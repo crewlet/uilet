@@ -1,0 +1,67 @@
+/*
+ * Avatar, round identity badge.
+ *
+ * The initials fallback
+ * uses the defined brand-accent surface and its paired on-brand text token so
+ * the dark, light, and system themes all keep an accessible contrast ratio.
+ */
+
+.crewlet-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  object-fit: cover;
+  font-family: var(--font-family-sans);
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+
+/* Shape modifiers. "circle" is the round identity badge; "square" keeps
+   rounded corners (matching the Card radius) so wide marks such as company
+   logos are not cropped into a circle. */
+.crewlet-avatar--circle {
+  border-radius: var(--radius-circle, 50%);
+}
+
+.crewlet-avatar--square {
+  border-radius: var(--radius-lg, 12px);
+}
+
+.crewlet-avatar--image {
+  display: block;
+  object-fit: cover;
+}
+
+.crewlet-avatar--fallback {
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-brand);
+  text-transform: uppercase;
+}
+
+/*
+ * Identity tints. When a colorSeed is supplied, the initials fallback picks
+ * one of these fixed backgrounds by a stable hash of the seed, so each
+ * identity keeps a distinct, consistent colour across the product (agent
+ * rosters, member lists). The palette is chosen for a legible contrast ratio
+ * against white initials (overridable through --crewlet-avatar-tint-fg),
+ * and each tint overrides the plain
+ * brand-accent fallback above. Ordering matters: these rules follow
+ * .crewlet-avatar--fallback so the tint wins at equal specificity.
+ */
+.crewlet-avatar--tint {
+  color: var(--crewlet-avatar-tint-fg, #ffffff);
+}
+
+.crewlet-avatar--tint-0 { background: #2563eb; }
+.crewlet-avatar--tint-1 { background: #7c3aed; }
+.crewlet-avatar--tint-2 { background: #c026d3; }
+.crewlet-avatar--tint-3 { background: #db2777; }
+.crewlet-avatar--tint-4 { background: #dc2626; }
+.crewlet-avatar--tint-5 { background: #ea580c; }
+.crewlet-avatar--tint-6 { background: #ca8a04; }
+.crewlet-avatar--tint-7 { background: #16a34a; }
+.crewlet-avatar--tint-8 { background: #0d9488; }
+.crewlet-avatar--tint-9 { background: #0284c7; }

@@ -1,0 +1,20 @@
+/*
+ * Section, the vertical rhythm band. One spacing scale keeps the cadence
+ * between page sections consistent, and collapses gracefully on small
+ * viewports.
+ */
+
+.crewlet-section {
+  position: relative;
+}
+
+.crewlet-section--none { padding-block: 0; }
+.crewlet-section--sm { padding-block: var(--spacing-9); }
+.crewlet-section--md { padding-block: var(--spacing-11); }
+.crewlet-section--lg { padding-block: 120px; }
+
+@media (max-width: 768px) {
+  .crewlet-section--sm { padding-block: var(--spacing-7); }
+  .crewlet-section--md { padding-block: var(--spacing-9); }
+  .crewlet-section--lg { padding-block: var(--spacing-10); }
+}

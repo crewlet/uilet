@@ -1,0 +1,141 @@
+name: ci
+
+# Verifies every pull request and every push to main. Nothing here needs a
+# secret or a write scope, which is what makes it safe to run for pull
+# requests from forks.
+#
+# Actions are pinned to full commit SHAs, with the release each one
+# corresponds to in a trailing comment. A tag can be moved to different code;
+# a SHA cannot. Dependabot updates the SHA and the comment together, and the
+# workflows job below fails when a workflow or action drops a pin or another
+# hardening rule.
+#
+# No job runs a dependency's install script: every install is
+# `npm ci --ignore-scripts`, and nothing in the workspace needs one.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request supersedes the run for the older one. Runs on
+# main are never cancelled, so every commit on main keeps a complete result.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-node
+        with:
+          cache: npm
+
+      # Manifest metadata, workspace pins, lockfile sources and toolchain pins,
+      # on Node alone and before anything is installed.
+      - name: Check the release metadata
+        run: node scripts/release.mjs check
+
+      - run: npm ci --ignore-scripts
+
+      # npm ci accepts a lockfile whose workspace entries no longer match the
+      # manifests (a changed license or description, for example); refreshing
+      # both lockfiles must change nothing.
+      - name: Check that the lockfiles match their manifests
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts
+          npm install --package-lock-only --ignore-scripts --prefix=.github/deploy
+          git diff --exit-code -- package-lock.json .github/deploy/package-lock.json
+
+      - run: npm run build
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: storybook-static
+          path: apps/storybook/storybook-static
+          retention-days: 7
+          if-no-files-found: error
+
+  # The exact install, build and pack the release workflow runs, from a fresh
+  # checkout, so a manifest, an exports entry, a license file or a build step
+  # that only the release path exercises fails on the pull request that
+  # breaks it rather than on the tag that publishes.
+  pack:
+    name: pack
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-node
+      - name: Install and build only the published packages
+        run: node scripts/release.mjs build
+      - name: Pack the published packages
+        run: node scripts/release.mjs pack "${RUNNER_TEMP}/packages"
+
+  sign-off:
+    name: sign-off
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Require a Signed-off-by trailer on every commit in the pull request
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check-signoff.mjs "${BASE_SHA}" "${HEAD_SHA}"
+
+  # The merge button composes the commit that lands on main itself, and a
+  # squash can lose the trailers the pull request's commits carried, so what
+  # each push adds to main is checked as well. A failure here cannot be fixed
+  # by a rewrite; it tells the maintainers a commit reached main uncertified.
+  sign-off-main:
+    name: sign-off (main)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Require a Signed-off-by trailer on every commit the push added
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: node scripts/check-signoff.mjs "${BEFORE_SHA}" "${GITHUB_SHA}"
+
+  # Static analysis of the workflows, the composite actions and dependabot.yml:
+  # unpinned actions, persisted credentials, excessive permissions, template
+  # injection, cache poisoning and the rest of zizmor's audits. The action runs
+  # the zizmor image by the digest recorded in the pinned action release, so
+  # moving the action SHA is what moves zizmor.
+  workflows:
+    name: workflows
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          advanced-security: false
+          annotations: true

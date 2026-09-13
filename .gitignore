@@ -1,0 +1,34 @@
+node_modules
+build
+dist
+.vite
+.cache
+.turbo
+coverage
+storybook-static
+*.log
+*.tsbuildinfo
+
+# Generated artifacts (regenerated from sources on every build)
+packages/tokens/dist
+packages/tokens/src/index.ts
+packages/icons/dist
+packages/icons/src/generated
+packages/ui/dist
+
+# Local env overrides, never commit
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+.idea
+.vscode
+*.swp
+*.swo
+
+# Local design-sync tool state (configuration, caches, reference builds)
+.design-sync/
+.ds-sync/
+ds-bundle/

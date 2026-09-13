@@ -1,0 +1,1593 @@
+/* ─────────────────────────────────────────────────────────────────
+ * Default variant.
+ *
+ * Every rule is scoped under the variant root, so the table's
+ * internals never match an application's own class names and the
+ * compact variant's rules further down never leak into this one.
+ * ───────────────────────────────────────────────────────────────── */
+.crewlet-data-table--default {
+  width: 100%;
+  position: relative;
+  overflow-x: auto;
+}
+
+.crewlet-data-table--default .crewlet-data-table__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+  display: table;
+  table-layout: auto;
+}
+
+.crewlet-data-table--default .crewlet-data-table__table thead {
+  border-bottom: 1px solid var(--color-border-default);
+  display: table-header-group;
+}
+
+.crewlet-data-table--default .crewlet-data-table__table tbody {
+  display: table-row-group;
+}
+
+.crewlet-data-table--default .crewlet-data-table__table tr {
+  display: table-row;
+}
+
+/*
+ * Header cells hold the absolutely positioned resize handle, so they
+ * are the positioning context, and the right padding is kept tight so
+ * the handle sits against the label rather than a gutter.
+ */
+.crewlet-data-table--default .crewlet-data-table__table th {
+  padding: 2px 4px 2px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  user-select: none;
+  display: table-cell;
+  white-space: nowrap;
+}
+
+.crewlet-data-table--default .crewlet-data-table__table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-default);
+  display: table-cell;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/*
+ * Column separator on the header row only. The th already declares
+ * position: relative for the resize handle, so the pseudo can hang
+ * off the right edge without extra wrapping.
+ */
+.crewlet-data-table--default .crewlet-data-table__table thead th:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  right: 0;
+  width: 1px;
+  background: var(--color-border-default);
+  pointer-events: none;
+}
+
+.crewlet-data-table--default .crewlet-data-table__table tbody tr {
+  background: var(--color-surface-subtle);
+  transition: background-color 0.2s ease;
+}
+
+.crewlet-data-table--default .crewlet-data-table__table tbody tr:hover {
+  background: var(--color-surface-elevated);
+}
+
+.crewlet-data-table--default .crewlet-data-table__empty {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* Resizable columns */
+.crewlet-data-table--default .crewlet-data-table__column-resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+}
+
+.crewlet-data-table--default .crewlet-data-table__column-resizer:hover {
+  background: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.3);
+}
+
+/* Set on <body> while a column is being dragged, so the resize cursor
+   and the text-selection lock hold even when the pointer leaves the
+   header cell. */
+body.crewlet-data-table-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* Sortable headers */
+.crewlet-data-table--default .crewlet-data-table__th--sortable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.crewlet-data-table--default .crewlet-data-table__th--sortable:hover {
+  color: var(--color-text-primary);
+}
+
+.crewlet-data-table--default .crewlet-data-table__header-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding-right: 0;
+}
+
+.crewlet-data-table--default .crewlet-data-table__header-content > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.crewlet-data-table--default .crewlet-data-table__sort-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.crewlet-data-table--default .crewlet-data-table__th--sortable:hover .crewlet-data-table__sort-icon {
+  opacity: 0.8;
+}
+
+.crewlet-data-table--default .crewlet-data-table__sort-icon.is-active {
+  opacity: 1;
+  color: var(--color-text-primary);
+}
+
+/* Row action button */
+.crewlet-data-table--default .crewlet-data-table__action-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.crewlet-data-table--default .crewlet-data-table__action-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.crewlet-data-table--default .crewlet-data-table__action-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+/* Settings and reset buttons in the Actions column header */
+.crewlet-data-table--default .crewlet-data-table__header-btn {
+  position: absolute;
+  top: 4px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.crewlet-data-table--default .crewlet-data-table__header-btn:hover {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+}
+
+.crewlet-data-table--default .crewlet-data-table__header-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.crewlet-data-table--default .crewlet-data-table__header-btn--settings {
+  right: 4px;
+}
+
+.crewlet-data-table--default .crewlet-data-table__header-btn--reset {
+  right: 28px;
+}
+
+/*
+ * The settings modal is uilet's Modal primitive, composed in
+ * DataTable.tsx. Its inner controls (the settings sections, the
+ * items-per-page chips and the column toggles) have no uilet
+ * equivalent and are styled below, namespaced under
+ * .crewlet-data-table__ so they never collide with an application's
+ * own class names.
+ */
+
+.crewlet-data-table__settings-section {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.crewlet-data-table__settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.crewlet-data-table__settings-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.crewlet-data-table__settings-section-hint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0 0 12px 0;
+}
+
+/* Items Per Page Options */
+/*
+ * Settings modal footer layout. Reset on the left, Cancel + Apply on
+ * the right, sharing the modal's footer row via space-between. Modal's
+ * default footer is justify-content: flex-end, so the wrapper takes
+ * over the row to anchor Reset on the left.
+ */
+.crewlet-data-table__settings-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.crewlet-data-table__settings-footer-right {
+  display: flex;
+  gap: 8px;
+}
+
+/*
+ * Reset to Default checkmark confirmation. Renders briefly inside the
+ * Button's leadingIcon slot after a click so the operator sees the
+ * reset landed; auto-clears after ~1.5s. The colour tracks the
+ * theme's success token (with a sensible fallback) so it reads as a
+ * positive affordance rather than chrome.
+ */
+.crewlet-data-table__reset-confirm-icon {
+  font-size: 16px;
+  color: var(--color-feedback-success, #22c55e);
+}
+
+.crewlet-data-table__items-per-page-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.crewlet-data-table__items-per-page-btn {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crewlet-data-table__items-per-page-btn:hover {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-text-secondary);
+}
+
+.crewlet-data-table__items-per-page-btn.is-active {
+  background: var(--color-brand-accent);
+  border-color: var(--color-brand-accent);
+  color: #ffffff;
+}
+
+/* Column Toggles */
+.crewlet-data-table__column-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 350px;
+}
+
+.crewlet-data-table__column-toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  cursor: move;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.crewlet-data-table__column-toggle-item:hover:not(.is-dragging) {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-text-secondary);
+}
+
+.crewlet-data-table__column-toggles:has(.is-dragging) .crewlet-data-table__column-toggle-item:not(.is-dragging):hover {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-border-default);
+}
+
+.crewlet-data-table__column-toggle-item.is-dragging {
+  opacity: 0.5;
+}
+
+.crewlet-data-table__column-drag-handle {
+  color: var(--color-text-secondary);
+  cursor: grab;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.crewlet-data-table__column-drag-handle:active {
+  cursor: grabbing;
+}
+
+.crewlet-data-table__column-toggle-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 2px solid var(--color-border-default);
+  border-radius: 4px;
+  background: var(--color-surface-background);
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.crewlet-data-table__column-toggle-checkbox:hover {
+  border-color: var(--color-brand-accent);
+  opacity: 1;
+}
+
+.crewlet-data-table__column-toggle-checkbox:checked {
+  background: var(--color-brand-accent);
+  border-color: var(--color-brand-accent);
+}
+
+.crewlet-data-table__column-toggle-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -60%) rotate(45deg);
+}
+
+.crewlet-data-table__column-toggle-checkbox:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.32));
+}
+
+.crewlet-data-table__column-toggle-label {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  user-select: none;
+  flex: 1;
+  text-align: left;
+}
+
+/* Modal footer buttons are uilet <Button> primitives composed in DataTable.tsx. */
+
+/*
+ * Light theme: the column-toggle checkbox needs higher contrast than
+ * --color-border-default on a white surface, so the unchecked state
+ * stays visible. The underlying surface / border / text tokens are
+ * flipped automatically by @crewlethq/tokens/css/themes.
+ */
+body.theme-light .crewlet-data-table__column-toggle-checkbox {
+  border-color: rgba(0, 0, 0, 0.4);
+}
+
+/*
+ * Compact settings modal widgets: the Wrap lines toggle. The page-size
+ * control reuses the rich modal's .crewlet-data-table__items-per-page-*
+ * chip styles so both modal shapes share one control vocabulary; only
+ * the section heading ("Page size" vs "Items per page") differs.
+ */
+.crewlet-data-table__toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+
+.crewlet-data-table__toggle-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 2px solid var(--color-border-default);
+  border-radius: 4px;
+  background: var(--color-surface-background);
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  margin-top: 1px;
+}
+
+.crewlet-data-table__toggle-checkbox:hover {
+  border-color: var(--color-brand-accent);
+}
+
+.crewlet-data-table__toggle-checkbox:checked {
+  background: var(--color-brand-accent);
+  border-color: var(--color-brand-accent);
+}
+
+.crewlet-data-table__toggle-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -60%) rotate(45deg);
+}
+
+.crewlet-data-table__toggle-checkbox:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.32));
+}
+
+.crewlet-data-table__toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  user-select: none;
+}
+
+.crewlet-data-table__toggle-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.crewlet-data-table__toggle-hint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+body.theme-light .crewlet-data-table__toggle-checkbox {
+  border-color: rgba(0, 0, 0, 0.4);
+}
+
+/*
+ * Cursor-pagination footer: centered Load more button rendered when
+ * the caller passes hasMore + onLoadMore. The terminal state is
+ * intentionally silent; an "End of feed" indicator was retired so
+ * exhausted tables collapse to nothing rather than a dead label.
+ */
+.crewlet-data-table__load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0;
+  min-height: 32px;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Compact variant.
+ *
+ * Lighter table chrome for dense list pages: tight padding, uppercase
+ * headers, full-row loading and error states, and the settings cog in
+ * the toolbar rather than the header row.
+ * Designed to sit inside an external Toolbar + Footer that the host
+ * page owns.
+ *
+ * Tokens declared on the root element are overridable by the host,
+ * from a rule that targets the root through the table's className or
+ * an ancestor selector (for example `.my-page .crewlet-data-table--compact`),
+ * so the active-sort color, the row hover and the archived-row tint
+ * can match a non-default palette without uilet needing to know about
+ * the host's tokens.
+ * ───────────────────────────────────────────────────────────────── */
+.crewlet-data-table--compact {
+  --crewlet-data-table-row-hover-bg: var(--color-surface-elevated);
+  --crewlet-data-table-active-sort-color: var(--color-brand-accent);
+  --crewlet-data-table-archived-tint-rgb: 196, 96, 96;
+  width: 100%;
+}
+
+/*
+ * Horizontal-scroll wrapper around the <table> element only. The
+ * header (title + description + cog + pagination), toolbar (filter
+ * slot), and Load more footer sit OUTSIDE this scroll viewport so
+ * they stay anchored when the table overflows on narrow viewports.
+ */
+.crewlet-data-table__rail {
+  /*
+   * Positioning context for the scrollbar mask. The rail wraps the
+   * scroll viewport so the mask can be placed at the rail's bottom-
+   * right corner without interfering with the table's natural flow.
+   * Width matches the scroll viewport inside.
+   */
+  position: relative;
+  width: 100%;
+}
+
+/*
+ * Scrollbar mask. When the table holds one or more sticky-right
+ * columns, the horizontal scrollbar inside the scroll viewport
+ * physically spans the full pane width, including the area visually
+ * occupied by the sticky cells. The mask overlays the rightmost
+ * portion of that scrollbar with the sticky background so the visible
+ * scroll track ends exactly at the left border of the sticky cells.
+ * Width is sourced from --crewlet-data-table-sticky-pane-width, which
+ * the component sets inline from the live sticky column widths so
+ * resize and Reset stay in sync. The default of 0 keeps the mask
+ * invisible on tables without a sticky pane.
+ *
+ * Height is sized to cover the tallest common horizontal scrollbar
+ * (Windows / X11 classic) without intruding into the rows above it
+ * on macOS overlay scrollbars where the bar is thinner. The mask is
+ * pointer-events: none so it never swallows clicks targeted at the
+ * underlying cells, even though those clicks already land on the
+ * sticky cell that sits above.
+ */
+.crewlet-data-table__rail::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: var(--crewlet-data-table-sticky-pane-width, 0);
+  height: 16px;
+  background: var(
+    --crewlet-data-table-sticky-bg,
+    var(--color-surface-elevated, #1f2128)
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/*
+ * Frozen variant: tables that carry a sticky-right action column.
+ * The fit pass guarantees the regular columns redistribute to fit
+ * the container at every container-size change, so a horizontal
+ * scrollbar is never needed and would only signal a layout that
+ * already lost. Locking overflow to hidden also removes the
+ * scrollbar mask requirement (no scrollbar means nothing to mask),
+ * so the rail drops its ::after pseudo to keep the bottom-right
+ * corner clean across surfaces that use a different sticky-bg.
+ */
+.crewlet-data-table__rail--frozen .crewlet-data-table__scroll {
+  overflow-x: hidden;
+}
+
+.crewlet-data-table__rail--frozen::after {
+  display: none;
+}
+
+.crewlet-data-table__scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table {
+  /*
+   * width: 100% + table-layout: fixed + a trailing spacer column
+   * lets the table fill the container at minimum, while still
+   * letting the column-resize handle write widths 1:1. The spacer
+   * column has no explicit width so it absorbs all the leftover
+   * space; user-resized columns stay at their exact widths. When
+   * the sum of column widths exceeds the container, the spacer
+   * collapses to zero and the horizontal-scroll wrapper handles
+   * overflow.
+   */
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.crewlet-data-table__th--spacer,
+.crewlet-data-table__td--spacer {
+  /*
+   * Trailing spacer column: invisible, padding-free, takes whatever
+   * width is left over after the user-defined columns claim theirs.
+   * No padding so it never adds to the natural minimum width; no
+   * border on the right so the table's right edge stays clean.
+   */
+  padding: 0;
+  border: 0;
+  background: transparent;
+  min-width: 0;
+  width: auto;
+}
+
+/*
+ * When the table carries a sticky-right action column, the spacer
+ * sits BETWEEN the rightmost regular cell and the pinned action
+ * cell. Force a minimum gutter on it so the regular content never
+ * touches the action column, even if a state mutation bypasses the
+ * fit pass (visibility toggle, controlled column-width override,
+ * etc.). The fit pass also reserves this same 16px in its chrome
+ * accounting so the gutter and the proportional grow stay in sync.
+ */
+.crewlet-data-table--compact
+  .crewlet-data-table__table:has(.crewlet-data-table__th--sticky-right)
+  .crewlet-data-table__th--spacer,
+.crewlet-data-table--compact
+  .crewlet-data-table__table:has(.crewlet-data-table__th--sticky-right)
+  .crewlet-data-table__td--spacer {
+  min-width: 24px;
+  width: 24px;
+}
+
+/*
+ * Row actions column: pinned to the viewport's right edge with
+ * position: sticky so the kebab affordance stays visible during
+ * horizontal scroll AND keeps a fixed visual position regardless of
+ * how the operator resizes the data columns. The cell intentionally
+ * has no background so it blends with the surrounding row tone
+ * (default, hover, archived), the parent card surface remains
+ * visible underneath. The z-index keeps the kebab above the column
+ * separators painted on data cells.
+ */
+.crewlet-data-table__th--actions,
+.crewlet-data-table__td--actions {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: transparent;
+}
+
+/*
+ * Opt-in sticky-right modifier for caller-defined columns. Pins the
+ * column to the right edge of the scroll container so a trailing
+ * action (a Details link, Edit chip, etc.) stays visible regardless
+ * of horizontal scroll or how the operator resizes earlier data
+ * columns. The cell paints an opaque background sourced from a
+ * theme-overridable token so content scrolling behind the cell does
+ * not bleed through the link text. The header z-index sits a layer
+ * above body cells so the column boundary remains crisp at the
+ * sticky edge. Callers tinting the surface re-bind the token via a
+ * wrapper rule (a card-style className on the table, for example).
+ */
+.crewlet-data-table__th--sticky-right,
+.crewlet-data-table__td--sticky-right {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: var(--crewlet-data-table-sticky-bg, var(--color-surface-elevated, #1f2128));
+}
+
+/*
+ * Sticky cells are the row's trailing action area; the affordance
+ * they hold sits centered inside the sticky pane so the chip reads
+ * as the focal point of the pane rather than tucked against either
+ * edge. The base compact cell rule pins text-align: left at higher
+ * specificity, so the override is written with the full selector
+ * chain to win the cascade. Inline-flex content (the typical action
+ * chip pattern) respects the cell's text-align so this is sufficient
+ * on its own, no display change to the table-cell needed.
+ */
+.crewlet-data-table--compact .crewlet-data-table__table th.crewlet-data-table__th--sticky-right,
+.crewlet-data-table--compact .crewlet-data-table__table td.crewlet-data-table__td--sticky-right {
+  text-align: center;
+}
+
+.crewlet-data-table__th--sticky-right {
+  z-index: 3;
+  background: var(
+    --crewlet-data-table-sticky-header-bg,
+    var(--crewlet-data-table-sticky-bg, var(--color-surface-elevated, #1f2128))
+  );
+}
+
+/*
+ * Row hover + expanded states change the <tr> background, but cells
+ * with their own background (the sticky-right column needs one so
+ * scrolled content does not bleed through) do not pick that change
+ * up automatically. Mirror the row-state colors onto the sticky
+ * cell so the right edge stays visually attached to the row it
+ * belongs to instead of standing out as a different shade.
+ */
+.crewlet-data-table--compact tbody tr:hover .crewlet-data-table__td--sticky-right,
+.crewlet-data-table--compact .crewlet-data-table__row--expandable.is-expanded .crewlet-data-table__td--sticky-right {
+  background: var(--crewlet-data-table-row-hover-bg);
+}
+
+/*
+ * Unstyled button-as-link cells (an agent name that navigates, a
+ * schedule that opens a drawer) must read as table text. Browsers
+ * center button text by their UA stylesheet, so a cell value that
+ * wraps onto multiple lines would center-align its lines instead of
+ * following the cell's alignment. Inherit pins buttons to whatever
+ * the cell declares; components that center via flex (Button,
+ * IconButton) are unaffected because their alignment comes from
+ * justify-content, not text-align.
+ */
+.crewlet-data-table__table td button {
+  text-align: inherit;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table th,
+.crewlet-data-table--compact .crewlet-data-table__table td {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 13px;
+  border-bottom: 1px solid var(--color-border-default);
+  /*
+   * Center cells against the row's tallest cell. Tables like an
+   * activity feed mix short cells ("4h ago", "success") with tall
+   * identity blocks (avatar + name + id stacked vertically),
+   * so middle alignment keeps the short cells from sticking to
+   * the top while the multi-line ones sit at the row's full height.
+   */
+  vertical-align: middle;
+  /*
+   * Default to truncate-with-ellipsis (AWS-style data tables). The
+   * Wrap lines toggle in the compact settings modal flips this on
+   * by adding .crewlet-data-table--wrap-lines on the root, which
+   * the override below re-enables wrapping for. Long unbroken
+   * tokens (UUIDs) get clipped with an ellipsis instead of pushing
+   * the column wider. (max-width is intentionally NOT set here:
+   * table-layout: fixed already takes the th's width as the column
+   * width, and forcing max-width: 0 collapses the column to zero
+   * under some browser implementations.)
+   */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * Wrap-lines toggle only affects BODY cells. Headers always keep
+ * their content on a single line; a narrow column truncates the
+ * label with an ellipsis instead of wrapping onto two lines, which
+ * would change row heights every time someone resizes a column.
+ */
+.crewlet-data-table--compact.crewlet-data-table--wrap-lines .crewlet-data-table__table td {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: none;
+}
+
+/*
+ * Force-pin the header cells (and their inner sort-button label) to
+ * single-line truncate, even when --wrap-lines is on. The sort
+ * button is a flex row [label | arrow]; the label takes whatever
+ * space is left, then ellipsises.
+ */
+.crewlet-data-table--compact .crewlet-data-table__table th,
+.crewlet-data-table--compact.crewlet-data-table--wrap-lines .crewlet-data-table__table th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__sort-button {
+  overflow: hidden;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__sort-button > span:first-child {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table th {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 11px;
+  /* Headers must read as a single tight line; never wrap onto two lines
+     because the next column is unusually narrow. */
+  white-space: nowrap;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table tbody tr:hover {
+  background: var(--crewlet-data-table-row-hover-bg);
+}
+
+/*
+ * Thin vertical separator between column headers. Painted as an
+ * absolutely positioned pseudo-element on the right edge of every
+ * thead th, with three exclusions:
+ *   1. The literal last th (no trailing separator at the row's edge).
+ *   2. Chrome columns themselves (the --chrome modifier on the
+ *      empty actions / expand-chevron headers) skip the separator
+ *      regardless of position. This matters when the expand chevron
+ *      sits at the left edge.
+ *   3. A th whose next sibling is a chrome column also skips the
+ *      separator, so the last data column never has a line dividing
+ *      it from a trailing chrome column.
+ * The line is inset 6px from top and bottom so it reads as a column
+ * delimiter rather than a horizontal border. Only the header row
+ * carries separators; data rows stay clean.
+ */
+.crewlet-data-table--compact .crewlet-data-table__table thead th {
+  position: relative;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table thead th:not(:last-child):not(.crewlet-data-table__th--chrome):not(:has(+ .crewlet-data-table__th--chrome))::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  right: 0;
+  width: 1px;
+  background: var(--color-border-default);
+  pointer-events: none;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__row--clickable {
+  cursor: pointer;
+}
+
+/*
+ * Pagination + settings controls live in the toolbar-end zone (see
+ * the toolbar rules higher up); these rules style the buttons
+ * themselves.
+ */
+.crewlet-data-table__pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/*
+ * Thin vertical separator between the pagination chevrons and the
+ * settings cog. Painted as a pseudo-element on the left edge of the
+ * settings button (inset 4px from top/bottom so it reads as a
+ * delimiter, not a border). Only renders when the settings button
+ * sits adjacent to the pagination block.
+ */
+.crewlet-data-table__pagination + .crewlet-data-table__settings-btn {
+  position: relative;
+  /*
+   * Widen the gap between the pagination cluster and the settings
+   * cog so the separator can sit close to the pagination side with
+   * comfortable breathing room before the cog.
+   */
+  margin-left: 14px;
+}
+
+.crewlet-data-table__pagination + .crewlet-data-table__settings-btn::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  /*
+   * Anchor the line ~2px past the pagination block's right edge
+   * (12px from the settings button's left edge) so it reads as the
+   * closer of the pagination cluster, not a divider centered in
+   * the gap.
+   */
+  left: -12px;
+  width: 1px;
+  background: var(--color-border-default);
+}
+
+.crewlet-data-table__page-btn,
+.crewlet-data-table__settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.crewlet-data-table__page-btn:hover:not(:disabled),
+.crewlet-data-table__settings-btn:hover {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+.crewlet-data-table__page-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.crewlet-data-table__page-btn .material-symbols-outlined,
+.crewlet-data-table__settings-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.crewlet-data-table__page-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+
+/* ─── Toolbar slot (filter bars, search, batch actions) ────────── */
+/*
+ * Two-zone toolbar: the caller's content (filter pills, search) sits
+ * on the LEFT (toolbar-start); the table's own controls (pagination
+ * chevrons + settings cog) sit on the RIGHT (toolbar-end). Either
+ * zone can be absent; the toolbar only renders when at least one
+ * has content. Toolbar-end always aligns to the right edge so the
+ * cog and chevrons hold a consistent position across pages.
+ */
+/*
+ * Optional header block. Sits above the toolbar and renders the
+ * table's title (section name) and description (one-line context)
+ * when callers pass either prop. Folds what used to be a per-page
+ * <section><header><h2/><p/></header><DataTable/></section> pattern
+ * into the primitive so the entire surface shares one card.
+ */
+/*
+ * Header row layout. Icon (optional) + title/description stack on the
+ * left, right-side controls (pagination + settings cog) on the right.
+ * Wraps on narrow viewports so the controls drop below the text rather
+ * than colliding with a long description.
+ */
+.crewlet-data-table__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-data-table__header-icon {
+  font-size: 22px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.crewlet-data-table__header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.crewlet-data-table__header .crewlet-data-table__toolbar-end {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.crewlet-data-table__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.005em;
+}
+
+.crewlet-data-table__description {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/*
+ * When the header and the toolbar are both present, the toolbar's
+ * top edge already meets the header's bottom border, so the toolbar
+ * keeps its own bottom border (table head delimiter) without painting
+ * a second top border.
+ */
+.crewlet-data-table__toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-data-table__toolbar-start {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/*
+ * Loading skeleton. Shimmer bars painted inside the real table body
+ * while `loading` is true and no rows exist. The pulse mirrors the
+ * Skeleton primitive's timing so mixed pages (skeleton cards above a
+ * loading table) breathe in sync.
+ */
+@keyframes crewlet-data-table-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+.crewlet-data-table__skeleton-bar {
+  display: inline-block;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--color-surface-elevated, var(--color-surface-muted));
+  animation: crewlet-data-table-skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  vertical-align: middle;
+}
+
+/*
+ * Clear-filters link. Sits at the end of the filter slot, baseline-
+ * aligned with the filter controls (the slot uses align-items:
+ * flex-end, so the bottom padding tucks the text to the same line
+ * as the Select triggers). Rendered only while a filter is active.
+ */
+.crewlet-data-table__clear-filters {
+  background: none;
+  border: none;
+  padding: 0 0 7px;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: var(--color-brand-accent);
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: flex-end;
+  /* Pin to the right edge of the toolbar row (before the pagination
+     cluster when present) so the affordance sits in the same place
+     on every table, regardless of the filter slot's own layout. */
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.crewlet-data-table__clear-filters:hover {
+  text-decoration: underline;
+}
+
+/*
+ * Pagination + settings cog. Always pinned to the right edge of the
+ * toolbar row, even when:
+ *   - the toolbar has no filter slot (solo right-side controls)
+ *   - the row wraps onto two lines on narrow viewports
+ * `margin-left: auto` consumes the leftover row space, pushing the
+ * cluster past the filter slot (or to the row's right edge when it
+ * is alone). justify-content: space-between alone is not enough,
+ * since space-between with one item left-aligns it.
+ */
+.crewlet-data-table__toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ─── Expandable rows ──────────────────────────────────────────── */
+
+/*
+ * Chevron column: fixed 32px width, zero horizontal padding on both
+ * the header and the body cells. With the same padding on both, the
+ * `>` glyph in every data row lines up vertically beneath the
+ * expand-all `>` in the header row.
+ */
+.crewlet-data-table__expand-header,
+.crewlet-data-table--compact .crewlet-data-table__table th.crewlet-data-table__expand-header {
+  width: 32px;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table td.crewlet-data-table__expand-cell {
+  width: 32px;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/*
+ * Expand-all header button. Sits inside the chevron column header
+ * cell, paints the right-pointing chevron, rotates to point down when
+ * every visible row is expanded. Clicking toggles between expand-all
+ * and collapse-all.
+ */
+.crewlet-data-table__expand-all-btn {
+  /*
+   * Tight 22x22 hit target around the chevron glyph so the hover
+   * highlight reads as a small square button rather than filling the
+   * whole header cell. The parent header centers it horizontally.
+   */
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  border-radius: 4px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.crewlet-data-table__expand-all-btn:hover {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+}
+
+.crewlet-data-table__expand-all-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.32));
+}
+
+.crewlet-data-table__chevron {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.18s ease;
+  display: inline-block;
+}
+
+/*
+ * `chevron_right` glyph points right by default; rotating 90deg
+ * makes it point down to signal "expanded". Both the per-row
+ * chevron and the expand-all header chevron share this transition.
+ */
+.crewlet-data-table__chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.crewlet-data-table--compact .crewlet-data-table__row--expandable.is-expanded {
+  background: var(--crewlet-data-table-row-hover-bg);
+}
+
+.crewlet-data-table__expanded-row td.crewlet-data-table__expanded-cell {
+  padding: 16px 14px;
+  background: var(--color-surface-subtle);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+/* In comfortable density, the expanded panel inherits the same outer
+   24px margin as its parent row so the detail content lines up with
+   the row's first and last columns. */
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__expanded-row td.crewlet-data-table__expanded-cell {
+  padding: 16px 24px;
+}
+
+/*
+ * Density="comfortable" overrides. Used by surfaces that live inside a
+ * section card with 24px inner padding, where the
+ * canonical compact density (13px font, 10/12px cell padding) looks
+ * cramped against the surrounding card chrome. The font and cell
+ * padding bump up; the first / last column gain extra outer padding
+ * so the row aligns with the card's left and right edges.
+ */
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__table {
+  font-size: 14px;
+}
+
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__table th,
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__table td {
+  padding: 14px 14px;
+}
+
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__table th {
+  padding: 12px 14px;
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__table th:first-child,
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__table td:first-child {
+  padding-left: 24px;
+}
+
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__table th:last-child,
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__table td:last-child {
+  padding-right: 24px;
+}
+
+/*
+ * Sortable-header button inside the comfortable density needs the same
+ * horizontal padding bumps so the label sits flush with adjacent cells
+ * (the button supplants the th's padding when sortable=true).
+ */
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__sort-button {
+  padding: 12px 14px;
+}
+
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__th--sortable:first-child .crewlet-data-table__sort-button {
+  padding-left: 24px;
+}
+
+.crewlet-data-table--compact.crewlet-data-table--density-comfortable .crewlet-data-table__th--sortable:last-child .crewlet-data-table__sort-button {
+  padding-right: 24px;
+}
+
+/* Sortable header. The button hosts the click target so the arrow icon
+   is part of the same hit region as the label. */
+.crewlet-data-table--compact .crewlet-data-table__th--sortable {
+  padding: 0 !important;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__sort-button {
+  display: inline-flex;
+  align-items: center;
+  /*
+   * Label on the left, sort arrow pinned to the right edge of the
+   * column. justify-content: space-between with gap stretches the
+   * row so the arrow always sits flush against the column boundary
+   * regardless of label length. The flex behaviour also makes the
+   * label and arrow share one hit region.
+   */
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  font-weight: inherit;
+  text-align: left;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__sort-button > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__sort-button .material-symbols-outlined {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__sort-button:hover {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-data-table--compact .crewlet-data-table__sort-button .material-symbols-outlined {
+  font-size: 14px;
+  opacity: 0.45;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__th--sortable.is-active .crewlet-data-table__sort-button {
+  color: var(--crewlet-data-table-active-sort-color);
+}
+
+.crewlet-data-table--compact .crewlet-data-table__th--sortable.is-active .crewlet-data-table__sort-button .material-symbols-outlined {
+  opacity: 1;
+}
+
+/*
+ * Compact column resizer. A wide hit area straddling the column's
+ * right edge: 8px total, centered on the boundary (4px into the
+ * cell, 4px past). Hovering reveals a soft accent strip so the
+ * operator can find the handle without it cluttering the default
+ * header. mousedown wiring is owned by the JSX; this rule just
+ * paints the affordance and sets the resize cursor.
+ */
+.crewlet-data-table__resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /*
+   * Wide hit area straddling the column boundary: 16px total, 8px
+   * on each side. Gives the operator a generous grab zone so the
+   * drag doesn't drop out when the mouse drifts a few pixels off
+   * the visible separator line.
+   */
+  right: -8px;
+  width: 16px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 2;
+}
+
+.crewlet-data-table__resizer::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: transparent;
+  border-radius: 1px;
+  transition: background-color 0.15s ease;
+}
+
+.crewlet-data-table__resizer:hover::before,
+.crewlet-data-table__resizer:active::before {
+  background: var(--color-brand-accent);
+}
+
+.crewlet-data-table--compact .crewlet-data-table__empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+}
+
+/* Archived row treatment: subdued tone plus a left edge accent in the
+   tint colour so the row reads as "still here for context but not
+   active". A host flips --crewlet-data-table-archived-tint-rgb to pick
+   its own palette (for example a muted warning red). */
+.crewlet-data-table--compact .crewlet-data-table__table tbody tr.crewlet-data-table__row--archived td {
+  opacity: 0.55;
+  background: linear-gradient(
+    90deg,
+    rgba(var(--crewlet-data-table-archived-tint-rgb), 0.05),
+    transparent 60%
+  );
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table tbody tr.crewlet-data-table__row--archived td:first-child {
+  position: relative;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table tbody tr.crewlet-data-table__row--archived td:first-child::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: rgba(var(--crewlet-data-table-archived-tint-rgb), 0.5);
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table tbody tr.crewlet-data-table__row--archived:hover td {
+  opacity: 0.75;
+}
+
+/* ─── Copyable cell affordance ─────────────────────────────────── */
+.crewlet-data-table__copy-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.crewlet-data-table__copy-cell-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-data-table__copy-cell-button {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.crewlet-data-table__copy-cell-button .material-symbols-outlined {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Reveal the copy button when the parent row is hovered (compact tables
+   only) or when the cell itself is hovered / focus-visible. The cell
+   selector keeps the affordance reachable outside a table context too. */
+.crewlet-data-table--compact tbody tr:hover .crewlet-data-table__copy-cell-button,
+.crewlet-data-table__copy-cell-button:focus-visible,
+.crewlet-data-table__copy-cell:hover .crewlet-data-table__copy-cell-button {
+  opacity: 1;
+}
+
+.crewlet-data-table__copy-cell-button:hover {
+  background: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.10);
+  border-color: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.32);
+  color: var(--color-brand-accent);
+}
+
+.crewlet-data-table__copy-cell-button.is-copied {
+  color: var(--color-brand-accent);
+  opacity: 1;
+}
+
+/* ─── Row actions kebab menu ──────────────────────────────────── */
+.crewlet-data-table__row-actions-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.crewlet-data-table__row-actions-trigger:hover,
+.crewlet-data-table__row-actions-trigger.is-open {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+.crewlet-data-table__row-actions-trigger:focus-visible {
+  outline: none;
+  border-color: var(--crewlet-data-table-active-sort-color, var(--color-brand-accent));
+  box-shadow: 0 0 0 3px rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.18);
+}
+
+.crewlet-data-table__row-actions-trigger .material-symbols-outlined {
+  font-size: 18px;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
+.crewlet-data-table__row-actions-popover {
+  min-width: 220px;
+  padding: 4px;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg, 0 12px 28px rgba(0, 0, 0, 0.45));
+}
+
+.crewlet-data-table__row-actions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.crewlet-data-table__row-actions-divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--color-border-default);
+}
+
+.crewlet-data-table__row-actions-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.crewlet-data-table__row-actions-item:hover:not(.is-disabled) {
+  background: var(--color-surface-elevated);
+}
+
+.crewlet-data-table__row-actions-item.is-disabled {
+  cursor: not-allowed;
+  color: var(--color-text-tertiary);
+  opacity: 0.55;
+}
+
+.crewlet-data-table__row-actions-item-icon {
+  flex-shrink: 0;
+  font-size: 18px;
+  line-height: 1.1;
+  color: var(--color-text-secondary);
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
+.crewlet-data-table__row-actions-item:hover:not(.is-disabled) .crewlet-data-table__row-actions-item-icon {
+  color: var(--color-text-primary);
+}
+
+.crewlet-data-table__row-actions-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.crewlet-data-table__row-actions-item-label {
+  font-weight: 500;
+}
+
+.crewlet-data-table__row-actions-item-description {
+  font-size: 11.5px;
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+
+/* Primary action: tinted with the active-sort accent so it reads as the
+   headline action. A host overrides the custom property to substitute
+   its own accent. */
+.crewlet-data-table__row-actions-item--primary {
+  color: var(--crewlet-data-table-active-sort-color, var(--color-brand-accent));
+}
+
+.crewlet-data-table__row-actions-item--primary .crewlet-data-table__row-actions-item-icon {
+  color: var(--crewlet-data-table-active-sort-color, var(--color-brand-accent));
+}
+
+/* Danger action: tinted with the feedback-danger token so destructive
+   actions read as deliberate without screaming. */
+.crewlet-data-table__row-actions-item--danger {
+  color: var(--color-feedback-danger);
+}
+
+.crewlet-data-table__row-actions-item--danger .crewlet-data-table__row-actions-item-icon {
+  color: var(--color-feedback-danger);
+}
+
+.crewlet-data-table__row-actions-item--danger:hover:not(.is-disabled) {
+  background: rgba(239, 68, 68, 0.10);
+}

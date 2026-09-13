@@ -1,0 +1,9 @@
+{
+  "breakpoint": {
+    "sm": { "value": "480px", "comment": "Small phones." },
+    "md": { "value": "768px", "comment": "Tablets. The primary layout switch between stacked and multi-column." },
+    "lg": { "value": "1024px", "comment": "Small laptops." },
+    "xl": { "value": "1200px", "comment": "Standard desktop." },
+    "2xl": { "value": "1600px", "comment": "Large desktop, such as wide marketing hero containers." }
+  }
+}

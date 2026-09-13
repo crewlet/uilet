@@ -1,0 +1,17 @@
+{
+  "motion": {
+    "duration": {
+      "instant": { "value": "75ms", "comment": "Tooltip flash, dropdown indicator nudge." },
+      "fast": { "value": "120ms", "comment": "Menu hover and active state changes." },
+      "base": { "value": "150ms", "comment": "Default UI transition." },
+      "moderate": { "value": "200ms", "comment": "Nav hover, topbar background changes." },
+      "slow": { "value": "300ms", "comment": "Modal enter, drawer slide." }
+    },
+    "easing": {
+      "default": { "value": "ease" },
+      "out": { "value": "ease-out" },
+      "inOut": { "value": "ease-in-out" },
+      "spring": { "value": "cubic-bezier(0.34, 1.56, 0.64, 1)", "comment": "Slight overshoot for emphasized entries." }
+    }
+  }
+}

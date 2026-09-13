@@ -1,0 +1,52 @@
+{
+  "name": "@crewlethq/tokens",
+  "version": "0.2.0",
+  "description": "Crewlet design tokens. Single JSON source compiled to CSS variables and typed JS modules.",
+  "license": "MIT AND OFL-1.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crewlet/uilet.git",
+    "directory": "packages/tokens"
+  },
+  "homepage": "https://github.com/crewlet/uilet/tree/main/packages/tokens#readme",
+  "bugs": {
+    "url": "https://github.com/crewlet/uilet/issues"
+  },
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./css": "./dist/css/tokens.css",
+    "./css/fonts": "./dist/css/fonts.css",
+    "./css/legacy": "./dist/css/legacy.css",
+    "./css/material-symbols": "./dist/css/material-symbols.css",
+    "./css/themes": "./dist/css/themes.css",
+    "./fonts/*": "./fonts/*"
+  },
+  "files": [
+    "dist",
+    "fonts"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs && tsc -p tsconfig.json",
+    "dev": "node scripts/build.mjs --watch",
+    "lint": "eslint scripts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist src/index.ts"
+  },
+  "devDependencies": {
+    "style-dictionary": "^5.5.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

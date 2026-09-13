@@ -1,0 +1,50 @@
+{
+  "color": {
+    "brand": {
+      "primary": { "value": "#5469d4", "comment": "Primary brand color and the fill of primary actions. The focus and glow shadows are tinted with it; the theme overrides repaint it per palette." },
+      "primaryHover": { "value": "#4759c2" },
+      "primaryActive": { "value": "#3b4caa" },
+      "accent": { "value": "#5469d4", "comment": "Interactive accent for selected, active and focus states (a checked checkbox, an active chip, a selected card). The same in both theme palettes." },
+      "accentHover": { "value": "#6478e0" },
+      "accentActive": { "value": "#4a5cc2" },
+      "accentRgb": { "value": "84, 105, 212", "comment": "The accent as an r, g, b triple for translucent tints: rgba(var(--color-brand-accent-rgb), 0.12). Rebind it together with the accent." },
+      "accentSoft": { "value": "rgba(84, 105, 212, 0.10)", "comment": "Translucent accent fill behind an active or selected control." },
+      "accentSoftStrong": { "value": "rgba(84, 105, 212, 0.32)", "comment": "Translucent accent border paired with the soft fill." },
+      "accentDeep": { "value": "#5c24ff", "comment": "Deep purple. Distinct from primary; used as a gradient stop and rarely on its own." },
+      "highlight": { "value": "#ff3bff", "comment": "Hot pink highlight. The first stop of the brand gradient; use sparingly on its own." },
+      "slate": { "value": "#3c4052", "comment": "Muted blue-grey for low-emphasis informational fills (toast progress drains, hover halos, info notification tints)." },
+      "gradient": { "value": "linear-gradient(90deg, #ff3bff 0%, #ecbfbf 38%, #5c24ff 76%, #d94fd5 100%)", "comment": "Brand gradient. The one 4-stop definition every gradient surface uses, so marketing and product surfaces match." }
+    },
+    "surface": {
+      "background": { "value": "#000000" },
+      "subtle": { "value": "rgba(255, 255, 255, 0.05)" },
+      "muted": { "value": "rgba(255, 255, 255, 0.08)" },
+      "elevated": { "value": "rgba(255, 255, 255, 0.12)" },
+      "topbar": { "value": "#15171c" },
+      "topbarLift": { "value": "#1c1e24" },
+      "topbarActive": { "value": "#22252b" },
+      "inverse": { "value": "#ffffff" }
+    },
+    "text": {
+      "primary": { "value": "#fafafa", "comment": "Slightly off-white to reduce eye strain on dark surfaces." },
+      "secondary": { "value": "#c9ced8" },
+      "tertiary": { "value": "#8c99ad" },
+      "muted": { "value": "rgba(255, 255, 255, 0.3)" },
+      "onBrand": { "value": "#ffffff" },
+      "inverse": { "value": "#09090b" }
+    },
+    "border": {
+      "default": { "value": "rgba(255, 255, 255, 0.08)" },
+      "hover": { "value": "rgba(255, 255, 255, 0.15)" },
+      "strong": { "value": "#3f4145" },
+      "strongHover": { "value": "#4a4d52", "comment": "Solid dark-mode hover border. Use when hover should be a solid color instead of a translucent overlay." }
+    },
+    "feedback": {
+      "success": { "value": "#46a758", "comment": "Running and healthy status green for status dots, badges and success icons. Softer than Tailwind green-500 so it does not glare on dark surfaces." },
+      "warning": { "value": "#f59e0b" },
+      "danger": { "value": "#ef4444", "comment": "Semantic error red for destructive actions and failure states." },
+      "dangerHover": { "value": "#dc2626" },
+      "info": { "value": "#3b82f6" }
+    }
+  }
+}

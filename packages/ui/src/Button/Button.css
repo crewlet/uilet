@@ -1,0 +1,174 @@
+/*
+ * Button styles. Colour properties go through the @crewlethq/tokens
+ * variables so the dark, light and system themes pick up the right
+ * palette without a per-theme rule here.
+ *
+ * Each size fixes a min-height (28, 32 and 44px) so a row of mixed
+ * buttons, with and without icons, keeps one height. IconButton's
+ * 28px size matches the small button, so check the IconButton and
+ * toolbar stories in Storybook when you change a size.
+ */
+
+.crewlet-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: var(--font-family-sans);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.crewlet-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
+}
+
+.crewlet-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Sizes (padding + font + min-height) ─────────────────────────── */
+.crewlet-btn--small  { padding: 5px 12px; font-size: 12px; min-height: 28px; }
+.crewlet-btn--medium { padding: 7px 14px; font-size: 13px; min-height: 32px; }
+.crewlet-btn--large  { padding: 9px 18px; font-size: 15px; min-height: 44px; }
+
+/* ── Shape modifiers ────────────────────────────────────────────── */
+.crewlet-btn--square { border-radius: 8px; }
+.crewlet-btn--pill   { border-radius: 100px; gap: 6px; }
+
+.crewlet-btn--pill.crewlet-btn--small  { padding: 6px 16px; }
+.crewlet-btn--pill.crewlet-btn--medium { padding: 9px 22px; }
+.crewlet-btn--pill.crewlet-btn--large  { padding: 11px 28px; }
+
+/*
+ * Pill buttons paired with Material Symbols icons read better when
+ * the icon drops from its default 20px to 16px so "← Back" / "Next →"
+ * pairs sit as a unit.
+ */
+.crewlet-btn--pill .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/* ── Primary: solid white CTA, black text (dark theme); flips to
+   black-on-white in the light theme through the token overrides. ── */
+.crewlet-btn--primary {
+  background: var(--color-brand-primary, #ffffff);
+  color: var(--color-text-on-brand, #000000);
+  border-color: var(--color-brand-primary, #ffffff);
+}
+.crewlet-btn--primary:hover:not(:disabled) {
+  background: var(--color-brand-primary-hover, rgba(255, 255, 255, 0.9));
+  border-color: var(--color-brand-primary-hover, rgba(255, 255, 255, 0.9));
+}
+.crewlet-btn--primary:active:not(:disabled) {
+  background: var(--color-brand-primary-active, rgba(255, 255, 255, 0.82));
+  border-color: var(--color-brand-primary-active, rgba(255, 255, 255, 0.82));
+}
+
+/* ── Secondary: ghost with visible border. ──────────────────────── */
+.crewlet-btn--secondary {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-default);
+}
+.crewlet-btn--secondary:hover:not(:disabled) {
+  background: var(--color-surface-elevated, var(--color-surface-subtle));
+  border-color: var(--color-border-strong);
+}
+
+/* ── Outline: lavender accent. Branded secondary CTA. ───────────── */
+.crewlet-btn--outline {
+  background: transparent;
+  color: var(--color-brand-accent, #5469d4);
+  border-color: var(--color-brand-accent, #5469d4);
+}
+.crewlet-btn--outline:hover:not(:disabled) {
+  background: var(--color-brand-accent-soft, rgba(84, 105, 212, 0.10));
+  border-color: var(--color-brand-accent, #5469d4);
+}
+
+/* ── Tertiary: borderless ghost. ─────────────────────────────────── */
+.crewlet-btn--tertiary {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: transparent;
+}
+.crewlet-btn--tertiary:hover:not(:disabled) {
+  background: var(--color-surface-elevated, var(--color-surface-subtle));
+  color: var(--color-text-primary);
+}
+
+/* ── Accent: solid brand accent CTA. Used when the page already has
+   a white "primary" and a branded "yes do this" still belongs on
+   the surface, for example the action inside a toast. ────────── */
+.crewlet-btn--accent {
+  background: var(--color-brand-accent, #5469d4);
+  color: #ffffff;
+  border-color: var(--color-brand-accent, #5469d4);
+}
+.crewlet-btn--accent:hover:not(:disabled) {
+  background: var(--color-brand-accent-hover, #6478e0);
+  border-color: var(--color-brand-accent-hover, #6478e0);
+}
+.crewlet-btn--accent:active:not(:disabled) {
+  background: var(--color-brand-accent-active, #4a5cc2);
+  border-color: var(--color-brand-accent-active, #4a5cc2);
+}
+
+/* ── Danger: solid red for destructive confirmation. ────────────── */
+.crewlet-btn--danger {
+  background: var(--color-feedback-danger, #f43f5e);
+  color: #ffffff;
+  border-color: var(--color-feedback-danger, #f43f5e);
+}
+.crewlet-btn--danger:hover:not(:disabled) {
+  background: var(--color-feedback-danger-hover, #e11d48);
+  border-color: var(--color-feedback-danger-hover, #e11d48);
+}
+
+.crewlet-btn__icon  { display: inline-flex; align-items: center; }
+.crewlet-btn__label { display: inline-flex; align-items: center; }
+
+/*
+ * Pending state. The spinner takes the leading icon's place so the
+ * label neither moves nor changes width when an action starts, which is
+ * what makes a button feel like it is working rather than replaced.
+ */
+.crewlet-btn__spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  opacity: 0.7;
+  animation: crewlet-btn-spin 0.6s linear infinite;
+  flex: none;
+}
+
+@keyframes crewlet-btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* A disabled button already reads as unavailable; a loading one should
+   still read as this button, mid-action. */
+.crewlet-btn--loading {
+  cursor: progress;
+}
+
+/* A spinner that cannot spin should not pretend to. The ring still
+   reads as pending without the motion. */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-btn__spinner {
+    animation: none;
+  }
+}

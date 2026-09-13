@@ -1,0 +1,35 @@
+{
+  "name": "uilet",
+  "private": true,
+  "type": "module",
+  "description": "Crewlet design system: design tokens, signature icons, and React UI components.",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "npm@11.19.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint && eslint scripts",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test && node --test \"scripts/*.test.mjs\"",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "storybook": "npm run dev --workspace @crewlethq/storybook",
+    "release:check": "node scripts/release.mjs check",
+    "release:version": "node scripts/release.mjs set",
+    "release:pack": "node scripts/release.mjs pack"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.28.0",
+    "globals": "^16.5.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.18.0"
+  }
+}

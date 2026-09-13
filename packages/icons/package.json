@@ -1,0 +1,54 @@
+{
+  "name": "@crewlethq/icons",
+  "version": "0.2.0",
+  "description": "Crewlet signature illustrated icons. SVGs in svg/ are compiled to typed React components.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crewlet/uilet.git",
+    "directory": "packages/icons"
+  },
+  "homepage": "https://github.com/crewlet/uilet/tree/main/packages/icons#readme",
+  "bugs": {
+    "url": "https://github.com/crewlet/uilet/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./svg/*": "./svg/*"
+  },
+  "files": [
+    "dist",
+    "svg",
+    "TRADEMARKS.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs && tsup",
+    "dev": "node scripts/build.mjs && tsup --watch",
+    "lint": "node scripts/build.mjs && eslint src scripts",
+    "typecheck": "node scripts/build.mjs && tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist src/generated"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@svgr/core": "^8.1.0",
+    "@svgr/plugin-jsx": "^8.1.0",
+    "@svgr/plugin-svgo": "^8.1.0",
+    "@types/react": "^19.0.0",
+    "react": "^19.2.3",
+    "tsup": "^8.3.5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

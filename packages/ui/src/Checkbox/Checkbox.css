@@ -1,0 +1,58 @@
+/*
+ * Checkbox, a box and its label as one target.
+ *
+ * The label is part of the control rather than text beside it, so the
+ * whole thing is clickable and the description is announced with it.
+ */
+
+.crewlet-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.crewlet-checkbox__control {
+  /* Aligns the box with the first line of the label rather than the
+     block, which drifts as soon as a description wraps. */
+  margin: 2px 0 0;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  accent-color: var(--color-brand-primary);
+  cursor: pointer;
+}
+
+.crewlet-checkbox--danger .crewlet-checkbox__control {
+  accent-color: var(--color-feedback-danger);
+}
+
+.crewlet-checkbox__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.crewlet-checkbox__label {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+}
+
+.crewlet-checkbox__description {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-checkbox.is-disabled .crewlet-checkbox__control,
+.crewlet-checkbox.is-disabled .crewlet-checkbox__text {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.crewlet-checkbox__control:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}

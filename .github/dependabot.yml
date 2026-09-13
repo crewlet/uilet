@@ -1,0 +1,78 @@
+# Automated dependency updates, one entry per dependency surface:
+#
+#   .github/workflows/*.yml, .github/actions/*/action.yml
+#                             the actions CI, releases and deployments run on
+#   package-lock.json         every workspace's build and runtime dependencies
+#   .github/deploy            the Wrangler release the Storybook deployment
+#                             installs
+#
+# A new surface needs its entry here in the same change. Nothing reports the
+# omission: a manifest with no entry never produces a pull request, which looks
+# exactly like a manifest with nothing to update.
+#
+# Security updates are separate. They come from published advisories, are
+# switched on in the repository settings rather than here, and are not held
+# back by this schedule or by the cooldown below.
+#
+# Each entry pins `commit-message.prefix` to `build(deps)`. Left unset,
+# Dependabot infers a prefix from recent commit subjects, which silently
+# produces bare "Bump x from 1 to 2" subjects the day the heuristic stops
+# matching. Dependabot capitalises "Bump" itself and offers no way not to.
+#
+# Each entry also sets a cooldown: a version update is proposed only once the
+# release is 7 days old, or 14 for a new major. The compromised npm releases of
+# 2025 were live for hours to a few days before they were removed, so a weekly
+# run inside that window would open a green pull request that puts the bad
+# version into the lockfile and from there into release and deployment builds.
+# A new major gets longer because it is a larger diff to review.
+
+version: 2
+
+updates:
+  # "/" covers every workflow under .github/workflows; the second directory
+  # covers the composite actions the workflows share. The actions are pinned
+  # to commit SHAs with the release in a trailing comment, and Dependabot
+  # moves the SHA and the comment together.
+  - package-ecosystem: github-actions
+    directories:
+      - "/"
+      - "/.github/actions/*"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    commit-message:
+      prefix: "build(deps)"
+
+  # One entry for the whole npm workspace: the root package-lock.json records
+  # the dependencies of every workspace, and Dependabot resolves them from the
+  # root.
+  #
+  # KEEP THE WORKSPACE INSTALLABLE BY DEPENDABOT, which runs its own Node rather
+  # than the one in .nvmrc. That is why .npmrc does not set engine-strict: with
+  # it, the root "engines" field (or any dependency's) refuses Dependabot's
+  # install, and a bump that cannot install is a bump that never opens a pull
+  # request, with nothing to report it (dependabot-core#12535 and #13741).
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    commit-message:
+      prefix: "build(deps)"
+
+  # The deployment tooling is locked apart from the workspace, so the deploy
+  # job installs Wrangler and nothing else. Its exact pin in package.json moves
+  # with the lockfile in each update.
+  - package-ecosystem: npm
+    directory: "/.github/deploy"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    commit-message:
+      prefix: "build(deps)"

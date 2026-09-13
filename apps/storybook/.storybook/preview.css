@@ -1,0 +1,30 @@
+/* Canvas defaults for the Storybook preview iframe. The chrome theme in
+   manager.ts only affects the sidebar / toolbar; the canvas body has its own
+   default styling. Without this file, stories that do not set an explicit
+   color inherit the iframe's default near-black text, which is invisible on
+   the dark canvas background. Anchoring body styles to canonical tokens
+   means stories render correctly without per-story decoration.
+
+   The background-color pairing keeps the canvas in lockstep with the chrome
+   theme (default-crewlet-dark sets appPreviewBg to the same surface token).
+   The backgrounds addon, when toggled, paints background-color inline and
+   wins via specificity, so contributors can still flip the canvas to a
+   lighter surface to audit token contrast. */
+body {
+  background-color: var(--color-surface-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--font-line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, pre {
+  font-family: var(--font-family-mono);
+}
+
+/* Keep links readable on the dark canvas. */
+a {
+  color: var(--color-brand-primary);
+}

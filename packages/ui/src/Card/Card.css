@@ -1,0 +1,86 @@
+/*
+ * Card, surface primitive with optional Header / Body / Footer slots.
+ * The 12px radius is shared with PricingCard so a card grid and a plain
+ * card read as one family on the same page.
+ *
+ * Variants: default sits one step above the page on the subtle surface,
+ * subtle sits flush with the page background behind its border,
+ * outlined is transparent with a strong border, and elevated lifts off
+ * the page with the elevated surface and a shadow.
+ */
+
+.crewlet-card {
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.crewlet-card--default  { background-color: var(--color-surface-subtle); }
+.crewlet-card--subtle   { background-color: var(--color-surface-background); }
+.crewlet-card--outlined {
+  background-color: transparent;
+  border-color: var(--color-border-strong);
+}
+.crewlet-card--elevated {
+  background-color: var(--color-surface-elevated, var(--color-surface-subtle));
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.crewlet-card--p-sm   { padding: 12px 16px; }
+.crewlet-card--p-md   { padding: 20px 24px; }
+.crewlet-card--p-lg   { padding: 24px 28px; }
+
+.crewlet-card.is-interactive {
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.crewlet-card.is-interactive:hover {
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+.crewlet-card.is-interactive:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
+}
+
+.crewlet-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.crewlet-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.crewlet-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.crewlet-card__description {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}

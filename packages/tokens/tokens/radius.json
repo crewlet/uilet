@@ -1,0 +1,13 @@
+{
+  "radius": {
+    "none": { "value": "0px" },
+    "xs": { "value": "4px" },
+    "sm": { "value": "6px" },
+    "md": { "value": "8px" },
+    "lg": { "value": "12px" },
+    "xl": { "value": "16px" },
+    "2xl": { "value": "24px" },
+    "pill": { "value": "999px" },
+    "circle": { "value": "50%", "comment": "Avatars, status dots, circular badges." }
+  }
+}

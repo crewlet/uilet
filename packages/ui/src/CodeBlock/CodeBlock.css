@@ -1,0 +1,90 @@
+/*
+ * CodeBlock, a monospace command/config surface. Slightly lifted from the
+ * page background, with an optional header for filename and a copy control.
+ * Content scrolls sideways so long lines never reflow.
+ */
+
+.crewlet-codeblock {
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+  font-family: var(--font-family-mono);
+}
+
+.crewlet-codeblock__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-surface-muted);
+}
+
+.crewlet-codeblock__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-codeblock__filename {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewlet-codeblock__lang {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.crewlet-codeblock__pre {
+  margin: 0;
+  padding: var(--spacing-4);
+  overflow-x: auto;
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+  color: var(--color-text-primary);
+}
+
+.crewlet-codeblock__code {
+  display: block;
+  font-family: inherit;
+}
+
+.crewlet-codeblock__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-3);
+  white-space: pre;
+}
+
+.crewlet-codeblock__ln {
+  flex-shrink: 0;
+  width: 1.5em;
+  text-align: right;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.crewlet-codeblock__prompt {
+  flex-shrink: 0;
+  color: var(--color-brand-accent);
+  user-select: none;
+}
+
+.crewlet-codeblock__linecontent {
+  white-space: pre;
+}
+
+/* The copy control is a Copyable configured to show a compact "Copy" label. */
+.crewlet-codeblock__copy {
+  flex-shrink: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+}

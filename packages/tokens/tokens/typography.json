@@ -1,0 +1,33 @@
+{
+  "font": {
+    "family": {
+      "sans": { "value": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", "comment": "Interface and body type. Inter is self-hosted by @crewlethq/tokens/css/fonts; the system stack covers the moment before it loads and any app that does not import that stylesheet." },
+      "display": { "value": "{font.family.sans}", "comment": "Headings and other display type. An alias of the sans family, so a heading costs no extra download. Components keep reading this role token so a dedicated display face would land in one place." },
+      "mono": { "value": "'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace", "comment": "Code, identifiers and tabular values. JetBrains Mono is self-hosted by @crewlethq/tokens/css/fonts." }
+    },
+    "size": {
+      "xs": { "value": "12px" },
+      "sm": { "value": "14px" },
+      "md": { "value": "16px" },
+      "lg": { "value": "18px" },
+      "xl": { "value": "20px" },
+      "2xl": { "value": "24px" },
+      "3xl": { "value": "32px" },
+      "4xl": { "value": "48px" },
+      "5xl": { "value": "64px" }
+    },
+    "weight": {
+      "regular": { "value": "400" },
+      "medium": { "value": "500" },
+      "semibold": { "value": "600" },
+      "bold": { "value": "700" },
+      "extrabold": { "value": "800" }
+    },
+    "lineHeight": {
+      "tight": { "value": "1.2" },
+      "snug": { "value": "1.4" },
+      "normal": { "value": "1.5" },
+      "relaxed": { "value": "1.7" }
+    }
+  }
+}

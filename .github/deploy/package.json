@@ -1,0 +1,8 @@
+{
+  "name": "uilet-deploy",
+  "private": true,
+  "description": "The tooling the deploy-storybook workflow installs to upload the Storybook, locked apart from the workspace so the deploy job installs nothing else.",
+  "devDependencies": {
+    "wrangler": "4.131.1"
+  }
+}

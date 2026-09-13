@@ -1,0 +1,20 @@
+# Review ownership. A pull request that touches a path below needs an
+# approving review from its owner before it can merge, which the main branch
+# ruleset in RELEASING.md enforces.
+#
+# The release tooling, the workflows, the dependency manifests and the
+# toolchain pins decide what gets built, published and deployed, so they are
+# owned by the maintainers who cut releases. The team is referenced rather
+# than individual accounts, so changing who releases is a team membership
+# change and not an edit to this file.
+
+*                       @crewlet/uilet-maintainers
+
+/.github/               @crewlet/uilet-maintainers
+/scripts/               @crewlet/uilet-maintainers
+/package-lock.json      @crewlet/uilet-maintainers
+/.npmrc                 @crewlet/uilet-maintainers
+/.nvmrc                 @crewlet/uilet-maintainers
+**/package.json         @crewlet/uilet-maintainers
+/LICENSE                @crewlet/uilet-maintainers
+/TRADEMARKS.md          @crewlet/uilet-maintainers

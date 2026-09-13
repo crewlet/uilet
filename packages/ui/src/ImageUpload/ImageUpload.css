@@ -1,0 +1,158 @@
+/*
+ * ImageUpload, click-to-upload affordance built on Avatar.
+ *
+ * Colour properties go through the @crewlethq/tokens variables, with literal
+ * fallbacks so the control still renders when the token stylesheet has not
+ * loaded.
+ */
+
+.crewlet-image-upload {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: var(--crewlet-image-upload-size, 64px);
+  height: var(--crewlet-image-upload-size, 64px);
+}
+
+.crewlet-image-upload__trigger {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Shape modifiers keep the trigger, overlay, and Avatar corners in sync. */
+.crewlet-image-upload--circle .crewlet-image-upload__trigger,
+.crewlet-image-upload--circle .crewlet-image-upload__overlay {
+  border-radius: var(--radius-circle, 50%);
+}
+
+.crewlet-image-upload--square .crewlet-image-upload__trigger,
+.crewlet-image-upload--square .crewlet-image-upload__overlay {
+  border-radius: var(--radius-lg, 12px);
+}
+
+.crewlet-image-upload__trigger:disabled {
+  cursor: default;
+}
+
+.crewlet-image-upload.is-uploading .crewlet-image-upload__trigger {
+  cursor: progress;
+}
+
+.crewlet-image-upload__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
+}
+
+.crewlet-image-upload__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.15s ease;
+  pointer-events: none;
+}
+
+.crewlet-image-upload__trigger:hover .crewlet-image-upload__overlay,
+.crewlet-image-upload__trigger:focus-visible .crewlet-image-upload__overlay {
+  opacity: 1;
+}
+
+.crewlet-image-upload.is-uploading .crewlet-image-upload__overlay,
+.crewlet-image-upload.is-empty .crewlet-image-upload__overlay {
+  opacity: 1;
+}
+
+.crewlet-image-upload__overlay .material-symbols-outlined {
+  font-size: calc(var(--crewlet-image-upload-size, 64px) * 0.28);
+  color: #ffffff;
+  transition: color 0.15s ease;
+}
+
+.crewlet-image-upload__overlay-text {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  transition: color 0.15s ease;
+}
+
+/* Hovering an editable control brightens the overlay: a deeper scrim with the
+   label and icon at full white, so a control whose overlay is already showing
+   (nothing uploaded yet) still answers the pointer. */
+.crewlet-image-upload__trigger:hover:not(:disabled) .crewlet-image-upload__overlay {
+  background: rgba(0, 0, 0, 0.66);
+}
+
+.crewlet-image-upload__trigger:hover:not(:disabled) .crewlet-image-upload__overlay .material-symbols-outlined,
+.crewlet-image-upload__trigger:hover:not(:disabled) .crewlet-image-upload__overlay-text {
+  color: #ffffff;
+}
+
+.crewlet-image-upload__spinner {
+  width: calc(var(--crewlet-image-upload-size, 64px) * 0.3);
+  height: calc(var(--crewlet-image-upload-size, 64px) * 0.3);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  animation: crewlet-image-upload-spin 0.7s linear infinite;
+}
+
+@keyframes crewlet-image-upload-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.crewlet-image-upload__remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 2;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-feedback-danger, #f43f5e);
+  border: 2px solid var(--color-surface-background, #15171c);
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.crewlet-image-upload:hover .crewlet-image-upload__remove,
+.crewlet-image-upload__remove:focus-visible {
+  opacity: 1;
+}
+
+.crewlet-image-upload__remove:disabled {
+  cursor: default;
+}
+
+.crewlet-image-upload__remove:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
+}
+
+.crewlet-image-upload__remove .material-symbols-outlined {
+  font-size: 12px;
+}
+
+.crewlet-image-upload__input {
+  display: none;
+}

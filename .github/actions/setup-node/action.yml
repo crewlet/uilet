@@ -1,0 +1,44 @@
+name: Set up the pinned Node toolchain
+description: >-
+  Installs the Node release named in .nvmrc and fails unless the npm it
+  bundles is the version the root package.json records in packageManager.
+  Every job that runs Node uses this action, so no job can drift to another
+  toolchain.
+
+inputs:
+  cache:
+    description: >-
+      Set to "npm" to restore and save the npm download cache. Leave it empty
+      in every job whose output is published or deployed, so that a cache
+      entry an earlier run wrote can never reach those bytes.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    # package-manager-cache is off so that caching happens only when a job
+    # asks for it; setup-node otherwise enables it automatically because the
+    # root package.json names npm in packageManager.
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: .nvmrc
+        cache: ${{ inputs.cache }}
+        package-manager-cache: false
+
+    # .nvmrc names an exact Node release, which fixes the npm it bundles, and
+    # packageManager records that npm. A mismatch means one was moved without
+    # the other, and the npm that installs, packs and publishes would not be
+    # the one the repository says it is. scripts/release.mjs check enforces
+    # that both pins are exact.
+    - name: Require the npm recorded in packageManager
+      shell: bash
+      run: |
+        set -euo pipefail
+        expected="$(jq -r .packageManager package.json)"
+        actual="npm@$(npm --version)"
+        if [ "${actual}" != "${expected}" ]; then
+          echo "::error file=package.json::Node $(node --version) from .nvmrc bundles ${actual}, but packageManager records ${expected}. Move the two together; see Dependency updates in RELEASING.md."
+          exit 1
+        fi
+        echo "Node $(node --version) with ${actual}"

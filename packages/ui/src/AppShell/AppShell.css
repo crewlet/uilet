@@ -1,0 +1,51 @@
+/*
+ * AppShell, layout shell for console apps.
+ *
+ * Passive composition: the sidebar and topbar slots position
+ * themselves (typically `position: fixed`); AppShell only reserves
+ * the gutters the fixed elements overlay via margin / padding on
+ * the content column, so an application can adopt the shell without
+ * restyling a sidebar or header it already positions itself.
+ *
+ * Layout dimensions are exposed as CSS custom properties on the
+ * root so styles inside slot children can read them.
+ */
+
+.crewlet-app-shell {
+  display: flex;
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: visible;
+  --crewlet-app-shell-sidebar-width: 280px;
+  --crewlet-app-shell-topbar-height: 64px;
+}
+
+.crewlet-app-shell__column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--crewlet-app-shell-sidebar-width);
+  padding-top: var(--crewlet-app-shell-topbar-height);
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+.crewlet-app-shell__main {
+  flex: 1;
+  padding: 40px 0;
+  overflow-y: auto;
+  overflow-x: visible;
+  min-height: 0;
+  /*
+   * Reserve space for the vertical scrollbar on every page so the
+   * tab strip, headers, and content stay anchored at the same x
+   * position when navigating between a tall page (long form, large
+   * table) and a short page (a card or two). Without this gutter,
+   * the scrollbar appears or disappears between routes and shifts
+   * every element horizontally by the scrollbar's width, which
+   * reads as the page "jumping" on every navigation.
+   */
+  scrollbar-gutter: stable;
+}

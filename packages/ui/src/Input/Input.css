@@ -1,0 +1,210 @@
+/*
+ * Form primitives, Input / Textarea / Label / FormField / FormRow.
+ *
+ * Two sizes: md (14px text, 10/14px padding) for form rows, and sm
+ * (13px text, 6/10px padding) for dense toolbars and inline filters.
+ */
+
+.crewlet-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crewlet-input:focus-within {
+  border-color: var(--color-brand-accent);
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.15));
+}
+
+.crewlet-input.is-error {
+  border-color: var(--color-feedback-danger);
+}
+
+.crewlet-input.is-error:focus-within {
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.2);
+}
+
+.crewlet-input.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.crewlet-input__control {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.crewlet-input__control::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+.crewlet-input__control:disabled {
+  cursor: not-allowed;
+}
+
+.crewlet-input--sm .crewlet-input__control { padding: 6px 10px; font-size: 13px; }
+.crewlet-input--md .crewlet-input__control { padding: 10px 14px; font-size: 14px; }
+
+/* Trailing content sits at the field's right edge, out of the pointer's way
+   so a click on it still lands in the field. */
+.crewlet-input__trailing {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding-right: 10px;
+  pointer-events: none;
+}
+
+.crewlet-input--sm .crewlet-input__trailing { padding-right: 8px; }
+
+/* ── Textarea ────────────────────────────────────────────────────────── */
+/* A textarea with trailing content is wrapped so the content can sit inside
+   its top right corner; the textarea itself is unchanged. */
+.crewlet-textarea-shell {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.crewlet-textarea-shell .crewlet-textarea {
+  padding-right: 72px;
+}
+
+.crewlet-textarea-shell .crewlet-input__trailing {
+  position: absolute;
+  top: 9px;
+  right: 0;
+}
+
+.crewlet-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+  outline: none;
+  resize: vertical;
+  min-height: 88px;
+}
+
+.crewlet-textarea:focus {
+  border-color: var(--color-brand-accent);
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.15));
+}
+
+.crewlet-textarea.is-error {
+  border-color: var(--color-feedback-danger);
+}
+
+.crewlet-textarea.is-error:focus {
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.2);
+}
+
+.crewlet-textarea.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.crewlet-textarea.is-auto-resize {
+  resize: none;
+  overflow: hidden;
+  min-height: 40px;
+}
+
+.crewlet-textarea::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+/* ── Label ───────────────────────────────────────────────────────────── */
+.crewlet-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: -0.005em;
+}
+
+.crewlet-label--with-action {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6px;
+}
+
+.crewlet-label__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: -0.005em;
+}
+
+.crewlet-label__required {
+  color: var(--color-feedback-danger, #e5484d);
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.crewlet-label__action {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── FormField ───────────────────────────────────────────────────────── */
+.crewlet-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crewlet-form-field__helper {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-form-field__error {
+  font-size: 12px;
+  color: var(--color-feedback-danger, #e5484d);
+}
+
+/* ── FormRow ─────────────────────────────────────────────────────────── */
+.crewlet-form-row {
+  display: grid;
+  gap: 16px;
+}
+
+.crewlet-form-row--1 { grid-template-columns: 1fr; }
+.crewlet-form-row--2 { grid-template-columns: repeat(2, 1fr); }
+.crewlet-form-row--3 { grid-template-columns: repeat(3, 1fr); }
+
+@media (max-width: 768px) {
+  .crewlet-form-row--2,
+  .crewlet-form-row--3 { grid-template-columns: 1fr; }
+}

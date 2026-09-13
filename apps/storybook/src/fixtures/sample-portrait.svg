@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Non-photographic sample portrait for the Avatar and ImageUpload stories: an opaque square that exercises image cropping without depicting a real person. -->
+  <defs>
+    <linearGradient id="sample-portrait-backdrop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5469d4"/>
+      <stop offset="1" stop-color="#5c24ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#sample-portrait-backdrop)"/>
+  <g fill="#ffffff" fill-opacity="0.88">
+    <circle cx="128" cy="100" r="44"/>
+    <path d="M36 256c0-54 41.2-92 92-92s92 38 92 92z"/>
+  </g>
+</svg>

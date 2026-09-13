@@ -1,0 +1,378 @@
+/*
+ * Skeleton, loading-state placeholder. Supports eight variants:
+ *   box           Single large rectangle with a sweeping wave-glow,
+ *                 used as a hero placeholder during heavy content
+ *                 loads. Five glow colours.
+ *   text          Multi-line text shimmer.
+ *   card          Single card with title + two text lines.
+ *   grid          N×M card grid.
+ *   list          Avatar + two-line list rows.
+ *   table         Header + rows table shimmer.
+ *   info-grid     Label/value pairs in a grid with row separators.
+ *   pricing-card  A row of cards laid out like PricingCard.Grid, each
+ *                 with a header, description, feature list and action
+ *                 button.
+ *
+ * Every class is namespaced under .crewlet-skeleton, so the placeholder
+ * never matches an application's own class names (a page stylesheet is
+ * likely to declare its own .skeleton-line, for instance).
+ *
+ * All static blocks share a single pulse animation; the box variant
+ * uses a sweeping wave overlay instead.
+ */
+
+/* ── Pulse animation, used by every static shimmer block ───────── */
+@keyframes crewlet-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+.crewlet-skeleton .crewlet-skeleton__line,
+.crewlet-skeleton .crewlet-skeleton__avatar,
+.crewlet-skeleton .crewlet-skeleton__circle,
+.crewlet-skeleton .crewlet-skeleton__button,
+.crewlet-skeleton .crewlet-skeleton__card,
+.crewlet-skeleton .crewlet-skeleton__list-item,
+.crewlet-skeleton .crewlet-skeleton__info-item {
+  animation: crewlet-skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ── Primitives: line, avatar, circle, button ───────────────────── */
+.crewlet-skeleton__line {
+  height: 12px;
+  background: var(--color-surface-elevated, var(--color-surface-muted));
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.crewlet-skeleton__line:last-child { margin-bottom: 0; }
+
+.crewlet-skeleton__line--title { height: 16px; width: 60%; margin-bottom: 12px; }
+.crewlet-skeleton__line--text  { height: 12px; width: 100%; }
+.crewlet-skeleton__line--short { width: 70%; }
+.crewlet-skeleton__line--label { height: 13px; width: 40%; margin-bottom: 8px; }
+.crewlet-skeleton__line--value { height: 14px; width: 80%; }
+
+.crewlet-skeleton__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-surface-elevated, var(--color-surface-muted));
+  flex-shrink: 0;
+}
+
+.crewlet-skeleton__circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-surface-elevated, var(--color-surface-muted));
+  flex-shrink: 0;
+}
+
+.crewlet-skeleton__circle--small {
+  width: 16px;
+  height: 16px;
+}
+
+.crewlet-skeleton__button {
+  width: 100%;
+  height: 36px;
+  background: var(--color-surface-elevated, var(--color-surface-muted));
+  border-radius: 8px;
+}
+
+/* ── card / grid / list containers ──────────────────────────────── */
+.crewlet-skeleton--card {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+/*
+ * grid and info-grid read their column count from
+ * --crewlet-skeleton-cols, set by the --cols-N modifier the component
+ * adds and lowered by the responsive rules at the end of this file.
+ */
+.crewlet-skeleton--cols-1 { --crewlet-skeleton-cols: 1; }
+.crewlet-skeleton--cols-2 { --crewlet-skeleton-cols: 2; }
+.crewlet-skeleton--cols-3 { --crewlet-skeleton-cols: 3; }
+.crewlet-skeleton--cols-4 { --crewlet-skeleton-cols: 4; }
+
+.crewlet-skeleton--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--crewlet-skeleton-cols, 1), 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.crewlet-skeleton__card {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.crewlet-skeleton--list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+
+.crewlet-skeleton__list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+}
+
+.crewlet-skeleton__list-content { flex: 1; min-width: 0; }
+
+/* ── table ──────────────────────────────────────────────────────── */
+.crewlet-skeleton--table {
+  width: 100%;
+  position: relative;
+  overflow-x: auto;
+}
+
+.crewlet-skeleton__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+  display: table;
+  table-layout: auto;
+}
+
+.crewlet-skeleton__table thead { border-bottom: 1px solid var(--color-border-default); display: table-header-group; }
+.crewlet-skeleton__table tbody { display: table-row-group; }
+.crewlet-skeleton__table tr    { display: table-row; }
+
+.crewlet-skeleton__th {
+  padding: 2px 16px;
+  text-align: left;
+  position: relative;
+  display: table-cell;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.crewlet-skeleton__th .crewlet-skeleton__line {
+  height: 14px;
+  width: 60%;
+  margin: 0;
+  display: inline-block;
+  transform: translateY(-4px);
+}
+
+.crewlet-skeleton__th:first-child .crewlet-skeleton__line { width: 70%; }
+.crewlet-skeleton__th:last-child  .crewlet-skeleton__line { width: 40%; }
+
+.crewlet-skeleton__tr {
+  background: var(--color-surface-subtle);
+  border-bottom: 1px solid var(--color-border-default);
+  transition: background-color 0.2s ease;
+  display: table-row;
+}
+.crewlet-skeleton__tr:hover { background: var(--color-surface-elevated, var(--color-surface-subtle)); }
+
+.crewlet-skeleton__td {
+  padding: 12px 16px;
+  display: table-cell;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.crewlet-skeleton__td .crewlet-skeleton__line {
+  height: 8px;
+  width: auto;
+  min-width: 80px;
+  margin: 0;
+  border-radius: 4px;
+}
+
+.crewlet-skeleton__td:first-child .crewlet-skeleton__line { min-width: 200px; }
+.crewlet-skeleton__td:last-child  .crewlet-skeleton__line { min-width: 60px; width: 60px; }
+
+/* ── info-grid (label/value pairs with row separators) ──────────── */
+.crewlet-skeleton--info-grid {
+  --crewlet-skeleton-row-gap: 32px;
+  --crewlet-skeleton-col-gap: 48px;
+  display: grid;
+  grid-template-columns: repeat(var(--crewlet-skeleton-cols, 1), 1fr);
+  gap: var(--crewlet-skeleton-row-gap) var(--crewlet-skeleton-col-gap);
+  width: 100%;
+}
+
+.crewlet-skeleton__info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+/*
+ * A separator centred in the row gap above the first item of every row
+ * after the first, drawn across the whole row: the item's own width
+ * times the column count, plus the column gaps between them. The
+ * row-start selectors are wrapped in :where() so every rule here shares
+ * one specificity and the responsive overrides win by source order.
+ */
+.crewlet-skeleton__info-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: calc(var(--crewlet-skeleton-row-gap) / -2);
+  width: calc(100% * var(--crewlet-skeleton-cols, 1) + var(--crewlet-skeleton-col-gap) * (var(--crewlet-skeleton-cols, 1) - 1));
+  height: 1px;
+  background: var(--color-border-default);
+  display: none;
+}
+
+:where(.crewlet-skeleton--cols-1) > .crewlet-skeleton__info-item:where(:nth-child(n+2))::before,
+:where(.crewlet-skeleton--cols-2) > .crewlet-skeleton__info-item:where(:nth-child(2n+1):nth-child(n+3))::before,
+:where(.crewlet-skeleton--cols-3) > .crewlet-skeleton__info-item:where(:nth-child(3n+1):nth-child(n+4))::before,
+:where(.crewlet-skeleton--cols-4) > .crewlet-skeleton__info-item:where(:nth-child(4n+1):nth-child(n+5))::before {
+  display: block;
+}
+
+/* ── pricing-card (mirrors PricingCard.Grid and the card surface) ── */
+.crewlet-skeleton--pricing-card {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.crewlet-skeleton__pricing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+}
+
+.crewlet-skeleton__pricing-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crewlet-skeleton__pricing-card-description {
+  display: flex;
+  flex-direction: column;
+}
+
+.crewlet-skeleton__pricing-card-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crewlet-skeleton__pricing-card-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crewlet-skeleton__line--heading      { width: 80px; height: 16px; margin: 0; }
+.crewlet-skeleton__line--wide         { width: 90%; }
+.crewlet-skeleton__line--three-quarter { width: 75%; }
+.crewlet-skeleton__line--feature      { width: 60px; height: 12px; margin: 0; }
+
+/* ── responsive ─────────────────────────────────────────────────── */
+@media (max-width: 1320px) {
+  .crewlet-skeleton--pricing-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1200px) {
+  .crewlet-skeleton--grid.crewlet-skeleton--cols-4 { --crewlet-skeleton-cols: 2; }
+
+  .crewlet-skeleton--info-grid.crewlet-skeleton--cols-4 {
+    --crewlet-skeleton-cols: 2;
+    --crewlet-skeleton-row-gap: 24px;
+    --crewlet-skeleton-col-gap: 32px;
+  }
+  :where(.crewlet-skeleton--cols-4) > .crewlet-skeleton__info-item::before { display: none; }
+  :where(.crewlet-skeleton--cols-4) > .crewlet-skeleton__info-item:where(:nth-child(2n+1):nth-child(n+3))::before {
+    display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .crewlet-skeleton--grid.crewlet-skeleton--cols-2,
+  .crewlet-skeleton--grid.crewlet-skeleton--cols-3,
+  .crewlet-skeleton--grid.crewlet-skeleton--cols-4 { --crewlet-skeleton-cols: 1; }
+
+  .crewlet-skeleton--info-grid.crewlet-skeleton--cols-2,
+  .crewlet-skeleton--info-grid.crewlet-skeleton--cols-3,
+  .crewlet-skeleton--info-grid.crewlet-skeleton--cols-4 {
+    --crewlet-skeleton-cols: 1;
+    --crewlet-skeleton-row-gap: 20px;
+  }
+  .crewlet-skeleton__info-item::before { display: none; }
+  .crewlet-skeleton__info-item:where(:nth-child(n+2))::before { display: block; }
+
+  .crewlet-skeleton--card,
+  .crewlet-skeleton__card { padding: 16px; }
+}
+
+@media (max-width: 680px) {
+  .crewlet-skeleton--pricing-card { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── Box variant: wave-glow hero shimmer ────────────────────────── */
+.crewlet-skeleton--box {
+  width: 100%;
+  padding: 0;
+  animation: crewlet-skeleton-fade-in 0.15s ease-in;
+}
+
+@keyframes crewlet-skeleton-fade-in {
+  from { opacity: 0; } to { opacity: 1; }
+}
+
+.crewlet-skeleton__glow-box {
+  width: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.crewlet-skeleton__glow-wave {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  animation: crewlet-skeleton-wave ease-in-out infinite;
+}
+
+@keyframes crewlet-skeleton-wave {
+  0%   { left: -100%; }
+  100% { left: 100%; }
+}
+
+.crewlet-skeleton__glow-wave--blue {
+  background: linear-gradient(90deg, transparent 0%, rgba(147, 197, 253, 0.3) 20%, rgba(147, 197, 253, 0.5) 50%, rgba(147, 197, 253, 0.3) 80%, transparent 100%);
+}
+.crewlet-skeleton__glow-wave--green {
+  background: linear-gradient(90deg, transparent 0%, rgba(134, 239, 172, 0.3) 20%, rgba(134, 239, 172, 0.5) 50%, rgba(134, 239, 172, 0.3) 80%, transparent 100%);
+}
+.crewlet-skeleton__glow-wave--purple {
+  background: linear-gradient(90deg, transparent 0%, rgba(196, 181, 253, 0.3) 20%, rgba(196, 181, 253, 0.5) 50%, rgba(196, 181, 253, 0.3) 80%, transparent 100%);
+}
+.crewlet-skeleton__glow-wave--orange {
+  background: linear-gradient(90deg, transparent 0%, rgba(253, 186, 116, 0.3) 20%, rgba(253, 186, 116, 0.5) 50%, rgba(253, 186, 116, 0.3) 80%, transparent 100%);
+}
+.crewlet-skeleton__glow-wave--red {
+  background: linear-gradient(90deg, transparent 0%, rgba(252, 165, 165, 0.3) 20%, rgba(252, 165, 165, 0.5) 50%, rgba(252, 165, 165, 0.3) 80%, transparent 100%);
+}

@@ -1,0 +1,294 @@
+/* Unified custom dropdown. Colours come from the canonical
+   @crewlethq/tokens variables (--color-surface-*, --color-border-*,
+   --color-text-*, --color-brand-accent), so the same component
+   follows whichever palette the host application loads without
+   per-surface overrides.
+
+   The accent is read from --color-brand-accent and
+   --color-brand-accent-rgb on the trigger and on the menu. An app that
+   rebinds those two tokens retints the focus, highlight and selected
+   colours; the menu is portaled to <body>, so the override has to be
+   declared on <body> or <html> (or on the menu itself) to reach it. */
+
+.crewlet-select {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  --crewlet-select-accent: var(--color-brand-accent, #5469d4);
+  --crewlet-select-accent-rgb: var(--color-brand-accent-rgb, 84, 105, 212);
+}
+
+.crewlet-select.is-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.crewlet-select__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 8px 12px;
+  background: var(--color-surface-elevated, #1f2128);
+  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  color: var(--color-text-primary, #f5f5f7);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.crewlet-select--sm .crewlet-select__trigger {
+  padding: 6px 8px 6px 10px;
+  font-size: 12px;
+}
+
+.crewlet-select__trigger:hover:not(:disabled) {
+  border-color: var(--color-border-strong, rgba(255, 255, 255, 0.18));
+}
+
+.crewlet-select__trigger:focus,
+.crewlet-select.is-open > .crewlet-select__trigger {
+  outline: none;
+  border-color: var(--crewlet-select-accent);
+  box-shadow: 0 0 0 3px rgba(var(--crewlet-select-accent-rgb), 0.15);
+}
+
+.crewlet-select__label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewlet-select__label.is-placeholder {
+  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.5));
+}
+
+.crewlet-select__chevron {
+  font-size: 18px;
+  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.6));
+  flex-shrink: 0;
+}
+
+.crewlet-select.is-open .crewlet-select__chevron {
+  color: var(--crewlet-select-accent);
+}
+
+/* Floating menu. Portaled to <body> so it never gets clipped by
+   an ancestor's overflow rule (popovers, table cards, modal
+   bodies). Position is set inline from getBoundingClientRect on
+   the trigger; this rule only sets the visual chrome and the
+   z-index. The accent token is set on the wrapper, but because
+   the menu lives outside the wrapper after portalling, we mirror
+   the same fallback chain here so colours stay consistent. */
+.crewlet-select__menu {
+  /* The popover layer sits above the modal layer because a Select is
+     routinely opened inside a Modal: the trigger lives in the dialog,
+     but the panel portals to <body> as a sibling of the backdrop.
+     Below the modal layer the panel renders but is covered by the
+     backdrop, which both hides it and swallows clicks, so the menu
+     looks like it will not open. Toasts stay above it. */
+  z-index: var(--z-index-popover, 10000);
+  background: var(--color-surface-subtle, #15171c);
+  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(var(--crewlet-select-accent-rgb, 84, 105, 212), 0.18);
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  overflow: hidden;
+  animation: crewlet-select-pop 120ms ease-out;
+  --crewlet-select-accent: var(--color-brand-accent, #5469d4);
+  --crewlet-select-accent-rgb: var(--color-brand-accent-rgb, 84, 105, 212);
+}
+
+/* Inner option list. Scrolls when the option count exceeds the
+   menu's max height, while the optional search header stays
+   pinned at the top of the menu. */
+.crewlet-select__list {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Search header. Same visual register as the toolbar search
+   field so the operator recognises it instantly. */
+.crewlet-select__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+}
+
+.crewlet-select__search .material-symbols-outlined {
+  font-size: 16px;
+  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.55));
+  flex-shrink: 0;
+}
+
+.crewlet-select__search-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary, #f5f5f7);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 0;
+}
+
+.crewlet-select__search-input::placeholder {
+  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.55));
+}
+
+/* "No matches" row when search filters everything out. */
+.crewlet-select__empty {
+  padding: 14px 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.55));
+  list-style: none;
+}
+
+.crewlet-select__menu--top {
+  transform-origin: bottom left;
+}
+
+.crewlet-select__menu--bottom {
+  transform-origin: top left;
+}
+
+@keyframes crewlet-select-pop {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.crewlet-select__option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: block;
+  color: var(--color-text-primary, #f5f5f7);
+  font-size: 13px;
+  line-height: 1.4;
+  user-select: none;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+/*
+ * Compact menu (size="sm") shrinks the inner list padding plus each
+ * option's padding + font so a sm Select dropdown reads as a tight
+ * companion to its sm trigger (e.g. the Local time zone / UTC
+ * selector inside the TimeWindowPicker header).
+ */
+.crewlet-select__menu--sm .crewlet-select__list {
+  padding: 4px;
+}
+
+.crewlet-select__menu--sm .crewlet-select__option {
+  padding: 5px 8px;
+  font-size: 12px;
+  line-height: 1.3;
+  border-radius: 4px;
+}
+
+.crewlet-select__menu--sm .crewlet-select__option-check {
+  font-size: 14px;
+}
+
+.crewlet-select__option + .crewlet-select__option {
+  margin-top: 1px;
+}
+
+.crewlet-select__option.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crewlet-select__option.is-highlight {
+  background: rgba(var(--crewlet-select-accent-rgb), 0.14);
+  color: var(--crewlet-select-accent);
+}
+
+.crewlet-select__option.is-selected:not(.is-highlight) {
+  color: var(--crewlet-select-accent);
+}
+
+.crewlet-select__option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.crewlet-select__option-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.crewlet-select__option-check {
+  font-size: 16px;
+  color: var(--crewlet-select-accent);
+  flex-shrink: 0;
+}
+
+/*
+ * Multi-select checkbox affordance painted on the leading edge of
+ * each option row. Uses the same accent token as the single-select
+ * check icon so every palette stays consistent.
+ * Empty state is a hollow box with the border tinted; checked state
+ * fills the box and centres the check glyph.
+ */
+.crewlet-select__option--multi .crewlet-select__option-row {
+  align-items: center;
+}
+
+.crewlet-select__option-checkbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--color-border-strong, rgba(255, 255, 255, 0.25));
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  color: transparent;
+}
+
+.crewlet-select__option-checkbox.is-checked {
+  background: var(--crewlet-select-accent);
+  border-color: var(--crewlet-select-accent);
+  color: #ffffff;
+}
+
+.crewlet-select__option-checkbox .material-symbols-outlined {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.crewlet-select__option-desc {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-text-secondary, rgba(245, 245, 247, 0.7));
+  line-height: 1.4;
+}

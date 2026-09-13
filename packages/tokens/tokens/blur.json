@@ -1,0 +1,9 @@
+{
+  "blur": {
+    "sm": { "value": "6px", "comment": "Subtle frosted glass." },
+    "md": { "value": "10px" },
+    "lg": { "value": "16px", "comment": "Standard frosted-panel effect for dropdowns and top bars." },
+    "xl": { "value": "20px", "comment": "Hero overlays and decorative panels." },
+    "2xl": { "value": "24px", "comment": "Aggressive backdrop blur for emphasis." }
+  }
+}

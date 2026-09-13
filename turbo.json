@@ -1,0 +1,43 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "src/**",
+        "tokens/**",
+        "fonts/**",
+        "svg/**",
+        "scripts/**",
+        ".storybook/**",
+        "package.json",
+        "tsconfig.json",
+        "tsup.config.*",
+        "style-dictionary.config.*",
+        "$TURBO_ROOT$/scripts/check-storybook-static.mjs"
+      ],
+      "outputs": ["dist/**", "src/generated/**", "build/**", "storybook-static/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "scripts/**", "eslint.config.*", "package.json"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "package.json"],
+      "outputs": ["coverage/**"]
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

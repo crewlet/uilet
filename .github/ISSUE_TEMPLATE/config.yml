@@ -1,0 +1,7 @@
+# Security reports never belong in a public issue, so the chooser points at
+# private vulnerability reporting instead of offering a blank issue for them.
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/crewlet/uilet/security/advisories/new
+    about: Report vulnerabilities privately, as described in SECURITY.md.

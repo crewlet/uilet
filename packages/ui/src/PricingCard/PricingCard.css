@@ -1,0 +1,238 @@
+/*
+ * PricingCard, plan-tier card surface.
+ *
+ * The primitive owns the outer card surface (border / radius / padding /
+ * states), the header / name / tag, the price block (amount + cadence
+ * + price note), the grid container, and a body / footer slot for
+ * domain content (allowances, features, CTAs).
+ *
+ * Colours flow through the @crewlethq/tokens variables so the light,
+ * dark and system themes pick up the right palette. Hex fallbacks keep
+ * the dark defaults when the token stylesheet has not loaded.
+ */
+
+/* ── Grid container ─────────────────────────────────────────────── */
+.crewlet-pricing-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 1320px) {
+  .crewlet-pricing-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .crewlet-pricing-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Card root ──────────────────────────────────────────────────── */
+.crewlet-pricing-card {
+  text-align: left;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: inherit;
+  color: inherit;
+  min-width: 0;
+  container-type: inline-size;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crewlet-pricing-card.is-interactive {
+  cursor: pointer;
+}
+
+.crewlet-pricing-card.is-interactive:hover:not(.is-disabled):not(.is-unavailable):not(:disabled) {
+  border-color: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.4);
+}
+
+.crewlet-pricing-card.is-selected {
+  border-color: var(--color-brand-accent, #5469d4);
+  background: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.08);
+  box-shadow: 0 0 0 1px var(--color-brand-accent, #5469d4);
+}
+
+.crewlet-pricing-card.is-disabled,
+.crewlet-pricing-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crewlet-pricing-card.is-unavailable {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.crewlet-pricing-card.is-selected:has(.crewlet-pricing-card__amount--discounted) {
+  box-shadow: 0 0 0 1px var(--color-brand-accent, #5469d4), 0 0 24px rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.18);
+}
+
+/* Compact a card's interior at small container widths so a 4-up grid
+   on a tablet doesn't render unreadably tight. */
+@container (max-width: 320px) {
+  .crewlet-pricing-card {
+    padding: 12px;
+    gap: 10px;
+  }
+  .crewlet-pricing-card__amount { font-size: 1.4rem; }
+}
+
+@container (max-width: 240px) {
+  .crewlet-pricing-card {
+    padding: 10px;
+  }
+  .crewlet-pricing-card__amount { font-size: 1.25rem; }
+  .crewlet-pricing-card__name   { font-size: 0.9rem; }
+}
+
+/* ── Header (name + tags) ───────────────────────────────────────── */
+.crewlet-pricing-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.crewlet-pricing-card__name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #f5f5f7);
+}
+
+/* ── Tags ───────────────────────────────────────────────────────── */
+.crewlet-pricing-card__tag {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.crewlet-pricing-card__tag--neutral {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary, #a1a1aa);
+}
+
+.crewlet-pricing-card__tag--top {
+  background: var(--color-brand-accent, #5469d4);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.6rem;
+  padding: 1px 6px;
+  margin-left: auto;
+}
+
+.crewlet-pricing-card__tag--save {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+/*
+ * Pending tag, for a change that takes effect later. Muted amber. The tag is the only
+ * visual signal on the card (no border tint, no card background
+ * change) so the eye picks it up as a heads-up annotation rather
+ * than a status badge competing with the selection ring.
+ */
+.crewlet-pricing-card__tag--pending {
+  background: rgba(245, 158, 11, 0.08);
+  color: rgba(251, 191, 36, 0.75);
+  font-weight: 500;
+}
+
+/* ── Price block ────────────────────────────────────────────────── */
+.crewlet-pricing-card__price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.crewlet-pricing-card__amount {
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #f5f5f7);
+  transition: color 0.2s ease;
+}
+
+.crewlet-pricing-card__amount--strike {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--color-text-tertiary, #8c99ad);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.crewlet-pricing-card__amount--discounted {
+  color: var(--color-brand-accent, #5469d4);
+  animation: crewlet-pricing-card-discount-pop 480ms cubic-bezier(0.2, 0.7, 0.2, 1.2);
+  transform-origin: left center;
+}
+
+@keyframes crewlet-pricing-card-discount-pop {
+  0%   { transform: scale(0.92); opacity: 0; filter: blur(2px); }
+  60%  { transform: scale(1.06); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1);    opacity: 1; filter: blur(0); }
+}
+
+.crewlet-pricing-card__cadence {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #a1a1aa);
+}
+
+/*
+ * Price note, a short label below the price block, for example
+ * "Save $X (10% off)" beneath a discounted plan, or "Billed annually"
+ * and "Free forever" hints.
+ */
+.crewlet-pricing-card__price-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-basis: 100%;
+  margin-top: 2px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(22, 163, 74, 0.35);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  width: max-content;
+  max-width: 100%;
+  animation: crewlet-pricing-card-price-note-enter 520ms cubic-bezier(0.2, 0.7, 0.2, 1.2);
+}
+
+.crewlet-pricing-card__price-note .material-symbols-outlined {
+  font-size: 14px;
+  line-height: 1;
+}
+
+@keyframes crewlet-pricing-card-price-note-enter {
+  0%   { transform: translateY(-4px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Body + Footer slots ────────────────────────────────────────── */
+.crewlet-pricing-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.crewlet-pricing-card__footer {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+}

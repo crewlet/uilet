@@ -1,0 +1,312 @@
+/*
+ * DateTimePicker, a themed replacement for <input type="datetime-local">.
+ * Trigger borrows the Select trigger's geometry so a DateTimePicker
+ * and a Select line up in the same toolbar; the popover paints its
+ * own calendar grid + (optional) hour / minute inputs.
+ */
+
+/* The accent variables are declared on the trigger AND on the calendar
+   popover. The popover is portaled to <body>, so it inherits nothing
+   from the trigger; declaring them on the trigger alone leaves the
+   selected day, the focused time input and the primary footer button
+   resolving an undefined variable and painting transparent. Both read
+   the brand accent tokens, so an app retints the picker by rebinding
+   --color-brand-accent and --color-brand-accent-rgb on <body>. */
+.crewlet-datetime,
+.crewlet-datetime__popover {
+  --crewlet-datetime-accent: var(--color-brand-accent, #5469d4);
+  --crewlet-datetime-accent-rgb: var(--color-brand-accent-rgb, 84, 105, 212);
+}
+
+.crewlet-datetime {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 8px 12px;
+  background: var(--color-surface-elevated, #1f2128);
+  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  color: var(--color-text-primary, #f5f5f7);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crewlet-datetime--sm {
+  padding: 6px 8px 6px 10px;
+  font-size: 12px;
+}
+
+.crewlet-datetime:hover:not(:disabled) {
+  border-color: var(--color-border-strong, rgba(255, 255, 255, 0.18));
+}
+
+.crewlet-datetime:focus,
+.crewlet-datetime.is-open {
+  outline: none;
+  border-color: var(--crewlet-datetime-accent);
+  box-shadow: 0 0 0 3px rgba(var(--crewlet-datetime-accent-rgb), 0.15);
+}
+
+.crewlet-datetime.is-disabled,
+.crewlet-datetime:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.crewlet-datetime__icon {
+  font-size: 16px;
+  color: var(--color-text-secondary, #c9ced8);
+  flex-shrink: 0;
+}
+
+.crewlet-datetime__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-datetime__label.is-placeholder {
+  color: var(--color-text-tertiary, #8c99ad);
+}
+
+.crewlet-datetime__chevron {
+  font-size: 18px;
+  color: var(--color-text-tertiary, #8c99ad);
+  flex-shrink: 0;
+}
+
+/* ─── Popover panel ─────────────────────────────────────────── */
+/*
+ * The base .crewlet-popover rule caps height at min(360px, 60vh) and
+ * scrolls overflow. The picker's content (quick-pick row + nav +
+ * weekday strip + 6-row grid + time inputs + footer) is taller than
+ * that, which made the time row sit below the scroll fold. Override
+ * max-height/max-width to none and disable inner scroll so every
+ * section is visible without scrolling.
+ */
+/*
+ * Popover matches the trigger width via Popover width="match" so the
+ * calendar lines up edge-for-edge with the input that opened it. The
+ * min-width floor keeps the calendar grid usable when the trigger
+ * sits inside a narrow cell (e.g. a form row); the explicit overrides
+ * lift the base Popover's max-height / max-width / overflow so the
+ * calendar, time row, and footer render in full.
+ */
+.crewlet-datetime__popover {
+  padding: 0;
+  background: var(--color-surface-subtle, var(--color-surface-elevated, #1c1e24));
+  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg, 0 12px 28px rgba(0, 0, 0, 0.45));
+  overflow: visible;
+  min-width: 320px;
+  max-width: none;
+  max-height: none;
+}
+
+.crewlet-datetime__panel {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+}
+
+
+/* ─── Month nav header ──────────────────────────────────────── */
+.crewlet-datetime__nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crewlet-datetime__nav-btn {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-secondary, #c9ced8);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.crewlet-datetime__nav-btn:hover {
+  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.08));
+  color: var(--color-text-primary, #fafafa);
+}
+
+.crewlet-datetime__nav-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.crewlet-datetime__title {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary, #fafafa);
+}
+
+/* ─── Weekday header strip ──────────────────────────────────── */
+.crewlet-datetime__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: 0 2px;
+}
+
+.crewlet-datetime__weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-tertiary, #8c99ad);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 0;
+}
+
+/* ─── Calendar grid ─────────────────────────────────────────── */
+.crewlet-datetime__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.crewlet-datetime__cell {
+  height: 32px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--color-text-primary, #fafafa);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crewlet-datetime__cell:hover:not(:disabled):not(.is-selected) {
+  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.08));
+}
+
+.crewlet-datetime__cell.is-outside {
+  color: var(--color-text-tertiary, #8c99ad);
+  opacity: 0.55;
+}
+
+.crewlet-datetime__cell.is-today:not(.is-selected) {
+  /* Subtle outline so today's cell is always findable even when no
+     date is picked. The accent inset keeps it visible on every surface. */
+  box-shadow: inset 0 0 0 1px rgba(var(--crewlet-datetime-accent-rgb), 0.55);
+}
+
+.crewlet-datetime__cell.is-selected {
+  background: var(--crewlet-datetime-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.crewlet-datetime__cell.is-disabled,
+.crewlet-datetime__cell:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ─── Time row ──────────────────────────────────────────────── */
+.crewlet-datetime__time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px 0;
+  border-top: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.06));
+  margin-top: 4px;
+}
+
+.crewlet-datetime__time-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-tertiary, #8c99ad);
+  margin-right: auto;
+}
+
+/*
+ * Hour / minute / second inputs render as type="text" so leading
+ * zeros stay visible ("00 : 00 : 00" instead of "0 : 0 : 0"). The
+ * inputMode + pattern attrs keep mobile keyboards numeric.
+ */
+.crewlet-datetime__time-input {
+  width: 36px;
+  background: var(--color-surface-elevated, #1f2128);
+  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
+  border-radius: 6px;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary, #fafafa);
+  text-align: center;
+}
+
+.crewlet-datetime__time-input:focus {
+  outline: none;
+  border-color: var(--crewlet-datetime-accent);
+  box-shadow: 0 0 0 2px rgba(var(--crewlet-datetime-accent-rgb), 0.18);
+}
+
+.crewlet-datetime__time-sep {
+  color: var(--color-text-tertiary, #8c99ad);
+}
+
+/* ─── Footer ────────────────────────────────────────────────── */
+.crewlet-datetime__footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.06));
+}
+
+.crewlet-datetime__footer-spacer {
+  flex: 1;
+}
+
+.crewlet-datetime__footer-btn {
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-text-secondary, #c9ced8);
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.crewlet-datetime__footer-btn:hover {
+  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.08));
+  color: var(--color-text-primary, #fafafa);
+}
+
+.crewlet-datetime__footer-btn.is-primary {
+  background: var(--crewlet-datetime-accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.crewlet-datetime__footer-btn.is-primary:hover {
+  background: var(--crewlet-datetime-accent);
+  filter: brightness(1.08);
+}

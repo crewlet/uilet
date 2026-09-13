@@ -1,0 +1,21 @@
+/*
+ * Container, the centered content measure. One max-width scale shared by
+ * every surface so pages line up regardless of who composed them.
+ */
+
+.crewlet-container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: var(--spacing-6);
+}
+
+.crewlet-container--sm { max-width: 720px; }
+.crewlet-container--md { max-width: 960px; }
+.crewlet-container--lg { max-width: 1200px; }
+.crewlet-container--xl { max-width: 1440px; }
+
+@media (max-width: 640px) {
+  .crewlet-container {
+    padding-inline: var(--spacing-5);
+  }
+}

@@ -1,0 +1,65 @@
+name: Verify the release tag
+description: >-
+  Fails unless the run was started by a tag, that tag still names the commit
+  the run is working on, and that commit is on main. The release workflow runs
+  it before building and again before publishing and before creating the
+  GitHub release.
+
+runs:
+  using: composite
+  steps:
+    # Nothing else ties a release to reviewed code. A v* tag on any commit
+    # starts the release workflow, the workflow file that runs is the one at
+    # that commit, and neither the npm-publish environment nor npm trusted
+    # publishing looks at which commit it is. A run can also wait for approval
+    # for up to 30 days, during which the tag may be deleted and pushed again
+    # onto another commit; approving the old run would then publish bytes for
+    # a commit the tag no longer names.
+    #
+    # The tag is read from the GitHub API rather than from the checkout, so
+    # the answer is the tag as it is now, not as it was when the run started.
+    # A release.yml changed on an unreviewed commit can delete this step, which
+    # is why the approver also confirms it ran (see RELEASING.md).
+    - name: Verify that the tag names this commit and that it is on main
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        case "${GITHUB_REF}" in
+          refs/tags/*) ;;
+          *)
+            echo "::error::this action verifies a release tag, but the run was started by ${GITHUB_REF}"
+            exit 1
+            ;;
+        esac
+        tag="${GITHUB_REF_NAME}"
+
+        # git/ref matches the full ref name exactly. An annotated tag points
+        # at a tag object, which is followed until it reaches the commit.
+        object="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" --jq '.object.type + " " + .object.sha')"
+        read -r type sha <<<"${object}"
+        while [ "${type}" = "tag" ]; do
+          object="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${sha}" --jq '.object.type + " " + .object.sha')"
+          read -r type sha <<<"${object}"
+        done
+        if [ "${type}" != "commit" ]; then
+          echo "::error::the tag ${tag} names a ${type}, not a commit"
+          exit 1
+        fi
+        if [ "${sha}" != "${GITHUB_SHA}" ]; then
+          echo "::error::the tag ${tag} now names ${sha}, but this run was started for ${GITHUB_SHA}. The tag was moved after the run started; cancel this run and let the run for the new tag release."
+          exit 1
+        fi
+
+        # "identical" or "ahead" means main is this commit or contains it.
+        status="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${GITHUB_SHA}...main" --jq .status)"
+        case "${status}" in
+          identical | ahead)
+            echo "${tag} names ${GITHUB_SHA}, which is on main"
+            ;;
+          *)
+            echo "::error::${tag} names ${GITHUB_SHA}, which is not on main (comparison status: ${status}). A release is tagged on a commit that was reviewed and merged; delete the tag."
+            exit 1
+            ;;
+        esac

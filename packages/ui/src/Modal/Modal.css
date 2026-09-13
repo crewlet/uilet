@@ -1,0 +1,138 @@
+/*
+ * Modal, portal-rendered dialog with backdrop, header, body, footer.
+ *
+ * Sizes, padding, radius, shadow and animation timings are declared
+ * here once, so every dialog (Modal, ConfirmModal, the DataTable
+ * settings dialog) shares one frame.
+ */
+
+.crewlet-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The stacking order for everything that escapes the page flow (modal,
+     popover, toast) is one scale in @crewlethq/tokens (zIndex), because
+     the relationship between the layers is the whole point; numbering
+     each component on its own is how they came to disagree. */
+  z-index: var(--z-index-modal, 9999);
+  padding: 24px;
+  animation: crewlet-modal-fade-in 0.15s ease-out;
+}
+
+.crewlet-modal {
+  width: 100%;
+  background: var(--color-surface-elevated, #131419);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 48px);
+  animation: crewlet-modal-pop 0.18s ease-out;
+  outline: none;
+}
+
+.crewlet-modal--sm { max-width: 480px; }
+.crewlet-modal--md { max-width: 560px; }
+.crewlet-modal--lg { max-width: 720px; }
+.crewlet-modal--xl { max-width: 1080px; }
+
+.crewlet-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-modal__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.crewlet-modal__title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.crewlet-modal__subtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.crewlet-modal__close {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.crewlet-modal__close:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+}
+
+.crewlet-modal__body {
+  padding: 18px 22px;
+  overflow-y: auto;
+  /* Set here rather than inherited. A dialog is read at a glance and
+     sits over a page whose base size it should not borrow, which is
+     how the same sentence came out larger in one product than another. */
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+/* Paragraphs stack without the browser's default margins fighting the
+   body padding, which is what left dialogs uneven top and bottom. */
+.crewlet-modal__body > p {
+  margin: 0 0 12px;
+}
+
+.crewlet-modal__body > p:last-child {
+  margin-bottom: 0;
+}
+
+.crewlet-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-modal__message {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+@keyframes crewlet-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes crewlet-modal-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)  scale(1); }
+}

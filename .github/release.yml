@@ -1,0 +1,22 @@
+# Shapes the notes GitHub generates for a release.
+#
+# The release workflow creates each GitHub release with --generate-notes, so
+# its body is the list of pull requests merged since the previous tag. Each
+# pull request lands in the first category whose labels it carries.
+# `dependencies` is applied by Dependabot itself, so no label convention has
+# to be maintained by hand, and the catch-all `*` means a pull request with no
+# labels still appears instead of silently dropping out of the notes.
+#
+# Those notes are the record of what a release contains, which is why a pull
+# request title has to read as a release note. See RELEASING.md.
+changelog:
+  categories:
+    - title: What's Changed
+      labels:
+        - "*"
+      exclude:
+        labels:
+          - dependencies
+    - title: Dependencies
+      labels:
+        - dependencies

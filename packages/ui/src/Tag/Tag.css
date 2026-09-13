@@ -1,0 +1,163 @@
+/*
+ * Tag and TagsInput primitives. A Tag is a static label; with onRemove it
+ * becomes a removable chip, and TagsInput renders a row of those chips
+ * in front of its text field.
+ */
+
+.crewlet-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background-color: rgba(100, 100, 100, 0.15);
+  color: var(--color-text-primary);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid rgba(100, 100, 100, 0.25);
+  animation: crewlet-tag-fade-in 0.2s ease;
+  line-height: 1;
+  /* A tag is an atomic token: its label must never break across
+     lines inside the pill. Constrained layouts truncate with an
+     ellipsis via the label's max-width instead. */
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.crewlet-tag__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes crewlet-tag-fade-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.crewlet-tag__icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-tag__label {
+  line-height: 1;
+}
+
+/* sm is the compact chip geometry used for inline values (an event
+   name pill in an activity feed): 12px text in a fixed 26px pill (18px content line +
+   3px vertical padding + 1px borders). The explicit height keeps
+   every small chip family (tags, agent chips, code pills) on one
+   baseline regardless of the content's own line box. */
+.crewlet-tag--sm { padding: 3px 8px; font-size: 12px; height: 26px; }
+.crewlet-tag--md { padding: 4px 8px; font-size: 13px; }
+
+.crewlet-tag--monospace .crewlet-tag__label {
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+}
+
+/* ── variants ───────────────────────────────────────────────────────── */
+.crewlet-tag--neutral {
+  background-color: rgba(100, 100, 100, 0.15);
+  border-color: rgba(100, 100, 100, 0.25);
+  color: var(--color-text-primary);
+}
+
+.crewlet-tag--info {
+  background-color: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.28);
+  color: #93c5fd;
+}
+
+.crewlet-tag--success {
+  background-color: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.28);
+  color: #86efac;
+}
+
+.crewlet-tag--warn {
+  background-color: rgba(234, 179, 8, 0.14);
+  border-color: rgba(234, 179, 8, 0.30);
+  color: #fde68a;
+}
+
+.crewlet-tag--danger {
+  background-color: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.30);
+  color: #fca5a5;
+}
+
+.crewlet-tag--brand {
+  background-color: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.14);
+  border-color: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.30);
+  color: var(--color-brand-accent, #5469d4);
+}
+
+/* ── remove button ──────────────────────────────────────────────────── */
+.crewlet-tag__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(100, 100, 100, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.crewlet-tag__remove:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  transform: scale(1.1);
+}
+
+/* ── TagsInput container ────────────────────────────────────────────── */
+.crewlet-tags-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  min-height: 44px;
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  align-items: center;
+  cursor: text;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crewlet-tags-input:focus-within {
+  border-color: var(--color-brand-accent);
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.15));
+}
+
+.crewlet-tags-input.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.crewlet-tags-input__field {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  padding: 4px;
+  font-family: inherit;
+}
+
+.crewlet-tags-input__field::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}

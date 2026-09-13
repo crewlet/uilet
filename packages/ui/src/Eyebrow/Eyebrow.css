@@ -1,0 +1,30 @@
+/*
+ * Eyebrow (kicker), the uppercase section label. Monospace, tracked-out,
+ * and quiet so it names a section without competing with its title.
+ */
+
+.crewlet-eyebrow {
+  display: inline-block;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: var(--font-line-height-tight);
+}
+
+.crewlet-eyebrow--muted {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-eyebrow--accent {
+  color: var(--color-brand-accent);
+}
+
+.crewlet-eyebrow--gradient {
+  background: var(--color-brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}

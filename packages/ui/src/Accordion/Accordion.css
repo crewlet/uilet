@@ -1,0 +1,88 @@
+/*
+ * Accordion, a stacked disclosure list for FAQs and dense settings. One
+ * hairline rule between items, a chevron that rotates on open, and a panel
+ * that is fully removed from the a11y tree when collapsed.
+ */
+
+.crewlet-accordion {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-accordion__item {
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-accordion__heading {
+  margin: 0;
+  font: inherit;
+}
+
+.crewlet-accordion__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  width: 100%;
+  padding: var(--spacing-5) 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-snug);
+  transition: color var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-accordion__trigger:hover {
+  color: var(--color-brand-accent);
+}
+
+.crewlet-accordion__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}
+
+.crewlet-accordion__item.is-disabled .crewlet-accordion__trigger {
+  cursor: not-allowed;
+  color: var(--color-text-muted);
+}
+
+.crewlet-accordion__title {
+  min-width: 0;
+}
+
+.crewlet-accordion__icon {
+  flex-shrink: 0;
+  font-size: 24px;
+  color: var(--color-text-tertiary);
+  transition: transform var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-accordion__item.is-open .crewlet-accordion__icon {
+  transform: rotate(180deg);
+  color: var(--color-brand-accent);
+}
+
+.crewlet-accordion__panel {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  line-height: var(--font-line-height-relaxed, 1.7);
+}
+
+.crewlet-accordion__panel-inner {
+  padding: 0 0 var(--spacing-5);
+  max-width: 68ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-accordion__icon,
+  .crewlet-accordion__trigger {
+    transition: none;
+  }
+}

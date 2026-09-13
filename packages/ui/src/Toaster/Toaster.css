@@ -1,0 +1,264 @@
+/*
+ * Toaster + Toast styles: a 380px max width, a 12px radius, a 240ms
+ * slide-in, and a scaleX progress drain whose animationend event is the
+ * onDismiss handshake, so the visible countdown and the dismissal can
+ * never drift apart.
+ *
+ * Variant accents:
+ *   .crewlet-toast--info     neutral, no accent strip
+ *   .crewlet-toast--success  matt moss-green icon
+ *   .crewlet-toast--warn     amber icon
+ *   .crewlet-toast--error    soft rose icon, never red flood
+ *   .crewlet-toast--quota    brand accent on a caller-supplied icon, for
+ *                            a usage limit notice (announced as an alert)
+ *   quota and any other custom variant render with no default icon or
+ *   title; consumers paint their own by passing the `icon` prop or by
+ *   overriding the body via `renderBody`.
+ */
+
+.crewlet-toaster {
+  position: fixed;
+  z-index: var(--z-index-toast, 10001);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100vw - 48px));
+  pointer-events: none;
+}
+
+.crewlet-toaster--bottom-right { bottom: 24px; right: 24px; }
+.crewlet-toaster--top-right    { top: 24px;    right: 24px; }
+.crewlet-toaster--bottom-left  { bottom: 24px; left: 24px;  }
+.crewlet-toaster--top-left     { top: 24px;    left: 24px;  }
+
+.crewlet-toast {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 38px 14px 14px;
+  background: color-mix(in srgb, var(--color-surface-subtle) 60%, #000);
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: crewlet-toast-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes crewlet-toast-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Children sit above the drain fill. */
+.crewlet-toast > * {
+  position: relative;
+  z-index: 1;
+}
+
+.crewlet-toast__icon {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--color-text-secondary);
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.crewlet-toast__icon .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.crewlet-toast--success .crewlet-toast__icon,
+.crewlet-toast--success .crewlet-toast__icon .material-symbols-outlined {
+  color: #8fbf9f;
+  font-variation-settings: 'FILL' 1;
+}
+
+.crewlet-toast--warn .crewlet-toast__icon,
+.crewlet-toast--warn .crewlet-toast__icon .material-symbols-outlined {
+  color: #e4c97c;
+  font-variation-settings: 'FILL' 1;
+}
+
+.crewlet-toast--error .crewlet-toast__icon,
+.crewlet-toast--error .crewlet-toast__icon .material-symbols-outlined {
+  color: #f87171;
+  font-variation-settings: 'FILL' 1;
+}
+
+/*
+ * The `quota` variant (a usage limit notice) paints the icon the caller
+ * supplies with the brand accent and a filled glyph. Its styling lives
+ * here so an app can render `<Toaster>` directly without shipping a
+ * stylesheet of its own.
+ */
+.crewlet-toast--quota .crewlet-toast__icon,
+.crewlet-toast--quota .crewlet-toast__icon .material-symbols-outlined {
+  color: var(--color-brand-accent, #5469d4);
+  font-variation-settings: 'FILL' 1;
+}
+
+.crewlet-toast__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.crewlet-toast__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.crewlet-toast__message {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  word-wrap: break-word;
+}
+
+.crewlet-toast__actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.crewlet-toast__action-btn,
+.crewlet-toast__action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--color-brand-accent, #5469d4);
+  color: var(--color-text-on-brand, #fff);
+  border: 1px solid var(--color-brand-accent, #5469d4);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.crewlet-toast__action-btn:hover,
+.crewlet-toast__action-link:hover {
+  background: var(--color-brand-accent-hover, #6478e0);
+  border-color: var(--color-brand-accent-hover, #6478e0);
+}
+
+.crewlet-toast--error .crewlet-toast__action-btn,
+.crewlet-toast--error .crewlet-toast__action-link {
+  background: #f43f5e;
+  border-color: #f43f5e;
+}
+
+.crewlet-toast--error .crewlet-toast__action-btn:hover,
+.crewlet-toast--error .crewlet-toast__action-link:hover {
+  background: #e11d48;
+  border-color: #e11d48;
+}
+
+/* Dismiss "X" sits absolute in the top-right so multi-line content
+   flows naturally underneath it. */
+.crewlet-toast__dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 0;
+  transition: background 120ms ease, color 120ms ease;
+  z-index: 2;
+}
+
+.crewlet-toast__dismiss:hover {
+  background: var(--color-surface-elevated, var(--color-surface-subtle));
+  color: var(--color-text-primary);
+}
+
+.crewlet-toast__dismiss:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
+}
+
+.crewlet-toast__dismiss .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/*
+ * Progress fill drives auto-dismissal: animationend → onDismiss.
+ * Hover/focus pauses the keyframe (and the implicit timer with it).
+ * Variant wash: slate for calm informational variants, rose for error,
+ * moss-green for success.
+ */
+.crewlet-toast__progress {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  transform-origin: left center;
+  transform: scaleX(1);
+  background: var(--color-brand-slate, #3c4052);
+  opacity: 0.3;
+  pointer-events: none;
+  animation-name: crewlet-toast-drain;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.crewlet-toast--error .crewlet-toast__progress {
+  background: #ae4a4a;
+  opacity: 0.18;
+}
+
+.crewlet-toast--success .crewlet-toast__progress {
+  background: rgba(78, 134, 90, 0.6);
+  opacity: 0.28;
+}
+
+.crewlet-toast--warn .crewlet-toast__progress {
+  background: rgba(180, 140, 50, 0.5);
+  opacity: 0.22;
+}
+
+.crewlet-toast:hover .crewlet-toast__progress,
+.crewlet-toast:focus-within .crewlet-toast__progress {
+  animation-play-state: paused;
+}
+
+@keyframes crewlet-toast-drain {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+@media (max-width: 480px) {
+  .crewlet-toaster--bottom-right,
+  .crewlet-toaster--top-right,
+  .crewlet-toaster--bottom-left,
+  .crewlet-toaster--top-left {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+  .crewlet-toaster--bottom-right,
+  .crewlet-toaster--bottom-left { bottom: 12px; }
+  .crewlet-toaster--top-right,
+  .crewlet-toaster--top-left    { top: 12px; }
+}

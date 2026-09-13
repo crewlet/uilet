@@ -1,0 +1,12 @@
+{
+  "zIndex": {
+    "base": { "value": "0" },
+    "raised": { "value": "1", "comment": "Lifts an element above its siblings inside its own stacking context, such as a control layered over a card." },
+    "sticky": { "value": "10", "comment": "Sticky headers and pinned columns within the page flow." },
+    "dropdown": { "value": "100", "comment": "In-flow menus that stay inside their container rather than portaling to the body." },
+    "overlay": { "value": "200", "comment": "In-page overlays such as drawers and scrims that cover page chrome but not dialogs." },
+    "modal": { "value": "9999", "comment": "Dialog backdrop and frame. High enough to clear any page chrome an application stacks with its own numbers." },
+    "popover": { "value": "10000", "comment": "Floating panels portaled to the body (Select menus, Popover, date pickers). Above modal because they are routinely opened from inside a dialog, and a panel under the backdrop is hidden and swallows clicks." },
+    "toast": { "value": "10001", "comment": "Top of the stack. A toast reports the outcome of what somebody just did, often in a dialog or from a menu opened inside one, so it sits above both." }
+  }
+}

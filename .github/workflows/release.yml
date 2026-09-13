@@ -1,0 +1,336 @@
+name: release
+
+# Publishes @crewlethq/tokens, @crewlethq/icons and @crewlethq/ui to
+# registry.npmjs.org and creates the GitHub release. See RELEASING.md for the
+# runbook.
+#
+# A release is a pushed tag, `v<version>`, on a commit that is on main, whose
+# version equals the one recorded in every published package.json. Every job
+# verifies the tag through the GitHub API before it does anything else
+# (.github/actions/verify-release-ref).
+#
+# The work is split so that no job that installs dependencies or runs project
+# code holds a credential worth stealing, and so that the bytes that receive
+# provenance are produced by as little third-party code as possible:
+#
+#   verify   contents: read. Installs the whole workspace and runs the build
+#            (the Storybook included), lint, typecheck and tests. Uploads
+#            nothing.
+#   pack     contents: read. Installs only the root tooling and the published
+#            workspaces, builds only those packages and packs them, then
+#            uploads the tarballs. The Storybook, its bundler and every
+#            dependency only they use are never installed here, and no install
+#            script runs in either job.
+#   publish  id-token: write, inside the npm-publish environment, after both.
+#            Runs no project code: it downloads the tarballs and publishes them
+#            through npm trusted publishing, which exchanges the OIDC token for
+#            a short-lived npm credential and attaches provenance.
+#   release  contents: write. Creates the GitHub release after every package
+#            is on the registry.
+#
+# npm matches its trusted publisher configuration against this file's NAME
+# (release.yml) and the environment name (npm-publish). Renaming either stops
+# publishing until the configuration on npmjs.com is updated to match.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions: {}
+
+# Never let two runs race to publish the same tag.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: verify the tagged commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: $/.github/actions/verify-release-ref
+      - uses: $/.github/actions/setup-node
+
+      # Runs before npm ci, on Node alone, so a tag that disagrees with the
+      # manifests fails before any third-party code has executed.
+      - name: Check the tag against the manifests
+        run: node scripts/release.mjs check --tag "${GITHUB_REF_NAME}"
+
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  pack:
+    name: build and pack the published packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: $/.github/actions/verify-release-ref
+      # No dependency cache: a release is built from the lockfile alone, so a
+      # cache entry written by an earlier run cannot reach the published bytes.
+      - uses: $/.github/actions/setup-node
+
+      - name: Check the tag against the manifests
+        run: node scripts/release.mjs check --tag "${GITHUB_REF_NAME}"
+
+      - name: Install and build only the published packages
+        run: node scripts/release.mjs build
+
+      - name: Pack the published packages
+        run: node scripts/release.mjs pack "${RUNNER_TEMP}/packages"
+
+      # Kept for 30 days, the longest a deployment can wait for approval in
+      # the npm-publish environment, so the tarballs a reviewer approves are
+      # still the ones the publish job downloads.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages/*.tgz
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: publish to npm
+    needs: [verify, pack]
+    runs-on: ubuntu-24.04
+    # Time spent waiting for approval does not count toward this limit.
+    timeout-minutes: 15
+    environment: npm-publish
+    permissions:
+      contents: read # the sparse checkout and the tag verification
+      id-token: write # the OIDC token npm trusted publishing exchanges for a one-publish credential
+    steps:
+      # Only the two toolchain pins the setup action reads. Nothing from the
+      # repository that installs or builds anything is checked out here.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            /.nvmrc
+            /package.json
+          sparse-checkout-cone-mode: false
+
+      # Again after approval: the tag may have been moved while this job
+      # waited, and these tarballs must never be published for a commit the
+      # tag no longer names.
+      - uses: $/.github/actions/verify-release-ref
+      - uses: $/.github/actions/setup-node
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages
+
+      # The package list below is an allowlist, in dependency order: tokens
+      # and icons are on the registry before the ui version that pins them.
+      # Each tarball must be exactly that package at the tagged version, with
+      # exactly the publishConfig scripts/release.mjs check enforces and no
+      # top-level tag field: npm publish applies every publishConfig key it is
+      # not given on the command line (a scoped registry key would send the
+      # publish and its OIDC exchange to another host), and a top-level tag
+      # overrides --tag. The access and the dist-tag are also passed explicitly.
+      #
+      # A version already on the registry is skipped when its integrity equals
+      # the tarball's and refused when it differs. That makes a re-run after a
+      # partial failure finish the release instead of failing on the packages
+      # that did publish, and it is what completes the first release after
+      # the one-time bootstrap in RELEASING.md. A version this job publishes is
+      # read back from the registry, and its integrity and dist-tag must be the
+      # ones intended.
+      #
+      # --provenance is explicit rather than left to npm's automatic detection,
+      # so a publish that cannot produce an attestation fails instead of
+      # silently shipping without one. --ignore-scripts is belt and braces: npm
+      # runs no lifecycle scripts for a tarball, and nothing here should.
+      - name: Publish the tarballs
+        env:
+          PACKAGES_DIR: ${{ runner.temp }}/packages
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          packages=(tokens icons ui)
+          expected_publish_config='{"access":"public","registry":"https://registry.npmjs.org"}'
+
+          # A prerelease must never become "latest", and npm refuses to publish
+          # one without an explicit dist-tag.
+          case "${version}" in
+            *-*) dist_tag=next ;;
+            *) dist_tag=latest ;;
+          esac
+
+          shopt -s nullglob
+          tarballs=("${PACKAGES_DIR}"/*.tgz)
+          if [ "${#tarballs[@]}" -ne "${#packages[@]}" ]; then
+            echo "::error::expected ${#packages[@]} tarballs, found ${#tarballs[@]}: ${tarballs[*]}"
+            exit 1
+          fi
+
+          registry_response="$(mktemp)"
+          # Fetches the registry's abbreviated record of one package (its
+          # dist-tags and the integrity of every version) into
+          # registry_response, and prints the HTTP status.
+          fetch_packument() {
+            curl --silent --show-error --retry 3 --output "${registry_response}" --write-out '%{http_code}' \
+              --header 'Accept: application/vnd.npm.install-v1+json' --header 'Cache-Control: no-cache' \
+              "https://registry.npmjs.org/@crewlethq%2F$1"
+          }
+          published_integrity() {
+            jq -r --arg version "${version}" '.versions[$version].dist.integrity // "null"' "${registry_response}"
+          }
+
+          for package in "${packages[@]}"; do
+            name="@crewlethq/${package}"
+            file="${PACKAGES_DIR}/crewlethq-${package}-${version}.tgz"
+            if [ ! -f "${file}" ]; then
+              echo "::error::${file} is missing from the build artifact"
+              exit 1
+            fi
+
+            manifest="$(tar -xOzf "${file}" package/package.json)"
+            if [ "$(jq -r .name <<<"${manifest}")" != "${name}" ] || [ "$(jq -r .version <<<"${manifest}")" != "${version}" ]; then
+              echo "::error::${file} does not contain ${name}@${version}"
+              exit 1
+            fi
+            if [ "$(jq -cS .publishConfig <<<"${manifest}")" != "${expected_publish_config}" ] || [ "$(jq 'has("tag")' <<<"${manifest}")" != "false" ]; then
+              echo "::error::${file} must carry exactly the publishConfig ${expected_publish_config} and no top-level tag field"
+              exit 1
+            fi
+
+            integrity="sha512-$(openssl dgst -sha512 -binary "${file}" | base64 -w 0)"
+            status="$(fetch_packument "${package}")"
+            case "${status}" in
+              200) published="$(published_integrity)" ;;
+              404) published="null" ;;
+              *)
+                echo "::error::the registry answered HTTP ${status} for ${name}; cannot tell whether ${version} is published"
+                exit 1
+                ;;
+            esac
+
+            if [ "${published}" != "null" ]; then
+              if [ "${published}" != "${integrity}" ]; then
+                echo "::error::${name}@${version} is already on the registry with integrity ${published}, but this build packed ${integrity}. A published version cannot be replaced; release a new version."
+                exit 1
+              fi
+              echo "::notice::${name}@${version} is already on the registry with identical contents; skipping"
+              continue
+            fi
+
+            # --tag is always explicit, and npm moves an explicit dist-tag even
+            # to a lower version, so a stable release below the current latest
+            # would move latest backwards. There is one release line.
+            if [ "${status}" = 200 ] && [ "${dist_tag}" = latest ]; then
+              current="$(jq -r '."dist-tags".latest // "null"' "${registry_response}")"
+              if [ "${current}" != "null" ] && [ "$(printf '%s\n%s\n' "${current}" "${version}" | sort -V | tail -n 1)" != "${version}" ]; then
+                echo "::error::${name}@${version} is lower than the latest release ${current}. There is one release line; release the change as a version above ${current}."
+                exit 1
+              fi
+            fi
+
+            npm publish "${file}" --provenance --ignore-scripts --access public --tag "${dist_tag}"
+
+            # The registry can take a moment to serve a new version.
+            attempt=1
+            until [ "$(fetch_packument "${package}")" = 200 ] && [ "$(published_integrity)" != "null" ]; do
+              if [ "${attempt}" -ge 30 ]; then
+                echo "::error::${name}@${version} was published, but the registry did not serve it within five minutes. Check it on the registry before re-running."
+                exit 1
+              fi
+              attempt=$((attempt + 1))
+              sleep 10
+            done
+            published="$(published_integrity)"
+            tagged="$(jq -r --arg tag "${dist_tag}" '."dist-tags"[$tag] // "null"' "${registry_response}")"
+            if [ "${published}" != "${integrity}" ]; then
+              echo "::error::${name}@${version} was published with integrity ${published}, but this build packed ${integrity}"
+              exit 1
+            fi
+            if [ "${tagged}" != "${version}" ]; then
+              echo "::error::${name}@${version} was published, but its ${dist_tag} dist-tag names ${tagged}. Point it at the release with: npm dist-tag add ${name}@${version} ${dist_tag}"
+              exit 1
+            fi
+            echo "::notice::published ${name}@${version} under ${dist_tag} with integrity ${integrity}"
+          done
+
+  release:
+    name: create the GitHub release
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write # creating the GitHub release
+    steps:
+      # No checkout. The composite action that verifies the tag is loaded
+      # from the tagged commit through the self-repository syntax, and nothing
+      # else from the repository runs beside the write-capable token.
+      - uses: $/.github/actions/verify-release-ref
+
+      # The body is generated by GitHub from the pull requests merged since
+      # the previous tag, grouped by .github/release.yml, after the npm links
+      # below.
+      #
+      # A release that already exists for the tag is accepted only when it is
+      # exactly what this step creates: made by this workflow's token, with no
+      # attached files, the same pre-release flag and the npm links first. A
+      # re-run after a failure in this step finds such a release. Anything
+      # else was created by someone else, possibly with look-alike files or
+      # links, and the job fails rather than report it as the release.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          case "${version}" in
+            *-*) prerelease=true ;;
+            *) prerelease=false ;;
+          esac
+
+          notes="Published to npm:"$'\n'
+          for package in tokens icons ui; do
+            notes+=$'\n'"- [@crewlethq/${package}@${version}](https://www.npmjs.com/package/@crewlethq/${package}/v/${version})"
+          done
+
+          if existing="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" 2>&1)"; then
+            author="$(jq -r .author.login <<<"${existing}")"
+            assets="$(jq '.assets | length' <<<"${existing}")"
+            existing_prerelease="$(jq -r .prerelease <<<"${existing}")"
+            body="$(jq -r '.body // ""' <<<"${existing}")"
+            url="$(jq -r .html_url <<<"${existing}")"
+            if [ "${author}" = "github-actions[bot]" ] && [ "${assets}" = 0 ] \
+              && [ "${existing_prerelease}" = "${prerelease}" ] && [[ "${body}" == "${notes}"* ]]; then
+              echo "::notice::the release for ${tag} already exists at ${url}"
+              exit 0
+            fi
+            echo "::error::a release for ${tag} already exists at ${url}, but this workflow did not create it (author ${author}, ${assets} attached files, pre-release ${existing_prerelease}). Find out who created it and what it links to before doing anything else. The one expected case is a release a maintainer created by hand in step 6 of the bootstrap in RELEASING.md."
+            exit 1
+          fi
+          case "${existing}" in
+            *"HTTP 404"*) ;;
+            *)
+              echo "::error::could not look up the release for ${tag}: ${existing}"
+              exit 1
+              ;;
+          esac
+
+          args=(--repo "${GITHUB_REPOSITORY}" --verify-tag --title "${tag}" --notes "${notes}" --generate-notes)
+          if [ "${prerelease}" = true ]; then
+            args+=(--prerelease --latest=false)
+          fi
+          gh release create "${tag}" "${args[@]}"
