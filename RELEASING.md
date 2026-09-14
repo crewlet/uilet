@@ -2,22 +2,23 @@
 
 Maintainer runbook for publishing `@crewlethq/tokens`, `@crewlethq/icons` and `@crewlethq/ui` to [registry.npmjs.org](https://www.npmjs.com/org/crewlethq). Nothing here is needed to use the packages; it is process for people with write access to this repository.
 
-A release is a pushed `v<version>` tag on a commit that is on `main`. [`.github/workflows/release.yml`](.github/workflows/release.yml) verifies the tagged commit, builds and packs the three packages, publishes them through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers) with provenance, and creates the GitHub release. No npm token is stored anywhere: the publish job exchanges its GitHub Actions OIDC identity for a short-lived npm credential that is valid for that one publish.
+**Every merge to `main` is released automatically.** [`.github/workflows/release.yml`](.github/workflows/release.yml) runs on the push the merge makes, computes the next version from the commit types since the previous release, and publishes the three packages through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers) with provenance, unless nothing they would publish has changed. It then tags the merged commit `v<version>` and creates the GitHub release. There is no approval step after the merge: the pull request review that the `main` branch ruleset requires is the gate. No npm token is stored anywhere; the publish job exchanges its GitHub Actions OIDC identity for a short-lived npm credential that is valid for that one publish.
 
 ---
 
-## How a release flows
+## How a merge becomes a release
 
 ```mermaid
 flowchart TD
-    V["<b>npm run release:version -- 0.2.1</b><br/>manifests and lockfile, merged to main"] --> T
-    T["<b>git push origin v0.2.1</b>"] --> C
-    T --> K
-    C["<b>verify</b> (contents: read)<br/>tag names this commit, which is on main<br/>full install without install scripts<br/>build, lint, typecheck, test"] --> A
-    K["<b>pack</b> (contents: read)<br/>tag names this commit, which is on main<br/>install and build only the published packages<br/>pack, upload tarballs"] --> A
-    A["<b>npm-publish environment</b><br/>a second maintainer reviews and approves"] --> P
-    P["<b>publish</b> (id-token: write)<br/>tag verified again, no project code runs<br/>allowlisted tarballs, exact publishConfig<br/>npm publish --provenance, read back from the registry"] --> R
-    R["<b>release</b> (contents: write)<br/>tag verified again, no checkout<br/>GitHub release with generated notes"]
+    M["<b>A pull request is merged into main</b><br/>approved by a code owner other than the last pusher"] --> C
+    M --> K
+    C["<b>verify</b> (contents: read)<br/>the commit is on main<br/>full install without install scripts<br/>build, lint, typecheck, test"] --> P
+    K["<b>pack</b> (contents: read)<br/>the commit is on main<br/>install and build only the published packages<br/>compute the version, pack, compare with npm"] --> D
+    D{"Does any package differ from<br/>its latest version on npm?"}
+    D -- no --> N["<b>Nothing to release</b><br/>no publish, no tag, no GitHub release"]
+    D -- yes --> P
+    P["<b>publish</b> (id-token: write, npm-publish environment)<br/>the commit is on main, no project code runs<br/>every package checked before any is published<br/>npm publish --provenance, read back from the registry"] --> R
+    R["<b>release</b> (contents: write)<br/>the commit is on main, no checkout<br/>tag v&lt;version&gt; on the merged commit<br/>GitHub release with generated notes"]
 ```
 
 The jobs are separate on purpose:
@@ -25,65 +26,87 @@ The jobs are separate on purpose:
 - **No job that runs third-party code holds a credential worth stealing.** Only `verify` and `pack` install dependencies and build, and both hold a read-only token. No install script runs anywhere (`npm ci --ignore-scripts`).
 - **The published bytes come from as little code as possible.** `pack` installs only the root tooling and the three published workspaces (`node scripts/release.mjs build`), so the Storybook, its bundler and every dependency only they use are never present when the tarballs are produced. `verify` runs everything else, and `publish` waits for both.
 - **The job that can publish runs nothing from the repository** apart from the two composite actions in `.github/actions`, and the job that can write to the repository has no checkout at all.
-- **Every job asks the GitHub API which commit the tag names now** ([`verify-release-ref`](.github/actions/verify-release-ref/action.yml)) and fails unless it is the commit the run started for and that commit is on `main`. A tag on an unmerged commit, or a tag moved while a run waited for approval, publishes nothing.
+- **Every job asks the GitHub API whether the run is for a push to `main` and whether the commit is still on `main`** ([`verify-release-ref`](.github/actions/verify-release-ref/action.yml)), and fails otherwise.
+- **Releases run one at a time, in the order the merges landed** (a concurrency group that never cancels a run in progress). GitHub keeps at most one run waiting, so when several merges land in quick succession the waiting run is replaced by the newest one, which shows as cancelled. Nothing is lost: the newest commit contains the older ones, and its version and contents cover them.
+
+Because nothing waits for approval after the merge, **approving a pull request is approving a release.** A pull request that changes a published package, a workflow, a composite action or the release tooling is reviewed with that in mind, and [`.github/CODEOWNERS`](.github/CODEOWNERS) routes it to the maintainers.
 
 ---
 
-## Versioning
+## How the version is chosen
 
-- **One version for all three packages**, recorded in their `package.json` files. `@crewlethq/ui` depends on the tokens and icons of exactly that version, because those are the only ones it was built and tested against.
-- **The manifests are the source of truth and the tag must agree.** `node scripts/release.mjs check --tag <tag>` runs in `verify` and `pack` before anything is installed, and refuses a tag that is not `v<version>`. The same check, without the tag, runs in CI's `verify` job on every pull request: it also covers the workspace dependency pins, the manifest metadata publishing relies on, the sources recorded in both lockfiles, and the Node and npm pins. CI's `pack` job runs `node scripts/release.mjs build` and `node scripts/release.mjs pack <directory>` exactly as a release does. To run the pack locally after `npm run build`, use `npm run release:pack -- "$(mktemp -d)"`.
-- **[Semantic versioning](https://semver.org/).** The patch number moves for fixes and the minor number for features. While the major number is `0`, a breaking change (a renamed export, CSS class, CSS variable, icon name or import path) also moves the minor number.
-- **Pre-releases** (`0.3.0-rc.1`) are released the same way. They are published under the `next` dist-tag, so `npm install @crewlethq/ui` never selects one, and the GitHub release is marked as a pre-release.
-- **There is one release line.** A stable release is always published under `latest`, so a fix for an older minor is released as a new version on the current line.
+All three packages are released together under one version. `@crewlethq/ui` depends on the tokens and icons of exactly that version, because those are the only ones it was built and tested against.
+
+The `pack` job computes the version (`node scripts/release.mjs version --write`) from two things only:
+
+1. **The previous release**: the highest `vMAJOR.MINOR.PATCH` tag reachable from the merged commit. Tags with a pre-release suffix (`v0.3.0-rc.1`) or any other shape are ignored.
+2. **Every commit since that tag**, apart from merge commits, read as [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). The largest change among them decides a single bump, however many commits there are:
+
+| The commits since the previous release include | For example | From `0.4.2` | From `1.4.2` |
+| --- | --- | --- | --- |
+| A breaking change: `!` after the type or scope, or a `BREAKING CHANGE:` footer | `feat(ui)!: rename the Button export` | `0.5.0` | `2.0.0` |
+| A feature: the `feat` type | `feat(icons): add the calendar icon` | `0.5.0` | `1.5.0` |
+| Anything else | `fix(ui): correct the focus ring`, `docs: ...`, `build(deps): ...` | `0.4.3` | `1.4.3` |
+
+While the major number is `0`, a breaking change moves the minor number, as [semantic versioning](https://semver.org/#spec-item-4) allows for initial development. A breaking change is a renamed or removed export, CSS class, CSS variable, icon name or import path. The type is matched without regard to case; the `BREAKING CHANGE:` (or `BREAKING-CHANGE:`) token must be upper case and start a line of the commit body. A subject that is not a conventional header counts as a patch.
+
+**What counts depends on how the pull request is merged**, because merge commits are skipped:
+
+- **Merge commit**: every commit on the pull request's branch.
+- **Squash**: the one squashed commit. Its subject is the pull request title (or the only commit's subject, for a single-commit pull request) and its body carries the branch's commit messages, so a `BREAKING CHANGE:` footer in any of them counts, while a `feat` or `!` in the subject of a squashed commit does not. Check the subject in the merge dialog before confirming.
+- **Rebase**: every commit on the branch, as it lands on `main`.
+
+**The manifest version is only the seed.** The version recorded in the package manifests (`0.2.0`) is used exactly once: while no release tag exists, a merge is released as that version, whatever its commits say. From the first tag on, releases ignore it. The manifests are never rewritten on `main` (the ruleset forbids direct pushes, and a bot commit would need a bypass of it); the computed version is written into the three manifests and their workspace dependency pins only inside the `pack` job's own checkout. The tree therefore keeps `0.2.0` as the version local builds and the Storybook carry, and it is not changed by hand. `node scripts/release.mjs check` still requires every published manifest to share one exact `MAJOR.MINOR.PATCH` version and every dependency between workspaces to pin it exactly, because that pin is what makes npm link the local workspace instead of installing a copy from the registry.
+
+**There are no pre-releases and one release line.** Every version is `MAJOR.MINOR.PATCH`, published under the `latest` dist-tag, and a fix for an older minor is released as the next version on the current line.
+
+To see the version a commit would be released as, run `npm run release:version` in a checkout with its tags (`git fetch --tags`). CI's `pack` job prints the same line for every pull request, computed over the commits already merged since the previous release together with the pull request's own commits, which is what a merge commit or a rebase would release.
+
+### Choosing a larger bump
+
+The bump follows the commit types, so a larger bump is chosen by writing the type that describes the change:
+
+- **A feature** (minor): give the commit that adds it the `feat` type, `feat(ui): add the DatePicker component`.
+- **A breaking change**: mark the commit with `!`, `refactor(ui)!: rename the Button export`, or add a footer that says what consumers have to change:
+
+  ```text
+  fix(tokens): rename the spacing scale
+
+  BREAKING CHANGE: --crewlet-space-* is now --crewlet-spacing-*; rename every reference.
+  ```
+
+When the commit that needs the type is already pushed, reword it (`git commit --amend -s` for the last commit, or a rebase for an earlier one) and force-push the branch. For a squash merge, editing the pull request title and the subject in the merge dialog is enough.
+
+A bump is never smaller than the commits ask for: there is no way to release a `feat` as a patch other than rewording the commit before it is merged. The automatic flow also never leaves `0.x` on its own. Moving to `1.0.0` is a deliberate decision that needs a change to this flow in its own pull request.
 
 ---
 
-## Cutting a release
+## What is not released
 
-1. **Set the version** on a branch and open a pull request:
+The version moves on every merge, but a merge whose published bytes are unchanged is not released. After packing, `node scripts/release.mjs compare` downloads the latest version of each package from the registry, verifies it against the integrity the registry records, and compares the two tarballs file by file. `package.json` is compared with its `version` field, and the pins on the other published packages that equal it, left out, because those are the only things the release writes.
 
-   ```bash
-   npm run release:version -- 0.2.1
-   git add package-lock.json packages/*/package.json apps/*/package.json
-   git commit -s -m "chore(release): prepare 0.2.1"
-   ```
+- **When no package differs, nothing is published, tagged or released.** The `pack` job's summary says "Nothing to release" and lists each package's latest version. Documentation, CI, workflow, script, test and Storybook changes land this way.
+- **When any package differs, all three are released at the new version**, including the ones whose contents did not change, so the three always share one version.
+- **What a tarball contains** is its manifest's `files`, plus `package.json`, `README.md` and `LICENSE`, which npm always includes. A change to a package's own README, to a published manifest's dependency ranges, or a dependency update that changes the built output, is therefore released as a patch.
+- **A merge that was not released is still part of the next release.** The next version is computed over every commit since the previous tag, and the GitHub release notes list every pull request merged since it.
 
-   The script writes the version into every published manifest and every workspace dependency, refreshes `package-lock.json`, and re-runs the consistency check.
+---
 
-2. **Read the merged pull requests** since the previous tag. The GitHub release body is generated from their titles and grouped by [`.github/release.yml`](.github/release.yml), so edit any title that does not read as a release note before tagging.
+## Checking a release
 
-3. **Merge the pull request** once CI is green, then tag the merge commit on `main`:
+Once the run for a merge is green:
 
-   ```bash
-   git fetch origin
-   git tag -a v0.2.1 -m "v0.2.1" origin/main
-   git push origin v0.2.1
-   ```
-
-4. **Review and approve the deployment.** The run pauses at the `npm-publish` environment. Before approving, open the run under **Actions** and confirm:
-   - both `verify` and `pack` passed, and each ran the "Verify that the tag names this commit and that it is on main" step, which printed the tag, the commit and "which is on main";
-   - the workflow and release tooling at the tag are the reviewed ones on `main`. The tag is on `main`, so this command prints nothing unless `main` has changed them since:
-
-     ```bash
-     git fetch origin --tags
-     git diff v0.2.1 origin/main -- .github scripts package.json package-lock.json
-     ```
-
-   - the `pack` job's "Pack the published packages" step lists the three tarballs you expect (file counts and sizes).
-
-   The integrity values in that step only show that the artifact the publish job downloads is the one `pack` produced. They say nothing about whether the code that produced it was the reviewed code; the two checks above do. Then choose **Review deployments** and approve.
-
-5. **Verify the release** once the run is green:
+1. The `pack` job's summary reads "Releasing `<version>`" and lists what differs from the previous version of each package. The `publish` job's notices name each published version and its integrity, and the `release` job created the tag and the release.
+2. Verify the published packages:
 
    ```bash
-   npm view @crewlethq/ui@0.2.1 dist.attestations --json   # provenance is attached
+   npm view @crewlethq/ui@<version> dist.attestations --json   # provenance is attached
    mkdir /tmp/uilet-verify && cd /tmp/uilet-verify && npm init -y >/dev/null
-   npm install --save-exact @crewlethq/tokens@0.2.1 @crewlethq/icons@0.2.1 @crewlethq/ui@0.2.1
-   npm audit signatures                                       # registry signatures and attestations verify
+   npm install --save-exact @crewlethq/tokens@<version> @crewlethq/icons@<version> @crewlethq/ui@<version>
+   npm audit signatures                                          # registry signatures and attestations verify
    ```
 
-   Open the GitHub release and check that it carries no attached files and that its first lines link to the three npm versions.
+3. Open the GitHub release and check that it carries no attached files and that its first lines link to the three npm versions.
 
 ---
 
@@ -106,17 +129,21 @@ npm scopes are first come, first served, and this repository's README, manifests
 
 ### 2. The GitHub repository
 
-1. **Team and collaborators** (**Settings, Collaborators and teams**). Create the `crewlet/uilet-maintainers` team, which [`.github/CODEOWNERS`](.github/CODEOWNERS) names, with the maintainers who review and release, and give it the Maintain role. No other account, and in particular no machine account, has write access; nothing in this repository's automation needs one.
+1. **Team and collaborators** (**Settings, Collaborators and teams**). Create the `crewlet/uilet-maintainers` team, which [`.github/CODEOWNERS`](.github/CODEOWNERS) names, with the maintainers who review and own releases, and give it the Maintain role. No other account, and in particular no machine account, has write access; nothing in this repository's automation needs one.
 2. **Branch ruleset for `main`** (**Settings, Rules, Rulesets, New branch ruleset**), targeting the default branch, with no bypass list:
    - **Restrict deletions** and **Block force pushes**.
    - **Require a pull request before merging**, with 1 required approval, **Dismiss stale pull request approvals when new commits are pushed**, **Require review from Code Owners** and **Require approval of the most recent reviewable push**.
    - **Require status checks to pass**, requiring the `ci` checks `verify`, `pack`, `sign-off` and `workflows`.
 
-   Both the `storybook` environment's credential and every release rely on `main` holding only reviewed commits, so this ruleset is what protects them.
-3. **Tag ruleset** (**New tag ruleset**): target tags matching `v*`, restrict creations, updates and deletions to the maintainers who release. A published tag is never moved or deleted.
+   Every merge is released without further approval, and both the `storybook` environment's credential and every release rely on `main` holding only reviewed commits, so this ruleset is what protects them.
+3. **Tag rulesets** (**New tag ruleset**), two of them, both targeting tags matching `v*`. A release tag is created by the release workflow, which authenticates as the GitHub Actions app, and is never moved or deleted:
+   - **Release tag creation**: **Restrict creations**, with a bypass list (bypass mode "Always") of exactly two actors: the `crewlet/uilet-maintainers` team, and the **GitHub Actions** app (integration ID `15368`), which is the identity of the workflow's `GITHUB_TOKEN`.
+   - **Release tag protection**: **Restrict updates** and **Restrict deletions**, with no bypass list. Keeping these rules apart from creation is what lets the workflow create a tag without also being allowed to move or delete one.
+
+   Check the result with `gh api repos/crewlet/uilet/rulesets` and `gh api repos/crewlet/uilet/rulesets/<id>`: the creation ruleset lists the team and `{"actor_id": 15368, "actor_type": "Integration"}` as bypass actors, and the protection ruleset lists none.
 4. **Environment `npm-publish`** (**Settings, Environments**):
-   - **Required reviewers:** the maintainers allowed to release, with **Prevent self-review** enabled so the person who pushed the tag cannot approve their own release alone.
-   - **Deployment branches and tags:** "Selected branches and tags", with a single tag rule `v*`.
+   - **Required reviewers:** none, and no wait timer. The pull request review is the approval; a second gate here would hold every merge's release until someone clicks it.
+   - **Deployment branches and tags:** "Selected branches and tags", with a single branch rule `main` and no tag rule. The workflow runs on pushes to `main` only, and this rule stops any other ref from reaching the environment.
    - **Allow administrators to bypass configured protection rules:** disabled.
    - No environment secrets or variables. Publishing needs none.
 5. **Environment `storybook`**:
@@ -126,7 +153,7 @@ npm scopes are first come, first served, and this repository's README, manifests
 6. **Actions** (**Settings, Actions, General**):
    - **Actions permissions:** allow actions created by GitHub, plus the specified action `zizmorcore/zizmor-action@*`, and enable **Require actions to be pinned to a full-length commit SHA**.
    - **Approval for running fork pull request workflows from contributors:** "Require approval for all external contributors".
-   - **Workflow permissions:** "Read repository contents and packages permissions", with **Allow GitHub Actions to create and approve pull requests** disabled, so a workflow can never supply the approval the `main` ruleset requires.
+   - **Workflow permissions:** "Read repository contents and packages permissions", with **Allow GitHub Actions to create and approve pull requests** disabled, so a workflow can never supply the approval the `main` ruleset requires. The release workflow's tag and release job asks for `contents: write` itself.
 7. **Security** (**Settings, Advanced Security**): enable **Private vulnerability reporting** (the channel [SECURITY.md](SECURITY.md) names), **Dependabot alerts**, **Dependabot security updates**, **Secret scanning** and **Push protection**.
 8. **Releases** (**Settings, General, Releases**): enable **release immutability**, so the files and the tag of a published GitHub release cannot be changed afterwards.
 
@@ -146,20 +173,20 @@ npm can only attach a trusted publisher to a package that already exists, so the
 
 Do this after the repository is public and every setting above is in place. Before starting, run the check in step 4 of [the npm organization](#1-before-anything-public-names-the-packages-the-npm-organization) again: the scope must still be held by the organization and contain no package.
 
-1. **Push the first tag** (the manifests already say `0.2.0`):
+1. **Let the first merge start the bootstrap run.** The first merge to `main` once the settings are in place (the pull request that introduces this workflow is one) starts a release run: `verify` and `pack` pass, the `pack` summary reads "Releasing `0.2.0`" with every package "not on npm yet", and the `publish` job fails with "is not on npm yet ... follow First publish (bootstrap) in RELEASING.md" before publishing anything. That run is the bootstrap run; note its ID:
 
    ```bash
-   git tag -a v0.2.0 -m "v0.2.0" origin/main
-   git push origin v0.2.0
+   gh run list --repo crewlet/uilet --workflow release.yml --limit 5
    ```
 
-   Wait for `verify` and `pack` to finish. The run then waits for approval at `npm-publish`. **Do not approve it yet.** The publish job would fail, because no trusted publisher exists.
+   Until step 6 is done, the release run of any other merge fails the same way, or, once step 3 has published, in `pack` because the registry holds `0.2.0` with no tag for it. Neither publishes anything, and step 7 covers their changes.
 
-2. **Download the tarballs** the `pack` job uploaded, and confirm their integrity matches the values its "Pack the published packages" step printed:
+2. **Download the tarballs** the bootstrap run's `pack` job uploaded, and confirm their integrity matches both `release.json` and the values its "Pack the published packages" step printed:
 
    ```bash
    mkdir uilet-0.2.0 && cd uilet-0.2.0
    gh run download <run-id> --repo crewlet/uilet --name packages
+   jq -r '.version, (.packages[] | "\(.file) \(.integrity)")' release.json
    for f in *.tgz; do echo "$f sha512-$(openssl dgst -sha512 -binary "$f" | base64 | tr -d '\n')"; done
    ```
 
@@ -190,56 +217,62 @@ Do this after the repository is public and every setting above is in place. Befo
 
 5. **Disallow token publishing.** For each package, open **Settings, Publishing access** on npmjs.com and choose "Require two-factor authentication and disallow tokens" (or run `npm access set mfa=publish @crewlethq/<package>`). Trusted publishing keeps working under this setting; a stolen or forgotten token no longer can. Delete the granular token now if step 3 used one.
 
-6. **Approve the waiting `npm-publish` deployment**, after the review in step 4 of [Cutting a release](#cutting-a-release). The publish job finds each version already on the registry with the same integrity, skips it, and the release job creates the `v0.2.0` GitHub release.
+6. **Re-run the failed jobs of the bootstrap run.** The `publish` job finds each version already on the registry with the same integrity and skips it, and the `release` job tags the bootstrap run's commit `v0.2.0` and creates the GitHub release:
 
-   A deployment waits at most 30 days. If it expired, re-running the workflow rebuilds the tarballs, and any byte of difference from what step 3 published fails the publish job by design. In that case create the release directly with `gh release create v0.2.0 --repo crewlet/uilet --verify-tag --generate-notes`.
+   ```bash
+   gh run rerun <run-id> --repo crewlet/uilet --failed
+   ```
 
-7. **Release `0.2.1` through the normal flow** as soon as there is a change to ship. It is the first version published through trusted publishing, and `npm view @crewlethq/ui@0.2.1 dist.attestations` proves the whole path end to end.
+   The artifact is kept for 30 days. If it expired before this step, a re-run cannot download the tarballs, so tag the bootstrap run's commit and create the release by hand instead, as a member of the maintainers team: `git tag -a v0.2.0 -m v0.2.0 <commit> && git push origin v0.2.0`, then `gh release create v0.2.0 --repo crewlet/uilet --verify-tag --generate-notes`.
+
+7. **Release what was merged meanwhile.** If a release run of another merge failed between steps 1 and 6, re-run the most recent one in full (`gh run rerun <run-id> --repo crewlet/uilet`); it now builds on `v0.2.0` and releases every change since. Otherwise the next merge does the same. The first version published through trusted publishing proves the whole path end to end: `npm view @crewlethq/ui@<version> dist.attestations`.
 
 ### Adding a published package later
 
-A new public workspace under `packages/` is picked up by `scripts/release.mjs` automatically, which also enforces its manifest metadata, installs and builds it in the `pack` job, and verifies its tarball. It additionally needs:
+A new public workspace under `packages/` is picked up by `scripts/release.mjs` automatically, which also enforces its manifest metadata, installs and builds it in the `pack` job, verifies its tarball and compares it with the registry. It additionally needs:
 
 1. Its expected SPDX license expression in `LICENSES` in `scripts/release.mjs`, and a copy of the root `LICENSE` in its directory.
 2. Its name added to both package lists in `release.yml` (the publish allowlist, in dependency order, and the release notes). Until then the publish job refuses the extra tarball.
-3. Its own bootstrap: when the first release that contains it is tagged, publish that package's tarball from the run's artifact as in step 3 above, configure its trusted publisher and publishing access as in steps 4 and 5, then approve the deployment.
+3. Its own bootstrap. The first release run after it is merged fails in `publish` because the package is not on npm, and publishes none of the packages. Publish that package's tarball from the run's artifact as in step 3 above, configure its trusted publisher and publishing access as in steps 4 and 5, then re-run the failed jobs as in step 6: the new package is skipped as already published, and the others are published with it.
 
 ---
 
 ## Dependency updates
 
-[Dependabot](.github/dependabot.yml) opens weekly pull requests, each committing as `build(deps)`, for the actions in the workflows and composite actions, for the npm workspace, and for the Wrangler release in [`.github/deploy`](.github/deploy/package.json) that the Storybook deployment installs.
+[Dependabot](.github/dependabot.yml) opens weekly pull requests, each committing as `build(deps)`, for the actions in the workflows and composite actions, for the npm workspace, and for the Wrangler release in [`.github/deploy`](.github/deploy/package.json) that the Storybook deployment installs. A merged update is released as a patch when it changes what a package publishes (a dependency range in a published manifest, or the built output), and releases nothing otherwise.
 
 - **A version update waits for its release to age**: 7 days, or 14 for a new major. Compromised npm releases have typically been live for hours to a few days before removal, and the cooldown keeps them out of the weekly pull requests. Security updates are not delayed by it.
 - **Actions are pinned to full commit SHAs** with the release in a trailing comment (`# v7.0.1`), and the repository setting requires it. Dependabot moves both together. When adding an action by hand, pin its newest release the same way: `gh api repos/<owner>/<action>/git/ref/tags/<tag> --jq .object` gives the commit (dereference it with `gh api repos/<owner>/<action>/git/tags/<sha> --jq .object.sha` when the type is `tag`), and add the action to the allowed actions setting. The `workflows` CI job runs zizmor over every workflow, and the zizmor release it runs is the one recorded in the pinned `zizmor-action` release, so it moves with that action's SHA.
-- **The Node toolchain is moved by hand, because Dependabot tracks none of its three pins**: `.nvmrc` names one exact Node release, the root `package.json` `packageManager` field names the npm that release bundles, and every job runs on `ubuntu-24.04`. Move `.nvmrc` and `packageManager` together, at least monthly and whenever Node publishes a security release: `curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(.lts)][0] | .version + " npm " + .npm'` gives the newest LTS release and its npm. Every CI job fails when the installed npm differs from `packageManager`, and `release.mjs check` fails when either pin is a range or the npm is older than trusted publishing needs. Move the runner label when GitHub publishes the next Ubuntu LTS image.
+- **The Node toolchain is moved by hand, because Dependabot tracks none of its three pins**: `.nvmrc` names one exact Node release, the root `package.json` `packageManager` field names the npm that release bundles, and every job runs on `ubuntu-24.04`. Move `.nvmrc` and `packageManager` together, at least monthly and whenever Node publishes a security release: `curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(.lts)][0] | .version + " npm " + .npm'` gives the newest LTS release and its npm. Every CI job fails when the installed npm differs from `packageManager`, and `release.mjs check` fails when either pin is a range or the npm is older than trusted publishing needs. Move the runner label when GitHub publishes the next Ubuntu LTS image. A toolchain change can change the packed bytes, in which case the next merge releases a patch.
 - **`.npmrc` must not set `engine-strict`.** Dependabot installs with its own Node, and engine-strict turns the root `engines` field into a refusal that silently stops every npm update.
 
 ---
 
 ## If a release goes wrong
 
-**Before pushing a tag again for any reason, cancel every release run still waiting for approval**, so an older run can never be approved for a commit the tag no longer names. (Its publish job would refuse, because it checks the tag again, but a cancelled run cannot be approved by mistake at all.)
+A run that failed publishes nothing further by itself, and the next merge computes its version from the tags again, so most failures are resolved by fixing the cause and re-running. Do not re-run an older failed run once a newer run has released: the newer release already contains its commits, and the older run is refused (by the registry check in `pack`, or by the version checks in `publish`).
 
-```bash
-gh run list --repo crewlet/uilet --workflow release.yml --status waiting
-gh run cancel <run-id> --repo crewlet/uilet
-```
+**`verify` or `pack` failed on a problem in the code.** Nothing was published or tagged. Fix it on `main` through a pull request; the release run of that merge includes every commit since the previous tag. A transient failure (the registry or a runner) is fixed by re-running the run.
 
-**`verify` or `pack` failed** (for example the tag does not match the manifests, or it is not on `main`). Nothing was published. Delete the tag, fix the cause on `main`, and tag again:
+**`pack` reports that the tags and the registry disagree** ("is on the registry, but no release tag is reachable from this commit", or "the latest version on the registry is X, but the latest release tag reachable from this commit is vY"). The registry holds a version that no reachable tag records, so a version computed from the tags would collide with it. Find out which case it is before doing anything else:
 
-```bash
-git push --delete origin v0.2.1
-git tag -d v0.2.1
-```
+- The bootstrap is not finished: complete step 6 of [First publish (bootstrap)](#4-first-publish-bootstrap).
+- A run published and then failed before its `release` job tagged the commit: re-run that run's failed jobs, which tags the commit it published and creates its release, then re-run the failed run.
+- Someone published a version or moved a dist-tag by hand: compare the registry with the tags (`npm view @crewlethq/ui dist-tags versions --json`), and restore the `latest` dist-tag of each package to the latest tagged version with `npm dist-tag add @crewlethq/<package>@<version> latest`. A version published by hand is deprecated rather than unpublished (see below). Then re-run the failed run.
 
-**The publish job failed partway.** Fix the cause (usually a trusted publisher or environment setting) and re-run the failed jobs. Versions that did publish are recognised by their integrity and skipped, so the re-run finishes the release. If it failed after publishing because a dist-tag does not name the release, move the tag with the command the error prints, then re-run.
+**`pack` reports that a commit packs different contents for a version it already released.** This only happens when a run for a commit that is already tagged is re-run, and it means the build did not reproduce the published bytes. Nothing needs publishing; find what differs, because the next release would be built the same way.
 
-**The publish job refuses a version that is already on the registry with different contents.** A published npm version can never be replaced. Release the next patch version instead.
+**`publish` failed with "is not on npm yet".** A package has never been published. Follow [First publish (bootstrap)](#4-first-publish-bootstrap), or [Adding a published package later](#adding-a-published-package-later) for a new package.
 
-**The release job refuses a release that already exists.** Someone other than the workflow created a release for the tag. Read who created it, what its notes link to and what files are attached before anything else; delete it only once you know it is not needed as evidence.
+**`publish` failed partway.** Fix the cause (usually a trusted publisher or environment setting) and re-run the failed jobs. Every package is checked before any is published, and versions that did publish are recognised by their integrity and skipped, so the re-run finishes the release. If it failed after publishing because a dist-tag does not name the release, move the tag with the command the error prints, then re-run.
 
-**A published version is broken.** Release the fix as a new version, then deprecate the broken one for each package so installs warn:
+**`publish` refuses a version that is already on the registry with different contents, or one below the latest version.** A published npm version can never be replaced, and there is one release line. The registry and the tags disagree as described above for `pack`; resolve it the same way.
+
+**The `release` job refuses a tag that already exists.** Someone created `v<version>` on another commit, although the version was published from this one. Read who created the tag and where it points before anything else. The tag rulesets allow no update or deletion, so removing a stray tag is a decision for an organization owner.
+
+**The `release` job refuses a release that already exists.** Someone other than the workflow created a release for the tag. Read who created it, what its notes link to and what files are attached before anything else; delete it only once you know it is not needed as evidence, then re-run the failed job.
+
+**A published version is broken.** Merge the fix (a `fix` commit releases it as the next patch), then deprecate the broken version of each package so installs warn:
 
 ```bash
 npm deprecate @crewlethq/ui@0.2.1 "Broken styles in DataTable; use 0.2.2 or later"
@@ -247,4 +280,4 @@ npm deprecate @crewlethq/ui@0.2.1 "Broken styles in DataTable; use 0.2.2 or late
 
 npm only allows unpublishing within 72 hours and under narrow conditions, and a consumer lockfile that already resolved the version breaks when it disappears, so prefer deprecation.
 
-**Never move or delete a tag that published.** The tag, the npm version, the provenance statement and the GitHub release all name the same commit.
+**Never move or delete a tag that published.** The tag, the npm version, the provenance statement and the GitHub release all name the same commit, and the next version is computed from the tag.

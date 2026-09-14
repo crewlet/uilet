@@ -54,7 +54,7 @@ npm run lint && npm run typecheck
 │   ├── icons/                 # @crewlethq/icons
 │   └── ui/                    # @crewlethq/ui
 ├── scripts/
-│   ├── release.mjs            # release version, consistency check, build and pack
+│   ├── release.mjs            # release version, consistency check, build, pack and registry comparison
 │   ├── check-signoff.mjs      # Signed-off-by gate for pull requests and main
 │   └── check-storybook-static.mjs  # static-site and font license check for the Storybook build
 └── .github/
@@ -68,12 +68,12 @@ npm run lint && npm run typecheck
 1. Create `packages/<name>/` with a `package.json` named `@crewlethq/<name>`.
 2. Extend `tsconfig.base.json` from the new package's `tsconfig.json`.
 3. Re-run `npm install` at the repo root to wire the workspace link.
-4. Reference it from another workspace with the exact release version the published manifests carry, never a range. `npm run release:check` enforces this, and `npm run release:version` keeps the pin in step on every release.
+4. Reference it from another workspace with the exact version the published manifests carry, never a range. `npm run release:check` enforces this, and every release writes its own version into the pin.
 5. A package that is not `"private": true` is published with the others. It needs the manifest metadata `npm run release:check` asks for, and the one-time setup in [RELEASING.md](RELEASING.md#adding-a-published-package-later) before its first release.
 
 ## Releasing
 
-The three packages are published to npm from a pushed `v<version>` tag whose version matches their manifests, through npm trusted publishing with provenance. `npm run release:version -- <version>` sets the version everywhere it is recorded. See [RELEASING.md](RELEASING.md) for the full runbook.
+Every merge to `main` that changes what the packages publish is released to npm automatically, through npm trusted publishing with provenance, and tagged `v<version>`. The version is computed from the Conventional Commits types merged since the previous release; `npm run release:version` prints the version the current commit would be released as. See [RELEASING.md](RELEASING.md) for the full runbook.
 
 ## Contributing
 

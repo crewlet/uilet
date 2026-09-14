@@ -3,10 +3,11 @@
 # ruleset in RELEASING.md enforces.
 #
 # The release tooling, the workflows, the dependency manifests and the
-# toolchain pins decide what gets built, published and deployed, so they are
-# owned by the maintainers who cut releases. The team is referenced rather
-# than individual accounts, so changing who releases is a team membership
-# change and not an edit to this file.
+# toolchain pins decide what gets built, published and deployed, and every
+# merge to main is released without a further approval, so they are owned by
+# the maintainers responsible for releases. The team is referenced rather than
+# individual accounts, so changing who releases is a team membership change
+# and not an edit to this file.
 
 *                       @crewlet/uilet-maintainers
 
