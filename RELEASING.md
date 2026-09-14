@@ -206,12 +206,20 @@ Do this after the repository is public and every setting above is in place. Befo
 
    If an interactive login is not possible, create a granular access token on npmjs.com instead: read and write permission limited to the `@crewlethq` scope, "Bypass two-factor authentication" left unchecked, and the shortest expiration offered. Use it for these three commands only, then delete it on npmjs.com.
 
-4. **Configure the trusted publisher** for each package. This needs npm 11.10.0 or later and an account with two-factor authentication:
+4. **Configure the trusted publisher** for each package, with an account that has two-factor authentication and the npm version `package.json` pins in `packageManager` (11.19.0) or later. npm now requires every trusted publisher to name what it may do, and an older npm sends the request without that permission, which the registry refuses with a bare `400 Bad Request`.
+
+   A newly published package takes several minutes to resolve on the registry, and a trusted publisher can only be attached to one that does, so wait until each of these prints `0.2.0` first:
+
+   ```bash
+   for package in tokens icons ui; do npm view "@crewlethq/${package}" version; done
+   ```
+
+   Then configure all three. `--file` takes the workflow's file name only; the registry refuses a path:
 
    ```bash
    for package in tokens icons ui; do
-     npm trust github "@crewlethq/${package}" --repository crewlet/uilet --file release.yml --environment npm-publish --yes
-     sleep 2
+     npm trust github "@crewlethq/${package}" --repository crewlet/uilet \
+       --file release.yml --environment npm-publish --allow-publish --yes
    done
    npm trust list @crewlethq/ui
    ```
