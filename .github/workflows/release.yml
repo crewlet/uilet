@@ -1,13 +1,22 @@
 name: release
 
-# Publishes @crewlethq/tokens, @crewlethq/icons and @crewlethq/ui to
-# registry.npmjs.org and creates the GitHub release. See RELEASING.md for the
-# runbook.
+# Releases every merge to main: publishes @crewlethq/tokens, @crewlethq/icons
+# and @crewlethq/ui to registry.npmjs.org, tags the merged commit and creates
+# the GitHub release. See RELEASING.md for the runbook.
 #
-# A release is a pushed tag, `v<version>`, on a commit that is on main, whose
-# version equals the one recorded in every published package.json. Every job
-# verifies the tag through the GitHub API before it does anything else
+# There is no approval step after the merge. The main branch ruleset requires
+# an approving code owner review from someone other than the last pusher, and
+# only a push to main starts this workflow, so the pull request review is the
+# gate. Every job verifies through the GitHub API that the run is for a push
+# to main and that the commit is still on main before it does anything else
 # (.github/actions/verify-release-ref).
+#
+# The version is not written in the tree. The pack job computes it from the
+# highest release tag reachable from the commit and the Conventional Commits
+# types of the commits since that tag, and writes it into the manifests of its
+# own checkout only. A merge whose packed contents equal the latest published
+# version of every package (documentation, CI or Storybook changes, for
+# example) publishes, tags and releases nothing. See scripts/release.mjs.
 #
 # The work is split so that no job that installs dependencies or runs project
 # code holds a credential worth stealing, and so that the bytes that receive
@@ -17,16 +26,20 @@ name: release
 #            (the Storybook included), lint, typecheck and tests. Uploads
 #            nothing.
 #   pack     contents: read. Installs only the root tooling and the published
-#            workspaces, builds only those packages and packs them, then
-#            uploads the tarballs. The Storybook, its bundler and every
+#            workspaces, builds only those packages, computes the version,
+#            packs them and compares them with the registry, then uploads the
+#            tarballs and release.json. The Storybook, its bundler and every
 #            dependency only they use are never installed here, and no install
 #            script runs in either job.
-#   publish  id-token: write, inside the npm-publish environment, after both.
-#            Runs no project code: it downloads the tarballs and publishes them
-#            through npm trusted publishing, which exchanges the OIDC token for
-#            a short-lived npm credential and attaches provenance.
-#   release  contents: write. Creates the GitHub release after every package
-#            is on the registry.
+#   publish  id-token: write and contents: read, inside the npm-publish
+#            environment, after both, and only when pack found something to
+#            release. Runs no project code: it downloads the tarballs and
+#            publishes them through npm trusted publishing, which exchanges the
+#            OIDC token for a short-lived npm credential and attaches
+#            provenance.
+#   release  contents: write, with no checkout. Creates the v<version> tag on
+#            the merged commit and the GitHub release, after every package is
+#            on the registry.
 #
 # npm matches its trusted publisher configuration against this file's NAME
 # (release.yml) and the environment name (npm-publish). Renaming either stops
@@ -34,18 +47,24 @@ name: release
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
 
 permissions: {}
 
-# Never let two runs race to publish the same tag.
+# One release at a time, in the order the merges landed: a run computes its
+# version from the tag the previous run created, so two runs must never
+# overlap, and a run in progress is never cancelled. GitHub keeps at most one
+# run waiting in a group, so when a third merge lands while one run is in
+# progress and another waits, the waiting run is replaced by the newer one.
+# Nothing is lost: the newer run's commit contains the older one, and its
+# version and contents cover both.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-main
   cancel-in-progress: false
 
 jobs:
   verify:
-    name: verify the tagged commit
+    name: verify the merged commit
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -58,10 +77,10 @@ jobs:
       - uses: $/.github/actions/verify-release-ref
       - uses: $/.github/actions/setup-node
 
-      # Runs before npm ci, on Node alone, so a tag that disagrees with the
-      # manifests fails before any third-party code has executed.
-      - name: Check the tag against the manifests
-        run: node scripts/release.mjs check --tag "${GITHUB_REF_NAME}"
+      # Runs before npm ci, on Node alone, so inconsistent release metadata
+      # fails before any third-party code has executed.
+      - name: Check the release metadata
+        run: node scripts/release.mjs check
 
       - run: npm ci --ignore-scripts
       - run: npm run build
@@ -70,50 +89,93 @@ jobs:
       - run: npm test
 
   pack:
-    name: build and pack the published packages
+    name: build, version and pack the published packages
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # The build takes a few minutes; compare can wait up to five more for the
+    # registry to serve the previous release.
+    timeout-minutes: 25
     permissions:
       contents: read
+    outputs:
+      release: ${{ steps.decision.outputs.release }}
+      version: ${{ steps.decision.outputs.version }}
     steps:
+      # The whole history and every tag: the version is computed from the
+      # release tags reachable from this commit and the commits since them,
+      # and scripts/release.mjs refuses a shallow checkout.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - uses: $/.github/actions/verify-release-ref
       # No dependency cache: a release is built from the lockfile alone, so a
       # cache entry written by an earlier run cannot reach the published bytes.
       - uses: $/.github/actions/setup-node
 
-      - name: Check the tag against the manifests
-        run: node scripts/release.mjs check --tag "${GITHUB_REF_NAME}"
-
       - name: Install and build only the published packages
         run: node scripts/release.mjs build
+
+      # After the install, which needs the manifests to agree with the
+      # lockfile, and before the pack, which reads the version from them. The
+      # rewritten manifests exist only in this checkout.
+      - name: Compute the release version and write it into the manifests
+        run: node scripts/release.mjs version --write
 
       - name: Pack the published packages
         run: node scripts/release.mjs pack "${RUNNER_TEMP}/packages"
 
-      # Kept for 30 days, the longest a deployment can wait for approval in
-      # the npm-publish environment, so the tarballs a reviewer approves are
-      # still the ones the publish job downloads.
+      - name: Compare the packages with their latest published versions
+        run: node scripts/release.mjs compare "${RUNNER_TEMP}/packages"
+
+      - name: Record the release decision
+        id: decision
+        run: |
+          set -euo pipefail
+          metadata="${RUNNER_TEMP}/packages/release.json"
+          version="$(jq -r .version "${metadata}")"
+          release="$(jq -r .release "${metadata}")"
+          if ! [[ "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { [ "${release}" != true ] && [ "${release}" != false ]; }; then
+            echo "::error::release.json holds version \"${version}\" and release \"${release}\", which is not a release decision"
+            exit 1
+          fi
+          echo "version=${version}" >>"${GITHUB_OUTPUT}"
+          echo "release=${release}" >>"${GITHUB_OUTPUT}"
+
+          packages="$(jq -r '.packages[] | "- `\(.name)`: " + (if .previous == null then "not on npm yet" elif .changed then "differs from \(.previous)" else "the same contents as \(.previous)" end)' "${metadata}")"
+          if [ "${release}" = true ]; then
+            echo "::notice::releasing ${version}"
+            printf '### Releasing %s\n\n%s\n' "${version}" "${packages}" >>"${GITHUB_STEP_SUMMARY}"
+          else
+            echo "::notice::nothing to release: no package differs from its latest version on npm, so nothing is published, tagged or released"
+            printf '### Nothing to release\n\nNo package differs from its latest version on npm, so this merge publishes, tags and releases nothing.\n\n%s\n' "${packages}" >>"${GITHUB_STEP_SUMMARY}"
+          fi
+
+      # Uploaded whether or not anything is released, as the record of what
+      # this commit would have published. Kept for 30 days, which is the time
+      # a maintainer has to re-run a failed publish or release job, or to
+      # finish the bootstrap, with these exact tarballs.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: packages
-          path: ${{ runner.temp }}/packages/*.tgz
+          path: |
+            ${{ runner.temp }}/packages/*.tgz
+            ${{ runner.temp }}/packages/release.json
           if-no-files-found: error
           retention-days: 30
 
   publish:
     name: publish to npm
     needs: [verify, pack]
+    if: needs.pack.outputs.release == 'true'
     runs-on: ubuntu-24.04
-    # Time spent waiting for approval does not count toward this limit.
     timeout-minutes: 15
     environment: npm-publish
     permissions:
-      contents: read # the sparse checkout and the tag verification
+      contents: read # the sparse checkout and the commit verification
       id-token: write # the OIDC token npm trusted publishing exchanges for a one-publish credential
+    outputs:
+      version: ${{ steps.publish.outputs.version }}
     steps:
       # Only the two toolchain pins the setup action reads. Nothing from the
       # repository that installs or builds anything is checked out here.
@@ -125,9 +187,6 @@ jobs:
             /package.json
           sparse-checkout-cone-mode: false
 
-      # Again after approval: the tag may have been moved while this job
-      # waited, and these tarballs must never be published for a commit the
-      # tag no longer names.
       - uses: $/.github/actions/verify-release-ref
       - uses: $/.github/actions/setup-node
 
@@ -138,19 +197,24 @@ jobs:
 
       # The package list below is an allowlist, in dependency order: tokens
       # and icons are on the registry before the ui version that pins them.
-      # Each tarball must be exactly that package at the tagged version, with
-      # exactly the publishConfig scripts/release.mjs check enforces and no
-      # top-level tag field: npm publish applies every publishConfig key it is
-      # not given on the command line (a scoped registry key would send the
-      # publish and its OIDC exchange to another host), and a top-level tag
-      # overrides --tag. The access and the dist-tag are also passed explicitly.
+      # Each tarball must be exactly that package at the version release.json
+      # names, with exactly the publishConfig scripts/release.mjs check
+      # enforces and no top-level tag field: npm publish applies every
+      # publishConfig key it is not given on the command line (a scoped
+      # registry key would send the publish and its OIDC exchange to another
+      # host), and a top-level tag overrides --tag. The access and the
+      # dist-tag are also passed explicitly.
       #
-      # A version already on the registry is skipped when its integrity equals
-      # the tarball's and refused when it differs. That makes a re-run after a
-      # partial failure finish the release instead of failing on the packages
-      # that did publish, and it is what completes the first release after
-      # the one-time bootstrap in RELEASING.md. A version this job publishes is
-      # read back from the registry, and its integrity and dist-tag must be the
+      # Every package is checked against the registry before any is
+      # published, so a package that cannot be published stops the release
+      # before the others reach the registry. A package not on the registry at
+      # all is the bootstrap in RELEASING.md. A version already on the
+      # registry is skipped when its integrity equals the tarball's and
+      # refused when it differs, which makes a re-run after a partial failure
+      # finish the release and is how the bootstrap completes. A version below
+      # the latest one is refused, because there is one release line and npm
+      # would move "latest" backwards. A version this job publishes is read
+      # back from the registry, and its integrity and dist-tag must be the
       # ones intended.
       #
       # --provenance is explicit rather than left to npm's automatic detection,
@@ -158,20 +222,19 @@ jobs:
       # silently shipping without one. --ignore-scripts is belt and braces: npm
       # runs no lifecycle scripts for a tarball, and nothing here should.
       - name: Publish the tarballs
+        id: publish
         env:
           PACKAGES_DIR: ${{ runner.temp }}/packages
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
           packages=(tokens icons ui)
           expected_publish_config='{"access":"public","registry":"https://registry.npmjs.org"}'
 
-          # A prerelease must never become "latest", and npm refuses to publish
-          # one without an explicit dist-tag.
-          case "${version}" in
-            *-*) dist_tag=next ;;
-            *) dist_tag=latest ;;
-          esac
+          version="$(jq -r .version "${PACKAGES_DIR}/release.json")"
+          if ! [[ "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::release.json names the version \"${version}\", which is not MAJOR.MINOR.PATCH"
+            exit 1
+          fi
 
           shopt -s nullglob
           tarballs=("${PACKAGES_DIR}"/*.tgz)
@@ -193,6 +256,9 @@ jobs:
             jq -r --arg version "${version}" '.versions[$version].dist.integrity // "null"' "${registry_response}"
           }
 
+          declare -A integrity_of
+          to_publish=()
+          refused=false
           for package in "${packages[@]}"; do
             name="@crewlethq/${package}"
             file="${PACKAGES_DIR}/crewlethq-${package}-${version}.tgz"
@@ -212,37 +278,51 @@ jobs:
             fi
 
             integrity="sha512-$(openssl dgst -sha512 -binary "${file}" | base64 -w 0)"
+            integrity_of["${package}"]="${integrity}"
             status="$(fetch_packument "${package}")"
             case "${status}" in
-              200) published="$(published_integrity)" ;;
-              404) published="null" ;;
+              200) ;;
+              404)
+                echo "::error::${name} is not on npm yet. npm attaches a trusted publisher only to a package that exists, so its first version is published by an owner: follow \"First publish (bootstrap)\" in RELEASING.md, then re-run the failed jobs of this run."
+                refused=true
+                continue
+                ;;
               *)
                 echo "::error::the registry answered HTTP ${status} for ${name}; cannot tell whether ${version} is published"
                 exit 1
                 ;;
             esac
 
+            published="$(published_integrity)"
             if [ "${published}" != "null" ]; then
               if [ "${published}" != "${integrity}" ]; then
-                echo "::error::${name}@${version} is already on the registry with integrity ${published}, but this build packed ${integrity}. A published version cannot be replaced; release a new version."
-                exit 1
+                echo "::error::${name}@${version} is already on npm with integrity ${published}, but this run packed ${integrity}. A published version cannot be replaced; see \"If a release goes wrong\" in RELEASING.md."
+                refused=true
+                continue
               fi
-              echo "::notice::${name}@${version} is already on the registry with identical contents; skipping"
+              echo "::notice::${name}@${version} is already on npm with identical contents; it is not published again"
               continue
             fi
 
-            # --tag is always explicit, and npm moves an explicit dist-tag even
-            # to a lower version, so a stable release below the current latest
-            # would move latest backwards. There is one release line.
-            if [ "${status}" = 200 ] && [ "${dist_tag}" = latest ]; then
-              current="$(jq -r '."dist-tags".latest // "null"' "${registry_response}")"
-              if [ "${current}" != "null" ] && [ "$(printf '%s\n%s\n' "${current}" "${version}" | sort -V | tail -n 1)" != "${version}" ]; then
-                echo "::error::${name}@${version} is lower than the latest release ${current}. There is one release line; release the change as a version above ${current}."
-                exit 1
-              fi
+            current="$(jq -r '."dist-tags".latest // "null"' "${registry_response}")"
+            if [ "${current}" != "null" ] && [ "$(printf '%s\n%s\n' "${current}" "${version}" | sort -V | tail -n 1)" != "${version}" ]; then
+              echo "::error::${name}@${version} is lower than its latest version on npm, ${current}. There is one release line; see \"If a release goes wrong\" in RELEASING.md."
+              refused=true
+              continue
             fi
+            to_publish+=("${package}")
+          done
+          if [ "${refused}" = true ]; then
+            echo "::error::nothing was published, because at least one package above cannot be"
+            exit 1
+          fi
 
-            npm publish "${file}" --provenance --ignore-scripts --access public --tag "${dist_tag}"
+          for package in "${to_publish[@]}"; do
+            name="@crewlethq/${package}"
+            file="${PACKAGES_DIR}/crewlethq-${package}-${version}.tgz"
+            integrity="${integrity_of[${package}]}"
+
+            npm publish "${file}" --provenance --ignore-scripts --access public --tag latest
 
             # The registry can take a moment to serve a new version.
             attempt=1
@@ -255,70 +335,102 @@ jobs:
               sleep 10
             done
             published="$(published_integrity)"
-            tagged="$(jq -r --arg tag "${dist_tag}" '."dist-tags"[$tag] // "null"' "${registry_response}")"
+            tagged="$(jq -r '."dist-tags".latest // "null"' "${registry_response}")"
             if [ "${published}" != "${integrity}" ]; then
-              echo "::error::${name}@${version} was published with integrity ${published}, but this build packed ${integrity}"
+              echo "::error::${name}@${version} was published with integrity ${published}, but this run packed ${integrity}"
               exit 1
             fi
             if [ "${tagged}" != "${version}" ]; then
-              echo "::error::${name}@${version} was published, but its ${dist_tag} dist-tag names ${tagged}. Point it at the release with: npm dist-tag add ${name}@${version} ${dist_tag}"
+              echo "::error::${name}@${version} was published, but its latest dist-tag names ${tagged}. Point it at the release with: npm dist-tag add ${name}@${version} latest"
               exit 1
             fi
-            echo "::notice::published ${name}@${version} under ${dist_tag} with integrity ${integrity}"
+            echo "::notice::published ${name}@${version} under latest with integrity ${integrity}"
           done
 
+          echo "version=${version}" >>"${GITHUB_OUTPUT}"
+
   release:
-    name: create the GitHub release
+    name: tag and create the GitHub release
     needs: publish
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
-      contents: write # creating the GitHub release
+      contents: write # creating the tag and the GitHub release
     steps:
-      # No checkout. The composite action that verifies the tag is loaded
-      # from the tagged commit through the self-repository syntax, and nothing
+      # No checkout. The composite action that verifies the commit is loaded
+      # from the merged commit through the self-repository syntax, and nothing
       # else from the repository runs beside the write-capable token.
       - uses: $/.github/actions/verify-release-ref
 
-      # The body is generated by GitHub from the pull requests merged since
-      # the previous tag, grouped by .github/release.yml, after the npm links
-      # below.
+      # The tag is annotated and names the merged commit, which is the commit
+      # the provenance of every published package names. It is created only
+      # here, after the publish, so a tag always records a version that is on
+      # the registry. A tag that already exists is accepted only when it names
+      # this commit, which is what a re-run of this job finds.
       #
-      # A release that already exists for the tag is accepted only when it is
-      # exactly what this step creates: made by this workflow's token, with no
-      # attached files, the same pre-release flag and the npm links first. A
-      # re-run after a failure in this step finds such a release. Anything
-      # else was created by someone else, possibly with look-alike files or
-      # links, and the job fails rather than report it as the release.
-      - name: Create the release
+      # The body of the release is generated by GitHub from the pull requests
+      # merged since the previous release, grouped by .github/release.yml,
+      # after the npm links below. A release that already exists for the tag
+      # is accepted only when it is exactly what this step creates: made by
+      # this workflow's token, with no attached files and the npm links first.
+      # Anything else was created by someone else, possibly with look-alike
+      # files or links, and the job fails rather than report it as the release.
+      - name: Tag the commit and create the release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.publish.outputs.version }}
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
-          version="${tag#v}"
-          case "${version}" in
-            *-*) prerelease=true ;;
-            *) prerelease=false ;;
-          esac
+          if ! [[ "${VERSION}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::the publish job reported the version \"${VERSION}\", which is not MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          tag="v${VERSION}"
+
+          # git/ref matches the full ref name exactly. An annotated tag points
+          # at a tag object, which is followed until it reaches the commit.
+          if existing="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" --jq '.object.type + " " + .object.sha' 2>&1)"; then
+            read -r type sha <<<"${existing}"
+            while [ "${type}" = "tag" ]; do
+              object="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${sha}" --jq '.object.type + " " + .object.sha')"
+              read -r type sha <<<"${object}"
+            done
+            if [ "${type}" != "commit" ] || [ "${sha}" != "${GITHUB_SHA}" ]; then
+              echo "::error::the tag ${tag} already exists and names the ${type} ${sha}, but ${VERSION} was published from ${GITHUB_SHA}. Find out who created the tag before doing anything else; see \"If a release goes wrong\" in RELEASING.md."
+              exit 1
+            fi
+            echo "::notice::the tag ${tag} already names ${GITHUB_SHA}"
+          else
+            case "${existing}" in
+              *"HTTP 404"*) ;;
+              *)
+                echo "::error::could not look up the tag ${tag}: ${existing}"
+                exit 1
+                ;;
+            esac
+            object="$(gh api --method POST "repos/${GITHUB_REPOSITORY}/git/tags" \
+              -f tag="${tag}" -f message="${tag}" -f object="${GITHUB_SHA}" -f type=commit --jq .sha)"
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" -f ref="refs/tags/${tag}" -f sha="${object}" --silent
+            echo "::notice::tagged ${GITHUB_SHA} as ${tag}"
+          fi
 
           notes="Published to npm:"$'\n'
           for package in tokens icons ui; do
-            notes+=$'\n'"- [@crewlethq/${package}@${version}](https://www.npmjs.com/package/@crewlethq/${package}/v/${version})"
+            notes+=$'\n'"- [@crewlethq/${package}@${VERSION}](https://www.npmjs.com/package/@crewlethq/${package}/v/${VERSION})"
           done
 
           if existing="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" 2>&1)"; then
             author="$(jq -r .author.login <<<"${existing}")"
             assets="$(jq '.assets | length' <<<"${existing}")"
-            existing_prerelease="$(jq -r .prerelease <<<"${existing}")"
+            prerelease="$(jq -r .prerelease <<<"${existing}")"
             body="$(jq -r '.body // ""' <<<"${existing}")"
             url="$(jq -r .html_url <<<"${existing}")"
             if [ "${author}" = "github-actions[bot]" ] && [ "${assets}" = 0 ] \
-              && [ "${existing_prerelease}" = "${prerelease}" ] && [[ "${body}" == "${notes}"* ]]; then
+              && [ "${prerelease}" = false ] && [[ "${body}" == "${notes}"* ]]; then
               echo "::notice::the release for ${tag} already exists at ${url}"
               exit 0
             fi
-            echo "::error::a release for ${tag} already exists at ${url}, but this workflow did not create it (author ${author}, ${assets} attached files, pre-release ${existing_prerelease}). Find out who created it and what it links to before doing anything else. The one expected case is a release a maintainer created by hand in step 6 of the bootstrap in RELEASING.md."
+            echo "::error::a release for ${tag} already exists at ${url}, but this workflow did not create it (author ${author}, ${assets} attached files, pre-release ${prerelease}). Find out who created it and what it links to before doing anything else."
             exit 1
           fi
           case "${existing}" in
@@ -329,8 +441,4 @@ jobs:
               ;;
           esac
 
-          args=(--repo "${GITHUB_REPOSITORY}" --verify-tag --title "${tag}" --notes "${notes}" --generate-notes)
-          if [ "${prerelease}" = true ]; then
-            args+=(--prerelease --latest=false)
-          fi
-          gh release create "${tag}" "${args[@]}"
+          gh release create "${tag}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${tag}" --notes "${notes}" --generate-notes

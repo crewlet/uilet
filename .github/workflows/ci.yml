@@ -69,21 +69,30 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-  # The exact install, build and pack the release workflow runs, from a fresh
-  # checkout, so a manifest, an exports entry, a license file or a build step
-  # that only the release path exercises fails on the pull request that
-  # breaks it rather than on the tag that publishes.
+  # The install, build, version and pack the release workflow runs, from a
+  # fresh checkout, so a manifest, an exports entry, a license file or a build
+  # step that only the release path exercises fails on the pull request that
+  # breaks it rather than on the merge that would release it. The version
+  # step also prints the version this commit would be released as. The
+  # comparison with the registry is left to the release workflow: its answer
+  # depends on what the registry holds at the moment, which a pull request
+  # neither controls nor can change, and while a release is being published
+  # it would fail every pull request that runs in that window.
   pack:
     name: pack
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
+      # The whole history and every tag, which the version is computed from.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: $/.github/actions/setup-node
       - name: Install and build only the published packages
         run: node scripts/release.mjs build
+      - name: Compute the release version and write it into the manifests
+        run: node scripts/release.mjs version --write
       - name: Pack the published packages
         run: node scripts/release.mjs pack "${RUNNER_TEMP}/packages"
 

@@ -20,7 +20,7 @@
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "storybook": "npm run dev --workspace @crewlethq/storybook",
     "release:check": "node scripts/release.mjs check",
-    "release:version": "node scripts/release.mjs set",
+    "release:version": "node scripts/release.mjs version",
     "release:pack": "node scripts/release.mjs pack"
   },
   "devDependencies": {
