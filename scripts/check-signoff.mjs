@@ -137,7 +137,7 @@ function main(argv) {
   process.stdout.write(`check-signoff: ${checked} commit(s) in ${range}, all signed off\n`);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     main(process.argv.slice(2));
   } catch (error) {

@@ -1,8 +1,10 @@
 # Shapes the notes GitHub generates for a release.
 #
 # The release workflow creates each GitHub release with --generate-notes, so
-# its body is the list of pull requests merged since the previous tag. Each
-# pull request lands in the first category whose labels it carries.
+# its body is the list of pull requests merged since the previous release,
+# including merges that were not released on their own because they changed
+# nothing the packages publish. Each pull request lands in the first category
+# whose labels it carries.
 # `dependencies` is applied by Dependabot itself, so no label convention has
 # to be maintained by hand, and the catch-all `*` means a pull request with no
 # labels still appears instead of silently dropping out of the notes.

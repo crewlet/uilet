@@ -1,18 +1,21 @@
 // Release tooling for the published workspaces. It depends on nothing but
-// Node itself, so the release workflow can run `check` before `npm ci` has
-// executed a single line of third-party code.
+// Node itself and git, so the release workflow can run `check` before `npm ci`
+// has executed a single line of third-party code.
 //
-//   node scripts/release.mjs check [--tag <tag>]
+//   node scripts/release.mjs check
 //     Verifies that every published package carries one shared version, that
-//     every dependency between workspaces pins that version exactly, that
-//     each manifest holds exactly the metadata npm provenance and public
-//     publishing rely on, that every lockfile installs only from the npm
-//     registry, and that the Node and npm pins are exact. With --tag, the tag
-//     must also be exactly v<version>.
+//     the version is MAJOR.MINOR.PATCH, that every dependency between
+//     workspaces pins that version exactly, that each manifest holds exactly
+//     the metadata npm provenance and public publishing rely on, that every
+//     lockfile installs only from the npm registry, and that the Node and npm
+//     pins are exact.
 //
-//   node scripts/release.mjs set <version>
-//     Writes <version> into every published manifest and every dependency
-//     between workspaces, then refreshes package-lock.json.
+//   node scripts/release.mjs version [--write]
+//     Prints the version the commit at HEAD is released as, and why. With
+//     --write, also writes that version into every published manifest and
+//     every dependency between workspaces. Only the release workflow's pack job
+//     (and CI's rehearsal of it) writes, in a throwaway checkout; nothing ever
+//     commits the result.
 //
 //   node scripts/release.mjs build
 //     Runs `check`, installs only what the published packages need (the root
@@ -28,14 +31,42 @@
 //     when it ships one) unchanged, and every directory of font files carries
 //     the OFL.txt the font license requires.
 //
+//   node scripts/release.mjs compare <directory>
+//     Compares every tarball `pack` wrote into <directory> with the latest
+//     version of that package on the registry, and writes
+//     <directory>/release.json: the release version, and whether anything is
+//     to be released at all.
+//
 // Why one shared version: @crewlethq/ui is built and tested against the tokens
 // and icons in the same commit, and nothing else. Independent versions would
 // let a consumer resolve a combination that no commit ever contained.
+//
+// How the release version is chosen. Every merge to main is a release
+// candidate, and its version follows from history rather than from a file a
+// pull request edits: the highest release tag (vMAJOR.MINOR.PATCH) reachable
+// from the commit, bumped by the Conventional Commits types of every non-merge
+// commit since that tag. A breaking change (a "!" after the type or scope, or a
+// BREAKING CHANGE footer) moves the minor number while the major number is 0
+// and the major number after that, a feat moves the minor number, and every
+// other commit moves the patch number. The manifests in the tree are never
+// rewritten, because main only accepts reviewed pull requests and a bot commit
+// would need a bypass of that rule. Their version is therefore the seed of the
+// very first release, used only while no release tag exists, and the version
+// local builds and the Storybook carry.
+//
+// Why a release is skipped when nothing changed: the version moves on every
+// merge, including merges that only touch documentation, CI or the Storybook.
+// Publishing those would put versions on the registry that differ from their
+// predecessor in nothing but the number, so `compare` looks at the bytes that
+// would be published instead of at the paths a merge touched.
 
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix, relative, resolve } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { gunzipSync } from 'node:zlib';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SCOPE = '@crewlethq/';
@@ -61,12 +92,34 @@ const OPTIONAL_NOTICES = ['TRADEMARKS.md'];
 // finds no credential and fails the publish with ENEEDAUTH.
 const MINIMUM_NPM = [11, 5, 1];
 
-// Semantic Versioning 2.0.0 without build metadata. Build metadata is ignored
-// by npm when comparing versions, so two tags differing only in it would
-// publish the same version twice.
-const SEMVER =
-  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$/;
+// A release version, and the tag that records one. Pre-release versions are
+// deliberately absent: the version is computed on every merge and there is
+// one release line, so nothing would ever choose a pre-release, and a
+// hand-made pre-release tag is not a release the next version builds on.
+// Build metadata is absent too, because npm ignores it when comparing
+// versions, so two versions differing only in it would be the same version.
 const EXACT_RELEASE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+const RELEASE_TAG = /^v((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))$/;
+
+// Registry requests. The packuments and tarballs read here are at most a few
+// megabytes and the registry answers them in well under a second, so thirty
+// seconds only ever cuts off a request that has stalled. Three attempts with a
+// doubling delay ride out the brief 5xx and 429 answers the registry gives
+// under load without holding a failing run for long.
+const REQUEST_TIMEOUT_MS = 30_000;
+const REQUEST_ATTEMPTS = 3;
+// How long `compare` waits for the registry to serve a version the previous
+// release published. Releases run one after another, so the run for the next
+// merge can start seconds after the last publish, while a registry edge may
+// still serve the previous record. Thirty checks ten seconds apart is the same
+// five minutes the publish job waits for a version it published to appear.
+const REGISTRY_LAG_ATTEMPTS = 30;
+const REGISTRY_LAG_INTERVAL_MS = 10_000;
+export const TIMING = {
+  retryDelayMs: 2_000,
+  lagAttempts: REGISTRY_LAG_ATTEMPTS,
+  lagIntervalMs: REGISTRY_LAG_INTERVAL_MS,
+};
 
 export class ReleaseError extends Error {}
 
@@ -174,6 +227,11 @@ function compareVersions(left, right) {
   return 0;
 }
 
+function parseRelease(version) {
+  const match = EXACT_RELEASE.exec(version);
+  return match === null ? null : match.slice(1, 4).map(Number);
+}
+
 // .nvmrc names the Node release every job installs, and that release fixes
 // the npm it bundles, which the root packageManager field records. A range
 // in either would let the toolchain that installs, packs and publishes change
@@ -203,7 +261,7 @@ export function toolchainProblems(root, rootManifest) {
   return problems;
 }
 
-export function check({ root = ROOT, tag } = {}) {
+export function check({ root = ROOT } = {}) {
   const rootManifest = readJson(join(root, 'package.json'));
   const workspaces = loadWorkspaces(root);
   const published = publishedOf(workspaces);
@@ -216,12 +274,14 @@ export function check({ root = ROOT, tag } = {}) {
       .map((workspace) => `${workspace.directory}/package.json has ${workspace.manifest.version}`)
       .join(', ');
     throw new ReleaseError(
-      `the published packages must share one version, but ${listing}. Run: npm run release:version -- <version>`,
+      `the published packages must share one version, but ${listing}. Give every published manifest, and every dependency between workspaces, the same version`,
     );
   }
   const [version] = versions;
-  if (typeof version !== 'string' || !SEMVER.test(version)) {
-    throw new ReleaseError(`version "${version}" is not a valid semantic version (MAJOR.MINOR.PATCH[-PRERELEASE])`);
+  if (typeof version !== 'string' || !EXACT_RELEASE.test(version)) {
+    throw new ReleaseError(
+      `version "${version}" is not MAJOR.MINOR.PATCH. The manifest version seeds the first release, and releases have no pre-release or build suffix`,
+    );
   }
 
   for (const { directory, manifest } of published) {
@@ -255,7 +315,7 @@ export function check({ root = ROOT, tag } = {}) {
       problems.push(`${where}: "publishConfig" must be exactly { "access": "public", "registry": "${REGISTRY}" }`);
     }
     // A top-level tag field wins over the --tag npm publish is given, so a
-    // stable release would silently not move "latest".
+    // release would silently not move "latest".
     if (Object.hasOwn(manifest, 'tag')) {
       problems.push(`${where}: remove the top-level "tag" field; it overrides the dist-tag the release workflow publishes under`);
     }
@@ -264,12 +324,15 @@ export function check({ root = ROOT, tag } = {}) {
     }
   }
 
+  // An exact pin is also what makes npm link the workspace: a pin the
+  // workspace's own version does not satisfy installs a copy from the
+  // registry instead, and the build would silently use it.
   for (const { directory, manifest } of workspaces) {
     for (const field of DEPENDENCY_FIELDS) {
       for (const [name, spec] of Object.entries(manifest[field] ?? {})) {
         if (internalNames.has(name) && spec !== version) {
           problems.push(
-            `${directory}/package.json: ${field}["${name}"] is "${spec}", but a workspace dependency must pin the release version "${version}" exactly`,
+            `${directory}/package.json: ${field}["${name}"] is "${spec}", but a workspace dependency must pin the shared version "${version}" exactly`,
           );
         }
       }
@@ -279,32 +342,112 @@ export function check({ root = ROOT, tag } = {}) {
   for (const lockfile of LOCKFILES) problems.push(...lockfileProblems(root, lockfile));
   problems.push(...toolchainProblems(root, rootManifest));
 
-  if (tag !== undefined && tag !== `v${version}`) {
-    problems.push(`the tag "${tag}" does not match the manifests: a release of ${version} is tagged v${version}`);
-  }
-
   if (problems.length > 0) {
     throw new ReleaseError(problems.join('\n'));
   }
   return { version, published };
 }
 
-function npm(root, args, { capture = false } = {}) {
-  const result = spawnSync('npm', args, {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit',
-  });
+// Runs git in root and returns its output. With allowFailure, a non-zero exit
+// returns null instead of throwing, for commands whose failure is an answer.
+function git(root, args, { allowFailure = false } = {}) {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (result.error) throw result.error;
   if (result.status !== 0) {
-    throw new ReleaseError(`npm ${args.join(' ')} exited with status ${result.status}`);
+    if (allowFailure) return null;
+    throw new ReleaseError(`git ${args.join(' ')} failed: ${result.stderr.trim()}`);
   }
   return result.stdout;
 }
 
-function setVersion(root, version) {
-  if (!SEMVER.test(version ?? '')) {
-    throw new ReleaseError(`"${version}" is not a valid semantic version (MAJOR.MINOR.PATCH[-PRERELEASE])`);
+// What one commit message asks of the version, under Conventional Commits
+// 1.0.0. The type is matched without regard to case, as the specification
+// requires, and the footer token only in upper case, as it also requires.
+// Anything that is not a conventional header (a merge button's default
+// subject, a revert, a typo) is a patch: an unrecognised commit still changed
+// something, and guessing it was a feature would move the minor number on
+// nothing but a spelling.
+const HEADER = /^([a-z]+)(?:\([^()\r\n]*\))?(!)?: \S/i;
+const BREAKING_FOOTER = /^BREAKING[ -]CHANGE: \S/;
+
+export function changeOf(message) {
+  const [subject = '', ...body] = message.split(/\r?\n/);
+  const header = HEADER.exec(subject);
+  if (header?.[2] === '!' || body.some((line) => BREAKING_FOOTER.test(line))) return 'breaking';
+  if (header?.[1].toLowerCase() === 'feat') return 'feature';
+  return 'fix';
+}
+
+const CHANGE_RANK = { fix: 0, feature: 1, breaking: 2 };
+
+export function bumpVersion(version, change) {
+  const parsed = parseRelease(version);
+  if (parsed === null) throw new ReleaseError(`"${version}" is not MAJOR.MINOR.PATCH`);
+  const [major, minor, patch] = parsed;
+  if (change === 'breaking') return major === 0 ? `0.${minor + 1}.0` : `${major + 1}.0.0`;
+  if (change === 'feature') return `${major}.${minor + 1}.0`;
+  return `${major}.${minor}.${patch + 1}`;
+}
+
+// The version <head> is released as. See "How the release version is chosen"
+// at the top of this file.
+export function releasePlan({ root = ROOT, head = 'HEAD', seed }) {
+  // A shallow clone knows neither the tags below its boundary nor the commits
+  // since them, and would silently answer with the seed or a smaller bump.
+  if (git(root, ['rev-parse', '--is-shallow-repository']).trim() === 'true') {
+    throw new ReleaseError(
+      'this checkout is shallow, so the release tags and the commits since them are not all present. Check out with fetch-depth: 0, or run: git fetch --unshallow --tags',
+    );
+  }
+  const commit = git(root, ['rev-parse', '--verify', '--quiet', `${head}^{commit}`], { allowFailure: true })?.trim();
+  if (commit === undefined) throw new ReleaseError(`"${head}" does not name a commit in ${root}`);
+
+  let base = null;
+  for (const tag of git(root, ['tag', '--merged', commit, '--list', 'v*']).split('\n')) {
+    const match = RELEASE_TAG.exec(tag);
+    if (match === null) continue;
+    if (base === null || compareVersions(parseRelease(match[1]), parseRelease(base.slice(1))) > 0) base = tag;
+  }
+  if (base === null) {
+    if (!EXACT_RELEASE.test(seed ?? '')) throw new ReleaseError(`the manifest version "${seed}" is not MAJOR.MINOR.PATCH`);
+    return { version: seed, base: null, change: null, commits: 0 };
+  }
+
+  // refs/tags/ in full, so a branch that happens to carry a tag's name cannot
+  // stand in for it.
+  const range = `refs/tags/${base}..${commit}`;
+  if (git(root, ['rev-list', '--count', range]).trim() === '0') {
+    return { version: base.slice(1), base, change: null, commits: 0 };
+  }
+  // Merge commits are skipped: their subject is whatever the merge button
+  // wrote, and the commits they bring in are in the range themselves. A range
+  // holding nothing but merges still changed the tree, so it is a patch.
+  const output = git(root, ['log', '--no-merges', '--no-show-signature', '-z', '--format=%B', range]);
+  const messages = output === '' ? [] : output.split('\0');
+  if (messages.at(-1) === '') messages.pop();
+  const change = messages.map(changeOf).reduce((highest, next) => (CHANGE_RANK[next] > CHANGE_RANK[highest] ? next : highest), 'fix');
+  return { version: bumpVersion(base.slice(1), change), base, change, commits: messages.length };
+}
+
+export function describePlan(plan) {
+  if (plan.base === null) {
+    return `No release tag is reachable from this commit, so it is released as the manifest version ${plan.version}.`;
+  }
+  if (plan.change === null) {
+    return `This commit is ${plan.base} itself, so its version is ${plan.version}.`;
+  }
+  const found = {
+    breaking: 'include a breaking change',
+    feature: 'include a feature and no breaking change',
+    fix: 'include no feature and no breaking change',
+  }[plan.change];
+  const commits = plan.commits === 1 ? '1 commit' : `${plan.commits} commits`;
+  return `The ${commits} since ${plan.base} (merge commits aside) ${found}, so this commit is released as ${plan.version}.`;
+}
+
+function writeVersion(root, version) {
+  if (!EXACT_RELEASE.test(version ?? '')) {
+    throw new ReleaseError(`"${version}" is not MAJOR.MINOR.PATCH`);
   }
   const workspaces = loadWorkspaces(root);
   const published = new Set(publishedOf(workspaces));
@@ -320,12 +463,32 @@ function setVersion(root, version) {
     }
     writeJson(workspace.manifestPath, manifest);
   }
+}
 
-  // The lockfile records every workspace's version and its dependency specs,
-  // and `npm ci` refuses a lockfile that disagrees with the manifests.
-  npm(root, ['install', '--package-lock-only', '--ignore-scripts']);
+function printVersion(root, { write }) {
+  const { version: seed } = check({ root });
+  const plan = releasePlan({ root, seed });
+  stdout(describePlan(plan));
+  if (!write) return;
+  // The lockfile is left alone: it records the seed version for every
+  // workspace, and nothing after this step installs. npm pack reads the
+  // manifests only.
+  writeVersion(root, plan.version);
   check({ root });
-  stdout(`Set the release version to ${version}. Commit the manifests and package-lock.json together.`);
+  stdout(`Wrote ${plan.version} into the manifests of this checkout. Do not commit them.`);
+}
+
+function npm(root, args, { capture = false } = {}) {
+  const result = spawnSync('npm', args, {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit',
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new ReleaseError(`npm ${args.join(' ')} exited with status ${result.status}`);
+  }
+  return result.stdout;
 }
 
 function buildPublished(root) {
@@ -427,20 +590,446 @@ function pack(root, destination) {
   stdout(`Packed ${published.length} packages at ${version} into ${target}`);
 }
 
-function main(argv) {
+// The file name npm pack gives a package's tarball.
+export function tarballName(name, version) {
+  return `${name.replace(/^@/, '').replace('/', '-')}-${version}.tgz`;
+}
+
+export function integrityOf(bytes) {
+  return `sha512-${createHash('sha512').update(bytes).digest('base64')}`;
+}
+
+// A minimal reader for the gzipped tar archives npm pack writes and the
+// registry serves: POSIX ustar entries, with pax extended headers (and GNU
+// long names) for paths that do not fit a header. It returns every regular
+// file's bytes keyed by its path inside the package, which is its path in the
+// archive without the first directory, exactly as npm extracts it. Anything a
+// package tarball never contains (links, devices) is refused rather than
+// skipped, so a comparison is never made over an archive only partly read.
+// Written here rather than taken from a dependency because `compare` runs on
+// Node alone, like the rest of this file.
+const BLOCK = 512;
+
+function headerField(block, start, length) {
+  const bytes = block.subarray(start, start + length);
+  const end = bytes.indexOf(0);
+  return bytes.subarray(0, end === -1 ? length : end).toString('utf8');
+}
+
+function headerNumber(block, start, length, what) {
+  const text = headerField(block, start, length).trim();
+  if (!/^[0-7]+$/.test(text)) {
+    throw new ReleaseError(`${what}: a tar header holds "${text}" where an octal number belongs`);
+  }
+  return Number.parseInt(text, 8);
+}
+
+function paxPath(body, what) {
+  let path;
+  let offset = 0;
+  while (offset < body.length) {
+    const space = body.indexOf(0x20, offset);
+    const length = space === -1 ? Number.NaN : Number(body.subarray(offset, space).toString('ascii'));
+    if (!Number.isSafeInteger(length) || length <= space - offset || offset + length > body.length) {
+      throw new ReleaseError(`${what}: a pax extended header is malformed`);
+    }
+    const record = body.subarray(space + 1, offset + length - 1).toString('utf8');
+    const equals = record.indexOf('=');
+    if (equals !== -1 && record.slice(0, equals) === 'path') path = record.slice(equals + 1);
+    offset += length;
+  }
+  return path;
+}
+
+export function readTarball(archive, what) {
+  let data;
+  try {
+    data = gunzipSync(archive);
+  } catch (error) {
+    throw new ReleaseError(`${what} is not a readable gzip archive: ${error.message}`);
+  }
+  const files = new Map();
+  let offset = 0;
+  let longPath;
+  for (;;) {
+    if (offset + BLOCK > data.length) {
+      throw new ReleaseError(`${what} ends before its end-of-archive marker`);
+    }
+    const header = data.subarray(offset, offset + BLOCK);
+    if (header.every((byte) => byte === 0)) break;
+
+    let sum = 0;
+    for (let index = 0; index < BLOCK; index += 1) sum += index >= 148 && index < 156 ? 0x20 : header[index];
+    if (sum !== headerNumber(header, 148, 8, what)) {
+      throw new ReleaseError(`${what}: a tar header fails its checksum`);
+    }
+
+    const size = headerNumber(header, 124, 12, what);
+    const bodyStart = offset + BLOCK;
+    if (bodyStart + size > data.length) {
+      throw new ReleaseError(`${what} is truncated inside an entry`);
+    }
+    const body = data.subarray(bodyStart, bodyStart + size);
+    offset = bodyStart + Math.ceil(size / BLOCK) * BLOCK;
+
+    const type = header[156] === 0 ? '0' : String.fromCharCode(header[156]);
+    if (type === 'x') {
+      longPath = paxPath(body, what) ?? longPath;
+      continue;
+    }
+    if (type === 'L') {
+      longPath = headerField(body, 0, body.length);
+      continue;
+    }
+    if (type === 'g') continue;
+
+    let path = longPath;
+    longPath = undefined;
+    if (path === undefined) {
+      const name = headerField(header, 0, 100);
+      // "ustar" followed by a NUL is the POSIX layout, where bytes 345 to 499
+      // are a path prefix. The GNU layout spells its magic "ustar " and keeps
+      // other fields there.
+      const prefix = headerField(header, 257, 6) === 'ustar' ? headerField(header, 345, 155) : '';
+      path = prefix === '' ? name : `${prefix}/${name}`;
+    }
+    if (type === '5') continue;
+    if (type !== '0' && type !== '7') {
+      throw new ReleaseError(`${what}: "${path}" is a tar entry of type "${type}", which a package tarball never contains`);
+    }
+    const slash = path.indexOf('/');
+    if (slash === -1 || slash === path.length - 1) {
+      throw new ReleaseError(`${what}: "${path}" is not inside the package directory of the archive`);
+    }
+    files.set(path.slice(slash + 1), Buffer.from(body));
+  }
+  return files;
+}
+
+// Stands in for the release version when two manifests are compared. It is
+// not a valid version, so no real version or dependency spec can equal it.
+const VERSION_PLACEHOLDER = '<release version>';
+
+// A package.json with its own version, and every pin on another published
+// package that equals that version, replaced by the placeholder. Those are the
+// only fields the release itself writes, so they are the only ones a
+// comparison ignores; a pin that does not equal the manifest's own version is
+// a real change and stays visible.
+function releaseIndependentManifest(bytes, internalNames) {
+  let manifest;
+  try {
+    manifest = JSON.parse(bytes.toString('utf8'));
+  } catch {
+    return null;
+  }
+  if (manifest === null || typeof manifest !== 'object' || Array.isArray(manifest)) return null;
+  const { version } = manifest;
+  if (Object.hasOwn(manifest, 'version')) manifest.version = VERSION_PLACEHOLDER;
+  for (const field of DEPENDENCY_FIELDS) {
+    const dependencies = manifest[field];
+    if (dependencies === null || typeof dependencies !== 'object') continue;
+    for (const name of Object.keys(dependencies)) {
+      if (internalNames.has(name) && dependencies[name] === version) dependencies[name] = VERSION_PLACEHOLDER;
+    }
+  }
+  return JSON.stringify(manifest);
+}
+
+// Every difference between two package tarballs' contents, as "added <path>",
+// "removed <path>" or "changed <path>", ignoring only what the release version
+// itself changes in package.json. An empty list means publishing the current
+// tarball would publish the previous version again under a new number.
+export function tarballDifferences(previous, current, internalNames) {
+  const differences = [];
+  for (const path of [...new Set([...previous.keys(), ...current.keys()])].sort()) {
+    const before = previous.get(path);
+    const after = current.get(path);
+    if (before === undefined) {
+      differences.push(`added ${path}`);
+    } else if (after === undefined) {
+      differences.push(`removed ${path}`);
+    } else if (path === 'package.json') {
+      const left = releaseIndependentManifest(before, internalNames);
+      const right = releaseIndependentManifest(after, internalNames);
+      const same = left === null || right === null ? before.equals(after) : left === right;
+      if (!same) differences.push(`changed ${path}`);
+    } else if (!before.equals(after)) {
+      differences.push(`changed ${path}`);
+    }
+  }
+  return differences;
+}
+
+// The published packages of the release <base> records: every workspace that
+// was public at the tagged commit and still carries the same name. The release
+// that created the tag published all of them at the tag's version, so each one
+// must be on the registry. A package that is public now but was not then (a
+// package added since) is absent from this set, and its absence from the
+// registry is the bootstrap rather than a problem.
+export function releasedPackagesOf(root, base, workspaces) {
+  const released = new Set();
+  if (base === null) return released;
+  for (const { directory, manifest } of workspaces) {
+    const text = git(root, ['show', `refs/tags/${base}:${posix.join(...directory.split(/[\\/]/), 'package.json')}`], {
+      allowFailure: true,
+    });
+    if (text === null) continue;
+    let tagged;
+    try {
+      tagged = JSON.parse(text);
+    } catch {
+      continue;
+    }
+    if (tagged?.name === manifest.name && tagged.private !== true) released.add(manifest.name);
+  }
+  return released;
+}
+
+// The registry must be exactly where the last release left it: every package
+// the latest release tag reachable from this commit published is on it, with
+// that tag's version as its latest version, and no other package on it has a
+// latest version the tags do not record. Anything else means a version was
+// published without the tag that records it (the bootstrap before its tag, or
+// a run that failed between publishing and tagging), the registry was changed
+// by hand, or the registry is not serving a release it holds. Computing a
+// version from the tags would then collide with, or fall behind, what is
+// there, and a released package the registry does not serve would look like a
+// package never published and be released again with nothing changed.
+export function registryProblems(plan, packages, released = new Set()) {
+  const problems = [];
+  for (const { name, previous } of packages) {
+    if (previous === null) {
+      if (released.has(name)) {
+        problems.push(
+          `${name} was released as ${plan.base}, but the registry does not serve the package. Check it on the registry (npm view ${name} versions) before re-running; see "If a release goes wrong" in RELEASING.md`,
+        );
+      }
+      continue;
+    }
+    if (plan.base === null) {
+      problems.push(
+        `${name}@${previous} is on the registry, but no release tag is reachable from this commit. A release was published without the tag that records it; see "If a release goes wrong" in RELEASING.md`,
+      );
+    } else if (previous !== plan.base.slice(1)) {
+      problems.push(
+        `${name}: the latest version on the registry is ${previous}, but the latest release tag reachable from this commit is ${plan.base}. The tags and the registry disagree; see "If a release goes wrong" in RELEASING.md`,
+      );
+    }
+  }
+  return problems;
+}
+
+// Whether anything is to be released: a package that is not on the registry
+// yet, or one whose contents differ from its latest version. A commit that is
+// itself the latest release has nothing new to publish, so contents that
+// differ there mean the build did not reproduce the published bytes, and
+// publishing would be refused as a replacement of that version.
+export function releaseDecision(plan, packages) {
+  const changed = packages.filter(({ previous, differences }) => previous === null || differences.length > 0);
+  const rebuilt = changed.filter(({ previous }) => previous !== null && previous === plan.version);
+  if (rebuilt.length > 0) {
+    throw new ReleaseError(
+      `${rebuilt.map(({ name }) => name).join(', ')} at ${plan.version} is already on the registry, but this commit packs different contents for it. The build is not reproducible; find what differs before releasing anything`,
+    );
+  }
+  return changed.length > 0;
+}
+
+async function registryRequest(url, { accept, what, timing }) {
+  let failure;
+  for (let attempt = 1; attempt <= REQUEST_ATTEMPTS; attempt += 1) {
+    if (attempt > 1) await sleep(timing.retryDelayMs * 2 ** (attempt - 2));
+    try {
+      const response = await fetch(url, {
+        headers: { Accept: accept, 'Cache-Control': 'no-cache' },
+        redirect: 'error',
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (response.status === 404) return null;
+      if (response.ok) return Buffer.from(await response.arrayBuffer());
+      failure = `HTTP ${response.status}`;
+      if (response.status !== 429 && response.status < 500) break;
+    } catch (error) {
+      failure = error.cause?.message ?? error.message;
+    }
+  }
+  throw new ReleaseError(`could not read ${what} from ${url}: ${failure}`);
+}
+
+// The registry's abbreviated record of a package, or null when the package is
+// not on the registry at all.
+async function fetchPackument(registry, name, timing) {
+  const body = await registryRequest(`${registry}/${name.replace('/', '%2F')}`, {
+    accept: 'application/vnd.npm.install-v1+json',
+    what: `the registry record of ${name}`,
+    timing,
+  });
+  if (body === null) return null;
+  let record;
+  try {
+    record = JSON.parse(body.toString('utf8'));
+  } catch {
+    throw new ReleaseError(`the registry record of ${name} is not JSON`);
+  }
+  const latest = record?.['dist-tags']?.latest;
+  if (!EXACT_RELEASE.test(latest ?? '')) {
+    throw new ReleaseError(`the registry record of ${name} names "${latest}" as its latest version, which is not MAJOR.MINOR.PATCH`);
+  }
+  return record;
+}
+
+// The registry records of every package, read again for as long as the
+// registry serves an older state than the previous release left: a latest
+// version below the release tag, or no record at all for a package that
+// release published. Whatever is still behind after the wait is reported by
+// registryProblems.
+async function registryRecords(registry, names, plan, released, { timing, log }) {
+  const baseVersion = plan.base === null ? null : parseRelease(plan.base.slice(1));
+  for (let attempt = 1; ; attempt += 1) {
+    const records = new Map();
+    for (const name of names) records.set(name, await fetchPackument(registry, name, timing));
+    const lagging = names.some((name) => {
+      const record = records.get(name);
+      if (record === null) return released.has(name);
+      return baseVersion !== null && compareVersions(parseRelease(record['dist-tags'].latest), baseVersion) < 0;
+    });
+    if (!lagging || attempt >= timing.lagAttempts) return records;
+    log(`The registry does not serve ${plan.base.slice(1)} as the latest version of every package yet; checking again in ${timing.lagIntervalMs / 1000} seconds.`);
+    await sleep(timing.lagIntervalMs);
+  }
+}
+
+// The published tarball of one version, verified against the integrity the
+// registry recorded for it and fetched only from the registry itself. A
+// tarball the record names but the registry does not serve yet is waited for
+// like a lagging record, because the previous release may have published it
+// seconds before this run started.
+async function publishedTarball(registry, name, record, version, { timing, log }) {
+  const dist = record.versions?.[version]?.dist;
+  if (typeof dist?.tarball !== 'string' || !dist.tarball.startsWith(`${registry}/`)) {
+    throw new ReleaseError(`the registry record of ${name}@${version} names no tarball on ${registry}`);
+  }
+  if (typeof dist.integrity !== 'string' || !dist.integrity.startsWith('sha512-')) {
+    throw new ReleaseError(`the registry record of ${name}@${version} has no sha512 integrity`);
+  }
+  for (let attempt = 1; ; attempt += 1) {
+    const bytes = await registryRequest(dist.tarball, {
+      accept: 'application/octet-stream',
+      what: `the tarball of ${name}@${version}`,
+      timing,
+    });
+    if (bytes !== null) {
+      if (integrityOf(bytes) !== dist.integrity) {
+        throw new ReleaseError(`the tarball of ${name}@${version} does not match the integrity the registry records for it`);
+      }
+      return bytes;
+    }
+    if (attempt >= timing.lagAttempts) {
+      throw new ReleaseError(`the registry has no tarball for ${name}@${version} at ${dist.tarball}`);
+    }
+    log(`The registry does not serve the tarball of ${name}@${version} yet; checking again in ${timing.lagIntervalMs / 1000} seconds.`);
+    await sleep(timing.lagIntervalMs);
+  }
+}
+
+// How many differences a package lists in the log before summarising the
+// rest. A dependency update can change every built file, and the log is read
+// by a person.
+const LISTED_DIFFERENCES = 20;
+
+export async function compare({ root = ROOT, directory, registry = REGISTRY, timing = TIMING, log = stdout } = {}) {
+  if (!directory) {
+    throw new ReleaseError('compare needs the directory pack wrote into: node scripts/release.mjs compare <directory>');
+  }
+  const { version, published } = check({ root });
+  const plan = releasePlan({ root, seed: version });
+  if (plan.version !== version) {
+    throw new ReleaseError(
+      `the manifests carry ${version}, but this commit is released as ${plan.version}. Run node scripts/release.mjs version --write before pack and compare`,
+    );
+  }
+  const target = resolve(directory);
+  const names = published.map(({ manifest }) => manifest.name);
+  const internalNames = new Set(names);
+
+  const tarballs = new Map();
+  for (const name of names) {
+    const file = tarballName(name, version);
+    try {
+      tarballs.set(name, { file, bytes: readFileSync(join(target, file)) });
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      throw new ReleaseError(`${file} is not in ${target}; run node scripts/release.mjs pack ${directory} first`);
+    }
+  }
+
+  const released = releasedPackagesOf(root, plan.base, published);
+  const records = await registryRecords(registry, names, plan, released, { timing, log });
+  const packages = names.map((name) => ({
+    name,
+    previous: records.get(name)?.['dist-tags'].latest ?? null,
+    differences: [],
+  }));
+  const problems = registryProblems(plan, packages, released);
+  if (problems.length > 0) throw new ReleaseError(problems.join('\n'));
+
+  log(describePlan(plan));
+  for (const entry of packages) {
+    const { file, bytes } = tarballs.get(entry.name);
+    if (entry.previous === null) {
+      log(`${entry.name}: not on the registry yet`);
+      continue;
+    }
+    const archive = await publishedTarball(registry, entry.name, records.get(entry.name), entry.previous, { timing, log });
+    entry.differences = tarballDifferences(
+      readTarball(archive, `the registry tarball of ${entry.name}@${entry.previous}`),
+      readTarball(bytes, file),
+      internalNames,
+    );
+    if (entry.differences.length === 0) {
+      log(`${entry.name}: the same contents as ${entry.previous}`);
+      continue;
+    }
+    log(`${entry.name}: ${entry.differences.length} difference(s) from ${entry.previous}`);
+    for (const difference of entry.differences.slice(0, LISTED_DIFFERENCES)) log(`  ${difference}`);
+    if (entry.differences.length > LISTED_DIFFERENCES) {
+      log(`  and ${entry.differences.length - LISTED_DIFFERENCES} more`);
+    }
+  }
+
+  const release = releaseDecision(plan, packages);
+  const metadata = {
+    version,
+    release,
+    base: plan.base,
+    packages: packages.map(({ name, previous, differences }) => {
+      const { file, bytes } = tarballs.get(name);
+      return { name, file, integrity: integrityOf(bytes), previous, changed: previous === null || differences.length > 0 };
+    }),
+  };
+  writeJson(join(target, 'release.json'), metadata);
+  log(
+    release
+      ? `Release ${version}: at least one package differs from its latest published version, so all ${names.length} are released at ${version}.`
+      : `Nothing to release: no package differs from its latest published version.`,
+  );
+  return metadata;
+}
+
+async function main(argv) {
   const [command, ...rest] = argv;
   switch (command) {
     case 'check': {
-      let tag;
-      if (rest.length === 2 && rest[0] === '--tag') tag = rest[1];
-      else if (rest.length !== 0) throw new ReleaseError('usage: node scripts/release.mjs check [--tag <tag>]');
-      const { version } = check({ tag });
-      stdout(`Release version ${version} is consistent${tag === undefined ? '' : ` with the tag ${tag}`}.`);
+      if (rest.length !== 0) throw new ReleaseError('usage: node scripts/release.mjs check');
+      const { version: seed } = check();
+      stdout(`The release metadata is consistent. The manifest version is ${seed}.`);
       return;
     }
-    case 'set':
-      if (rest.length !== 1) throw new ReleaseError('usage: node scripts/release.mjs set <version>');
-      setVersion(ROOT, rest[0]);
+    case 'version':
+      if (rest.length > 1 || (rest.length === 1 && rest[0] !== '--write')) {
+        throw new ReleaseError('usage: node scripts/release.mjs version [--write]');
+      }
+      printVersion(ROOT, { write: rest.length === 1 });
       return;
     case 'build':
       if (rest.length !== 0) throw new ReleaseError('usage: node scripts/release.mjs build');
@@ -450,16 +1039,20 @@ function main(argv) {
       if (rest.length !== 1) throw new ReleaseError('usage: node scripts/release.mjs pack <directory>');
       pack(ROOT, rest[0]);
       return;
+    case 'compare':
+      if (rest.length !== 1) throw new ReleaseError('usage: node scripts/release.mjs compare <directory>');
+      await compare({ directory: rest[0] });
+      return;
     default:
       throw new ReleaseError(
-        'usage: node scripts/release.mjs <check [--tag <tag>] | set <version> | build | pack <directory>>',
+        'usage: node scripts/release.mjs <check | version [--write] | build | pack <directory> | compare <directory>>',
       );
   }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    main(process.argv.slice(2));
+    await main(process.argv.slice(2));
   } catch (error) {
     if (!(error instanceof ReleaseError)) throw error;
     console.error(error.message);
