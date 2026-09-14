@@ -17,6 +17,7 @@ import {
   integrityOf,
   readTarball,
   registryProblems,
+  releasedPackagesOf,
   releaseDecision,
   ReleaseError,
   releasePlan,
@@ -679,21 +680,63 @@ describe('the release decision', () => {
     ]);
     assert.deepEqual(registryProblems(tagged, [{ name: '@crewlethq/ui', previous: '0.2.0' }, { name: '@crewlethq/icons', previous: null }]), []);
   });
+
+  it('refuses a registry that does not serve a package the previous release published', () => {
+    const released = new Set(['@crewlethq/ui']);
+    assert.deepEqual(registryProblems(tagged, [{ name: '@crewlethq/ui', previous: null }], released), [
+      '@crewlethq/ui was released as v0.2.0, but the registry does not serve the package. Check it on the registry (npm view @crewlethq/ui versions) before re-running; see "If a release goes wrong" in RELEASING.md',
+    ]);
+    assert.deepEqual(registryProblems(tagged, [{ name: '@crewlethq/icons', previous: null }], released), []);
+  });
+});
+
+describe('releasedPackagesOf', () => {
+  it('names the packages that were public at the release tag under the same name', () => {
+    const root = repository({
+      'package.json': { name: 'fixture', private: true, packageManager: 'npm@11.19.0', workspaces: ['packages/*'] },
+      'packages/tokens/package.json': manifest({ name: '@crewlethq/tokens', private: true }),
+      'packages/old/package.json': manifest({ name: '@crewlethq/old' }),
+    });
+    history(root);
+    git(root, 'add', '.');
+    commit(root, 'feat: released');
+    tag(root, 'v1.2.3');
+    const workspaces = [
+      { directory: 'packages/icons', manifest: manifest() },
+      { directory: 'packages/tokens', manifest: manifest({ name: '@crewlethq/tokens' }) },
+      { directory: 'packages/old', manifest: manifest({ name: '@crewlethq/renamed' }) },
+      { directory: 'packages/ui', manifest: manifest({ name: '@crewlethq/ui' }) },
+    ];
+    assert.deepEqual([...releasedPackagesOf(root, 'v1.2.3', workspaces)], ['@crewlethq/icons']);
+    assert.deepEqual([...releasedPackagesOf(root, null, workspaces)], []);
+  });
 });
 
 // A registry on the loopback interface serving abbreviated records and
 // tarballs. `latest` is either one version or a list served one request
 // after another, which is how a registry that lags behind a publish looks.
+// `missing` and `tarballMissing` answer that many requests for the record or
+// a tarball with 404 before serving it, and `tarballHost` names the tarballs
+// on another host.
 async function startRegistry(t, packages) {
   const server = createServer((request, response) => {
     const path = decodeURIComponent(request.url);
     for (const [name, entry] of Object.entries(packages)) {
       if (path === `/${name}`) {
+        if (entry.missing > 0) {
+          entry.missing -= 1;
+          break;
+        }
         const latest = Array.isArray(entry.latest) ? (entry.latest.length > 1 ? entry.latest.shift() : entry.latest[0]) : entry.latest;
         const versions = Object.fromEntries(
           Object.entries(entry.tarballs).map(([version, bytes]) => [
             version,
-            { dist: { tarball: `${address}/${name}/-/${name.split('/')[1]}-${version}.tgz`, integrity: entry.integrity ?? integrityOf(bytes) } },
+            {
+              dist: {
+                tarball: `${entry.tarballHost ?? address}/${name}/-/${name.split('/')[1]}-${version}.tgz`,
+                integrity: entry.integrity ?? integrityOf(bytes),
+              },
+            },
           ]),
         );
         response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ 'dist-tags': { latest }, versions }));
@@ -701,6 +744,11 @@ async function startRegistry(t, packages) {
       }
       for (const [version, bytes] of Object.entries(entry.tarballs)) {
         if (path === `/${name}/-/${name.split('/')[1]}-${version}.tgz`) {
+          if (entry.tarballMissing > 0) {
+            entry.tarballMissing -= 1;
+            response.writeHead(404).end('{}');
+            return;
+          }
           response.writeHead(200).end(bytes);
           return;
         }
@@ -719,8 +767,13 @@ const QUICK = { retryDelayMs: 0, lagAttempts: 3, lagIntervalMs: 0 };
 
 // The fixture workspace in a git repository: released as v1.2.3, followed by
 // one fix, and packed at 1.2.4 as the pack job would after `version --write`.
-function releasedWorkspace({ build = 'export const icon = 1;\n' } = {}) {
-  const root = repository({ 'packages/icons/dist/index.js': 'export const icon = 1;\n' });
+// With addedAfterRelease, the package was private when v1.2.3 was tagged, so
+// that release did not publish it.
+function releasedWorkspace({ build = 'export const icon = 1;\n', addedAfterRelease = false } = {}) {
+  const root = repository({
+    'packages/icons/dist/index.js': 'export const icon = 1;\n',
+    ...(addedAfterRelease ? { 'packages/icons/package.json': manifest({ private: true }) } : {}),
+  });
   history(root);
   git(root, 'add', '.');
   commit(root, 'feat(icons): the first icons');
@@ -782,12 +835,40 @@ describe('compare', () => {
     assert.ok(lines.includes('  changed dist/index.js'), lines.join('\n'));
   });
 
-  it('releases a package that is not on the registry yet', async (t) => {
-    const { root, directory } = releasedWorkspace();
+  it('releases a package that is not on the registry yet and was not part of the previous release', async (t) => {
+    const { root, directory } = releasedWorkspace({ addedAfterRelease: true });
     const registry = await startRegistry(t, {});
     const { result } = await compareQuietly({ root, directory, registry });
     assert.equal(result.release, true);
     assert.equal(result.packages[0].previous, null);
+  });
+
+  it('waits for a registry that does not serve a package the previous release published, then refuses', async (t) => {
+    const { root, directory } = releasedWorkspace();
+    const registry = await startRegistry(t, { '@crewlethq/icons': { latest: '1.2.3', tarballs: {}, missing: Infinity } });
+    const lines = [];
+    await assert.rejects(
+      compare({ root, directory, registry, timing: QUICK, log: (line) => lines.push(line) }),
+      /@crewlethq\/icons was released as v1\.2\.3, but the registry does not serve the package/,
+    );
+    assert.equal(lines.filter((line) => line.startsWith('The registry does not serve 1.2.3')).length, QUICK.lagAttempts - 1);
+  });
+
+  it('releases nothing when the registry only briefly failed to serve a released package', async (t) => {
+    const { root, directory, published } = releasedWorkspace();
+    const registry = await startRegistry(t, {
+      '@crewlethq/icons': { latest: '1.2.3', tarballs: { '1.2.3': published }, missing: 2, tarballMissing: 2 },
+    });
+    const { result } = await compareQuietly({ root, directory, registry });
+    assert.equal(result.release, false);
+  });
+
+  it('refuses a published tarball the registry record places on another host', async (t) => {
+    const { root, directory, published } = releasedWorkspace();
+    const registry = await startRegistry(t, {
+      '@crewlethq/icons': { latest: '1.2.3', tarballs: { '1.2.3': published }, tarballHost: 'https://registry.example.com' },
+    });
+    await assert.rejects(compareQuietly({ root, directory, registry }), /names no tarball on http:\/\/127\.0\.0\.1/);
   });
 
   it('waits for a registry that still serves the version before the latest release', async (t) => {

@@ -760,16 +760,52 @@ export function tarballDifferences(previous, current, internalNames) {
   return differences;
 }
 
+// The published packages of the release <base> records: every workspace that
+// was public at the tagged commit and still carries the same name. The release
+// that created the tag published all of them at the tag's version, so each one
+// must be on the registry. A package that is public now but was not then (a
+// package added since) is absent from this set, and its absence from the
+// registry is the bootstrap rather than a problem.
+export function releasedPackagesOf(root, base, workspaces) {
+  const released = new Set();
+  if (base === null) return released;
+  for (const { directory, manifest } of workspaces) {
+    const text = git(root, ['show', `refs/tags/${base}:${posix.join(...directory.split(/[\\/]/), 'package.json')}`], {
+      allowFailure: true,
+    });
+    if (text === null) continue;
+    let tagged;
+    try {
+      tagged = JSON.parse(text);
+    } catch {
+      continue;
+    }
+    if (tagged?.name === manifest.name && tagged.private !== true) released.add(manifest.name);
+  }
+  return released;
+}
+
 // The registry must be exactly where the last release left it: every package
-// already on it has the latest release tag reachable from this commit as its
-// latest version. Anything else means a version was published without the tag
-// that records it (the bootstrap before its tag, or a run that failed between
-// publishing and tagging), or the registry was changed by hand, and computing
-// a version from the tags would collide with, or fall behind, what is there.
-export function registryProblems(plan, packages) {
+// the latest release tag reachable from this commit published is on it, with
+// that tag's version as its latest version, and no other package on it has a
+// latest version the tags do not record. Anything else means a version was
+// published without the tag that records it (the bootstrap before its tag, or
+// a run that failed between publishing and tagging), the registry was changed
+// by hand, or the registry is not serving a release it holds. Computing a
+// version from the tags would then collide with, or fall behind, what is
+// there, and a released package the registry does not serve would look like a
+// package never published and be released again with nothing changed.
+export function registryProblems(plan, packages, released = new Set()) {
   const problems = [];
   for (const { name, previous } of packages) {
-    if (previous === null) continue;
+    if (previous === null) {
+      if (released.has(name)) {
+        problems.push(
+          `${name} was released as ${plan.base}, but the registry does not serve the package. Check it on the registry (npm view ${name} versions) before re-running; see "If a release goes wrong" in RELEASING.md`,
+        );
+      }
+      continue;
+    }
     if (plan.base === null) {
       problems.push(
         `${name}@${previous} is on the registry, but no release tag is reachable from this commit. A release was published without the tag that records it; see "If a release goes wrong" in RELEASING.md`,
@@ -842,23 +878,33 @@ async function fetchPackument(registry, name, timing) {
   return record;
 }
 
-async function registryRecords(registry, names, plan, { timing, log }) {
+// The registry records of every package, read again for as long as the
+// registry serves an older state than the previous release left: a latest
+// version below the release tag, or no record at all for a package that
+// release published. Whatever is still behind after the wait is reported by
+// registryProblems.
+async function registryRecords(registry, names, plan, released, { timing, log }) {
   const baseVersion = plan.base === null ? null : parseRelease(plan.base.slice(1));
   for (let attempt = 1; ; attempt += 1) {
     const records = new Map();
     for (const name of names) records.set(name, await fetchPackument(registry, name, timing));
-    const lagging = [...records.values()].some(
-      (record) => record !== null && baseVersion !== null && compareVersions(parseRelease(record['dist-tags'].latest), baseVersion) < 0,
-    );
+    const lagging = names.some((name) => {
+      const record = records.get(name);
+      if (record === null) return released.has(name);
+      return baseVersion !== null && compareVersions(parseRelease(record['dist-tags'].latest), baseVersion) < 0;
+    });
     if (!lagging || attempt >= timing.lagAttempts) return records;
-    log(`The registry does not serve ${plan.base.slice(1)} as the latest version yet; checking again in ${timing.lagIntervalMs / 1000} seconds.`);
+    log(`The registry does not serve ${plan.base.slice(1)} as the latest version of every package yet; checking again in ${timing.lagIntervalMs / 1000} seconds.`);
     await sleep(timing.lagIntervalMs);
   }
 }
 
 // The published tarball of one version, verified against the integrity the
-// registry recorded for it and fetched only from the registry itself.
-async function publishedTarball(registry, name, record, version, timing) {
+// registry recorded for it and fetched only from the registry itself. A
+// tarball the record names but the registry does not serve yet is waited for
+// like a lagging record, because the previous release may have published it
+// seconds before this run started.
+async function publishedTarball(registry, name, record, version, { timing, log }) {
   const dist = record.versions?.[version]?.dist;
   if (typeof dist?.tarball !== 'string' || !dist.tarball.startsWith(`${registry}/`)) {
     throw new ReleaseError(`the registry record of ${name}@${version} names no tarball on ${registry}`);
@@ -866,16 +912,24 @@ async function publishedTarball(registry, name, record, version, timing) {
   if (typeof dist.integrity !== 'string' || !dist.integrity.startsWith('sha512-')) {
     throw new ReleaseError(`the registry record of ${name}@${version} has no sha512 integrity`);
   }
-  const bytes = await registryRequest(dist.tarball, {
-    accept: 'application/octet-stream',
-    what: `the tarball of ${name}@${version}`,
-    timing,
-  });
-  if (bytes === null) throw new ReleaseError(`the registry has no tarball for ${name}@${version} at ${dist.tarball}`);
-  if (integrityOf(bytes) !== dist.integrity) {
-    throw new ReleaseError(`the tarball of ${name}@${version} does not match the integrity the registry records for it`);
+  for (let attempt = 1; ; attempt += 1) {
+    const bytes = await registryRequest(dist.tarball, {
+      accept: 'application/octet-stream',
+      what: `the tarball of ${name}@${version}`,
+      timing,
+    });
+    if (bytes !== null) {
+      if (integrityOf(bytes) !== dist.integrity) {
+        throw new ReleaseError(`the tarball of ${name}@${version} does not match the integrity the registry records for it`);
+      }
+      return bytes;
+    }
+    if (attempt >= timing.lagAttempts) {
+      throw new ReleaseError(`the registry has no tarball for ${name}@${version} at ${dist.tarball}`);
+    }
+    log(`The registry does not serve the tarball of ${name}@${version} yet; checking again in ${timing.lagIntervalMs / 1000} seconds.`);
+    await sleep(timing.lagIntervalMs);
   }
-  return bytes;
 }
 
 // How many differences a package lists in the log before summarising the
@@ -909,13 +963,14 @@ export async function compare({ root = ROOT, directory, registry = REGISTRY, tim
     }
   }
 
-  const records = await registryRecords(registry, names, plan, { timing, log });
+  const released = releasedPackagesOf(root, plan.base, published);
+  const records = await registryRecords(registry, names, plan, released, { timing, log });
   const packages = names.map((name) => ({
     name,
     previous: records.get(name)?.['dist-tags'].latest ?? null,
     differences: [],
   }));
-  const problems = registryProblems(plan, packages);
+  const problems = registryProblems(plan, packages, released);
   if (problems.length > 0) throw new ReleaseError(problems.join('\n'));
 
   log(describePlan(plan));
@@ -925,7 +980,7 @@ export async function compare({ root = ROOT, directory, registry = REGISTRY, tim
       log(`${entry.name}: not on the registry yet`);
       continue;
     }
-    const archive = await publishedTarball(registry, entry.name, records.get(entry.name), entry.previous, timing);
+    const archive = await publishedTarball(registry, entry.name, records.get(entry.name), entry.previous, { timing, log });
     entry.differences = tarballDifferences(
       readTarball(archive, `the registry tarball of ${entry.name}@${entry.previous}`),
       readTarball(bytes, file),
