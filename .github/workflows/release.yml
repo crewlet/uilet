@@ -169,7 +169,11 @@ jobs:
     needs: [verify, pack]
     if: needs.pack.outputs.release == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # Publishing takes seconds. The budget is for the read-back below, which
+    # waits up to five minutes per package for the registry to serve what it
+    # just accepted, so three packages can legitimately hold the job a quarter
+    # of an hour.
+    timeout-minutes: 20
     environment: npm-publish
     permissions:
       contents: read # the sparse checkout and the commit verification
@@ -211,11 +215,17 @@ jobs:
       # all is the bootstrap in RELEASING.md. A version already on the
       # registry is skipped when its integrity equals the tarball's and
       # refused when it differs, which makes a re-run after a partial failure
-      # finish the release and is how the bootstrap completes. A version below
-      # the latest one is refused, because there is one release line and npm
-      # would move "latest" backwards. A version this job publishes is read
-      # back from the registry, and its integrity and dist-tag must be the
-      # ones intended.
+      # finish the release and is how the bootstrap completes. A version not
+      # yet on the registry must be exactly one step above the package's latest
+      # version (the next patch, the next minor, or from 1.0.0 on the next
+      # major), which is every version the pack job can compute once it has
+      # confirmed that the registry matches the release tags. The version
+      # comes from the pack job, which runs the build and its third-party
+      # tooling, so this bound is checked here, outside that job: nothing it
+      # writes into release.json can move "latest" backwards, skip versions or
+      # jump to an arbitrary one. A version this job publishes is read back
+      # from the registry, and its integrity and dist-tag must be the ones
+      # intended.
       #
       # --provenance is explicit rather than left to npm's automatic detection,
       # so a publish that cannot produce an attestation fails instead of
@@ -305,8 +315,26 @@ jobs:
             fi
 
             current="$(jq -r '."dist-tags".latest // "null"' "${registry_response}")"
-            if [ "${current}" != "null" ] && [ "$(printf '%s\n%s\n' "${current}" "${version}" | sort -V | tail -n 1)" != "${version}" ]; then
-              echo "::error::${name}@${version} is lower than its latest version on npm, ${current}. There is one release line; see \"If a release goes wrong\" in RELEASING.md."
+            if ! [[ "${current}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+              echo "::error::${name} is on npm, but its latest dist-tag names \"${current}\", which is not MAJOR.MINOR.PATCH. See \"If a release goes wrong\" in RELEASING.md."
+              refused=true
+              continue
+            fi
+            major="${BASH_REMATCH[1]}"
+            minor="${BASH_REMATCH[2]}"
+            patch="${BASH_REMATCH[3]}"
+            next_versions=("${major}.${minor}.$((patch + 1))" "${major}.$((minor + 1)).0")
+            if [ "${major}" -gt 0 ]; then
+              next_versions+=("$((major + 1)).0.0")
+            fi
+            next=false
+            for candidate in "${next_versions[@]}"; do
+              if [ "${candidate}" = "${version}" ]; then
+                next=true
+              fi
+            done
+            if [ "${next}" != true ]; then
+              echo "::error::${name}@${version} is not a version one release can move to from ${current}, its latest version on npm (${next_versions[*]}). If a release was published moments ago, the registry may not serve it yet, so re-run the failed jobs; otherwise see \"If a release goes wrong\" in RELEASING.md."
               refused=true
               continue
             fi
@@ -441,4 +469,25 @@ jobs:
               ;;
           esac
 
-          gh release create "${tag}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${tag}" --notes "${notes}" --generate-notes
+          # GitHub marks a new release as the repository's latest one unless
+          # told otherwise. A re-run of this job can create a release after a
+          # later run released a higher version, so the release is marked
+          # latest only when no release with a higher version already is.
+          latest=true
+          if current="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name 2>&1)"; then
+            if [[ "${current}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] \
+              && [ "$(printf '%s\n%s\n' "${current#v}" "${VERSION}" | sort -V | tail -n 1)" != "${VERSION}" ]; then
+              latest=false
+              echo "::notice::${current} is already the latest release, so ${tag} is not marked as latest"
+            fi
+          else
+            case "${current}" in
+              *"HTTP 404"*) ;;
+              *)
+                echo "::error::could not look up the latest release: ${current}"
+                exit 1
+                ;;
+            esac
+          fi
+
+          gh release create "${tag}" --repo "${GITHUB_REPOSITORY}" --verify-tag --title "${tag}" --notes "${notes}" --generate-notes "--latest=${latest}"
