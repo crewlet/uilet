@@ -58,7 +58,7 @@ export function checkStorybookStatic(root) {
   return problems;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [root, ...extra] = process.argv.slice(2);
   if (!root || extra.length > 0) {
     console.error('usage: node scripts/check-storybook-static.mjs <directory>');
