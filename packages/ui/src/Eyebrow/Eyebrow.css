@@ -1,26 +1,42 @@
 /*
- * Eyebrow (kicker), the uppercase section label. Monospace, tracked-out,
- * and quiet so it names a section without competing with its title.
+ * Eyebrow (kicker), the uppercase label that names a section.
+ *
+ * THE ONE MICRO-LABEL REGISTER, and it is the same one `Text variant="label"`
+ * and a table's column head are set in: 11px, medium, the wide track,
+ * uppercase, on the tertiary step. It used to be its own thing (monospace, one
+ * size up, semibold, the wider track), and two registers that mean "this names
+ * the block under it" is exactly how a page ends up with six tracking values
+ * for one job.
  */
 
 .crewlet-eyebrow {
   display: inline-block;
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.14em;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
   text-transform: uppercase;
-  line-height: var(--font-line-height-tight);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-tertiary);
 }
 
 .crewlet-eyebrow--muted {
   color: var(--color-text-tertiary);
 }
 
+/*
+ * The accent as TEXT takes the INK step, never the fill. The fill is a mark
+ * and clears 3:1; a word has to clear 4.5:1, and an 11px uppercase label is
+ * exactly where a fill-as-text fails.
+ */
 .crewlet-eyebrow--accent {
-  color: var(--color-brand-accent);
+  color: var(--color-brand-accent-ink);
 }
 
+/*
+ * A marketing hero's kicker. A gradient painted through the glyphs has no
+ * measurable contrast, so it is reserved for display type over a surface the
+ * page controls, never for a label carrying a fact on its own.
+ */
 .crewlet-eyebrow--gradient {
   background: var(--color-brand-gradient);
   -webkit-background-clip: text;

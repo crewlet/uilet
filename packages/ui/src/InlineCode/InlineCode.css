@@ -1,0 +1,65 @@
+/*
+ * One identifier inside a sentence: a mono chip on the inset surface.
+ *
+ * The size is relative (0.92em) rather than a step off the scale, because the
+ * chip has to sit inside whatever register its sentence is set in. A fixed
+ * size makes it either a shout inside a caption or a whisper inside a lead.
+ */
+
+.crewlet-inline-code {
+  /*
+   * RELATIVE, so it is deliberately not a step off the type scale: the chip
+   * sits inside whatever register its sentence is set in, and an absolute size
+   * makes it a shout inside a caption or a whisper inside a lead. The mono
+   * face also runs larger than the sans at the same nominal size, which is
+   * what the reduction corrects.
+   */
+  --crewlet-inline-code-size: 0.92em;
+  font-family: var(--font-family-mono);
+  /* An identifier is read character by character; a ligature joins two of them
+     into a drawing of something nobody typed. */
+  font-variant-ligatures: none;
+  font-size: var(--crewlet-inline-code-size);
+  background: var(--color-surface-inset);
+  border-radius: var(--radius-xs);
+  padding: 1px var(--spacing-1);
+  color: var(--color-text-secondary);
+  /* A URL IS ONE UNBREAKABLE WORD to a line breaker. Without this the chip is
+     pushed whole onto its own line and the sentence around it is torn up. */
+  overflow-wrap: anywhere;
+}
+
+/*
+ * A `${NAME}` pointer. It is one token a reader copies, so it keeps its braces
+ * together. THE SAME INK AS ANY OTHER CHIP: a pointer is the name of a sealed
+ * entry, and drawn a step quieter than the identifiers around it, it read as
+ * decoration rather than as the thing an operator has to type back.
+ */
+.crewlet-inline-code--reference {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+/*
+ * Inside a Callout or a field error the chip carries that message's ink, or a
+ * calm grey identifier sits in the middle of an alarming sentence.
+ *
+ * ONLY THE INK. The chip keeps its own ground and its own inset, because they
+ * are what says "this is a string you type", and a bare run of monospace
+ * inside a sentence is not that. The composite the message's ink then lands on
+ * is measured: @crewlethq/tokens' palette suite holds every status ink to
+ * 4.5:1 on the inset well drawn over its own callout tint, and the tightest
+ * pair is 4.61:1.
+ */
+.crewlet-inline-code--inherit {
+  color: inherit;
+}
+
+.crewlet-inline-code--truncate {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}

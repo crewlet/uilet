@@ -1,0 +1,68 @@
+/*
+ * SegmentedControl: the pill row, drawn with the Tabs classes.
+ *
+ * Only what is its own lives here. The chrome, the sizes and the active chip
+ * come from Tabs.css, so a lens row and a setting row look the same whichever
+ * component a screen reached for.
+ */
+
+.crewlet-segmented__text {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
+/*
+ * A choice a reader has to READ before making it is a card row, not a chip:
+ * a template with a sentence under its name does not fit in a pill, and
+ * squeezing it there is how the sentence ends up truncated to nothing.
+ */
+/*
+ * TWO CLASSES, so this wins whatever order the stylesheets are bundled in.
+ * `.crewlet-tabs` sets the row's own display and alignment, and a rule of
+ * equal weight in a file that happens to come later takes them back.
+ */
+.crewlet-tabs.crewlet-segmented--cards {
+  display: grid;
+  gap: var(--spacing-2);
+  width: 100%;
+  align-items: stretch;
+}
+
+/*
+ * The same frame a framed Checkbox draws, because it is the same row: a
+ * boundary on the body it sits in, and no surface of its own. A choice with a
+ * surface inside a panel of the same surface reads as a second panel.
+ */
+.crewlet-segmented--cards .crewlet-segmented__option {
+  justify-content: flex-start;
+  text-align: left;
+  /* A sentence under a name is a sentence: it wraps rather than being cut. */
+  white-space: normal;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-compact);
+}
+
+/* The one card that is chosen takes the accent, which is what "here, this
+   one" means everywhere else in the product. */
+.crewlet-segmented--cards .crewlet-segmented__option.is-active {
+  border-color: var(--color-brand-accent);
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-segmented__description {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
+  white-space: normal;
+}
+
+.crewlet-segmented--cards .crewlet-segmented__option.is-active .crewlet-segmented__description {
+  color: var(--color-brand-accent-ink);
+}

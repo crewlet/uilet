@@ -1,0 +1,79 @@
+/*
+ * A button drawn as the field it stands in for.
+ *
+ * Below the shell breakpoint it keeps the glyph and drops the label and the
+ * hint, which is why the name lives on the button rather than in its text.
+ */
+
+.crewlet-search-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  /* The resting width of the box. A topbar with less room sets it. */
+  --crewlet-search-trigger-width: 220px;
+  min-width: var(--crewlet-search-trigger-width);
+  height: var(--size-control-md);
+  padding: 0 var(--spacing-2) 0 var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-compact);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-search-trigger:hover {
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
+}
+
+.crewlet-search-trigger:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-search-trigger__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+/* The glyph is quieter than the word beside it, on the decoration step, which
+   is the one thing that step is for. */
+.crewlet-search-trigger__icon svg {
+  color: var(--color-text-muted);
+}
+
+.crewlet-search-trigger__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The hint as a whole, so its keys stay together at the end of the box. */
+.crewlet-search-trigger__shortcut {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  flex: none;
+}
+
+@media (max-width: 900px) {
+  .crewlet-search-trigger {
+    min-width: 0;
+  }
+
+  .crewlet-search-trigger__label,
+  .crewlet-search-trigger__shortcut {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-search-trigger {
+    transition: none;
+  }
+}

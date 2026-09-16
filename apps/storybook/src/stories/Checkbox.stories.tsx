@@ -10,75 +10,73 @@ const meta: Meta<typeof Checkbox> = {
 export default meta;
 type Story = StoryObj<typeof Checkbox>;
 
+const column: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16,
+  maxWidth: 480,
+};
+
 export const Basic: Story = {
   render: () => {
     function Demo() {
-      const [checked, setChecked] = useState(false);
-
+      const [on, setOn] = useState(true);
       return (
-        <Checkbox
-          label="Email me when an agent needs attention"
-          checked={checked}
-          onChange={(event) => setChecked(event.target.checked)}
-        />
+        <div style={column}>
+          <Checkbox label="Enabled" checked={on} onCheckedChange={setOn} />
+          <Checkbox
+            label="Clear lead"
+            description="The unit inherits its parent's lead until somebody sets one."
+            checked={false}
+            onChange={() => {}}
+          />
+          <Checkbox label="Unavailable" checked={false} disabled onChange={() => {}} />
+        </div>
       );
     }
-
     return <Demo />;
   },
 };
 
-/* A choice worth explaining before it is made. */
-export const WithDescription: Story = {
-  render: () => {
-    function Demo() {
-      const [checked, setChecked] = useState(false);
-
-      return (
-        <Checkbox
-          label="Keep the workspace in sync"
-          description="Agents are added to new channels as they are created."
-          checked={checked}
-          onChange={(event) => setChecked(event.target.checked)}
-        />
-      );
-    }
-
-    return <Demo />;
-  },
-};
-
-/*
- * Danger is for a choice that destroys something. It colours the box
- * rather than the label, so the tick reads as the dangerous part: the
- * sentence stays legible and the state is what stands out.
+/**
+ * The decision a dialog gives its own row, and the one case where the box
+ * itself carries a tone: ticking it destroys something.
  */
-export const Danger: Story = {
+export const FramedAndDestructive: Story = {
   render: () => {
     function Demo() {
-      const [checked, setChecked] = useState(false);
-
+      const [remove, setRemove] = useState(false);
       return (
-        <Checkbox
-          tone="danger"
-          label="Also remove the accounts Crewlet created"
-          description="They are deleted in the provider. Anything they own stays, but they can no longer be used."
-          checked={checked}
-          onChange={(event) => setChecked(event.target.checked)}
-        />
+        <div style={column}>
+          <Checkbox
+            framed
+            tone="danger"
+            label="Also remove the accounts Crewlet created"
+            description="Each agent's account at the vendor is deleted. This cannot be undone."
+            checked={remove}
+            onCheckedChange={setRemove}
+          />
+          <Checkbox
+            framed
+            label="Send a summary when this finishes"
+            description="One message in the company's default channel."
+            checked
+            onChange={() => {}}
+          />
+        </div>
       );
     }
-
     return <Demo />;
   },
 };
 
-export const Disabled: Story = {
+/** Some of what the box stands for is ticked, which is neither on nor off. */
+export const Indeterminate: Story = {
   render: () => (
-    <Checkbox
-      label="Not available in this workspace"
-      description="Ask an administrator to turn this on."
-      disabled
-    />
+    <div style={column}>
+      <Checkbox label="Every seat" indeterminate checked={false} onChange={() => {}} />
+      <Checkbox label="Software Engineer" checked onChange={() => {}} />
+      <Checkbox label="Site Reliability" checked={false} onChange={() => {}} />
+    </div>
   ),
 };

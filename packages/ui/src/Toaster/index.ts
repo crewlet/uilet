@@ -1,4 +1,14 @@
 import './Toaster.css';
 
-export { Toaster } from './Toaster.js';
-export type { Toast, ToastVariant, ToastAction, ToasterProps } from './Toaster.js';
+export { ToastProvider, Toaster, useToast } from './Toaster.js';
+export type {
+  Toast,
+  ToastAction,
+  ToastApi,
+  ToastOptions,
+  ToastProviderProps,
+  ToastRequest,
+  ToastTitles,
+  ToastVariant,
+  ToasterProps,
+} from './Toaster.js';

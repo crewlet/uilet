@@ -12,6 +12,8 @@ after(() => {
 });
 
 const LICENSE = 'Copyright notice\n\nSIL OPEN FONT LICENSE Version 1.1 - 26 February 2007\n';
+const APACHE = '                              Apache License\n                        Version 2.0, January 2004\n';
+const ATTRIBUTION = 'Material Symbols by Google, licensed under the Apache License 2.0\n';
 
 // A build shaped like the real one: the Storybook interface fonts at the root
 // and the preview's fonts under assets/, each directory with its license.
@@ -31,6 +33,8 @@ const valid = {
   'OFL.txt': LICENSE,
   'assets/inter-latin-abc.woff2': 'font',
   'assets/OFL.txt': LICENSE,
+  'third-party/material-symbols/LICENSE': APACHE,
+  'third-party/material-symbols/NOTICE': ATTRIBUTION,
 };
 
 describe('checkStorybookStatic', () => {
@@ -52,6 +56,27 @@ describe('checkStorybookStatic', () => {
     assert.match(problems[0], /^_worker\.js is present/);
   });
 
+  for (const [what, path, content] of [
+    ['an @import of a remote stylesheet', 'assets/preview.css', "@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');"],
+    ['a url() reaching a host', 'assets/preview.css', '@font-face { src: url(https://cdn.example.com/inter.woff2); }'],
+    ['a protocol relative url()', 'assets/preview.css', '.a { background: url(//cdn.example.com/a.png); }'],
+    ['a src attribute reaching a host', 'iframe.html', '<script src="https://cdn.example.com/a.js"></script>'],
+    ['a <link> reaching a host', 'index.html', '<!doctype html><link rel="stylesheet" href="https://cdn.example.com/a.css">'],
+  ]) {
+    it(`refuses a build carrying ${what}`, () => {
+      const problems = checkStorybookStatic(build({ ...valid, [path]: content }));
+      assert.equal(problems.length, 1);
+      assert.match(problems[0], /every asset this site needs ships with it/);
+    });
+  }
+
+  it('leaves a plain link alone, which is not a request the page makes', () => {
+    // Storybook's own error pages link to its documentation. A rule that
+    // refused those would be switched off within a week.
+    const files = { ...valid, 'iframe.html': '<a href="https://storybook.js.org/docs">Docs</a>' };
+    assert.deepEqual(checkStorybookStatic(build(files)), []);
+  });
+
   it('refuses a font directory without OFL.txt', () => {
     const { 'assets/OFL.txt': _omitted, ...files } = valid;
     const problems = checkStorybookStatic(build(files));
@@ -65,8 +90,29 @@ describe('checkStorybookStatic', () => {
 
   it('refuses a directory with no fonts, which means the wrong directory was checked', () => {
     const problems = checkStorybookStatic(build({ 'index.html': '<!doctype html>' }));
-    assert.equal(problems.length, 1);
+    assert.equal(problems.length, 3);
     assert.match(problems[0], /^no font files found/);
+  });
+
+  it('refuses a build without the license of the drawings it bundles', () => {
+    const { 'third-party/material-symbols/LICENSE': _omitted, ...files } = valid;
+    assert.deepEqual(checkStorybookStatic(build(files)), [
+      'third-party/material-symbols/LICENSE is missing; the preview bundles the Material Symbols drawings, whose license travels with them',
+    ]);
+  });
+
+  it('refuses a drawings license that does not hold the license text', () => {
+    const files = { ...valid, 'third-party/material-symbols/LICENSE': 'Some other terms\n' };
+    assert.deepEqual(checkStorybookStatic(build(files)), [
+      'third-party/material-symbols/LICENSE does not contain the Apache License 2.0 text',
+    ]);
+  });
+
+  it('refuses a build without the attribution of the drawings it bundles', () => {
+    const { 'third-party/material-symbols/NOTICE': _omitted, ...files } = valid;
+    assert.deepEqual(checkStorybookStatic(build(files)), [
+      'third-party/material-symbols/NOTICE is missing; the preview bundles the Material Symbols drawings, whose license travels with them',
+    ]);
   });
 
   it('refuses a path that is not a directory', () => {

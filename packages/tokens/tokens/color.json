@@ -1,18 +1,20 @@
 {
   "color": {
     "brand": {
-      "primary": { "value": "#5469d4", "comment": "Primary brand color and the fill of primary actions. The focus and glow shadows are tinted with it; the theme overrides repaint it per palette." },
+      "primary": { "value": "#5469d4", "comment": "Primary brand color and the fill of primary actions. The themes repaint it monochrome: black on light, white on dark." },
       "primaryHover": { "value": "#4759c2" },
       "primaryActive": { "value": "#3b4caa" },
-      "accent": { "value": "#5469d4", "comment": "Interactive accent for selected, active and focus states (a checked checkbox, an active chip, a selected card). The same in both theme palettes." },
-      "accentHover": { "value": "#6478e0" },
-      "accentActive": { "value": "#4a5cc2" },
+      "accent": { "value": "#5469d4", "comment": "The one colour that means HERE: the active nav indicator, the focus ring, the selected row, the filter that is on. A fill and a mark, never text. The same in every palette." },
+      "accentHover": { "value": "#4a5cc2", "comment": "White clears 5.83:1 on it. The value it replaced, #6478e0, measured 3.96:1 and put the label of a hovered primary button under the text floor." },
+      "accentActive": { "value": "#3e50b8", "comment": "White clears 6.90:1 on it." },
+      "accentInk": { "value": "#8b9ff5", "comment": "The accent as TEXT. The fill step is never text and this step is never a background; the split is what the palette suite measures. Light repaints it to a dark indigo." },
       "accentRgb": { "value": "84, 105, 212", "comment": "The accent as an r, g, b triple for translucent tints: rgba(var(--color-brand-accent-rgb), 0.12). Rebind it together with the accent." },
-      "accentSoft": { "value": "rgba(84, 105, 212, 0.10)", "comment": "Translucent accent fill behind an active or selected control." },
+      "accentSoft": { "value": "rgba(84, 105, 212, 0.18)", "comment": "Translucent accent fill behind an active or selected row. The alpha is per theme: a selected row has to separate from its ground by at least as much as a plain hover overlay does, and one alpha for both themes cannot." },
       "accentSoftStrong": { "value": "rgba(84, 105, 212, 0.32)", "comment": "Translucent accent border paired with the soft fill." },
       "accentDeep": { "value": "#5c24ff", "comment": "Deep purple. Distinct from primary; used as a gradient stop and rarely on its own." },
       "highlight": { "value": "#ff3bff", "comment": "Hot pink highlight. The first stop of the brand gradient; use sparingly on its own." },
       "slate": { "value": "#3c4052", "comment": "Muted blue-grey for low-emphasis informational fills (toast progress drains, hover halos, info notification tints)." },
+      "mark": { "value": "#7c56ff", "comment": "The logo's own colour, and the default of the brand figure. It belongs to the mark rather than to the interface, so it is the same in every palette and is never spent on a control." },
       "gradient": { "value": "linear-gradient(90deg, #ff3bff 0%, #ecbfbf 38%, #5c24ff 76%, #d94fd5 100%)", "comment": "Brand gradient. The one 4-stop definition every gradient surface uses, so marketing and product surfaces match." }
     },
     "surface": {
@@ -23,28 +25,87 @@
       "topbar": { "value": "#15171c" },
       "topbarLift": { "value": "#1c1e24" },
       "topbarActive": { "value": "#22252b" },
-      "inverse": { "value": "#ffffff" }
+      "hover": { "value": "rgba(255, 255, 255, 0.05)", "comment": "The overlay a hovered row carries. A row shows this OR the selected tint, never both: they are the same property on the same element, so the tinted row keeps its tint and the palette suite measures no hover-over-selected composite." },
+      "pressed": { "value": "rgba(255, 255, 255, 0.08)" },
+      "inset": { "value": "rgba(255, 255, 255, 0.05)", "comment": "A well: a code block, an empty state, a panel sunk into its card." },
+      "glass": { "value": "rgba(28, 30, 36, 0.90)", "comment": "Frosted chrome, paired with --blur-sm. Glass carries chrome; anything carrying words sits on an opaque surface. The alpha is 0.90 because that is what keeps the tertiary text step over 4.5:1 with the brand-primary fill behind it, which is the worst backdrop a panned canvas can put there." },
+      "scrim": { "value": "rgba(0, 0, 0, 0.6)", "comment": "A ground that DARKENS what is behind it: a media viewer, an upload target, the rail's own overlay on a phone. It is not what a dialog sits on; see veil." },
+      "veil": { "value": "rgba(0, 0, 0, 0.72)", "comment": "The ground a dialog, a sheet and the command palette sit on. It is THE ROOT'S OWN background at 0.72, which is this root's black here and a theme's own ground there, so the page is faded to context rather than darkened out of the way: an operator keeps their place while a surface is open. Held to the ground it belongs to, and not to one theme's value: a veil that is a different colour from the page it covers is a wash over the page rather than the page seen through less of itself. The alpha is what holds the page's own primary text inside a band, below the 3:1 mark floor so nothing behind competes with the surface and above 1.5:1 so the page is still there. The palette suite measures both ends." },
+      "inverse": { "value": "#ffffff", "comment": "The ground that inverts the palette, carrying --color-text-inverse." }
     },
     "text": {
       "primary": { "value": "#fafafa", "comment": "Slightly off-white to reduce eye strain on dark surfaces." },
       "secondary": { "value": "#c9ced8" },
-      "tertiary": { "value": "#8c99ad" },
-      "muted": { "value": "rgba(255, 255, 255, 0.3)" },
-      "onBrand": { "value": "#ffffff" },
+      "tertiary": { "value": "#95a2b6", "comment": "A fact, so it clears 4.5:1 on every surface it can land on, including a pressed row inside the top bar's active step. #8c99ad measured 4.17:1 there." },
+      "muted": { "value": "#686b70", "comment": "DECORATION ONLY: a hairline glyph, a disabled affordance, a border. Measured BETWEEN 2.8:1 and 4.5:1 on the panel, because a step that crept up to the fact floor would invite itself into a table cell, which is the whole reason it has a separate name." },
+      "onBrand": { "value": "#ffffff", "comment": "The label on a brand-primary fill." },
+      "onAccent": { "value": "#ffffff", "comment": "The label on an accent fill, and on the danger fill. Separate from onBrand because the themes repaint the brand fill monochrome and leave the accent where it is." },
       "inverse": { "value": "#09090b" }
     },
     "border": {
       "default": { "value": "rgba(255, 255, 255, 0.08)" },
       "hover": { "value": "rgba(255, 255, 255, 0.15)" },
-      "strong": { "value": "#3f4145" },
-      "strongHover": { "value": "#4a4d52", "comment": "Solid dark-mode hover border. Use when hover should be a solid color instead of a translucent overlay." }
+      "strong": { "value": "#4a4d52", "comment": "The heavier resting border, at the plain border's hover weight. It used to hold the same value as --color-border-default in both palettes, so the pair was a copy of the plain pair rather than a third step." },
+      "strongHover": { "value": "#5a5e65", "comment": "One step past strong, so the strong pair is a real pair." },
+      "control": { "value": "#7f848e", "comment": "The boundary of an input, a checkbox or a switch. It clears 3:1 on every surface a control can sit on, the overlay composites included: a checkbox inside a hovered row in a dialog body is the case the opaque surfaces alone do not catch." }
     },
+    "focus": { "value": "#8b9ff5", "comment": "The focus indicator, drawn as an OUTLINE at 2px and offset 2px. Forced-colors mode drops every box-shadow and keeps outlines, so a ring drawn as a shadow alone disappears for exactly the readers who need one." },
     "feedback": {
-      "success": { "value": "#46a758", "comment": "Running and healthy status green for status dots, badges and success icons. Softer than Tailwind green-500 so it does not glare on dark surfaces." },
-      "warning": { "value": "#f59e0b" },
-      "danger": { "value": "#ef4444", "comment": "Semantic error red for destructive actions and failure states." },
-      "dangerHover": { "value": "#dc2626" },
-      "info": { "value": "#3b82f6" }
-    }
+      "success": { "value": "#14b8a6", "comment": "A good terminal state. The four status meanings never move." },
+      "successInk": { "value": "#5eead4" },
+      "warning": { "value": "#f59e0b", "comment": "A person is needed." },
+      "warningInk": { "value": "#fde68a" },
+      "danger": { "value": "#dc2626", "comment": "Failure, and the fill of a destructive action." },
+      "dangerHover": { "value": "#b91c1c" },
+      "dangerInk": { "value": "#fca5a5" },
+      "info": { "value": "#38bdf8", "comment": "Neutral information." },
+      "infoInk": { "value": "#7dd3fc" }
+    },
+    "phase": {
+      "onboarding": { "value": "#f77ae9", "comment": "The agent phases: onboarding, execute, review. Three, and the only categorical identity outside a chart. Every pair stays dE 10 apart under normal, protan and deutan vision, and clears the status family and the accent under all three." },
+      "onboardingInk": { "value": "#ff82f1" },
+      "execute": { "value": "#ac6bff" },
+      "executeInk": { "value": "#d697ff" },
+      "review": { "value": "#00a24f" },
+      "reviewInk": { "value": "#46c872" }
+    },
+    "data": {
+      "1": { "value": "#a5b4fc", "comment": "Five chart series in a fixed order, plus a neutral residual, and legal ONLY inside a chart that carries a legend. Adjacent pairs are what a legend reader distinguishes, so that is what is measured, under all three visions. Series 1 is deliberately NOT the accent: a series painted in the selection colour claims to be the selection." },
+      "2": { "value": "#facc15" },
+      "3": { "value": "#38bdf8" },
+      "4": { "value": "#86efac" },
+      "5": { "value": "#ec4899" },
+      "other": { "value": "#71717a", "comment": "The residual bucket. Exempt from the separation rules on purpose: a residual that competed with a real series would be claiming to be one." }
+    },
+    "avatar": {
+      "tint": {
+        "0": { "value": "#2563eb", "comment": "The ten seeded avatar grounds, chosen by a stable hash when a consumer passes a colour seed. Each clears 4.5:1 under white initials; five of them were darkened along OKLab lightness to get there, keeping their hue and chroma." },
+        "1": { "value": "#7c3aed" },
+        "2": { "value": "#c026d3" },
+        "3": { "value": "#db2777" },
+        "4": { "value": "#dc2626" },
+        "5": { "value": "#d54400" },
+        "6": { "value": "#a76900" },
+        "7": { "value": "#008931" },
+        "8": { "value": "#00857a" },
+        "9": { "value": "#007cbe" }
+      }
+    },
+    "node": {
+      "purple": { "value": "#8e6ed4", "comment": "Six hues a node of a chart is tinted with, chosen per entity and NOT a series: two nodes sharing one is no statement, so nothing here is measured for separability and no legend is owed. Each hue derives a fill, a border and a halo at fixed alphas, and carries an ink step for the name drawn on that fill, because the tinted card is the only ground that name is read on. The dark values are the muted set the console chart was drawn with, tuned to sit beside the accent rather than beside neon; light repaints every one, since a tint tuned for black is a wash on white." },
+      "purpleInk": { "value": "#cabae0", "comment": "The name drawn on the purple fill. It clears 7:1 there, as every ink step here does." },
+      "cyan": { "value": "#5ca8be" },
+      "cyanInk": { "value": "#b3d7e0" },
+      "green": { "value": "#62a578" },
+      "greenInk": { "value": "#b8d8c0" },
+      "amber": { "value": "#c89866" },
+      "amberInk": { "value": "#e0c89e" },
+      "rose": { "value": "#c8757f" },
+      "roseInk": { "value": "#e0bfc4" },
+      "blue": { "value": "#5b7fc7" },
+      "blueInk": { "value": "#b9c5e0" }
+    },
+    "scrollbar": { "value": "rgba(255, 255, 255, 0.16)", "comment": "Scrollbars belong to the palette. A bright system gutter down the side of a dark page is the most visible way an application admits it is a web page." },
+    "scrollbarHover": { "value": "rgba(255, 255, 255, 0.26)" }
   }
 }

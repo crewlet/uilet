@@ -1,31 +1,33 @@
 /*
- * PricingCard, plan-tier card surface.
+ * PricingCard, the plan-tier card surface.
  *
- * The primitive owns the outer card surface (border / radius / padding /
- * states), the header / name / tag, the price block (amount + cadence
- * + price note), the grid container, and a body / footer slot for
- * domain content (allowances, features, CTAs).
+ * The primitive owns the outer card (border, radius, padding, states), the
+ * header, the price block and the grid container, and leaves the body and the
+ * footer to the caller.
  *
- * Colours flow through the @crewlethq/tokens variables so the light,
- * dark and system themes pick up the right palette. Hex fallbacks keep
- * the dark defaults when the token stylesheet has not loaded.
+ * EVERY COLOUR IS A TOKEN NOW. The tags, the price note and the card's own
+ * ground were dark-theme literals: an amber at rgba(251, 191, 36, 0.75), a
+ * green at #86efac and a white lift at 2 percent, none of which is visible on
+ * a light page. The status hues here are the same soft-and-ink pairs the Tag
+ * and the Callout draw, so a "Save 10 percent" chip and a success tag on the
+ * screen behind it are the same green.
  */
 
 /* ── Grid container ─────────────────────────────────────────────── */
 .crewlet-pricing-card-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--spacing-3);
   align-items: stretch;
 }
 
-@media (max-width: 1320px) {
+@media (max-width: 1200px) {
   .crewlet-pricing-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
   .crewlet-pricing-card-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -34,18 +36,25 @@
 /* ── Card root ──────────────────────────────────────────────────── */
 .crewlet-pricing-card {
   text-align: left;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.08));
-  border-radius: 12px;
-  padding: 14px;
+  /* The panel recipe: on dark the top hairline is the elevation, on light the
+     shadow is. One card surface across the system, so a plan tier and a
+     dashboard panel are the same object. */
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs), var(--shadow-hairline);
+  padding: var(--spacing-4);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-family: inherit;
-  color: inherit;
+  gap: var(--spacing-3);
+  font-family: var(--font-family-sans);
+  color: var(--color-text-primary);
   min-width: 0;
   container-type: inline-size;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-pricing-card.is-interactive {
@@ -53,13 +62,20 @@
 }
 
 .crewlet-pricing-card.is-interactive:hover:not(.is-disabled):not(.is-unavailable):not(:disabled) {
-  border-color: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.4);
+  border-color: var(--color-brand-accent-soft-strong);
 }
 
+.crewlet-pricing-card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The chosen plan takes the selection ring, which is the same inset rule
+   every selected surface in the system draws. */
 .crewlet-pricing-card.is-selected {
-  border-color: var(--color-brand-accent, #5469d4);
-  background: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.08);
-  box-shadow: 0 0 0 1px var(--color-brand-accent, #5469d4);
+  border-color: var(--color-brand-accent);
+  background: var(--color-brand-accent-soft);
+  box-shadow: var(--shadow-selection), var(--shadow-hairline);
 }
 
 .crewlet-pricing-card.is-disabled,
@@ -74,79 +90,60 @@
 }
 
 .crewlet-pricing-card.is-selected:has(.crewlet-pricing-card__amount--discounted) {
-  box-shadow: 0 0 0 1px var(--color-brand-accent, #5469d4), 0 0 24px rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.18);
+  box-shadow: var(--shadow-selection), var(--shadow-hairline), var(--shadow-glow);
 }
 
-/* Compact a card's interior at small container widths so a 4-up grid
-   on a tablet doesn't render unreadably tight. */
+/* Compact a card's interior at small container widths, so a four-up grid on a
+   tablet does not render unreadably tight. */
 @container (max-width: 320px) {
   .crewlet-pricing-card {
-    padding: 12px;
-    gap: 10px;
+    padding: var(--spacing-3);
+    gap: var(--spacing-2);
   }
-  .crewlet-pricing-card__amount { font-size: 1.4rem; }
+
+  .crewlet-pricing-card__amount { font-size: var(--font-size-xl); }
 }
 
 @container (max-width: 240px) {
   .crewlet-pricing-card {
-    padding: 10px;
+    padding: var(--spacing-2);
   }
-  .crewlet-pricing-card__amount { font-size: 1.25rem; }
-  .crewlet-pricing-card__name   { font-size: 0.9rem; }
+
+  .crewlet-pricing-card__amount { font-size: var(--font-size-lg); }
+  .crewlet-pricing-card__name { font-size: var(--font-size-sm); }
 }
 
-/* ── Header (name + tags) ───────────────────────────────────────── */
+/* ── Header (name and tags) ─────────────────────────────────────── */
 .crewlet-pricing-card__header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-2);
   flex-wrap: wrap;
 }
 
 .crewlet-pricing-card__name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text-primary, #f5f5f7);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
 /* ── Tags ───────────────────────────────────────────────────────── */
-.crewlet-pricing-card__tag {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-.crewlet-pricing-card__tag--neutral {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--color-text-secondary, #a1a1aa);
-}
-
-.crewlet-pricing-card__tag--top {
-  background: var(--color-brand-accent, #5469d4);
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 0.6rem;
-  padding: 1px 6px;
-  margin-left: auto;
-}
-
-.crewlet-pricing-card__tag--save {
-  background: rgba(34, 197, 94, 0.15);
-  color: #86efac;
-}
 
 /*
- * Pending tag, for a change that takes effect later. Muted amber. The tag is the only
- * visual signal on the card (no border tint, no card background
- * change) so the eye picks it up as a heads-up annotation rather
- * than a status badge competing with the selection ring.
+ * A PRICING TAG IS A TAG. It had its own pill here, with its own radius, its
+ * own type and its own tint table, so a "Save 10 percent" chip and a success
+ * tag two screens away were the same claim drawn two ways; four of the five
+ * declarations it needed were the Tag's own, already written down. It renders
+ * the shared primitive now, and what is left in this file is the only thing
+ * this card has to say about it: where the top tag sits.
+ *
+ * Pending, for a change that takes effect later, is the warning tone and the
+ * only signal on the card (no border tint, no ground change), so the eye reads
+ * it as a heads-up annotation rather than as a status competing with the
+ * selection ring.
  */
-.crewlet-pricing-card__tag--pending {
-  background: rgba(245, 158, 11, 0.08);
-  color: rgba(251, 191, 36, 0.75);
-  font-weight: 500;
+.crewlet-pricing-card__tag--top {
+  margin-left: auto;
 }
 
 /* ── Price block ────────────────────────────────────────────────── */
@@ -154,85 +151,128 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--spacing-2);
 }
 
 .crewlet-pricing-card__amount {
-  font-size: 1.7rem;
-  font-weight: 600;
-  color: var(--color-text-primary, #f5f5f7);
-  transition: color 0.2s ease;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  transition: color var(--motion-duration-base) var(--motion-easing-default);
 }
 
 .crewlet-pricing-card__amount--strike {
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: var(--color-text-tertiary, #8c99ad);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   text-decoration: line-through;
   text-decoration-thickness: 1.5px;
 }
 
+/* The discounted price is TEXT, so it takes the accent's ink step rather than
+   its fill: the fill measures 3.77:1 as text on a light card. */
 .crewlet-pricing-card__amount--discounted {
-  color: var(--color-brand-accent, #5469d4);
-  animation: crewlet-pricing-card-discount-pop 480ms cubic-bezier(0.2, 0.7, 0.2, 1.2);
+  color: var(--color-brand-accent-ink);
+  animation: crewlet-pricing-card-discount-pop var(--motion-duration-slow) var(--motion-easing-spring);
   transform-origin: left center;
 }
 
 @keyframes crewlet-pricing-card-discount-pop {
-  0%   { transform: scale(0.92); opacity: 0; filter: blur(2px); }
-  60%  { transform: scale(1.06); opacity: 1; filter: blur(0); }
-  100% { transform: scale(1);    opacity: 1; filter: blur(0); }
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .crewlet-pricing-card__cadence {
-  font-size: 0.8rem;
-  color: var(--color-text-secondary, #a1a1aa);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 /*
- * Price note, a short label below the price block, for example
- * "Save $X (10% off)" beneath a discounted plan, or "Billed annually"
- * and "Free forever" hints.
+ * A short label under the price: "Save $X (10 percent off)" on a discounted
+ * plan, or "Billed annually" and "Free forever" on a pricing page.
  */
 .crewlet-pricing-card__price-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  /* Layout and arrival only. The pill, the tint and the ink are the Tag's. */
   flex-basis: 100%;
   margin-top: 2px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(22, 163, 74, 0.12);
-  color: #4ade80;
-  border: 1px solid rgba(22, 163, 74, 0.35);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
   width: max-content;
   max-width: 100%;
-  animation: crewlet-pricing-card-price-note-enter 520ms cubic-bezier(0.2, 0.7, 0.2, 1.2);
+  animation: crewlet-pricing-card-price-note-enter var(--motion-duration-slow) var(--motion-easing-spring);
 }
 
-.crewlet-pricing-card__price-note .material-symbols-outlined {
-  font-size: 14px;
-  line-height: 1;
+/*
+ * A NOTE THAT LEADS WITH A GLYPH IS STILL TWO THINGS.
+ *
+ * The pill spaces its own slots, and a caller's glyph is not one of them: the
+ * children it is given are ONE slot, the label, so the gap the pill spends
+ * between a dot and a word does not reach inside it and a discount icon ends
+ * up touching the "Save" beside it. The label carries the same step instead,
+ * which is what this note drew for itself before it became a Tag. It is
+ * layout, not look: the pill, the tint and the type are still the Tag's.
+ *
+ * `min-width: 0` with it, because the label is a flex item of the pill and a
+ * flex item does not shrink below its content without it, which is what would
+ * push a long note past the card's edge instead of ellipsing inside it.
+ */
+.crewlet-pricing-card__price-note .crewlet-tag__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
 }
 
 @keyframes crewlet-pricing-card-price-note-enter {
-  0%   { transform: translateY(-4px); opacity: 0; }
-  100% { transform: translateY(0);    opacity: 1; }
+  0% {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-/* ── Body + Footer slots ────────────────────────────────────────── */
+/* ── Body and footer slots ──────────────────────────────────────── */
 .crewlet-pricing-card__body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-3);
   min-width: 0;
 }
 
 .crewlet-pricing-card__footer {
   margin-top: auto;
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-2);
+}
+
+/*
+ * The price still changes and the note still appears; neither jumps to say so.
+ * A price that pops is a nice touch for somebody who can watch it and a
+ * genuine problem for somebody who cannot.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-pricing-card,
+  .crewlet-pricing-card__amount {
+    transition: none;
+  }
+
+  .crewlet-pricing-card__amount--discounted,
+  .crewlet-pricing-card__price-note {
+    animation: none;
+  }
 }

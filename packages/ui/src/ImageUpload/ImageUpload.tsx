@@ -5,7 +5,8 @@ import {
   type HTMLAttributes,
   type MouseEvent,
 } from 'react';
-import { Avatar, type AvatarShape } from '../Avatar/Avatar.js';
+import { Avatar, avatarSquareCorner, type AvatarShape } from '../Avatar/index.js';
+import { CloseGlyph, PhotoCameraGlyph } from '@crewlethq/icons/glyphs';
 
 // Omit the DOM "onSelect" event handler so it does not clash with the
 // file-selection callback below, which carries a different signature.
@@ -16,7 +17,11 @@ export interface ImageUploadProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   name?: string | undefined;
   /** Rendered width and height in pixels. */
   size?: number | undefined;
-  /** Outline shape passed through to the preview and fallback. Defaults to "circle". */
+  /**
+   * Outline shape passed through to the preview and fallback. Defaults to
+   * "square", as Avatar does: what this control takes is normally a company
+   * logo, and a wide mark cropped into a circle loses its ends.
+   */
   shape?: AvatarShape | undefined;
   /** When true, the control is display only: no overlay, no remove button, no file picker. */
   readOnly?: boolean | undefined;
@@ -44,7 +49,7 @@ export const ImageUpload = ({
   src,
   name,
   size = 64,
-  shape = 'circle',
+  shape = 'square',
   readOnly = false,
   uploading = false,
   accept = 'image/*',
@@ -97,6 +102,13 @@ export const ImageUpload = ({
 
   const sizeStyle = {
     '--crewlet-image-upload-size': `${size}px`,
+    /*
+     * The corner comes from Avatar's own ladder, so the trigger and the
+     * overlay round exactly as the picture inside them does. A fixed step here
+     * showed the badge's corners through the overlay at every size but the one
+     * the step was chosen for.
+     */
+    '--crewlet-image-upload-corner': avatarSquareCorner(size),
     ...style,
   } as CSSProperties;
 
@@ -123,7 +135,7 @@ export const ImageUpload = ({
               <span className="crewlet-image-upload__spinner" />
             ) : (
               <>
-                <span className="material-symbols-outlined">photo_camera</span>
+                <PhotoCameraGlyph size="lg" />
                 <span className="crewlet-image-upload__overlay-text">
                   {src ? 'Change' : 'Upload'}
                 </span>
@@ -141,13 +153,17 @@ export const ImageUpload = ({
           disabled={uploading}
           aria-label="Remove image"
         >
-          <span className="material-symbols-outlined" aria-hidden>
-            close
-          </span>
+          <CloseGlyph size="sm" />
         </button>
       ) : null}
 
       {!readOnly ? (
+        /*
+         * The MECHANISM, not the control. The button above is what a reader
+         * reaches, names and presses; this is what it opens. Left in the
+         * accessibility tree it is a second, unnamed file control on every
+         * form that draws one, which is what axe reports it as.
+         */
         <input
           ref={inputRef}
           type="file"
@@ -155,6 +171,7 @@ export const ImageUpload = ({
           className="crewlet-image-upload__input"
           onChange={handleChange}
           tabIndex={-1}
+          aria-hidden
         />
       ) : null}
     </div>

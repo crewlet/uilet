@@ -1,0 +1,30 @@
+{
+  "size": {
+    "control": {
+      "sm": { "value": "28px", "density": true, "floor": "24px", "comment": "The height of a control. The small step carries a floor because 28 x 0.82 is 22.96px, and a target under 24px fails at compact density on a touch screen. Every step is emitted as calc(Npx * var(--density, 1)), so it is unchanged at density 1." },
+      "md": { "value": "32px", "density": true },
+      "lg": { "value": "44px", "density": true }
+    },
+    "row": {
+      "sm": { "value": "28px", "density": true, "floor": "24px", "comment": "The height of a list row, so every list in a product lines up with every other. The small step floors at 24px as the control step does." },
+      "md": { "value": "36px", "density": true },
+      "lg": { "value": "48px", "density": true }
+    },
+    "nav": {
+      "gutter": { "value": "8px", "density": true, "comment": "The rail's geometry in TWO parts, because a row's EDGE and a row's TEXT want different insets. The gutter insets the rail, which is where a row's background begins; the row pad insets the content inside the row. Splitting it is what lets the rows widen without moving a glyph: shrink the gutter, grow the pad by the same step, and the line every mark, group label and item text starts on does not move." },
+      "rowPad": { "value": "12px", "density": true }
+    },
+    "shell": {
+      "rail": { "value": "280px", "comment": "The application rail, and the top bar over the pane beside it." },
+      "topbar": { "value": "64px" }
+    },
+    "targetMin": { "value": "24px", "comment": "The smallest a hit target may ever stand, and the same floor size.control.sm and size.row.sm carry. It is a token because a component that DERIVES a height from a control step (a chip in a well stands shorter than the control beside it) has to clamp the result itself: max(var(--size-target-min), calc(...)) holds at every density, where the step's own floor no longer can once it has been subtracted from." },
+    "measure": { "value": "68ch", "comment": "Prose and forms get a measure. Tables and charts deliberately do not: they are the one content that genuinely wants the whole viewport." },
+    "measureNarrow": { "value": "48ch" },
+    "contentMax": { "value": "1600px" },
+    "focusRingInsetOffset": {
+      "value": "-2px",
+      "comment": "The outline offset for a focusable row INSIDE a clipping scroller: a tree row, a grid row, a card header. An outset ring there is clipped by the scroller on the first and last rows and painted over by the next row, so the indicator has to be drawn inside the row's own box."
+    }
+  }
+}

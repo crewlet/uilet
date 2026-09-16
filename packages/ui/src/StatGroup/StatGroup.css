@@ -1,0 +1,80 @@
+/*
+ * A row of stat tiles.
+ *
+ * ITS COLUMN COUNT NEVER MOVES with its contents. A grid that reflowed as
+ * tiles appeared and vanished moved every number on the page for a reason that
+ * had nothing to do with the numbers, which is exactly what a reader watching
+ * a live board is trying not to have happen.
+ */
+
+.crewlet-stat-group {
+  display: grid;
+  grid-template-columns: repeat(var(--crewlet-stat-group-cols, 4), minmax(0, 1fr));
+  /* The flush-panel recipe: the surface, the hairline, the 12px corner and
+     `overflow: hidden`, which is what lets the tiles inside sit against the
+     corners without their own hairlines escaping past them. The engine puts
+     its stat row inside exactly this. */
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs), var(--shadow-hairline);
+  overflow: hidden;
+}
+
+/*
+ * A tile inside the row brings no surface of its own, whether or not its
+ * caller remembered `flush`. The group draws one card and the hairlines
+ * inside it, so a tile that kept its own border and radius is a card inside
+ * a card: a box inside a box, which is what the reader sees.
+ *
+ * TWO CLASSES, NOT :where(). Written as `> :where(.crewlet-statcard)` this
+ * weighed exactly what the tile's own `.crewlet-statcard` rule weighs, so
+ * which one painted was settled by whichever stylesheet the bundler put
+ * last. It put the tile's last, and every tile in every group drew its own
+ * border, its own 12px corner and its own surface inside the group's.
+ * Naming both classes settles it by weight, which no import order can undo.
+ */
+.crewlet-stat-group > .crewlet-statcard {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-none);
+  box-shadow: none;
+}
+
+/*
+ * A hairline between columns, drawn on the tile that follows one.
+ *
+ * NAMED TWICE, ON PURPOSE. The rule above clears the tile's own border and
+ * weighs two classes, so a one-class selector here loses to it and the row
+ * of numbers runs together with nothing between the columns. The first
+ * selector matches whatever a caller puts in the row; the second weighs the
+ * same as the rule it has to beat, and sits after it.
+ */
+.crewlet-stat-group > * + *,
+.crewlet-stat-group > .crewlet-statcard + .crewlet-statcard {
+  border-left: 1px solid var(--color-border-default);
+}
+
+/*
+ * Two columns under the shell breakpoint, which is where the engine drops its
+ * own stat row: 900px is a 280px rail plus a 620px content column, so it is
+ * the width at which a four-up row of numbers stops having a column each. The
+ * rules are written for the general case rather than per column count: the
+ * first tile of each pair loses its left hairline, and everything on the
+ * second row and below gains a top one.
+ */
+@media (max-width: 900px) {
+  .crewlet-stat-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .crewlet-stat-group > *:nth-child(odd),
+  .crewlet-stat-group > .crewlet-statcard:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .crewlet-stat-group > *:nth-child(n + 3),
+  .crewlet-stat-group > .crewlet-statcard:nth-child(n + 3) {
+    border-top: 1px solid var(--color-border-default);
+  }
+}

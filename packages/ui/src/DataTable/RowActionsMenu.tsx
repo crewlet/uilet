@@ -1,95 +1,50 @@
-import { Fragment, type ReactNode } from 'react';
-import { Popover } from '../Popover/Popover.js';
+import { Menu, type MenuEntry } from '../Menu/index.js';
 import type { DataTableRowAction } from './DataTable.js';
 
 /*
- * RowActionsMenu, a DataTable-internal helper for the compact variant.
- * Renders a single kebab (⋮) trigger that opens a themed Popover listing
- * per-row actions. Falsy entries are filtered so callers can compose
- * actions conditionally without ternary noise.
+ * RowActionsMenu: the kebab at the end of a row, as an ADAPTER over Menu.
+ *
+ * It used to be a second menu, hand-built inside a Popover: its own list, its
+ * own item buttons, its own separators, and a `role="menu"` with no keyboard
+ * model behind it, so the arrows did nothing, Home and End did nothing, and
+ * the first item took no focus when it opened. None of that is a table's
+ * business. What IS the table's business is the shape a caller describes a
+ * row's actions in, and that is all this file does now: it translates
+ * `DataTableRowAction` into the entries Menu draws, so there is exactly one
+ * menu in the package and one place its keys are decided.
  */
 export interface RowActionsMenuProps {
   actions: Array<DataTableRowAction | null | undefined | false>;
-  ariaLabel?: string;
+  /** The trigger's accessible name. */
+  label?: string;
 }
 
-export const RowActionsMenu = ({ actions, ariaLabel = 'Row actions' }: RowActionsMenuProps) => {
-  const items = (actions || []).filter(
-    (a): a is DataTableRowAction => !!a && a.visible !== false,
-  );
+/** One action as a menu entry, with the dividers it asks for around it. */
+function entriesFor(action: DataTableRowAction, index: number): MenuEntry[] {
+  const key = `${index}:${action.label}`;
+  const item: MenuEntry = {
+    key,
+    label: action.label,
+    icon: action.icon,
+    // An action with nothing to do still draws, because `disabled` is what
+    // says why it cannot be pressed; an empty handler is never called.
+    onSelect: action.onClick ?? (() => {}),
+    disabled: action.disabled,
+    danger: action.danger,
+    description: action.description,
+  };
+  return [
+    ...(action.divider === 'before' ? [{ kind: 'separator' as const, key: `${key}:before` }] : []),
+    item,
+    ...(action.divider === 'after' ? [{ kind: 'separator' as const, key: `${key}:after` }] : []),
+  ];
+}
+
+export const RowActionsMenu = ({ actions, label = 'Row actions' }: RowActionsMenuProps) => {
+  const items = (actions || [])
+    .filter((action): action is DataTableRowAction => !!action && action.visible !== false)
+    .flatMap(entriesFor);
   if (items.length === 0) return null;
 
-  return (
-    <Popover
-      align="end"
-      side="bottom"
-      width="auto"
-      className="crewlet-data-table__row-actions-popover"
-      trigger={(open, toggle) => (
-        <button
-          type="button"
-          className={`crewlet-data-table__row-actions-trigger${open ? ' is-open' : ''}`}
-          onClick={(e) => { e.stopPropagation(); toggle(); }}
-          aria-label={ariaLabel}
-          aria-haspopup="menu"
-          aria-expanded={open}
-        >
-          <span className="material-symbols-outlined" aria-hidden>more_vert</span>
-        </button>
-      )}
-    >
-      {(close: () => void): ReactNode => (
-        <ul className="crewlet-data-table__row-actions-list" role="menu">
-          {items.map((action, i) => {
-            const cls = [
-              'crewlet-data-table__row-actions-item',
-              action.variant && `crewlet-data-table__row-actions-item--${action.variant}`,
-              action.disabled && 'is-disabled',
-            ].filter(Boolean).join(' ');
-            return (
-              <Fragment key={i}>
-                {action.divider === 'before' && (
-                  <li className="crewlet-data-table__row-actions-divider" role="separator" />
-                )}
-                <li role="none">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className={cls}
-                    disabled={action.disabled}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (action.disabled) return;
-                      action.onClick?.();
-                      close();
-                    }}
-                  >
-                    {action.icon && (
-                      <span
-                        className="material-symbols-outlined crewlet-data-table__row-actions-item-icon"
-                        aria-hidden
-                      >
-                        {action.icon}
-                      </span>
-                    )}
-                    <span className="crewlet-data-table__row-actions-item-text">
-                      <span className="crewlet-data-table__row-actions-item-label">{action.label}</span>
-                      {action.description && (
-                        <span className="crewlet-data-table__row-actions-item-description">
-                          {action.description}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-                {action.divider === 'after' && (
-                  <li className="crewlet-data-table__row-actions-divider" role="separator" />
-                )}
-              </Fragment>
-            );
-          })}
-        </ul>
-      )}
-    </Popover>
-  );
+  return <Menu label={label} items={items} align="end" className="crewlet-data-table__row-actions" />;
 };

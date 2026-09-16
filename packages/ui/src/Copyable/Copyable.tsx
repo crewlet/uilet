@@ -1,25 +1,30 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type MouseEvent,
-} from 'react';
+import { useCallback } from 'react';
+import { IconButton } from '../IconButton/index.js';
+import { cx } from '../utils/cx.js';
+import { useClipboard } from '../utils/useClipboard.js';
+import { CopyStatus, copyGlyph } from './CopyButton.js';
 
 export type CopyableVariant = 'chip' | 'inline' | 'block';
 
 export interface CopyableProps {
+  /** The value shown, and the text copied. */
   value: string | number | null | undefined;
-  display?: string;
-  variant?: CopyableVariant;
-  monospace?: boolean;
-  truncate?: boolean;
-  truncateLength?: number;
-  ariaLabel?: string;
-  className?: string;
+  /** Shown instead of the value, when the value itself is not what to read. */
+  display?: string | undefined;
+  variant?: CopyableVariant | undefined;
+  monospace?: boolean | undefined;
+  truncate?: boolean | undefined;
+  truncateLength?: number | undefined;
+  /** Names the copy control. */
+  ariaLabel?: string | undefined;
+  /** The copy control's tooltip. */
+  title?: string | undefined;
+  /** Read out on success. */
+  copiedMessage?: string | undefined;
+  /** Read out on failure. */
+  failedMessage?: string | undefined;
+  className?: string | undefined;
 }
-
-const COPIED_DURATION_MS = 1500;
 
 const truncateValue = (text: string, length: number, variant: CopyableVariant): string => {
   if (text.length <= length) return text;
@@ -31,22 +36,19 @@ const truncateValue = (text: string, length: number, variant: CopyableVariant): 
   return `${text.slice(0, length)}…`;
 };
 
-const writeToClipboard = async (text: string): Promise<void> => {
-  if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
-  document.execCommand('copy');
-  document.body.removeChild(ta);
-};
-
+/**
+ * An identifier, with a control that copies it.
+ *
+ * ONE TAB STOP. The value used to be a `role="button"` span with its own
+ * `tabIndex` beside the button that did the same thing, so every id in a table
+ * was two stops on the way to the next row, and the first of them was a button
+ * that was not one. The value is text now, and the button is the only control.
+ *
+ * A REFUSAL IS REPORTED. The previous implementation awaited
+ * `document.execCommand` and reported success whatever it returned, so on the
+ * plain http origin anybody reads a remote dashboard at, the tick appeared and
+ * the clipboard was empty.
+ */
 export const Copyable = ({
   value,
   display,
@@ -54,16 +56,17 @@ export const Copyable = ({
   monospace = false,
   truncate = false,
   truncateLength,
-  ariaLabel,
-  className = '',
+  ariaLabel = 'Copy to clipboard',
+  title = 'Copy',
+  copiedMessage = 'copied to the clipboard',
+  failedMessage = 'the browser refused the clipboard',
+  className,
 }: CopyableProps) => {
   const text = value === undefined || value === null ? '' : String(value);
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }, []);
+  const { state, copy } = useClipboard();
+  const onCopy = useCallback(() => {
+    void copy(text);
+  }, [copy, text]);
 
   if (!text) return null;
 
@@ -71,54 +74,31 @@ export const Copyable = ({
   const shouldTruncate = truncate || (variant === 'chip' && text.length > resolvedLength);
   const rendered = display ?? (shouldTruncate ? truncateValue(text, resolvedLength, variant) : text);
 
-  const onCopy = async (event: MouseEvent | KeyboardEvent) => {
-    event.stopPropagation();
-    event.preventDefault();
-    try {
-      await writeToClipboard(text);
-      setCopied(true);
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setCopied(false), COPIED_DURATION_MS);
-    } catch {
-      // Clipboard refused (permissions, http context). No UI affordance for the failure.
-    }
-  };
-
-  const classes = [
-    'crewlet-copyable',
-    `crewlet-copyable--${variant}`,
-    monospace ? 'crewlet-copyable--monospace' : '',
-    copied ? 'is-copied' : '',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   return (
-    <span className={classes}>
-      <span
-        className="crewlet-copyable__value"
-        title={text}
-        role="button"
-        tabIndex={0}
-        onClick={onCopy}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') onCopy(e);
-        }}
-      >
+    <span
+      className={cx(
+        'crewlet-copyable',
+        `crewlet-copyable--${variant}`,
+        monospace && 'crewlet-copyable--monospace',
+        state === 'copied' && 'is-copied',
+        state === 'failed' && 'is-failed',
+        className,
+      )}
+    >
+      {/* The whole value in the tooltip, because the drawn one may be cut. */}
+      <span className="crewlet-copyable__value" title={text}>
         {rendered}
       </span>
-      <button
-        type="button"
+      <IconButton
         className="crewlet-copyable__button"
+        label={ariaLabel}
+        title={state === 'failed' ? failedMessage : title}
+        size="sm"
+        variant="ghost"
+        icon={copyGlyph(state)}
         onClick={onCopy}
-        aria-label={ariaLabel || 'Copy to clipboard'}
-        title="Copy"
-      >
-        <span className="material-symbols-outlined" aria-hidden>
-          {copied ? 'check' : 'content_copy'}
-        </span>
-      </button>
+      />
+      <CopyStatus state={state} copiedMessage={copiedMessage} failedMessage={failedMessage} />
     </span>
   );
 };

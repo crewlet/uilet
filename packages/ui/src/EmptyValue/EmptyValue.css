@@ -1,0 +1,12 @@
+/*
+ * The absent value sits on the tertiary step, quieter than the values around
+ * it in a column and still over the 4.5:1 floor. NOT the decoration step: the
+ * dash is what tells a sighted reader the value is absent, so it is a fact
+ * they have to be able to make out, not an ornament.
+ */
+
+.crewlet-empty-value {
+  color: var(--color-text-tertiary);
+  /* A dash in a numeric column lines up with the digits above it. */
+  font-variant-numeric: tabular-nums;
+}

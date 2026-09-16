@@ -4,6 +4,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
+import { Tag as SharedTag, type TagVariant } from '../Tag/index.js';
 
 export type PricingCardTagVariant = 'neutral' | 'top' | 'save' | 'pending';
 
@@ -107,13 +108,29 @@ interface TagProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: PricingCardTagVariant;
 }
 
+/**
+ * Which tone of the shared Tag each pricing variant is.
+ *
+ * A pricing tag is a tag. It had its own pill here, with its own radius, its
+ * own type and its own tint table, so a "Save 10 percent" chip and a success
+ * tag two screens away were the same claim drawn two ways. The shape comes
+ * from the one primitive now and this card contributes only the placement.
+ */
+const TAG_TONE: Record<PricingCardTagVariant, TagVariant> = {
+  neutral: 'neutral',
+  top: 'brand',
+  save: 'success',
+  pending: 'warning',
+};
+
 const Tag = ({ variant = 'neutral', className = '', children, ...rest }: TagProps) => (
-  <span
+  <SharedTag
     {...rest}
+    variant={TAG_TONE[variant]}
     className={`crewlet-pricing-card__tag crewlet-pricing-card__tag--${variant} ${className}`.trim()}
   >
     {children}
-  </span>
+  </SharedTag>
 );
 
 const Price = ({ className = '', children, ...rest }: HTMLAttributes<HTMLDivElement>) => (
@@ -149,7 +166,12 @@ const Cadence = ({ className = '', children, ...rest }: HTMLAttributes<HTMLSpanE
  * forever" hints on a pricing page.
  */
 const PriceNote = ({ className = '', children, ...rest }: HTMLAttributes<HTMLSpanElement>) => (
-  <span {...rest} className={`crewlet-pricing-card__price-note ${className}`.trim()}>{children}</span>
+  // The success tag, on its own line. The shape and the tint come from the one
+  // primitive; this file adds only the line of its own it sits on and the way
+  // it arrives.
+  <SharedTag {...rest} variant="success" className={`crewlet-pricing-card__price-note ${className}`.trim()}>
+    {children}
+  </SharedTag>
 );
 
 const Body = ({ className = '', children, ...rest }: HTMLAttributes<HTMLDivElement>) => (

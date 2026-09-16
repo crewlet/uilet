@@ -1,27 +1,65 @@
 /*
- * Tag and TagsInput primitives. A Tag is a static label; with onRemove it
- * becomes a removable chip, and TagsInput renders a row of those chips
- * in front of its text field.
+ * The tag: a small pill naming a state, a phase or a value.
+ *
+ * THREE VARIABLES CARRY EVERY VARIANT. A tag is its tone's `soft` tint under
+ * its tone's `ink`, with the `line` step as the boundary it grows when it can
+ * be pressed, so the whole palette is three declarations per variant and the
+ * geometry is written once. 0.2.0 spelled five dark-theme literals instead
+ * (#93c5fd, #86efac, #fde68a, #fca5a5 and the accent as text), which measured
+ * between 1.14:1 and 1.58:1 on a light page.
+ *
+ * A PRESSED TAG DOES NOT REPAINT ITS GROUND. Every deeper fill measured under
+ * 4.5:1 for at least one tone in the light palette (warning reached 4.42:1
+ * over the elevated surface), and the engine's own pressed badge drew the
+ * label in its ink on a background of the same ink, at 1:1. The press is
+ * carried by the boundary instead: transparent at rest, the line step on
+ * hover, the ink step with an inset rule when it is on. The measured
+ * ink-on-soft composite never moves.
  */
 
 .crewlet-tag {
+  /*
+   * THE ENGINE'S BADGE. Its line box is 11px at the document's 1.5 leading
+   * plus a pixel of padding and a pixel of border on each side, which lands on
+   * 20.5px; the step below is the whole pixel that renders, and it scales with
+   * density the way every size token does.
+   *
+   * The height is a STEP and the floor is separate, because the two answer
+   * different questions. A tag that only labels takes the engine's geometry
+   * exactly. A tag that ACTS is a pointer target, and 20px fails WCAG 2.2, so
+   * it takes the 24px floor as well: the engine draws its actionable badge at
+   * the inert one's height, which is the one place its look and the target
+   * rule disagree. Nothing else about the pill changes, so a row of tags still
+   * reads as one set.
+   */
+  --crewlet-tag-height: calc(20px * var(--density, 1));
+  --crewlet-tag-floor: 0px;
+  --crewlet-tag-fill: var(--color-surface-inset);
+  --crewlet-tag-ink: var(--color-text-secondary);
+  --crewlet-tag-line: var(--color-border-hover);
+
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background-color: rgba(100, 100, 100, 0.15);
-  color: var(--color-text-primary);
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  border: 1px solid rgba(100, 100, 100, 0.25);
-  animation: crewlet-tag-fade-in 0.2s ease;
+  gap: var(--spacing-1);
+  height: max(var(--crewlet-tag-height), var(--crewlet-tag-floor));
+  padding: 0 var(--spacing-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: var(--crewlet-tag-fill);
+  color: var(--crewlet-tag-ink);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  /* The engine tracks the badge a hundredth of an em open, which is the
+     normal step at this size: a hundredth of 11px is a tenth of a pixel. */
+  letter-spacing: var(--font-letter-spacing-normal);
   line-height: 1;
-  /* A tag is an atomic token: its label must never break across
-     lines inside the pill. Constrained layouts truncate with an
-     ellipsis via the label's max-width instead. */
+  /* A tag is an atomic token: its label never breaks across lines inside the
+     pill. A constrained layout truncates it with an ellipsis instead. */
   white-space: nowrap;
   max-width: 100%;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .crewlet-tag__label {
@@ -29,135 +67,340 @@
   text-overflow: ellipsis;
 }
 
-@keyframes crewlet-tag-fade-in {
-  from { opacity: 0; transform: scale(0.8); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
 .crewlet-tag__icon {
   display: inline-flex;
   align-items: center;
-  font-size: 14px;
-  color: var(--color-text-secondary);
+  flex: none;
 }
 
-.crewlet-tag__label {
-  line-height: 1;
+/*
+ * INSIDE A PILL THE DOT IS THE PILL'S OWN INK, not the tone's fill step.
+ *
+ * StatusDot paints the fill step, which is measured as a mark against the
+ * OPAQUE surfaces a page is made of. Inside a tag it lands on the tone's soft
+ * tint instead, and that composite is a different number: the accent fell to
+ * 2.65:1 and the danger red to 2.96:1 over their own tints in the dark
+ * palette, both under the 3:1 a mark has to clear. The ink step is the pair
+ * that IS measured on that tint, at 4.5:1, and it is also the colour of the
+ * word beside it, so the shape reads as part of the label rather than as a
+ * second object sitting on it.
+ *
+ * Two classes deep, so it beats StatusDot's own tone rule whichever order the
+ * bundle writes the two files in.
+ */
+.crewlet-tag .crewlet-tag__dot {
+  flex: none;
+  background: currentColor;
 }
 
-/* sm is the compact chip geometry used for inline values (an event
-   name pill in an activity feed): 12px text in a fixed 26px pill (18px content line +
-   3px vertical padding + 1px borders). The explicit height keeps
-   every small chip family (tags, agent chips, code pills) on one
-   baseline regardless of the content's own line box. */
-.crewlet-tag--sm { padding: 3px 8px; font-size: 12px; height: 26px; }
-.crewlet-tag--md { padding: 4px 8px; font-size: 13px; }
+/* Tabular figures, so a count that ticks up does not move the label beside
+   it, and the tag's own ink, because the number is part of what it says. */
+.crewlet-tag__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  flex: none;
+}
 
+/* ── sizes ─────────────────────────────────────────────────────────────── */
+
+/*
+ * THREE HEIGHTS OF ONE BADGE. The engine draws a single pill and spends its
+ * variation on tone rather than on size, so the steps here differ by how much
+ * room the pill takes and not by what it is: the type, the radius, the weight
+ * and the tracking are the engine's at every one of them.
+ *
+ * xs is an 18px pill and is NON-INTERACTIVE for that reason: it is under the
+ * 24px target floor, and the component refuses a press at this step. It is for
+ * a mark inside a dense row, where the label is still the carrier.
+ *
+ * EVERY STEP SCALES WITH DENSITY, which is not decoration: written as a flat
+ * 18px, this one stayed put while the badge above it came down to
+ * 20 x 0.82 = 16.4px, so the dense mark rendered TALLER than the badge it is
+ * meant to sit inside a row of. A step that does not move with the rest of the
+ * scale is a step that overtakes one of its neighbours at some density.
+ */
+.crewlet-tag--xs {
+  --crewlet-tag-height: calc(18px * var(--density, 1));
+  padding: 0 var(--spacing-1);
+  gap: 3px;
+}
+
+/* The engine's badge, and the default. */
+.crewlet-tag--sm {
+  --crewlet-tag-height: calc(20px * var(--density, 1));
+}
+
+/* The md step is a small control's own height, so a tag and a small button in
+   one toolbar sit on the same baseline. One type step up with it: 11px inside
+   a 28px pill reads as a label that lost its box. */
+.crewlet-tag--md {
+  --crewlet-tag-height: var(--size-control-sm);
+  font-size: var(--font-size-xs);
+}
+
+/*
+ * A TAG THAT ACTS CLEARS 24px, at every density and every step. Last among the
+ * steps so it is the floor whichever one is drawn, and a floor rather than a
+ * height so the md step keeps its 28px.
+ */
+.crewlet-tag--acts {
+  --crewlet-tag-floor: max(24px, calc(24px * var(--density, 1)));
+}
+
+/* One step down from the sans, where there is a step to take: a mono face
+   draws larger than the sans at the same size, and a machine value beside a
+   word has to read as the same line. At the two smaller steps the sans is
+   already at the bottom of the scale and the mono stays beside it. */
 .crewlet-tag--monospace .crewlet-tag__label {
   font-family: var(--font-family-mono);
-  font-size: 12px;
+  font-size: var(--font-size-2xs);
 }
 
-/* ── variants ───────────────────────────────────────────────────────── */
-.crewlet-tag--neutral {
-  background-color: rgba(100, 100, 100, 0.15);
-  border-color: rgba(100, 100, 100, 0.25);
-  color: var(--color-text-primary);
-}
+/* ── variants ──────────────────────────────────────────────────────────── */
 
 .crewlet-tag--info {
-  background-color: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.28);
-  color: #93c5fd;
+  --crewlet-tag-fill: var(--color-feedback-info-soft);
+  --crewlet-tag-ink: var(--color-feedback-info-ink);
+  --crewlet-tag-line: var(--color-feedback-info-line);
 }
 
 .crewlet-tag--success {
-  background-color: rgba(34, 197, 94, 0.12);
-  border-color: rgba(34, 197, 94, 0.28);
-  color: #86efac;
+  --crewlet-tag-fill: var(--color-feedback-success-soft);
+  --crewlet-tag-ink: var(--color-feedback-success-ink);
+  --crewlet-tag-line: var(--color-feedback-success-line);
 }
 
-.crewlet-tag--warn {
-  background-color: rgba(234, 179, 8, 0.14);
-  border-color: rgba(234, 179, 8, 0.30);
-  color: #fde68a;
+.crewlet-tag--warning {
+  --crewlet-tag-fill: var(--color-feedback-warning-soft);
+  --crewlet-tag-ink: var(--color-feedback-warning-ink);
+  --crewlet-tag-line: var(--color-feedback-warning-line);
 }
 
 .crewlet-tag--danger {
-  background-color: rgba(239, 68, 68, 0.14);
-  border-color: rgba(239, 68, 68, 0.30);
-  color: #fca5a5;
+  --crewlet-tag-fill: var(--color-feedback-danger-soft);
+  --crewlet-tag-ink: var(--color-feedback-danger-ink);
+  --crewlet-tag-line: var(--color-feedback-danger-line);
 }
 
 .crewlet-tag--brand {
-  background-color: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.14);
-  border-color: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.30);
-  color: var(--color-brand-accent, #5469d4);
+  --crewlet-tag-fill: var(--color-brand-accent-soft);
+  --crewlet-tag-ink: var(--color-brand-accent-ink);
+  --crewlet-tag-line: var(--color-brand-accent-soft-strong);
 }
 
-/* ── remove button ──────────────────────────────────────────────────── */
+/*
+ * The phase family has a soft step and no line step, because nothing else in
+ * the system needed a phase boundary. The ink is the boundary here: it is the
+ * same hue at a strength a 1px rule can be seen at, and a border is not text,
+ * so the rule that an ink step is never a BACKGROUND is untouched.
+ *
+ * A PHASE IS SET IN THE MICRO-LABEL REGISTER, uppercase and tracked open,
+ * where a state is set in the badge's own. Phase is the one categorical
+ * identity the product spends colour on outside a chart, and it is what a
+ * reader follows across four screens; the second register is what separates it
+ * at a glance from the state badge sitting beside it on the same row.
+ */
+.crewlet-tag--phase-onboarding,
+.crewlet-tag--phase-execute,
+.crewlet-tag--phase-review {
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.crewlet-tag--phase-onboarding {
+  --crewlet-tag-fill: var(--color-phase-onboarding-soft);
+  --crewlet-tag-ink: var(--color-phase-onboarding-ink);
+  --crewlet-tag-line: var(--color-phase-onboarding-ink);
+}
+
+.crewlet-tag--phase-execute {
+  --crewlet-tag-fill: var(--color-phase-execute-soft);
+  --crewlet-tag-ink: var(--color-phase-execute-ink);
+  --crewlet-tag-line: var(--color-phase-execute-ink);
+}
+
+.crewlet-tag--phase-review {
+  --crewlet-tag-fill: var(--color-phase-review-soft);
+  --crewlet-tag-ink: var(--color-phase-review-ink);
+  --crewlet-tag-line: var(--color-phase-review-ink);
+}
+
+/* ── appearance ────────────────────────────────────────────────────────── */
+
+/*
+ * The outline appearance drops the tint and keeps the boundary, for a row
+ * where a tinted pill would be one fill too many: a tag inside a card that is
+ * already tinted, or a list of values where only one of them is a state.
+ */
+.crewlet-tag--outline {
+  background: transparent;
+  border-color: var(--crewlet-tag-line);
+}
+
+/* The neutral outline is the engine's `.badge.outline`: the hairline step as
+   the boundary, and the tertiary ink, which is a quieter register than the
+   tinted outlines keep. It is the appearance for a value that is not a state
+   at all, so it says less than its neighbours on purpose. */
+.crewlet-tag--neutral.crewlet-tag--outline {
+  border-color: var(--color-border-default);
+  --crewlet-tag-ink: var(--color-text-tertiary);
+}
+
+/* ── the interactive form ──────────────────────────────────────────────── */
+
+.crewlet-tag--actionable {
+  cursor: pointer;
+  /* A button inherits none of these. */
+  font-family: inherit;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tag--actionable:hover {
+  border-color: var(--crewlet-tag-line);
+}
+
+.crewlet-tag--actionable[aria-pressed='true'] {
+  border-color: var(--crewlet-tag-ink);
+  box-shadow: inset 0 0 0 1px var(--crewlet-tag-ink);
+}
+
+.crewlet-tag--actionable:focus-visible,
+.crewlet-tag__press:focus-visible,
+.crewlet-tag__remove:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── the pill that holds two controls ──────────────────────────────────── */
+
+/*
+ * A tag that both presses and removes is TWO CONTROLS SIDE BY SIDE, because
+ * one of them inside the other is a button inside a button: invalid markup,
+ * and one control whose inner half no keyboard reaches. The pill keeps the
+ * fill, the ink and the boundary; the press takes the left of it and the
+ * remove the right, each the pill's full height, so neither is under 24px.
+ */
+.crewlet-tag--split {
+  padding: 0;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tag--split .crewlet-tag__press {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  gap: inherit;
+  min-width: 0;
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  background: transparent;
+  /* A button inherits none of these. */
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+/* The remove has no padding of the pill's to eat back here. */
+.crewlet-tag--split .crewlet-tag__remove {
+  margin-right: 0;
+}
+
+.crewlet-tag--split:hover {
+  border-color: var(--crewlet-tag-line);
+}
+
+/*
+ * The same boundary the single-control form draws, put on the pill: the
+ * press state belongs to the whole tag, and drawing it around the press half
+ * alone would read as a second control beside the remove.
+ */
+.crewlet-tag--split.is-pressed {
+  border-color: var(--crewlet-tag-ink);
+  box-shadow: inset 0 0 0 1px var(--crewlet-tag-ink);
+}
+
+/* ── the remove control ────────────────────────────────────────────────── */
+
+/*
+ * The target is the tag's own height, not the glyph's. A 16px close drawn as a
+ * 16px button is a target under the floor; drawn as a full-height one at the
+ * trailing edge, the glyph stays small and the thing a finger has to hit is
+ * the whole end of the pill.
+ *
+ * ITS OWN HEIGHT MEANS THE PILL'S OUTER BOX, which is what `--crewlet-tag-acts`
+ * floors at 24px. `align-self: stretch` reaches the flex container's CONTENT
+ * box, and the pill's is its 1px boundary shorter on each side, so the control
+ * measured 22px inside a 24px tag: under the floor the class beside it exists
+ * to hold. The block margin pulls it back over that boundary, exactly as the
+ * inline one already pulls it over the pill's trailing pad. The longhands
+ * rather than the `margin-block` shorthand: this is the one declaration that
+ * holds the control at a pointer target, and the suite that measures it reads
+ * a box the cascade decides, where the shorthand expands to nothing.
+ */
 .crewlet-tag__remove {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(100, 100, 100, 0.2);
-  border: none;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  padding: 0;
+  align-self: stretch;
+  min-width: 24px;
+  margin-block-start: -1px;
+  margin-block-end: -1px;
+  margin-right: calc(var(--spacing-2) * -1);
+  padding: 0 var(--spacing-1);
+  border: 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
-  color: var(--color-text-secondary);
-  font-size: 16px;
-  line-height: 1;
-  font-weight: 600;
-  transition: all 0.15s ease;
+  opacity: 0.7;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-tag__remove:hover {
-  background: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-  transform: scale(1.1);
+  opacity: 1;
 }
 
-/* ── TagsInput container ────────────────────────────────────────────── */
-.crewlet-tags-input {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 12px;
-  min-height: 44px;
-  background-color: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  align-items: center;
-  cursor: text;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+/* ── mount ─────────────────────────────────────────────────────────────── */
+
+/*
+ * OPT IN, because tags arrive in their hundreds on a data push and a list that
+ * animates every arrival is one nobody can read while it is arriving. It is
+ * still here for the case it was written for: a chip the reader themselves
+ * just added to a field.
+ */
+.crewlet-tag--animate-in {
+  animation: crewlet-tag-in var(--motion-duration-base) var(--motion-easing-emphasized);
 }
 
-.crewlet-tags-input:focus-within {
-  border-color: var(--color-brand-accent);
-  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.15));
+@keyframes crewlet-tag-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.crewlet-tags-input.is-disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tag--animate-in {
+    animation: none;
+  }
 
-.crewlet-tags-input__field {
-  flex: 1;
-  min-width: 120px;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--color-text-primary);
-  font-size: 14px;
-  padding: 4px;
-  font-family: inherit;
-}
-
-.crewlet-tags-input__field::placeholder {
-  color: var(--color-text-secondary);
-  opacity: 0.6;
+  .crewlet-tag--actionable,
+  .crewlet-tag--split,
+  .crewlet-tag__remove {
+    transition: none;
+  }
 }

@@ -1,86 +1,428 @@
 /*
- * Card, surface primitive with optional Header / Body / Footer slots.
- * The 12px radius is shared with PricingCard so a card grid and a plain
- * card read as one family on the same page.
+ * Card, THE surface. Everything on a screen is a card, a row inside one, or a
+ * control.
  *
- * Variants: default sits one step above the page on the subtle surface,
- * subtle sits flush with the page background behind its border,
- * outlined is transparent with a strong border, and elevated lifts off
- * the page with the elevated surface and a shadow.
+ * TWO RECIPES, and the engine dashboard's panel is the second. A card given
+ * raw children is a padded block that lifts off the page. A card built from
+ * Header, Body and Footer is FLUSH: it carries no padding of its own, its
+ * slots carry theirs, and it clips them to its own radius, so the header's
+ * hairline and a table's first row reach the card's edges instead of stopping
+ * short of them. The component picks the recipe from what it was given.
+ *
+ * A flush card's own content, where it holds any beside its slots, is drawn in
+ * a body: see Card.tsx. Without that the header sits at the card's inset and
+ * the sentence under it against the border, which is the shape this file's
+ * `p-none` used to leave behind.
  */
 
 .crewlet-card {
-  background-color: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: 12px;
-  color: var(--color-text-primary);
+  position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
 }
 
-.crewlet-card--default  { background-color: var(--color-surface-subtle); }
-.crewlet-card--subtle   { background-color: var(--color-surface-background); }
+/*
+ * TWO GROUNDS, TWO DEVICES. On light the shadow is the elevation; on dark a
+ * shadow over a dark page is nearly invisible, so the hairline along the top
+ * edge does the job instead.
+ *
+ * THE HAIRLINE IS ON ITS OWN ELEMENT, and that is the whole reason the rule is
+ * two rules. `--shadow-hairline` is `none` in the light theme, and `none` is a
+ * value a shadow list may not carry: `box-shadow: <shadow>, none` is invalid at
+ * computed-value time, so the declaration is dropped and the light card loses
+ * the elevation the list was built around. Alone on a pseudo element the same
+ * token is valid in both themes, and it composes with the selection ring
+ * rather than replacing whichever was declared last, exactly as the rail does.
+ */
+.crewlet-card--default:not(.crewlet-card--flush) {
+  box-shadow: var(--shadow-xs);
+}
+
+.crewlet-card--default:not(.crewlet-card--flush)::after,
+.crewlet-card--elevated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: var(--shadow-hairline);
+}
+
+.crewlet-card--default {
+  background-color: var(--color-surface-subtle);
+}
+
+/*
+ * THE TILE: the panel's ground with none of its lift. One of many in a grid,
+ * where a shadow under every card turns a list of records into a relief map.
+ *
+ * It used to take the PAGE's ground, which is a card drawn in the colour of
+ * the thing behind it: on the light palette a white tile on a white page, held
+ * together by its hairline alone, and on dark the same trick one step darker
+ * than the panel beside it. The ground here is the one every other card
+ * already stands on, so every ink measured against a card is measured against
+ * this too.
+ */
+.crewlet-card--subtle {
+  background-color: var(--color-surface-subtle);
+}
+
 .crewlet-card--outlined {
   background-color: transparent;
   border-color: var(--color-border-strong);
 }
-.crewlet-card--elevated {
-  background-color: var(--color-surface-elevated, var(--color-surface-subtle));
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+
+/*
+ * A well rather than a panel: the inset ground, and the tighter radius that
+ * says it is a block INSIDE a card rather than a card of its own.
+ */
+.crewlet-card--inset {
+  background-color: var(--color-surface-inset);
+  border-color: transparent;
+  border-radius: var(--radius-md);
 }
 
-.crewlet-card--p-sm   { padding: 12px 16px; }
-.crewlet-card--p-md   { padding: 20px 24px; }
-.crewlet-card--p-lg   { padding: 24px 28px; }
+/*
+ * A card that is not the page's main surface: the same ground, the tighter
+ * radius, and no elevation at all. It is what a nested block takes so two
+ * borders at the same radius do not read as one box drawn twice.
+ */
+.crewlet-card--quiet {
+  background-color: var(--color-surface-subtle);
+  border-radius: var(--radius-md);
+}
+
+.crewlet-card--elevated {
+  background-color: var(--color-surface-elevated);
+  box-shadow: var(--shadow-md);
+}
+
+/*
+ * Not a record yet. A dashed boundary says "this slot is defined and empty"
+ * where a solid one would claim there is something in it.
+ */
+.crewlet-card--dashed {
+  background-color: transparent;
+  border-style: dashed;
+}
+
+/*
+ * THE FLUSH RECIPE. The slots reach the card's edges, and the clip is what
+ * makes the header's hairline and a table's own corners follow the radius
+ * instead of crossing it. The selection ring survives the clip because it is
+ * an INSET shadow; an outset one would be cut off here.
+ */
+.crewlet-card--flush {
+  overflow: hidden;
+}
+
+/* ---- The inset scale ---------------------------------------------------- */
+
+/*
+ * ONE WORD, ONE INSET, wherever it is said. A card's own padding, a body's and
+ * a footer's are the same five steps, because they are one decision asked at
+ * three levels. They used to be two scales that shared two words: `tight` was
+ * 12px on every edge on the card and a vertical-only step in a section, and
+ * `md` was 16px on every edge on the card and on a body and 8px over 16px on a
+ * footer. A caller who read the card's steps and wrote one on a body got a
+ * different inset, with nothing to say so.
+ *
+ * TIGHT IS THE TILE'S INSET, on every edge: one of many records in a grid,
+ * where at the panel's own step each tile spends a third of its height on air
+ * and the grid reads as a page of panels rather than as a list.
+ *
+ * SM IS VERTICAL ONLY, because a card has ONE left edge and its header sets
+ * it. Reducing the horizontal inset too puts content on a different vertical
+ * line from the title above it, and pushes a code block against the card's
+ * right edge with nowhere for its scrollbar to sit. What it is for is content
+ * whose rows carry their own vertical rhythm, which is a claim about height
+ * rather than about the edge.
+ *
+ * The step is the ONLY place any of these three declares a padding, so no base
+ * rule ties with a step on specificity and wins on source order instead.
+ */
+.crewlet-card--p-none,
+.crewlet-card__body--p-none,
+.crewlet-card__footer--p-none {
+  padding: 0;
+}
+
+.crewlet-card--p-tight,
+.crewlet-card__body--p-tight,
+.crewlet-card__footer--p-tight {
+  padding: var(--spacing-3);
+}
+
+.crewlet-card--p-sm,
+.crewlet-card__body--p-sm,
+.crewlet-card__footer--p-sm {
+  padding: var(--spacing-2) var(--spacing-4);
+}
+
+.crewlet-card--p-md,
+.crewlet-card__body--p-md,
+.crewlet-card__footer--p-md {
+  padding: var(--spacing-4);
+}
+
+.crewlet-card--p-lg,
+.crewlet-card__body--p-lg,
+.crewlet-card__footer--p-lg {
+  padding: var(--spacing-5) var(--spacing-6);
+}
+
+/* ---- Interaction ------------------------------------------------------- */
 
 .crewlet-card.is-interactive {
   cursor: pointer;
-  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-}
-.crewlet-card.is-interactive:hover {
-  border-color: var(--color-border-strong);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
-}
-.crewlet-card.is-interactive:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
+  text-decoration: none;
+  transition:
+    border-color var(--motion-duration-base) var(--motion-easing-default),
+    box-shadow var(--motion-duration-base) var(--motion-easing-default);
 }
 
+.crewlet-card.is-interactive:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.crewlet-card.is-interactive:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/*
+ * Chosen. A ring rather than a tint, because a card carries its own surface
+ * and a tint under it would change the ground every value on it was measured
+ * against.
+ */
+.crewlet-card.is-selected {
+  box-shadow: var(--shadow-selection);
+  border-color: var(--color-brand-accent);
+}
+
+/* ---- Rails ------------------------------------------------------------- */
+
+/*
+ * A state down the leading edge. Drawn as a pseudo element rather than a
+ * border or an inset shadow, so it composes with the elevated shadow and the
+ * selection ring instead of replacing whichever one was declared last.
+ */
+.crewlet-card--rail-info::before,
+.crewlet-card--rail-warning::before,
+.crewlet-card--rail-danger::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  border-start-start-radius: var(--radius-lg);
+  border-end-start-radius: var(--radius-lg);
+}
+
+.crewlet-card--rail-info::before {
+  background: var(--color-feedback-info);
+}
+
+.crewlet-card--rail-warning::before {
+  background: var(--color-feedback-warning);
+}
+
+.crewlet-card--rail-danger::before {
+  background: var(--color-feedback-danger);
+}
+
+/* ---- Slots ------------------------------------------------------------- */
+
+/*
+ * The panel head: ONE LINE, at the card's own inset, with the rule under it
+ * reaching both edges. `--size-row-lg` is the floor, so a row of nothing but a
+ * title stands as tall as the rows on every other card; a control taller than
+ * what is left of it after the inset raises the row, which is what a head with
+ * a button in it draws.
+ */
 .crewlet-card__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: var(--spacing-3);
+  min-height: var(--size-row-lg);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-default);
 }
 
+/*
+ * A head with nothing under it to separate from: a card whose body is prose
+ * rather than rows. It keeps the inset and gives up the rule.
+ */
+.crewlet-card__header--plain {
+  border-bottom: none;
+}
+
+/*
+ * The name block. It CLIPS, because the head is one line: a title with nowhere
+ * left to go is cut at the row's end rather than allowed to spill across the
+ * controls beside it.
+ */
+.crewlet-card__header-main {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.crewlet-card__header-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The actions take the end of the row, and the auto margin is the spacer
+ * between them and the title block. Not `justify-content: space-between`: the
+ * subtitle is a third child, and space-between would push it into the middle
+ * of the line rather than leaving it beside the name it belongs to.
+ */
+.crewlet-card__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex: none;
+  margin-inline-start: auto;
+}
+
+/*
+ * The panel's own controls: a table's pager and its settings cog, drawn on
+ * this row rather than in a bar of their own under it. See Card/headerSlot.ts
+ * for how they get here.
+ *
+ * NO BOX WHEN THERE IS NOTHING IN IT. Every header inside a card renders this
+ * node, because the panel that might fill it is below the header in the tree.
+ * An empty one that still laid out would open the row's gap on every card in
+ * the product for a control nobody drew.
+ */
+.crewlet-card__header-chrome {
+  display: flex;
+  align-items: center;
+  flex: none;
+  margin-inline-start: auto;
+}
+
+.crewlet-card__header-chrome:empty {
+  display: none;
+}
+
+/*
+ * The card's own actions take the end of the row and the panel's controls
+ * close onto them, so the cog stays the last thing on the line. Without this
+ * both carry the auto margin, and two auto margins SPLIT the free space: the
+ * card's actions would drift into the middle of its own header.
+ */
+.crewlet-card__header-actions ~ .crewlet-card__header-chrome {
+  margin-inline-start: 0;
+}
+
+/*
+ * The panel body. Its inset is a step of the scale above, and a card's own
+ * children are drawn in one of these whenever its slots have made it flush:
+ * see Card.tsx.
+ */
 .crewlet-card__body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 0;
+  gap: var(--spacing-3);
+  min-width: 0;
 }
 
+/*
+ * The panel foot: a quiet strip at the card's inset, in the caption register.
+ * A row of buttons carries its own ink, so the tertiary step here is what the
+ * facts beside them take.
+ */
 .crewlet-card__footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 16px;
+  align-items: center;
+  gap: var(--spacing-2);
   border-top: 1px solid var(--color-border-default);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
 }
 
+.crewlet-card__footer--actions {
+  justify-content: flex-end;
+}
+
+.crewlet-card__footer--meta {
+  justify-content: flex-start;
+}
+
+/* A footer with no inset has no rule either: there is no strip left to draw. */
+.crewlet-card__footer--p-none {
+  border-top: none;
+}
+
+/*
+ * The page's leading rather than the baseline's heading leading. The title is
+ * a heading element, and it shares one row with a subtitle, a count and the
+ * card's own controls: at the tight step it is the one thing in the header on
+ * a different rhythm from everything beside it, which is what made a head with
+ * a button in it a pixel taller than one without.
+ */
 .crewlet-card__title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text-primary);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  /*
+   * ONE LINE, which is the head's own rule. Left to wrap, a title one pixel
+   * wider than the space the subtitle beside it had left broke over two lines
+   * and took the whole head from 48px to 67px: at 1100px wide, "By model" was
+   * drawn as "By" over "model" while the subtitle beside it still had a tail
+   * to give up. Which is what the subtitle does first; see below.
+   */
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-normal);
+  letter-spacing: var(--font-letter-spacing-tight);
+  color: var(--color-text-primary);
+}
+
+/*
+ * The subtitle gives up its tail and the title does not: a title is the
+ * record's identity and has to be read in full, while a subtitle is context.
+ *
+ * WHICH IS WHAT THE SHRINK FACTOR SAYS. Two flex items that both may shrink
+ * give up space in proportion to their widths, so a head one pixel too narrow
+ * took that pixel off the title as well, and the title has nowhere to put it
+ * but a second line. At a hundred to the title's one the subtitle absorbs
+ * effectively all of it, down to nothing, before the title gives up a pixel.
+ */
+.crewlet-card__subtitle {
+  flex-shrink: 100;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .crewlet-card__description {
-  font-size: 13px;
-  color: var(--color-text-secondary);
   margin: 0;
-  line-height: 1.5;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-card.is-interactive {
+    transition: none;
+  }
 }

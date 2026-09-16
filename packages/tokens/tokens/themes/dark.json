@@ -1,0 +1,102 @@
+{
+  "color": {
+    "surface": {
+      "background": { "value": "#15171c", "comment": "Deliberately not #000. An operator reads an application for hours, and pure black behind near-white text is the combination that halates." },
+      "subtle": { "value": "#1c1e24" },
+      "muted": { "value": "#1c1e24" },
+      "elevated": { "value": "#22252b" },
+      "topbar": { "value": "#15171c" },
+      "topbarLift": { "value": "#1c1e24" },
+      "topbarActive": { "value": "#22252b" },
+      "hover": { "value": "rgba(255, 255, 255, 0.05)" },
+      "pressed": { "value": "rgba(255, 255, 255, 0.08)" },
+      "inset": { "value": "rgba(255, 255, 255, 0.05)" },
+      "glass": { "value": "rgba(28, 30, 36, 0.90)" },
+      "scrim": { "value": "rgba(0, 0, 0, 0.6)" },
+      "veil": { "value": "rgba(21, 23, 28, 0.72)" },
+      "inverse": { "value": "#ffffff" }
+    },
+    "text": {
+      "primary": { "value": "#fafafa" },
+      "secondary": { "value": "#c9ced8" },
+      "tertiary": { "value": "#95a2b6", "comment": "#8c99ad measured 4.17:1 on a pressed row inside the elevated surface." },
+      "muted": { "value": "#686b70", "comment": "Decoration only. rgba(255, 255, 255, 0.3) measured 2.52:1 on the panel." },
+      "onBrand": { "value": "#000000" },
+      "onAccent": { "value": "#ffffff", "comment": "The accent keeps its value in both palettes, so its label does too. Black on it measured 4.35:1." },
+      "inverse": { "value": "#09090b" }
+    },
+    "brand": {
+      "primary": { "value": "#ffffff" },
+      "primaryHover": { "value": "rgba(255, 255, 255, 0.9)" },
+      "primaryActive": { "value": "rgba(255, 255, 255, 0.82)" },
+      "accentInk": { "value": "#8b9ff5", "comment": "The accent as text. #5469d4 measured 3.18:1, and 2.88:1 on a selected row." },
+      "accentSoft": { "value": "rgba(84, 105, 212, 0.18)", "comment": "At 0.10, the alpha both palettes used to share, a selected row separated dE 3.94 from the panel while a plain hover overlay separated 4.68: selected read WEAKER than hovered." }
+    },
+    "border": {
+      "default": { "value": "#3f4145" },
+      "hover": { "value": "#4a4d52" },
+      "strong": { "value": "#4a4d52" },
+      "strongHover": { "value": "#5a5e65" },
+      "control": { "value": "#7f848e", "comment": "#3f4145 on the page measured 1.75:1, and #767b85 measured 2.83:1 on a pressed row inside a dialog body." }
+    },
+    "focus": { "value": "#8b9ff5" },
+    "feedback": {
+      "success": { "value": "#14b8a6" },
+      "successInk": { "value": "#5eead4" },
+      "warning": { "value": "#f59e0b" },
+      "warningInk": { "value": "#fde68a" },
+      "danger": { "value": "#dc2626" },
+      "dangerHover": { "value": "#b91c1c" },
+      "dangerInk": { "value": "#fca5a5" },
+      "info": { "value": "#38bdf8" },
+      "infoInk": { "value": "#7dd3fc" }
+    },
+    "phase": {
+      "onboarding": { "value": "#f77ae9", "comment": "#e879f9 sat dE 2.6 from the info fill under deuteranopia. The move is dE 3.7, so the family keeps its magenta identity." },
+      "onboardingInk": { "value": "#ff82f1" },
+      "execute": { "value": "#ac6bff" },
+      "executeInk": { "value": "#d697ff" },
+      "review": { "value": "#00a24f", "comment": "#16a34a sat dE 5.5 from the danger fill under deuteranopia." },
+      "reviewInk": { "value": "#46c872" }
+    },
+    "data": {
+      "1": { "value": "#a5b4fc" },
+      "2": { "value": "#facc15" },
+      "3": { "value": "#38bdf8" },
+      "4": { "value": "#86efac" },
+      "5": { "value": "#ec4899" },
+      "other": { "value": "#71717a" }
+    },
+    "node": {
+      "purple": { "value": "#8e6ed4" },
+      "purpleInk": { "value": "#cabae0" },
+      "cyan": { "value": "#5ca8be" },
+      "cyanInk": { "value": "#b3d7e0" },
+      "green": { "value": "#62a578" },
+      "greenInk": { "value": "#b8d8c0" },
+      "amber": { "value": "#c89866" },
+      "amberInk": { "value": "#e0c89e" },
+      "rose": { "value": "#c8757f" },
+      "roseInk": { "value": "#e0bfc4" },
+      "blue": { "value": "#5b7fc7" },
+      "blueInk": { "value": "#b9c5e0" }
+    },
+    "scrollbar": { "value": "rgba(255, 255, 255, 0.16)" },
+    "scrollbarHover": { "value": "rgba(255, 255, 255, 0.26)" }
+  },
+  "shadow": {
+    "xs": { "value": "0 1px 2px rgba(0, 0, 0, 0.2)" },
+    "sm": { "value": "0 2px 8px rgba(0, 0, 0, 0.15)" },
+    "md": { "value": "0 4px 12px rgba(0, 0, 0, 0.25)" },
+    "lg": { "value": "0 8px 24px rgba(0, 0, 0, 0.3)" },
+    "xl": { "value": "0 12px 32px rgba(0, 0, 0, 0.4)" },
+    "sheet": { "value": "-8px 0 32px rgba(0, 0, 0, 0.4)" },
+    "2xl": { "value": "0 16px 64px rgba(0, 0, 0, 0.6)" },
+    "card": { "value": "0 8px 24px rgba(0, 0, 0, 0.1)" },
+    "rimLit": { "value": "0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04)" },
+    "hairline": { "value": "inset 0 1px 0 rgba(255, 255, 255, 0.04)", "comment": "On a dark ground a panel is lifted by the light along its top edge, not by a shadow nobody can see against near-black." },
+    "focus": { "value": "0 0 0 2px var(--color-surface-background), 0 0 0 4px var(--color-focus)" },
+    "selection": { "value": "inset 0 0 0 2px var(--color-brand-accent)" },
+    "glow": { "value": "0 4px 24px rgba(84, 105, 212, 0.3)" }
+  }
+}

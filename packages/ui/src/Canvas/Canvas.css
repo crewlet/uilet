@@ -1,0 +1,315 @@
+/*
+ * A bounded viewport (Canvas.tsx). It fills the box it is given and clips; the
+ * page's own scroller is never involved.
+ */
+
+.crewlet-canvas {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  /*
+   * THE PAGE'S OWN GROUND, not a panel's. A canvas is a FIELD that cards are
+   * placed on, and a card carries the panel surface: painted on the panel
+   * colour the two were the same grey, so a chart read as a sheet of cards
+   * with no space between them rather than as objects standing on a field.
+   * The frame is what says where the canvas ends.
+   */
+  background: var(--color-surface-background);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+}
+
+.crewlet-canvas__viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  /* Until it is tapped, one finger belongs to the page's vertical scroll. */
+  touch-action: pan-y;
+}
+
+/*
+ * The ring is drawn INSIDE the viewport's own box, because the canvas clips:
+ * an outset ring would be cut away by the border it sits under.
+ */
+.crewlet-canvas__viewport:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-canvas[data-touch-active='true'] .crewlet-canvas__viewport {
+  touch-action: none;
+}
+
+.crewlet-canvas[data-panning='true'] .crewlet-canvas__viewport {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.crewlet-canvas__world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+/*
+ * Nothing is shown before the first fit: a chart that appears at the origin and
+ * then jumps into place reads as the page misbehaving.
+ */
+.crewlet-canvas[data-ready='false'] .crewlet-canvas__world {
+  visibility: hidden;
+}
+
+.crewlet-canvas[data-panning='true'] .crewlet-canvas__world {
+  will-change: transform;
+}
+
+/*
+ * Eased only when asked for, never while a finger or a wheel is moving it, and
+ * in one of TWO eases, because the canvas does two different things.
+ *
+ * `near` is a CORRECTION to the view the reader already has: a fit, a zoom
+ * step, the least pan that brings something into view. The emphasised
+ * decelerate at the default step, which is what an arriving surface takes
+ * everywhere in the system, so it lands rather than drifts.
+ *
+ * `travel` is the chart GOING SOMEWHERE ELSE: easing onto the node a surface
+ * is about, onto a node being composed, and back again. That is a gesture
+ * rather than a correction, and what the movement says is WHERE the place is,
+ * so cutting it short throws away the whole of what it is for. Measured
+ * against the console chart this package is drawn to match, whose own viewBox
+ * ease is 400ms of easeInOutQuad: at the near step ours was 150ms, 2.7 times
+ * faster, and the owner's words for it were that there was no zoom effect at
+ * all. Two `moderate` steps is that chart's 400 exactly, written as scale
+ * steps rather than as a number off the scale, and the in-out curve is the
+ * shape of its easing rather than the decelerate a surface lands on: a journey
+ * is read by leaving as well as by arriving.
+ *
+ * The two properties the world carries anyway are repeated in both, because a
+ * transition property is replaced rather than added to.
+ */
+.crewlet-canvas[data-animate='near'] .crewlet-canvas__world {
+  transition:
+    transform var(--motion-duration-base) var(--motion-easing-emphasized),
+    filter var(--motion-duration-slow) var(--motion-easing-default),
+    opacity var(--motion-duration-slow) var(--motion-easing-default);
+}
+
+.crewlet-canvas[data-animate='travel'] .crewlet-canvas__world {
+  transition:
+    transform calc(var(--motion-duration-moderate) * 2) var(--motion-easing-in-out),
+    filter var(--motion-duration-slow) var(--motion-easing-default),
+    opacity var(--motion-duration-slow) var(--motion-easing-default);
+}
+
+/*
+ * The untransformed overlay, under the layer host that carries the menus and
+ * pickers opened from the content. Empty space passes presses through to the
+ * viewport beneath it; each child takes its own back, because a control drawn
+ * here has to be pressable, and a note that must not swallow the drag that
+ * pans the chart turns them off on itself.
+ */
+.crewlet-canvas__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.crewlet-canvas__overlay > * {
+  pointer-events: auto;
+}
+
+/*
+ * THE CHART'S OWN CHROME, as ONE group in ONE corner: a column of bars, each a
+ * surface of its own, in the corner the caller names. The console org chart
+ * stacks its toolbar, its key hint and its chart switch exactly this way, and
+ * what is being avoided is what happened when it was not one group: the zoom
+ * bar sat in one corner of the canvas and two of its three companions sat in
+ * the page's toolbar 800px away, acting on a canvas they were nowhere near.
+ */
+.crewlet-canvas__controls {
+  position: absolute;
+  right: var(--spacing-3);
+  bottom: var(--spacing-3);
+  z-index: var(--z-index-raised);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-2);
+}
+
+/*
+ * TOP RIGHT IS A CHART'S CORNER. A tree grows downward from its root, so the
+ * bottom right is where the content ends up and the top right is the corner
+ * that stays empty; it is also the first place a reader looks after the root.
+ */
+.crewlet-canvas__controls[data-placement='top-right'] {
+  top: var(--spacing-3);
+  bottom: auto;
+}
+
+/*
+ * ONE BAR: a well at the panel radius with its controls lifted inside it. The
+ * chip step is exactly one hairline tighter than the well around it, which is
+ * what reads as sitting IN it rather than beside it, and it is the console
+ * chart's own 7px against its 10px bar.
+ */
+.crewlet-canvas__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+}
+
+.crewlet-canvas__bar .crewlet-icon-btn {
+  border-radius: var(--radius-chip);
+}
+
+/*
+ * A NOTE UNDER THE CONTROLS, about a key or a state the canvas is in. The
+ * bar's own surface at the smallest step, because it is one of the group's
+ * bars rather than a thing floating over the chart; inert, because it is
+ * decoration and a press meant for the chart must reach the chart.
+ *
+ * AND IT IS DRAWN ONLY WHEN IT SAYS SOMETHING. The element stays in the
+ * document while it is empty, because a live region a page INSERTS with its
+ * message already in it is a region a screen reader may never announce, where
+ * one that was there and is then filled is announced; an empty bar with a
+ * border around it is not a thing to draw, so it is not.
+ */
+.crewlet-canvas__hint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  max-width: 16rem;
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-tight);
+  color: var(--color-text-secondary);
+  text-align: right;
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  pointer-events: none;
+}
+
+.crewlet-canvas__hint:empty {
+  display: none;
+}
+
+/*
+ * THE ZOOM READOUT, between the two steppers. It says where the view stands,
+ * which two chevrons never do, and it is the way to a number without pressing a
+ * chevron eight times.
+ *
+ * It is the SMALL CONTROL STEP tall, like the buttons either side of it, so the
+ * row of controls is one row of targets rather than two heights; and the same
+ * step wide at least, so a zoom of 25% and one of 100% do not move the buttons
+ * beside them as a reader zooms. `tabular-nums` is the other half of that: a
+ * proportional 1 is narrower than a 0, so a digit changing would otherwise
+ * shift the two characters beside it.
+ */
+.crewlet-canvas__zoom,
+.crewlet-canvas__zoom-field {
+  flex: none;
+  box-sizing: border-box;
+  /*
+   * ONE WIDTH FOR BOTH, and it is a WIDTH rather than a floor. As a floor it
+   * held the button to the step and did nothing at all to the field, whose own
+   * intrinsic size is its `size` attribute: 155px at this type, so pressing
+   * the readout made the bar 111px wider and moved every button in it out from
+   * under the pointer. The console chart's is a fixed 36px in the slot the
+   * readout used, for that reason.
+   */
+  width: var(--size-control-lg);
+  height: var(--size-control-sm);
+  padding: 0 var(--spacing-1);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+.crewlet-canvas__zoom {
+  cursor: pointer;
+  border-radius: var(--radius-chip);
+}
+
+.crewlet-canvas__zoom:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  background: var(--color-surface-hover);
+}
+
+.crewlet-canvas__zoom:disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/*
+ * The field is the box it replaced the button with, so it is drawn as a box:
+ * the boundary is what says a value can be typed here, where the button's is
+ * transparent.
+ */
+.crewlet-canvas__zoom-field {
+  color: var(--color-text-primary);
+  background: var(--color-surface-inset);
+  border-color: var(--color-border-control);
+}
+
+.crewlet-canvas__zoom:focus-visible,
+.crewlet-canvas__zoom-field:focus-visible {
+  outline: 2px solid var(--color-focus);
+  /* Inset, like every ring on this canvas: the controls sit against the
+     viewport's clipping edge, where an outset ring is cut away. */
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
+ * THE CONTENT PUSHED BACK, for a surface opened over the canvas about one part
+ * of it. Blurred and faded rather than covered: the chart is still there
+ * behind the decision being made about it, which is what tells a reader where
+ * the thing they are naming will go. The console chart does the same while a
+ * node is being added.
+ *
+ * ON THE WORLD, NOT THE CANVAS. A filter on the canvas would blur the controls
+ * and any note over it too, and a filter makes a containing block, which would
+ * take every menu the content opens out of its own layer.
+ */
+.crewlet-canvas[data-dimmed='true'] .crewlet-canvas__world {
+  filter: blur(var(--blur-xs));
+  opacity: 0.55;
+}
+
+.crewlet-canvas__world {
+  transition:
+    filter var(--motion-duration-slow) var(--motion-easing-default),
+    opacity var(--motion-duration-slow) var(--motion-easing-default);
+}
+
+/*
+ * A READER WHO ASKED FOR LESS is put where they are going without travelling:
+ * both eases are cancelled, so the chart ARRIVES at the node a surface is
+ * about, or at a node being composed, rather than moving there. Nothing is
+ * lost but the journey.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-canvas[data-animate='near'] .crewlet-canvas__world,
+  .crewlet-canvas[data-animate='travel'] .crewlet-canvas__world,
+  .crewlet-canvas__world {
+    transition: none;
+  }
+}

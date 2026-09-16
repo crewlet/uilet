@@ -1,0 +1,144 @@
+/*
+ * A numbered ledger: a node per step, a rail bracketing that step's content.
+ *
+ * TWO DEVICES, TWO JOBS. The alternating tint separates adjacent blocks; the
+ * rail bounds one. Drawn the other way round, as a connector strictly BETWEEN
+ * steps, a ledger of one step got neither, and it rendered as a bare numeral
+ * in the gutter beside a flat stack of look-alike rows.
+ */
+
+.crewlet-timeline {
+  /* The node's diameter, which the rail's offset and its left edge both read
+     off, so moving the node is one edit rather than three. */
+  --crewlet-timeline-node-size: 18px;
+  --crewlet-timeline-pulse-period: 1.8s;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * The block padding separates one step from the next, and it has to beat the
+ * gap INSIDE a step by enough to read as a different kind of boundary.
+ */
+.crewlet-timeline__item {
+  display: grid;
+  grid-template-columns: var(--crewlet-timeline-node-size) minmax(0, 1fr);
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-2) var(--spacing-3) 0;
+  /* The well's radius, which is what every inset block on a screen is drawn
+     at. A step tighter here made a tinted step read as a chip. */
+  border-radius: var(--radius-md);
+}
+
+/*
+ * Two steps, alternating: enough to separate adjacent blocks, not enough to
+ * claim a meaning. The inset surface rather than a second grey step, because
+ * two adjacent surface steps are nearly the same colour in the dark theme.
+ */
+.crewlet-timeline--alternating .crewlet-timeline__item:nth-child(even) {
+  background: var(--color-surface-inset);
+}
+
+.crewlet-timeline__rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.crewlet-timeline__node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  position: relative;
+  width: var(--crewlet-timeline-node-size);
+  height: var(--crewlet-timeline-node-size);
+  margin-top: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-inset);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * From just under the node to the bottom of THIS step's content, on every
+ * step including the last. Starting it clear of the node left a detached dash
+ * on a step only one row tall.
+ */
+.crewlet-timeline__rail::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 1px);
+  top: calc(var(--crewlet-timeline-node-size) + 4px);
+  bottom: 0;
+  width: 2px;
+  border-radius: var(--radius-pill);
+  /* The default border step, not the subtle one: this line is the thing that
+     says which blocks are one step, and a rule a reader has to look for is not
+     doing that job. */
+  background: var(--color-border-default);
+}
+
+.crewlet-timeline__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/*
+ * A step that failed. The one other colour the ledger carries, and it is
+ * earned: scanning nine steps for where it went wrong is the actual question a
+ * reader brings to a stuck run.
+ */
+.crewlet-timeline__item--danger .crewlet-timeline__node {
+  border-color: var(--color-feedback-danger-line);
+  background: var(--color-feedback-danger-soft);
+  color: var(--color-feedback-danger-ink);
+}
+
+/* The step in flight. The accent is the one colour that means "where it is". */
+.crewlet-timeline__item--active .crewlet-timeline__node {
+  border-color: var(--color-brand-accent);
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-timeline__item--active .crewlet-timeline__node::before {
+  content: '';
+  position: absolute;
+  width: var(--crewlet-timeline-node-size);
+  height: var(--crewlet-timeline-node-size);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-brand-accent);
+  animation: crewlet-timeline-pulse var(--crewlet-timeline-pulse-period) var(--motion-easing-out) infinite;
+}
+
+@keyframes crewlet-timeline-pulse {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+/*
+ * A live indicator that will not stop is exactly what this setting is for, so
+ * it stops rather than slowing. The node keeps its accent ring, so the step in
+ * flight is still the one that looks different.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-timeline__item--active .crewlet-timeline__node::before {
+    animation: none;
+  }
+}

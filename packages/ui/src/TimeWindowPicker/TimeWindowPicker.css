@@ -1,82 +1,47 @@
 /*
- * TimeWindowPicker, AWS-style time range picker.
+ * TimeWindowPicker: one trigger over one panel.
  *
- * Trigger renders Select-styled so it lines up with other toolbar
- * controls. The popover opens a 720px-wide panel with two tabs
- * (Absolute / Relative), each occupying the same width so switching
- * doesn't shift the panel size. Absolute pairs two side-by-side
- * calendars with prev/next month controls + date/time text inputs;
- * Relative shows grouped chip rows + a custom number/unit fallback.
- * The footer mirrors AWS with Cancel/Apply.
+ * The trigger takes the same geometry as a Select and a DateTimePicker, so the
+ * three line up in a filter bar. The panel is a RAIL of named windows beside
+ * the calendars, rather than two tabs with one of them hidden: the windows a
+ * reader picks by name are the road, and the absolute range is the turning off
+ * it, so both are on screen at once and each shows what the other chose.
  */
 
-/* The accent variables are declared on the trigger AND on the popover.
-   The popover is portaled to <body>, so it inherits nothing from the
-   trigger; declaring them on the trigger alone leaves the calendar
-   cells, chips and footer button resolving an undefined variable and
-   painting transparent. Both read the brand accent tokens, so an app
-   retints the picker by rebinding --color-brand-accent and
-   --color-brand-accent-rgb on <body>. */
-.crewlet-time-window,
-.crewlet-time-window__popover {
-  --crewlet-time-window-accent: var(--color-brand-accent, #5469d4);
-  --crewlet-time-window-accent-rgb: var(--color-brand-accent-rgb, 84, 105, 212);
-}
-
 .crewlet-time-window {
-  /*
-   * Trigger fills its parent container so the chevron sits flush
-   * right, matching the Select and DateTimePicker shape. Default
-   * min-width keeps the label readable when a relative window
-   * collapses to "Last 1 hour" and the parent has no constraint.
-   */
-  width: 100%;
-  min-width: 220px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px 8px 12px;
-  background: var(--color-surface-elevated, #1f2128);
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 8px;
-  color: var(--color-text-primary, #f5f5f7);
+  gap: var(--spacing-2);
+  width: 100%;
+  min-height: var(--size-control-md);
+  /* The side inset only: see DateTimePicker's own trigger. */
+  padding: 0 var(--spacing-2) 0 var(--spacing-3);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--font-size-compact);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-time-window--sm {
-  /*
-   * Match the Input + Select sm trigger heights so a toolbar that
-   * mixes these primitives reads as one tight row. The default
-   * 16/18px icon and chevron font-sizes were dominating the line
-   * box and inflating the trigger past the ~30px sm height of the
-   * other inputs; shrinking them to 14/16 keeps the affordance
-   * legible while letting padding own the height.
-   */
-  padding: 6px 10px;
-  font-size: 13px;
-}
-
-.crewlet-time-window--sm .crewlet-time-window__icon {
-  font-size: 14px;
-}
-
-.crewlet-time-window--sm .crewlet-time-window__chevron {
-  font-size: 16px;
+  min-height: var(--size-control-sm);
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
 }
 
 .crewlet-time-window:hover:not(:disabled) {
-  border-color: var(--color-border-strong, rgba(255, 255, 255, 0.18));
+  border-color: var(--color-border-hover);
 }
 
-.crewlet-time-window:focus,
+.crewlet-time-window:focus-visible,
 .crewlet-time-window.is-open {
-  outline: none;
-  border-color: var(--crewlet-time-window-accent);
-  box-shadow: 0 0 0 3px rgba(var(--crewlet-time-window-accent-rgb), 0.15);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-color: var(--color-focus);
 }
 
 .crewlet-time-window.is-disabled,
@@ -85,545 +50,354 @@
   cursor: not-allowed;
 }
 
-.crewlet-time-window__icon {
-  font-size: 16px;
-  color: var(--color-text-secondary, #c9ced8);
+/* Decoration, as every glyph that repeats what the control already says. */
+svg.crewlet-time-window__icon,
+svg.crewlet-time-window__chevron {
+  color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
 .crewlet-time-window__label {
-  /*
-   * Label flexes to fill the row so the chevron is pushed to the
-   * right edge of the trigger, matching the Select / DateTimePicker
-   * shape. Long values ("2026/05/22 00:00:00 to 2026/05/24 23:59:59")
-   * truncate with an ellipsis rather than expanding the trigger
-   * past its container.
-   */
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-time-window__label.is-placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* ─── The panel ──────────────────────────────────────────────── */
+
+/*
+ * SIZED BY WHAT IS IN IT, not to a number. A calendar's width is seven control
+ * squares, and a control square is a different size at each density, so a panel
+ * pinned to one width is a panel with a hole in it at compact and a wrapped
+ * week at comfortable. The max-width is the only number, and it is the window's.
+ */
+.crewlet-time-window__popover {
+  padding: 0;
+  /* A window picker is one fixed-size thing: shown whole, or not shown. */
+  overflow: visible;
+  width: max-content;
+  max-width: calc(100vw - var(--spacing-8));
+  max-height: none;
+}
+
+.crewlet-time-window__panel {
+  display: grid;
+  grid-template-columns: auto;
+  gap: var(--spacing-4);
+  padding: var(--spacing-3);
+}
+
+.crewlet-time-window__panel--both {
+  grid-template-columns: auto auto;
+}
+
+/* ─── The rail of named windows ──────────────────────────────── */
+
+.crewlet-time-window__relative {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-time-window__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/*
+ * A window on the rail is a MENU ROW, drawn the way every other row of choices
+ * in the package is drawn: one line, the row corner, the tick in the accent ink
+ * for the one that is on and the hover tint for the one under the pointer. The
+ * two are different facts about different rows, so they are never the same
+ * paint.
+ */
+.crewlet-time-window__preset {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-row-sm);
+  padding: 0 var(--spacing-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-compact);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-time-window__preset:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.crewlet-time-window__preset.is-active {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-time-window__preset:focus-visible {
+  outline: 2px solid var(--color-focus);
+  /* Drawn inside: the rail is a column in a grid with a panel edge beside it,
+     and an outset ring on the last row is clipped by it. */
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* Held, rather than dropped, so the labels do not step sideways as the
+   choice moves down the rail. */
+svg.crewlet-time-window__tick {
+  flex-shrink: 0;
+  visibility: hidden;
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-time-window__preset.is-active svg.crewlet-time-window__tick {
+  visibility: visible;
+}
+
+.crewlet-time-window__preset-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.crewlet-time-window__label.is-placeholder {
-  color: var(--color-text-tertiary, #8c99ad);
-}
-
-.crewlet-time-window__chevron {
-  font-size: 18px;
-  color: var(--color-text-tertiary, #8c99ad);
-  flex-shrink: 0;
-}
-
-/* ─── Popover panel ─────────────────────────────────────────── */
-/*
- * 720px wide accommodates two side-by-side calendars without
- * cramping the date/time text inputs below them. The base Popover
- * rule's max-height/overflow constraints are lifted because the
- * panel's own footer is the bottom bound, not viewport scroll.
- */
-.crewlet-time-window__popover {
-  /*
-   * 540px keeps the two calendars compact: each gets ~246px width,
-   * cells render at ~34x26 (close to square), and the date/time
-   * input row below still has room for two YYYY/MM/DD + HH:MM:SS
-   * pairs without crowding.
-   */
-  padding: 0;
-  width: 540px;
-  max-width: none;
-  max-height: none;
-  background: var(--color-surface-subtle, var(--color-surface-elevated, #1c1e24));
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 10px;
-  box-shadow: var(--shadow-lg, 0 12px 28px rgba(0, 0, 0, 0.45));
-  overflow: visible;
-}
-
-.crewlet-time-window__panel {
+.crewlet-time-window__custom {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-1);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-border-default);
 }
 
-/* ─── Header (tab strip + tz selector) ──────────────────────── */
-.crewlet-time-window__header {
+.crewlet-time-window__custom-label {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-time-window__custom-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-right: 12px;
-  border-bottom: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.08));
+  gap: var(--spacing-2);
 }
 
-.crewlet-time-window__tabs {
-  display: flex;
-}
+/* ─── The absolute range ─────────────────────────────────────── */
 
-/*
- * Time-zone Select sits on the right edge of the tab strip,
- * matching the AWS picker's "Local time zone ▼" affordance.
- * Constrained width keeps the popover header tidy regardless
- * of the label length.
- */
-.crewlet-time-window__tz {
-  flex-shrink: 0;
-  min-width: 150px;
-}
-
-.crewlet-time-window__tab {
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  padding: 12px 16px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #c9ced8);
-  cursor: pointer;
-  transition: color 0.12s ease, border-color 0.12s ease;
-}
-
-.crewlet-time-window__tab:hover {
-  color: var(--color-text-primary, #fafafa);
-}
-
-.crewlet-time-window__tab.is-active {
-  color: var(--color-text-primary, #fafafa);
-  border-bottom-color: var(--crewlet-time-window-accent);
-}
-
-/* ─── Absolute pane ────────────────────────────────────────── */
 .crewlet-time-window__absolute {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 18px;
-}
-
-.crewlet-time-window__cal-row {
-  /* Two calendars sit side by side; each owns its own prev/next
-     chevron pinned to the outer day column inside its title row.
-     Tight 12px gutter keeps the two months visually paired without
-     bleeding into one another. */
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  align-items: start;
-}
-
-/* ─── Inline calendar ──────────────────────────────────────── */
-.crewlet-time-window__calendar {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-3);
   min-width: 0;
 }
 
-/*
- * Calendar title row uses the same 7-column grid as the weekdays
- * and day grid below it, so the prev/next chevron sits directly
- * above the leftmost or rightmost weekday header (Su / Sa). The
- * month label spans the remaining 6 columns and centres there.
- */
+.crewlet-time-window__absolute-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+
+.crewlet-time-window__absolute-title {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-time-window__tz {
+  flex: 0 0 auto;
+}
+
+.crewlet-time-window__calendars {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: var(--spacing-4);
+}
+
+.crewlet-time-window__calendar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-time-window__calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-1);
+}
+
 .crewlet-time-window__calendar-title {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  align-items: center;
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
 
-.crewlet-time-window__calendar-title.has-prev .crewlet-time-window__calendar-title-text {
-  grid-column: 2 / span 6;
-}
-
-.crewlet-time-window__calendar-title.has-next .crewlet-time-window__calendar-title-text {
-  grid-column: 1 / span 6;
-}
-
-.crewlet-time-window__calendar-title-text {
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary, #fafafa);
-  padding: 2px 0;
-}
-
-/* Prev / next chevron buttons embedded in the calendar title row.
-   Pinned to the outer day column via grid-column so they sit
-   directly above the matching weekday cell. */
-.crewlet-time-window__calendar-nav {
-  background: transparent;
-  border: 0;
-  color: var(--color-text-secondary, #c9ced8);
-  height: 28px;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
-}
-
-.crewlet-time-window__calendar-nav:hover {
-  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.08));
-  color: var(--color-text-primary, #fafafa);
-}
-
-.crewlet-time-window__calendar-nav--prev {
-  grid-column: 1;
-}
-
-.crewlet-time-window__calendar-nav--next {
-  grid-column: 7;
-}
-
-.crewlet-time-window__calendar-nav .material-symbols-outlined {
-  font-size: 18px;
-}
-
-.crewlet-time-window__weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-}
-
-.crewlet-time-window__weekday {
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-tertiary, #8c99ad);
-  padding: 2px 0;
-}
-
-.crewlet-time-window__grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-}
-
-/*
- * Cell square is tighter (26px) with no padding, so the two months
- * sit closer together and the calendar block reads compact. The
- * 12px font is kept; only the box around it shrinks.
- */
-.crewlet-time-window__cell {
-  height: 26px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-  color: var(--color-text-primary, #fafafa);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background 0.1s ease, color 0.1s ease, border-color 0.1s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.crewlet-time-window__cell:hover:not(:disabled):not(.is-selected) {
-  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.08));
-}
-
-/*
- * Cells from neighbouring months stay in the DOM (so the 7x6 grid
- * keeps its shape) but render fully invisible. The operator only
- * sees days that belong to the month in the title.
- */
-.crewlet-time-window__cell.is-outside {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-/*
- * Future cells (strictly after today) read with the same gray
- * treatment as the static placeholder for tab strip and the
- * weekday header. The disabled attribute on the <button> blocks
- * clicks; cursor stays as default (no "blocked" affordance) since
- * a not-allowed glyph reads as too aggressive for a calendar.
- */
-.crewlet-time-window__cell.is-future,
-.crewlet-time-window__cell:disabled {
-  color: var(--color-text-tertiary, #8c99ad);
-  opacity: 0.5;
-  cursor: default;
-}
-
-.crewlet-time-window__cell.is-future:hover,
-.crewlet-time-window__cell:disabled:hover {
-  background: transparent;
-}
-
-.crewlet-time-window__cell.is-today:not(.is-selected) {
-  box-shadow: inset 0 0 0 1px rgba(var(--crewlet-time-window-accent-rgb), 0.55);
-}
-
-.crewlet-time-window__cell.is-selected {
-  background: var(--crewlet-time-window-accent);
-  color: #ffffff;
-  font-weight: 600;
-}
-
-/*
- * Range hover preview. After the operator clicks the start date and
- * before they click the end, every cell between (start, hover) gets
- * a faint accent fill so the duration is visible at a glance. The
- * same class applies once both endpoints are picked, painting the
- * filled range between them.
- */
-.crewlet-time-window__cell.is-in-range:not(.is-selected) {
-  background: rgba(var(--crewlet-time-window-accent-rgb), 0.16);
-  color: var(--color-text-primary, #fafafa);
-}
-
-.crewlet-time-window__cell.is-in-range:not(.is-selected):hover {
-  background: rgba(var(--crewlet-time-window-accent-rgb), 0.24);
-}
-
-/* ─── Date / time text inputs ──────────────────────────────── */
-.crewlet-time-window__inputs {
+.crewlet-time-window__fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  padding-top: 4px;
-  border-top: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.06));
+  gap: var(--spacing-3);
 }
 
 .crewlet-time-window__field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-1);
+  min-width: 0;
 }
 
 .crewlet-time-window__field-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #c9ced8);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
 }
 
 .crewlet-time-window__field-row {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
+/* ─── The masked boxes ───────────────────────────────────────── */
+
 /*
- * Masked input layout: the wrapper hosts both the actual <input>
- * (which draws transparent text + a visible caret) and an overlay
- * layer (which paints per-character colors). Both share identical
- * padding, font-family, font-size, and tabular-nums so the overlay
- * glyphs align with the caret pixel-for-pixel.
+ * The value and the shape still to be filled sit side by side in one box, in
+ * the same mono face at the same size, so the two read as one string. The
+ * remainder is a PICTURE: it is aria-hidden, because a reader hearing "Y Y Y
+ * Y slash M M" is being read a template rather than a value.
  */
-.crewlet-time-window__masked-wrap {
-  position: relative;
-  display: flex;
+.crewlet-time-window__masked {
+  display: inline-flex;
+  align-items: center;
+  flex: 1;
   min-width: 0;
-}
-
-.crewlet-time-window__masked-wrap.is-date { flex: 1.4; }
-.crewlet-time-window__masked-wrap.is-time { flex: 1; }
-
-.crewlet-time-window__text-input {
-  background: var(--color-surface-elevated, #1f2128);
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 6px;
-  padding: 8px 10px;
-  font: inherit;
-  font-size: 13px;
+  min-height: var(--size-control-sm);
+  padding: 0 var(--spacing-2);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-compact);
   font-variant-numeric: tabular-nums;
-  /* Text is invisible; the overlay paints the visible glyphs. The
-     caret stays visible via caret-color, so the cursor still shows
-     where typing will land. */
-  color: transparent;
-  caret-color: var(--color-text-primary, #fafafa);
-  box-sizing: border-box;
-  width: 100%;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-.crewlet-time-window__text-input::selection {
-  background: rgba(var(--crewlet-time-window-accent-rgb), 0.35);
-  color: transparent;
+.crewlet-time-window__masked:focus-within {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  border-color: var(--color-focus);
+  box-shadow: var(--shadow-focus);
 }
 
-.crewlet-time-window__text-input::placeholder {
-  color: var(--color-text-tertiary, #8c99ad);
-}
-
-.crewlet-time-window__text-input:focus {
-  outline: none;
-  border-color: var(--crewlet-time-window-accent);
-  box-shadow: 0 0 0 3px rgba(var(--crewlet-time-window-accent-rgb), 0.15);
-}
-
-/*
- * Overlay is text-only. No border, no background, no radius: every
- * pixel of visible "box" comes from the input below. The overlay
- * is offset by 1px on every side to sit inside the input's 1px
- * border, so its text starts at exactly the input's content origin
- * and the caret + overlay glyphs align. pointer-events: none lets
- * the click pass through to the input.
- */
-.crewlet-time-window__masked-overlay {
-  position: absolute;
-  inset: 1px;
-  pointer-events: none;
-  padding: 8px 10px;
-  font: inherit;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  box-sizing: border-box;
-  white-space: pre;
-  display: flex;
-  align-items: center;
-}
-
-/*
- * Two visible states for the overlay glyphs:
- *
- *   is-digit   primary white. Used for typed digits AND for any
- *              separator whose preceding segment is fully filled,
- *              so "2026/" reads as one finished block.
- *
- *   is-mask    tertiary gray + 0.75 opacity. Used for unfilled
- *              mask letters AND for any separator whose preceding
- *              segment is still showing placeholders, so the
- *              ghost shape ("YYYY/MM/DD") reads as one continuous
- *              gray hint instead of having stark white slashes
- *              poking through.
- */
-.crewlet-time-window__masked-char.is-digit {
-  color: var(--color-text-primary, #fafafa);
-}
-
-.crewlet-time-window__masked-char.is-mask {
-  color: var(--color-text-tertiary, #8c99ad);
-  opacity: 0.75;
-}
-
-/* ─── Relative pane ────────────────────────────────────────── */
-.crewlet-time-window__relative {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px;
-}
-
-.crewlet-time-window__chip-row {
-  display: grid;
-  grid-template-columns: 80px 1fr;
-  align-items: center;
-  gap: 12px;
-}
-
-.crewlet-time-window__chip-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #c9ced8);
-}
-
-.crewlet-time-window__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.crewlet-time-window__chip {
-  background: var(--color-surface-elevated, #1f2128);
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 6px;
-  padding: 6px 14px;
-  font: inherit;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-primary, #fafafa);
-  cursor: pointer;
-  min-width: 44px;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
-}
-
-.crewlet-time-window__chip:hover:not(.is-active) {
-  border-color: var(--crewlet-time-window-accent);
-  color: var(--crewlet-time-window-accent);
-}
-
-/*
- * Active chip mirrors the calendar-cell selection: full accent fill,
- * white text, no border tint. Keeps the two modes (Relative chip pick,
- * Absolute day pick) reading as the same "this is your current
- * selection" gesture.
- */
-.crewlet-time-window__chip.is-active {
-  background: var(--crewlet-time-window-accent);
-  border-color: var(--crewlet-time-window-accent);
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.crewlet-time-window__custom-row {
-  display: grid;
-  grid-template-columns: 1fr 180px;
-  gap: 12px;
-  align-items: center;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.06));
-}
-
-.crewlet-time-window__custom-input {
-  background: var(--color-surface-elevated, #1f2128);
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 6px;
-  padding: 8px 12px;
-  font: inherit;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-primary, #fafafa);
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.crewlet-time-window__custom-input:focus {
-  outline: none;
-  border-color: var(--crewlet-time-window-accent);
-  box-shadow: 0 0 0 3px rgba(var(--crewlet-time-window-accent-rgb), 0.15);
-}
-
-/* ─── Footer ────────────────────────────────────────────────── */
-.crewlet-time-window__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 18px;
-  border-top: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.08));
-  background: var(--color-surface-muted, rgba(255, 255, 255, 0.02));
-}
-
-.crewlet-time-window__footer-btn {
+.crewlet-time-window__masked-input {
+  min-width: 0;
+  /* The `size` attribute the component sets is what holds the width open in
+     every engine; this narrows it to the text where it is supported. */
+  width: auto;
+  field-sizing: content;
+  padding: 0;
   background: transparent;
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.12));
-  border-radius: 6px;
+  border: none;
+  outline: none;
   font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-primary, #fafafa);
-  cursor: pointer;
-  padding: 8px 18px;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  color: var(--color-text-primary);
 }
 
-.crewlet-time-window__footer-btn:hover {
-  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
-  border-color: var(--color-border-strong, rgba(255, 255, 255, 0.2));
+.crewlet-time-window__masked-input[aria-invalid='true'] {
+  color: var(--color-feedback-danger-ink);
 }
 
-.crewlet-time-window__footer-btn.is-primary {
-  background: var(--crewlet-time-window-accent);
-  border-color: var(--crewlet-time-window-accent);
-  color: #ffffff;
+.crewlet-time-window__masked-rest {
+  color: var(--color-text-tertiary);
+  pointer-events: none;
 }
 
-.crewlet-time-window__footer-btn.is-primary:hover {
-  background: var(--crewlet-time-window-accent);
-  filter: brightness(1.08);
+/* ─── The footer ─────────────────────────────────────────────── */
+
+/*
+ * WHAT IS SELECTED, and what to do about it, on one line under both columns.
+ * The sentence is first because it is the answer to the question the panel was
+ * opened to ask, and the buttons are what a reader reaches for after reading
+ * it.
+ */
+.crewlet-time-window__footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-time-window__summary {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-time-window__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
+}
+
+/*
+ * One column on a narrow window: the rail over the calendars, and the two
+ * months stacked. The panel is as wide as its content, so without this the
+ * only thing a phone-sized window could do with it is clip it.
+ */
+@media (max-width: 768px) {
+  .crewlet-time-window__panel--both,
+  .crewlet-time-window__calendars,
+  .crewlet-time-window__fields {
+    grid-template-columns: 1fr;
+  }
+
+  .crewlet-time-window__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /*
+   * One column is a tall column, and a panel taller than the window puts Apply
+   * below the fold of a surface the page cannot scroll: the reader can change
+   * the window and never commit it. So here, and only here, the panel takes
+   * back the scrolling every other popover in the package does.
+   */
+  .crewlet-time-window__popover {
+    max-height: calc(100vh - var(--spacing-10));
+    overflow: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-time-window,
+  .crewlet-time-window__masked,
+  .crewlet-time-window__preset {
+    transition: none;
+  }
 }

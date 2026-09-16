@@ -1,0 +1,84 @@
+/*
+ * The status dot: a 6px mark in its tone's fill, beside the word it belongs
+ * to. See the component doc for why it is hidden from assistive technology.
+ */
+
+.crewlet-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-circle);
+  /*
+   * The quiet state is still a mark, so it takes the tertiary step rather than
+   * the decoration one the engine spends here: a 6px dot has to clear 3:1 to
+   * be seen at all, and --color-text-muted measures 2.33:1 on a light page and
+   * 2.25:1 on a dark one at their worst grounds. The tertiary step measures
+   * 4.87:1 and 4.65:1 on the same pair, and is the nearest step that holds.
+   */
+  background: var(--color-text-tertiary);
+  flex: none;
+}
+
+.crewlet-status-dot--info {
+  background: var(--color-feedback-info);
+}
+
+.crewlet-status-dot--success {
+  background: var(--color-feedback-success);
+}
+
+.crewlet-status-dot--warning {
+  background: var(--color-feedback-warning);
+}
+
+.crewlet-status-dot--danger {
+  background: var(--color-feedback-danger);
+}
+
+.crewlet-status-dot--brand {
+  background: var(--color-brand-accent);
+}
+
+.crewlet-status-dot--phase-onboarding {
+  background: var(--color-phase-onboarding);
+}
+
+.crewlet-status-dot--phase-execute {
+  background: var(--color-phase-execute);
+}
+
+.crewlet-status-dot--phase-review {
+  background: var(--color-phase-review);
+}
+
+/*
+ * Still happening. Three things are deliberate: the pulse never goes to
+ * nothing, because a mark that disappears reads as a fault rather than as work
+ * in progress; it alternates rather than sawtooths, so the mark comes back the
+ * way it went; and the round trip is 1.8s, which is the engine's own breath
+ * and is 0.55 flashes a second, well clear of the three that are a seizure
+ * risk. Three of the slow step each way makes that round trip.
+ */
+.crewlet-status-dot.is-pulsing {
+  animation: crewlet-status-dot-pulse calc(var(--motion-duration-slow) * 3) var(--motion-easing-default) infinite
+    alternate;
+}
+
+@keyframes crewlet-status-dot-pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+
+/*
+ * A mark that cannot move should not pretend to. The dot still reads as its
+ * tone, and the word beside it still says what is happening.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-status-dot.is-pulsing {
+    animation: none;
+  }
+}

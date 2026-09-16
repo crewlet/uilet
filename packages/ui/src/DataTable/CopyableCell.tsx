@@ -1,76 +1,85 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { type MouseEvent, type ReactNode } from 'react';
+import { CheckGlyph, ContentCopyGlyph, ErrorGlyph } from '@crewlethq/icons/glyphs';
+import { useClipboard } from '../utils/useClipboard.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /*
- * CopyableCell, a DataTable-internal helper for the compact variant.
- * Wraps any rendered cell content with a hover-revealed copy button
- * whose clipboard text is supplied explicitly. The DOM is never
- * scraped, because cells often contain pills, icons, or formatters
- * that should not appear on the clipboard verbatim.
+ * CopyableCell: a cell value with a copy beside it.
  *
- * The button only fades in on row hover (driven by CSS), so it does
- * not add visual weight to a static reading of the table.
+ * TWO THINGS IT DOES NOT DO ANY MORE. It had its own clipboard write, which
+ * called `navigator.clipboard` where the API exists and fell through an
+ * `execCommand` path whose boolean result it threw away; and it swallowed
+ * every failure, so on a plain http origin the button clicked, nothing was
+ * copied, and nothing said so. Both are `useClipboard`'s job now, and the
+ * refusal is REPORTED: the glyph changes and a status line says "Copy
+ * failed", because a clipboard is invisible and the control is the only place
+ * a reader can learn what happened.
+ *
+ * The clipboard text is supplied explicitly rather than scraped from the DOM,
+ * because a cell often holds a pill, a glyph or a formatter and none of those
+ * belong on the clipboard verbatim.
+ *
+ * ONE TAB STOP: the value is text and the button is the only control.
  */
 export interface CopyableCellProps {
   value: string | number | null | undefined;
   children?: ReactNode;
+  /** The button's accessible name. */
   ariaLabel?: string;
+  /** What the status line says once the value is on the clipboard. */
+  copiedLabel?: string;
+  /** What it says when the clipboard refused. */
+  failedLabel?: string;
 }
 
-const COPIED_DURATION_MS = 1500;
-
-const writeToClipboard = async (text: string): Promise<void> => {
-  if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
-  document.execCommand('copy');
-  document.body.removeChild(ta);
-};
-
-export const CopyableCell = ({ value, children, ariaLabel }: CopyableCellProps) => {
+export const CopyableCell = ({
+  value,
+  children,
+  ariaLabel,
+  copiedLabel = 'Copied',
+  failedLabel = 'Copy failed',
+}: CopyableCellProps) => {
   const text = value === undefined || value === null ? '' : String(value);
-  const [copied, setCopied] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clipboard = useClipboard();
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
-
-  const onCopy = async (event: React.MouseEvent<HTMLButtonElement>) => {
+  const onCopy = (event: MouseEvent<HTMLButtonElement>) => {
+    // The row underneath may navigate; copying a cell is not that press.
     event.stopPropagation();
     if (!text) return;
-    try {
-      await writeToClipboard(text);
-      setCopied(true);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setCopied(false), COPIED_DURATION_MS);
-    } catch {
-      // No good UI for "clipboard refused"; an alert would be noisier than silence.
-    }
+    void clipboard.copy(text);
   };
 
   return (
     <span className="crewlet-data-table__copy-cell">
       <span className="crewlet-data-table__copy-cell-value">{children}</span>
       {text && (
-        <button
-          type="button"
-          className={`crewlet-data-table__copy-cell-button${copied ? ' is-copied' : ''}`}
-          onClick={onCopy}
-          aria-label={ariaLabel || 'Copy to clipboard'}
-          title="Copy"
-        >
-          <span className="material-symbols-outlined" aria-hidden>
-            {copied ? 'check' : 'content_copy'}
+        <>
+          <button
+            type="button"
+            className={`crewlet-data-table__copy-cell-button${clipboard.state === 'copied' ? ' is-copied' : ''}${clipboard.state === 'failed' ? ' is-failed' : ''}`}
+            onClick={onCopy}
+            aria-label={ariaLabel || 'Copy to clipboard'}
+            title={ariaLabel || 'Copy to clipboard'}
+          >
+            {clipboard.state === 'copied' ? (
+              <CheckGlyph size="sm" />
+            ) : clipboard.state === 'failed' ? (
+              <ErrorGlyph size="sm" />
+            ) : (
+              <ContentCopyGlyph size="sm" />
+            )}
+          </button>
+          {/*
+            * The outcome sits OUTSIDE the button, so the button's own name
+            * stays "Copy <column>" rather than growing a second sentence
+            * every reader hears before they can press it.
+            */}
+          <span role="status">
+            <VisuallyHidden>
+              {clipboard.state === 'copied' ? copiedLabel : clipboard.state === 'failed' ? failedLabel : ''}
+            </VisuallyHidden>
           </span>
-        </button>
+        </>
       )}
     </span>
   );

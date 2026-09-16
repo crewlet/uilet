@@ -1,20 +1,127 @@
 /*
  * Section, the vertical rhythm band. One spacing scale keeps the cadence
- * between page sections consistent, and collapses gracefully on small
- * viewports.
+ * between page sections consistent, and collapses on small viewports.
  */
 
 .crewlet-section {
   position: relative;
 }
 
-.crewlet-section--none { padding-block: 0; }
-.crewlet-section--sm { padding-block: var(--spacing-9); }
-.crewlet-section--md { padding-block: var(--spacing-11); }
-.crewlet-section--lg { padding-block: 120px; }
+.crewlet-section--none {
+  padding-block: 0;
+}
+
+/*
+ * The console preset: no band padding, one gap between the heading and what it
+ * introduces. A screen is a stack of these, and a marketing band between each
+ * pair would put one panel per viewport.
+ */
+.crewlet-section--compact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding-block: 0;
+}
+
+.crewlet-section--sm {
+  padding-block: var(--spacing-9);
+}
+
+.crewlet-section--md {
+  padding-block: var(--spacing-11);
+}
+
+/*
+ * The largest band is a multiple of the largest spacing step rather than a
+ * number of its own: the scale stops at 80px, this band has always been 120,
+ * and written as a literal it would be the one measure on the page a density
+ * setting could not reach.
+ */
+.crewlet-section--lg {
+  padding-block: calc(var(--spacing-11) * 1.5);
+}
+
+.crewlet-section__header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+/*
+ * The page's leading, not the baseline's heading leading. A band title sits on
+ * one line beside its own sentence, and the tight step every heading element
+ * inherits puts the two on different rhythms within one row.
+ */
+.crewlet-section__title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-normal);
+  letter-spacing: var(--font-letter-spacing-tight);
+  color: var(--color-text-primary);
+  min-width: 0;
+}
+
+/*
+ * Beside the title, not under it, and it gives up its tail first: the heading
+ * is what a reader scans for and the sentence is what they read once they have
+ * found it.
+ */
+.crewlet-section__description {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* THE CAPTION REGISTER. It is one line beside a heading, truncated before
+     the heading gives up a character, so it is glanced at rather than read:
+     the compact step it used to take made it the same weight of text as a
+     table cell and it competed with the title it qualifies. */
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  max-width: var(--size-measure);
+}
+
+.crewlet-section__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex: none;
+  margin-inline-start: auto;
+}
+
+/* A titled band lays its header and its content out as a column. */
+.crewlet-section--titled {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
 
 @media (max-width: 768px) {
-  .crewlet-section--sm { padding-block: var(--spacing-7); }
-  .crewlet-section--md { padding-block: var(--spacing-9); }
-  .crewlet-section--lg { padding-block: var(--spacing-10); }
+  .crewlet-section--sm {
+    padding-block: var(--spacing-7);
+  }
+
+  .crewlet-section--md {
+    padding-block: var(--spacing-9);
+  }
+
+  .crewlet-section--lg {
+    padding-block: var(--spacing-10);
+  }
+
+  /*
+   * Narrow: the sentence moves under the heading rather than competing with it
+   * for a line that has room for neither.
+   */
+  .crewlet-section__header {
+    flex-wrap: wrap;
+  }
+
+  .crewlet-section__description {
+    white-space: normal;
+    flex-basis: 100%;
+  }
 }

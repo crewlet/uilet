@@ -1,0 +1,293 @@
+/*
+ * What a node of an org chart and a row of an org table both say
+ * (OrgLabel.tsx).
+ *
+ * THE BASE RULES ARE THE NODE'S, AND `--row` OVERRIDES THEM. Not a neutral
+ * base with a modifier each, which is the shape this would take anywhere else:
+ * a node layout renders no wrapper at all (the chart lays out the zones
+ * itself, so they have to be its own children), so there is no element in a
+ * node for a modifier class to sit on. The node is therefore what a rule with
+ * no modifier draws, and every `--row` rule below is one of the seventeen
+ * declarations the two surfaces genuinely disagreed about.
+ *
+ * NOTHING HERE CHOOSES A COLOUR FOR A ROW. A node's ink is the chart card's
+ * own tone, published to everything inside the card, and read here with the
+ * chart's neutral ink as the fallback. A row's is the table's, which is a
+ * system of six hues this file knows nothing about: `OrgTable.css` points the
+ * row's mark and name at it, beside the rules that produce it.
+ *
+ * Every measurement is a proportion of the console org chart this package is
+ * drawn to match, taken up by the ratio between its 10px name and the smallest
+ * name step in this type scale, and then snapped to the token nearest the
+ * result.
+ */
+
+/* ---- The mark's zone ----------------------------------------------------- */
+
+/*
+ * A FIXED ZONE, so the name beside it starts in the same place on every node
+ * and every row. `align-self: stretch` is the node's: the zone is as tall as
+ * the card's first rank, which is what centres a mark against a name that has
+ * a caption under it.
+ */
+.crewlet-org-label__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-lg);
+  align-self: stretch;
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  color: var(--crewlet-tree-canvas-card-accent, var(--color-text-tertiary));
+}
+
+/*
+ * A MARK THE SIZE OF WHAT IT STANDS FOR. The console chart draws a company and
+ * a unit at half its icon zone and an AGENT at three quarters of it, which is
+ * what lets a reader tell an agent seat from a unit at the far end of a chart
+ * without reading either caption. Drawn at one step for all three, the hue and
+ * the caption were carrying that difference alone. The zone does not change,
+ * so nothing here moves a node: only what is drawn in it.
+ */
+.crewlet-org-label__icon--lg {
+  font-size: var(--font-size-3xl);
+}
+
+/*
+ * THE ZONE IS ONE INK, and the mark in it takes that ink whatever it arrived
+ * painted in. A glyph already inherits, but a brand mark or an illustration
+ * carries its own fill, and on a toned node that is the one mark on the whole
+ * node still drawn in somebody else's colour: a rose node with a purple figure
+ * in its corner. Stated as the zone's own rule rather than asked of each
+ * caller, because the zone is what decides that a node is drawn in one colour.
+ */
+.crewlet-org-label__icon svg,
+.crewlet-org-label__icon svg g,
+.crewlet-org-label__icon svg path {
+  /* THE INK AS WELL AS THE FILL, which is what made the rule above true. A
+     mark may publish its own hue as a `color` on its own root (the Crewlet
+     figure does, from the brand token), and `currentcolor` under that root
+     then resolves to THAT: the fill was overridden and landed on exactly the
+     purple it started from, on every agent seat of a toned chart. The table
+     had the fill alone and therefore the same defect; one rule now answers for
+     both surfaces. */
+  color: inherit;
+  fill: currentColor;
+}
+
+/*
+ * THE DASHED RING is the boundary something standing for somebody outside the
+ * system wears, around the mark rather than instead of it: the card's own edge
+ * and the row's own mark carry the same dash, and the two together are what a
+ * reader recognises without reading a word.
+ */
+.crewlet-org-label__icon--dashed {
+  position: relative;
+}
+
+.crewlet-org-label__icon--dashed::before {
+  content: '';
+  position: absolute;
+  width: var(--size-target-min);
+  height: var(--size-target-min);
+  border: 1px dashed var(--color-border-hover);
+  border-radius: var(--radius-circle);
+}
+
+/* ---- The name and its caption -------------------------------------------- */
+
+/*
+ * CENTRED IN WHAT THE TWO FIXED ZONES LEAVE. Centred rather than ranged left
+ * because the zones are fixed: a name ranged left starts under the mark's
+ * right edge and a short one leaves the node looking like a label with an
+ * empty half. A ROW ranges left instead, below.
+ */
+.crewlet-org-label__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
+}
+
+/*
+ * ONE LINE, ALWAYS. A name that wrapped would make the node a rank taller,
+ * which is a new layout for the whole chart, and would make one row of the
+ * table two ranks and push its rhythm off. The name truncates instead.
+ */
+.crewlet-org-label__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-tight);
+  color: var(--crewlet-tree-canvas-card-ink, var(--color-text-primary));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * THE CAPTION RECEDES BEHIND THE NAME, and on a toned node or a toned row it
+ * recedes in the neutral ink rather than in the hue.
+ *
+ * TWO REASONS, and either one is enough. It is a WORD, so it is read rather
+ * than made out, and the hue's own step measures 4.2:1 on both these grounds:
+ * over the floor for a drawing and under it for text. And the one word that
+ * names what a thing IS was drawn in two colours across the two surfaces of
+ * one page. The smallest step in this scale is 11px against the console
+ * chart's 7 on a 10px name, so the caption cannot recede by size here; it
+ * recedes by ink.
+ */
+.crewlet-org-label__caption {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-tight);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-org-label__kind {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * THE WIRING MARKS ride the caption as glyphs. Each is named for a reader who
+ * cannot see it and titled for one who can, and each keeps its size, so the
+ * node is the same height with three of them as with none.
+ *
+ * EVERY CHILD BUT THE WORD, which is the form the table arrived at and the
+ * chart did not: a mark arrives as a bare glyph or as a glyph inside a span
+ * that names it, and a rule reaching only the bare one let a named mark shrink
+ * with the strip around it. The word is the one child that may shrink, because
+ * it is the one that truncates.
+ */
+.crewlet-org-label__caption > * {
+  flex: none;
+}
+
+.crewlet-org-label__caption svg {
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-org-label__caption > .crewlet-org-label__kind {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* ---- The slot a push arrives in ------------------------------------------ */
+
+/*
+ * IT HOLDS ITS ROOM EMPTY, so a live state that changes twice a tool-loop
+ * round and a count that leaves while a check is out and comes back with its
+ * answer both change a word and never a measured size.
+ *
+ * A FIXED WIDTH, NOT A FLOOR. A `min-width` of one spacing step was not that
+ * promise: a node is `width: max-content`, so a badge arriving made the card
+ * 35px wider and relaid the chart, and a state that changed only its word
+ * ("idle" to "working") moved the node too. The slot is the same width whether
+ * it holds two marks, one or none, and anything wider is clipped inside it
+ * rather than pushing the card out. The room is one CONTROL STEP, which two
+ * fixed marks and the gap between them fit in (a state's dot and a count), and
+ * the slot is that plus its own separation either side.
+ *
+ * AND IT IS SEPARATED FROM THE NAME. The row this sits in has no gap (the
+ * zones either side of the name are fixed and the name is centred between
+ * them), so without this the name's box ended exactly where the badge's began.
+ */
+.crewlet-org-label__trailing {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-1);
+  width: calc(var(--size-control-lg) + var(--spacing-2) + var(--spacing-1));
+  overflow: hidden;
+  padding-right: var(--spacing-1);
+  padding-left: var(--spacing-2);
+  white-space: nowrap;
+}
+
+/* ---- The row layout ------------------------------------------------------ */
+
+/*
+ * A ROW IS A LINE IN A COLUMN, and every rule from here down is one of the
+ * seventeen declarations that follow from that.
+ *
+ * IT FILLS THE CELL IT IS IN. At `0 1 auto` the group was as wide as its own
+ * name, so the text column had nothing to grow into and the slot sat wherever
+ * that name ended: two seats' live states never lined up, and the name never
+ * truncated because it never ran out of room.
+ */
+.crewlet-org-label--row {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/*
+ * HALF THE NODE'S ZONE, and the mark inside it half-fills or three-quarter-
+ * fills that, which is the same proportion the chart draws at its own size.
+ * `align-self` goes back to the wrapper's own centring: a row is one rank, so
+ * there is no second line for a stretched zone to centre a mark against.
+ */
+.crewlet-org-label--row .crewlet-org-label__icon {
+  width: var(--size-control-sm);
+  align-self: auto;
+  font-size: var(--font-size-md);
+}
+
+.crewlet-org-label--row .crewlet-org-label__icon--lg {
+  font-size: var(--font-size-xl);
+}
+
+/*
+ * RANGED LEFT, where a node centres. They say the same things about the same
+ * thing, but a chart node is a box as wide as its own name, where a column of
+ * rows is read down its leading edge: names centred in a column are a column
+ * nobody can scan.
+ */
+.crewlet-org-label--row .crewlet-org-label__text {
+  align-items: stretch;
+  justify-content: flex-start;
+  text-align: start;
+}
+
+.crewlet-org-label--row .crewlet-org-label__caption {
+  max-width: none;
+  justify-content: flex-start;
+}
+
+/*
+ * AND THE NAME IS BOUNDED BY THE CELL RATHER THAN BY ITSELF. A node is as wide
+ * as its own name up to the chart's ceiling, so the name is capped at the
+ * width it was given; a row's column is already a fixed width, and a cap of
+ * its own would stop the name using the room the grid handed it.
+ */
+.crewlet-org-label--row .crewlet-org-label__name {
+  max-width: none;
+}
+
+/*
+ * THE SLOT IS CONTENT-SIZED IN A ROW. The fixed room above exists because a
+ * node is measured and relaid whenever its size changes; a row sits in a grid
+ * that has already decided the column, so a slot holding its own width there
+ * would be a second, smaller column inside the first.
+ */
+.crewlet-org-label--row .crewlet-org-label__trailing {
+  justify-content: flex-start;
+  width: auto;
+  overflow: visible;
+  padding-right: 0;
+  padding-left: 0;
+}

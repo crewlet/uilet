@@ -1,0 +1,87 @@
+/*
+ * The meter.
+ *
+ * ITS FILL IS A MARK, so it takes the tone's FILL step, which is measured at
+ * 3:1 against every surface it can sit on. Nothing is written on it, which is
+ * what lets it be a fill rather than an ink: a percentage printed inside the
+ * bar would need a fourth measured pair for every tone.
+ */
+
+.crewlet-meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+/*
+ * The legend is the QUIET half. What a reader takes from a meter is the bar;
+ * the words under it name what is being measured and are read once. The engine
+ * sets the whole legend at the tertiary step, which still clears 4.5:1 on
+ * every ground.
+ */
+.crewlet-meter__legend {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  min-width: 0;
+}
+
+.crewlet-meter__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-meter__hint {
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/*
+ * A 4px track, which is the engine's. A meter sits under a line of 12px text
+ * inside a card, and the 6px bar read as a divider rather than as a reading of
+ * something; four is the height at which the fill is still unmistakably a
+ * proportion and the bar is unmistakably chrome.
+ */
+.crewlet-meter__track {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-inset);
+  overflow: hidden;
+}
+
+.crewlet-meter__fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-brand-accent);
+  transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);
+}
+
+.crewlet-meter__fill[data-tone='success'] { background: var(--color-feedback-success); }
+.crewlet-meter__fill[data-tone='warning'] { background: var(--color-feedback-warning); }
+.crewlet-meter__fill[data-tone='danger'] { background: var(--color-feedback-danger); }
+/* The quiet reading is still a mark, so it takes the tertiary step rather than
+   the decoration one the engine spends here: a 4px bar has to clear 3:1 to be
+   seen at all, and --color-text-muted measures 2.33:1 on a light page and
+   2.25:1 on a dark one at their worst grounds. The tertiary step measures
+   4.87:1 and 4.65:1 on the same pair. */
+.crewlet-meter__fill[data-tone='neutral'] { background: var(--color-text-tertiary); }
+
+.crewlet-meter--compact .crewlet-meter__legend {
+  font-size: var(--font-size-2xs);
+}
+
+/*
+ * The bar arrives at its width rather than growing into it. A value that is
+ * pushed every second would otherwise be permanently in motion, which is the
+ * one thing a reader watching a budget does not need.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-meter__fill {
+    transition: none;
+  }
+}

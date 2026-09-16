@@ -25,22 +25,34 @@
       "import": "./dist/index.js"
     },
     "./css": "./dist/css/tokens.css",
+    "./css/base": "./dist/css/base.css",
+    "./css/breakpoint": "./dist/css/breakpoint.css",
+    "./css/density": "./dist/css/density.css",
     "./css/fonts": "./dist/css/fonts.css",
     "./css/legacy": "./dist/css/legacy.css",
     "./css/material-symbols": "./dist/css/material-symbols.css",
     "./css/themes": "./dist/css/themes.css",
-    "./fonts/*": "./fonts/*"
+    "./fonts/*": "./fonts/*",
+    "./test/palette": {
+      "types": "./test/palette.d.mts",
+      "import": "./test/palette.mjs"
+    }
   },
   "files": [
     "dist",
-    "fonts"
+    "fonts",
+    "test/color.mjs",
+    "test/palette.mjs",
+    "test/palette.d.mts",
+    "test/palette.test.mjs"
   ],
   "scripts": {
     "build": "node scripts/build.mjs && tsc -p tsconfig.json",
     "dev": "node scripts/build.mjs --watch",
-    "lint": "eslint scripts",
+    "lint": "eslint scripts test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rm -rf dist src/index.ts"
+    "test": "node --test \"test/*.test.mjs\"",
+    "clean": "rm -rf dist src/index.ts src/themes.ts"
   },
   "devDependencies": {
     "style-dictionary": "^5.5.3"

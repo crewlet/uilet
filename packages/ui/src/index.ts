@@ -1,29 +1,13 @@
-export * from './Accordion/index.js';
-export * from './AppShell/index.js';
-export * from './Avatar/index.js';
-export * from './Button/index.js';
-export * from './Callout/index.js';
-export * from './Card/index.js';
-export * from './CodeBlock/index.js';
-export * from './Container/index.js';
-export * from './Copyable/index.js';
-export * from './DataTable/index.js';
-export * from './DateTimePicker/index.js';
-export * from './Eyebrow/index.js';
-export * from './IconButton/index.js';
-export * from './ImageUpload/index.js';
-export * from './Checkbox/index.js';
-export * from './Input/index.js';
-export * from './Kbd/index.js';
-export * from './Modal/index.js';
-export * from './Popover/index.js';
-export * from './PricingCard/index.js';
-export * from './Section/index.js';
-export * from './Select/index.js';
-export * from './Skeleton/index.js';
-export * from './StatCard/index.js';
-export * from './Table/index.js';
-export * from './Tabs/index.js';
-export * from './TimeWindowPicker/index.js';
-export * from './Tag/index.js';
-export * from './Toaster/index.js';
+/*
+ * The package's root export.
+ *
+ * It re-exports a GENERATED barrel (scripts/write-barrel.mjs), one line per
+ * component folder, because the barrel is the one file every component folder
+ * would otherwise have to touch: eight people adding components at once is
+ * eight conflicts in it. Add a folder with an index.ts and it is exported.
+ *
+ * A consumer that wants one component and none of the rest imports the folder
+ * directly, `@crewlethq/ui/Button`, which carries that component's stylesheet
+ * and nothing else.
+ */
+export * from './generated/index.js';

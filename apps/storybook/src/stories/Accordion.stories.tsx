@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { AccordionProps } from '@crewlethq/ui';
-import { Accordion } from '@crewlethq/ui';
+import { Accordion, Button, Card } from '@crewlethq/ui';
 
 const meta: Meta<typeof Accordion> = {
   title: 'UI/Accordion',
@@ -8,6 +8,8 @@ const meta: Meta<typeof Accordion> = {
   argTypes: {
     type: { control: 'inline-radio', options: ['single', 'multiple'] },
     collapsible: { control: 'boolean' },
+    density: { control: 'inline-radio', options: ['default', 'compact'] },
+    appearance: { control: 'inline-radio', options: ['default', 'card'] },
   },
   args: { type: 'single', collapsible: true },
 };
@@ -74,6 +76,48 @@ export const WithDisabledItem: Story = {
           Only one panel stays open at a time in single mode.
         </Accordion.Item>
       </Accordion>
+    </div>
+  ),
+};
+
+/**
+ * Inside a Card, as the card's identity block: the stack drops its own frame
+ * so the card's border is the only one, the trigger is the identity row, and
+ * the card's own buttons sit BESIDE the trigger rather than nested in it.
+ */
+export const AsACardIdentityBlock: Story = {
+  args: { appearance: 'card', density: 'compact', type: 'multiple' },
+  render: (args) => (
+    <div style={{ maxWidth: 560 }}>
+      <Card padding="none">
+        <Accordion {...args}>
+          <Accordion.Item
+            value="slack"
+            title="Slack"
+            meta="connected"
+            count={3}
+            actions={
+              <Button variant="tertiary" size="small">
+                Disconnect
+              </Button>
+            }
+          >
+            Three channels are mapped to seats, and the signing secret was rotated six days ago.
+          </Accordion.Item>
+          <Accordion.Item
+            value="github"
+            title="GitHub"
+            meta="needs a person"
+            actions={
+              <Button variant="secondary" size="small">
+                Finish setup
+              </Button>
+            }
+          >
+            The app is installed, and the webhook secret has not been sealed yet.
+          </Accordion.Item>
+        </Accordion>
+      </Card>
     </div>
   ),
 };

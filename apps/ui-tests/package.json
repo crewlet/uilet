@@ -1,0 +1,31 @@
+{
+  "name": "@crewlethq/ui-tests",
+  "private": true,
+  "type": "module",
+  "description": "The jsdom suite for @crewlethq/ui. A private workspace, so no test tooling reaches a published tarball.",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "vitest",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf coverage"
+  },
+  "dependencies": {
+    "@crewlethq/icons": "0.2.0",
+    "@crewlethq/tokens": "0.2.0",
+    "@crewlethq/ui": "0.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "axe-core": "^4.13.0",
+    "jsdom": "^30.0.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "vitest": "^5.0.0"
+  }
+}

@@ -1,15 +1,19 @@
 /*
- * CodeBlock, a monospace command/config surface. Slightly lifted from the
- * page background, with an optional header for filename and a copy control.
- * Content scrolls sideways so long lines never reflow.
+ * CodeBlock, a monospace command, config or record surface. One step off the
+ * page, with an optional header carrying a filename and the copy control.
+ * Long lines WRAP, because the common block is one a reader reads; a caller
+ * whose columns are the point asks for the sideways scroll instead.
  */
 
 .crewlet-codeblock {
   border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
+  /* The block sits INSIDE a card more often than beside one, and the card's
+     own radius repeated inside it reads as a box drawn twice. */
+  border-radius: var(--radius-md);
   background: var(--color-surface-subtle);
   overflow: hidden;
   font-family: var(--font-family-mono);
+  min-width: 0;
 }
 
 .crewlet-codeblock__header {
@@ -17,9 +21,12 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-4);
-  padding: var(--spacing-3) var(--spacing-4);
+  padding: var(--spacing-2) var(--spacing-3);
+  /* The rule alone, as every head in the system is drawn. A second ground
+     inside the block made the filename strip a lighter band across a surface
+     that is already one step off the page. */
   border-bottom: 1px solid var(--color-border-default);
-  background: var(--color-surface-muted);
+  min-height: var(--size-row-md);
 }
 
 .crewlet-codeblock__meta {
@@ -40,16 +47,60 @@
 
 .crewlet-codeblock__lang {
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--font-letter-spacing-wide);
 }
 
 .crewlet-codeblock__pre {
   margin: 0;
-  padding: var(--spacing-4);
-  overflow-x: auto;
-  font-size: var(--font-size-sm);
-  line-height: 1.7;
-  color: var(--color-text-primary);
+  padding: var(--spacing-3);
+  overflow: auto;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+  /*
+   * IT WRAPS. A block a reader READS is the common case, a stack trace or a
+   * record or a model's own error text, and a sideways scrollbar on one of
+   * those is a line nobody finds the end of. `nowrap` is what the caller asks
+   * for when the columns are the point.
+   */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+}
+
+/*
+ * Columns kept, and a sideways scroll to reach them: a diff, a table of
+ * output, a log whose alignment carries meaning.
+ */
+.crewlet-codeblock--nowrap .crewlet-codeblock__pre {
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+/*
+ * Bounded, with its own scroll. Without a ceiling a long record pushes
+ * everything under it off the screen, which on a detail page is every other
+ * fact about the thing being read.
+ */
+.crewlet-codeblock--bounded .crewlet-codeblock__pre {
+  max-height: var(--crewlet-codeblock-max-height);
+}
+
+/*
+ * A BLOCK THAT OWNS SELECT-ALL. Select-all is a document verb, so on a screen
+ * that is mostly one record it took the nav, the stat row and every card with
+ * it. While this block has focus the verb means "this record", which is the
+ * only thing anybody was reaching for, and the ring is what says so: a
+ * keyboard verb that changes meaning on focus, with no visible focus state, is
+ * a secret.
+ */
+.crewlet-codeblock__pre[role='region'] {
+  cursor: text;
+}
+
+.crewlet-codeblock__pre:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-codeblock__code {
@@ -58,33 +109,45 @@
 }
 
 .crewlet-codeblock__line {
-  display: flex;
-  align-items: baseline;
-  gap: var(--spacing-3);
-  white-space: pre;
+  display: block;
 }
 
+.crewlet-codeblock--numbered .crewlet-codeblock__line {
+  display: grid;
+  grid-template-columns: 2ch 1fr;
+  gap: var(--spacing-3);
+  align-items: baseline;
+}
+
+/*
+ * A line number is a reference somebody reads aloud in a review, so it sits on
+ * the tertiary step rather than the decoration one. `user-select: none` is
+ * what keeps it out of a copy.
+ */
 .crewlet-codeblock__ln {
-  flex-shrink: 0;
-  width: 1.5em;
   text-align: right;
-  color: var(--color-text-muted);
+  color: var(--color-text-tertiary);
   user-select: none;
 }
 
 .crewlet-codeblock__prompt {
-  flex-shrink: 0;
-  color: var(--color-brand-accent);
+  flex: none;
+  color: var(--color-brand-accent-ink);
   user-select: none;
+  margin-inline-end: var(--spacing-2);
 }
 
 .crewlet-codeblock__linecontent {
-  white-space: pre;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-/* The copy control is a Copyable configured to show a compact "Copy" label. */
+.crewlet-codeblock--nowrap .crewlet-codeblock__linecontent {
+  overflow-wrap: normal;
+}
+
+/* The copy control sits in the header in the sans face, not the block's. */
 .crewlet-codeblock__copy {
-  flex-shrink: 0;
+  flex: none;
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-xs);
 }

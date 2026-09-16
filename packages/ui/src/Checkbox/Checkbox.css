@@ -1,24 +1,53 @@
 /*
- * Checkbox, a box and its label as one target.
+ * Checkbox: a box, its label and its consequence as one target.
  *
- * The label is part of the control rather than text beside it, so the
- * whole thing is clickable and the description is announced with it.
+ * The root IS the label element, so the row is clickable end to end. A 16px
+ * square is under every pointer-target floor there is; the row is what makes
+ * it pass, which is why the text is inside the control rather than beside it.
  */
 
+/*
+ * THE ROW CARRIES THE LABEL'S SIZE, and it is load-bearing rather than
+ * cosmetic: the box below is nudged onto the label's first line by arithmetic
+ * in `em`, and `em` on the box is the size it INHERITS, which is this. Left
+ * off, the row took whatever size the application's body text happened to be
+ * and the nudge was computed against a line the label does not set: on a 16px
+ * host it moved a 16px box by 3.2px to sit on an 18.9px line, which wants
+ * 1.45px.
+ */
 .crewlet-checkbox {
+  --crewlet-checkbox-size: 16px;
+
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--spacing-2);
+  min-height: var(--size-row-sm);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
 }
 
 .crewlet-checkbox__control {
-  /* Aligns the box with the first line of the label rather than the
-     block, which drifts as soon as a description wraps. */
-  margin: 2px 0 0;
-  width: 16px;
-  height: 16px;
+  /*
+   * Nudged down by half the difference between the label's first LINE and the
+   * BOX, so the box sits on that line rather than above it.
+   *
+   * BOTH TERMS ARE NAMED. The product's own stylesheet writes this as
+   * (line-height * 1em - 1em) / 2, which is the same sum only where the box
+   * is one em tall: that one draws a native checkbox at whatever size the
+   * platform picks, and this one is a stated 16px square on a 19.6px line, so
+   * the em form leaves it a pixel low. Reading the square's own token here is
+   * what stops the two drifting when either changes.
+   */
+  margin: calc((var(--font-line-height-snug) * 1em - var(--crewlet-checkbox-size)) / 2) 0 0;
+  width: var(--crewlet-checkbox-size);
+  height: var(--crewlet-checkbox-size);
   flex: 0 0 auto;
-  accent-color: var(--color-brand-primary);
+  /*
+   * THE TICK IS THE ACCENT, which is what "here, this one" means everywhere
+   * else in the system. It used to read --color-brand-primary, which is white
+   * in the dark theme: a white tick on a white box.
+   */
+  accent-color: var(--color-brand-accent);
   cursor: pointer;
 }
 
@@ -29,30 +58,54 @@
 .crewlet-checkbox__text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  cursor: pointer;
+  gap: var(--spacing-1);
   user-select: none;
+  min-width: 0;
 }
 
 .crewlet-checkbox__label {
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-snug);
   color: var(--color-text-primary);
 }
 
+/*
+ * The consequence, on the tertiary step. It says what ticking the box
+ * deletes, so it is a fact a reader has to make out rather than decoration:
+ * the muted step is measured into the 2.8 to 4.5 band on purpose and is the
+ * wrong home for a sentence about removing somebody's accounts.
+ */
 .crewlet-checkbox__description {
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
 }
 
-.crewlet-checkbox.is-disabled .crewlet-checkbox__control,
-.crewlet-checkbox.is-disabled .crewlet-checkbox__text {
+/*
+ * The bordered row a dialog gives a decision that stands on its own. It draws
+ * a BOUNDARY and nothing else: the frame sits on the dialog's own body, and a
+ * surface of its own inside a panel of the same surface is a box that reads
+ * as a second panel rather than as one choice.
+ *
+ * A destructive choice is not tinted here either. What it deletes is said in
+ * the words, and the box itself says so in the colour of its tick; a red
+ * panel around the sentence puts the alarm on the frame, where a reader who
+ * has already decided is not reading.
+ */
+.crewlet-checkbox--framed {
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+}
+
+.crewlet-checkbox.is-disabled,
+.crewlet-checkbox.is-disabled .crewlet-checkbox__control {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 .crewlet-checkbox__control:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }

@@ -1,0 +1,71 @@
+/*
+ * The tooltip panel.
+ *
+ * It is placed by arithmetic (see Tooltip.tsx), so this owns what the panel
+ * looks like and how it arrives.
+ *
+ * TWO THINGS ARE DELIBERATE AND LOOK LIKE OVERSIGHTS.
+ *
+ * It TAKES THE POINTER (`pointer-events: auto`, which the layer host's own
+ * children already have). A panel a pointer cannot land on cannot be hovered,
+ * and WCAG 2.2's 1.4.13 asks that it can be, so the reader can travel onto it
+ * and read the line at their own pace.
+ *
+ * It is OPAQUE and it is SMALL, but it is not quiet: the ink is the primary
+ * step on the panel surface, not a muted one. A hint drawn in a decoration
+ * ink is a hint nobody with low vision can read, and the whole point of it is
+ * to be read.
+ *
+ * IT IS DRAWN AS THE SMALLEST MEMBER OF THE OVERLAY FAMILY, on the same panel
+ * step as a menu, a popover and a dialog, with the same corner the other small
+ * floating objects take. A tooltip is the one surface a reader meets by
+ * accident, and a surface that arrives looking like nothing else in the
+ * product is one they have to work out before they can read it.
+ */
+
+.crewlet-tooltip {
+  position: fixed;
+  max-width: 260px;
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  /* One short line, wrapped rather than cut: a hint that ends in an ellipsis
+     is a hint that failed. */
+  overflow-wrap: break-word;
+  animation: crewlet-tooltip-in var(--motion-duration-base) var(--motion-easing-emphasized);
+}
+
+/* Inside a LayerHost the panel is absolute in that host's own box. */
+.crewlet-tooltip--in-host {
+  position: absolute;
+}
+
+/*
+ * The side the tip was placed on is left on the element for anything that has
+ * to know which way it went, and it draws nothing: the entrance is a rise
+ * rather than a scale now, and a transform-origin under a translate is a
+ * declaration that reads as a decision and is not one.
+ */
+
+/*
+ * The same entrance every floating surface here has, at the smallest step: a
+ * short rise. A scale was its own gesture for no reason, and next to a menu
+ * opening beside it the two read as two different products.
+ */
+@keyframes crewlet-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-1));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tooltip {
+    animation: none;
+  }
+}

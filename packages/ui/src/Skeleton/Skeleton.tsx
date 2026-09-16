@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { cx } from '../utils/cx.js';
 
 export type SkeletonVariant =
   | 'box'
@@ -10,16 +12,30 @@ export type SkeletonVariant =
   | 'info-grid'
   | 'pricing-card';
 
-export type SkeletonGlow = 'blue' | 'green' | 'purple' | 'orange' | 'red';
-
 export interface SkeletonProps {
   variant?: SkeletonVariant;
   /** Row count for `text`, `grid`, `list`, `table` and `info-grid`. */
   rows?: number;
+  /**
+   * How tall each line of the `text` variant is. A number of px, or a CSS
+   * length. Unset, the stylesheet's own step, which is a line of body text.
+   */
+  rowHeight?: number | string;
   /** Column count for `table`, and for `grid` and `info-grid` (1 to 4). */
   columns?: number;
   /** Card count for `pricing-card`. */
   count?: number;
+  /**
+   * What is loading, said once for a reader who cannot see the placeholder.
+   * Rendered in a polite status region beside it: "Loading seats".
+   *
+   * THE `aria-busy` BELONGS TO THE REGION THAT IS LOADING, not to this
+   * element. A placeholder is the thing that is there INSTEAD of the content,
+   * so marking it busy says the placeholder is loading; the panel or the list
+   * whose content has not arrived is what a reader is waiting on, and that is
+   * the element its caller puts `aria-busy` on.
+   */
+  label?: string;
   /** Applied to the root element of every variant. */
   className?: string;
   /** Applied to the root element of every variant. */
@@ -30,8 +46,6 @@ export interface SkeletonProps {
   borderRadius?: number;
   marginTop?: number;
   marginBottom?: number;
-  glowColor?: SkeletonGlow;
-  animationDuration?: number;
 }
 
 const range = (n: number) => Array.from({ length: Math.max(0, n) }, (_, i) => i);
@@ -41,21 +55,17 @@ const range = (n: number) => Array.from({ length: Math.max(0, n) }, (_, i) => i)
 // unstyled single column.
 const clampColumns = (n: number) => Math.min(4, Math.max(1, Math.round(n)));
 
-const cx = (...classes: Array<string | false | undefined>) => classes.filter(Boolean).join(' ');
-
 const line = (...modifiers: string[]) =>
   cx('crewlet-skeleton__line', ...modifiers.map((modifier) => `crewlet-skeleton__line--${modifier}`));
 
 /**
- * Loading placeholder. Every variant renders one root element carrying
- * `crewlet-skeleton`, a `crewlet-skeleton--<variant>` modifier, and the
- * caller's `className` and `style`. The placeholder is decorative, so it
- * is hidden from assistive technology; announce the loading state on the
- * region that is loading (for example with `aria-busy`).
+ * The drawing itself, which is decoration and hidden from assistive
+ * technology at every variant.
  */
-export const Skeleton = ({
+const Placeholder = ({
   variant = 'card',
   rows = 1,
+  rowHeight,
   columns = 1,
   count = 4,
   className = '',
@@ -65,8 +75,6 @@ export const Skeleton = ({
   borderRadius = 12,
   marginTop = 32,
   marginBottom = 0,
-  glowColor = 'blue',
-  animationDuration = 2,
 }: SkeletonProps) => {
   const rootClass = (...modifiers: Array<string | false | undefined>) =>
     cx('crewlet-skeleton', `crewlet-skeleton--${variant}`, ...modifiers, className);
@@ -83,10 +91,7 @@ export const Skeleton = ({
               borderRadius: `${borderRadius}px`,
             }}
           >
-            <div
-              className={`crewlet-skeleton__glow-wave crewlet-skeleton__glow-wave--${glowColor}`}
-              style={{ animationDuration: `${animationDuration}s` }}
-            />
+            <div className="crewlet-skeleton__glow-wave" />
           </div>
         </div>
       );
@@ -95,7 +100,11 @@ export const Skeleton = ({
       return (
         <div className={rootClass()} style={style} aria-hidden>
           {range(rows).map((i) => (
-            <div key={i} className={line(i === 0 ? 'title' : 'text', ...(i === rows - 1 ? ['short'] : []))} />
+            <div
+              key={i}
+              className={line(i === 0 ? 'title' : 'text', ...(i === rows - 1 ? ['short'] : []))}
+              style={rowHeight === undefined ? undefined : { height: rowHeight }}
+            />
           ))}
         </div>
       );
@@ -217,3 +226,27 @@ export const Skeleton = ({
       );
   }
 };
+
+/**
+ * Loading placeholder.
+ *
+ * ONLY WHERE CONTENT OF KNOWN SHAPE IS COMING. A spinner in place of a screen
+ * tells a reader nothing about what to expect; a placeholder that matches the
+ * shape of what will arrive tells them how much of it there is and stops the
+ * page moving when it does.
+ *
+ * The drawing is decoration and is hidden. `label` is what a reader who cannot
+ * see it is told, said once in a polite region; the `aria-busy` that goes with
+ * it belongs on the region whose content has not arrived, which is the
+ * caller's own element rather than this one.
+ */
+export const Skeleton = ({ label, ...placeholder }: SkeletonProps) => (
+  <>
+    <Placeholder {...placeholder} />
+    {label === undefined ? null : (
+      <VisuallyHidden>
+        <span role="status">{label}</span>
+      </VisuallyHidden>
+    )}
+  </>
+);

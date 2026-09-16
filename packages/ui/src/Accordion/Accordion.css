@@ -1,88 +1,87 @@
 /*
- * Accordion, a stacked disclosure list for FAQs and dense settings. One
- * hairline rule between items, a chevron that rotates on open, and a panel
- * that is fully removed from the a11y tree when collapsed.
+ * Accordion: a stack of disclosures, one hairline between them.
+ *
+ * The rows themselves are the shared disclosure anatomy (see
+ * Disclosure.css). This file states only what makes a STACK: the frame, the
+ * boundary between items, and the heading register a marketing accordion sets
+ * its triggers in.
  */
 
 .crewlet-accordion {
   display: flex;
   flex-direction: column;
+}
+
+.crewlet-accordion--default {
   border-top: 1px solid var(--color-border-default);
 }
 
-.crewlet-accordion__item {
+.crewlet-accordion--default .crewlet-accordion__item {
   border-bottom: 1px solid var(--color-border-default);
 }
 
-.crewlet-accordion__heading {
-  margin: 0;
-  font: inherit;
+/*
+ * NO FRAME. Inside a Card the card's own border is the frame, and a second one
+ * inside it draws a box in a box. The items still separate from each other.
+ */
+.crewlet-accordion--card .crewlet-accordion__item + .crewlet-accordion__item {
+  border-top: 1px solid var(--color-border-default);
 }
 
-.crewlet-accordion__trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-4);
-  width: 100%;
-  padding: var(--spacing-5) 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  color: var(--color-text-primary);
+/*
+ * The heading register: this is a section title a reader scans a page for, not
+ * the compact row a console folds a tool call into.
+ */
+.crewlet-accordion .crewlet-accordion__trigger {
+  padding: var(--spacing-4) var(--spacing-2);
   font-family: var(--font-family-display);
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
   line-height: var(--font-line-height-snug);
-  transition: color var(--motion-duration-base) var(--motion-easing-out);
+  color: var(--color-text-primary);
 }
 
-.crewlet-accordion__trigger:hover {
-  color: var(--color-brand-accent);
+/*
+ * The console's own expander head, restated here because the heading register
+ * above it has to be overridden: the caption size, at the disclosure head's
+ * own inset, ON ITS INK. The ink is the half that has to be written out twice
+ * rather than inherited: the heading register above sets the primary step at
+ * the same specificity the shared anatomy's secondary step is declared at, so
+ * without these two rules the compact head is the one expander in the package
+ * that is already at its hover colour before a pointer reaches it.
+ */
+.crewlet-accordion--compact .crewlet-accordion__trigger {
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--font-letter-spacing-normal);
+  color: var(--color-text-secondary);
 }
 
-.crewlet-accordion__trigger:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus);
-  border-radius: var(--radius-sm);
+.crewlet-accordion--compact .crewlet-accordion__trigger:hover {
+  color: var(--color-text-primary);
 }
 
 .crewlet-accordion__item.is-disabled .crewlet-accordion__trigger {
-  cursor: not-allowed;
-  color: var(--color-text-muted);
-}
-
-.crewlet-accordion__title {
-  min-width: 0;
-}
-
-.crewlet-accordion__icon {
-  flex-shrink: 0;
-  font-size: 24px;
   color: var(--color-text-tertiary);
-  transition: transform var(--motion-duration-base) var(--motion-easing-out);
-}
-
-.crewlet-accordion__item.is-open .crewlet-accordion__icon {
-  transform: rotate(180deg);
-  color: var(--color-brand-accent);
 }
 
 .crewlet-accordion__panel {
   color: var(--color-text-secondary);
   font-size: var(--font-size-md);
-  line-height: var(--font-line-height-relaxed, 1.7);
+  line-height: var(--font-line-height-relaxed);
 }
 
 .crewlet-accordion__panel-inner {
-  padding: 0 0 var(--spacing-5);
-  max-width: 68ch;
+  padding: 0 var(--spacing-2) var(--spacing-5);
+  max-width: var(--size-measure);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .crewlet-accordion__icon,
-  .crewlet-accordion__trigger {
-    transition: none;
-  }
+.crewlet-accordion--compact .crewlet-accordion__panel {
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-accordion--compact .crewlet-accordion__panel-inner {
+  padding: 0 var(--spacing-2) var(--spacing-3);
 }

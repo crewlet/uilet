@@ -1,126 +1,156 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Input, Textarea, FormField, FormRow, Button, Kbd } from '@crewlethq/ui';
+import {
+  Button,
+  FormField,
+  FormRow,
+  FormSection,
+  Input,
+  InputAffix,
+  Kbd,
+  Label,
+  ReadOnlyField,
+  Textarea,
+} from '@crewlethq/ui';
+import { SearchGlyph } from '@crewlethq/icons/glyphs';
 
+/**
+ * The form row, in the register the product reads it in.
+ *
+ * A LABEL IS A MICRO-LABEL: 11px, medium, opened up and uppercased, on the
+ * tertiary step, so the column of labels is taken in one pass and the eye
+ * stops at the values. A field is a single line inset by one scale step,
+ * exactly a control step tall, so it lines up with the button and the select
+ * beside it at every density. Switch the theme and the density in the toolbar
+ * above: nothing here carries a number of its own.
+ */
 const meta: Meta<typeof Input> = {
   title: 'UI/Input',
   component: Input,
-  args: {
-    placeholder: 'Type here…',
-    inputSize: 'md',
-  },
-  argTypes: {
-    inputSize: { control: 'inline-radio', options: ['sm', 'md'] },
-    error: { control: 'boolean' },
-    disabled: { control: 'boolean' },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof Input>;
 
-export const Basic: Story = {};
-export const Small: Story = { args: { inputSize: 'sm' } };
-export const Error: Story = { args: { error: true, defaultValue: 'invalid value' } };
-export const Disabled: Story = { args: { disabled: true, defaultValue: 'read only' } };
-
-/* A field that adds its value to a list on Enter says so with a keycap in
-   its trailing slot. */
-export const EnterAdds: Story = {
-  args: { placeholder: 'e.g. code-review', trailing: <Kbd subtle>Enter</Kbd> },
+const column: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 20,
+  maxWidth: 520,
 };
 
-export const TextareaEnterAdds: Story = {
+/*
+ * Every field is NAMED, and none of them by its placeholder. A placeholder is
+ * the example of the shape a value takes and it is gone the moment somebody
+ * types, so a field named by one is a field with no name for the reader who
+ * needs it most. The reference box here had none at all, which axe found on
+ * the first run over this story.
+ */
+export const Sizes: Story = {
   render: () => (
-    <div style={{ maxWidth: 420 }}>
-      <Textarea autoResize rows={1} placeholder="e.g. Communicate decisions in writing" trailing={<Kbd subtle>Enter</Kbd>} />
+    <div style={column}>
+      <Input aria-label="Medium field" placeholder="Medium, the form step" />
+      <Input inputSize="sm" aria-label="Small field" placeholder="Small, the toolbar step" />
+      <Input appearance="reference" aria-label="Secret reference" defaultValue="${SLACK_BOT_TOKEN}" />
+      <Input appearance="command" aria-label="Command palette search" placeholder="Search anything" />
     </div>
   ),
 };
 
-export const InsideFormField: Story = {
+export const Widths: Story = {
   render: () => (
-    <div style={{ maxWidth: 360 }}>
-      <FormField
-        label="Project name"
-        required
-        helper="Visible to project members only."
-      >
-        {({ id, describedBy }) => (
-          <Input id={id} aria-describedby={describedBy} placeholder="e.g. Quarterly reports" />
+    <div style={column}>
+      <Input width="xs" placeholder="xs, a filter" />
+      <Input width="sm" placeholder="sm, a search box" />
+      <Input width="md" placeholder="md, a form field" />
+      <Input width="lg" placeholder="lg" />
+    </div>
+  ),
+};
+
+export const Slots: Story = {
+  render: () => (
+    <div style={column}>
+      <Input type="search" leading={<SearchGlyph />} placeholder="Search seats" aria-label="Search seats" />
+      <Input trailing={<Kbd subtle>Enter</Kbd>} placeholder="Add a responsibility" aria-label="Add" />
+      <FormField label="Site" helper="Where the engine reaches your instance." describedBy="story-affix">
+        {(field) => (
+          <Input
+            id={field.id}
+            aria-describedby={field.describedBy}
+            leading={<InputAffix id="story-affix" text="https://" />}
+            placeholder="acme.atlassian.net"
+          />
         )}
       </FormField>
     </div>
   ),
 };
 
-export const FormFieldWithError: Story = {
+/**
+ * The case the family exists for: a refusal does not take the line that says
+ * what a valid value looks like away with it.
+ */
+export const HelpBesideError: Story = {
   render: () => (
-    <div style={{ maxWidth: 360 }}>
+    <div style={column}>
       <FormField
-        label="Email"
+        label="Workspace"
         required
-        error="Enter a valid email address."
+        helper="The subdomain, not the whole address."
+        error="That workspace does not exist."
       >
-        {({ id, describedBy }) => (
-          <Input id={id} type="email" aria-describedby={describedBy} error defaultValue="not-an-email" />
+        {(field) => (
+          <Input
+            id={field.id}
+            aria-describedby={field.describedBy}
+            aria-required={field.required}
+            error={field.invalid}
+            defaultValue="https://acme.slack.com"
+          />
         )}
       </FormField>
     </div>
   ),
 };
 
-export const FormRowGrid: Story = {
-  render: () => (
-    <div style={{ maxWidth: 480 }}>
-      <FormRow columns={2}>
-        <FormField label="First name">
-          {({ id }) => <Input id={id} />}
-        </FormField>
-        <FormField label="Last name">
-          {({ id }) => <Input id={id} />}
-        </FormField>
-      </FormRow>
-    </div>
-  ),
-};
-
-export const TextareaAutoResize: Story = {
+export const Sections: Story = {
   render: () => {
     function Demo() {
-      const [value, setValue] = useState('Type a few lines and watch the box grow.');
+      const [name, setName] = useState('Software Engineer');
       return (
-        <div style={{ maxWidth: 480 }}>
-          <FormField label="Mission" helper="Auto-resizing textarea.">
-            {({ id }) => (
-              <Textarea
-                id={id}
-                autoResize
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
+        <div style={{ ...column, maxWidth: 640 }}>
+          <FormSection title="Identity" hint="What this seat is called everywhere it appears.">
+            <FormRow columns={2}>
+              <FormField label="Name" required>
+                {(field) => (
+                  <Input
+                    id={field.id}
+                    aria-required={field.required}
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                )}
+              </FormField>
+              <ReadOnlyField
+                label="Handle"
+                value="software-engineer"
+                reason="Derived from the name."
+                mono
               />
-            )}
-          </FormField>
+            </FormRow>
+            <FormField label="Backstory" optional labelAction={<Button size="small" variant="tertiary">Generate</Button>}>
+              {(field) => <Textarea id={field.id} rows={3} placeholder="A few sentences." />}
+            </FormField>
+          </FormSection>
+          <FormSection title="Schedule" hint="When the seat wakes up on its own." divided>
+            <FormField as="fieldset" label="Windows" helper="Every window is in the company's time zone.">
+              <Label as="span">Nothing scheduled yet.</Label>
+            </FormField>
+          </FormSection>
         </div>
       );
     }
     return <Demo />;
   },
-};
-
-export const LabelWithAction: Story = {
-  render: () => (
-    <div style={{ maxWidth: 480 }}>
-      <FormField
-        label="Policies"
-        labelAction={
-          <Button size="small" variant="tertiary" leadingIcon={<span className="material-symbols-outlined">add</span>}>
-            Add policy
-          </Button>
-        }
-      >
-        {({ id }) => <Textarea id={id} placeholder="Type one policy and press Add." />}
-      </FormField>
-    </div>
-  ),
 };

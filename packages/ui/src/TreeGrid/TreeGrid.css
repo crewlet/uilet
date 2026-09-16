@@ -1,0 +1,132 @@
+/*
+ * A hierarchy as rows and columns (TreeGrid.tsx).
+ *
+ * Each row is a grid on ONE column template, so the cells of every row line up
+ * without a table: a table row cannot be a focusable treegrid row with a
+ * level. The grid keeps a minimum width and scrolls sideways in its own box
+ * below that, so a phone width screen keeps every column readable and the page
+ * itself never scrolls sideways.
+ */
+
+.crewlet-tree-grid {
+  position: relative;
+}
+
+/*
+ * THE SCROLLER IS THE CONTAINING BLOCK OF WHAT IT HOLDS. A box that scrolls
+ * clips only the descendants whose containing block is inside it, so an
+ * absolutely positioned one (the screen-reader text of the last column's
+ * header, far right in a phone width grid) would be placed against the frame
+ * instead, escape the scroller, and give the page a sideways overflow as wide
+ * as the whole grid: hidden, but scrolled by a focus or a find in page, which
+ * pushes the page sideways. Positioned, the scroller keeps all of it.
+ *
+ * The two declarations belong together, and the component's suite holds them
+ * together: one without the other is the bug, not a style.
+ */
+.crewlet-tree-grid__scroller {
+  position: relative;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.crewlet-tree-grid__grid {
+  min-width: var(--crewlet-tree-grid-min-width, 45rem);
+  font-size: var(--font-size-compact);
+  /*
+   * THE PANEL'S GROUND. It painted the step above it, which is the colour a
+   * hovered row takes elsewhere in the system: an outline sitting beside a
+   * table read as a table with every row hovered at once, and on a card it was
+   * a lighter block inside a darker frame for no stated reason.
+   */
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+}
+
+.crewlet-tree-grid__row {
+  display: grid;
+  grid-template-columns: var(--crewlet-tree-grid-columns, minmax(0, 1fr));
+  align-items: center;
+  min-height: var(--size-row-md);
+  border-top: 1px solid var(--color-border-default);
+}
+
+/*
+ * THE HEAD IS THE TABLE'S HEADER REGISTER, in full. It spelled three of the
+ * register's five declarations and left the tracking and the case off, so a
+ * treegrid and a table standing on the same screen named their columns two
+ * different ways. It is one micro-label step, declared once, wherever a column
+ * is named.
+ */
+.crewlet-tree-grid__head .crewlet-tree-grid__row {
+  border-top: 0;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-tree-grid__row > [role='columnheader'],
+.crewlet-tree-grid__cell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  padding: 0 var(--spacing-2);
+}
+
+/* The indent is the row's own level, set on the row. */
+.crewlet-tree-grid__cell:first-child {
+  padding-inline-start: calc(var(--spacing-5) * var(--crewlet-tree-grid-depth, 0));
+}
+
+/*
+ * The chevron's place is held on every row, expandable or not, so a name never
+ * shifts sideways as a row gains or loses children.
+ */
+.crewlet-tree-grid__toggle {
+  display: inline-flex;
+  flex: none;
+  width: var(--size-control-sm);
+}
+
+/*
+ * OPENING A ROW TURNS THE CHEVRON, it does not swap it for another drawing.
+ * Two glyphs exchanged is a cut, and a row opening is the one movement this
+ * table has: the mark a reader is pointing at is the mark that moves. The
+ * drawing turns inside its control, so the control's own box, ground and focus
+ * ring stay square.
+ */
+.crewlet-tree-grid__toggle svg {
+  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tree-grid__toggle[data-open] svg {
+  transform: rotate(90deg);
+}
+
+/*
+ * A READER WHO ASKED FOR LESS gets the turn without the movement: the chevron
+ * still points at the row's state, it simply arrives there. Dropping the
+ * rotation as well would leave a closed and an open row drawn identically.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tree-grid__toggle svg {
+    transition: none;
+  }
+}
+
+.crewlet-tree-grid__row:focus-visible,
+.crewlet-tree-grid__cell:focus-visible {
+  outline: 2px solid var(--color-focus);
+  /* Inside a box that scrolls, an outset ring is clipped by the scroller on
+     the first and last rows and painted over by the next row. */
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* The selection is where the reader is, so it takes the accent. */
+.crewlet-tree-grid__row[aria-selected='true'] {
+  box-shadow: inset 2px 0 0 var(--color-brand-accent);
+}

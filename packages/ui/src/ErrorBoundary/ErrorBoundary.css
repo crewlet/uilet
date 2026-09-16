@@ -1,0 +1,59 @@
+/*
+ * The default fallback: a quiet block on the inset surface rather than a red
+ * panel. A screen that failed to draw is not an error the reader made, and a
+ * danger frame around it says the opposite. The one danger note is the
+ * message itself, which is the part a report needs.
+ */
+
+.crewlet-error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  /* The panel's own body inset and its lift: a fallback is still a panel of
+     the product, and one drawn without the rim read as a block of unstyled
+     text where the screen should have been. */
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  box-shadow: var(--shadow-xs), var(--shadow-hairline);
+  max-width: var(--size-measure);
+}
+
+.crewlet-error-boundary__title {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  /* The panel title register. It was the 18px heading step, which on a block
+     that replaces one section of a screen announced itself more loudly than
+     the screen's own name. */
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  color: var(--color-text-primary);
+}
+
+.crewlet-error-boundary__description {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+/* The message wraps rather than scrolls: it is one sentence from a thrown
+   error, and a reader asked to copy it should be able to see all of it. */
+.crewlet-error-boundary__message {
+  margin: 0;
+  max-width: 100%;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-feedback-danger-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-inset);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-feedback-danger-ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,108 @@
+/*
+ * The brand lockup at the head of the rail.
+ *
+ * ONE INSET FOR THE WHOLE RAIL, so the mark, the group labels and the row
+ * text all start on the same vertical line. The lockup has no row of its own,
+ * so it adds the rail's gutter to a row's pad rather than spending a literal
+ * somebody has to remember to move when either changes.
+ */
+
+/*
+ * IT FITS THE BAR IT IS DRAWN BESIDE. The rail's head is the top bar's own
+ * height (64px, a fixed token at every density), so the lockup has to come in
+ * under that height with its context line on: mark 24 plus one 11px line at
+ * the document's own leading plus twice the block padding is 56.5px at the
+ * normal density and 58.7px at comfortable. It was 66.5px, which grew the head
+ * past the bar and put a visible kink across the window on every deployment
+ * that names a company.
+ *
+ * NO GAP BETWEEN THE TWO LINES. They are one lockup rather than two stacked
+ * labels, and the leading is the space between them: a gap on top of it reads
+ * as a product name with a caption under it, which is the wrong relation. Both
+ * lines take the DOCUMENT'S leading rather than a tight step of their own,
+ * because the eight pixels it spends here are eight the rail's head already
+ * has and the two lines otherwise sit closer together than any other pair of
+ * lines in the product.
+ */
+.crewlet-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  /* The mark's box, and what the context line is indented by. It is also the
+     link's target height, so it sits on the 24px floor rather than under it.
+     A consumer with a wider mark sets this rather than editing two rules. */
+  --crewlet-brand-mark: 24px;
+  padding: var(--spacing-2) calc(var(--size-nav-gutter) + var(--size-nav-row-pad));
+}
+
+.crewlet-brand__home {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--spacing-2);
+  min-width: 0;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.crewlet-brand__home:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-brand__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--crewlet-brand-mark);
+  height: var(--crewlet-brand-mark);
+}
+
+.crewlet-brand__mark > * {
+  width: 100%;
+  height: 100%;
+}
+
+.crewlet-brand__name {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Indented to the name above it by the mark's own box, and truncated: a
+   company name is as long as somebody registered it.
+
+   THE RAIL'S OWN MICRO-LABEL REGISTER, which is the wide step rather than the
+   wider one an Eyebrow takes: this line and the nav's group labels are the two
+   uppercase runs in the rail, they sit twenty pixels apart, and at the wider
+   step the company's name was visibly broader than the sections under it
+   rather than quieter than them. The suite holds the two together. */
+.crewlet-brand__context {
+  padding-left: calc(var(--crewlet-brand-mark) + var(--spacing-2));
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  /* THE REGULAR WEIGHT, which is the one thing that separates this line from
+     the nav's group labels below it. The two are the only uppercase runs in
+     the rail and they sit twenty pixels apart; drawn at the same size, the
+     same tracking and the same weight they read as two headings of one list
+     rather than as the company's name above the sections in it. A group name
+     is what a reader scans, so the weight stays there and goes from here. */
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--font-letter-spacing-wide);
+  line-height: var(--font-line-height-normal);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

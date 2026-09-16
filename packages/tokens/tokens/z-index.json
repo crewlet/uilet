@@ -5,6 +5,8 @@
     "sticky": { "value": "10", "comment": "Sticky headers and pinned columns within the page flow." },
     "dropdown": { "value": "100", "comment": "In-flow menus that stay inside their container rather than portaling to the body." },
     "overlay": { "value": "200", "comment": "In-page overlays such as drawers and scrims that cover page chrome but not dialogs." },
+    "layerBase": { "value": "9000", "comment": "The bottom of the layer stack's own band. A portaled surface takes this plus its DEPTH in the live stack, clamped at layerMax, rather than a number from a counter that only grows: modal, popover and toast leave two free steps between them, so a counter would put the second dialog of a session at the popover level and the third at the toast level." },
+    "layerMax": { "value": "9899", "comment": "The top of the layer band, and the clamp. It stays below modal so a toast always paints above the topmost surface: a toast reports what a write inside a dialog did." },
     "modal": { "value": "9999", "comment": "Dialog backdrop and frame. High enough to clear any page chrome an application stacks with its own numbers." },
     "popover": { "value": "10000", "comment": "Floating panels portaled to the body (Select menus, Popover, date pickers). Above modal because they are routinely opened from inside a dialog, and a panel under the backdrop is hidden and swallows clicks." },
     "toast": { "value": "10001", "comment": "Top of the stack. A toast reports the outcome of what somebody just did, often in a dialog or from a menu opened inside one, so it sits above both." }

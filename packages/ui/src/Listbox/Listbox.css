@@ -1,0 +1,110 @@
+/*
+ * The listbox register: one look for every list a field offers.
+ *
+ * A combobox's completions, a multi-select's options and a command palette's
+ * results are the same shape read the same way, so they are drawn by one
+ * family rather than three. The component owns the markup and the filtering;
+ * this owns the rows.
+ *
+ * A MENU'S ROWS ARE NOT IN THIS FAMILY, and that is a decision rather than an
+ * oversight. A menu is a short list of verbs run past at a glance and is drawn
+ * tight (`Menu.css`); this is a list of candidates read one at a time for the
+ * one that matches, and the row it is read at is the command palette's.
+ *
+ * THE HIGHLIGHT IS NOT FOCUS. Focus stays in the text field and the list is
+ * pointed at with `aria-activedescendant`, so the active row is drawn from
+ * `[aria-selected]` rather than from `:focus-visible`, and a hover paints the
+ * same row the arrows would.
+ */
+
+.crewlet-listbox {
+  list-style: none;
+  margin: 0;
+  padding: var(--spacing-1);
+  display: flex;
+  flex-direction: column;
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.crewlet-listbox__option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-row-sm);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  /*
+   * The SECONDARY step, not the primary one. A list of candidates is read by
+   * running the eye down it for the one that matches, and rows drawn at full
+   * strength all shout at once; the row the reader is actually on is the one
+   * that takes the accent and its ink. The step is held at 4.5:1 on every
+   * ground a row can sit on, so quieter is not fainter.
+   */
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  text-align: left;
+  cursor: pointer;
+  /* A row is chosen by the arrows as often as by the pointer, so the highlight
+     lands with no transition: a fade would lag a held arrow key. */
+}
+
+/*
+ * The active row, whether the arrows put it there or a hover did. The accent
+ * is what means "here", and it is a tint plus its ink step rather than a fill
+ * with a label on it.
+ */
+.crewlet-listbox__option[aria-selected='true'],
+.crewlet-listbox__option:hover {
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-listbox__option[aria-disabled='true'] {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+/*
+ * The words a row carries beyond its label: a path, a kind, a shortcut. Held
+ * off the label by the row's own gap and never wrapped: a hint that broke
+ * across two lines turned every row in the list a different height.
+ */
+.crewlet-listbox__hint {
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+/*
+ * A group heading, on the tertiary step. It is a heading for the eye; the
+ * grouping a screen reader hears comes from the `group` the component wraps
+ * its rows in, which is why nothing here makes it focusable.
+ */
+.crewlet-listbox__heading {
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+/*
+ * The empty line. An honest empty state says which kind of nothing this is,
+ * so the component supplies the sentence and this only draws it.
+ */
+.crewlet-listbox__empty {
+  padding: var(--spacing-3) var(--spacing-3);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-listbox__separator {
+  height: 1px;
+  margin: var(--spacing-1) 0;
+  background: var(--color-border-default);
+}

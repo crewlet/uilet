@@ -1,1415 +1,1297 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Popover } from '../Popover/Popover.js';
-import { Select } from '../Select/Select.js';
-
-/*
- * TimeWindowPicker, an AWS-style time range control. One trigger
- * collapses into a popover with two modes: Absolute (two side-by-
- * side calendars + date / time text inputs) and Relative (grouped
- * chip rows + a custom number / unit pair).
- *
- * The component is fully controlled: the caller owns the value and
- * the onChange callback fires when the operator clicks Apply.
- * Cancel discards the in-popover draft, mirroring AWS's commit-on-
- * apply UX. The draft state lives in a child component that mounts
- * fresh each time the popover opens, so closing without Apply
- * leaves the parent's value untouched.
- *
- * Callers consume the value via the exported `resolveTimeWindow`
- * helper, which returns { from, to } ISO strings ready to hand to
- * a backend filter.
- */
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
+import {
+  CheckGlyph,
+  ChevronLeftGlyph,
+  ChevronRightGlyph,
+  KeyboardArrowDownGlyph,
+  ScheduleGlyph,
+} from '@crewlethq/icons/glyphs';
+import { Button } from '../Button/index.js';
+import {
+  CalendarGrid,
+  compareDays,
+  shiftMonth,
+  today,
+  type CalendarDate,
+} from '../CalendarGrid/index.js';
+import { IconButton } from '../IconButton/index.js';
+import { Input } from '../Input/index.js';
+import { isComposing } from '../Layer/index.js';
+import { Popover } from '../Popover/index.js';
+import { Select } from '../Select/index.js';
+import { cx } from '../utils/cx.js';
+import {
+  DATE_MASK,
+  DATE_SEGMENTS,
+  TIME_MASK,
+  TIME_SEGMENTS,
+  isComplete,
+  isRealDate,
+  isRealTime,
+  project,
+  remainder,
+  segmentAt,
+  stepSegment,
+  type MaskSegment,
+} from './mask.js';
 
 export type TimeWindowMode = 'relative' | 'absolute';
 
 export type TimeWindowTimezone = 'local' | 'utc';
 
+/**
+ * A relative window whose start is a CALENDAR BOUNDARY rather than a duration
+ * back from now.
+ *
+ * Two, and both are convention-free. "This week" and "this month" are the ones
+ * that look like obvious neighbours and are not: a week begins on a different
+ * day in different places, so the span alone would not say when it starts, and
+ * the answer would have to be threaded through every pure function here from
+ * the picker's own `firstDayOfWeek`. A caller that wants a month passes `30d`
+ * or an absolute range.
+ */
+export type TimeWindowSpan = 'today' | 'yesterday';
+
+export const TIME_WINDOW_SPANS: readonly TimeWindowSpan[] = ['today', 'yesterday'];
+
 export interface TimeWindowValue {
   kind: TimeWindowMode;
-  /** Duration string for relative mode, e.g. '7d', '24h', '15m'. */
-  duration?: string;
-  /** Datetime-local string for absolute mode (YYYY-MM-DDTHH:MM:SS). */
-  from?: string;
-  to?: string;
   /**
-   * How to interpret the absolute from/to strings when resolving
-   * to ISO 8601: 'local' (default) treats them as the operator's
-   * wall clock; 'utc' treats them as already-UTC. The selection
-   * persists with the value so a saved window round-trips cleanly.
+   * A rolling duration for the relative mode: `15m`, `1h`, `24h`, `7d`. It
+   * resolves against the moment it is read, so a window set yesterday still
+   * means the last seven days today.
    */
-  timezone?: TimeWindowTimezone;
+  duration?: string | undefined;
+  /**
+   * A calendar-aligned span for the relative mode, INSTEAD of a duration:
+   * "today" starts at midnight rather than 24 hours ago. A value carrying
+   * both is one value holding two windows; the span is the more specific of
+   * the two, so it is the one that is kept.
+   */
+  span?: TimeWindowSpan | undefined;
+  /** A datetime-local string for the absolute mode (YYYY-MM-DDTHH:MM:SS). */
+  from?: string | undefined;
+  to?: string | undefined;
+  /**
+   * How the absolute strings and the calendar spans are read: `local` is the
+   * reader's wall clock, `utc` treats midnight as UTC midnight. It travels
+   * with the value, so a saved window round-trips.
+   */
+  timezone?: TimeWindowTimezone | undefined;
 }
+
+/**
+ * One window on the panel's rail, named the way a reader would say it.
+ *
+ * A preset is IDENTIFIED BY WHAT IT MEANS rather than by an id of its own:
+ * two presets for `7d` would be one window with two names, and the trigger
+ * would have to pick one of them to draw.
+ */
+export interface TimeWindowPreset {
+  /** What a reader calls it: "Last 7 days". */
+  label: string;
+  /** A rolling duration: `15m`, `1h`, `24h`, `7d`, `30d`. */
+  duration?: string | undefined;
+  /** A calendar-aligned span, instead of a duration. */
+  span?: TimeWindowSpan | undefined;
+}
+
+export interface TimeWindowBounds {
+  /** The earliest day a reader may choose, as a YYYY-MM-DD or datetime-local string. */
+  min?: string | undefined;
+  /**
+   * The latest. It defaults to TODAY, because every window this drives reads
+   * something that has already happened: a range ending next Tuesday returns
+   * nothing and looks like a range that found nothing.
+   */
+  max?: string | undefined;
+}
+
+/** Every string the picker renders on its own, and every phrase it builds. */
+export interface TimeWindowLabels {
+  /** What the trigger shows before a window is set. */
+  placeholder: string;
+  /**
+   * How the trigger is ANNOUNCED: its own name, and the window it holds. The
+   * name has to carry the window, because a button whose `aria-label` is
+   * "Time window" says nothing about the seven days it is currently showing.
+   */
+  triggerName: (name: string, window: string) => string;
+  /** Names the rail of relative windows. */
+  presetsLabel: string;
+  /** Names the absolute side. */
+  absoluteLabel: string;
+  timezoneLabel: string;
+  localLabel: string;
+  utcLabel: string;
+  startLabel: string;
+  endLabel: string;
+  startDateLabel: string;
+  startTimeLabel: string;
+  endDateLabel: string;
+  endTimeLabel: string;
+  previousMonthLabel: string;
+  nextMonthLabel: string;
+  customLabel: string;
+  customAmountLabel: string;
+  customUnitLabel: string;
+  /** What a unit is called in the custom row's chooser. */
+  unitNames: Record<TimeWindowUnit, string>;
+  /** What a calendar span is called where no preset names it. */
+  spanNames: Record<TimeWindowSpan, string>;
+  /** What a duration no preset names is called: "Last 3 days". */
+  durationWindow: (amount: number, unit: TimeWindowUnit) => string;
+  /** Two moments, as one phrase. */
+  range: (from: string, to: string) => string;
+  /** The open end of a relative window. */
+  nowLabel: string;
+  /** The open start of a window with only an end. */
+  earliestLabel: string;
+  /** A window that narrows nothing. */
+  unsetLabel: string;
+  /** The window and what it resolves to, as one sentence. */
+  summary: (window: string, range: string) => string;
+  resetLabel: string;
+  cancelLabel: string;
+  applyLabel: string;
+}
+
+export type TimeWindowUnit = 'm' | 'h' | 'd' | 'w';
 
 export interface TimeWindowPickerProps {
   value: TimeWindowValue;
   onChange: (value: TimeWindowValue) => void;
-  /** Suppress the Relative tab. Defaults to true (shown). */
-  allowRelative?: boolean;
-  /** Suppress the Absolute tab. Defaults to true (shown). */
-  allowAbsolute?: boolean;
-  placeholder?: string;
-  ariaLabel?: string;
-  className?: string;
-  disabled?: boolean;
-  size?: 'sm' | 'md';
+  /**
+   * The window Reset goes back to. Without one there is nothing to go back
+   * TO, so the control is not drawn: a Reset that clears the window to
+   * nothing is a different button wearing the same word.
+   */
+  defaultValue?: TimeWindowValue | undefined;
+  /**
+   * The windows this caller can actually answer, in the order a reader reads
+   * them. A screen whose store keeps thirty days offers thirty days, and
+   * nothing offers a year that comes back empty with no explanation.
+   */
+  presets?: readonly TimeWindowPreset[] | undefined;
+  /** Suppress the rail of relative windows. */
+  allowRelative?: boolean | undefined;
+  /** Suppress the absolute side. */
+  allowAbsolute?: boolean | undefined;
+  /** Suppress the row that takes a relative window the rail does not offer. */
+  allowCustom?: boolean | undefined;
+  /** The days a reader may choose between. */
+  bounds?: TimeWindowBounds | undefined;
+  /** 0 is Sunday (the United States), 1 is Monday (ISO 8601). */
+  firstDayOfWeek?: 0 | 1 | undefined;
+  /** Names the trigger and the dialog it opens. */
+  ariaLabel?: string | undefined;
+  className?: string | undefined;
+  disabled?: boolean | undefined;
+  size?: 'sm' | 'md' | undefined;
+  /** Every string the picker renders on its own. */
+  labels?: Partial<TimeWindowLabels> | undefined;
 }
 
-/* ─── Duration helpers ─────────────────────────────────────── */
+const DURATION = /^\s*(\d+)\s*(m|h|d|w)\s*$/i;
 
-const DURATION_RX = /^\s*(\d+)\s*(m|h|d|w)\s*$/i;
+const MILLISECONDS: Record<TimeWindowUnit, number> = {
+  m: 60_000,
+  h: 3_600_000,
+  d: 86_400_000,
+  w: 604_800_000,
+};
 
-export function parseTimeWindowDuration(s: string): number {
-  const m = DURATION_RX.exec(s);
-  if (!m) return 0;
-  const n = parseInt(m[1]!, 10);
-  if (!Number.isFinite(n)) return 0;
-  const unit = m[2]!.toLowerCase();
-  const factor =
-    unit === 'm' ? 60_000
-    : unit === 'h' ? 3_600_000
-    : unit === 'd' ? 86_400_000
-    : 604_800_000;
-  return n * factor;
+const DAY = MILLISECONDS.d;
+
+/** The length of a `15m`, `1h`, `7d` duration in milliseconds, or 0 for anything else. */
+export function parseTimeWindowDuration(text: string): number {
+  const match = DURATION.exec(text);
+  if (!match) return 0;
+  const amount = Number.parseInt(match[1]!, 10);
+  if (!Number.isFinite(amount)) return 0;
+  return amount * MILLISECONDS[match[2]!.toLowerCase() as TimeWindowUnit];
 }
 
-export function resolveTimeWindow(value: TimeWindowValue): {
-  from: string | undefined;
-  to: string | undefined;
-} {
-  if (!value) return { from: undefined, to: undefined };
-  if (value.kind === 'relative' && value.duration) {
-    const ms = parseTimeWindowDuration(value.duration);
-    if (ms <= 0) return { from: undefined, to: undefined };
-    return {
-      from: new Date(Date.now() - ms).toISOString(),
-      to: undefined,
-    };
+/** The two halves of a duration, or null when the text is not one. */
+function splitDuration(text: string | undefined): { amount: number; unit: TimeWindowUnit } | null {
+  if (!text) return null;
+  const match = DURATION.exec(text);
+  if (!match) return null;
+  const amount = Number.parseInt(match[1]!, 10);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return { amount, unit: match[2]!.toLowerCase() as TimeWindowUnit };
+}
+
+/**
+ * Where a calendar span starts and ends.
+ *
+ * The local arm walks the CALENDAR rather than subtracting a day's worth of
+ * milliseconds: the day a clock change falls on is 23 or 25 hours long, so the
+ * subtraction lands an hour inside the wrong day twice a year. UTC has no such
+ * day, which is why its arm may subtract.
+ */
+function spanBounds(span: TimeWindowSpan, zone: TimeWindowTimezone, now: Date): { from: Date; to?: Date } {
+  if (zone === 'utc') {
+    const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    if (span === 'today') return { from: new Date(midnight) };
+    return { from: new Date(midnight - DAY), to: new Date(midnight) };
+  }
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (span === 'today') return { from: midnight };
+  return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1), to: midnight };
+}
+
+/**
+ * What a window means right now, as two ISO instants.
+ *
+ * `now` is a parameter rather than a read of the clock so that a caller can
+ * resolve a window against the same moment it resolved another one against,
+ * and so that the panel's own arithmetic does not move underneath a reader
+ * while they are using it.
+ */
+export function resolveTimeWindow(
+  value: TimeWindowValue,
+  now: Date = new Date(),
+): { from: string | undefined; to: string | undefined } {
+  const nothing = { from: undefined, to: undefined };
+  if (!value) return nothing;
+  if (value.kind === 'relative') {
+    if (value.span) {
+      const bounds = spanBounds(value.span, value.timezone ?? 'local', now);
+      return { from: bounds.from.toISOString(), to: bounds.to?.toISOString() };
+    }
+    const span = parseTimeWindowDuration(value.duration ?? '');
+    if (span <= 0) return nothing;
+    return { from: new Date(now.getTime() - span).toISOString(), to: undefined };
   }
   if (value.kind === 'absolute') {
-    // For UTC, append the Z marker so Date() treats the string as
-    // already-UTC instead of local-wall-clock. For local (default),
-    // the bare datetime-local string is fed to Date() which applies
-    // the operator's timezone offset before serialising to ISO.
+    // For UTC the Z marker is appended, so `Date` reads the string as already
+    // UTC rather than applying the reader's own offset to it.
     const suffix = value.timezone === 'utc' ? 'Z' : '';
     return {
       from: value.from ? new Date(value.from + suffix).toISOString() : undefined,
       to: value.to ? new Date(value.to + suffix).toISOString() : undefined,
     };
   }
-  return { from: undefined, to: undefined };
+  return nothing;
 }
 
-/* ─── Chip groups for the Relative pane ────────────────────── */
-
-interface ChipGroup {
-  label: string;
-  unit: 'm' | 'h' | 'd' | 'w';
-  values: number[];
-}
-
-const CHIP_GROUPS: ChipGroup[] = [
-  { label: 'Minutes', unit: 'm', values: [5, 10, 15, 30, 45] },
-  { label: 'Hours',   unit: 'h', values: [1, 2, 3, 6, 8, 12] },
-  { label: 'Days',    unit: 'd', values: [1, 2, 3, 4, 5, 6] },
-  { label: 'Weeks',   unit: 'w', values: [1, 2, 3, 4] },
+/**
+ * The windows a reader actually picks.
+ *
+ * Each one is here because somebody reaches for it by name, and the list is
+ * short on purpose: a rail a reader has to read twice is a rail that has
+ * stopped being faster than typing two dates. The minutes are for a log
+ * somebody is watching, the four hours are a shift, Today and Yesterday are
+ * the calendar days an operator reasons in and reports against, and the last
+ * three are the rolling day, week and month every dashboard is asked for.
+ * A caller whose data does not reach thirty days back passes its own list.
+ */
+const DEFAULT_PRESETS: readonly TimeWindowPreset[] = [
+  { label: 'Last 15 minutes', duration: '15m' },
+  { label: 'Last hour', duration: '1h' },
+  { label: 'Last 4 hours', duration: '4h' },
+  { label: 'Today', span: 'today' },
+  { label: 'Yesterday', span: 'yesterday' },
+  { label: 'Last 24 hours', duration: '24h' },
+  { label: 'Last 7 days', duration: '7d' },
+  { label: 'Last 30 days', duration: '30d' },
 ];
 
-const UNIT_LABELS: Record<string, string> = {
-  m: 'Minutes', h: 'Hours', d: 'Days', w: 'Weeks',
+const SINGULAR: Record<TimeWindowUnit, string> = {
+  m: 'minute',
+  h: 'hour',
+  d: 'day',
+  w: 'week',
 };
 
-/* ─── Datetime parsing ─────────────────────────────────────── */
+const PLURAL: Record<TimeWindowUnit, string> = {
+  m: 'minutes',
+  h: 'hours',
+  d: 'days',
+  w: 'weeks',
+};
 
-interface ParsedDateTime {
-  year: number; month: number; day: number;
-  hour: number; minute: number; second: number;
+export const DEFAULT_TIME_WINDOW_LABELS: TimeWindowLabels = {
+  placeholder: 'Pick a time window',
+  triggerName: (name, window) => `${name}: ${window}`,
+  presetsLabel: 'Relative windows',
+  absoluteLabel: 'Absolute range',
+  timezoneLabel: 'Time zone',
+  localLabel: 'Local time zone',
+  utcLabel: 'UTC',
+  startLabel: 'Start',
+  endLabel: 'End',
+  startDateLabel: 'Start date',
+  startTimeLabel: 'Start time',
+  endDateLabel: 'End date',
+  endTimeLabel: 'End time',
+  previousMonthLabel: 'Previous month',
+  nextMonthLabel: 'Next month',
+  customLabel: 'Or the last',
+  customAmountLabel: 'Custom amount',
+  customUnitLabel: 'Custom unit',
+  unitNames: { m: 'Minutes', h: 'Hours', d: 'Days', w: 'Weeks' },
+  spanNames: { today: 'Today', yesterday: 'Yesterday' },
+  durationWindow: (amount, unit) => `Last ${amount} ${amount === 1 ? SINGULAR[unit] : PLURAL[unit]}`,
+  range: (from, to) => `${from} to ${to}`,
+  nowLabel: 'now',
+  earliestLabel: 'the earliest record',
+  unsetLabel: 'Any time',
+  summary: (window, range) => `${window}: ${range}`,
+  resetLabel: 'Reset to default',
+  cancelLabel: 'Cancel',
+  applyLabel: 'Apply',
+};
+
+const withLabels = (labels: Partial<TimeWindowLabels> | undefined): TimeWindowLabels =>
+  labels ? { ...DEFAULT_TIME_WINDOW_LABELS, ...labels } : DEFAULT_TIME_WINDOW_LABELS;
+
+/** What a window IS, said three ways, for the three places that have to say it. */
+export interface TimeWindowDescription {
+  /** What the window is CALLED: "Last 7 days", "Today", or two moments. */
+  window: string;
+  /** What it resolves to right now: "Sep 8, 2026, 09:41 to now". */
+  range: string;
+  /** Both, as one sentence. This is what a screen reader is given. */
+  spoken: string;
+}
+
+export interface TimeWindowDescribeOptions {
+  /** The names this caller offers, so a window is called what its own rail calls it. */
+  presets?: readonly TimeWindowPreset[] | undefined;
+  labels?: Partial<TimeWindowLabels> | undefined;
+  /** The moment the window resolves against. */
+  now?: Date | undefined;
+}
+
+const MOMENT_FORMAT: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  // h23 rather than `hour12: false`, which renders midnight as 24 in several
+  // locales: a window said to start at 24:00 on the 8th starts on the 9th.
+  hourCycle: 'h23',
+};
+
+const momentText = (at: Date, zone: TimeWindowTimezone): string =>
+  new Intl.DateTimeFormat(undefined, zone === 'utc' ? { ...MOMENT_FORMAT, timeZone: 'UTC' } : MOMENT_FORMAT).format(at);
+
+/**
+ * Whether a value and a preset mean the same window.
+ *
+ * A duration is compared by its LENGTH rather than by its spelling, so a
+ * window somebody stored as `1d` is named by the rail's own `24h` row instead
+ * of falling through to a second phrase for exactly the same window.
+ */
+export function timeWindowMatchesPreset(value: TimeWindowValue, preset: TimeWindowPreset): boolean {
+  if (!value || value.kind !== 'relative') return false;
+  if (preset.span) return value.span === preset.span;
+  if (!preset.duration || value.span) return false;
+  return parseTimeWindowDuration(value.duration ?? '') === parseTimeWindowDuration(preset.duration);
+}
+
+/** Whether a window narrows anything at all. */
+export function isTimeWindowSet(value: TimeWindowValue): boolean {
+  if (!value) return false;
+  if (value.kind === 'relative') return Boolean(value.span) || parseTimeWindowDuration(value.duration ?? '') > 0;
+  return Boolean(value.from || value.to);
+}
+
+/**
+ * What is selected, in words.
+ *
+ * ONE IMPLEMENTATION, because three surfaces have to agree about it: the
+ * trigger draws it, the trigger's accessible NAME carries it (a button named
+ * only "Time window" tells a screen reader nothing about the seven days it is
+ * showing), and the panel states it as the draft moves. Written per surface,
+ * the three drifted the moment a preset was renamed.
+ */
+export function describeTimeWindow(
+  value: TimeWindowValue,
+  options: TimeWindowDescribeOptions = {},
+): TimeWindowDescription {
+  const labels = withLabels(options.labels);
+  const presets = options.presets ?? DEFAULT_PRESETS;
+  const now = options.now ?? new Date();
+  const zone = value?.timezone ?? 'local';
+  const resolved = resolveTimeWindow(value, now);
+
+  const range = ((): string => {
+    if (!resolved.from && !resolved.to) return labels.unsetLabel;
+    const from = resolved.from ? momentText(new Date(resolved.from), zone) : labels.earliestLabel;
+    const to = resolved.to ? momentText(new Date(resolved.to), zone) : labels.nowLabel;
+    return labels.range(from, to);
+  })();
+
+  const window = ((): string => {
+    if (!isTimeWindowSet(value)) return labels.unsetLabel;
+    if (value.kind === 'absolute') return range;
+    const named = presets.find((preset) => timeWindowMatchesPreset(value, preset));
+    if (named) return named.label;
+    if (value.span) return labels.spanNames[value.span];
+    const parts = splitDuration(value.duration);
+    return parts ? labels.durationWindow(parts.amount, parts.unit) : labels.unsetLabel;
+  })();
+
+  return { window, range, spoken: window === range ? window : labels.summary(window, range) };
+}
+
+interface Moment extends CalendarDate {
+  hour: number;
+  minute: number;
+  second: number;
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
-const parseDateTime = (s: string | undefined): ParsedDateTime | null => {
-  if (!s) return null;
-  const tIndex = s.indexOf('T');
-  const datePart = tIndex >= 0 ? s.slice(0, tIndex) : s;
-  const timePart = tIndex >= 0 ? s.slice(tIndex + 1) : '00:00:00';
-  const dateBits = datePart.split('-');
-  if (dateBits.length < 3) return null;
-  const y = parseInt(dateBits[0]!, 10);
-  const m = parseInt(dateBits[1]!, 10);
-  const d = parseInt(dateBits[2]!, 10);
-  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
-  const timeBits = timePart.split(':');
-  const h = parseInt(timeBits[0] || '0', 10);
-  const mn = parseInt(timeBits[1] || '0', 10);
-  const sec = parseInt(timeBits[2] || '0', 10);
+function parseMoment(text: string | undefined): Moment | null {
+  if (!text) return null;
+  const at = text.indexOf('T');
+  const date = at >= 0 ? text.slice(0, at) : text;
+  const time = at >= 0 ? text.slice(at + 1) : '00:00:00';
+  const parts = date.split('-');
+  if (parts.length < 3) return null;
+  const [year, month, day] = parts.map((part) => Number.parseInt(part, 10));
+  if (![year, month, day].every((n) => Number.isFinite(n))) return null;
+  const clock = time.split(':');
+  const hour = Number.parseInt(clock[0] || '0', 10);
+  const minute = Number.parseInt(clock[1] || '0', 10);
+  const second = Number.parseInt(clock[2] || '0', 10);
   return {
-    year: y, month: m - 1, day: d,
-    hour: Number.isFinite(h) ? h : 0,
-    minute: Number.isFinite(mn) ? mn : 0,
-    second: Number.isFinite(sec) ? sec : 0,
+    year: year!,
+    month: month! - 1,
+    day: day!,
+    hour: Number.isFinite(hour) ? hour : 0,
+    minute: Number.isFinite(minute) ? minute : 0,
+    second: Number.isFinite(second) ? second : 0,
   };
+}
+
+/** An instant read as a wall clock in the window's own zone. */
+const momentIn = (at: Date, zone: TimeWindowTimezone): Moment =>
+  zone === 'utc'
+    ? {
+        year: at.getUTCFullYear(),
+        month: at.getUTCMonth(),
+        day: at.getUTCDate(),
+        hour: at.getUTCHours(),
+        minute: at.getUTCMinutes(),
+        second: at.getUTCSeconds(),
+      }
+    : {
+        year: at.getFullYear(),
+        month: at.getMonth(),
+        day: at.getDate(),
+        hour: at.getHours(),
+        minute: at.getMinutes(),
+        second: at.getSeconds(),
+      };
+
+const formatMoment = (moment: Moment): string =>
+  `${moment.year}-${pad(moment.month + 1)}-${pad(moment.day)}T${pad(moment.hour)}:${pad(moment.minute)}:${pad(moment.second)}`;
+
+const dateText = (moment: Moment): string =>
+  `${moment.year}/${pad(moment.month + 1)}/${pad(moment.day)}`;
+
+const timeText = (moment: Moment): string =>
+  `${pad(moment.hour)}:${pad(moment.minute)}:${pad(moment.second)}`;
+
+const readDate = (text: string): CalendarDate | null => {
+  const match = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(text);
+  if (!match || !isRealDate(text)) return null;
+  return { year: Number(match[1]), month: Number(match[2]) - 1, day: Number(match[3]) };
 };
 
-const formatDateTime = (p: ParsedDateTime): string =>
-  `${p.year}-${pad(p.month + 1)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}`;
-
-const formatDateOnly = (p: ParsedDateTime): string =>
-  `${p.year}/${pad(p.month + 1)}/${pad(p.day)}`;
-
-const formatTimeOnly = (p: ParsedDateTime): string =>
-  `${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}`;
-
-const parseDateOnly = (s: string): { year: number; month: number; day: number } | null => {
-  const m = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/.exec(s.trim());
-  if (!m) return null;
-  return {
-    year: parseInt(m[1]!, 10),
-    month: parseInt(m[2]!, 10) - 1,
-    day: parseInt(m[3]!, 10),
-  };
+const readTime = (text: string): { hour: number; minute: number; second: number } | null => {
+  const match = /^(\d{2}):(\d{2}):(\d{2})$/.exec(text);
+  if (!match || !isRealTime(text)) return null;
+  return { hour: Number(match[1]), minute: Number(match[2]), second: Number(match[3]) };
 };
-
-const parseTimeOnly = (s: string): { hour: number; minute: number; second: number } | null => {
-  const m = /^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/.exec(s.trim());
-  if (!m) return null;
-  return {
-    hour: parseInt(m[1]!, 10),
-    minute: parseInt(m[2]!, 10),
-    second: m[3] ? parseInt(m[3], 10) : 0,
-  };
-};
-
-/*
- * Per-segment validation ranges:
- *   YYYY: 2000-2030      MM (month):  01-12      DD: 01-31
- *   HH:   00-24          MM (minute): 00-60      SS: 00-60
- *
- * Date and time mask positions:
- *   YYYY/MM/DD  →  0123 4 56 7 89
- *   HH:MM:SS    →  01 2 34 5 67
- */
-
-/* Per-keystroke digit filter for a YYYY/MM/DD field. Blocks digits
-   that can't fit the 2000-2030 / 01-12 / 01-31 ranges. */
-const dateDigitFilter = (digit: string, pos: number, display: string): boolean => {
-  switch (pos) {
-    // YYYY: 2000-2030
-    case 0: return digit === '2';                     // must start with 2
-    case 1: return digit === '0';                     // 20xx
-    case 2: return /[0-3]/.test(digit);               // 2000/2010/2020/2030
-    case 3:                                           // last digit of year
-      return display[2] === '3' ? digit === '0' : /[0-9]/.test(digit);
-    // MM (month): 01-12
-    case 5: return /[01]/.test(digit);                // 0x or 1x
-    case 6:                                           // last digit of month
-      if (display[5] === '0') return /[1-9]/.test(digit);
-      if (display[5] === '1') return /[0-2]/.test(digit);
-      return true;
-    // DD: 01-31
-    case 8: return /[0-3]/.test(digit);
-    case 9:                                           // last digit of day
-      if (display[8] === '0') return /[1-9]/.test(digit);
-      if (display[8] === '3') return /[01]/.test(digit);
-      return /[0-9]/.test(digit);
-    default: return true;
-  }
-};
-
-/* Per-keystroke digit filter for an HH:MM:SS field. Blocks digits
-   that can't fit the 00-24 / 00-60 / 00-60 ranges. */
-const timeDigitFilter = (digit: string, pos: number, display: string): boolean => {
-  switch (pos) {
-    // HH: 00-24
-    case 0: return /[0-2]/.test(digit);
-    case 1:
-      return display[0] === '2' ? /[0-4]/.test(digit) : /[0-9]/.test(digit);
-    // MM (minute): 00-60
-    case 3: return /[0-6]/.test(digit);
-    case 4:
-      return display[3] === '6' ? digit === '0' : /[0-9]/.test(digit);
-    // SS: 00-60
-    case 6: return /[0-6]/.test(digit);
-    case 7:
-      return display[6] === '6' ? digit === '0' : /[0-9]/.test(digit);
-    default: return true;
-  }
-};
-
-/* On-blur full-range validator. Returns true only if every segment
-   is filled (no mask letters left) AND inside its declared range. */
-const isValidDateInput = (s: string): boolean => {
-  const m = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(s);
-  if (!m) return false;
-  const y = parseInt(m[1]!, 10);
-  const mo = parseInt(m[2]!, 10);
-  const d = parseInt(m[3]!, 10);
-  return y >= 2000 && y <= 2030 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31;
-};
-
-const isValidTimeInput = (s: string): boolean => {
-  const m = /^(\d{2}):(\d{2}):(\d{2})$/.exec(s);
-  if (!m) return false;
-  const h = parseInt(m[1]!, 10);
-  const mi = parseInt(m[2]!, 10);
-  const se = parseInt(m[3]!, 10);
-  return h >= 0 && h <= 24 && mi >= 0 && mi <= 60 && se >= 0 && se <= 60;
-};
-
-/* Segment ranges driving the MaskedInput's ArrowUp/Down stepper. */
-const DATE_SEGMENTS = [
-  { start: 0, end: 3, min: 2000, max: 2030 },  // YYYY
-  { start: 5, end: 6, min: 1, max: 12 },       // MM
-  { start: 8, end: 9, min: 1, max: 31 },       // DD
-];
-
-const TIME_SEGMENTS = [
-  { start: 0, end: 1, min: 0, max: 24 },       // HH
-  { start: 3, end: 4, min: 0, max: 60 },       // MM
-  { start: 6, end: 7, min: 0, max: 60 },       // SS
-];
-
-/* ─── Calendar primitives ──────────────────────────────────── */
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
-const WEEKDAY_LABELS_SUN = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const WEEKDAY_LABELS_MON = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const DAY_START = { hour: 0, minute: 0, second: 0 };
+const DAY_END = { hour: 23, minute: 59, second: 59 };
 
-const daysInMonth = (year: number, month: number): number =>
-  new Date(year, month + 1, 0).getDate();
-
-const startWeekday = (year: number, month: number, firstDay: 0 | 1): number => {
-  const d = new Date(year, month, 1).getDay();
-  return (d - firstDay + 7) % 7;
-};
-
-interface DateCoord { year: number; month: number; day: number }
-
-const compareDates = (a: DateCoord, b: DateCoord): number => {
-  if (a.year !== b.year) return a.year - b.year;
-  if (a.month !== b.month) return a.month - b.month;
-  return a.day - b.day;
-};
-
-const isBetween = (cell: DateCoord, lo: DateCoord, hi: DateCoord): boolean =>
-  compareDates(cell, lo) >= 0 && compareDates(cell, hi) <= 0;
-
-interface CalendarProps {
-  year: number;
-  month: number;
-  /*
-   * Range state. rangeStart and rangeEnd together describe the
-   * currently-painted range; cells matching either endpoint get
-   * is-selected, cells strictly between get is-in-range. When the
-   * operator is hovering a candidate end date during a two-click
-   * pick, the parent passes rangeEnd = hover coord so the preview
-   * fills live without committing draft state.
-   */
-  rangeStart: DateCoord | null;
-  rangeEnd: DateCoord | null;
-  onSelectDate: (date: DateCoord) => void;
-  onHoverDate?: (date: DateCoord | null) => void;
-  firstDayOfWeek?: 0 | 1;
-  /*
-   * Optional nav button rendered INSIDE the calendar's title row,
-   * pinned to the outer column of the 7-day grid so it sits
-   * directly above the leftmost (or rightmost) weekday header. The
-   * left calendar gets prev; the right calendar gets next.
-   */
-  onPrev?: () => void;
-  onNext?: () => void;
-}
-
-function Calendar({
-  year,
-  month,
-  rangeStart,
-  rangeEnd,
-  onSelectDate,
-  onHoverDate,
-  firstDayOfWeek = 0,
-  onPrev,
-  onNext,
-}: CalendarProps) {
-  const totalDays = daysInMonth(year, month);
-  const leading = startWeekday(year, month, firstDayOfWeek);
-  const weekdayLabels = firstDayOfWeek === 1 ? WEEKDAY_LABELS_MON : WEEKDAY_LABELS_SUN;
-
-  const today = useMemo<DateCoord>(() => {
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() };
-  }, []);
-
-  const cells = useMemo<Array<{ day: number; inMonth: boolean }>>(() => {
-    const out: Array<{ day: number; inMonth: boolean }> = [];
-    const prevTotal = daysInMonth(
-      month === 0 ? year - 1 : year,
-      month === 0 ? 11 : month - 1,
-    );
-    for (let i = 0; i < leading; i += 1) {
-      out.push({ day: prevTotal - leading + 1 + i, inMonth: false });
-    }
-    for (let d = 1; d <= totalDays; d += 1) {
-      out.push({ day: d, inMonth: true });
-    }
-    while (out.length < 42) {
-      out.push({ day: out.length - leading - totalDays + 1, inMonth: false });
-    }
-    return out;
-  }, [year, month, leading, totalDays]);
-
-  /*
-   * Title row uses the same 7-column grid as the weekdays + day grid
-   * so the chevron pins directly above the leftmost or rightmost
-   * weekday header. The month label spans the remaining 6 columns.
-   */
-  const titleClass = [
-    'crewlet-time-window__calendar-title',
-    onPrev ? 'has-prev' : '',
-    onNext ? 'has-next' : '',
-  ].filter(Boolean).join(' ');
-
-  return (
-    <div className="crewlet-time-window__calendar">
-      <div className={titleClass}>
-        {onPrev && (
-          <button
-            type="button"
-            className="crewlet-time-window__calendar-nav crewlet-time-window__calendar-nav--prev"
-            onClick={onPrev}
-            aria-label="Previous month"
-          >
-            <span className="material-symbols-outlined" aria-hidden>chevron_left</span>
-          </button>
-        )}
-        <span className="crewlet-time-window__calendar-title-text">
-          {MONTH_NAMES[month]} {year}
-        </span>
-        {onNext && (
-          <button
-            type="button"
-            className="crewlet-time-window__calendar-nav crewlet-time-window__calendar-nav--next"
-            onClick={onNext}
-            aria-label="Next month"
-          >
-            <span className="material-symbols-outlined" aria-hidden>chevron_right</span>
-          </button>
-        )}
-      </div>
-      <div className="crewlet-time-window__weekdays" aria-hidden>
-        {weekdayLabels.map((label, i) => (
-          <span key={i} className="crewlet-time-window__weekday">{label}</span>
-        ))}
-      </div>
-      <div
-        className="crewlet-time-window__grid"
-        role="grid"
-        onMouseLeave={onHoverDate ? () => onHoverDate(null) : undefined}
-      >
-        {cells.map((cell, i) => {
-          let cellYear = year;
-          let cellMonth = month;
-          if (!cell.inMonth) {
-            if (cell.day > 20) {
-              cellMonth -= 1;
-              if (cellMonth < 0) { cellMonth = 11; cellYear -= 1; }
-            } else {
-              cellMonth += 1;
-              if (cellMonth > 11) { cellMonth = 0; cellYear += 1; }
-            }
-          }
-          const cellCoord: DateCoord = { year: cellYear, month: cellMonth, day: cell.day };
-
-          // Future cells (strictly after today) are non-selectable. They
-          // render with the same gray treatment as outside-month cells
-          // so the calendar reads as "you can only pick up to today".
-          const isFuture = compareDates(cellCoord, today) > 0;
-
-          const isStart = !isFuture && !!rangeStart && compareDates(cellCoord, rangeStart) === 0;
-          const isEnd = !isFuture && !!rangeEnd && compareDates(cellCoord, rangeEnd) === 0;
-          const isSel = isStart || isEnd;
-
-          // In-range = cells strictly between the lo and hi endpoints.
-          // Endpoints themselves get is-selected (full accent fill) so the
-          // range body is only the strictly-between cells. Future cells
-          // never paint in-range either, even if a preview would walk
-          // past today.
-          let inRange = false;
-          if (!isFuture && rangeStart && rangeEnd && !isSel) {
-            const lo = compareDates(rangeStart, rangeEnd) <= 0 ? rangeStart : rangeEnd;
-            const hi = compareDates(rangeStart, rangeEnd) <= 0 ? rangeEnd : rangeStart;
-            inRange = isBetween(cellCoord, lo, hi);
-          }
-
-          const isToday = today.year === cellYear
-            && today.month === cellMonth
-            && today.day === cell.day;
-          const cls = [
-            'crewlet-time-window__cell',
-            cell.inMonth ? '' : 'is-outside',
-            isFuture ? 'is-future' : '',
-            isToday ? 'is-today' : '',
-            isSel ? 'is-selected' : '',
-            inRange ? 'is-in-range' : '',
-          ].filter(Boolean).join(' ');
-          return (
-            <button
-              key={i}
-              type="button"
-              role="gridcell"
-              className={cls}
-              disabled={isFuture}
-              onClick={() => !isFuture && onSelectDate(cellCoord)}
-              onMouseEnter={onHoverDate && !isFuture ? () => onHoverDate(cellCoord) : undefined}
-            >
-              {cell.day}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Trigger label ────────────────────────────────────────── */
-
-/*
- * Trigger label uses the same YYYY/MM/DD HH:MM:SS format as the
- * MaskedInputs inside the popover, so the operator sees one
- * consistent numeric date / time shape across the trigger and the
- * Absolute pane. Locale-aware month names are intentionally avoided
- * because they introduce ambiguity ("Oct 19" reads differently to
- * the audit feeds the picker drives).
+/**
+ * A value carrying exactly one window.
+ *
+ * A relative value with a span AND a duration is two windows in one object,
+ * and which of them a reader got would depend on which branch happened to be
+ * asked first. Nothing this component emits carries both.
  */
-const formatLocalDateLabel = (s: string | undefined): string => {
-  if (!s) return '';
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s;
-  const pad2 = (n: number) => String(n).padStart(2, '0');
-  return (
-    `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())}`
-    + ` ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
-  );
-};
+function normalise(value: TimeWindowValue | undefined): TimeWindowValue {
+  if (!value) return { kind: 'relative' };
+  if (value.kind !== 'relative') return value;
+  const zone = value.timezone ? { timezone: value.timezone } : {};
+  if (value.span) return { kind: 'relative', span: value.span, ...zone };
+  return { kind: 'relative', duration: value.duration ?? '', ...zone };
+}
 
-const triggerLabelFor = (
-  value: TimeWindowValue,
-  placeholder: string,
-): ReactNode => {
-  if (value?.kind === 'relative' && value.duration) {
-    const m = DURATION_RX.exec(value.duration);
-    if (m) {
-      const n = parseInt(m[1]!, 10);
-      const unit = m[2]!.toLowerCase();
-      return `Last ${n} ${UNIT_LABELS[unit]?.toLowerCase() || unit}`;
-    }
-    return `Last ${value.duration}`;
-  }
-  if (value?.kind === 'absolute') {
-    if (!value.from && !value.to) return placeholder;
-    const from = value.from ? formatLocalDateLabel(value.from) : 'earliest';
-    const to = value.to ? formatLocalDateLabel(value.to) : 'now';
-    return `${from} → ${to}`;
-  }
-  return placeholder;
-};
+/** The value a preset stands for, keeping the zone the reader is working in. */
+const fromPreset = (preset: TimeWindowPreset, zone: TimeWindowTimezone): TimeWindowValue =>
+  preset.span
+    ? { kind: 'relative', span: preset.span, timezone: zone }
+    : { kind: 'relative', duration: preset.duration ?? '', timezone: zone };
 
-/* ─── Public component ─────────────────────────────────────── */
-
+/**
+ * A window of time: one of the windows a reader asks for by name, or two
+ * moments.
+ *
+ * THE PANEL IS ONE SURFACE, not two tabs. It used to be an Absolute tab and a
+ * Relative tab, with the relative one a grid of BARE NUMBERS under unit
+ * headings: "Last 7 days" was a 7 in a row called Days, and reaching it meant
+ * switching tab first. What a reader wants is almost always one of six or
+ * eight named windows, so those are a rail down the side of the panel, always
+ * on screen, with the calendar beside them rather than behind them.
+ *
+ * THE TWO SIDES SAY THE SAME THING. Take "Last 7 days" and the calendar shades
+ * those seven days and the boxes fill with the moments they resolve to; edit a
+ * box or take a day and the window becomes that absolute range and the rail
+ * lets go. There is one window, drawn twice, rather than two windows the panel
+ * has to choose between when Apply is pressed.
+ *
+ * WHAT IS SELECTED IS SAID OUT LOUD, in one place ([describeTimeWindow]) that
+ * the trigger's text, the trigger's accessible NAME and the panel's own live
+ * line all read from. The trigger used to carry `aria-label="Time window"`
+ * over its own text, so the one thing it was drawn to say -- which window is
+ * on -- was the one thing a screen reader could not hear from it.
+ *
+ * AND THERE IS A WAY BACK. `defaultValue` is the window the screen opens on,
+ * and Reset returns the draft to it; without one the control is not drawn,
+ * because a Reset with nothing to reset to is a Clear wearing the wrong word.
+ *
+ * The draft, the masked boxes and the two-month grid are unchanged: a partial
+ * date still rolls back rather than travelling, the mask letters are still a
+ * picture nobody hears, and the calendar is still the shared [CalendarGrid],
+ * so the same keyboard works here as in every other picker.
+ */
 export function TimeWindowPicker({
   value,
   onChange,
+  defaultValue,
+  presets = DEFAULT_PRESETS,
   allowRelative = true,
   allowAbsolute = true,
-  placeholder = 'Pick a time window',
-  ariaLabel,
+  allowCustom = true,
+  bounds,
+  firstDayOfWeek = 0,
+  ariaLabel = 'Time window',
   className = '',
   disabled = false,
   size = 'md',
+  labels: labelOverrides,
 }: TimeWindowPickerProps) {
-  const triggerLabel = triggerLabelFor(value, placeholder);
-  const isSet = !!(
-    (value?.kind === 'relative' && value.duration) ||
-    (value?.kind === 'absolute' && (value.from || value.to))
-  );
-
-  const wrapClass = [
-    'crewlet-time-window',
-    `crewlet-time-window--${size}`,
-    isSet ? 'is-set' : '',
-    disabled ? 'is-disabled' : '',
-    className,
-  ].filter(Boolean).join(' ');
+  const labels = useMemo(() => withLabels(labelOverrides), [labelOverrides]);
+  const isSet = isTimeWindowSet(value);
+  /*
+   * Re-described on every render rather than memoised: a relative window's
+   * words depend on the clock, and a memo keyed on the value alone would hold
+   * yesterday's phrasing for as long as the page stayed open.
+   */
+  const described = describeTimeWindow(value, { presets, labels });
+  const shown = isSet ? described.window : labels.placeholder;
 
   return (
     <Popover
       align="start"
       side="bottom"
       width="auto"
+      /* The panel is a dialog, and a dialog is announced by its name. The same
+         name the trigger carries, so the reader hears what they opened. */
+      label={ariaLabel}
       className="crewlet-time-window__popover"
       trigger={(open, toggle) => (
         <button
           type="button"
-          className={`${wrapClass}${open ? ' is-open' : ''}`}
-          onClick={() => { if (!disabled) toggle(); }}
+          className={cx(
+            'crewlet-time-window',
+            `crewlet-time-window--${size}`,
+            isSet && 'is-set',
+            open && 'is-open',
+            disabled && 'is-disabled',
+            className,
+          )}
+          onClick={() => {
+            if (!disabled) toggle();
+          }}
           disabled={disabled}
           aria-haspopup="dialog"
           aria-expanded={open}
-          aria-label={ariaLabel || 'Time window'}
+          /*
+           * THE NAME CARRIES THE WINDOW. An `aria-label` replaces the content
+           * of the element it is on, so "Time window" over the words "Last 7
+           * days" left a screen reader with the question and never the answer.
+           * The visible text is inside the name, which is what a reader
+           * speaking the label they can see needs it to be.
+           */
+          aria-label={labels.triggerName(ariaLabel, shown)}
         >
-          <span className="material-symbols-outlined crewlet-time-window__icon" aria-hidden>schedule</span>
-          <span className={`crewlet-time-window__label${isSet ? '' : ' is-placeholder'}`}>
-            {triggerLabel}
-          </span>
-          <span className="material-symbols-outlined crewlet-time-window__chevron" aria-hidden>
-            {open ? 'expand_less' : 'expand_more'}
-          </span>
+          <ScheduleGlyph className="crewlet-time-window__icon" size="sm" />
+          <span className={cx('crewlet-time-window__label', !isSet && 'is-placeholder')}>{shown}</span>
+          <KeyboardArrowDownGlyph className="crewlet-time-window__chevron" size="sm" />
         </button>
       )}
     >
       {(close) => (
-        <PanelContent
+        <Panel
           value={value}
           onChange={onChange}
           close={close}
+          defaultValue={defaultValue}
+          presets={presets}
           allowRelative={allowRelative}
           allowAbsolute={allowAbsolute}
+          allowCustom={allowCustom}
+          bounds={bounds}
+          firstDayOfWeek={firstDayOfWeek}
+          labels={labels}
         />
       )}
     </Popover>
   );
 }
 
-/* ─── Popover content (draft state lives here) ─────────────── */
-
-interface PanelContentProps {
+interface PanelProps {
   value: TimeWindowValue;
   onChange: (value: TimeWindowValue) => void;
   close: () => void;
+  defaultValue: TimeWindowValue | undefined;
+  presets: readonly TimeWindowPreset[];
   allowRelative: boolean;
   allowAbsolute: boolean;
+  allowCustom: boolean;
+  bounds: TimeWindowBounds | undefined;
+  firstDayOfWeek: 0 | 1;
+  labels: TimeWindowLabels;
 }
 
-function PanelContent({ value, onChange, close, allowRelative, allowAbsolute }: PanelContentProps) {
-  const initialMode: TimeWindowMode = (() => {
-    if (value?.kind === 'absolute' && allowAbsolute) return 'absolute';
-    if (allowRelative) return 'relative';
-    return 'absolute';
-  })();
-  const [mode, setMode] = useState<TimeWindowMode>(initialMode);
-  const [draft, setDraft] = useState<TimeWindowValue>(value || { kind: initialMode });
+/**
+ * The draft lives here, in a component that mounts fresh each time the panel
+ * opens, so closing without applying leaves the caller's value untouched.
+ *
+ * `now` is frozen for the life of the panel. Read from the clock each render
+ * instead, "Last 15 minutes" would shade a slightly different quarter hour
+ * every time anything moved, and the calendar under the reader's pointer would
+ * shift while they were aiming at it.
+ */
+function Panel({
+  value,
+  onChange,
+  close,
+  defaultValue,
+  presets,
+  allowRelative,
+  allowAbsolute,
+  allowCustom,
+  bounds,
+  firstDayOfWeek,
+  labels,
+}: PanelProps) {
+  const now = useMemo(() => new Date(), []);
+  const [draft, setDraft] = useState<TimeWindowValue>(() => normalise(value));
+  const zone: TimeWindowTimezone = draft.timezone ?? 'local';
 
-  const handleApply = () => {
-    onChange(draft);
-    close();
-  };
+  const described = describeTimeWindow(draft, { presets, labels, now });
+  const resolved = useMemo(() => resolveTimeWindow(draft, now), [draft, now]);
+  /*
+   * WHAT THE ABSOLUTE SIDE SHOWS, whichever side set it. A relative window is
+   * resolved into the same two moments the boxes and the calendar would hold
+   * had a reader typed them, so the panel never has two answers on screen at
+   * once.
+   *
+   * A RELATIVE WINDOW ENDS AT NOW, and now is shown as the end it is: without
+   * it "Last 7 days" drew one shaded day and an empty End box, which is a
+   * panel saying the window has a start and no extent. The footer still says
+   * "to now", because what is PINNED and what it currently reaches are two
+   * different facts and only the second one fits in a date box.
+   */
+  const from = resolved.from ? momentIn(new Date(resolved.from), zone) : null;
+  const to = resolved.to
+    ? momentIn(new Date(resolved.to), zone)
+    : draft.kind === 'relative' && isTimeWindowSet(draft)
+      ? momentIn(now, zone)
+      : null;
 
   return (
-    <div className="crewlet-time-window__panel">
-      <div className="crewlet-time-window__header">
-        <div className="crewlet-time-window__tabs" role="tablist" aria-label="Time window mode">
-          {allowAbsolute && (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'absolute'}
-              className={`crewlet-time-window__tab${mode === 'absolute' ? ' is-active' : ''}`}
-              onClick={() => setMode('absolute')}
-            >
-              Absolute
-            </button>
-          )}
-          {allowRelative && (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'relative'}
-              className={`crewlet-time-window__tab${mode === 'relative' ? ' is-active' : ''}`}
-              onClick={() => setMode('relative')}
-            >
-              Relative
-            </button>
-          )}
-        </div>
-        {/*
-          Time zone selector on the right side of the tab strip,
-          matching the AWS layout. Changing the selection rewrites
-          the draft's timezone field; on Apply the parent's
-          resolveTimeWindow uses it to interpret the absolute
-          strings as either local wall clock or UTC.
-        */}
-        <div className="crewlet-time-window__tz">
-          <Select
-            value={draft.timezone || 'local'}
-            onChange={(v) => setDraft({ ...draft, timezone: v as TimeWindowTimezone })}
-            options={[
-              { value: 'local', label: 'Local time zone' },
-              { value: 'utc',   label: 'UTC' },
-            ]}
-            size="sm"
-            align="right"
-            ariaLabel="Time zone"
-          />
-        </div>
-      </div>
+    <div
+      className={cx(
+        'crewlet-time-window__panel',
+        allowRelative && allowAbsolute && 'crewlet-time-window__panel--both',
+      )}
+    >
+      {allowRelative ? (
+        <RelativeRail
+          draft={draft}
+          setDraft={setDraft}
+          presets={presets}
+          allowCustom={allowCustom}
+          zone={zone}
+          labels={labels}
+        />
+      ) : null}
 
-      {mode === 'absolute' && allowAbsolute && (
-        <AbsolutePane draft={draft} setDraft={setDraft} />
-      )}
-      {mode === 'relative' && allowRelative && (
-        <RelativePane draft={draft} setDraft={setDraft} />
-      )}
+      {allowAbsolute ? (
+        <AbsolutePane
+          draft={draft}
+          setDraft={setDraft}
+          from={from}
+          to={to}
+          zone={zone}
+          bounds={bounds}
+          firstDayOfWeek={firstDayOfWeek}
+          labels={labels}
+        />
+      ) : null}
 
       <div className="crewlet-time-window__footer">
-        <button
-          type="button"
-          className="crewlet-time-window__footer-btn"
-          onClick={close}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="crewlet-time-window__footer-btn is-primary"
-          onClick={handleApply}
-        >
-          Apply
-        </button>
+        {/*
+          WHAT IS SELECTED, said as the draft moves. Politely, because it
+          reports what a press just did and must never cut across the control
+          the reader is still using.
+        */}
+        <p className="crewlet-time-window__summary" aria-live="polite">
+          {described.spoken}
+        </p>
+        <div className="crewlet-time-window__actions">
+          {defaultValue ? (
+            <Button
+              size="small"
+              variant="tertiary"
+              /*
+               * Never disabled, even sitting on the default. A control that
+               * disables itself the moment it has nothing to do takes focus
+               * off the button a reader just pressed and drops it on the page
+               * body; pressing Reset twice costs nothing.
+               */
+              onClick={() => setDraft(normalise(defaultValue))}
+            >
+              {labels.resetLabel}
+            </Button>
+          ) : null}
+          <Button size="small" variant="tertiary" onClick={close}>
+            {labels.cancelLabel}
+          </Button>
+          <Button
+            size="small"
+            variant="secondary"
+            onClick={() => {
+              onChange(draft);
+              close();
+            }}
+          >
+            {labels.applyLabel}
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ─── Absolute pane ────────────────────────────────────────── */
-
-interface PaneProps {
+interface RailProps {
   draft: TimeWindowValue;
   setDraft: (next: TimeWindowValue) => void;
+  presets: readonly TimeWindowPreset[];
+  allowCustom: boolean;
+  zone: TimeWindowTimezone;
+  labels: TimeWindowLabels;
 }
 
-function AbsolutePane({ draft, setDraft }: PaneProps) {
-  const fromParsed = parseDateTime(draft.from);
-  const toParsed = parseDateTime(draft.to);
+/**
+ * The windows a reader picks by name.
+ *
+ * A RADIO GROUP, because that is exactly what it is: several windows, one of
+ * them on. The pattern brings the keyboard with it -- one tab stop for the
+ * whole rail, the arrows moving and taking, Home and End at the ends -- and it
+ * brings the announcement too: a row says it is a radio, which of how many,
+ * and whether it is the one that is on. The row of `aria-pressed` buttons this
+ * replaces was eight separate tab stops that each claimed to be a toggle a
+ * reader could turn off.
+ */
+function RelativeRail({ draft, setDraft, presets, allowCustom, zone, labels }: RailProps) {
+  const rail = useRef<HTMLDivElement | null>(null);
+  const custom = useId();
+  const chosen = presets.findIndex((preset) => timeWindowMatchesPreset(draft, preset));
+  /* The rail always holds a tab stop, even with nothing on it: an absolute
+     window checks no row, and a group nobody can tab into is unreachable. */
+  const stop = chosen >= 0 ? chosen : 0;
 
-  // The left calendar seeds from the From date (or today); the right
-  // calendar always shows the next month so the user can see a
-  // straddling range without scrolling.
-  const [leftMonth, setLeftMonth] = useState(() => {
-    if (fromParsed) return { year: fromParsed.year, month: fromParsed.month };
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() };
-  });
-
-  const rightMonth = useMemo(() => {
-    let m = leftMonth.month + 1;
-    let y = leftMonth.year;
-    if (m > 11) { m = 0; y += 1; }
-    return { year: y, month: m };
-  }, [leftMonth]);
-
-  const stepLeft = (delta: number) => {
-    let m = leftMonth.month + delta;
-    let y = leftMonth.year;
-    while (m < 0) { m += 12; y -= 1; }
-    while (m > 11) { m -= 12; y += 1; }
-    setLeftMonth({ year: y, month: m });
-  };
+  const held = splitDuration(draft.kind === 'relative' && !draft.span ? draft.duration : undefined);
+  const [amount, setAmount] = useState(() => String(held?.amount ?? 1));
+  const [unit, setUnit] = useState<TimeWindowUnit>(() => held?.unit ?? 'h');
 
   /*
-   * Per-field commit handlers receive the masked-input's display
-   * string (always mask-shaped, e.g. "2026/05/23" or "YYYY/05/2D"
-   * if partially filled). parseDateOnly / parseTimeOnly accept only
-   * fully-numeric inputs; a partial fill fails to parse and the
-   * field rolls back to its prior value via the MaskedInput's own
-   * value-sync effect.
+   * The custom row follows the draft when the draft moves under it, and the
+   * two halves are pulled out as PRIMITIVES first: `held` is a fresh object
+   * every render, so naming it would re-seed the row on every keystroke.
    */
-  const commitFromDate = (s: string) => {
-    const date = parseDateOnly(s);
-    if (!date) return;
-    const time = fromParsed
-      ? { hour: fromParsed.hour, minute: fromParsed.minute, second: fromParsed.second }
-      : { hour: 0, minute: 0, second: 0 };
-    setDraft({
-      ...draft, kind: 'absolute',
-      from: formatDateTime({ ...date, ...time }),
-      to: draft.to || '',
-    });
-  };
-  const commitFromTime = (s: string) => {
-    const time = parseTimeOnly(s);
-    if (!time) return;
-    const date = fromParsed
-      ? { year: fromParsed.year, month: fromParsed.month, day: fromParsed.day }
-      : null;
-    if (!date) return;
-    setDraft({
-      ...draft, kind: 'absolute',
-      from: formatDateTime({ ...date, ...time }),
-      to: draft.to || '',
-    });
-  };
-  const commitToDate = (s: string) => {
-    const date = parseDateOnly(s);
-    if (!date) return;
-    const time = toParsed
-      ? { hour: toParsed.hour, minute: toParsed.minute, second: toParsed.second }
-      : { hour: 23, minute: 59, second: 59 };
-    setDraft({
-      ...draft, kind: 'absolute',
-      from: draft.from || '',
-      to: formatDateTime({ ...date, ...time }),
-    });
-  };
-  const commitToTime = (s: string) => {
-    const time = parseTimeOnly(s);
-    if (!time) return;
-    const date = toParsed
-      ? { year: toParsed.year, month: toParsed.month, day: toParsed.day }
-      : null;
-    if (!date) return;
-    setDraft({
-      ...draft, kind: 'absolute',
-      from: draft.from || '',
-      to: formatDateTime({ ...date, ...time }),
-    });
-  };
-
-  const fromCoord: DateCoord | null = fromParsed ? { year: fromParsed.year, month: fromParsed.month, day: fromParsed.day } : null;
-  const toCoord: DateCoord | null = toParsed ? { year: toParsed.year, month: toParsed.month, day: toParsed.day } : null;
-
-  /*
-   * Two-click range selection state machine. 'start' = the next
-   * click sets the From endpoint and clears the To endpoint; 'end'
-   * = the next click sets the To endpoint (or swaps with From if
-   * the clicked day is earlier). After picking End the phase
-   * resets to 'start' so the cycle is: click start → click end →
-   * (next click resets and starts over).
-   *
-   * hoverCoord drives the in-range hover preview: when phase=end
-   * and the operator is hovering before clicking, every cell
-   * between From and hover paints with the faint accent fill.
-   */
-  const [phase, setPhase] = useState<'start' | 'end'>(
-    fromCoord && !toCoord ? 'end' : 'start',
-  );
-  const [hoverCoord, setHoverCoord] = useState<DateCoord | null>(null);
-
-  const pickDay = (date: DateCoord) => {
-    if (phase === 'start') {
-      const time = fromParsed ?? { hour: 0, minute: 0, second: 0 };
-      setDraft({
-        ...draft, kind: 'absolute',
-        from: formatDateTime({ ...date, hour: time.hour, minute: time.minute, second: time.second }),
-        to: '',
-      });
-      setPhase('end');
-      return;
-    }
-    // phase === 'end'. If the clicked day is earlier than the
-    // already-picked From, swap them so the operator gets a sane
-    // range without having to redo the pick.
-    const fromCmp = fromCoord ? compareDates(date, fromCoord) : 0;
-    if (fromCoord && fromCmp < 0) {
-      // The clicked day predates the already-picked From: swap so the
-      // clicked day becomes the new start and the old start becomes the
-      // end with an end-of-day time so the range covers the full span.
-      const toTime = { hour: 23, minute: 59, second: 59 };
-      setDraft({
-        ...draft, kind: 'absolute',
-        from: formatDateTime({ ...date, hour: 0, minute: 0, second: 0 }),
-        to: formatDateTime({ ...fromCoord, hour: toTime.hour, minute: toTime.minute, second: toTime.second }),
-      });
-    } else {
-      const time = toParsed ?? { hour: 23, minute: 59, second: 59 };
-      setDraft({
-        ...draft, kind: 'absolute',
-        from: draft.from || '',
-        to: formatDateTime({ ...date, hour: time.hour, minute: time.minute, second: time.second }),
-      });
-    }
-    setPhase('start');
-    setHoverCoord(null);
-  };
-
-  // The end of the range painted on the calendar: the committed To
-  // endpoint when both are set; the hovered cell when the operator
-  // is mid-pick (phase='end' and hovering).
-  const previewEnd: DateCoord | null = toCoord ?? (phase === 'end' ? hoverCoord : null);
-
-  return (
-    <div className="crewlet-time-window__absolute">
-      <div className="crewlet-time-window__cal-row">
-        <Calendar
-          year={leftMonth.year}
-          month={leftMonth.month}
-          rangeStart={fromCoord}
-          rangeEnd={previewEnd}
-          onSelectDate={pickDay}
-          onHoverDate={setHoverCoord}
-          onPrev={() => stepLeft(-1)}
-        />
-        <Calendar
-          year={rightMonth.year}
-          month={rightMonth.month}
-          rangeStart={fromCoord}
-          rangeEnd={previewEnd}
-          onSelectDate={pickDay}
-          onHoverDate={setHoverCoord}
-          onNext={() => stepLeft(1)}
-        />
-      </div>
-
-      <div className="crewlet-time-window__inputs">
-        <div className="crewlet-time-window__field">
-          <span className="crewlet-time-window__field-label">Start date and time</span>
-          <div className="crewlet-time-window__field-row">
-            <MaskedInput
-              mask="YYYY/MM/DD"
-              value={fromParsed ? formatDateOnly(fromParsed) : ''}
-              onCommit={commitFromDate}
-              digitFilter={dateDigitFilter}
-              validate={isValidDateInput}
-              segments={DATE_SEGMENTS}
-              className="is-date"
-              ariaLabel="Start date"
-            />
-            <MaskedInput
-              mask="HH:MM:SS"
-              value={fromParsed ? formatTimeOnly(fromParsed) : ''}
-              onCommit={commitFromTime}
-              digitFilter={timeDigitFilter}
-              validate={isValidTimeInput}
-              segments={TIME_SEGMENTS}
-              className="is-time"
-              ariaLabel="Start time"
-            />
-          </div>
-        </div>
-        <div className="crewlet-time-window__field">
-          <span className="crewlet-time-window__field-label">End date and time</span>
-          <div className="crewlet-time-window__field-row">
-            <MaskedInput
-              mask="YYYY/MM/DD"
-              value={toParsed ? formatDateOnly(toParsed) : ''}
-              onCommit={commitToDate}
-              digitFilter={dateDigitFilter}
-              validate={isValidDateInput}
-              segments={DATE_SEGMENTS}
-              className="is-date"
-              ariaLabel="End date"
-            />
-            <MaskedInput
-              mask="HH:MM:SS"
-              value={toParsed ? formatTimeOnly(toParsed) : ''}
-              onCommit={commitToTime}
-              digitFilter={timeDigitFilter}
-              validate={isValidTimeInput}
-              segments={TIME_SEGMENTS}
-              className="is-time"
-              ariaLabel="End time"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Relative pane ────────────────────────────────────────── */
-
-function RelativePane({ draft, setDraft }: PaneProps) {
-  const m = draft.kind === 'relative' && draft.duration ? DURATION_RX.exec(draft.duration) : null;
-  const draftN = m ? parseInt(m[1]!, 10) : 60;
-  const draftUnit = m ? m[2]!.toLowerCase() : 'm';
-  const draftDuration = draft.kind === 'relative' ? draft.duration : '';
-
-  // Custom row inputs are local drafts; they push to the parent draft
-  // on change so Apply commits whatever the operator last saw.
-  const [customN, setCustomN] = useState<string>(String(draftN));
-  const [customUnit, setCustomUnit] = useState<string>(draftUnit);
-
+  const heldAmount = held?.amount;
+  const heldUnit = held?.unit;
   useEffect(() => {
-    if (m) {
-      setCustomN(String(parseInt(m[1]!, 10)));
-      setCustomUnit(m[2]!.toLowerCase());
-    }
-  }, [draftDuration]);
+    if (heldAmount === undefined || heldUnit === undefined) return;
+    setAmount(String(heldAmount));
+    setUnit(heldUnit);
+  }, [heldAmount, heldUnit]);
 
-  const pickChip = (n: number, unit: string) => {
-    setDraft({ kind: 'relative', duration: `${n}${unit}` });
+  const take = (at: number) => {
+    const preset = presets[at];
+    if (preset) setDraft(fromPreset(preset, zone));
   };
 
-  const commitCustom = (n: string, unit: string) => {
-    const parsedN = parseInt(n, 10);
-    if (!Number.isFinite(parsedN) || parsedN <= 0) return;
-    setDraft({ kind: 'relative', duration: `${parsedN}${unit}` });
+  function onKeyDown(event: KeyboardEvent<HTMLElement>, at: number) {
+    const last = presets.length - 1;
+    let to: number;
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'ArrowRight':
+        to = at === last ? 0 : at + 1;
+        break;
+      case 'ArrowUp':
+      case 'ArrowLeft':
+        to = at === 0 ? last : at - 1;
+        break;
+      case 'Home':
+        to = 0;
+        break;
+      case 'End':
+        to = last;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    take(to);
+    // Selection follows focus, which is what a radio group does, so the
+    // reader hears the window they have landed on as they arrive on it.
+    rail.current?.querySelectorAll<HTMLElement>('[role="radio"]')[to]?.focus();
+  }
+
+  const commit = (nextAmount: string, nextUnit: TimeWindowUnit) => {
+    const parsed = Number.parseInt(nextAmount, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    setDraft({ kind: 'relative', duration: `${parsed}${nextUnit}`, timezone: zone });
   };
 
   return (
     <div className="crewlet-time-window__relative">
-      {CHIP_GROUPS.map((group) => (
-        <div key={group.unit} className="crewlet-time-window__chip-row">
-          <span className="crewlet-time-window__chip-label">{group.label}</span>
-          <div className="crewlet-time-window__chips">
-            {group.values.map((n) => {
-              const dur = `${n}${group.unit}`;
-              const active = draftDuration === dur;
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  className={`crewlet-time-window__chip${active ? ' is-active' : ''}`}
-                  onClick={() => pickChip(n, group.unit)}
-                >
-                  {n}
-                </button>
-              );
-            })}
+      <div className="crewlet-time-window__rail" role="radiogroup" aria-label={labels.presetsLabel} ref={rail}>
+        {presets.map((preset, at) => {
+          const on = at === chosen;
+          return (
+            <button
+              key={preset.span ?? preset.duration ?? preset.label}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              tabIndex={at === stop ? 0 : -1}
+              className={cx('crewlet-time-window__preset', on && 'is-active')}
+              onClick={() => take(at)}
+              onKeyDown={(event) => onKeyDown(event, at)}
+            >
+              {/* The tick is what is CHOSEN; the tint under the pointer is
+                  where the reader is. Drawn always and hidden when off, so the
+                  labels do not step sideways as the choice moves. */}
+              <CheckGlyph className="crewlet-time-window__tick" size="xs" aria-hidden="true" />
+              <span className="crewlet-time-window__preset-label">{preset.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {allowCustom ? (
+        <div className="crewlet-time-window__custom">
+          <span className="crewlet-time-window__custom-label" id={custom}>
+            {labels.customLabel}
+          </span>
+          <div className="crewlet-time-window__custom-row" role="group" aria-labelledby={custom}>
+            <Input
+              inputSize="sm"
+              width="xs"
+              inputMode="numeric"
+              aria-label={labels.customAmountLabel}
+              value={amount}
+              onChange={(event) => {
+                const next = event.target.value.replace(/[^0-9]/g, '');
+                setAmount(next);
+                commit(next, unit);
+              }}
+            />
+            <Select
+              size="sm"
+              width="auto"
+              ariaLabel={labels.customUnitLabel}
+              value={unit}
+              onChange={(next) => {
+                setUnit(String(next) as TimeWindowUnit);
+                commit(amount, String(next) as TimeWindowUnit);
+              }}
+              options={(['m', 'h', 'd', 'w'] as const).map((key) => ({
+                value: key,
+                label: labels.unitNames[key],
+              }))}
+            />
           </div>
         </div>
-      ))}
+      ) : null}
+    </div>
+  );
+}
 
-      <div className="crewlet-time-window__custom-row">
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          className="crewlet-time-window__custom-input"
-          value={customN}
-          onChange={(e) => {
-            const next = e.target.value.replace(/[^0-9]/g, '');
-            setCustomN(next);
-            commitCustom(next, customUnit);
-          }}
-          aria-label="Custom amount"
-        />
+interface AbsoluteProps {
+  draft: TimeWindowValue;
+  setDraft: (next: TimeWindowValue) => void;
+  from: Moment | null;
+  to: Moment | null;
+  zone: TimeWindowTimezone;
+  bounds: TimeWindowBounds | undefined;
+  firstDayOfWeek: 0 | 1;
+  labels: TimeWindowLabels;
+}
+
+function AbsolutePane({ draft, setDraft, from, to, zone, bounds, firstDayOfWeek, labels }: AbsoluteProps) {
+  const heading = useId();
+  const nowDay = useMemo(today, []);
+  const min = useMemo(() => (bounds?.min ? parseMoment(bounds.min) : null), [bounds?.min]);
+  /*
+   * NOTHING IN THE FUTURE BY DEFAULT. Every window this drives reads
+   * something that has already happened, and a range ending next Tuesday
+   * returns an empty list that looks exactly like a range that found nothing.
+   */
+  const max = useMemo(() => (bounds?.max ? parseMoment(bounds.max) : nowDay), [bounds?.max, nowDay]);
+
+  const [view, setView] = useState<CalendarDate>(() => from ?? nowDay);
+  const [focused, setFocused] = useState<CalendarDate>(() => from ?? nowDay);
+  const [hover, setHover] = useState<CalendarDate | null>(null);
+  const [phase, setPhase] = useState<'start' | 'end'>('start');
+
+  /*
+   * The months on screen follow the window's start, but ONLY when the start
+   * is not already on screen: taking "Last 30 days" should carry the calendar
+   * back to where the range begins, while taking a day in the right-hand
+   * month should not slide that month into the left-hand slot under the
+   * pointer that is still aiming at it.
+   */
+  const startYear = from?.year;
+  const startMonth = from?.month;
+  useEffect(() => {
+    if (startYear === undefined || startMonth === undefined) return;
+    setView((held) => {
+      const right = shiftMonth(held, 1);
+      const seen =
+        (held.year === startYear && held.month === startMonth) ||
+        (right.year === startYear && right.month === startMonth);
+      return seen ? held : { year: startYear, month: startMonth, day: 1 };
+    });
+  }, [startYear, startMonth]);
+
+  const right = shiftMonth(view, 1);
+  const refused = (date: CalendarDate) =>
+    (min !== null && compareDays(date, min) < 0) || (max !== null && compareDays(date, max) > 0);
+
+  const step = (months: number) => setView(shiftMonth(view, months));
+
+  /** The window this pane is editing, as an absolute one, whatever set it. */
+  const absolute = (next: { from?: string; to?: string }): TimeWindowValue => ({
+    kind: 'absolute',
+    from: next.from ?? (from ? formatMoment(from) : ''),
+    to: next.to ?? (to ? formatMoment(to) : ''),
+    timezone: zone,
+  });
+
+  function pick(date: CalendarDate) {
+    if (phase === 'start') {
+      // A NEW range. The end is dropped rather than kept, because a start
+      // after the old end is a range that reads backwards, and a reader who
+      // has just pressed the first day has not said where it ends yet.
+      setDraft({ kind: 'absolute', from: formatMoment({ ...date, ...DAY_START }), to: '', timezone: zone });
+      setPhase('end');
+      return;
+    }
+    const start = parseMoment(draft.from);
+    // The second press. A day BEFORE the one already chosen swaps the two
+    // rather than refusing, so a reader who went backwards gets the range
+    // they clearly meant instead of having to start again.
+    if (start && compareDays(date, start) < 0) {
+      setDraft({
+        kind: 'absolute',
+        from: formatMoment({ ...date, ...DAY_START }),
+        to: formatMoment({ year: start.year, month: start.month, day: start.day, ...DAY_END }),
+        timezone: zone,
+      });
+    } else {
+      setDraft(
+        absolute({ to: formatMoment({ ...date, hour: to?.hour ?? 23, minute: to?.minute ?? 59, second: to?.second ?? 59 }) }),
+      );
+    }
+    setPhase('start');
+    setHover(null);
+  }
+
+  const start: CalendarDate | null = from ? { year: from.year, month: from.month, day: from.day } : null;
+  const end: CalendarDate | null = to
+    ? { year: to.year, month: to.month, day: to.day }
+    : phase === 'end'
+      ? hover
+      : null;
+  const selected = [start, end].filter((day): day is CalendarDate => day !== null);
+  const inRange = (date: CalendarDate) => {
+    if (!start || !end) return false;
+    const low = compareDays(start, end) <= 0 ? start : end;
+    const high = compareDays(start, end) <= 0 ? end : start;
+    return compareDays(date, low) > 0 && compareDays(date, high) < 0;
+  };
+
+  const commitDate = (which: 'from' | 'to', text: string) => {
+    const date = readDate(text);
+    if (!date) return;
+    const held = which === 'from' ? from : to;
+    const clock = held ?? (which === 'from' ? DAY_START : DAY_END);
+    const moment = formatMoment({
+      ...date,
+      hour: clock.hour,
+      minute: clock.minute,
+      second: clock.second,
+    });
+    setDraft(absolute(which === 'from' ? { from: moment } : { to: moment }));
+    setPhase('start');
+  };
+
+  const commitTime = (which: 'from' | 'to', text: string) => {
+    const clock = readTime(text);
+    const held = which === 'from' ? from : to;
+    if (!clock || !held) return;
+    const moment = formatMoment({ year: held.year, month: held.month, day: held.day, ...clock });
+    setDraft(absolute(which === 'from' ? { from: moment } : { to: moment }));
+    setPhase('start');
+  };
+
+  return (
+    <div className="crewlet-time-window__absolute" role="group" aria-labelledby={heading}>
+      <div className="crewlet-time-window__absolute-head">
+        <span className="crewlet-time-window__absolute-title" id={heading}>
+          {labels.absoluteLabel}
+        </span>
         <Select
-          value={customUnit}
-          onChange={(v) => {
-            const unit = String(v);
-            setCustomUnit(unit);
-            commitCustom(customN, unit);
-          }}
-          options={[
-            { value: 'm', label: 'Minutes' },
-            { value: 'h', label: 'Hours' },
-            { value: 'd', label: 'Days' },
-            { value: 'w', label: 'Weeks' },
-          ]}
           size="sm"
-          ariaLabel="Custom unit"
+          width="auto"
+          ariaLabel={labels.timezoneLabel}
+          className="crewlet-time-window__tz"
+          value={zone}
+          onChange={(next) => setDraft({ ...draft, timezone: next as TimeWindowTimezone })}
+          options={[
+            { value: 'local', label: labels.localLabel },
+            { value: 'utc', label: labels.utcLabel },
+          ]}
         />
+      </div>
+
+      <div className="crewlet-time-window__calendars">
+        {[view, right].map((month, at) => (
+          <div key={`${month.year}-${month.month}`} className="crewlet-time-window__calendar">
+            <div className="crewlet-time-window__calendar-head">
+              {at === 0 ? (
+                <IconButton
+                  size="sm"
+                  variant="secondary"
+                  label={labels.previousMonthLabel}
+                  icon={<ChevronLeftGlyph />}
+                  onClick={() => step(-1)}
+                />
+              ) : (
+                <span />
+              )}
+              {/*
+                The month on screen, said out loud when it changes. Politely:
+                it reports what a press just did, so it never interrupts the
+                day a reader is arrowing through.
+              */}
+              <span className="crewlet-time-window__calendar-title" aria-live="polite">
+                {MONTH_NAMES[month.month]} {month.year}
+              </span>
+              {at === 1 ? (
+                <IconButton
+                  size="sm"
+                  variant="secondary"
+                  label={labels.nextMonthLabel}
+                  icon={<ChevronRightGlyph />}
+                  onClick={() => step(1)}
+                />
+              ) : (
+                <span />
+              )}
+            </div>
+            <CalendarGrid
+              label={`${MONTH_NAMES[month.month]} ${month.year}`}
+              year={month.year}
+              month={month.month}
+              focused={focused}
+              onFocusedChange={setFocused}
+              onMonthChange={(year, monthIndex) => setView({ year, month: monthIndex, day: 1 })}
+              onSelect={pick}
+              onHover={setHover}
+              selected={selected}
+              inRange={inRange}
+              isDisabled={refused}
+              firstDayOfWeek={firstDayOfWeek}
+              showOutsideDays={false}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="crewlet-time-window__fields">
+        <div className="crewlet-time-window__field">
+          <span className="crewlet-time-window__field-label">{labels.startLabel}</span>
+          <div className="crewlet-time-window__field-row">
+            <MaskedInput
+              mask={DATE_MASK}
+              segments={DATE_SEGMENTS}
+              value={from ? dateText(from) : ''}
+              onCommit={(text) => commitDate('from', text)}
+              isValid={isRealDate}
+              label={labels.startDateLabel}
+            />
+            <MaskedInput
+              mask={TIME_MASK}
+              segments={TIME_SEGMENTS}
+              value={from ? timeText(from) : ''}
+              onCommit={(text) => commitTime('from', text)}
+              isValid={isRealTime}
+              label={labels.startTimeLabel}
+            />
+          </div>
+        </div>
+        <div className="crewlet-time-window__field">
+          <span className="crewlet-time-window__field-label">{labels.endLabel}</span>
+          <div className="crewlet-time-window__field-row">
+            <MaskedInput
+              mask={DATE_MASK}
+              segments={DATE_SEGMENTS}
+              value={to ? dateText(to) : ''}
+              onCommit={(text) => commitDate('to', text)}
+              isValid={isRealDate}
+              label={labels.endDateLabel}
+            />
+            <MaskedInput
+              mask={TIME_MASK}
+              segments={TIME_SEGMENTS}
+              value={to ? timeText(to) : ''}
+              onCommit={(text) => commitTime('to', text)}
+              isValid={isRealTime}
+              label={labels.endTimeLabel}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ─── Masked YYYY/MM/DD and HH:MM:SS text input ────────────── */
-
-/*
- * MaskedInput renders a single text input whose value is locked to a
- * fixed pattern (e.g. "YYYY/MM/DD" or "HH:MM:SS"). The separators (/
- * and :) are pinned in place: backspace deletes only the digit slot
- * before them, and the cursor steps over them when the operator
- * presses ArrowLeft / ArrowRight. Typing a digit at any cursor
- * position drops it into the next available digit slot and advances
- * the cursor past the trailing separator.
- *
- * The mask string defines the pattern: any A-Z character is a digit
- * slot (rendered as that letter when unfilled, e.g. "Y", "M", "D"),
- * any other character is a fixed separator. The display always
- * matches the mask in length, separator positions, and separator
- * characters.
- */
-interface MaskedSegment {
-  /** First mask position belonging to this segment (inclusive). */
-  start: number;
-  /** Last mask position belonging to this segment (inclusive). */
-  end: number;
-  /** Minimum integer value the segment can hold. */
-  min: number;
-  /** Maximum integer value the segment can hold. */
-  max: number;
-}
-
 interface MaskedInputProps {
   mask: string;
+  segments: readonly MaskSegment[];
   value: string;
-  onCommit: (committed: string) => void;
-  /**
-   * Optional per-keystroke validator. Returns true if `digit` is
-   * allowed at `position` given the in-progress `display` string.
-   * Lets the caller reject obviously-invalid digits at type time
-   * (e.g. a "9" at the first slot of YYYY, which can never produce
-   * a 2000-2030 year).
-   */
-  digitFilter?: (digit: string, position: number, display: string) => boolean;
-  /**
-   * Optional on-blur validator. When supplied and returns false,
-   * the input reverts to the projected value from `value` instead
-   * of committing, so a partially-typed or out-of-range entry
-   * doesn't propagate to the parent.
-   */
-  validate?: (committed: string) => boolean;
-  /**
-   * Optional segment list driving ArrowUp / ArrowDown behaviour.
-   * When the caret sits inside one of these segments, Up / Down
-   * increment / decrement the segment's numeric value clamped to
-   * [min, max]. If the segment is empty (no digits typed yet),
-   * either arrow seeds it with the minimum value.
-   */
-  segments?: MaskedSegment[];
-  className?: string;
-  ariaLabel?: string;
+  onCommit: (text: string) => void;
+  isValid: (text: string) => boolean;
+  label: string;
 }
 
-function MaskedInput({
-  mask,
-  value,
-  onCommit,
-  digitFilter,
-  validate,
-  segments,
-  className,
-  ariaLabel,
-}: MaskedInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+/**
+ * A text box locked to a fixed shape: YYYY/MM/DD, HH:MM:SS.
+ *
+ * THE MASK LETTERS ARE NOT THE VALUE. They used to be, so the field's own
+ * content was "YYYY/MM/DD" and a screen reader read out the letters as the
+ * value somebody had entered. Here the input holds only what was typed, with
+ * the separators laid in between, and the letters still to come are drawn
+ * beside it in an aria-hidden overlay: a picture of the shape, for the reader
+ * who can see one.
+ *
+ * AND ONLY A PRINTABLE NON-DIGIT IS REFUSED. Every other key was swallowed,
+ * which took Enter, Tab, an input method's own keys and every application
+ * shortcut with them: a reader could not copy the date they had just typed.
+ */
+function MaskedInput({ mask, segments, value, onCommit, isValid, label }: MaskedInputProps) {
+  const [text, setText] = useState(() => project(mask, value));
 
-  const isSepAt = (pos: number): boolean => {
-    const c = mask[pos];
-    return !!c && !/[A-Za-z]/.test(c);
-  };
-
-  // Project an incoming value (which may or may not have separators)
-  // back into a mask-shaped display string. Digits land in digit slots;
-  // separator chars in the value are skipped; unfilled slots show the
-  // mask letter so the operator can still see "MM/DD" structure.
-  const projectValueToDisplay = (v: string): string => {
-    let out = '';
-    let vi = 0;
-    for (let i = 0; i < mask.length; i += 1) {
-      if (isSepAt(i)) {
-        out += mask[i];
-        if (vi < v.length && v[vi] === mask[i]) vi += 1;
-        continue;
-      }
-      // Digit slot. Skip non-digit chars in value.
-      while (vi < v.length && !/\d/.test(v[vi]!)) vi += 1;
-      if (vi < v.length) {
-        out += v[vi];
-        vi += 1;
-      } else {
-        out += mask[i];
-      }
-    }
-    return out;
-  };
-
-  const [display, setDisplay] = useState<string>(() => projectValueToDisplay(value));
-
-  // Re-sync the display whenever the external value flips (calendar
-  // pick lands a new YYYY/MM/DD without the input being touched).
   useEffect(() => {
-    setDisplay(projectValueToDisplay(value));
-  }, [value]);
+    setText(project(mask, value));
+  }, [mask, value]);
 
-  // No typed digits = the mask letters are the only thing visible.
-  // The is-empty class tints the whole text gray + opaque so the
-  // operator reads it as ghost guidance, the way a placeholder
-  // looks. Drops off the moment any digit lands.
-  const hasAnyDigit = /\d/.test(display);
-
-  // Find the next digit slot at or after `from`, returning -1 if none.
-  const nextDigitSlot = (from: number): number => {
-    let p = from;
-    while (p < mask.length && isSepAt(p)) p += 1;
-    return p < mask.length ? p : -1;
-  };
-
-  // Find the previous digit slot strictly before `from`, returning -1 if none.
-  const prevDigitSlot = (from: number): number => {
-    let p = from - 1;
-    while (p >= 0 && isSepAt(p)) p -= 1;
-    return p;
-  };
-
-  // Move the cursor after a state mutation; requestAnimationFrame lets
-  // React commit the new value before we set selection.
-  const setCursor = (pos: number) => {
-    requestAnimationFrame(() => {
-      const el = inputRef.current;
-      if (el) el.setSelectionRange(pos, pos);
-    });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const el = e.currentTarget;
-    const pos = el.selectionStart ?? 0;
-
-    if (/^\d$/.test(e.key)) {
-      e.preventDefault();
-      const target = nextDigitSlot(pos);
-      if (target < 0) return;
-      // Per-position digit filter: a caller-supplied function vetoes
-      // digits that would make the in-progress value definitively
-      // invalid (e.g. "9" at YYYY position 0, since no 9xxx year
-      // falls in the 2000-2030 range).
-      if (digitFilter && !digitFilter(e.key, target, display)) {
-        return;
-      }
-      const next = display.substring(0, target) + e.key + display.substring(target + 1);
-      setDisplay(next);
-      let cursor = target + 1;
-      while (cursor < mask.length && isSepAt(cursor)) cursor += 1;
-      setCursor(cursor);
+  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (isComposing(event)) return;
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      const caret = event.currentTarget.selectionStart ?? text.length;
+      const segment = segmentAt(segments, caret);
+      if (!segment) return;
+      event.preventDefault();
+      setText(stepSegment(mask, text, segment, event.key === 'ArrowUp' ? 1 : -1));
       return;
     }
-
-    if (e.key === 'Backspace') {
-      e.preventDefault();
-      const target = prevDigitSlot(pos);
-      if (target < 0) return;
-      // Unfill: replace the digit at target with its mask letter.
-      const next = display.substring(0, target) + mask[target] + display.substring(target + 1);
-      setDisplay(next);
-      setCursor(target);
-      return;
-    }
-
-    if (e.key === 'Delete') {
-      e.preventDefault();
-      // Unfill the digit slot AT cursor (if any), don't move cursor.
-      if (pos < mask.length && !isSepAt(pos)) {
-        const next = display.substring(0, pos) + mask[pos] + display.substring(pos + 1);
-        setDisplay(next);
-      }
-      return;
-    }
-
-    /*
-     * ArrowUp / ArrowDown step the segment containing the caret.
-     * If the segment already holds at least one digit, the value
-     * increments / decrements by 1 (clamped to [min, max]). If the
-     * segment is still showing mask letters, either arrow seeds it
-     * with the minimum value, so the operator can spin a date or
-     * time field up from its empty state without typing.
-     */
-    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && segments && segments.length > 0) {
-      // Find the segment that contains the caret. The caret can sit
-      // anywhere from seg.start to seg.end + 1 (just past the last
-      // digit, before the trailing separator).
-      const seg = segments.find((s) => pos >= s.start && pos <= s.end + 1);
-      if (!seg) return;
-      e.preventDefault();
-      const segText = display.substring(seg.start, seg.end + 1);
-      const hasDigits = /\d/.test(segText);
-      const width = seg.end - seg.start + 1;
-      let nextVal: number;
-      if (!hasDigits) {
-        nextVal = seg.min;
-      } else {
-        // Treat any remaining mask letters as 0 so a partial fill
-        // like "20YY" parses as 2000 before stepping.
-        const numeric = segText.replace(/[^0-9]/g, '0');
-        const current = parseInt(numeric, 10);
-        nextVal = e.key === 'ArrowUp' ? current + 1 : current - 1;
-        if (nextVal > seg.max) nextVal = seg.max;
-        if (nextVal < seg.min) nextVal = seg.min;
-      }
-      const padded = String(nextVal).padStart(width, '0');
-      const next =
-        display.substring(0, seg.start) + padded + display.substring(seg.end + 1);
-      setDisplay(next);
-      // Park the caret at the end of the just-stepped segment so the
-      // operator's next ArrowUp/Down keeps stepping the same field
-      // without having to reach back into it.
-      setCursor(seg.end + 1);
-      return;
-    }
-
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      const target = prevDigitSlot(pos);
-      setCursor(target < 0 ? 0 : target);
-      return;
-    }
-
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      const target = nextDigitSlot(pos + 1);
-      setCursor(target < 0 ? mask.length : target);
-      return;
-    }
-
-    if (e.key === 'Home') {
-      e.preventDefault();
-      const target = nextDigitSlot(0);
-      setCursor(target < 0 ? 0 : target);
-      return;
-    }
-
-    if (e.key === 'End') {
-      e.preventDefault();
-      // Land cursor after the last digit slot.
-      let target = mask.length;
-      while (target > 0 && isSepAt(target - 1)) target -= 1;
-      setCursor(target);
-      return;
-    }
-
-    // Let Tab and Enter / Escape flow naturally.
-    if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'Escape') return;
-
-    // Block all other characters (letters, symbols).
-    e.preventDefault();
-  };
-
-  /*
-   * Helper: park the caret at the leftmost digit slot. Called when
-   * the field is still showing the bare mask (no digits typed), so
-   * the operator's first keystroke always lands at the top-left
-   * regardless of which character they clicked or where Tab
-   * dropped them.
-   */
-  const snapToLeftmost = (el: HTMLInputElement) => {
-    const target = nextDigitSlot(0);
-    const pos = target < 0 ? 0 : target;
-    el.setSelectionRange(pos, pos);
-  };
-
-  // On focus, if the field is empty/template, park the caret at the
-  // leftmost digit slot so typing fills left-to-right.
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    const el = e.currentTarget;
-    if (!hasAnyDigit) {
-      requestAnimationFrame(() => snapToLeftmost(el));
-    }
-  };
-
-  // On click, if the field has no digits yet, force the caret to
-  // the leftmost slot regardless of where the click landed. Once
-  // the operator has started filling, fall back to the original
-  // "snap to nearest digit slot if landed on a separator" behaviour.
-  const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
-    const el = e.currentTarget;
-    requestAnimationFrame(() => {
-      if (!hasAnyDigit) {
-        snapToLeftmost(el);
-        return;
-      }
-      const pos = el.selectionStart ?? 0;
-      if (isSepAt(pos)) {
-        const target = nextDigitSlot(pos);
-        if (target >= 0) el.setSelectionRange(target, target);
-      }
-    });
-  };
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData('text');
-    const digits = pasted.replace(/\D/g, '');
-    if (!digits) return;
-    // Start at the current cursor's first digit slot and fill forward.
-    const el = e.currentTarget;
-    const startPos = nextDigitSlot(el.selectionStart ?? 0);
-    if (startPos < 0) return;
-    let out = display;
-    let cursor = startPos;
-    let di = 0;
-    while (cursor < mask.length && di < digits.length) {
-      if (!isSepAt(cursor)) {
-        out = out.substring(0, cursor) + digits[di] + out.substring(cursor + 1);
-        di += 1;
-      }
-      cursor += 1;
-    }
-    setDisplay(out);
-    setCursor(cursor);
-  };
-
-  const handleBlur = () => {
-    /*
-     * Validate on blur. If the committed string is out of range
-     * (or partial), revert the display to whatever the parent
-     * value resolves to so the operator visibly sees the rejection
-     * and the field doesn't propagate a bogus value upstream.
-     */
-    if (validate && !validate(display)) {
-      setDisplay(projectValueToDisplay(value));
-      return;
-    }
-    onCommit(display);
-  };
-
-  /*
-   * Overlay characters. A single <input> can't paint different chars
-   * in different colors, so we render a per-char overlay on top of
-   * the input (which itself draws transparent text + a visible
-   * caret). Identical font, padding, and tabular-nums on both
-   * surfaces keep the overlay glyphs aligned with the input caret
-   * pixel-for-pixel.
-   *
-   * Each character is either "bright" (primary text color) or
-   * "muted" (tertiary gray, the same treatment as unfilled mask
-   * letters). For digit slots, brightness follows whether a digit
-   * was typed. For separators, brightness follows whether the
-   * preceding segment is fully filled, so "/" in "2026/MM/DD"
-   * brightens (YYYY is complete) but the next "/" stays gray
-   * (MM is still placeholders).
-   */
-  const isPrecedingSegmentFilled = (sepPos: number): boolean => {
-    for (let p = sepPos - 1; p >= 0; p -= 1) {
-      if (isSepAt(p)) break;
-      if (!/\d/.test(display[p] || '')) return false;
-    }
-    return true;
-  };
-
-  const overlay = display.split('').map((ch, i) => {
-    const sep = isSepAt(i);
-    const bright = sep ? isPrecedingSegmentFilled(i) : /\d/.test(ch);
-    return (
-      <span
-        key={i}
-        className={`crewlet-time-window__masked-char ${bright ? 'is-digit' : 'is-mask'}`}
-      >
-        {ch}
-      </span>
-    );
-  });
-
-  // is-empty stays on the wrapper too so consumers can target either
-  // state if they need to; it no longer drives input text color
-  // (the overlay handles that per-char), but it's a useful hook for
-  // any caller wanting to dim the whole field.
-  const wrapClass = [
-    'crewlet-time-window__masked-wrap',
-    className || '',
-    hasAnyDigit ? '' : 'is-empty',
-  ].filter(Boolean).join(' ');
+    // A chord belongs to the application, and a key with no character of its
+    // own (Tab, Enter, Escape, the arrows, Home, End) belongs to the browser.
+    if (event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1) return;
+    if (!/\d/.test(event.key)) event.preventDefault();
+  }
 
   return (
-    <div className={wrapClass}>
+    <span className={cx('crewlet-time-window__masked', text === '' && 'is-empty')}>
       <input
-        ref={inputRef}
         type="text"
-        className="crewlet-time-window__text-input"
-        value={display}
-        onKeyDown={handleKeyDown}
-        onFocus={handleFocus}
-        onClick={handleClick}
-        onPaste={handlePaste}
-        onChange={() => { /* controlled via keydown / paste */ }}
-        onBlur={handleBlur}
-        aria-label={ariaLabel}
+        inputMode="numeric"
+        className="crewlet-time-window__masked-input"
+        /*
+         * The box is as wide as what it holds, so the shape still to be
+         * filled sits directly after the value rather than at the far edge.
+         * `size` rather than `field-sizing: content` alone, which two engines
+         * do not have yet: without it an `auto` width falls back to the
+         * input's default of twenty characters and the overlay is stranded.
+         */
+        size={Math.max(text.length, 1)}
+        value={text}
+        aria-label={label}
+        aria-invalid={text !== '' && isComplete(mask, text) && !isValid(text) ? true : undefined}
+        // The whole edit goes through here, so a paste, an input method and a
+        // phone keyboard all work: what comes back is stripped to its digits
+        // and laid into the mask again.
+        onChange={(event) => setText(project(mask, event.target.value))}
+        onKeyDown={onKeyDown}
+        onBlur={() => {
+          // A partial or impossible entry rolls back to what the value
+          // resolves to, so the refusal is visible and nothing bogus travels.
+          if (!isComplete(mask, text) || !isValid(text)) {
+            setText(project(mask, value));
+            return;
+          }
+          onCommit(text);
+        }}
       />
-      <div className="crewlet-time-window__masked-overlay" aria-hidden>
-        {overlay}
-      </div>
-    </div>
+      {/* The shape still to be filled. A picture, so it is never read out. */}
+      <span className="crewlet-time-window__masked-rest" aria-hidden="true">
+        {remainder(mask, text)}
+      </span>
+    </span>
   );
 }

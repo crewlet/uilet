@@ -1,0 +1,161 @@
+/*
+ * The non-tabular list. One row recipe, four framings.
+ *
+ * The row's height is --size-row-md, so every list in a product lines up with
+ * every other and a density setting reaches all of them at once.
+ */
+
+.crewlet-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.crewlet-list__item {
+  min-width: 0;
+}
+
+.crewlet-list__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  width: 100%;
+  min-width: 0;
+  min-height: var(--size-row-md);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-xs);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  text-decoration: none;
+}
+
+/*
+ * Columns, on every row at once. A track list set per row lines nothing up,
+ * which is the whole reason the template belongs to the list.
+ */
+.crewlet-list--templated .crewlet-list__row--templated {
+  display: grid;
+  grid-template-columns: var(--crewlet-list-template);
+  align-items: center;
+}
+
+.crewlet-list__content {
+  min-width: 0;
+}
+
+.crewlet-list__leading,
+.crewlet-list__trailing {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+/* The row's own words take the room; a time or a count sits at the end. */
+.crewlet-list__trailing {
+  margin-inline-start: auto;
+}
+
+.crewlet-list--templated .crewlet-list__trailing {
+  margin-inline-start: 0;
+}
+
+.crewlet-list__row--interactive {
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-list__row--interactive:hover {
+  background: var(--color-surface-hover);
+}
+
+/*
+ * The ring is drawn INSIDE the row. A list sits in a clipping scroller more
+ * often than not, where an outset ring is cut off on the first and last rows
+ * and painted over by the row below.
+ */
+.crewlet-list__row:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* ---- Framings ---------------------------------------------------------- */
+
+.crewlet-list--divided .crewlet-list__item {
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-list--divided .crewlet-list__item:last-child {
+  border-bottom: none;
+}
+
+.crewlet-list--divided .crewlet-list__row {
+  border-radius: 0;
+}
+
+/*
+ * Bullets and numbers are prose furniture, so those two framings drop the row
+ * height and the horizontal pad: a paragraph's list should sit against the
+ * paragraph's own left edge.
+ */
+.crewlet-list--bulleted,
+.crewlet-list--numbered {
+  padding-inline-start: var(--spacing-5);
+  list-style: revert;
+}
+
+.crewlet-list--bulleted .crewlet-list__item,
+.crewlet-list--numbered .crewlet-list__item {
+  display: list-item;
+}
+
+.crewlet-list--bulleted .crewlet-list__row,
+.crewlet-list--numbered .crewlet-list__row {
+  min-height: 0;
+  padding-inline: 0;
+}
+
+/* ---- States ------------------------------------------------------------ */
+
+/*
+ * The row the reader is on. The accent is the one colour that means "here",
+ * and the rail is what carries it at a glance in a long list.
+ */
+.crewlet-list__item--selected > .crewlet-list__row {
+  background: var(--color-brand-accent-soft);
+  box-shadow: inset 2px 0 0 var(--color-brand-accent);
+}
+
+/*
+ * A selected row does NOT also take the hover overlay. Both are a background
+ * on the same element, the selected tint wins, and a composite of the two is a
+ * colour nothing has measured.
+ */
+.crewlet-list__item--selected > .crewlet-list__row--interactive:hover {
+  background: var(--color-brand-accent-soft);
+}
+
+/*
+ * A row that failed. The rail is the scannable half and the glyph beside it is
+ * the honest one: a reader who cannot tell the rail's hue from the row above
+ * still meets a mark and a word.
+ */
+.crewlet-list__item--danger > .crewlet-list__row {
+  box-shadow: inset 2px 0 0 var(--color-feedback-danger);
+}
+
+.crewlet-list__danger-mark {
+  flex: none;
+  color: var(--color-feedback-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-list__row--interactive {
+    transition: none;
+  }
+}

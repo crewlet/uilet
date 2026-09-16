@@ -1,83 +1,133 @@
-/* Generic popover panel. Portaled to <body> so it can escape any
-   ancestor's overflow:hidden. Colours come from the canonical
-   @crewlethq/tokens variables, so the chrome matches whichever palette
-   is active. The panel mounts under <body>, so an app that rebinds
-   the accent tokens declares the override on <body> or <html>. */
+/*
+ * The anchored panel.
+ *
+ * It is placed by arithmetic (see Popover.tsx), so this stylesheet owns only
+ * what the panel looks like and how it enters. Two positioning modes, and one
+ * branch decides which: inside a LayerHost the panel is absolute in that
+ * host's own box, and against the window it is fixed, because the coordinates
+ * it is given are viewport coordinates and an absolute panel under an
+ * unpositioned body is offset by the page's scroll.
+ *
+ * An OPAQUE surface, never the glass one: glass carries chrome, and anything
+ * carrying words sits on something a contrast ratio can be measured against.
+ */
 
 .crewlet-popover {
-  position: absolute;
-  z-index: var(--z-index-popover, 10000);
-  background: var(--color-surface-subtle, #15171c);
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 12px;
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
-  outline: none;
-  min-width: 200px;
+  position: fixed;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  /* Wide enough that a panel is a panel: below this a popover reads as a
+     tooltip that happens to hold controls. */
+  min-width: 260px;
   max-width: 380px;
   max-height: min(360px, 60vh);
   overflow-y: auto;
-  animation: crewlet-popover-in 120ms ease-out;
+  overscroll-behavior: contain;
+  animation: crewlet-popover-in var(--motion-duration-base) var(--motion-easing-emphasized);
 }
 
-.crewlet-popover--bottom {
+.crewlet-popover--in-host {
+  position: absolute;
+}
+
+.crewlet-popover--below {
   transform-origin: top left;
 }
 
-.crewlet-popover--top {
+.crewlet-popover--above {
   transform-origin: bottom left;
 }
 
-@keyframes crewlet-popover-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* A panel that takes focus shows it on the panel, not only on what is inside. */
+.crewlet-popover:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
-/* Menu list inside a popover. Option rows look identical to the
-   ones in Select so the visual register stays consistent. */
+/* Up from under its anchor, which is where it is about to be. */
+@keyframes crewlet-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-2));
+  }
+}
+
+/* A list inside a panel. The rows carry the menu's register, because a row of
+   verbs is a row of verbs wherever it is drawn.
+
+   WHAT THEY DO NOT TAKE FROM A MENU IS ITS `white-space: nowrap`. A menu panel
+   is as wide as its longest row and can afford an unbreakable line; this panel
+   is a declared width range, so a line that cannot break has nowhere to go but
+   sideways out of a box whose `overflow-y` already makes the other axis
+   scroll. A row's text is often a bare child of the row as well, which is a
+   place `text-overflow` cannot reach, so the line would be clipped with
+   nothing to say it had been. It wraps instead. */
 .crewlet-popover__list {
   list-style: none;
   margin: 0;
-  padding: 6px;
+  padding: var(--spacing-1);
   display: flex;
   flex-direction: column;
-  gap: 1px;
 }
 
 .crewlet-popover__item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  gap: var(--spacing-2);
+  min-height: var(--size-row-sm);
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-xs);
   cursor: pointer;
   background: transparent;
   border: none;
-  color: var(--color-text-primary, #f5f5f7);
-  font-size: 13px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-compact);
   font-family: inherit;
   text-align: left;
   width: 100%;
-  transition: background 0.1s ease, color 0.1s ease;
 }
 
-.crewlet-popover__item:hover,
+/*
+ * A NEUTRAL hover. The accent means "where the reader is": a selection, an
+ * active filter, the row a listbox's arrows are on. A row that turned the
+ * accent under the pointer said the reader was somewhere they were only
+ * passing over, and with focus moving row to row in a menu it said it twice.
+ */
+.crewlet-popover__item:hover:not(.is-disabled):not([aria-disabled='true']) {
+  background: var(--color-surface-hover);
+}
+
+/*
+ * The tint is on `:focus` and the ring on `:focus-visible`, as in a menu: a
+ * panel that takes focus as it opens hands it to its first row, and a row a
+ * script focused after a pointer opened the panel matches no browser's
+ * `:focus-visible`, so the panel came up with nothing lit. See Menu.css.
+ */
+.crewlet-popover__item:focus {
+  background: var(--color-surface-hover);
+}
+
 .crewlet-popover__item:focus-visible {
-  background: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.14);
-  color: var(--color-brand-accent, #5469d4);
-  outline: none;
+  outline: 2px solid var(--color-focus);
+  /* Inside a panel that scrolls its own rows, an outset ring is clipped by the
+     scroller and painted over by the next row. */
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
-.crewlet-popover__item.is-disabled {
-  opacity: 0.5;
+.crewlet-popover__item.is-disabled,
+.crewlet-popover__item[aria-disabled='true'] {
+  color: var(--color-text-tertiary);
   cursor: not-allowed;
 }
 
+/* The current answer of a choice: the one place the accent belongs here. */
 .crewlet-popover__item.is-active {
-  color: var(--crewlet-select-accent, var(--color-brand-accent, #5469d4));
+  color: var(--color-brand-accent-ink);
 }
 
 .crewlet-popover__item-icon {
-  font-size: 16px;
   flex-shrink: 0;
 }
 
@@ -86,38 +136,50 @@
 }
 
 .crewlet-popover__item-trail {
-  font-size: 11px;
-  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.55));
+  margin-left: auto;
+  padding-left: var(--spacing-4);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
 }
 
-/* Section headings inside a multi-section popover, for example a
-   "Filters" heading above a group of items. */
+/* A heading above a group of rows. */
 .crewlet-popover__heading {
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
   text-transform: uppercase;
-  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.55));
-  padding: 10px 12px 4px;
+  color: var(--color-text-tertiary);
 }
 
 .crewlet-popover__divider {
   height: 1px;
-  background: var(--color-border-default, rgba(255, 255, 255, 0.08));
-  margin: 4px 0;
+  background: var(--color-border-default);
+  margin: var(--spacing-1) 0;
 }
 
-/* Inline editor: a popover that hosts a single Select or input while
-   a value is edited in place. Sized snug around the control. */
+/* An inline editor: a panel hosting a single control while a value is edited
+   in place. Sized snug around it. */
 .crewlet-popover__editor {
-  padding: 10px;
+  padding: var(--spacing-3);
   min-width: 240px;
 }
 
 .crewlet-popover__editor-label {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.55));
-  margin-bottom: 6px;
   display: block;
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-2xs);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The rows carry no transition, and that is the rule rather than an omission:
+ * the arrows move the highlight, and a fade lags a held arrow key.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-popover {
+    animation: none;
+  }
 }

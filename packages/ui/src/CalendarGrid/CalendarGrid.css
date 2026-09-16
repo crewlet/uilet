@@ -1,0 +1,128 @@
+/*
+ * The month grid, shared by every picker.
+ *
+ * Seven equal columns, drawn as a grid rather than a wrapped row of buttons,
+ * so a week is a row a reader can move along and a day sits in one. The cells
+ * are spans with grid roles rather than buttons: a button inside a gridcell
+ * is two focusable things where the pattern has one, and the roving tabindex
+ * is what makes the month a single tab stop.
+ */
+
+.crewlet-calendar {
+  display: grid;
+  gap: 1px;
+  user-select: none;
+}
+
+.crewlet-calendar__weekdays,
+.crewlet-calendar__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.crewlet-calendar__weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--size-row-sm);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-calendar__day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Never under the 24px target floor, at any density. */
+  min-width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  /* The corner every small row in the package wears: a menu item, a
+     completion, a day. */
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-compact);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-calendar__day:hover:not(.is-disabled):not(.is-selected):not(.is-blank) {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-calendar__day.is-outside {
+  color: var(--color-text-tertiary);
+}
+
+/* A padding cell holds the column open and nothing else: no day, no tint, and
+   no cursor promising that a press does something. */
+.crewlet-calendar__day.is-blank {
+  cursor: default;
+}
+
+.crewlet-calendar__day.is-disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+/*
+ * TODAY IS A RING, not a fill: the fill means "chosen", and the two are
+ * different facts that are often true of different days.
+ */
+.crewlet-calendar__day.is-today {
+  box-shadow: inset 0 0 0 1px var(--color-border-hover);
+}
+
+/*
+ * A RANGE IS ONE BAND. The cells sit 1px apart, so a tint on each of them
+ * alone reads as a row of separate squares with the ground showing between.
+ * An OUTLINE in the band's own colour closes that gap on every side, which is
+ * what joins the weeks a multi-week range runs through as well as the days.
+ *
+ * An outline rather than a box-shadow because today's ring is a box-shadow: a
+ * second one on the same element replaces it, and a day that is both today and
+ * inside the chosen range would lose the ring that says which day it is. The
+ * focus ring is an outline too and is declared after this, so it still wins on
+ * the day the keyboard is on.
+ */
+.crewlet-calendar__day.is-in-range {
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+  border-radius: 0;
+  outline: 1px solid var(--color-brand-accent-soft);
+}
+
+.crewlet-calendar__day.is-selected {
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+}
+
+/*
+ * The ends of the band: the chosen day keeps its own fill and its own corner,
+ * and carries the band's colour around it so the chip reads as joined to the
+ * run beside it rather than floating one gap away from it.
+ */
+.crewlet-calendar__day.is-range-start,
+.crewlet-calendar__day.is-range-end {
+  outline: 1px solid var(--color-brand-accent-soft);
+}
+
+/*
+ * The ring is an OUTLINE, drawn INSIDE the cell: the grid is a clipping box
+ * at its edges, so an outset ring on the first or last column is cut off by
+ * it and painted over by the row beneath.
+ */
+.crewlet-calendar__day:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-calendar__day {
+    transition: none;
+  }
+}

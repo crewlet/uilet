@@ -1,0 +1,441 @@
+/*
+ * The list screen: header, toolbar, filter chips, table.
+ *
+ * THE VERTICAL RHYTHM IS THE WHOLE LAYOUT. Each part carries the space BELOW
+ * it, so a screen missing one of them (no header, no chips) closes the gap
+ * rather than leaving a band where it would have been. The chip row is the one
+ * that renders nothing at all when it is empty, which is why its rules can
+ * assume it has content.
+ *
+ * WHERE THE ACCENT GOES. On a chip, because a chip IS a filter that is on, and
+ * on a toolbar control only while what it controls is on (a sort, the archived
+ * rows). Everything else in the row is neutral: a toolbar painted with the
+ * accent at rest spends the colour that means "where the reader is" on a row
+ * where nothing is happening.
+ */
+
+.crewlet-data-view {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The screen's own rhythm: the head, the toolbar and the list are the three
+   bands of a list screen, and one step separates all of them. */
+.crewlet-data-view > .crewlet-page-header {
+  margin-bottom: var(--spacing-5);
+}
+
+.crewlet-data-view__table {
+  min-width: 0;
+}
+
+/*
+ * The table on a surface of its own. The boundary is what makes a long list
+ * read as one object inside a padded page rather than as text on the ground,
+ * and the radius is clipped so the header band stops at the edge.
+ *
+ * THE FRAME HOLDS THE TABLE AND NOTHING ELSE. It used to end on a count row
+ * saying "Showing 12 of 300", which is gone from every list, so the rows are
+ * the last thing inside it.
+ */
+.crewlet-data-view--framed .crewlet-data-view__table {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  /*
+   * CLIP, NOT HIDDEN. Both cut the corners the radius rounds, and only one of
+   * them leaves the toolbar able to stick: `overflow: hidden` makes this box
+   * the nearest scrollport, and a sticky child inside a scrollport that never
+   * scrolls never moves. `clip` cuts without becoming one, so the toolbar
+   * inside the panel pins against the page the way the bar above it used to.
+   */
+  overflow: clip;
+}
+
+/*
+ * AND THE FRAME IS WHAT CLOSES THEM. A row's hairline separates it from the
+ * row below, so the table draws one under every row including its last, which
+ * is what closes a table standing on the page with nothing underneath it.
+ * Inside this panel something already does: the frame's own bottom edge,
+ * directly beneath it. Left on, the two meet and the list ends on a doubled
+ * two-pixel rule the rest of the table never draws. The suppression is
+ * written here, where the frame is, rather than in the table, which cannot
+ * know what it has been put inside.
+ *
+ * ONLY WHERE THE ROWS REALLY ARE LAST. A cursor list draws a Load more strip
+ * under them, and an exhausted one the end message, and neither carries a
+ * fence of its own: the last row's hairline IS the fence, everywhere else a
+ * table is drawn. Cancelled unconditionally, the strip inside a panel sat
+ * against the rows with no line between them, which is the one case the rule
+ * was never about.
+ */
+.crewlet-data-view--framed .crewlet-data-table:not(:has(.crewlet-data-table__load-more, .crewlet-data-table__end)) .crewlet-data-table__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── The toolbar ──────────────────────────────────────────────────────── */
+
+/*
+ * THE SCREEN'S CONTROLS SIT IN THE TABLE'S OWN TOOLBAR ROW, beside the table's
+ * pagination and settings, so a list screen reads as one object rather than as
+ * a bar, a second bar and then a table with a third. In that slot the row owns
+ * neither the inset nor the space below it: the band it is in draws both.
+ */
+.crewlet-data-table__toolbar-start > .crewlet-data-view-toolbar {
+  margin-bottom: 0;
+  padding: 0;
+  flex: 1 1 auto;
+}
+
+.crewlet-data-view-toolbar {
+  /* The width under which the search box stops shrinking and the row wraps
+     instead, so the box never becomes a slot too narrow to read a query in. */
+  --crewlet-data-view-search-min: 240px;
+
+  margin-bottom: var(--spacing-3);
+}
+
+.crewlet-data-view-toolbar__search {
+  flex: 1 1 var(--crewlet-data-view-search-min);
+  min-width: var(--crewlet-data-view-search-min);
+  max-width: none;
+}
+
+/*
+ * A toolbar button's own label: the word, then whatever sits after it (the
+ * chevron that says a panel opens, the count on the archived toggle).
+ */
+.crewlet-data-view-toolbar__menu-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  white-space: nowrap;
+}
+
+.crewlet-data-view-toolbar__spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.crewlet-data-view-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* ── The sort panel ───────────────────────────────────────────────────── */
+
+.crewlet-data-view-toolbar__sort {
+  --crewlet-data-view-sort-width: 240px;
+
+  min-width: var(--crewlet-data-view-sort-width);
+}
+
+.crewlet-data-view-toolbar__sort-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-data-view-toolbar__sort-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+}
+
+.crewlet-data-view-toolbar__sort-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-data-view-toolbar__sort-label {
+  font-size: var(--font-size-compact);
+  color: var(--color-text-primary);
+  min-width: 0;
+}
+
+.crewlet-data-view-toolbar__sort-buttons {
+  display: inline-flex;
+  gap: var(--spacing-1);
+  flex: none;
+}
+
+.crewlet-data-view-toolbar__sort-footer {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-border-default);
+}
+
+/* ── The chip row ─────────────────────────────────────────────────────── */
+
+/*
+ * Between the toolbar and the table, fenced above and below: the chips are
+ * neither part of the controls that add them nor part of the data they narrow,
+ * and without the boundary a reader reads them as a row of the table's own.
+ *
+ * A SOLID HAIRLINE. The fence was dashed, and a dashed edge MEANS SOMETHING
+ * ELSE here: it is the mark a card or a node wears when it stands for somebody
+ * outside the system, on the canvas and in every chart. Two meanings for one
+ * stroke is how a reader learns neither. Every boundary in this system is the
+ * same hairline; what differs is where it is drawn.
+ */
+.crewlet-filter-axis-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+  padding: var(--spacing-2) 0;
+  border-top: 1px solid var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+/*
+ * Inside the table's own band the fence is already drawn: the toolbar above
+ * carries the rule over the chips and the band carries the rule under them, so
+ * the row itself takes no boundary, no inset and no space below it. The rules
+ * above stay for a chip row used on its own, which is what the exported
+ * FilterAxisBar is for.
+ */
+.crewlet-data-table__filter-bar > .crewlet-filter-axis-bar {
+  margin-bottom: 0;
+  padding: 0;
+  border: 0;
+  flex: 1 1 auto;
+}
+
+/* Held to the end of the row, so it is never mistaken for one more chip. */
+.crewlet-filter-axis-bar__clear {
+  margin-left: auto;
+}
+
+/* ── One chip ─────────────────────────────────────────────────────────── */
+
+/*
+ * TWO CONTROLS IN ONE PILL: pressing the chip opens its editor, pressing the
+ * cross takes the filter off. They are drawn as one object with a divider
+ * because they are one filter, and they are two BUTTONS because they do two
+ * different things, which is also why the cross carries its own name rather
+ * than relying on the chip's.
+ */
+.crewlet-filter-axis-chip {
+  display: inline-flex;
+  align-items: stretch;
+  height: var(--size-control-sm);
+  background: var(--color-brand-accent-soft);
+  border: 1px solid var(--color-brand-accent-soft-strong);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  max-width: 100%;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/*
+ * THE EDGE, NOT THE FILL. `--color-surface-hover` is the overlay a row at rest
+ * carries, and the token says a surface shows it OR a selected tint, never
+ * both: put on a chip it REPLACED the accent fill, so the one control on screen
+ * that means "this filter is on" went pale under the pointer and read as the
+ * filter being switched off.
+ *
+ * The fill stays where it is and the boundary takes the accent itself.
+ * Deepening the fill to the next accent step instead measures 4.48:1 under the
+ * chip's own ink on the light ground, and 4.18:1 on a card, which is why that
+ * step is a BORDER value in the palette and is used as one here.
+ */
+.crewlet-filter-axis-chip:hover {
+  border-color: var(--color-brand-accent);
+}
+
+.crewlet-filter-axis-chip__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: 0 var(--spacing-2) 0 var(--spacing-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-brand-accent-ink);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  line-height: 1;
+}
+
+.crewlet-filter-axis-chip__trigger:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
+ * THE AXIS NAME IS NOT DIMMED. It read at 0.85 opacity, which takes the chip's
+ * own ink off the step the pairing was measured at, and the name of the axis
+ * is exactly what a reader checks before the value: "status" and "stage" narrow
+ * a list to very different things. The value's own weight is what separates
+ * the halves, which is a difference a reader can see at any contrast.
+ */
+.crewlet-filter-axis-chip__label {
+  white-space: nowrap;
+}
+
+.crewlet-filter-axis-chip__value {
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * The chevron carries the chip's own ink rather than a fainter version of it,
+ * for the reason every mark beside its words does: a grey glyph next to
+ * coloured text reads as two things. At 0.7 it measured 3.00:1 on a card in
+ * light, which is the 3:1 floor for a glyph to the second decimal place.
+ */
+.crewlet-filter-axis-chip__chevron {
+  flex: none;
+}
+
+/*
+ * The remove control keeps the chip's own ink rather than taking the critical
+ * hue on hover: removing a filter destroys nothing, and a row of chips that
+ * turns red under the pointer reads as a row of dangerous things.
+ */
+.crewlet-filter-axis-chip__remove {
+  border-radius: 0;
+  border-left: 1px solid var(--color-brand-accent-soft-strong);
+  color: var(--color-brand-accent-ink);
+}
+
+/*
+ * Its ring is drawn INSIDE it, like the trigger's beside it. The pill clips to
+ * its own radius, so the outset ring an icon button carries everywhere else is
+ * cut off on every edge the control touches, which here is all of them.
+ */
+.crewlet-filter-axis-chip__remove:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-filter-axis-chip {
+    transition: none;
+  }
+}
+
+/* ── A chip's editor ──────────────────────────────────────────────────── */
+
+.crewlet-filter-axis__popover {
+  padding: 0;
+}
+
+.crewlet-filter-axis__editor {
+  --crewlet-filter-axis-editor-width: 220px;
+  --crewlet-filter-axis-options-max: 280px;
+
+  min-width: var(--crewlet-filter-axis-editor-width);
+}
+
+.crewlet-filter-axis__editor--text,
+.crewlet-filter-axis__editor--moment {
+  padding: var(--spacing-2);
+}
+
+/*
+ * The option list is ONE tab stop and takes the focus ring itself, because the
+ * rows inside it are not focusable: the highlight moves with the arrows and is
+ * announced through aria-activedescendant.
+ */
+.crewlet-filter-axis__options {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: var(--crewlet-filter-axis-options-max);
+  overflow-y: auto;
+  padding: var(--spacing-2);
+  margin: 0;
+  list-style: none;
+}
+
+.crewlet-filter-axis__options:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-filter-axis__option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-compact);
+  text-align: left;
+}
+
+.crewlet-filter-axis__option.is-highlight {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-filter-axis__option.is-selected {
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-filter-axis__option.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The tick box: drawn by the design system rather than by the platform, so it
+   takes the accent at the same step every other chosen thing here does. */
+.crewlet-filter-axis__tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-on-accent);
+}
+
+.crewlet-filter-axis__tick.is-checked {
+  background: var(--color-brand-accent);
+  border-color: var(--color-brand-accent);
+}
+
+.crewlet-filter-axis__option-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-filter-axis__editor-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+  border-top: 1px solid var(--color-border-default);
+}
+
+/*
+ * The panel's own toolbar band, held under the top of the scroller. It is the
+ * WHOLE band rather than the screen's half of it: the table's settings cog
+ * shares that row, and a row that pins half of itself leaves the other half
+ * behind.
+ */
+.crewlet-data-view--sticky-toolbar .crewlet-data-table__toolbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+}

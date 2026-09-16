@@ -1,0 +1,94 @@
+/* DiffList: one path per row, with its mark, its word and its tint.
+
+   The tint is the soft step of the state the row is in and the text is the
+   matching ink step, which is the pairing the palette suite measures: a fill
+   is never text and an ink step is never a background. */
+/*
+ * HALF A STEP, between the rows and inside them. A diff row is a LINE OF A
+ * DOCUMENT rather than an item in a list: at the full 4px step a fifty-line
+ * diff gained two hundred pixels of nothing, and the tint that groups the
+ * added lines together stopped reading as a block. It is written as half the
+ * smallest step rather than as 2px so it still scales with the density
+ * setting, which is the whole reason the scale exists.
+ */
+.crewlet-diff-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing-1) / 2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-diff-list__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 200px) minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--spacing-2);
+  padding: calc(var(--spacing-1) / 2) var(--spacing-2);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+}
+
+/* THE SERVER'S OWN WORDS: a change is added, removed or changed. The rules
+   this replaces read add, remove and replace, which no answer has ever
+   carried, so every diff row rendered untinted. */
+.crewlet-diff-list__row--added {
+  background: var(--color-feedback-success-soft);
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-diff-list__row--removed {
+  background: var(--color-feedback-danger-soft);
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-diff-list__row--changed {
+  background: var(--color-feedback-warning-soft);
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-diff-list__mark {
+  display: inline-flex;
+  align-items: center;
+  /* The glyph carries the row's own ink, so the mark and its words read as
+     one thing rather than as a grey icon beside coloured text. */
+  color: inherit;
+}
+
+.crewlet-diff-list__path,
+.crewlet-diff-list__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-diff-list__value {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+/* THE OLD VALUE IS NOT DIMMED. It read at 0.75 opacity, which took the ink
+   this file pairs with its tint down to between 3.28:1 and 4.24:1 in light,
+   under the 4.5:1 the pairing exists to clear, and the value being replaced
+   is exactly the one a reader checks the new one against. The arrow, the word
+   "to" and the order are what say which half is which. */
+.crewlet-diff-list__from,
+.crewlet-diff-list__to {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-diff-list__arrow {
+  flex: none;
+}
+
+.crewlet-diff-list__empty {
+  margin: 0;
+  font-size: var(--font-size-compact);
+  color: var(--color-text-tertiary);
+}

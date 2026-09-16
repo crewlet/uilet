@@ -1,0 +1,60 @@
+/*
+ * The pill that holds finished rows back.
+ *
+ * FULL WIDTH AND IN THE FLOW, where the rows would have gone. A floating
+ * badge over the list would cover the row somebody is reading, which is the
+ * thing this exists to stop happening.
+ */
+
+.crewlet-new-items {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  min-height: var(--size-control-sm);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  /* Regular, which is what the engine's pill inherits from the document. It
+     stands in the flow where the rows will go, so it should read as a gap in
+     the list rather than as a heading over one. */
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/*
+ * The accent on hover, and only there. What is behind the pill IS where the
+ * reader is about to be, which is the one thing the accent means; at rest it
+ * would be a permanent accent on a page that already has one.
+ *
+ * TWO STEPS OF THE ONE HUE, because they are asked two different questions.
+ * The boundary takes the FILL step, which the engine spends here and which is
+ * measured at 3:1 as a mark; the label takes the INK step, which is measured
+ * at 4.5:1 as text. The engine paints its label in the fill step too, and that
+ * measures 4.39:1 on a light card and 3.45:1 on a dark one.
+ */
+.crewlet-new-items:hover {
+  border-color: var(--color-brand-accent);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-new-items:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-new-items {
+    transition: none;
+  }
+}

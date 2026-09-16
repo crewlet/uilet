@@ -1,0 +1,194 @@
+/* The opt-in document baseline: the reset, the document's own type and
+   colour, one focus treatment, themed scrollbars and the reduced-motion
+   collapse. Copied into dist/css/base.css by scripts/build.mjs.
+
+   Import it after tokens.css and themes.css:
+       import '@crewlethq/tokens/css';
+       import '@crewlethq/tokens/css/themes';
+       import '@crewlethq/tokens/css/base';
+
+   It is opt-in because it styles element selectors, which an application
+   with its own reset does not want twice. Every COLOUR, type step, radius and
+   space comes from a token, so it follows the palette and the density without
+   a rule of its own, and the package's suite refuses a colour literal here.
+
+   Four lengths are written out, and each is a measurement of a thing rather
+   than a step on a scale: the focus ring's own width and offset, and the
+   scrollbar's width and the inset that rounds its thumb. A token for any of
+   them would be a scale with one value on it.
+
+   What is deliberately NOT here: the body's height and overflow. A page that
+   can scroll as a whole moves an application's rail off the top of the
+   window, so the rule that stops it belongs to the shell that owns the rail,
+   not to every document that imports a baseline. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--font-line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+  letter-spacing: var(--font-letter-spacing-tight);
+}
+
+p,
+figure,
+pre {
+  margin: 0;
+}
+
+a {
+  color: var(--color-brand-accent-ink);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* A control inherits the document's type. Left alone, every browser gives
+   form controls a system face at a size of its own, which is how one button
+   in a row ends up a pixel taller than the rest. */
+button,
+input,
+optgroup,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-family-mono);
+  font-variant-ligatures: none;
+  /* Every number in a product is a number that changes. Tabular figures are
+     what stop a live counter shifting the column beside it. */
+  font-variant-numeric: tabular-nums;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--color-border-default);
+  margin: 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+svg {
+  display: block;
+  flex: none;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* One focus treatment for the whole document, and only ever the keyboard
+   ring: a mouse click that painted a ring around a row made every list look
+   permanently selected.
+
+   The indicator is an OUTLINE. Forced-colors mode drops every box-shadow and
+   keeps outlines, so a ring drawn as a shadow alone disappears for exactly
+   the readers who most need one. A component that also wants a shadow pairs
+   --shadow-focus with a transparent outline, so forced colors substitutes a
+   system colour for it. */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+::selection {
+  background: var(--color-brand-accent-soft);
+}
+
+/* Scrollbars belong to the palette. A bright system gutter down the side of a
+   dark page is the most visible way an application admits it is a web page. */
+* {
+  scrollbar-color: var(--color-scrollbar) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-hover);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* The one place a reduced-motion preference is honoured for the whole
+   document. A component still states its own rule, because a component is
+   also used in a document that does not import this file. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

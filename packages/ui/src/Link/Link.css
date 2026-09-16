@@ -1,0 +1,80 @@
+/*
+ * A link, in the two registers a console needs: a navigation and an identity.
+ *
+ * The ink is the accent's INK step, not the accent fill. The fill is a mark
+ * and clears 3:1; text has to clear 4.5:1, and at caption size it is exactly
+ * the place a fill-as-text fails.
+ */
+
+.crewlet-link {
+  display: inline;
+  color: var(--color-brand-accent-ink);
+  text-decoration: none;
+  border-radius: var(--radius-xs);
+  transition: color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-link:hover {
+  text-decoration: underline;
+}
+
+.crewlet-link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* An identity, not an instruction: neutral until a reader reaches for it. */
+.crewlet-link--subtle {
+  color: var(--color-text-primary);
+}
+
+.crewlet-link--subtle:hover {
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-link--body {
+  font-size: var(--font-size-sm);
+}
+
+/*
+ * A caption-sized link takes the caption's SIZE and keeps the link's ink. It
+ * is medium weight and does not wrap, because the thing it names (an event id,
+ * a turn, a model) is one token a reader scans for.
+ */
+.crewlet-link--caption {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+/*
+ * A whole row is the target. No underline, because the row's own hover says
+ * it is live, and the ring is drawn INSIDE: a row inside a clipping scroller
+ * loses an outset ring to the scroller's edge and to the next row painted
+ * over it.
+ */
+.crewlet-link--block {
+  display: block;
+  width: 100%;
+  color: inherit;
+}
+
+.crewlet-link--block:hover {
+  text-decoration: none;
+}
+
+.crewlet-link--block:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-link__external {
+  /* Sits on the text baseline beside the last word rather than under it. */
+  vertical-align: -0.125em;
+  margin-inline-start: var(--spacing-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-link {
+    transition: none;
+  }
+}

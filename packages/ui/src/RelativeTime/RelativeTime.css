@@ -1,0 +1,10 @@
+/*
+ * A relative time is text, so it takes the register around it. Its one rule is
+ * tabular figures: the words change once a second, and proportional digits
+ * would move whatever sits beside them on every tick.
+ */
+
+.crewlet-relative-time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

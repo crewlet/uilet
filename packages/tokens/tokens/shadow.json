@@ -5,10 +5,13 @@
     "md": { "value": "0 4px 12px rgba(0, 0, 0, 0.25)" },
     "lg": { "value": "0 8px 24px rgba(0, 0, 0, 0.3)" },
     "xl": { "value": "0 12px 32px rgba(0, 0, 0, 0.4)" },
+    "sheet": { "value": "-8px 0 32px rgba(0, 0, 0, 0.4)", "comment": "The separation under a side sheet, cast along the INLINE axis rather than downward. A sheet runs the full height of the window, so a shadow with a vertical offset drops both of its casts off the screen and leaves the one edge the sheet actually has lit by a blur tail; this one is thrown into the page the sheet covers. Not a step on the elevation ramp: it is the only shadow here whose offset is horizontal, and a surface that wants the ramp wants shadow.xl." },
     "2xl": { "value": "0 16px 64px rgba(0, 0, 0, 0.6)" },
     "card": { "value": "0 8px 24px rgba(0, 0, 0, 0.1)", "comment": "Standard card depth on dark surfaces." },
     "rimLit": { "value": "0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04)", "comment": "Card with a subtle inset rim light, for cards that need to lift off an already elevated surface." },
-    "focus": { "value": "0 0 0 3px rgba(84, 105, 212, 0.35)", "comment": "Focus ring tinted with the canonical brand color." },
+    "hairline": { "value": "inset 0 1px 0 rgba(255, 255, 255, 0.04)", "comment": "The top-edge rim light on its own, for a panel that is lifted by light rather than by a shadow. It is none in the light theme." },
+    "focus": { "value": "0 0 0 2px var(--color-surface-background), 0 0 0 4px var(--color-focus)", "comment": "For a component that wants a shadow as well as its focus outline. It never REPLACES the outline: forced-colors mode drops every box-shadow and keeps outlines, so a ring drawn as a shadow alone leaves the readers who most need an indicator with none. The value it replaces, a 3px rgba(84, 105, 212, 0.35) glow, measured between 1.41:1 and 1.61:1." },
+    "selection": { "value": "inset 0 0 0 2px var(--color-brand-accent)", "comment": "The ring around a selected card or canvas node. Inset, so it is not clipped by a scroller." },
     "glow": { "value": "0 4px 24px rgba(84, 105, 212, 0.3)" }
   }
 }

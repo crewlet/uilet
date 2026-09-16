@@ -1,0 +1,23 @@
+/*
+ * The portal target a LayerHost provides.
+ *
+ * It covers its container so a surface placed against its rectangle is placed
+ * against the container, and it is inert until something is drawn in it: an
+ * empty host over a canvas must not swallow the drag that pans the canvas.
+ * Each overlay inside takes pointer events back for its own panel.
+ *
+ * Its container establishes the positioning context. A host whose parent is
+ * static covers the nearest positioned ancestor instead, which is the
+ * viewport in the common case and is still a usable bound.
+ */
+
+.crewlet-layer-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-index-layer-base);
+}
+
+.crewlet-layer-host > * {
+  pointer-events: auto;
+}

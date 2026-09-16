@@ -1,138 +1,484 @@
 /*
- * Modal, portal-rendered dialog with backdrop, header, body, footer.
+ * The modal surface: the veil, the frame, and the three bands inside it.
  *
- * Sizes, padding, radius, shadow and animation timings are declared
- * here once, so every dialog (Modal, ConfirmModal, the DataTable
- * settings dialog) shares one frame.
+ * ONE STYLESHEET FOR BOTH VARIANTS, because a dialog and a side sheet differ
+ * in where they are pinned and in how tight their head and foot are, and in
+ * nothing else. Written as two, the head of one drifts from the head of the
+ * other and the two stop announcing the same way; here the variant changes the
+ * frame's box and the bands' padding, and leaves every other rule alone.
+ *
+ * THE SURFACE IS THE PANEL STEP, NOT THE ELEVATED ONE, and the veil is the
+ * page faded rather than the page darkened. Both are the same decision: a
+ * surface here is a sheet of the product's own paper laid over the page, not a
+ * lit box in a dark room. A dialog opens where the eye already is, one step
+ * down from the top of the window, for the same reason.
+ *
+ * The frame's widths are the only lengths declared here that are not tokens.
+ * They are component variables, so an application that needs a wider prompt
+ * sets one rather than restating the whole rule, and a reader of this file can
+ * see the four steps at once.
  */
 
 .crewlet-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   display: flex;
-  align-items: center;
+  background: var(--color-surface-veil);
+  /*
+   * A light touch, because the veil is already doing most of the work. The
+   * page behind is meant to stay legible as context; blurred any harder it
+   * becomes a texture, which is a scrim with extra steps.
+   *
+   * THE STANDARD PROPERTY, AND ONLY IT. The vendor-prefixed spelling used to
+   * be written here by hand, after it, and the build's minifier answered by
+   * keeping the prefixed declaration and dropping the standard one: the
+   * shipped rule read `-webkit-backdrop-filter` alone, Chrome reports
+   * `CSS.supports('-webkit-backdrop-filter', 'blur(3px)')` as false, and the
+   * blur computed to `none` in every dialog and every sheet in the product
+   * while the source said otherwise. The bundler emits the prefix itself
+   * (Canvas.css writes one line and ships two), so writing the second line is
+   * what costs the effect. Guarded in apps/ui-tests against the BUILT
+   * stylesheet, because the source text here has always been correct.
+   */
+  backdrop-filter: blur(var(--blur-xs));
+  animation: crewlet-modal-veil-in var(--motion-duration-base) var(--motion-easing-default);
+}
+
+/* Inside a LayerHost the overlay covers the host, not the window. */
+.crewlet-modal-overlay--in-host {
+  position: absolute;
+}
+
+/* A dialog is padded off every edge; a sheet is pinned against one. */
+.crewlet-modal-overlay--dialog {
+  padding: var(--spacing-4);
   justify-content: center;
-  /* The stacking order for everything that escapes the page flow (modal,
-     popover, toast) is one scale in @crewlethq/tokens (zIndex), because
-     the relationship between the layers is the whole point; numbering
-     each component on its own is how they came to disagree. */
-  z-index: var(--z-index-modal, 9999);
-  padding: 24px;
-  animation: crewlet-modal-fade-in 0.15s ease-out;
+}
+
+.crewlet-modal-overlay--dialog.crewlet-modal-overlay--center {
+  align-items: center;
+}
+
+/*
+ * THE DEFAULT, and the one placement the engine's dashboard has. `top` puts
+ * the surface where the eye already is: a reader who just pressed a button is
+ * looking at the top half of the window, and a surface that opens in the
+ * middle of the screen asks them to find it. The inset is generous enough that
+ * the page behind stays legible as context, which is the whole reason the veil
+ * fades rather than darkens.
+ */
+.crewlet-modal-overlay--dialog.crewlet-modal-overlay--top {
+  align-items: flex-start;
+  padding-top: var(--spacing-10);
+}
+
+/*
+ * The sheet's veil fades over the same span the sheet itself travels, so the
+ * two are one movement rather than a ground that lands and a panel that
+ * follows it. A dialog's veil keeps the shorter base step: a dialog rises
+ * 8px, and a ground that outlasts that motion reads as a lag.
+ */
+.crewlet-modal-overlay--sheet {
+  padding: 0;
+  justify-content: flex-end;
+  align-items: stretch;
+  animation-duration: var(--motion-duration-slow);
 }
 
 .crewlet-modal {
-  width: 100%;
-  background: var(--color-surface-elevated, #131419);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-default);
-  border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  --crewlet-modal-width: 480px;
+  --crewlet-modal-sheet-width: 560px;
+
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 48px);
-  animation: crewlet-modal-pop 0.18s ease-out;
+  min-height: 0;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  box-shadow: var(--shadow-xl);
   outline: none;
 }
 
-.crewlet-modal--sm { max-width: 480px; }
-.crewlet-modal--md { max-width: 560px; }
-.crewlet-modal--lg { max-width: 720px; }
-.crewlet-modal--xl { max-width: 1080px; }
+/*
+ * THE FORM DRAWS NO BOX. It sits between the frame and the three bands so a
+ * dialog can submit without being a `<form role="dialog">`, which no browser
+ * accepts as conformant, and `display: contents` keeps the head, the body and
+ * the footer as the frame's own children: every rule below still addresses
+ * them, and the body still scrolls inside the frame's column.
+ */
+.crewlet-modal__form {
+  display: contents;
+}
 
+/*
+ * 100dvh, not 100vh: on a phone the browser's own chrome collapses as the page
+ * scrolls, and a frame measured against the larger viewport hides its own
+ * footer, which is where the button that closes it lives. The two insets
+ * subtracted are the overlay's own, top and bottom, so the frame stops exactly
+ * where its padding does however tall the window is.
+ *
+ * THE FRAME WITH THE CORNERS IS THE FRAME THAT CLIPS. A body with its padding
+ * dropped runs its content to the frame's own edge, and a table head, a code
+ * well or an image there is square where the frame is round: the corner is
+ * painted over by the first thing inside it. A sheet has no corners and does
+ * not clip, so nothing inside one is cut off at a rounded edge that is not
+ * there. Nothing that has to escape the frame is drawn inside it either: a
+ * menu, a listbox and a tooltip raised from a dialog all portal to a layer
+ * host outside it.
+ */
+.crewlet-modal--dialog {
+  width: min(var(--crewlet-modal-width), 100%);
+  max-height: calc(100dvh - var(--spacing-10) - var(--spacing-4));
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  animation: crewlet-modal-rise var(--motion-duration-slow) var(--motion-easing-emphasized);
+}
+
+.crewlet-modal--sm { --crewlet-modal-width: 480px; }
+.crewlet-modal--md { --crewlet-modal-width: 560px; }
+.crewlet-modal--lg { --crewlet-modal-width: 720px; }
+.crewlet-modal--xl { --crewlet-modal-width: 1080px; }
+
+/*
+ * THE PROMPT: one question, three blocks, no chrome at all.
+ *
+ * A surface that asks "discard these changes?" is read in one glance, and
+ * every band around it is a thing the eye has to cross first: a rule under a
+ * head whose only content is the question itself, a glyph restating the
+ * danger the sentence states, a close control that does what the Cancel
+ * beside it does. It is narrower than a dialog because the question is one
+ * sentence and a sentence set across 560px is read twice, and it is centred
+ * because there is nothing behind it to stay in touch with: the prompt IS
+ * what the reader is doing.
+ *
+ * It is not a variant of its own. A prompt is a dialog with its bands taken
+ * off, so it keeps the frame, the corner, the veil and the rise, and changes
+ * the width, the shadow and where its title is drawn.
+ */
+.crewlet-modal--prompt {
+  --crewlet-modal-width: 420px;
+
+  box-shadow: var(--shadow-2xl);
+}
+
+.crewlet-modal--prompt .crewlet-modal__body {
+  padding: var(--spacing-6);
+}
+
+/*
+ * The title, drawn INSIDE the body as its first line rather than in a band of
+ * its own. It still names the frame: see Modal.tsx, which links it either way.
+ */
+.crewlet-modal__prompt-title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+  color: var(--color-text-primary);
+}
+
+/*
+ * The actions hang off the body rather than sitting in a band: no rule above
+ * them and no ground of their own, because the whole surface is one block.
+ */
+.crewlet-modal--prompt .crewlet-modal__footer {
+  padding: 0 var(--spacing-6) var(--spacing-6);
+  border-top: none;
+  background: none;
+}
+
+/*
+ * 100%, not 100dvh: the overlay already stretches the sheet to its own height,
+ * and inside a LayerHost that height is the host's rather than the window's. A
+ * sheet measured against the viewport there hangs out of the box it was drawn
+ * into and takes its footer with it.
+ */
+.crewlet-modal--sheet {
+  /*
+   * WHERE THE SHEET COMES FROM, as a distance it can be flipped at: the frame
+   * is pinned by a logical flex property, so a document in a right-to-left
+   * script pins it against the other edge and has to arrive from that one.
+   * Nothing in this package sets a direction yet, which is exactly why the
+   * flip is one declaration here rather than a number buried in a keyframe.
+   */
+  --crewlet-modal-sheet-from: 100%;
+
+  width: min(var(--crewlet-modal-sheet-width), 100%);
+  height: 100%;
+  border-radius: 0;
+  border-block: none;
+  border-inline-end: none;
+  /*
+   * ITS OWN SHADOW, CAST SIDEWAYS. --shadow-xl is written for a dialog
+   * floating over a page and casts downward; on a frame that runs the whole
+   * height of the window both of its offsets fall off the screen, and the one
+   * edge a right-pinned sheet actually has is left with a blur tail. This one
+   * is cast along the inline axis, into the page the sheet covers.
+   */
+  box-shadow: var(--shadow-sheet);
+  animation: crewlet-modal-sheet-in var(--motion-duration-slow) var(--motion-easing-emphasized);
+}
+
+/*
+ * The shell's one breakpoint. Below it there is no content beside a sheet to
+ * keep in view, so the sheet takes the whole width and its edge goes with it.
+ */
+@media (max-width: 900px) {
+  .crewlet-modal--sheet {
+    width: 100%;
+    border-inline: none;
+  }
+}
+
+/*
+ * Centred, not top-aligned. The head is one line in almost every surface, and
+ * on the few that carry a subtitle the glyph and the close control read as
+ * belonging to the pair rather than to the first line of it.
+ */
 .crewlet-modal__header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 22px 14px;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
   border-bottom: 1px solid var(--color-border-default);
+}
+
+/*
+ * A SHEET IS COMMITTED FROM ITS HEAD, so its head is the taller band, not the
+ * tighter one. It stands at the shell's own top-bar height, which is what puts
+ * it on the line the bar behind it draws, and holds the two buttons that
+ * commit and abandon the form at a full control step with room around them.
+ *
+ * It used to be the tighter band, 49px with a close control alone, and the
+ * commit pair sat in a foot below a body that scrolled 1,764px on a seat with
+ * a dozen fields: the reader had to travel the whole form to reach Apply, and
+ * back again to read the field they were applying.
+ */
+.crewlet-modal__header--sheet {
+  min-height: var(--size-shell-topbar);
+  padding: var(--spacing-4) var(--spacing-6);
+  gap: var(--spacing-4);
+  box-sizing: border-box;
+}
+
+/*
+ * The head's own actions, at the inline end. They are the surface's commit
+ * pair, so they are the last thing in the band and the close control, where a
+ * surface still draws one, sits after them.
+ */
+.crewlet-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
+}
+
+/*
+ * The document's own ink, because the glyph is read as part of the title it
+ * sits beside rather than as a decoration next to it. Quietened, it made every
+ * surface in the product look faded at its top edge.
+ */
+.crewlet-modal__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-primary);
 }
 
 .crewlet-modal__heading {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
   flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
 }
 
+/*
+ * The title is drawn at the BODY register, one weight up, and is not a heading
+ * element: the dialog role announces it already, and the outline inside a
+ * modal starts one level below it. See Modal.tsx. A larger step here is what
+ * made a prompt asking one short question look like a page.
+ */
 .crewlet-modal__title {
-  font-size: 16px;
-  font-weight: 600;
   margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
   color: var(--color-text-primary);
+}
+
+/*
+ * AFTER THE BASE RULE IT OVERRIDES, because both are one class and a tie is
+ * broken by source order: written above it, this set a size the base rule
+ * then set back, and the sheet's head kept the dialog's register while the
+ * source said otherwise.
+ *
+ * A sheet's title stands one step above a dialog's. A dialog's head is read
+ * in the same glance as the question under it; a sheet's is a bar the reader
+ * comes back to, over a column of fields that carry their own labels at the
+ * body register, and at that register it was one of them.
+ */
+.crewlet-modal__title--sheet {
+  font-size: var(--font-size-md);
 }
 
 .crewlet-modal__subtitle {
-  font-size: 13px;
-  color: var(--color-text-secondary);
   margin: 0;
-  line-height: 1.4;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-secondary);
 }
 
 .crewlet-modal__close {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: 4px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 6px;
-  transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
-}
-
-.crewlet-modal__close:hover {
-  background: var(--color-surface-subtle);
-  color: var(--color-text-primary);
+  margin: calc(var(--spacing-1) * -1);
 }
 
 .crewlet-modal__body {
-  padding: 18px 22px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--spacing-4);
   overflow-y: auto;
-  /* Set here rather than inherited. A dialog is read at a glance and
-     sits over a page whose base size it should not borrow, which is
-     how the same sentence came out larger in one product than another. */
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--color-text-secondary);
+  /*
+   * Declared rather than inherited. A dialog is read at a glance and sits over
+   * a page whose base size it should not borrow, which is how one sentence
+   * came out larger in one product than in another. The ink is the page's own:
+   * a prompt's one sentence is the thing being read, and drawn a step quieter
+   * it reads as a caption under a title nobody asked about.
+   */
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
 }
 
-/* Paragraphs stack without the browser's default margins fighting the
-   body padding, which is what left dialogs uneven top and bottom. */
-.crewlet-modal__body > p {
-  margin: 0 0 12px;
+/*
+ * A sheet's body is inset on the head's own line, so a field's label starts
+ * where the title above it does. A dialog's tighter square would put the
+ * column of fields 8px closer to both edges than the bar naming them.
+ */
+.crewlet-modal__body--sheet {
+  padding: var(--spacing-6);
 }
 
-.crewlet-modal__body > p:last-child {
+.crewlet-modal__body--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+/*
+ * Tighter between a sheet's own children, because they are FIELDS: each
+ * carries its own label above it and its own helper below, and a step meant
+ * to separate a paragraph from a callout reads as a gap inside the form.
+ */
+.crewlet-modal__body--stacked.crewlet-modal__body--sheet {
+  gap: var(--spacing-2);
+}
+
+.crewlet-modal__body--flush {
+  padding: 0;
+}
+
+/*
+ * Paragraphs stack without the browser's own margins fighting the body
+ * padding, which is what left dialogs uneven at the top and the bottom. Not in
+ * a stacked body: there the gap between children is the stack's, and a margin
+ * as well would double it.
+ */
+.crewlet-modal__body:not(.crewlet-modal__body--stacked) > p {
+  margin: 0 0 var(--spacing-3);
+}
+
+.crewlet-modal__body:not(.crewlet-modal__body--stacked) > p:last-child {
   margin-bottom: 0;
 }
 
+/*
+ * OPAQUE, and on the panel's own step: the body scrolls under it, and a foot
+ * the content shows through is a foot whose buttons sit on whatever sentence
+ * happens to be behind them.
+ */
 .crewlet-modal__footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 22px 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
   border-top: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
 }
 
+/* On the sheet's own inset, so the foot's first word starts under the body's. */
+.crewlet-modal__footer--sheet {
+  padding-inline: var(--spacing-6);
+}
+
+.crewlet-modal__footer-start {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  margin-inline-end: auto;
+  font-size: var(--font-size-compact);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The actions, and the reason the start slot carries the auto margin instead:
+ * with no start slot the end slot has to be pushed over itself, and a rule
+ * that reads "align to the end unless a sibling exists" is a rule that breaks
+ * the first time somebody adds one.
+ */
+.crewlet-modal__footer-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-inline-start: auto;
+}
+
+/*
+ * The message line a prompt leads with, in the body's own ink. No margin of
+ * its own: a prompt's body is a stacked one, so the gap between the message
+ * and the acknowledgement below it is the stack's, spelled once.
+ */
 .crewlet-modal__message {
   margin: 0;
-  color: var(--color-text-secondary);
-  line-height: 1.5;
+  line-height: var(--font-line-height-normal);
 }
 
-@keyframes crewlet-modal-fade-in {
+@keyframes crewlet-modal-veil-in {
   from { opacity: 0; }
-  to { opacity: 1; }
 }
 
-@keyframes crewlet-modal-pop {
-  from { opacity: 0; transform: translateY(6px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0)  scale(1); }
+@keyframes crewlet-modal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-2));
+  }
+}
+
+/*
+ * A SHEET TRAVELS ITS OWN WIDTH, which is what makes the motion read as a
+ * sheet rather than as a box appearing beside the page: the frame starts
+ * wholly off screen and arrives. No opacity ramp with it, for the same
+ * reason. It used to move 16px and fade, and at that distance the panel did
+ * not arrive from anywhere, it simply turned up where it already was.
+ */
+@keyframes crewlet-modal-sheet-in {
+  from {
+    transform: translateX(var(--crewlet-modal-sheet-from));
+  }
+}
+
+/*
+ * A surface that arrives instantly still arrives: the animation goes, and
+ * nothing else about the surface changes.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-modal-overlay,
+  .crewlet-modal--dialog,
+  .crewlet-modal--sheet {
+    animation: none;
+  }
 }

@@ -1,9 +1,13 @@
 /*
- * IconButton, square icon-only affordance.
+ * IconButton: a square icon-only control.
  *
- * Two square sizes: 22x22 fits inline beside a form label, and 28x28
- * matches the min-height of a small Button. Variant accents use the brand accent (lavender) and the
- * feedback-danger (rose) tokens.
+ * Three square steps, each a --size-control-* token, so an icon button sits
+ * exactly as tall as the button, select or input beside it at every density,
+ * and the smallest cannot fall under the 24px a pointer target needs.
+ *
+ * THE CORNER IS THE BUTTON'S. An icon-only control is the square case of the
+ * same control, so it takes --radius-md: a toolbar of six-pixel squares
+ * beside an eight-pixel button reads as two families of control.
  */
 
 .crewlet-icon-btn {
@@ -13,70 +17,142 @@
   padding: 0;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   line-height: 1;
   flex-shrink: 0;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+/* An outline, never a shadow alone: forced-colors mode keeps one and drops
+   the other. */
 .crewlet-icon-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.32));
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-icon-btn:disabled,
+.crewlet-icon-btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .crewlet-icon-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
   pointer-events: none;
 }
 
-/* ── Sizes ──────────────────────────────────────────────────────── */
-.crewlet-icon-btn--sm { width: 22px; height: 22px; }
-.crewlet-icon-btn--md { width: 28px; height: 28px; }
-
-/* The icon glyph inside scales with the button size. */
-.crewlet-icon-btn--sm .material-symbols-outlined { font-size: 14px; }
-.crewlet-icon-btn--md .material-symbols-outlined { font-size: 18px; }
-
-/* ── ghost: transparent surface, neutral text, mild tint on hover ── */
-.crewlet-icon-btn--ghost {
-  color: var(--color-text-secondary);
-}
-.crewlet-icon-btn--ghost:hover:not(:disabled) {
-  background: var(--color-surface-elevated, var(--color-surface-subtle));
-  color: var(--color-text-primary);
+.crewlet-icon-btn--sm {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
 }
 
-/* ── ghost-brand: transparent → lavender-soft on hover ─────────── */
-.crewlet-icon-btn--ghost-brand {
-  color: var(--color-text-tertiary);
-}
-.crewlet-icon-btn--ghost-brand:hover:not(:disabled) {
-  background: var(--color-brand-accent-soft, rgba(84, 105, 212, 0.10));
-  border-color: var(--color-brand-accent-soft-strong, rgba(84, 105, 212, 0.32));
-  color: var(--color-brand-accent, #5469d4);
+.crewlet-icon-btn--md {
+  width: var(--size-control-md);
+  height: var(--size-control-md);
 }
 
-/* ── ghost-danger: transparent → rose-soft on hover ─────────────── */
-.crewlet-icon-btn--ghost-danger {
-  color: var(--color-text-tertiary);
-}
-.crewlet-icon-btn--ghost-danger:hover:not(:disabled) {
-  background: rgba(244, 63, 94, 0.10);
-  color: var(--color-feedback-danger, #f43f5e);
+.crewlet-icon-btn--lg {
+  width: var(--size-control-lg);
+  height: var(--size-control-lg);
 }
 
 /*
- * ── soft-brand: lavender-tinted square with matching outline. The
- *    add affordance beside a form label (for example "Add a policy").
+ * The glyph inside follows the button's step, at the ratio a label sets: a
+ * medium button draws its leading glyph at its own 13px text, so a square one
+ * drawing a 16px glyph put a heavier mark in the same toolbar row.
  */
-.crewlet-icon-btn--soft-brand {
-  background: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.12);
-  border-color: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.3);
-  color: var(--color-brand-accent, #5469d4);
+.crewlet-icon-btn--sm .crewlet-glyph {
+  width: var(--font-size-xs);
+  height: var(--font-size-xs);
 }
-.crewlet-icon-btn--soft-brand:hover:not(:disabled) {
-  background: rgba(var(--color-brand-accent-rgb, 84, 105, 212), 0.22);
-  border-color: var(--color-brand-accent, #5469d4);
+
+.crewlet-icon-btn--md .crewlet-glyph {
+  width: var(--font-size-sm);
+  height: var(--font-size-sm);
+}
+
+.crewlet-icon-btn--lg .crewlet-glyph {
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
+}
+
+/*
+ * secondary: the bordered square. The same surface, boundary and states as a
+ * secondary Button, for an icon-only control that has to read as a control
+ * with nothing around it to say so: a step in a toolbar, a month's back and
+ * forward, an add beside a field. Without it a call site drew a Button with
+ * no label and squared it off with a stylesheet of its own.
+ */
+.crewlet-icon-btn--secondary {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+.crewlet-icon-btn--secondary:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-hover);
+}
+
+.crewlet-icon-btn--secondary:active:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-surface-pressed);
+}
+
+/* ghost: transparent, neutral ink, a mild tint on hover. */
+.crewlet-icon-btn--ghost {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-icon-btn--ghost:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/* ghost-brand: transparent, the accent on hover. */
+.crewlet-icon-btn--ghost-brand {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-icon-btn--ghost-brand:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-brand-accent-soft);
+  border-color: var(--color-brand-accent-soft-strong);
+  color: var(--color-brand-accent-ink);
+}
+
+/* ghost-danger: transparent, the critical hue on hover, from the token rather
+   than the rose literal it used to carry. */
+.crewlet-icon-btn--ghost-danger {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-icon-btn--ghost-danger:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-feedback-danger-soft);
+  color: var(--color-feedback-danger-ink);
+}
+
+/* soft-brand: a tinted square with a matching boundary. */
+.crewlet-icon-btn--soft-brand {
+  background: var(--color-brand-accent-soft);
+  border-color: var(--color-brand-accent-soft-strong);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-icon-btn--soft-brand:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-brand-accent-soft-strong);
+  border-color: var(--color-brand-accent);
+}
+
+/* A toggle that is on, drawn from the state a screen reader is already told. */
+.crewlet-icon-btn[aria-pressed='true'] {
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-icon-btn {
+    transition: none;
+  }
 }

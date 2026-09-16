@@ -1,0 +1,59 @@
+/*
+ * Metadata pairs on one grid.
+ *
+ * The term track is `minmax(120px, max-content)`: wide enough that short terms
+ * line up with each other, and free to grow for a long one rather than
+ * wrapping it into two lines beside a one-word value.
+ */
+
+.crewlet-description-list {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: var(--spacing-2) var(--spacing-4);
+  margin: 0;
+  font-size: var(--font-size-compact);
+  align-items: baseline;
+}
+
+/*
+ * A pair is one grid row. `display: contents` is what puts the term and the
+ * detail on the list's OWN tracks: wrapped in a div that participates in the
+ * grid, every pair would be one cell and nothing would line up.
+ */
+.crewlet-description-list__pair {
+  display: contents;
+}
+
+.crewlet-description-list__term {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-description-list__detail {
+  margin: 0;
+  min-width: 0;
+  color: var(--color-text-primary);
+  /* An id, a path or a URL is one unbreakable word to a line breaker, and this
+     is where those are shown. */
+  overflow-wrap: anywhere;
+}
+
+.crewlet-description-list--dense {
+  gap: var(--spacing-1) var(--spacing-3);
+}
+
+/*
+ * Narrow: the term over its detail. Two columns at this width leave a value
+ * column too narrow for the values it carries, which is worse than a taller
+ * list.
+ */
+@media (max-width: 480px) {
+  .crewlet-description-list {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-1);
+  }
+
+  .crewlet-description-list__detail {
+    margin-bottom: var(--spacing-2);
+  }
+}

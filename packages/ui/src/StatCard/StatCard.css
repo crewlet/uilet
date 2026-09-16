@@ -1,50 +1,111 @@
 /*
- * StatCard, key-metric tile. Shares the Card surface treatment so
- * stat rows sit naturally next to Card-based sections.
+ * The stat tile.
+ *
+ * THE TONE PAINTS THE VALUE, which is what the props always said and what the
+ * stylesheet never did: 0.2.0 tinted the ICON, so a caller who passed a tone
+ * and no icon got a tile identical to a neutral one. Ink only, and never a
+ * fill: a tinted block behind a 24px number reads as a button.
  */
 
 .crewlet-statcard {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background-color: var(--color-surface-subtle);
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-4);
+  /* The panel recipe: the surface, the hairline, the 12px corner and the
+     elevation the engine gives every card on a screen, so a lone tile is the
+     same object as the panel beside it rather than a flatter cousin. */
+  background: var(--color-surface-subtle);
   border: 1px solid var(--color-border-default);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs), var(--shadow-hairline);
   color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  min-width: 0;
+}
+
+/* Inside a StatGroup the row is one card and the tiles are its columns, so a
+   tile brings no surface of its own. */
+.crewlet-statcard--flush {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-none);
+  box-shadow: none;
+}
+
+.crewlet-statcard__value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  min-width: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  /* 1.1, the engine's, which is tighter than the tight step: a 24px number
+     with 1.2 of leading sits low in its box and opens a gap between the value
+     and the line under it that the 4px gap was already spending. */
+  line-height: 1.1;
+  /* A number that ticks up must not move the label under it. */
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-statcard__unit {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--font-letter-spacing-normal);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The placeholder is a line, not a pair of dashes. `--` is read aloud as
+ * "dash dash" and looks exactly like a measured value of nothing; the tile
+ * carries aria-busy instead, and the line says the number is on its way.
+ */
+.crewlet-statcard__placeholder {
+  display: inline-block;
+  width: 3ch;
+  height: 0.7em;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-inset);
+}
+
+.crewlet-statcard__label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  min-width: 0;
 }
 
 .crewlet-statcard__icon {
   display: inline-flex;
-  margin-top: 2px;
-  color: var(--color-text-tertiary);
+  flex: none;
 }
 
-.crewlet-statcard__body { min-width: 0; }
-
-.crewlet-statcard__value {
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.2;
-  color: var(--color-text-primary);
-}
-
-.crewlet-statcard__placeholder { color: var(--color-text-muted); }
-
-.crewlet-statcard__label {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-top: 4px;
-}
-
+/*
+ * The second line keeps its space whether or not there is one, so a row of
+ * tiles where only some carry a sub still sits on one baseline.
+ */
 .crewlet-statcard__sub {
-  font-size: 11.5px;
+  min-height: 1.2em;
+  font-size: var(--font-size-xs);
+  /* The quiet step, with the label. The sub qualifies the number rather than
+     being a second one, and the engine keeps both of them a step under the
+     value they belong to. */
   color: var(--color-text-tertiary);
-  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.crewlet-statcard--brand   .crewlet-statcard__icon { color: var(--color-brand-primary); }
-.crewlet-statcard--success .crewlet-statcard__icon { color: var(--color-feedback-success); }
-.crewlet-statcard--warning .crewlet-statcard__icon { color: var(--color-feedback-warning); }
-.crewlet-statcard--danger  .crewlet-statcard__icon { color: var(--color-feedback-danger); }
-.crewlet-statcard--info    .crewlet-statcard__icon { color: var(--color-feedback-info); }
+.crewlet-statcard--success .crewlet-statcard__value { color: var(--color-feedback-success-ink); }
+.crewlet-statcard--warning .crewlet-statcard__value { color: var(--color-feedback-warning-ink); }
+.crewlet-statcard--danger .crewlet-statcard__value { color: var(--color-feedback-danger-ink); }
+.crewlet-statcard--info .crewlet-statcard__value { color: var(--color-feedback-info-ink); }

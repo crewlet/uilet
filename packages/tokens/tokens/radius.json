@@ -7,6 +7,7 @@
     "lg": { "value": "12px" },
     "xl": { "value": "16px" },
     "2xl": { "value": "24px" },
+    "chip": { "value": "calc({radius.md} - 1px)", "comment": "The corner of a chip lifted INSIDE a well at --radius-md: one hairline tighter than the well around it, which is what reads as sitting in it. It sits between sm and md and is derived rather than written as 7px, so it follows --radius-md if that step ever moves." },
     "pill": { "value": "999px" },
     "circle": { "value": "50%", "comment": "Avatars, status dots, circular badges." }
   }

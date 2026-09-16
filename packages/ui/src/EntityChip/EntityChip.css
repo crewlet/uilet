@@ -1,0 +1,64 @@
+/*
+ * A name with its badge, as one thing.
+ *
+ * A LINK THAT IS A ROW TAKES THE PAGE'S TEXT COLOUR, not the link colour.
+ * Otherwise every seat name in every list renders in the accent, which is
+ * identity-colouring by accident and leaves the one thing on the page that IS
+ * the reader's position looking exactly like forty links that are not. The
+ * affordance is the hover and the cursor.
+ */
+
+.crewlet-entity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  max-width: 100%;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  text-decoration: none;
+}
+
+.crewlet-entity-chip__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.crewlet-entity-chip--link {
+  cursor: pointer;
+  transition: color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/*
+ * TWO CARRIERS ON HOVER: the accent ink on the chip, and an underline on the
+ * NAME. The ink is the engine's, and it is the accent's own meaning, where the
+ * reader is about to be, spent for exactly as long as the pointer is there; at
+ * rest the chip stays in the page's ink, because a name rendered in the accent
+ * everywhere it appears is identity-colouring by accident and leaves the one
+ * thing on the page that IS the reader's position looking like forty links
+ * that are not. The underline is what a reader who cannot separate the two
+ * inks sees instead, and it costs the badge beside it no movement.
+ */
+.crewlet-entity-chip--link:hover,
+.crewlet-entity-chip--link:focus-visible {
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-entity-chip--link:hover .crewlet-entity-chip__name,
+.crewlet-entity-chip--link:focus-visible .crewlet-entity-chip__name {
+  text-decoration: underline;
+}
+
+.crewlet-entity-chip--link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-entity-chip--link {
+    transition: none;
+  }
+}

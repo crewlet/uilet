@@ -1,4 +1,4 @@
 import './Button.css';
 
-export { Button } from './Button.js';
-export type { ButtonProps, ButtonVariant, ButtonSize, ButtonShape } from './Button.js';
+export { Button, ButtonLink } from './Button.js';
+export type { ButtonLinkProps, ButtonProps, ButtonShape, ButtonSize, ButtonVariant } from './Button.js';

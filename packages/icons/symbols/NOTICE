@@ -1,0 +1,15 @@
+Material Symbols by Google, licensed under the Apache License 2.0 and
+redistributed from google/material-design-icons at commit
+40a7a292a79d9394157e1ea24f83d52d5e17c556.
+
+The drawings in 20/ and 24/ are the Material Symbols Outlined style at weight
+400 and grade 0, in the 20 px and 24 px optical sizes. A file named
+<glyph>-fill.svg is the fill 1 variant of <glyph>.
+
+The files are unchanged. The build compiles each pair into one React component
+and copies the path data across verbatim, so what a page draws is what upstream
+drew. SHA256SUMS records the checksum of every file.
+
+The Apache License 2.0 text is in LICENSE beside this file, and it covers these
+drawings only. The rest of @crewlethq/icons is under the MIT License in the
+package's own LICENSE.
