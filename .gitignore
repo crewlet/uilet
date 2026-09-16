@@ -15,6 +15,7 @@ packages/tokens/src/index.ts
 packages/icons/dist
 packages/icons/src/generated
 packages/ui/dist
+packages/ui/src/generated
 
 # Local env overrides, never commit
 .env
@@ -32,3 +33,4 @@ packages/ui/dist
 .design-sync/
 .ds-sync/
 ds-bundle/
+packages/tokens/src/themes.ts

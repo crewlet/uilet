@@ -2,9 +2,10 @@ import './Select.css';
 
 export { Select } from './Select.js';
 export type {
-  SelectProps,
-  SelectOption,
-  SelectValue,
-  SelectSize,
   SelectAlign,
+  SelectMode,
+  SelectOption,
+  SelectProps,
+  SelectSize,
+  SelectValue,
 } from './Select.js';

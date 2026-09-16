@@ -1,13 +1,19 @@
 import './DataTable.css';
 
-export { DataTable } from './DataTable.js';
+export { DataTable, DATA_TABLE_LABELS, ALL_ITEMS } from './DataTable.js';
 export type {
-  DataTableProps,
   DataTableColumn,
-  DataTableSortState,
-  DataTableRowAction,
-  DataTableVariant,
   DataTableDensity,
+  DataTableItemsPerPage,
+  DataTableLabels,
+  DataTableProps,
+  DataTableRow,
+  DataTableRowAction,
+  DataTableRowTone,
+  DataTableSortCycle,
+  DataTableSortDirection,
+  DataTableSortState,
+  DataTableVariant,
 } from './DataTable.js';
 
 /*
@@ -18,3 +24,5 @@ export type {
  */
 export { CopyableCell } from './CopyableCell.js';
 export type { CopyableCellProps } from './CopyableCell.js';
+export { RowActionsMenu } from './RowActionsMenu.js';
+export type { RowActionsMenuProps } from './RowActionsMenu.js';

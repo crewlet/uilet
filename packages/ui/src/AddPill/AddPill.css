@@ -1,0 +1,434 @@
+/*
+ * The control that adds a child (AddPill.tsx).
+ *
+ * TWO SIZES PER THING: what is DRAWN and what is HIT. The console org chart
+ * draws this at about a third of a node's height, which is half of what a
+ * pointer target is allowed to be, and the drawing is the point: a chart at
+ * rest is cards and branches with one small mark on each branch, not a row of
+ * buttons. So every control here is the target's own size and transparent, and
+ * the pill and the disc are drawn inside it. The proportions are the console
+ * chart's, taken up by the ratio between its node's height and this package's.
+ *
+ * TWO STEPS, because one gesture serves two surfaces. On a branch the drawing
+ * is the disc and the target is grown past it (`sm`); in a table row there is
+ * a control step to fill and the drawing IS the target (`md`), which is the
+ * pill the console's own table row draws. Both are the same state machine, the
+ * same spring and the same ink: it was two components once, and they disagreed
+ * about the size, the ground, the border's alpha and whether the gesture
+ * animated at all.
+ *
+ * THE STEPS ARE WRITTEN OUT PER SIZE rather than held in a variable of this
+ * component's own. A custom property is a value no suite outside a browser can
+ * resolve, and every measurement here is one a suite has to be able to take:
+ * written as a variable, the rules below measured zero in the suite that is
+ * supposed to catch them being wrong.
+ *
+ * THE ADD IS GREEN, and the green is the node ramp's. The console chart draws
+ * this control in one hue and nothing else on the chart in it, which is what
+ * makes "the green plus" a thing a reader can be told to press. Its three
+ * alphas land on this package's own derived steps almost exactly: its pill
+ * edge is the hue at 0.4 and `-line` is 0.38, its dividers 0.15 against a
+ * `-halo` of 0.16, and its hovered half 0.12, which is `-fill`.
+ *
+ * WHAT IS QUIET IS THE GLYPH, NEVER THE GROUND. The disc and the pill carry a
+ * ground of their own and it MASKS the branch they sit on: faded, the line
+ * runs straight through the plus. So the resting step is the GLYPH's, and it
+ * is one step for the plus and for the three choices alike, measured at 3:1 or
+ * better on both card grounds and on the page's, in both themes, because these
+ * are buttons and they are the only ones that add a child. The console chart
+ * draws its own choices at 0.6, which measures 2.51:1 on the light theme's
+ * node ground and 3.07 on the dark one: on the floor where it is not under it,
+ * for the one control a reader is told to press.
+ */
+
+.crewlet-add-pill {
+  /* Where the pill grows from: over the mark, or beside it. See the keyframes. */
+  --crewlet-add-pill-origin: translate(-50%, -50%);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-target-min);
+}
+
+.crewlet-add-pill[data-size='md'] {
+  min-height: var(--size-control-sm);
+}
+
+/* ---- the mark, which is what a resting chart draws --------------------- */
+
+.crewlet-add-pill__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-target-min);
+  height: var(--size-target-min);
+  padding: 0;
+  color: var(--color-node-green);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-circle);
+  cursor: pointer;
+}
+
+.crewlet-add-pill[data-size='md'] .crewlet-add-pill__mark {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+}
+
+/*
+ * THE DISC IS DRAWN, NOT THE BUTTON. A ground of its own, so the branch the
+ * mark sits on stops at its edge instead of running through the plus; a third
+ * of a node's height across, which is the console chart's own proportion.
+ *
+ * AND THE GROUND IS THE NODE'S, NOT THE PAGE'S. The console chart draws this
+ * on a step of its own, one notch off the card it hangs under and well clear
+ * of the page behind it, so the control reads as belonging to the node rather
+ * than as a hole punched in the chart. Written as the page's ground plus the
+ * card's own translucent step, in one declaration, which is exactly what a
+ * node is painted with: the two are the same grey wherever the chart is
+ * scrolled to, and the pair is OPAQUE, which the card's step alone is not.
+ * The resting hairline and the 150ms it fades over are that chart's as well.
+ *
+ * FULLY OPAQUE, ALWAYS. It used to fade with the rest of the control at rest,
+ * and a mask at a little over half opacity is not a mask: the branch was drawn
+ * straight through the plus on every node of a resting chart.
+ */
+.crewlet-add-pill__disc {
+  position: absolute;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  background-color: var(--color-surface-background);
+  background-image: linear-gradient(var(--color-surface-subtle), var(--color-surface-subtle));
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-circle);
+  transition:
+    background-color var(--motion-duration-base) var(--motion-easing-default),
+    border-color var(--motion-duration-base) var(--motion-easing-default);
+}
+
+/* A row has no branch to mask, so there is no disc and no boundary either:
+   the plus stands on the row's own ground, at the row's own control step. */
+.crewlet-add-pill[data-size='md'] .crewlet-add-pill__disc {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+}
+
+.crewlet-add-pill__mark:hover .crewlet-add-pill__disc,
+.crewlet-add-pill__mark:focus-visible .crewlet-add-pill__disc {
+  border-color: var(--color-node-green-line);
+}
+
+/*
+ * QUIET IS THE PLUS ITSELF. It is one mark per branch on a chart of a hundred,
+ * and at rest it says a child can go here and nothing more. The step is the
+ * highest that still reads as quiet and the lowest that still measures 3:1 on
+ * the page's ground and on both card grounds, in both themes, which it has to
+ * clear AT REST: it is a button, not a decoration.
+ */
+.crewlet-add-pill__mark svg {
+  position: relative;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0.75;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-add-pill[data-size='md'] .crewlet-add-pill__mark svg {
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+}
+
+.crewlet-add-pill__mark:hover svg,
+.crewlet-add-pill__mark:focus-visible svg,
+.crewlet-add-pill:focus-within .crewlet-add-pill__mark svg {
+  opacity: 1;
+}
+
+.crewlet-add-pill__mark:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* WHILE THE PILL IS OPEN the mark is what the pill grew out of, so it is not
+   drawn beside it and takes no press; it keeps its place, because focus comes
+   back to it when the pill closes. A pill that opens BESIDE the mark
+   (`inline`) keeps it: there it is the toggle rather than the thing that
+   split. */
+.crewlet-add-pill[data-layout='split'][data-phase='preview'] .crewlet-add-pill__mark,
+.crewlet-add-pill[data-layout='split'][data-phase='locked'] .crewlet-add-pill__mark,
+.crewlet-add-pill[data-layout='split'][data-phase='closing'] .crewlet-add-pill__mark {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- the pill ---------------------------------------------------------- */
+
+/*
+ * CENTRED ON THE MARK, because the gesture is the mark SPLITTING: the pill
+ * grows out of exactly where the disc was, so the choice a reader presses is
+ * within a few pixels of what they pointed at.
+ *
+ * ON THE DISC'S OWN GROUND, for the reason the disc has one: the pill hangs on
+ * the branch its choices add a child to, and a translucent ground would have
+ * that branch running through the three marks a reader is choosing between.
+ */
+.crewlet-add-pill__sections {
+  display: flex;
+  height: var(--spacing-4);
+  background-color: var(--color-surface-background);
+  background-image: linear-gradient(var(--color-surface-subtle), var(--color-surface-subtle));
+  border: 1px solid var(--color-node-green-line);
+  border-radius: var(--radius-pill);
+  transform-origin: center;
+  animation: crewlet-add-pill-open var(--motion-duration-moderate) var(--motion-easing-spring);
+}
+
+.crewlet-add-pill[data-size='md'] .crewlet-add-pill__sections {
+  height: var(--size-control-sm);
+}
+
+.crewlet-add-pill[data-layout='split'] .crewlet-add-pill__sections {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: var(--crewlet-add-pill-origin);
+}
+
+/*
+ * OPENING BESIDE THE MARK, for a row that has the width to spare. The pill is
+ * in the flow after the toggle rather than over it, so the row's own controls
+ * are not covered and the toggle stays where the pointer left it.
+ */
+.crewlet-add-pill[data-layout='inline'] {
+  --crewlet-add-pill-origin: translate(0, 0);
+
+  gap: var(--spacing-1);
+}
+
+.crewlet-add-pill[data-layout='inline'] .crewlet-add-pill__sections {
+  transform-origin: left center;
+}
+
+/*
+ * THE CLOSE IS THE OPEN RUN BACKWARDS, and the easing is the open's own curve
+ * inverted: the pill pulls in past its resting width and settles, so closing
+ * reads as a recoil rather than as a surface being switched off. Written out
+ * rather than taken from a token because the package publishes the spring and
+ * not its inverse, and an easing that is not the exact mirror of
+ * `--motion-easing-spring` is a close that does not match its own open.
+ */
+.crewlet-add-pill[data-phase='closing'] .crewlet-add-pill__sections {
+  pointer-events: none;
+  animation: crewlet-add-pill-close var(--motion-duration-moderate) cubic-bezier(0.36, 0, 0.66, -0.56)
+    forwards;
+}
+
+@keyframes crewlet-add-pill-open {
+  from {
+    opacity: 0.6;
+    transform: var(--crewlet-add-pill-origin) scaleX(0.22);
+  }
+
+  to {
+    opacity: 1;
+    transform: var(--crewlet-add-pill-origin) scaleX(1);
+  }
+}
+
+@keyframes crewlet-add-pill-close {
+  from {
+    opacity: 1;
+    transform: var(--crewlet-add-pill-origin) scaleX(1);
+  }
+
+  to {
+    opacity: 0.6;
+    transform: var(--crewlet-add-pill-origin) scaleX(0.22);
+  }
+}
+
+/*
+ * A SECTION IS A POINTER TARGET WEARING A SLICE OF THE PILL. At the branch's
+ * step the pill is half a target tall, so the button is grown past it, top and
+ * bottom, into the branch's own strip: what is drawn is the console chart's
+ * pill and what is pressed clears the 24px floor at every density. At the
+ * row's step the two are the same number and the margin is nothing.
+ *
+ * AND THE SLICE IS WHAT IS PAINTED, not the target. The overhang is PADDING
+ * rather than bare height, and the ground is clipped to the content box, so a
+ * hovered choice tints the pill and stops at its edges. Painted over the whole
+ * button it was a square of green standing four pixels proud of the pill top
+ * and bottom, over the branch behind it: a blob on the one gesture that is
+ * supposed to read as one pill splitting into three. The rounding follows the
+ * content box for the same reason, so the outer choices keep the pill's own
+ * ends rather than the target's.
+ */
+.crewlet-add-pill__section {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-target-min);
+  height: var(--size-target-min);
+  margin: calc((var(--spacing-4) - var(--size-target-min)) / 2) 0;
+  /* The overhang, as padding: the content box is then the pill's own height. */
+  padding: calc((var(--size-target-min) - var(--spacing-4)) / 2) 0;
+  color: var(--color-node-green);
+  /*
+   * NOT THE `background` SHORTHAND. It resets `background-clip` along with
+   * everything else it does not name, and the clip below is what holds the
+   * tint to the pill: written as the shorthand plus a longhand after it, the
+   * declaration is honoured by a browser and DROPPED by jsdom, so the suite
+   * that is supposed to catch the tint bleeding measured `border-box` while
+   * the page painted correctly. A guard that cannot see the rule it guards is
+   * the whole reason these are measured rather than matched in the source.
+   */
+  background-color: transparent;
+  background-clip: content-box;
+  border: 0;
+  cursor: pointer;
+  opacity: 0.75;
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-easing-default),
+    background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* A row's step is the target, so there is no overhang and nothing to clip. */
+.crewlet-add-pill[data-size='md'] .crewlet-add-pill__section {
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * THE DIVIDER IS INSET, and it is not a boundary on a section's own box. The
+ * console chart draws these two lines from a sixth of the pill's height to
+ * five sixths of it, so they separate the choices without reaching the pill's
+ * own ends, where they would read as three pills rather than one split into
+ * three. Drawn as a `border-left` it could not be inset at all: a border is
+ * the length of the box it is on, and the box here is a POINTER TARGET half as
+ * tall again as the pill, so the line ran past the pill at both ends.
+ *
+ * AND IT TAKES NO PRESS. It stands between two choices, so a reader landing on
+ * the hairline would otherwise be pressing neither: that chart marks both of
+ * its dividers `pointer-events: none` for the same reason. The pixel it takes
+ * comes off nothing, because the pill's own room is reserved at four choices
+ * wide wherever a chart hangs one (`TreeCanvas.css`).
+ */
+.crewlet-add-pill__divider {
+  flex: none;
+  align-self: center;
+  width: 1px;
+  height: var(--spacing-3);
+  background: var(--color-node-green-halo);
+  pointer-events: none;
+}
+
+.crewlet-add-pill[data-size='md'] .crewlet-add-pill__divider {
+  height: var(--spacing-5);
+}
+
+/*
+ * THE OUTER TWO ARE ROUNDED, of TYPE rather than of child: the reasons a
+ * refused choice carries are rendered after the last section (out of the flow,
+ * so that a refusal nobody can see never lands between two choices), and a
+ * dividing element now stands before each section but the first. Keyed on the
+ * child position, a pill whose last choice was refused drew a square right end
+ * inside a rounded one, and a pill with dividers drew no rounding at all.
+ */
+.crewlet-add-pill__section:first-of-type {
+  border-top-left-radius: var(--radius-pill);
+  border-bottom-left-radius: var(--radius-pill);
+}
+
+.crewlet-add-pill__section:last-of-type {
+  border-top-right-radius: var(--radius-pill);
+  border-bottom-right-radius: var(--radius-pill);
+}
+
+.crewlet-add-pill__section:hover,
+.crewlet-add-pill__section:focus-visible {
+  background-color: var(--color-node-green-fill);
+  opacity: 1;
+}
+
+.crewlet-add-pill__section:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* Refused rather than removed, so a reader learns the chart offers this and
+   why it will not do it now. */
+.crewlet-add-pill__section[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.crewlet-add-pill__section[aria-disabled='true']:hover {
+  background-color: transparent;
+  opacity: 0.4;
+}
+
+/*
+ * A CHOICE IS ONE INK, and its mark takes that ink whatever it arrived
+ * painted in. A glyph inherits on its own, but a brand mark carries its own
+ * fill, and on a pill whose whole point is that it is drawn in ONE hue that is
+ * the one choice of three in somebody else's colour: measured, the middle
+ * section of every pill in the chart was the Crewlet figure's purple between
+ * two green marks. The console chart puts a hue-rotate filter on that same
+ * mark for the same reason. Stated as the section's own rule rather than asked
+ * of each caller, because the pill is what decides it is drawn in one colour.
+ */
+.crewlet-add-pill__section svg {
+  width: var(--spacing-3);
+  height: var(--spacing-3);
+}
+
+.crewlet-add-pill__section svg,
+.crewlet-add-pill__section svg g,
+.crewlet-add-pill__section svg path {
+  /* THE INK AS WELL AS THE FILL. A mark may publish its own hue as a `color`
+     on its own root (the Crewlet figure does, from the brand token), and
+     `currentcolor` under that root then resolves to THAT: the fill was
+     overridden and landed on the same purple it started from. */
+  color: inherit;
+  fill: currentcolor;
+}
+
+.crewlet-add-pill[data-size='md'] .crewlet-add-pill__section svg {
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+}
+
+/*
+ * A READER WHO ASKED FOR LESS gets the same pill, open or closed. The split is
+ * a state change rather than an entrance under this query: every choice is
+ * still drawn, still in the same place, and reached by the same press.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-add-pill__disc,
+  .crewlet-add-pill__mark svg,
+  .crewlet-add-pill__section {
+    transition: none;
+  }
+
+  .crewlet-add-pill__sections {
+    animation: none;
+  }
+
+  /* And a pill that is closing is closed: with no animation to play out,
+     holding it drawn for the length of one would be a pill that lingers. */
+  .crewlet-add-pill[data-phase='closing'] .crewlet-add-pill__sections {
+    display: none;
+  }
+}

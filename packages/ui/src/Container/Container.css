@@ -1,21 +1,52 @@
 /*
- * Container, the centered content measure. One max-width scale shared by
- * every surface so pages line up regardless of who composed them.
+ * Container, the centred content measure. One max-width scale shared by every
+ * surface, so pages line up regardless of who composed them.
  */
 
 .crewlet-container {
   width: 100%;
   margin-inline: auto;
-  padding-inline: var(--spacing-6);
+  /* The console's own gutter. A wider one leaves a table's first column
+     further from the window edge than the rail beside it is. */
+  padding-inline: var(--spacing-5);
 }
 
-.crewlet-container--sm { max-width: 720px; }
-.crewlet-container--md { max-width: 960px; }
-.crewlet-container--lg { max-width: 1200px; }
-.crewlet-container--xl { max-width: 1440px; }
+.crewlet-container--sm {
+  max-width: 720px;
+}
 
-@media (max-width: 640px) {
+.crewlet-container--md {
+  max-width: 960px;
+}
+
+.crewlet-container--lg {
+  max-width: 1200px;
+}
+
+.crewlet-container--xl {
+  max-width: 1440px;
+}
+
+/*
+ * The console width. It reads the content-max token rather than restating the
+ * number, because the shell and this container have to agree about where a
+ * pane stops or a screen's own header sits at a different width from the
+ * screen under it.
+ */
+.crewlet-container--2xl {
+  max-width: var(--size-content-max);
+}
+
+/*
+ * No measure, and the gutter kept. A canvas, a wide grid or a table that
+ * genuinely wants the viewport still needs its content off the window edge.
+ */
+.crewlet-container--full {
+  max-width: none;
+}
+
+@media (max-width: 480px) {
   .crewlet-container {
-    padding-inline: var(--spacing-5);
+    padding-inline: var(--spacing-3);
   }
 }

@@ -1,8 +1,8 @@
 {
   "name": "@crewlethq/icons",
   "version": "0.2.0",
-  "description": "Crewlet signature illustrated icons. SVGs in svg/ are compiled to typed React components.",
-  "license": "MIT",
+  "description": "Crewlet signature illustrated icons, vendor marks, and the Material Symbols glyph set as React components.",
+  "license": "MIT AND Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/crewlet/uilet.git",
@@ -13,7 +13,9 @@
     "url": "https://github.com/crewlet/uilet/issues"
   },
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -22,18 +24,32 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./svg/*": "./svg/*"
+    "./glyphs": {
+      "types": "./dist/glyphs.d.ts",
+      "import": "./dist/glyphs.js"
+    },
+    "./glyphs/registry": {
+      "types": "./dist/glyphs-registry.d.ts",
+      "import": "./dist/glyphs-registry.js"
+    },
+    "./favicon/*": "./favicon/*",
+    "./svg/*": "./svg/*",
+    "./symbols/*": "./symbols/*"
   },
   "files": [
     "dist",
+    "favicon",
     "svg",
+    "symbols",
     "TRADEMARKS.md"
   ],
   "scripts": {
     "build": "node scripts/build.mjs && tsup",
     "dev": "node scripts/build.mjs && tsup --watch",
-    "lint": "node scripts/build.mjs && eslint src scripts",
+    "lint": "node scripts/build.mjs && eslint src scripts test",
     "typecheck": "node scripts/build.mjs && tsc -p tsconfig.json --noEmit",
+    "test": "node --import ./test/css-stub.mjs --test \"test/*.test.mjs\"",
+    "vendor-symbols": "node scripts/vendor-symbols.mjs",
     "clean": "rm -rf dist src/generated"
   },
   "peerDependencies": {
@@ -44,7 +60,9 @@
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
     "@types/react": "^19.0.0",
+    "esbuild": "^0.28.2",
     "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "tsup": "^8.3.5"
   },
   "publishConfig": {

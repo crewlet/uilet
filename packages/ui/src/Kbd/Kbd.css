@@ -2,22 +2,60 @@
 .crewlet-kbd {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--spacing-1);
   min-width: 18px;
-  padding: 1px 6px;
-  border-radius: 5px;
+  padding: 1px var(--spacing-1);
+  border-radius: var(--radius-xs);
   border: 1px solid var(--color-border-default);
+  /* The thicker bottom edge is the whole of the "cap": one border, drawn
+     heavier on one side, reads as a key without a shadow that forced-colors
+     mode would drop. */
   border-bottom-width: 2px;
-  background: var(--color-surface-subtle);
-  color: var(--color-text-secondary);
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.4;
+  background: var(--color-surface-inset);
+  /*
+   * The MONO face, not the surrounding one. A keycap is a literal: the reader
+   * is being told which character is printed on a key, and a proportional face
+   * draws `l`, `I` and `1` as three widths of the same mark.
+   */
+  font-family: var(--font-family-mono);
+  font-variant-ligatures: none;
+  font-size: var(--font-size-2xs);
+  /* THE DOCUMENT'S OWN LEADING, because a cap is drawn INSIDE a line of text
+     and not beside it: a hint at the end of a search field, a key named in a
+     sentence, a shortcut in a menu row. Tightened it stood a pixel under the
+     line it sits in and the row it was in wobbled by that pixel wherever a
+     cap appeared and wherever one did not. */
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
   white-space: nowrap;
   vertical-align: middle;
 }
 
+/*
+ * A quieter cap: FLATTER, not fainter. The opacity this replaces multiplied
+ * the ink as well as the frame, and 0.7 of a text step measures 3.43:1 on the
+ * panel, so a hint printing the key a reader is told to press was the one
+ * thing on the row they could not read. The cap gives up its raised edge and
+ * its fill instead, and keeps the tertiary ink, which is measured at 4.5:1 on
+ * every surface the package paints on.
+ */
 .crewlet-kbd--subtle {
-  opacity: 0.7;
+  border-bottom-width: 1px;
+  background: none;
+}
+
+/*
+ * A whole shortcut: the caps drawn together, and one sentence read instead of
+ * them. The caps are hidden from assistive technology by the component; this
+ * only lays them out.
+ */
+.crewlet-kbd-combo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.crewlet-kbd-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
 }

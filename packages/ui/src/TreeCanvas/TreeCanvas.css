@@ -1,0 +1,1098 @@
+/*
+ * A hierarchy drawn as cards on a canvas (TreeCanvas.tsx).
+ *
+ * Every card is measured and placed by the tidy tree layout with a transform:
+ * the card width variable wide in the `card` appearance, as wide as its own
+ * name in `node`.
+ *
+ * A CARD IS NEUTRAL UNLESS IT IS TONED, and a tone is never a taxonomy. A
+ * chart that tinted its cards by what they CONTAIN would spend the one hue
+ * that means "where the reader is" on a classification the reader then has to
+ * decode. `--color-node-*` is the other thing a hue can be: a mark an operator
+ * puts on one node so they can find it again, or one a chart derives from a
+ * stable identity. Nothing is claimed by two cards sharing one, so the palette
+ * is not measured for separability and no legend is owed; what IS measured is
+ * that the name drawn on a tinted card clears 7:1 on it and the caption 4.5:1,
+ * in both themes.
+ */
+
+.crewlet-tree-canvas {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.crewlet-tree-canvas > .crewlet-canvas {
+  flex: 1;
+}
+
+.crewlet-tree-canvas__tree,
+.crewlet-tree-canvas__card,
+.crewlet-tree-canvas__links,
+.crewlet-tree-canvas__gap,
+.crewlet-tree-canvas__margin {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/*
+ * THE CARD'S FRAME IS THE CHART'S, NOT THE CALLER'S.
+ *
+ * The box used to carry a width and nothing else, so every consumer drew the
+ * surface, the boundary, the radius and the lift itself, and two charts in one
+ * product drew four different cards. What a node of a hierarchy LOOKS like is
+ * one decision, so it is made here; what a card SAYS is still entirely the
+ * caller's.
+ *
+ * One width for every card, so a chart reads as a column of equal cards rather
+ * than a ransom note. A caller that wants wider cards rebinds the variable on
+ * the chart rather than on each card, because the layout measures what it is
+ * given and two widths in one chart is a decision, not a default.
+ *
+ * A COLUMN, and the pointer's controls are not a track in it. They used to be:
+ * the card was two columns and the second held the strip, so every name in the
+ * chart was measured against the width three buttons left over and the longer
+ * half of them were truncated at rest, for controls nobody was pointing at. The
+ * strip is drawn over the card's end instead and appears when the card is
+ * reached, so the row below is what the card says with all of the width, and
+ * what is left over when a name is short is space rather than chrome.
+ */
+.crewlet-tree-canvas__card {
+  /*
+   * ABSOLUTE, WHICH IS ALSO THE CONTAINING BLOCK THE STRIP NEEDS. It used to
+   * say `relative` here, one rule after the block above had said `absolute`
+   * for the same element at the same specificity, so the later word won and
+   * every card was left in normal flow: the transform that places it was then
+   * added to wherever the stack of cards before it had already pushed it, and
+   * a chart's Nth card was drawn the height of the N-1 before it too low.
+   * Nothing caught it, because the layout is arithmetic a suite checks with no
+   * browser and jsdom computes no position at all. An absolutely positioned
+   * box is a containing block for its own absolutely positioned descendants,
+   * so the actions strip keeps what `relative` was added for.
+   */
+  position: absolute;
+  width: var(--crewlet-tree-canvas-card-width, 15rem);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--crewlet-tree-canvas-card-fill, var(--color-surface-subtle));
+  border: 1px solid var(--crewlet-tree-canvas-card-line, var(--color-border-default));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+/*
+ * A TONED CARD IS OPAQUE UNDER ITS TINT. The neutral surface step is itself
+ * translucent, and the connectors are drawn under the cards, so a tint laid
+ * straight on it would have the branches of the rank above running through the
+ * card's own face. The page's ground goes down first and the tint over it, in
+ * one declaration, so the card is exactly the tint over the page wherever it
+ * sits.
+ */
+.crewlet-tree-canvas__card[data-tone] {
+  background-color: var(--color-surface-background);
+  background-image: linear-gradient(
+    var(--crewlet-tree-canvas-card-fill),
+    var(--crewlet-tree-canvas-card-fill)
+  );
+}
+
+/*
+ * The halo: a hairline ring OUTSIDE the card's own boundary, at the lightest
+ * of the hue's three alphas. It is what says a card is toned at all from the
+ * far end of a chart, where the fill is a few pixels of tint; drawn as its own
+ * ring rather than a second border so it never competes with the boundary that
+ * says where the card ends. Pointer-transparent, because it is drawn over the
+ * gap the next card's controls reach into.
+ */
+.crewlet-tree-canvas__card[data-tone]::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--crewlet-tree-canvas-card-halo);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+}
+
+/*
+ * The six hues, each as the four steps a toned card draws: the fill it sits
+ * on, the boundary around it, the halo outside that, and the ink its name is
+ * written in. The ink is published as a variable rather than applied here
+ * because WHICH text is the name is the caller's to say.
+ */
+.crewlet-tree-canvas__card[data-tone='purple'] {
+  --crewlet-tree-canvas-card-fill: var(--color-node-purple-fill);
+  --crewlet-tree-canvas-card-line: var(--color-node-purple-line);
+  --crewlet-tree-canvas-card-halo: var(--color-node-purple-halo);
+  --crewlet-tree-canvas-card-ink: var(--color-node-purple-ink);
+  --crewlet-tree-canvas-card-accent: var(--color-node-purple);
+}
+
+.crewlet-tree-canvas__card[data-tone='cyan'] {
+  --crewlet-tree-canvas-card-fill: var(--color-node-cyan-fill);
+  --crewlet-tree-canvas-card-line: var(--color-node-cyan-line);
+  --crewlet-tree-canvas-card-halo: var(--color-node-cyan-halo);
+  --crewlet-tree-canvas-card-ink: var(--color-node-cyan-ink);
+  --crewlet-tree-canvas-card-accent: var(--color-node-cyan);
+}
+
+.crewlet-tree-canvas__card[data-tone='green'] {
+  --crewlet-tree-canvas-card-fill: var(--color-node-green-fill);
+  --crewlet-tree-canvas-card-line: var(--color-node-green-line);
+  --crewlet-tree-canvas-card-halo: var(--color-node-green-halo);
+  --crewlet-tree-canvas-card-ink: var(--color-node-green-ink);
+  --crewlet-tree-canvas-card-accent: var(--color-node-green);
+}
+
+.crewlet-tree-canvas__card[data-tone='amber'] {
+  --crewlet-tree-canvas-card-fill: var(--color-node-amber-fill);
+  --crewlet-tree-canvas-card-line: var(--color-node-amber-line);
+  --crewlet-tree-canvas-card-halo: var(--color-node-amber-halo);
+  --crewlet-tree-canvas-card-ink: var(--color-node-amber-ink);
+  --crewlet-tree-canvas-card-accent: var(--color-node-amber);
+}
+
+.crewlet-tree-canvas__card[data-tone='rose'] {
+  --crewlet-tree-canvas-card-fill: var(--color-node-rose-fill);
+  --crewlet-tree-canvas-card-line: var(--color-node-rose-line);
+  --crewlet-tree-canvas-card-halo: var(--color-node-rose-halo);
+  --crewlet-tree-canvas-card-ink: var(--color-node-rose-ink);
+  --crewlet-tree-canvas-card-accent: var(--color-node-rose);
+}
+
+.crewlet-tree-canvas__card[data-tone='blue'] {
+  --crewlet-tree-canvas-card-fill: var(--color-node-blue-fill);
+  --crewlet-tree-canvas-card-line: var(--color-node-blue-line);
+  --crewlet-tree-canvas-card-halo: var(--color-node-blue-halo);
+  --crewlet-tree-canvas-card-ink: var(--color-node-blue-ink);
+  --crewlet-tree-canvas-card-accent: var(--color-node-blue);
+}
+
+/*
+ * A card that stands for somebody outside the system takes the dashed edge
+ * every such seat wears. The BOUNDARY says it rather than a hue, so it reads
+ * to somebody who cannot separate the hue at all.
+ */
+.crewlet-tree-canvas__card--outline {
+  border-style: dashed;
+}
+
+/*
+ * THE NODES INSIDE THE CARD. `role="treeitem"` is this component's own
+ * contract, handed to the caller by `ctx.item(id)`, so the inset a node sits
+ * on and the two states it can be in belong here rather than to whatever a
+ * caller happens to spell around them.
+ */
+.crewlet-tree-canvas__card [role='treeitem'] {
+  /*
+   * A NODE IS A STACK, and the stack is the component's too. The inset and
+   * the radius moved here and the rhythm INSIDE the node did not, so every
+   * caller still wrote the same three declarations around its own name and
+   * meta line: the Storybook story did, which is how two charts in one
+   * product come to space their nodes differently. What a node SAYS is still
+   * entirely the caller's; how its lines sit is the chart's.
+   */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-lg);
+  min-width: 0;
+  /* A node is selectable and focusable and is NOT a button: the text cursor
+     over it promised a selection the drag to pan takes away. */
+  cursor: default;
+}
+
+/*
+ * The ring is drawn INSIDE the node: it sits on the card's own edge, and the
+ * canvas clips, so an outset ring is cut away on the cards nearest the frame.
+ * This component hands out the tab stop, so the indicator is its to draw; left
+ * to the caller it was drawn on some charts and on others not at all.
+ */
+.crewlet-tree-canvas__card [role='treeitem']:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* The selection is where the reader is, so it takes the accent. Inset, for the
+   same reason the ring is. */
+.crewlet-tree-canvas__card [role='treeitem'][aria-selected='true'] {
+  box-shadow: inset 0 0 0 1px var(--color-brand-accent);
+}
+
+/*
+ * THE POINTER'S CONTROLS, drawn over the end of the card and quiet until it is
+ * reached.
+ *
+ * REVEALED BY FOCUS AS WELL AS BY HOVER, which is the rule every quiet control
+ * in this package keeps: an opacity of 0 alone is a control a keyboard reader
+ * is shown nothing of.
+ *
+ * THE CARD'S OWN STRIP APPEARS WITH THE CARD, and a ROW's appears with its row.
+ * A card is the thing a pointer addresses, so reaching one anywhere has to show
+ * what can be done to it, and the add control below it already appears that
+ * way: keyed on the treeitem alone, pointing at a unit's lead chip showed the
+ * add and not the menu beside its name. A row is addressed on its own, so an
+ * expanded unit shows the controls of the row under the pointer rather than of
+ * all nine at once. Both are the same selector written against a different
+ * ancestor, and a row's strip has to be its treeitem's immediate next sibling,
+ * which is what `ctx.actions` says.
+ *
+ * The strip covers what it is drawn over, so it carries the card's own ground
+ * rather than sitting transparent on top of a name it half hides. And it is
+ * inert while quiet: a button at zero opacity that still takes the press is a
+ * control that acts on a card the reader has not reached.
+ *
+ * `[aria-expanded='true']` is a menu opened FROM the strip. Focus is then in
+ * the menu's own surface, which is portalled out of the card, so neither
+ * `:hover` nor `:focus-within` holds any more and the strip would vanish from
+ * under its own open menu. `data-menu-open` is the same fact from the
+ * component's state, for a menu whose open state the caller keeps.
+ */
+/*
+ * WHATEVER HOLDS A STRIP IS ITS CONTAINING BLOCK. A card's own strip hangs off
+ * the card, which is positioned above; a strip beside a ROW inside a card hangs
+ * off that row, and the row is the caller's element, drawn however the caller
+ * likes. Asking every caller to remember `position: relative` on it is asking
+ * for a chart where each of nine rows draws its controls over the card's top
+ * right corner, all on top of one another, and nothing says why. So the rule
+ * finds the parent instead of the parent declaring itself.
+ */
+.crewlet-tree-canvas__card :has(> .crewlet-tree-canvas__actions) {
+  position: relative;
+}
+
+.crewlet-tree-canvas__actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: var(--z-index-raised);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tree-canvas__card:hover > .crewlet-tree-canvas__actions,
+.crewlet-tree-canvas__card:focus-within > .crewlet-tree-canvas__actions,
+.crewlet-tree-canvas__card:has([aria-selected='true']) > .crewlet-tree-canvas__actions,
+.crewlet-tree-canvas__card [role='treeitem']:hover + .crewlet-tree-canvas__actions,
+.crewlet-tree-canvas__card [role='treeitem']:focus-visible + .crewlet-tree-canvas__actions,
+.crewlet-tree-canvas__card [role='treeitem'][aria-selected='true'] + .crewlet-tree-canvas__actions,
+.crewlet-tree-canvas__actions:hover,
+.crewlet-tree-canvas__actions:focus-within,
+.crewlet-tree-canvas__actions[data-menu-open='true'],
+.crewlet-tree-canvas__actions:has([aria-expanded='true']) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+ * WHAT HANGS UNDER A CARD: the control that adds a child, on the branch the
+ * children come off.
+ *
+ * Its room is kept at rest and only its content is quiet, because this strip is
+ * INSIDE the card the layout measures: revealed by growing the card, every
+ * hover would push the whole rank below it down and move the card the pointer
+ * was on. So the band is always there and the reveal is opacity, exactly as the
+ * actions strip's is.
+ *
+ * Card-wide rather than per node here, because there is one of these to a card
+ * and it is the CARD's branch it hangs from, not any one row's.
+ */
+.crewlet-tree-canvas__under {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--spacing-2) var(--spacing-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/*
+ * And a band that turned out empty takes no room at all. The component draws no
+ * slot for a caller that returns nothing; a caller can also return a component
+ * that itself renders nothing, which is an element as far as the component can
+ * tell, and this is what catches that.
+ */
+.crewlet-tree-canvas__under:empty {
+  display: none;
+}
+
+.crewlet-tree-canvas__card:hover > .crewlet-tree-canvas__under,
+.crewlet-tree-canvas__card:focus-within > .crewlet-tree-canvas__under,
+.crewlet-tree-canvas__card:has([aria-selected='true']) > .crewlet-tree-canvas__under,
+.crewlet-tree-canvas__under:has([aria-expanded='true']) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+ * A reveal is a state change rather than an entrance, so under reduced motion
+ * it simply happens. The control is still shown and still reached the same way.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tree-canvas__actions,
+  .crewlet-tree-canvas__under,
+  .crewlet-tree-canvas--node .crewlet-tree-canvas__under > :not(.crewlet-add-pill),
+  .crewlet-tree-canvas--node .crewlet-org-node__leading,
+  .crewlet-tree-canvas--node .crewlet-org-node-lead__clear {
+    transition: none;
+  }
+}
+
+/*
+ * The gaps between cards, as tokens: measured like a card, so density scales
+ * the space between cards with the space inside them. A layout constant in
+ * TypeScript could not do that, and a chart at comfortable density would
+ * crowd.
+ */
+.crewlet-tree-canvas__gap {
+  width: var(--spacing-6);
+  height: var(--spacing-7);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*
+ * The space around the whole chart, as a token, for the reason the gaps are
+ * one. None by default: a chart of panels is read inside its own frame, and
+ * the space around it is the page's. The `node` appearance takes the console
+ * chart's own margin below, which is what keeps the outermost node's halo and
+ * its focus ring off the canvas's clip.
+ */
+.crewlet-tree-canvas__margin {
+  width: var(--spacing-0);
+  height: var(--spacing-0);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * THE CHART ARRIVING, AND REARRANGING.
+ *
+ * A card waiting its turn is drawn at nothing and is still MEASURED, because
+ * the layout the entrance plays over is the layout the chart ends at; it is
+ * never `display: none`, which would make every card's arrival a relayout of
+ * everything after it. The branch into a card waits for the card, so the chart
+ * never has loose ends while it comes in.
+ *
+ * The TRAVEL is not here: a card's position is a transform the layout
+ * computes, and a transition on it would fire on the first paint of every card
+ * the measurement pass adds, which is the entrance played twice at two speeds.
+ * It is tweened over the layout's own numbers instead (`motion.ts`).
+ * ------------------------------------------------------------------------- */
+
+.crewlet-tree-canvas__card[data-enter='waiting'],
+.crewlet-tree-canvas__links path[data-enter='waiting'] {
+  opacity: 0;
+}
+
+.crewlet-tree-canvas__card[data-enter='shown'] {
+  animation: crewlet-tree-canvas-arrive var(--motion-duration-slow) var(--motion-easing-default) both;
+}
+
+.crewlet-tree-canvas__links path[data-enter='shown'] {
+  animation: crewlet-tree-canvas-arrive var(--motion-duration-moderate) var(--motion-easing-default)
+    both;
+}
+
+@keyframes crewlet-tree-canvas-arrive {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * A READER WHO ASKED FOR LESS is given the whole chart at once. The component
+ * does not start the staggered reveal at all under this query, so nothing here
+ * has an animation to cancel; this is what catches a card that was mid-reveal
+ * when the setting changed.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tree-canvas__card[data-enter],
+  .crewlet-tree-canvas__links path[data-enter] {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+.crewlet-tree-canvas__links {
+  overflow: visible;
+  pointer-events: none;
+}
+
+/*
+ * THE CONNECTORS ARE THE CONTENT, and they take the step that is measured to
+ * be resolvable. The SHAPE is `layoutConnectors`, which draws a rounded step
+ * from each parent's bottom into each child's top; what is decided here is only
+ * how dark it is, and that the joins are round so a corner reads as a turn
+ * rather than as two lines meeting.
+ *
+ * A connector is the only thing on the chart that says who reports to whom:
+ * remove it and the picture is a scatter of cards. That makes it a graphical
+ * object a reader has to make out, at the 3:1 floor, and the boundary steps
+ * are not measured there because a hairline between two panels is understood
+ * from the panels rather than from the line. `--color-border-hover` measured
+ * 1.48:1 on the canvas's ground in light and 2.11:1 in dark; the control
+ * boundary step, which the palette suite already holds at 3:1 on every ground,
+ * measures 4.83:1 and 4.78:1. Darker than the chart this is drawn from, and
+ * deliberately: there the hierarchy was a line a reader had to hunt for.
+ */
+.crewlet-tree-canvas__links path {
+  fill: none;
+  stroke: var(--color-border-control);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/*
+ * A TONED CARD IS REACHED BY ITS OWN BRANCH. The line into it carries the
+ * card's boundary step, which is the same value the card's own edge takes, so
+ * the branch arrives as part of the card rather than as the chart's neutral
+ * ink ending on somebody else's colour.
+ */
+.crewlet-tree-canvas__links path[data-tone='purple'] {
+  stroke: var(--color-node-purple-line);
+}
+
+.crewlet-tree-canvas__links path[data-tone='cyan'] {
+  stroke: var(--color-node-cyan-line);
+}
+
+.crewlet-tree-canvas__links path[data-tone='green'] {
+  stroke: var(--color-node-green-line);
+}
+
+.crewlet-tree-canvas__links path[data-tone='amber'] {
+  stroke: var(--color-node-amber-line);
+}
+
+.crewlet-tree-canvas__links path[data-tone='rose'] {
+  stroke: var(--color-node-rose-line);
+}
+
+.crewlet-tree-canvas__links path[data-tone='blue'] {
+  stroke: var(--color-node-blue-line);
+}
+
+/* ---------------------------------------------------------------------------
+ * THE `node` APPEARANCE: an org chart node rather than a panel.
+ *
+ * The console's org chart draws a node as one rank tall, as wide as its own
+ * name, with three zones across it: an icon on the left, the name and its
+ * caption centred in what is left, and a column of actions down the right
+ * edge. This is that drawing, and the numbers are that chart's own, taken up
+ * by the ratio between its 10px name and this package's smallest name step so
+ * every proportion across the node is the one it was drawn at.
+ *
+ * THE ZONES ARE FIXED AND THE NAME TAKES WHAT IS LEFT. The icon zone and the
+ * actions column are the same width on every node in the chart, so the names
+ * down a rank start and end on the same two lines however long they are; the
+ * actions column keeps its width whether or not its controls are drawn, for
+ * the reason the `card` appearance's strip does, and the name is centred in
+ * the middle zone rather than in the card, which would slide it left under an
+ * actions column nobody is pointing at.
+ * ------------------------------------------------------------------------- */
+
+/*
+ * THE CONSOLE CHART'S OWN SPACING, which is a rank-and-order layout's: 50
+ * units between neighbouring nodes on a rank, and ranks a whole node's height
+ * apart, with a margin around the chart. The steps nearest those on this
+ * scale, so density scales them with everything else:
+ *
+ * - ACROSS: `--spacing-9`, 48px against the console chart's 50. The two are
+ *   directly comparable, because there a node's box IS its drawn width.
+ * - DOWN: `--spacing-11` PLUS the strip that hangs under a node, which is
+ *   where the add control lives. NOT comparable to that chart's 70, which is
+ *   the gap between boxes 30 taller than the node drawn in them: half of that
+ *   padding is the add control and the other half is empty chart. What is
+ *   comparable is the gap a reader sees, from a node's bottom edge to its
+ *   children's tops: 100px there and 104 here, of which the first 24 hold the
+ *   add control, exactly as the first 15 of that chart's 100 hold its own. The
+ *   strip used to be INSIDE the card and the gap was `--spacing-11` alone; the
+ *   drawn distance is the same number either way, and the room simply moved
+ *   from the card's box into the gap with the control that needs it.
+ * - AROUND: `--spacing-8`, 40px against 36, and deliberately the step above
+ *   rather than below: the canvas CLIPS, and the outermost node's halo and
+ *   focus ring have to clear the frame.
+ */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__gap {
+  width: var(--spacing-9);
+  height: calc(var(--spacing-11) + var(--size-target-min));
+}
+
+.crewlet-tree-canvas--node .crewlet-tree-canvas__margin {
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+}
+
+/*
+ * AS WIDE AS THE NAME, between a floor and a ceiling. The floor is what the
+ * three zones need before a name is squeezed into nothing; the ceiling is
+ * where a name stops being read and starts being scanned, and a name past it
+ * truncates. A chart of equal cards is the `card` appearance's decision and
+ * this is the other one: a node here says what it is by its size as well as
+ * its words, and forty of them at one width is a wall.
+ */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__card {
+  width: max-content;
+  min-width: var(--crewlet-tree-canvas-node-min-width, 9.5rem);
+  max-width: var(--crewlet-tree-canvas-node-max-width, 16.5rem);
+  /*
+   * AND OPAQUE, EVERY ONE OF THEM. The branches are drawn UNDER the cards, and
+   * the neutral surface step is translucent wherever no theme is loaded, so a
+   * node with no tone had the connectors of the rank above running through its
+   * own face and through its name. A toned card already went down as the
+   * page's ground plus its tint for exactly this reason; here the same pair
+   * covers the neutral node too, with the card's own step standing in for the
+   * tint, so one declaration answers for both and a node is the same grey
+   * wherever the chart is panned to. The console chart lays an opaque
+   * rectangle under every card and says so: it is what stops the wires
+   * showing through.
+   */
+  background-color: var(--color-surface-background);
+  background-image: linear-gradient(
+    var(--crewlet-tree-canvas-card-fill, var(--color-surface-subtle)),
+    var(--crewlet-tree-canvas-card-fill, var(--color-surface-subtle))
+  );
+}
+
+/*
+ * ONE RANK TALL, AND NEVER SHORTER THAN THE COLUMN BESIDE IT. The rank is a
+ * row step, which density scales with everything else; the floor is two
+ * pointer targets, because the actions column splits this height into two
+ * cells and a cell under 24px is a control a finger cannot reliably hit. At
+ * compact density the row step alone is 39px, so the floor is what holds, and
+ * the node is a little less dense than the rest of the page. That is the cost
+ * of the target floor and it is paid here rather than by the controls.
+ */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__card [role='treeitem'] {
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  /* The actions column's room, kept on every node whether it is drawn or not. */
+  padding: 0 max(var(--size-control-sm), var(--size-target-min)) 0 0;
+  min-height: max(var(--size-row-lg), calc(2 * var(--size-target-min)));
+}
+
+/*
+ * THE ACTIONS ARE A COLUMN DOWN THE RIGHT EDGE, in the room the node already
+ * keeps for them: a hairline separating them from the name, and each control
+ * taking an equal share of the node's height with a hairline between. No
+ * ground of its own, because it covers nothing, and a ground would be a patch
+ * of the neutral surface over a toned node.
+ */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__actions {
+  top: 0;
+  /*
+   * THE COLUMN IS THE NAME'S ROW, NOT THE WHOLE NODE. A node can carry a strip
+   * along its bottom edge saying something about itself (a unit's lead), and a
+   * column run to the node's full height would cut that strip short and put a
+   * control beside a fact rather than beside the name it acts on.
+   */
+  bottom: auto;
+  height: max(var(--size-row-lg), calc(2 * var(--size-target-min)));
+  right: 0;
+  flex-direction: column;
+  /* A control step, floored at a pointer target: the small step is 28px and
+     compact density takes it to 23, which is a cell a finger misses. */
+  width: max(var(--size-control-sm), var(--size-target-min));
+  gap: 0;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+}
+
+/*
+ * THE RULE BESIDE THE NAME IS INSET, top and bottom, like every hairline the
+ * console chart draws inside a node (`y1 = 4, y2 = NODE_H - 4` on a 38px
+ * node). Run edge to edge it turned the node into a table of cells; floating
+ * clear of both edges it reads as a card with a column beside the name, which
+ * is what that chart draws.
+ *
+ * AND IT TAKES NO WIDTH FROM THE CELLS. Drawn as a border it would be inside
+ * the column's own box, so each control would be a pixel narrower than the
+ * target floor the column is sized to; drawn outside the box, on the boundary,
+ * the cells keep the whole width. That was a `box-shadow` before, which cannot
+ * be inset along its own length.
+ */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__actions::before {
+  content: '';
+  position: absolute;
+  top: var(--spacing-1);
+  bottom: var(--spacing-1);
+  left: -1px;
+  width: 1px;
+  background: var(--color-border-default);
+}
+
+.crewlet-tree-canvas--node .crewlet-tree-canvas__actions > * {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: var(--size-target-min);
+}
+
+/* The divider between two cells, inset each side for the reason the column's
+   own rule is: that chart draws it from `ACT_X + 4` to `nw - 4`. */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__actions > * + *::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: var(--spacing-1);
+  left: var(--spacing-1);
+  height: 1px;
+  background: var(--color-border-default);
+}
+
+/*
+ * WHAT HANGS UNDER A NODE HANGS BELOW IT: on the branch its children come off,
+ * outside the card's own rounded border, which is where the console chart puts
+ * it (`pillY = fullH + 3`). Inside the card it was a band of the card's face
+ * with a hole punched in it, the branch started at the card's bottom edge 13px
+ * BELOW the mark and never reached it, and the disc's ground was the page's
+ * over the card's, which is two greys where there should be one line broken by
+ * one disc.
+ *
+ * OUT OF THE FLOW, so the card's MEASURED box is the node itself and nothing
+ * here can ever relay the chart: a hover changes an opacity and no size. The
+ * room the strip needs is in the rank gap instead, which is a constant of the
+ * layout (see the gap probe above), so it is reserved in the only place that
+ * cannot move under a pointer. `top: 100%` is the card's padding box, one
+ * hairline above its border's outside edge, which puts the disc's centre 11px
+ * below the card exactly as that chart's 9px is at its own scale.
+ *
+ * THE STRIP ITSELF IS DRAWN AT REST HERE, which is the one place this
+ * appearance parts company with the `card` one, and it is what the console
+ * chart does: the mark that adds a child is on every branch of a resting
+ * chart, at a third of a node's height and at a little over half ink, so it
+ * says a child can go here without being a control anybody has to look past.
+ * `AddPill` draws itself that way and brightens when it is reached.
+ *
+ * WHAT IS IN THE STRIP AND IS NOT THAT is still quiet, because it is a
+ * CONTROL rather than an affordance, and a control on every branch of a chart
+ * of a hundred nodes is a hundred buttons drawn over a picture of an
+ * organization. It appears the way the actions strip does.
+ *
+ * THREE COLUMNS, AND THE MIDDLE ONE IS THE ADD'S ALONE. The console chart
+ * centres the add on `nw / 2` and has nothing else on the branch at all, and
+ * that is the shape here too: the disclosure a collapsing chart needs is drawn
+ * on the card's LEADING EDGE instead (below), where it can never be under the
+ * one control this strip is for.
+ *
+ * SO THE MIDDLE TRACK IS THE PILL'S WIDEST FOOTPRINT. The pill OPENS over its
+ * own mark, out of the flow and centred on it, at one pointer target per
+ * choice; the room a CLOSED pill asks for is one target, so anything placed
+ * beside it sat exactly where the second choice would land, and a reader who
+ * reached for it pressed "add a unit" instead. The reservation is a floor on
+ * the pill's own box, at the widest pill `AddPill` takes (four choices), which
+ * the `auto` track then follows: nothing a caller puts in this strip can be
+ * covered by one, whatever it holds. The mark stays centred in that box, so
+ * the add lands on the node's axis whether or not anything is beside it.
+ */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__under {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: 0;
+  min-height: var(--size-target-min);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.crewlet-tree-canvas--node .crewlet-tree-canvas__under > * {
+  grid-column: 1;
+  justify-self: end;
+}
+
+.crewlet-tree-canvas--node .crewlet-tree-canvas__under > .crewlet-add-pill {
+  grid-column: 2;
+  justify-self: center;
+  min-width: calc(4 * var(--size-target-min));
+}
+
+.crewlet-tree-canvas--node .crewlet-tree-canvas__under > :not(.crewlet-add-pill) {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tree-canvas--node
+  .crewlet-tree-canvas__card:hover
+  > .crewlet-tree-canvas__under
+  > :not(.crewlet-add-pill),
+.crewlet-tree-canvas--node
+  .crewlet-tree-canvas__card:focus-within
+  > .crewlet-tree-canvas__under
+  > :not(.crewlet-add-pill),
+.crewlet-tree-canvas--node
+  .crewlet-tree-canvas__card:has([aria-selected='true'])
+  > .crewlet-tree-canvas__under
+  > :not(.crewlet-add-pill) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+ * THE DISCLOSURE, ON THE CARD'S LEADING EDGE.
+ *
+ * NOT ON THE BRANCH, which is the whole point. What hangs under a node is the
+ * control that ADDS a child, on the node's own axis, and the console chart has
+ * nothing else there because its chart cannot collapse at all. This one can,
+ * so it owes a reader a disclosure; drawn on the branch beside the add, the
+ * two were a pair fighting over one place, and an add pill splitting open
+ * covered the chevron a reader had just reached for.
+ *
+ * THE START OF THE ROW IS WHERE A HIERARCHY PUTS ONE. Every outline, file tree
+ * and nested table a reader has met opens and closes from the leading edge of
+ * the row, and this is that edge: the node's, rather than its children's line.
+ *
+ * STRADDLING THE BOUNDARY AND OUT OF THE FLOW, exactly as the add straddles
+ * the bottom one. A node that can be expanded is then the same width, the same
+ * height and in the same place as one that cannot, so nothing here can relay
+ * the chart; and the zones across a node stay the two the console chart draws,
+ * rather than becoming three with an empty one on every seat. It is centred on
+ * the node's FIRST RANK for the reason the actions column stops there: a node
+ * may carry a strip along its bottom edge stating a fact, and a control
+ * centred over the pair would sit beside the fact rather than beside the name.
+ *
+ * AND IT IS A SIBLING OF THE TREEITEM, never a child, which is what lets it be
+ * placed from here at all: the card is the positioned ancestor either way, and
+ * a tree's items hold nothing focusable. `OrgNodeDisclosure` is the element,
+ * and it hides itself the way the actions strip does.
+ *
+ * AND IT IS QUIET UNTIL THE CARD IS REACHED, with the actions column and the
+ * lead's own clear: a chart of a hundred nodes is not a hundred chevrons drawn
+ * over a picture of an organization. Revealed by FOCUS as well as by a
+ * pointer, because a control a pointer alone reveals is a control a keyboard
+ * reader is shown nothing of.
+ */
+.crewlet-tree-canvas--node .crewlet-org-node__leading {
+  position: absolute;
+  top: calc(max(var(--size-row-lg), 2 * var(--size-target-min)) / 2);
+  left: 0;
+  z-index: var(--z-index-raised);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tree-canvas--node .crewlet-tree-canvas__card:hover .crewlet-org-node__leading,
+.crewlet-tree-canvas--node .crewlet-tree-canvas__card:focus-within .crewlet-org-node__leading,
+.crewlet-tree-canvas--node
+  .crewlet-tree-canvas__card:has([aria-selected='true'])
+  .crewlet-org-node__leading {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+ * A CONTROL DRAWN ON A FACT the node states is quiet with the rest of them.
+ * The lead along a unit's bottom edge stays drawn, because who leads a unit is
+ * a fact about the organization; the control that CLEARS it is a tool, so it
+ * arrives with the actions column and the expander and leaves with them. Keyed
+ * on the card, and on focus as well as hover, because a control revealed by a
+ * pointer alone is a control a keyboard reader is shown nothing of.
+ */
+.crewlet-tree-canvas--node .crewlet-org-node-lead__clear {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tree-canvas--node .crewlet-tree-canvas__card:hover .crewlet-org-node-lead__clear,
+.crewlet-tree-canvas--node .crewlet-tree-canvas__card:focus-within .crewlet-org-node-lead__clear,
+.crewlet-tree-canvas--node
+  .crewlet-tree-canvas__card:has([aria-selected='true'])
+  .crewlet-org-node-lead__clear {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+ * THE BRANCHES ARE HEAVIER HERE. A node is half the height of a card, so a
+ * hairline between two ranks of them is a thread; this is the console chart's
+ * own weight, at the same ratio to a node's height.
+ */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__links path {
+  stroke-width: 3;
+}
+
+/*
+ * THE CONTROLS IN A NODE'S COLUMN fill their cell rather than sitting in it:
+ * the column is two hairline-separated halves of the node's height, and a
+ * control centred in one with its own rounded square inside would be a button
+ * drawn inside a button. Their targets are the cells, which are the node's
+ * full height between them and the column's own width across.
+ */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__actions .crewlet-menu-anchor {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+.crewlet-tree-canvas--node .crewlet-tree-canvas__actions .crewlet-icon-btn {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+/*
+ * A CONTROL ON AN EDGE IS A DISC: a ground of its own, so the line it sits on,
+ * or the card it straddles, stops at its edge rather than running through it.
+ *
+ * ONE RULE FOR BOTH EDGES, because it is one drawing: the disclosure on the
+ * leading boundary and whatever else a caller hangs on the branch are the same
+ * disc at the same step, and written twice they were the pair a reader met as
+ * two different controls. The ADD is `AddPill` and draws its own, quieter
+ * disc, on this same ground.
+ *
+ * DRAWN AT THE TARGET'S SIZE here, where the add is drawn smaller than its
+ * target: these are only ever seen on a node the pointer or focus has already
+ * reached, so there is no resting chart for them to be quiet on.
+ */
+.crewlet-tree-canvas--node .crewlet-tree-canvas__under .crewlet-icon-btn,
+.crewlet-tree-canvas--node .crewlet-org-node__leading .crewlet-icon-btn {
+  width: var(--size-target-min);
+  height: var(--size-target-min);
+  min-width: var(--size-target-min);
+  min-height: var(--size-target-min);
+  color: var(--color-brand-accent-ink);
+  /* The NODE's own ground, which is what `AddPill` masks with too: one grey
+     for every disc a node carries, rather than the page's on one edge and the
+     card's on the other. */
+  background-color: var(--color-surface-background);
+  background-image: linear-gradient(var(--color-surface-subtle), var(--color-surface-subtle));
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-circle);
+}
+
+.crewlet-tree-canvas--node .crewlet-tree-canvas__under .crewlet-icon-btn:hover,
+.crewlet-tree-canvas--node .crewlet-org-node__leading .crewlet-icon-btn:hover {
+  border-color: var(--color-brand-accent);
+}
+
+/*
+ * A CONTROL THE KEYBOARD OPENS AND THE POINTER REACHES ANOTHER WAY.
+ *
+ * The ContextMenu key opens a node's own menu, and a menu has to be anchored
+ * to something on the node to be placed at all; a chart whose visible controls
+ * are two named buttons still needs that anchor. Marked, it takes no cell of
+ * the column and is drawn nowhere, so the column is the controls a reader can
+ * see and nothing else. It stays in the DOM and keeps its place: an anchor
+ * removed from the flow entirely places its menu at the corner of the page.
+ */
+.crewlet-tree-canvas__actions > [data-keyboard-only] {
+  position: absolute;
+  inset: 0;
+  flex: none;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* And it is not a cell, so it takes no divider either: the hairline between
+   two cells is drawn by the second one's own ::before. */
+.crewlet-tree-canvas__actions > [data-keyboard-only]::before {
+  content: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * A NODE BEING COMPOSED: the ghost, and the form drawn inside it.
+ *
+ * WHAT IT SAYS. A chart that asked for a child's name in a dialog over itself
+ * said everything about the child and nothing about WHERE it was going, which
+ * is the one question a chart answers. The ghost is that answer drawn: the
+ * chart makes room in the rank the new node will land in, the branch reaches
+ * the place it will hang from, and the form is IN that place. The console
+ * chart this package is drawn to match does exactly this, and every step below
+ * is its step.
+ *
+ * IT IS THE ONLY DASHED THING ON THE CHART THAT IS NOT A HUMAN SEAT, and the
+ * two never collide: `cardOutline` marks a node of the data and this marks a
+ * node that is not one yet, so no card can carry both. What tells them apart
+ * is the hue and the breath: a human seat's edge is the chart's own boundary
+ * step and does not move, and this one is the accent, with a ring outside it
+ * that pulses for as long as the form is open.
+ *
+ * ITS GROUND IS EVERY OTHER CARD'S. The ghost holds a real form with real
+ * labels, helps and refusals in it, so it is NOT tinted: every contrast
+ * measured for that form on a panel holds here unchanged, and what says the
+ * card is a proposal is its boundary rather than its face. Opaque for the
+ * reason a toned card is: the neutral surface step is translucent and the
+ * branches are drawn underneath, so the page's ground goes down first.
+ * ------------------------------------------------------------------------- */
+
+/*
+ * WIDER THAN A NODE, because a node is a name and this is a form. Qualified
+ * with the chart's own class so it outranks the `node` appearance's width
+ * rule, which is two classes: written as one class it lost on specificity and
+ * the ghost was drawn at a name's width with the form spilling out of it.
+ */
+.crewlet-tree-canvas .crewlet-tree-canvas__card--composing {
+  width: var(--crewlet-tree-canvas-compose-width, 20rem);
+  min-width: 0;
+  max-width: none;
+  padding: var(--spacing-4);
+  gap: var(--spacing-3);
+  background-color: var(--color-surface-background);
+  background-image: linear-gradient(var(--color-surface-subtle), var(--color-surface-subtle));
+  border: 1px dashed var(--color-brand-accent-soft-strong);
+  box-shadow: var(--shadow-md);
+  animation: crewlet-tree-canvas-ghost-card var(--motion-duration-slow) var(--motion-easing-emphasized)
+    var(--motion-duration-base) both;
+}
+
+/*
+ * THE RING THAT BREATHES, outside the boundary, exactly where a toned card's
+ * halo is: it is what says the card is waiting for the reader from the far
+ * end of a chart, where a dashed hairline is a few pixels. It is decoration
+ * over the gap the next card's controls reach into, so it takes no pointer.
+ */
+.crewlet-tree-canvas__card--composing::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--color-brand-accent-soft-strong);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  animation:
+    crewlet-tree-canvas-ghost-glow var(--motion-duration-slow) var(--motion-easing-default)
+      var(--motion-duration-moderate) both,
+    /* A BREATH RATHER THAN A TRANSITION, so it is a multiple of the scale's
+       longest step (1.8s) rather than a number off it: the scale tops out at
+       one UI transition, and a pulse held there would strobe. The console
+       chart's own is 2s. It starts where the fade in ends. */
+      crewlet-tree-canvas-ghost-pulse calc(var(--motion-duration-slow) * 6)
+      var(--motion-easing-in-out)
+      calc(var(--motion-duration-moderate) + var(--motion-duration-slow)) infinite;
+}
+
+/*
+ * THE FORM ARRIVES LAST, and from slightly above and behind: the wire, then
+ * the card, then the glow, then what is inside it, which is the order a reader
+ * follows from the node they pressed to the thing they have to fill in. The
+ * caller's own element, whatever it drew, because the ghost's contents are
+ * entirely the caller's.
+ */
+.crewlet-tree-canvas__card--composing > * {
+  animation: crewlet-tree-canvas-ghost-form var(--motion-duration-slow)
+    var(--motion-easing-emphasized) var(--motion-duration-slow) both;
+}
+
+/*
+ * THE BRANCH INTO THE GHOST, drawn first and dashed like the card it reaches.
+ * Same path, same arithmetic and same rank as every other branch: what is
+ * being proposed is drawn in the chart's own language, so a reader sees where
+ * it will hang rather than a decoration that happens to be nearby.
+ */
+.crewlet-tree-canvas__links path[data-composing='true'] {
+  stroke: var(--color-brand-accent-soft-strong);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  animation: crewlet-tree-canvas-ghost-wire var(--motion-duration-slow)
+    var(--motion-easing-emphasized) both;
+}
+
+@keyframes crewlet-tree-canvas-ghost-wire {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes crewlet-tree-canvas-ghost-card {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes crewlet-tree-canvas-ghost-glow {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes crewlet-tree-canvas-ghost-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes crewlet-tree-canvas-ghost-form {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/*
+ * A READER WHO ASKED FOR LESS gets the ghost DRAWN, in place, at once. Nothing
+ * about the add is behind the motion: the chart still makes room, the branch
+ * is still dashed, the view still moves onto it and focus still lands in the
+ * form. Only the arrival, the breath and the rise are dropped, and the ring
+ * stays at the bright end of the pulse rather than wherever it was stopped.
+ */
+@media (prefers-reduced-motion: reduce) {
+  /* NOT `transform` on the card itself: its transform is where the layout
+     put it, written as an inline style, and a rule here saying `none` would
+     be a rule that only ever fires when something else drops that style. */
+  .crewlet-tree-canvas__card--composing,
+  .crewlet-tree-canvas__links path[data-composing='true'] {
+    opacity: 1;
+    animation: none;
+  }
+
+  .crewlet-tree-canvas__card--composing > * {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .crewlet-tree-canvas__card--composing::after {
+    opacity: 1;
+    animation: none;
+  }
+}

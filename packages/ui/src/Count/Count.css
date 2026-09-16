@@ -1,0 +1,20 @@
+/*
+ * The count pill. One neutral look, deliberately: see the component doc for
+ * why a count is never tinted.
+ */
+
+.crewlet-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 1px var(--spacing-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-inset);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  /* A count that ticks up must not shift the heading beside it. */
+  font-variant-numeric: tabular-nums;
+  line-height: var(--font-line-height-normal);
+}

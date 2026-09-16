@@ -1,33 +1,97 @@
 /*
- * Avatar, round identity badge.
+ * The identity badge.
  *
- * The initials fallback
- * uses the defined brand-accent surface and its paired on-brand text token so
- * the dark, light, and system themes all keep an accessible contrast ratio.
+ * IT IS NEUTRAL, and that is the whole rule. The system this replaces coloured
+ * a seat by `PALETTE[hash(name) % 8]`, over the same eight families it also
+ * spent on phases and event categories, so one amber meant "the execute
+ * phase", "the decision category" and "the Analyst" at once. A hash of a name
+ * carries no information: rename the seat and its colour changes, which is the
+ * proof it never meant anything. Identity is the monogram and the name.
+ *
+ * The seeded tints stay for the one case that earns them, a roster somebody
+ * scans, and their grounds are TOKENS: measured under white initials and held
+ * at 4.5:1 by the palette suite. Spelled as literals, five of the ten sat
+ * under that floor while the suite measured ten values nothing painted with.
  */
 
 .crewlet-avatar {
+  --crewlet-avatar-size: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  flex: none;
+  width: var(--crewlet-avatar-size);
+  height: var(--crewlet-avatar-size);
   overflow: hidden;
   object-fit: cover;
   font-family: var(--font-family-sans);
-  font-weight: 600;
-  line-height: 1;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-wide);
+  /* The document's own leading rather than a tight step of the badge's own.
+     The box is a fixed square that centres whatever line it holds, so the ink
+     lands in the same place either way; what the tight step bought was one
+     more number in a component that already sets four. */
+  line-height: var(--font-line-height-normal);
+  text-transform: uppercase;
   user-select: none;
+  box-sizing: border-box;
 }
 
-/* Shape modifiers. "circle" is the round identity badge; "square" keeps
-   rounded corners (matching the Card radius) so wide marks such as company
-   logos are not cropped into a circle. */
+/*
+ * The four steps. Each pairs its box with a type step, so two initials sit
+ * inside the circle at every one of them; a numeric size computes its own,
+ * because nothing in the scale can answer for an arbitrary box.
+ */
+.crewlet-avatar--xs {
+  --crewlet-avatar-size: 20px;
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-avatar--sm {
+  --crewlet-avatar-size: 26px;
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-avatar--md {
+  --crewlet-avatar-size: 32px;
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-avatar--lg {
+  --crewlet-avatar-size: 40px;
+  font-size: var(--font-size-sm);
+}
+
+/*
+ * Shapes. THE SQUARE IS THE DEFAULT, which is the change: the engine's
+ * identity mark is a rounded square and it is what a reader sees in every seat
+ * chip, every list row and every header on that product. A circle stays for a
+ * PERSON, where the round badge is the platform convention a member list
+ * already speaks.
+ *
+ * The square's radius moves with the box rather than sitting at one step. The
+ * engine draws 4px at 20, 8px at 26 and 12px at 40, which is a roughly
+ * constant proportion; one radius across the four steps reads as a pill at the
+ * smallest and as a plain box at the largest. A NUMERIC SIZE OBEYS THE SAME
+ * LADDER, from `avatarSquareCorner` in the component, which picks the corner
+ * of the step nearest the box it was given: taking one fixed step there is how
+ * `size={80}` ended up drawn squarer than `size="lg"` at half its width.
+ */
 .crewlet-avatar--circle {
-  border-radius: var(--radius-circle, 50%);
+  border-radius: var(--radius-circle);
 }
 
 .crewlet-avatar--square {
-  border-radius: var(--radius-lg, 12px);
+  border-radius: var(--radius-md);
+}
+
+.crewlet-avatar--square.crewlet-avatar--xs {
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-avatar--square.crewlet-avatar--lg {
+  border-radius: var(--radius-lg);
 }
 
 .crewlet-avatar--image {
@@ -35,33 +99,58 @@
   object-fit: cover;
 }
 
+/* ── tones ─────────────────────────────────────────────────────────────── */
+
 .crewlet-avatar--fallback {
-  background: var(--color-brand-accent);
-  color: var(--color-text-on-brand);
-  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.crewlet-avatar--neutral {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-default);
+  color: var(--color-text-secondary);
 }
 
 /*
- * Identity tints. When a colorSeed is supplied, the initials fallback picks
- * one of these fixed backgrounds by a stable hash of the seed, so each
- * identity keeps a distinct, consistent colour across the product (agent
- * rosters, member lists). The palette is chosen for a legible contrast ratio
- * against white initials (overridable through --crewlet-avatar-tint-fg),
- * and each tint overrides the plain
- * brand-accent fallback above. Ordering matters: these rules follow
- * .crewlet-avatar--fallback so the tint wins at equal specificity.
+ * The label on the accent fill is the on-accent step, not the on-brand one.
+ * The themes repaint the brand fill monochrome and leave the accent where it
+ * is, so on-brand is black in the dark palette and black on the accent
+ * measures 4.35:1. On-accent is white in every palette and measures 4.83:1.
  */
-.crewlet-avatar--tint {
-  color: var(--crewlet-avatar-tint-fg, #ffffff);
+.crewlet-avatar--brand {
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
 }
 
-.crewlet-avatar--tint-0 { background: #2563eb; }
-.crewlet-avatar--tint-1 { background: #7c3aed; }
-.crewlet-avatar--tint-2 { background: #c026d3; }
-.crewlet-avatar--tint-3 { background: #db2777; }
-.crewlet-avatar--tint-4 { background: #dc2626; }
-.crewlet-avatar--tint-5 { background: #ea580c; }
-.crewlet-avatar--tint-6 { background: #ca8a04; }
-.crewlet-avatar--tint-7 { background: #16a34a; }
-.crewlet-avatar--tint-8 { background: #0d9488; }
-.crewlet-avatar--tint-9 { background: #0284c7; }
+.crewlet-avatar--seeded {
+  color: var(--color-text-on-accent);
+}
+
+.crewlet-avatar--tint-0 { background: var(--color-avatar-tint-0); }
+.crewlet-avatar--tint-1 { background: var(--color-avatar-tint-1); }
+.crewlet-avatar--tint-2 { background: var(--color-avatar-tint-2); }
+.crewlet-avatar--tint-3 { background: var(--color-avatar-tint-3); }
+.crewlet-avatar--tint-4 { background: var(--color-avatar-tint-4); }
+.crewlet-avatar--tint-5 { background: var(--color-avatar-tint-5); }
+.crewlet-avatar--tint-6 { background: var(--color-avatar-tint-6); }
+.crewlet-avatar--tint-7 { background: var(--color-avatar-tint-7); }
+.crewlet-avatar--tint-8 { background: var(--color-avatar-tint-8); }
+.crewlet-avatar--tint-9 { background: var(--color-avatar-tint-9); }
+
+/*
+ * A HUMAN SEAT IS DRAWN, NOT TINTED. The engine does not run it, which is a
+ * structural fact rather than a status, so it takes the edge and no fill at
+ * all. Last, so it wins over whichever tone it is paired with.
+ *
+ * The whole border rather than its style alone: the badge is the same person
+ * whether or not they have uploaded a photo, and an image draws no border of
+ * its own for a style to change.
+ */
+.crewlet-avatar--dashed {
+  background: transparent;
+  /* The same hairline the solid neutral badge draws, so the human seat differs
+     by its LINE STYLE and its missing fill rather than by a second grey a
+     reader would have to hold two of in mind. */
+  border: 1px dashed var(--color-border-default);
+  color: var(--color-text-secondary);
+}

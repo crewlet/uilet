@@ -1,49 +1,51 @@
 import { create } from 'storybook/theming';
+import { color, font, radius, themes } from '@crewlethq/tokens';
 
 // default-crewlet-dark
-// The default Storybook chrome theme for the crewlet design system.
-// Hex values are pulled verbatim from the canonical token set so the tool
-// surface and the rendered canvas share one visual language.
+// The default Storybook chrome theme for the crewlet design system, so the
+// tool surface and the rendered canvas share one visual language.
 //
-// Sources (see packages/tokens/tokens/*.json):
-//   colorPrimary       <- color.brand.primary       #5469d4
-//   appBg              <- color.surface.topbar      #15171c
-//   appContentBg       <- color.surface.background  #000000
-//   barBg              <- color.surface.topbar-lift #1c1e24
-//   appBorderColor     <- color.border.strong       #3f4145
-//   textColor          <- color.text.primary        #fafafa
-//   textMutedColor     <- color.text.tertiary       #8c99ad
+// READ FROM THE TOKENS, never copied out of them. Storybook's theming API
+// takes finished strings rather than custom properties, and this file used to
+// list a hex for each of them with a comment naming the token it came from.
+// Four of those hexes were the values the palette was moved away from by the
+// time anybody looked: the muted text was the step measured at 4.17:1 on a
+// pressed row, and the border was the plain step wearing the strong step's
+// name. A value that is copied is a value that drifts, and nothing here could
+// have said so.
+const dark = themes.dark.color;
+
 export default create({
   base: 'dark',
 
   brandTitle: 'Crewlet Design System',
   brandTarget: '_self',
 
-  colorPrimary: '#5469d4',
-  colorSecondary: '#5469d4',
+  // The accent is the same in every palette: it is the one colour that means
+  // "here", and where the reader is does not depend on the theme.
+  colorPrimary: color.brand.accent,
+  colorSecondary: color.brand.accent,
 
-  appBg: '#15171c',
-  appContentBg: '#000000',
-  appPreviewBg: '#000000',
-  appBorderColor: '#3f4145',
-  appBorderRadius: 6,
+  appBg: dark.surface.topbar,
+  appContentBg: dark.surface.background,
+  appPreviewBg: dark.surface.background,
+  appBorderColor: dark.border.strong,
+  appBorderRadius: Number.parseInt(radius.sm, 10),
 
-  textColor: '#fafafa',
-  textInverseColor: '#09090b',
-  textMutedColor: '#8c99ad',
+  textColor: dark.text.primary,
+  textInverseColor: dark.text.inverse,
+  textMutedColor: dark.text.tertiary,
 
-  barBg: '#1c1e24',
-  barTextColor: '#c9ced8',
-  barHoverColor: '#fafafa',
-  barSelectedColor: '#5469d4',
+  barBg: dark.surface.topbarLift,
+  barTextColor: dark.text.tertiary,
+  barHoverColor: dark.text.primary,
+  barSelectedColor: color.brand.accent,
 
-  inputBg: '#1c1e24',
-  inputBorder: '#3f4145',
-  inputTextColor: '#fafafa',
-  inputBorderRadius: 6,
+  inputBg: dark.surface.subtle,
+  inputBorder: dark.border.default,
+  inputTextColor: dark.text.primary,
+  inputBorderRadius: Number.parseInt(radius.sm, 10),
 
-  fontBase:
-    "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
-  fontCode:
-    "'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
+  fontBase: font.family.sans,
+  fontCode: font.family.mono,
 });

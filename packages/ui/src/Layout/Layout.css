@@ -1,0 +1,171 @@
+/*
+ * Stack, Inline, Spacer and AutoGrid.
+ *
+ * The gap is one custom property with a token default, so a caller that passes
+ * no step still gets a value off the scale rather than the browser's zero, and
+ * the alignment classes are shared by both flex primitives: an align is an
+ * align whichever axis it is read on.
+ */
+
+.crewlet-stack,
+.crewlet-inline {
+  display: flex;
+  --crewlet-layout-gap: var(--spacing-2);
+  gap: var(--crewlet-layout-gap);
+  /* A flex child's minimum size is its content. Without this one long
+     identifier in one row widens the whole column past its parent. */
+  min-width: 0;
+}
+
+.crewlet-stack {
+  flex-direction: column;
+}
+
+.crewlet-inline {
+  flex-direction: row;
+}
+
+/*
+ * A GRID OF CARDS KEEPS ITS TRACKS. `auto-fill` lays down every track the row
+ * has room for and leaves the empty ones empty; `auto-fit`, which this was,
+ * COLLAPSES them, so the last row of a list, and every list that is short of a
+ * full row, stretches its cards across the whole width. One seat in a company
+ * drew a single card 1109px wide where its neighbours in a full row are 365.
+ * The inner min() is what keeps a track from being wider than the grid on a
+ * narrow screen, which is how a card row gives a phone a sideways scroll.
+ *
+ * The three track minimums are component variables rather than tokens: the
+ * token layer has no grid-track family, and a card's narrowest readable column
+ * is a property of the card rather than of the scale. An application that
+ * needs a fourth step sets --crewlet-auto-grid-min on its own wrapper.
+ *
+ * DECLARED BEFORE THE GAP CLASSES, and that order is load-bearing: a container
+ * and a --gap-N modifier are both one class, so the later rule in this file
+ * wins. Below them, `<AutoGrid gap={3}>` drew its own 16px default and the
+ * caller's step did nothing at all.
+ */
+.crewlet-auto-grid {
+  display: grid;
+  --crewlet-layout-gap: var(--spacing-4);
+  --crewlet-auto-grid-min: 260px;
+  gap: var(--crewlet-layout-gap);
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--crewlet-auto-grid-min), 100%), 1fr));
+  min-width: 0;
+}
+
+.crewlet-auto-grid--sm {
+  --crewlet-auto-grid-min: 180px;
+}
+
+.crewlet-auto-grid--md {
+  --crewlet-auto-grid-min: 260px;
+}
+
+.crewlet-auto-grid--lg {
+  --crewlet-auto-grid-min: 360px;
+}
+
+/*
+ * One gap class per step on the scale, shared by all three containers: a gap
+ * is the same distance whichever direction the children run in. Written out
+ * rather than composed in JavaScript so every token name a component can read
+ * appears literally in a stylesheet, which is what the custom property check
+ * verifies against the tokens the build emits.
+ */
+.crewlet-layout--gap-0 {
+  --crewlet-layout-gap: var(--spacing-0);
+}
+
+.crewlet-layout--gap-1 {
+  --crewlet-layout-gap: var(--spacing-1);
+}
+
+.crewlet-layout--gap-2 {
+  --crewlet-layout-gap: var(--spacing-2);
+}
+
+.crewlet-layout--gap-3 {
+  --crewlet-layout-gap: var(--spacing-3);
+}
+
+.crewlet-layout--gap-4 {
+  --crewlet-layout-gap: var(--spacing-4);
+}
+
+.crewlet-layout--gap-5 {
+  --crewlet-layout-gap: var(--spacing-5);
+}
+
+.crewlet-layout--gap-6 {
+  --crewlet-layout-gap: var(--spacing-6);
+}
+
+.crewlet-layout--gap-7 {
+  --crewlet-layout-gap: var(--spacing-7);
+}
+
+.crewlet-layout--gap-8 {
+  --crewlet-layout-gap: var(--spacing-8);
+}
+
+.crewlet-layout--gap-9 {
+  --crewlet-layout-gap: var(--spacing-9);
+}
+
+.crewlet-layout--gap-10 {
+  --crewlet-layout-gap: var(--spacing-10);
+}
+
+.crewlet-layout--gap-11 {
+  --crewlet-layout-gap: var(--spacing-11);
+}
+
+.crewlet-layout--align-start {
+  align-items: flex-start;
+}
+
+.crewlet-layout--align-center {
+  align-items: center;
+}
+
+.crewlet-layout--align-end {
+  align-items: flex-end;
+}
+
+.crewlet-layout--align-baseline {
+  align-items: baseline;
+}
+
+.crewlet-layout--align-stretch {
+  align-items: stretch;
+}
+
+.crewlet-layout--justify-start {
+  justify-content: flex-start;
+}
+
+.crewlet-layout--justify-center {
+  justify-content: center;
+}
+
+.crewlet-layout--justify-end {
+  justify-content: flex-end;
+}
+
+.crewlet-layout--justify-between {
+  justify-content: space-between;
+}
+
+.crewlet-layout--justify-around {
+  justify-content: space-around;
+}
+
+.crewlet-layout--wrap {
+  flex-wrap: wrap;
+}
+
+.crewlet-spacer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+

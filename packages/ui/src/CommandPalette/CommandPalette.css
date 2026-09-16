@@ -1,0 +1,115 @@
+/*
+ * The command palette: a field, a list, and a line of keyboard hints.
+ *
+ * It is a Modal with its body's padding dropped, so the three bands run edge to
+ * edge and the field reads as the surface rather than as a question on a form.
+ * The rows are the listbox register (`Listbox.css`), because a result here and
+ * a completion in a field are the same thing to a reader and the accent that
+ * marks the active row has to mean the same in both.
+ *
+ * THE TWO OVERRIDES BELOW NAME BOTH CLASSES ON PURPOSE. A single class would
+ * tie with the rule it is overriding (`.crewlet-modal--md`,
+ * `.crewlet-input--command`), and a tie is broken by the order the stylesheets
+ * happen to be concatenated in, which is alphabetical over filenames.
+ */
+
+.crewlet-modal.crewlet-palette {
+  /* Wider than a prompt and shorter than the window: a launcher is read in one
+     glance, and a list taller than this is a list nobody scans. */
+  --crewlet-modal-width: 620px;
+
+  max-height: min(60dvh, 520px);
+}
+
+/*
+ * THE BODY LAYS THE THREE BANDS OUT, and the RESULTS are what scrolls.
+ *
+ * A Modal's body is a block that scrolls its whole content, which is right for
+ * a dialog read top to bottom and wrong here: the field would ride up out of
+ * view as the arrows walked the list, and the list, sized to its own content,
+ * would never overflow, so the row the listbox brings into view by scrolling
+ * that element would have nowhere to go.
+ */
+.crewlet-palette .crewlet-modal__body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/*
+ * The field, drawn as the surface's own top band: no box of its own, the full
+ * height of a large row, and the question asked at the reading size rather
+ * than at a control's. It is the first thing on the surface and the only thing
+ * with focus, so it is the surface's headline as much as its input.
+ */
+.crewlet-input.crewlet-palette__field {
+  flex-shrink: 0;
+  min-height: var(--size-row-lg);
+  padding-inline: var(--spacing-4);
+  border: none;
+  border-bottom: 1px solid var(--color-border-default);
+  border-radius: 0;
+  background: transparent;
+}
+
+.crewlet-input.crewlet-palette__field .crewlet-input__control {
+  font-size: var(--font-size-md);
+}
+
+/*
+ * THE FOOT IS THE KEYBOARD'S OWN BAND, at the micro register rather than the
+ * modal footer's. A modal's foot carries buttons and is sized for them; this
+ * one carries a line of keycaps saying what the arrows, Enter and Escape do,
+ * and at a dialog's padding that line reads as an action row nobody can press.
+ *
+ * Both classes are named for the same reason the two rules below are: a single
+ * class ties with `.crewlet-modal__footer`, and a tie is broken by the order
+ * the stylesheets are concatenated in.
+ */
+.crewlet-palette .crewlet-modal__footer {
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.crewlet-palette .crewlet-modal__footer-start {
+  gap: var(--spacing-3);
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-palette__results {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-1);
+}
+
+/*
+ * The glyph takes the ROW'S colour rather than a quiet step of its own, so the
+ * row under the arrows turns accent in one piece. Pinned to the tertiary step
+ * it stayed grey inside the highlight, which read as a glyph that had failed
+ * to load.
+ */
+.crewlet-palette__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.crewlet-palette__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * An honest empty state: it says which kind of nothing this is, and the
+ * component takes the sentence from the caller for that reason.
+ */
+.crewlet-palette__empty {
+  margin: 0;
+  padding: var(--spacing-5) var(--spacing-4);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
+  text-align: center;
+}

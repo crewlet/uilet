@@ -1,32 +1,121 @@
 /*
- * Form primitives, Input / Textarea / Label / FormField / FormRow.
+ * The form row: Input, Textarea, Label, FormField, FormRow, FormSection and
+ * ReadOnlyField.
  *
- * Two sizes: md (14px text, 10/14px padding) for form rows, and sm
- * (13px text, 6/10px padding) for dense toolbars and inline filters.
+ * Two sizes, both on the control tokens so a field lines up with the button
+ * and the select beside it at every density: md for a form row, sm for a
+ * dense toolbar or an inline filter.
+ *
+ * THE VALUE SITS ON ONE LINE, CENTRED IN THE BOX. The control carries its
+ * inset as side padding only and the box's own height is what makes the row:
+ * with padding on all four sides a 32px field drew 39px tall, so a field, the
+ * button beside it and the select beside that were three heights.
+ *
+ * THE BOUNDARY IS --color-border-control, not the default border. A text
+ * box, a checkbox and a switch are the three things on a page whose OUTLINE
+ * is the control: with the ordinary hairline they measured 1.27:1 in light
+ * and 1.75:1 in dark, which is a box a reader has to already know is there.
+ * It is the one place this register does not follow the product's own
+ * stylesheet, which draws every field on the panel hairline.
+ *
+ * AND A FOCUSED FIELD SHOWS ONE RING, drawn as an outline over that boundary.
+ * Every field in this package states that rule for itself and states it the
+ * same way; the long version is on .crewlet-input:has(...:focus-visible)
+ * below, and Input.test.tsx holds all of them to it.
  */
 
 .crewlet-input {
+  /* The width steps, named for what they hold. See InputWidth. */
+  --crewlet-input-width-xs: 140px;
+  --crewlet-input-width-sm: 200px;
+  --crewlet-input-width-md: 320px;
+  /* The widest step is the one a SENTENCE is typed into rather than a name:
+     the knowledge search asks for plain text and its own placeholder runs to
+     sixty characters, which is what this step is measured against. */
+  --crewlet-input-width-lg: 520px;
+
   position: relative;
   display: inline-flex;
   align-items: center;
   width: 100%;
+  min-height: var(--size-control-md);
   background-color: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  /* The boundary is the only thing that moves here. The ring is an outline,
+     which takes no transition, and nothing else paints a shadow. */
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-.crewlet-input:focus-within {
-  border-color: var(--color-brand-accent);
-  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.15));
+.crewlet-input--w-full { max-width: none; }
+.crewlet-input--w-xs { max-width: var(--crewlet-input-width-xs); }
+.crewlet-input--w-sm { max-width: var(--crewlet-input-width-sm); }
+.crewlet-input--w-md { max-width: var(--crewlet-input-width-md); }
+.crewlet-input--w-lg { max-width: var(--crewlet-input-width-lg); }
+
+.crewlet-input--sm { min-height: var(--size-control-sm); }
+
+.crewlet-input:hover {
+  border-color: var(--color-border-hover);
+}
+
+/*
+ * ONE RING, AND IT IS THE BOUNDARY ITSELF.
+ *
+ * What this replaces drew the indicator twice. The border took --color-focus
+ * AND --shadow-focus laid a second focus-coloured ring outside it, and that
+ * token is already a ring in its own right: `0 0 0 2px background, 0 0 0 4px
+ * focus` is a background-coloured gap and then a band. So a focused field was
+ * an accent hairline, a two-pixel gap and an accent band, measured on the
+ * running dashboard as `border 1px #8b9ff5` under `#15171c 0 0 0 2px, #8b9ff5
+ * 0 0 0 4px`. Two layers of highlight, from one state.
+ *
+ * The one that is left is an OUTLINE rather than the shadow, because
+ * forced-colors mode drops every box-shadow and keeps outlines: a ring drawn
+ * as a shadow disappears for exactly the readers who most need one.
+ *
+ * It is drawn INSIDE the box, on the offset every focusable in a clipping
+ * scroller takes, so it covers the boundary rather than standing outside it.
+ * Two things follow: a scroller cannot clip it, and the field does not grow a
+ * four-pixel halo the moment a caret lands in it, which is what a filter box
+ * in a toolbar of them did to the row it sits in.
+ *
+ * THE BORDER IS LEFT ALONE. Recolouring it under the ring says nothing the
+ * ring has not already said, and it is what cost the error state its own
+ * colour: see the rule below.
+ *
+ * THE SELECTOR NAMES THE CONTROL rather than asking :focus-within. A search
+ * box holds a second focusable, its own clear control, and :focus-within drew
+ * the whole field's ring around the IconButton's ring the moment a reader
+ * tabbed onto it: a ring around a button inside a ring around the field.
+ * :focus-visible rather than :focus is the package's one vocabulary for an
+ * indicator, and for a text control the two are the same thing: every input
+ * type this slot holds, readonly and search included, matches :focus-visible
+ * on a pointer press as well as on a tab.
+ */
+.crewlet-input:has(.crewlet-input__control:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-input.is-error {
   border-color: var(--color-feedback-danger);
 }
 
-.crewlet-input.is-error:focus-within {
-  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.2);
+/*
+ * A REFUSED FIELD KEEPS ITS COLOUR WHILE THE READER IS IN IT. The ring covers
+ * the boundary, so a focus-coloured one would paint out the one mark on the
+ * field itself saying the value cannot be saved, at the exact moment somebody
+ * is fixing it. The ring takes the danger step instead: the same token the
+ * boundary already carries, so the field does not change hue when a caret
+ * lands in it, and "here" and "refused" stay one edge rather than two.
+ *
+ * It is the FILL step, not the ink one the error line takes, because this is
+ * a graphical object rather than a word: @crewlethq/tokens measures
+ * --color-feedback-danger to 3:1 on every surface a mark can be drawn on.
+ */
+.crewlet-input.is-error:has(.crewlet-input__control:focus-visible) {
+  outline-color: var(--color-feedback-danger);
 }
 
 .crewlet-input.is-disabled {
@@ -41,85 +130,240 @@
   border: none;
   outline: none;
   font-family: inherit;
+  align-self: stretch;
   color: var(--color-text-primary);
-  font-size: 14px;
-  line-height: 1.5;
-  padding: 10px 14px;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  padding: 0 var(--spacing-3);
   box-sizing: border-box;
   width: 100%;
 }
 
+/*
+ * THE PLACEHOLDER IS A FACT, not decoration: it is the example of the shape a
+ * value takes, so it sits on the tertiary step (4.5:1) rather than the
+ * decoration step it used to take at 0.6 opacity, which measured 2.22:1.
+ */
 .crewlet-input__control::placeholder {
-  color: var(--color-text-secondary);
-  opacity: 0.6;
+  color: var(--color-text-tertiary);
+  opacity: 1;
 }
 
 .crewlet-input__control:disabled {
   cursor: not-allowed;
 }
 
-.crewlet-input--sm .crewlet-input__control { padding: 6px 10px; font-size: 13px; }
-.crewlet-input--md .crewlet-input__control { padding: 10px 14px; font-size: 14px; }
+.crewlet-input--sm .crewlet-input__control {
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+}
 
-/* Trailing content sits at the field's right edge, out of the pointer's way
-   so a click on it still lands in the field. */
+/*
+ * The leading and trailing slots sit out of the pointer's way, so a press
+ * anywhere in the field still lands in the box. Anything a reader has to
+ * press belongs beside the field rather than inside it.
+ */
+.crewlet-input__leading,
 .crewlet-input__trailing {
   display: inline-flex;
   align-items: center;
   flex: none;
-  padding-right: 10px;
+  color: var(--color-text-tertiary);
   pointer-events: none;
 }
 
-.crewlet-input--sm .crewlet-input__trailing { padding-right: 8px; }
+/*
+ * A GLYPH IS INSET ONE STEP LESS THAN TEXT. The mark reads from its own
+ * middle and the letter from its left edge, so a search glyph on the text's
+ * own 12px line sat further in than the box's other contents; at 8px the two
+ * hang on one optical edge, and the value after it starts where it does in
+ * every other field on the form.
+ */
+.crewlet-input__leading {
+  padding-left: var(--spacing-2);
+}
+
+.crewlet-input__leading + .crewlet-input__control {
+  padding-left: var(--spacing-2);
+}
+
+.crewlet-input__trailing {
+  padding-right: var(--spacing-3);
+}
+
+.crewlet-input--sm .crewlet-input__trailing { padding-right: var(--spacing-2); }
+
+/*
+ * A TEXT AFFIX IS INSET LIKE TEXT, AND THE VALUE JOINS IT.
+ *
+ * The rule above is written for a GLYPH, which reads from its own middle and
+ * therefore hangs one step further out than a letter does. An affix is not a
+ * glyph: it is the first word of the value, so it takes the step the
+ * control's own text takes, and the control after it takes none.
+ *
+ * Both halves matter and they fail the same way. At the glyph's inset the
+ * scheme sits a step closer to the boundary than every other value on the
+ * form; with the control still paying its own inset behind it, `https://`
+ * stands a clear step away from the host, which is the two-fields reading
+ * that drawing the affix INSIDE the boundary exists to stop.
+ *
+ * Selected with `:has` on the slot, because only the affix knows which kind
+ * of leading content this is and the padding belongs to the slot.
+ */
+.crewlet-input__leading:has(.crewlet-input__affix) {
+  padding-left: var(--spacing-3);
+}
+
+.crewlet-input--sm .crewlet-input__leading:has(.crewlet-input__affix) {
+  padding-left: var(--spacing-2);
+}
+
+.crewlet-input__leading:has(.crewlet-input__affix) + .crewlet-input__control {
+  padding-left: 0;
+}
+
+/*
+ * The scheme a url field wears, INSIDE the boundary rather than beside it, so
+ * the box reads as one value: a chip in front of the field reads as two
+ * fields, and the second of them looks optional.
+ *
+ * The page's own face, not the code face it used to take. It is the start of
+ * a sentence somebody is finishing, not a token to be read exactly, and a
+ * mono `https://` in front of a proportional host is two typefaces in one
+ * value. Its ink is the SECONDARY step rather than the decoration one the
+ * product's own stylesheet gives it: the scheme is part of the value the
+ * field submits, and a value has to clear 4.5:1.
+ */
+.crewlet-input__affix {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+  user-select: none;
+}
+
+/*
+ * THE NATIVE CLEAR CONTROL IS NOT DRAWN. `::-webkit-search-cancel-button`
+ * exists in one browser family, is drawn by nobody else, and is reachable by
+ * no keyboard anywhere, so a themed version of it was a control that half the
+ * readers of a search box did not have. Input draws its own, as a real button
+ * with a name, whenever a caller passes `onClear`.
+ */
+.crewlet-input__control[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+/*
+ * The clear control's slot. It DOES take the pointer, unlike the leading and
+ * trailing slots above, because it is the one control that belongs inside a
+ * text box (see Input's own `onClear`).
+ */
+.crewlet-input__clear {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding-right: var(--spacing-1);
+}
+
+/*
+ * A field holding a name something else resolves: a secret reference, a key,
+ * a path. Monospace and quieter than prose, because it is a value to be read
+ * exactly rather than read for sense.
+ */
+.crewlet-input--reference .crewlet-input__control {
+  font-family: var(--font-family-mono);
+  font-variant-ligatures: none;
+  font-size: var(--font-size-compact);
+  color: var(--color-text-secondary);
+}
+
+/*
+ * The search field of a command palette. Borderless and large, because the
+ * surface around it IS the field: a boundary inside a dialog whose whole body
+ * is one input is a boundary around nothing, and a drawn one made the palette
+ * read as a form with a single question.
+ */
+.crewlet-input--command {
+  border-color: transparent;
+  background: transparent;
+  padding-inline: 0;
+}
+
+/*
+ * And it draws no ring either, for the same reason: the dialog around it is
+ * what says where the reader is, and the list below carries the highlight the
+ * arrows move.
+ *
+ * The outline is kept and made TRANSPARENT rather than dropped. Forced-colors
+ * mode substitutes a system colour into a transparent outline, so the one
+ * control in the palette is not the single field in the package left with no
+ * indicator at all for the readers who depend on that mode.
+ */
+.crewlet-input--command:has(.crewlet-input__control:focus-visible) {
+  outline-color: transparent;
+}
+
+.crewlet-input--command .crewlet-input__control {
+  font-size: var(--font-size-lg);
+}
 
 /* ── Textarea ────────────────────────────────────────────────────────── */
 /* A textarea with trailing content is wrapped so the content can sit inside
    its top right corner; the textarea itself is unchanged. */
 .crewlet-textarea-shell {
+  --crewlet-textarea-trailing-inset: 72px;
+
   position: relative;
   display: block;
   width: 100%;
 }
 
 .crewlet-textarea-shell .crewlet-textarea {
-  padding-right: 72px;
+  padding-right: var(--crewlet-textarea-trailing-inset);
 }
 
 .crewlet-textarea-shell .crewlet-input__trailing {
   position: absolute;
-  top: 9px;
+  top: var(--spacing-2);
   right: 0;
 }
 
+/*
+ * The multiline field: prose a person writes, such as a goal or a mission, so
+ * it wears the page's own face. It was the code face when this rule was
+ * written for a raw JSON editor that no longer exists.
+ */
 .crewlet-textarea {
   width: 100%;
-  padding: 10px 14px;
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.5;
+  padding: var(--spacing-2) var(--spacing-3);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
   color: var(--color-text-primary);
   background-color: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
   box-sizing: border-box;
   outline: none;
   resize: vertical;
-  min-height: 88px;
+  min-height: var(--spacing-11);
 }
 
-.crewlet-textarea:focus {
-  border-color: var(--color-brand-accent);
-  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.15));
+/* The same one ring the box above draws, and for the same reasons. Here it is
+   on the control itself: a textarea is the field, with nothing wrapped round
+   it and nothing focusable inside it. */
+.crewlet-textarea:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-textarea.is-error {
   border-color: var(--color-feedback-danger);
 }
 
-.crewlet-textarea.is-error:focus {
-  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.2);
+.crewlet-textarea.is-error:focus-visible {
+  outline-color: var(--color-feedback-danger);
 }
 
 .crewlet-textarea.is-disabled {
@@ -130,46 +374,69 @@
 .crewlet-textarea.is-auto-resize {
   resize: none;
   overflow: hidden;
-  min-height: 40px;
+  min-height: var(--size-control-lg);
 }
 
 .crewlet-textarea::placeholder {
-  color: var(--color-text-secondary);
-  opacity: 0.6;
+  color: var(--color-text-tertiary);
+  opacity: 1;
 }
 
 /* ── Label ───────────────────────────────────────────────────────────── */
+/*
+ * THE ONE MICRO-LABEL REGISTER: 11px, medium, opened up and uppercased, on
+ * the tertiary step. A form is read by its values, and a label set in the
+ * same size and weight as the value under it competes with it for the line;
+ * in this register the eye takes the whole column of labels in one pass and
+ * stops at the values.
+ *
+ * It is declared here and in exactly two other places that must match it, the
+ * fieldset legend and the read-only field's label, because those three ARE
+ * the same label in three markup positions.
+ */
 .crewlet-label {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  letter-spacing: -0.005em;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
 }
 
 .crewlet-label--with-action {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-2);
 }
 
 .crewlet-label__text {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  letter-spacing: -0.005em;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
 }
 
+/*
+ * The asterisk takes the danger INK, not the danger fill: at 3.76:1 the fill
+ * is under the floor for a mark a reader has to notice, and this one carries
+ * a rule about whether the form can be saved.
+ */
 .crewlet-label__required {
-  color: var(--color-feedback-danger, #e5484d);
-  font-weight: 700;
-  margin-left: 2px;
+  color: var(--color-feedback-danger-ink);
+  font-weight: var(--font-weight-bold);
+}
+
+/* "(optional)" and "(required)": a fact about the field, on the tertiary step. */
+.crewlet-label__note {
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-regular);
 }
 
 .crewlet-label__action {
@@ -178,26 +445,53 @@
 }
 
 /* ── FormField ───────────────────────────────────────────────────────── */
+/* The label, the control and its lines are one thing, so they sit one step
+   apart; the step BETWEEN fields is FormRow's and FormSection's, and it is
+   four times this. A field whose own parts were as far apart as the fields
+   around it left a label reading as a heading over the row below it. */
 .crewlet-form-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-1);
+  min-width: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* A fieldset's legend wears the field label's register, so a list of values
+   reads as one field among the others. */
+.crewlet-form-field__legend {
+  padding: 0;
+  margin-bottom: var(--spacing-1);
 }
 
 .crewlet-form-field__helper {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
   color: var(--color-text-tertiary);
 }
 
+/*
+ * The error line, on the danger INK. It stays BESIDE the help rather than
+ * replacing it: a reader told they are wrong needs the line that says what
+ * right looks like more than ever, not less.
+ *
+ * THE INK IS NOT THE HELP LINE'S. The product's own stylesheet draws a
+ * field's refusal in the same tertiary grey as its help, which leaves the one
+ * line saying the value cannot be saved indistinguishable from the line
+ * saying what the value is for. This register keeps the measured danger step.
+ */
 .crewlet-form-field__error {
-  font-size: 12px;
-  color: var(--color-feedback-danger, #e5484d);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-feedback-danger-ink);
 }
 
 /* ── FormRow ─────────────────────────────────────────────────────────── */
 .crewlet-form-row {
   display: grid;
-  gap: 16px;
+  gap: var(--spacing-4);
 }
 
 .crewlet-form-row--1 { grid-template-columns: 1fr; }
@@ -207,4 +501,116 @@
 @media (max-width: 768px) {
   .crewlet-form-row--2,
   .crewlet-form-row--3 { grid-template-columns: 1fr; }
+}
+
+/* ── FormSection ─────────────────────────────────────────────────────── */
+.crewlet-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.crewlet-form-section--divided {
+  border-top: 1px solid var(--color-border-default);
+  padding-top: var(--spacing-5);
+}
+
+.crewlet-form-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+
+.crewlet-form-section__titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-form-section__title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  color: var(--color-text-primary);
+}
+
+.crewlet-form-section__hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
+  max-width: var(--size-measure-narrow);
+}
+
+.crewlet-form-section__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex: none;
+}
+
+.crewlet-form-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+/* ── ReadOnlyField ───────────────────────────────────────────────────── */
+.crewlet-readonly-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+/* The same micro-label register a Label draws, because it is the same label:
+   the field is read-only, not a different kind of field. */
+.crewlet-readonly-field__label {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-readonly-field__value {
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-readonly-field__value.is-mono {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-compact);
+}
+
+/*
+ * Why it is not editable here, and where it is. The SECONDARY step rather
+ * than the decoration one: this sentence is the whole reason the reader stops
+ * looking for a control that is not on this screen.
+ */
+.crewlet-readonly-field__reason {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-readonly-field__action {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-input,
+  .crewlet-textarea {
+    transition: none;
+  }
 }

@@ -1,0 +1,319 @@
+/*
+ * The rail's navigation.
+ *
+ * ONE VERTICAL LINE. The rail pads by --size-nav-gutter and each row pads by
+ * --size-nav-row-pad, so the mark, the group labels and every row's text start
+ * on the same line: shrink the gutter and grow the pad by the same step and
+ * nothing moves. That is why the row's own background takes the full width the
+ * gutter leaves it, rather than each row carrying a horizontal margin of its
+ * own.
+ */
+
+.crewlet-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: var(--spacing-2) var(--size-nav-gutter) var(--spacing-4);
+}
+
+/*
+ * THE ROWS INSIDE A GROUP ARE FLUSH. A group is a run of destinations read as
+ * one block, and the space between two of them is already the row's own height
+ * against a 13px line; a step on top of that spends four pixels a rail cannot
+ * afford fifteen times over. It is what the group LABEL's bottom pad is for,
+ * and the rail's own gap between groups is what separates one run from the
+ * next.
+ *
+ * Measured rather than chosen: at one step per row the rail stood 823px in a
+ * 755px scroller, so the last two destinations in the product were reachable
+ * only by scrolling the rail. Flush it is 746px and every row is on screen.
+ */
+.crewlet-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0);
+  min-width: 0;
+}
+
+.crewlet-nav-group__label {
+  padding: var(--spacing-3) var(--size-nav-row-pad) var(--spacing-1);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  /* The rail's own micro-label register, which is one step tighter than the
+     wider step an Eyebrow takes: a group name here sits four pixels above the
+     row it names, and at the wider step "OPERATIONS" was visibly broader than
+     the rows beneath it rather than quieter than them. */
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  /* The 4.5:1 step: a group name is a fact a reader has to read, not
+     decoration. */
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-nav-item {
+  min-width: 0;
+}
+
+.crewlet-nav-item__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-nav-item__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  min-height: var(--size-row-md);
+  padding: 0 var(--size-nav-row-pad);
+  border: none;
+  /* The chrome's radius, not a card's. A 12px corner on a 36px row leaves the
+     tint reading as a lozenge floating in the gutter rather than as a band the
+     width of the rail. */
+  border-radius: var(--radius-md);
+  background: transparent;
+  /*
+   * THE RAIL READS AT FULL INK. A destination is not secondary text: a rail of
+   * fifteen rows in the quiet step is a column of grey a reader has to hunt
+   * through, and the step down bought nothing the row's own tint does not
+   * already say. It is also the darker of the two on light and the lighter on
+   * dark, so the contrast on every ground the row can have goes up rather than
+   * down.
+   *
+   * WHAT CARRIES HOVER IS THEREFORE THE TINT, not an ink step: there is no
+   * step left above this one. The glyph is the second half of it, lifting from
+   * the decoration ramp to the row's own ink.
+   */
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  /* THE CHROME IS NOT BODY TEXT. A rail row names a destination; it is read at
+     a glance and never read through, so it takes the compact step in the
+     medium weight, which is what keeps a one-word row legible at 13px. */
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-snug);
+  line-height: var(--font-line-height-tight);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-nav-item__row:hover {
+  background: var(--color-surface-hover);
+  text-decoration: none;
+}
+
+.crewlet-nav-item__row:focus-visible {
+  outline: 2px solid var(--color-focus);
+  /* Inside the row's own box: the rail is a clipping scroller, so an outset
+     ring on the first or last row is cut off by it. */
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
+ * WHERE THE READER IS: the accent's own soft tint, with the label and the
+ * glyph in the accent ink. That is the whole job of an accent in a chrome, and
+ * the rail is the one place in the chrome it appears.
+ *
+ * It was a neutral lift with the accent as a one-pixel bar outside the row's
+ * left edge, on the reading that accent text in a rail competes with the
+ * status hues beside it and cannot be separated from the row above by a reader
+ * with a colour vision deficiency. Neither holds here. Nothing in this rail
+ * carries a status hue except the attention count below, which is a tint
+ * BEHIND a word rather than a word in a hue; and the tint is what answers the
+ * second objection, because the row still lifts off its ground by more than a
+ * hovered one does whether or not the hue is seen at all (@crewlethq/tokens
+ * measures exactly that, and measures this ink on this composite: 5.76:1 in
+ * light, 5.96:1 in dark).
+ *
+ * What the bar cost was that one pixel of hue was the entire signal, at the
+ * one moment a reader is scanning the rail to find out where they are.
+ *
+ * Drawn from aria-current, so the picture and what a screen reader is told
+ * cannot come apart. It is declared after :hover deliberately: both selectors
+ * weigh the same, a row shows the current tint or the hover overlay and never
+ * both, and later is what decides which.
+ */
+.crewlet-nav-item__row[aria-current='page'] {
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-nav-item__row[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.crewlet-nav-item__row[aria-disabled='true']:hover {
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+/*
+ * THE GLYPH FOLLOWS THE LABEL. At rest it is quieter than the word beside it
+ * and takes the decoration step; on a hovered row and on the reader's own it
+ * takes the row's own colour, which on the current row is the accent ink.
+ *
+ * ONE inherit rather than a second ramp, because a second ramp is how a row
+ * comes to paint its label and its glyph two different answers to "where am
+ * I". The colour is set on the DRAWING rather than on the box around it, which
+ * is what says the decoration step is being spent on a glyph and not on text:
+ * the package's variable check holds that rule, and it is the rule the step
+ * exists for.
+ */
+.crewlet-nav-item__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.crewlet-nav-item__icon svg {
+  color: var(--color-text-muted);
+  transition: color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-nav-item__row:hover .crewlet-nav-item__icon svg,
+.crewlet-nav-item__row[aria-current='page'] .crewlet-nav-item__icon svg {
+  color: inherit;
+}
+
+.crewlet-nav-item__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-nav-item__badge {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  margin-left: auto;
+  font-size: var(--font-size-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * THE SLOT IS WHAT PAINTS. A caller hands in the figure and the name a screen
+ * reader reads after the row's own ("3 things waiting on somebody"); the rail
+ * decides whether that is a quiet number at the end of the row or the one
+ * thing on the screen that should pull the eye. So whatever arrives
+ * contributes its text and its accessible name and nothing else, which is why
+ * a <Count> here draws its own text rather than a second pill inside this one.
+ */
+.crewlet-nav-item__badge > * {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  min-width: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  /* Not the `font` shorthand, which would reset font-variant and take the
+     tabular figures with it. */
+  font-variant-numeric: inherit;
+  line-height: inherit;
+}
+
+/* A quiet badge takes the row's ink, the current row's accent included. The
+   attention badge keeps its own, which is the whole point of it, and the
+   :not() is what says so: both selectors would otherwise weigh the same and a
+   tone would be decided by which rule a later edit happened to move. */
+.crewlet-nav-item__row[aria-current='page'] .crewlet-nav-item__badge:not(.crewlet-nav-item__badge--attention) {
+  color: inherit;
+}
+
+/*
+ * THE ONE BADGE IN THE CHROME ALLOWED A STATUS HUE. A count of what is waiting
+ * on a person is the one thing that should pull the eye out of whatever screen
+ * the reader is on, and it stays a tint BEHIND a word rather than a word in a
+ * hue, so it reads to somebody who cannot separate the hue at all.
+ *
+ * Measured on every ground a row can have, the reader's own row included,
+ * which is a warning tint on the accent tint on the rail: @crewlethq/tokens'
+ * palette suite has that composite by name, at 5.08:1 in light and 9.75:1 in
+ * dark.
+ */
+.crewlet-nav-item__badge--attention {
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-feedback-warning-soft);
+  color: var(--color-feedback-warning-ink);
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-nav-item__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+}
+
+.crewlet-nav-item__toggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.crewlet-nav-item__toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-nav-item__chevron {
+  display: inline-flex;
+  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-nav-item__chevron--open {
+  transform: rotate(180deg);
+}
+
+/*
+ * Nested rows carry an indent guide rather than more padding, because a run of
+ * indents with no line is a hierarchy a reader has to measure by eye. The
+ * guide takes the accent on the path the reader is on, which is the same
+ * signal the top-level rail gives.
+ */
+.crewlet-nav-item__children {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin-left: var(--size-nav-row-pad);
+  padding-left: var(--spacing-2);
+  border-left: 1px solid var(--color-border-default);
+}
+
+/* No type step of its own any more: every row in the rail reads at the compact
+   step now, and the indent guide is what says a row is nested. */
+.crewlet-nav-item__children:has(.crewlet-nav-item__row[aria-current='page']) {
+  border-left-color: var(--color-brand-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-nav-item__row,
+  .crewlet-nav-item__icon svg,
+  .crewlet-nav-item__chevron {
+    transition: none;
+  }
+}

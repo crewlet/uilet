@@ -1,0 +1,169 @@
+/*
+ * Switch: a setting that takes effect as it moves.
+ *
+ * The native checkbox is still the control. It is drawn over the track at
+ * full size and zero opacity rather than hidden, so the pointer hits the real
+ * input and nothing here has to rebuild Space, the label association or form
+ * submission.
+ *
+ * What zero opacity costs is the one thing the control cannot do: be seen. Its
+ * ring is drawn on the TRACK, keyed on the control's own focus, because an
+ * outline on an element at zero alpha is an outline nobody is shown. See the
+ * rule at the bottom of this file.
+ */
+
+.crewlet-switch {
+  --crewlet-switch-width: 36px;
+  --crewlet-switch-height: 20px;
+  --crewlet-switch-thumb: 14px;
+  --crewlet-switch-inset: 3px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  min-height: var(--size-row-sm);
+  /*
+   * The label's size, on the row, because the track below is placed against
+   * the label's first LINE in `em` and `em` on the track is the size it
+   * inherits. Left off, the sum was computed against whatever body size an
+   * application happened to set.
+   */
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.crewlet-switch__track {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: var(--crewlet-switch-width);
+  height: var(--crewlet-switch-height);
+  /*
+   * Centred on the label's first LINE, the same sum a Checkbox's box takes,
+   * so a form holding both does not draw two rows whose controls sit at two
+   * heights. The literal it replaces put a 20px track 2px below a 19.6px
+   * line, which is a track hanging under its own sentence.
+   */
+  margin-top: calc((var(--font-line-height-snug) * 1em - var(--crewlet-switch-height)) / 2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-inset);
+  /*
+   * A REAL BOUNDARY IN BOTH STATES. Two fills alone leave "off" as a grey
+   * pill on a grey panel, and the control most likely to be missed is the one
+   * saying whether something is running.
+   */
+  border: 1px solid var(--color-border-control);
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-switch__control {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.crewlet-switch__thumb {
+  position: absolute;
+  top: var(--crewlet-switch-inset);
+  left: var(--crewlet-switch-inset);
+  width: var(--crewlet-switch-thumb);
+  height: var(--crewlet-switch-thumb);
+  border-radius: var(--radius-circle);
+  background: var(--color-text-on-accent);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* Off, the thumb rides the neutral track and needs its own contrast. */
+.crewlet-switch__control:not(:checked) ~ .crewlet-switch__thumb {
+  background: var(--color-text-secondary);
+}
+
+.crewlet-switch__control:checked ~ .crewlet-switch__thumb {
+  transform: translateX(
+    calc(var(--crewlet-switch-width) - var(--crewlet-switch-thumb) - var(--crewlet-switch-inset) * 2 - 2px)
+  );
+}
+
+.crewlet-switch__track:has(.crewlet-switch__control:checked) {
+  background: var(--color-brand-accent);
+  border-color: var(--color-brand-accent);
+}
+
+/*
+ * THE RING IS DRAWN ON THE TRACK, NOT ON THE CONTROL.
+ *
+ * The control is still what takes focus, and the rule this replaces put the
+ * ring on it for exactly that reason. It painted nothing: the control carries
+ * `opacity: 0`, and opacity applies to the WHOLE of an element's rendering,
+ * its outline included. A keyboard reader tabbing onto a switch was shown no
+ * indicator at all, measured on a screenshot of the focused control. It is the
+ * one failure a focus rule can have that reading the computed style does not
+ * reveal: `outline: solid 2px rgb(84, 105, 212)` was there the whole time, at
+ * zero alpha.
+ *
+ * So it moves to the track, which is what a reader sees, keyed on the
+ * control's own :focus-visible. The track is the same box: the control is
+ * `inset: 0` over it.
+ *
+ * OUTSET, like a Checkbox's and unlike a text field's. A 20px pill has no
+ * room to draw a ring inside itself, and there is no boundary to cover out
+ * there either: the track's own border goes the accent colour of its fill
+ * when the switch is on, so the ring is the only edge in that space.
+ */
+.crewlet-switch__track:has(.crewlet-switch__control:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-switch__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  user-select: none;
+  min-width: 0;
+}
+
+.crewlet-switch__label {
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-primary);
+}
+
+.crewlet-switch__description {
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
+}
+
+/* The same frame a Checkbox's row draws, because it is the same row: a
+   boundary on the dialog's own body, and no surface of its own. */
+.crewlet-switch--framed {
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+}
+
+.crewlet-switch.is-disabled,
+.crewlet-switch.is-disabled .crewlet-switch__control {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/*
+ * The thumb ARRIVES rather than slides. The state still changes and the track
+ * still recolours; what stops is the travel, which is the part that makes a
+ * reader with a vestibular disorder look away from the control they are using.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-switch__track,
+  .crewlet-switch__thumb {
+    transition: none;
+  }
+}

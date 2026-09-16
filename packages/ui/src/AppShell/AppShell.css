@@ -1,51 +1,395 @@
 /*
- * AppShell, layout shell for console apps.
+ * The application frame.
  *
- * Passive composition: the sidebar and topbar slots position
- * themselves (typically `position: fixed`); AppShell only reserves
- * the gutters the fixed elements overlay via margin / padding on
- * the content column, so an application can adopt the shell without
- * restyling a sidebar or header it already positions itself.
+ * The rail's width and the bar's height are read from the token layer through
+ * two component variables, so an application with a narrower rail sets ONE
+ * value rather than repeating a number in its own stylesheet, which is what
+ * every consumer of the passive shell had to do.
  *
- * Layout dimensions are exposed as CSS custom properties on the
- * root so styles inside slot children can read them.
+ * The breakpoint is written out because a media query cannot read a custom
+ * property. It is the shell step from @crewlethq/tokens, and the CSS check
+ * compares the literal against the token.
  */
 
 .crewlet-app-shell {
+  --crewlet-app-shell-rail: var(--size-shell-rail);
+  --crewlet-app-shell-topbar: var(--size-shell-topbar);
+  /* Where the drawer's veil sits while it is open. The shell replaces it with
+     the surface's own place in the layer band; this default only has to clear
+     the page chrome for the moment before that lands. */
+  --crewlet-app-shell-drawer-z: var(--z-index-overlay);
+  display: grid;
+  grid-template-columns: var(--crewlet-app-shell-rail) minmax(0, 1fr);
+  /* THE DOCUMENT DOES NOT SCROLL: exactly the viewport, and nothing may grow
+     past it. A page that can also scroll as a whole carries the rail off the
+     top of the window. */
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--color-surface-background);
+  color: var(--color-text-primary);
+}
+
+/* The skip link, drawn only while it holds focus, over everything. */
+.crewlet-app-shell__skip {
+  position: fixed;
+  top: var(--spacing-2);
+  left: var(--spacing-2);
+  z-index: var(--z-index-toast);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+  transform: translateY(calc(-100% - var(--spacing-4)));
+  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-app-shell__skip:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-app-shell__rail {
   display: flex;
-  height: 100vh;
-  overflow-x: hidden;
-  overflow-y: visible;
-  --crewlet-app-shell-sidebar-width: 280px;
-  --crewlet-app-shell-topbar-height: 64px;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--color-surface-topbar);
+  border-right: 1px solid var(--color-border-default);
+}
+
+.crewlet-app-shell__rail-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+/*
+ * The head sits at the top bar's own height, so the first nav row starts level
+ * with the top of the screen beside it.
+ *
+ * AND IT DRAWS NO LINE OF ITS OWN. It carried a bottom border, which put a
+ * divider across the rail at the same height as the bar's, and the two read as
+ * one rule running the width of the window with the brand and the screen title
+ * sitting above it like a second bar. The rail is one column: the bar's line
+ * belongs to the bar, the rail's right edge is what separates the two, and the
+ * only rule inside the rail is the one over its foot.
+ */
+.crewlet-app-shell__rail-head {
+  display: flex;
+  align-items: center;
+  flex: none;
+  min-height: var(--crewlet-app-shell-topbar);
+}
+
+.crewlet-app-shell__rail-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-color: var(--color-scrollbar) transparent;
+}
+
+/* The same gutter the nav takes, so what the foot says lines up with the rows
+   above it rather than sitting further out. */
+.crewlet-app-shell__rail-foot {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--size-nav-gutter);
+  border-top: 1px solid var(--color-border-default);
+}
+
+/*
+ * A ROW IN THE RAIL LIKE ANY OTHER, for the foot.
+ *
+ * The rail's geometry is in two parts on purpose: the gutter insets the rail,
+ * which is where a row's background begins, and the row pad insets the content
+ * inside the row. A control dropped into the foot brings its own inset and
+ * lands its mark four or five pixels off the line every nav glyph above it
+ * sits on, which is the one thing a reader notices about a rail without being
+ * able to say what it is. This takes both halves, so it cannot.
+ *
+ * AND SO DOES WHATEVER ELSE LANDS THERE. `AppShell.RailRow` is the row this
+ * package draws, but the slot takes a control from anywhere and an application
+ * that already has a status button reaches for that one: the engine drops a
+ * tertiary Button into the foot, which arrived centred in a 263px rail on a
+ * toolbar's inset. The foot claims a direct child instead, which is the same
+ * move the nav's badge slot makes on whatever a caller puts in it, and there
+ * is no second idea of what a row in this rail is.
+ *
+ * THE BLOCK INSET IS A STEP, NOT A HEIGHT. A status line is a word with room
+ * around it rather than a control on the control ladder, so it takes one
+ * spacing step above and below its own line: 8 + 18 + 8 is 34px at the normal
+ * density and follows the density from there. --size-row-sm stays under it as
+ * the floor, because that is the step carrying the 24px a finger can hit, so
+ * compact density cannot take the target under it.
+ *
+ * And the boundary is TRANSPARENT rather than absent, spending one pixel of
+ * that step rather than adding one on top of it. A button carries one at every
+ * variant so that a bordered variant and a borderless one stand the same
+ * height, and the row this package draws carries the same one for the same
+ * reason: without it the two rows in one foot are 34px and 36px, and the
+ * difference is a border nobody can see.
+ */
+.crewlet-app-shell__rail-row,
+.crewlet-app-shell__rail-foot > .crewlet-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--spacing-2);
+  width: 100%;
+  min-width: 0;
+  min-height: var(--size-row-sm);
+  padding: calc(var(--spacing-2) - 1px) var(--size-nav-row-pad);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--font-line-height-normal);
+  text-align: left;
+}
+
+.crewlet-app-shell__rail-row--action,
+.crewlet-app-shell__rail-foot > .crewlet-btn {
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-app-shell__rail-row--action:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/* A row in the foot fills the rail, so its label takes whatever the glyph and
+   the trailing slot leave it and truncates rather than pushing them off the
+   end: a status line says what a node is doing, and what it says is as long as
+   the sentence the application wrote. */
+.crewlet-app-shell__rail-foot > .crewlet-btn > .crewlet-btn__label {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Inside the row's own box, like every row in the rail above it. The shell's
+ * root is `overflow: hidden` at exactly the viewport's height, so an outset
+ * ring on the last row in the foot is cut off at the bottom of the window.
+ */
+.crewlet-app-shell__rail-row--action:focus-visible,
+.crewlet-app-shell__rail-foot > .crewlet-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-app-shell__rail-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.crewlet-app-shell__rail-row-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pushed to the end of the row whatever the label's length. */
+.crewlet-app-shell__rail-row-trailing {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  margin-left: auto;
 }
 
 .crewlet-app-shell__column {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  margin-left: var(--crewlet-app-shell-sidebar-width);
-  padding-top: var(--crewlet-app-shell-topbar-height);
-  height: 100vh;
-  overflow-x: hidden;
-  overflow-y: visible;
+  min-width: 0;
+  min-height: 0;
 }
 
+.crewlet-app-shell__topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex: none;
+  height: var(--crewlet-app-shell-topbar);
+  padding: 0 var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-surface-topbar);
+}
+
+.crewlet-app-shell__title {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-app-shell__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-left: auto;
+  min-width: 0;
+}
+
+.crewlet-app-shell__banner {
+  flex: none;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+/*
+ * THE one scroll container. Every screen scrolls here, which is what lets a
+ * router restore a position per history entry.
+ *
+ * The gutter is reserved at every height, so navigating between a tall screen
+ * and a short one does not shift every element sideways by the scrollbar's
+ * width, which reads as the page jumping on each move.
+ */
 .crewlet-app-shell__main {
-  flex: 1;
-  padding: 40px 0;
-  overflow-y: auto;
-  overflow-x: visible;
+  flex: 1 1 auto;
   min-height: 0;
-  /*
-   * Reserve space for the vertical scrollbar on every page so the
-   * tab strip, headers, and content stay anchored at the same x
-   * position when navigating between a tall page (long form, large
-   * table) and a short page (a card or two). Without this gutter,
-   * the scrollbar appears or disappears between routes and shifts
-   * every element horizontally by the scrollbar's width, which
-   * reads as the page "jumping" on every navigation.
-   */
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-gutter: stable;
+}
+
+/* No focus rule of its own: `main` takes focus only from the skip link, and a
+   programmatic focus does not match :focus-visible, so neither the browser nor
+   the document baseline draws a ring around the whole screen. */
+
+.crewlet-app-shell__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  max-width: var(--size-content-max);
+  margin: 0 auto;
+  padding: var(--spacing-5) var(--spacing-5) var(--spacing-10);
+  min-width: 0;
+}
+
+/* A screen that draws to the bottom of the window: the scroller stops
+   scrolling and the content column takes the height that is left. */
+.crewlet-app-shell--fill .crewlet-app-shell__main {
+  overflow: hidden;
+}
+
+.crewlet-app-shell--fill .crewlet-app-shell__content {
+  height: 100%;
+  padding-bottom: var(--spacing-5);
+}
+
+/* Hidden by default, revealed by the breakpoint below: the wide layout has the
+   rail on screen already, so the control that opens it has nothing to do. */
+.crewlet-app-shell__toggle {
+  display: none;
+}
+
+/*
+ * An open rail paints ONE step above its own veil, at every width: the drawer
+ * is JavaScript state and its shape is a stylesheet's, so a shell that opens
+ * it above the breakpoint (a demonstration, a test) must not draw a scrim over
+ * the rail it just opened.
+ *
+ * Z-INDEX ALONE, AND NO POSITION. The rail is a grid item wide and a fixed
+ * box narrow, and z-index applies to both, so a `position` here would buy
+ * nothing and cost the narrow layout everything: an attribute selector
+ * outranks the plain class the media query below re-declares, so a
+ * `position: relative` written here wins INSIDE that query too, and the open
+ * drawer leaves the fixed layer to become a grid item that takes the whole
+ * column and pushes the application into the next row. The suite holds this
+ * rule over the file rather than over a browser it cannot drive.
+ */
+.crewlet-app-shell__rail[data-open='true'] {
+  z-index: calc(var(--crewlet-app-shell-drawer-z) + 1);
+}
+
+/*
+ * The veil, declared OUTSIDE the breakpoint: a position it takes at one width
+ * only is a layout participant at every other, and as a plain element in the
+ * shell's grid it took the rail's column and pushed the application into the
+ * next row.
+ */
+.crewlet-app-shell__veil {
+  position: fixed;
+  inset: 0;
+  background: var(--color-surface-scrim);
+}
+
+@media (max-width: 900px) {
+  .crewlet-app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .crewlet-app-shell__rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--crewlet-app-shell-rail);
+    max-width: 100%;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-xl);
+    /*
+     * HIDDEN, not only moved. A rail translated off screen keeps every link
+     * and control in the tab order and in the accessibility tree, so a
+     * keyboard reader walks through a dozen stops nobody can see.
+     *
+     * Visibility is transitioned rather than switched, which is how the
+     * hiding waits for the slide out: an in-between value of visibility is
+     * `visible` whenever either end of the transition is, so the rail stays
+     * drawn for the whole duration and hides at the end. Going the other way
+     * the same rule shows it at once, which is what lets the drawer take
+     * focus the moment it opens.
+     */
+    visibility: hidden;
+    transition:
+      transform var(--motion-duration-slow) var(--motion-easing-emphasized),
+      visibility var(--motion-duration-slow) linear;
+  }
+
+  .crewlet-app-shell__rail[data-open='true'] {
+    transform: none;
+    visibility: visible;
+    transition: transform var(--motion-duration-slow) var(--motion-easing-emphasized);
+  }
+
+  .crewlet-app-shell__toggle {
+    display: inline-flex;
+  }
+
+  .crewlet-app-shell__content {
+    padding: var(--spacing-4) var(--spacing-3) var(--spacing-9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-app-shell__skip,
+  .crewlet-app-shell__rail,
+  .crewlet-app-shell__rail[data-open='true'],
+  .crewlet-app-shell__rail-row--action,
+  .crewlet-app-shell__rail-foot > .crewlet-btn {
+    transition: none;
+  }
 }

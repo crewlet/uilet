@@ -1,0 +1,21 @@
+/*
+ * Hidden from the eye, read by everything else.
+ *
+ * The clip rectangle rather than `display: none` or `visibility: hidden`:
+ * those two remove the text from the accessibility tree as well as from the
+ * page. One pixel rather than zero, because a zero-sized element is skipped by
+ * some screen readers. `white-space: nowrap` stops a long sentence wrapping
+ * inside that pixel and being read a word at a time.
+ */
+
+.crewlet-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

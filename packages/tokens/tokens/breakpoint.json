@@ -2,6 +2,7 @@
   "breakpoint": {
     "sm": { "value": "480px", "comment": "Small phones." },
     "md": { "value": "768px", "comment": "Tablets. The primary layout switch between stacked and multi-column." },
+    "shell": { "value": "900px", "comment": "Where the application shell stops being a rail beside a pane: a 280px rail plus a 620px minimum content column. A media query cannot read a custom property, so a stylesheet that switches here spells the number, and @crewlethq/tokens/css/breakpoint is the generated partial that says what the number is." },
     "lg": { "value": "1024px", "comment": "Small laptops." },
     "xl": { "value": "1200px", "comment": "Standard desktop." },
     "2xl": { "value": "1600px", "comment": "Large desktop, such as wide marketing hero containers." }

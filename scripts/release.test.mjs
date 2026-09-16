@@ -41,7 +41,7 @@ function manifest(overrides = {}) {
   return {
     name: '@crewlethq/icons',
     version: '1.2.3',
-    license: 'MIT',
+    license: 'MIT AND Apache-2.0',
     repository: { type: 'git', url: 'git+https://github.com/crewlet/uilet.git', directory: 'packages/icons' },
     exports: { '.': './dist/index.js' },
     files: ['dist'],
@@ -230,7 +230,7 @@ describe('check', () => {
 
     it('refuses a license other than the one expected for the package', () => {
       const root = repository({ 'packages/icons/package.json': manifest({ license: 'ISC' }) });
-      assert.deepEqual(problemsOf(root), ['packages/icons/package.json: "license" must be "MIT"']);
+      assert.deepEqual(problemsOf(root), ['packages/icons/package.json: "license" must be "MIT AND Apache-2.0"']);
     });
   });
 
@@ -303,6 +303,29 @@ describe('tarballProblems', () => {
       'crewlethq-icons-1.2.3.tgz: ships font files in fonts/ without the OFL.txt their license requires beside them',
     ]);
     files.add('fonts/OFL.txt');
+    assert.deepEqual(tarballProblems(root, workspace, filename, files), []);
+  });
+
+  it('refuses vendored drawings shipped without the license and notice beside them', () => {
+    const root = repository();
+    const files = new Set(['package.json', 'LICENSE', 'dist/index.js', 'symbols/20/close.svg', 'symbols/24/close.svg']);
+    assert.deepEqual(tarballProblems(root, workspace, filename, files), [
+      'crewlethq-icons-1.2.3.tgz: ships vendored drawings in symbols/ without the LICENSE their license requires beside them',
+      'crewlethq-icons-1.2.3.tgz: ships vendored drawings in symbols/ without the NOTICE their license requires beside them',
+    ]);
+    files.add('symbols/LICENSE');
+    assert.deepEqual(tarballProblems(root, workspace, filename, files), [
+      'crewlethq-icons-1.2.3.tgz: ships vendored drawings in symbols/ without the NOTICE their license requires beside them',
+    ]);
+    files.add('symbols/NOTICE');
+    assert.deepEqual(tarballProblems(root, workspace, filename, files), []);
+  });
+
+  it('asks for the drawings notices only when drawings ship', () => {
+    // The package's own SVGs are MIT and sit in svg/. Only the vendored tree
+    // carries somebody else's terms.
+    const root = repository();
+    const files = new Set(['package.json', 'LICENSE', 'dist/index.js', 'svg/crewlet-icon.svg']);
     assert.deepEqual(tarballProblems(root, workspace, filename, files), []);
   });
 

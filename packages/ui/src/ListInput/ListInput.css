@@ -1,0 +1,147 @@
+/*
+ * ListInput: an ordered list of sentences, written in the box at the top and
+ * listed under it.
+ *
+ * THE LIST IS ONE CARD, and each item one line of it. A stack of separate
+ * boxes, each a two-row textarea with three buttons beside it, is a form per
+ * item: three of them measured 256px where the console's own list draws 111,
+ * and the second row of every textarea was empty. The card, the dividing
+ * rules and the drawn position are what make a list of sentences read as a
+ * list rather than as a column of fields.
+ */
+
+.crewlet-list-input__add {
+  display: flex;
+  align-items: flex-start;
+}
+
+.crewlet-list-input__add > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.crewlet-list-input__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /*
+   * Split rather than the shorthand, so the width and the style are readable
+   * where the colour is not: the suites substitute the length tokens and
+   * deliberately leave a colour standing, which drops a whole shorthand
+   * holding one.
+   */
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-border-default);
+  border-radius: var(--radius-md);
+  /*
+   * The page's own ground, one step from the sheet's. A card drawn on the
+   * ground it sits on is a card nobody can see: the sheet is the subtle step,
+   * so the list takes the step beside it in both palettes (#ffffff on
+   * #f4f4f5, #15171c on #1c1e24).
+   */
+  background: var(--color-surface-background);
+  /*
+   * The card clips, so the first and last rows take its corners: a square row
+   * painted over a rounded edge is the corner disappearing under its own
+   * content.
+   */
+  overflow: hidden;
+}
+
+/*
+ * ONE LINE PER ITEM. The inline padding is the card's own; the block padding
+ * is what is left over once the row's controls have their height, so a row
+ * holding one line of text stands at the height the console draws and a row
+ * holding three grows with them.
+ */
+.crewlet-list-input__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-block-end-width: 1px;
+  border-block-end-style: solid;
+  border-block-end-color: var(--color-border-default);
+}
+
+.crewlet-list-input__item:last-child {
+  border-block-end-style: none;
+}
+
+.crewlet-list-input__item > .crewlet-input,
+.crewlet-list-input__item > .crewlet-textarea {
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+ * THE ITEM'S CONTROL READS AS THE TEXT IT HOLDS, until it is reached. A
+ * bordered box per row would draw the card's rule twice and turn the list
+ * back into a column of fields; the boundary comes back on hover and the
+ * focus ring is untouched, so nothing about reaching the control is quieter,
+ * only its resting state.
+ */
+.crewlet-list-input__item .crewlet-input,
+.crewlet-list-input__item .crewlet-textarea {
+  background: none;
+  border-color: transparent;
+  /*
+   * THE ROW OWNS THE ROW'S HEIGHT. A control standing at its own step inside
+   * a row that already insets it is a row an inch taller than the sentence in
+   * it: at the control's 44px minimum the list measured 53px a row against
+   * the console's 37. The control's block padding stays, because the text
+   * still needs to clear the rule above and below it; its inline padding goes,
+   * because the position beside it and the row's own gap are that inset
+   * already, and paying it twice indents every sentence past its own number.
+   */
+  min-height: 0;
+}
+
+.crewlet-list-input__item .crewlet-input__control,
+.crewlet-list-input__item .crewlet-textarea {
+  padding-block: var(--spacing-1);
+  padding-inline: 0;
+}
+
+.crewlet-list-input__index {
+  flex: none;
+  min-width: var(--spacing-4);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  /* The accent's own ink step, which is what the position is: a mark on the
+     card's ground rather than a word in the sentence beside it. */
+  color: var(--color-brand-accent);
+}
+
+.crewlet-list-input__actions {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+/*
+ * MOVE UP AND MOVE DOWN ARE THE ROW'S SECOND THOUGHT. Three controls on every
+ * row is what made this list a grid of buttons; the console draws one. They
+ * are revealed by the pointer and by the focus, never removed: an invisible
+ * control that still takes a Tab is the worst of both, so the same state that
+ * lets the keyboard reach them is the state that draws them.
+ */
+.crewlet-list-input__move {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-list-input__item:hover .crewlet-list-input__move,
+.crewlet-list-input__item:focus-within .crewlet-list-input__move {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-list-input__move {
+    transition: none;
+  }
+}

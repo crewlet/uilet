@@ -1,0 +1,360 @@
+/*
+ * An organization as an indented table of rows (OrgTable.tsx).
+ *
+ * The rows, the cells and the column template are `TreeGrid`'s, and the add's
+ * own split is `AddPill`'s. What is here is the console org table's own drawing
+ * on top of them: the gutter the wires run down, the two-line name group, the
+ * controls that stay quiet until a row is reached, the slot the add splits open
+ * in, and the tab of tree controls attached to the table's top edge.
+ *
+ * IT KEYS ON ROLES, NOT ON THE GRID'S CLASS NAMES. A row is `[role='row']` and
+ * a cell is `[role='gridcell']`, which is the contract that component
+ * documents and a suite here holds it to; a private class name would be a
+ * second component's internals read from the outside, which changes without
+ * anything noticing.
+ */
+
+.crewlet-org-table {
+  /*
+   * THE STEP EACH LEVEL IS INDENTED BY, and therefore how long a row's own
+   * branch is. One step per level, on the spacing scale, and the step is the
+   * console org table's own 40px: at half of it a seat four levels down was
+   * offset 80px where the console offsets it 160, so the indent that IS the
+   * answer to "where is this in the organization" read at half strength.
+   */
+  --crewlet-org-table-indent: var(--spacing-8);
+  /* The wire arriving at a row, and what it fades to at the row's own end.
+     Rebound per hue below. */
+  --crewlet-org-table-wire: var(--color-border-control);
+  --crewlet-org-table-wire-fade: var(--color-border-default);
+  /* What a row's name and its mark are drawn in. Rebound per hue below. */
+  --crewlet-org-table-ink: var(--color-text-primary);
+  --crewlet-org-table-accent: var(--color-text-tertiary);
+  /*
+   * HOW MANY KINDS THE ROW'S ADD OFFERS, which is what the slot holding it
+   * reserves: the pill opens to one target per kind and it opens IN PLACE, so
+   * the room it needs is room the closed row already holds. Three is what an
+   * organization takes (a unit, an agent seat, a human seat); a caller
+   * offering another number sets this once, here, and the slot and the track
+   * below both follow it.
+   */
+  --crewlet-org-table-add-kinds: 3;
+  /*
+   * THE SLOT THE ADD SITS IN: the OPEN pill's own width, which is one pointer
+   * target per kind and the pill's own boundary. Reserved rather than
+   * overflowed, because the pill used to open back over the row and cover the
+   * Problems cell beside it, which is the check's own answer for that row; and
+   * a pill that opened the other way would have run off the end of the row and
+   * out of the grid's scroller.
+   */
+  --crewlet-org-table-add: calc(
+    var(--size-target-min) * var(--crewlet-org-table-add-kinds) + 2px
+  );
+  /*
+   * THE TRACK A ROW'S CONTROL STRIP TAKES, and why it is a number at all:
+   * EVERY ROW IS ITS OWN GRID, so an `auto` last track is as wide as that
+   * row's own controls. The header row holds none, so its last track measured
+   * 16px where a row's measured 108, and every flexible column before it began
+   * somewhere else in the header than in the rows: a table whose headings
+   * named the wrong columns.
+   *
+   * The add's slot, the strip, and the cell's own inset. A caller with a
+   * different number sets its own track; what matters is that the track is
+   * fixed, and that it holds the add OPEN.
+   */
+  --crewlet-org-table-actions: calc(
+    var(--crewlet-org-table-add) + var(--crewlet-org-table-strip) + var(--spacing-2) * 3
+  );
+  /*
+   * THE ROOM THE QUIET STRIP KEEPS, whatever that row draws in it: three
+   * controls and their two gaps, which is the most a row here takes (a
+   * pencil, a trash, a menu).
+   *
+   * RESERVED, because the cell is end-aligned and the ADD sits before the
+   * strip: measured, the company's row draws no trash and no menu, so its
+   * strip was 28px where every other row's was 92, and the plus a reader
+   * scans down the table for stood 64px to the right of the one on the row
+   * beneath it. A row that draws fewer controls leaves the room empty rather
+   * than moving what is beside it.
+   */
+  --crewlet-org-table-strip: calc(var(--size-control-sm) * 3 + var(--spacing-1) * 2);
+  /*
+   * THE WIDTH BELOW WHICH THE TABLE SCROLLS SIDEWAYS, wider than a plain
+   * treegrid's because a row here spends its first column on a mark, two lines
+   * of text and an indent that grows with the level. At the treegrid's own
+   * 45rem a seat four levels down had 59px left for its name, so the column a
+   * reader scans said "SR…" and, on one row, nothing at all.
+   */
+  --crewlet-tree-grid-min-width: 60rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+}
+
+/*
+ * THE TREE CONTROLS ARE A TAB ON THE TABLE'S OWN EDGE, not a toolbar above it:
+ * they act on this table and nothing else, and a strip floating over the page
+ * would read as the screen's. Its bottom hairline is the table's top one, so
+ * the two are one frame.
+ */
+.crewlet-org-table__controls {
+  display: flex;
+  align-self: flex-start;
+  align-items: center;
+  margin-inline-start: var(--spacing-4);
+  margin-bottom: -1px;
+  padding: var(--spacing-1);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-bottom: 0;
+  border-start-start-radius: var(--radius-sm);
+  border-start-end-radius: var(--radius-sm);
+}
+
+/*
+ * A ROW IS TWO LINES TALL, so it stands on the TALL row step rather than the
+ * grid's own. The name group is a name over a caption and the grid's step left
+ * it 1.8px of air above and below, which is what made these rows read as
+ * cramped beside the console's 48.5px ones; it is also the room a wiring mark
+ * riding the caption needs before it can grow the row.
+ *
+ * KEYED ON `aria-level`, which is the ARIA contract's own mark of a row IN the
+ * tree: the head's row carries none, so a column heading keeps the shorter
+ * step it should have and no private class name is read from the outside.
+ */
+.crewlet-org-table [role='row'][aria-level] {
+  min-height: var(--size-row-lg);
+}
+
+/*
+ * THE INDENT IS THE WIRE'S, NOT THE CELL'S. `TreeGrid` indents its first cell
+ * by the row's level, which moves the row's own toggle right with it; the
+ * console table holds the toggle in a column of its own and indents what
+ * follows, so the trunk is one line down the whole table rather than one per
+ * level. The cell's padding is taken back and the wire element carries the
+ * level instead.
+ */
+.crewlet-org-table [role='gridcell']:first-child {
+  padding-inline-start: var(--spacing-2);
+}
+
+/*
+ * THE STRIP ENDS THE ROW, AND AN OPEN PILL GROWS BACK ALONG IT. The last track
+ * is the width of the CLOSED strip, so an open pill is wider than the cell
+ * holding it; a flex item that overflows a flex-start container spills off the
+ * END of the row, past the table's own edge and out of its scroller. Ended, it
+ * spills back over the row instead, where the pill's own ground covers
+ * whatever it crosses.
+ */
+.crewlet-org-table [role='gridcell']:last-child {
+  justify-content: flex-end;
+}
+
+.crewlet-org-table__wire {
+  position: relative;
+  flex: none;
+  align-self: stretch;
+  width: calc(var(--crewlet-org-table-indent) * var(--crewlet-org-table-depth, 0));
+}
+
+.crewlet-org-table__wire::before,
+.crewlet-org-table__wire::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+/*
+ * THE TRUNK: a segment down the gutter on every row inside the tree, so the
+ * segments stack into one line. Neutral, always: it belongs to the table
+ * rather than to any row, and a trunk that took each row's hue in turn would
+ * be a striped line saying nothing.
+ */
+.crewlet-org-table__wire[data-trunk]::before {
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 2px;
+  background: var(--color-border-default);
+}
+
+/* A root row's trunk starts at the row's middle: nothing hangs above the
+   first row of the table. */
+.crewlet-org-table__wire[data-root][data-trunk]::before {
+  inset-block-start: 50%;
+}
+
+/*
+ * THE BRANCH: from the trunk across the gutter to the row's own mark, fading
+ * as it arrives. It reaches one cell gap past the wire's own width, which is
+ * where the mark begins. A root row has no branch, because its width is zero.
+ */
+.crewlet-org-table__wire::after {
+  inset-inline-start: 0;
+  inset-block-start: 50%;
+  width: calc(100% + var(--spacing-2));
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--crewlet-org-table-wire),
+    var(--crewlet-org-table-wire-fade)
+  );
+}
+
+/* A root row has nothing above it to branch off, so it draws none: the stub a
+   branch would leave beside the first row of the table is a line to nowhere. */
+.crewlet-org-table__wire[data-root]::after {
+  content: none;
+}
+
+/*
+ * The six hues, on the branch arriving at a row and on the mark and name in
+ * it. Measured on the table's own ground (--color-surface-subtle): the ink
+ * every hue's name is drawn in clears 8.2:1 in both themes, and the accent the
+ * mark takes clears 4.2:1, which is over the floor for a drawing and under it
+ * for words. So the caption stays in the neutral tertiary ink, where the
+ * console table tints it: a word at 4.2:1 is a word a reader has to work at.
+ */
+.crewlet-org-table__wire[data-tone='purple'],
+.crewlet-org-label--row[data-tone='purple'] {
+  --crewlet-org-table-wire: var(--color-node-purple-line);
+  --crewlet-org-table-wire-fade: var(--color-node-purple-halo);
+  --crewlet-org-table-ink: var(--color-node-purple-ink);
+  --crewlet-org-table-accent: var(--color-node-purple);
+}
+
+.crewlet-org-table__wire[data-tone='cyan'],
+.crewlet-org-label--row[data-tone='cyan'] {
+  --crewlet-org-table-wire: var(--color-node-cyan-line);
+  --crewlet-org-table-wire-fade: var(--color-node-cyan-halo);
+  --crewlet-org-table-ink: var(--color-node-cyan-ink);
+  --crewlet-org-table-accent: var(--color-node-cyan);
+}
+
+.crewlet-org-table__wire[data-tone='green'],
+.crewlet-org-label--row[data-tone='green'] {
+  --crewlet-org-table-wire: var(--color-node-green-line);
+  --crewlet-org-table-wire-fade: var(--color-node-green-halo);
+  --crewlet-org-table-ink: var(--color-node-green-ink);
+  --crewlet-org-table-accent: var(--color-node-green);
+}
+
+.crewlet-org-table__wire[data-tone='amber'],
+.crewlet-org-label--row[data-tone='amber'] {
+  --crewlet-org-table-wire: var(--color-node-amber-line);
+  --crewlet-org-table-wire-fade: var(--color-node-amber-halo);
+  --crewlet-org-table-ink: var(--color-node-amber-ink);
+  --crewlet-org-table-accent: var(--color-node-amber);
+}
+
+.crewlet-org-table__wire[data-tone='rose'],
+.crewlet-org-label--row[data-tone='rose'] {
+  --crewlet-org-table-wire: var(--color-node-rose-line);
+  --crewlet-org-table-wire-fade: var(--color-node-rose-halo);
+  --crewlet-org-table-ink: var(--color-node-rose-ink);
+  --crewlet-org-table-accent: var(--color-node-rose);
+}
+
+.crewlet-org-table__wire[data-tone='blue'],
+.crewlet-org-label--row[data-tone='blue'] {
+  --crewlet-org-table-wire: var(--color-node-blue-line);
+  --crewlet-org-table-wire-fade: var(--color-node-blue-halo);
+  --crewlet-org-table-ink: var(--color-node-blue-ink);
+  --crewlet-org-table-accent: var(--color-node-blue);
+}
+
+/* ---- The name group ------------------------------------------------------ */
+
+/*
+ * WHAT A ROW SAYS IS `OrgLabel`, in its row layout, because a chart node says
+ * the same four things in the same words: see `OrgLabel.css`, which holds
+ * every rule that draws them. What is left here is the one thing that is the
+ * TABLE's and not the label's, which is the ink.
+ *
+ * THE SIX HUES ARE ABOVE, on the wire and on the row together, and they are a
+ * system this table owns: the chart's equivalent is published by a card, so
+ * the shared component cannot read either directly without knowing about both.
+ * It reads what is handed to it instead, and this is the table handing it over
+ * beside the rules that produce it.
+ *
+ * THE CAPTION IS NOT IN THIS. It stays the neutral tertiary ink, because a
+ * hue's own step measures 4.2:1 on this ground: over the floor for a drawing
+ * and under it for a word.
+ */
+.crewlet-org-label--row .crewlet-org-label__icon {
+  color: var(--crewlet-org-table-accent);
+}
+
+.crewlet-org-label--row .crewlet-org-label__name {
+  color: var(--crewlet-org-table-ink);
+}
+
+/* ---- The row's own controls ---------------------------------------------- */
+
+/*
+ * THE STRIP IS WHAT ACTS ON THIS ROW, and the add is not in it: see the slot
+ * below. No auto margin, because the cell already ends its content and an auto
+ * margin between the add and this strip would push the two apart by whatever a
+ * row's own controls left over, which is a different gap on every row.
+ */
+.crewlet-org-table__actions {
+  display: inline-flex;
+  align-items: center;
+  /* END-ALIGNED INSIDE THE ROOM IT KEEPS, so the control a row draws last is
+     at the row's own end whether it draws one or three. */
+  justify-content: flex-end;
+  gap: var(--spacing-1);
+  min-width: var(--crewlet-org-table-strip);
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/*
+ * REACHED BY THE POINTER, BY FOCUS, AND ON THE SELECTED ROW. Focus is the half
+ * that is not decoration: a control a keyboard can reach but nobody can see is
+ * a control that fails the focus-visibility rule, so the strip comes back the
+ * moment focus enters the row.
+ */
+.crewlet-org-table [role='row']:hover .crewlet-org-table__actions,
+.crewlet-org-table [role='row']:focus-within .crewlet-org-table__actions,
+.crewlet-org-table [role='row'][aria-selected='true'] .crewlet-org-table__actions {
+  opacity: 1;
+}
+
+/*
+ * A POINTER THAT CANNOT HOVER NEVER REACHES A ROW, so on a touch screen the
+ * strip is simply drawn. Without this the table is unusable on a phone: every
+ * control on it is behind a state that device has no way to enter.
+ */
+@media (hover: none) {
+  .crewlet-org-table__actions {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-org-table__actions {
+    transition: none;
+  }
+}
+
+/*
+ * THE ADD IS NOT ONE OF THE ROW'S QUIET CONTROLS. It is the console's own
+ * green plus and it is DRAWN on every row that can take a child, at the quiet
+ * opacity `AddPill` holds its mark at; only the controls that act on the row
+ * itself wait to be reached. Inside the strip it inherited `opacity: 0`, so
+ * the one control an operator reaches for by its colour could not be seen
+ * until the pointer was already on the row.
+ *
+ * THE SLOT IS AS WIDE AS THE PILL IS OPEN, so the split happens inside the
+ * track the row already reserved: the pill is centred on its own mark, the
+ * mark is centred here, and nothing the pill covers is something a reader was
+ * reading.
+ */
+.crewlet-org-table__add {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--crewlet-org-table-add);
+}

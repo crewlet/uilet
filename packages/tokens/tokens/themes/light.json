@@ -1,0 +1,102 @@
+{
+  "color": {
+    "surface": {
+      "background": { "value": "#ffffff" },
+      "subtle": { "value": "#f4f4f5" },
+      "muted": { "value": "#f4f4f5" },
+      "elevated": { "value": "#ebebee", "comment": "One step lighter than the #e3e3e6 it replaces, which was DARKER than the page and so made a dialog body the tightest ground in the palette: the tertiary step measured 4.53:1 on it and the secondary step sat only dE 1.8 away. At #ebebee the page lifts dE 5.9 and no text value had to move." },
+      "topbar": { "value": "#ffffff" },
+      "topbarLift": { "value": "#f4f4f5" },
+      "topbarActive": { "value": "#ebebee" },
+      "hover": { "value": "rgba(9, 9, 11, 0.04)" },
+      "pressed": { "value": "rgba(9, 9, 11, 0.07)" },
+      "inset": { "value": "rgba(9, 9, 11, 0.05)" },
+      "glass": { "value": "rgba(244, 244, 245, 0.90)" },
+      "scrim": { "value": "rgba(0, 0, 0, 0.6)" },
+      "veil": { "value": "rgba(255, 255, 255, 0.72)" },
+      "inverse": { "value": "#09090b" }
+    },
+    "text": {
+      "primary": { "value": "#09090b" },
+      "secondary": { "value": "#52525b", "comment": "#71717a measured 3.77:1 on the elevated surface, under the fact floor." },
+      "tertiary": { "value": "#5b5b64" },
+      "muted": { "value": "#8f8f95", "comment": "Decoration only. rgba(0, 0, 0, 0.4) measured 2.59:1 on the panel, under even the decoration band." },
+      "onBrand": { "value": "#ffffff" },
+      "onAccent": { "value": "#ffffff" },
+      "inverse": { "value": "#fafafa" }
+    },
+    "brand": {
+      "primary": { "value": "#000000", "comment": "The primary action is monochrome, and it is not the accent. The accent stays the one colour that means HERE." },
+      "primaryHover": { "value": "rgba(0, 0, 0, 0.85)" },
+      "primaryActive": { "value": "rgba(0, 0, 0, 0.7)" },
+      "accentInk": { "value": "#3e50b8", "comment": "The accent as text. #5469d4 measured 3.77:1 on the elevated surface." },
+      "accentSoft": { "value": "rgba(84, 105, 212, 0.14)", "comment": "Per theme, so a selected row separates from its ground by at least as much as a plain hover overlay does and by at least dE 3 from the overlay itself." }
+    },
+    "border": {
+      "default": { "value": "#e4e4e7" },
+      "hover": { "value": "#d4d4d8" },
+      "strong": { "value": "#d4d4d8" },
+      "strongHover": { "value": "#a1a1aa" },
+      "control": { "value": "#71717a", "comment": "#e4e4e7 on white measured 1.27:1, which is a boundary a reader cannot find." }
+    },
+    "focus": { "value": "#5469d4" },
+    "feedback": {
+      "success": { "value": "#0f766e", "comment": "#46a758 measured 2.37:1 as a mark, under the 3:1 non-text floor." },
+      "successInk": { "value": "#115e59" },
+      "warning": { "value": "#b45309", "comment": "#f59e0b measured 1.68:1 as a mark." },
+      "warningInk": { "value": "#92400e" },
+      "danger": { "value": "#991b1b", "comment": "White on #ef4444 measured 3.76:1, so the label of a destructive button was under the text floor." },
+      "dangerHover": { "value": "#7f1d1d" },
+      "dangerInk": { "value": "#991b1b" },
+      "info": { "value": "#075985", "comment": "#3b82f6 measured 2.87:1 as a mark and sat only dE 6.0 from the accent, so an info badge read as a selection." },
+      "infoInk": { "value": "#075985" }
+    },
+    "phase": {
+      "onboarding": { "value": "#980099", "comment": "#86198f sat dE 3.1 from the info fill under deuteranopia, so an onboarding tag read as an info badge." },
+      "onboardingInk": { "value": "#8e0090" },
+      "execute": { "value": "#5b37da", "comment": "#9333ea sat dE 3.3 from the accent under deuteranopia." },
+      "executeInk": { "value": "#552dd1" },
+      "review": { "value": "#078543" },
+      "reviewInk": { "value": "#006121" }
+    },
+    "data": {
+      "1": { "value": "#3730a3", "comment": "It used to be byte-identical to the accent, which silently exempted it from the rule that no hue sits within dE 10 of the accent. It keeps uilet indigo as the first series and stops being the colour that means HERE." },
+      "2": { "value": "#a16207" },
+      "3": { "value": "#075985" },
+      "4": { "value": "#1c9002", "comment": "A grass green rather than the forest green it was. #166534 sat dE 6.0 from the danger red under deuteranopia and 8.0 under protanopia, so the reader scanning a chart for failure could not tell the fourth series from it. Under normal vision they were 24.0 apart, which is how a rule measured under one vision missed it. This is as far as the reserved red can be pushed while the series is still a green, still clears 3:1 as a mark on white, and still separates from the pink beside it in the ramp." },
+      "5": { "value": "#db2777" },
+      "other": { "value": "#71717a" }
+    },
+    "node": {
+      "purple": { "value": "#7150b3" },
+      "purpleInk": { "value": "#573394" },
+      "cyan": { "value": "#166b80" },
+      "cyanInk": { "value": "#004f62" },
+      "green": { "value": "#2c7046" },
+      "greenInk": { "value": "#05532b" },
+      "amber": { "value": "#865a28" },
+      "amberInk": { "value": "#683e03" },
+      "rose": { "value": "#984a55" },
+      "roseInk": { "value": "#7a2f3c" },
+      "blue": { "value": "#4062a7" },
+      "blueInk": { "value": "#264588" }
+    },
+    "scrollbar": { "value": "rgba(9, 9, 11, 0.2)" },
+    "scrollbarHover": { "value": "rgba(9, 9, 11, 0.32)" }
+  },
+  "shadow": {
+    "xs": { "value": "0 1px 2px rgba(9, 9, 11, 0.06)" },
+    "sm": { "value": "0 2px 8px rgba(9, 9, 11, 0.07)" },
+    "md": { "value": "0 4px 12px rgba(9, 9, 11, 0.08), 0 1px 3px rgba(9, 9, 11, 0.06)" },
+    "lg": { "value": "0 8px 24px rgba(9, 9, 11, 0.12)" },
+    "xl": { "value": "0 16px 40px rgba(9, 9, 11, 0.16), 0 2px 8px rgba(9, 9, 11, 0.08)" },
+    "sheet": { "value": "-16px 0 40px rgba(9, 9, 11, 0.16), -2px 0 8px rgba(9, 9, 11, 0.08)", "comment": "The xl step turned onto the inline axis. The alphas are the light palette's own: a 0.4 black cast 8px into a near-white page is a smear rather than an edge." },
+    "2xl": { "value": "0 16px 64px rgba(9, 9, 11, 0.20)" },
+    "card": { "value": "0 8px 24px rgba(9, 9, 11, 0.07)" },
+    "rimLit": { "value": "0 4px 24px rgba(9, 9, 11, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.6)" },
+    "hairline": { "value": "none", "comment": "On a light ground a panel is lifted by its shadow. The top-edge rim light is a dark-palette device and would be invisible here." },
+    "focus": { "value": "0 0 0 2px var(--color-surface-background), 0 0 0 4px var(--color-focus)" },
+    "selection": { "value": "inset 0 0 0 2px var(--color-brand-accent)" },
+    "glow": { "value": "0 4px 24px rgba(84, 105, 212, 0.22)" }
+  }
+}

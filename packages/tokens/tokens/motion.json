@@ -11,6 +11,7 @@
       "default": { "value": "ease" },
       "out": { "value": "ease-out" },
       "inOut": { "value": "ease-in-out" },
+      "emphasized": { "value": "cubic-bezier(0.16, 1, 0.3, 1)", "comment": "A strong decelerate for a surface that ENTERS: a dialog, a sheet, a popover. It is a new role beside easing.out rather than a replacement for it. That token carries the CSS ease-out keyword, cubic-bezier(0, 0, 0.58, 1), a much gentler curve, and folding one onto the other would change the motion of every entering surface with no stated reason." },
       "spring": { "value": "cubic-bezier(0.34, 1.56, 0.64, 1)", "comment": "Slight overshoot for emphasized entries." }
     }
   }

@@ -1,5 +1,6 @@
 {
   "blur": {
+    "xs": { "value": "3px", "comment": "The softening behind a modal veil. Half the frosted step: the veil is already carrying most of the work, and a heavier blur there smears the page into a texture rather than leaving it legible as context." },
     "sm": { "value": "6px", "comment": "Subtle frosted glass." },
     "md": { "value": "10px" },
     "lg": { "value": "16px", "comment": "Standard frosted-panel effect for dropdowns and top bars." },

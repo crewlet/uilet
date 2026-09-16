@@ -1,145 +1,330 @@
-/* Unified custom dropdown. Colours come from the canonical
-   @crewlethq/tokens variables (--color-surface-*, --color-border-*,
-   --color-text-*, --color-brand-accent), so the same component
-   follows whichever palette the host application loads without
-   per-surface overrides.
-
-   The accent is read from --color-brand-accent and
-   --color-brand-accent-rgb on the trigger and on the menu. An app that
-   rebinds those two tokens retints the focus, highlight and selected
-   colours; the menu is portaled to <body>, so the override has to be
-   declared on <body> or <html> (or on the menu itself) to reach it. */
+/*
+ * Select: one chrome over two controls, and the product's only dropdown.
+ *
+ * The native mode is a real `<select>` drawn transparent over this frame, so
+ * the platform keeps its own overlay, its own type-ahead and, on a phone, its
+ * own full-screen picker. The listbox mode is the hand-built panel, portalled
+ * into the nearest layer host and drawn with the shared listbox register, so
+ * a list of options looks the same wherever it is offered from.
+ *
+ * The boundary is --color-border-control, like every other control: the
+ * hairline measured 1.27:1 in light, which is a box a reader has to know is
+ * there already.
+ */
 
 .crewlet-select {
+  /*
+   * The toolbar picker's bounds. The floor keeps a row of filters even when
+   * one of them is showing "Any"; the cap stops a long value pushing the rest
+   * of the bar off the screen, and the label truncates instead.
+   */
+  --crewlet-select-auto-min-width: 132px;
+  --crewlet-select-auto-max-width: 220px;
+
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   width: 100%;
-  --crewlet-select-accent: var(--color-brand-accent, #5469d4);
-  --crewlet-select-accent-rgb: var(--color-brand-accent-rgb, 84, 105, 212);
+  min-height: var(--size-control-md);
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  /* The boundary is the only thing that moves. The ring is an outline, which
+     takes no transition, and nothing else here paints a shadow. */
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-select--sm {
+  min-height: var(--size-control-sm);
+}
+
+/* A picker in a toolbar sizes to its answer. See [SelectWidth]. */
+.crewlet-select--auto {
+  width: auto;
+  min-width: var(--crewlet-select-auto-min-width);
+  max-width: var(--crewlet-select-auto-max-width);
+  flex: 0 1 auto;
+}
+
+.crewlet-select:hover {
+  border-color: var(--color-border-hover);
+}
+
+/*
+ * ONE RING, and the same one every field in this package draws: an outline
+ * over the boundary, inset so a scroller cannot clip it. See Input.css for
+ * why it is not the border plus --shadow-focus it used to be, and why an
+ * outline is the half that survives forced-colors mode.
+ *
+ * :focus-within is enough HERE, where the Input's own rule has to name its
+ * control: this frame holds the trigger and a chevron, and the chevron takes
+ * no focus. Anything focusable added beside the trigger would have to narrow
+ * this selector, or its ring would be drawn inside the field's.
+ *
+ * It is also why the trigger is asked nothing about :focus-visible. A native
+ * <select> matches that on a pointer press and a <button> does not, so
+ * keying the frame on it would ring one of Select's two modes on a click and
+ * leave the other bare.
+ */
+.crewlet-select:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
+ * A FILTER THAT IS ON. The accent border says where the reader is and the
+ * accent INK says what it is set to. It used to be the accent FILL with the
+ * value written on it, which measured 3.58:1 in dark: the one control on the
+ * page whose whole job is to say "this list is narrowed" was the hardest to
+ * read on it.
+ */
+.crewlet-select.is-active {
+  border-color: var(--color-brand-accent);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-select.is-active .crewlet-select__label,
+.crewlet-select.is-active .crewlet-select__native,
+.crewlet-select.is-active .crewlet-select__chevron {
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-select.is-error {
+  border-color: var(--color-feedback-danger);
+}
+
+/* A refused picker keeps its colour while the reader is in it: the ring
+   covers the boundary, so a focus-coloured one would paint out the refusal.
+   See Input.css. */
+.crewlet-select.is-error:focus-within {
+  outline-color: var(--color-feedback-danger);
 }
 
 .crewlet-select.is-disabled {
-  opacity: 0.55;
-  pointer-events: none;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
+/* ── The trigger, native and built ───────────────────────────────────── */
+
+/*
+ * The trigger IS the field: the value sits on one line inset by the same step
+ * a text box insets its own, and the box's height is what makes the row. It
+ * stretches to the frame so a press anywhere in the control opens the list.
+ */
+.crewlet-select__native,
 .crewlet-select__trigger {
-  width: 100%;
-  display: flex;
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px 8px 12px;
-  background: var(--color-surface-elevated, #1f2128);
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 8px;
-  color: var(--color-text-primary, #f5f5f7);
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  text-align: left;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    background 0.15s ease;
-}
-
-.crewlet-select--sm .crewlet-select__trigger {
-  padding: 6px 8px 6px 10px;
-  font-size: 12px;
-}
-
-.crewlet-select__trigger:hover:not(:disabled) {
-  border-color: var(--color-border-strong, rgba(255, 255, 255, 0.18));
-}
-
-.crewlet-select__trigger:focus,
-.crewlet-select.is-open > .crewlet-select__trigger {
+  align-self: stretch;
+  gap: var(--spacing-2);
+  background: transparent;
+  border: none;
   outline: none;
-  border-color: var(--crewlet-select-accent);
-  box-shadow: 0 0 0 3px rgba(var(--crewlet-select-accent-rgb), 0.15);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-compact);
+  color: inherit;
+  text-align: left;
+  padding: 0 var(--spacing-3);
+  /* Room for the chevron, which sits over the control rather than beside it:
+     its own inset twice over, plus the glyph. */
+  padding-right: var(--spacing-6);
 }
 
+.crewlet-select--sm .crewlet-select__native,
+.crewlet-select--sm .crewlet-select__trigger {
+  font-size: var(--font-size-xs);
+  padding: 0 var(--spacing-2);
+  padding-right: var(--spacing-6);
+}
+
+.crewlet-select__native:disabled,
+.crewlet-select__trigger:disabled {
+  cursor: not-allowed;
+}
+
+/*
+ * THE TRIGGER DRAWS NO RING OF ITS OWN. The frame around it is the field a
+ * reader sees, and it is already ringed by the rule above. The transparent
+ * outline that used to sit here was the frame's forced-colors stand-in put on
+ * the wrong element: with the frame drawing a real outline now, that one was
+ * a second system-coloured ring inside the first for the readers that mode
+ * exists for, and it sat two pixels further out than the frame's own.
+ */
 .crewlet-select__label {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Nothing chosen: the tertiary step, which is measured, because it is the
+   example of what belongs here rather than decoration. */
+.crewlet-select__label.is-placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The chevron is DECORATION and takes the decoration step. It says a second
+ * time what the control's own role, name and boundary already say, and a mark
+ * that repeats is a mark that must not compete with the value beside it.
+ *
+ * The selector names the ELEMENT as well as the class, which is what says
+ * this is the one exemption the decoration step has: an svg, never a word.
+ */
+svg.crewlet-select__chevron {
+  position: absolute;
+  right: var(--spacing-2);
+  pointer-events: none;
+  color: var(--color-text-muted);
+}
+
+/* ── The panel ───────────────────────────────────────────────────────── */
+
+.crewlet-select__menu {
+  /* Six rows and a scroll. A list that draws past the bottom of the dialog
+     it was opened in is a list whose last answers nobody finds. */
+  --crewlet-select-menu-max-height: 12rem;
+
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: var(--crewlet-select-menu-max-height);
+  /*
+   * THE PANEL IS THE PRODUCT'S SURFACE, on the panel hairline, at the panel
+   * corner. A list offered from a field is another panel over the one the
+   * field is in, not a heavier kind of thing: the elevated surface and the
+   * large shadow it used to lift with read as a dialog, over a form the
+   * reader has not left.
+   */
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  /*
+   * The popover band. A list portalled out of its form has to paint over the
+   * dialog it was opened inside, and the shared listbox model does not hand
+   * back the layer's own depth, so this is the token for the band rather than
+   * a number.
+   */
+  z-index: var(--z-index-popover);
+}
+
+/* Inside a layer host the panel is placed against the host's own box. */
+.crewlet-select__menu--in-host {
+  position: absolute;
+}
+
+.crewlet-select__list {
+  flex: 1;
+  min-height: 0;
+}
+
+.crewlet-select__group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.crewlet-select__option {
+  align-items: flex-start;
+}
+
+/*
+ * WHAT IS CHOSEN AND WHERE THE READER IS ARE TWO DIFFERENT FACTS, and this
+ * list draws them with two different marks: the chosen row carries the tick,
+ * in the accent ink, and the row the arrows or the pointer are on carries the
+ * hover tint. Drawn as one tint they collided on the commonest list there is,
+ * a filter whose current answer is also the row it opens on.
+ *
+ * The rules are scoped to the panel rather than written on the option class,
+ * because the shared listbox register paints [aria-selected] itself and the
+ * stylesheets are bundled in hash order: a rule of equal weight would win or
+ * lose by the name of a build artefact.
+ */
+.crewlet-select__menu .crewlet-listbox__option,
+.crewlet-select__menu .crewlet-listbox__option[aria-selected='true'] {
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.crewlet-select__menu .crewlet-listbox__option.is-highlight,
+.crewlet-select__menu .crewlet-listbox__option:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/*
+ * A row a caller draws itself (`renderOption`) has no tick column, so the
+ * choice is said in the weight as well. It is the one mark that costs the row
+ * nothing: a custom row with no tick and no tint said nothing at all.
+ */
+.crewlet-select__menu .crewlet-listbox__option.is-selected {
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-select__menu .crewlet-listbox__option.is-disabled {
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+.crewlet-select__option-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-select__option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.crewlet-select__option-label {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.crewlet-select__label.is-placeholder {
-  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.5));
+.crewlet-select__option-desc {
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
 }
 
-.crewlet-select__chevron {
-  font-size: 18px;
-  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.6));
-  flex-shrink: 0;
+/* The second line stays the second line on the row the reader is on: it is
+   the same fact, and a description that changes colour with the highlight
+   reads as a different kind of thing under the pointer. */
+.crewlet-select__menu .crewlet-listbox__option.is-highlight .crewlet-select__option-desc {
+  color: var(--color-text-tertiary);
 }
 
-.crewlet-select.is-open .crewlet-select__chevron {
-  color: var(--crewlet-select-accent);
-}
+/* ── The search box ──────────────────────────────────────────────────── */
 
-/* Floating menu. Portaled to <body> so it never gets clipped by
-   an ancestor's overflow rule (popovers, table cards, modal
-   bodies). Position is set inline from getBoundingClientRect on
-   the trigger; this rule only sets the visual chrome and the
-   z-index. The accent token is set on the wrapper, but because
-   the menu lives outside the wrapper after portalling, we mirror
-   the same fallback chain here so colours stay consistent. */
-.crewlet-select__menu {
-  /* The popover layer sits above the modal layer because a Select is
-     routinely opened inside a Modal: the trigger lives in the dialog,
-     but the panel portals to <body> as a sibling of the backdrop.
-     Below the modal layer the panel renders but is covered by the
-     backdrop, which both hides it and swallows clicks, so the menu
-     looks like it will not open. Toasts stay above it. */
-  z-index: var(--z-index-popover, 10000);
-  background: var(--color-surface-subtle, #15171c);
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 10px;
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(var(--crewlet-select-accent-rgb, 84, 105, 212), 0.18);
-  max-height: 320px;
-  display: flex;
-  flex-direction: column;
-  outline: none;
-  overflow: hidden;
-  animation: crewlet-select-pop 120ms ease-out;
-  --crewlet-select-accent: var(--color-brand-accent, #5469d4);
-  --crewlet-select-accent-rgb: var(--color-brand-accent-rgb, 84, 105, 212);
-}
-
-/* Inner option list. Scrolls when the option count exceeds the
-   menu's max height, while the optional search header stays
-   pinned at the top of the menu. */
-.crewlet-select__list {
-  margin: 0;
-  padding: 6px;
-  list-style: none;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-/* Search header. Same visual register as the toolbar search
-   field so the operator recognises it instantly. */
 .crewlet-select__search {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.08));
-  flex-shrink: 0;
-}
-
-.crewlet-select__search .material-symbols-outlined {
-  font-size: 16px;
-  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.55));
-  flex-shrink: 0;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-bottom: 1px solid var(--color-border-default);
+  color: var(--color-text-tertiary);
+  flex: none;
 }
 
 .crewlet-select__search-input {
@@ -148,147 +333,18 @@
   background: transparent;
   border: none;
   outline: none;
-  color: var(--color-text-primary, #f5f5f7);
-  font-size: 13px;
-  font-family: inherit;
-  padding: 0;
+  font: inherit;
+  font-size: var(--font-size-compact);
+  color: var(--color-text-primary);
 }
 
 .crewlet-select__search-input::placeholder {
-  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.55));
+  color: var(--color-text-tertiary);
+  opacity: 1;
 }
 
-/* "No matches" row when search filters everything out. */
-.crewlet-select__empty {
-  padding: 14px 10px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--color-text-tertiary, rgba(245, 245, 247, 0.55));
-  list-style: none;
-}
-
-.crewlet-select__menu--top {
-  transform-origin: bottom left;
-}
-
-.crewlet-select__menu--bottom {
-  transform-origin: top left;
-}
-
-@keyframes crewlet-select-pop {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.crewlet-select__option {
-  padding: 8px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: block;
-  color: var(--color-text-primary, #f5f5f7);
-  font-size: 13px;
-  line-height: 1.4;
-  user-select: none;
-  transition: background 0.1s ease, color 0.1s ease;
-}
-
-/*
- * Compact menu (size="sm") shrinks the inner list padding plus each
- * option's padding + font so a sm Select dropdown reads as a tight
- * companion to its sm trigger (e.g. the Local time zone / UTC
- * selector inside the TimeWindowPicker header).
- */
-.crewlet-select__menu--sm .crewlet-select__list {
-  padding: 4px;
-}
-
-.crewlet-select__menu--sm .crewlet-select__option {
-  padding: 5px 8px;
-  font-size: 12px;
-  line-height: 1.3;
-  border-radius: 4px;
-}
-
-.crewlet-select__menu--sm .crewlet-select__option-check {
-  font-size: 14px;
-}
-
-.crewlet-select__option + .crewlet-select__option {
-  margin-top: 1px;
-}
-
-.crewlet-select__option.is-disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.crewlet-select__option.is-highlight {
-  background: rgba(var(--crewlet-select-accent-rgb), 0.14);
-  color: var(--crewlet-select-accent);
-}
-
-.crewlet-select__option.is-selected:not(.is-highlight) {
-  color: var(--crewlet-select-accent);
-}
-
-.crewlet-select__option-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.crewlet-select__option-label {
-  flex: 1;
-  min-width: 0;
-}
-
-.crewlet-select__option-check {
-  font-size: 16px;
-  color: var(--crewlet-select-accent);
-  flex-shrink: 0;
-}
-
-/*
- * Multi-select checkbox affordance painted on the leading edge of
- * each option row. Uses the same accent token as the single-select
- * check icon so every palette stays consistent.
- * Empty state is a hollow box with the border tinted; checked state
- * fills the box and centres the check glyph.
- */
-.crewlet-select__option--multi .crewlet-select__option-row {
-  align-items: center;
-}
-
-.crewlet-select__option-checkbox {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border: 1.5px solid var(--color-border-strong, rgba(255, 255, 255, 0.25));
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
-  color: transparent;
-}
-
-.crewlet-select__option-checkbox.is-checked {
-  background: var(--crewlet-select-accent);
-  border-color: var(--crewlet-select-accent);
-  color: #ffffff;
-}
-
-.crewlet-select__option-checkbox .material-symbols-outlined {
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.crewlet-select__option-desc {
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--color-text-secondary, rgba(245, 245, 247, 0.7));
-  line-height: 1.4;
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-select {
+    transition: none;
+  }
 }

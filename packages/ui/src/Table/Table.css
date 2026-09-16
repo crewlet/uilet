@@ -1,89 +1,159 @@
-/* Table Component Styles */
+/*
+ * Table: the operator's table, on the elements a table is made of.
+ *
+ * ONE TABLE REGISTER FOR THE WHOLE PRODUCT, and this is it: a micro-label
+ * header on the panel's own ground, hairline rows, cells at the compact step,
+ * and a row as tall as the row token every other list in the system uses. The
+ * DataTable below carries the same values; the two differ in what they DO
+ * (sorting, columns, pagination), never in what a row looks like.
+ */
 .crewlet-table {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
+  /*
+   * THE FRAME IS THE TABLE'S, NOT THE SCROLLER'S. The boundary and the radius
+   * used to sit on the scroller inside, which put the action row underneath
+   * the frame as a loose word on the page, and let a sideways scroll carry the
+   * table's own edge out of view. Here the frame clips a header band that runs
+   * to the edge and a foot that is fenced from the rows above it, which is the
+   * flush panel every table on the dashboard sits in.
+   */
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .crewlet-table__container {
-  border: 1px solid var(--color-border-default);
-  border-radius: 8px;
-  overflow: hidden;
+  /* The overflow is a safety net for a cell that cannot wrap (a long token, a
+     hash); the fixed layout below is what keeps a table inside the width it is
+     given. A `maxHeight` turns this into the vertical scroller the sticky
+     header needs, which is the only way a long table keeps its column names. */
+  overflow-x: auto;
+  overflow-y: var(--crewlet-table-overflow-y, visible);
+  max-height: var(--crewlet-table-max-height, none);
+  overscroll-behavior-x: contain;
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  min-width: 0;
 }
 
-.crewlet-table__header {
-  display: grid;
-  padding: 12px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
+.crewlet-table__table {
+  width: 100%;
+  border-collapse: collapse;
+  /* The compact step is the table's own: a cell is scanned down a column
+     rather than read as a sentence, and 13px is where a row of them still
+     lines up against the 36px row token. */
+  font-size: var(--font-size-compact);
+  /* Fixed layout is the equal-width columns the grid drew, and it also stops
+     one long cell dragging the whole table sideways. */
+  table-layout: fixed;
+}
+
+.crewlet-table__caption {
+  padding: var(--spacing-3) var(--spacing-3) 0;
+  text-align: left;
+  font-size: var(--font-size-compact);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * THE HEADER IS A MICRO-LABEL, NOT A ROW OF WORDS. A column name is read once,
+ * at a glance, to find the column; drawn at the body step in the row's own ink
+ * it competed with the values under it for the same attention. The uppercase
+ * step at the tertiary ink is the register every other label of its kind in
+ * the system takes, and it is measured on the panel ground it is painted on.
+ *
+ * Sticky, so a table given a height keeps its column names while its rows
+ * scroll past. It costs nothing when there is no vertical scroller, and it is
+ * the difference between a long table that can be read and one that cannot.
+ */
+.crewlet-table__table th {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  padding: var(--spacing-2) var(--spacing-3);
+  text-align: left;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
   background: var(--color-surface-subtle);
   border-bottom: 1px solid var(--color-border-default);
 }
 
-/* The dark palette lays the header flush with the page background,
-   so the rows (on the subtle surface) read as lifted beneath it. */
-body.theme-dark .crewlet-table__header {
-  background: var(--color-surface-background);
-}
-
-.crewlet-table__body {
-  display: flex;
-  flex-direction: column;
-}
-
-.crewlet-table__row {
-  display: grid;
-  padding: 12px 16px;
-  font-size: 14px;
+.crewlet-table__table td {
+  padding: var(--spacing-2) var(--spacing-3);
   color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border-default);
-  transition: background 0.2s ease;
+  vertical-align: middle;
+  /* The row token, so a table lines up with every other list in a product and
+     a cell holding one word is as tall as a cell holding an avatar. */
+  height: var(--size-row-md);
+  overflow-wrap: anywhere;
 }
 
-.crewlet-table__row:last-child {
+.crewlet-table__table tbody tr:last-child td {
   border-bottom: none;
 }
 
-.crewlet-table__row:hover {
-  background: var(--color-surface-elevated);
-}
+/*
+ * NO HOVER ON A ROW THAT DOES NOTHING. Every row used to light up under the
+ * pointer, which is an affordance: it says the row can be pressed, and in this
+ * table no row can. A tint that promises a press nothing answers is worse than
+ * no tint at all. DataTable carries the hover, because there a row really is
+ * a control.
+ */
 
 .crewlet-table__empty {
-  padding: 32px 16px;
+  padding: var(--spacing-7) var(--spacing-3);
   text-align: center;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
 }
 
+/*
+ * THE FOOT IS INSIDE THE FRAME, fenced by its own rule: it is a row of the
+ * panel rather than a word floating under it. It sits outside the scroller, so
+ * a table scrolled sideways does not carry its own footer off the screen.
+ */
 .crewlet-table__action-btn {
   width: 100%;
-  padding: 12px 16px;
+  padding: var(--spacing-2) var(--spacing-3);
   background: none;
   border: none;
-  color: var(--color-brand-accent, #5469d4);
-  font-size: 14px;
-  font-weight: 600;
+  border-top: 1px solid var(--color-border-default);
+  color: var(--color-brand-accent-ink);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   text-align: center;
-  transition: all 0.2s ease;
-  margin-bottom: -20px;
 }
 
 .crewlet-table__action-text {
   display: inline-block;
-  padding: 6px 16px;
-  border-radius: 6px;
-  transition: background 0.2s ease;
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-table__action-btn:hover .crewlet-table__action-text {
-  background: var(--color-surface-elevated);
+  background: var(--color-surface-hover);
+}
+
+/* Inset, because the foot sits on the frame's own clipped bottom edge and an
+   outset ring is cut away by it. */
+.crewlet-table__action-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-table__action-text {
+    transition: none;
+  }
 }

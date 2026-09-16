@@ -1,0 +1,222 @@
+/*
+ * The menu button's panel.
+ *
+ * It shares the popover's surface deliberately: a menu and a popover are the
+ * same object to a reader, and two surfaces that differ by a shadow step are
+ * how a design system starts to look assembled rather than designed. What is
+ * its own is the row: a check column, a danger ink, and a hover that is
+ * neutral because focus, not the pointer, is what moves through a menu.
+ *
+ * THE PANEL IS SIZED BY ITS LONGEST ROW, not by a minimum of its own. A menu
+ * is a short list of verbs, and a floor wide enough for the longest one in the
+ * product leaves every other menu padded out with air. The ceiling stays, so a
+ * label nobody expected truncates instead of running off the screen.
+ *
+ * THE ROW IS ONE LINE HIGH AND TIGHT. A menu is read by running the eye down
+ * the verbs, and a row with a dialog's padding turns six of them into a
+ * scroller. The rows that carry a second line say so (`--described`) rather
+ * than every row paying for the two that need it.
+ */
+
+.crewlet-menu-anchor {
+  display: inline-flex;
+}
+
+.crewlet-menu {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-1);
+  /*
+   * WIDTH, not min-width. Both spell "as wide as the longest row", and only
+   * this one leaves the ceiling below able to hold it: a min-width larger than
+   * a max-width replaces it, so the pair sized the panel to its longest label
+   * however long that label was and the 320px was a number nothing read. A
+   * width is clamped by the ceiling, and the label that no longer fits is the
+   * one that truncates.
+   */
+  width: max-content;
+  max-width: 320px;
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  animation: crewlet-menu-in var(--motion-duration-base) var(--motion-easing-emphasized);
+}
+
+/* Inside a LayerHost the coordinates are the host's own, so the panel is
+   absolute within it rather than fixed against the window. */
+.crewlet-menu--in-host {
+  position: absolute;
+}
+
+/* Up from under its trigger, which is where it is about to be. */
+@keyframes crewlet-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-2));
+  }
+}
+
+.crewlet-menu__group {
+  display: contents;
+}
+
+.crewlet-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  min-height: var(--size-row-sm);
+  padding: 0 var(--spacing-2);
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-compact);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/*
+ * The rows that carry a second line, and only those. The row height alone
+ * would hold a label and a description in the space meant for one line.
+ */
+.crewlet-menu__item--described {
+  padding-block: var(--spacing-2);
+}
+
+/* Neutral, because the accent means "where the reader is" and in a menu that
+   is what focus already says. */
+.crewlet-menu__item:hover:not(.is-disabled) {
+  background: var(--color-surface-hover);
+}
+
+/*
+ * THE TINT IS ON `:focus`, NOT ON `:focus-visible`. A menu puts focus on a row
+ * as it opens, and a row a script focused after a POINTER opened the panel
+ * does not match `:focus-visible` in any browser: the panel came up with no
+ * row lit at all until the reader moved the pointer or pressed an arrow, which
+ * is the one thing a menu has to say before it says anything else. A disabled
+ * row is not excluded here as it is from the hover above, and the asymmetry is
+ * the point: hover is an invitation and a disabled row declines it, while
+ * focus is a fact about where the keys will land.
+ */
+.crewlet-menu__item:focus {
+  background: var(--color-surface-hover);
+}
+
+/*
+ * Focus is the only cursor a menu has, so the ring is the important mark here,
+ * and it is inset: the panel scrolls its own rows, and an outset ring is
+ * clipped by the scroller and painted over by the row below. The ring alone,
+ * because the rule above has already drawn the tint under it.
+ */
+.crewlet-menu__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* The whole row, its glyph included: a destructive action is one thing. */
+.crewlet-menu__item.is-danger,
+.crewlet-menu__item.is-danger .crewlet-menu__icon {
+  color: var(--color-feedback-danger-ink);
+}
+
+/*
+ * A disabled item is still reachable and still says what it is. It is drawn
+ * quieter rather than removed, so a keyboard reader learns the action exists.
+ *
+ * The quiet step is the tertiary one and NOT an opacity. Half-strength ink is
+ * a composite nothing measured, and on this panel it lands at 2.4:1; the
+ * tertiary step is the one the palette suite holds at 4.5:1 on every ground a
+ * row can sit on, which is what makes "unavailable" readable rather than
+ * merely faint.
+ *
+ * IT IS DECLARED AFTER THE DESTRUCTIVE ROW ON PURPOSE. The two weigh the same,
+ * so the later one wins, and the one a reader has to be told is the one that
+ * says the row cannot be pressed: a Delete nobody is allowed to press was
+ * drawn in full danger ink, which is the strongest "press me" in the palette.
+ * The opacity this replaced faded both at once and so never had to choose.
+ */
+.crewlet-menu__item.is-disabled,
+.crewlet-menu__item.is-disabled .crewlet-menu__icon {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-menu__item.is-disabled {
+  cursor: not-allowed;
+}
+
+/*
+ * The check column. It is drawn for every answer of a choice, filled or not,
+ * so the labels line up and the answered one is the only row with a mark. It
+ * is the width of a glyph step rather than of a font size, so the column is
+ * the same width in a menu of any register.
+ */
+.crewlet-menu__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-4);
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-menu__icon {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-menu__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-menu__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-menu__description {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  white-space: normal;
+}
+
+/*
+ * A shortcut or a short note at the end of the row, held off the label by a
+ * full glyph step so the two never read as one phrase.
+ */
+.crewlet-menu__hint {
+  margin-left: auto;
+  padding-left: var(--spacing-4);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-menu__separator {
+  height: 1px;
+  margin: var(--spacing-1) 0;
+  background: var(--color-border-default);
+}
+
+/*
+ * The rows themselves carry no transition, and that is the rule rather than an
+ * omission: the arrows move the highlight, and a fade lags a held arrow key so
+ * the row the reader is on stops being the row that is lit.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-menu {
+    animation: none;
+  }
+}

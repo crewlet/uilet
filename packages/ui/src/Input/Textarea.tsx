@@ -6,8 +6,10 @@ import {
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react';
+import { cx } from '../utils/cx.js';
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  /** Marks the value as refused. Sets `aria-invalid`. */
   error?: boolean;
   /**
    * When true, the textarea height tracks its content. The element's
@@ -36,22 +38,19 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
     el.style.height = `${el.scrollHeight}px`;
   }, [autoResize, value]);
 
-  const classes = [
-    'crewlet-textarea',
-    error ? 'is-error' : '',
-    disabled ? 'is-disabled' : '',
-    autoResize ? 'is-auto-resize' : '',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   const control = (
     <textarea
       ref={localRef}
-      className={classes}
+      className={cx(
+        'crewlet-textarea',
+        error && 'is-error',
+        disabled && 'is-disabled',
+        autoResize && 'is-auto-resize',
+        className,
+      )}
       value={value}
       disabled={disabled}
+      aria-invalid={error || undefined}
       {...rest}
     />
   );

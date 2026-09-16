@@ -24,17 +24,22 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": "./dist/styles.css",
+    "./*": {
+      "types": "./dist/*/index.d.ts",
+      "import": "./dist/*/index.js"
+    }
   },
   "files": [
-    "dist"
+    "dist",
+    "scripts"
   ],
   "scripts": {
-    "build": "tsup && node scripts/bundle-css.mjs",
-    "dev": "tsup --watch --onSuccess \"node scripts/bundle-css.mjs\"",
-    "lint": "eslint src scripts && node scripts/check-css-variables.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rm -rf dist"
+    "build": "node scripts/write-barrel.mjs && tsup && tsc -p tsconfig.build.json && node scripts/bundle-css.mjs",
+    "dev": "node scripts/write-barrel.mjs && tsup --watch --onSuccess \"node scripts/bundle-css.mjs\"",
+    "lint": "node scripts/write-barrel.mjs && eslint src scripts && node scripts/check-css-variables.mjs && node scripts/check-css-literals.mjs src/Avatar src/Layer src/Listbox src/Announcer src/Modal src/Tooltip src/CommandPalette src/VisuallyHidden src/utils src/Count src/StatusDot src/EmptyValue src/Button src/IconButton src/Popover src/Menu src/DataView src/DataTable src/Input src/Tag src/TagGroup src/FilterChip src/EntityChip src/Callout src/Toaster src/Skeleton src/EmptyState src/Meter src/StatCard src/StatGroup src/NewItemsNotice src/PricingCard src/ImageUpload src/Tabs src/SegmentedControl src/PageHeader src/Card src/Section src/Charts src/Layout src/Canvas src/Tree src/TreeCanvas src/TreeGrid src/OrgNode src/OrgLabel src/AddPill src/OrgTable",
+    "typecheck": "node scripts/write-barrel.mjs && tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist src/generated"
   },
   "dependencies": {
     "@crewlethq/icons": "0.2.0",
@@ -54,5 +59,8 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "bin": {
+    "crewlet-css-check": "./scripts/check-css.mjs"
   }
 }

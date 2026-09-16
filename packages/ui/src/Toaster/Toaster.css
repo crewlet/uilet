@@ -1,109 +1,139 @@
 /*
- * Toaster + Toast styles: a 380px max width, a 12px radius, a 240ms
- * slide-in, and a scaleX progress drain whose animationend event is the
- * onDismiss handshake, so the visible countdown and the dismissal can
- * never drift apart.
+ * The toast stack.
  *
- * Variant accents:
- *   .crewlet-toast--info     neutral, no accent strip
- *   .crewlet-toast--success  matt moss-green icon
- *   .crewlet-toast--warn     amber icon
- *   .crewlet-toast--error    soft rose icon, never red flood
- *   .crewlet-toast--quota    brand accent on a caller-supplied icon, for
- *                            a usage limit notice (announced as an alert)
- *   quota and any other custom variant render with no default icon or
- *   title; consumers paint their own by passing the `icon` prop or by
- *   overriding the body via `renderBody`.
+ * ITS SURFACE IS A THEME TOKEN. 0.2.0 mixed the subtle surface 60 percent with
+ * black, which is a dark strip whatever palette is painting: on a light page
+ * the toast's own text measured 1.56:1 against it.
+ *
+ * THE DRAIN IS A RULE ALONG THE FOOT, not a wash behind the words. A tinted
+ * layer under the message is a composite nothing measured, and it moves while
+ * the message is being read; a 2px bar at the edge says the same thing and
+ * touches no text at all. It is decoration either way: the dismissal is a
+ * timer now, so a reader who asks for reduced motion still gets the toast
+ * taken away.
  */
 
 .crewlet-toaster {
   position: fixed;
-  z-index: var(--z-index-toast, 10001);
+  z-index: var(--z-index-toast);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: min(380px, calc(100vw - 48px));
+  gap: var(--spacing-2);
+  /* The engine's 420px, held under the viewport at the width a phone has.
+     The strip is one or two lines of 13px text and an action; at 380 the
+     commonest failure message wrapped onto a third. */
+  width: min(420px, calc(100vw - var(--spacing-9)));
+  /* The stack itself takes no presses, so the screen under it stays live
+     while nothing is up; each toast takes them back for its own strip. */
   pointer-events: none;
 }
 
-.crewlet-toaster--bottom-right { bottom: 24px; right: 24px; }
-.crewlet-toaster--top-right    { top: 24px;    right: 24px; }
-.crewlet-toaster--bottom-left  { bottom: 24px; left: 24px;  }
-.crewlet-toaster--top-left     { top: 24px;    left: 24px;  }
+.crewlet-toaster--bottom-right {
+  bottom: var(--spacing-4);
+  right: var(--spacing-4);
+}
+
+.crewlet-toaster--top-right {
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+}
+
+.crewlet-toaster--bottom-left {
+  bottom: var(--spacing-4);
+  left: var(--spacing-4);
+}
+
+.crewlet-toaster--top-left {
+  top: var(--spacing-4);
+  left: var(--spacing-4);
+}
 
 .crewlet-toast {
+  --crewlet-toast-mark: var(--color-text-secondary);
+  /*
+   * The boundary and the two inks are variables so a tone can spend them. Only
+   * one does: a failure, which is the engine's one toned strip.
+   */
+  --crewlet-toast-line: var(--color-border-default);
+  --crewlet-toast-ink: var(--color-text-primary);
+  --crewlet-toast-ink-quiet: var(--color-text-secondary);
+
   pointer-events: auto;
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 38px 14px 14px;
-  background: color-mix(in srgb, var(--color-surface-subtle) 60%, #000);
-  border: 1px solid var(--color-border-default);
-  border-radius: 12px;
-  color: var(--color-text-primary);
+  /* The panel's own gap and padding, and the panel's own surface: the engine
+     draws a toast as a small panel that happens to float, so it sits on the
+     same ground, the same hairline and the same corner as everything the
+     screen behind it is made of. */
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-8) var(--spacing-2) var(--spacing-3);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--crewlet-toast-line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  color: var(--crewlet-toast-ink);
   font-family: var(--font-family-sans);
-  font-size: 13px;
-  line-height: 1.45;
-  letter-spacing: -0.005em;
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  animation: crewlet-toast-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  letter-spacing: var(--font-letter-spacing-snug);
   overflow: hidden;
+  animation: crewlet-toast-in var(--motion-duration-base) var(--motion-easing-emphasized);
 }
 
 @keyframes crewlet-toast-in {
-  from { opacity: 0; transform: translateX(16px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 
-/* Children sit above the drain fill. */
-.crewlet-toast > * {
-  position: relative;
-  z-index: 1;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .crewlet-toast__icon {
-  flex-shrink: 0;
-  font-size: 20px;
-  color: var(--color-text-secondary);
-  line-height: 1;
+  display: inline-flex;
+  flex: none;
   margin-top: 1px;
+  color: var(--crewlet-toast-mark);
 }
 
-.crewlet-toast__icon .material-symbols-outlined {
-  font-size: 20px;
+/* The mark is the tone's FILL step, which is measured at 3:1 as a mark. The
+   words beside it stay in the primary ink: a coloured sentence on a coloured
+   strip is the pair that has to be measured, and this one does not exist. */
+.crewlet-toast--success {
+  --crewlet-toast-mark: var(--color-feedback-success);
 }
 
-.crewlet-toast--success .crewlet-toast__icon,
-.crewlet-toast--success .crewlet-toast__icon .material-symbols-outlined {
-  color: #8fbf9f;
-  font-variation-settings: 'FILL' 1;
-}
-
-.crewlet-toast--warn .crewlet-toast__icon,
-.crewlet-toast--warn .crewlet-toast__icon .material-symbols-outlined {
-  color: #e4c97c;
-  font-variation-settings: 'FILL' 1;
-}
-
-.crewlet-toast--error .crewlet-toast__icon,
-.crewlet-toast--error .crewlet-toast__icon .material-symbols-outlined {
-  color: #f87171;
-  font-variation-settings: 'FILL' 1;
+.crewlet-toast--warning {
+  --crewlet-toast-mark: var(--color-feedback-warning);
 }
 
 /*
- * The `quota` variant (a usage limit notice) paints the icon the caller
- * supplies with the brand accent and a filled glyph. Its styling lives
- * here so an app can render `<Toaster>` directly without shipping a
- * stylesheet of its own.
+ * A FAILURE IS THE ONE TONED STRIP. It is the outcome that is news rather than
+ * confirmation and the one that does not take itself away, so the engine gives
+ * it the hue twice: the fill step on the edge, where 3:1 is the floor a
+ * boundary has to clear, and the INK step on every word, which is the measured
+ * text pair on this surface. Never the fill behind a word: that is the swap
+ * the whole soft-and-ink split exists to stop.
  */
-.crewlet-toast--quota .crewlet-toast__icon,
-.crewlet-toast--quota .crewlet-toast__icon .material-symbols-outlined {
-  color: var(--color-brand-accent, #5469d4);
-  font-variation-settings: 'FILL' 1;
+.crewlet-toast--danger {
+  --crewlet-toast-mark: var(--color-feedback-danger);
+  --crewlet-toast-line: var(--color-feedback-danger);
+  --crewlet-toast-ink: var(--color-feedback-danger-ink);
+  --crewlet-toast-ink-quiet: var(--color-feedback-danger-ink);
+}
+
+.crewlet-toast--info {
+  --crewlet-toast-mark: var(--color-feedback-info);
+}
+
+/* A usage limit notice is the application's own variant: it paints the glyph
+   the caller passes with the accent and brings its own title. */
+.crewlet-toast--quota {
+  --crewlet-toast-mark: var(--color-brand-accent);
 }
 
 .crewlet-toast__body {
@@ -115,22 +145,18 @@
 }
 
 .crewlet-toast__title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  letter-spacing: -0.01em;
+  font-weight: var(--font-weight-semibold);
 }
 
 .crewlet-toast__message {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  word-wrap: break-word;
+  color: var(--crewlet-toast-ink-quiet);
+  overflow-wrap: anywhere;
 }
 
 .crewlet-toast__actions {
-  margin-top: 10px;
+  margin-top: var(--spacing-2);
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
 .crewlet-toast__action-btn,
@@ -138,127 +164,143 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: var(--color-brand-accent, #5469d4);
-  color: var(--color-text-on-brand, #fff);
-  border: 1px solid var(--color-brand-accent, #5469d4);
-  font-size: 12px;
-  font-weight: 600;
+  height: var(--size-control-sm);
+  padding: 0 var(--spacing-3);
+  border: 1px solid var(--color-brand-accent);
+  border-radius: var(--radius-md);
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-decoration: none;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-toast__action-btn:hover,
 .crewlet-toast__action-link:hover {
-  background: var(--color-brand-accent-hover, #6478e0);
-  border-color: var(--color-brand-accent-hover, #6478e0);
+  background: var(--color-brand-accent-hover);
+  border-color: var(--color-brand-accent-hover);
 }
 
-.crewlet-toast--error .crewlet-toast__action-btn,
-.crewlet-toast--error .crewlet-toast__action-link {
-  background: #f43f5e;
-  border-color: #f43f5e;
+.crewlet-toast--danger .crewlet-toast__action-btn,
+.crewlet-toast--danger .crewlet-toast__action-link {
+  background: var(--color-feedback-danger);
+  border-color: var(--color-feedback-danger);
 }
 
-.crewlet-toast--error .crewlet-toast__action-btn:hover,
-.crewlet-toast--error .crewlet-toast__action-link:hover {
-  background: #e11d48;
-  border-color: #e11d48;
+.crewlet-toast--danger .crewlet-toast__action-btn:hover,
+.crewlet-toast--danger .crewlet-toast__action-link:hover {
+  background: var(--color-feedback-danger-hover);
+  border-color: var(--color-feedback-danger-hover);
 }
 
-/* Dismiss "X" sits absolute in the top-right so multi-line content
-   flows naturally underneath it. */
+.crewlet-toast__action-btn:focus-visible,
+.crewlet-toast__action-link:focus-visible,
+.crewlet-toast__dismiss:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The dismiss sits absolute in the corner so a multi-line message flows
+   under it rather than around it. 24px square: the smallest target
+   WCAG 2.2 accepts. */
 .crewlet-toast__dismiss {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
   width: 24px;
   height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
   padding: 0;
-  transition: background 120ms ease, color 120ms ease;
-  z-index: 2;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  /* The strip's own quiet ink rather than the neutral tertiary step, so the
+     close on a failure is part of the failure rather than the one grey thing
+     inside it. */
+  color: var(--crewlet-toast-ink-quiet);
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-toast__dismiss:hover {
-  background: var(--color-surface-elevated, var(--color-surface-subtle));
-  color: var(--color-text-primary);
+  background: var(--color-surface-hover);
+  color: var(--crewlet-toast-ink);
 }
 
-.crewlet-toast__dismiss:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
-}
-
-.crewlet-toast__dismiss .material-symbols-outlined {
-  font-size: 16px;
-}
-
-/*
- * Progress fill drives auto-dismissal: animationend → onDismiss.
- * Hover/focus pauses the keyframe (and the implicit timer with it).
- * Variant wash: slate for calm informational variants, rose for error,
- * moss-green for success.
- */
 .crewlet-toast__progress {
   position: absolute;
-  inset: 0;
-  z-index: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
   transform-origin: left center;
-  transform: scaleX(1);
-  background: var(--color-brand-slate, #3c4052);
-  opacity: 0.3;
+  background: var(--crewlet-toast-mark);
   pointer-events: none;
   animation-name: crewlet-toast-drain;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
 }
 
-.crewlet-toast--error .crewlet-toast__progress {
-  background: #ae4a4a;
-  opacity: 0.18;
-}
-
-.crewlet-toast--success .crewlet-toast__progress {
-  background: rgba(78, 134, 90, 0.6);
-  opacity: 0.28;
-}
-
-.crewlet-toast--warn .crewlet-toast__progress {
-  background: rgba(180, 140, 50, 0.5);
-  opacity: 0.22;
-}
-
-.crewlet-toast:hover .crewlet-toast__progress,
-.crewlet-toast:focus-within .crewlet-toast__progress {
+/* Paused by the class rather than by :hover, so the bar and the timer that
+   actually dismisses are stopped by the same event. */
+.crewlet-toast__progress.is-paused {
   animation-play-state: paused;
 }
 
 @keyframes crewlet-toast-drain {
-  from { transform: scaleX(1); }
-  to   { transform: scaleX(0); }
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
 }
 
 @media (max-width: 480px) {
-  .crewlet-toaster--bottom-right,
-  .crewlet-toaster--top-right,
-  .crewlet-toaster--bottom-left,
-  .crewlet-toaster--top-left {
-    left: 12px;
-    right: 12px;
+  .crewlet-toaster {
+    left: var(--spacing-3);
+    right: var(--spacing-3);
     width: auto;
   }
+
   .crewlet-toaster--bottom-right,
-  .crewlet-toaster--bottom-left { bottom: 12px; }
+  .crewlet-toaster--bottom-left {
+    bottom: var(--spacing-3);
+  }
+
   .crewlet-toaster--top-right,
-  .crewlet-toaster--top-left    { top: 12px; }
+  .crewlet-toaster--top-left {
+    top: var(--spacing-3);
+  }
+}
+
+/*
+ * The strip still arrives and still goes; it just does not slide, and the
+ * countdown bar holds still. The timer is untouched: a reader who asked for
+ * less motion did not ask to be left with a toast that never leaves.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-toast {
+    animation: none;
+  }
+
+  .crewlet-toast__progress {
+    display: none;
+  }
+
+  .crewlet-toast__action-btn,
+  .crewlet-toast__action-link,
+  .crewlet-toast__dismiss {
+    transition: none;
+  }
 }

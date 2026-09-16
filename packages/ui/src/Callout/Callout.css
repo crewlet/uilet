@@ -1,52 +1,111 @@
 /*
- * Callout, inline status banner. One tinted surface per feedback
- * tone, readable on dark surfaces without stealing focus from the
- * content it annotates.
+ * The callout: a status that stays in the content flow.
+ *
+ * ITS INK IS THE TONE'S OWN `-ink` STEP, not a mix. 0.2.0 built every one of
+ * these with `color-mix(in srgb, <fill> 55%, var(--color-text-primary))`,
+ * which produces a colour nobody measured: the light warning reached 4.41:1
+ * against its own tint. The ink, the soft fill and the line are three declared
+ * steps the palette suite measures against each other, so the pair a reader
+ * sees is the pair that was checked.
  */
 
 .crewlet-callout {
+  --crewlet-callout-fill: var(--color-surface-inset);
+  --crewlet-callout-ink: var(--color-text-secondary);
+  /*
+   * TRANSPARENT, because the tint is the boundary. The engine's banner is a
+   * block of the tone's soft step with no rule around it: a 1px line in the
+   * same hue as the fill behind it adds a second edge a reader reads as a
+   * card, and the thing this component IS is a sentence the screen is saying
+   * rather than a card the screen contains. The pixel is still spent, so a
+   * consumer that overrides the line gets it back without the box moving.
+   */
+  --crewlet-callout-line: transparent;
+
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  border: 1px solid;
-  border-radius: 10px;
-  padding: 12px 16px;
-  font-size: 13px;
-  line-height: 1.5;
+  gap: var(--spacing-2);
+  /* The engine's own: a tight strip rather than a padded card. This sits
+     above a screen or between two sections and takes a line or two of text,
+     and the card's 16px made a one-line banner 48px tall. */
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--crewlet-callout-line);
+  border-radius: var(--radius-md);
+  background: var(--crewlet-callout-fill);
+  color: var(--crewlet-callout-ink);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
 }
 
 .crewlet-callout__icon {
   display: inline-flex;
-  margin-top: 1px;
+  flex: none;
+  /* On the first line's optical centre rather than its box top, which a 16px
+     glyph beside a 13px line sits two pixels above. */
+  margin-top: 2px;
 }
 
-.crewlet-callout__content { min-width: 0; }
+.crewlet-callout__content {
+  min-width: 0;
+  flex: 1;
+}
 
 .crewlet-callout__title {
-  font-weight: 600;
-  margin-right: 6px;
+  font-weight: var(--font-weight-semibold);
+  margin-right: var(--spacing-2);
 }
 
+.crewlet-callout__action {
+  flex: none;
+  align-self: center;
+}
+
+/*
+ * Inline code inside a callout takes the callout's ink. A mono chip that kept
+ * its own neutral ink inside a danger banner read as the one part of the
+ * sentence that was fine.
+ */
+.crewlet-callout code,
+.crewlet-callout .crewlet-inline-code {
+  color: inherit;
+}
+
+/* ── tones ─────────────────────────────────────────────────────────────── */
+
 .crewlet-callout--info {
-  border-color: color-mix(in srgb, var(--color-feedback-info) 30%, transparent);
-  background: color-mix(in srgb, var(--color-feedback-info) 9%, transparent);
-  color: color-mix(in srgb, var(--color-feedback-info) 55%, var(--color-text-primary));
+  --crewlet-callout-fill: var(--color-feedback-info-soft);
+  --crewlet-callout-ink: var(--color-feedback-info-ink);
 }
 
 .crewlet-callout--success {
-  border-color: color-mix(in srgb, var(--color-feedback-success) 32%, transparent);
-  background: color-mix(in srgb, var(--color-feedback-success) 9%, transparent);
-  color: color-mix(in srgb, var(--color-feedback-success) 55%, var(--color-text-primary));
+  --crewlet-callout-fill: var(--color-feedback-success-soft);
+  --crewlet-callout-ink: var(--color-feedback-success-ink);
 }
 
 .crewlet-callout--warning {
-  border-color: color-mix(in srgb, var(--color-feedback-warning) 32%, transparent);
-  background: color-mix(in srgb, var(--color-feedback-warning) 9%, transparent);
-  color: color-mix(in srgb, var(--color-feedback-warning) 60%, var(--color-text-primary));
+  --crewlet-callout-fill: var(--color-feedback-warning-soft);
+  --crewlet-callout-ink: var(--color-feedback-warning-ink);
 }
 
 .crewlet-callout--danger {
-  border-color: color-mix(in srgb, var(--color-feedback-danger) 30%, transparent);
-  background: color-mix(in srgb, var(--color-feedback-danger) 9%, transparent);
-  color: color-mix(in srgb, var(--color-feedback-danger) 45%, var(--color-text-primary));
+  --crewlet-callout-fill: var(--color-feedback-danger-soft);
+  --crewlet-callout-ink: var(--color-feedback-danger-ink);
+}
+
+/* ── layouts ───────────────────────────────────────────────────────────── */
+
+/*
+ * The banner is what a shell puts above a screen: against both edges, with no
+ * radius and no side borders, because a rounded card there leaves a gutter of
+ * page colour down each side and reads as content rather than as chrome.
+ */
+.crewlet-callout--banner {
+  border-radius: var(--radius-none);
+  /* The one layout that keeps a visible rule, on the edge it meets the screen
+     at: full bleed, there is no tint boundary at the sides for the eye to
+     stop on, so the bottom line is what says the strip has ended. */
+  border-width: 0 0 1px;
+  border-bottom-color: var(--color-border-default);
+  padding: var(--spacing-2) var(--spacing-4);
 }

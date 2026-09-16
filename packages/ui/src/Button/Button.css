@@ -1,147 +1,267 @@
 /*
- * Button styles. Colour properties go through the @crewlethq/tokens
- * variables so the dark, light and system themes pick up the right
- * palette without a per-theme rule here.
+ * The button, and the link drawn as one.
  *
- * Each size fixes a min-height (28, 32 and 44px) so a row of mixed
- * buttons, with and without icons, keeps one height. IconButton's
- * 28px size matches the small button, so check the IconButton and
- * toolbar stories in Storybook when you change a size.
+ * SIX VARIANTS, AND THEY ARE A HIERARCHY RATHER THAN A PALETTE. primary is the
+ * one action on the screen and takes the accent fill; secondary is everything
+ * else; outline is the branded yes on a page that already has a primary;
+ * tertiary is for a dense toolbar; danger is destructive, and the only one
+ * that spends the critical hue. accent is primary's own recipe under the name
+ * a caller may already have written.
+ *
+ * THE ONE ACTION IS THE ACCENT FILL. It reads as the answer a screen is
+ * asking for, which is what a filled monochrome button could not do beside a
+ * secondary of the same neutral family: on the dark palette a white primary
+ * and a light-grey secondary were one pair of greys, and the reader had to
+ * compare them to find the action.
+ *
+ * Every size is a --size-control-* step, so a button, a select and an input in
+ * one row are the same height at every density, and none of them can fall
+ * under the 24px a finger can hit. The padding ramp is one spacing step per
+ * size, so a small button in a toolbar is tight and a large one on a landing
+ * page is not.
  */
 
 .crewlet-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--spacing-2);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-family: var(--font-family-sans);
-  font-weight: 600;
-  letter-spacing: -0.005em;
+  /*
+   * MEDIUM, and the tracking left alone. A control's label is read at a
+   * glance rather than for sense, and the semibold it carried made a row of
+   * three buttons read as three headings; the negative tracking it carried
+   * with it is a display-size correction that closes up 12px text.
+   */
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-normal);
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+/*
+ * A BUTTON IS NOT A LINK, WHATEVER ELEMENT IT IS. Several of these controls
+ * are anchors, because a step that leaves for somebody else's site has to be a
+ * real href, and a document baseline underlines a hovered link. That is right
+ * for a link inside a sentence and wrong for something drawn as a filled
+ * button: "Install on GitHub" grew an underline the Create button beside it
+ * never had, so two controls that are the same act looked like two kinds of
+ * thing.
+ */
+.crewlet-btn,
+.crewlet-btn:hover {
+  text-decoration: none;
+}
+
+/*
+ * THE FOCUS RING IS AN OUTLINE. Forced-colors mode drops every box-shadow and
+ * keeps outlines, so a ring drawn as a shadow disappears for exactly the
+ * readers who most need one.
+ */
 .crewlet-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
-.crewlet-btn:disabled {
-  opacity: 0.4;
+.crewlet-btn:disabled,
+.crewlet-btn[aria-disabled='true'] {
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+/*
+ * Only the natively disabled one stops taking the pointer. A soft-disabled
+ * button keeps its hover and its focus on purpose: the tooltip that explains
+ * why it cannot be pressed is unreachable otherwise.
+ */
+.crewlet-btn:disabled {
   pointer-events: none;
 }
 
-/* ── Sizes (padding + font + min-height) ─────────────────────────── */
-.crewlet-btn--small  { padding: 5px 12px; font-size: 12px; min-height: 28px; }
-.crewlet-btn--medium { padding: 7px 14px; font-size: 13px; min-height: 32px; }
-.crewlet-btn--large  { padding: 9px 18px; font-size: 15px; min-height: 44px; }
+/* Sizes: the height is the control step, and the padding is one scale step
+   per size. min-height rather than height, so a label that wraps is read
+   rather than clipped. */
+.crewlet-btn--small {
+  min-height: var(--size-control-sm);
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+}
 
-/* ── Shape modifiers ────────────────────────────────────────────── */
-.crewlet-btn--square { border-radius: 8px; }
-.crewlet-btn--pill   { border-radius: 100px; gap: 6px; }
+.crewlet-btn--medium {
+  min-height: var(--size-control-md);
+  padding: 0 var(--spacing-3);
+  font-size: var(--font-size-compact);
+}
 
-.crewlet-btn--pill.crewlet-btn--small  { padding: 6px 16px; }
-.crewlet-btn--pill.crewlet-btn--medium { padding: 9px 22px; }
-.crewlet-btn--pill.crewlet-btn--large  { padding: 11px 28px; }
+.crewlet-btn--large {
+  min-height: var(--size-control-lg);
+  padding: 0 var(--spacing-4);
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-btn--square {
+  border-radius: var(--radius-md);
+}
+
+.crewlet-btn--pill {
+  border-radius: var(--radius-pill);
+}
+
+/* A pill spends one step more than its square, because a rounded end eats the
+   room a straight one gives the first letter. */
+.crewlet-btn--pill.crewlet-btn--small {
+  padding: 0 var(--spacing-3);
+}
+
+.crewlet-btn--pill.crewlet-btn--medium {
+  padding: 0 var(--spacing-4);
+}
+
+.crewlet-btn--pill.crewlet-btn--large {
+  padding: 0 var(--spacing-5);
+}
+
+.crewlet-btn--block {
+  width: 100%;
+}
 
 /*
- * Pill buttons paired with Material Symbols icons read better when
- * the icon drops from its default 20px to 16px so "← Back" / "Next →"
- * pairs sit as a unit.
+ * Primary: the accent fill, and the one action on the screen.
+ *
+ * `accent` is the same recipe under the other name it is written as. They are
+ * one rule rather than two, so the pair cannot drift into two blues, and the
+ * name stays because call sites already spell it.
+ *
+ * THE BORDER IS TRANSPARENT rather than the fill: a filled control needs no
+ * boundary, and one drawn in the fill's own colour makes the button a step
+ * wider than the secondary beside it in every forced-colors stylesheet that
+ * repaints backgrounds and keeps borders.
  */
-.crewlet-btn--pill .material-symbols-outlined {
-  font-size: 16px;
+.crewlet-btn--primary,
+.crewlet-btn--accent {
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+  border-color: transparent;
 }
 
-/* ── Primary: solid white CTA, black text (dark theme); flips to
-   black-on-white in the light theme through the token overrides. ── */
-.crewlet-btn--primary {
-  background: var(--color-brand-primary, #ffffff);
-  color: var(--color-text-on-brand, #000000);
-  border-color: var(--color-brand-primary, #ffffff);
-}
-.crewlet-btn--primary:hover:not(:disabled) {
-  background: var(--color-brand-primary-hover, rgba(255, 255, 255, 0.9));
-  border-color: var(--color-brand-primary-hover, rgba(255, 255, 255, 0.9));
-}
-.crewlet-btn--primary:active:not(:disabled) {
-  background: var(--color-brand-primary-active, rgba(255, 255, 255, 0.82));
-  border-color: var(--color-brand-primary-active, rgba(255, 255, 255, 0.82));
+.crewlet-btn--primary:hover:not(:disabled):not([aria-disabled='true']),
+.crewlet-btn--accent:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-brand-accent-hover);
+  border-color: transparent;
 }
 
-/* ── Secondary: ghost with visible border. ──────────────────────── */
+.crewlet-btn--primary:active:not(:disabled):not([aria-disabled='true']),
+.crewlet-btn--accent:active:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-brand-accent-active);
+  border-color: transparent;
+}
+
+/* Secondary: a surface with a visible boundary. Everything else. */
 .crewlet-btn--secondary {
   background: var(--color-surface-subtle);
   color: var(--color-text-primary);
   border-color: var(--color-border-default);
 }
-.crewlet-btn--secondary:hover:not(:disabled) {
-  background: var(--color-surface-elevated, var(--color-surface-subtle));
-  border-color: var(--color-border-strong);
+
+.crewlet-btn--secondary:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-hover);
 }
 
-/* ── Outline: lavender accent. Branded secondary CTA. ───────────── */
+.crewlet-btn--secondary:active:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-surface-pressed);
+}
+
+/* Outline: the branded secondary. Its ink is the accent's text step, never
+   the fill, which is not a text colour on any surface. */
 .crewlet-btn--outline {
   background: transparent;
-  color: var(--color-brand-accent, #5469d4);
-  border-color: var(--color-brand-accent, #5469d4);
-}
-.crewlet-btn--outline:hover:not(:disabled) {
-  background: var(--color-brand-accent-soft, rgba(84, 105, 212, 0.10));
-  border-color: var(--color-brand-accent, #5469d4);
+  color: var(--color-brand-accent-ink);
+  border-color: var(--color-brand-accent);
 }
 
-/* ── Tertiary: borderless ghost. ─────────────────────────────────── */
+.crewlet-btn--outline:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-brand-accent-soft);
+}
+
+/* Tertiary: borderless, for a dense toolbar. */
 .crewlet-btn--tertiary {
   background: transparent;
   color: var(--color-text-secondary);
   border-color: transparent;
 }
-.crewlet-btn--tertiary:hover:not(:disabled) {
-  background: var(--color-surface-elevated, var(--color-surface-subtle));
+
+.crewlet-btn--tertiary:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
 
-/* ── Accent: solid brand accent CTA. Used when the page already has
-   a white "primary" and a branded "yes do this" still belongs on
-   the surface, for example the action inside a toast. ────────── */
-.crewlet-btn--accent {
-  background: var(--color-brand-accent, #5469d4);
-  color: #ffffff;
-  border-color: var(--color-brand-accent, #5469d4);
+.crewlet-btn--tertiary:active:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-surface-pressed);
 }
-.crewlet-btn--accent:hover:not(:disabled) {
-  background: var(--color-brand-accent-hover, #6478e0);
-  border-color: var(--color-brand-accent-hover, #6478e0);
-}
-.crewlet-btn--accent:active:not(:disabled) {
-  background: var(--color-brand-accent-active, #4a5cc2);
-  border-color: var(--color-brand-accent-active, #4a5cc2);
-}
-
-/* ── Danger: solid red for destructive confirmation. ────────────── */
-.crewlet-btn--danger {
-  background: var(--color-feedback-danger, #f43f5e);
-  color: #ffffff;
-  border-color: var(--color-feedback-danger, #f43f5e);
-}
-.crewlet-btn--danger:hover:not(:disabled) {
-  background: var(--color-feedback-danger-hover, #e11d48);
-  border-color: var(--color-feedback-danger-hover, #e11d48);
-}
-
-.crewlet-btn__icon  { display: inline-flex; align-items: center; }
-.crewlet-btn__label { display: inline-flex; align-items: center; }
 
 /*
- * Pending state. The spinner takes the leading icon's place so the
- * label neither moves nor changes width when an action starts, which is
- * what makes a button feel like it is working rather than replaced.
+ * Danger: destructive, and the only button that spends the critical hue.
+ *
+ * A SECONDARY THAT HAS GONE RED, not a red slab. It sits in the same row as
+ * Cancel and it is the button a reader must not press by reflex, so it holds
+ * the secondary's own weight until it is pointed at and states itself in its
+ * INK, which is the step measured as text; the red fill it used to carry
+ * pulled the eye to the destructive answer first on every dialog that had one.
+ * The hue arrives on hover, as the tint plus the full fill on the boundary.
+ */
+.crewlet-btn--danger {
+  background: var(--color-surface-subtle);
+  color: var(--color-feedback-danger-ink);
+  border-color: var(--color-border-default);
+}
+
+.crewlet-btn--danger:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-feedback-danger-soft);
+  border-color: var(--color-feedback-danger);
+}
+
+.crewlet-btn--danger:active:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-feedback-danger-soft);
+  border-color: var(--color-feedback-danger-hover);
+}
+
+/* A toggle that is on. Drawn from the state a screen reader is already told
+   about, so the two cannot disagree. */
+.crewlet-btn[aria-pressed='true'] {
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+  border-color: var(--color-brand-accent-soft-strong);
+}
+
+.crewlet-btn__icon,
+.crewlet-btn__label {
+  display: inline-flex;
+  align-items: center;
+}
+
+/*
+ * A glyph inside a button follows the label's own size, which is what lets one
+ * rule serve every step. The SVG sits on the baseline as an inline box, where
+ * the font ligature this replaced was inline-block and centred itself.
+ */
+.crewlet-btn__icon .crewlet-glyph {
+  width: 1em;
+  height: 1em;
+}
+
+/*
+ * Pending. The spinner takes the leading icon's place, so a button that has
+ * one neither moves nor changes width mid-action, and the label stays exactly
+ * as it was: a button whose text becomes "Saving" has stopped saying what it
+ * does.
  */
 .crewlet-btn__spinner {
   display: inline-block;
@@ -149,25 +269,33 @@
   height: 1em;
   border: 2px solid currentColor;
   border-right-color: transparent;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   opacity: 0.7;
-  animation: crewlet-btn-spin 0.6s linear infinite;
+  animation: crewlet-btn-spin var(--motion-duration-slow) linear infinite;
   flex: none;
 }
 
 @keyframes crewlet-btn-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* A disabled button already reads as unavailable; a loading one should
-   still read as this button, mid-action. */
+/* A disabled button already reads as unavailable; a loading one should still
+   read as this button, mid-action. */
 .crewlet-btn--loading {
   cursor: progress;
 }
 
-/* A spinner that cannot spin should not pretend to. The ring still
-   reads as pending without the motion. */
+/*
+ * A spinner that cannot spin should not pretend to, and a colour change that
+ * cannot fade is still a colour change. The ring reads as pending either way.
+ */
 @media (prefers-reduced-motion: reduce) {
+  .crewlet-btn {
+    transition: none;
+  }
+
   .crewlet-btn__spinner {
     animation: none;
   }

@@ -1,0 +1,168 @@
+/*
+ * TagsInput: several values in one field.
+ *
+ * THE CHIPS SIT ABOVE THE FIELD, not inside it. Inline, a chosen value shares
+ * a box with the text somebody is typing, so the field's width is whatever
+ * the choices left of it, a long value pushes the caret off the end, and the
+ * Move controls an ordered chain needs have nowhere to go. Above, the box
+ * stays the same width whatever is in it and the chips are one list a screen
+ * reader can walk.
+ */
+
+.crewlet-tags-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  width: 100%;
+}
+
+.crewlet-tags-input__chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.crewlet-tags-input__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-tags-input__field {
+  position: relative;
+  width: 100%;
+}
+
+.crewlet-tags-input__box {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--size-control-md);
+  /* The side inset only, as every box in this register: the control's own
+     height is what makes the row, so a field, a button and a select in one
+     line are one height. */
+  padding: 0 var(--spacing-3);
+  font-family: inherit;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  outline: none;
+  /* The boundary is the only thing that moves. The ring is an outline, which
+     takes no transition, and nothing else here paints a shadow. */
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tags-input__box::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+/*
+ * ONE RING, and the same one every field in this package draws: an outline
+ * over the boundary, inset so a scroller cannot clip it. See Input.css for
+ * why it is not the border plus --shadow-focus it used to be.
+ *
+ * It is on the box rather than on a frame because the box IS the field here.
+ * The chips above it are each their own target with their own rings, which is
+ * the whole reason they sit above the field instead of inside it.
+ */
+.crewlet-tags-input__box:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-tags-input.is-disabled {
+  opacity: 0.6;
+}
+
+.crewlet-tags-input.is-disabled .crewlet-tags-input__box {
+  cursor: not-allowed;
+}
+
+/*
+ * The offered list, anchored inside the field's own box. In the flow it would
+ * push every field under it down the form as somebody types.
+ */
+.crewlet-tags-input__list {
+  /* Six rows and a scroll, as every list this package offers from a field. */
+  --crewlet-tags-list-max-height: 12rem;
+
+  position: absolute;
+  top: calc(100% + var(--spacing-1));
+  left: 0;
+  right: 0;
+  max-height: var(--crewlet-tags-list-max-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-1);
+  /* The product's own panel surface, hairline and corner: a list offered from
+     a field is another panel over the form, not a heavier kind of thing. */
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-index-dropdown);
+}
+
+/*
+ * TWO CLASSES, so the list's own bound wins whatever order the stylesheets
+ * are bundled in: the row it draws with carries the shared listbox class,
+ * which sets a max-height and a pad of its own at equal weight.
+ */
+.crewlet-tags-input__list.crewlet-listbox {
+  max-height: var(--crewlet-tags-list-max-height);
+  padding: var(--spacing-1);
+}
+
+/*
+ * WHAT IS CHOSEN AND WHERE THE READER IS ARE TWO DIFFERENT FACTS, and in a
+ * list where several rows are chosen at once they are both on screen the
+ * whole time: the chosen rows carry the tick in the accent ink, and the row
+ * the arrows or the pointer are on carries the hover tint.
+ *
+ * Scoped to the list rather than written on the row class, because the shared
+ * listbox register paints [aria-selected] itself and the stylesheets are
+ * bundled in hash order: a rule of equal weight would win or lose by the name
+ * of a build artefact.
+ */
+.crewlet-tags-input__list .crewlet-listbox__option,
+.crewlet-tags-input__list .crewlet-listbox__option[aria-selected='true'] {
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.crewlet-tags-input__list .crewlet-listbox__option.is-highlight,
+.crewlet-tags-input__list .crewlet-listbox__option:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/* The tick column, which holds its width whether or not a row is chosen, so
+   the labels line up down the list. */
+.crewlet-tags-input__option-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-tags-input__option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tags-input__box {
+    transition: none;
+  }
+}

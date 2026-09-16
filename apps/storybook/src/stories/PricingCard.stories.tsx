@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { PricingCard, Button } from '@crewlethq/ui';
+import { TagGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof PricingCard> = {
   title: 'UI/PricingCard',
@@ -92,7 +93,7 @@ export const Discounted: Story = {
         <PricingCard.Amount discounted>$45</PricingCard.Amount>
         <PricingCard.Cadence>/mo</PricingCard.Cadence>
         <PricingCard.PriceNote>
-          <span className="material-symbols-outlined" aria-hidden>savings</span>
+          <TagGlyph size="sm" />
           Save $5 (10% off)
         </PricingCard.PriceNote>
       </PricingCard.Price>
@@ -133,7 +134,7 @@ export const Grid: Story = {
             <PricingCard.Amount discounted>$45</PricingCard.Amount>
             <PricingCard.Cadence>/mo</PricingCard.Cadence>
             <PricingCard.PriceNote>
-              <span className="material-symbols-outlined" aria-hidden>savings</span>
+              <TagGlyph size="sm" />
               Save $5 (10% off)
             </PricingCard.PriceNote>
           </PricingCard.Price>

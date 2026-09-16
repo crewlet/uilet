@@ -1,10 +1,11 @@
 import './Tabs.css';
 
-export { Tabs } from './Tabs.js';
+export { TabPanel, Tabs, tabId } from './Tabs.js';
 export type {
-  TabsProps,
+  TabPanelProps,
   TabsItem,
-  TabsVariant,
-  TabsSize,
+  TabsProps,
   TabsRenderItemProps,
+  TabsSize,
+  TabsVariant,
 } from './Tabs.js';

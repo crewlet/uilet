@@ -1,0 +1,7 @@
+{
+  "density": {
+    "compact": { "value": "0.82", "comment": "The three steps --density takes, set on the root by @crewlethq/tokens/css/density. Every spacing and size token is emitted as calc(Npx * var(--density, 1)), so a density is a real change to every surface rather than to three font sizes, and every value is unchanged at 1." },
+    "normal": { "value": "1" },
+    "comfortable": { "value": "1.14" }
+  }
+}

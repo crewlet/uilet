@@ -1,4 +1,4 @@
 import './Kbd.css';
 
-export { Kbd } from './Kbd.js';
+export { Kbd, isApplePlatform, keyGlyph } from './Kbd.js';
 export type { KbdProps } from './Kbd.js';

@@ -1,0 +1,48 @@
+/*
+ * The toolbar row.
+ *
+ * It WRAPS rather than scrolling sideways: the controls in it are named, and a
+ * row that scrolls hides half of them behind a gesture nobody discovers. What
+ * it does not do is reflow from the data, which is why the wide and overflow
+ * slots switch at the shell breakpoint and nowhere else.
+ */
+
+.crewlet-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  min-width: 0;
+  padding: var(--spacing-2) 0;
+}
+
+/* Under the top of the scroller, on the sticky step, over the page's own
+   ground so rows do not show through it. */
+.crewlet-toolbar--sticky {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  background: var(--color-surface-background);
+}
+
+.crewlet-toolbar__wide,
+.crewlet-toolbar__overflow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-toolbar__overflow {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .crewlet-toolbar__wide {
+    display: none;
+  }
+
+  .crewlet-toolbar__overflow {
+    display: flex;
+  }
+}

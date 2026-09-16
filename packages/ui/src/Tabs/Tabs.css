@@ -1,19 +1,16 @@
 /*
- * Tabs primitive.
+ * The pill register: Tabs and SegmentedControl.
  *
- * Two visual variants share the same item layout:
+ * One item layout under two chromes. `underline` is a flat strip on a
+ * baseline with a sliding accent bar, for the sections of a screen;
+ * `pill` is a segmented chip row inside a tinted container, for a lens,
+ * a setting or a compact switch. SegmentedControl draws with the same
+ * classes, because a row of choices should not look like two different
+ * controls depending on which component a screen reached for.
  *
- *   - underline   Flat strip on a baseline border with a sliding
- *                 2px accent bar under the active tab. The bar
- *                 position + width come from CSS variables the
- *                 primitive writes after measuring the active tab
- *                 in a useLayoutEffect, so the bar animates between
- *                 tabs as the selection moves.
- *   - pill        Segmented control inside a tinted container, with
- *                 a lifted active chip.
- *
- * Variant chrome is owned here so consumers do not need to ship a
- * parallel stylesheet for each new tab strip they introduce.
+ * Every step comes from a token, the active chip included: the shadow it used
+ * to lift with was a black literal, invisible on a dark panel and a smudge on
+ * a light one.
  */
 
 .crewlet-tabs {
@@ -23,114 +20,219 @@
 }
 
 /* ─── Underline (sliding accent bar) ──────────────────────────── */
+/*
+ * THE ROW SCROLLS RATHER THAN OVERFLOWING THE PAGE. A section can own more
+ * tabs than a narrow window has room for, and a row that does not scroll
+ * pushes the whole screen sideways instead. The scrollbar itself is hidden:
+ * it would sit on the baseline the tabs and their bar are drawn on, and the
+ * row is reachable by the arrow keys either way.
+ */
 .crewlet-tabs--underline {
   display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
+  gap: var(--spacing-2);
+  border-bottom: 1px solid var(--color-border-default);
   position: relative;
   width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.crewlet-tabs--underline::-webkit-scrollbar {
+  display: none;
 }
 
 .crewlet-tabs--underline::after {
   /*
-   * Sliding accent bar. Positioned absolutely against the nav. The
-   * left + width come from inline CSS variables the primitive writes
-   * from a measurement pass against the .is-active tab. The default
-   * width of 0 keeps the bar invisible until the first measurement
-   * lands, no opacity toggle needed.
+   * The sliding bar, positioned against the row from two custom properties
+   * the component writes after measuring the active tab. A width of 0 keeps
+   * it invisible until the first measurement lands, so nothing needs an
+   * opacity flag.
    */
   content: '';
   position: absolute;
   bottom: -1px;
-  left: var(--crewlet-tabs-slider-left, 0);
-  width: var(--crewlet-tabs-slider-width, 0);
+  /*
+   * Under the LABEL, not under the tab's box: the measurement is the button,
+   * which carries the small side pad an inset focus ring needs, and a bar
+   * that ran the width of that pad read as a wider word than the one above
+   * it.
+   */
+  left: calc(var(--crewlet-tabs-slider-left, 0px) + var(--spacing-1));
+  width: max(0px, calc(var(--crewlet-tabs-slider-width, 0px) - var(--spacing-1) * 2));
   height: 2px;
-  background: var(--color-brand-accent, #5469d4);
+  background: var(--color-brand-accent);
+  border-radius: var(--radius-pill) var(--radius-pill) 0 0;
   transition:
-    left 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-    width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    left var(--motion-duration-base) var(--motion-easing-default),
+    width var(--motion-duration-base) var(--motion-easing-default);
   pointer-events: none;
 }
 
 /* ─── Pill (segmented control) ────────────────────────────────── */
+/*
+ * A WELL WITH CHIPS IN IT, not a panel with buttons in it. The container is
+ * the inset surface and carries no boundary of its own: the chip that is on
+ * is what the reader looks for, and it is found by being the one thing lifted
+ * off the well rather than by a border around the whole set.
+ *
+ * The inset is 2px, which is smaller than the scale's first step on purpose:
+ * it is the gap a chip needs to read as sitting IN the well, and a 4px one
+ * makes the row a control step taller than the button beside it.
+ */
 .crewlet-tabs--pill {
-  gap: 4px;
-  padding: 4px;
-  background: var(--color-surface-subtle, #f4f4f5);
-  border: 1px solid var(--color-border-default, rgba(255, 255, 255, 0.1));
-  border-radius: 10px;
+  --crewlet-tabs-pill-inset: 2px;
+
+  gap: var(--crewlet-tabs-pill-inset);
+  padding: var(--crewlet-tabs-pill-inset);
+  background: var(--color-surface-inset);
+  border-radius: var(--radius-md);
   width: fit-content;
 }
 
 /* ─── Tab item (shared) ───────────────────────────────────────── */
+/*
+ * A TARGET IS TWO DIMENSIONS. The height has been floored since this row was
+ * first drawn and the width was floored by nothing at all: a tab is side
+ * padding around whatever it holds, so a one-character mark or a bare glyph
+ * made a target as narrow as its own content. Measured on the engine's rail,
+ * the density row's chips stood 23.1px, 26px and 22.2px wide at the reader's
+ * default density and 20.2px, 23.1px and 19.3px at the compact one, where the
+ * floor a finger needs is 24px in BOTH directions.
+ *
+ * It is on the shared item rather than on the segmented option, because the
+ * underline chrome is the same padding around the same content and has the
+ * same hole. A tab whose label is wider than the floor is untouched.
+ */
 .crewlet-tabs__tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: var(--spacing-1);
+  /* Never under the 24px target floor, at any density. */
+  min-height: var(--size-control-sm);
+  min-width: var(--size-target-min);
   background: transparent;
   border: 0;
-  color: var(--color-text-secondary, #c9ced8);
+  color: var(--color-text-tertiary);
   font: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-medium);
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
   transition:
-    background-color 0.12s ease,
-    color 0.12s ease,
-    box-shadow 0.12s ease;
+    background-color var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-.crewlet-tabs--sm .crewlet-tabs__tab {
-  font-size: 12px;
-}
-
-/* Underline tab sizing. Sits flush against the baseline; the slider
-   provides the active indicator so no per-tab border is needed. */
+/*
+ * Underline tabs sit flush on the baseline and the slider is the indicator,
+ * so the label carries no chrome of its own: its only side pad is the room
+ * the focus ring is drawn in, and the labels stand one scale step apart.
+ */
 .crewlet-tabs--underline .crewlet-tabs__tab {
-  padding: 12px 16px;
-  font-size: 14px;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-1);
+  font-size: var(--font-size-compact);
   position: relative;
 }
 
 .crewlet-tabs--underline.crewlet-tabs--sm .crewlet-tabs__tab {
-  padding: 10px 14px;
-  font-size: 13px;
+  font-size: var(--font-size-xs);
 }
 
-/* Pill tab sizing + rounded chip shape. */
+/*
+ * THE RING IS DRAWN INSIDE THE TAB. The row is a scroller, so an outset ring
+ * on any tab in it is clipped by the row's own box, top and bottom, and on
+ * the first and last tabs at the ends as well. This is what
+ * --size-focus-ring-inset-offset exists for.
+ */
+.crewlet-tabs--underline .crewlet-tabs__tab:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
+ * A CHIP STANDS SHORTER THAN THE CONTROL IT SITS BESIDE, and it is the row
+ * that has to match: the well adds its inset above and below every chip, so a
+ * chip at a full control step makes the whole segmented row taller than the
+ * button next to it. Six pixels off the md step and four off the sm one is
+ * what the engine's own segmented row has always drawn.
+ *
+ * AND THE FLOOR IS TAKEN AGAIN AFTER THE SUBTRACTION. --size-control-sm
+ * carries a 24px floor of its own, but subtracting from a step subtracts from
+ * its floor too: at compact density `calc(var(--size-control-sm) - 4px)` is
+ * 20px, under the target a finger can hit. max() against --size-target-min
+ * leaves the value exactly 24px at density 1 and reachable at every other.
+ *
+ * The corner is one hairline tighter than the well around it rather than a
+ * step of its own, which is what reads as a chip sitting IN the well.
+ *
+ * AND THE CONTENT IS CENTRED IN THE CHIP. It was aligned to the start, for a
+ * chip stretched on a grid track, which is a case the pill chrome's own
+ * `width: fit-content` container cannot produce: the row is sized to its
+ * chips, so no chip is ever wider than its content except by the target floor
+ * above. Under that floor start alignment is a visible defect rather than an
+ * invisible preference: a 12px glyph in a 24px chip sat 4px from one edge and
+ * 8px from the other, and a one-letter mark sat further off still. The
+ * stretched row that wanted a common inner edge is the segmented CARD row,
+ * and that mode aligns its own options to the start.
+ */
 .crewlet-tabs--pill .crewlet-tabs__tab {
-  padding: 6px 12px;
-  border-radius: 7px;
+  min-height: max(var(--size-target-min), calc(var(--size-control-md) - 6px));
+  padding: 0 var(--spacing-3);
+  border-radius: var(--radius-chip);
+  font-size: var(--font-size-xs);
 }
 
+/*
+ * THE SMALL CHIP IS THE QUIET ONE. It is the register the rail's foot wears,
+ * where a theme row and a density row sit beside a status pill and are read
+ * past rather than read, so its side pad is the scale's first step rather
+ * than its second and its glyph is the step under the label register's.
+ *
+ * The height does not follow: at the reader's default density this chip is
+ * already exactly --size-target-min, so a shorter one would be a target a
+ * finger misses. The whole reduction comes out of the width, where the pad is
+ * spent, and the floor above catches what is left.
+ */
 .crewlet-tabs--pill.crewlet-tabs--sm .crewlet-tabs__tab {
-  padding: 5px 10px;
+  min-height: max(var(--size-target-min), calc(var(--size-control-sm) - 4px));
+  padding: 0 var(--spacing-1);
+  font-size: var(--font-size-2xs);
 }
 
-/* Hover. */
+.crewlet-tabs--pill.crewlet-tabs--sm .crewlet-tabs__icon {
+  font-size: var(--font-size-xs);
+}
+
+/*
+ * A HOVER IS A BRIGHTENING, NOT A FILL, in both chromes. The fill is what the
+ * chip that is on wears, and a hovered neighbour wearing a lighter version of
+ * it is a second answer that looks half-chosen; on the underline row the
+ * whole indicator is the bar, so a tinted box under a hovered label is a
+ * second indicator saying something else.
+ */
 .crewlet-tabs__tab:hover:not(.is-disabled):not(.is-active) {
-  color: var(--color-text-primary, #fafafa);
+  color: var(--color-text-primary);
 }
 
-.crewlet-tabs--pill .crewlet-tabs__tab:hover:not(.is-disabled):not(.is-active) {
-  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
-}
-
-/* Active. Underline relies on the slider for the line; tab itself
-   just brightens its text color. Pill paints an elevated chip. */
 .crewlet-tabs__tab.is-active {
-  color: var(--color-text-primary, #fafafa);
+  color: var(--color-text-primary);
 }
 
 .crewlet-tabs--pill .crewlet-tabs__tab.is-active {
-  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.08));
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  background: var(--color-surface-subtle);
+  box-shadow: var(--shadow-xs);
 }
 
+/*
+ * THE RING IS AN OUTLINE. Forced-colors mode drops every box-shadow and keeps
+ * outlines, so a ring drawn as a shadow disappears for exactly the readers who
+ * need one most.
+ */
 .crewlet-tabs__tab:focus-visible {
-  outline: 2px solid var(--color-brand-accent, #5469d4);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -140,8 +242,11 @@
   cursor: not-allowed;
 }
 
+/* A glyph beside a label is the label's own size, so the two sit on one line
+   rather than the mark outweighing the word. */
 .crewlet-tabs__icon {
-  font-size: 16px;
+  display: inline-flex;
+  font-size: var(--font-size-sm);
   line-height: 1;
   flex-shrink: 0;
 }
@@ -150,4 +255,21 @@
   display: inline-flex;
   align-items: center;
   min-width: 0;
+}
+
+/* The panel a row controls keeps the layout it sits in. */
+.crewlet-tab-panel {
+  display: contents;
+}
+
+/*
+ * The slider ARRIVES rather than travels, and a chip changes without a fade.
+ * The indicator still moves; what stops is the animation between the two
+ * places it can be.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tabs--underline::after,
+  .crewlet-tabs__tab {
+    transition: none;
+  }
 }

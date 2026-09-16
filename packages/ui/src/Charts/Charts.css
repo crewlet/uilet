@@ -1,0 +1,277 @@
+/* The chart kit: a legend, a ranked bar list, a stacked bar and an activity
+   strip. Hand-drawn rather than a charting library, for one reason that
+   decides it: every mark here reads tokens, in two themes, at the contrast
+   floors the palette suite measures, and a library's theming surface is a
+   second design system to keep in step with this one. */
+
+/* ─── Legend ──────────────────────────────────────────────────── */
+.crewlet-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+/*
+ * A ROUNDED SQUARE, NOT A DOT. At the smallest radius step an 8px swatch is a
+ * circle, and a circle in this system is a StatusDot: a legend beside a chart
+ * was reading as a row of live states. Half that step keeps the corner soft
+ * and the shape square, and it is written as half a step rather than as 2px so
+ * it is still a value off the scale.
+ */
+.crewlet-legend__swatch {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: calc(var(--radius-xs) / 2);
+  background: var(--crewlet-legend-swatch-color, var(--color-data-other));
+}
+
+.crewlet-legend__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-legend__value {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Bar list ────────────────────────────────────────────────── */
+.crewlet-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-bar-list__item {
+  min-width: 0;
+}
+
+.crewlet-bar-list__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+
+.crewlet-bar-list__row--pressable {
+  cursor: pointer;
+}
+
+.crewlet-bar-list__row--pressable:hover .crewlet-bar-list__label {
+  color: var(--color-text-primary);
+}
+
+.crewlet-bar-list__row--pressable:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-bar-list__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-bar-list__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-compact);
+  color: var(--color-text-primary);
+}
+
+.crewlet-bar-list__value {
+  font-size: var(--font-size-compact);
+  color: var(--color-text-secondary);
+  /* Tabular, so a column of numbers lines up on its digits and a push that
+     changes one of them does not move the rest. */
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-bar-list__track {
+  display: block;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-inset);
+  overflow: hidden;
+}
+
+.crewlet-bar-list__bar {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--crewlet-bar-list-bar-color, var(--color-data-other));
+}
+
+/*
+ * THE CAPTION STEP. These are sentences a reader actually reads (what a row is
+ * besides its name, how long the tail is, that there is nothing here at all),
+ * and the 11px step is the MICRO-LABEL register: it is for a word above a
+ * column, not for a line of prose.
+ */
+.crewlet-bar-list__sub,
+.crewlet-bar-list__more,
+.crewlet-bar-list__empty {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * THE SENTENCE STARTS WHERE THE BARS WOULD HAVE. It stands in for them, so it
+ * takes the inset the panel holding it gives every other row and none of its
+ * own.
+ *
+ * It carried the panel's own step for a while, which was a repair applied at
+ * the wrong end: the sentence was landing against a card's border because the
+ * CARD was drawing its content with no inset at all, and a padding here moved
+ * this one line while every sibling in the same card stayed against the edge.
+ * A card draws its own content in a body now, so a padding here is the panel's
+ * inset a second time.
+ */
+.crewlet-bar-list__empty {
+  margin: 0;
+  padding: 0;
+}
+
+.crewlet-bar-list__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Stacked bar ─────────────────────────────────────────────── */
+.crewlet-stacked-bar__track {
+  display: flex;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-inset);
+  overflow: hidden;
+}
+
+.crewlet-stacked-bar__segment {
+  height: 100%;
+  background: var(--crewlet-stacked-bar-segment-color, var(--color-data-other));
+}
+
+/* ─── Activity strip ──────────────────────────────────────────── */
+.crewlet-activity-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--crewlet-activity-strip-gap, 2px);
+  height: var(--crewlet-activity-strip-height, 26px);
+  width: 100%;
+}
+
+.crewlet-activity-strip__cell {
+  flex: 1;
+  min-width: var(--crewlet-activity-strip-cell-min-width, 2px);
+  height: var(--crewlet-activity-strip-fill, 10%);
+  /*
+   * A quarter of the smallest step. A cell is two pixels wide, so at the step
+   * itself every mark was a capsule and the strip read as a row of pills
+   * rather than as a shape.
+   */
+  border-radius: calc(var(--radius-xs) / 4);
+  /* An empty bucket is a neutral hairline: the bucket happened, and nothing
+     happened in it. That is a different fact from a quiet one, so it takes a
+     different colour rather than a fainter version of the same one. */
+  background: var(--color-border-default);
+}
+
+.crewlet-activity-strip__cell.is-active {
+  background: var(--color-data-1);
+}
+
+/* ─── Time series, and the sparkline beside a number ──────────── */
+
+/*
+ * The plot fills the width it is given and does not clip: a line that touches
+ * the top of its own box is a peak, and a box that clipped it would silently
+ * flatten exactly the moment a reader is looking for.
+ */
+.crewlet-time-series {
+  margin: 0;
+  min-width: 0;
+}
+
+.crewlet-chart {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+/* The baseline: a hairline, because it is where the plot sits rather than
+   something to read. */
+.crewlet-chart__axis-line {
+  stroke: var(--color-border-default);
+  stroke-width: 1;
+}
+
+/*
+ * The grid is DASHED, which is what keeps three horizontal lines from reading
+ * as three series. They carry no values of their own: the peak under the plot
+ * is the scale, and a chart this size cannot label four gridlines legibly.
+ */
+.crewlet-chart__grid-line {
+  stroke: var(--color-border-default);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+/*
+ * The series line. It is painted with the colour passed on the element,
+ * because a series' hue is data rather than style; the shape of the stroke is
+ * the one thing that is the same for all of them.
+ */
+.crewlet-chart__series {
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* The window's two ends and its peak, under the plot: the scale, as words. */
+.crewlet-time-series__scale {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-spark {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}

@@ -1,0 +1,107 @@
+/*
+ * The filter chip: neutral until it is on, and then the accent.
+ *
+ * WHY THE ACCENT HERE AND NOWHERE ELSE IN A ROW OF CONTROLS. The accent means
+ * "where the reader is". The filter currently narrowing a list is exactly
+ * that, so it is the one control in a toolbar entitled to the colour; a chip
+ * that carried it at rest would spend it on a row where nothing is happening.
+ *
+ * The pressed ground is the accent SOFT tint under the accent INK, the same
+ * measured pair a Tag uses, never the accent fill with a label on it: the fill
+ * step is measured as a mark at 3:1 and would put its own label under 4.5:1.
+ */
+
+.crewlet-filter-chip-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/* The micro register: the same label step a Text `label` and a stat draw. */
+.crewlet-filter-chip-group__label {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: var(--size-control-sm);
+  /* The engine's own padding, and a full step tighter than 0.2.0 drew: a
+     Filter menu puts six of these in one row under a list, and the extra 4px
+     on each side was what pushed the sixth onto a second line. */
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  /*
+   * The QUIET step at rest. A chip that is off is an option a reader has not
+   * taken and the row of them is scanned rather than read; the one that is on
+   * is the only thing in the row entitled to say so, and it says it in the
+   * accent.
+   */
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  /* Regular, which is what the engine's chip inherits from the document. The
+     row is a set of equal options and a medium weight on every one of them
+     made a toolbar of six read as six headings. */
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-filter-chip:hover {
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
+}
+
+.crewlet-filter-chip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-filter-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crewlet-filter-chip[aria-pressed='true'],
+.crewlet-filter-chip[aria-checked='true'] {
+  background: var(--color-brand-accent-soft);
+  border-color: var(--color-brand-accent-soft-strong);
+  color: var(--color-brand-accent-ink);
+}
+
+/*
+ * The count takes the chip's own ink, in both states.
+ *
+ * The engine draws it in the DECORATION step, which measures 2.25:1 at its
+ * worst and is the one step this package refuses to put a word on: a number
+ * that says how far a filter narrows a list is a fact a reader acts on, not a
+ * hairline. It was already one step quieter than the label here, and the label
+ * has since come down to meet it, so inheriting is what the engine's two-tone
+ * pill now looks like anyway, one measured step higher.
+ */
+.crewlet-filter-chip__count {
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-filter-chip {
+    transition: none;
+  }
+}

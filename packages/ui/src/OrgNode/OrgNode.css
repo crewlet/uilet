@@ -1,0 +1,214 @@
+/*
+ * What a node of an org chart carries beyond what it says (OrgNode.tsx).
+ *
+ * WHAT IT SAYS IS `OrgLabel.css`, because a table row says the same things in
+ * the same words. What is here is the two parts only a node has: the
+ * disclosure on its leading edge, and the strip along its bottom edge stating
+ * who leads the unit.
+ *
+ * Every measurement is a proportion of the console org chart this package is
+ * drawn to match, taken up by the ratio between its 10px name and the smallest
+ * name step in this type scale, and then snapped to the token nearest the
+ * result. So the lead strip is half a rank.
+ *
+ * NOTHING HERE CHOOSES A COLOUR ON ITS OWN ACCOUNT beyond the neutral steps: a
+ * node's hue reaches its card, its edge, its halo, its branch and its words
+ * from the one answer the chart publishes.
+ */
+
+/*
+ * THE DISCLOSURE, at the start of the node.
+ *
+ * WHAT IT IS is here; WHERE IT GOES is the chart's, because the edge it is
+ * drawn on is the card's and the rank it is centred on is the layout's
+ * (`TreeCanvas.css`, the `node` appearance). In any other frame it is simply
+ * the first thing in the card, which is what a panel wants.
+ */
+.crewlet-org-node__leading {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- A unit's lead ------------------------------------------------------ */
+
+.crewlet-org-node-lead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 var(--spacing-1) var(--spacing-1);
+}
+
+/*
+ * THE SEPARATOR IS INSET, like every hairline inside a node of the console
+ * chart (it draws this one from 4 to `nw - 4`). Edge to edge it cut the card
+ * in two and the node read as two stacked cells rather than as a card with a
+ * fact along its bottom edge. Drawn rather than bordered for that reason
+ * alone: a border cannot be shorter than the box it is on.
+ */
+.crewlet-org-node-lead::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: var(--spacing-1);
+  left: var(--spacing-1);
+  height: 1px;
+  background: var(--color-border-default);
+}
+
+/*
+ * A PILL RATHER THAN A LINE OF TEXT, so the lead reads as one value attached
+ * to this unit rather than as a second caption. The empty state is the same
+ * pill with a dashed edge and the word alone: a unit with no lead has a place
+ * for one, which is what invites the reader to set it.
+ */
+.crewlet-org-node-lead__pill {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  min-height: var(--spacing-5);
+  padding: 0 var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-tight);
+  color: var(--color-text-secondary);
+  /*
+   * THE BOUNDARY IS THE HOVER STEP, not the resting hairline, which is what
+   * the console chart draws around this one pill and nowhere else inside a
+   * node: every other line in there is the separator step and this is a
+   * boundary around a value. At the separator's own alpha the pill was a
+   * rectangle a reader had to look for, on the one fact a unit's node states.
+   */
+  border: 1px solid var(--color-border-hover);
+  border-radius: var(--radius-sm);
+}
+
+/*
+ * AND AN EMPTY ONE IS THE SAME PILL, DASHED. The console chart separates the
+ * two by the DASH and by the ink, and its two boundary alphas are 0.15 and
+ * 0.12, which is one step of this ramp: written as two tokens the difference
+ * would be invisible beside the dash that already carries it.
+ */
+.crewlet-org-node-lead__pill--empty {
+  color: var(--color-text-tertiary);
+  border-style: dashed;
+}
+
+/*
+ * A LEAD THAT CAN BE CHANGED IS STILL A LEAD. Where the pill holds a control
+ * rather than a word, the control IS the pill: it fills it, carries the pill's
+ * own type and ink, and draws no second boundary inside the one already there.
+ * Left at its own size, a control step inside a half-rank strip is a button
+ * that overflows the node it sits in.
+ *
+ * DRAWN AS THE PILL, HIT AS A CONTROL. The strip is half a rank, which is
+ * under the pointer-target floor on its own; the target is grown past the
+ * pill's own edge instead, into the node's bottom padding, so what is drawn is
+ * the console chart's strip and what is pressed clears the floor.
+ */
+.crewlet-org-node-lead__pill .crewlet-btn {
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+  min-height: var(--size-target-min);
+  margin: calc((var(--size-target-min) - var(--spacing-5)) / -2) 0;
+  padding: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+}
+
+.crewlet-org-node-lead__pill .crewlet-btn:hover {
+  color: var(--color-text-primary);
+}
+
+/* The name of the lead, not the chevron beside it, is what truncates. */
+.crewlet-org-node-lead__pill .crewlet-btn > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * THE CLEAR, drawn inside the pill's right end.
+ *
+ * ONE PRESS, which is the whole reason it exists: the menu that sets a lead
+ * can also unset one, and a unit whose lead is wrong is two presses and a list
+ * away from having none. The console chart draws a small X at `nw - 12`,
+ * revealed with the node's own controls, calling the same edit with an empty
+ * lead.
+ *
+ * DRAWN SMALL, HIT FULL SIZE, the rule the whole node keeps: the strip is half
+ * a rank, so the target is grown past the pill's own edge into the node's
+ * bottom padding, exactly as the lead's own control is. It takes its room from
+ * the pill rather than overlaying the name, so the lead truncates beside it
+ * instead of running under it: the console chart shifts its text 5px left for
+ * the same reason, which a row of flex items does on its own.
+ */
+.crewlet-org-node-lead__clear {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * THE GROUND IS A STEP OFF THE CARD'S, rather than that chart's own alpha. Its
+ * 0.08 of white over a dark card is a disc a reader can see; on this package's
+ * LIGHT theme the step at that alpha is the card's own value, so the disc
+ * would disappear on half the deployments. The step past the card is the same
+ * relationship in both themes, which is what the drawing was after.
+ */
+.crewlet-org-node-lead__disc {
+  position: absolute;
+  width: var(--spacing-3);
+  height: var(--spacing-3);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-hover);
+  border-radius: var(--radius-circle);
+  pointer-events: none;
+}
+
+.crewlet-org-node-lead__clear .crewlet-btn,
+.crewlet-org-node-lead__clear .crewlet-icon-btn {
+  position: relative;
+  width: var(--size-target-min);
+  height: var(--size-target-min);
+  min-width: var(--size-target-min);
+  min-height: var(--size-target-min);
+  margin: calc((var(--size-target-min) - var(--spacing-5)) / -2) calc(var(--spacing-1) * -1);
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-circle);
+}
+
+/*
+ * REACHED, IT BRIGHTENS RATHER THAN FILLING. The disc already carries a ground
+ * of its own, and a hover overlay laid over that is a composite of two
+ * translucent steps nothing has measured; the console chart gives this control
+ * no hover state at all beyond the node's own reveal. So the ink goes to full
+ * and the boundary to the control step, and the ground does not move.
+ */
+.crewlet-org-node-lead__clear .crewlet-icon-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.crewlet-org-node-lead__clear:hover .crewlet-org-node-lead__disc {
+  border-color: var(--color-border-control);
+}
+
+.crewlet-org-node-lead__clear svg {
+  position: relative;
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+}

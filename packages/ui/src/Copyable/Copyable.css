@@ -1,109 +1,101 @@
 /*
- * Copyable, identifier / value display with click-to-copy and a
- * hover-revealed copy button. Three variants:
+ * Copyable: a value and the one control that copies it.
  *
- *   chip    Compact pill for table cells. firstN…lastM truncation.
- *           Background chip, copy button reveals on hover.
- *   inline  Full value inline for detail pages, no chip background,
- *           copy button reveals on hover.
- *   block   Bordered panel for code samples or full URLs. Copy
- *           button is always visible.
+ * Three framings, and they differ only in how the value is drawn:
+ *
+ *   chip    A compact pill for a table cell, with head and tail truncation.
+ *   inline  The value inline in a detail row, no chip behind it.
+ *   block   A bordered panel for a full URL or a command.
+ *
+ * The control is an IconButton in every one of them, and it is the only tab
+ * stop: the value is text.
  */
 
 .crewlet-copyable {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-1);
   max-width: 100%;
   vertical-align: middle;
 }
 
 .crewlet-copyable__value {
-  font-family: var(--font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-  letter-spacing: 0.02em;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
+  font-family: var(--font-family-mono);
+  font-variant-ligatures: none;
+  letter-spacing: var(--font-letter-spacing-snug);
+  /* The ink every identifier chip in the system takes. A step quieter made a
+     value a reader is about to copy the faintest thing in its own row. */
+  color: var(--color-text-secondary);
   white-space: nowrap;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.15s ease, background 0.15s ease;
 }
 
-.crewlet-copyable:hover .crewlet-copyable__value {
-  color: var(--color-text-primary);
-}
-
+/*
+ * The control is quiet until the row is reached, and it is REVEALED BY FOCUS
+ * as well as by hover: hidden from a keyboard reader, an opacity of 0 is a
+ * control that takes a tab stop and shows nothing.
+ */
 .crewlet-copyable__button {
-  flex-shrink: 0;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
+  flex: none;
   opacity: 0;
-  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
-}
-
-.crewlet-copyable__button .material-symbols-outlined {
-  font-size: 14px;
-  line-height: 1;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-copyable:hover .crewlet-copyable__button,
 .crewlet-copyable__button:focus-visible,
-.crewlet-copyable.is-copied .crewlet-copyable__button {
+.crewlet-copyable.is-copied .crewlet-copyable__button,
+.crewlet-copyable.is-failed .crewlet-copyable__button {
   opacity: 1;
 }
 
-.crewlet-copyable__button:hover {
-  background: var(--color-brand-accent-soft, rgba(84, 105, 212, 0.1));
-  border-color: var(--color-brand-accent-soft-strong, rgba(84, 105, 212, 0.32));
-  color: var(--color-brand-accent, var(--color-brand-primary));
-}
-
 .crewlet-copyable.is-copied .crewlet-copyable__button {
-  color: var(--color-brand-accent, var(--color-brand-primary));
+  color: var(--color-feedback-success-ink);
 }
 
-/* ── chip ───────────────────────────────────────────────────────── */
+.crewlet-copyable.is-failed .crewlet-copyable__button {
+  color: var(--color-feedback-danger-ink);
+}
+
+/* ---- chip -------------------------------------------------------------- */
+
 .crewlet-copyable--chip .crewlet-copyable__value {
-  font-size: 11.5px;
-  background: var(--color-surface-elevated, var(--color-surface-subtle));
-  padding: 1px 6px;
-  border-radius: 4px;
+  font-size: var(--font-size-2xs);
+  background: var(--color-surface-inset);
+  padding: 1px var(--spacing-1);
+  border-radius: var(--radius-xs);
 }
 
-/* ── inline ─────────────────────────────────────────────────────── */
+/* ---- inline ------------------------------------------------------------ */
+
 .crewlet-copyable--inline .crewlet-copyable__value {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   background: transparent;
   padding: 0;
   color: var(--color-text-secondary);
 }
 
-/* ── block ──────────────────────────────────────────────────────── */
+/* ---- block ------------------------------------------------------------- */
+
 .crewlet-copyable--block {
   display: inline-flex;
-  background: var(--color-surface-elevated, var(--color-surface-subtle));
-  border: 1px solid var(--color-border-default);
-  border-radius: 6px;
-  padding: 8px 12px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--spacing-2);
+  /* The bordered value surface, which is the one a code block and a field
+     take. The elevated step here lifted a one-line value off the card it sits
+     on further than the card lifts off the page. */
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2) var(--spacing-3);
 }
 
 .crewlet-copyable--block .crewlet-copyable__value {
-  font-size: 13px;
+  font-size: var(--font-size-compact);
   color: var(--color-text-primary);
   background: transparent;
   padding: 0;
@@ -112,12 +104,22 @@
   flex: 1;
 }
 
+/* A panel's control is always drawn: there is nothing else in the panel. */
 .crewlet-copyable--block .crewlet-copyable__button {
   opacity: 1;
 }
 
-/* monospace flag: forces mono font for any variant (commonly paired
-   with block to render command samples). */
+/*
+ * The mono face for any framing, for a value that is a command rather than an
+ * identifier. The value is already mono, so this is what a caller reaches for
+ * when `display` has replaced it with prose.
+ */
 .crewlet-copyable--monospace .crewlet-copyable__value {
   font-family: var(--font-family-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-copyable__button {
+    transition: none;
+  }
 }

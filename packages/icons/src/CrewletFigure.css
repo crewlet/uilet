@@ -1,0 +1,85 @@
+/*
+ * The crewlet figure's motions.
+ *
+ * A stylesheet rather than a <style> element inside the SVG, which is what
+ * this was: a style element inside an inline SVG applies to the WHOLE
+ * document, and a strict Content-Security-Policy refuses it outright, so on a
+ * page with one the figure lost every motion and its default colour with them.
+ *
+ * Every class, keyframe and custom property is namespaced under
+ * crewlet-figure, because these rules now really are the page's. To add a
+ * motion: extend CrewletMotion, add its .crewlet-figure--<name> rules and
+ * @keyframes here, and list it in the Storybook catalog.
+ */
+
+.crewlet-figure {
+  /* The brand mark colour where a consumer ships the tokens, and the brand's
+     own value where it does not: this package depends on no other. */
+  color: var(--color-brand-mark, #7c56ff);
+}
+
+.crewlet-figure__all, .crewlet-figure__arm-l, .crewlet-figure__arm-r, .crewlet-figure__leg-l, .crewlet-figure__leg-r { transform-box: view-box; animation-delay: var(--crewlet-figure-delay, 0s); }
+.crewlet-figure__all { transform-origin: 761px 869px; }
+.crewlet-figure__arm-l { transform-origin: 384px 473px; }
+.crewlet-figure__arm-r { transform-origin: 1128px 475px; }
+.crewlet-figure__leg-l { transform-origin: 588px 730px; }
+.crewlet-figure__leg-r { transform-origin: 939px 733px; }
+
+.crewlet-figure--idle .crewlet-figure__arm-l { animation: crewlet-figure-idle-arm-l 3.4s ease-in-out infinite; }
+.crewlet-figure--idle .crewlet-figure__arm-r { animation: crewlet-figure-idle-arm-r 3.4s ease-in-out infinite; }
+
+.crewlet-figure--dance .crewlet-figure__all { animation: crewlet-figure-bob 0.8s ease-in-out infinite; }
+.crewlet-figure--dance .crewlet-figure__arm-l { animation: crewlet-figure-arm-l-dance 0.8s ease-in-out infinite; }
+.crewlet-figure--dance .crewlet-figure__arm-r { animation: crewlet-figure-arm-r-dance 0.8s ease-in-out infinite; }
+.crewlet-figure--dance .crewlet-figure__leg-l { animation: crewlet-figure-leg-l-dance 0.8s ease-in-out infinite; }
+.crewlet-figure--dance .crewlet-figure__leg-r { animation: crewlet-figure-leg-r-dance 0.8s ease-in-out infinite; }
+
+.crewlet-figure--wave .crewlet-figure__arm-r { animation: crewlet-figure-wave-arm 0.8s ease-in-out infinite; }
+.crewlet-figure--wave .crewlet-figure__arm-l { animation: crewlet-figure-idle-arm-l 3.4s ease-in-out infinite; }
+
+.crewlet-figure--jump .crewlet-figure__all { animation: crewlet-figure-jump 1.15s ease-in-out infinite; }
+.crewlet-figure--jump .crewlet-figure__arm-l { animation: crewlet-figure-jump-arm-l 1.15s ease-in-out infinite; }
+.crewlet-figure--jump .crewlet-figure__arm-r { animation: crewlet-figure-jump-arm-r 1.15s ease-in-out infinite; }
+
+.crewlet-figure--walk .crewlet-figure__all { animation: crewlet-figure-walk-body 0.5s ease-in-out infinite; }
+.crewlet-figure--walk .crewlet-figure__arm-l { animation: crewlet-figure-walk-arm-l 0.5s ease-in-out infinite; }
+.crewlet-figure--walk .crewlet-figure__arm-r { animation: crewlet-figure-walk-arm-r 0.5s ease-in-out infinite; }
+.crewlet-figure--walk .crewlet-figure__leg-l { animation: crewlet-figure-walk-leg-l 0.5s ease-in-out infinite; }
+.crewlet-figure--walk .crewlet-figure__leg-r { animation: crewlet-figure-walk-leg-r 0.5s ease-in-out infinite; }
+
+.crewlet-figure--spin .crewlet-figure__all { animation: crewlet-figure-spin 1.1s cubic-bezier(0.5, 0, 0.5, 1) infinite; }
+.crewlet-figure--spin .crewlet-figure__arm-l { animation: crewlet-figure-idle-arm-l 1.1s ease-in-out infinite; }
+.crewlet-figure--spin .crewlet-figure__arm-r { animation: crewlet-figure-idle-arm-r 1.1s ease-in-out infinite; }
+
+@keyframes crewlet-figure-idle-arm-l { 0%, 100% { transform: rotate(2deg); } 50% { transform: rotate(-3deg); } }
+@keyframes crewlet-figure-idle-arm-r { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(3deg); } }
+@keyframes crewlet-figure-arm-l-dance { 0%, 100% { transform: rotate(6deg); } 50% { transform: rotate(-12deg); } }
+@keyframes crewlet-figure-arm-r-dance { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(12deg); } }
+@keyframes crewlet-figure-leg-l-dance { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+@keyframes crewlet-figure-leg-r-dance { 0%, 100% { transform: rotate(8deg); } 50% { transform: rotate(-8deg); } }
+@keyframes crewlet-figure-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-26px); } }
+@keyframes crewlet-figure-wave-arm { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(-20deg); } }
+@keyframes crewlet-figure-jump {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  12% { transform: translateY(22px) scale(1.05, 0.9); }
+  45% { transform: translateY(-124px) scale(0.95, 1.06); }
+  72% { transform: translateY(0) scale(1.03, 0.96); }
+}
+@keyframes crewlet-figure-jump-arm-l { 0%, 100% { transform: rotate(3deg); } 45% { transform: rotate(-16deg); } }
+@keyframes crewlet-figure-jump-arm-r { 0%, 100% { transform: rotate(-3deg); } 45% { transform: rotate(16deg); } }
+@keyframes crewlet-figure-walk-body { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+@keyframes crewlet-figure-walk-leg-l { 0%, 100% { transform: rotate(16deg); } 50% { transform: rotate(-16deg); } }
+@keyframes crewlet-figure-walk-leg-r { 0%, 100% { transform: rotate(-16deg); } 50% { transform: rotate(16deg); } }
+@keyframes crewlet-figure-walk-arm-l { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
+@keyframes crewlet-figure-walk-arm-r { 0%, 100% { transform: rotate(12deg); } 50% { transform: rotate(-12deg); } }
+@keyframes crewlet-figure-spin {
+  0% { transform: rotate(0) translateY(0); }
+  25% { transform: rotate(90deg) translateY(-40px); }
+  50% { transform: rotate(180deg) translateY(0); }
+  75% { transform: rotate(270deg) translateY(-40px); }
+  100% { transform: rotate(360deg) translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-figure__all, .crewlet-figure__arm-l, .crewlet-figure__arm-r, .crewlet-figure__leg-l, .crewlet-figure__leg-r { animation: none !important; }
+}

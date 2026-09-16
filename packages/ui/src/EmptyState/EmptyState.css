@@ -1,0 +1,73 @@
+/*
+ * The empty state.
+ *
+ * ITS MARK IS DECORATION and takes the decoration ink, which is the one place
+ * that step is allowed: a 32px glyph a reader does not have to make out. Every
+ * word in the box is on a step that clears 4.5:1, because the sentence is the
+ * whole point of the component.
+ */
+
+.crewlet-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-8) var(--spacing-4);
+  text-align: center;
+  font-family: var(--font-family-sans);
+}
+
+.crewlet-empty-state--compact {
+  padding: var(--spacing-6) var(--spacing-4);
+}
+
+.crewlet-empty-state__mark {
+  display: inline-flex;
+  margin-bottom: var(--spacing-1);
+}
+
+/*
+ * The decoration step, and this is the one thing it is for: a 32px drawing a
+ * reader does not have to make out. It is set on the svg rather than on the
+ * wrapper so that it can never reach a word, which is the rule the package
+ * checks.
+ */
+.crewlet-empty-state__mark svg {
+  color: var(--color-text-muted);
+}
+
+/*
+ * A STEP DOWN FROM THE PAGE'S OWN INK, both of them. The engine sets the
+ * sentence at the secondary step and the line under it at the tertiary one,
+ * and the reason is that nothing is here: the box is telling a reader what is
+ * absent, so it should not out-shout the content around it that is present.
+ * Both steps clear 4.5:1 on every ground in both palettes, which is what makes
+ * quiet different from faint.
+ */
+/*
+ * The page's own leading. The box is a sentence with a sentence under it, and
+ * at the tight step the heading's line sits closer to its own descenders than
+ * to the line it introduces.
+ */
+.crewlet-empty-state__title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-empty-state__description {
+  margin: 0;
+  /* Narrow on purpose: this is one or two sentences, and a line of it running
+     the width of a screen is a line nobody finishes. */
+  max-width: var(--size-measure-narrow);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-empty-state__action {
+  margin-top: var(--spacing-2);
+}

@@ -1,0 +1,75 @@
+/*
+ * A labelled list of tags with the tail behind a count.
+ *
+ * The overflow control is drawn as a tag rather than as a button, because it
+ * stands in the row where the rest of them are: a button styled as a control
+ * would read as a different kind of thing from the six items beside it, which
+ * is exactly what it is not.
+ */
+
+.crewlet-tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+/* The list takes focus when the overflow control expands it and takes itself
+   away with it, so the reader has to be able to see where they landed. */
+.crewlet-tag-group:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-tag-group__item {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/*
+ * It wears the tag's own face: the badge radius, the badge type and the badge
+ * weight, so the row reads as one set with a dashed member rather than as six
+ * tags and a control. The height is the 24px target floor rather than the
+ * badge's 20px step, for the same reason a tag that acts takes it.
+ */
+.crewlet-tag-group__more {
+  display: inline-flex;
+  align-items: center;
+  height: max(24px, calc(24px * var(--density, 1)));
+  padding: 0 var(--spacing-2);
+  border: 1px dashed var(--color-border-hover);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tag-group__more:hover {
+  border-color: var(--color-border-strong-hover);
+  color: var(--color-text-primary);
+}
+
+.crewlet-tag-group__more:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tag-group__more {
+    transition: none;
+  }
+}

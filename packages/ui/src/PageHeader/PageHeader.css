@@ -1,0 +1,88 @@
+/*
+ * The head of a screen.
+ *
+ * THE OPERATOR'S TITLE, NOT THE MARKETING ONE. It was the 32px display step
+ * over a 16px sentence, which is the type a landing page opens with: on a
+ * screen whose job is to show a table it took a third of the first fold and
+ * pushed the rows a reader came for below it, and it said the screen's name
+ * twice as loudly as the shell's own bar says it. The 20px step over the
+ * compact sentence is the head every screen on the dashboard wears, and it
+ * leaves the content the largest thing on the page.
+ */
+
+.crewlet-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.crewlet-page-header__lead {
+  display: flex;
+  flex-direction: column;
+  /* One step. The title and the sentence under it are ONE block: at the
+     8px step they read as a heading with a caption parked below it. */
+  gap: var(--spacing-1);
+  min-width: 0;
+  /* Takes the row, so the actions wrap under the title rather than squeezing
+     a long screen name into two words and an ellipsis. */
+  flex: 1 1 auto;
+}
+
+.crewlet-page-header__titles {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/*
+ * THE TITLE KEEPS THE PAGE'S OWN LEADING. It is a heading element, and the
+ * document baseline sets every heading at the tight step, which is the right
+ * answer for a stack of headings in prose and the wrong one here: this is one
+ * line above one sentence, and at 1.2 the two sit closer than the gap between
+ * them, so the head reads as three lines of something rather than a title with
+ * a caption. Declared here rather than left to the baseline because a screen
+ * that renders the title in a `div` would otherwise draw a different head from
+ * the one that renders it in an `h1`.
+ */
+.crewlet-page-header__title {
+  margin: 0;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-normal);
+  letter-spacing: var(--font-letter-spacing-tight);
+  color: var(--color-text-primary);
+  min-width: 0;
+}
+
+.crewlet-page-header__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.crewlet-page-header__description {
+  margin: 0;
+  max-width: var(--size-measure);
+  font-family: var(--font-family-sans);
+  /* A sentence that answers "what is this screen for", read once. It is not
+     body copy, and at the body step it competed with the table under it. */
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
+}
+
+/* One step between actions, which is what keeps a run of buttons reading as
+   one cluster at the end of the row rather than as three separate controls. */
+.crewlet-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex-wrap: wrap;
+}

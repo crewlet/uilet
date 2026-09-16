@@ -7,8 +7,10 @@
       "inputs": [
         "src/**",
         "tokens/**",
+        "stylesheets/**",
         "fonts/**",
         "svg/**",
+        "symbols/**",
         "scripts/**",
         ".storybook/**",
         "package.json",
@@ -17,7 +19,14 @@
         "style-dictionary.config.*",
         "$TURBO_ROOT$/scripts/check-storybook-static.mjs"
       ],
-      "outputs": ["dist/**", "src/generated/**", "build/**", "storybook-static/**"]
+      "outputs": [
+        "dist/**",
+        "src/generated/**",
+        "build/**",
+        "storybook-static/**",
+        "src/index.ts",
+        "src/themes.ts"
+      ]
     },
     "dev": {
       "cache": false,
@@ -25,16 +34,15 @@
     },
     "lint": {
       "dependsOn": ["^build"],
-      "inputs": ["src/**", "scripts/**", "eslint.config.*", "package.json"]
+      "inputs": ["src/**", "scripts/**", "test/**", "package.json", "$TURBO_ROOT$/eslint.config.js"]
     },
     "typecheck": {
-      "dependsOn": ["^build"],
-      "inputs": ["src/**", "tsconfig.json", "package.json"]
+      "dependsOn": ["^build", "build"],
+      "inputs": ["src/**", "tsconfig.json", "vitest.config.*", "package.json", "$TURBO_ROOT$/tsconfig.base.json"]
     },
     "test": {
-      "dependsOn": ["^build"],
-      "inputs": ["src/**", "package.json"],
-      "outputs": ["coverage/**"]
+      "dependsOn": ["^build", "build"],
+      "inputs": ["src/**", "test/**", "tokens/**", "stylesheets/**", "symbols/**", "svg/**", "vitest.config.*", "package.json"]
     },
     "clean": {
       "cache": false

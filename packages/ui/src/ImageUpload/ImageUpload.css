@@ -1,17 +1,31 @@
 /*
- * ImageUpload, click-to-upload affordance built on Avatar.
+ * ImageUpload, the click-to-upload affordance built on Avatar.
  *
- * Colour properties go through the @crewlethq/tokens variables, with literal
- * fallbacks so the control still renders when the token stylesheet has not
- * loaded.
+ * WHITE ON THE SCRIM, from tokens, in both palettes. The overlay used to spell
+ * its own rgba(0, 0, 0, 0.5) and three shades of white; the scrim and the
+ * on-accent step are the two values the palette already measures for exactly
+ * this, which is a label drawn on something dark whatever is behind it.
+ *
+ * NO LITERAL FALLBACKS INSIDE var(). A fallback is what renders whenever the
+ * token name is misspelt, so it hides the very failure it looks like
+ * insurance against, and the dark value it held rendered on a light page.
  */
 
 .crewlet-image-upload {
+  /* The default box, which the component overrides per instance from its
+     `size` prop. Declared here rather than carried as a var() fallback at each
+     of the six places that read it: a fallback repeated six times is six
+     places for the default to drift apart. */
+  --crewlet-image-upload-size: 64px;
+  /* The corner that box takes, set per instance beside the size. Declared here
+     for the same reason the size is: a default repeated as a var() fallback at
+     each place that reads it is several places for one default to drift. */
+  --crewlet-image-upload-corner: var(--radius-lg);
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
-  width: var(--crewlet-image-upload-size, 64px);
-  height: var(--crewlet-image-upload-size, 64px);
+  width: var(--crewlet-image-upload-size);
+  height: var(--crewlet-image-upload-size);
 }
 
 .crewlet-image-upload__trigger {
@@ -26,15 +40,19 @@
   cursor: pointer;
 }
 
-/* Shape modifiers keep the trigger, overlay, and Avatar corners in sync. */
+/* Shape modifiers keep the trigger, the overlay and the Avatar corners in step. */
 .crewlet-image-upload--circle .crewlet-image-upload__trigger,
 .crewlet-image-upload--circle .crewlet-image-upload__overlay {
-  border-radius: var(--radius-circle, 50%);
+  border-radius: var(--radius-circle);
 }
 
+/* THE SAME CORNER THE PICTURE INSIDE TAKES, which is why it is a variable
+   rather than a step: Avatar moves a square badge's radius with its box, so a
+   trigger pinned to one step is rounder or squarer than the badge under it at
+   every size but one, and the badge's corners show through the overlay. */
 .crewlet-image-upload--square .crewlet-image-upload__trigger,
 .crewlet-image-upload--square .crewlet-image-upload__overlay {
-  border-radius: var(--radius-lg, 12px);
+  border-radius: var(--crewlet-image-upload-corner);
 }
 
 .crewlet-image-upload__trigger:disabled {
@@ -46,8 +64,8 @@
 }
 
 .crewlet-image-upload__trigger:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .crewlet-image-upload__overlay {
@@ -58,11 +76,28 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  background: rgba(0, 0, 0, 0.5);
-  color: #ffffff;
+  background: var(--color-surface-scrim);
+  color: var(--color-text-on-accent);
   opacity: 0;
-  transition: opacity 0.2s ease, background 0.15s ease;
+  transition: opacity var(--motion-duration-base) var(--motion-easing-default);
   pointer-events: none;
+}
+
+/*
+ * With nothing uploaded yet the overlay IS the whole affordance, so it stays
+ * up rather than waiting for a hover: an initials tile on its own does not say
+ * "put your logo here".
+ *
+ * AT FULL STRENGTH, and that is a fix rather than a preference. `opacity`
+ * fades the element, so 0.85 fades the scrim AND the word on it together: the
+ * composite measured 3.47:1 on a light page, where the label on the full scrim
+ * measures 5.74:1. What the fade bought was a hover that still answered, and
+ * the hover has nothing left to answer with here, because the affordance is
+ * already up: the pointer and the focus ring carry it instead.
+ */
+.crewlet-image-upload.is-uploading .crewlet-image-upload__overlay,
+.crewlet-image-upload.is-empty .crewlet-image-upload__overlay {
+  opacity: 1;
 }
 
 .crewlet-image-upload__trigger:hover .crewlet-image-upload__overlay,
@@ -70,43 +105,25 @@
   opacity: 1;
 }
 
-.crewlet-image-upload.is-uploading .crewlet-image-upload__overlay,
-.crewlet-image-upload.is-empty .crewlet-image-upload__overlay {
-  opacity: 1;
-}
-
-.crewlet-image-upload__overlay .material-symbols-outlined {
-  font-size: calc(var(--crewlet-image-upload-size, 64px) * 0.28);
-  color: #ffffff;
-  transition: color 0.15s ease;
+/* The overlay's glyph is sized against the avatar rather than by a step,
+   because it sits inside the picture. */
+.crewlet-image-upload__overlay .crewlet-glyph {
+  width: calc(var(--crewlet-image-upload-size) * 0.28);
+  height: calc(var(--crewlet-image-upload-size) * 0.28);
 }
 
 .crewlet-image-upload__overlay-text {
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
-  transition: color 0.15s ease;
-}
-
-/* Hovering an editable control brightens the overlay: a deeper scrim with the
-   label and icon at full white, so a control whose overlay is already showing
-   (nothing uploaded yet) still answers the pointer. */
-.crewlet-image-upload__trigger:hover:not(:disabled) .crewlet-image-upload__overlay {
-  background: rgba(0, 0, 0, 0.66);
-}
-
-.crewlet-image-upload__trigger:hover:not(:disabled) .crewlet-image-upload__overlay .material-symbols-outlined,
-.crewlet-image-upload__trigger:hover:not(:disabled) .crewlet-image-upload__overlay-text {
-  color: #ffffff;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
 }
 
 .crewlet-image-upload__spinner {
-  width: calc(var(--crewlet-image-upload-size, 64px) * 0.3);
-  height: calc(var(--crewlet-image-upload-size, 64px) * 0.3);
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #ffffff;
-  animation: crewlet-image-upload-spin 0.7s linear infinite;
+  width: calc(var(--crewlet-image-upload-size) * 0.3);
+  height: calc(var(--crewlet-image-upload-size) * 0.3);
+  border-radius: var(--radius-circle);
+  border: 2px solid var(--color-surface-scrim);
+  border-top-color: var(--color-text-on-accent);
+  animation: crewlet-image-upload-spin calc(var(--motion-duration-slow) * 2.5) linear infinite;
 }
 
 @keyframes crewlet-image-upload-spin {
@@ -115,24 +132,30 @@
   }
 }
 
+/*
+ * 24px square, which is the smallest target WCAG 2.2 accepts. It was 20, on a
+ * control that is also the only way to take a logo off.
+ *
+ * It needs no z-index of its own: it is positioned and it comes after the
+ * trigger in the markup, so it already paints above it.
+ */
 .crewlet-image-upload__remove {
   position: absolute;
   top: -6px;
   right: -6px;
-  z-index: 2;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: var(--color-feedback-danger, #f43f5e);
-  border: 2px solid var(--color-surface-background, #15171c);
-  color: #ffffff;
+  border-radius: var(--radius-circle);
+  background: var(--color-feedback-danger);
+  border: 2px solid var(--color-surface-background);
+  color: var(--color-text-on-accent);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-image-upload:hover .crewlet-image-upload__remove,
@@ -145,14 +168,26 @@
 }
 
 .crewlet-image-upload__remove:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus, 0 0 0 3px rgba(84, 105, 212, 0.32));
-}
-
-.crewlet-image-upload__remove .material-symbols-outlined {
-  font-size: 12px;
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .crewlet-image-upload__input {
   display: none;
+}
+
+/*
+ * The ring holds still. The trigger already carries aria-busy, and the control
+ * is disabled while the upload is out, so nothing about the state is carried
+ * by the motion alone.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-image-upload__overlay,
+  .crewlet-image-upload__remove {
+    transition: none;
+  }
+
+  .crewlet-image-upload__spinner {
+    animation: none;
+  }
 }

@@ -1,0 +1,154 @@
+/*
+ * The type registers, one rule each.
+ *
+ * Every register states its size, its weight, its tracking and its ink
+ * together, because those move as one: a caption is not "body, smaller", it is
+ * a different job. The ink a register sets is its default, and the tone
+ * modifiers below override it, so they are declared after.
+ */
+
+.crewlet-text {
+  min-width: 0;
+}
+
+.crewlet-text--display {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  line-height: var(--font-line-height-tight);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+
+.crewlet-text--stat {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  line-height: var(--font-line-height-tight);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+
+.crewlet-text--heading {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  /* The tight step, which is the one every heading in the product is set on.
+     Two tracking values across two heading registers is how a card title and
+     the section title above it stop looking like one family. */
+  letter-spacing: var(--font-letter-spacing-tight);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-primary);
+}
+
+.crewlet-text--lead {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+}
+
+.crewlet-text--body {
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+}
+
+.crewlet-text--cell {
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-primary);
+}
+
+/*
+ * Metadata: the tertiary step rather than the decoration one. A caption is
+ * read, not glanced at, so it carries the 4.5:1 ink.
+ */
+.crewlet-text--caption {
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * THE one micro-label register, declared once and never overridden. The system
+ * this replaces declared it once and then redeclared it in six selectors with
+ * six different tracking values.
+ */
+.crewlet-text--label {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  line-height: var(--font-line-height-snug);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-text--tone-primary {
+  color: var(--color-text-primary);
+}
+
+.crewlet-text--tone-secondary {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-text--tone-tertiary {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-text--mono {
+  font-family: var(--font-family-mono);
+  /*
+   * An identifier is read character by character, so a ligature that joins two
+   * of them into one drawing is a drawing of something the reader did not
+   * type.
+   */
+  font-variant-ligatures: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-text--numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.crewlet-text--truncate {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.crewlet-text--clamp-2,
+.crewlet-text--clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.crewlet-text--clamp-2 {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.crewlet-text--clamp-3 {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+/*
+ * A measure is a maximum, never a width: a bounded block still shrinks with
+ * the column it sits in.
+ */
+.crewlet-text--measure-normal {
+  display: block;
+  max-width: var(--size-measure);
+}
+
+.crewlet-text--measure-narrow {
+  display: block;
+  max-width: var(--size-measure-narrow);
+}

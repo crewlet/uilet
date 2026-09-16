@@ -1,0 +1,176 @@
+/*
+ * The disclosure anatomy, declared once for every expander in the package.
+ *
+ * THE TRIGGER AND THE SECTION'S CONTROLS ARE SIBLINGS. A copy button nested
+ * inside the trigger would be a button inside a button, which is invalid, and
+ * worse, pressing it would collapse the very thing it just copied. The bar is
+ * what puts them side by side, and `width: auto` on the trigger is load
+ * bearing: it overrides the standalone case's `width: 100%`, which inside this
+ * row would claim the whole line and push the controls onto one of their own.
+ */
+
+.crewlet-disclosure {
+  min-width: 0;
+}
+
+.crewlet-disclosure__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-disclosure__heading {
+  margin: 0;
+  font: inherit;
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+ * The expander head the dashboard draws: the caption size, the chevron a step
+ * closer to the words than the words are to each other, and the whole row on
+ * the secondary step until a pointer reaches it. `--size-row-sm` is the one
+ * addition, and it is not decoration: a 12px row with 4px of padding is a
+ * 20px target, under the 24px WCAG 2.2 accepts, so the row keeps the floor
+ * every other control in the package keeps.
+ */
+.crewlet-disclosure__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  width: 100%;
+  min-width: 0;
+  min-height: var(--size-row-sm);
+  padding: var(--spacing-1) var(--spacing-2);
+  border: none;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-fast) var(--motion-easing-default),
+    background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-disclosure__bar > .crewlet-disclosure__trigger {
+  flex: 1;
+  width: auto;
+}
+
+/*
+ * NEUTRAL on hover, not the accent. The accent is the one colour that means
+ * "where the reader is"; spending it on every expander a pointer passes over
+ * makes it mean "under the cursor" instead.
+ */
+.crewlet-disclosure__trigger:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-hover);
+}
+
+.crewlet-disclosure__trigger:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-disclosure__trigger:disabled {
+  cursor: not-allowed;
+  /* Quieter, but still legible: a disabled row a reader cannot read is a row
+     they cannot learn is unavailable. */
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-disclosure__trigger:disabled:hover {
+  background: none;
+}
+
+/*
+ * ONE glyph, turned. Two drawings (a right chevron closed, a down one open)
+ * swap shapes at the moment of the change, so the control reads as two
+ * different controls rather than as one that moved.
+ */
+.crewlet-disclosure__chevron {
+  flex: none;
+  color: var(--color-text-tertiary);
+  transform: rotate(-90deg);
+  transition: transform var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-disclosure__trigger[aria-expanded='true'] .crewlet-disclosure__chevron {
+  transform: rotate(0deg);
+}
+
+.crewlet-disclosure__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-disclosure__title--mono {
+  font-family: var(--font-family-mono);
+  font-variant-ligatures: none;
+}
+
+/* A fact inside the button: quieter than the title it belongs to. */
+.crewlet-disclosure__meta {
+  flex: none;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-disclosure__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex: none;
+}
+
+.crewlet-disclosure__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+  color: var(--color-text-secondary);
+}
+
+/* ---- Sizes and variants ------------------------------------------------ */
+
+/*
+ * ONLY THE PANEL. The trigger's compact register was one size down and one gap
+ * in; both are what the standalone trigger is now set at, so a second rule
+ * restating them would be a rule that can only ever drift from the first.
+ */
+.crewlet-disclosure--compact .crewlet-disclosure__panel {
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+}
+
+/*
+ * An aside: what was considered, not what was decided. The rule down its edge
+ * is what lets a reader skip the block by its shape.
+ */
+.crewlet-disclosure--aside .crewlet-disclosure__trigger {
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The hover step rather than the strong one. This rule is a margin down the
+ * side of an aside, not a boundary a reader has to find: at the strong step it
+ * reads as a second border inside the card it sits in.
+ */
+.crewlet-disclosure--aside .crewlet-disclosure__panel {
+  border-left: 2px solid var(--color-border-hover);
+  margin-left: var(--spacing-1);
+  padding-left: var(--spacing-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-disclosure__trigger,
+  .crewlet-disclosure__chevron {
+    transition: none;
+  }
+}

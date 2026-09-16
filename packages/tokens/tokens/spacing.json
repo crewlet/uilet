@@ -1,16 +1,16 @@
 {
   "spacing": {
-    "0": { "value": "0px" },
-    "1": { "value": "4px" },
-    "2": { "value": "8px" },
-    "3": { "value": "12px" },
-    "4": { "value": "16px" },
-    "5": { "value": "20px" },
-    "6": { "value": "24px" },
-    "7": { "value": "32px" },
-    "8": { "value": "40px" },
-    "9": { "value": "48px" },
-    "10": { "value": "64px" },
-    "11": { "value": "80px" }
+    "0": { "value": "0px", "comment": "A 4px base. Every step but this one is emitted as calc(Npx * var(--density, 1)), so a density setting reaches every gap and pad in a product and every value is unchanged at density 1. Zero is left alone: scaling it would spend a calc() on a number that cannot change." },
+    "1": { "value": "4px", "density": true },
+    "2": { "value": "8px", "density": true },
+    "3": { "value": "12px", "density": true },
+    "4": { "value": "16px", "density": true },
+    "5": { "value": "20px", "density": true },
+    "6": { "value": "24px", "density": true },
+    "7": { "value": "32px", "density": true },
+    "8": { "value": "40px", "density": true },
+    "9": { "value": "48px", "density": true },
+    "10": { "value": "64px", "density": true },
+    "11": { "value": "80px", "density": true }
   }
 }

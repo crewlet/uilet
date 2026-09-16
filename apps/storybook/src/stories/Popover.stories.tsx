@@ -12,6 +12,7 @@ type Story = StoryObj<typeof Popover>;
 export const Basic: Story = {
   render: () => (
     <Popover
+      label="Details"
       trigger={(open, toggle) => (
         <Button variant="outline" onClick={toggle}>
           {open ? 'Close menu' : 'Open menu'}
@@ -32,6 +33,7 @@ export const AlignEnd: Story = {
   render: () => (
     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
       <Popover
+        label="Actions"
         align="end"
         trigger={(_open, toggle) => (
           <Button variant="outline" onClick={toggle}>Actions</Button>

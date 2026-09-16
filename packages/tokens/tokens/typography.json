@@ -6,8 +6,10 @@
       "mono": { "value": "'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace", "comment": "Code, identifiers and tabular values. JetBrains Mono is self-hosted by @crewlethq/tokens/css/fonts." }
     },
     "size": {
-      "xs": { "value": "12px" },
-      "sm": { "value": "14px" },
+      "2xs": { "value": "11px", "comment": "Micro labels and table column heads." },
+      "xs": { "value": "12px", "comment": "Dense secondary text and badges." },
+      "compact": { "value": "13px", "comment": "Table cells and captions. It sits between xs and sm rather than extending the ramp at either end, so it is named for its job." },
+      "sm": { "value": "14px", "comment": "Body." },
       "md": { "value": "16px" },
       "lg": { "value": "18px" },
       "xl": { "value": "20px" },
@@ -28,6 +30,13 @@
       "snug": { "value": "1.4" },
       "normal": { "value": "1.5" },
       "relaxed": { "value": "1.7" }
+    },
+    "letterSpacing": {
+      "tight": { "value": "-0.02em", "comment": "Display sizes tighten, body sits at zero, micro labels open up. Declared once, so a heading and a caption cannot drift into six tracking values across six selectors." },
+      "snug": { "value": "-0.005em" },
+      "normal": { "value": "0" },
+      "wide": { "value": "0.04em" },
+      "wider": { "value": "0.14em", "comment": "The uppercase micro-label register." }
     }
   }
 }

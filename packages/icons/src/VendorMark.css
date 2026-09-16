@@ -1,0 +1,32 @@
+/*
+ * A vendor mark draws the app's own colours, so the muted state cannot be a
+ * colour: it drains the one the mark already has. That keeps "available but
+ * not connected" readable without inventing a second palette for somebody
+ * else's brand, and it leaves the drawing recognisable, which a flat tint
+ * would not.
+ *
+ * A rule rather than a style attribute, because a strict Content-Security-
+ * Policy that allows a stylesheet still refuses an inline style.
+ */
+
+.crewlet-vendor-mark {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+}
+
+.crewlet-vendor-mark--muted {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+/*
+ * Forced colours drop filters and repaint everything from the user's own
+ * palette, so the muted mark would come back at full strength and read as
+ * connected. Opacity survives, and carries the distinction on its own.
+ */
+@media (forced-colors: active) {
+  .crewlet-vendor-mark--muted {
+    opacity: 0.4;
+  }
+}
