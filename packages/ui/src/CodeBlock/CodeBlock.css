@@ -66,6 +66,42 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   tab-size: 2;
+  /*
+   * THE CEILING IS A CASCADING ONE, read here and declared nowhere, so the
+   * fallback IS the default: with nothing set the block is unbounded, as it
+   * has always been. `maxHeight` writes the property inline on the block, and
+   * an application that wants one ceiling for every block it renders writes it
+   * once on an ancestor instead — because a ceiling every call site has to
+   * remember is a ceiling somebody forgets, and the right height is a fact
+   * about the SURFACE the block sits on rather than about the component.
+   *
+   * Declared with a fallback rather than seeded on `.crewlet-codeblock`: a
+   * name a component declares on itself stops inheriting, so seeding it would
+   * be the one shape in which an ancestor's value can never arrive.
+   *
+   * ONE DECLARATION, in the rule below. `.crewlet-codeblock--bounded` is still
+   * emitted as the marker that this block set a ceiling of its own — the hook
+   * an application stylesheet and a reader of the DOM key on — but it draws
+   * nothing, because a second rule restating this height is how the two come
+   * to disagree.
+   */
+}
+
+/*
+ * The ceiling, at the specificity the rule it replaces already had.
+ *
+ * `.crewlet-codeblock .crewlet-codeblock__pre` rather than
+ * `.crewlet-codeblock__pre`, and the extra class earns its place: the rule
+ * that used to set this was `.crewlet-codeblock--bounded .crewlet-codeblock__pre`
+ * at (0,2,0), and an application overriding it wrote `.crewlet-codeblock__pre
+ * { max-height: … }` at (0,1,0) and expected to LOSE. Declaring it on the
+ * single class drops this to (0,1,0), which turns every one of those
+ * overrides into a tie decided by sheet order — so a consumer who wrote a
+ * losing rule on purpose silently starts winning. Same two-class weight,
+ * same outcome for anybody who already had an opinion.
+ */
+.crewlet-codeblock .crewlet-codeblock__pre {
+  max-height: var(--crewlet-codeblock-max-height, none);
 }
 
 /*
@@ -78,21 +114,20 @@
 }
 
 /*
- * Bounded, with its own scroll. Without a ceiling a long record pushes
- * everything under it off the screen, which on a detail page is every other
- * fact about the thing being read.
- */
-.crewlet-codeblock--bounded .crewlet-codeblock__pre {
-  max-height: var(--crewlet-codeblock-max-height);
-}
-
-/*
- * A BLOCK THAT OWNS SELECT-ALL. Select-all is a document verb, so on a screen
- * that is mostly one record it took the nav, the stat row and every card with
- * it. While this block has focus the verb means "this record", which is the
- * only thing anybody was reaching for, and the ring is what says so: a
- * keyboard verb that changes meaning on focus, with no visible focus state, is
- * a secret.
+ * A BLOCK A READER CAN REACH. Two things put the block in the tab order and
+ * the role follows both: `selectable`, and `focusWhenScrollable` on a box that
+ * turned out to scroll.
+ *
+ * On the first, select-all is a document verb, so on a screen that is mostly
+ * one record it took the nav, the stat row and every card with it. While this
+ * block has focus the verb means "this record", which is the only thing
+ * anybody was reaching for, and the ring is what says so: a keyboard verb that
+ * changes meaning on focus, with no visible focus state, is a secret. On the
+ * second the block keeps no keys at all; the ring is there because a scroll
+ * container a reader arrows through has to say where they are.
+ *
+ * The text cursor is right for both, and it is what the caret-shape of a
+ * `pre` full of selectable text should always have been.
  */
 .crewlet-codeblock__pre[role='region'] {
   cursor: text;
