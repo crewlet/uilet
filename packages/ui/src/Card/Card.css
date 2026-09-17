@@ -395,6 +395,28 @@
 }
 
 /*
+ * A TITLE THAT ENDS RATHER THAN STOPS, where a caller has asked for it.
+ *
+ * The name block clips, which is what keeps the head one line, so a title
+ * wider than the row is cut at the header's edge — mid-word, with nothing to
+ * say a word was lost. `text-overflow` is the rule that says it, and it
+ * applies to a BLOCK container only: on the flex title above it does nothing
+ * at all, and the text it would act on is an anonymous flex item that no
+ * selector here can reach. So the modifier makes the title a block. Its
+ * children are then one line of inline content rather than centred flex items
+ * with a gap between them, which is the whole of what a caller opts into, and
+ * why this is a modifier rather than the base rule.
+ *
+ * `white-space: nowrap` is already the title's own, and `min-width: 0` is what
+ * lets the block shrink below its content inside the name block; both stand.
+ */
+.crewlet-card__title--truncate {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
  * The subtitle gives up its tail and the title does not: a title is the
  * record's identity and has to be read in full, while a subtitle is context.
  *

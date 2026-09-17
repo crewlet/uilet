@@ -14,7 +14,7 @@ import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Modal } from '../Modal/index.js';
-import { Select, type SelectOption, type SelectValue } from './Select.js';
+import { Select, type SelectOption, type SelectProps, type SelectValue } from './Select.js';
 
 afterEach(cleanup);
 
@@ -236,6 +236,73 @@ test('the form handlers a caller passes reach the control it actually draws', ()
   // And the field's own description and requiredness travel with them.
   expect(trigger().getAttribute('aria-describedby')).toBe('hint');
   expect(trigger().getAttribute('aria-required')).toBe('true');
+});
+
+test('a field can state requiredness without asking for the constraint', () => {
+  /*
+   * THE DEFECT THIS EXISTS FOR. `aria-required` was not on the props at all,
+   * so the only way to tell a reader an answer is expected was `required` —
+   * and on a form where requiredness is the UNMARKED DEFAULT that is the wrong
+   * flag, because the mark beside the label is drawn from the same one. A
+   * consumer that wanted the fact without the asterisk could not express it,
+   * and shipped the select with nothing said at all.
+   *
+   * With neither, nothing is said: an attribute reading `false` is a claim of
+   * its own and every current call site would start making it.
+   */
+  const { rerender } = render(<Picker />);
+  expect(trigger().hasAttribute('aria-required')).toBe(false);
+
+  rerender(<Picker aria-required />);
+  expect(trigger().getAttribute('aria-required')).toBe('true');
+  // The constraint is NOT what was asked for, and is not implied backwards.
+  expect(trigger().hasAttribute('required')).toBe(false);
+});
+
+test('the props type carries the fact, not only the JSX element', () => {
+  /*
+   * AND THIS IS THE HALF A RENDER CANNOT HOLD. TypeScript exempts a JSX
+   * attribute whose name is not a valid identifier from excess-property
+   * checking, so `aria-required` on the element was never a compile error even
+   * while the component dropped it: the consumer's call site was green and the
+   * control said nothing. The exemption does not apply to a props OBJECT,
+   * which is what a consumer's own field component forwards, so this is where
+   * the prop has to be declared to exist at all. It is a typecheck guard
+   * written as a test, and `npm run typecheck` covers this file.
+   */
+  const forwarded: SelectProps = {
+    ariaLabel: 'Owner',
+    options: SEATS,
+    value: 'engineer',
+    'aria-required': true,
+  };
+  render(<Select {...forwarded} onChange={() => {}} />);
+  expect(trigger().getAttribute('aria-required')).toBe('true');
+});
+
+test('the explicit statement wins over the constraint that implies it', () => {
+  // `required` implies the ARIA fact; `aria-required` states it on its own.
+  // Given both, the more specific one is the answer — otherwise a field could
+  // never carry the constraint and say anything else about it.
+  render(<Picker required aria-required={false} />);
+  expect(trigger().getAttribute('aria-required')).toBe('false');
+});
+
+test('requiredness follows the element that IS the combobox, and reaches the native one', () => {
+  // With a search box open, focus is in it and it carries the role, so it is
+  // what has to carry the fact: a reader is told by whichever element they are
+  // standing on.
+  render(<Picker searchable aria-required />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  expect(screen.getByRole('combobox', { name: 'Search' }).getAttribute('aria-required')).toBe('true');
+
+  cleanup();
+  // And the other mode draws one element, which carries it the same way.
+  render(<Picker mode="native" aria-required />);
+  const control = screen.getByRole('combobox', { name: 'Owner' });
+  expect(control.tagName).toBe('SELECT');
+  expect(control.getAttribute('aria-required')).toBe('true');
+  expect(control.hasAttribute('required')).toBe(false);
 });
 
 test('native mode keeps a stored answer the list no longer offers', () => {

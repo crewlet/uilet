@@ -23,6 +23,14 @@ export interface CopyableProps {
   copiedMessage?: string | undefined;
   /** Read out on failure. */
   failedMessage?: string | undefined;
+  /** How long the tick stands before the control settles back. */
+  resetMs?: number | undefined;
+  /**
+   * How long the refusal glyph stands. Unset it is `resetMs`; `null` holds it
+   * until the next press. See [ClipboardOptions.failedResetMs] for why a
+   * refusal wants a clock of its own.
+   */
+  failedResetMs?: number | null | undefined;
   className?: string | undefined;
 }
 
@@ -60,10 +68,12 @@ export const Copyable = ({
   title = 'Copy',
   copiedMessage = 'copied to the clipboard',
   failedMessage = 'the browser refused the clipboard',
+  resetMs,
+  failedResetMs,
   className,
 }: CopyableProps) => {
   const text = value === undefined || value === null ? '' : String(value);
-  const { state, copy } = useClipboard();
+  const { state, copy } = useClipboard({ resetMs, failedResetMs });
   const onCopy = useCallback(() => {
     void copy(text);
   }, [copy, text]);
