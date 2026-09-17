@@ -7,7 +7,17 @@ export default defineConfig((options) => ({
   // of them, so that nothing pays for it by accident.
   entry: ['src/index.ts', 'src/glyphs.ts', 'src/glyphs-registry.ts'],
   format: ['esm'],
-  dts: true,
+  dts: {
+    /*
+     * tsup's declaration build sets `baseUrl` on the program it creates
+     * (`baseUrl: compilerOptions.baseUrl || '.'`), and TypeScript 6.0 turns
+     * every use of that removed option into an error. Nothing in this
+     * repository asks for `baseUrl`, and no tsup release drops it yet, so the
+     * error is silenced where it is raised rather than in a tsconfig every
+     * other check reads. It goes when tsup stops setting it.
+     */
+    compilerOptions: { ignoreDeprecations: '6.0' },
+  },
   // Source maps are emitted for the local watch loop only. A published map
   // would embed the full TypeScript source through sourcesContent and point
   // at src/ paths the tarball does not contain, so it adds weight to every
