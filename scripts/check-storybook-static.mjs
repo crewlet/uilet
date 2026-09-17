@@ -1,17 +1,14 @@
-// Checks a built Storybook, and fails on anything that breaks the two
-// promises its deployment makes.
+// Checks a built Storybook, and fails on anything that breaks the promises
+// the built site makes.
 //
 //   node scripts/check-storybook-static.mjs <directory>
 //
-// 1. The site is static. Cloudflare Pages treats a _worker.js file or
-//    directory in the upload as server code for the whole hostname, applies a
-//    _routes.json to it, and honours _headers and _redirects. The Storybook
+// 1. The site is static. A static host reads _worker.js (as server code for
+//    the whole hostname), _routes.json, _headers and _redirects out of the
+//    files it is given and changes what it serves accordingly. The Storybook
 //    build produces none of them, so one appearing means a build dependency or
-//    a configuration change put it there, and deploying it would run code or
-//    rewrite responses the repository never reviewed as such. (Pages Functions
-//    are read from a functions directory in the working directory of the
-//    deploy command, never from the upload, and the deploy job has no
-//    checkout that could hold one.)
+//    a configuration change put it there, and serving it would run code or
+//    rewrite responses the repository never reviewed as such.
 // 2. The third-party licenses travel with what they cover. The SIL Open Font
 //    License requires its text beside every redistributed copy of the font
 //    files, so every directory holding a woff2 file must also hold an OFL.txt
@@ -32,9 +29,9 @@
 //    inlined into the site's CSS with nothing to say so. A plain <a href> is
 //    left alone: a link a reader may click is not a request the page makes.
 //
-// It depends on nothing but Node, so the deploy job runs it on the downloaded
-// artifact without installing the workspace, and the Storybook build runs it
-// on its own output.
+// It depends on nothing but Node, so the Storybook build runs it on its own
+// output, and anything that publishes that output can run it on the files it
+// is about to upload without installing the workspace.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -78,7 +75,7 @@ export function checkStorybookStatic(root) {
   const problems = [];
   for (const name of FORBIDDEN_AT_ROOT) {
     if (statSync(join(root, name), { throwIfNoEntry: false })) {
-      problems.push(`${name} is present; the Storybook deployment is static and must not carry Pages server code or response rules`);
+      problems.push(`${name} is present; the built Storybook is static and must not carry server code or response rules`);
     }
   }
 

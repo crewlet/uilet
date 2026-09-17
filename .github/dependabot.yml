@@ -1,11 +1,9 @@
 # Automated dependency updates, one entry per dependency surface:
 #
-#   .github/workflows/*.yml   the actions CI, releases and deployments run on
+#   .github/workflows/*.yml   the actions CI and releases run on
 #   .github/actions/*/action.yml
 #                             the actions those workflows share
 #   package-lock.json         every workspace's build and runtime dependencies
-#   .github/deploy            the Wrangler release the Storybook deployment
-#                             installs
 #
 # A new surface needs its entry here in the same change. Nothing reports the
 # omission: a manifest with no entry never produces a pull request, which looks
@@ -57,16 +55,6 @@ updates:
   # request, with nothing to report it (dependabot-core#12535 and #13741).
   - package-ecosystem: npm
     directory: "/"
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: "build(deps)"
-
-  # The deployment tooling is locked apart from the workspace, so the deploy
-  # job installs Wrangler and nothing else. Its exact pin in package.json moves
-  # with the lockfile in each update.
-  - package-ecosystem: npm
-    directory: "/.github/deploy"
     schedule:
       interval: weekly
     commit-message:

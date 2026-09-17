@@ -59,8 +59,7 @@ npm run lint && npm run typecheck
 │   └── check-storybook-static.mjs  # static-site and font license check for the Storybook build
 └── .github/
     ├── actions/               # composite actions the workflows share
-    ├── deploy/                # the locked Wrangler release the Storybook deployment installs
-    └── workflows/             # ci, release, deploy-storybook
+    └── workflows/             # ci, release
 ```
 
 ## Adding a new package
