@@ -12,20 +12,42 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { FilterChip, FilterChipGroup } from './index.js';
+import { FilterChip, FilterChipGroup, type FilterChipActivation } from './index.js';
 
 afterEach(cleanup);
 
 /** A radio row driven the way a screen drives it. */
-function Kinds({ allowNone = false, initial = 'decision' as string | null }) {
+function Kinds({
+  allowNone = false,
+  initial = 'decision' as string | null,
+  // NOT defaulted: a row that names no activation is what the group's own
+  // default answers for, and a helper that filled it in would have tested
+  // the helper.
+  activate,
+  activateHint,
+}: {
+  allowNone?: boolean;
+  initial?: string | null;
+  activate?: FilterChipActivation;
+  activateHint?: string | null;
+}) {
   const [value, setValue] = useState<string | null>(initial);
   return (
     <>
-      <FilterChipGroup label="Event kind" semantics="radio" value={value} onValueChange={setValue} allowNone={allowNone}>
+      <FilterChipGroup
+        label="Event kind"
+        semantics="radio"
+        value={value}
+        onValueChange={setValue}
+        allowNone={allowNone}
+        activate={activate}
+        activateHint={activateHint}
+      >
         <FilterChip value="decision" count={12}>
           Decision
         </FilterChip>
@@ -209,6 +231,7 @@ describe('FilterChipGroup', () => {
           </FilterChip>
         </FilterChipGroup>
         <Kinds />
+        <Kinds activate="manual" />
       </main>,
     );
     const result = await axe.run(container, {
@@ -217,5 +240,112 @@ describe('FilterChipGroup', () => {
       resultTypes: ['violations'],
     });
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+});
+
+describe('FilterChipGroup under manual activation', () => {
+  test('the arrows move without applying, and Enter or Space applies', async () => {
+    const user = userEvent.setup();
+    render(<Kinds activate="manual" />);
+    const chips = screen.getAllByRole('radio');
+    chips[0]!.focus();
+
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    expect(document.activeElement).toBe(chips[2]);
+    /*
+     * THE WHOLE FINDING: two moves across the row, and not one query. A chip
+     * row driving a URL parameter re-runs the screen's query on every change,
+     * so under automatic activation those two keystrokes are two fetches and
+     * two redraws under the reader on the way to the filter they wanted.
+     */
+    expect(document.querySelector('output')?.textContent).toBe('decision');
+
+    await user.keyboard('{Enter}');
+    expect(document.querySelector('output')?.textContent).toBe('fault');
+
+    // And Space, which a real button turns into the same click.
+    await user.keyboard('{ArrowLeft} ');
+    expect(document.querySelector('output')?.textContent).toBe('delivery');
+  });
+
+  test('the tab stop follows focus rather than the chosen chip', () => {
+    render(<Kinds activate="manual" />);
+    const chips = screen.getAllByRole('radio') as HTMLButtonElement[];
+    expect(chips.map((chip) => chip.tabIndex)).toEqual([0, -1, -1]);
+
+    chips[0]!.focus();
+    fireEvent.keyDown(chips[0]!, { key: 'ArrowRight' });
+    fireEvent.keyDown(chips[1]!, { key: 'ArrowRight' });
+
+    // Nothing is applied yet, and the row's ONE TAB STOP is where the reader
+    // is: Tab away and Tab back lands on the chip they left, not on the chip
+    // that happens to be on.
+    expect(chips[0]!.getAttribute('aria-checked')).toBe('true');
+    expect(chips.map((chip) => chip.tabIndex)).toEqual([-1, -1, 0]);
+    chips[2]!.blur();
+    expect(chips.map((chip) => chip.tabIndex)).toEqual([-1, -1, 0]);
+  });
+
+  test('a pointer press moves the stop too', () => {
+    render(<Kinds activate="manual" />);
+    const chips = screen.getAllByRole('radio') as HTMLButtonElement[];
+    // What a browser does on a press. A row where a press and an arrow key
+    // leave the stop in two different places disagrees with itself about
+    // where the reader is.
+    act(() => {
+      chips[1]!.focus();
+    });
+    expect(chips.map((chip) => chip.tabIndex)).toEqual([-1, 0, -1]);
+  });
+
+  test('a chip that vanishes under the stop hands it back to the chosen one', () => {
+    // The stop is remembered as an ELEMENT, so a row whose chips changed
+    // cannot hand it to whatever took that position.
+    const { rerender } = render(
+      <FilterChipGroup label="Event kind" semantics="radio" activate="manual" value="decision" onValueChange={() => {}}>
+        <FilterChip value="decision">Decision</FilterChip>
+        <FilterChip value="delivery">Delivery</FilterChip>
+        <FilterChip value="fault">Fault</FilterChip>
+      </FilterChipGroup>,
+    );
+    const chips = screen.getAllByRole('radio') as HTMLButtonElement[];
+    chips[0]!.focus();
+    fireEvent.keyDown(chips[0]!, { key: 'End' });
+    expect(chips.map((chip) => chip.tabIndex)).toEqual([-1, -1, 0]);
+
+    rerender(
+      <FilterChipGroup label="Event kind" semantics="radio" activate="manual" value="decision" onValueChange={() => {}}>
+        <FilterChip value="decision">Decision</FilterChip>
+        <FilterChip value="delivery">Delivery</FilterChip>
+      </FilterChipGroup>,
+    );
+    expect((screen.getAllByRole('radio') as HTMLButtonElement[]).map((chip) => chip.tabIndex)).toEqual([0, -1]);
+  });
+
+  test('the row says which key applies, and the caller can word it or silence it', () => {
+    const described = () => {
+      const id = screen.getByRole('radiogroup').getAttribute('aria-describedby');
+      return id === null ? null : document.getElementById(id);
+    };
+
+    const { unmount } = render(<Kinds activate="manual" />);
+    expect(described()?.textContent).toMatch(/Enter or Space/);
+    // Said, not drawn: the row looks exactly as it did.
+    expect(described()?.classList.contains('crewlet-visually-hidden')).toBe(true);
+    unmount();
+
+    const custom = render(<Kinds activate="manual" activateHint="Press Enter to run the filter." />);
+    expect(described()?.textContent).toBe('Press Enter to run the filter.');
+    custom.unmount();
+
+    // And nothing at all where the screen says it somewhere a reader reaches
+    // first, rather than two sentences about one row.
+    const silent = render(<Kinds activate="manual" activateHint={null} />);
+    expect(screen.getByRole('radiogroup').getAttribute('aria-describedby')).toBeNull();
+    silent.unmount();
+
+    // An automatic row is the platform's own behaviour and describes nothing.
+    render(<Kinds />);
+    expect(screen.getByRole('radiogroup').getAttribute('aria-describedby')).toBeNull();
   });
 });

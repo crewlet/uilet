@@ -5,4 +5,9 @@ import '../Tabs/Tabs.css';
 import './SegmentedControl.css';
 
 export { SegmentedControl } from './SegmentedControl.js';
-export type { SegmentedControlProps, SegmentedOption, SegmentedSize } from './SegmentedControl.js';
+export type {
+  SegmentedActivation,
+  SegmentedControlProps,
+  SegmentedOption,
+  SegmentedSize,
+} from './SegmentedControl.js';
