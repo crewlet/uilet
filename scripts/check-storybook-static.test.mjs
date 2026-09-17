@@ -50,7 +50,7 @@ describe('checkStorybookStatic', () => {
     });
   }
 
-  it('refuses a _worker.js directory, which Pages also runs as server code', () => {
+  it('refuses a _worker.js directory, which a host also runs as server code', () => {
     const problems = checkStorybookStatic(build({ ...valid, '_worker.js/index.js': 'export default {}' }));
     assert.equal(problems.length, 1);
     assert.match(problems[0], /^_worker\.js is present/);

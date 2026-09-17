@@ -51,8 +51,8 @@ function manifest(overrides = {}) {
 }
 
 // A repository shaped like this one: one published workspace, the workspace
-// lockfile, the deployment lockfile and the toolchain pins. Each override
-// replaces one file's content; a value of null removes the file.
+// lockfile and the toolchain pins. Each override replaces one file's content;
+// a value of null removes the file.
 function repository(overrides = {}) {
   const root = mkdtempSync(join(tmpdir(), 'release-'));
   directories.push(root);
@@ -70,10 +70,6 @@ function repository(overrides = {}) {
         'node_modules/react': REGISTRY_ENTRY,
         'packages/icons': { name: '@crewlethq/icons', version: '1.2.3' },
       },
-    },
-    '.github/deploy/package-lock.json': {
-      lockfileVersion: 3,
-      packages: { '': { name: 'deploy' }, 'node_modules/react': REGISTRY_ENTRY },
     },
     ...overrides,
   };
@@ -188,16 +184,9 @@ describe('check', () => {
       ]);
     });
 
-    it('checks the deployment lockfile as well, and requires it to exist', () => {
-      const tampered = repository({
-        '.github/deploy/package-lock.json': {
-          lockfileVersion: 3,
-          packages: { 'node_modules/wrangler': { ...REGISTRY_ENTRY, resolved: 'https://example.com/wrangler.tgz' } },
-        },
-      });
-      assert.match(problemsOf(tampered)[0], /^\.github\/deploy\/package-lock\.json: "node_modules\/wrangler" resolves from/);
-      assert.deepEqual(problemsOf(repository({ '.github/deploy/package-lock.json': null })), [
-        '.github/deploy/package-lock.json is missing; every install in this repository runs from a committed lockfile',
+    it('requires the lockfile to exist', () => {
+      assert.deepEqual(problemsOf(repository({ 'package-lock.json': null })), [
+        'package-lock.json is missing; every install in this repository runs from a committed lockfile',
       ]);
     });
 

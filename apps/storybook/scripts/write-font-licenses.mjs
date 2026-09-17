@@ -9,7 +9,7 @@
 // this build is deployed, so each directory that ends up holding a woff2 file
 // gets an OFL.txt carrying the copyright notice of every family in it and the
 // license text. scripts/check-storybook-static.mjs at the repository root
-// verifies the result, at the end of the build and again before a deployment.
+// verifies the result at the end of the build.
 //
 // A font file this script has no notice for fails the build instead of
 // shipping without one; add its family to FAMILIES.

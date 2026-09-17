@@ -84,9 +84,8 @@ const LICENSES = {
   '@crewlethq/ui': 'MIT',
 };
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
-// Every lockfile an install in this repository reads: the workspace, and the
-// deployment tooling the deploy-storybook workflow installs on its own.
-const LOCKFILES = ['package-lock.json', '.github/deploy/package-lock.json'];
+// Every lockfile an install in this repository reads.
+const LOCKFILES = ['package-lock.json'];
 // Root files a published package ships a copy of. LICENSE is required in
 // every tarball; the others are verified whenever a tarball carries them.
 const REQUIRED_NOTICES = ['LICENSE'];

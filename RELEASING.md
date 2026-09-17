@@ -113,7 +113,7 @@ Once the run for a merge is green:
 
 ## One-time setup
 
-These settings live on npmjs.com, on Cloudflare and in the GitHub repository settings, not in this tree, so nothing in CI can detect when one of them is missing or changed. Work through them in this order.
+These settings live on npmjs.com and in the GitHub repository settings, not in this tree, so nothing in CI can detect when one of them is missing or changed. Work through them in this order.
 
 ### 1. Before anything public names the packages: the npm organization
 
@@ -136,7 +136,7 @@ npm scopes are first come, first served, and this repository's README, manifests
    - **Require a pull request before merging**, with 1 required approval, **Dismiss stale pull request approvals when new commits are pushed**, **Require review from Code Owners** and **Require approval of the most recent reviewable push**.
    - **Require status checks to pass**, requiring the `ci` checks `verify`, `pack` and `sign-off`.
 
-   Every merge is released without further approval, and both the `storybook` environment's credential and every release rely on `main` holding only reviewed commits, so this ruleset is what protects them.
+   Every merge is released without further approval, and every release relies on `main` holding only reviewed commits, so this ruleset is what protects them.
 3. **Tag rulesets** (**New tag ruleset**), two of them, both targeting tags matching `v*`. A release tag is created by the release workflow, which authenticates as the GitHub Actions app, and is never moved or deleted:
    - **Release tag creation**: **Restrict creations**, with a bypass list (bypass mode "Always") of exactly two actors: the `crewlet/uilet-maintainers` team, and the **GitHub Actions** app (integration ID `15368`), which is the identity of the workflow's `GITHUB_TOKEN`.
    - **Release tag protection**: **Restrict updates** and **Restrict deletions**, with no bypass list. Keeping these rules apart from creation is what lets the workflow create a tag without also being allowed to move or delete one.
@@ -147,28 +147,16 @@ npm scopes are first come, first served, and this repository's README, manifests
    - **Deployment branches and tags:** "Selected branches and tags", with a single branch rule `main` and no tag rule. The workflow runs on pushes to `main` only, and this rule stops any other ref from reaching the environment.
    - **Allow administrators to bypass configured protection rules:** disabled.
    - No environment secrets or variables. Publishing needs none.
-5. **Environment `storybook`**:
-   - **Deployment branches and tags:** "Selected branches and tags", with a single branch rule `main`.
-   - **Environment variable** `CLOUDFLARE_PAGES_PROJECT`: the name of the Pages project the Storybook deploys to.
-   - **Environment secrets** `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`, as described under [Cloudflare](#3-cloudflare). No repository-level or organization-level copy of either may exist, so no other workflow or branch can read them.
-6. **Actions** (**Settings, Actions, General**):
+5. **Actions** (**Settings, Actions, General**):
    - **Actions permissions:** allow actions created by GitHub, and enable **Require actions to be pinned to a full-length commit SHA**.
    - **Approval for running fork pull request workflows from contributors:** "Require approval for all external contributors".
    - **Workflow permissions:** "Read repository contents and packages permissions", with **Allow GitHub Actions to create and approve pull requests** disabled, so a workflow can never supply the approval the `main` ruleset requires. The release workflow's tag and release job asks for `contents: write` itself.
-7. **Security** (**Settings, Advanced Security**): enable **Private vulnerability reporting** (the channel [SECURITY.md](SECURITY.md) names), **Dependabot alerts**, **Dependabot security updates**, **Secret scanning** and **Push protection**.
-8. **Releases** (**Settings, General, Releases**): enable **release immutability**, so the files and the tag of a published GitHub release cannot be changed afterwards.
+6. **Security** (**Settings, Advanced Security**): enable **Private vulnerability reporting** (the channel [SECURITY.md](SECURITY.md) names), **Dependabot alerts**, **Dependabot security updates**, **Secret scanning** and **Push protection**.
+7. **Releases** (**Settings, General, Releases**): enable **release immutability**, so the files and the tag of a published GitHub release cannot be changed afterwards.
 
 The trusted publisher configuration on npm matches the workflow file name `release.yml` and the environment name `npm-publish`. Renaming either one stops publishing until the configuration on npm is updated to the new name.
 
-### 3. Cloudflare
-
-A Cloudflare API token with the Pages permission can deploy every Pages project on its account; the permission cannot be narrowed to one project. The Storybook deployment therefore runs on a Cloudflare account that holds nothing else:
-
-1. Create a dedicated Cloudflare account for the Storybook and create its Pages project there. No other Pages project, zone or Worker lives on that account.
-2. Create an account API token for that account with the single permission **Account, Cloudflare Pages, Edit**, and an expiry date. Record the expiry, and replace the token before it passes.
-3. Store the account ID and the token as the `storybook` environment secrets, and the project name as its variable (see above).
-
-### 4. First publish (bootstrap)
+### 3. First publish (bootstrap)
 
 npm can only attach a trusted publisher to a package that already exists, so the first version of each package is published once by an owner. The bootstrap publishes the exact tarballs the release workflow built, so the first release is the same bytes a normal release would have produced. Those first versions carry no provenance, because only a CI identity can produce an attestation; every later version does.
 
@@ -240,7 +228,7 @@ A new public workspace under `packages/` is picked up by `scripts/release.mjs` a
 
 ## Dependency updates
 
-[Dependabot](.github/dependabot.yml) opens weekly pull requests, each committing as `build(deps)`, for the actions in the workflows and composite actions, for the npm workspace, and for the Wrangler release in [`.github/deploy`](.github/deploy/package.json) that the Storybook deployment installs. A merged update is released as a patch when it changes what a package publishes (a dependency range in a published manifest, or the built output), and releases nothing otherwise.
+[Dependabot](.github/dependabot.yml) opens weekly pull requests, each committing as `build(deps)`, for the actions in the workflows and composite actions, and for the npm workspace. A merged update is released as a patch when it changes what a package publishes (a dependency range in a published manifest, or the built output), and releases nothing otherwise.
 
 - **A version update waits the 3 days Dependabot applies on its own.** No entry in `dependabot.yml` sets a `cooldown`, so a version is not proposed until 3 days after its release. Security updates are exempt from that wait. A longer wait is a `cooldown` in every entry there, and nothing reports its absence.
 - **Actions are pinned to full commit SHAs** with the release in a trailing comment (`# v7.0.1`), and the repository setting requires it. Dependabot moves both together. When adding an action by hand, pin its newest release the same way: `gh api repos/<owner>/<action>/git/ref/tags/<tag> --jq .object` gives the commit (dereference it with `gh api repos/<owner>/<action>/git/tags/<sha> --jq .object.sha` when the type is `tag`), and add the action to the allowed actions setting.
@@ -257,7 +245,7 @@ A run that failed publishes nothing further by itself, and the next merge comput
 
 **`pack` reports that the tags and the registry disagree** ("is on the registry, but no release tag is reachable from this commit", "the latest version on the registry is X, but the latest release tag reachable from this commit is vY", or "was released as vY, but the registry does not serve the package"). Where the registry was only behind the tags, `pack` has already waited five minutes for it to catch up, so what is left is a real disagreement: a version computed from the tags would collide with what is on the registry, or release unchanged contents again. Find out which case it is before doing anything else:
 
-- The bootstrap is not finished: complete step 6 of [First publish (bootstrap)](#4-first-publish-bootstrap).
+- The bootstrap is not finished: complete step 6 of [First publish (bootstrap)](#3-first-publish-bootstrap).
 - A run published and then failed before its `release` job tagged the commit: re-run that run's failed jobs, which tags the commit it published and creates its release, then re-run the failed run.
 - Someone published a version or moved a dist-tag by hand: compare the registry with the tags (`npm view @crewlethq/ui dist-tags versions --json`), and restore the `latest` dist-tag of each package to the latest tagged version with `npm dist-tag add @crewlethq/<package>@<version> latest`. A version published by hand is deprecated rather than unpublished (see below). Then re-run the failed run.
 - Someone created a `v*` tag by hand on a commit on `main`, for a version the registry does not hold (`git ls-remote --tags origin 'v*'` lists the tags; the highest one reachable from the commit is the one the error names). Every later release is refused until that tag is gone, and the tag rulesets allow nobody to delete it, so an organization owner removes **Restrict deletions** from the protection ruleset, deletes the tag (`git push --delete origin v<version>`), restores the rule at once, and re-runs the failed run.
@@ -265,11 +253,11 @@ A run that failed publishes nothing further by itself, and the next merge comput
 
 **`pack` reports that a commit packs different contents for a version it already released.** This only happens when a run for a commit that is already tagged is re-run, and it means the build did not reproduce the published bytes. Nothing needs publishing; find what differs, because the next release would be built the same way.
 
-**`publish` failed with "is not on npm yet".** A package has never been published. Follow [First publish (bootstrap)](#4-first-publish-bootstrap), or [Adding a published package later](#adding-a-published-package-later) for a new package.
+**`publish` failed with "is not on npm yet".** A package has never been published. Follow [First publish (bootstrap)](#3-first-publish-bootstrap), or [Adding a published package later](#adding-a-published-package-later) for a new package.
 
 **`publish` failed partway.** Fix the cause (usually a trusted publisher or environment setting) and re-run the failed jobs, not the whole run: a full re-run packs again, and `pack` refuses to continue while the registry holds versions no tag records. Every package is checked before any is published, and versions that did publish are recognised by their integrity and skipped, so the re-run finishes the release. If it failed after publishing because a dist-tag does not name the release, move the tag with the command the error prints, then re-run.
 
-GitHub keeps both the artifact and the ability to re-run jobs for 30 days. Past that, an owner finishes the release by hand: pack the commit in a clean clone with its tags (`node scripts/release.mjs build`, `node scripts/release.mjs version --write`, `node scripts/release.mjs pack <directory>`), confirm that every tarball whose version is already on the registry has the integrity the registry records (`npm view @crewlethq/<package>@<version> dist.integrity`), which proves the build reproduced the published bytes, publish the remaining tarballs as in step 3 of [First publish (bootstrap)](#4-first-publish-bootstrap), and tag the commit and create the release as in step 6 there.
+GitHub keeps both the artifact and the ability to re-run jobs for 30 days. Past that, an owner finishes the release by hand: pack the commit in a clean clone with its tags (`node scripts/release.mjs build`, `node scripts/release.mjs version --write`, `node scripts/release.mjs pack <directory>`), confirm that every tarball whose version is already on the registry has the integrity the registry records (`npm view @crewlethq/<package>@<version> dist.integrity`), which proves the build reproduced the published bytes, publish the remaining tarballs as in step 3 of [First publish (bootstrap)](#3-first-publish-bootstrap), and tag the commit and create the release as in step 6 there.
 
 **`publish` refuses a version that is already on the registry with different contents, or one that is not one step above the latest version** (the next patch, the next minor, or from `1.0.0` on the next major). A published npm version can never be replaced, and there is one release line that moves one step per release. When a release was published moments before, the registry may not serve it yet: re-run the failed jobs. Otherwise the registry and the tags disagree as described above for `pack`; resolve it the same way.
 
