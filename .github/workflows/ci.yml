@@ -7,8 +7,8 @@ name: ci
 # Actions are pinned to full commit SHAs, with the release each one
 # corresponds to in a trailing comment. A tag can be moved to different code;
 # a SHA cannot. Dependabot updates the SHA and the comment together, and the
-# workflows job below fails when a workflow or action drops a pin or another
-# hardening rule.
+# repository's "Require actions to be pinned to a full-length commit SHA"
+# setting refuses a workflow that drops a pin.
 #
 # No job runs a dependency's install script: every install is
 # `npm ci --ignore-scripts`, and nothing in the workspace needs one.
@@ -130,21 +130,3 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: node scripts/check-signoff.mjs "${BEFORE_SHA}" "${GITHUB_SHA}"
-
-  # Static analysis of the workflows, the composite actions and dependabot.yml:
-  # unpinned actions, persisted credentials, excessive permissions, template
-  # injection, cache poisoning and the rest of zizmor's audits. The action runs
-  # the zizmor image by the digest recorded in the pinned action release, so
-  # moving the action SHA is what moves zizmor.
-  workflows:
-    name: workflows
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
-        with:
-          advanced-security: false
-          annotations: true
