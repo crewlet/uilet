@@ -37,6 +37,7 @@
   "overrides": {
     "eslint-plugin-jsx-a11y": {
       "eslint": "$eslint"
-    }
+    },
+    "esbuild": "^0.28.2"
   }
 }
