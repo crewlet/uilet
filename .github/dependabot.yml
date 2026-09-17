@@ -13,7 +13,13 @@
 #
 # Security updates are separate. They come from published advisories, are
 # switched on in the repository settings rather than here, and are not held
-# back by this schedule.
+# back by this schedule or by the cooldown below.
+#
+# No entry sets a `cooldown`, so a version update waits the 3 days Dependabot
+# applies on its own. .github/zizmor.yml records those 3 days as the bar its
+# `dependabot-cooldown` audit holds this file to, and CI's `workflows` job
+# fails on anything under it; a longer wait means a `cooldown` in every entry
+# here and the matching `days` there.
 #
 # Each entry pins `commit-message.prefix` to `build(deps)`, which is what the
 # bumps already in `main` carry. Left unset, Dependabot infers the prefix from

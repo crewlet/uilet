@@ -1,0 +1,21 @@
+# Configuration for the zizmor audit ci.yml's `workflows` job runs over
+# .github/. Everything it audits is on by default; this file only states where
+# this repository's bar differs from zizmor's.
+
+rules:
+  # zizmor's `dependabot-cooldown` wants every entry in dependabot.yml to hold
+  # a version update back for 7 days, and fails the job on anything less. This
+  # repository does not set a cooldown at all, so every entry falls back to the
+  # 3 days Dependabot applies on its own, and that is the bar recorded here.
+  #
+  # Three days is what Dependabot gives unconfigured, not nothing: a version
+  # is not considered for an update until 3 days after its release, and a
+  # security update is exempt from that wait in either case. Raising this to 7
+  # means writing a `cooldown` into every entry in dependabot.yml, not just
+  # this number.
+  #
+  # The rule stays on: an entry that sets an explicit cooldown SHORTER than
+  # this still fails the job.
+  dependabot-cooldown:
+    config:
+      days: 3
