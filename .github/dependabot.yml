@@ -16,10 +16,9 @@
 # back by this schedule or by the cooldown below.
 #
 # No entry sets a `cooldown`, so a version update waits the 3 days Dependabot
-# applies on its own. .github/zizmor.yml records those 3 days as the bar its
-# `dependabot-cooldown` audit holds this file to, and CI's `workflows` job
-# fails on anything under it; a longer wait means a `cooldown` in every entry
-# here and the matching `days` there.
+# applies on its own: a version is not proposed until 3 days after its
+# release. A longer wait is a `cooldown` in every entry here, and nothing
+# reports its absence.
 #
 # Each entry pins `commit-message.prefix` to `build(deps)`, which is what the
 # bumps already in `main` carry. Left unset, Dependabot infers the prefix from
