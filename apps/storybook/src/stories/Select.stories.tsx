@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Select, type SelectOption, type SelectValue } from '@crewlethq/ui';
+import { FormField, Select, type SelectOption, type SelectValue } from '@crewlethq/ui';
 
 const fruits: SelectOption[] = [
   { value: 'apple', label: 'Apple', description: 'Red, crunchy' },
@@ -124,6 +124,57 @@ export const Several: Story = {
       );
     }
     return <Several />;
+  },
+};
+
+/**
+ * REQUIREDNESS, WITHOUT THE MARK. `required` is the form constraint and it
+ * implies the ARIA fact; `aria-required` states the fact on its own.
+ *
+ * They are separate because the visible mark is not. On a form where an answer
+ * is expected almost everywhere, marking every field teaches a reader to skip
+ * the mark — so the screen says nothing beside the label and tells assistive
+ * technology directly. The left-hand field below is the ordinary one, asterisk
+ * and all; the right-hand one carries the same fact to a screen reader with no
+ * mark on the page. Given both, the explicit statement is the answer.
+ */
+export const RequiredWithoutTheMark: Story = {
+  render: () => {
+    function Fields() {
+      const [marked, setMarked] = useState<SelectValue | SelectValue[] | undefined>('');
+      const [quiet, setQuiet] = useState<SelectValue | SelectValue[] | undefined>('');
+      return (
+        <div style={{ display: 'grid', gap: 16, width: 320 }}>
+          <FormField label="Owner" required helper="Marked, and stated.">
+            {(field) => (
+              <Select
+                id={field.id}
+                aria-describedby={field.describedBy}
+                required={field.required}
+                placeholder="Choose a seat"
+                options={seats}
+                value={marked}
+                onChange={(next) => setMarked(next)}
+              />
+            )}
+          </FormField>
+          <FormField label="Reviewer" helper="Stated only: no asterisk on the page.">
+            {(field) => (
+              <Select
+                id={field.id}
+                aria-describedby={field.describedBy}
+                aria-required
+                placeholder="Choose a seat"
+                options={seats}
+                value={quiet}
+                onChange={(next) => setQuiet(next)}
+              />
+            )}
+          </FormField>
+        </div>
+      );
+    }
+    return <Fields />;
   },
 };
 

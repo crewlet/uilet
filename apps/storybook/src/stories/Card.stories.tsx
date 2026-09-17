@@ -205,6 +205,44 @@ export const ContentWithNoBody: Story = {
 };
 
 /**
+ * A NAME TOO LONG FOR THE ROW. The head is one line and the name block clips,
+ * so the subtitle beside it gives up its tail first — and once there is no
+ * tail left to trade, the title itself runs out of room.
+ *
+ * Left alone it is CUT at the header's edge, mid-word: `text-overflow` acts on
+ * a block container only, and the title is flex. `truncate` makes it a block
+ * so the line ends in an ellipsis instead. It is opt-in, because a title with
+ * its own children inside it lays them out as one line of inline content
+ * rather than as centred flex items with a gap; a glyph belongs in the
+ * header's own `icon` slot, which is outside the title either way.
+ *
+ * Narrow the viewport, or drag the two cards narrower, to watch the ellipsis
+ * appear on the right-hand one and the word break on the left.
+ */
+export const ALongTitle: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-4)', gridTemplateColumns: '1fr 1fr', maxWidth: 560 }}>
+      <Card as="section">
+        <Card.Header icon={<TerminalGlyph size="sm" />} count={12} subtitle="last hour">
+          <Card.Title>Platform Reliability and Developer Experience</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <Card.Description>Cut at the edge: the default, and what a unit name meets today.</Card.Description>
+        </Card.Body>
+      </Card>
+      <Card as="section">
+        <Card.Header icon={<TerminalGlyph size="sm" />} count={12} subtitle="last hour">
+          <Card.Title truncate>Platform Reliability and Developer Experience</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <Card.Description>Ended with an ellipsis: the same title, asked to truncate.</Card.Description>
+        </Card.Body>
+      </Card>
+    </div>
+  ),
+};
+
+/**
  * The panel at all three densities, side by side. Every inset, row height and
  * gap in it is a spacing token, so one setting on the root reaches all of
  * them; nothing in the card restates a number.
