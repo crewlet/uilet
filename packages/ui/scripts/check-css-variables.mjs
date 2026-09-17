@@ -80,6 +80,7 @@ function tokenNames() {
   } catch (error) {
     throw new Error(
       `cannot resolve @crewlethq/tokens/css (${error.message}). Build the tokens package first: npm run build --workspace @crewlethq/tokens`,
+      { cause: error },
     );
   }
   const directory = dirname(tokensCss);
