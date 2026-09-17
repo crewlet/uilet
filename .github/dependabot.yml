@@ -1,7 +1,8 @@
 # Automated dependency updates, one entry per dependency surface:
 #
-#   .github/workflows/*.yml, .github/actions/*/action.yml
-#                             the actions CI, releases and deployments run on
+#   .github/workflows/*.yml   the actions CI, releases and deployments run on
+#   .github/actions/*/action.yml
+#                             the actions those workflows share
 #   package-lock.json         every workspace's build and runtime dependencies
 #   .github/deploy            the Wrangler release the Storybook deployment
 #                             installs
@@ -12,36 +13,31 @@
 #
 # Security updates are separate. They come from published advisories, are
 # switched on in the repository settings rather than here, and are not held
-# back by this schedule or by the cooldown below.
+# back by this schedule.
 #
-# Each entry pins `commit-message.prefix` to `build(deps)`. Left unset,
-# Dependabot infers a prefix from recent commit subjects, which silently
-# produces bare "Bump x from 1 to 2" subjects the day the heuristic stops
-# matching. Dependabot capitalises "Bump" itself and offers no way not to.
-#
-# Each entry also sets a cooldown: a version update is proposed only once the
-# release is 7 days old, or 14 for a new major. The compromised npm releases of
-# 2025 were live for hours to a few days before they were removed, so a weekly
-# run inside that window would open a green pull request that puts the bad
-# version into the lockfile and from there into release and deployment builds.
-# A new major gets longer because it is a larger diff to review.
+# Each entry pins `commit-message.prefix` to `build(deps)`, which is what the
+# bumps already in `main` carry. Left unset, Dependabot infers the prefix from
+# recent commit subjects, a heuristic that silently produces bare "Bump x from
+# 1 to 2" subjects the day it stops matching: not the `type(scope): summary`
+# form CONTRIBUTING.md asks of every commit, and not a subject that reads as
+# the release note it becomes. Dependabot capitalises "Bump" itself and offers
+# no way not to.
 
 version: 2
 
 updates:
-  # "/" covers every workflow under .github/workflows; the second directory
-  # covers the composite actions the workflows share. The actions are pinned
-  # to commit SHAs with the release in a trailing comment, and Dependabot
-  # moves the SHA and the comment together.
+  # "/" covers every workflow under .github/workflows, which Dependabot reads
+  # whatever directory it is given; the second directory covers the composite
+  # actions those workflows share, which it reads only where it is pointed at
+  # an action.yml. Both pin the actions they use to commit SHAs with the
+  # release in a trailing comment, and Dependabot moves the SHA and the
+  # comment together.
   - package-ecosystem: github-actions
     directories:
       - "/"
       - "/.github/actions/*"
     schedule:
       interval: weekly
-    cooldown:
-      default-days: 7
-      semver-major-days: 14
     commit-message:
       prefix: "build(deps)"
 
@@ -58,9 +54,6 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    cooldown:
-      default-days: 7
-      semver-major-days: 14
     commit-message:
       prefix: "build(deps)"
 
@@ -71,8 +64,5 @@ updates:
     directory: "/.github/deploy"
     schedule:
       interval: weekly
-    cooldown:
-      default-days: 7
-      semver-major-days: 14
     commit-message:
       prefix: "build(deps)"
