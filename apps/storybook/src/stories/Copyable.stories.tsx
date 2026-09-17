@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useEffect, type ReactNode } from 'react';
 import { Copyable, CopyButton, Text } from '@crewlethq/ui';
 
 const meta: Meta<typeof Copyable> = {
@@ -57,6 +58,65 @@ export const TheLabelledButton: Story = {
       <CopyButton text={'{"turn_id":"t-1"}'} />
       <CopyButton text={'{"turn_id":"t-1"}'} variant="secondary" label="Copy the record" />
     </div>
+  ),
+};
+
+/**
+ * Both halves of a refusal, which is the one state a story could not reach
+ * before: the clipboard works in this iframe, so the failed styling and the
+ * error glyph were only ever visible to somebody reading an http origin.
+ *
+ * `Refusing` puts the browser into the state that origin is in — no
+ * `navigator.clipboard`, an `execCommand` that answers false — and puts it
+ * back when the story is left, so it touches nothing else in the Storybook.
+ */
+const Refusing = ({ children }: { children: ReactNode }) => {
+  useEffect(() => {
+    const owned = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    const exec = document.execCommand;
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    document.execCommand = () => false;
+    return () => {
+      // An own property shadowing the prototype getter: deleting it is what
+      // restores the real one, and redefining is what restores an own one.
+      if (owned) Object.defineProperty(navigator, 'clipboard', owned);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+      document.execCommand = exec;
+    };
+  }, []);
+  return children;
+};
+
+/**
+ * A REFUSAL DOES NOT WANT THE SUCCESS CLOCK. Press both. The first settles
+ * back to "Copy" after two seconds and is then indistinguishable from a button
+ * nobody ever pressed, so the reader presses it again and learns nothing a
+ * second time. The second holds what it found out.
+ *
+ * `failedResetMs={null}` is the recommended setting, and it is not the default
+ * only because moving the default would change what every existing call site
+ * draws. Its cost is that the control's accessible name stays "Copy failed",
+ * which names a status rather than the action it still performs — pass a
+ * number instead for a longer clock that still hands the action back.
+ */
+export const ARefusalAndItsClock: Story = {
+  render: () => (
+    <Refusing>
+      <div style={{ display: 'grid', gap: 'var(--spacing-4)', justifyItems: 'start' }}>
+        <Text as="p" variant="cell">
+          The success clock (the default): gone in 2s.
+        </Text>
+        <CopyButton text="never reaches the clipboard here" />
+        <Text as="p" variant="cell">
+          Held until the next press.
+        </Text>
+        <CopyButton text="never reaches the clipboard here" failedResetMs={null} />
+        <Text as="p" variant="cell">
+          The chip, held the same way.
+        </Text>
+        <Copyable value="seat_01HZX" ariaLabel="Copy the seat id" failedResetMs={null} />
+      </div>
+    </Refusing>
   ),
 };
 

@@ -80,6 +80,56 @@ export const OneChoice: Story = {
 };
 
 /**
+ * The same row where the choice is NOT free. A chip row driving a URL
+ * parameter re-runs the screen's query on every change, so `activate="manual"`
+ * moves focus with the arrows and applies on Enter or Space — and the tab stop
+ * follows focus, so Tab out and Tab back returns to the chip the reader left.
+ *
+ * Arrow across both rows with the keyboard and watch the counters.
+ */
+export const ManualActivation: Story = {
+  render: function ManualActivation() {
+    function Row({ activate }: { activate: 'automatic' | 'manual' }) {
+      const [value, setValue] = useState<string | null>('decision');
+      const [queries, setQueries] = useState(0);
+      return (
+        <div style={{ display: 'grid', gap: 8, justifyItems: 'start' }}>
+          <FilterChipGroup
+            label={`Event kind (${activate})`}
+            semantics="radio"
+            activate={activate}
+            value={value}
+            onValueChange={(next) => {
+              setValue(next);
+              setQueries((ran) => ran + 1);
+            }}
+          >
+            <FilterChip value="decision" count={12}>
+              Decision
+            </FilterChip>
+            <FilterChip value="delivery" count={4}>
+              Delivery
+            </FilterChip>
+            <FilterChip value="fault" count={0}>
+              Fault
+            </FilterChip>
+          </FilterChipGroup>
+          <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)' }}>
+            {activate}: {queries} quer{queries === 1 ? 'y' : 'ies'} run
+          </span>
+        </div>
+      );
+    }
+    return (
+      <div style={{ display: 'grid', gap: 24 }}>
+        <Row activate="automatic" />
+        <Row activate="manual" />
+      </div>
+    );
+  },
+};
+
+/**
  * With `allowNone`, a second press on the chosen chip clears it. For a row
  * with no explicit "All" chip to go back to.
  */

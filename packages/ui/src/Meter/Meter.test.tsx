@@ -13,7 +13,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
 import { contrast, flatten, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
-import { Meter, meterTone } from './index.js';
+import { Meter, meterTone, progressTone } from './index.js';
 
 afterEach(cleanup);
 
@@ -25,6 +25,25 @@ describe('meterTone', () => {
     expect(meterTone(99.9)).toBe('warning');
     expect(meterTone(100)).toBe('danger');
     expect(meterTone(140)).toBe('danger');
+  });
+});
+
+describe('progressTone', () => {
+  test('reads a finished bar as finished rather than as a fault', () => {
+    // The whole reason the polarity exists: this percent is `danger` on the
+    // spent ramp and a completed goal on this one.
+    expect(progressTone(100)).toBe('success');
+    expect(progressTone(140)).toBe('success');
+  });
+
+  test('has no middle step, because a goal has no fact between started and done', () => {
+    // 75 is where the spent ramp turns, and there is deliberately nothing here:
+    // "nearly done" is not a warning, and "barely started" is only a fault
+    // against a deadline this component is never told.
+    expect(progressTone(0)).toBe('brand');
+    expect(progressTone(74.9)).toBe('brand');
+    expect(progressTone(75)).toBe('brand');
+    expect(progressTone(99.9)).toBe('brand');
   });
 });
 
@@ -53,8 +72,32 @@ describe('Meter', () => {
     const fill = container.querySelector<HTMLElement>('.crewlet-meter__fill')!;
     expect(fill.style.width).toBe('100%');
     expect(fill.dataset['tone']).toBe('danger');
-    // And the reported value is the real one: the bar is clamped, the fact is not.
-    expect(screen.getByRole('meter').getAttribute('aria-valuenow')).toBe('140');
+  });
+
+  test('a value past the maximum is REPORTED inside the scale and stated in words', () => {
+    // A budget lowered under a counter that has already passed it is ordinary,
+    // and aria-valuenow outside [min,max] is not something ARIA allows or
+    // assistive technology resolves the same way twice. The clamp makes the
+    // pair valid; the words are what stop the clamp becoming a second lie,
+    // because "100" alone says the counter is exactly at the limit it overran.
+    render(<Meter label="Spend" value={140} max={100} />);
+    const meter = screen.getByRole('meter');
+    expect(meter.getAttribute('aria-valuenow')).toBe('100');
+    expect(meter.getAttribute('aria-valuemax')).toBe('100');
+    expect(meter.getAttribute('aria-valuetext')).toBe('140 of 100');
+  });
+
+  test('a value under the floor is clamped at the other end for the same reason', () => {
+    render(<Meter label="Drift" value={-5} max={100} />);
+    const meter = screen.getByRole('meter');
+    expect(meter.getAttribute('aria-valuenow')).toBe('0');
+    expect(meter.getAttribute('aria-valuemin')).toBe('0');
+    expect(meter.getAttribute('aria-valuetext')).toBe('-5 of 100');
+  });
+
+  test("the caller's own words win over the ones the clamp would write", () => {
+    render(<Meter label="Spend" value={140} max={100} valueText="$140 against a $100 cap" />);
+    expect(screen.getByRole('meter').getAttribute('aria-valuetext')).toBe('$140 against a $100 cap');
   });
 
   test('a maximum of zero is nothing rather than a division', () => {
@@ -64,6 +107,88 @@ describe('Meter', () => {
 
   test('a caller can override the derived tone', () => {
     const { container } = render(<Meter label="Quiet" value={90} max={100} tone="neutral" />);
+    expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('neutral');
+  });
+
+  test('a non-positive maximum claims no scale, because the meter role cannot say there is none', () => {
+    // ARIA gives the meter role no way to say "no ceiling". max={0} states a
+    // range of zero width, where the fraction is 0/0 and any value but 0
+    // breaks "aria-valuenow MUST NOT fall below or exceed the computed values
+    // of aria-valuemin and aria-valuemax"; leaving the attribute off is worse,
+    // because missing is exactly when the role's implicit 100 takes over and
+    // the bar announces a ceiling nobody set. So it stops being a meter.
+    const { container } = render(<Meter label="Tokens used" value={12_400} max={0} />);
+    const track = container.querySelector<HTMLElement>('.crewlet-meter__track')!;
+    expect(track.getAttribute('role')).toBeNull();
+    expect(track.getAttribute('aria-valuenow')).toBeNull();
+    expect(track.getAttribute('aria-valuemin')).toBeNull();
+    expect(track.getAttribute('aria-valuemax')).toBeNull();
+    expect(track.getAttribute('aria-valuetext')).toBeNull();
+    expect(track.getAttribute('aria-labelledby')).toBeNull();
+    // Decoration, and hidden as decoration: an empty bar beside a figure would
+    // otherwise be read out as an unexplained blank.
+    expect(track.getAttribute('aria-hidden')).toBe('true');
+    // The legend is untouched -- the name and the figure are still on the page.
+    expect(screen.getByText('Tokens used')).toBeTruthy();
+    expect(screen.queryByRole('meter')).toBeNull();
+  });
+
+  test('a negative maximum is the same non-answer as a zero one', () => {
+    const { container } = render(<Meter label="Tokens used" value={12_400} max={-1} />);
+    expect(container.querySelector<HTMLElement>('.crewlet-meter__track')!.getAttribute('role')).toBeNull();
+  });
+
+  test('a real maximum is still a meter, so the scale is claimed exactly where there is one', () => {
+    // The floor under the case above: this is what has to keep working.
+    render(<Meter label="Seats" value={3} max={4} />);
+    expect(screen.getByRole('meter', { name: 'Seats' }).getAttribute('aria-valuemax')).toBe('4');
+  });
+
+  test('with no scale and no legend, the figure is spoken instead of lost', () => {
+    // aria-valuetext went with the role, and hideLabel means the legend draws
+    // nothing -- so without this the reader gets a name and no number at all.
+    render(<Meter label="Tokens used" value={12_400} max={0} valueText="12.4K tokens, no limit" hideLabel />);
+    expect(screen.getByText('12.4K tokens, no limit')).toBeTruthy();
+  });
+
+  test('with no scale and a hint in the way, the figure is spoken too', () => {
+    // `hint` displaces valueText in the legend, so the words meant for a reader
+    // are on the page nowhere.
+    const { container } = render(
+      <Meter label="Tokens used" value={12_400} max={0} valueText="12.4K tokens, no limit" hint={<b>12.4K</b>} />,
+    );
+    expect(container.querySelector('.crewlet-visually-hidden')!.textContent).toBe('12.4K tokens, no limit');
+  });
+
+  test('a scaled meter says it once, on the meter, and not twice', () => {
+    const { container } = render(
+      <Meter label="Token budget" value={12_400} max={20_000} valueText="12.4K of 20K tokens" hideLabel />,
+    );
+    expect(container.querySelectorAll('.crewlet-visually-hidden').length).toBe(1);
+    expect(screen.getByRole('meter').getAttribute('aria-valuetext')).toBe('12.4K of 20K tokens');
+  });
+
+  test('the polarity picks the ramp, and a finished goal is not a crisis', () => {
+    // The one finding that kept a consumer on its own Meter: the spent ramp
+    // paints a completed goal `danger`.
+    const { container } = render(<Meter label="Onboarding" value={100} max={100} polarity="progress" />);
+    expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('success');
+  });
+
+  test('the progress ramp stays quiet where the spent ramp warns', () => {
+    const { container } = render(<Meter label="Onboarding" value={82} max={100} polarity="progress" />);
+    expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('brand');
+  });
+
+  test('spent is the default, so no existing caller moves', () => {
+    const { container } = render(<Meter label="Spend" value={100} max={100} />);
+    expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('danger');
+    const warn = render(<Meter label="Spend" value={82} max={100} />);
+    expect(warn.container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('warning');
+  });
+
+  test('an explicit tone still beats the ramp the polarity chose', () => {
+    const { container } = render(<Meter label="Onboarding" value={100} max={100} polarity="progress" tone="neutral" />);
     expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('neutral');
   });
 
@@ -151,6 +276,8 @@ describe('Meter', () => {
         <h1>Spend</h1>
         <Meter label="Token budget" value={12_400} max={20_000} valueText="12.4K of 20K tokens" />
         <Meter label="Seats" value={4} max={4} size="compact" hideLabel />
+        <Meter label="Tokens used" value={12_400} max={0} valueText="12.4K tokens, no limit" />
+        <Meter label="Onboarding" value={100} max={100} polarity="progress" valueText="100 of 100 steps" />
       </main>,
     );
     const result = await axe.run(container, {

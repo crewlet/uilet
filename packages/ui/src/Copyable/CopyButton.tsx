@@ -59,6 +59,16 @@ export interface CopyButtonProps {
   size?: ButtonSize | undefined;
   variant?: ButtonVariant | undefined;
   title?: string | undefined;
+  /** How long `copiedLabel` stands before the control offers its action again. */
+  resetMs?: number | undefined;
+  /**
+   * How long `failedLabel` stands. Unset it is `resetMs`; `null` holds it
+   * until the next press. See [ClipboardOptions.failedResetMs] for why a
+   * refusal wants a clock of its own — and note the cost of `null`, which is
+   * that the control's accessible name stays "Copy failed" and so names a
+   * status rather than the action it still performs.
+   */
+  failedResetMs?: number | null | undefined;
   className?: string | undefined;
 }
 
@@ -80,9 +90,11 @@ export function CopyButton({
   size = 'small',
   variant = 'tertiary',
   title,
+  resetMs,
+  failedResetMs,
   className,
 }: CopyButtonProps) {
-  const { state, copy } = useClipboard();
+  const { state, copy } = useClipboard({ resetMs, failedResetMs });
   const onClick = useCallback(() => {
     void copy(text);
   }, [copy, text]);

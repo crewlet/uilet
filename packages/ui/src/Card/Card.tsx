@@ -541,9 +541,31 @@ export interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
    * heading and an `h2` at the top of a page.
    */
   as?: `h${HeadingLevel}` | undefined;
+  /**
+   * A title with nowhere left to go ENDS in an ellipsis rather than being cut.
+   *
+   * The head is one line and the name block clips, so a title longer than the
+   * row is stopped at the header's edge — mid-word, with nothing to say a word
+   * was lost. `text-overflow` is the answer to that and it applies to a BLOCK
+   * container only, never to a flex one, and the title is flex: the text
+   * inside it is an anonymous flex item that no rule in this stylesheet can
+   * reach. So the ellipsis is a change of the title's own display, which is a
+   * change to what a caller's own children do inside it, which is why it is
+   * asked for rather than assumed.
+   *
+   * OFF BY DEFAULT, because it is not free: a truncating title lays its
+   * children out as one line of inline content instead of as centred,
+   * gap-separated flex items, so a caller who put a glyph or a tag inside the
+   * title gets it on the text baseline with no gap. `Card.Header`'s own `icon`
+   * slot is where a glyph belongs, and it is outside the title and unaffected.
+   * A title of plain text — which is every title in this package and every one
+   * in the engine dashboard — reads identically either way, and is exactly the
+   * case that was being cut.
+   */
+  truncate?: boolean | undefined;
 }
 
-const CardTitle = ({ as, className, children, ...rest }: CardTitleProps) => {
+const CardTitle = ({ as, truncate = false, className, children, ...rest }: CardTitleProps) => {
   const card = useContext(CardContext);
   const fallback = useHeadingLevel();
   const Tag = as ?? headingTag(card?.titleLevel ?? fallback);
@@ -554,7 +576,11 @@ const CardTitle = ({ as, className, children, ...rest }: CardTitleProps) => {
     register?.();
   }, [register]);
   return (
-    <Tag {...rest} id={rest.id ?? card?.titleId} className={cx('crewlet-card__title', className)}>
+    <Tag
+      {...rest}
+      id={rest.id ?? card?.titleId}
+      className={cx('crewlet-card__title', truncate && 'crewlet-card__title--truncate', className)}
+    >
       {children}
     </Tag>
   );

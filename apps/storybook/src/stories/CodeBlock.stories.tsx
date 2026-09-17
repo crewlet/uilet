@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CodeBlock } from '@crewlethq/ui';
 
@@ -10,6 +11,7 @@ const meta: Meta<typeof CodeBlock> = {
     wrap: { control: 'boolean' },
     plain: { control: 'boolean' },
     maxHeight: { control: 'text' },
+    focusWhenScrollable: { control: 'boolean' },
   },
 };
 
@@ -117,4 +119,53 @@ export const ColumnsKept: Story = {
       'backend-lead                execute       11  61,903     $1.38    just now',
     ].join('\n'),
   },
+};
+
+const LOG = Array.from(
+  { length: 120 },
+  (_, index) => `2026-09-17T09:${String(index % 60).padStart(2, '0')}:12Z  seat=cto  phase=execute  round=${index + 1}`,
+).join('\n');
+
+/**
+ * A block that earns its tab stop by MEASURING ITSELF. The `pre` is
+ * `overflow: auto`, so a ceiling — or `wrap={false}` on a wide line — turns a
+ * block into a scroll container, and Safari leaves a scroll container out of
+ * the tab order entirely: its content is then unreachable from a keyboard.
+ *
+ * Whether a given block is one is a fact about the RENDERED BOX and about no
+ * prop: narrow the Storybook viewport and a block that fit starts scrolling.
+ * So the component watches its own box and takes the stop only when it needs
+ * one — which is what keeps a phase card carrying dozens of three-line tool
+ * arguments from putting a stop in front of every one of them.
+ *
+ * It takes NO KEYS. Select-all stays with the browser here; `selectable` is
+ * the block that claims it.
+ */
+export const FocusWhenScrollable: Story = {
+  args: {
+    code: LOG,
+    filename: 'turn.log',
+    maxHeight: 220,
+    focusWhenScrollable: true,
+    label: 'The turn log',
+  },
+};
+
+/**
+ * THE CEILING FROM THE CASCADE. There is no default `maxHeight`, and a ceiling
+ * every call site has to remember is a ceiling somebody forgets — so an
+ * application declares `--crewlet-codeblock-max-height` once, on `:root` or on
+ * a route's own wrapper, and every block under it is bounded without a prop.
+ *
+ * The wrapper below sets it to 160px. The first block takes it; the second
+ * escapes it with `maxHeight="none"`, which is how one block opts out of a
+ * ceiling it inherited.
+ */
+export const ACeilingFromTheCascade: Story = {
+  render: () => (
+    <div style={{ '--crewlet-codeblock-max-height': '160px', display: 'grid', gap: 16 } as CSSProperties}>
+      <CodeBlock code={LOG} filename="bounded-by-the-wrapper.log" focusWhenScrollable label="The bounded log" />
+      <CodeBlock code={LOG} filename="opted-out.log" maxHeight="none" />
+    </div>
+  ),
 };

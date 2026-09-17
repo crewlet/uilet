@@ -533,6 +533,84 @@ test('a head stays one line, and the subtitle is what gives up its tail', () => 
   expect(px(subtitle, 'flex-shrink')).toBeGreaterThan(px(main, 'flex-shrink') * 10);
 });
 
+test('a title asked to truncate ENDS, and one that was not is untouched', () => {
+  /*
+   * THE DEFECT THIS EXISTS FOR. The name block clips so the head stays one
+   * line, and the title itself is a FLEX container: `text-overflow` applies to
+   * a block container and never to a flex one, so a title longer than the row
+   * was cut at the header's edge mid-word rather than ellipsed, and the text
+   * it would have acted on is an anonymous flex item that no rule in the
+   * stylesheet can reach. A consumer fixed it by redeclaring
+   * `.crewlet-card__title` in its own sheet, which is a package class reached
+   * into from outside.
+   *
+   * Asked of the CASCADE rather than of the file: a modifier that ties with
+   * the base rule on specificity and loses on source order reads exactly the
+   * same in the source.
+   */
+  styled();
+  const { container } = render(
+    <Card as="section">
+      <Card.Header subtitle="every unit under Engineering">
+        <Card.Title truncate>Platform Reliability and Developer Experience</Card.Title>
+      </Card.Header>
+    </Card>,
+  );
+  const title = container.querySelector('.crewlet-card__title')!;
+  // A block container, which is the only kind `text-overflow` acts on.
+  expect(getComputedStyle(title).display).toBe('block');
+  expect(getComputedStyle(title).overflow).toBe('hidden');
+  expect(getComputedStyle(title).getPropertyValue('text-overflow')).toBe('ellipsis');
+  // And the head's own rule is untouched: the line does not grow a second one.
+  expect(getComputedStyle(title).whiteSpace).toBe('nowrap');
+
+  cleanup();
+  // The default is what every current call site draws, unchanged: the flex
+  // title, with no truncation rule on it at all.
+  const { container: asBefore } = render(
+    <Card as="section">
+      <Card.Header>
+        <Card.Title>Platform Reliability and Developer Experience</Card.Title>
+      </Card.Header>
+    </Card>,
+  );
+  const plain = asBefore.querySelector('.crewlet-card__title')!;
+  expect(plain.className).not.toContain('crewlet-card__title--truncate');
+  expect(getComputedStyle(plain).display).toBe('flex');
+  expect(getComputedStyle(plain).getPropertyValue('text-overflow')).not.toBe('ellipsis');
+});
+
+test('a truncating title keeps the caller own class, and the heading it always was', () => {
+  /*
+   * The modifier is ADDED to what the title already carried, never in place of
+   * it: a rule a consumer wrote against `.crewlet-card__title` still matches,
+   * and its own class still lands last.
+   *
+   * There is deliberately no guard here that `truncate` stays off the DOM, the
+   * way the padding props have one. React drops an unknown attribute whose
+   * value is a boolean rather than rendering it, so a `truncate` left in the
+   * rest spread produces no attribute to find and such a guard could not fail:
+   * what a forgotten destructure actually costs is the class, which the case
+   * above is what holds.
+   */
+  const { container } = render(
+    <Card>
+      <Card.Header>
+        <Card.Title truncate className="mine">
+          Platform Reliability
+        </Card.Title>
+      </Card.Header>
+    </Card>,
+  );
+  const title = container.querySelector('.crewlet-card__title')!;
+  expect(title.tagName).toBe('H2');
+  expect(title.className.split(/\s+/)).toEqual([
+    'crewlet-card__title',
+    'crewlet-card__title--truncate',
+    'mine',
+  ]);
+});
+
 test('a card told to carry no inset leaves its own content flush, and adds no box', () => {
   // What `padding="none"` is for: a table reaches the card's edges. A body
   // around it at no inset would still add a column direction and a gap between

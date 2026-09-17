@@ -56,6 +56,31 @@ describe('the vendored drawings', () => {
     assert.deepEqual(identical, []);
   });
 
+  it('pair every filled variant with the outline it fills', () => {
+    /*
+     * A Material Symbol is a filled path already, so a caller cannot turn an
+     * outline into the solid mark with a `fill` attribute the way a stroked
+     * icon allows: the two states are two drawings, and a set carrying one
+     * without the other leaves a surface that can draw a state it cannot
+     * leave. Vendoring the wrong upstream variant is the same failure with no
+     * symptom either — both names resolve, both render, and the glyph simply
+     * never changes when the state does.
+     */
+    const fills = [...glyphs.keys()].filter((name) => name.endsWith('-fill'));
+    assert.ok(fills.length > 0, 'no filled variant is vendored at all');
+    for (const fill of fills) {
+      const outline = fill.slice(0, -'-fill'.length);
+      assert.ok(glyphs.has(outline), `${fill} is vendored without ${outline}, the outline it fills`);
+      for (const opticalSize of OPTICAL_SIZES) {
+        assert.notEqual(
+          glyphs.get(fill)[opticalSize],
+          glyphs.get(outline)[opticalSize],
+          `symbols/${opticalSize}/${fill}.svg draws the outline rather than the fill 1 variant`,
+        );
+      }
+    }
+  });
+
   it('are path data that starts with a move', () => {
     // The SVG path grammar's own alphabet: commands, numbers, separators. A
     // malformed `d` draws nothing and raises no error, so the button it sits

@@ -90,8 +90,26 @@ export interface SelectOption {
  * `HTMLSelectElement`, because the element a caller's handler lands on depends
  * on the mode: the listbox's trigger is a button and the native mode's is a
  * `select`. A handler written for the wider type works in both.
+ *
+ * `required` AND `aria-required` ARE BOTH HERE, and they are not the same
+ * fact. `required` is the form constraint: in native mode it is the attribute
+ * the browser validates against and refuses a submission on, and it implies
+ * the ARIA fact. `aria-required` states that fact ALONE — which is what a form
+ * needs where requiredness is the unmarked default and the visible mark beside
+ * the label is welded to the constraint flag, so asking for the constraint
+ * would mark every field on the screen. Where both are given the explicit one
+ * wins, because it is the more specific of the two statements.
+ *
+ * The rest of the `aria-*` surface is deliberately NOT picked. The listbox
+ * mode draws a button, a search box and a portalled panel rather than one
+ * element, so each attribute has to be routed to whichever of them is the
+ * combobox at the time; widened wholesale, every name nothing routes would be
+ * a prop the component accepts and silently ignores.
  */
-type NativePassthrough = Pick<SelectHTMLAttributes<HTMLSelectElement>, 'autoFocus' | 'name' | 'required' | 'aria-describedby'> & {
+type NativePassthrough = Pick<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  'autoFocus' | 'name' | 'required' | 'aria-describedby' | 'aria-required'
+> & {
   onBlur?: FocusEventHandler<HTMLElement> | undefined;
   onFocus?: FocusEventHandler<HTMLElement> | undefined;
 };
@@ -267,6 +285,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
       emptyMessage={emptyMessage}
       describedBy={native['aria-describedby']}
       required={native.required}
+      ariaRequired={native['aria-required']}
       focusOnMount={native.autoFocus}
       name={native.name}
       /*
@@ -384,6 +403,7 @@ interface ListboxSelectProps {
   emptyMessage: string;
   describedBy: string | undefined;
   required: boolean | undefined;
+  ariaRequired: NativePassthrough['aria-required'];
   focusOnMount: boolean | undefined;
   name: string | undefined;
   onBlur: NativePassthrough['onBlur'];
@@ -414,6 +434,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     emptyMessage,
     describedBy,
     required,
+    ariaRequired,
     focusOnMount,
     name,
     onBlur,
@@ -668,6 +689,15 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
   // never leaves the trigger, so the trigger carries the role and the
   // highlight; with one, focus moves into it and it does.
   const comboOnTrigger = !searchable;
+  /*
+   * WHAT THE READER IS TOLD, from two props that say it differently. The
+   * `required` constraint implies the ARIA fact; an explicit `aria-required`
+   * states the fact on its own, for a form whose visible mark is welded to the
+   * constraint flag. The explicit statement wins where both are given, being
+   * the more specific of the two; with neither there is no attribute at all,
+   * rather than one reading `false`.
+   */
+  const requiredForAria = ariaRequired ?? required;
 
   let index = -1;
   const rows = groups.map((group, position) => {
@@ -770,7 +800,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
             aria-controls={listId}
             aria-activedescendant={activeId}
             aria-label={searchPlaceholder}
-            aria-required={required}
+            aria-required={requiredForAria}
             placeholder={searchPlaceholder}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -825,7 +855,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         aria-label={ariaLabel}
         aria-describedby={describedBy}
         aria-invalid={error || undefined}
-        aria-required={comboOnTrigger ? required : undefined}
+        aria-required={comboOnTrigger ? requiredForAria : undefined}
         disabled={disabled}
         onBlur={onBlur}
         onFocus={onFocus}

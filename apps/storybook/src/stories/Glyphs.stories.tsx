@@ -15,7 +15,7 @@ import { glyphByName } from '@crewlethq/icons/glyphs/registry';
  * signature illustrations it shares a row with in the product.
  *
  * The registry entry is what a story wants and what a screen almost never
- * does: rendering all 98 from their names is exactly the case
+ * does: rendering all 105 from their names is exactly the case
  * @crewlethq/icons/glyphs/registry is for.
  */
 
@@ -118,6 +118,54 @@ export const OpticalSizes: StoryObj = {
           </BothThemes>
         </section>
       ))}
+    </div>
+  ),
+};
+
+/*
+ * The pairs vendored in both states, derived from the set rather than listed,
+ * so a glyph that gains a filled variant appears here without an edit.
+ */
+const FILL_SUFFIX = '-fill';
+
+const FILLED_PAIRS = GLYPH_NAMES.flatMap((fill) => {
+  if (!fill.endsWith(FILL_SUFFIX)) return [];
+  const outline = GLYPH_NAMES.find((name) => `${name}${FILL_SUFFIX}` === fill);
+  return outline === undefined ? [] : [{ outline, fill }];
+});
+
+/**
+ * Each glyph that has a filled state, outline beside fill, at every step.
+ *
+ * A Material Symbol is a filled path already, so the solid mark is a second
+ * drawing rather than a `fill` attribute on the first: a surface that toggles
+ * a state swaps the component. The pair is worth looking at together because
+ * the two have to read as one mark in two states — same silhouette, same
+ * optical weight — and at 12 px a fill that is a shade too heavy stops looking
+ * like the outline it replaces.
+ */
+export const FilledPairs: StoryObj = {
+  render: () => (
+    <div style={{ padding: 'var(--spacing-5)' }}>
+      <BothThemes>
+        <div style={{ display: 'grid', gap: 'var(--spacing-4)' }}>
+          {FILLED_PAIRS.map(({ outline, fill }) => (
+            <div key={fill} style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
+              <p style={caption}>
+                {outline} / {fill}
+              </p>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--spacing-4)' }}>
+                {SIZES.map((size) => (
+                  <span key={size} style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 'var(--spacing-1)' }}>
+                    <Cell name={outline} size={size} />
+                    <Cell name={fill} size={size} />
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </BothThemes>
     </div>
   ),
 };

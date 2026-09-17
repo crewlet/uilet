@@ -69,6 +69,53 @@ export const Sections: Story = {
   },
 };
 
+/**
+ * A single-choice filter that drives a URL parameter, where a choice is NOT
+ * free: every change re-runs the screen's query. With `activate="manual"` the
+ * arrows move focus alone and Enter or Space chooses, so crossing the row
+ * costs one query rather than one per keystroke — and the tab stop follows
+ * focus, so Tab out and Tab back returns to the option the reader left.
+ *
+ * Arrow across both rows with the keyboard and watch the counters.
+ */
+export const ManualActivation: Story = {
+  render: () => {
+    function Row({ activate }: { activate: 'automatic' | 'manual' }) {
+      const [kind, setKind] = useState('all');
+      const [queries, setQueries] = useState(0);
+      return (
+        <div style={{ display: 'grid', gap: 8, justifyItems: 'start' }}>
+          <SegmentedControl
+            label={`Event kind (${activate})`}
+            semantics="radio"
+            activate={activate}
+            value={kind}
+            onValueChange={(next) => {
+              setKind(next);
+              setQueries((ran) => ran + 1);
+            }}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'decision', label: 'Decision', count: 12 },
+              { value: 'delivery', label: 'Delivery', count: 4 },
+              { value: 'fault', label: 'Fault', count: 0 },
+            ]}
+          />
+          <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)' }}>
+            {activate}: {queries} quer{queries === 1 ? 'y' : 'ies'} run
+          </span>
+        </div>
+      );
+    }
+    return (
+      <div style={{ display: 'grid', gap: 24 }}>
+        <Row activate="automatic" />
+        <Row activate="manual" />
+      </div>
+    );
+  },
+};
+
 /** A choice a reader has to read before making it is a card row, not a chip. */
 export const Cards: Story = {
   render: () => {
