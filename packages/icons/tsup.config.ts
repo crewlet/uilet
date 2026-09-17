@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig((options) => ({
   // Three entries, because they are three different weights. The root carries
-  // the illustrations and the marks; ./glyphs carries 98 drawings a bundler
+  // the illustrations and the marks; ./glyphs carries 105 drawings a bundler
   // takes one at a time; ./glyphs/registry carries the lookup that needs all
   // of them, so that nothing pays for it by accident.
   entry: ['src/index.ts', 'src/glyphs.ts', 'src/glyphs-registry.ts'],

@@ -4,7 +4,7 @@ The glyph drawings behind `@crewlethq/icons/glyphs`. The build compiles each pai
 
 | Style | Weight | Grade | Optical sizes | Fills | Files | License | Upstream |
 | ----- | ------ | ----- | ------------- | ----- | ----- | ------- | -------- |
-| Material Symbols Outlined | 400 | 0 | 20 px (`20/`), 24 px (`24/`) | fill 0 for every glyph, fill 1 for `check_circle`, `error`, `info` and `warning` | 101 glyphs at both optical sizes, 202 files | Apache License 2.0 | <https://github.com/google/material-design-icons> |
+| Material Symbols Outlined | 400 | 0 | 20 px (`20/`), 24 px (`24/`) | fill 0 for every glyph, fill 1 for `check_circle`, `error`, `info`, `star` and `warning` | 105 glyphs at both optical sizes, 210 files | Apache License 2.0 | <https://github.com/google/material-design-icons> |
 
 Every file is `<svg xmlns height viewBox width><path d="..."/></svg>` on the `0 -960 960 960` viewBox, and the build refuses anything else.
 

@@ -1,7 +1,7 @@
 /**
  * What a consumer's build actually carries.
  *
- * This package ships 101 glyph drawings and a 670 KB illustration, so the whole
+ * This package ships 105 glyph drawings and a 670 KB illustration, so the whole
  * question is whether importing one of them brings the rest. Nothing else in
  * the build says: the bundle is valid, the types are right, every test passes,
  * and the page is half a megabyte heavier than it should be.

@@ -6,7 +6,7 @@ All three are React components compiled from SVG files that ship in the package.
 
 | What | Import from | Looks like |
 | ---- | ----------- | ---------- |
-| Glyphs (101 Material Symbols) | `@crewlethq/icons/glyphs` | `<CloseGlyph size="md" />` |
+| Glyphs (105 Material Symbols) | `@crewlethq/icons/glyphs` | `<CloseGlyph size="md" />` |
 | A glyph chosen from a value | `@crewlethq/icons/glyphs/registry` | `glyphByName(name)` |
 | Vendor marks | `@crewlethq/icons` | `<VendorMark vendor="slack" />` |
 | Signature illustrations | `@crewlethq/icons` | `<AgentReading />`, `<Icon name="AgentReading" />` |
@@ -32,6 +32,8 @@ Material Symbols Outlined, weight 400, grade 0, vendored at the 20 px and 24 px 
 Every SVG attribute passes through, and `className` is added to the component's own `crewlet-glyph`.
 
 **Names carry a `Glyph` suffix** because the bare words collide: `Timeline`, `List`, `Menu`, `Tag`, `Link` and `Code` are all `@crewlethq/ui` components, and a glyph taking one of those names would shadow the component at every import site that wanted both. `close` is `CloseGlyph`, `keyboard_arrow_down` is `KeyboardArrowDownGlyph`, `check_circle-fill` is `CheckCircleFillGlyph`.
+
+**A filled state is its own name**, not a `fill` attribute: a Material Symbol is a filled path already, so `fill` paints the outline's own shape rather than solidifying it. Five glyphs ship both drawings — `check_circle` / `check_circle-fill`, `error` / `error-fill`, `info` / `info-fill`, `star` / `star-fill` and `warning` / `warning-fill` — so a surface that toggles a state swaps the component rather than a prop.
 
 `GLYPH_NAMES` lists every vendored name and `GlyphName` is the union of them, so a name the package does not ship is a compile error.
 

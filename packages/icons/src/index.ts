@@ -13,7 +13,7 @@ export type { Vendor, VendorMarkProps } from './VendorMark.js';
 // export). There is no way to offer both.
 export * from './generated/index.js';
 
-// The Material Symbols glyphs are NOT here. They are 98 drawings that almost
+// The Material Symbols glyphs are NOT here. They are 105 drawings that almost
 // no consumer wants all of, so they have their own entry, which a bundler
 // reaches into one glyph at a time: import { CloseGlyph } from
 // '@crewlethq/icons/glyphs'.
