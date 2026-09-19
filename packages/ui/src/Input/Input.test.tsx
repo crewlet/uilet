@@ -613,3 +613,63 @@ for (const theme of ['light', 'dark'] as const) {
     }
   });
 }
+
+/*
+ * AN UNCONTROLLED AUTO-RESIZING TEXTAREA GROWS. The effect was keyed on the
+ * `value` PROP, which for an uncontrolled field stays undefined however much
+ * is typed — so it measured once at mount and never again, and
+ * `.crewlet-textarea.is-auto-resize` sets `overflow: hidden` precisely because
+ * a box that grows needs no scrollbar. The text went below the fold with no
+ * way to scroll to it. The controlled case was the only one that worked.
+ *
+ * jsdom reports `scrollHeight` as 0, so the assertion is that a measurement
+ * HAPPENED on input — the stub is what supplies the number a browser would.
+ */
+test('an uncontrolled auto-resizing textarea re-measures as it is typed into', () => {
+  const heights: string[] = [];
+  let content = 1;
+  Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', {
+    configurable: true,
+    get() {
+      return content * 20;
+    },
+  });
+  try {
+    render(<Textarea autoResize defaultValue="one line" aria-label="Notes" />);
+    const box = screen.getByLabelText('Notes') as HTMLTextAreaElement;
+    heights.push(box.style.height);
+
+    content = 3;
+    fireEvent.input(box, { target: { value: 'one\ntwo\nthree' } });
+    heights.push(box.style.height);
+
+    expect(heights[0]).toBe('20px');
+    expect(heights[1]).toBe('60px');
+  } finally {
+    delete (HTMLTextAreaElement.prototype as unknown as Record<string, unknown>).scrollHeight;
+  }
+});
+
+test('and it adds back the border scrollHeight leaves out', () => {
+  // `scrollHeight` excludes the border and the element is `border-box`, so
+  // assigning it straight left the box a border short of its own content —
+  // enough to clip the last line's descenders.
+  Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', {
+    configurable: true,
+    get() {
+      return 40;
+    },
+  });
+  const realStyle = globalThis.getComputedStyle;
+  globalThis.getComputedStyle = ((el: Element, pseudo?: string | null) =>
+    el instanceof HTMLTextAreaElement
+      ? ({ boxSizing: 'border-box', borderTopWidth: '1px', borderBottomWidth: '1px' } as CSSStyleDeclaration)
+      : realStyle(el, pseudo)) as typeof globalThis.getComputedStyle;
+  try {
+    render(<Textarea autoResize defaultValue="x" aria-label="Notes" />);
+    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).style.height).toBe('42px');
+  } finally {
+    globalThis.getComputedStyle = realStyle;
+    delete (HTMLTextAreaElement.prototype as unknown as Record<string, unknown>).scrollHeight;
+  }
+});

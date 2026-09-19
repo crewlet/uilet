@@ -11,6 +11,13 @@
  *    applies to the WHOLE document, and a strict Content-Security-Policy
  *    refuses it outright, so the rules belong in a stylesheet the bundler
  *    emits.
+ *
+ * 3. Every ResizeObserver is feature-checked. It is absent in older embedded
+ *    browsers, where an unguarded `new ResizeObserver` throws inside an effect
+ *    and takes the component down with it — and it is absent in jsdom, so a
+ *    suite only catches this where it has not installed a stub. Four call
+ *    sites guarded and one did not, which is exactly the shape a convention
+ *    held by memory decays into, so it is a scan rather than a habit.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -64,5 +71,45 @@ describe('component source', () => {
       .filter(({ text }) => /<style[\s>]|createElement\(\s*['"]style['"]/.test(text))
       .map(({ path }) => path);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('every ResizeObserver', () => {
+  test('is constructed only behind a feature check', () => {
+    const unguarded: string[] = [];
+    for (const file of files) {
+      if (!file.path.endsWith('.tsx') && !file.path.endsWith('.ts')) continue;
+      if (file.path.includes('.test.')) continue;
+      /*
+       * Comments blanked before the scan, and kept line-for-line so a hit
+       * still names its real line: the guard is DESCRIBED in prose beside
+       * several of these, and a scan that reads the prose reports the
+       * explanation as the offence.
+       */
+      const code = file.text.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/\/\/[^\n]*/g, '');
+      const lines = code.split('\n');
+      for (const [index, line] of lines.entries()) {
+        if (!/\bnew ResizeObserver\b/.test(line)) continue;
+        /*
+         * The guard is on the construction's own line — the ternary form Tabs
+         * and CodeBlock use — or on a line above it in the same function. Ten
+         * lines is generous enough for an early return with its comment and
+         * tight enough that the next function's guard cannot be borrowed.
+         */
+        const above = lines.slice(Math.max(0, index - 10), index + 1).join('\n');
+        const guarded =
+          /typeof ResizeObserver (===|!==) ['"](function|undefined)['"]/.test(above) ||
+          /'ResizeObserver' in (window|globalThis)/.test(above);
+        if (!guarded) unguarded.push(`${file.path}:${index + 1}`);
+      }
+    }
+    expect(unguarded, 'construct it behind `typeof ResizeObserver === \'function\'`').toEqual([]);
+  });
+
+  test('and the scan can tell, so it cannot pass on nothing', () => {
+    // The floor every gate in this workspace carries: a scan that found no
+    // call sites at all would satisfy the test above perfectly.
+    const sites = files.filter((file) => /\bnew ResizeObserver\b/.test(file.text));
+    expect(sites.length).toBeGreaterThanOrEqual(4);
   });
 });

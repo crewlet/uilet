@@ -174,11 +174,25 @@ export function Tabs({
     reveal(nav);
 
     const mutation = new MutationObserver(update);
+    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
+    /*
+     * THE TABS THEMSELVES, not only the row they sit in. `update` measures the
+     * ACTIVE TAB's box, and neither watcher could see that box change: the
+     * mutation observer is filtered to `class`, so it catches the active
+     * toggle and not a label being rewritten, and the row's own border box is
+     * pinned by `width: 100%` with the scrolling inside it — a tab growing
+     * moves the row's scrollWidth and never its border box, so a resize
+     * observer on the row alone never fires. That left the slider correct only
+     * for the changes that arrive as a new `items` array, which the deps below
+     * already cover, and wrong for every one that does not: a label loaded
+     * late, a count appearing beside it, a font settling.
+     */
     nav.querySelectorAll<HTMLElement>('.crewlet-tabs__tab').forEach((tab) => {
       mutation.observe(tab, { attributes: true, attributeFilter: ['class'] });
+      resize?.observe(tab);
     });
 
-    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
+    // The row's own width still matters: it decides where the tabs sit.
     resize?.observe(nav);
 
     return () => {

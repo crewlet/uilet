@@ -1613,6 +1613,14 @@ export const DataTable = <TRow,>({
     const el = scrollRef.current;
     if (!el) return;
     let lastWidth = el.clientWidth;
+    /*
+     * FEATURE-CHECKED, as every other observer in this package is — Tabs,
+     * CodeBlock and Canvas all guard, and this one did not. It is absent in
+     * older embedded browsers, where an unguarded construction throws inside
+     * an effect and takes the whole table down; the one-off measurement the
+     * fit pass already did still stands without it.
+     */
+    if (typeof ResizeObserver !== 'function') return;
     const observer = new ResizeObserver(() => {
       const w = el.clientWidth;
       if (w > 0 && w !== lastWidth) {
