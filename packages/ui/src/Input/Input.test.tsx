@@ -355,6 +355,17 @@ test('one element draws the ring, and it is the one a reader reads as the field'
       '.crewlet-textarea.is-error:focus-visible',
       '.crewlet-select:focus-within',
       '.crewlet-select.is-error:focus-within',
+      /*
+       * AND ITS SEARCH BOX, WHICH IS NOT INSIDE THAT RING — which is the
+       * question this list exists to force, and here the answer is the reason
+       * the rule had to be added at all. `.crewlet-select:focus-within` cannot
+       * match while focus is in the search field: the panel is PORTALLED into
+       * the layer host, outside the `.crewlet-select` subtree entirely. The
+       * input clears the user agent's outline and nothing replaced it, so the
+       * one control a searchable Select puts a reader in on every open was the
+       * only field in the package with no focus indicator.
+       */
+      '.crewlet-select__search:focus-within',
       '.crewlet-tags-input__box:focus-visible',
       // The two small controls that ARE their own target, so their ring is
       // outset: an inset one on a 16px box is a box with no middle left.
@@ -436,6 +447,9 @@ test('every field rings on one geometry, and a boxed one rings inside its own bo
         ['.crewlet-input:has(.crewlet-input__control:focus-visible)', inset],
         ['.crewlet-textarea:focus-visible', inset],
         ['.crewlet-select:focus-within', inset],
+        // Inset for the boxed reason AND for a second one: the panel it sits
+        // in clips, so an outset ring on the band would be cut by it.
+        ['.crewlet-select__search:focus-within', inset],
         ['.crewlet-tags-input__box:focus-visible', inset],
         ['.crewlet-checkbox__control:focus-visible', '2px'],
         ['.crewlet-switch__track:has(.crewlet-switch__control:focus-visible)', '2px'],

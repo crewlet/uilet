@@ -388,13 +388,34 @@ test('the rule under the last row is dropped by the frame, not by the table', ()
 test('every sideways scroller this package draws contains its overscroll', () => {
   const offences: string[] = [];
   for (const [name, css] of Object.entries(SHEETS)) {
-    for (const [, selectors, body] of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
-      if (!/overflow-x:\s*auto/.test(body!)) continue;
+    /*
+     * COMMENTS BLANKED FIRST, and the selector is read from what is left. A
+     * rule that EXPLAINS why it no longer scrolls sideways names the
+     * declaration in prose, and a scan reading the prose reports the
+     * explanation as the offence — with the whole comment as the "selector",
+     * which is also how it announces itself.
+     */
+    const text = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
+    for (const [, selectors, body] of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      // The shorthand counts too: `overflow: auto` scrolls BOTH axes, so it
+      // hands the gesture on at the left edge exactly as the longhand does.
+      if (!/overflow(-x)?:\s*auto/.test(body!)) continue;
       if (/overscroll-behavior(-x)?:\s*contain/.test(body!)) continue;
       offences.push(`${name}: ${selectors!.trim()}`);
     }
   }
   expect(offences).toEqual([]);
+});
+
+test('and the scan can tell, so it cannot pass on nothing', () => {
+  // The floor: a scan that matched no scrollers at all would satisfy the test
+  // above perfectly. Four is the count this package draws today.
+  const scrollers = Object.values(SHEETS).flatMap((css) =>
+    [...css.replace(/\/\*[\s\S]*?\*\//g, ' ').matchAll(/([^{}]+)\{([^}]*)\}/g)].filter(([, , body]) =>
+      /overflow(-x)?:\s*auto/.test(body!),
+    ),
+  );
+  expect(scrollers.length).toBeGreaterThanOrEqual(3);
 });
 
 

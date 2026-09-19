@@ -4,6 +4,9 @@
  * elements rather than the look.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Table } from './index.js';
@@ -62,18 +65,39 @@ test('the action control is a button that cannot submit a form', () => {
 
 /*
  * A max height with no scroller CLIPS the rows it hides: they are drawn,
- * unreachable, and nothing says so. The two declarations are one decision, so
- * the component sets both or neither.
+ * unreachable, and nothing says so.
+ *
+ * The two used to be one decision the COMPONENT made, setting a height
+ * variable and an overflow variable together or neither. The overflow half was
+ * never a decision: `overflow-x: auto` is declared unconditionally beside it,
+ * and per CSS Overflow an axis that is not `visible` pulls the other to
+ * `auto`, so the box was a scrollport in both directions in every state and
+ * the variable's `visible` default could not be selected by anything. So the
+ * pairing is now structural — the stylesheet always scrolls, the component
+ * only says how tall — and it is asserted in both halves here, because a
+ * height variable alone is only safe for as long as the sheet keeps its end.
  */
 test('a bounded table scrolls its own rows, and an unbounded one sets no height', () => {
   const { container, rerender } = render(<Table headers={headers} data={rows} maxHeight="20rem" />);
   const scroller = container.querySelector('.crewlet-table__container') as HTMLElement;
   expect(scroller.style.getPropertyValue('--crewlet-table-max-height')).toBe('20rem');
-  expect(scroller.style.getPropertyValue('--crewlet-table-overflow-y')).toBe('auto');
 
   rerender(<Table headers={headers} data={rows} />);
   expect(scroller.style.getPropertyValue('--crewlet-table-max-height')).toBe('');
+  // Nothing sets the old knob any more: it had one reachable value.
   expect(scroller.style.getPropertyValue('--crewlet-table-overflow-y')).toBe('');
+});
+
+test('and the container scrolls whether or not it was given a height', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Table.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const rule = /\.crewlet-table__container\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(rule).toMatch(/overflow:\s*auto/);
+  expect(rule).not.toMatch(/--crewlet-table-overflow-y/);
+  // The gesture still stops at the table's own edge.
+  expect(rule).toMatch(/overscroll-behavior-x:\s*contain/);
 });
 
 test('a cell may be a node, not only a string', () => {

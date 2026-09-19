@@ -700,3 +700,22 @@ test('a panel closed by its anchor scrolling away hands focus back', () => {
     restore();
   }
 });
+
+/*
+ * THE SEARCH BOX HAS A FOCUS RING. It clears the user agent's outline, and the
+ * frame's `:focus-within` rule is the package's one replacement — but that
+ * rule's premise is that everything focusable sits inside `.crewlet-select`,
+ * and this box does not: the panel is portalled into the layer host, outside
+ * that subtree. So the one control a searchable Select puts a reader in on
+ * every open was the one with no focus indicator at all.
+ */
+test('the search box draws a focus ring where the frame cannot reach', () => {
+  const css = selectCss();
+  const cleared = /\.crewlet-select__search-input\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(cleared).toMatch(/outline:\s*none/);
+  // On the band, and INSET, because the panel clips: an outset ring on the
+  // input itself would be cut by the menu's own overflow.
+  const ring = /\.crewlet-select__search:focus-within\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(ring).toMatch(/outline:\s*2px solid var\(--color-focus\)/);
+  expect(ring).toMatch(/outline-offset:\s*var\(--size-focus-ring-inset-offset\)/);
+});

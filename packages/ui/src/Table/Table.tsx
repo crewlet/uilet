@@ -80,9 +80,10 @@ export const Table = ({
       <div
         className="crewlet-table__container"
         style={
-          maxHeight
-            ? ({ '--crewlet-table-max-height': maxHeight, '--crewlet-table-overflow-y': 'auto' } as CSSProperties)
-            : undefined
+          // Only the height: the stylesheet scrolls both axes unconditionally,
+          // because with `overflow-x: auto` declared beside it a `visible`
+          // vertical axis was never reachable. See Table.css.
+          maxHeight ? ({ '--crewlet-table-max-height': maxHeight } as CSSProperties) : undefined
         }
       >
         <table className="crewlet-table__table">

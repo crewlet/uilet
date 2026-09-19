@@ -333,6 +333,24 @@ svg.crewlet-select__chevron {
 
 /* ── The search box ──────────────────────────────────────────────────── */
 
+/*
+ * THE RING IS DRAWN WHERE THE ELEMENT IS. The input below clears the user
+ * agent's outline, and the frame's `:focus-within` rule is the package's one
+ * replacement for it — but that rule's own premise is that everything
+ * focusable sits INSIDE `.crewlet-select`, and this box does not: the panel is
+ * portalled into the layer host, outside that subtree, so `:focus-within`
+ * could never match while focus was in the search field. And focus is moved
+ * here on every open, so the one control a searchable Select puts a reader in
+ * was the one with no focus indicator at all.
+ *
+ * On the band rather than the input, and INSET, because the panel clips: an
+ * outset ring on the input would be cut by the menu's own `overflow: hidden`.
+ */
+.crewlet-select__search:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
 .crewlet-select__search {
   display: flex;
   align-items: center;

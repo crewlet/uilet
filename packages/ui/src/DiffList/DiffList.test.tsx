@@ -70,3 +70,26 @@ test('a diff says it is a list, so its length is read where the markers are off'
   expect(list.getAttribute('role')).toBe('list');
   expect(within(list).getAllByRole('listitem')).toHaveLength(3);
 });
+
+/*
+ * EVERY VALUE IS IN A SPAN THE TRUNCATION RULE CAN REACH. `__value` is
+ * `display: flex`, and `text-overflow` applies to the inline content of a
+ * BLOCK container — in a flex container bare text becomes an anonymous flex
+ * item no selector can name, so the ellipsis did nothing and the item, whose
+ * automatic minimum is its whole nowrap width, refused to shrink. The box's
+ * own `overflow: hidden` then cut the value mid-character with nothing to say
+ * it had been cut. The `changed` branch already wrapped both of its halves;
+ * `added` and `removed` did not.
+ */
+test('an added or removed value is wrapped, so it can ellipse like a changed one', () => {
+  render(
+    <DiffList
+      rows={[
+        { kind: 'added', path: 'roles[2].name', to: 'A very long new value indeed' },
+        { kind: 'removed', path: 'roles[3].name', from: 'A very long old value indeed' },
+      ]}
+    />,
+  );
+  expect(screen.getByText('A very long new value indeed').className).toContain('crewlet-diff-list__to');
+  expect(screen.getByText('A very long old value indeed').className).toContain('crewlet-diff-list__from');
+});
