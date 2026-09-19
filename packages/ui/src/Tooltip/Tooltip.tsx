@@ -242,10 +242,27 @@ export function Tooltip({
     window.addEventListener('resize', onLayout);
     // Capture, so a scroll in any ancestor is heard and not only the window's.
     window.addEventListener('scroll', onLayout, true);
+
+    /*
+     * AND WHEN THE PANEL ITSELF CHANGES SIZE, which none of the three above
+     * reports: every one of them signals the ANCHOR moving. The panel's own
+     * box is what the alignment offset and `placePopup`'s horizontal clamp are
+     * built from, so content arriving, a row's label changing or a font
+     * loading left the surface placed for a box it no longer has.
+     *
+     * An observer rather than a dependency on the content: it catches a font
+     * settling and an image loading too, neither of which is a render.
+     * FEATURE-CHECKED as every observer in this package is — it is absent in
+     * older embedded browsers and in jsdom, where an unguarded construction
+     * throws and takes the suite with it.
+     */
+    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(onLayout) : null;
+    if (panel.current) resize?.observe(panel.current);
     return () => {
       container?.removeEventListener(LAYER_REPOSITION_EVENT, onLayout);
       window.removeEventListener('resize', onLayout);
       window.removeEventListener('scroll', onLayout, true);
+      resize?.disconnect();
     };
   }, [open, container, position]);
 

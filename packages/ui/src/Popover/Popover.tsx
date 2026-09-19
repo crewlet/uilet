@@ -180,10 +180,26 @@ export function Popover({
     const inHost = container !== document.body;
     const host = inHost ? container.getBoundingClientRect() : viewportBounds();
     const rect = at.getBoundingClientRect();
+    /*
+     * ASK FOR THE MATCH WIDTH, THEN MEASURE WHAT IT ACTUALLY GOT. `width` and
+     * `min-width` are separate properties — the used width is
+     * `max(min-width, min(max-width, width))` — and inline-style specificity
+     * reaches only the first of them. So this panel's own `min-width: 260px`
+     * and `max-width: 380px` bound whatever `match` asks for, and taking the
+     * ANCHOR's width as the panel's meant the alignment and the clamp below
+     * were computed for a box the panel does not have: a trigger under 260px
+     * let `placePopup` push `left` as much as the difference too far right,
+     * and the panel hung past the bound it was supposed to be held inside.
+     * `Menu.css` already documents this min/max-versus-width interaction for
+     * its own panel, so the rule was known in this tree.
+     *
+     * The style is written here rather than waited for through state because a
+     * placement pass is synchronous by nature: it writes, reads back, commits.
+     */
+    box.style.width = width === 'match' ? `${rect.width}px` : '';
     const own = box.getBoundingClientRect();
-    const panelWidth = width === 'match' ? rect.width : own.width;
     const local: PlacementRect = {
-      x: (align === 'end' ? rect.right - panelWidth : rect.left) - (inHost ? host.x : 0),
+      x: (align === 'end' ? rect.right - own.width : rect.left) - (inHost ? host.x : 0),
       y: rect.top - (inHost ? host.y : 0),
       width: rect.width,
       height: rect.height,
@@ -205,17 +221,19 @@ export function Popover({
       close('anchor-gone');
       return;
     }
+    // What the style asks for; `own.width` above is what the cascade allowed.
+    const asked = width === 'match' ? rect.width : undefined;
     const spot = placePopup(
       local,
-      { width: panelWidth, height: own.height },
+      { width: own.width, height: own.height },
       bounds,
       LAYER_GAP,
       side === 'top' ? 'above' : 'below',
     );
     setPlace((was) =>
-      was && was.left === spot.left && was.top === spot.top && was.side === spot.side && was.width === panelWidth
+      was && was.left === spot.left && was.top === spot.top && was.side === spot.side && was.width === asked
         ? was
-        : { left: spot.left, top: spot.top, side: spot.side, width: width === 'match' ? panelWidth : undefined },
+        : { left: spot.left, top: spot.top, side: spot.side, width: asked },
     );
   }, [align, close, container, side, width]);
 
@@ -227,10 +245,27 @@ export function Popover({
     window.addEventListener('resize', onLayout);
     // Capture, so a scroll inside any ancestor is heard, not only the window's.
     window.addEventListener('scroll', onLayout, true);
+
+    /*
+     * AND WHEN THE PANEL ITSELF CHANGES SIZE, which none of the three above
+     * reports: every one of them signals the ANCHOR moving. The panel's own
+     * box is what the alignment offset and `placePopup`'s horizontal clamp are
+     * built from, so content arriving, a row's label changing or a font
+     * loading left the surface placed for a box it no longer has.
+     *
+     * An observer rather than a dependency on the content: it catches a font
+     * settling and an image loading too, neither of which is a render.
+     * FEATURE-CHECKED as every observer in this package is — it is absent in
+     * older embedded browsers and in jsdom, where an unguarded construction
+     * throws and takes the suite with it.
+     */
+    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(onLayout) : null;
+    if (panel.current) resize?.observe(panel.current);
     return () => {
       container?.removeEventListener(LAYER_REPOSITION_EVENT, onLayout);
       window.removeEventListener('resize', onLayout);
       window.removeEventListener('scroll', onLayout, true);
+      resize?.disconnect();
     };
   }, [open, container, position]);
 

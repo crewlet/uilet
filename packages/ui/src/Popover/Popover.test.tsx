@@ -302,3 +302,103 @@ test('the open panel carries no accessibility violation', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+/*
+ * A PANEL IS CLAMPED WITH THE WIDTH IT ACTUALLY HAS.
+ *
+ * `width` and `min-width` are separate properties — the used width is
+ * `max(min-width, min(max-width, width))` — and an inline style reaches only
+ * the first. So `width="match"` asking for a 120px trigger's width still gets
+ * a 260px panel, because that is this component's own floor, and passing the
+ * ANCHOR's width to `placePopup` told the clamp the panel was 140px narrower
+ * than it is: `left` was allowed that much further right and the panel hung
+ * past the bound it was supposed to be held inside.
+ *
+ * jsdom lays nothing out, so the cascade is stubbed the way the browser would
+ * resolve it: the panel reports the 260px floor whatever it was asked for.
+ */
+function stubBoxes({ anchor, panel }: { anchor: DOMRect; panel: DOMRect }) {
+  const real = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-popover')) return panel;
+    if (this.classList.contains('crewlet-chip') || this.tagName === 'BUTTON') return anchor;
+    return real.call(this);
+  };
+  return () => {
+    Element.prototype.getBoundingClientRect = real;
+  };
+}
+
+test('a match-width panel is placed by the width its own floor gives it', () => {
+  // A 120px trigger hard against the right edge of a 1024px viewport, and the
+  // panel's own `min-width: 260px` floor.
+  const restore = stubBoxes({ anchor: rect(890, 100, 120, 32), panel: rect(0, 0, 260, 200) });
+  try {
+    render(<Chip width="match" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+    const panel = screen.getByRole('dialog', { name: 'Owner' });
+    const left = Number.parseFloat(panel.style.left);
+
+    // The layer places inside a box inset by its own gap, so the furthest
+    // right a 260px panel may start is 1024 - 4 - 260 = 760. Told the panel
+    // was 120px wide, the clamp would have permitted 900.
+    expect(left).toBeLessThanOrEqual(760);
+    // And it still asks for the match width in the style, which is what the
+    // cascade then floors — the style is the request, not the measurement.
+    expect(panel.style.width).toBe('120px');
+  } finally {
+    restore();
+  }
+});
+
+/*
+ * AND IT IS RE-PLACED WHEN THE PANEL'S OWN SIZE CHANGES. Every listener the
+ * placement effect registers — resize, capture-phase scroll, the layer host's
+ * reposition — reports the ANCHOR moving. None of them fires when the panel's
+ * content arrives, a row's label changes or a font settles, and the panel's
+ * own box is what the alignment offset and the horizontal clamp are built
+ * from. The suite's own ResizeObserver is a no-op, so the callback is captured
+ * and fired by hand: what is asserted is that the component subscribed the
+ * PANEL and re-places on the callback.
+ */
+test('a panel that changes size while open is placed again', () => {
+  const observed: Element[] = [];
+  let fire: (() => void) | undefined;
+  const real = globalThis.ResizeObserver;
+  globalThis.ResizeObserver = class {
+    constructor(cb: () => void) {
+      fire = cb;
+    }
+    observe(el: Element) {
+      observed.push(el);
+    }
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+
+  // Far enough from the left edge that an `end` alignment is not clamped to
+  // the gap: 820 - 260 = 560, and 820 - 380 = 440, both inside the bounds.
+  const boxes = { anchor: rect(700, 100, 120, 32), panel: rect(0, 0, 260, 200) };
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-popover')) return boxes.panel;
+    if (this.tagName === 'BUTTON') return boxes.anchor;
+    return realRect.call(this);
+  };
+  try {
+    render(<Chip align="end" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+    const panel = screen.getByRole('dialog', { name: 'Owner' });
+    expect(observed).toContain(panel);
+    const before = panel.style.left;
+
+    // The panel grows — an `end` alignment is measured from its own width, so
+    // its left edge has to move by the same amount.
+    boxes.panel = rect(0, 0, 380, 200);
+    act(() => fire?.());
+    expect(panel.style.left).not.toBe(before);
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+    globalThis.ResizeObserver = real;
+  }
+});
