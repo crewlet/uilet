@@ -30,6 +30,7 @@
  */
 
 import { useCallback, useRef, type KeyboardEvent } from 'react';
+import { isComposing } from '../Layer/stack.js';
 import type { Listbox } from './useListbox.js';
 
 /** How long a type-ahead run stays open, in milliseconds. */
@@ -47,6 +48,17 @@ export interface OptionKeysOptions {
    * letters belong to a search box: that list has no type-ahead, on purpose.
    */
   textOf?: ((index: number) => string) | undefined;
+  /**
+   * Whether Home and End move the HIGHLIGHT. True by default, and false for a
+   * list whose field is editable, where they belong to the caret.
+   *
+   * The same split `textOf` makes, for the same reason. WAI-ARIA states it
+   * outright for a combobox with a listbox popup: Home and End move visual
+   * focus in the list only when the combobox is NOT editable; when it is, they
+   * are the text's. This hook cannot tell — its whole input is a count, a
+   * disabled predicate and some strings — so the component that knows says so.
+   */
+  ends?: boolean | undefined;
 }
 
 export interface OptionKeys {
@@ -66,7 +78,7 @@ export interface OptionKeys {
   opening: (chosen: number) => number;
 }
 
-export function useOptionKeys({ listbox, count, disabled, textOf }: OptionKeysOptions): OptionKeys {
+export function useOptionKeys({ listbox, count, disabled, textOf, ends = true }: OptionKeysOptions): OptionKeys {
   const typed = useRef({ text: '', at: 0 });
   const { active, setActive } = listbox;
 
@@ -82,7 +94,20 @@ export function useOptionKeys({ listbox, count, disabled, textOf }: OptionKeysOp
     [count, disabled],
   );
 
-  const opening = useCallback((chosen: number) => (chosen >= 0 && !disabled?.(chosen) ? chosen : Math.max(step(0, 1), 0)), [disabled, step]);
+  /*
+   * `step` answers -1 for "no row can be taken", and that is the answer here
+   * too. This used to clamp it with `Math.max(..., 0)`, which turned the one
+   * input the function exists for — a list whose every row is disabled — back
+   * into index 0, a valid index naming a row Enter refuses. So the guard
+   * defeated itself on exactly its own case.
+   *
+   * -1 is what `useListbox` already spells for "nothing is highlighted", so a
+   * caller that reports the highlight has to ask whether there IS one before
+   * naming it; `optionId(-1)` would otherwise mint an id no row renders and
+   * leave `aria-activedescendant` pointing at nothing, which is a second wrong
+   * answer rather than a fix.
+   */
+  const opening = useCallback((chosen: number) => (chosen >= 0 && !disabled?.(chosen) ? chosen : step(0, 1)), [disabled, step]);
 
   const typeAhead = useCallback(
     (key: string): boolean => {
@@ -109,6 +134,16 @@ export function useOptionKeys({ listbox, count, disabled, textOf }: OptionKeysOp
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLElement>): boolean => {
+      /*
+       * NOTHING IS TAKEN MID-COMPOSITION, which `useListbox` has always said
+       * and this hook did not do. Consumers run these keys FIRST and only fall
+       * through to the guarded handler, so the arrows and the ends were
+       * prevented and the highlight moved before the guard was ever consulted:
+       * the promise was unreachable for precisely the four keys an input
+       * method uses to walk its own candidate list, and a reader choosing a
+       * word dragged the listbox highlight along with it.
+       */
+      if (isComposing(event)) return false;
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
         const by = event.key === 'ArrowDown' ? 1 : -1;
@@ -116,7 +151,7 @@ export function useOptionKeys({ listbox, count, disabled, textOf }: OptionKeysOp
         if (next >= 0) setActive(next);
         return true;
       }
-      if (event.key === 'Home' || event.key === 'End') {
+      if (ends && (event.key === 'Home' || event.key === 'End')) {
         event.preventDefault();
         const next = event.key === 'Home' ? step(0, 1) : step(count - 1, -1);
         if (next >= 0) setActive(next);
@@ -131,7 +166,7 @@ export function useOptionKeys({ listbox, count, disabled, textOf }: OptionKeysOp
       }
       return false;
     },
-    [active, count, setActive, step, typeAhead],
+    [active, count, ends, setActive, step, typeAhead],
   );
 
   return { onKeyDown, step, opening };

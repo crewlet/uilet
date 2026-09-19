@@ -123,7 +123,16 @@ export function useListbox({
   popup = true,
 }: ListboxOptions): Listbox {
   const [at, setAt] = useState(0);
-  const active = count === 0 ? -1 : Math.min(Math.max(at, 0), count - 1);
+  /*
+   * -1 IS A VALUE, NOT A GAP. The type above says "-1 when nothing is
+   * highlighted", and the floor of 0 here made that unreachable for any list
+   * with rows in it: the one case that needs it is a list whose every row is
+   * DISABLED, where `useOptionKeys.opening` answers -1 and this clamped it
+   * straight back onto row 0 — a row Enter refuses, named to a screen reader
+   * as the highlight. Flooring at -1 instead keeps the clamp doing its real
+   * job, which is holding an index inside a list that shrank under it.
+   */
+  const active = count === 0 ? -1 : Math.min(Math.max(at, -1), count - 1);
   const listId = `${id}-listbox`;
   const layer = usePopupLayer({ open: open && popup, onDismiss: () => onClose() });
   const list = useRef<HTMLElement | null>(null);

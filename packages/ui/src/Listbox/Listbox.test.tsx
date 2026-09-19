@@ -17,7 +17,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useId, useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { useModalLayer } from '../Layer/index.js';
-import { useListbox } from './index.js';
+import { useListbox, useOptionKeys } from './index.js';
 
 afterEach(cleanup);
 
@@ -330,4 +330,55 @@ test('and neither is the separator, whose content minimum is zero', () => {
   const rule = /\.crewlet-listbox__separator\s*\{([^}]*)\}/.exec(listboxCss())?.[1] ?? '';
   expect(rule).toMatch(/flex:\s*none/);
   expect(rule).toMatch(/height:\s*1px/);
+});
+
+/*
+ * `opening` ANSWERS -1 WHEN NOTHING CAN BE TAKEN, tested at the hook because
+ * that is where the only consumer without a re-step of its own reads it:
+ * DataView's filter axis seeds its highlight through this call and has nothing
+ * downstream to correct a bad answer.
+ *
+ * `step` already answers -1 for "no row can be taken"; `opening` used to clamp
+ * that with `Math.max(..., 0)`, which turned the one input the function exists
+ * for — a list whose every row is disabled — back into index 0, naming a row
+ * Enter refuses. And the clamp in `useListbox` floored it a second time, so
+ * even an honest -1 could not survive: "-1 when nothing is" was unreachable
+ * for any list with rows in it.
+ */
+function Opening({ disabled }: { disabled: (index: number) => boolean }) {
+  const id = useId();
+  const listbox = useListbox({ id, open: true, count: 3, onCommit: () => {}, onClose: () => {} });
+  const keys = useOptionKeys({ listbox, count: 3, disabled });
+  const [seeded, setSeeded] = useState<number | null>(null);
+  return (
+    <button
+      type="button"
+      data-testid="probe"
+      data-active={listbox.active}
+      data-seeded={seeded ?? ''}
+      onClick={() => {
+        const next = keys.opening(-1);
+        setSeeded(next);
+        listbox.setActive(next);
+      }}
+    >
+      seed
+    </button>
+  );
+}
+
+test('a freshly opened list whose every row is disabled highlights none of them', () => {
+  render(<Opening disabled={() => true} />);
+  fireEvent.click(screen.getByTestId('probe'));
+  const probe = screen.getByTestId('probe');
+  expect(probe.getAttribute('data-seeded')).toBe('-1');
+  // And the clamp lets it through: flooring at 0 here is what made the value
+  // above unreachable the moment the list had any rows at all.
+  expect(probe.getAttribute('data-active')).toBe('-1');
+});
+
+test('and one with a takeable row still opens on it', () => {
+  render(<Opening disabled={(index) => index < 2} />);
+  fireEvent.click(screen.getByTestId('probe'));
+  expect(screen.getByTestId('probe').getAttribute('data-active')).toBe('2');
 });

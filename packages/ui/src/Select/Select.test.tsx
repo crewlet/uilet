@@ -485,21 +485,27 @@ test('a press outside the panel still dismisses it', () => {
  * edge, so the public prop could not move anything.
  */
 function stubGeometry({ trigger, panel }: { trigger: DOMRect; panel: DOMRect }) {
+  const boxes = { trigger, panel };
   const real = Element.prototype.getBoundingClientRect;
   Element.prototype.getBoundingClientRect = function () {
-    if (this.classList.contains('crewlet-select__menu')) return panel;
+    if (this.classList.contains('crewlet-select__menu')) return boxes.panel;
     // The measured anchor is the trigger BUTTON, not the root: `position()`
     // reads `trigger.current`, and that ref is on the control itself.
-    if (this.classList.contains('crewlet-select__trigger')) return trigger;
+    if (this.classList.contains('crewlet-select__trigger')) return boxes.trigger;
     return real.call(this);
   };
-  return () => {
-    Element.prototype.getBoundingClientRect = real;
-  };
+  return Object.assign(
+    () => {
+      Element.prototype.getBoundingClientRect = real;
+    },
+    // Move the anchor mid-case: a panel that closes because its trigger
+    // scrolled away has to have been open first.
+    { move: (next: DOMRect) => { boxes.trigger = next; } },
+  );
 }
 
-const rect = (x: number, width: number): DOMRect =>
-  ({ x, y: 100, left: x, right: x + width, top: 100, bottom: 132, width, height: 32 }) as DOMRect;
+const rect = (x: number, width: number, y = 100): DOMRect =>
+  ({ x, y, left: x, right: x + width, top: y, bottom: y + 32, width, height: 32 }) as DOMRect;
 
 test('the panel is placed by its OWN width, so align moves it', () => {
   // A trigger far narrower than the options it offers: 132px showing a short
@@ -577,5 +583,120 @@ test('an option label truncates on one line, as the trigger label does', () => {
     expect(rule).toMatch(/overflow:\s*hidden/);
     expect(rule).toMatch(/text-overflow:\s*ellipsis/);
     expect(rule, selector).toMatch(/white-space:\s*nowrap/);
+  }
+});
+
+/*
+ * NOTHING IS TAKEN MID-COMPOSITION, which `useListbox` promised and the option
+ * keys did not keep. Consumers run the option keys FIRST and fall through to
+ * the guarded handler only for what they did not take, so the arrows and the
+ * ends were prevented and the highlight moved before the guard was consulted —
+ * the promise was unreachable for exactly the four keys an input method uses
+ * to walk its own candidates.
+ */
+test('an input method walking its candidates does not walk the listbox', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  const box = screen.getByRole('combobox', { name: 'Search' });
+  const before = box.getAttribute('aria-activedescendant');
+
+  fireEvent.keyDown(box, { key: 'ArrowDown', isComposing: true });
+  expect(box.getAttribute('aria-activedescendant')).toBe(before);
+  // Safari spells the end of a composition as keyCode 229 rather than the
+  // flag; `isComposing` in the layer stack reads both.
+  fireEvent.keyDown(box, { key: 'ArrowDown', keyCode: 229 });
+  expect(box.getAttribute('aria-activedescendant')).toBe(before);
+
+  // And the same key outside a composition still moves it.
+  fireEvent.keyDown(box, { key: 'ArrowDown' });
+  expect(box.getAttribute('aria-activedescendant')).not.toBe(before);
+});
+
+/*
+ * HOME AND END BELONG TO THE CARET WHERE THERE IS ONE. WAI-ARIA splits the two
+ * cases for a combobox with a listbox popup: those keys move visual focus in
+ * the list only when the combobox is NOT editable. With a search box they were
+ * taken anyway, so the head and tail of a typed query were unreachable — the
+ * panel is portalled, so a pointer cannot place the caret either.
+ */
+test('Home and End reach the ends of a query, not the ends of the list', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  const box = screen.getByRole('combobox', { name: 'Search' });
+  const at = box.getAttribute('aria-activedescendant');
+  // `false` is "not prevented": the browser's own caret default survives.
+  expect(fireEvent.keyDown(box, { key: 'Home' })).toBe(true);
+  expect(fireEvent.keyDown(box, { key: 'End' })).toBe(true);
+  expect(box.getAttribute('aria-activedescendant')).toBe(at);
+});
+
+test('and they still walk the list where there is no box to type in', () => {
+  render(<Picker />);
+  fireEvent.click(trigger());
+  fireEvent.keyDown(trigger(), { key: 'End' });
+  // The last row that can be taken — `Engineering`, since `Retired seat`
+  // above it is disabled.
+  expect(highlighted()).toBe('Engineering');
+  fireEvent.keyDown(trigger(), { key: 'Home' });
+  expect(highlighted()?.startsWith('Software Engineer')).toBe(true);
+});
+
+/*
+ * A LIST WITH NOTHING TAKEABLE HIGHLIGHTS NOTHING. `step` answers -1 for it and
+ * `opening` used to clamp that to 0 — a valid index naming a row Enter
+ * refuses, which is the one input the function exists to handle.
+ */
+test('a list whose every row is disabled highlights none of them', () => {
+  const allDisabled: SelectOption[] = [
+    { value: 'a', label: 'Alpha', disabled: true },
+    { value: 'b', label: 'Beta', disabled: true },
+  ];
+  render(<Picker options={allDisabled} value={undefined} />);
+  fireEvent.click(trigger());
+  // Not a dangling id either: `optionId(-1)` would be an id no row renders.
+  expect(trigger().getAttribute('aria-activedescendant')).toBeNull();
+});
+
+/*
+ * AND THE HIGHLIGHT STAYS TAKEABLE AS THE LIST NARROWS. After the one seeding
+ * pass, the only thing holding the index in range is a clamp over the COUNT,
+ * which knows nothing about which rows are disabled.
+ */
+test('a search that narrows onto a disabled row does not park the highlight there', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  const box = screen.getByRole('combobox', { name: 'Search' });
+  fireEvent.change(box, { target: { value: 'Retired' } });
+  expect(screen.getAllByRole('option').map((row) => row.textContent)).toEqual(['Retired seat']);
+  // The only row offered refuses to be taken, so nothing is highlighted —
+  // rather than `aria-activedescendant` naming a row Enter silently ignores.
+  expect(box.getAttribute('aria-activedescendant')).toBeNull();
+  expect(document.querySelector('[data-active="true"]')).toBeNull();
+});
+
+/*
+ * FOCUS IS NOT LEFT ON THE PAGE BODY when the panel closes because its anchor
+ * scrolled away. `position()` closes on that condition and passed `false` for
+ * "hand focus back" — but a searchable Select is focused on its search box,
+ * which lives in the portalled panel being removed, so focus fell to the body
+ * and the next Tab restarted the document from the top. [Menu] takes the other
+ * branch for the identical condition.
+ */
+test('a panel closed by its anchor scrolling away hands focus back', () => {
+  const restore = stubGeometry({ trigger: rect(24, 132), panel: rect(0, 210) });
+  try {
+    render(<Picker searchable />);
+    const button = screen.getByRole('button', { name: 'Owner' });
+    fireEvent.click(button);
+    screen.getByRole('combobox', { name: 'Search' }).focus();
+
+    // Now scroll it off the top, which is what `position()` closes on.
+    restore.move(rect(24, 132, -400));
+    fireEvent.scroll(window);
+
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(document.activeElement).toBe(button);
+  } finally {
+    restore();
   }
 });

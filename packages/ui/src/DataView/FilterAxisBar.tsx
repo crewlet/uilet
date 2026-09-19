@@ -236,7 +236,9 @@ function OptionListEditor<TRow>({ def, value, labels, onCommit }: EditorProps<TR
         role="listbox"
         aria-label={labels.options(def.label)}
         aria-multiselectable={multiple || undefined}
-        aria-activedescendant={options.length > 0 ? listbox.optionId(listbox.active) : undefined}
+        // Named only when there IS one: `opening` answers -1 for an
+        // all-disabled list, and `optionId(-1)` is an id no row renders.
+        aria-activedescendant={listbox.active >= 0 ? listbox.optionId(listbox.active) : undefined}
         tabIndex={0}
         className="crewlet-filter-axis__options"
         onKeyDown={onKeyDown}

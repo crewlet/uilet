@@ -544,6 +544,11 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     listbox,
     count: flat.length,
     disabled: (index) => flat[index]?.disabled === true,
+    // AND NEITHER ARE THE ENDS, for the same reason type-ahead is withheld
+    // below: with a search box on screen those keys are the caret's, and the
+    // query's own start and end are otherwise unreachable — the panel is
+    // portalled, so a pointer cannot place the caret either.
+    ends: !searchable,
     ...(searchable
       ? {}
       : {
@@ -564,6 +569,27 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     // back to the chosen row on every keystroke of a search.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  /*
+   * AND IT STAYS ON A ROW THAT CAN BE TAKEN as the list narrows. The seeding
+   * effect above runs once per opening, deliberately; after that the only
+   * thing holding the index in range is `useListbox`'s clamp, which is
+   * arithmetic over a count and knows nothing about which rows are disabled.
+   * So a query that shrinks the list can park the highlight on a disabled row:
+   * `aria-activedescendant` names it, the row paints as active, and Enter
+   * refuses it with no change, no close and nothing said. The same happens
+   * with no search box at all when a caller's own `options` shrink.
+   *
+   * Re-stepping is not re-seeding: it moves only a highlight that has become
+   * untakeable, so it cannot drag the highlight back to the chosen row the way
+   * following `flat` in the effect above would.
+   */
+  useEffect(() => {
+    if (!open || listbox.active < 0) return;
+    if (flat[listbox.active]?.disabled !== true) return;
+    listbox.setActive(keys.step(listbox.active, 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, flat]);
 
   useEffect(() => {
     if (open && searchable) search.current?.focus();
@@ -652,7 +678,17 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     };
     const whole: PlacementRect = { x: 0, y: 0, width: host.width, height: host.height };
     if (outsideBounds(local, whole)) {
-      close(false);
+      /*
+       * HAND FOCUS BACK IF IT IS IN THE THING BEING REMOVED. A searchable
+       * Select is focused on its search box, which lives in the portalled
+       * panel this unmounts — the same hazard the Tab path below documents —
+       * so closing with `false` dropped focus on the document body and the
+       * next Tab restarted the page from the top. Conditional rather than
+       * always: with no search box focus is already on the trigger, and a
+       * redundant `focus()` would scroll the off-screen trigger back into
+       * view, undoing the reader's own scroll.
+       */
+      close(panel.current?.contains(document.activeElement) ?? false);
       return;
     }
     const spot = placePopup(
@@ -762,7 +798,14 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
   }
 
   const listId = listbox.listId;
-  const activeId = open && flat.length > 0 ? listbox.optionId(listbox.active) : undefined;
+  /*
+   * NAMED ONLY WHEN THERE IS ONE. `opening` answers -1 for a list whose every
+   * row is disabled, and `useListbox` answers -1 for an empty one, so the
+   * count is the wrong question: `optionId(-1)` mints `<listId>--1`, an id no
+   * row ever renders, and a dangling `aria-activedescendant` tells a screen
+   * reader the focus is somewhere that does not exist.
+   */
+  const activeId = open && listbox.active >= 0 ? listbox.optionId(listbox.active) : undefined;
   // WHICHEVER ELEMENT HOLDS FOCUS IS THE COMBOBOX. With no search box focus
   // never leaves the trigger, so the trigger carries the role and the
   // highlight; with one, focus moves into it and it does.
