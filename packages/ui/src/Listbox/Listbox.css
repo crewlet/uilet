@@ -32,6 +32,29 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+  /*
+   * A ROW IS NEVER SHRUNK BELOW ITS OWN CONTENT, and `flex: none` is what says
+   * so. The list above is a column flex container with a `max-height` and
+   * `overflow-y: auto`, which makes every row a flex ITEM, and a flex item's
+   * automatic minimum size is normally its content — that is what stops a
+   * column from compressing its children and makes the container scroll
+   * instead. The `min-height` below REPLACES that automatic minimum with a
+   * fixed floor, so once the rows no longer fit, the free space goes negative
+   * and every row shrinks to exactly that floor BEFORE the scrollbar appears.
+   * A row is `overflow: visible`, so its content then paints over its
+   * neighbours.
+   *
+   * It is not a corner case: a row is 19.5px of text plus 16px of padding =
+   * 35.5px against a 28px floor, so EVERY row of a list long enough to scroll
+   * was over-tall. Measured in Chromium on a nine-option Select — five rows
+   * drawn over each other, two of them at 59px inside a 28px box.
+   *
+   * `flex: none` is `0 0 auto`: the basis stays content-derived and the row
+   * can no longer shrink, which leaves `min-height` doing the one job it was
+   * written for — a floor under a SHORT row, not a cap on a tall one. The
+   * scroller absorbs the excess, one row deep, which is what it is for.
+   */
+  flex: none;
   min-height: var(--size-row-sm);
   padding: var(--spacing-2) var(--spacing-3);
   border-radius: var(--radius-md);
@@ -103,7 +126,12 @@
   font-size: var(--font-size-compact);
 }
 
+/* AND NEITHER IS THE SEPARATOR, for the same reason one step further: its
+   content minimum is zero, so it is the one child a squeezed column can
+   flatten completely — exactly when the list is long enough to need the
+   grouping it draws. */
 .crewlet-listbox__separator {
+  flex: none;
   height: 1px;
   margin: var(--spacing-1) 0;
   background: var(--color-border-default);

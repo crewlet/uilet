@@ -70,6 +70,21 @@
   align-items: center;
   gap: var(--spacing-2);
   width: 100%;
+  /*
+   * THE SAME RULE THE LISTBOX ROW STATES, and it has to be stated twice
+   * because a menu's rows are deliberately not in that family (see the head of
+   * Listbox.css). The panel above is a column flex scroller, `__group` is
+   * `display: contents` so every item is a direct flex item of it, and the
+   * `min-height` below replaces the automatic minimum that would otherwise
+   * hold a row at its content. Once the menu is long enough to scroll, the
+   * free space goes negative and the rows shrink to that floor first.
+   *
+   * A plain row survives it by accident — one nowrap line is 19.5px, under the
+   * floor, so there is nothing to shrink. A `--described` row does not: it
+   * adds `padding-block` and stacks a label over a wrapping description, which
+   * is ~52px squeezed into 28px and drawn over the rows either side.
+   */
+  flex: none;
   min-height: var(--size-row-sm);
   padding: 0 var(--spacing-2);
   border: none;

@@ -10,6 +10,9 @@
  * and secret completion never scrolled the highlighted row into view.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useId, useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -287,4 +290,44 @@ test('a list that is a modal’s whole body leaves Escape and the veil to the mo
   expect(fireEvent.keyDown(screen.getByLabelText('query'), { key: 'Escape' })).toBe(false);
   expect(listClosed).not.toHaveBeenCalled();
   expect(closed).toHaveBeenCalledTimes(1);
+});
+
+/*
+ * THE ROW'S OWN SIZING, read off the stylesheet, because jsdom performs no
+ * layout and the failure this guards is purely a layout one.
+ *
+ * `.crewlet-listbox` is a column flex container with a `max-height` and
+ * `overflow-y: auto`, which makes every row a flex ITEM. A flex item's
+ * automatic minimum size is its content, and that is what makes a column
+ * scroll rather than compress — but an explicit `min-height` REPLACES that
+ * automatic minimum with a fixed floor. So a list long enough to scroll first
+ * squeezed every row down to the floor, and a row is `overflow: visible`, so
+ * its content painted over its neighbours.
+ *
+ * It was every row, not an edge: 19.5px of text plus 16px of padding = 35.5px
+ * against a 28px floor. Measured in a browser on a nine-option Select, five
+ * rows drawn over one another, two of them 59px inside a 28px box.
+ *
+ * The pair has to hold TOGETHER, which is why one test asserts both: the floor
+ * alone is the bug, and `flex: none` alone would drop the floor a short row
+ * needs to match the rows around it.
+ */
+const listboxCss = (): string =>
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Listbox.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+
+test('a row keeps its floor and cannot be shrunk under its own content', () => {
+  const row = /\.crewlet-listbox__option\s*\{([^}]*)\}/.exec(listboxCss())?.[1] ?? '';
+  expect(row).toMatch(/min-height:\s*var\(--size-row-sm\)/);
+  expect(row).toMatch(/flex:\s*none/);
+});
+
+test('and neither is the separator, whose content minimum is zero', () => {
+  // The one child a squeezed column can flatten completely — and it would do
+  // it exactly when the list is long enough to need the grouping it draws.
+  const rule = /\.crewlet-listbox__separator\s*\{([^}]*)\}/.exec(listboxCss())?.[1] ?? '';
+  expect(rule).toMatch(/flex:\s*none/);
+  expect(rule).toMatch(/height:\s*1px/);
 });

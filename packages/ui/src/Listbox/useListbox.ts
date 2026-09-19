@@ -86,6 +86,20 @@ export interface Listbox {
   listId: string;
   /** The list on screen: what a press outside is measured against, and what scrolls. */
   listRef: (el: HTMLElement | null) => void;
+  /**
+   * THE SURFACE, where it is bigger than the list — and a consumer uses this
+   * OR `listRef`, never both.
+   *
+   * `listRef` does two jobs because for most consumers one element does both:
+   * the list is what scrolls AND what a press outside is measured against. A
+   * popup that carries anything beside its list breaks that: a Select with
+   * `searchable` puts a search box in the panel as a SIBLING of the list, so a
+   * press on it was measured against the list, came out `outside`, and
+   * dismissed the popup the reader was trying to type into — the control could
+   * not be used with a pointer at all. Naming the surface separately is what
+   * keeps the two questions apart.
+   */
+  panelRef: (el: HTMLElement | null) => void;
   /** The element around the field: a press on it is not outside the list. */
   anchorRef: (el: HTMLElement | null) => void;
   /** The id of the option element at `index`. */
@@ -170,6 +184,7 @@ export function useListbox({
     setActive: setAt,
     listId,
     listRef,
+    panelRef: layer.panelRef,
     anchorRef: layer.insideRef,
     optionId: (index) => `${listId}-${index}`,
     onKeyDown,

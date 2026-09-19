@@ -9,6 +9,9 @@
  * a placeholder must not sit above an answer that already exists.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
@@ -422,4 +425,157 @@ test('an open list carries no violation, grouped, searchable or multiple', async
   // to say about, and the case would pass for the wrong reason.
   expect(screen.getByRole('listbox', { name: 'Owner' })).toBeTruthy();
   expect(await auditPage()).toEqual([]);
+});
+
+/*
+ * A PRESS INSIDE THE PANEL IS NOT A PRESS OUTSIDE IT, and the search box is
+ * the case that proves the panel and the list are two different questions.
+ *
+ * The layer stack measures a press against the surface the listbox registered,
+ * and that was the LIST element. A searchable Select puts its search box in
+ * the panel as a SIBLING of the list, so pressing it was read as outside: the
+ * panel dismissed, the query was cleared and focus went back to the trigger.
+ * The control could not be typed into with a pointer at all — only by opening
+ * it from the keyboard, which is the one route a suite of `fireEvent.change`
+ * calls never exercises, which is why nothing caught it.
+ *
+ * The `onPointerDown` the panel carries is not what covers this: the stack
+ * listens on the document in the CAPTURE phase so the decision is taken before
+ * the page reacts, and a React handler runs on the way back up.
+ */
+test('pressing a searchable list own search box does not dismiss it', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  const box = screen.getByRole('combobox', { name: 'Search' });
+  expect(screen.queryByRole('listbox')).toBeTruthy();
+
+  // As the stack hears it: on the document, capturing, before anything else.
+  fireEvent.pointerDown(box, { bubbles: true });
+
+  expect(screen.queryByRole('listbox')).toBeTruthy();
+  fireEvent.change(box, { target: { value: 'rel' } });
+  expect(screen.getAllByRole('option').map((row) => row.textContent?.slice(0, 16))).toEqual(['Site Reliability']);
+});
+
+/*
+ * AND A PRESS GENUINELY OUTSIDE STILL DISMISSES IT. The other half of the rule
+ * above: widening what counts as inside is only correct if it did not widen to
+ * everything.
+ */
+test('a press outside the panel still dismisses it', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  expect(screen.queryByRole('listbox')).toBeTruthy();
+  fireEvent.pointerDown(document.body, { bubbles: true });
+  expect(screen.queryByRole('listbox')).toBeNull();
+});
+
+/*
+ * WHERE THE PANEL LANDS, WITH THE GEOMETRY STUBBED, because jsdom performs no
+ * layout and every box it reports is zero — under which the defect below is
+ * invisible: `rect.right - width` and `rect.left` are both 0, so the two
+ * branches agree by arithmetic and a suite sees nothing wrong.
+ *
+ * `placePopup` itself is covered as a pure function in Layer/place.test.tsx.
+ * What is covered HERE is the thing that was actually broken: which BOX the
+ * Select hands it. It used to pass the trigger's width as the panel's size —
+ * measuring the height off the panel in the same object literal — so the
+ * panel was sized and clamped to its anchor, and `align="right"` subtracted
+ * the anchor's own width from the anchor's own right edge, which is its left
+ * edge, so the public prop could not move anything.
+ */
+function stubGeometry({ trigger, panel }: { trigger: DOMRect; panel: DOMRect }) {
+  const real = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-select__menu')) return panel;
+    // The measured anchor is the trigger BUTTON, not the root: `position()`
+    // reads `trigger.current`, and that ref is on the control itself.
+    if (this.classList.contains('crewlet-select__trigger')) return trigger;
+    return real.call(this);
+  };
+  return () => {
+    Element.prototype.getBoundingClientRect = real;
+  };
+}
+
+const rect = (x: number, width: number): DOMRect =>
+  ({ x, y: 100, left: x, right: x + width, top: 100, bottom: 132, width, height: 32 }) as DOMRect;
+
+test('the panel is placed by its OWN width, so align moves it', () => {
+  // A trigger far narrower than the options it offers: 132px showing a short
+  // answer, over a 210px list. That gap is the whole defect.
+  const restore = stubGeometry({ trigger: rect(400, 132), panel: rect(0, 210) });
+  try {
+    const { unmount } = render(<Picker align="left" />);
+    fireEvent.click(trigger());
+    const left = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style.left;
+    unmount();
+
+    render(<Picker align="right" />);
+    fireEvent.click(trigger());
+    const right = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style.right;
+    const rightLeft = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style.left;
+
+    expect(left).toBe('400px');
+    // The trigger's right edge (532) less the PANEL's width (210). With the
+    // anchor's own width it would have been 400px — the same as `left`.
+    expect(rightLeft).toBe('322px');
+    expect(right).toBe('');
+  } finally {
+    restore();
+  }
+});
+
+/*
+ * AND THE TRIGGER IS A FLOOR FOR A PICKER, NOT A CEILING. `width="auto"` sizes
+ * the TRIGGER to the answer it is showing and caps it so it cannot push a
+ * filter bar around — a bound about the toolbar, which a portalled popup is
+ * not in. The panel takes that width as a minimum and sizes to its options;
+ * `width="full"` is the other contract and still matches its field exactly.
+ */
+test('a picker panel floors at its trigger, a field panel matches it', () => {
+  const restore = stubGeometry({ trigger: rect(400, 132), panel: rect(0, 210) });
+  try {
+    const { unmount } = render(<Picker width="auto" />);
+    fireEvent.click(trigger());
+    const auto = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style;
+    expect(auto?.minWidth).toBe('132px');
+    expect(auto?.width).toBe('');
+    unmount();
+
+    render(<Picker width="full" />);
+    fireEvent.click(trigger());
+    const full = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style;
+    expect(full?.width).toBe('132px');
+    expect(full?.minWidth).toBe('');
+  } finally {
+    restore();
+  }
+});
+
+/*
+ * AN ELLIPSIS IS THREE DECLARATIONS OR IT IS NONE. `overflow: hidden` clips
+ * what leaves the box and `text-overflow` replaces what a LINE cannot hold —
+ * and neither does anything to text that is allowed to wrap. The option label
+ * carried the first two and not the third, so a long option quietly grew a
+ * second line instead of ellipsing, and that second line was drawn over the
+ * option beneath it.
+ *
+ * The trigger's own label a hundred lines above has carried all three since it
+ * was written, which is what says this was an omission rather than a choice.
+ */
+const selectCss = (): string =>
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Select.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+
+test('an option label truncates on one line, as the trigger label does', () => {
+  const css = selectCss();
+  for (const selector of ['\\.crewlet-select__option-label', '\\.crewlet-select__label']) {
+    const rule = new RegExp(selector + '\\s*\\{([^}]*)\\}').exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/overflow:\s*hidden/);
+    expect(rule).toMatch(/text-overflow:\s*ellipsis/);
+    expect(rule, selector).toMatch(/white-space:\s*nowrap/);
+  }
 });

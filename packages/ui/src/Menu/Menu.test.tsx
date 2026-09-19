@@ -472,3 +472,22 @@ test('the open menu carries no accessibility violation', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+/*
+ * THE SAME SIZING RULE THE LISTBOX ROW KEEPS, stated again because a menu's
+ * rows are deliberately not in that family (see the head of Listbox.css), so
+ * the one declaration does not reach here.
+ *
+ * `.crewlet-menu` is a column flex scroller and `__group` is
+ * `display: contents`, so every item is a direct flex item of the panel; an
+ * explicit `min-height` replaces the automatic minimum that would otherwise
+ * hold a row at its content, and a menu long enough to scroll squeezes its
+ * rows first. A plain row escapes by accident — one nowrap line is under the
+ * floor — but a `--described` row stacks a label over a wrapping description
+ * at roughly 52px, drawn into 28px and over the rows either side.
+ */
+test('a menu row keeps its floor and cannot be shrunk under its own content', () => {
+  const row = /\.crewlet-menu__item\s*\{([^}]*)\}/.exec(menuCss())?.[1] ?? '';
+  expect(row).toMatch(/min-height:\s*var\(--size-row-sm\)/);
+  expect(row).toMatch(/flex:\s*none/);
+});
