@@ -95,10 +95,22 @@ export function DiffList({ rows, emptyMessage, labels: overrides, className }: D
             </span>
             <span className="crewlet-diff-list__path">{row.path}</span>
             <span className="crewlet-diff-list__value">
+              {/*
+                IN THE SPAN THE `changed` BRANCH ALREADY USES, because the
+                truncation rule above it cannot reach bare text here.
+                `__value` is `display: flex`, and `text-overflow` applies to
+                the inline content of a BLOCK container — in a flex container
+                the text becomes an anonymous flex item no selector can name,
+                so the ellipsis did nothing and the item, whose automatic
+                minimum is its whole `nowrap` width, refused to shrink. The
+                box's own `overflow: hidden` then cut the value at the track
+                edge, mid-character, with nothing to say it had been cut.
+                `Card.css` states this same rule for its own flex title.
+              */}
               {row.kind === 'added' ? (
-                row.to
+                <span className="crewlet-diff-list__to">{row.to}</span>
               ) : row.kind === 'removed' ? (
-                row.from
+                <span className="crewlet-diff-list__from">{row.from}</span>
               ) : (
                 <>
                   <span className="crewlet-diff-list__from">{row.from}</span>

@@ -272,6 +272,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
       className={classes}
       menuClassName={menuClassName}
       size={size}
+      width={width}
       align={align}
       active={active}
       error={error}
@@ -390,6 +391,16 @@ interface ListboxSelectProps {
   className: string;
   menuClassName: string;
   size: SelectSize;
+  /*
+   * THE WIDTH MODE, not a measurement. The panel's width policy follows it —
+   * a field's list matches its field, a picker's list takes the trigger as a
+   * floor and sizes to its options — and this branch could not see it, which
+   * is why its placement reached for the trigger's box instead. The mode also
+   * reaches the root as a class, and that stays: the class sizes the TRIGGER
+   * and this sizes the PANEL, which is a different element in a different
+   * stacking context and not reachable by a selector from here.
+   */
+  width: SelectWidth;
   align: SelectAlign;
   active: boolean;
   error: boolean;
@@ -421,6 +432,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     className,
     menuClassName,
     size,
+    width,
     align,
     active,
     error,
@@ -444,7 +456,12 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
 ) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [place, setPlace] = useState<{ left: number; top: number; width: number } | null>(null);
+  const [place, setPlace] = useState<{
+    left: number;
+    top: number;
+    width?: number | undefined;
+    minWidth?: number | undefined;
+  } | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const list = useRef<HTMLElement | null>(null);
@@ -527,6 +544,11 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     listbox,
     count: flat.length,
     disabled: (index) => flat[index]?.disabled === true,
+    // AND NEITHER ARE THE ENDS, for the same reason type-ahead is withheld
+    // below: with a search box on screen those keys are the caret's, and the
+    // query's own start and end are otherwise unreachable — the panel is
+    // portalled, so a pointer cannot place the caret either.
+    ends: !searchable,
     ...(searchable
       ? {}
       : {
@@ -547,6 +569,27 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     // back to the chosen row on every keystroke of a search.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  /*
+   * AND IT STAYS ON A ROW THAT CAN BE TAKEN as the list narrows. The seeding
+   * effect above runs once per opening, deliberately; after that the only
+   * thing holding the index in range is `useListbox`'s clamp, which is
+   * arithmetic over a count and knows nothing about which rows are disabled.
+   * So a query that shrinks the list can park the highlight on a disabled row:
+   * `aria-activedescendant` names it, the row paints as active, and Enter
+   * refuses it with no change, no close and nothing said. The same happens
+   * with no search box at all when a caller's own `options` shrink.
+   *
+   * Re-stepping is not re-seeding: it moves only a highlight that has become
+   * untakeable, so it cannot drag the highlight back to the chosen row the way
+   * following `flat` in the effect above would.
+   */
+  useEffect(() => {
+    if (!open || listbox.active < 0) return;
+    if (flat[listbox.active]?.disabled !== true) return;
+    listbox.setActive(keys.step(listbox.active, 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, flat]);
 
   useEffect(() => {
     if (open && searchable) search.current?.focus();
@@ -579,6 +622,39 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     else if (spot.bottom > bounds.bottom) box.scrollTop += spot.bottom - bounds.bottom;
   }, [listbox.active, flat.length, open]);
 
+  /*
+   * WHERE THE PANEL GOES, MEASURED FROM THE PANEL.
+   *
+   * This used to pass the TRIGGER's width to `placePopup` while taking the
+   * height off the panel — the two halves of one box read from two different
+   * elements, in the same object literal. [Menu] and [Popover] pass their own
+   * measured box, and they are the same call; this was the one that did not,
+   * and it cost three separate things.
+   *
+   * It pinned the LIST to the CONTROL. A `width="auto"` trigger is sized to
+   * the answer it happens to be showing and capped so it cannot push a filter
+   * bar around — a bound about the TOOLBAR, which a portalled popup is not in
+   * and cannot push. A picker showing a short name offered its options in a
+   * 130px panel whatever they said.
+   *
+   * It made `align="right"` a no-op. The offset was `rect.right - width` with
+   * `width` bound to `rect.width`, and an anchor's own right edge minus its
+   * own width IS its left edge — so both branches of the ternary computed the
+   * same number and the public prop could not move the panel. Measured: 945px
+   * either way, where right-aligned is 946.
+   *
+   * And it clamped with a box the panel does not have, so a panel wider than
+   * its trigger was kept on screen as though it were not, and hung over the
+   * edge by the difference.
+   *
+   * THE WIDTH IS APPLIED BEFORE THE MEASUREMENT, not after. A panel's height
+   * is a function of its width — the narrower it is, the more its options
+   * wrap — so measuring at the natural width and then applying another one
+   * computes the flip and the vertical clamp for a layout that never renders.
+   * The style is written directly on the node here rather than waited for
+   * through state, because a placement pass is synchronous by nature: it
+   * writes, reads back, and commits once.
+   */
   const position = useCallback(() => {
     const at = trigger.current;
     const box = panel.current;
@@ -586,29 +662,48 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     const inHost = container !== document.body;
     const host = inHost ? container.getBoundingClientRect() : viewportBounds();
     const rect = at.getBoundingClientRect();
-    const width = rect.width;
+    // A field's list matches its field, which is what `full` means and why
+    // this is not simply "size to the content" everywhere. A picker's list
+    // takes the trigger as a FLOOR instead, so it is never narrower than the
+    // control it hangs from and never capped by it.
+    const matches = width === 'full';
+    box.style.width = matches ? `${rect.width}px` : '';
+    box.style.minWidth = matches ? '' : `${rect.width}px`;
+    const own = box.getBoundingClientRect();
     const local: PlacementRect = {
-      x: (align === 'right' ? rect.right - width : rect.left) - (inHost ? host.x : 0),
+      x: (align === 'right' ? rect.right - own.width : rect.left) - (inHost ? host.x : 0),
       y: rect.top - (inHost ? host.y : 0),
       width: rect.width,
       height: rect.height,
     };
     const whole: PlacementRect = { x: 0, y: 0, width: host.width, height: host.height };
     if (outsideBounds(local, whole)) {
-      close(false);
+      /*
+       * HAND FOCUS BACK IF IT IS IN THE THING BEING REMOVED. A searchable
+       * Select is focused on its search box, which lives in the portalled
+       * panel this unmounts — the same hazard the Tab path below documents —
+       * so closing with `false` dropped focus on the document body and the
+       * next Tab restarted the page from the top. Conditional rather than
+       * always: with no search box focus is already on the trigger, and a
+       * redundant `focus()` would scroll the off-screen trigger back into
+       * view, undoing the reader's own scroll.
+       */
+      close(panel.current?.contains(document.activeElement) ?? false);
       return;
     }
     const spot = placePopup(
       local,
-      { width, height: box.getBoundingClientRect().height },
+      { width: own.width, height: own.height },
       { x: LAYER_GAP, y: LAYER_GAP, width: host.width - 2 * LAYER_GAP, height: host.height - 2 * LAYER_GAP },
     );
+    const applied = matches ? rect.width : undefined;
+    const floor = matches ? undefined : rect.width;
     setPlace((was) =>
-      was && was.left === spot.left && was.top === spot.top && was.width === width
+      was && was.left === spot.left && was.top === spot.top && was.width === applied && was.minWidth === floor
         ? was
-        : { left: spot.left, top: spot.top, width },
+        : { left: spot.left, top: spot.top, width: applied, minWidth: floor },
     );
-  }, [align, close, container]);
+  }, [align, close, container, width]);
 
   useLayoutEffect(() => {
     if (!open) {
@@ -626,6 +721,25 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       window.removeEventListener('scroll', onLayout, true);
     };
   }, [open, container, position]);
+
+  /*
+   * AND AGAIN WHENEVER THE PANEL'S CONTENT CHANGES SIZE. The effect above
+   * places the panel on opening and re-places it on a scroll, a resize or the
+   * layer host's own reposition — none of which fire when the reader TYPES.
+   * A search that narrows nine options to one shortens the panel by most of
+   * its height, and the placement kept the geometry of the unfiltered list:
+   * the flip decided for a tall panel stayed decided, so a list that now fits
+   * below the trigger went on being drawn above it, and the bottom clamp went
+   * on holding it off an edge it no longer reached.
+   *
+   * Keyed on the row count rather than on the query, because the count is what
+   * the HEIGHT follows: two different queries that match the same number of
+   * rows leave the panel exactly as tall, and re-placing on every keystroke
+   * would read back layout the panel did not change.
+   */
+  useLayoutEffect(() => {
+    if (open) position();
+  }, [open, flat.length, position]);
 
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (disabled) return;
@@ -684,7 +798,14 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
   }
 
   const listId = listbox.listId;
-  const activeId = open && flat.length > 0 ? listbox.optionId(listbox.active) : undefined;
+  /*
+   * NAMED ONLY WHEN THERE IS ONE. `opening` answers -1 for a list whose every
+   * row is disabled, and `useListbox` answers -1 for an empty one, so the
+   * count is the wrong question: `optionId(-1)` mints `<listId>--1`, an id no
+   * row ever renders, and a dangling `aria-activedescendant` tells a screen
+   * reader the focus is somewhere that does not exist.
+   */
+  const activeId = open && listbox.active >= 0 ? listbox.optionId(listbox.active) : undefined;
   // WHICHEVER ELEMENT HOLDS FOCUS IS THE COMBOBOX. With no search box focus
   // never leaves the trigger, so the trigger carries the role and the
   // highlight; with one, focus moves into it and it does.
@@ -764,8 +885,22 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
 
   const panelNode = open ? (
     <div
+      /*
+       * THE WHOLE MENU IS THE SURFACE a press outside is measured against,
+       * which the LIST alone is not: with `searchable` the search box is the
+       * list's sibling inside this panel, so a press on it was read as a press
+       * outside, and the panel closed, cleared the query and threw focus back
+       * to the trigger. A searchable Select could not be typed into with a
+       * pointer. See `panelRef` in useListbox.
+       *
+       * The `onPointerDown` below is not what covers this and never was: the
+       * layer stack listens on the document in the CAPTURE phase, precisely so
+       * the decision is taken before anything on the page reacts, and a React
+       * handler runs on the way back up — long after.
+       */
       ref={(el) => {
         panel.current = el;
+        listbox.panelRef(el);
       }}
       className={cx(
         'crewlet-select__menu',
@@ -775,7 +910,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       )}
       style={
         place
-          ? { left: place.left, top: place.top, width: place.width }
+          ? { left: place.left, top: place.top, width: place.width, minWidth: place.minWidth }
           : // Laid out but not painted, so its own height can be measured
             // before it is placed and no reader sees it in a corner first.
             { visibility: 'hidden' }
@@ -809,9 +944,16 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         </div>
       ) : null}
       <div
+        /*
+         * A PLAIN REF. `listRef` would make this the dismiss surface again,
+         * and the reveal it also wires is the one this component overrides
+         * below: the shared model scrolls to `[aria-selected]`, which here is
+         * the CHOSEN row rather than the highlighted one, so it would drag the
+         * view back to the choice on every arrow press. That override used to
+         * work by being declared last; now there is nothing to out-declare.
+         */
         ref={(el) => {
           list.current = el;
-          listbox.listRef(el);
         }}
         id={listId}
         className={cx('crewlet-listbox', 'crewlet-select__list')}

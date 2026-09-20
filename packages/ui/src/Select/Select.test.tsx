@@ -9,6 +9,9 @@
  * a placeholder must not sit above an answer that already exists.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
@@ -422,4 +425,297 @@ test('an open list carries no violation, grouped, searchable or multiple', async
   // to say about, and the case would pass for the wrong reason.
   expect(screen.getByRole('listbox', { name: 'Owner' })).toBeTruthy();
   expect(await auditPage()).toEqual([]);
+});
+
+/*
+ * A PRESS INSIDE THE PANEL IS NOT A PRESS OUTSIDE IT, and the search box is
+ * the case that proves the panel and the list are two different questions.
+ *
+ * The layer stack measures a press against the surface the listbox registered,
+ * and that was the LIST element. A searchable Select puts its search box in
+ * the panel as a SIBLING of the list, so pressing it was read as outside: the
+ * panel dismissed, the query was cleared and focus went back to the trigger.
+ * The control could not be typed into with a pointer at all — only by opening
+ * it from the keyboard, which is the one route a suite of `fireEvent.change`
+ * calls never exercises, which is why nothing caught it.
+ *
+ * The `onPointerDown` the panel carries is not what covers this: the stack
+ * listens on the document in the CAPTURE phase so the decision is taken before
+ * the page reacts, and a React handler runs on the way back up.
+ */
+test('pressing a searchable list own search box does not dismiss it', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  const box = screen.getByRole('combobox', { name: 'Search' });
+  expect(screen.queryByRole('listbox')).toBeTruthy();
+
+  // As the stack hears it: on the document, capturing, before anything else.
+  fireEvent.pointerDown(box, { bubbles: true });
+
+  expect(screen.queryByRole('listbox')).toBeTruthy();
+  fireEvent.change(box, { target: { value: 'rel' } });
+  expect(screen.getAllByRole('option').map((row) => row.textContent?.slice(0, 16))).toEqual(['Site Reliability']);
+});
+
+/*
+ * AND A PRESS GENUINELY OUTSIDE STILL DISMISSES IT. The other half of the rule
+ * above: widening what counts as inside is only correct if it did not widen to
+ * everything.
+ */
+test('a press outside the panel still dismisses it', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  expect(screen.queryByRole('listbox')).toBeTruthy();
+  fireEvent.pointerDown(document.body, { bubbles: true });
+  expect(screen.queryByRole('listbox')).toBeNull();
+});
+
+/*
+ * WHERE THE PANEL LANDS, WITH THE GEOMETRY STUBBED, because jsdom performs no
+ * layout and every box it reports is zero — under which the defect below is
+ * invisible: `rect.right - width` and `rect.left` are both 0, so the two
+ * branches agree by arithmetic and a suite sees nothing wrong.
+ *
+ * `placePopup` itself is covered as a pure function in Layer/place.test.tsx.
+ * What is covered HERE is the thing that was actually broken: which BOX the
+ * Select hands it. It used to pass the trigger's width as the panel's size —
+ * measuring the height off the panel in the same object literal — so the
+ * panel was sized and clamped to its anchor, and `align="right"` subtracted
+ * the anchor's own width from the anchor's own right edge, which is its left
+ * edge, so the public prop could not move anything.
+ */
+function stubGeometry({ trigger, panel }: { trigger: DOMRect; panel: DOMRect }) {
+  const boxes = { trigger, panel };
+  const real = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-select__menu')) return boxes.panel;
+    // The measured anchor is the trigger BUTTON, not the root: `position()`
+    // reads `trigger.current`, and that ref is on the control itself.
+    if (this.classList.contains('crewlet-select__trigger')) return boxes.trigger;
+    return real.call(this);
+  };
+  return Object.assign(
+    () => {
+      Element.prototype.getBoundingClientRect = real;
+    },
+    // Move the anchor mid-case: a panel that closes because its trigger
+    // scrolled away has to have been open first.
+    { move: (next: DOMRect) => { boxes.trigger = next; } },
+  );
+}
+
+const rect = (x: number, width: number, y = 100): DOMRect =>
+  ({ x, y, left: x, right: x + width, top: y, bottom: y + 32, width, height: 32 }) as DOMRect;
+
+test('the panel is placed by its OWN width, so align moves it', () => {
+  // A trigger far narrower than the options it offers: 132px showing a short
+  // answer, over a 210px list. That gap is the whole defect.
+  const restore = stubGeometry({ trigger: rect(400, 132), panel: rect(0, 210) });
+  try {
+    const { unmount } = render(<Picker align="left" />);
+    fireEvent.click(trigger());
+    const left = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style.left;
+    unmount();
+
+    render(<Picker align="right" />);
+    fireEvent.click(trigger());
+    const right = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style.right;
+    const rightLeft = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style.left;
+
+    expect(left).toBe('400px');
+    // The trigger's right edge (532) less the PANEL's width (210). With the
+    // anchor's own width it would have been 400px — the same as `left`.
+    expect(rightLeft).toBe('322px');
+    expect(right).toBe('');
+  } finally {
+    restore();
+  }
+});
+
+/*
+ * AND THE TRIGGER IS A FLOOR FOR A PICKER, NOT A CEILING. `width="auto"` sizes
+ * the TRIGGER to the answer it is showing and caps it so it cannot push a
+ * filter bar around — a bound about the toolbar, which a portalled popup is
+ * not in. The panel takes that width as a minimum and sizes to its options;
+ * `width="full"` is the other contract and still matches its field exactly.
+ */
+test('a picker panel floors at its trigger, a field panel matches it', () => {
+  const restore = stubGeometry({ trigger: rect(400, 132), panel: rect(0, 210) });
+  try {
+    const { unmount } = render(<Picker width="auto" />);
+    fireEvent.click(trigger());
+    const auto = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style;
+    expect(auto?.minWidth).toBe('132px');
+    expect(auto?.width).toBe('');
+    unmount();
+
+    render(<Picker width="full" />);
+    fireEvent.click(trigger());
+    const full = document.querySelector<HTMLElement>('.crewlet-select__menu')?.style;
+    expect(full?.width).toBe('132px');
+    expect(full?.minWidth).toBe('');
+  } finally {
+    restore();
+  }
+});
+
+/*
+ * AN ELLIPSIS IS THREE DECLARATIONS OR IT IS NONE. `overflow: hidden` clips
+ * what leaves the box and `text-overflow` replaces what a LINE cannot hold —
+ * and neither does anything to text that is allowed to wrap. The option label
+ * carried the first two and not the third, so a long option quietly grew a
+ * second line instead of ellipsing, and that second line was drawn over the
+ * option beneath it.
+ *
+ * The trigger's own label a hundred lines above has carried all three since it
+ * was written, which is what says this was an omission rather than a choice.
+ */
+const selectCss = (): string =>
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Select.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+
+test('an option label truncates on one line, as the trigger label does', () => {
+  const css = selectCss();
+  for (const selector of ['\\.crewlet-select__option-label', '\\.crewlet-select__label']) {
+    const rule = new RegExp(selector + '\\s*\\{([^}]*)\\}').exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/overflow:\s*hidden/);
+    expect(rule).toMatch(/text-overflow:\s*ellipsis/);
+    expect(rule, selector).toMatch(/white-space:\s*nowrap/);
+  }
+});
+
+/*
+ * NOTHING IS TAKEN MID-COMPOSITION, which `useListbox` promised and the option
+ * keys did not keep. Consumers run the option keys FIRST and fall through to
+ * the guarded handler only for what they did not take, so the arrows and the
+ * ends were prevented and the highlight moved before the guard was consulted —
+ * the promise was unreachable for exactly the four keys an input method uses
+ * to walk its own candidates.
+ */
+test('an input method walking its candidates does not walk the listbox', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  const box = screen.getByRole('combobox', { name: 'Search' });
+  const before = box.getAttribute('aria-activedescendant');
+
+  fireEvent.keyDown(box, { key: 'ArrowDown', isComposing: true });
+  expect(box.getAttribute('aria-activedescendant')).toBe(before);
+  // Safari spells the end of a composition as keyCode 229 rather than the
+  // flag; `isComposing` in the layer stack reads both.
+  fireEvent.keyDown(box, { key: 'ArrowDown', keyCode: 229 });
+  expect(box.getAttribute('aria-activedescendant')).toBe(before);
+
+  // And the same key outside a composition still moves it.
+  fireEvent.keyDown(box, { key: 'ArrowDown' });
+  expect(box.getAttribute('aria-activedescendant')).not.toBe(before);
+});
+
+/*
+ * HOME AND END BELONG TO THE CARET WHERE THERE IS ONE. WAI-ARIA splits the two
+ * cases for a combobox with a listbox popup: those keys move visual focus in
+ * the list only when the combobox is NOT editable. With a search box they were
+ * taken anyway, so the head and tail of a typed query were unreachable — the
+ * panel is portalled, so a pointer cannot place the caret either.
+ */
+test('Home and End reach the ends of a query, not the ends of the list', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  const box = screen.getByRole('combobox', { name: 'Search' });
+  const at = box.getAttribute('aria-activedescendant');
+  // `false` is "not prevented": the browser's own caret default survives.
+  expect(fireEvent.keyDown(box, { key: 'Home' })).toBe(true);
+  expect(fireEvent.keyDown(box, { key: 'End' })).toBe(true);
+  expect(box.getAttribute('aria-activedescendant')).toBe(at);
+});
+
+test('and they still walk the list where there is no box to type in', () => {
+  render(<Picker />);
+  fireEvent.click(trigger());
+  fireEvent.keyDown(trigger(), { key: 'End' });
+  // The last row that can be taken — `Engineering`, since `Retired seat`
+  // above it is disabled.
+  expect(highlighted()).toBe('Engineering');
+  fireEvent.keyDown(trigger(), { key: 'Home' });
+  expect(highlighted()?.startsWith('Software Engineer')).toBe(true);
+});
+
+/*
+ * A LIST WITH NOTHING TAKEABLE HIGHLIGHTS NOTHING. `step` answers -1 for it and
+ * `opening` used to clamp that to 0 — a valid index naming a row Enter
+ * refuses, which is the one input the function exists to handle.
+ */
+test('a list whose every row is disabled highlights none of them', () => {
+  const allDisabled: SelectOption[] = [
+    { value: 'a', label: 'Alpha', disabled: true },
+    { value: 'b', label: 'Beta', disabled: true },
+  ];
+  render(<Picker options={allDisabled} value={undefined} />);
+  fireEvent.click(trigger());
+  // Not a dangling id either: `optionId(-1)` would be an id no row renders.
+  expect(trigger().getAttribute('aria-activedescendant')).toBeNull();
+});
+
+/*
+ * AND THE HIGHLIGHT STAYS TAKEABLE AS THE LIST NARROWS. After the one seeding
+ * pass, the only thing holding the index in range is a clamp over the COUNT,
+ * which knows nothing about which rows are disabled.
+ */
+test('a search that narrows onto a disabled row does not park the highlight there', () => {
+  render(<Picker searchable />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  const box = screen.getByRole('combobox', { name: 'Search' });
+  fireEvent.change(box, { target: { value: 'Retired' } });
+  expect(screen.getAllByRole('option').map((row) => row.textContent)).toEqual(['Retired seat']);
+  // The only row offered refuses to be taken, so nothing is highlighted —
+  // rather than `aria-activedescendant` naming a row Enter silently ignores.
+  expect(box.getAttribute('aria-activedescendant')).toBeNull();
+  expect(document.querySelector('[data-active="true"]')).toBeNull();
+});
+
+/*
+ * FOCUS IS NOT LEFT ON THE PAGE BODY when the panel closes because its anchor
+ * scrolled away. `position()` closes on that condition and passed `false` for
+ * "hand focus back" — but a searchable Select is focused on its search box,
+ * which lives in the portalled panel being removed, so focus fell to the body
+ * and the next Tab restarted the document from the top. [Menu] takes the other
+ * branch for the identical condition.
+ */
+test('a panel closed by its anchor scrolling away hands focus back', () => {
+  const restore = stubGeometry({ trigger: rect(24, 132), panel: rect(0, 210) });
+  try {
+    render(<Picker searchable />);
+    const button = screen.getByRole('button', { name: 'Owner' });
+    fireEvent.click(button);
+    screen.getByRole('combobox', { name: 'Search' }).focus();
+
+    // Now scroll it off the top, which is what `position()` closes on.
+    restore.move(rect(24, 132, -400));
+    fireEvent.scroll(window);
+
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(document.activeElement).toBe(button);
+  } finally {
+    restore();
+  }
+});
+
+/*
+ * THE SEARCH BOX HAS A FOCUS RING. It clears the user agent's outline, and the
+ * frame's `:focus-within` rule is the package's one replacement — but that
+ * rule's premise is that everything focusable sits inside `.crewlet-select`,
+ * and this box does not: the panel is portalled into the layer host, outside
+ * that subtree. So the one control a searchable Select puts a reader in on
+ * every open was the one with no focus indicator at all.
+ */
+test('the search box draws a focus ring where the frame cannot reach', () => {
+  const css = selectCss();
+  const cleared = /\.crewlet-select__search-input\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(cleared).toMatch(/outline:\s*none/);
+  // On the band, and INSET, because the panel clips: an outset ring on the
+  // input itself would be cut by the menu's own overflow.
+  const ring = /\.crewlet-select__search:focus-within\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(ring).toMatch(/outline:\s*2px solid var\(--color-focus\)/);
+  expect(ring).toMatch(/outline-offset:\s*var\(--size-focus-ring-inset-offset\)/);
 });

@@ -86,6 +86,20 @@ export interface Listbox {
   listId: string;
   /** The list on screen: what a press outside is measured against, and what scrolls. */
   listRef: (el: HTMLElement | null) => void;
+  /**
+   * THE SURFACE, where it is bigger than the list — and a consumer uses this
+   * OR `listRef`, never both.
+   *
+   * `listRef` does two jobs because for most consumers one element does both:
+   * the list is what scrolls AND what a press outside is measured against. A
+   * popup that carries anything beside its list breaks that: a Select with
+   * `searchable` puts a search box in the panel as a SIBLING of the list, so a
+   * press on it was measured against the list, came out `outside`, and
+   * dismissed the popup the reader was trying to type into — the control could
+   * not be used with a pointer at all. Naming the surface separately is what
+   * keeps the two questions apart.
+   */
+  panelRef: (el: HTMLElement | null) => void;
   /** The element around the field: a press on it is not outside the list. */
   anchorRef: (el: HTMLElement | null) => void;
   /** The id of the option element at `index`. */
@@ -109,7 +123,16 @@ export function useListbox({
   popup = true,
 }: ListboxOptions): Listbox {
   const [at, setAt] = useState(0);
-  const active = count === 0 ? -1 : Math.min(Math.max(at, 0), count - 1);
+  /*
+   * -1 IS A VALUE, NOT A GAP. The type above says "-1 when nothing is
+   * highlighted", and the floor of 0 here made that unreachable for any list
+   * with rows in it: the one case that needs it is a list whose every row is
+   * DISABLED, where `useOptionKeys.opening` answers -1 and this clamped it
+   * straight back onto row 0 — a row Enter refuses, named to a screen reader
+   * as the highlight. Flooring at -1 instead keeps the clamp doing its real
+   * job, which is holding an index inside a list that shrank under it.
+   */
+  const active = count === 0 ? -1 : Math.min(Math.max(at, -1), count - 1);
   const listId = `${id}-listbox`;
   const layer = usePopupLayer({ open: open && popup, onDismiss: () => onClose() });
   const list = useRef<HTMLElement | null>(null);
@@ -170,6 +193,7 @@ export function useListbox({
     setActive: setAt,
     listId,
     listRef,
+    panelRef: layer.panelRef,
     anchorRef: layer.insideRef,
     optionId: (index) => `${listId}-${index}`,
     onKeyDown,

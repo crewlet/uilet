@@ -472,3 +472,77 @@ test('the open menu carries no accessibility violation', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+/*
+ * THE SAME SIZING RULE THE LISTBOX ROW KEEPS, stated again because a menu's
+ * rows are deliberately not in that family (see the head of Listbox.css), so
+ * the one declaration does not reach here.
+ *
+ * `.crewlet-menu` is a column flex scroller and `__group` is
+ * `display: contents`, so every item is a direct flex item of the panel; an
+ * explicit `min-height` replaces the automatic minimum that would otherwise
+ * hold a row at its content, and a menu long enough to scroll squeezes its
+ * rows first. A plain row escapes by accident — one nowrap line is under the
+ * floor — but a `--described` row stacks a label over a wrapping description
+ * at roughly 52px, drawn into 28px and over the rows either side.
+ */
+test('a menu row keeps its floor and cannot be shrunk under its own content', () => {
+  const row = /\.crewlet-menu__item\s*\{([^}]*)\}/.exec(menuCss())?.[1] ?? '';
+  expect(row).toMatch(/min-height:\s*var\(--size-row-sm\)/);
+  expect(row).toMatch(/flex:\s*none/);
+});
+
+/*
+ * THE PANEL IS RE-PLACED WHEN ITS OWN SIZE CHANGES. The three listeners the
+ * placement effect registers all report the ANCHOR moving; none of them fires
+ * when a row's label changes or a font settles. This panel is especially
+ * exposed because it is `width: max-content` under a `max-width`, so a label
+ * change moves its width — and that width is what the `end` alignment and the
+ * horizontal clamp are both built from.
+ *
+ * The suite's ResizeObserver is a no-op, so the callback is captured and fired
+ * by hand: what is asserted is that the component subscribed the PANEL and
+ * re-places when told it changed.
+ */
+test('a menu whose panel changes size while open is placed again', () => {
+  const observed: Element[] = [];
+  let fire: (() => void) | undefined;
+  const realRO = globalThis.ResizeObserver;
+  globalThis.ResizeObserver = class {
+    constructor(cb: () => void) {
+      fire = cb;
+    }
+    observe(el: Element) {
+      observed.push(el);
+    }
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+
+  const box = (left: number, width: number) =>
+    ({ left, top: 100, width, height: 200, right: left + width, bottom: 300, x: left, y: 100 }) as DOMRect;
+  // Clear of the left edge, so an `end` alignment is not clamped to the gap.
+  const boxes = { anchor: box(700, 120), panel: box(0, 200) };
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-menu')) return boxes.panel;
+    // The trigger, which is the one button outside the panel: a menu ROW is
+    // a button too.
+    if (this.tagName === 'BUTTON' && !this.classList.contains('crewlet-menu__item')) return boxes.anchor;
+    return realRect.call(this);
+  };
+  try {
+    render(<Menu label="Actions for Software Engineer" align="end" items={entries()} />);
+    fireEvent.click(trigger());
+    const panel = screen.getByRole('menu');
+    expect(observed).toContain(panel);
+    const before = panel.style.left;
+
+    boxes.panel = box(0, 320);
+    act(() => fire?.());
+    expect(panel.style.left).not.toBe(before);
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+    globalThis.ResizeObserver = realRO;
+  }
+});

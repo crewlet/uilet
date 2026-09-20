@@ -222,3 +222,62 @@ test('the tip carries no accessibility violation', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+/*
+ * THE PANEL IS RE-PLACED WHEN ITS OWN SIZE CHANGES, which matters more here
+ * than anywhere: this surface is CENTRED on its trigger, and the centring is
+ * arithmetic over the panel's own measured width (`placePopup` aligns to the
+ * anchor's start, so the offset is computed by hand). A tooltip whose content
+ * changes while it is open was left off-centre by half the width delta, and
+ * one near an edge overhung it, because the clamp had been computed for the
+ * old width too.
+ *
+ * The suite's ResizeObserver is a no-op, so the callback is captured and fired
+ * by hand: what is asserted is that the component subscribed the PANEL.
+ */
+test('a tooltip whose content changes while open is centred again', () => {
+  const observed: Element[] = [];
+  let fire: (() => void) | undefined;
+  const realRO = globalThis.ResizeObserver;
+  globalThis.ResizeObserver = class {
+    constructor(cb: () => void) {
+      fire = cb;
+    }
+    observe(el: Element) {
+      observed.push(el);
+    }
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+
+  const box = (left: number, width: number) =>
+    ({ left, top: 200, width, height: 24, right: left + width, bottom: 224, x: left, y: 200 }) as DOMRect;
+  const boxes = { anchor: box(500, 80), panel: box(0, 120) };
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.getAttribute('role') === 'tooltip') return boxes.panel;
+    if (this.tagName === 'BUTTON') return boxes.anchor;
+    return realRect.call(this);
+  };
+  try {
+    render(
+      <Tooltip content="Runs at 09:00 in Europe/Berlin">
+        <button>Schedule</button>
+      </Tooltip>,
+    );
+    fireEvent.pointerEnter(screen.getByRole('button', { name: 'Schedule' }));
+    settle();
+    const panel = tip()!;
+    expect(observed).toContain(panel);
+    // Centred on the trigger: 500 + 80/2 - 120/2 = 480.
+    expect(panel.style.left).toBe('480px');
+
+    boxes.panel = box(0, 200);
+    act(() => fire?.());
+    // 500 + 40 - 100 = 440, not the 480 the old width gave.
+    expect(panel.style.left).toBe('440px');
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+    globalThis.ResizeObserver = realRO;
+  }
+});

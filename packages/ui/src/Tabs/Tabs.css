@@ -50,7 +50,21 @@
    */
   content: '';
   position: absolute;
-  bottom: -1px;
+  /*
+   * ON THE PADDING EDGE, NOT BELOW IT. This is an absolutely positioned child
+   * of the row, and the row is a scroll container: `overflow-x: auto` makes
+   * `overflow-y` compute to `auto` as well, so there is no axis on which it
+   * does not clip. Clipping is to the PADDING edge and the row's own 1px
+   * `border-bottom` lies outside it, so at `bottom: -1px` a 2px bar was cut in
+   * half — and the half removed was the lower one, the half meant to sit on
+   * the baseline rule and replace it. `scrollbar-width: none` above then hid
+   * the 1px vertical scrollbar that would have given the game away.
+   *
+   * `overflow: visible` is not the way out: the horizontal scrolling is the
+   * row's whole contract. The bar sits at 0 instead and paints over the row's
+   * last two pixels, which is where a reader sees it anyway.
+   */
+  bottom: 0;
   /*
    * Under the LABEL, not under the tab's box: the measurement is the button,
    * which carries the small side pad an inset focus ring needs, and a bar
@@ -108,6 +122,24 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-1);
+  /*
+   * A TAB IS NEVER SQUEEZED, which is what makes the row above it SCROLL.
+   *
+   * `.crewlet-tabs--underline` is a `width: 100%` flex row with
+   * `overflow-x: auto`, and its own comment states the contract: the row
+   * scrolls rather than overflowing the page. That behaviour came entirely
+   * from each tab's automatic minimum resolving to its `nowrap` label, which
+   * is what makes the line unable to fit — and the explicit `min-width` below
+   * REPLACES that automatic minimum with a flat 24px for every item, not just
+   * the narrow ones the floor is for. With the default `flex-shrink: 1` the
+   * tabs were squeezed toward 24px until the line fitted, the strip stopped
+   * scrolling, and the labels — `nowrap`, with `min-width: 0` and no clip —
+   * spilled out of their buttons over their neighbours.
+   *
+   * `flex: none` is what the comment above already claims: "a tab whose label
+   * is wider than the floor is untouched".
+   */
+  flex: none;
   /* Never under the 24px target floor, at any density. */
   min-height: var(--size-control-sm);
   min-width: var(--size-target-min);

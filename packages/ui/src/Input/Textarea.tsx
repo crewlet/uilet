@@ -30,12 +30,55 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   useImperativeHandle(ref, () => localRef.current as HTMLTextAreaElement);
 
+  /*
+   * GROWING TO THE CONTENT, which used to depend on the caller controlling it.
+   *
+   * The effect was keyed on the `value` PROP, so an UNCONTROLLED auto-resizing
+   * textarea — one given `defaultValue`, or none at all — measured once at
+   * mount and never again: `value` stays undefined however much is typed, so
+   * nothing re-ran and the box never grew. And `.crewlet-textarea.is-auto-resize`
+   * sets `overflow: hidden`, precisely because a box that grows needs no
+   * scrollbar, so the text simply disappeared below the fold with no way to
+   * scroll to it. The one combination that worked was the controlled one.
+   *
+   * `input` is what both modes have in common: it fires on every edit whoever
+   * owns the value, and the prop stays in the list so a controlled caller that
+   * replaces the text from outside still re-measures.
+   *
+   * `scrollHeight` EXCLUDES the border, and `.crewlet-textarea` is
+   * `box-sizing: border-box`, so assigning it directly left the box a border
+   * short of its own content — enough to clip the last line's descenders and,
+   * on a growing field, enough to keep a scrollbar the rule above has hidden.
+   * The border is added back from the computed style rather than assumed,
+   * since a caller's own class can change it.
+   */
   useEffect(() => {
     if (!autoResize) return;
     const el = localRef.current;
     if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
+    const measure = () => {
+      el.style.height = 'auto';
+      const style = getComputedStyle(el);
+      const border =
+        style.boxSizing === 'border-box'
+          ? Number.parseFloat(style.borderTopWidth || '0') + Number.parseFloat(style.borderBottomWidth || '0')
+          : 0;
+      el.style.height = `${el.scrollHeight + (Number.isFinite(border) ? border : 0)}px`;
+    };
+    measure();
+    el.addEventListener('input', measure);
+    /*
+     * AND WHEN THE BOX'S OWN WIDTH CHANGES, which decides how many lines the
+     * same text takes. Neither an edit nor a re-render announces a column
+     * resizing or a font settling. Feature-checked, as every observer in this
+     * package is.
+     */
+    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    resize?.observe(el);
+    return () => {
+      el.removeEventListener('input', measure);
+      resize?.disconnect();
+    };
   }, [autoResize, value]);
 
   const control = (

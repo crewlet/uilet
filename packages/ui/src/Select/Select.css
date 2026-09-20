@@ -297,9 +297,25 @@ svg.crewlet-select__chevron {
   min-width: 0;
 }
 
+/*
+ * ONE LINE, WHICH IS WHAT THE ELLIPSIS BELOW WAS ALWAYS FOR. `overflow:
+ * hidden` clips what leaves the box and `text-overflow` replaces what a LINE
+ * cannot hold — and neither does anything to text that is simply allowed to
+ * wrap, which is what this rule did without `white-space`. A long option
+ * silently grew a second line instead of ellipsing, and with the row's own
+ * flex minimum gone (see Listbox.css) that second line was drawn over the
+ * option underneath.
+ *
+ * The trigger's `.crewlet-select__label` a hundred lines above has carried all
+ * three since it was written; this is the same register on the same text, and
+ * `.crewlet-listbox__hint` states the rule outright — "never wrapped: a hint
+ * that broke across two lines turned every row in the list a different
+ * height".
+ */
 .crewlet-select__option-label {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .crewlet-select__option-desc {
@@ -316,6 +332,24 @@ svg.crewlet-select__chevron {
 }
 
 /* ── The search box ──────────────────────────────────────────────────── */
+
+/*
+ * THE RING IS DRAWN WHERE THE ELEMENT IS. The input below clears the user
+ * agent's outline, and the frame's `:focus-within` rule is the package's one
+ * replacement for it — but that rule's own premise is that everything
+ * focusable sits INSIDE `.crewlet-select`, and this box does not: the panel is
+ * portalled into the layer host, outside that subtree, so `:focus-within`
+ * could never match while focus was in the search field. And focus is moved
+ * here on every open, so the one control a searchable Select puts a reader in
+ * was the one with no focus indicator at all.
+ *
+ * On the band rather than the input, and INSET, because the panel clips: an
+ * outset ring on the input would be cut by the menu's own `overflow: hidden`.
+ */
+.crewlet-select__search:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
 
 .crewlet-select__search {
   display: flex;

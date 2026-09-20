@@ -11,6 +11,9 @@
  * both into the click this suite does drive, and jsdom does not synthesise it.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -459,5 +462,88 @@ test('a chip takes the corner that nests in its well, from the token', () => {
     expect(length(screen.getAllByRole('radio')[0]!, 'border-radius')).toBe(7);
   } finally {
     remove();
+  }
+});
+
+/*
+ * THE STRIP SCROLLS RATHER THAN SQUEEZING, which is the row's own documented
+ * contract and came entirely from each tab's automatic minimum resolving to
+ * its `nowrap` label. An explicit `min-width` replaces that automatic minimum
+ * for EVERY item, not just the narrow ones the 24px target floor is for, so
+ * with the default `flex-shrink: 1` the tabs were squeezed until the line
+ * fitted, the row stopped scrolling, and the labels spilled over their
+ * neighbours. Both declarations have to hold together: `flex: none` alone
+ * drops the floor a bare-glyph tab needs.
+ *
+ * Read off the stylesheet, because this is a layout failure and jsdom lays
+ * nothing out.
+ */
+const tabsCss = (): string =>
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Tabs.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+
+test('a tab keeps its target floor and is never shrunk under its label', () => {
+  const rule = /\.crewlet-tabs__tab\s*\{([^}]*)\}/.exec(tabsCss())?.[1] ?? '';
+  expect(rule).toMatch(/min-width:\s*var\(--size-target-min\)/);
+  expect(rule).toMatch(/flex:\s*none/);
+});
+
+test('the sliding bar sits inside the box that clips it', () => {
+  /*
+   * The bar is an absolutely positioned child of the row, and the row is a
+   * scroll container — `overflow-x: auto` makes `overflow-y` compute to `auto`
+   * too, so there is no axis on which it does not clip. Clipping is to the
+   * PADDING edge and the row's 1px border-bottom lies outside it, so a 2px bar
+   * at `bottom: -1px` lost the half meant to sit on the baseline rule.
+   */
+  const rule = /\.crewlet-tabs--underline::after\s*\{([^}]*)\}/.exec(tabsCss())?.[1] ?? '';
+  expect(rule).toMatch(/bottom:\s*0/);
+  expect(rule).not.toMatch(/bottom:\s*-/);
+  // And the row still scrolls: the fix must not have reached for `visible`.
+  const row = /\.crewlet-tabs--underline\s*\{([^}]*)\}/.exec(tabsCss())?.[1] ?? '';
+  expect(row).toMatch(/overflow-x:\s*auto/);
+});
+
+/*
+ * AND THE SLIDER FOLLOWS A TAB THAT CHANGES WIDTH. `update` measures the
+ * ACTIVE TAB, and neither watcher could see that box change: the mutation
+ * observer is filtered to `class`, and the row's own border box is pinned at
+ * `width: 100%` with the scrolling inside it, so a tab growing moves only the
+ * row's scrollWidth. The slider was therefore correct for changes that arrive
+ * as a new `items` array and wrong for every one that does not.
+ */
+test('every tab is watched for its own size, not only the row', () => {
+  const observed: Element[] = [];
+  const realRO = globalThis.ResizeObserver;
+  globalThis.ResizeObserver = class {
+    constructor(_cb: () => void) {}
+    observe(el: Element) {
+      observed.push(el);
+    }
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+  try {
+    render(
+      <Tabs
+        ariaLabel="Views"
+        variant="underline"
+        value="board"
+        onValueChange={() => {}}
+        items={[
+          { value: 'board', label: 'Board' },
+          { value: 'list', label: 'List' },
+        ]}
+      />,
+    );
+    const tabs = [...document.querySelectorAll('.crewlet-tabs__tab')];
+    expect(tabs).toHaveLength(2);
+    for (const tab of tabs) expect(observed).toContain(tab);
+    // The row stays watched too: its width decides where the tabs sit.
+    expect(observed).toContain(document.querySelector('.crewlet-tabs'));
+  } finally {
+    globalThis.ResizeObserver = realRO;
   }
 });

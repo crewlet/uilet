@@ -16,11 +16,15 @@
   --crewlet-data-table-active-sort-color: var(--color-brand-accent-ink);
   width: 100%;
   position: relative;
-  overflow-x: auto;
-  /* The gesture stops at the table's own edge. Without it a trackpad swipe
-     that runs out of table carries on into the browser's back navigation, so
-     one column too far left loses the page. */
-  overscroll-behavior-x: contain;
+  /* NO SCROLLER HERE. This carried `overflow-x: auto` and its own
+     `overscroll-behavior-x`, and neither could act: `.crewlet-data-table__scroll`
+     is rendered inside it for BOTH variants at `width: 100%`, so it absorbs
+     the table's width and the root never has anything to scroll. What the
+     declaration did still do is make this a scroll container — and per CSS
+     Overflow that pulls `overflow-y` to `auto` as well — so it quietly became
+     the scrollport a `position: sticky` descendant resolves against. The inner
+     wrapper carries the real scrolling and the gesture containment, which is
+     what the layout comment further down already describes. */
 }
 
 .crewlet-data-table--default .crewlet-data-table__table {

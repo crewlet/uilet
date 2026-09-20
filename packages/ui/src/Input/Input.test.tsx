@@ -355,6 +355,17 @@ test('one element draws the ring, and it is the one a reader reads as the field'
       '.crewlet-textarea.is-error:focus-visible',
       '.crewlet-select:focus-within',
       '.crewlet-select.is-error:focus-within',
+      /*
+       * AND ITS SEARCH BOX, WHICH IS NOT INSIDE THAT RING — which is the
+       * question this list exists to force, and here the answer is the reason
+       * the rule had to be added at all. `.crewlet-select:focus-within` cannot
+       * match while focus is in the search field: the panel is PORTALLED into
+       * the layer host, outside the `.crewlet-select` subtree entirely. The
+       * input clears the user agent's outline and nothing replaced it, so the
+       * one control a searchable Select puts a reader in on every open was the
+       * only field in the package with no focus indicator.
+       */
+      '.crewlet-select__search:focus-within',
       '.crewlet-tags-input__box:focus-visible',
       // The two small controls that ARE their own target, so their ring is
       // outset: an inset one on a 16px box is a box with no middle left.
@@ -436,6 +447,9 @@ test('every field rings on one geometry, and a boxed one rings inside its own bo
         ['.crewlet-input:has(.crewlet-input__control:focus-visible)', inset],
         ['.crewlet-textarea:focus-visible', inset],
         ['.crewlet-select:focus-within', inset],
+        // Inset for the boxed reason AND for a second one: the panel it sits
+        // in clips, so an outset ring on the band would be cut by it.
+        ['.crewlet-select__search:focus-within', inset],
         ['.crewlet-tags-input__box:focus-visible', inset],
         ['.crewlet-checkbox__control:focus-visible', '2px'],
         ['.crewlet-switch__track:has(.crewlet-switch__control:focus-visible)', '2px'],
@@ -613,3 +627,63 @@ for (const theme of ['light', 'dark'] as const) {
     }
   });
 }
+
+/*
+ * AN UNCONTROLLED AUTO-RESIZING TEXTAREA GROWS. The effect was keyed on the
+ * `value` PROP, which for an uncontrolled field stays undefined however much
+ * is typed — so it measured once at mount and never again, and
+ * `.crewlet-textarea.is-auto-resize` sets `overflow: hidden` precisely because
+ * a box that grows needs no scrollbar. The text went below the fold with no
+ * way to scroll to it. The controlled case was the only one that worked.
+ *
+ * jsdom reports `scrollHeight` as 0, so the assertion is that a measurement
+ * HAPPENED on input — the stub is what supplies the number a browser would.
+ */
+test('an uncontrolled auto-resizing textarea re-measures as it is typed into', () => {
+  const heights: string[] = [];
+  let content = 1;
+  Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', {
+    configurable: true,
+    get() {
+      return content * 20;
+    },
+  });
+  try {
+    render(<Textarea autoResize defaultValue="one line" aria-label="Notes" />);
+    const box = screen.getByLabelText('Notes') as HTMLTextAreaElement;
+    heights.push(box.style.height);
+
+    content = 3;
+    fireEvent.input(box, { target: { value: 'one\ntwo\nthree' } });
+    heights.push(box.style.height);
+
+    expect(heights[0]).toBe('20px');
+    expect(heights[1]).toBe('60px');
+  } finally {
+    delete (HTMLTextAreaElement.prototype as unknown as Record<string, unknown>).scrollHeight;
+  }
+});
+
+test('and it adds back the border scrollHeight leaves out', () => {
+  // `scrollHeight` excludes the border and the element is `border-box`, so
+  // assigning it straight left the box a border short of its own content —
+  // enough to clip the last line's descenders.
+  Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', {
+    configurable: true,
+    get() {
+      return 40;
+    },
+  });
+  const realStyle = globalThis.getComputedStyle;
+  globalThis.getComputedStyle = ((el: Element, pseudo?: string | null) =>
+    el instanceof HTMLTextAreaElement
+      ? ({ boxSizing: 'border-box', borderTopWidth: '1px', borderBottomWidth: '1px' } as CSSStyleDeclaration)
+      : realStyle(el, pseudo)) as typeof globalThis.getComputedStyle;
+  try {
+    render(<Textarea autoResize defaultValue="x" aria-label="Notes" />);
+    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).style.height).toBe('42px');
+  } finally {
+    globalThis.getComputedStyle = realStyle;
+    delete (HTMLTextAreaElement.prototype as unknown as Record<string, unknown>).scrollHeight;
+  }
+});

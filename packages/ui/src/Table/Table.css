@@ -29,10 +29,20 @@
 .crewlet-table__container {
   /* The overflow is a safety net for a cell that cannot wrap (a long token, a
      hash); the fixed layout below is what keeps a table inside the width it is
-     given. A `maxHeight` turns this into the vertical scroller the sticky
-     header needs, which is the only way a long table keeps its column names. */
-  overflow-x: auto;
-  overflow-y: var(--crewlet-table-overflow-y, visible);
+     given. A `maxHeight` gives it something to scroll vertically, which is
+     what the sticky header needs and the only way a long table keeps its
+     column names.
+
+     BOTH AXES, STATED. This was `overflow-y: var(--crewlet-table-overflow-y,
+     visible)`, and the fallback was unreachable: per CSS Overflow, when one
+     axis is not `visible` the other computes to `auto`, so the unconditional
+     `overflow-x: auto` beside it made this box a scrollport in both
+     directions in every state. The variable had exactly one reachable value —
+     the `auto` Table.tsx wrote beside the max-height — so it read as a knob
+     with a default nothing could ever select. Without a max-height there is
+     simply nothing to scroll to, which is what made the difference invisible
+     rather than what made it absent. */
+  overflow: auto;
   max-height: var(--crewlet-table-max-height, none);
   overscroll-behavior-x: contain;
   flex: 1;
