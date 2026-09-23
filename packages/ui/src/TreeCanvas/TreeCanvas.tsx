@@ -46,6 +46,17 @@
  * still on screen. Nothing else is an input to the layout: a badge whose text
  * changes inside a slot that keeps its size lays nothing out again.
  *
+ * A RUN OF SIBLINGS CAN BE ENCLOSED IN A BOX, a unit round its seats, with a
+ * label along its top (`groups`). The box is room the layout KEEPS rather than
+ * a rectangle drawn over it afterwards: its padding and header are part of the
+ * members' outlines, so a card that is not a member is never drawn inside one
+ * and two boxes are never drawn over each other. The label rides OVER the
+ * connectors, on the box's own fill, so a branch dropping into a member passes
+ * behind the words rather than through them. The box is drawing, like the
+ * connectors, and hidden from assistive technology; what it SAYS is given to
+ * each member card as its description, which is where a reader of the tree
+ * meets it.
+ *
  * AND IT MOVES. A chart arrives rank by rank rather than all at once, and a
  * relayout TWEENS every card from where it was to where it is, connectors and
  * all, so adding a seat is visibly the same chart rearranging rather than a
@@ -67,11 +78,13 @@
 
 import {
   useCallback,
+  useId,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
@@ -100,6 +113,7 @@ import {
   useMeasuredSizes,
   useTreeState,
   type ForestLayout,
+  type LayoutGroup,
   type LayoutNode,
   type TreeConnectorShape,
   type TreeInput,
@@ -155,6 +169,11 @@ export interface TreeItemProps {
   'aria-posinset': number;
   'aria-expanded': boolean | undefined;
   'aria-selected': boolean;
+  /**
+   * The label of the group box the node's card is drawn in, for the card's
+   * own node: see `TreeCanvasProps.groups`. Unset for every other node.
+   */
+  'aria-describedby': string | undefined;
   'data-tree-id': string;
   ref: (el: HTMLElement | null) => void;
   onClick: (event: MouseEvent<HTMLElement>) => void;
@@ -274,6 +293,32 @@ export interface TreeComposing {
   onCancel: () => void;
 }
 
+/**
+ * A box drawn round a run of sibling cards, with a label along its top: a unit
+ * round the seats in it, say. See `TreeCanvasProps.groups`.
+ */
+export interface TreeCanvasGroup {
+  /** The group's own id. Unique among the groups, and never a card's id. */
+  id: string;
+  /**
+   * What the box is called, such as "Engineering · Core". Drawn along its top
+   * in the tertiary ink, and read as the description of every member card.
+   */
+  label: string;
+  /**
+   * A short fact at the END of the label's line, such as the project key chip
+   * a unit's work is filed under. Drawn and described with the label.
+   */
+  meta?: ReactNode | undefined;
+  /**
+   * The CARDS it encloses: ids `cards` returns, all children of one card (or
+   * all roots) and consecutive among them. A member that is not drawn right
+   * now (inside a closed card) is left out, and a group with none drawn is not
+   * drawn at all. Anything else is refused: see [LayoutGroup].
+   */
+  memberIds: readonly string[];
+}
+
 /** The id of the probe the gaps between cards are measured from. */
 const GAP_PROBE = 'crewlet:tree-canvas-gap';
 
@@ -288,6 +333,23 @@ const GAP_PROBE = 'crewlet:tree-canvas-gap';
  * frame exactly when a reader has panned to that card.
  */
 const MARGIN_PROBE = 'crewlet:tree-canvas-margin';
+
+/**
+ * The id of the probe a group box's padding is measured from: its width is the
+ * room beside the outermost members, its height the room under them.
+ *
+ * A TOKEN FOR THE REASON THE GAPS ARE ONE, and the SAME step as the label's
+ * own inset, so a group's label starts on the line its first card's edge does.
+ */
+const GROUP_PAD_PROBE = 'crewlet:tree-canvas-group-pad';
+
+/**
+ * The id a group's header is measured under. The header is what the room
+ * above the members holds, and it is MEASURED rather than a token because it
+ * is a line of text at the reader's own font size plus whatever chip the
+ * caller put beside it.
+ */
+const groupHeadKey = (id: string) => `crewlet:tree-canvas-group:${id}`;
 
 export interface TreeCanvasProps {
   /** The accessible name of the chart, such as "Structure chart". */
@@ -372,11 +434,24 @@ export interface TreeCanvasProps {
    */
   ranks?: LayoutRanks | undefined;
   /**
-   * The shape of the connectors: a rounded step (the default) or the single
-   * cubic the console's org chart draws. See [layoutConnectors], which states
-   * what each shape costs.
+   * The shape of the connectors: `elbow` (the default), orthogonal with a
+   * small round corner; `straight`, one segment; or the two older drawings,
+   * the softer `step` and the single `curve` the console's org chart draws.
+   * See [layoutConnectors], which states what each shape costs.
    */
   connector?: TreeConnectorShape | undefined;
+  /**
+   * Boxes drawn round runs of sibling cards, each with a label along its top:
+   * see [TreeCanvasGroup]. Keep it stable, as `nodes` is: it is an input to
+   * the layout.
+   *
+   * WHAT A GROUP IS FOR. A chart's cards say who reports to whom; a group says
+   * which of them work TOGETHER, the seats of one unit under the lead they
+   * report to, which the lines alone cannot: two units under one lead are two
+   * runs of children with nothing between them. The box is laid out, not
+   * painted over the layout, so a card outside it is never drawn inside it.
+   */
+  groups?: readonly TreeCanvasGroup[] | undefined;
   /**
    * Carries out Enter (activate) or Delete and Backspace (remove) on a node.
    * Return false when the node has no such action, so the key travels on.
@@ -447,7 +522,8 @@ export function TreeCanvas({
   cardTone,
   appearance = 'card',
   ranks,
-  connector = 'step',
+  connector = 'elbow',
+  groups,
   onNodeKey,
   onNodeKeyDown,
   hasNodeMenu,
@@ -512,12 +588,35 @@ export function TreeCanvas({
     return out;
   }, [cardForest]);
 
+  /*
+   * THE GROUPS THAT ARE DRAWN RIGHT NOW: each with the members that are cards
+   * this frame. A unit whose parent is closed has no card on the chart, and a
+   * box round nothing is a box round the empty place where it was.
+   */
+  const shownGroups = useMemo(() => {
+    if (!groups || groups.length === 0) return [];
+    const drawnCards = new Set(cardIds);
+    return groups
+      .map((group) => ({ group, members: group.memberIds.filter((id) => drawnCards.has(id)) }))
+      .filter((one) => one.members.length > 0);
+  }, [groups, cardIds]);
+
   const spacing = ranks ?? (appearance === 'node' ? 'shared' : 'per-parent');
   const previousLayout = useRef<ForestLayout | null>(null);
   const layout = useMemo(() => {
-    if (!measured([...cardIds, GAP_PROBE, MARGIN_PROBE])) return previousLayout.current;
+    const probes = [GAP_PROBE, MARGIN_PROBE];
+    if (shownGroups.length > 0) {
+      probes.push(GROUP_PAD_PROBE, ...shownGroups.map(({ group }) => groupHeadKey(group.id)));
+    }
+    if (!measured([...cardIds, ...probes])) return previousLayout.current;
     const size = (id: string) => sizes.get(id)!;
     const gap = size(GAP_PROBE);
+    const pad = shownGroups.length > 0 ? size(GROUP_PAD_PROBE) : null;
+    const boxes: LayoutGroup[] = shownGroups.map(({ group, members }) => ({
+      id: group.id,
+      members,
+      inset: { x: pad!.width, top: size(groupHeadKey(group.id)).height, bottom: pad!.height },
+    }));
     const toLayout = (card: TreeCardInput): LayoutNode => ({
       id: card.id,
       width: size(card.id).width,
@@ -529,8 +628,9 @@ export function TreeCanvas({
       gapY: gap.height,
       ranks: spacing,
       margin: size(MARGIN_PROBE).width,
+      groups: boxes,
     });
-  }, [cardForest, cardIds, measured, sizes, spacing]);
+  }, [cardForest, cardIds, measured, sizes, spacing, shownGroups]);
   previousLayout.current = layout;
 
   // WHAT IS DRAWN THIS FRAME, which during a relayout is on its way to the
@@ -866,6 +966,24 @@ export function TreeCanvas({
     },
   });
 
+  /*
+   * A MEMBER CARD IS DESCRIBED BY ITS GROUP'S LABEL. The box is drawing and is
+   * hidden, like the connectors; what it says is not, and the card's own node
+   * is where a reader walking the tree meets it. An id per group, from the
+   * chart's own id and the group's position, because a group's id is the
+   * caller's string and need not be a valid id reference.
+   */
+  const uid = useId();
+  const headIds = useMemo(
+    () => new Map(shownGroups.map(({ group }, i) => [group.id, `${uid}-group-${i}`])),
+    [shownGroups, uid],
+  );
+  const describedBy = useMemo(() => {
+    const out = new Map<string, string>();
+    for (const { group, members } of shownGroups) for (const id of members) out.set(id, headIds.get(group.id)!);
+    return out;
+  }, [shownGroups, headIds]);
+
   const card: TreeCardContext = {
     item: (id) => ({
       role: 'treeitem',
@@ -875,6 +993,7 @@ export function TreeCanvas({
       'aria-posinset': treePosInSet(model, id),
       'aria-expanded': treeExpandable(model, id) ? expanded.has(id) : undefined,
       'aria-selected': id === selectedId,
+      'aria-describedby': describedBy.get(id),
       'data-tree-id': id,
       ref: refFor(id),
       onClick: (event) => {
@@ -952,6 +1071,24 @@ export function TreeCanvas({
       >
         <div className="crewlet-tree-canvas__gap" ref={measure(GAP_PROBE)} aria-hidden="true" />
         <div className="crewlet-tree-canvas__margin" ref={measure(MARGIN_PROBE)} aria-hidden="true" />
+        {shownGroups.length > 0 && (
+          <div className="crewlet-tree-canvas__group-pad" ref={measure(GROUP_PAD_PROBE)} aria-hidden="true" />
+        )}
+        {/* THE BOXES ARE UNDER EVERYTHING, the branches included: a branch
+            leaving a member's parent runs over the box it drops into. */}
+        {shownGroups.map(({ group, members }) => {
+          const placed = drawn?.groups?.find((one) => one.id === group.id);
+          return (
+            <div
+              key={group.id}
+              className="crewlet-tree-canvas__group"
+              aria-hidden="true"
+              data-group-id={group.id}
+              data-enter={enterOf(members, arrived)}
+              style={placedStyle(placed, true)}
+            />
+          );
+        })}
         {drawn && (
           <svg
             className="crewlet-tree-canvas__links"
@@ -979,6 +1116,29 @@ export function TreeCanvas({
             ))}
           </svg>
         )}
+        {/* THE LABELS ARE OVER THE BRANCHES and under the cards: a branch
+            dropping into a member passes behind the words, which stand on the
+            box's own fill, rather than striking through them. Each is also
+            what the room above its members is measured from. */}
+        {shownGroups.map(({ group, members }) => {
+          const placed = drawn?.groups?.find((one) => one.id === group.id);
+          return (
+            <div
+              key={group.id}
+              id={headIds.get(group.id)}
+              ref={measure(groupHeadKey(group.id))}
+              className="crewlet-tree-canvas__group-head"
+              aria-hidden="true"
+              data-enter={enterOf(members, arrived)}
+              style={placedStyle(placed, false)}
+            >
+              <span className="crewlet-tree-canvas__group-label">{group.label}</span>
+              {group.meta === undefined || group.meta === null ? null : (
+                <span className="crewlet-tree-canvas__group-meta">{group.meta}</span>
+              )}
+            </div>
+          );
+        })}
         {/* The tree itself takes no tab stop: the ITEMS carry the roving one,
             as the tree pattern asks, and the container only listens so one
             handler serves every item. */}
@@ -1100,6 +1260,29 @@ function UnderSlot({
       {content}
     </div>
   );
+}
+
+/**
+ * Whether a group has arrived: with its first member, since a box round cards
+ * that are not drawn yet is a frame round nothing.
+ */
+function enterOf(members: readonly string[], arrived: ReadonlySet<string> | null): 'shown' | 'waiting' | undefined {
+  if (arrived === null) return undefined;
+  return members.some((id) => arrived.has(id)) ? 'shown' : 'waiting';
+}
+
+/**
+ * Where a group's box or header is drawn: at the box's corner, the box as
+ * large as the layout made it and the header as wide. Unplaced, it is drawn
+ * hidden, as a card is, and still measured.
+ */
+function placedStyle(placed: CanvasRect | undefined, box: boolean): CSSProperties {
+  if (!placed) return { visibility: 'hidden' };
+  return {
+    transform: `translate(${placed.x}px, ${placed.y}px)`,
+    width: `${placed.width}px`,
+    ...(box ? { height: `${placed.height}px` } : {}),
+  };
 }
 
 /** How far down `el` sits inside `container`, in layout pixels. */

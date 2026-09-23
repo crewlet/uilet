@@ -29,11 +29,12 @@
  * two speeds. The tween is over the layout's own numbers, so a frame is a
  * position rather than a promise about one, and the connectors are recomputed
  * from those same numbers: a line that did not travel with its cards would
- * spend the whole relayout pointing at where a card used to be.
+ * spend the whole relayout pointing at where a card used to be, and so is every
+ * group's box, which is drawn round wherever its members are this frame.
  */
 
 import { useCallback, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { ForestLayout, PlacedNode } from '../Tree/index.js';
+import { placeGroups, type ForestLayout, type PlacedNode } from '../Tree/index.js';
 
 /** How far apart two cards are revealed, in milliseconds. */
 export const ENTRANCE_STEP_MS = 60;
@@ -174,7 +175,17 @@ export function useReflow(layout: ForestLayout | null, still: boolean): ForestLa
         return { ...one, x: was.x + (one.x - was.x) * through, y: was.y + (one.y - was.y) * through };
       });
       record(nodes);
-      setDrawn({ nodes, byId: new Map(nodes.map((one) => [one.id, one])), bounds: layout.bounds });
+      const byId = new Map(nodes.map((one) => [one.id, one]));
+      // A GROUP'S BOX TRAVELS WITH ITS MEMBERS, drawn round where they are
+      // this frame: a box computed once from the target would wait at the end
+      // of a journey its members were still making.
+      setDrawn({
+        nodes,
+        byId,
+        groups: placeGroups(byId, layout.groups ?? []),
+        ...(layout.ranks ? { ranks: layout.ranks } : {}),
+        bounds: layout.bounds,
+      });
       frame.current = through < 1 ? requestAnimationFrame(tick) : null;
     };
     frame.current = requestAnimationFrame(tick);

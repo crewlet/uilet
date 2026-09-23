@@ -779,6 +779,40 @@ data) is held for the visit, so the control shows the pick it just made rather
 than re-reading an empty store. `useSystemTheme` and `resolveTheme` are
 exported for an application that draws its own. Nothing is renamed.
 
+**`TreeCanvas` boxes a unit round its seats, and its connectors are elbows.**
+The design's org chart. `groups: { id, label, meta?, memberIds }[]` draws a
+hairline `--color-border-default` box on `--color-surface-subtle` round a run
+of sibling cards (the seats that report to one lead), with `label` along its
+top in the tertiary ink at 12px and `meta` (the project key chip) at the end
+of that line. The box is room the LAYOUT keeps rather than a frame over it:
+`layoutForest` takes `groups` (`{ id, members, inset }`, each member's outline
+widened by the box's padding and header), so a card outside a unit is held a
+gap clear of the unit's box, two boxes never overlap, a short member's
+children start below the box, and `ForestLayout.groups` is each box's
+rectangle, exactly its members' extent plus the padding (`--spacing-3`, the
+label's own inset) and the header's measured height. Members must be
+consecutive children of one card (or consecutive roots), since a rectangle
+round anything else encloses what lies between; anything else is refused by
+name. A member not drawn right now is left out and a group with none drawn is
+not drawn. The box and its label are hidden drawing, like the connectors; each
+member card's node is described by the label (`aria-describedby`), and the
+label rides over the branches on the box's own fill. `connector` gains
+`elbow`, now the default, and `straight`: an elbow is orthogonal, down, a 6px
+corner (`--radius-sm`) drawn as a true arc, across, another corner and down,
+and the run across a parent's children is drawn halfway through the clear
+space between the parent (or its box) and the box its children are in, so it
+never passes through a label. On shared ranks that run is between the RANKS:
+it used to be halfway below a short parent centred in a tall band, inside its
+rank, and a children's row reaching under a taller neighbour ran through that
+neighbour's card. `step` and `curve` are unchanged; a chart that relied on the
+old default asks for `connector="step"`. Connectors are 1.5px, the design's
+weight (the `node` appearance keeps its 3). The design draws them in
+`--color-border-strong`, which measures 1.45:1 on the canvas in dark and 1.43:1
+in light against the 3:1 a connector is held to, so they stay on
+`--color-border-control` (4.40:1 and 4.04:1). A child a fraction of a pixel off
+its parent's centre now gets its two corners rather than a vertical that ended
+beside the child. Nothing is renamed.
+
 ## Breaking changes in 0.3.0
 
 Every one of these is a change a consumer can see. None of them needs an edit

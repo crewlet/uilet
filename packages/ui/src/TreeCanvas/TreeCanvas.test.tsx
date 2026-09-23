@@ -23,6 +23,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import axe from 'axe-core';
 import { createRef, useMemo, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { ChevronDownGlyph, ChevronRightGlyph } from '@crewlethq/icons/glyphs';
@@ -37,6 +38,7 @@ import type { TreeInput, TreeModel } from '../Tree/index.js';
 import { installMotion, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import {
   TreeCanvas,
+  type TreeCanvasGroup,
   type TreeCanvasHandle,
   type TreeCardContext,
   type TreeCardInput,
@@ -61,6 +63,10 @@ const GHOST = { width: 320, height: 400 };
 let GHOST_MEASURED = true;
 /** What the margin probe measures, which a case about the margin sets. */
 let MARGIN = 0;
+/** What a group box's padding probe measures: beside and below its members. */
+const GROUP_PAD = { width: 12, height: 10 };
+/** What a group's header measures: the room above its members. */
+const GROUP_HEAD = 28;
 
 function sizeOf(el: Element): { width: number; height: number } | null {
   if (el.classList.contains('crewlet-canvas__viewport')) return VIEWPORT;
@@ -69,6 +75,8 @@ function sizeOf(el: Element): { width: number; height: number } | null {
   // cases below read the same coordinates they always did, and the cases that
   // are ABOUT the margin render their own chart with a margin.
   if (el.classList.contains('crewlet-tree-canvas__margin')) return { width: MARGIN, height: MARGIN };
+  if (el.classList.contains('crewlet-tree-canvas__group-pad')) return GROUP_PAD;
+  if (el.classList.contains('crewlet-tree-canvas__group-head')) return { width: 180, height: GROUP_HEAD };
   // The ghost holds a form, so it is neither a card's width nor a row tall:
   // it is the size the layout has to make room for, which is the whole point
   // of measuring it rather than assuming it.
@@ -426,6 +434,7 @@ function Harness({
   appearance,
   ranks,
   connector,
+  groups,
   composing = null,
 }: {
   extra?: readonly string[] | undefined;
@@ -438,7 +447,8 @@ function Harness({
   cardTone?: ((id: string) => TreeCardTone | undefined) | undefined;
   appearance?: 'card' | 'node' | undefined;
   ranks?: 'per-parent' | 'shared' | undefined;
-  connector?: 'step' | 'curve' | undefined;
+  connector?: 'elbow' | 'straight' | 'step' | 'curve' | undefined;
+  groups?: readonly TreeCanvasGroup[] | undefined;
   composing?: TreeComposing | null | undefined;
 }) {
   const nodes = useMemo(() => forestOf(extra), [extra]);
@@ -459,6 +469,7 @@ function Harness({
       appearance={appearance}
       ranks={ranks}
       connector={connector}
+      groups={groups}
       composing={composing}
       ref={handle}
     />
@@ -1134,9 +1145,11 @@ describe('the node appearance', () => {
 });
 
 /*
- * THE CURVE is what the console chart draws, and the component has to reach
- * `layoutConnectors` with it: a shape the caller asks for and the component
- * drops is a chart drawn in the wrong language with nothing to say so.
+ * THE SHAPE A CALLER ASKS FOR is the one drawn: the component has to reach
+ * `layoutConnectors` with it, and a shape the caller asks for and the
+ * component drops is a chart drawn in the wrong language with nothing to say
+ * so. The arithmetic of each shape is the layout suite's; what is asserted
+ * here is that the answer arrives.
  */
 describe('the connector shape', () => {
   const paths = (container: HTMLElement) =>
@@ -1144,14 +1157,26 @@ describe('the connector shape', () => {
       (path) => path.getAttribute('d') ?? '',
     );
 
-  test('a chart that asks for nothing draws the rounded step', () => {
+  test('a chart that asks for nothing draws the elbow: vertical, horizontal and round corners only', () => {
     const { container } = mount();
     const drawn = paths(container);
     expect(drawn.length).toBeGreaterThan(0);
-    // A step, or the bare vertical a child centred under its parent takes.
-    // Never a cubic, which is the shape the other answer draws.
-    expect(drawn.every((d) => !d.includes('C'))).toBe(true);
-    expect(drawn.some((d) => d.includes('Q'))).toBe(true);
+    // Every command is a move, a vertical, a horizontal or a corner: no
+    // diagonal line, no quadratic and no cubic.
+    expect(drawn.every((d) => /^M[^A-Z]+(?:[VHA][^A-Z]+)+$/.test(d))).toBe(true);
+    expect(drawn.some((d) => d.includes('A'))).toBe(true);
+  });
+
+  test('a chart that asks for the straight shape draws one segment per branch', () => {
+    const { container } = mount({ connector: 'straight' });
+    const drawn = paths(container);
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(drawn.every((d) => /^M[^A-Z]+L[^A-Z]+$/.test(d))).toBe(true);
+  });
+
+  test('a chart that asks for the step draws its quadratic corners', () => {
+    const { container } = mount({ connector: 'step' });
+    expect(paths(container).some((d) => d.includes('Q'))).toBe(true);
   });
 
   test('a chart that asks for the curve draws one cubic per branch', () => {
@@ -1159,6 +1184,180 @@ describe('the connector shape', () => {
     const drawn = paths(container);
     expect(drawn.length).toBeGreaterThan(0);
     expect(drawn.every((d) => /^M [\d.-]+ [\d.-]+ C [^A-Z]+$/.test(d))).toBe(true);
+  });
+
+  /*
+   * THE CONNECTOR'S COLOUR IS A TOKEN, and it is the sheet's. The path carries
+   * its geometry as an attribute the layout computed and nothing else, so no
+   * colour can be written into the markup where a theme cannot reach it; and
+   * every stroke the sheet gives a connector is a colour token, the neutral one
+   * being the border step the palette suite holds to 3:1 for exactly this mark.
+   */
+  test('the connector colour is a token from the stylesheet, never a literal', () => {
+    const { container } = mount();
+    for (const path of container.querySelectorAll('.crewlet-tree-canvas__links path')) {
+      for (const attribute of ['stroke', 'fill', 'style', 'stroke-width']) {
+        expect(path.hasAttribute(attribute), attribute).toBe(false);
+      }
+    }
+    const strokes = [...SHEET.matchAll(/crewlet-tree-canvas__links path[^{]*\{([^}]*)\}/g)]
+      .flatMap((found) => [...found[1]!.matchAll(/(?:^|;|\s)stroke:\s*([^;]+);/g)].map((one) => one[1]!.trim()));
+    expect(strokes.length).toBeGreaterThan(0);
+    for (const stroke of strokes) expect(stroke).toMatch(/^var\(--color-[a-z0-9-]+\)$/);
+    expect(rule('.crewlet-tree-canvas__links path')).toContain('stroke: var(--color-border-control)');
+    expect(rule('.crewlet-tree-canvas__links path')).toContain('stroke-width: 1.5');
+  });
+});
+
+/*
+ * GROUPS: a box round a run of sibling cards, with a label along its top.
+ *
+ * What these protect: the box is where the layout made room for it, round
+ * exactly its members plus the padding and header it measured; it arrives and
+ * travels with them; it says what it is to a reader of the TREE (as each
+ * member's description) while the drawing itself is hidden; and a group whose
+ * members are not drawn is not drawn.
+ */
+describe('groups', () => {
+  const UNITS: TreeCanvasGroup[] = [
+    {
+      id: 'units',
+      label: 'Engineering · Core',
+      meta: <span className="key">ENG</span>,
+      memberIds: ['unit:eng', 'unit:sales'],
+    },
+  ];
+  const box = (container: HTMLElement) => container.querySelector<HTMLElement>('.crewlet-tree-canvas__group')!;
+  const head = (container: HTMLElement) => container.querySelector<HTMLElement>('.crewlet-tree-canvas__group-head')!;
+  const heightOf = (card: HTMLElement) => Math.max(1, card.querySelectorAll("[role='treeitem']").length) * ROW_HEIGHT;
+
+  test("the box is drawn round exactly its members' cards, plus the padding and header it measured", () => {
+    const { container } = mount({ groups: UNITS });
+    const members = [cardBox('Engineering'), cardBox('Sales')];
+    const left = Math.min(...members.map((one) => translateOf(one).x));
+    const top = Math.min(...members.map((one) => translateOf(one).y));
+    const right = Math.max(...members.map((one) => translateOf(one).x + CARD_WIDTH));
+    const bottom = Math.max(...members.map((one) => translateOf(one).y + heightOf(one)));
+    const drawn = box(container);
+    expect(translateOf(drawn)).toEqual({ x: left - GROUP_PAD.width, y: top - GROUP_HEAD });
+    expect(drawn.style.width).toBe(`${right - left + 2 * GROUP_PAD.width}px`);
+    expect(drawn.style.height).toBe(`${bottom - top + GROUP_HEAD + GROUP_PAD.height}px`);
+    // The label's line is the box's top edge, as wide as the box.
+    expect(translateOf(head(container))).toEqual(translateOf(drawn));
+    expect(head(container).style.width).toBe(drawn.style.width);
+  });
+
+  /*
+   * A CARD OUTSIDE THE BOX IS NEVER DRAWN IN IT, and it is the layout that
+   * keeps it out: the CEO is the members' own sibling, immediately left of
+   * the run, and is held a gap clear of the BOX's edge rather than the card's.
+   */
+  test("a card outside the box is kept a gap clear of the box, not of the member's card", () => {
+    const { container } = mount({ groups: UNITS });
+    const drawn = box(container);
+    const ceo = translateOf(cardBox('CEO'));
+    expect(translateOf(drawn).x - (ceo.x + CARD_WIDTH)).toBe(24);
+  });
+
+  test('the label is the group\'s, with its meta at the end of the line', () => {
+    const { container } = mount({ groups: UNITS });
+    const line = head(container);
+    expect(line.querySelector('.crewlet-tree-canvas__group-label')!.textContent).toBe('Engineering · Core');
+    expect(line.lastElementChild!.className).toBe('crewlet-tree-canvas__group-meta');
+    expect(line.lastElementChild!.textContent).toBe('ENG');
+  });
+
+  test('the drawing is hidden, and each member card is described by what the box says', () => {
+    const { container } = mount({ groups: UNITS });
+    expect(box(container).getAttribute('aria-hidden')).toBe('true');
+    expect(head(container).getAttribute('aria-hidden')).toBe('true');
+    const described = item('Engineering').getAttribute('aria-describedby');
+    expect(described).toBe(head(container).id);
+    expect(document.getElementById(described!)!.textContent).toBe('Engineering · CoreENG');
+    expect(item('Sales').getAttribute('aria-describedby')).toBe(described);
+    // A node that is not a member, and a ROW inside a member card, say nothing.
+    expect(item('CEO').hasAttribute('aria-describedby')).toBe(false);
+    expect(item('Dev').hasAttribute('aria-describedby')).toBe(false);
+    // Neither is inside the tree, so the tree still holds only its items.
+    expect(screen.getByRole('tree').contains(box(container))).toBe(false);
+    expectNothingFocusableInAnItem();
+  });
+
+  test('a group whose members are not drawn is not drawn, and one drawn in part encloses what is', () => {
+    const { container, rerender } = mount({
+      groups: [
+        { id: 'platform', label: 'Platform', memberIds: ['unit:platform'] },
+        { id: 'units', label: 'Units', memberIds: ['unit:eng', 'unit:sales'] },
+      ],
+    });
+    expect(container.querySelectorAll('.crewlet-tree-canvas__group')).toHaveLength(2);
+    pointerPress('Collapse Engineering');
+    const drawn = [...container.querySelectorAll<HTMLElement>('.crewlet-tree-canvas__group')];
+    expect(drawn.map((one) => one.getAttribute('data-group-id'))).toEqual(['units']);
+    // No label is left behind for the box that went.
+    expect(container.querySelectorAll('.crewlet-tree-canvas__group-head')).toHaveLength(1);
+    rerender({ groups: [] });
+    expect(container.querySelector('.crewlet-tree-canvas__group')).toBeNull();
+    expect(container.querySelector('.crewlet-tree-canvas__group-pad')).toBeNull();
+  });
+
+  /*
+   * THE BRANCH INTO A MEMBER RUNS ACROSS ABOVE THE BOX, halfway through the
+   * space between the parent and the box's top: a run at the plain midpoint of
+   * the gap would pass through the label.
+   */
+  test("the run into the box's members is drawn above the box", () => {
+    const { container } = mount({ groups: UNITS });
+    const top = translateOf(box(container)).y;
+    const company = translateOf(cardBox('Acme'));
+    const runs = [...container.querySelectorAll('.crewlet-tree-canvas__links path')]
+      .map((path) => /A[\d.]+ [\d.]+ 0 0 [01] -?[\d.]+ (-?[\d.]+)H/.exec(path.getAttribute('d') ?? ''))
+      .filter((found) => found !== null)
+      .map((found) => Number(found[1]));
+    expect(runs.length).toBeGreaterThan(0);
+    expect(runs).toContain((company.y + ROW_HEIGHT + top) / 2);
+    for (const y of runs) expect(y).toBeLessThanOrEqual(top);
+  });
+
+  test('a box and its label are painted in tokens: the card rung, its hairline and the tertiary ink at 12px', () => {
+    const uninstall = installThemed('dark', 'TreeCanvas/TreeCanvas.css');
+    const { container } = mount({ groups: UNITS });
+    const rgb = (hex: string) => {
+      const one = parseHex(hex)!;
+      return `rgb(${one.r}, ${one.g}, ${one.b})`;
+    };
+    const drawn = getComputedStyle(box(container));
+    expect(drawn.backgroundColor).toBe(rgb(themes.dark.color.surface.subtle));
+    expect(drawn.borderTopColor).toBe(rgb(themes.dark.color.border.default));
+    expect(drawn.borderTopWidth).toBe('1px');
+    const line = getComputedStyle(head(container));
+    expect(line.color).toBe(rgb(themes.dark.color.text.tertiary));
+    expect(line.fontSize).toBe('12px');
+    expect(line.whiteSpace).toBe('nowrap');
+    // The words stand on the box's own fill, over the branches.
+    const label = getComputedStyle(head(container).querySelector('.crewlet-tree-canvas__group-label')!);
+    expect(label.backgroundColor).toBe(rgb(themes.dark.color.surface.subtle));
+    uninstall();
+  });
+
+  test('the labels are drawn over the branches and the boxes under them', () => {
+    const { container } = mount({ groups: UNITS });
+    const world = [...box(container).parentElement!.children];
+    const at = (el: Element) => world.indexOf(el);
+    const links = container.querySelector('.crewlet-tree-canvas__links')!;
+    expect(at(box(container))).toBeLessThan(at(links));
+    expect(at(head(container))).toBeGreaterThan(at(links));
+    expect(at(head(container))).toBeLessThan(at(screen.getByRole('tree')));
+  });
+
+  test('the chart with its groups carries no axe violation', async () => {
+    const { container } = mount({ groups: UNITS });
+    const result = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 });
 
@@ -1498,6 +1697,26 @@ describe('the chart rearranging', () => {
     expect(path()).not.toBe(still);
   });
 
+  /* A BOX IS DRAWN ROUND WHERE ITS MEMBERS ARE THIS FRAME, not where they are going. */
+  test('a group box travels with its members', () => {
+    // The company is what an added seat moves: it re-centres over one more
+    // child. A run of roots is a run of siblings too.
+    const groups: TreeCanvasGroup[] = [{ id: 'company', label: 'Company', memberIds: [COMPANY] }];
+    const view = mount({ groups });
+    const drawn = () => view.container.querySelector<HTMLElement>('.crewlet-tree-canvas__group')!;
+    const was = translateOf(drawn()).x;
+    view.rerenderMoving({ groups, extra: [ADVISOR], anchorNode: ADVISOR });
+    runFrames(performance.now() + REFLOW_MS / 2);
+    const half = translateOf(drawn()).x;
+    expect(half).toBe(translateOf(cardBox('Acme')).x - GROUP_PAD.width);
+    settleMotion();
+    const end = translateOf(drawn()).x;
+    expect(end).not.toBe(was);
+    expect(half).not.toBe(end);
+    expect(half).not.toBe(was);
+    expect(end).toBe(translateOf(cardBox('Acme')).x - GROUP_PAD.width);
+  });
+
   test('a reader who asked for less is given the new chart at once', () => {
     stillness(true);
     const { container, rerenderMoving } = mount();
@@ -1514,7 +1733,9 @@ describe('the motion in the stylesheet', () => {
   test('a card waiting its turn is drawn at nothing and is still laid out', () => {
     const waiting = rule(
       ".crewlet-tree-canvas__card[data-enter='waiting'],\n" +
-        ".crewlet-tree-canvas__links path[data-enter='waiting']",
+        ".crewlet-tree-canvas__links path[data-enter='waiting'],\n" +
+        ".crewlet-tree-canvas__group[data-enter='waiting'],\n" +
+        ".crewlet-tree-canvas__group-head[data-enter='waiting']",
     );
     expect(waiting).toContain('opacity: 0');
     expect(waiting).not.toContain('display: none');
@@ -1545,6 +1766,46 @@ describe('the motion in the stylesheet', () => {
       uninstall = installMotion('reduce', 'TreeCanvas/TreeCanvas.css');
       expect(getComputedStyle(shown[0]!).animation).toBe('none');
       for (const card of [...shown, ...waiting]) expect(getComputedStyle(card).opacity).toBe('1');
+      uninstall();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  /*
+   * A GROUP ARRIVES WITH ITS FIRST MEMBER, and stops arriving for a reader who
+   * asked for less, exactly as a card does: caught waiting while only the
+   * company is in, and again arriving once a member is, and the stops put to
+   * the cascade over both.
+   */
+  test('a group waits for its first member, and reduced motion draws it at once', () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = mount({
+        groups: [{ id: 'units', label: 'Units', memberIds: ['unit:eng', 'unit:sales'] }],
+      });
+      const drawing = () =>
+        [
+          container.querySelector<HTMLElement>('.crewlet-tree-canvas__group')!,
+          container.querySelector<HTMLElement>('.crewlet-tree-canvas__group-head')!,
+        ] as const;
+      act(() => vi.advanceTimersByTime(0));
+      for (const one of drawing()) expect(one.getAttribute('data-enter')).toBe('waiting');
+      let uninstall = installMotion('no-preference', 'TreeCanvas/TreeCanvas.css');
+      for (const one of drawing()) expect(getComputedStyle(one).opacity).toBe('0');
+      uninstall();
+      uninstall = installMotion('reduce', 'TreeCanvas/TreeCanvas.css');
+      for (const one of drawing()) expect(getComputedStyle(one).opacity).toBe('1');
+      uninstall();
+
+      act(() => vi.advanceTimersByTime(ENTRANCE_STEP_MS * 2));
+      expect(cardBox('Engineering').getAttribute('data-enter')).toBe('shown');
+      for (const one of drawing()) expect(one.getAttribute('data-enter')).toBe('shown');
+      uninstall = installMotion('no-preference', 'TreeCanvas/TreeCanvas.css');
+      for (const one of drawing()) expect(getComputedStyle(one).animation).toContain('crewlet-tree-canvas-arrive');
+      uninstall();
+      uninstall = installMotion('reduce', 'TreeCanvas/TreeCanvas.css');
+      for (const one of drawing()) expect(getComputedStyle(one).animation).toBe('none');
       uninstall();
     } finally {
       vi.useRealTimers();
