@@ -46,6 +46,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
+| Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx` |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure` |
@@ -235,6 +236,44 @@ meter is drawn on a card, which is where the design puts every one: the palette
 holds raised a visible step above the card, and on the raised rung itself an
 opaque track has no edge, so the unfilled remainder, and with it the extent of
 the bar, would disappear. Do not draw a meter on a raised surface.
+
+**A chart can be read mark by mark, by pointer and by keyboard, and
+`StackedColumns` is new.** `TimeSeries` stands a crosshair on the nearest
+instant under the pointer and reads every series there in a tooltip;
+`StackedColumns` reads a column's every part and its total; `StackedBar` reads
+the part under the pointer with its value, its share and the whole, and gains
+an optional `format` for those values and its default sentence, which is now
+also the bar's accessible name. `BarList` takes no reading, because every row
+already prints its value beside its bar. Each plot is one
+tab stop, `←`/`→` walk its marks (`Home` and `End` jump to the ends, and the
+first `←` opens on the newest), and `Escape` closes the reading, stopping there
+only when it closed one, so a chart inside a `Modal` does not close the modal.
+The tooltip is the live region, so a screen reader hears each reading, and its
+words are text tokens only: a series' hue is its swatch, never the colour of a
+word. Its ground is `--color-surface-glass` frosted by `--blur-sm`, not the
+card: it stands over the marks beside the one it reads, and the card, a 5%
+wash in the marketing palette, let every data hue through it, where the glass
+keeps every word over 4.5:1 on each of them. It is placed by a React style
+property (`left`) and never by a style element, so it works under a strict
+Content-Security-Policy. `ChartTooltip` and
+`useChartHover` are exported for a figure of your own.
+
+`StackedColumns` takes `series` (`{ id, name, color? }`, stacked first at the
+baseline) and `buckets` (`{ t, values }`, `values` keyed by series id). A
+series' colour is its place in `series`, and a filter is `hidden` (ids), never
+a shorter list, so hiding one series never repaints the others; a `Legend`
+beside it passes each `color` or lists the same series in the same order. The
+scale is round (`niceScale`: about four steps of 1, 2, 2.5 or 5), the parts of a
+column stand 2px apart with the gap taken out of the parts, and only the value
+end is rounded, at `--radius-xs`.
+
+Marks change shape with no API change. A `BarList` bar and its track, and a
+`StackedBar`'s track, are rounded at the VALUE END only (the inline end, at
+`--radius-xs`) and square on the baseline, where they were pills. A
+`StackedBar`'s parts stand 2px apart and grow by their value rather than
+taking a percentage width. A `TimeSeries` line is 2px (it was 1.75, which a
+`Sparkline` keeps). A stylesheet of your own that set a part's `width` or
+relied on the pill ends should drop it.
 
 **A failed row in a `List` marks itself with the danger ink.** The rail and the
 glyph of a `tone="danger"` item were the danger fill, which is measured to 3:1

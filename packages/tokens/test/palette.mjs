@@ -988,19 +988,24 @@ function checkState(state, values, profile, push) {
     say('a control boundary clears 3:1', low.ratio >= 3, '--color-border-control', low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
   }
 
-  // Glass carries chrome; anything carrying words sits on an opaque surface.
-  // The declared worst backdrop is the INVERSE ground, the far end of the
-  // palette from the glass itself, which is as far as anything a panned
-  // canvas puts under a floating panel can pull the composite; the accent
-  // fill, the primary action on that canvas, is measured by name beside it.
+  // Glass is the ground of what floats OVER CONTENT rather than over
+  // interface: a canvas's bars and notes, and a chart's reading, which stands
+  // beside the mark it reads and so over its neighbours. Each carries words,
+  // so every text step is held to 4.5:1 on the composite. The declared worst
+  // backdrop is the INVERSE ground, the far end of the palette from the glass
+  // itself, which is as far as anything under a floating panel can pull the
+  // composite; the accent fill, the primary action on a canvas, and every data
+  // hue a chart paints (the residual included) are measured by name beside it,
+  // so the reading over a column is a measured case rather than an inference.
   const backdrops = [
     ['the inverse ground', colour('--color-surface-inverse')],
     ['the accent fill', colour('--color-brand-accent')],
+    ...[...DATA, '--color-data-other'].map((name) => [name, colour(name)]),
     ...opaque,
   ];
   for (const [name, backdrop] of backdrops) {
     const glass = flatten(values.get('--color-surface-glass'), backdrop);
-    for (const step of ['--color-text-secondary', '--color-text-tertiary']) {
+    for (const step of ['--color-text-primary', '--color-text-secondary', '--color-text-tertiary']) {
       const ratio = contrast(colour(step), glass);
       say('text on glass clears 4.5:1', ratio >= 4.5, `${step} over ${name}`, ratio, `${ratio.toFixed(2)}:1`);
     }

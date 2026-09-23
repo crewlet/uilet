@@ -1,5 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ActivityStrip, BarList, Legend, Sparkline, StackedBar, TimeSeries, dataColor } from '@crewlethq/ui';
+import { useState } from 'react';
+import {
+  ActivityStrip,
+  BarList,
+  Legend,
+  SegmentedControl,
+  Sparkline,
+  StackedBar,
+  StackedColumns,
+  TimeSeries,
+  dataColor,
+} from '@crewlethq/ui';
 
 /*
  * The chart kit, and the rules that travel with it:
@@ -8,6 +19,8 @@ import { ActivityStrip, BarList, Legend, Sparkline, StackedBar, TimeSeries, data
  *  - A stacked bar is never drawn without that legend.
  *  - A quantity of nothing is drawn as nothing.
  *  - The values are in the markup, not only in a tooltip a mouse can reach.
+ *  - A tooltip a pointer can open, the keyboard can open too: focus a plot and
+ *    walk it with ←/→, and Escape closes the reading.
  */
 const meta: Meta = {
   title: 'UI/Charts',
@@ -108,7 +121,7 @@ export const Split: Story = {
       <div style={{ padding: 20 }}>
         <Frame
           title="Turns by phase"
-          hint="Never drawn without the legend beside it: a proportional bar with no legend is a picture of some numbers."
+          hint="Never drawn without the legend beside it: a proportional bar with no legend is a picture of some numbers. Point at a part, or tab to the bar and press ←/→, to read it with its share and the whole."
         >
           <StackedBar segments={segments} />
           <Legend
@@ -179,7 +192,7 @@ export const OverTime: Story = {
     <div style={{ padding: 20 }}>
       <Frame
         title="Turns per half hour"
-        hint="The x domain is the WINDOW, not the data: these six and a half hours are drawn in the first quarter of a day, never stretched across it. The peak and both ends of the window are text under the plot, so the figures are there for a reader who cannot see the shape."
+        hint="The x domain is the WINDOW, not the data: these six and a half hours are drawn in the first quarter of a day, never stretched across it. The peak and both ends of the window are text under the plot, so the figures are there for a reader who cannot see the shape. Point at the plot, or focus it and use ←/→, to read both series at one instant on a crosshair."
       >
         <TimeSeries
           label="Turns per half hour"
@@ -219,6 +232,65 @@ export const BesideANumber: Story = {
           <Sparkline values={[]} />
         </div>
       </Frame>
+    </div>
+  ),
+};
+
+const phases = [
+  { id: 'execute', name: 'Execute' },
+  { id: 'review', name: 'Review' },
+  { id: 'workers', name: 'Workers' },
+  { id: 'auxiliary', name: 'Auxiliary' },
+];
+
+/* Thirty days of tokens, execute doing the work and the rest the overhead. */
+const daily = Array.from({ length: 30 }, (_, index) => {
+  const weekend = index % 7 === 5 || index % 7 === 6;
+  const load = weekend ? 0.25 : 0.7 + ((index * 37) % 11) / 20;
+  return {
+    t: Date.UTC(2026, 7, 24) + index * day,
+    values: {
+      execute: Math.round(load * 620_000),
+      review: Math.round(load * 190_000),
+      workers: Math.round(load * (index % 3 === 0 ? 40_000 : 170_000)),
+      auxiliary: Math.round(load * 60_000),
+    },
+  };
+});
+
+const shortDate = (at: number) =>
+  new Date(at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+function DailyByPhase() {
+  const [only, setOnly] = useState('all');
+  const hidden = only === 'all' ? [] : phases.filter((phase) => phase.id !== only).map((phase) => phase.id);
+  return (
+    <Frame
+      title="Daily tokens by phase"
+      hint="A column is its day's total, and its parts stand 2px apart with only the value end rounded. Point at a column, or focus the plot and walk it with ←/→, for every part and the total. Filtering hides series rather than removing them, so the ones left keep their colour."
+    >
+      <SegmentedControl
+        semantics="radio"
+        label="Phases shown"
+        value={only}
+        onValueChange={setOnly}
+        options={[{ value: 'all', label: 'All' }, ...phases.map((phase) => ({ value: phase.id, label: phase.name }))]}
+      />
+      <StackedColumns label="Daily tokens by phase" series={phases} buckets={daily} hidden={hidden} formatTime={shortDate} />
+      <Legend
+        items={phases
+          .map((phase, index) => ({ id: phase.id, label: phase.name, color: dataColor(index) }))
+          .filter((item) => !hidden.includes(item.id))}
+      />
+    </Frame>
+  );
+}
+
+export const Columns: Story = {
+  name: 'StackedColumns / Parts of a total, per day',
+  render: () => (
+    <div style={{ padding: 20 }}>
+      <DailyByPhase />
     </div>
   ),
 };

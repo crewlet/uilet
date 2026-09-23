@@ -1,6 +1,9 @@
 import { useId } from 'react';
+import type { PointerEvent } from 'react';
 import { cx } from '../utils/cx.js';
+import { ChartTooltip } from './ChartTooltip.js';
 import { DATA_COLOR_OTHER, dataColor } from './dataColor.js';
+import { useChartHover } from './useChartHover.js';
 
 export interface SeriesPoint {
   /** The bucket's start, epoch milliseconds. */
@@ -60,6 +63,12 @@ export interface TimeSeriesProps {
  * scale, then the whole of it again. A name is how a graphic carries its
  * meaning; a second copy in the text is not a fallback, it is a repeat.
  *
+ * A READING, BY POINTER OR BY KEY. Over the plot a crosshair stands on the
+ * nearest instant any series has a point at, and a tooltip beside it reads
+ * every series at that instant. The plot is one tab stop, and ←/→ walk the
+ * same instants (see `useChartHover`), so what a mouse can read a keyboard
+ * can too; the tooltip is the live region, so a screen reader hears each one.
+ *
  * The plot is hand drawn rather than taken from a charting library for one
  * reason that decides it: every mark here reads tokens, in two themes, at the
  * contrast floors the palette suite measures, and a library's theming surface
@@ -94,58 +103,106 @@ export function TimeSeries({
   const x = (at: number) => ((at - from) / span) * width;
   const y = (value: number) => head + (1 - value / peak) * (plot - head - footer);
 
+  /*
+   * The instants a reading can stand on: every one any series has a point
+   * at, once, in order. A reading between two of them snaps to the nearer,
+   * because a crosshair between points reads a value nobody recorded.
+   */
+  const instants = [...new Set(series.flatMap((one) => one.points.map((point) => point.t)))].sort((a, b) => a - b);
+  const hover = useChartHover(instants.length);
+  const reading = hover.active == null ? null : instants[hover.active]!;
+
+  const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
+    const box = event.currentTarget.getBoundingClientRect();
+    if (box.width <= 0 || instants.length === 0) return;
+    const at = from + ((event.clientX - box.left) / box.width) * span;
+    let nearest = 0;
+    for (let index = 1; index < instants.length; index += 1) {
+      if (Math.abs(instants[index]! - at) < Math.abs(instants[nearest]! - at)) nearest = index;
+    }
+    hover.point(nearest);
+  };
+
   const sentence = summary
     ? summary({ from, to, peak, series: series.map((one, index) => ({ name: one.name, peak: peaks[index] ?? 0 })) })
     : `${label}. ${formatTime(from)} to ${formatTime(to)}, peak ${format(peak)}.`;
 
   return (
     <figure className={cx('crewlet-time-series', className)}>
-      <svg
-        className="crewlet-chart"
-        viewBox={`0 0 ${width} ${plot}`}
-        preserveAspectRatio="none"
-        style={{ height }}
-        role="img"
-        aria-label={sentence}
-      >
-        {[0.25, 0.5, 0.75].map((fraction) => (
-          <line
-            key={fraction}
-            className="crewlet-chart__grid-line"
-            x1={0}
-            x2={width}
-            y1={y(peak * fraction)}
-            y2={y(peak * fraction)}
-          />
-        ))}
-        <line className="crewlet-chart__axis-line" x1={0} x2={width} y1={plot - footer} y2={plot - footer} />
-        {series.map((one, index) => {
-          const color = one.color ?? dataColor(index);
-          const points = [...one.points].sort((a, b) => a.t - b.t);
-          if (points.length === 0) return null;
-          const line = points.map((point) => `${x(point.t).toFixed(2)},${y(point.v).toFixed(2)}`).join(' ');
-          const first = points[0]!;
-          const last = points[points.length - 1]!;
-          const area = `${x(first.t).toFixed(2)},${plot - footer} ${line} ${x(last.t).toFixed(2)},${plot - footer}`;
-          return (
-            <g key={one.id}>
-              <defs>
-                <linearGradient id={`${id}-${index}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity="0.22" />
-                  <stop offset="100%" stopColor={color} stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <polygon points={area} fill={`url(#${id}-${index})`} />
-              <polyline
-                className="crewlet-chart__series"
-                points={line}
-                stroke={color}
-                vectorEffect="non-scaling-stroke"
-              />
-            </g>
-          );
-        })}
-      </svg>
+      <div className="crewlet-chart-frame" role="group" aria-label={label} {...hover.plotProps}>
+        <svg
+          className="crewlet-chart"
+          viewBox={`0 0 ${width} ${plot}`}
+          preserveAspectRatio="none"
+          style={{ height }}
+          role="img"
+          aria-label={sentence}
+          onPointerMove={onPointerMove}
+        >
+          {[0.25, 0.5, 0.75].map((fraction) => (
+            <line
+              key={fraction}
+              className="crewlet-chart__grid-line"
+              x1={0}
+              x2={width}
+              y1={y(peak * fraction)}
+              y2={y(peak * fraction)}
+            />
+          ))}
+          <line className="crewlet-chart__axis-line" x1={0} x2={width} y1={plot - footer} y2={plot - footer} />
+          {series.map((one, index) => {
+            const color = one.color ?? dataColor(index);
+            const points = [...one.points].sort((a, b) => a.t - b.t);
+            if (points.length === 0) return null;
+            const line = points.map((point) => `${x(point.t).toFixed(2)},${y(point.v).toFixed(2)}`).join(' ');
+            const first = points[0]!;
+            const last = points[points.length - 1]!;
+            const area = `${x(first.t).toFixed(2)},${plot - footer} ${line} ${x(last.t).toFixed(2)},${plot - footer}`;
+            return (
+              <g key={one.id}>
+                <defs>
+                  <linearGradient id={`${id}-${index}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+                    <stop offset="100%" stopColor={color} stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <polygon points={area} fill={`url(#${id}-${index})`} />
+                <polyline
+                  className="crewlet-chart__series"
+                  points={line}
+                  stroke={color}
+                  vectorEffect="non-scaling-stroke"
+                />
+              </g>
+            );
+          })}
+          {reading != null && (
+            <line
+              className="crewlet-chart__crosshair"
+              x1={x(reading)}
+              x2={x(reading)}
+              y1={0}
+              y2={plot - footer}
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+        </svg>
+        <ChartTooltip
+          open={reading != null}
+          anchor={reading == null ? undefined : { start: (reading - from) / span }}
+          title={reading == null ? undefined : formatTime(reading)}
+          rows={
+            reading == null
+              ? []
+              : series.flatMap((one, index) => {
+                  const point = one.points.find((candidate) => candidate.t === reading);
+                  return point
+                    ? [{ id: one.id, name: one.name, value: format(point.v), color: one.color ?? dataColor(index) }]
+                    : [];
+                })
+          }
+        />
+      </div>
       <figcaption className="crewlet-time-series__scale">
         <span>{formatTime(from)}</span>
         <span>peak {format(peak)}</span>
