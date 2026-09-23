@@ -52,11 +52,11 @@ export interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
    */
   delta?: StatCardDelta | undefined;
   /**
-   * A small figure at the end of the value's line, such as a `Sparkline` or a
-   * `Meter`, or a small control that acts on the number. A figure fills the
-   * slot's width and a control keeps its own. The slot is
-   * `--crewlet-statcard-trend-width` wide, 96px unless a stylesheet says
-   * otherwise.
+   * A small figure at the end of the value's line, such as a `Sparkline`, a
+   * `Meter` or a `SegmentedMeter`, or a small control that acts on the
+   * number. A figure fills the slot's width and a control keeps its own. The
+   * slot is `--crewlet-statcard-trend-width` wide, 96px unless a stylesheet
+   * says otherwise.
    */
   trend?: ReactNode;
   /** A glyph before the label. A component, not a name. */

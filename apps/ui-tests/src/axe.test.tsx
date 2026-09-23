@@ -43,9 +43,11 @@ import {
   Popover,
   SearchTrigger,
   SegmentedControl,
+  SegmentedMeter,
   Sparkline,
   StatCard,
   StatusDot,
+  Stepper,
   Tag,
   TimeWindowPicker,
   VisuallyHidden,
@@ -164,6 +166,50 @@ test('the restyled primitives carry no violation: the register, the pill, the ke
           </ButtonLink>
         }
       />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('the state bar and the step row carry no violation, in a tile, a list and a card', async () => {
+  const crew = [
+    { id: 'working', value: 4, tone: 'info', label: 'working' },
+    { id: 'waiting', value: 1, tone: 'warning', label: 'waiting' },
+    { id: 'stopped', value: 1, tone: 'danger', label: 'stopped' },
+  ] as const;
+  const turn = [
+    { id: 'context', label: 'Context' },
+    { id: 'execute', label: 'Execute · round 7' },
+    { id: 'review', label: 'Review' },
+  ];
+  const { container } = render(
+    <main>
+      <h1>Home</h1>
+      <StatCard
+        label="Agents working now"
+        value="4"
+        unit="/ 7"
+        trend={<SegmentedMeter segments={crew} total={7} remainderLabel="idle" />}
+        sub="1 waiting · 1 stopped · 1 idle"
+      />
+      <ul>
+        <li>
+          Core platform
+          <SegmentedMeter
+            size="compact"
+            segments={[
+              { id: 'done', value: 38, tone: 'success', label: 'done' },
+              { id: 'active', value: 12, tone: 'info', label: 'active' },
+            ]}
+            total={61}
+            remainderLabel="to do"
+          />
+        </li>
+      </ul>
+      <section aria-label="Live now">
+        <Stepper label="Turn progress" steps={turn} current="execute" pulse />
+        <Stepper label="Turn 1 progress" steps={turn} current={null} />
+      </section>
     </main>,
   );
   expect(await violations(container)).toEqual([]);

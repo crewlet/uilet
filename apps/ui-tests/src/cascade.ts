@@ -338,10 +338,21 @@ export function channels(value: string): { r: number; g: number; b: number } {
   return { r: parts[0]!, g: parts[1]!, b: parts[2]! };
 }
 
-/** A computed length in px, with `auto`, `normal` and an empty value read as 0. */
+/**
+ * A computed length in px, with `auto`, `normal` and an empty value read as 0.
+ *
+ * A `calc()` jsdom has already folded to ONE length is read as that length.
+ * jsdom evaluates a calc() over lengths it can resolve and then keeps the
+ * wrapper for some properties, `gap` among them, so a gap written as
+ * `calc(var(--spacing-1) * 1.5)` computes to `calc(6px)`: read as a number
+ * that was NaN, and so 0, and every measurement of a derived gap read zero
+ * however the rule changed. A calc() still holding a var() or a percentage
+ * is not folded and still reads 0, which is honest: nothing measured it.
+ */
 export function px(element: Element, property: string): number {
   const value = getComputedStyle(element).getPropertyValue(property);
-  const parsed = Number.parseFloat(value);
+  const folded = /^calc\(\s*(-?[\d.]+)px\s*\)$/.exec(value.trim());
+  const parsed = Number.parseFloat(folded ? folded[1]! : value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -539,7 +550,104 @@ export function answerMotion(
   css: string,
   preference: "reduce" | "no-preference",
 ): string {
+  return answerFeature(
+    css,
+    "prefers-reduced-motion",
+    ["reduce", "no-preference"],
+    preference,
+    "answerMotion",
+  );
+}
+
+/**
+ * A COMPONENT'S SHEETS AS A BROWSER APPLIES THEM IN FORCED-COLORS MODE, or
+ * outside it, with every token resolved for the named palette as
+ * `installThemed` resolves them and the component's own properties as
+ * `installSheets` does.
+ *
+ * The mode repaints every author background to `Canvas`, so a figure drawn
+ * in backgrounds alone (a meter's fill, a bar's parts) disappears whole for
+ * the reader who asked for more contrast, and the only answer a stylesheet
+ * has is a `@media (forced-colors: active)` block that draws it in system
+ * colours, which the mode keeps. jsdom evaluates no media query, so that
+ * block is never in the cascade here and a suite could only ever read its
+ * source, which is how a block that names the selector one weight short of
+ * the rule it has to beat reads as working. So the query is ANSWERED, as
+ * `installMotion` answers the motion preference: a matching block is
+ * unwrapped where it stands and the other is dropped, and jsdom's own cascade
+ * then decides which rule wins.
+ *
+ * THE COLOUR TOKENS ARE RESOLVED, which is what makes that cascade a real
+ * contest. A tone rule whose `var(--color-…)` stood unresolved would be
+ * invalid at computed-value time and lose to anything, so a forced-colors
+ * rule one attribute short of the tone rule it has to beat would still read
+ * as winning: measured, a Meter's `.crewlet-meter__fill` block passed against
+ * `.crewlet-meter__fill[data-tone='success']` until the palette was resolved.
+ *
+ * It is NOT the mode itself. The repainting a browser does to every colour
+ * the author did not write as a system colour happens after the cascade, and
+ * nothing here imitates it: what a suite reads is what the stylesheet says
+ * for the mode, which is the half the stylesheet is responsible for. jsdom
+ * resolves a system colour to a fixed value of its own (`CanvasText` to
+ * black), so compare a reading with the same keyword computed here, never
+ * with a number. Returns the remover, as above.
+ */
+export function installForcedColors(
+  mode: "active" | "none",
+  theme: "light" | "dark",
+  ...paths: string[]
+): () => void {
+  const table = themeTokens(theme);
+  const source = paths
+    .map((path) => readFileSync(join(uiSource, path), "utf8"))
+    .join("\n")
+    .replace(
+      /var\((--[\w-]+)\)/g,
+      (whole, name: string) => table.get(name) ?? whole,
+    );
+  return installCss(
+    answerForcedColors(resolveOwn(resolveLengths(source)), mode),
+  );
+}
+
+/**
+ * The stylesheet with every `forced-colors` query answered for the mode named,
+ * and every other at-rule left where it was; a combined query is refused, as
+ * `answerMotion` refuses one.
+ */
+export function answerForcedColors(
+  css: string,
+  mode: "active" | "none",
+): string {
+  return answerFeature(
+    css,
+    "forced-colors",
+    ["active", "none"],
+    mode,
+    "answerForcedColors",
+  );
+}
+
+/**
+ * ONE ANSWERER for a media feature that takes a keyword, so the motion and
+ * the colour-mode helpers cannot come to disagree about where a block ends or
+ * what counts as a combined query. Every `@media` whose prelude names the
+ * feature must be exactly `(feature: value)` for one of `values`; the block
+ * whose value is `answer` is unwrapped where it stands, the others are
+ * dropped, and every at-rule that does not name the feature is left exactly
+ * where it was.
+ */
+function answerFeature(
+  css: string,
+  feature: string,
+  values: readonly string[],
+  answer: string,
+  caller: string,
+): string {
   const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const exact = new RegExp(
+    `^@media\\s*\\(\\s*${feature}\\s*:\\s*(${values.join("|")})\\s*\\)$`,
+  );
   let out = "";
   let from = 0;
   for (
@@ -559,18 +667,15 @@ export function answerMotion(
       if (text[close] === "{") depth += 1;
       else if (text[close] === "}") depth -= 1;
     }
-    if (!prelude.includes("prefers-reduced-motion")) {
+    if (!prelude.includes(feature)) {
       out += text.slice(from, close);
       from = close;
       continue;
     }
-    const query =
-      /^@media\s*\(\s*prefers-reduced-motion\s*:\s*(reduce|no-preference)\s*\)$/.exec(
-        prelude,
-      );
-    if (!query) throw new Error(`answerMotion cannot answer "${prelude}"`);
+    const query = exact.exec(prelude);
+    if (!query) throw new Error(`${caller} cannot answer "${prelude}"`);
     out += text.slice(from, at);
-    if (query[1] === preference) out += text.slice(open + 1, close - 1);
+    if (query[1] === answer) out += text.slice(open + 1, close - 1);
     from = close;
   }
   return out + text.slice(from);

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ButtonLink, Meter, Sparkline, StatCard, StatGroup } from '@crewlethq/ui';
+import { ButtonLink, Meter, SegmentedMeter, Sparkline, StatCard, StatGroup } from '@crewlethq/ui';
 import { ArrowRightGlyph, CoinsGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof StatCard> = {
@@ -33,8 +33,9 @@ export const Basic: Story = {};
 /**
  * THE HOME ROW, as the approved design draws it: five tiles on the sheet, each
  * a flat card. A figure at the end of the value's line says where the number
- * has been going (a sparkline whose accent point is now, a meter against a
- * budget), a change against an earlier reading heads the second line in the
+ * has been going or what it is made of (the state bar of who is working,
+ * waiting, stopped and idle, a sparkline whose accent point is now, a meter
+ * against a budget), a change against an earlier reading heads the second line in the
  * ink of whether it was wanted, and a small control can stand in the figure's
  * place when the number is something to act on.
  */
@@ -49,7 +50,25 @@ export const TheHomeRow: Story = {
         background: 'var(--color-surface-background)',
       }}
     >
-      <StatCard label="Agents working now" value="4" unit="/ 7" sub="1 waiting · 1 stopped · 1 idle" />
+      <StatCard
+        label="Agents working now"
+        value="4"
+        unit="/ 7"
+        // Decorative here: the value and the line under it already say every
+        // part the bar draws, so a name would read them out a second time.
+        trend={
+          <SegmentedMeter
+            segments={[
+              { id: 'working', value: 4, tone: 'info', label: 'working' },
+              { id: 'waiting', value: 1, tone: 'warning', label: 'waiting' },
+              { id: 'stopped', value: 1, tone: 'danger', label: 'stopped' },
+            ]}
+            total={7}
+            decorative
+          />
+        }
+        sub="1 waiting · 1 stopped · 1 idle"
+      />
       <StatCard
         label="Waiting on your decision"
         value="3"

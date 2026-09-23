@@ -104,3 +104,23 @@
     transition: none;
   }
 }
+
+/*
+ * FORCED COLORS. The mode repaints every author background to Canvas, and the
+ * track and the fill are nothing but backgrounds, so the bar used to disappear
+ * whole, track and reading together, for exactly the reader who asked for
+ * more contrast. A system colour an author writes is kept, so the fill is
+ * drawn in CanvasText and the track in GrayText, the system's own pair for
+ * "there" and "quieter", which is what a SegmentedMeter draws its parts and
+ * its remainder in. The tone goes, as every hue does in this mode; the length
+ * is the reading, and it stays.
+ */
+@media (forced-colors: active) {
+  .crewlet-meter__track {
+    background: GrayText;
+  }
+
+  .crewlet-meter__fill[data-tone] {
+    background: CanvasText;
+  }
+}

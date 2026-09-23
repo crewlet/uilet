@@ -13,7 +13,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
 import { contrast, deltaE, flatten, OPAQUE_SURFACES, paletteStates, parseHex, RUNG_STEPS } from '@crewlethq/tokens/test/palette';
-import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { installForcedColors, installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { Meter, meterTone, progressTone } from './index.js';
 
 afterEach(cleanup);
@@ -323,6 +323,51 @@ describe('Meter', () => {
       expect(tracks.map((track) => getComputedStyle(track).borderRadius)).toEqual(['999px', '999px']);
     } finally {
       uninstall();
+    }
+  });
+
+  test('in forced colors the fill is CanvasText and the track GrayText, so the length survives', () => {
+    /*
+     * The mode repaints every author background to Canvas, and a meter is
+     * nothing but backgrounds: the bar used to vanish whole, track and reading
+     * together, for the reader who asked for more contrast. A system colour an
+     * author writes is the one thing the mode keeps. jsdom resolves one to a
+     * fixed value of its own, so each reading is compared with the same
+     * keyword resolved here, and every tone is drawn, since a tone rule is
+     * the one that has to be beaten.
+     */
+    const system = (keyword: string) => {
+      const probe = document.createElement('i');
+      probe.style.backgroundColor = keyword;
+      document.body.append(probe);
+      const value = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return value;
+    };
+    expect(system('CanvasText')).not.toBe(system('GrayText'));
+    // In both palettes, with every token resolved, so each tone rule is a
+    // real colour the block has to beat rather than a declaration jsdom drops.
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installForcedColors('active', theme, 'Meter/Meter.css');
+      try {
+        const tones = ['quantity', 'success', 'warning', 'danger', 'neutral'] as const;
+        const { container } = render(
+          <>
+            {tones.map((tone) => (
+              <Meter key={tone} label={tone} value={40} max={100} tone={tone} />
+            ))}
+          </>,
+        );
+        for (const fill of container.querySelectorAll<HTMLElement>('.crewlet-meter__fill')) {
+          expect(getComputedStyle(fill).backgroundColor, `${theme} ${fill.dataset['tone']}`).toBe(system('CanvasText'));
+        }
+        for (const track of container.querySelectorAll('.crewlet-meter__track')) {
+          expect(getComputedStyle(track).backgroundColor, theme).toBe(system('GrayText'));
+        }
+      } finally {
+        uninstall();
+      }
+      cleanup();
     }
   });
 

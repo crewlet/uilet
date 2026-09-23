@@ -43,7 +43,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
 | Content and text | `Text` (the eight registers), `Prose`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload` |
-| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
+| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
@@ -525,9 +525,9 @@ shell breakpoint.
 12px caption step, as the caller wrote it, where it was uppercased and tracked
 open in the column-head register. The value is `--font-size-display`, the
 screen's one display number, in tabular figures. Two slots are new. `trend`
-stands a small figure at the END of the value's line, such as a `Sparkline` or
-a `Meter`, or a small control that acts on the number, in a slot
-`--crewlet-statcard-trend-width` wide (96px); a figure fills it and a control
+stands a small figure at the END of the value's line, such as a `Sparkline`,
+a `Meter` or a `SegmentedMeter`, or a small control that acts on the number,
+in a slot `--crewlet-statcard-trend-width` wide (96px); a figure fills it and a control
 keeps its own width at its end. `delta` heads the second line with a change
 against an earlier reading, `{ value, polarity }`, drawn in the ink of whether
 it was WANTED (`good` the success ink, `bad` the danger ink, `neutral` the
@@ -572,6 +572,55 @@ so the figure's root is a `div.crewlet-spark` holding the plot's
 | a `Sparkline` relying on the accent as its default colour | `DATA_COLOR_OTHER`; pass `color` for another |
 | a stylesheet selecting the `Sparkline` root as an `svg` | the root is `div.crewlet-spark`; the plot is `svg.crewlet-spark__plot` inside it |
 | a `Meter` track measured at 4px | 6px |
+
+**`SegmentedMeter` is new: the design's state bar.** A whole divided into the
+states its parts are in, `segments: { id, value, tone, label }[]` against a
+`total`: how many seats are working (`info`), waiting on a person (`warning`),
+stopped (`danger`) and done (`success`), or how much of a project is done,
+active and still to do. Each part is its share of the whole, 2px from the
+next, in its tone's fill step; what the parts leave of `total` is the
+remainder, drawn last in `--color-border-strong`, which stands at least dE
+7.99 off every rung, so the whole bar is seen on any ground. There is no
+neutral part, because the quiet part of a whole IS the remainder. The bar is
+8px, the figure at the end of a stat tile's value line (the `trend` slot takes
+it), and `size="compact"` is the design's 6px progress bar under a project's
+name. A part of 0 is not drawn at all, so it leaves no gap behind it, and no
+part is ever narrower than the kit's 7px status dot, or than an equal share of
+the bar where so many parts would not fit at 7px. It is one image to a screen
+reader, named for every part it draws and the whole, "4 working, 1 waiting,
+1 stopped, 1 idle of 7", with `remainderLabel` naming the remainder;
+`segmentedMeterLabel()` answers the same words, `label` replaces them for a
+figure with a unit, and `decorative` silences a bar whose figures are written
+beside it. A total under its parts draws the parts against their own sum and
+keeps the figures it was given in the name, as a `Meter` past its maximum
+does; a negative or non-finite count, and two parts with one id, are refused
+with a `RangeError` that names them.
+
+**`Stepper` is new: where a sequence has got to.** The design's step row, an
+ordered list of `steps: { id, label }[]` with `current` naming the step under
+way: the steps before it are done, in the secondary ink behind a check and
+said as "Done" before their words (`doneLabel` for another language); the
+current one is a pill of its tone's soft tint under its ink with the tone's
+dot, `info` by default (`warning`, `danger`, `success` and `brand` for a step
+parked, stopped, finished or where the reader is), and carries
+`aria-current="step"`; the steps after it are the tertiary ink. A 10px rule in
+`--color-border-strong` joins two steps. `current={null}` is a finished
+sequence, every step done and none current, which is how a turn's history is
+drawn. `pulse` breathes the current dot with `StatusDot`'s own pulse, held
+still under a reduced-motion preference. The tone is drawn and never spoken,
+so a step whose state is not ordinary work says so in its own words ("Review ·
+sent back"). A `current` that names none of the steps, and two steps with one
+id, are refused with a `RangeError` that names them.
+
+**A `Meter`, and both new figures, are drawn in forced-colors mode.** The mode
+repaints every author background to `Canvas`, and a meter's track and fill are
+nothing but backgrounds, so the whole bar used to disappear for the reader who
+asked for more contrast. A system colour an author writes is kept, so in that
+mode a `Meter`'s fill and a `SegmentedMeter`'s parts are `CanvasText`, the
+track and the remainder `GrayText`, and a `Stepper`'s current step is
+`HighlightText` on `Highlight`, the system's own drawing of a selection, with
+the rule between two steps in `GrayText`. The hues go, as every hue does in
+that mode; the lengths and the current step stay.
 
 ## Breaking changes in 0.3.0
 

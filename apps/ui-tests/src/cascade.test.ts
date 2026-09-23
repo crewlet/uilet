@@ -12,6 +12,7 @@
  */
 import { afterEach, expect, test } from 'vitest';
 import {
+  answerForcedColors,
   answerMotion,
   inset,
   installCss,
@@ -232,4 +233,53 @@ test('a query it cannot answer honestly is refused', () => {
   expect(() =>
     answerMotion('@media (prefers-reduced-motion: reduce) and (width < 1024px) { .a { animation: none; } }', 'reduce'),
   ).toThrow(/cannot answer/);
+});
+
+test('a forced-colors block is answered where it stands, and the cascade then decides', () => {
+  /*
+   * jsdom applies no `@media` rule, so without the answer a forced-colors
+   * block is never in the cascade and a suite can only read its source. The
+   * block below is one weight short of the rule it has to beat, which is the
+   * defect a source read passes and the cascade does not.
+   */
+  const sheet =
+    '.p[data-t] { background: rgb(1, 2, 3); }\n.q[data-t] { background: rgb(1, 2, 3); }\n' +
+    '@media (forced-colors: active) { .p { background: CanvasText; } .q[data-t] { background: CanvasText; } }';
+  document.body.innerHTML = '<i class="p" data-t="x"></i><i class="q" data-t="x"></i><i class="r"></i>';
+  const [p, q, r] = [...document.body.children];
+  r!.setAttribute('style', 'background: CanvasText');
+  const canvasText = getComputedStyle(r!).backgroundColor;
+  remove = installCss(answerForcedColors(sheet, 'active'));
+  expect(getComputedStyle(p!).backgroundColor).toBe('rgb(1, 2, 3)');
+  expect(getComputedStyle(q!).backgroundColor).toBe(canvasText);
+  remove();
+  remove = installCss(answerForcedColors(sheet, 'none'));
+  expect(getComputedStyle(q!).backgroundColor).toBe('rgb(1, 2, 3)');
+});
+
+test('each answerer leaves the other feature’s blocks where they were, and refuses a combined query', () => {
+  const both =
+    '@media (prefers-reduced-motion: reduce) { .a { animation: none; } }\n' +
+    '@media (forced-colors: active) { .a { color: CanvasText; } }';
+  expect(answerForcedColors(both, 'active')).toBe(
+    '@media (prefers-reduced-motion: reduce) { .a { animation: none; } }\n .a { color: CanvasText; } ',
+  );
+  expect(answerMotion(both, 'reduce')).toBe(
+    ' .a { animation: none; } \n@media (forced-colors: active) { .a { color: CanvasText; } }',
+  );
+  expect(() =>
+    answerForcedColors('@media (forced-colors: active) and (prefers-color-scheme: dark) { .a { color: red; } }', 'active'),
+  ).toThrow(/answerForcedColors cannot answer/);
+});
+
+test('a calc() jsdom has folded to one length is read as that length, and one it could not fold as 0', () => {
+  // jsdom folds `calc(4px * 1.5)` and keeps the wrapper on a gap, so without
+  // the unwrap every derived gap in the package measured zero.
+  remove = installCss('.a { gap: calc(4px * 1.5); } .b { gap: calc(100% - 4px); } .c { gap: 6px; }');
+  document.body.innerHTML = '<i class="a"></i><i class="b"></i><i class="c"></i>';
+  const [a, b, c] = [...document.body.children];
+  expect(getComputedStyle(a!).gap).toBe('calc(6px)');
+  expect(px(a!, 'gap')).toBe(6);
+  expect(px(b!, 'gap')).toBe(0);
+  expect(px(c!, 'gap')).toBe(6);
 });

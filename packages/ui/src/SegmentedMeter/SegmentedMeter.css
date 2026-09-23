@@ -1,0 +1,109 @@
+/*
+ * The segmented meter: a whole divided into the states its parts are in
+ * (SegmentedMeter.tsx).
+ *
+ * THE APPROVED DESIGN'S STATE BAR. 8px tall with 2px between the parts, each
+ * part its tone's FILL step and the remainder the quiet --color-border-strong:
+ * "4 of 7 working" on the Home screen's first tile. The compact step is the
+ * design's 6px progress bar under a project's name, the height of a Meter's
+ * track. Both are the measure of one mark, fixed at every density, as a
+ * Meter's track and a status dot are: a bar read by its proportions does not
+ * shrink with the gaps around it.
+ *
+ * A FILL IS A MARK. Nothing is written on it, so it takes the fill step, which
+ * the palette suite in @crewlethq/tokens measures at 3:1 against every opaque
+ * rung, and the ground shows through the gap on either side of it: two states
+ * are told apart by the gap between them and by the hue each clears on the
+ * ground, never by a contrast between two fills, which no rule measures.
+ *
+ * THE REMAINDER IS THE EXTENT OF THE BAR, not a reading, as a Meter's track
+ * is: what is left of seven seats once four work, one waits and one has
+ * stopped. It is the strong hairline's colour, which stands dE 7.99 off its
+ * nearest rung (the light frame) and 17.19 off its farthest, far past the dE 3
+ * this kit holds every "can a reader notice it" difference to, so the whole is
+ * visible on any ground the bar is put on. It is quieter than a fill by design:
+ * the idle seats are the part of the picture nobody has to act on.
+ */
+
+.crewlet-segmented-meter {
+  /* The gap between two parts, declared once because the width floor below
+     takes it out of the bar as well. */
+  --crewlet-segmented-meter-gap: 2px;
+  /* How many parts share the bar. The component sets it from the parts it
+     draws; one is what a bar that says nothing else holds. */
+  --crewlet-segmented-meter-count: 1;
+
+  display: flex;
+  gap: var(--crewlet-segmented-meter-gap);
+  height: 8px;
+  min-width: 0;
+  /*
+   * ROUND AT THE TWO ENDS AND SQUARE BETWEEN THE PARTS, which is the design's
+   * bar: the corner is the bar's, clipped, rather than each part's, so a part
+   * in the middle is a plain block and the ends are round whichever parts
+   * happen to stand there. The design writes 3px; the ramp's smallest step is
+   * --radius-xs, 4px, which is half the bar at both heights, so the ends are
+   * round.
+   */
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.crewlet-segmented-meter--compact {
+  height: 6px;
+}
+
+/*
+ * A PART'S WIDTH IS ITS SHARE, set by the component as a flex basis in
+ * percent of the whole. The bases add to 100%, the gaps push the row past its
+ * box, and every part gives back in proportion to its basis, which is what
+ * flex-shrink at 1 does: each ends at its share of the bar less the gaps.
+ *
+ * THE FLOOR is the kit's 7px status dot, the smallest mark this kit asks a
+ * reader to tell by its hue: at its share alone one stopped seat in sixty is a
+ * sixth of a pixel. It yields to an equal share of the bar where so many parts
+ * are drawn that 7px each would not fit, so no part is ever pushed out of the
+ * end. A part held at the floor overstates its share, and the name says the
+ * exact figures.
+ */
+.crewlet-segmented-meter__segment {
+  flex-grow: 0;
+  flex-shrink: 1;
+  min-width: min(
+    7px,
+    calc(
+      (100% - (var(--crewlet-segmented-meter-count) - 1) * var(--crewlet-segmented-meter-gap)) /
+        var(--crewlet-segmented-meter-count)
+    )
+  );
+  height: 100%;
+}
+
+.crewlet-segmented-meter__segment[data-tone='info'] { background: var(--color-feedback-info); }
+.crewlet-segmented-meter__segment[data-tone='success'] { background: var(--color-feedback-success); }
+.crewlet-segmented-meter__segment[data-tone='warning'] { background: var(--color-feedback-warning); }
+.crewlet-segmented-meter__segment[data-tone='danger'] { background: var(--color-feedback-danger); }
+
+.crewlet-segmented-meter__remainder {
+  background: var(--color-border-strong);
+}
+
+/*
+ * FORCED COLORS. The mode repaints every author background to Canvas, so a bar
+ * drawn only in backgrounds disappears whole for exactly the reader who asked
+ * for more contrast, and a bar is read by its LENGTHS, which that reader needs
+ * as much as anybody. A system colour an author writes is kept, so the parts
+ * are drawn in CanvasText and the remainder in GrayText, the system's own
+ * pair for "there" and "quieter", and the gaps still stand between the parts.
+ * The hues go, as every hue does in this mode: the name says which part is
+ * which state.
+ */
+@media (forced-colors: active) {
+  .crewlet-segmented-meter__segment[data-tone] {
+    background: CanvasText;
+  }
+
+  .crewlet-segmented-meter__remainder {
+    background: GrayText;
+  }
+}

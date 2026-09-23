@@ -1,0 +1,176 @@
+/*
+ * The stepper: where a sequence has got to (Stepper.tsx).
+ *
+ * THE APPROVED DESIGN'S STEP ROW. Each step is a 20px pill inside the default
+ * hairline, the 11px step at the medium weight, 8px inside each end and 5px
+ * between a mark and the word; two pills are joined by a 10px rule in the
+ * strong hairline's colour with 6px either side of it. A finished step is the
+ * secondary ink behind a check, the current step its tone's soft tint under
+ * its ink behind its dot, and a step still to come the tertiary ink.
+ *
+ * EVERY INK IS A MEASURED PAIR. The secondary and tertiary steps are held to
+ * 4.5:1 on every opaque rung, and each tone's ink to 4.5:1 on its own soft
+ * tint over every rung, by the palette suite in @crewlethq/tokens; the pill
+ * draws nothing else. The current pill is the design's `work-soft` under
+ * `work-ink` in the default tone, and a Tag's colours in every tone, which is
+ * what a chip naming a state is in this kit.
+ */
+
+.crewlet-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  /* The design's 6px between a pill and the rule beside it: a step and a half. */
+  gap: calc(var(--spacing-1) * 1.5);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-stepper__step {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-1) * 1.5);
+  min-width: 0;
+}
+
+/*
+ * THE RULE BETWEEN TWO STEPS is drawn by the second of them, so a sequence of
+ * one draws none and nothing trails the last. A pseudo-element, because it is
+ * furniture: it carries nothing a reader has to be told, and the list already
+ * says the steps are in order. 10px by a hairline, the measure of this one
+ * mark, and fixed at every density as a hairline is.
+ */
+.crewlet-stepper__step + .crewlet-stepper__step::before {
+  content: '';
+  flex: none;
+  width: 10px;
+  height: 1px;
+  background: var(--color-border-strong);
+}
+
+.crewlet-stepper__chip {
+  display: inline-flex;
+  align-items: center;
+  /* The design's 5px between the check or the dot and the word. */
+  gap: calc(var(--spacing-1) * 1.25);
+  box-sizing: border-box;
+  /* The design's 20px pill, which follows the density with every other step
+     height in the kit. It labels and takes no press, so the 24px target floor
+     is not its to clear. */
+  height: calc(20px * var(--density, 1));
+  max-width: 100%;
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.crewlet-stepper__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewlet-stepper__check {
+  flex: none;
+}
+
+.crewlet-stepper__step--done > .crewlet-stepper__chip {
+  color: var(--color-text-secondary);
+}
+
+/*
+ * THE CURRENT STEP, in its tone. The hairline goes transparent rather than
+ * away, so the pill keeps its box and the row does not move by a pixel as the
+ * current step advances along it, and so forced-colors mode, which draws a
+ * transparent border in the system's own colour, still outlines it.
+ */
+.crewlet-stepper--info .crewlet-stepper__step--current > .crewlet-stepper__chip {
+  border-color: transparent;
+  background: var(--color-feedback-info-soft);
+  color: var(--color-feedback-info-ink);
+}
+
+.crewlet-stepper--success .crewlet-stepper__step--current > .crewlet-stepper__chip {
+  border-color: transparent;
+  background: var(--color-feedback-success-soft);
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-stepper--warning .crewlet-stepper__step--current > .crewlet-stepper__chip {
+  border-color: transparent;
+  background: var(--color-feedback-warning-soft);
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-stepper--danger .crewlet-stepper__step--current > .crewlet-stepper__chip {
+  border-color: transparent;
+  background: var(--color-feedback-danger-soft);
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-stepper--brand .crewlet-stepper__step--current > .crewlet-stepper__chip {
+  border-color: transparent;
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+}
+
+/*
+ * INSIDE THE PILL THE DOT IS THE PILL'S OWN INK, as a Tag's is, and for the
+ * Tag's reason: StatusDot paints the fill step, measured as a mark on the
+ * opaque rungs, and here it stands on the tone's soft tint instead, where
+ * nothing measures it. The ink is the step that IS measured on that tint, at
+ * 4.5:1, and the colour of the word beside it. A pulsing dot keeps
+ * StatusDot's halo, the same soft step drawn once more over the pill, which
+ * stands dE 3.92 off it at the least (the light warning pill on the frame).
+ *
+ * Two classes deep, so it beats StatusDot's own tone rule whichever order the
+ * bundle writes the two files in.
+ */
+.crewlet-stepper .crewlet-stepper__dot {
+  background: currentColor;
+}
+
+/*
+ * FORCED COLORS repaints every background to Canvas, which takes the current
+ * step's tint and its dot, so the one step the row is about would read like
+ * any other. The current pill is drawn as the system draws a selection,
+ * HighlightText on Highlight, with its dot in the same ink, and the rule
+ * between two steps in GrayText; the chips' hairlines are borders, which the
+ * mode keeps in its own colour.
+ *
+ * THE CURRENT PILL OPTS OUT OF THE ADJUSTMENT, which is safe only because
+ * every colour it draws in that mode is a system colour. Left to it, Chromium
+ * paints a Canvas backplate behind every run of text, and HighlightText is
+ * written for Highlight, not for Canvas: in a dark high-contrast theme the
+ * step's words drew black on black (measured in Chromium 153 with the mode
+ * emulated). Opting out also keeps shadows, so the pulsing dot's halo, which
+ * is the tone's soft tint and no system colour, is held still inside it.
+ */
+@media (forced-colors: active) {
+  .crewlet-stepper .crewlet-stepper__step--current > .crewlet-stepper__chip {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .crewlet-stepper .crewlet-stepper__dot {
+    background: HighlightText;
+  }
+
+  .crewlet-stepper .crewlet-stepper__dot.is-pulsing::after {
+    animation: none;
+  }
+
+  .crewlet-stepper__step + .crewlet-stepper__step::before {
+    background: GrayText;
+  }
+}

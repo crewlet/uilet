@@ -85,6 +85,12 @@ export const VISIONS: readonly string[];
 export const OPAQUE_SURFACES: readonly string[];
 
 /**
+ * The neutral text steps that carry a FACT, each as [custom property, the
+ * contrast floor it clears on every opaque rung].
+ */
+export const TEXT_STEPS: readonly (readonly [string, number])[];
+
+/**
  * The steps of the ladder, each as [rule, upper rung, lower rung, the dE the
  * upper rung has to sit off the lower one].
  */
