@@ -17,8 +17,10 @@
  *     because a node is read as a box and a column is read down its leading
  *     edge: names centred in a column are a column nobody can scan;
  *   - the mark's zone is a large control step in a node and a small one in a
- *     row, and the mark inside it takes the step that half-fills or
- *     three-quarter-fills whichever zone it is in;
+ *     row, and a glyph inside it takes the step that half-fills or
+ *     three-quarter-fills whichever zone it is in; a seat's badge is the
+ *     approved org chart's own 26px in a node and the smallest badge, 20px,
+ *     in a row;
  *   - the push slot keeps a FIXED room in a node, because a node is
  *     `width: max-content` and a slot that grew with its content would relay
  *     the whole chart, and is content-sized in a row, where the grid already
@@ -43,6 +45,7 @@
 
 import type { ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
+import { Avatar, type AvatarKind } from '../Avatar/index.js';
 import type { TreeCardTone } from '../TreeCanvas/index.js';
 
 /**
@@ -51,30 +54,64 @@ import type { TreeCardTone } from '../TreeCanvas/index.js';
  */
 export type OrgLabelLayout = 'node' | 'row';
 
-/** What both layouts say, in the order they say it. */
-export interface OrgLabelContent {
-  /** The mark in the leading zone: a glyph, a brand mark, an image. */
-  icon?: ReactNode | undefined;
-  /**
-   * A ring around that mark.
-   *
-   * `dashed` is the boundary something standing for somebody outside the
-   * system wears, the same mark a dashed card and a dashed row carry. The
-   * BOUNDARY says it rather than a hue, so it reads to somebody who cannot
-   * separate hues at all.
-   */
-  iconRing?: 'none' | 'dashed' | undefined;
-  /**
-   * How big the mark is drawn in its zone, as a proportion of the zone rather
-   * than as a size: `md` half-fills it, `lg` fills three quarters.
-   *
-   * `md` is what a container takes (a company, a unit, a group) and `lg` is
-   * for the mark that stands for the THING the chart is about, so a reader
-   * tells one from the other at the far end of a chart without reading either
-   * caption. The zone itself does not change either way, so this moves
-   * nothing: only what is drawn inside it.
-   */
-  iconSize?: 'md' | 'lg' | undefined;
+/**
+ * The seat a node or a row stands for, drawn as its badge in the mark's zone.
+ *
+ * `kind` IS REQUIRED HERE, where `Avatar` defaults it: an org chart is the one
+ * surface whose whole job is saying which seats a person holds and which the
+ * engine runs, and a default would draw every person the caller forgot to
+ * mark as an agent.
+ */
+export interface OrgLabelAvatar {
+  /** Whose badge: the initials are made from it, usually the label's own name. */
+  name: string;
+  /** An agent is a squircle, a human a circle: `Avatar`'s own kind. */
+  kind: AvatarKind;
+  /** A picture, where the seat has one; otherwise the initials. */
+  src?: string | undefined;
+}
+
+/**
+ * The mark in the leading zone: a glyph, or a seat's badge. Never both, since
+ * the zone holds one mark.
+ */
+export type OrgLabelMark =
+  | {
+      /** A glyph, a brand mark or an image, for what is not a seat: a company, a unit, a group. */
+      icon?: ReactNode | undefined;
+      /**
+       * How big the glyph is drawn in its zone, as a proportion of the zone
+       * rather than as a size: `md` half-fills it, `lg` fills three quarters.
+       *
+       * `md` is what a container takes (a company, a unit, a group) and `lg`
+       * is for the mark that stands for the THING the chart is about, so a
+       * reader tells one from the other at the far end of a chart without
+       * reading either caption. The zone itself does not change either way,
+       * so this moves nothing: only what is drawn inside it.
+       */
+      iconSize?: 'md' | 'lg' | undefined;
+      avatar?: undefined;
+    }
+  | {
+      /**
+       * A SEAT'S BADGE, with its kind as its outline: a squircle for an agent,
+       * a circle for a person, which is the one cue that tells them apart.
+       * There used to be a second, a dashed ring round a glyph for a human
+       * seat, and two cues for one fact are two things to keep agreeing.
+       *
+       * The layout sizes it and nothing here does: the approved org chart's
+       * 26px badge in a node and the smallest step, 20px, in a row.
+       *
+       * Optional in this branch as well, so a label that draws no mark at all
+       * matches both and a caller can hand either layout the same content.
+       */
+      avatar?: OrgLabelAvatar | undefined;
+      icon?: undefined;
+      iconSize?: undefined;
+    };
+
+/** What both layouts say besides the mark, in the order they say it. */
+interface OrgLabelWords {
   /** The name, which takes the width the two fixed zones leave and truncates. */
   name: ReactNode;
   /** What kind of thing this is: "Department", "Human seat", "Crewlet agent". */
@@ -103,7 +140,10 @@ export interface OrgLabelContent {
   className?: string | undefined;
 }
 
-export interface OrgLabelNodeProps extends OrgLabelContent {
+/** What both layouts say, in the order they say it. */
+export type OrgLabelContent = OrgLabelMark & OrgLabelWords;
+
+export type OrgLabelNodeProps = OrgLabelContent & {
   layout?: 'node' | undefined;
   /**
    * Refused on a node, because a node has no element to carry it. A chart card
@@ -111,31 +151,48 @@ export interface OrgLabelNodeProps extends OrgLabelContent {
    * is where a node's ink comes from; there is nothing here to tone.
    */
   tone?: never | undefined;
-}
+};
 
-export interface OrgLabelRowProps extends OrgLabelContent {
+export type OrgLabelRowProps = OrgLabelContent & {
   layout: 'row';
-  /** The row's hue, which its mark and its name are drawn in. */
+  /** The row's hue, which its glyph and its name are drawn in. */
   tone?: TreeCardTone | undefined;
-}
+};
 
 export type OrgLabelProps = OrgLabelNodeProps | OrgLabelRowProps;
 
 /** The mark, the name and the caption of an org chart node or an org table row. */
 export function OrgLabel(props: OrgLabelProps) {
-  const { layout = 'node', icon, iconRing = 'none', iconSize = 'md', className } = props;
-  const zone = (
-    <span
-      className={cx(
-        'crewlet-org-label__icon',
-        iconRing === 'dashed' && 'crewlet-org-label__icon--dashed',
-        iconSize === 'lg' && 'crewlet-org-label__icon--lg',
-      )}
-      aria-hidden="true"
-    >
-      {icon}
-    </span>
-  );
+  const { layout = 'node', className } = props;
+  const zone =
+    props.avatar === undefined ? (
+      <span
+        className={cx('crewlet-org-label__icon', props.iconSize === 'lg' && 'crewlet-org-label__icon--lg')}
+        aria-hidden="true"
+      >
+        {props.icon}
+      </span>
+    ) : (
+      <span className="crewlet-org-label__icon" aria-hidden="true">
+        {/*
+         * THE DESIGN'S BADGE, IN EITHER LAYOUT. In a node it is the `sm` step,
+         * 26px, which is what the approved org chart draws on every node, and
+         * which fails no floor: its initials are the kit's 11px. In a row it
+         * is the smallest step, `xs`, 20px, the nearest to the 18 to 20px the
+         * design's lists draw a badge at on a line of text. Either way it is
+         * larger than a container's glyph in the same zone (20px in a node,
+         * 16px in a row), so a seat never reads as a unit. Decorative, because
+         * the name is printed right beside it.
+         */}
+        <Avatar
+          name={props.avatar.name}
+          kind={props.avatar.kind}
+          src={props.avatar.src}
+          size={layout === 'row' ? 'xs' : 'sm'}
+          decorative
+        />
+      </span>
+    );
   if (layout === 'row') {
     return (
       <span className={cx('crewlet-org-label', 'crewlet-org-label--row', className)} data-tone={props.tone}>
@@ -174,7 +231,7 @@ function Words({
   caption,
   captionMarks,
   className,
-}: Pick<OrgLabelContent, 'name' | 'caption' | 'captionMarks' | 'className'>) {
+}: Pick<OrgLabelWords, 'name' | 'caption' | 'captionMarks' | 'className'>) {
   return (
     <span className={cx('crewlet-org-label__text', className)}>
       <span className="crewlet-org-label__name">{name}</span>
@@ -195,7 +252,7 @@ function Words({
  * console chart's own node, and it is the difference between a node with room
  * kept for a live state and a node that can never have one.
  */
-function Slot({ trailing }: Pick<OrgLabelContent, 'trailing'>) {
+function Slot({ trailing }: Pick<OrgLabelWords, 'trailing'>) {
   if (trailing === undefined) return null;
   return <span className="crewlet-org-label__trailing">{trailing}</span>;
 }

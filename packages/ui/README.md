@@ -43,7 +43,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `tertiary`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
 | Content and text | `Text` (the eight registers), `Prose`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload` |
-| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `PricingCard`, `Avatar`, `CodeBlock`, `Skeleton`, `Eyebrow` |
+| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
@@ -140,7 +140,7 @@ land at once.
   `runPalette({ tokens, themes: themes + override })` from
   `@crewlethq/tokens/test/palette`.
 
-- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-tint-rgb` on the compact `DataTable`, and `--crewlet-avatar-tint-fg` for the initials on a tinted `Avatar`. Override them from a rule that targets the component's root.
+- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-rail` on the compact `DataTable`, and `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface). Override them from a rule that targets the component's root.
 
 The component stylesheets read only variables that `@crewlethq/tokens` emits or
 that the components declare themselves, and the same check refuses a glyph
@@ -315,6 +315,84 @@ draws the outline, in the same tone, beside the same title word.
 | a stylesheet of your own setting `fill` on the SVGs inside a component, or on `.crewlet-glyph` | `color` on the element; the glyph's stroke is `currentColor` |
 | a stylesheet setting `stroke-width` on `.crewlet-glyph` | `--crewlet-glyph-stroke` on an ancestor |
 | a toast relying on the filled status glyph | the outline, in the same `--crewlet-toast-mark` tone |
+
+**An agent is a squircle and a person a circle, and a state is a ring.**
+`Avatar` takes a `kind` in place of its `shape` and its `variant`: `agent`, the
+default, is a squircle with its initials in the mono face, and `human` is a
+circle with them in the sans face. That outline is the one cue telling the two
+apart. There were two, a square or a circle and a solid or a dashed edge, and
+nothing stopped them disagreeing; the dashed edge is gone, from the badge and
+from everything that drew it (`EntityChip`, the dashed ring `OrgLabel` drew
+round a glyph and the dashed card `TreeCanvas` drew for a person's seat). An
+agent's corner is 0.29 of its box, the approved design's 7px at 24 and 9px at 30
+as one proportion, and a numeric size now goes through the same rule as a step
+by setting the same `--crewlet-avatar-size`; where the browser draws
+`corner-shape: squircle` it is a whole squircle, at the circle token, which
+stands as deep at the diagonal as that corner does. The neutral badge is the
+design's: the raised rung, the strong hairline and the secondary ink.
+
+The `brand` tone is gone, because the accent means where the reader is, the
+primary action and focus, and a badge filled with it was identity drawn in that
+colour. A new `ring` draws a state instead: a 1.5px outline 2px outside the
+badge in `info`, `warning`, `danger` or `success`'s own fill, or the accent for
+`brand`, which means selected. The gap is transparent, so the ring reads on any
+ground, and it is an outline, so forced-colors mode keeps it; in that mode every
+ring is one system colour, so say the state in words beside the badge. An image
+keeps its kind's outline and its ring.
+
+`AvatarStack` is new: badges that overlap by 6px, each cut out of the one before
+by a 2px ring of `--crewlet-avatar-stack-ground` (the sheet by default, where
+the design draws every stack; a stack on a card sets it to the card's rung),
+with the members past `max` (four by default) counted in a pill. Its badges are
+the `sm` step by default rather than the design's 22px: the design sets their
+initials at 9px, under this kit's 11px floor, and `sm` is the smallest step at
+which the overlap hides no more of two initials than the design's own stack
+does. It is one image to a screen reader, named for how many of each kind and
+every name, "2 agents and 1 person: Jane Founder, CTO, SWE", or by a `label` of
+your own, or silent with `decorative` where the words beside it already say it.
+
+`OrgLabel`, and so `OrgNodeLabel` and `OrgTableName`, lead a seat with its
+badge: `avatar={{ name, kind }}` in place of `icon`, read by nobody, since the
+name is beside it. It is the approved org chart's 26px badge (the `sm` step) in
+a node and the smallest step, 20px, in a row, larger than a container's glyph in
+either, so a seat never reads as a unit. `ImageUpload` takes the picture's
+`kind` in place of its `shape`; `agent` is the squircle and is what a company's
+mark takes too, since the circle is a person's.
+
+`TreeCanvas`'s `cardOutline` is removed, with the
+`.crewlet-tree-canvas__card--outline` class it set. It drew a dashed edge round
+the card of a seat a person holds, which was the same second cue drawn in a
+card's frame, and the approved org chart draws a person's seat on the same solid
+card as an agent's, with the badge's circle saying who holds it. For the same
+reason a `Card` of the `dashed` variant no longer stands for a person's seat. A
+dashed edge stands for a person nowhere in the kit now: it marks a place nothing
+fills yet, which is what that `Card` variant, a unit's missing lead and the
+ghost of a node being added all draw.
+
+| Was | Is |
+|---|---|
+| `<Avatar shape="square">`, or no `shape` | `<Avatar>`, or `kind="agent"` |
+| `<Avatar shape="circle">` | `<Avatar kind="human">` |
+| `<Avatar variant="dashed">` | `<Avatar kind="human">` |
+| `<Avatar variant="solid">` | drop it |
+| `<Avatar tone="brand">` for the reader's own badge or a selected one | `<Avatar ring="brand">`, on the neutral badge |
+| the `AvatarShape` and `AvatarVariant` types | `AvatarKind`; `AvatarTone` is `'neutral' \| 'seeded'` |
+| `avatarSquareCorner(px)`, which answered a radius token | `avatarCorner(px)`, which answers the corner in px (`px * AVATAR_CORNER_RATIO`) |
+| a stylesheet targeting `.crewlet-avatar--square` or `.crewlet-avatar--circle` | `.crewlet-avatar--agent` or `.crewlet-avatar--human` |
+| a stylesheet targeting `.crewlet-avatar--dashed` or `.crewlet-avatar--brand` | nothing is drawn with either any more |
+| a stylesheet relying on the neutral badge's `--color-border-default` hairline | it is `--color-border-strong` |
+| a stylesheet reading a numeric badge's inline `width` and `height` | its inline `--crewlet-avatar-size` |
+| `<EntityChip variant="human">`, and the `EntityChipVariant` type | `<EntityChip kind="human">`, typed `AvatarKind` |
+| `<OrgNodeLabel iconRing="dashed" icon={…}>`, or the same on `OrgLabel` or `OrgTableName` | `avatar={{ name, kind: 'human' }}` in place of `icon` |
+| `iconRing="none"` | drop it |
+| a stylesheet targeting `.crewlet-org-label__icon--dashed` | the badge inside the zone, `.crewlet-org-label__icon .crewlet-avatar--human` |
+| `interface … extends OrgLabelContent`, `OrgLabelNodeProps`, `OrgLabelRowProps` or `OrgTableNameProps` | an intersection: each is a type now, over `OrgLabelMark` (a glyph or a badge, never both) |
+| `<TreeCanvas cardOutline={…}>` | drop it: a person's seat is the same solid card as an agent's, and its badge's circle says who holds it |
+| a stylesheet targeting `.crewlet-tree-canvas__card--outline` | nothing is drawn with it any more |
+| `<Card variant="dashed">` round a seat a person holds | the card it would take for an agent's seat; the badge's circle says who holds it |
+| `<ImageUpload shape="square">`, or no `shape` | `<ImageUpload>`, or `kind="agent"` |
+| `<ImageUpload shape="circle">` | `<ImageUpload kind="human">` |
+| a stylesheet targeting `.crewlet-image-upload--square` or `.crewlet-image-upload--circle` | `.crewlet-image-upload--agent` or `.crewlet-image-upload--human` |
 
 ## Breaking changes in 0.3.0
 

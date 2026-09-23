@@ -61,14 +61,13 @@ describe('the node label', () => {
 
   /*
    * AND IT PASSES EVERYTHING ON. A thin alias that dropped a prop would be a
-   * node that silently stopped drawing a ring, a large mark or a push slot,
-   * with nothing in either suite to say so.
+   * node that silently stopped drawing a seat's badge, a large mark or a push
+   * slot, with nothing in either suite to say so.
    */
   test('hands the shared label every answer it was given', () => {
     const { container } = render(
       <OrgNodeLabel
         icon={<svg />}
-        iconRing="dashed"
         iconSize="lg"
         name="Ada"
         caption="Agent seat"
@@ -77,7 +76,6 @@ describe('the node label', () => {
         className="mine"
       />,
     );
-    expect(container.querySelector('.crewlet-org-label__icon--dashed')).not.toBeNull();
     expect(container.querySelector('.crewlet-org-label__icon--lg')).not.toBeNull();
     expect(container.querySelector('.crewlet-org-label__kind')!.textContent).toBe('Agent seat');
     expect(container.querySelector('.crewlet-org-label__caption .mark')).not.toBeNull();
@@ -85,6 +83,28 @@ describe('the node label', () => {
     expect(container.querySelector('.crewlet-org-label__text')!.classList.contains('mine')).toBe(
       true,
     );
+  });
+
+  /*
+   * A SEAT'S NODE LEADS WITH ITS BADGE, in the node's own layout: its kind is
+   * the outline, a squircle for an agent and a circle for a person, and the
+   * node draws no second cue for it.
+   */
+  test("leads a seat's node with its badge, its kind as the outline", () => {
+    const { container } = render(
+      <>
+        <OrgNodeLabel name="CTO" caption="Agent" avatar={{ name: 'CTO', kind: 'agent' }} />
+        <OrgNodeLabel name="Jane Founder" caption="Human" avatar={{ name: 'Jane Founder', kind: 'human' }} />
+      </>,
+    );
+    const badges = [...container.querySelectorAll('.crewlet-org-label__icon .crewlet-avatar')];
+    expect(badges.map((badge) => badge.className.match(/crewlet-avatar--(agent|human)/)?.[1])).toEqual([
+      'agent',
+      'human',
+    ]);
+    // The node layout's badge, the approved org chart's 26px: the sm step.
+    for (const badge of badges) expect(badge.className).toContain('crewlet-avatar--sm');
+    expect(container.innerHTML).not.toContain('dashed');
   });
 });
 

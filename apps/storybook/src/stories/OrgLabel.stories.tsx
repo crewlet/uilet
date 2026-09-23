@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { OrgLabel } from '@crewlethq/ui';
-import { BotGlyph, BuildingComplexGlyph, TriangleAlertGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
+import { BotGlyph, BuildingComplexGlyph, TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * UI / OrgLabel.
@@ -100,14 +100,22 @@ export const Node_: Story = {
           trailing={<span style={{ fontSize: 11 }}>idle</span>}
         />
       </Node>
-      {/* A dashed ring is the boundary something standing for somebody outside
-          the system wears: a boundary rather than a hue, so it reads to
-          somebody who cannot separate hues at all. */}
+      {/* A SEAT LEADS WITH ITS BADGE, and the badge's outline is its kind: a
+          squircle for an agent, a circle for a person. A boundary rather than
+          a hue, so it reads to somebody who cannot separate hues at all. It is
+          the approved org chart's 26px badge, larger than a container's glyph
+          beside it, so a seat never reads as a unit. */}
       <Node>
         <OrgLabel
-          icon={<UserGlyph />}
-          iconRing="dashed"
-          iconSize="lg"
+          avatar={{ name: 'Dev Agent', kind: 'agent' }}
+          name="Dev Agent"
+          caption="Crewlet agent"
+          trailing={<span style={{ fontSize: 11 }}>working</span>}
+        />
+      </Node>
+      <Node>
+        <OrgLabel
+          avatar={{ name: 'Ada Lovelace', kind: 'human' }}
           name="Ada Lovelace"
           caption="Human seat"
           captionMarks={<TriangleAlertGlyph />}
@@ -138,8 +146,7 @@ export const Row_: Story = {
       <Row>
         <OrgLabel
           layout="row"
-          icon={<UserGlyph />}
-          iconRing="dashed"
+          avatar={{ name: 'Ada Lovelace', kind: 'human' }}
           name="Ada Lovelace"
           caption="Human seat"
           captionMarks={<TriangleAlertGlyph />}

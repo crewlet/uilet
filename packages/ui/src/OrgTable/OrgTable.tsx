@@ -223,9 +223,9 @@ function OrgTableWire({
  * this folder is drawing. It adds nothing and takes nothing away beyond the
  * row's `tone`, which only a row has: a chart card publishes its own.
  */
-export interface OrgTableNameProps extends OrgLabelContent {
+export type OrgTableNameProps = OrgLabelContent & {
   tone?: OrgTableTone | undefined;
-}
+};
 
 export function OrgTableName({ tone, ...content }: OrgTableNameProps) {
   return <OrgLabel layout="row" {...content} {...(tone ? { tone } : {})} />;

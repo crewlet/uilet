@@ -336,13 +336,17 @@ export const RAIL_PAINTS = [
  * The scrim is the one ground in the palette that is not a surface step: it is
  * a wash over whatever is already there, so the pair a reader sees depends on
  * what that was. An upload overlay puts a word on it over an identity badge,
- * which is a seeded tint, the accent fill, or the initials tile on whichever
- * surface the form sits on, and none of those composites is reachable from the
- * surface list. Every ground here is measured because the shallowest one is
- * what sets the number: a 60 percent black over a white page is much lighter
- * than the same wash over a dark tint.
+ * which is a seeded tint or the initials tile on whichever surface the form
+ * sits on, and the tints are not reachable from the surface list. Every ground
+ * here is measured because the shallowest one is what sets the number: a 60
+ * percent black over a white page is much lighter than the same wash over a
+ * dark tint.
+ *
+ * The accent's fill is not one of them. It was, while a badge could be filled
+ * with it; @crewlethq/ui's Avatar has no such tone any more (a SELECTED badge
+ * is a ring round a neutral one), so it would be a composite nothing draws.
  */
-export const SCRIM_GROUNDS = ['--color-brand-accent', ...AVATAR_TINTS];
+export const SCRIM_GROUNDS = [...AVATAR_TINTS];
 
 // The controls
 // ---------------------------------------------------------------------------
@@ -737,8 +741,8 @@ function checkState(state, values, profile, push) {
     // A word on the scrim. The scrim is a wash rather than a surface, so the
     // composite is taken over every ground it can be drawn on rather than read
     // from a token: an upload overlay's label sits on the scrim over an
-    // identity badge, and the badge is a seeded tint, the accent fill or an
-    // initials tile on whichever surface the form is on.
+    // identity badge, and the badge is a seeded tint or an initials tile on
+    // whichever surface the form is on.
     const label = colour('--color-text-on-accent');
     const scrim = values.get('--color-surface-scrim');
     const over = [...opaque, ...SCRIM_GROUNDS.map((name) => [name, colour(name)])];

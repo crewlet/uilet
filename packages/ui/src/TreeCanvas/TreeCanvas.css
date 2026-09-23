@@ -171,15 +171,6 @@
 }
 
 /*
- * A card that stands for somebody outside the system takes the dashed edge
- * every such seat wears. The BOUNDARY says it rather than a hue, so it reads
- * to somebody who cannot separate the hue at all.
- */
-.crewlet-tree-canvas__card--outline {
-  border-style: dashed;
-}
-
-/*
  * THE NODES INSIDE THE CARD. `role="treeitem"` is this component's own
  * contract, handed to the caller by `ctx.item(id)`, so the inset a node sits
  * on and the two states it can be in belong here rather than to whatever a
@@ -929,12 +920,11 @@
  * chart this package is drawn to match does exactly this, and every step below
  * is its step.
  *
- * IT IS THE ONLY DASHED THING ON THE CHART THAT IS NOT A HUMAN SEAT, and the
- * two never collide: `cardOutline` marks a node of the data and this marks a
- * node that is not one yet, so no card can carry both. What tells them apart
- * is the hue and the breath: a human seat's edge is the chart's own boundary
- * step and does not move, and this one is the accent, with a ring outside it
- * that pulses for as long as the form is open.
+ * IT IS THE ONLY DASHED CARD ON THE CHART, because a dashed edge marks a
+ * place nothing fills yet and this is the one card that is not a node of the
+ * data. Every node's card is solid, a person's seat included: who holds a seat
+ * is its badge's outline, never the card's frame, which is why the chart has
+ * no second dashed card for a person to be confused with this one.
  *
  * ITS GROUND IS EVERY OTHER CARD'S. The ghost holds a real form with real
  * labels, helps and refusals in it, so it is NOT tinted: every contrast

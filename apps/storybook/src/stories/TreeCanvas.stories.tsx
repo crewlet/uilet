@@ -25,7 +25,6 @@ import {
   PencilGlyph,
   PlusGlyph,
   TrashGlyph,
-  UserGlyph,
   UserPlusGlyph,
 } from '@crewlethq/icons/glyphs';
 
@@ -55,7 +54,11 @@ interface Entity {
   name: string;
   kind: Kind;
   parent: string | null;
-  /** A human seat is drawn with the dashed edge every human seat has. */
+  /**
+   * A seat a person holds. Its card is the same as an agent's: what tells the
+   * two apart is the words under the name here, and the badge's outline in
+   * the org chart below, a circle for a person and a squircle for an agent.
+   */
   human?: boolean;
 }
 
@@ -105,11 +108,11 @@ function cards(model: TreeModel, expanded: ReadonlySet<string>): TreeCardInput[]
 
 /*
  * THE FRAME IS NOT HERE ANY MORE. The surface, the boundary, the radius, the
- * lift, the dashed edge of a human seat and the accent ring on the selected
- * node were all spelled out in this file, which is how two charts in one
- * product came to draw four different cards. TreeCanvas draws the card and the
- * two states a node can be in; `cardOutline` is what says a card stands for
- * somebody outside the system. What is left here is what a card SAYS.
+ * lift and the accent ring on the selected node were all spelled out in this
+ * file, which is how two charts in one product came to draw four different
+ * cards. TreeCanvas draws the card and the two states a node can be in, and
+ * every card the same edge, a person's seat included. What is left here is
+ * what a card SAYS.
  *
  * The pointer's controls are not drawn here either: `card.actions(id)` is the
  * whole of the strip beside a node and `renderUnder` is what hangs below a
@@ -188,14 +191,7 @@ function Card({ id, card }: { id: string; card: TreeCardContext }) {
           }}
         >
           {rows.map((row) => (
-            <div
-              key={row}
-              role="none"
-              style={{
-                border: `1px ${ENTITIES[row]!.human ? 'dashed' : 'solid'} ${ENTITIES[row]!.human ? 'var(--color-border-default)' : 'transparent'}`,
-                borderRadius: 'var(--radius-md)',
-              }}
-            >
+            <div key={row} role="none">
               <div {...card.item(row)} style={body}>
                 <span>{ENTITIES[row]!.name}</span>
                 <span style={metaText}>{ENTITIES[row]!.human ? 'Human seat' : 'Agent seat'}</span>
@@ -234,7 +230,6 @@ function Chart({ note }: { note?: string }) {
             </Button>
           )
         }
-        cardOutline={(id) => ENTITIES[id]?.human === true}
         hasNodeMenu={() => true}
         onNodeKey={() => true}
         selectedId={selected}
@@ -267,15 +262,15 @@ function Chart({ note }: { note?: string }) {
 }
 
 /**
- * Dashed cards for the human seats, one selected node, and a menu in the
- * overlay that the zoom neither scales nor clips.
+ * One selected node, and a menu in the overlay that the zoom neither scales
+ * nor clips.
  *
- * Every frame on this canvas is the component's: the card, its dashed variant,
- * the inset on each node, the accent ring on the selected one and the ring a
- * keyboard leaves behind it. The canvas stands on the page's own ground so the
- * cards read as objects on a field rather than as one sheet, and the connectors
- * curve from each parent's bottom into each child's top, dark enough to be
- * measured rather than the hairline they were.
+ * Every frame on this canvas is the component's: the card, the inset on each
+ * node, the accent ring on the selected one and the ring a keyboard leaves
+ * behind it. The canvas stands on the page's own ground so the cards read as
+ * objects on a field rather than as one sheet, and the connectors curve from
+ * each parent's bottom into each child's top, dark enough to be measured
+ * rather than the hairline they were.
  *
  * At rest the chart is cards and connectors: point at one and its controls
  * appear over the card's end, and the control that adds a child appears on the
@@ -315,22 +310,19 @@ const LEADS: Record<string, string> = {
 function NodeCard({ id, card }: { id: string; card: TreeCardContext }) {
   const entity = ENTITIES[id]!;
   const open = card.expanded(id);
-  const icon =
-    entity.kind === 'company' ? (
-      <BuildingComplexGlyph />
-    ) : entity.kind === 'unit' ? (
-      <NetworkGlyph />
-    ) : entity.human === true ? (
-      <UserGlyph size="sm" />
-    ) : (
-      <CrewletFigure motion="idle" />
-    );
+  /* A container is a glyph; a seat is its badge, whose outline is its kind: a
+     squircle for an agent and a circle for a person. */
+  const mark =
+    entity.kind === 'company'
+      ? { icon: <BuildingComplexGlyph /> }
+      : entity.kind === 'unit'
+        ? { icon: <NetworkGlyph /> }
+        : { avatar: { name: entity.name, kind: entity.human === true ? ('human' as const) : ('agent' as const) } };
   return (
     <>
       <div {...card.item(id)}>
         <OrgNodeLabel
-          icon={icon}
-          iconRing={entity.human === true ? 'dashed' : 'none'}
+          {...mark}
           name={entity.name}
           caption={
             entity.kind === 'company'
@@ -430,8 +422,9 @@ function nodeCards(model: TreeModel, expanded: ReadonlySet<string>): TreeCardInp
  *
  * Everything the `card` appearance guarantees is still here: the tree pattern
  * and its keys, the roving tab stop, the focus ring drawn inside the clipping
- * viewport, the reveal of every pointer-only control by focus as well as by
- * hover, and the dashed boundary on a seat nobody inside the system holds.
+ * viewport, and the reveal of every pointer-only control by focus as well as
+ * by hover. A person's seat is the same solid card as an agent's: its badge's
+ * circle is what says a person holds it.
  */
 export const OrgChart: Story = {
   render: function OrgChartStory() {
@@ -475,7 +468,6 @@ export const OrgChart: Story = {
               />
             )
           }
-          cardOutline={(id) => ENTITIES[id]?.human === true}
           hasNodeMenu={() => true}
           onNodeKey={() => true}
           selectedId={selected}
@@ -543,7 +535,6 @@ export const AddingANode: Story = {
               />
             )
           }
-          cardOutline={(id) => ENTITIES[id]?.human === true}
           hasNodeMenu={() => true}
           onNodeKey={() => true}
           composing={

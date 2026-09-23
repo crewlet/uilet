@@ -50,8 +50,9 @@ export type CardVariant =
   /** Lifted off the page. */
   | 'elevated'
   /**
-   * A dashed boundary: something that is not quite a record yet. A seat held
-   * by a person rather than an agent, a slot waiting to be filled.
+   * A dashed boundary: something that is not quite a record yet, a slot
+   * waiting to be filled. Never a person: a seat a person holds is a record
+   * like any other, and its badge's circle is what says who holds it.
    */
   | 'dashed';
 

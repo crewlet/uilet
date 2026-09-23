@@ -29,6 +29,8 @@ import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test } from 'vitest';
 import {
+  Avatar,
+  AvatarStack,
   Button,
   ButtonLink,
   Count,
@@ -83,6 +85,23 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
       </p>
       <p>
         Cost <EmptyValue />
+      </p>
+      <p>
+        <Avatar name="Software Engineer" ring="info" /> <Avatar name="Jane Founder" kind="human" ring="brand" />
+      </p>
+      <p>
+        <AvatarStack
+          members={[
+            { name: 'Jane Founder', kind: 'human' },
+            { name: 'CTO', ring: 'warning' },
+            { name: 'SWE' },
+            { name: 'PM' },
+            { name: 'AI Systems' },
+          ]}
+        />
+      </p>
+      <p>
+        <AvatarStack members={[{ name: 'SWE' }, { name: 'CTO' }]} decorative /> read by 2 agents today
       </p>
       <VisuallyHidden>Loaded</VisuallyHidden>
     </main>,

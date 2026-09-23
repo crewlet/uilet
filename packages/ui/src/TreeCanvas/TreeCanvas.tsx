@@ -334,16 +334,6 @@ export interface TreeCanvasProps {
    */
   renderUnder?: ((id: string, card: TreeCardContext) => ReactNode) | undefined;
   /**
-   * Whether a card is drawn with the dashed edge.
-   *
-   * It is the mark a card carries when it stands for somebody outside the
-   * system: a person rather than an agent, a seat nobody holds. The BOUNDARY
-   * says it rather than a hue, so it reads to a reader who cannot separate the
-   * hue at all, and the card's frame is this component's to draw so the mark
-   * is too. Unset, every card takes the solid edge.
-   */
-  cardOutline?: ((id: string) => boolean) | undefined;
-  /**
    * The hue a card is tinted with, and the connector arriving at it.
    *
    * ONE ANSWER FOR BOTH, because they are one statement. A tinted card reached
@@ -454,7 +444,6 @@ export function TreeCanvas({
   cardOf,
   renderCard,
   renderUnder,
-  cardOutline,
   cardTone,
   appearance = 'card',
   ranks,
@@ -1004,10 +993,7 @@ export function TreeCanvas({
                   key={id}
                   role="none"
                   ref={measure(id)}
-                  className={cx(
-                    'crewlet-tree-canvas__card',
-                    cardOutline?.(id) && 'crewlet-tree-canvas__card--outline',
-                  )}
+                  className="crewlet-tree-canvas__card"
                   data-tone={cardTone?.(id)}
                   // A CARD WAITING ITS TURN IS STILL MEASURED, so it is drawn at
                   // zero rather than removed from the flow: the layout the

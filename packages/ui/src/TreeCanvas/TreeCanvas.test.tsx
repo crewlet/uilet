@@ -780,28 +780,37 @@ describe('live state', () => {
 
 
 /*
- * THE FRAME IS THE CHART'S, so the mark on it is too. A card that stands for
- * somebody outside the system takes the dashed edge, and the modifier lands on
- * the card box rather than on anything the caller drew inside it, because the
- * caller no longer draws the frame at all.
+ * WHO HOLDS A SEAT IS NEVER THE CARD'S FRAME. A person's seat is told from an
+ * agent's by its badge's outline, which is the one cue, so the chart draws
+ * every node's card with the same edge and offers the caller no way to mark
+ * one: the dashed edge it used to draw round a person's seat was a second cue
+ * for that one fact. The only dashed card on a chart is the ghost of a node
+ * being added, which is a place nothing fills yet.
  */
-test('a card can be marked as standing for somebody outside the system', () => {
+test("every node's card takes the same edge, and the only dashed card is the ghost", () => {
+  // @ts-expect-error a card's edge is not the caller's to choose
+  void (<TreeCanvas label="Chart" nodes={forestOf([])} cards={cards} cardOf={cardOf} renderCard={renderCardWith({})} cardOutline={() => true} />);
+
   const { container } = render(
     <TreeCanvas
       label="Structure chart"
       nodes={forestOf([])}
       cards={cards}
       cardOf={cardOf}
-      cardOutline={(id) => id === 'unit:sales'}
       renderCard={renderCardWith({})}
     />,
   );
   LayoutObserver.settle();
-  const marked = [...container.querySelectorAll('.crewlet-tree-canvas__card')].filter((card) =>
-    card.className.includes('crewlet-tree-canvas__card--outline'),
-  );
-  expect(marked).toHaveLength(1);
-  expect(marked[0]!.textContent).toContain('Sales');
+  const drawn = [...container.querySelectorAll('.crewlet-tree-canvas__card')];
+  expect(drawn.length).toBeGreaterThan(1);
+  for (const card of drawn) expect(card.className).toBe('crewlet-tree-canvas__card');
+
+  // And nothing in the stylesheet draws a dashed edge on anything but the
+  // ghost: every rule declaring one is the composing card's.
+  const rules = [...SHEET.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+  const dashed = rules.filter(([, , body]) => /\bdashed\b/.test(body!)).map(([, selector]) => selector!.trim());
+  expect(dashed.length).toBeGreaterThan(0);
+  for (const selector of dashed) expect(selector).toContain('crewlet-tree-canvas__card--composing');
 });
 
 /*

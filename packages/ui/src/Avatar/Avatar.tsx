@@ -1,49 +1,77 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties, HTMLAttributes } from 'react';
 import { cx } from '../utils/cx.js';
+import type { Tone } from '../utils/tone.js';
 
 /**
- * Round, or a rounded square.
+ * WHAT THE BADGE STANDS FOR, drawn as its outline.
  *
- * `square` IS THE DEFAULT. The engine's identity mark is a rounded square, and
- * it is what a reader sees in every seat chip, every list row and every header
- * on that product; a design system with two identity marks has two looks.
- * `circle` stays for a PERSON in a member list, where the round badge is the
- * platform convention that surface already speaks.
+ * `agent` is the default: a SQUIRCLE with the initials in the mono face, which
+ * is what the engine runs and what nearly every badge on that product is.
+ * `human` is a CIRCLE with the initials in the sans face: a person.
+ *
+ * ONE STRUCTURAL CUE, where there used to be two. The badge took a `shape`
+ * (square or circle) and a `variant` (solid, or `dashed` for a human seat), and
+ * the two could disagree: a dashed square and a solid circle were both
+ * reachable and meant nothing. The approved design draws a person as a circle
+ * and an agent as a squircle, and that outline is the whole of the difference,
+ * so it is the one prop. It is a SHAPE rather than a hue, which leaves every
+ * hue meaning only a state, and it reads to somebody who cannot separate hues
+ * at all.
  */
-export type AvatarShape = 'circle' | 'square';
+export type AvatarKind = 'agent' | 'human';
 
 /**
  * How much colour a badge spends on WHO something is.
  *
- * `neutral` is the default, and the change from 0.2.0. A hash of a name
- * carries no information: rename the seat and its colour changes, which is the
- * proof it never meant anything. Worse, the eight families a hash spread over
- * were the same eight the product spent on states and phases, so one amber
- * meant "the execute phase", "needs a person" and "the Analyst" at once.
- * Identity is the monogram and the name beside it.
+ * `neutral` is the default. A hash of a name carries no information: rename
+ * the seat and its colour changes, which is the proof it never meant anything.
+ * Identity is the outline, the monogram and the name beside it.
  *
- * `brand` is for the one badge that is the reader themselves, and `seeded` for
- * a roster where a stable per-identity tint genuinely helps a reader scan, a
- * member list being the case it was built for. Each seeded ground is a token
- * measured at 4.5:1 under white initials.
+ * `seeded` is for a roster where a stable per-identity tint genuinely helps a
+ * reader scan, a member list being the case it was built for. Each seeded
+ * ground is a token measured at 4.5:1 under white initials.
+ *
+ * THERE IS NO `brand` TONE ANY MORE. The accent means "here", "the primary
+ * action" and "focus"; a badge filled with it was identity drawn in the
+ * reader's-position colour. A badge that is SELECTED says so with
+ * `ring="brand"`, which is the design's own selected badge.
  */
-export type AvatarTone = 'neutral' | 'brand' | 'seeded';
+export type AvatarTone = 'neutral' | 'seeded';
 
 /**
- * Filled, or drawn.
+ * The STATE ring: a 1.5px line 2px outside the badge, in one of the state
+ * fills or the accent.
  *
- * `dashed` is a HUMAN seat: the engine does not run it. That is a structural
- * fact rather than a status, so it is carried by the edge rather than by a
- * hue, which is what leaves the status hues meaning only what they mean.
+ * `info`, `warning`, `danger` and `success` are what the thing is DOING, and
+ * `brand` is SELECTED. Which state each one means is the consumer's to decide,
+ * and to SAY in words beside the badge: the ring is never the only carrier of
+ * a state, because in forced-colors mode every ring is the same system colour.
+ * No ring at all is the resting state.
  */
-export type AvatarVariant = 'solid' | 'dashed';
+export type AvatarRing = Exclude<Tone, 'neutral'>;
 
 /** The four steps, in px. A number is accepted for anything outside them. */
 export const AVATAR_SIZES = { xs: 20, sm: 26, md: 32, lg: 40 } as const;
 
 export type AvatarSizeStep = keyof typeof AVATAR_SIZES;
 export type AvatarSize = AvatarSizeStep | number;
+
+/**
+ * An agent's corner, as a share of its box.
+ *
+ * The approved design draws 7px at 24 and 9px at 30 (and 5 at 18, 6 at 20, 8
+ * at 26 and 28, 13 at 44): a corner that moves WITH the box rather than
+ * sitting on one radius step, which would read as a pill at the smallest badge
+ * and as a plain box at the largest. 0.29 is that ladder as one number, and
+ * every size the design draws lands within 0.62px of it.
+ *
+ * THE STYLESHEET COMPUTES IT, from `--crewlet-avatar-size`, for a step and for
+ * a numeric size alike, so there is one ladder and nothing to keep in step
+ * with it. The number is restated in `Avatar.css`, which cannot import it, and
+ * the suite holds the two equal.
+ */
+export const AVATAR_CORNER_RATIO = 0.29;
 
 export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   /** Image source. With one set the badge renders the image; otherwise the initials. */
@@ -52,9 +80,11 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   name?: string | undefined;
   /** A step, or a number of px. */
   size?: AvatarSize | undefined;
-  shape?: AvatarShape | undefined;
+  /** An agent (the default) is a squircle; a human is a circle. */
+  kind?: AvatarKind | undefined;
   tone?: AvatarTone | undefined;
-  variant?: AvatarVariant | undefined;
+  /** A state ring, or none. `brand` is selected. */
+  ring?: AvatarRing | undefined;
   /**
    * The name is already printed beside this badge, so the badge itself says
    * nothing. Without it a row reads "Carlos Diaz avatar, Carlos Diaz".
@@ -110,39 +140,39 @@ export function avatarPixels(size: AvatarSize): number {
 }
 
 /**
- * The corner a square badge of this many pixels takes.
+ * The corner an agent's badge of this many pixels is drawn with, in px, where
+ * the browser draws a circular corner (`Avatar.css` has the squircle).
  *
- * THE CORNER MOVES WITH THE BOX, which is the rule the steps are drawn to:
- * 4px at 20, 8px at 26 and 32, 12px at 40. A numeric size has to obey the same
- * rule or it contradicts it, and it did: every arbitrary box took the middle
- * step, so `size={80}` rendered an 8px corner where `size="lg"` at half the
- * width renders 12px, a bigger badge drawn squarer than a smaller one. The
- * bands are the steps' own midpoints, so a number lands on the corner of the
- * step nearest it and the ladder is one ladder rather than two.
+ * The same arithmetic the stylesheet does, for a caller that has to round
+ * something ELSE to match a badge: `ImageUpload`'s trigger and overlay sit
+ * over the picture, and a corner of their own would show the badge's corners
+ * through them at every size but one.
  *
- * The values are spelled in full rather than composed from the step name: the
- * package's variable check reads `var(--radius-${name})` as a reference to a
- * token called `--radius-`, which nothing emits.
+ * NOT ROUNDED, because the stylesheet cannot round: a whole-pixel corner there
+ * would take `round()` with a literal length, which the package's literal
+ * check refuses in a radius, and a rounded number here would then disagree
+ * with the badge under it by up to half a pixel. A fractional corner is
+ * anti-aliased like any other curve.
  */
-export function avatarSquareCorner(pixels: number): string {
-  if (pixels < 23) return 'var(--radius-xs)';
-  if (pixels < 36) return 'var(--radius-md)';
-  return 'var(--radius-lg)';
+export function avatarCorner(pixels: number): number {
+  return pixels * AVATAR_CORNER_RATIO;
 }
 
 /**
  * An identity badge: an image, or the initials behind it.
  *
  * If the image fails to load (a stale CDN URL, an expired signature) it
- * degrades to the initials rather than to a broken-image glyph.
+ * degrades to the initials rather than to a broken-image glyph. Either way it
+ * keeps its kind's outline and its ring: whether somebody has uploaded a photo
+ * says nothing about what they are or what they are doing.
  */
 export const Avatar = ({
   src,
   name,
   size = 'md',
-  shape = 'square',
+  kind = 'agent',
   tone = 'neutral',
-  variant = 'solid',
+  ring,
   decorative = false,
   colorSeed,
   className,
@@ -160,30 +190,29 @@ export const Avatar = ({
   const step = typeof size === 'number' ? null : size;
   const pixels = avatarPixels(size);
   /*
-   * A step takes its type from the scale, in the stylesheet. A number is an
-   * arbitrary size nothing in the scale can answer for, so its own font size
-   * is computed here: 0.36 of the box is what keeps two initials inside a
-   * circle, with a floor of 9px, under which they are not initials any more.
+   * A step takes its box and its type from the scale, in the stylesheet. A
+   * number sets the SAME custom property the steps set, so its box, and the
+   * agent's corner computed from it, come out of the one rule every step goes
+   * through: a numeric badge cannot be drawn squarer or rounder than the steps
+   * either side of it. Its type is computed here, because nothing in the scale
+   * can answer for an arbitrary box: 0.36 of it keeps two initials inside the
+   * outline, with a floor of 9px, under which they are not initials any more.
    */
-  const measured: CSSProperties =
+  const measured =
     step === null
-      ? {
-          width: pixels,
-          height: pixels,
+      ? ({
+          '--crewlet-avatar-size': `${pixels}px`,
           fontSize: Math.max(9, Math.round(pixels * 0.36)),
-          // And its corner, for the same reason: the stylesheet's square steps
-          // move the radius with the box, so an arbitrary box that took one
-          // fixed step would be squarer or rounder than every step beside it.
-          ...(shape === 'square' ? { borderRadius: avatarSquareCorner(pixels) } : {}),
-        }
+        } as CSSProperties)
       : {};
 
   const seeded = tone === 'seeded' ? avatarTint(colorSeed ?? name ?? '') : null;
 
   const classes = cx(
     'crewlet-avatar',
-    `crewlet-avatar--${shape}`,
+    `crewlet-avatar--${kind}`,
     step === null ? null : `crewlet-avatar--${step}`,
+    ring === undefined ? null : `crewlet-avatar--ring-${ring}`,
     className,
   );
 
@@ -191,9 +220,7 @@ export const Avatar = ({
     return (
       <img
         {...rest}
-        // The dashed edge travels with the image: whether a human seat has
-        // uploaded a photo says nothing about whether the engine runs it.
-        className={cx(classes, 'crewlet-avatar--image', variant === 'dashed' && 'crewlet-avatar--dashed')}
+        className={cx(classes, 'crewlet-avatar--image')}
         style={{ ...measured, ...style }}
         src={src}
         alt={decorative ? '' : (name ?? '')}
@@ -210,7 +237,6 @@ export const Avatar = ({
         classes,
         'crewlet-avatar--fallback',
         `crewlet-avatar--${tone}`,
-        variant === 'dashed' && 'crewlet-avatar--dashed',
         seeded === null ? null : `crewlet-avatar--tint-${seeded}`,
       )}
       style={{ ...measured, ...style }}

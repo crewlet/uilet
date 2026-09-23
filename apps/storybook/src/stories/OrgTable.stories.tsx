@@ -21,7 +21,6 @@ import {
   NetworkGlyph,
   PencilGlyph,
   TrashGlyph,
-  UserGlyph,
   UserPlusGlyph,
 } from '@crewlethq/icons/glyphs';
 
@@ -147,11 +146,11 @@ function forest(): TreeInput[] {
   return [node(COMPANY)];
 }
 
-const ICONS: Record<Kind, typeof UserGlyph> = {
+/* A container's glyph. A seat is drawn as its badge instead, whose outline is
+   its kind: a squircle for an agent, a circle for a person. */
+const ICONS: Record<'company' | 'unit', typeof NetworkGlyph> = {
   company: BuildingComplexGlyph,
   unit: NetworkGlyph,
-  agent: BotGlyph,
-  human: UserGlyph,
 };
 
 function Demo() {
@@ -161,17 +160,19 @@ function Demo() {
 
   const cell = (id: string, column: number, grid: TreeGridContext) => {
     const entity = ENTITIES[id]!;
-    const Icon = ICONS[entity.kind];
     if (column === 1) {
-      return (
-        <OrgTableName
-          icon={<Icon />}
-          iconRing={entity.kind === 'human' ? 'dashed' : 'none'}
-          name={entity.name}
-          caption={entity.caption}
-          tone={entity.tone}
-        />
-      );
+      if (entity.kind === 'agent' || entity.kind === 'human') {
+        return (
+          <OrgTableName
+            avatar={{ name: entity.name, kind: entity.kind }}
+            name={entity.name}
+            caption={entity.caption}
+            tone={entity.tone}
+          />
+        );
+      }
+      const Icon = ICONS[entity.kind];
+      return <OrgTableName icon={<Icon />} name={entity.name} caption={entity.caption} tone={entity.tone} />;
     }
     if (column === 2) return entity.handle ?? '';
     if (column === 3) return entity.lead ?? '';

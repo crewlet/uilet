@@ -86,25 +86,6 @@
   fill: currentColor;
 }
 
-/*
- * THE DASHED RING is the boundary something standing for somebody outside the
- * system wears, around the mark rather than instead of it: the card's own edge
- * and the row's own mark carry the same dash, and the two together are what a
- * reader recognises without reading a word.
- */
-.crewlet-org-label__icon--dashed {
-  position: relative;
-}
-
-.crewlet-org-label__icon--dashed::before {
-  content: '';
-  position: absolute;
-  width: var(--size-target-min);
-  height: var(--size-target-min);
-  border: 1px dashed var(--color-border-hover);
-  border-radius: var(--radius-circle);
-}
-
 /* ---- The name and its caption -------------------------------------------- */
 
 /*

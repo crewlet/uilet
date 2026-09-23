@@ -1,16 +1,6 @@
 import { Children, cloneElement, isValidElement, type HTMLAttributes, type ReactElement, type ReactNode } from 'react';
-import { Avatar, type AvatarSizeStep } from '../Avatar/index.js';
+import { Avatar, type AvatarKind, type AvatarSizeStep } from '../Avatar/index.js';
 import { cx } from '../utils/cx.js';
-
-/**
- * Whether the engine runs this one.
- *
- * `human` draws the badge with a dashed edge, which is structure and not
- * status: a human seat is a real seat that no agent occupies. It is carried by
- * the edge rather than by a hue, so the status hues keep meaning only what
- * they mean.
- */
-export type EntityChipVariant = 'agent' | 'human';
 
 export interface EntityChipProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
   /** Who or what this is. Drawn as initials and read as the chip's own text. */
@@ -22,7 +12,13 @@ export interface EntityChipProps extends Omit<HTMLAttributes<HTMLElement>, 'chil
    * this look on a router's own Link while keeping its navigation.
    */
   asChild?: boolean | undefined;
-  variant?: EntityChipVariant | undefined;
+  /**
+   * Whether the engine runs this one: an `agent` (the default) is drawn as a
+   * squircle, a `human` seat as a circle, which is `Avatar`'s own kind. That is
+   * structure rather than status, so it is carried by the outline rather than
+   * by a hue and the state hues keep meaning only what they mean.
+   */
+  kind?: AvatarKind | undefined;
   /** The badge's step. The name takes the surrounding text size either way. */
   size?: AvatarSizeStep | undefined;
   children?: ReactNode;
@@ -45,7 +41,7 @@ export function EntityChip({
   name,
   href,
   asChild = false,
-  variant = 'agent',
+  kind = 'agent',
   size = 'sm',
   className,
   children,
@@ -55,7 +51,7 @@ export function EntityChip({
 
   const inner = (
     <>
-      <Avatar name={name} size={size} variant={variant === 'human' ? 'dashed' : 'solid'} decorative />
+      <Avatar name={name} size={size} kind={kind} decorative />
       <span className="crewlet-entity-chip__name">{name}</span>
     </>
   );

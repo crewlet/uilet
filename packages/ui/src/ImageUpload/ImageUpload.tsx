@@ -5,7 +5,7 @@ import {
   type HTMLAttributes,
   type MouseEvent,
 } from 'react';
-import { Avatar, avatarSquareCorner, type AvatarShape } from '../Avatar/index.js';
+import { Avatar, avatarCorner, type AvatarKind } from '../Avatar/index.js';
 import { CameraGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
 // Omit the DOM "onSelect" event handler so it does not clash with the
@@ -18,11 +18,14 @@ export interface ImageUploadProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   /** Rendered width and height in pixels. */
   size?: number | undefined;
   /**
-   * Outline shape passed through to the preview and fallback. Defaults to
-   * "square", as Avatar does: what this control takes is normally a company
-   * logo, and a wide mark cropped into a circle loses its ends.
+   * The picture is an Avatar, so it takes the Avatar's kind, and with it the
+   * outline the preview, the fallback, the trigger and the overlay are all
+   * drawn in. `agent`, the default as it is Avatar's, is the squircle, which
+   * is also the outline for a mark that is not a person, a company's logo
+   * among them: a wide mark cropped into a circle loses its ends. `human` is
+   * a person's round picture.
    */
-  shape?: AvatarShape | undefined;
+  kind?: AvatarKind | undefined;
   /** When true, the control is display only: no overlay, no remove button, no file picker. */
   readOnly?: boolean | undefined;
   /** When true, the control shows a spinner and ignores interaction while an upload is in flight. */
@@ -40,7 +43,7 @@ export interface ImageUploadProps extends Omit<HTMLAttributes<HTMLDivElement>, '
  * current image (or an initials fallback), an overlay with a camera icon and
  * an "Upload" or "Change" label (shown on hover, or always while no image is
  * set), a hidden file input, a remove button, and an uploading state. One
- * primitive covers both square logos and round profile pictures.
+ * primitive covers both a logo in the squircle and a person's round picture.
  *
  * The selection callback hands back the raw File rather than a data URL because
  * the upload now happens over the network.
@@ -49,7 +52,7 @@ export const ImageUpload = ({
   src,
   name,
   size = 64,
-  shape = 'square',
+  kind = 'agent',
   readOnly = false,
   uploading = false,
   accept = 'image/*',
@@ -92,7 +95,7 @@ export const ImageUpload = ({
 
   const wrapperClasses = [
     'crewlet-image-upload',
-    `crewlet-image-upload--${shape}`,
+    `crewlet-image-upload--${kind}`,
     uploading ? 'is-uploading' : '',
     empty ? 'is-empty' : '',
     className,
@@ -108,7 +111,7 @@ export const ImageUpload = ({
      * showed the badge's corners through the overlay at every size but the one
      * the step was chosen for.
      */
-    '--crewlet-image-upload-corner': avatarSquareCorner(size),
+    '--crewlet-image-upload-corner': `${avatarCorner(size)}px`,
     ...style,
   } as CSSProperties;
 
@@ -128,7 +131,7 @@ export const ImageUpload = ({
         aria-label={triggerLabel}
         aria-busy={uploading}
       >
-        <Avatar src={src} name={name} size={size} shape={shape} />
+        <Avatar src={src} name={name} size={size} kind={kind} />
         {!readOnly ? (
           <span className="crewlet-image-upload__overlay" aria-hidden>
             {uploading ? (

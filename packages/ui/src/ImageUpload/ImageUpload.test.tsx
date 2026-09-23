@@ -14,7 +14,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
-import { avatarSquareCorner } from '../Avatar/index.js';
+import { avatarCorner } from '../Avatar/index.js';
 import { ImageUpload } from './index.js';
 
 afterEach(cleanup);
@@ -74,32 +74,66 @@ describe('ImageUpload', () => {
   });
 
   test('the trigger rounds exactly as the badge inside it does, at any size', () => {
-    // Avatar moves a square badge's corner with its box, so a trigger pinned
+    // Avatar moves an agent badge's corner with its box, so a trigger pinned
     // to one radius step is rounder or squarer than the badge under it at
     // every size but the one the step was chosen for, and the badge's corners
-    // show through the overlay. Both read the same ladder.
+    // show through the overlay. Both read the same ladder: the badge from the
+    // box it is handed, and the frame from Avatar's own arithmetic over it.
+    // Spelled without the leading dashes and prefixed at use: the package's
+    // variable check reads a quoted `--name` in a .tsx file as a declaration.
+    const property = (name: string) => `--${name}`;
     for (const size of [20, 64, 120]) {
       const { container, unmount } = render(<ImageUpload name="Acme" size={size} onSelect={() => {}} />);
       const wrapper = container.querySelector<HTMLElement>('.crewlet-image-upload')!;
       const badge = container.querySelector<HTMLElement>('.crewlet-avatar')!;
-      // Spelled without its leading dashes and prefixed at use: the package's
-      // variable check reads a quoted `--name` in a .tsx file as a declaration.
-      const corner = wrapper.style.getPropertyValue(`--${'crewlet-image-upload-corner'}`);
-      expect(corner).toBe(avatarSquareCorner(size));
-      expect(badge.style.borderRadius).toBe(corner);
+      expect(wrapper.className).toContain('crewlet-image-upload--agent');
+      expect(badge.className).toContain('crewlet-avatar--agent');
+      expect(badge.style.getPropertyValue(property('crewlet-avatar-size'))).toBe(`${size}px`);
+      expect(wrapper.style.getPropertyValue(property('crewlet-image-upload-corner'))).toBe(`${avatarCorner(size)}px`);
       unmount();
     }
     // And the stylesheet reads it rather than naming a step of its own.
     const rule =
-      /\.crewlet-image-upload--square \.crewlet-image-upload__trigger,\s*\.crewlet-image-upload--square \.crewlet-image-upload__overlay\s*\{([^}]*)\}/.exec(
+      /\.crewlet-image-upload--agent \.crewlet-image-upload__trigger,\s*\.crewlet-image-upload--agent \.crewlet-image-upload__overlay\s*\{([^}]*)\}/.exec(
         css(),
       )?.[1] ?? '';
     expect(rule).toContain('border-radius: var(--crewlet-image-upload-corner)');
   });
 
+  test('where the browser draws a squircle, the frame draws the same one as the badge', () => {
+    // A frame with a circular corner over a squircle picture shows the
+    // picture's shoulders through the overlay. The two @supports blocks are
+    // held to one declaration list, so moving the badge's squircle moves this.
+    const supports = (sheet: string) => {
+      const at = sheet.indexOf('@supports (corner-shape: squircle)');
+      expect(at).toBeGreaterThan(-1);
+      const body = /\{[^{]*\{([^}]*)\}/.exec(sheet.slice(at))?.[1] ?? '';
+      return body
+        .split(';')
+        .map((declaration) => declaration.trim())
+        .filter(Boolean)
+        .sort();
+    };
+    const avatar = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../Avatar/Avatar.css'), 'utf8');
+    expect(supports(css())).toEqual(supports(avatar));
+    expect(supports(css())).toContain('corner-shape: squircle');
+  });
+
+  test("a person's picture is a circle, frame and all", () => {
+    const { container } = render(<ImageUpload name="Carlos Diaz" kind="human" onSelect={() => {}} />);
+    expect(container.querySelector('.crewlet-image-upload')?.className).toContain('crewlet-image-upload--human');
+    expect(container.querySelector('.crewlet-avatar')?.className).toContain('crewlet-avatar--human');
+    const rule =
+      /\.crewlet-image-upload--human \.crewlet-image-upload__trigger,\s*\.crewlet-image-upload--human \.crewlet-image-upload__overlay\s*\{([^}]*)\}/.exec(
+        css(),
+      )?.[1] ?? '';
+    expect(rule).toContain('border-radius: var(--radius-circle)');
+  });
+
   test('its label clears 4.5:1 on the scrim, over every ground the picture can be', () => {
-    // The scrim lands on whatever the badge under it is: the page, a card, the
-    // accent fill of a brand badge, or any of the ten seeded identity tints.
+    // The scrim lands on whatever the badge under it is: the neutral badge on
+    // the page or a card, or any of the ten seeded identity tints. A badge is
+    // never the accent's fill any more: selection is a ring round it.
     const here = dirname(fileURLToPath(import.meta.url));
     const tokensCss = resolve(here, '../../../tokens/dist/css');
     const states = paletteStates({
@@ -111,9 +145,7 @@ describe('ImageUpload', () => {
     const token = (name: string) => `--${name}`;
     const grounds = [
       ...OPAQUE_SURFACES,
-      ...['brand-accent', ...Array.from({ length: 10 }, (_, index) => `avatar-tint-${index}`)].map((name) =>
-        token(`color-${name}`),
-      ),
+      ...Array.from({ length: 10 }, (_, index) => token(`color-avatar-tint-${index}`)),
     ];
 
     const failures: string[] = [];
@@ -144,7 +176,8 @@ describe('ImageUpload', () => {
     const { container } = render(
       <main>
         <h1>Company</h1>
-        <ImageUpload name="Acme" shape="square" onSelect={() => {}} />
+        <ImageUpload name="Acme" kind="agent" onSelect={() => {}} />
+        <ImageUpload name="Carlos Diaz" kind="human" onSelect={() => {}} />
       </main>,
     );
     const result = await axe.run(container, {
