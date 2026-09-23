@@ -156,7 +156,7 @@ export const CustomRender: Story = {
               <span style={{
                 padding: '2px 8px',
                 borderRadius: 6,
-                background: value === 'Owner' ? 'rgba(84, 105, 212, 0.18)' : 'rgba(100, 100, 100, 0.15)',
+                background: value === 'Owner' ? 'var(--color-brand-accent-soft)' : 'rgba(100, 100, 100, 0.15)',
                 fontSize: 12,
                 fontWeight: 600,
               }}>{String(value)}</span>

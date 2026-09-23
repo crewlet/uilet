@@ -151,15 +151,16 @@ export const OneLongRow: Story = {
  * Every state a row can be in, at all three densities, side by side.
  *
  * The rail is chrome: it is read at a glance, and what has to be legible at a
- * glance is which row the reader is on. The current row takes the accent
- * TWICE, as its tint and as its ink, so it is found by a reader who sees the
- * hue and by one who does not; the attention count is the one badge in the
- * chrome allowed a status hue, because a count of what is waiting on a person
- * is the one thing that should pull the eye off the screen they are on.
+ * glance is which row the reader is on. The current row stands on the raised
+ * rung with a hairline round it, and no hue: it is found by its lift and its
+ * line, by a reader who sees colour and by one who does not. The attention
+ * count is the one badge in the chrome allowed a hue, and it is the accent's
+ * fill, because a count of what is waiting on the reader is the one thing in
+ * the rail that asks them to act.
  *
  * Switch the Theme toolbar to see both palettes. Every pair here is measured
- * on the rail's own composites by `SidebarNav.test.tsx` and by the palette
- * suite in @crewlethq/tokens, the attention tint on the accent tint included.
+ * on the rail's own grounds by `SidebarNav.test.tsx` and by the palette suite
+ * in @crewlethq/tokens, the current row's lift and hairline included.
  */
 export const EveryRowState: Story = {
   parameters: { bare: true },

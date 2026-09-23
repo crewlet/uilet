@@ -13,7 +13,7 @@ import { Card, useCardHeaderSlot } from './index.js';
 import { themes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
-import { inset, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, inset, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 /*
  * The stylesheet, in the document, for the guards that ask what the CASCADE
@@ -291,18 +291,6 @@ test('a tile takes the panel ground and the tighter inset, and an explicit paddi
   expect(ground('subtle')).toMatch(/^--color-surface-subtle$/);
   expect(ground('subtle')).toBe(ground('default'));
 });
-
-/** A computed colour as its three channels, whichever notation jsdom answers in. */
-function channels(value: string): { r: number; g: number; b: number } {
-  const hex = parseHex(value.trim());
-  if (hex) return hex;
-  const parts = /rgba?\(([^)]+)\)/
-    .exec(value)?.[1]
-    ?.split(',')
-    .map((one) => Number.parseFloat(one));
-  if (!parts || parts.length < 3) throw new Error(`not a colour: ${value}`);
-  return { r: parts[0]!, g: parts[1]!, b: parts[2]! };
-}
 
 test('a card stands on the card rung and draws the hairline that finds it, in both palettes', () => {
   // A CARD IS FOUND BY ITS HAIRLINE. It sits only about dE 1.8 off the sheet

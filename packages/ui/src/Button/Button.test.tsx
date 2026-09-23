@@ -7,10 +7,16 @@
  * `ui/primitives.test.tsx`; the rest are what the merged API adds.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { MoreVertGlyph } from '@crewlethq/icons/glyphs';
+import { themes } from '@crewlethq/tokens';
+import { contrast, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
+import { channels, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import { Button, ButtonLink } from './index.js';
 import { IconButton } from '../IconButton/index.js';
 
@@ -134,6 +140,111 @@ describe('Button', () => {
     const link = screen.getByRole('link', { name: 'Open' });
     expect(link.className).toBe('crewlet-btn crewlet-btn--secondary crewlet-btn--small crewlet-btn--square');
     expect(screen.queryByRole('button')).toBeNull();
+  });
+});
+
+/**
+ * THE PRIMARY ACTION IS THE ACCENT, at rest, under the pointer and pressed,
+ * with the on-accent label on all three. @crewlethq/tokens measures those
+ * three fills against that label; what it cannot see is which tokens this
+ * stylesheet spends, so the pairs are read back out of the CSS here, and the
+ * cascade is asked what a rendered button actually paints.
+ */
+describe('the primary action', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const css = readFileSync(resolve(here, 'Button.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const tokensCss = resolve(here, '../../../tokens/dist/css');
+  const states = paletteStates({
+    tokens: readFileSync(resolve(tokensCss, 'tokens.css'), 'utf8'),
+    themes: readFileSync(resolve(tokensCss, 'themes.css'), 'utf8'),
+  });
+  /*
+   * Token names are written without their leading dashes and prefixed at use:
+   * the package's variable check reads a quoted `--name` in a .tsx file as a
+   * DECLARATION, and a component may declare only `--crewlet-*` names.
+   */
+  const token = (name: string) => `--${name}`;
+  const PRESSABLE = ":not(:disabled):not([aria-disabled='true'])";
+  const STEPS = [
+    ['at rest', '', 'color-brand-accent'],
+    ['under the pointer', `:hover${PRESSABLE}`, 'color-brand-accent-hover'],
+    ['pressed', `:active${PRESSABLE}`, 'color-brand-accent-active'],
+  ] as const;
+
+  /** The one rule whose selector list names `selector`, and what it binds. */
+  function rule(selector: string): { selectors: string[]; fill: string | null; ink: string | null } {
+    const found = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .map(([, list, body]) => ({ selectors: (list ?? '').split(',').map((one) => one.trim()), body: body ?? '' }))
+      .filter(({ selectors }) => selectors.includes(selector));
+    if (found.length !== 1) throw new Error(`Button.css has ${found.length} rules for ${selector}`);
+    const { selectors, body } = found[0]!;
+    return {
+      selectors,
+      fill: /(?:^|;|\s)background:\s*var\((--[\w-]+)\)/.exec(body)?.[1] ?? null,
+      ink: /(?:^|;|\s)color:\s*var\((--[\w-]+)\)/.exec(body)?.[1] ?? null,
+    };
+  }
+
+  test('primary and accent are one recipe, and it paints the accent in each of its three states', () => {
+    for (const [when, state, fill] of STEPS) {
+      const bound = rule(`.crewlet-btn--primary${state}`);
+      // One rule for both names, so the pair cannot drift into two violets.
+      expect(bound.selectors, when).toContain(`.crewlet-btn--accent${state}`);
+      expect(bound.fill, when).toBe(token(fill));
+      // The label is set once, at rest, and a state that named its own would
+      // be a second answer the palette suite never measured.
+      expect(bound.ink, when).toBe(state === '' ? token('color-text-on-accent') : null);
+    }
+  });
+
+  test('its label clears 4.5:1 on every fill it takes, and gains as the button is pressed, in every palette', () => {
+    const failures: string[] = [];
+    for (const [name, values] of Object.entries(states)) {
+      const label = parseHex(values.get(token('color-text-on-accent')) ?? '');
+      if (label === null) throw new Error(`${name} has no opaque on-accent label`);
+      let previous = 0;
+      for (const [when, , fill] of STEPS) {
+        const ground = parseHex(values.get(token(fill)) ?? '');
+        if (ground === null) throw new Error(`${name}: ${fill} is not an opaque colour`);
+        const ratio = contrast(label, ground);
+        if (ratio < 4.5) failures.push(`${name}: the label ${when}: ${ratio.toFixed(2)}:1`);
+        // A hover that brightens moves the fill TOWARD a white label, which is
+        // how the approved design's hover took it under the floor.
+        if (ratio <= previous) failures.push(`${name}: the label ${when} loses contrast (${ratio.toFixed(2)}:1)`);
+        previous = ratio;
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test('as the cascade decides it, a primary button, an accent one and a link drawn as one paint the accent', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installThemed(theme, 'Button/Button.css');
+      const { unmount } = render(
+        <>
+          <Button>Default</Button>
+          <Button variant="primary">Create</Button>
+          <Button variant="accent">Continue</Button>
+          <ButtonLink variant="primary" href="#/tasks/new">
+            New task
+          </ButtonLink>
+        </>,
+      );
+      const palette = themes[theme].color;
+      for (const element of [
+        screen.getByRole('button', { name: 'Default' }),
+        screen.getByRole('button', { name: 'Create' }),
+        screen.getByRole('button', { name: 'Continue' }),
+        screen.getByRole('link', { name: 'New task' }),
+      ]) {
+        const style = getComputedStyle(element);
+        const where = `${theme}: ${element.textContent}`;
+        expect(channels(style.backgroundColor), where).toEqual(parseHex(palette.brand.accent));
+        expect(channels(style.color), where).toEqual(parseHex(palette.text.onAccent));
+      }
+      unmount();
+      uninstall();
+    }
   });
 });
 

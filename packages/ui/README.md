@@ -80,21 +80,65 @@ land at once.
   found by the `--color-border-default` hairline it draws round itself rather
   than by its fill. Rebind a rung on `<html>` and everything standing on it
   follows.
-- **Accent colour.** The selected, active and focus states read `--color-brand-accent` and its companions from `@crewlethq/tokens`: `--color-brand-accent-rgb` (the same colour as a comma-separated `r, g, b` triple, for translucent tints), `--color-brand-accent-hover`, `--color-brand-accent-active`, `--color-brand-accent-soft` and `--color-brand-accent-soft-strong`. Rebind them together to retint the components. Every overlay portals into the nearest `LayerHost`, or into `<body>` when
-there is none, so declare the override on `<html>` for those panels to follow
-it.
+- **Accent colour.** The primary `Button`, the selected, active and focus
+  states and the rail's attention count read `--color-brand-accent` and its
+  companions from `@crewlethq/tokens`: `--color-brand-accent-rgb` (the same
+  colour as a comma-separated `r, g, b` triple, for translucent tints),
+  `--color-brand-accent-hover`, `--color-brand-accent-active`,
+  `--color-brand-accent-ink`, `--color-brand-accent-soft`,
+  `--color-brand-accent-soft-strong` and `--color-focus`. The accent is PER
+  PALETTE (`#7c56ff` dark, `#6b45f0` light), so rebind the set together, and
+  under the same three selectors the theme layer paints it with: an override
+  on `:root` alone is beaten by `:root[data-theme="light"]` in light. Declare
+  it on the root rather than on `<body>` or a wrapper: `--shadow-focus`,
+  `--shadow-selection` and `--shadow-glow` are composed from the accent where
+  the tokens declare them, on the root, so they follow only an override
+  declared there.
 
 ```css
-/* Retint every accent state to the brand slate. */
-body {
-  --color-brand-accent: var(--color-brand-slate);
-  --color-brand-accent-hover: var(--color-brand-slate);
-  --color-brand-accent-active: var(--color-brand-slate);
-  --color-brand-accent-rgb: 60, 64, 82;
-  --color-brand-accent-soft: rgba(60, 64, 82, 0.10);
-  --color-brand-accent-soft-strong: rgba(60, 64, 82, 0.32);
+/* Retint every accent state to an indigo, in both palettes. The hover and the
+   press step DARKER, so the white label gains contrast as the button is used.
+   Import it after @crewlethq/tokens/css/themes: each block here weighs the
+   same as the one it overrides, so the later one wins. */
+:root {
+  --color-brand-accent: #5469d4;
+  --color-brand-accent-hover: #4a5cc2;
+  --color-brand-accent-active: #3e50b8;
+  --color-brand-accent-ink: #8b9ff5;
+  --color-brand-accent-rgb: 84, 105, 212;
+  --color-brand-accent-soft: rgba(84, 105, 212, 0.18);
+  --color-brand-accent-soft-strong: rgba(84, 105, 212, 0.32);
+  --color-focus: #8b9ff5;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --color-brand-accent: #5469d4;
+    --color-brand-accent-hover: #4a5cc2;
+    --color-brand-accent-active: #3e50b8;
+    --color-brand-accent-ink: #3e50b8;
+    --color-brand-accent-rgb: 84, 105, 212;
+    --color-brand-accent-soft: rgba(84, 105, 212, 0.14);
+    --color-brand-accent-soft-strong: rgba(84, 105, 212, 0.32);
+    --color-focus: #5469d4;
+  }
+}
+:root[data-theme="light"] {
+  --color-brand-accent: #5469d4;
+  --color-brand-accent-hover: #4a5cc2;
+  --color-brand-accent-active: #3e50b8;
+  --color-brand-accent-ink: #3e50b8;
+  --color-brand-accent-rgb: 84, 105, 212;
+  --color-brand-accent-soft: rgba(84, 105, 212, 0.14);
+  --color-brand-accent-soft-strong: rgba(84, 105, 212, 0.32);
+  --color-focus: #5469d4;
 }
 ```
+
+  That is the accent this kit shipped before 0.5.0, and it clears every floor
+  the violet is held to. Hold a retint of your own to the same floors by
+  appending it to the theme layer the palette suite reads:
+  `runPalette({ tokens, themes: themes + override })` from
+  `@crewlethq/tokens/test/palette`.
 
 - **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-tint-rgb` on the compact `DataTable`, and `--crewlet-avatar-tint-fg` for the initials on a tinted `Avatar`. Override them from a rule that targets the component's root.
 
@@ -122,6 +166,41 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Breaking changes in 0.5.0
+
+**The primary action is the violet accent, and it darkens as it is used.**
+`@crewlethq/tokens` makes the accent a per-palette violet (`#7c56ff` in dark,
+`#6b45f0` in light) and removes the monochrome `--color-brand-primary` family
+and `--color-text-on-brand`. `Button`'s `primary` and `accent` variants already
+painted the accent, so they change colour and nothing else: the fill is the
+new violet, the label is white in both palettes, and hover and press each step
+DARKER rather than brighter, because a brighter fill is a step toward a white
+label (the approved design's brightening hover measured 4.18:1). The focus
+ring every component draws follows the accent too.
+
+**The rail's current row is raised, and the attention count is the accent.**
+`SidebarNav` drew the row the reader is on in the accent's soft tint with the
+accent ink. With the accent spent on the primary action that would read as a
+second primary on every screen, so the current row now stands on
+`--color-surface-elevated` with a `--color-border-default` hairline drawn
+round it inside the row, and keeps the rail's full ink. The hairline is an
+OUTLINE rather than an inset shadow, so it survives forced-colors mode, which
+drops shadows and backgrounds; a focused current row draws the focus ring in
+its place. A `NavItem` with `badgeTone="attention"` is the one hue in the
+chrome, and it is now the accent's fill with the on-accent label rather than
+the warning tint and ink: a count of what is waiting on the reader asks them
+to act, which is what the accent means, and warning is kept for state. The
+indent guide beside a nested run steps up to `--color-border-strong` on the
+reader's path rather than taking the accent.
+
+| Was | Is |
+|---|---|
+| `--color-brand-primary`, `-hover`, `-active` in a stylesheet of your own | `--color-brand-accent`, `-hover`, `-active` |
+| `--color-text-on-brand` | `--color-text-on-accent` |
+| an accent override declared on `:root` or `body` alone | the same values under the three theme selectors, as above |
+| a stylesheet tinting `.crewlet-nav-item__row[aria-current='page']` with the accent | drop it: the row is raised with a hairline, and the hairline is its `outline` |
+| a stylesheet relying on `.crewlet-nav-item__badge--attention` being the warning tint | it is `--color-brand-accent` with `--color-text-on-accent` |
 
 ## Breaking changes in 0.3.0
 

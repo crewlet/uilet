@@ -112,10 +112,10 @@
 }
 
 /*
- * The label on the accent fill is the on-accent step, not the on-brand one.
- * The themes repaint the brand fill monochrome and leave the accent where it
- * is, so on-brand is black in the dark palette and black on the accent
- * measures 4.35:1. On-accent is white in every palette and measures 4.83:1.
+ * The label on the accent fill is the on-accent step, the primary action's own
+ * pair: white in every palette, 4.53:1 on the dark accent and 5.62:1 on the
+ * light one, and measured on all three of the accent's fills by
+ * @crewlethq/tokens.
  */
 .crewlet-avatar--brand {
   background: var(--color-brand-accent);

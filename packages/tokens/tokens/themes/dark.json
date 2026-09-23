@@ -16,18 +16,17 @@
     "text": {
       "primary": { "value": "#ededf0" },
       "secondary": { "value": "#b4b4bc" },
-      "tertiary": { "value": "#9797a1", "comment": "The approved #8c8c96, lightened dE 3.63 along lightness: it measured 3.92:1 on a pressed row inside a raised surface, and 4.21:1 on glass over the brand-primary fill." },
+      "tertiary": { "value": "#9797a1", "comment": "The approved #8c8c96, lightened dE 3.63 along lightness: it measured 3.92:1 on a pressed row inside a raised surface, and 4.21:1 on glass over the inverse ground." },
       "muted": { "value": "#5f5f68", "comment": "The approved step, unmoved: 2.91:1 on the card and 3.15:1 on the rail, inside the decoration band." },
-      "onBrand": { "value": "#000000" },
-      "onAccent": { "value": "#ffffff", "comment": "The accent keeps its value in both palettes, so its label does too. Black on it measured 4.35:1." },
+      "onAccent": { "value": "#ffffff", "comment": "White, as in light. Black would clear this accent too (4.63:1 against white's 4.53:1) but measures 3.73:1 on the light one, and a primary button whose label changed colour with the theme would read as two different buttons." },
       "inverse": { "value": "#09090b" }
     },
     "brand": {
-      "primary": { "value": "#ffffff" },
-      "primaryHover": { "value": "rgba(255, 255, 255, 0.9)" },
-      "primaryActive": { "value": "rgba(255, 255, 255, 0.82)" },
-      "accentInk": { "value": "#8b9ff5", "comment": "The accent as text. #5469d4 measured 3.18:1, and 2.88:1 on a selected row." },
-      "accentSoft": { "value": "rgba(84, 105, 212, 0.18)", "comment": "At 0.10, the alpha both palettes used to share, a selected row separated dE 3.94 from the panel while a plain hover overlay separated 4.68: selected read WEAKER than hovered." }
+      "accent": { "value": "#7c56ff", "comment": "The approved violet, and the primary action's fill. White clears 4.53:1 on it." },
+      "accentHover": { "value": "#744bf4", "comment": "A step darker: the least move along lightness a reader can see (dE 3.08), taking white to 5.18:1. The approved brightening hover, #865dff, measured 4.18:1." },
+      "accentActive": { "value": "#6c40e9", "comment": "dE 3.05 past the hover. White clears 5.92:1." },
+      "accentInk": { "value": "#b3a1ff", "comment": "The approved step, unmoved: 5.88:1 at its tightest, on a pressed row inside a raised surface." },
+      "accentSoft": { "value": "rgba(124, 86, 255, 0.16)", "comment": "The approved 0.16, unmoved. A selected row lands dE 7.66 to 9.50 off its rung, against a hover overlay's 5.82 to 6.91, and at least 4.80 from the hovered row itself." }
     },
     "border": {
       "default": { "value": "#232329" },
@@ -36,7 +35,7 @@
       "strongHover": { "value": "#3e3e48", "comment": "The default-to-strong step, dE 5.38, taken once more." },
       "control": { "value": "#797983", "comment": "The approved neutral mark, #6e6e78, lightened dE 3.78: it measured 2.59:1 on a pressed row inside a raised surface." }
     },
-    "focus": { "value": "#8b9ff5" },
+    "focus": { "value": "#805bff", "comment": "The accent, #7c56ff, lightened dE 1.24 along lightness: the accent itself measured 2.88:1 on a pressed row inside a raised surface, under the 3:1 a ring clears. The accent cannot move for it: any lighter takes the primary action's white label under 4.5:1." },
     "feedback": {
       "success": { "value": "#14b8a6" },
       "successInk": { "value": "#5eead4" },
@@ -51,7 +50,7 @@
     "phase": {
       "onboarding": { "value": "#f77ae9", "comment": "#e879f9 sat dE 2.6 from the info fill under deuteranopia. The move is dE 3.7, so the family keeps its magenta identity." },
       "onboardingInk": { "value": "#ff82f1" },
-      "execute": { "value": "#ac6bff" },
+      "execute": { "value": "#ae6dff", "comment": "#ac6bff lightened dE 0.57: once the accent became #7c56ff it sat dE 9.6 from it under normal vision and 7.7 under protanopia, against the 10 and 8 no hue may come within." },
       "executeInk": { "value": "#d697ff" },
       "review": { "value": "#00a24f", "comment": "#16a34a sat dE 5.5 from the danger fill under deuteranopia." },
       "reviewInk": { "value": "#46c872" }
@@ -94,6 +93,6 @@
     "hairline": { "value": "inset 0 1px 0 rgba(255, 255, 255, 0.04)", "comment": "On a dark ground a panel is lifted by the light along its top edge, not by a shadow nobody can see against near-black." },
     "focus": { "value": "0 0 0 2px var(--color-surface-background), 0 0 0 4px var(--color-focus)" },
     "selection": { "value": "inset 0 0 0 2px var(--color-brand-accent)" },
-    "glow": { "value": "0 4px 24px rgba(84, 105, 212, 0.3)" }
+    "glow": { "value": "0 4px 24px rgba(var(--color-brand-accent-rgb), 0.3)" }
   }
 }

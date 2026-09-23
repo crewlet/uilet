@@ -21,7 +21,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { motion, themes } from '@crewlethq/tokens';
 import { contrast, flatten, parseHex } from '@crewlethq/tokens/test/palette';
-import { installCss, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installCss, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { AddPill, ADD_PILL_MS, type AddPillSection } from './AddPill.js';
 
 const Glyph = () => <svg data-testid="glyph" />;
@@ -193,18 +193,6 @@ describe('the keyboard', () => {
  * this month: it cannot see a later rule that wins, a selector that matches
  * nothing, or a value that was never the winner.
  */
-
-/** A colour the cascade reports, as the three channels. jsdom answers `rgb(r, g, b)`. */
-function channels(value: string): { r: number; g: number; b: number } {
-  const hex = parseHex(value.trim());
-  if (hex) return hex;
-  const parts = /rgba?\(([^)]+)\)/
-    .exec(value)?.[1]
-    ?.split(',')
-    .map((one) => Number.parseFloat(one));
-  if (!parts || parts.length < 3) throw new Error(`not a colour: ${value}`);
-  return { r: parts[0]!, g: parts[1]!, b: parts[2]! };
-}
 
 /** A flattened colour back as a hex string, which is what `painted` takes. */
 function hexOf({ r, g, b }: { r: number; g: number; b: number }): string {

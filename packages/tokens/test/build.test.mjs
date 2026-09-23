@@ -161,6 +161,31 @@ describe('the derived tints', () => {
       }
     }
   });
+
+  test("the accent's companions are the accent, in every palette", () => {
+    // The accent is per palette, so a companion copied from one palette into
+    // another is a tint of a hue that palette does not have. The triple and
+    // the strong line are derived by the build; the soft fill is written per
+    // palette, because its alpha is fitted per palette, and it is held here
+    // to the accent's own channels.
+    const accents = new Set();
+    for (const [state, values] of Object.entries(paletteStates({ tokens: tokensCss, themes: themesCss }))) {
+      const accent = values.get('--color-brand-accent');
+      const { r, g, b } = parseHex(accent);
+      accents.add(accent);
+      assert.equal(values.get('--color-brand-accent-rgb'), `${r}, ${g}, ${b}`, `${state} accent-rgb`);
+      assert.equal(values.get('--color-brand-accent-soft-strong'), withAlpha(accent, 0.32), `${state} accent-soft-strong`);
+      const soft = parseRgba(values.get('--color-brand-accent-soft'));
+      assert.deepEqual(soft?.rgb, { r, g, b }, `${state} accent-soft is a tint of ${accent}`);
+      assert.ok(soft.a > 0 && soft.a < 1, `${state} accent-soft is translucent`);
+      // The glow is the accent's own light, composed from the triple, so an
+      // application that rebinds the accent retints it too.
+      assert.match(values.get('--shadow-glow'), /rgba\(var\(--color-brand-accent-rgb\), 0\.\d+\)/, `${state} glow`);
+    }
+    // And the palettes really do differ, which is what makes the above a check
+    // rather than one value compared with itself four times.
+    assert.ok(accents.size >= 2, `every state resolved one accent, ${[...accents].join(', ')}`);
+  });
 });
 
 describe('the document baseline', () => {

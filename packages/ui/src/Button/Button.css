@@ -136,8 +136,15 @@
  * Primary: the accent fill, and the one action on the screen.
  *
  * `accent` is the same recipe under the other name it is written as. They are
- * one rule rather than two, so the pair cannot drift into two blues, and the
+ * one rule rather than two, so the pair cannot drift into two violets, and the
  * name stays because call sites already spell it.
+ *
+ * UNDER THE POINTER AND PRESSED IT DARKENS, a step each, and never brightens.
+ * The label is the on-accent white in both palettes, so a brighter fill is a
+ * step toward it: the approved design's brightness(1.08) hover took the dark
+ * accent's label from 4.53:1 to 4.18:1, under the text floor at the one moment
+ * the reader is about to press. The steps are tokens rather than a filter, so
+ * @crewlethq/tokens can measure them.
  *
  * THE BORDER IS TRANSPARENT rather than the fill: a filled control needs no
  * boundary, and one drawn in the fill's own colour makes the button a step

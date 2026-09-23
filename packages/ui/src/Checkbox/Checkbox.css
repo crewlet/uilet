@@ -44,8 +44,8 @@
   flex: 0 0 auto;
   /*
    * THE TICK IS THE ACCENT, which is what "here, this one" means everywhere
-   * else in the system. It used to read --color-brand-primary, which is white
-   * in the dark theme: a white tick on a white box.
+   * else in the system. It used to read the monochrome brand fill, which was
+   * white in the dark theme: a white tick on a white box.
    */
   accent-color: var(--color-brand-accent);
   cursor: pointer;

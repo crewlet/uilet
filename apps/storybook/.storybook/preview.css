@@ -24,7 +24,8 @@ code, pre {
   font-family: var(--font-family-mono);
 }
 
-/* Keep links readable on the dark canvas. */
+/* A link in a story's own prose is the accent as text, which is the step
+   measured for it on every ground in both palettes. */
 a {
-  color: var(--color-brand-primary);
+  color: var(--color-brand-accent-ink);
 }

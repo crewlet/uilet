@@ -22,6 +22,7 @@
  */
 import { readFileSync } from "node:fs";
 import * as tokens from "@crewlethq/tokens";
+import { parseHex } from "@crewlethq/tokens/test/palette";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -189,6 +190,22 @@ export function installCss(css: string): () => void {
   style.textContent = css;
   document.head.append(style);
   return () => style.remove();
+}
+
+/**
+ * A computed colour as its three channels, whichever notation jsdom answers
+ * in: the `#rrggbb` a declaration was written with, or the `rgb(r, g, b)` it
+ * serialises most colours to. Compare it with `parseHex` of the token's value.
+ */
+export function channels(value: string): { r: number; g: number; b: number } {
+  const hex = parseHex(value.trim());
+  if (hex) return hex;
+  const parts = /rgba?\(([^)]+)\)/
+    .exec(value)?.[1]
+    ?.split(",")
+    .map((one) => Number.parseFloat(one));
+  if (!parts || parts.length < 3) throw new Error(`not a colour: ${value}`);
+  return { r: parts[0]!, g: parts[1]!, b: parts[2]! };
 }
 
 /** A computed length in px, with `auto`, `normal` and an empty value read as 0. */

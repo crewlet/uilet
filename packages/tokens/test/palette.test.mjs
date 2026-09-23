@@ -16,15 +16,20 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
+  ACTION_STEPS,
   CARD_HAIRLINE,
   describeFailure,
+  fromOklab,
+  hex,
   OPAQUE_SURFACES,
   OVERLAY_STEPS,
   paletteStates,
   parseHex,
+  RAIL_CURRENT_ROW,
   runPalette,
   RUNG_STEPS,
   tightest,
+  toOklab,
   VEIL_ALPHA,
   withAlpha,
 } from './palette.mjs';
@@ -56,6 +61,31 @@ function editBlock(css, opening, edit) {
   const edited = edit(body);
   assert.notEqual(edited, body, 'the mutation changed nothing, so it proves nothing');
   return css.slice(0, bodyStart) + edited + css.slice(bodyEnd);
+}
+
+/**
+ * The measured rules a palette fails once ONE declaration is edited in its own
+ * blocks (the dark root, or both light blocks alike, so the structural rule
+ * that holds them together stays out of it), by name and each once. Every
+ * case that uses it edits one declaration and expects exactly the rules it
+ * names back, so a mutation that tripped a neighbour as well would say so.
+ */
+function failuresAfter(palette, name, value) {
+  const [openings, states] =
+    palette === 'dark'
+      ? [[DARK_ROOT], ['dark']]
+      : [[LIGHT_MEDIA_BLOCK, LIGHT_ATTRIBUTE_BLOCK], ['light (media query)', 'light (attribute)']];
+  let themes = sources.themes;
+  for (const opening of openings) {
+    themes = editBlock(themes, opening, (body) => body.replace(new RegExp(`${name}: [^;]+;`), `${name}: ${value};`));
+  }
+  return [
+    ...new Set(
+      runPalette({ ...sources, themes })
+        .failures.filter((check) => states.includes(check.state))
+        .map((check) => check.rule),
+    ),
+  ];
 }
 
 /** The structural rules a theme file fails, by name. */
@@ -172,25 +202,7 @@ describe('the four rungs', () => {
   const { checks } = runPalette(sources);
   const dark = typed.dark.color;
 
-  /**
-   * The measured rules the DARK state fails once the dark root is edited, by
-   * name and each once. Every case below edits one declaration and expects
-   * exactly one rule back, so a mutation that tripped a neighbour as well
-   * would say so.
-   */
-  const darkFailures = (name, value) =>
-    [
-      ...new Set(
-        runPalette({
-          ...sources,
-          themes: editBlock(sources.themes, DARK_ROOT, (body) =>
-            body.replace(new RegExp(`${name}: [^;]+;`), `${name}: ${value};`),
-          ),
-        })
-          .failures.filter((check) => check.state === 'dark')
-          .map((check) => check.rule),
-      ),
-    ];
+  const darkFailures = (name, value) => failuresAfter('dark', name, value);
 
   test('four opaque rungs are measured, in every theme state', () => {
     // A ladder that lost a rung, or a rung that resolved to nothing a rule
@@ -247,3 +259,82 @@ describe('the four rungs', () => {
   });
 });
 
+describe('the accent and the primary action', () => {
+  const { checks } = runPalette(sources);
+  const LABEL_RULE = 'a label clears 4.5:1 on its own fill';
+  const [HOVER_RULE, PRESS_RULE] = ACTION_STEPS.map(([rule]) => rule);
+
+  /**
+   * What `filter: brightness(1.08)` does to a colour, which is the hover the
+   * approved design drew: each sRGB channel scaled and clipped.
+   */
+  const brightened = (value) => {
+    const { r, g, b } = parseHex(value);
+    return hex({ r: Math.min(255, r * 1.08), g: Math.min(255, g * 1.08), b: Math.min(255, b * 1.08) });
+  };
+
+  test('each of the three fills is measured under its label, and each step against the one before it, in every state', () => {
+    // A table that silently stopped measuring one of the three would pass the
+    // one step that was ever wrong.
+    for (const state of STATES) {
+      for (const fill of ['--color-brand-accent', '--color-brand-accent-hover', '--color-brand-accent-active']) {
+        assert.ok(
+          checks.some((check) => check.state === state && check.rule === LABEL_RULE && check.subject === `--color-text-on-accent on ${fill}`),
+          `${state}: the label was never measured on ${fill}`,
+        );
+      }
+      for (const rule of [HOVER_RULE, PRESS_RULE]) {
+        assert.equal(checks.filter((check) => check.state === state && check.rule === rule).length, 1, `${state}: ${rule}`);
+      }
+    }
+  });
+
+  test("the approved design's brightening hover is caught in both palettes", () => {
+    // In dark it takes the white label under the text floor (4.18:1), which
+    // the label rule sees; in light it still clears 5.01:1, and only the step
+    // rule sees that it moved toward the label rather than away from it.
+    assert.equal(brightened(typed.dark.color.brand.accent), '#865dff');
+    assert.deepEqual(failuresAfter('dark', '--color-brand-accent-hover', brightened(typed.dark.color.brand.accent)), [
+      LABEL_RULE,
+      HOVER_RULE,
+    ]);
+    assert.deepEqual(failuresAfter('light', '--color-brand-accent-hover', brightened(typed.light.color.brand.accent)), [
+      HOVER_RULE,
+    ]);
+  });
+
+  test('a step nobody can see is caught, even one in the right direction', () => {
+    // Darker by dE 1: the label still gains, so only the visibility floor
+    // stands between this and a button that does not answer the pointer.
+    const barely = (value) => {
+      const lab = toOklab(parseHex(value));
+      return hex(fromOklab({ ...lab, L: lab.L - 0.01 }));
+    };
+    const { accent, accentHover } = typed.dark.color.brand;
+    assert.deepEqual(failuresAfter('dark', '--color-brand-accent-hover', barely(accent)), [HOVER_RULE]);
+    assert.deepEqual(failuresAfter('dark', '--color-brand-accent-active', barely(accentHover)), [PRESS_RULE]);
+    // And a press that IS the hover moves nowhere at all.
+    assert.deepEqual(failuresAfter('dark', '--color-brand-accent-active', accentHover), [PRESS_RULE]);
+  });
+
+  test('a focus ring drawn in the dark accent itself is caught', () => {
+    // The accent cannot clear 3:1 on the lightest dark ground and still carry
+    // a white label, which is why the ring is its own step.
+    assert.deepEqual(failuresAfter('dark', '--color-focus', typed.dark.color.brand.accent), ['the focus ring clears 3:1']);
+  });
+
+  test("the rail's current row is caught when its hairline or its lift is lost", () => {
+    const [fill, line] = RAIL_CURRENT_ROW;
+    assert.deepEqual([fill, line], ['--color-surface-elevated', '--color-border-default']);
+    // The line drawn in the row's own colour is no line at all.
+    assert.deepEqual(failuresAfter('dark', line, typed.dark.color.surface.elevated), [
+      "the hairline round the rail's current row is visible on it",
+    ]);
+    // Raised two steps off the light frame: every other rule raised is held
+    // to still holds, and the row is no longer there.
+    const { r, g, b } = parseHex(typed.light.color.surface.frame);
+    assert.deepEqual(failuresAfter('light', fill, hex({ r: r + 2, g: g + 2, b: b + 2 })), [
+      "the rail's current row lifts off the rail",
+    ]);
+  });
+});

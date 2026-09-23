@@ -37,7 +37,7 @@ const accent = color.brand.accent;
 ```
 
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
-for example `var(--color-brand-primary)` or `var(--spacing-4)`.
+for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
 ## Theming
 
@@ -139,8 +139,6 @@ Where an approved value failed one of the suite's floors on the new rungs, the f
 | `--color-border-control` light | `#8e8e96` | `#7a7a82` | 6.71 | 2.29:1 on a pressed row on the frame |
 | `--color-data-other` light | `#8e8e96` | `#87878f` | 2.33 | 2.77:1 as a mark on the frame |
 
-One value outside the neutral family moved with them: the light `--color-feedback-warning-ink`, `#92400e` to `#903f0c` (dE 0.50), because the attention count on the rail's current row, drawn on the warning tint over the accent tint over the frame, measured 4.43:1 there.
-
 ### Breaking change in 0.5.0: the four rungs
 
 The surface ramp was three rungs (`background`, `subtle` and `elevated`) plus four names that repeated them: `muted` was byte-identical to `subtle` in both palettes, and the three `topbar` steps held the values of `background`, `subtle` and `elevated`. They are gone, and the frame is new.
@@ -197,7 +195,7 @@ Four families, and the meanings never move:
 | --- | --- | --- |
 | Status | `success` a good terminal state, `warning` a person is needed, `danger` failure, `info` neutral information | `--color-feedback-{success,warning,danger,info}` and their `-ink`, `-soft` and `-line` steps |
 | Phase | onboarding, execute, review | `--color-phase-{onboarding,execute,review}` and their `-ink` and `-soft` steps |
-| Accent | where the reader is: the active nav indicator, the focus ring, the selected row, the filter that is on | `--color-brand-accent`, `-hover`, `-active`, `-ink`, `-soft`, `-soft-strong` |
+| Accent | what to act on, and what is chosen: the primary action's fill, the focus ring, the selected row, the filter that is on, the count of what is waiting on the reader | `--color-brand-accent`, `-hover`, `-active`, `-ink`, `-soft`, `-soft-strong`, `-rgb`, and `--color-focus` |
 | Data | a chart series, and only inside a chart that carries a legend | `--color-data-1` to `-5`, `--color-data-other` |
 
 Two rules travel with them:
@@ -207,9 +205,58 @@ Two rules travel with them:
 
 A `-soft` step is its own fill at alpha 0.12 and a `-line` step is the same fill at alpha 0.30. They are derived by the build from the fill, per palette, so a tint cannot come to belong to a hue the fill no longer is.
 
+### The accent
+
+The accent is a violet, and it is **per palette**:
+
+| Token | Dark (and the marketing root) | Light | What it is |
+| --- | --- | --- | --- |
+| `--color-brand-accent` | `#7c56ff` | `#6b45f0` | The fill of the primary action, a selected card's ring, a selected row's rail, the attention count. A fill and a mark, never text. |
+| `--color-brand-accent-hover` | `#744bf4` | `#633ae5` | The primary action under the pointer. |
+| `--color-brand-accent-active` | `#6c40e9` | `#5b2dda` | The primary action pressed. |
+| `--color-brand-accent-ink` | `#b3a1ff` | `#5a33de` | The accent as text: a link, an outline button's label. |
+| `--color-brand-accent-soft` | the accent at 0.16 | the accent at 0.109 | The tint behind a selected row or a toggle that is on. |
+| `--color-brand-accent-soft-strong` | the accent at 0.32 | the accent at 0.32 | The border paired with the soft tint. |
+| `--color-brand-accent-rgb` | `124, 86, 255` | `107, 69, 240` | The accent as an `r, g, b` triple, for a translucent tint of a stylesheet's own. `--shadow-glow` is composed from it. |
+| `--color-focus` | `#805bff` | `#6b45f0` | The focus ring. |
+| `--color-text-on-accent` | `#ffffff` | `#ffffff` | The label on the accent's three fills, and on the danger fill. |
+
+`-rgb` and `-soft-strong` are derived from the accent by the build, per palette, and the build suite holds the written `-soft` to the accent's own channels.
+
+- **The primary action is the accent.** The monochrome `--color-brand-primary` (white on dark, black on light) is gone: a white primary beside a light-grey secondary was one pair of greys. White clears 4.53:1 on the dark accent and 5.62:1 on the light one.
+- **Its hover and its press are darker, a step each, never brighter.** The label is white, so a brighter fill is a step toward it: the approved design's `brightness(1.08)` hover took the dark accent's label to 4.18:1, under the text floor at the moment the reader is about to press. Each step is the least move along lightness a reader can see, dE 3, and the palette suite holds both halves: `a hovered primary action is a visible step away from its label` and `a pressed primary action is a visible step past a hovered one`.
+- **The focus ring is the accent**, except where the floor forbids it. The dark accent measured 2.88:1 on a pressed row inside a raised surface, under the 3:1 a ring clears, and it cannot lighten itself without taking the primary action's label under 4.5:1; so the dark ring is the accent lifted dE 1.24.
+- **Where the reader is in a rail is not the accent.** The rail's current row stands on raised with the plain border round it (`RAIL_CURRENT_ROW`), and the rail's one hue is the attention count, the accent's fill with the on-accent label: the one thing in the chrome that asks the reader to act.
+
+Where an approved value failed a floor, the floor won and the value moved the least it could, keeping its hue. Each token's comment names the value it replaced, the distance and the measurement:
+
+| Token | Was | Shipped | Moved (dE) | Because |
+| --- | --- | --- | --- | --- |
+| `--color-brand-accent-hover` dark | `#865dff`, the approved `brightness(1.08)` | `#744bf4` | | 4.18:1 under the white label; the shipped step is darker by dE 3.08 |
+| `--color-brand-accent-hover` light | `#744bff`, the approved `brightness(1.08)` | `#633ae5` | | it moved toward the label; the shipped step is darker by dE 3.03 |
+| `--color-focus` dark | `#7c56ff`, the accent | `#805bff` | 1.24 | 2.88:1 on a pressed row inside a raised surface |
+| `--color-brand-accent-soft` light | 0.10 | 0.109 | | a selected row sat dE 2.64 from a hovered one on the frame, under 3 |
+| `--color-phase-execute` dark | `#ac6bff` | `#ae6dff` | 0.57 | dE 9.6 from the new accent under normal vision, 7.7 under protanopia |
+| `--color-phase-execute` light | `#5b37da` | `#480fbe` | 8.14 | dE 5.2 from the new accent under every vision; the least move that also keeps it 10 from onboarding |
+
+The light `--color-feedback-warning-ink` is back at `#92400e`. It had moved to `#903f0c` for the attention count drawn on the warning tint over the accent tint of the rail's current row, a composite that is gone.
+
+### Breaking change in 0.5.0: the accent is the primary action
+
+| What changed | What to change |
+| --- | --- |
+| `--color-brand-primary`, `--color-brand-primary-hover` and `--color-brand-primary-active` (`color.brand.primary`, `.primaryHover`, `.primaryActive`) are removed. | `--color-brand-accent`, `-hover` and `-active`, which is what the primary `Button` already painted. A surface that wanted the monochrome fill itself takes `--color-surface-inverse`. |
+| `--color-text-on-brand` (`color.text.onBrand`) is removed. | `--color-text-on-accent` on an accent fill, or `--color-text-inverse` on the inverse ground. |
+| The accent is per palette: `#7c56ff` on the dark root and the marketing root, `#6b45f0` in light. It was `#5469d4` in every palette, and its hover, press, ink, soft tint, triple and `--color-focus` move with it (the table above). | Nothing, for a stylesheet that reads the tokens. A literal `#5469d4` or `84, 105, 212` spelled in an application is the old accent: read the token instead. |
+| The accent is a THEMED slot now, declared by all three blocks of `@crewlethq/tokens/css/themes`. It was declared by `tokens.css` alone. | An application that rebinds the accent on `:root` alone is beaten by `:root[data-theme="light"]` in light: mirror the three selectors, as for any themed token (see [Theming](#theming)), and rebind `-rgb`, `-soft` and `-soft-strong` with it. |
+| `--color-brand-accent-rgb` and `--color-brand-accent-soft-strong` are derived from the accent by the build. | Nothing. |
+| `--shadow-glow` is `rgba(var(--color-brand-accent-rgb), …)` rather than a literal indigo. | Nothing; it follows a rebound accent now. |
+| In `@crewlethq/tokens/css/legacy`, `--accent`, `--primary-blue` and `--accent-purple` read `--color-brand-accent`. They read `--color-brand-primary`. | Nothing, unless a stylesheet relied on them being white on dark. |
+| In `@crewlethq/tokens/test/palette`, `LABEL_ON_FILL` no longer carries the three `--color-text-on-brand` pairs; the rail's current row is `RAIL_CURRENT_ROW` (raised, with the plain border) and the attention count is the on-accent label on the accent in `RAIL_PAINTS`; `text on glass clears 4.5:1` measures over the inverse ground and the accent fill rather than over the brand-primary fill. `a hovered primary action is a visible step away from its label`, `a pressed primary action is a visible step past a hovered one`, `the rail's current row lifts off the rail` and `the hairline round the rail's current row is visible on it` are new, with the exports `ACTION_STEPS`, `ACTION_LABEL`, `ACTION_DE`, `RAIL_CURRENT_ROW` and `RAIL_CURRENT_LIFT`. | Rename a subject a suite filters on. |
+
 ## The palette suite
 
-`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), every ink on its own soft tint, every fill as a mark, the focus ring, the control boundary, the steps between the rungs and the hairline that finds a card, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision, and the structure of the theme file itself. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
+`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), every ink on its own soft tint, every fill as a mark, the primary action's three fills under its label and the steps between them, the focus ring, the control boundary, the rail's current row, the steps between the rungs and the hairline that finds a card, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision, and the structure of the theme file itself. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
 
 The module is **published**, as `@crewlethq/tokens/test/palette`, so a consumer runs the same rules over the version it installed:
 

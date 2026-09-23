@@ -50,7 +50,7 @@ const Spacing = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
     {Object.entries(spacing).map(([k, v]) => (
       <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
-        <div style={{ width: v, height: 16, background: 'var(--color-brand-primary)' }} />
+        <div style={{ width: v, height: 16, background: 'var(--color-border-control)' }} />
         <code style={{ fontSize: 'var(--font-size-sm)' }}>spacing.{k} = {v}</code>
       </div>
     ))}

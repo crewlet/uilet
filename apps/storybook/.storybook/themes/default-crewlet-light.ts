@@ -1,5 +1,5 @@
 import { create } from 'storybook/theming';
-import { color, font, radius, themes } from '@crewlethq/tokens';
+import { font, radius, themes } from '@crewlethq/tokens';
 
 // default-crewlet-light
 // The light counterpart to default-crewlet-dark. Not active by default; swap
@@ -21,10 +21,11 @@ export default create({
   brandTitle: 'Crewlet Design System',
   brandTarget: '_self',
 
-  // The accent is the same in every palette: it is the one colour that means
-  // "here", and where the reader is does not depend on the theme.
-  colorPrimary: color.brand.accent,
-  colorSecondary: color.brand.accent,
+  // The accent is per palette: the primary action's fill, and the one colour
+  // that means "here". This palette's own, so the tool's selection reads as
+  // the canvas's does.
+  colorPrimary: light.brand.accent,
+  colorSecondary: light.brand.accent,
 
   appBg: light.surface.frame,
   appContentBg: light.surface.background,
@@ -39,7 +40,7 @@ export default create({
   barBg: light.surface.background,
   barTextColor: light.text.tertiary,
   barHoverColor: light.text.primary,
-  barSelectedColor: color.brand.accent,
+  barSelectedColor: light.brand.accent,
 
   inputBg: light.surface.subtle,
   inputBorder: light.border.default,

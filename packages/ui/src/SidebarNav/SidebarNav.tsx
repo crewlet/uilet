@@ -1,13 +1,13 @@
 /**
  * The rail's navigation: groups of rows, one of which says where the reader is.
  *
- * THE ROW THE READER IS ON IS THE ONE PLACE THE ACCENT APPEARS IN THE CHROME,
- * and it takes the accent twice over: the accent's soft tint as its ground,
- * and the accent ink for its label and its glyph. Position AND hue, so the row
- * is found at a glance by a reader who sees the hue and by one who does not.
+ * THE ROW THE READER IS ON IS RAISED, WITH A HAIRLINE ROUND IT, AND NO HUE: it
+ * is found by its position, its lift and its line, by a reader who sees
+ * colour and by one who does not. The accent is the primary action's fill, so
+ * a violet row in the rail would read as a second primary on every screen.
  * `aria-current="page"` says the same thing to a screen reader, and the style
  * is drawn FROM that attribute, so the two cannot come apart. The stylesheet
- * carries why this replaced a one-pixel accent bar outside the row's edge.
+ * carries why the hairline is an outline rather than a shadow.
  *
  * THE LINK ELEMENT BELONGS TO THE APPLICATION (`renderLink`). A router's own
  * link is what carries a client navigation and a leave guard; a plain anchor is
@@ -57,14 +57,16 @@ export interface NavLinkProps {
  * How loudly a row's badge is drawn.
  *
  * `neutral` is a quiet figure at the end of the row, in the row's own ink.
- * `attention` is the one badge in the chrome allowed a status hue: a count of
- * what is waiting on a person is the one thing that should pull the eye out of
- * whatever screen the reader is on. It is a tint behind a word rather than a
- * word in a hue, so it still reads to somebody who cannot separate the hue.
+ * `attention` is the one badge in the chrome allowed a hue, and it is the
+ * accent: a count of what is waiting on the reader is the one thing in the
+ * rail that asks them to act, and the one thing that should pull the eye out
+ * of whatever screen they are on. It is a filled pill carrying a label rather
+ * than a word in a hue, so it still reads to somebody who cannot separate the
+ * hue.
  *
- * A TONE RATHER THAN A COMPONENT THE CALLER PASSES IN, because the tint has to
- * clear its floor on the ground the ROW has, which is the accent tint on the
- * reader's own row. That is a fact about the rail, measured in the rail's own
+ * A TONE RATHER THAN A COMPONENT THE CALLER PASSES IN, because the pair has to
+ * clear its floor on every ground a ROW can have, the reader's own raised row
+ * included. That is a fact about the rail, measured in the rail's own
  * stylesheet, and not something a call site can be asked to know.
  */
 export type NavBadgeTone = 'neutral' | 'attention';

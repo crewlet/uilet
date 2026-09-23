@@ -112,40 +112,40 @@
   text-decoration: none;
 }
 
-.crewlet-nav-item__row:focus-visible {
-  outline: 2px solid var(--color-focus);
-  /* Inside the row's own box: the rail is a clipping scroller, so an outset
-     ring on the first or last row is cut off by it. */
-  outline-offset: var(--size-focus-ring-inset-offset);
-}
-
 /*
- * WHERE THE READER IS: the accent's own soft tint, with the label and the
- * glyph in the accent ink. That is the whole job of an accent in a chrome, and
- * the rail is the one place in the chrome it appears.
+ * WHERE THE READER IS: the row stands on RAISED, with the plain border drawn
+ * round it as a hairline INSIDE the row, and keeps the rail's own ink.
  *
- * It was a neutral lift with the accent as a one-pixel bar outside the row's
- * left edge, on the reading that accent text in a rail competes with the
- * status hues beside it and cannot be separated from the row above by a reader
- * with a colour vision deficiency. Neither holds here. Nothing in this rail
- * carries a status hue except the attention count below, which is a tint
- * BEHIND a word rather than a word in a hue; and the tint is what answers the
- * second objection, because the row still lifts off its ground by more than a
- * hovered one does whether or not the hue is seen at all (@crewlethq/tokens
- * measures exactly that, and measures this ink on this composite: 5.76:1 in
- * light, 5.96:1 in dark).
+ * It is found the way a card is found. In light, raised is only dE 1.84 off
+ * the frame the rail stands on, so the fill alone is a lift a reader may not
+ * see; the hairline is what carries the row, and in dark it is also what
+ * tells the current row from a hovered one, whose fill lands only dE 1.56
+ * away. @crewlethq/tokens holds both halves by name: the row lifts off the
+ * rail by dE 1.5 and the hairline clears dE 3 on the row it is drawn on.
  *
- * What the bar cost was that one pixel of hue was the entire signal, at the
- * one moment a reader is scanning the rail to find out where they are.
+ * It used to be the accent's own soft tint with the label in the accent ink.
+ * The accent is the fill of the primary action now, so a violet row in the
+ * rail would read as a second primary on every screen, beside the one the
+ * screen is actually asking for. Where the reader is, is the row's position,
+ * its lift and its line; aria-current says it to a screen reader.
+ *
+ * THE HAIRLINE IS AN OUTLINE, not an inset box-shadow, for the reason the
+ * focus ring is one: forced-colors mode drops every box-shadow and every
+ * background and keeps outlines, so drawn as a shadow the current row would
+ * be indistinguishable from its neighbours for exactly the readers that mode
+ * exists for. The focus ring is the same property, so its rule is declared
+ * after this one and a focused current row draws the ring instead.
  *
  * Drawn from aria-current, so the picture and what a screen reader is told
  * cannot come apart. It is declared after :hover deliberately: both selectors
- * weigh the same, a row shows the current tint or the hover overlay and never
+ * weigh the same, a row shows the current lift or the hover overlay and never
  * both, and later is what decides which.
  */
 .crewlet-nav-item__row[aria-current='page'] {
-  background: var(--color-brand-accent-soft);
-  color: var(--color-brand-accent-ink);
+  background: var(--color-surface-elevated);
+  outline: 1px solid var(--color-border-default);
+  outline-offset: -1px;
+  color: var(--color-text-primary);
 }
 
 .crewlet-nav-item__row[aria-disabled='true'] {
@@ -159,9 +159,21 @@
 }
 
 /*
+ * After the current row's rule, which draws its hairline on the same
+ * property: both weigh the same, so source order is what lets a focused
+ * current row draw the ring rather than the line.
+ */
+.crewlet-nav-item__row:focus-visible {
+  outline: 2px solid var(--color-focus);
+  /* Inside the row's own box: the rail is a clipping scroller, so an outset
+     ring on the first or last row is cut off by it. */
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
  * THE GLYPH FOLLOWS THE LABEL. At rest it is quieter than the word beside it
  * and takes the decoration step; on a hovered row and on the reader's own it
- * takes the row's own colour, which on the current row is the accent ink.
+ * takes the row's own colour, the rail's full ink.
  *
  * ONE inherit rather than a second ramp, because a second ramp is how a row
  * comes to paint its label and its glyph two different answers to "where am
@@ -228,30 +240,36 @@
   line-height: inherit;
 }
 
-/* A quiet badge takes the row's ink, the current row's accent included. The
-   attention badge keeps its own, which is the whole point of it, and the
-   :not() is what says so: both selectors would otherwise weigh the same and a
-   tone would be decided by which rule a later edit happened to move. */
+/* A quiet badge takes the row's ink on the current row, lifting from the
+   tertiary step to the rail's full ink with the row it sits in. The attention
+   badge keeps its own, which is the whole point of it, and the :not() is what
+   says so: both selectors would otherwise weigh the same, and the attention
+   count's label would take the row's ink on the accent fill. */
 .crewlet-nav-item__row[aria-current='page'] .crewlet-nav-item__badge:not(.crewlet-nav-item__badge--attention) {
   color: inherit;
 }
 
 /*
- * THE ONE BADGE IN THE CHROME ALLOWED A STATUS HUE. A count of what is waiting
- * on a person is the one thing that should pull the eye out of whatever screen
- * the reader is on, and it stays a tint BEHIND a word rather than a word in a
- * hue, so it reads to somebody who cannot separate the hue at all.
+ * THE ONE BADGE IN THE CHROME ALLOWED A HUE, and it is the accent. A count of
+ * what is waiting on the reader is the one thing in the rail that asks them to
+ * act, which is what the accent means, and it is the one thing that should
+ * pull the eye out of whatever screen they are on. It is a FILL carrying a
+ * label rather than a word in a hue, so it reads to somebody who cannot
+ * separate the hue at all: the filled pill is the signal, the figure is the
+ * count.
  *
- * Measured on every ground a row can have, the reader's own row included,
- * which is a warning tint on the accent tint on the rail: @crewlethq/tokens'
- * palette suite has that composite by name, at 5.08:1 in light and 9.75:1 in
- * dark.
+ * It used to be the warning tint with the warning ink. Warning is a STATE,
+ * that somebody's work is stopped on a person, and a count of messages is not
+ * one: it is an invitation, and state hues are kept for state.
+ *
+ * The label is the on-accent step, the primary action's own pair: 4.53:1 in
+ * dark and 5.62:1 in light, on every row alike, because the fill is opaque.
  */
 .crewlet-nav-item__badge--attention {
   padding: 0 var(--spacing-2);
   border-radius: var(--radius-pill);
-  background: var(--color-feedback-warning-soft);
-  color: var(--color-feedback-warning-ink);
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -291,9 +309,10 @@
 
 /*
  * Nested rows carry an indent guide rather than more padding, because a run of
- * indents with no line is a hierarchy a reader has to measure by eye. The
- * guide takes the accent on the path the reader is on, which is the same
- * signal the top-level rail gives.
+ * indents with no line is a hierarchy a reader has to measure by eye. On the
+ * path the reader is on the guide steps up to the strong border: the same
+ * neutral lift the current row itself takes, and not the accent, which the
+ * rail keeps for the one count that asks the reader to act.
  */
 .crewlet-nav-item__children {
   display: flex;
@@ -307,7 +326,7 @@
 /* No type step of its own any more: every row in the rail reads at the compact
    step now, and the indent guide is what says a row is nested. */
 .crewlet-nav-item__children:has(.crewlet-nav-item__row[aria-current='page']) {
-  border-left-color: var(--color-brand-accent);
+  border-left-color: var(--color-border-strong);
 }
 
 @media (prefers-reduced-motion: reduce) {

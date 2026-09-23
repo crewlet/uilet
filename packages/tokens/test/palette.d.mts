@@ -104,6 +104,23 @@ export const OVERLAY_DE: number;
 /** The ground the application rail stands on. */
 export const RAIL_GROUND: string;
 
+/**
+ * The row the reader is on in the rail, as [fill, hairline]: raised, with the
+ * plain border drawn round it. The fill lifts off the rail by
+ * RAIL_CURRENT_LIFT and the hairline clears HAIRLINE_DE on the fill.
+ */
+export const RAIL_CURRENT_ROW: readonly [string, string];
+export const RAIL_CURRENT_LIFT: number;
+
+/**
+ * The primary action's steps, each as [rule, the step, the fill it follows]:
+ * each clears ACTION_DE against the one before it and raises the contrast of
+ * ACTION_LABEL on it.
+ */
+export const ACTION_STEPS: readonly (readonly [string, string, string])[];
+export const ACTION_LABEL: string;
+export const ACTION_DE: number;
+
 /** The token name of the modal veil. */
 export const VEIL: string;
 

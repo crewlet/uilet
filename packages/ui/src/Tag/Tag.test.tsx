@@ -332,14 +332,18 @@ describe('Tag colour', () => {
   test('a dot inside a pill takes the pill ink, because the fill step is measured elsewhere', () => {
     // StatusDot paints the FILL step, which is measured as a mark against the
     // opaque surfaces a page is made of. Inside a tag the dot lands on the
-    // tone's own soft tint, which is a different composite and one nothing in
-    // the palette suite reaches. This case measures both: the fill step would
-    // fail there, and the ink step, which is what the pill actually draws,
-    // holds. A rule that reverted to the fill would go red on the second half.
+    // tone's own soft tint instead, a composite the palette suite measures
+    // for an INK and never for a fill, and one that sits close to the mark
+    // floor: the brand dot measured 2.95:1 on its tint over the dark raised
+    // rung with the indigo accent this kit shipped before 0.5.0, and 3.21:1
+    // with the violet. So the dot is drawn in the pill's ink, the step that IS
+    // held on that tint, here and by the palette suite, and a tone an
+    // application rebinds cannot take the dot under the floor without taking
+    // the label with it. A rule that reverted to the fill goes red on the
+    // first assertion.
     const rule = /\.crewlet-tag \.crewlet-tag__dot\s*\{([^}]*)\}/.exec(css);
     expect(rule?.[1]).toContain('background: currentColor');
 
-    const fillFailures: string[] = [];
     const inkFailures: string[] = [];
     for (const [state, values] of Object.entries(states)) {
       if (state === 'base') continue;
@@ -351,13 +355,8 @@ describe('Tag colour', () => {
         return parseHex(raw) ?? flatten(raw, page);
       };
       for (const { variant, fill, ink } of declaredPairs()) {
-        // The fill step a bare StatusDot would paint for this tone. A phase
-        // and a feedback tone drop the suffix the same way.
-        const mark = fill.replace(/-soft$/, '');
-        if (values.get(mark) === undefined) continue;
         for (const surface of OPAQUE_SURFACES) {
           const tint = flatten(values.get(fill) ?? '', read(surface));
-          if (contrast(read(mark), tint) < 3) fillFailures.push(`${state}: ${variant} on ${surface}`);
           const ratio = contrast(read(ink), tint);
           if (ratio < 3) inkFailures.push(`${state}: ${variant} on ${surface}: ${ratio.toFixed(2)}:1`);
         }
@@ -365,9 +364,6 @@ describe('Tag colour', () => {
     }
     // The ink holds everywhere, which is why the pill can spend it.
     expect(inkFailures).toEqual([]);
-    // And the fill does not, which is why this rule is load-bearing rather
-    // than a preference: delete it and a dot goes under the mark floor.
-    expect(fillFailures.length).toBeGreaterThan(0);
   });
 });
 

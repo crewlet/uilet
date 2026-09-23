@@ -14,8 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { font, themes } from '@crewlethq/tokens';
-import { parseHex } from '@crewlethq/tokens/test/palette';
-import { installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { OrgNodeDisclosure, OrgNodeLabel, OrgNodeLead } from './OrgNode.js';
 
 let uninstall: (() => void) | undefined;
@@ -29,18 +28,6 @@ afterEach(() => {
 function drawn(theme: 'light' | 'dark' = 'dark') {
   uninstall?.();
   uninstall = installThemed(theme, 'OrgNode/OrgNode.css');
-}
-
-/** A colour the cascade reports, as the three channels. */
-function channels(value: string): { r: number; g: number; b: number } {
-  const hex = parseHex(value.trim());
-  if (hex) return hex;
-  const parts = /rgba?\(([^)]+)\)/
-    .exec(value)?.[1]
-    ?.split(',')
-    .map((one) => Number.parseFloat(one));
-  if (!parts || parts.length < 3) throw new Error(`not a colour: ${value}`);
-  return { r: parts[0]!, g: parts[1]!, b: parts[2]! };
 }
 
 const SHEET = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'OrgNode.css'), 'utf8');

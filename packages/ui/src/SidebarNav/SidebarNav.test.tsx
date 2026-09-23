@@ -9,7 +9,18 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
-import { contrast, flatten, paletteStates, parseHex, RAIL_GROUND, type Rgb } from '@crewlethq/tokens/test/palette';
+import { themes } from '@crewlethq/tokens';
+import {
+  contrast,
+  deltaE,
+  flatten,
+  paletteStates,
+  parseHex,
+  RAIL_CURRENT_ROW,
+  RAIL_GROUND,
+  type Rgb,
+} from '@crewlethq/tokens/test/palette';
+import { channels, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import { NavGroup, NavItem, SidebarNav } from './index.js';
 
 afterEach(cleanup);
@@ -202,12 +213,11 @@ test('the rail has no accessibility violations, expanded or collapsed', async ()
 /**
  * What the rail PAINTS, measured from the stylesheet that ships.
  *
- * The rail is the one surface in the product that draws a tint on a tint: the
- * attention count's warning tint lands on the accent tint of the row the
- * reader is on. @crewlethq/tokens measures that composite against the tokens
- * it emits; what it cannot know is which tokens this stylesheet spends, so the
- * pairs are read back out of the CSS here and measured on the rail's own
- * grounds. Swap either token for one nobody measured and the number moves.
+ * The rail stands on the frame, and its current row on raised with a hairline
+ * round it. @crewlethq/tokens measures those grounds and that line against the
+ * tokens it emits; what it cannot know is which tokens this stylesheet spends,
+ * so the pairs are read back out of the CSS here and measured on the rail's
+ * own grounds. Swap a token for one nobody measured and the number moves.
  */
 describe('the rail colour', () => {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -255,11 +265,37 @@ describe('the rail colour', () => {
     // A reading that found nothing would pass every measurement below for any
     // stylesheet at all.
     expect(pair(RESTING).ink).toBe(token('color-text-primary'));
-    expect(pair(CURRENT).fill).toBe(token('color-brand-accent-soft'));
-    expect(pair(CURRENT).ink).toBe(token('color-brand-accent-ink'));
-    expect(pair(ATTENTION).fill).toBe(token('color-feedback-warning-soft'));
-    expect(pair(ATTENTION).ink).toBe(token('color-feedback-warning-ink'));
+    expect(pair(CURRENT).fill).toBe(token('color-surface-elevated'));
+    expect(pair(CURRENT).ink).toBe(token('color-text-primary'));
+    expect(pair(ATTENTION).fill).toBe(token('color-brand-accent'));
+    expect(pair(ATTENTION).ink).toBe(token('color-text-on-accent'));
     expect(Object.keys(states)).toEqual(['base', 'dark', 'light (media query)', 'light (attribute)']);
+  });
+
+  test('the current row is the one the palette suite measures: raised, with the plain border round it', () => {
+    // @crewlethq/tokens holds RAIL_CURRENT_ROW to its two floors (the row
+    // lifts off the rail, the hairline is visible on the row). Those floors
+    // say nothing about a stylesheet that drew some other fill or line.
+    const [fill, line] = RAIL_CURRENT_ROW;
+    const rule = /\.crewlet-nav-item__row\[aria-current='page'\]\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(pair(CURRENT).fill).toBe(fill);
+    expect(rule).toContain(`outline: 1px solid var(${line})`);
+    expect(rule).toContain('outline-offset: -1px');
+    // The hairline is an OUTLINE rather than an inset box-shadow, because
+    // forced-colors mode drops a box-shadow and keeps an outline.
+    expect(rule).not.toMatch(/box-shadow/);
+    // And nothing in it is the accent, which the rail keeps for the one count
+    // that asks the reader to act.
+    expect(rule).not.toMatch(/brand-accent/);
+  });
+
+  test('a focused current row draws the ring rather than its hairline', () => {
+    // Both rules set `outline` and weigh the same, so the one declared LAST
+    // wins on a row that is both current and focused.
+    const current = css.indexOf(".crewlet-nav-item__row[aria-current='page'] {");
+    const ring = css.indexOf('.crewlet-nav-item__row:focus-visible {');
+    expect(current).toBeGreaterThan(0);
+    expect(ring).toBeGreaterThan(current);
   });
 
   test('the shell paints the rail on the ground every measurement here is taken on', () => {
@@ -303,8 +339,9 @@ describe('the rail colour', () => {
       for (const [on, ground] of [rows[0], rows[1]] as [string, Rgb][]) {
         measure('a quiet badge and a group label', colour(values, token('color-text-tertiary'), page), ground, on);
       }
-      // THE TINT ON A TINT: the attention count's own ground is the warning
-      // tint composited over whichever ground the row already had.
+      // The attention count on its own fill, over whichever ground the row
+      // already had: the fill is opaque today, and composited this way a
+      // translucent one would still be measured on the grounds it lands on.
       for (const [on, ground] of rows) {
         measure(
           'the attention count',
@@ -356,8 +393,8 @@ describe('the rail colour', () => {
     /*
      * The two rules weigh the same without the :not(): a quiet badge takes the
      * row's ink on the current row, and an attention badge would have taken
-     * the accent ink on its warning tint, which is a pair nobody measured and
-     * which no reading of the stylesheet would have shown.
+     * the rail's full ink on the accent fill, which is a pair nobody measured
+     * and which no reading of the stylesheet would have shown.
      */
     const inherit = new RegExp(
       "\\.crewlet-nav-item__row\\[aria-current='page'\\] \\.crewlet-nav-item__badge([^{]*)\\{",
@@ -407,5 +444,60 @@ describe('the rail colour', () => {
     );
     expect(animated.size).toBeGreaterThan(0);
     expect([...animated].filter((name) => !collapsed.has(name))).toEqual([]);
+  });
+  test('as the cascade decides it, the current row is raised and the attention count is the accent, in both palettes', () => {
+    /*
+     * The pairs above are read out of the source. This is what jsdom's own
+     * cascade paints on the rendered rail with the values each theme ships:
+     * a later rule winning on source order, or a selector that matches
+     * nothing the component renders, shows up here and nowhere above.
+     */
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installThemed(theme, 'SidebarNav/SidebarNav.css');
+      const { unmount } = render(<Rail />);
+      const palette = themes[theme].color;
+      const current = screen.getByRole('link', { name: /^Overview/ });
+      const style = getComputedStyle(current);
+      const where = `${theme}: the current row`;
+      expect(channels(style.backgroundColor), where).toEqual(parseHex(palette.surface.elevated));
+      expect(channels(style.color), where).toEqual(parseHex(palette.text.primary));
+      // jsdom keeps the `outline` shorthand as written rather than expanding
+      // it into its longhands, so the winning declaration is read whole.
+      const [width, drawn, line] = style.outline.split(' ');
+      expect([width, drawn], where).toEqual(['1px', 'solid']);
+      expect(channels(line ?? ''), where).toEqual(parseHex(palette.border.default));
+      expect(channels(style.backgroundColor), where).not.toEqual(parseHex(palette.brand.accent));
+
+      const resting = getComputedStyle(screen.getByRole('link', { name: /^People/ }));
+      expect(resting.outline, `${theme}: a resting row`).toBe('');
+
+      const badge = getComputedStyle(current.querySelector('.crewlet-nav-item__badge--attention')!);
+      expect(channels(badge.backgroundColor), `${theme}: the attention count`).toEqual(parseHex(palette.brand.accent));
+      expect(channels(badge.color), `${theme}: the attention count`).toEqual(parseHex(palette.text.onAccent));
+      unmount();
+      uninstall();
+    }
+  });
+
+  test('the fill and the line the current row paints clear the floors the palette suite sets for them', () => {
+    // Measured here on the tokens the STYLESHEET names, so a rule that moved
+    // to a fill or a line the palette suite never held is caught by number.
+    const current = pair(CURRENT);
+    const line = /outline:\s*1px solid var\((--[\w-]+)\)/.exec(
+      /\.crewlet-nav-item__row\[aria-current='page'\]\s*\{([^}]*)\}/.exec(css)?.[1] ?? '',
+    )?.[1];
+    const failures: string[] = [];
+    for (const [state, values] of Object.entries(states)) {
+      if (state === 'base') continue;
+      const page = parseHex(values.get(token('color-surface-background')) ?? '');
+      if (page === null || line === undefined) throw new Error(`${state} has no page colour, or the row draws no line`);
+      const rail = colour(values, RAIL, page);
+      const fill = flatten(values.get(current.fill ?? '') ?? '', rail);
+      const lift = deltaE(fill, rail);
+      if (lift < 1.5) failures.push(`${state}: the current row lifts dE ${lift.toFixed(2)} off the rail`);
+      const drawn = deltaE(flatten(values.get(line) ?? '', fill), fill);
+      if (drawn < 3) failures.push(`${state}: the hairline is dE ${drawn.toFixed(2)} off the row`);
+    }
+    expect(failures).toEqual([]);
   });
 });

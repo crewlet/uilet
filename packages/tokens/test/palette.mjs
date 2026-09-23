@@ -176,11 +176,13 @@ export const STATUS = [
 export const PHASE = ['--color-phase-onboarding', '--color-phase-execute', '--color-phase-review'];
 export const DATA = ['--color-data-1', '--color-data-2', '--color-data-3', '--color-data-4', '--color-data-5'];
 
-/** A fill with the label a component paints on it. The Button variants. */
+/**
+ * A fill with the label a component paints on it: the primary action at rest,
+ * under the pointer and pressed, the danger fill, and the inverse ground. The
+ * label on every fill but the last is on-accent, which is white in every
+ * palette, and each fill is measured over every ground it can sit on.
+ */
 export const LABEL_ON_FILL = [
-  ['--color-text-on-brand', '--color-brand-primary'],
-  ['--color-text-on-brand', '--color-brand-primary-hover'],
-  ['--color-text-on-brand', '--color-brand-primary-active'],
   ['--color-text-on-accent', '--color-brand-accent'],
   ['--color-text-on-accent', '--color-brand-accent-hover'],
   ['--color-text-on-accent', '--color-brand-accent-active'],
@@ -188,6 +190,33 @@ export const LABEL_ON_FILL = [
   ['--color-text-on-accent', '--color-feedback-danger-hover'],
   ['--color-text-inverse', '--color-surface-inverse'],
 ];
+
+/**
+ * THE PRIMARY ACTION'S THREE FILLS, at rest, under the pointer and pressed,
+ * each held against the one before it: [rule, the step, the fill it follows].
+ *
+ * The primary action IS the accent, in both palettes, and on a filled button
+ * the fill is the whole of the feedback, so every step clears two things. It
+ * is SEEN: ACTION_DE, the floor this file holds every "can a reader notice
+ * it" difference to. And it moves AWAY from its label, which is ACTION_LABEL
+ * on every fill: a hover or a press only ever gains contrast. The approved
+ * design brightened its hover instead (brightness(1.08)), which is the step
+ * TOWARD a white label, and on the dark accent it took white from 4.53:1 to
+ * 4.18:1, under the text floor at the moment a reader is about to press. The
+ * label rule above catches that number in dark; this rule is what catches the
+ * same move in light, where the brightened step still measured 5.01:1 and
+ * only its direction was wrong.
+ */
+export const ACTION_STEPS = [
+  ['a hovered primary action is a visible step away from its label', '--color-brand-accent-hover', '--color-brand-accent'],
+  [
+    'a pressed primary action is a visible step past a hovered one',
+    '--color-brand-accent-active',
+    '--color-brand-accent-hover',
+  ],
+];
+export const ACTION_LABEL = '--color-text-on-accent';
+export const ACTION_DE = 3;
 
 /** The ten seeded avatar grounds, each carrying white initials. */
 export const AVATAR_TINTS = Array.from({ length: 10 }, (_, i) => `--color-avatar-tint-${i}`);
@@ -197,35 +226,55 @@ export const AVATAR_TINTS = Array.from({ length: 10 }, (_, i) => `--color-avatar
 // ---------------------------------------------------------------------------
 
 /**
- * The application rail, which is the one surface in the product that paints A
- * TINT ON A TINT.
+ * The application rail, and every pair it paints on its own grounds.
  *
- * Every other rule here composites what a component draws onto an OPAQUE
- * ground, because that is what a badge in a table cell and a callout in a
- * dialog body do. The rail does not. The row the reader is on carries the
- * accent's own soft tint, a hovered row carries the hover overlay, and the
- * attention count's warning tint is drawn on top of whichever of those the row
- * happens to have. `--color-feedback-warning-ink` on its own soft tint was
- * already a rule, and it is measured over the seven opaque grounds; on the
- * reader's own row the tint sits on the accent tint instead, and that third
- * composite is both unmeasured and the tightest of the three.
+ * The rail stands on the FRAME rather than on the sheet, which no other
+ * column of text does. Its rows have three grounds: the frame itself, the
+ * frame under the hover overlay, and RAISED for the row the reader is on
+ * (RAIL_CURRENT_ROW). The attention count is the one hue in it, an opaque
+ * accent fill carrying the on-accent label.
  *
- * The rail's ground is the FRAME rather than the sheet, which is the other
- * half of why this is a list of its own: every pair is named here, so an edit
- * to the accent, to the warning hue or to either soft alpha shows its cost on
- * the rail rather than only inside a dialog.
+ * WHAT THIS TABLE IS, HONESTLY. Every ink in it is also reached by a rule
+ * above, which measures the same composites over every rung: the text steps
+ * over the overlays on the frame, the focus ring over raised, the on-accent
+ * label on the accent fill. So none of these can fail on its own. What it is,
+ * is the MAP from what the rail paints to the ground it lands on, which the
+ * SidebarNav suite in @crewlethq/ui reads the stylesheet's own pairs against,
+ * so a rail that spent a token nobody measured there says so by name. The
+ * rules the table cannot reach are the current row's own, below.
  */
 export const RAIL_GROUND = '--color-surface-frame';
+
+/**
+ * The row the reader is on, as [fill, hairline]: raised, with the plain
+ * border drawn round it INSIDE the row, and the rail's own ink.
+ *
+ * It is found the way a card is found. Its fill is allowed to be near-flat on
+ * the frame, RAIL_CURRENT_LIFT, because in light raised is only dE 1.84 off
+ * the frame (the design draws it there); what carries the row is the
+ * hairline, held to HAIRLINE_DE against the fill it is drawn on. The hairline
+ * is also what tells the current row from a HOVERED one, which draws none: in
+ * dark the two fills land dE 1.56 apart, because the fitted hover overlay
+ * lifts the frame almost to raised.
+ *
+ * It used to be the accent's own soft tint with the label in the accent ink.
+ * The accent is the primary action's fill now, so a violet row in the rail
+ * would read as a second primary on every screen, beside the one the screen
+ * actually asks for; where the reader is, is the row's position, its lift and
+ * its line.
+ */
+export const RAIL_CURRENT_ROW = ['--color-surface-elevated', '--color-border-default'];
+export const RAIL_CURRENT_LIFT = 1.5;
 
 /** The three grounds a row in the rail can have, over that ground. */
 export const RAIL_ROWS = [
   ['a row', null],
   ['a hovered row', '--color-surface-hover'],
-  ['the row the reader is on', '--color-brand-accent-soft'],
+  ['the row the reader is on', RAIL_CURRENT_ROW[0]],
 ];
 
 /**
- * What the rail paints: the ink, the tint it is drawn on (null for the row's
+ * What the rail paints: the ink, the fill it is drawn on (null for the row's
  * own ground), which rows carry it, and the floor it clears.
  *
  * The resting glyph is deliberately not in this list. It is the decoration
@@ -236,12 +285,12 @@ export const RAIL_ROWS = [
 export const RAIL_PAINTS = [
   ["a row's label", '--color-text-secondary', null, ['a row'], 4.5],
   ['a hovered row, label and glyph', '--color-text-primary', null, ['a hovered row'], 4.5],
-  ['the current row, label and glyph', '--color-brand-accent-ink', null, ['the row the reader is on'], 4.5],
+  ['the current row, label, glyph and quiet badge', '--color-text-primary', null, ['the row the reader is on'], 4.5],
   ['a group label, a quiet badge, a foot row', '--color-text-tertiary', null, ['a row', 'a hovered row'], 4.5],
   [
     'the attention count',
-    '--color-feedback-warning-ink',
-    '--color-feedback-warning-soft',
+    '--color-text-on-accent',
+    '--color-brand-accent',
     ['a row', 'a hovered row', 'the row the reader is on'],
     4.5,
   ],
@@ -599,10 +648,26 @@ function checkState(state, values, profile, push) {
   }
 
   for (const [label, fill] of LABEL_ON_FILL) {
-    // A fill can be translucent (the monochrome primary's hover and active
-    // steps are), so it is measured over every ground it can sit on.
+    // Measured over every ground the fill can sit on, so a translucent fill
+    // is measured as the composite a reader sees. None is today; the
+    // monochrome primary this list used to carry had two.
     const low = worst(colour(label), opaque.map(([name, rgb]) => [`${fill} on ${name}`, flatten(values.get(fill), rgb)]));
     say('a label clears 4.5:1 on its own fill', low.ratio >= 4.5, `${label} on ${fill}`, low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
+  }
+
+  // THE PRIMARY ACTION'S STEPS. See ACTION_STEPS.
+  for (const [rule, step, from] of ACTION_STEPS) {
+    const label = colour(ACTION_LABEL);
+    const [was, now] = [colour(from), colour(step)];
+    const measured = deltaE(now, was);
+    const gain = contrast(label, now) - contrast(label, was);
+    say(
+      rule,
+      measured >= ACTION_DE && gain > 0,
+      `${step} after ${from}`,
+      measured,
+      `dE ${measured.toFixed(2)} >= ${ACTION_DE}, and ${ACTION_LABEL} ${contrast(label, was).toFixed(2)}:1 -> ${contrast(label, now).toFixed(2)}:1 rises`,
+    );
   }
 
   for (const name of AVATAR_TINTS) {
@@ -764,6 +829,26 @@ function checkState(state, values, profile, push) {
       glyph,
       `2.8 < ${glyph.toFixed(2)}:1 < 4.5 on the rail`,
     );
+
+    // THE ROW THE READER IS ON, found as a card is. See RAIL_CURRENT_ROW.
+    const [fill, line] = RAIL_CURRENT_ROW;
+    const current = rows.get('the row the reader is on');
+    const lift = deltaE(current, rail);
+    say(
+      "the rail's current row lifts off the rail",
+      lift >= RAIL_CURRENT_LIFT,
+      `${fill} on ${RAIL_GROUND}`,
+      lift,
+      `dE ${lift.toFixed(2)} >= ${RAIL_CURRENT_LIFT}`,
+    );
+    const drawn = deltaE(flatten(values.get(line), current), current);
+    say(
+      "the hairline round the rail's current row is visible on it",
+      drawn >= HAIRLINE_DE,
+      `${line} on ${fill}`,
+      drawn,
+      `dE ${drawn.toFixed(2)} >= ${HAIRLINE_DE}`,
+    );
   }
 
   for (const [set, floor, adjacent, rule] of [
@@ -841,9 +926,15 @@ function checkState(state, values, profile, push) {
   }
 
   // Glass carries chrome; anything carrying words sits on an opaque surface.
-  // The declared worst backdrop is the brand-primary fill, which a panned
-  // canvas can put under a floating panel.
-  const backdrops = [['the brand-primary fill', flatten(values.get('--color-brand-primary'), ground)], ...opaque];
+  // The declared worst backdrop is the INVERSE ground, the far end of the
+  // palette from the glass itself, which is as far as anything a panned
+  // canvas puts under a floating panel can pull the composite; the accent
+  // fill, the primary action on that canvas, is measured by name beside it.
+  const backdrops = [
+    ['the inverse ground', colour('--color-surface-inverse')],
+    ['the accent fill', colour('--color-brand-accent')],
+    ...opaque,
+  ];
   for (const [name, backdrop] of backdrops) {
     const glass = flatten(values.get('--color-surface-glass'), backdrop);
     for (const step of ['--color-text-secondary', '--color-text-tertiary']) {
