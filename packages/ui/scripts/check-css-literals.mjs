@@ -1,17 +1,11 @@
 #!/usr/bin/env node
 // Refuses a value a component should have taken from a token, over the folders
-// it is given.
+// it is given. The package's own lint runs it over all of src/, so every
+// component keeps these rules at every commit.
 //
-// WHY IT TAKES FOLDERS. Its sibling, check-css-variables.mjs, runs over the
-// whole package and holds rules no component may break at any point. This one
-// holds the rules a folder OPTS INTO as it is rewritten onto the token layer,
-// so a component that has not been rewritten yet does not have to be
-// allow-listed to keep the build green. The list of folders in the package's
-// lint script is the record of which are done; when the last one lands, the
-// list becomes `src` and this paragraph goes with it.
-//
-// It is also the published bin, `crewlet-css-check`, so a consumer can hold
-// its own stylesheets to the same rules.
+// WHY IT TAKES FOLDERS. It is also the published bin, `crewlet-css-check`, so
+// a consumer can hold its own stylesheets to the same rules, and a consumer's
+// stylesheets live wherever its build puts them.
 //
 // THE RULES.
 //

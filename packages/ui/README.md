@@ -154,8 +154,11 @@ The component stylesheets read only variables that `@crewlethq/tokens` emits or
 that the components declare themselves, and the same check refuses a glyph
 drawn as a ligature, anything loaded from a host, a theme painted on a body
 class, the decoration step used as text, and a focus rule that turns the
-outline off without putting one back. `npm run lint` in this package runs it,
-and `npx crewlet-css-check <folder>` runs it and the literal check over an
+outline off without putting one back. A second, literal check refuses a colour,
+font size, radius, duration or z-index spelled out where a token belongs, a
+`color-mix()`, a media query off the breakpoint steps and a hover overlay drawn
+on a pseudo element. `npm run lint` in this package runs both over every
+stylesheet in `src`, and `npx crewlet-css-check <folder>` runs both over an
 application's own stylesheets.
 
 The literal check also pairs every motion with a stop that WINS. A rule that
