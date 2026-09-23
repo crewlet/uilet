@@ -14,7 +14,16 @@ import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
 import { contrast, deltaE, flatten, OPAQUE_SURFACES, paletteStates, parseHex, RUNG_STEPS } from '@crewlethq/tokens/test/palette';
 import { installForcedColors, installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
-import { Meter, meterTone, progressTone } from './index.js';
+import {
+  DEFAULT_METER_THRESHOLDS,
+  METER_STATES,
+  Meter,
+  meterState,
+  meterStateTone,
+  meterTone,
+  progressTone,
+  type MeterState,
+} from './index.js';
 
 afterEach(cleanup);
 
@@ -26,6 +35,57 @@ describe('meterTone', () => {
     expect(meterTone(99.9)).toBe('warning');
     expect(meterTone(100)).toBe('danger');
     expect(meterTone(140)).toBe('danger');
+  });
+});
+
+describe('meterState', () => {
+  test('is ok below near, near from it, and refusing from the limit itself', () => {
+    expect(meterState(0)).toBe('ok');
+    expect(meterState(0.749)).toBe('ok');
+    expect(meterState(0.75)).toBe('near');
+    expect(meterState(0.999)).toBe('near');
+    expect(meterState(1)).toBe('refusing');
+    expect(meterState(1.4)).toBe('refusing');
+  });
+
+  test('the default is the ramp every caller already had, three quarters of the limit', () => {
+    expect(DEFAULT_METER_THRESHOLDS).toEqual({ near: 0.75 });
+    // meterTone IS this ramp over a percentage, painted: the two can not drift.
+    for (const percent of [0, 74.9, 75, 99.9, 100, 140]) {
+      expect(meterTone(percent), `${percent}`).toBe(meterStateTone(meterState(percent / 100)));
+    }
+  });
+
+  test('a caller threshold flips at exactly its fraction, inclusively', () => {
+    expect(meterState(0.8999, { near: 0.9 })).toBe('ok');
+    expect(meterState(9 / 10, { near: 0.9 })).toBe('near');
+    // The default step is not consulted once a caller names its own.
+    expect(meterState(0.8, { near: 0.9 })).toBe('ok');
+  });
+
+  test('near at the limit leaves no middle step, because the limit is refusing', () => {
+    expect(meterState(0.999, { near: 1 })).toBe('ok');
+    expect(meterState(1, { near: 1 })).toBe('refusing');
+  });
+
+  test.each([0, -0.1, 1.01, Number.NaN, Number.POSITIVE_INFINITY])(
+    'refuses near=%s, a rule no bar can draw, by name',
+    (near) => {
+      expect(() => meterState(0.5, { near })).toThrow(RangeError);
+      expect(() => meterState(0.5, { near })).toThrow(/thresholds\.near/);
+    },
+  );
+});
+
+describe('meterStateTone', () => {
+  test('near is the warning, refusing the danger, and ok the ordinary quantity', () => {
+    expect(METER_STATES.map((state) => meterStateTone(state))).toEqual(['quantity', 'warning', 'danger']);
+  });
+
+  test('refuses a state it does not know, including a key every object inherits', () => {
+    for (const state of ['over', 'toString', '']) {
+      expect(() => meterStateTone(state as MeterState), state).toThrow(/Meter state must be one of ok, near, refusing/);
+    }
   });
 });
 
@@ -205,6 +265,92 @@ describe('Meter', () => {
     expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('neutral');
   });
 
+  test('a given state wins over any fraction, so the meter derives nothing', () => {
+    // The consumer owns the rule: an empty bar it says is refusing is
+    // refusing, and a full one it says is ok is ok.
+    const cases: [MeterState, number, string][] = [
+      ['refusing', 0, 'danger'],
+      ['near', 10, 'warning'],
+      ['ok', 100, 'quantity'],
+      ['ok', 140, 'quantity'],
+      ['near', 0, 'warning'],
+    ];
+    for (const [state, value, tone] of cases) {
+      const { container } = render(<Meter label="Budget" value={value} max={100} state={state} />);
+      const fill = container.querySelector<HTMLElement>('.crewlet-meter__fill')!;
+      expect(fill.dataset['tone'], `${state} at ${value}`).toBe(tone);
+      // The verdict paints the fill; it does not move it.
+      expect(fill.style.width, `${state} at ${value}`).toBe(`${Math.min(100, value)}%`);
+      cleanup();
+    }
+  });
+
+  test('a state is drawn on an unbounded bar too, since the verdict needs no ceiling', () => {
+    const { container } = render(<Meter label="Budget" value={5} max={0} state="refusing" />);
+    expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('danger');
+  });
+
+  test('an unknown state is refused rather than drawn as the ordinary reading', () => {
+    expect(() => render(<Meter label="Budget" value={5} max={10} state={'over' as MeterState} />)).toThrow(RangeError);
+  });
+
+  test('thresholds.near replaces the built-in step and flips at it exactly', () => {
+    const tone = (value: number) => {
+      const { container } = render(<Meter label="Budget" value={value} max={100} thresholds={{ near: 0.9 }} />);
+      const drawn = container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone'];
+      cleanup();
+      return drawn;
+    };
+    // 82 is `warning` on the default ramp and ordinary under this rule.
+    expect(tone(82)).toBe('quantity');
+    expect(tone(89)).toBe('quantity');
+    expect(tone(90)).toBe('warning');
+    expect(tone(99)).toBe('warning');
+    expect(tone(100)).toBe('danger');
+    expect(tone(140)).toBe('danger');
+  });
+
+  test('a threshold outside the limit is refused by name', () => {
+    expect(() => render(<Meter label="Budget" value={5} max={10} thresholds={{ near: 1.5 }} />)).toThrow(
+      /thresholds\.near must be a fraction of the limit above 0 and at most 1; it was 1\.5/,
+    );
+  });
+
+  test('with neither a state nor thresholds the built-in ramp is unchanged', () => {
+    const tone = (value: number) => {
+      const { container } = render(<Meter label="Budget" value={value} max={100} />);
+      const drawn = container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone'];
+      cleanup();
+      return drawn;
+    };
+    expect([0, 74, 75, 99, 100, 140].map(tone)).toEqual([
+      'quantity',
+      'quantity',
+      'warning',
+      'warning',
+      'danger',
+      'danger',
+    ]);
+  });
+
+  test('the types refuse a second opinion beside a verdict or a threshold', () => {
+    // @ts-expect-error a verdict and a hand-picked tone would disagree about one reading
+    void (<Meter label="Budget" value={1} max={2} state="near" tone="neutral" />);
+    // @ts-expect-error a verdict takes no ramp
+    void (<Meter label="Budget" value={1} max={2} state="near" polarity="spent" />);
+    // @ts-expect-error a verdict derives nothing, so a threshold would be read by nobody
+    void (<Meter label="Budget" value={1} max={2} state="near" thresholds={{ near: 0.9 }} />);
+    // @ts-expect-error a hand-picked tone ignores the ramp a threshold moves
+    void (<Meter label="Budget" value={1} max={2} tone="neutral" thresholds={{ near: 0.9 }} />);
+    // @ts-expect-error the progress ramp has no middle step to move
+    void (<Meter label="Budget" value={1} max={2} polarity="progress" thresholds={{ near: 0.9 }} />);
+    // Each on its own is a reading, and optional values still pass through.
+    const maybe = undefined as MeterState | undefined;
+    void (<Meter label="Budget" value={1} max={2} state={maybe} />);
+    void (<Meter label="Budget" value={1} max={2} polarity="spent" thresholds={{ near: 0.9 }} />);
+    void (<Meter label="Budget" value={1} max={2} polarity="progress" tone="neutral" />);
+  });
+
   test('every fill clears 3:1 against the track it sits in, on every rung', () => {
     // MEASURED ON THE TRACK, not on the card. The fill's adjacent colour is
     // the unfilled remainder, and a bar a reader cannot separate from its own
@@ -379,6 +525,8 @@ describe('Meter', () => {
         <Meter label="Seats" value={4} max={4} size="compact" hideLabel />
         <Meter label="Tokens used" value={12_400} max={0} valueText="12.4K tokens, no limit" />
         <Meter label="Onboarding" value={100} max={100} polarity="progress" valueText="100 of 100 steps" />
+        <Meter label="Daily tokens" value={96} max={100} state="refusing" valueText="96K of 100K, refusing" />
+        <Meter label="Weekly tokens" value={91} max={100} thresholds={{ near: 0.9 }} valueText="91K of 100K" />
       </main>,
     );
     const result = await axe.run(container, {

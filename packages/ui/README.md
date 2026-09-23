@@ -813,6 +813,31 @@ in light against the 3:1 a connector is held to, so they stay on
 its parent's centre now gets its two corners rather than a vertical that ended
 beside the child. Nothing is renamed.
 
+**A `Meter` takes its thresholds, or its verdict.** The `spent` ramp turned at
+three quarters of the maximum for every caller, so an application whose own
+rule warns elsewhere had to compute the tone itself and pass `tone`, which
+names a paint rather than a state. Two props replace that. `thresholds={{ near:
+0.9 }}` moves the middle step to the given FRACTION of the limit and keeps the
+rest of the ramp: at or past the maximum the bar is `danger`, at or past `near`
+it is `warning`, below that it is the ordinary `quantity`. The fraction is
+compared with `value / max` as given, so `near: 0.9` flips at exactly 90 of
+100, and one outside (0, 1] is refused with a `RangeError` that names it (at 1
+there is no middle step). `state` is the VERDICT of a consumer that owns the
+rule, such as the engine that enforces a budget: `'ok'`, `'near'` or
+`'refusing'`, painted `quantity`, `warning` and `danger`. Given a state the
+meter derives nothing, whatever the fill; the bar is still drawn at the value
+against the maximum, and an unknown state is refused rather than drawn as the
+ordinary reading. The types refuse a second opinion beside either one: a
+`state` with a `tone`, a `polarity` or `thresholds`, and `thresholds` with a
+`tone` or with `polarity="progress"`, whose ramp has no middle step. The tone is
+drawn and never spoken, so a refusing budget says so in its `valueText`.
+`meterState(fraction, thresholds?)` and `meterStateTone(state)` are the same
+rule for an application drawing its own figure; `meterTone(percent)` is
+`meterState` at `DEFAULT_METER_THRESHOLDS` (`{ near: 0.75 }`), unchanged.
+`MeterProps` is now a union of `MeterVerdictProps`, `MeterRampProps` and
+`MeterThresholdProps` over the shared props, so an interface that extended it
+extends one of those. A meter given neither prop is drawn exactly as before.
+
 ## Breaking changes in 0.3.0
 
 Every one of these is a change a consumer can see. None of them needs an edit

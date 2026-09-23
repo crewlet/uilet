@@ -14,6 +14,7 @@ const meta: Meta<typeof Meter> = {
   argTypes: {
     tone: { control: 'inline-radio', options: [undefined, 'quantity', 'success', 'warning', 'danger', 'neutral'] },
     polarity: { control: 'inline-radio', options: ['spent', 'progress'] },
+    state: { control: 'inline-radio', options: [undefined, 'ok', 'near', 'refusing'] },
     size: { control: 'inline-radio', options: ['default', 'compact'] },
     hideLabel: { control: 'boolean' },
   },
@@ -43,6 +44,38 @@ export const Derived: Story = {
       <Meter label="Nearly full" value={82} max={100} valueText="82 of 100" />
       <Meter label="Over" value={140} max={100} valueText="140 of 100" />
       <Meter label="Quiet" value={82} max={100} valueText="82 of 100" tone="neutral" />
+    </div>
+  ),
+};
+
+/**
+ * THRESHOLDS move the spent ramp's middle step to the caller's rule, as a
+ * fraction of the limit: here `near` begins at nine tenths, so 82 of 100 is an
+ * ordinary reading that the default ramp would have painted as a warning.
+ */
+export const Thresholds: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <Meter label="Default ramp" value={82} max={100} valueText="82 of 100" />
+      <Meter label="Near at 0.9" value={82} max={100} valueText="82 of 100" thresholds={{ near: 0.9 }} />
+      <Meter label="Near at 0.9" value={90} max={100} valueText="90 of 100" thresholds={{ near: 0.9 }} />
+      <Meter label="Near at 0.9" value={100} max={100} valueText="100 of 100" thresholds={{ near: 0.9 }} />
+    </div>
+  ),
+};
+
+/**
+ * A VERDICT is the state a consumer that owns the rule says the quantity is
+ * in, and the meter derives nothing: a budget the engine is refusing at 96
+ * percent is `refusing`, whatever the fill would have said. The tone is drawn
+ * and never spoken, so the words say it too.
+ */
+export const Verdict: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <Meter label="Daily tokens" value={40} max={100} valueText="40K of 100K" state="ok" />
+      <Meter label="Weekly tokens" value={62} max={100} valueText="62K of 100K, near its limit" state="near" />
+      <Meter label="Monthly tokens" value={96} max={100} valueText="96K of 100K, refusing" state="refusing" />
     </div>
   ),
 };
