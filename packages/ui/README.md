@@ -51,6 +51,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx` |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure` |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar` and `useAppShell`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
+| Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences` |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -66,9 +67,13 @@ land at once.
   `data-theme="dark"` or `data-theme="light"` on `<html>`. With the attribute
   absent the document follows the system, and is dark in a browser that
   reports no preference: the palette is dark first. `ThemeSwitcher` writes the
-  attribute for an explicit choice and removes it for "Follow the system".
-  Every component reads the canonical `--color-*` variables, so no provider is
-  needed.
+  attribute for an explicit choice and removes it for "Follow the system";
+  `ThemeToggle` flips the palette actually on the screen and writes the
+  explicit opposite. Every component reads the canonical `--color-*`
+  variables, so no provider is needed. Every stored control on one
+  `storageKey` shows one value; an application that owns the preference holds
+  it with one `useThemePreference` and passes `value` and `onChange` to each
+  control, which then writes nothing of its own.
 - **Density.** Import `@crewlethq/tokens/css/density` and set
   `data-density="compact"` or `"comfortable"` on `<html>`. Every spacing and
   size token scales with it, and the small control and row steps floor at 24px
@@ -750,6 +755,29 @@ stop. `useListbox` brings the HIGHLIGHTED row into view by its id rather than
 the first `[aria-selected="true"]` in its scroller, which in a multi-select is
 the first chosen row and in a palette could be a tab in the lead; `TagsInput`
 drops the second reveal it kept to undo that.
+
+**`ThemeToggle` is new, and the preference controls can be controlled.** The
+design's rail foot carries one button beside the reader's identity row rather
+than the three-way row. `ThemeToggle` resolves the preference against the
+platform, through the same `(prefers-color-scheme: light)` query the theme
+layer answers (so a browser reporting no preference is dark, as it is
+painted), and a press writes the EXPLICIT opposite: on a dark system a reader
+following it gets `light`, and a second press `dark`, never `system`, which
+repaints nothing. It is named for what a press does ("Switch to the light
+theme", `toLightLabel` / `toDarkLabel`) and draws the palette it goes to, a
+sun on a dark page and a moon on a light one; it carries no `aria-pressed`,
+because neither palette is the other's "on". `ThemeSwitcher`,
+`DensitySwitcher` and `ThemeToggle` take `value` / `onChange`: given a
+`value`, a control draws it, reports a pick and writes NOTHING, neither the
+root attribute nor storage, and the types refuse a `storageKey` beside it.
+Without one a control is stored as before, and `onChange` is told after the
+pick is applied and kept. Stored controls on one key now read ONE value: each
+held its own copy, so a press on a toggle left a settings row showing the
+choice it had replaced, and a choice another tab writes now reaches every
+control and the root. A choice storage refuses (a private window, blocked site
+data) is held for the visit, so the control shows the pick it just made rather
+than re-reading an empty store. `useSystemTheme` and `resolveTheme` are
+exported for an application that draws its own. Nothing is renamed.
 
 ## Breaking changes in 0.3.0
 

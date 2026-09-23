@@ -49,6 +49,9 @@ import {
   StatusDot,
   Stepper,
   Tag,
+  ThemeSwitcher,
+  ThemeToggle,
+  DensitySwitcher,
   TimeWindowPicker,
   VisuallyHidden,
 } from '@crewlethq/ui';
@@ -169,6 +172,38 @@ test('the restyled primitives carry no violation: the register, the pill, the ke
     </main>,
   );
   expect(await violations(container)).toEqual([]);
+});
+
+test('the preference controls carry no violation, stored and controlled, before and after a press', async () => {
+  function Owned() {
+    const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('system');
+    return (
+      <>
+        <ThemeToggle value={theme} onChange={setTheme} />
+        <ThemeSwitcher value={theme} onChange={setTheme} label="Theme, owned" />
+      </>
+    );
+  }
+  const { container } = render(
+    <main>
+      <h1>Preferences</h1>
+      <ThemeToggle storageKey="axe_theme" />
+      <ThemeSwitcher storageKey="axe_theme" />
+      <DensitySwitcher storageKey="axe_density" />
+      <Owned />
+    </main>,
+  );
+  try {
+    expect(await violations(container)).toEqual([]);
+    // The toggle is renamed by a press, so the name it takes is checked too.
+    for (const toggle of screen.getAllByRole('button', { name: /switch to the/i })) fireEvent.click(toggle);
+    expect(await violations(container)).toEqual([]);
+  } finally {
+    // The stored controls write the root and storage, which every later case
+    // in this file shares.
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.removeItem('axe_theme');
+  }
 });
 
 test('the state bar and the step row carry no violation, in a tile, a list and a card', async () => {
