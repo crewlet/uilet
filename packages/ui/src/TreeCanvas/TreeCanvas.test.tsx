@@ -31,9 +31,10 @@ import { parseHex } from '@crewlethq/tokens/test/palette';
 import { IconButton } from '../IconButton/index.js';
 import { focusables } from '../Layer/index.js';
 import { Menu } from '../Menu/index.js';
+import { OrgNodeDisclosure, OrgNodeLead } from '../OrgNode/index.js';
 import { ENTRANCE_STEP_MS, REFLOW_MS, entranceOrder } from './motion.js';
 import type { TreeInput, TreeModel } from '../Tree/index.js';
-import { installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { installMotion, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import {
   TreeCanvas,
   type TreeCanvasHandle,
@@ -1264,12 +1265,62 @@ describe('the stylesheet', () => {
   });
 
   test('a reveal is a state change, so reduced motion simply has it happen', () => {
-    const at = SHEET.indexOf('@media (prefers-reduced-motion: reduce)');
-    expect(at).toBeGreaterThan(-1);
-    const guarded = SHEET.slice(at, SHEET.indexOf('\n}', SHEET.indexOf('{', at)));
-    expect(guarded).toContain('.crewlet-tree-canvas__actions');
-    expect(guarded).toContain('.crewlet-tree-canvas__under');
-    expect(guarded).toContain('transition: none');
+    /*
+     * PUT TO THE CASCADE, not read off the block: the node appearance's three
+     * quiet controls were named in a stop that sat ABOVE the rules starting
+     * their fades, so it tied with them on specificity, lost on source order,
+     * and read perfectly. Every control the chart reveals is measured here.
+     */
+    const { container } = render(
+      <TreeCanvas
+        label="Structure chart"
+        nodes={forestOf([])}
+        cards={cards}
+        cardOf={cardOf}
+        appearance="node"
+        renderCard={(id, card) => (
+          <div className="card">
+            <div {...card.item(id)} className="head">
+              <span className="name">{nameOf(id)}</span>
+            </div>
+            <Actions id={id} card={card}>
+              <More id={id} card={card} />
+            </Actions>
+            <OrgNodeDisclosure>
+              <button type="button" tabIndex={-1} aria-label={`Collapse ${nameOf(id)}`} />
+            </OrgNodeDisclosure>
+            <OrgNodeLead clear={<button type="button" tabIndex={-1} aria-label={`Clear the lead of ${nameOf(id)}`} />}>
+              Lead
+            </OrgNodeLead>
+          </div>
+        )}
+        renderUnder={renderUnder}
+      />,
+    );
+    LayoutObserver.settle();
+    const revealed = [
+      ...container.querySelectorAll('.crewlet-tree-canvas__actions, .crewlet-tree-canvas__under'),
+      ...container.querySelectorAll('.crewlet-tree-canvas__under > :not(.crewlet-add-pill)'),
+      ...container.querySelectorAll('.crewlet-org-node__leading, .crewlet-org-node-lead__clear'),
+    ];
+    const kinds = (selector: string) => revealed.filter((element) => element.matches(selector)).length;
+    // Each kind is really on the chart, or the case below passes on nothing.
+    for (const selector of [
+      '.crewlet-tree-canvas__actions',
+      '.crewlet-tree-canvas__under',
+      '.crewlet-tree-canvas__under > :not(.crewlet-add-pill)',
+      '.crewlet-org-node__leading',
+      '.crewlet-org-node-lead__clear',
+    ]) {
+      expect(kinds(selector), selector).toBeGreaterThan(0);
+    }
+
+    let uninstall = installMotion('no-preference', 'TreeCanvas/TreeCanvas.css');
+    for (const element of revealed) expect(getComputedStyle(element).transition, element.className).toContain('opacity');
+    uninstall();
+    uninstall = installMotion('reduce', 'TreeCanvas/TreeCanvas.css');
+    for (const element of revealed) expect(getComputedStyle(element).transition, element.className).toBe('none');
+    uninstall();
   });
 });
 
@@ -1470,11 +1521,34 @@ describe('the motion in the stylesheet', () => {
   });
 
   test('reduced motion draws every card at once', () => {
-    const at = SHEET.indexOf('@media (prefers-reduced-motion: reduce)', SHEET.indexOf('data-enter'));
-    const guarded = SHEET.slice(at, SHEET.indexOf('\n}', SHEET.indexOf('{', at)));
-    expect(guarded).toContain('data-enter');
-    expect(guarded).toContain('opacity: 1');
-    expect(guarded).toContain('animation: none');
+    /*
+     * The component does not start the reveal under the preference at all;
+     * what the stylesheet adds is the card that was MID-reveal when the
+     * setting changed. So the chart is caught mid-reveal, one card shown and
+     * the rest waiting, and the stops are put to the cascade: every card is
+     * drawn, and the one arriving stops arriving.
+     */
+    vi.useFakeTimers();
+    try {
+      const { container } = mount();
+      act(() => vi.advanceTimersByTime(0));
+      const cards = [...container.querySelectorAll<HTMLElement>('.crewlet-tree-canvas__card')];
+      const shown = cards.filter((card) => card.getAttribute('data-enter') === 'shown');
+      const waiting = cards.filter((card) => card.getAttribute('data-enter') === 'waiting');
+      expect(shown).toHaveLength(1);
+      expect(waiting.length).toBeGreaterThan(0);
+
+      let uninstall = installMotion('no-preference', 'TreeCanvas/TreeCanvas.css');
+      expect(getComputedStyle(shown[0]!).animation).toContain('crewlet-tree-canvas-arrive');
+      for (const card of waiting) expect(getComputedStyle(card).opacity).toBe('0');
+      uninstall();
+      uninstall = installMotion('reduce', 'TreeCanvas/TreeCanvas.css');
+      expect(getComputedStyle(shown[0]!).animation).toBe('none');
+      for (const card of [...shown, ...waiting]) expect(getComputedStyle(card).opacity).toBe('1');
+      uninstall();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   /*
@@ -1575,8 +1649,8 @@ describe('the motion in the stylesheet', () => {
    * a picture of an organization.
    */
   test('the add is drawn at rest and everything else in the strip is not', () => {
-    // From the node appearance's own section: the same selector appears in the
-    // reduced-motion block above it, where it only stills a transition.
+    // The rule that hides the strip's controls, not the reduced-motion block
+    // in the same section that names the same selector to still its fade.
     const section = SHEET.slice(SHEET.indexOf('THE `node` APPEARANCE'));
     expect(rule('.crewlet-tree-canvas--node .crewlet-tree-canvas__under')).toContain('opacity: 1');
     expect(section).toMatch(/__under > :not\(\.crewlet-add-pill\) \{[^}]*opacity: 0/);
@@ -1995,7 +2069,7 @@ describe('the ghost in the stylesheet', () => {
     );
     const guarded = SHEET.slice(at, SHEET.indexOf('\n}\n', at));
     for (const selector of [
-      '.crewlet-tree-canvas__card--composing,',
+      '.crewlet-tree-canvas .crewlet-tree-canvas__card--composing,',
       ".crewlet-tree-canvas__links path[data-composing='true'] {",
       '.crewlet-tree-canvas__card--composing > * {',
       '.crewlet-tree-canvas__card--composing::after {',
@@ -2014,5 +2088,24 @@ describe('the ghost in the stylesheet', () => {
     expect(ghostCard(view.container)!.style.transform).not.toBe('');
     expect(world()).not.toBe(before);
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Kind' }));
+
+    /*
+     * And what the block holds is put to the cascade, which is the half the
+     * source cannot answer: the card's arrival starts on the chart's class and
+     * its own, and a stop naming its own class alone read perfectly above and
+     * lost on specificity. The form inside it is the caller's, and rises the
+     * same way.
+     */
+    const card = ghostCard(view.container)!;
+    const form = [...card.children];
+    expect(form.length).toBeGreaterThan(0);
+    let uninstall = installMotion('no-preference', 'TreeCanvas/TreeCanvas.css');
+    expect(getComputedStyle(card).animation).toContain('crewlet-tree-canvas-ghost-card');
+    for (const part of form) expect(getComputedStyle(part).animation).toContain('crewlet-tree-canvas-ghost-form');
+    uninstall();
+    uninstall = installMotion('reduce', 'TreeCanvas/TreeCanvas.css');
+    expect(getComputedStyle(card).animation).toBe('none');
+    for (const part of form) expect(getComputedStyle(part).animation).toBe('none');
+    uninstall();
   });
 });

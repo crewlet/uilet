@@ -314,12 +314,15 @@ test('a row rests with one control, and reveals the pair that reorders it on foc
    * The reveal itself is read off the rule that performs it. jsdom does not
    * re-evaluate a dynamic pseudo-class in a computed style (measured: a
    * focused input leaves `:focus-within` unmatched), so the alternative would
-   * be a case that always passes.
+   * be a case that always passes. The harness writes a selector list as one
+   * rule per selector (jsdom scores and matches a list wrongly), so the reveal
+   * is every rule that performs it, taken together.
    */
   const revealed = [...document.styleSheets]
     .flatMap((sheet) => [...sheet.cssRules])
     .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule)
-    .find((rule) => rule.style.opacity === '1' && rule.selectorText.includes('__move'))!;
-  expect(revealed.selectorText).toContain(':hover');
-  expect(revealed.selectorText).toContain(':focus-within');
+    .filter((rule) => rule.style.opacity === '1' && rule.selectorText.includes('__move'))
+    .map((rule) => rule.selectorText);
+  expect(revealed.some((selector) => selector.includes(':hover'))).toBe(true);
+  expect(revealed.some((selector) => selector.includes(':focus-within'))).toBe(true);
 });

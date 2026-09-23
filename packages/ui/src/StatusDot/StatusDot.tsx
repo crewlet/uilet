@@ -8,8 +8,15 @@ export interface StatusDotProps {
    */
   tone?: Tone | undefined;
   /**
-   * A slow pulse, for a state that is still happening. Held still under a
-   * reduced-motion preference, where the mark still reads as its tone.
+   * A halo that breathes out round the dot and back, in the tone's soft step,
+   * for a state that is still happening: the approved design pulses the
+   * `info` dot, which is working. One round is `--motion-duration-breath`. The
+   * dot itself never fades, and the halo never touches it: it is cast from a
+   * ring 2px out, so the dot always stands on the surface its fill clears 3:1
+   * against. Held still under a reduced-motion preference, where the dot rests
+   * at its fill with no halo and the word beside it still says the work is
+   * under way. The ring is drawn on the dot's `::after`, and a `position` of
+   * your own on the dot still wins over the one the ring needs.
    */
   pulse?: boolean | undefined;
   className?: string | undefined;

@@ -270,9 +270,9 @@ No token is renamed or removed here; values moved to the approved design, and si
 | `--motion-duration-base` | 150ms | The default transition |
 | `--motion-duration-moderate` | 200ms | A rail row's hover, a bar's background |
 | `--motion-duration-slow` | 300ms | A dialog entering, a drawer sliding |
-| `--motion-duration-breath` | 2200ms | The PERIOD of a mark saying work is still happening: one full round, out and back, 0.45 cycles a second. Not a transition |
+| `--motion-duration-breath` | 2200ms | The PERIOD of a mark saying work is still happening: one full round, out and back, 0.45 cycles a second. Not a transition. A pulsing `StatusDot` breathes one round of it |
 
-A component that moves states a reduced-motion rule of its own in the same stylesheet, and `@crewlethq/tokens/css/base` collapses motion for the whole document under `prefers-reduced-motion: reduce`.
+A component that moves stops every motion it starts in the same stylesheet, naming the rule's selector again, after it, inside `@media (prefers-reduced-motion: reduce)`, which is what `crewlet-css-check` in `@crewlethq/ui` holds it to; and `@crewlethq/tokens/css/base` collapses motion for the whole document under `prefers-reduced-motion: reduce`.
 
 ## What colour means
 

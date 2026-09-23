@@ -150,6 +150,19 @@ outline off without putting one back. `npm run lint` in this package runs it,
 and `npx crewlet-css-check <folder>` runs it and the literal check over an
 application's own stylesheets.
 
+The literal check also pairs every motion with a stop that WINS. A rule that
+starts an animation or a transition is named again, selector for selector, by a
+later rule in the same file inside `@media (prefers-reduced-motion: reduce)`
+that sets it to `none` (or takes the element out with `display: none`), unless
+the motion only starts inside `@media (prefers-reduced-motion: no-preference)`.
+The same selector, later, is the one arrangement the cascade guarantees: the
+two tie on specificity and the stop wins on source order. A stop that names a
+broader selector, a shorter one, or sits above the rule it stops is refused,
+because each of those can lose, and each of them did in this package. "Later"
+is where a browser places it: in nested CSS, declarations written after a
+block nested in their rule come after that block, so a motion written below a
+nested stop beats it and is refused.
+
 ## Overlays
 
 Every overlay in this package is on ONE layer stack, so a press of Escape
@@ -290,6 +303,55 @@ design's mark, rather than 6px.
 | a stylesheet overriding `.crewlet-modal__header--sheet` padding | the head is 52px with 4px over 24px insets; override `--size-shell-topbar` or the rule itself |
 | a stylesheet overriding `.crewlet-brand` padding | its block padding is `--spacing-1` |
 | a layout that reserved 6px for a `StatusDot` | 7px |
+
+**A working dot breathes rather than fades, and every stop is one that wins.**
+A pulsing `StatusDot` keeps its fill and breathes a halo out round it, in its
+tone's own soft step: out to 5px and back, once every `--motion-duration-breath`
+(2.2s), the approved design's working pulse. It used to fade the dot itself to
+0.35 and back every 1.8s, and at the bottom of that fade every fill measured
+1.35:1 to 2.17:1 against its ground, under the 3:1 a mark clears. The design
+casts the halo from the dot itself, where it would touch the dot for the whole
+round and become its ground: on their own soft step the light info, success and
+warning fills measure 2.65:1 to 2.95:1, the same fault at a smaller size. So the
+halo is a `box-shadow` cast by the dot's `::after`, a ring box 2px outside it
+(the offset the `Avatar` state ring stands at), and a shadow is never painted
+inside the box that casts it: 2px of the real ground always stands between the
+dot and its halo, and the halo spreads 3px beyond that, to the design's 5px. It
+takes no room and moves nothing beside the dot. The pulsing dot is the ring's
+containing block through a `:where()` rule, which weighs nothing, so a
+`position` of your own on it still wins. The neutral dot, whose family has no
+soft step, breathes in `--color-surface-pressed`. Every halo stands at least
+dE 3 off every surface, the floor the palette suite holds every "can a reader
+notice it" difference to. Under `prefers-reduced-motion: reduce` the pulse is
+held: the dot rests at its fill with no halo, and the word beside it still says
+the work is under way.
+
+The literal check behind `crewlet-css-check` used to accept any stylesheet that
+MENTIONED `prefers-reduced-motion`, and three components here passed it while
+still moving for a reader who had asked them not to. `DataTable` stopped its
+motion with one catch-all, `.crewlet-data-table.crewlet-data-table *`, and its
+row's own hover transition outranked it, so the row still eased; `TreeCanvas`
+stopped the ghost card of a node being added by its own class, one class short
+of the rule that starts its arrival; and its `node` appearance stopped its quiet
+controls in a rule above the ones that fade them in, so source order handed
+every tie back to the fade. Each is now stopped by name, after the rule it
+stops, and the check refuses anything else (see "Theming hooks" above).
+`DataTable` stops exactly what its own stylesheet starts, so motion of your own
+inside a table is stopped by your own stylesheet rather than by the table's.
+The check also reads a top-level media query now: it read only rule selectors,
+so a query outside every block was never checked against the breakpoint scale.
+In nested CSS it reads declarations written after a nested block where a
+browser places them, after that block, so a motion written below a nested stop
+is refused rather than read as coming first.
+
+| Was | Is |
+|---|---|
+| a stylesheet relying on a pulsing `StatusDot` fading, or setting its `opacity` | the dot never fades; the pulse is a `box-shadow` halo on its `::after` |
+| a `::after` of your own on a pulsing `StatusDot` | the pulse draws its ring there; decorate a wrapper instead |
+| a pulsing `StatusDot` left `position: static` | it is `position: relative` at no specificity, as the ring's containing block; a `position` of your own still wins, and any but `static` keeps the ring on the dot |
+| motion of your own inside a `DataTable`, left to the table's reduced-motion catch-all | a stop in your own stylesheet: the table no longer stops what it did not start |
+| a stylesheet `crewlet-css-check` passed because it mentioned `prefers-reduced-motion` | name each selector that starts a motion again, in a later `@media (prefers-reduced-motion: reduce)` rule, set to `none` |
+| a top-level `@media` query of your own at a length off the breakpoint scale | one of the `--breakpoint-*` steps; the check reads the query now |
 
 **Every glyph is a Lucide stroke.** `@crewlethq/icons` replaces the Material
 Symbols set with Lucide drawings, stroked at the approved design's 1.75 on the

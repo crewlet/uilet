@@ -54,8 +54,15 @@ export const Counts: Story = {
  *
  * The quiet dot takes the tertiary step rather than the decoration one the
  * engine spends there. A 7px mark is read the way a glyph is, so it has to
- * clear 3:1, and the decoration step measures 2.33:1 on a light page. The
- * pulse is the engine's 1.8s breath, which is 0.55 flashes a second.
+ * clear 3:1, and the decoration step measures 2.33:1 on a light page.
+ *
+ * Work still under way pulses: a halo in the tone's soft step breathes out
+ * round the dot to 5px and back once every `--motion-duration-breath` (2.2s,
+ * 0.45 rounds a second). The dot itself never fades, and a 2px band of the
+ * page always stands between it and the halo, so it is always read against
+ * the ground its fill was measured on. Ask your system for reduced motion and
+ * the pulse is held, with no halo; the word beside the dot still says the
+ * work is under way.
  *
  * Only a state has a hue. A phase is a category, and a category's dot is the
  * quiet one, with the word beside it saying which phase.

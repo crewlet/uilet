@@ -329,13 +329,13 @@
 /*
  * A reveal is a state change rather than an entrance, so under reduced motion
  * it simply happens. The control is still shown and still reached the same way.
+ * The `node` appearance's own quiet controls are stopped in its own section,
+ * below the rules that start them: named here, above those rules, the stops
+ * tied with them on specificity and lost on source order.
  */
 @media (prefers-reduced-motion: reduce) {
   .crewlet-tree-canvas__actions,
-  .crewlet-tree-canvas__under,
-  .crewlet-tree-canvas--node .crewlet-tree-canvas__under > :not(.crewlet-add-pill),
-  .crewlet-tree-canvas--node .crewlet-org-node__leading,
-  .crewlet-tree-canvas--node .crewlet-org-node-lead__clear {
+  .crewlet-tree-canvas__under {
     transition: none;
   }
 }
@@ -413,9 +413,16 @@
  * when the setting changed.
  */
 @media (prefers-reduced-motion: reduce) {
+  /* Drawn, whatever step of the entrance it had reached: a card still WAITING
+     is otherwise held at nothing. */
   .crewlet-tree-canvas__card[data-enter],
   .crewlet-tree-canvas__links path[data-enter] {
     opacity: 1;
+  }
+
+  /* And the entrance stopped by the selectors that start it. */
+  .crewlet-tree-canvas__card[data-enter='shown'],
+  .crewlet-tree-canvas__links path[data-enter='shown'] {
     animation: none;
   }
 }
@@ -821,6 +828,20 @@
 }
 
 /*
+ * The node's quiet controls arrive as a state change too, so under reduced
+ * motion they simply appear. Stopped HERE, after the rules that start their
+ * fades: the three selectors tie with those rules on specificity, so the stop
+ * has to come later in the file to win.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tree-canvas--node .crewlet-tree-canvas__under > :not(.crewlet-add-pill),
+  .crewlet-tree-canvas--node .crewlet-org-node__leading,
+  .crewlet-tree-canvas--node .crewlet-org-node-lead__clear {
+    transition: none;
+  }
+}
+
+/*
  * THE BRANCHES ARE HEAVIER HERE. A node is half the height of a card, so a
  * hairline between two ranks of them is a thread; this is the console chart's
  * own weight, at the same ratio to a node's height.
@@ -1068,8 +1089,11 @@
 @media (prefers-reduced-motion: reduce) {
   /* NOT `transform` on the card itself: its transform is where the layout
      put it, written as an inline style, and a rule here saying `none` would
-     be a rule that only ever fires when something else drops that style. */
-  .crewlet-tree-canvas__card--composing,
+     be a rule that only ever fires when something else drops that style.
+     Named with the chart's class, as the rule that starts its arrival names
+     it: by its own class alone the stop was one class short of that rule,
+     and the arrival played for a reader who had asked for none. */
+  .crewlet-tree-canvas .crewlet-tree-canvas__card--composing,
   .crewlet-tree-canvas__links path[data-composing='true'] {
     opacity: 1;
     animation: none;

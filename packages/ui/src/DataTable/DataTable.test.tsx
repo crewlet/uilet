@@ -15,6 +15,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { Card } from '../Card/index.js';
 import { DataTable, type DataTableColumn, type DataTableProps, type DataTableVariant } from './index.js';
 import { reconcileOrder } from './DataTable.js';
+import { installMotion } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(() => {
   cleanup();
@@ -1160,6 +1161,55 @@ test('the pagination is a named group, and says which rows the page is', () => {
   expect(within(pagination).getByText('Page 1 of 2. Rows 1 to 1 of 2')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
   expect(within(pagination).getByText('Page 2 of 2. Rows 2 to 2 of 2')).toBeTruthy();
+});
+
+/*
+ * NOTHING THE TABLE MOVES KEEPS MOVING FOR A READER WHO ASKED FOR STILLNESS,
+ * put to the cascade rather than read off the block. The stops used to be one
+ * catch-all, `.crewlet-data-table.crewlet-data-table *`, which read as
+ * covering everything and was two classes; the row's own transition is two
+ * classes and two elements, so the row still eased its hover. Every element
+ * the table renders is measured, in both states it draws: rows, and the bars
+ * that stand in for them while they load.
+ */
+test('under reduced motion every part of the table holds still', () => {
+  const props = { getRowKey: (row: Seat) => row.id, columns: nameAndNote };
+  const { container, rerender } = render(<DataTable<Seat> data={seats} {...props} />);
+  const still = (value: string) => value === '' || value === 'none';
+  const moving = (): Element[] =>
+    [...container.querySelectorAll('*')].filter((element) => {
+      const style = getComputedStyle(element);
+      return !still(style.transition) || !still(style.animation);
+    });
+  const under = (preference: 'reduce' | 'no-preference', measure: () => void) => {
+    const remove = installMotion(preference, 'DataTable/DataTable.css');
+    try {
+      measure();
+    } finally {
+      remove();
+    }
+  };
+
+  under('no-preference', () => {
+    // The case can fail: the row eases its hover, the sort control its state.
+    const rows = [...container.querySelectorAll('tbody tr')];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) expect(moving()).toContain(row);
+    expect(moving().some((element) => element.matches('.crewlet-data-table__th--sortable'))).toBe(true);
+  });
+  under('reduce', () => expect(moving().map((element) => element.className)).toEqual([]));
+
+  rerender(<DataTable<Seat> data={[]} {...props} loading />);
+  const bars = [...container.querySelectorAll('.crewlet-data-table__skeleton-bar')];
+  expect(bars.length).toBeGreaterThan(0);
+  under('no-preference', () => {
+    for (const bar of bars) expect(getComputedStyle(bar).animation).toContain('crewlet-data-table-skeleton-pulse');
+  });
+  under('reduce', () => {
+    expect(moving().map((element) => element.className)).toEqual([]);
+    // The bars stay: only the pulse goes.
+    for (const bar of bars) expect(getComputedStyle(bar).opacity).toBe('0.6');
+  });
 });
 
 test('an empty table says so out loud, and a loading one says it is loading', () => {

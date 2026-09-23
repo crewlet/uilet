@@ -1973,52 +1973,49 @@ body.crewlet-data-table-resizing {
    The component states its own, rather than leaning on the document
    baseline: this stylesheet also ships to an application that imports the
    component and not the baseline. The skeleton stops PULSING and keeps its
-   bars, which is what says the rows have not arrived.
-
-   THE SETTINGS FRAME IS NAMED SEPARATELY BECAUSE IT IS NOT IN THE TABLE. It
-   is a Modal, which portals onto the layer host, so a descendant selector
-   rooted at .crewlet-data-table reaches none of it: the chip row and every
-   column row kept their transitions under the preference in exactly the
-   application this rule exists for. */
+   bars, which is what says the rows have not arrived. */
 /*
- * EVERY PART OF THE TABLE, INCLUDING THE ONES DRAWN SOMEWHERE ELSE. The list
- * is not the root and its descendants: two of these live in the settings
- * frame, which is a dialog portaled to the layer host, and the chrome row is
- * drawn on a card's header wherever the table fills one. A preference
- * cancelled through the root alone leaves exactly those pieces animating,
- * which is the one place a reader who asked for stillness is least able to
- * connect it back to a table.
+ * EVERY MOTION THIS FILE STARTS IS STOPPED BY NAME, the same selector as the
+ * rule that starts it and after it, so the two tie on specificity and the stop
+ * wins on source order. The package's literal check holds the pairing
+ * selector for selector.
+ *
+ * A CATCH-ALL IS WHAT THIS REPLACED, and it lost twice. Written as
+ * `.crewlet-data-table *` it was one class against rules of two, so the row
+ * hover, the sort control, the action button and the pager and cog all kept
+ * their transitions; doubled to `.crewlet-data-table.crewlet-data-table *` it
+ * was two classes, and the row's own rule is two classes AND two elements
+ * (`… tbody tr`), so the row still eased its hover for a reader who had asked
+ * for stillness. The document-wide rule in @crewlethq/tokens covers every
+ * one of them with `!important` wherever that sheet is loaded, which is the
+ * only reason nobody saw it.
+ *
+ * Naming the rules also reaches the pieces a descendant selector cannot: the
+ * page-size and column rows are in the settings frame, a Modal portaled onto
+ * the layer host, and the chrome row is drawn on a card's header wherever the
+ * table fills one.
  */
 @media (prefers-reduced-motion: reduce) {
-  /*
-   * EACH NAME IS WRITTEN TWICE, which is not a typo: a selector repeating one
-   * class matches exactly what it matched and counts for twice as much. A
-   * cancellation is only a cancellation if it outranks what it cancels, and
-   * this one did not: written once, `.crewlet-data-table *` is one class where
-   * the rules it had to beat are two, so the row hover, the sort control, the
-   * action button and the pager and cog all kept their transitions for a
-   * reader who had asked for stillness. The document-wide rule in
-   * @crewlethq/tokens covered it with `!important` wherever that sheet is
-   * loaded, which is the only reason nobody saw it; this rule exists for the
-   * document that loads the components alone, and it has to stand on its own.
-   */
-  .crewlet-data-table.crewlet-data-table,
-  .crewlet-data-table.crewlet-data-table *,
-  .crewlet-data-table.crewlet-data-table *::before,
-  .crewlet-data-table.crewlet-data-table *::after,
-  .crewlet-data-table__chrome.crewlet-data-table__chrome,
-  .crewlet-data-table__chrome.crewlet-data-table__chrome *,
-  .crewlet-data-table__chrome.crewlet-data-table__chrome *::before,
-  .crewlet-data-table__chrome.crewlet-data-table__chrome *::after,
-  .crewlet-data-table__items-per-page-btn.crewlet-data-table__items-per-page-btn,
-  .crewlet-data-table__column-toggle-item.crewlet-data-table__column-toggle-item {
-    animation: none;
+  .crewlet-data-table--default .crewlet-data-table__table tbody tr,
+  .crewlet-data-table--default .crewlet-data-table__th--sortable,
+  .crewlet-data-table--default .crewlet-data-table__sort-icon,
+  .crewlet-data-table--default .crewlet-data-table__action-btn,
+  .crewlet-data-table--default .crewlet-data-table__header-btn,
+  .crewlet-data-table__items-per-page-btn,
+  .crewlet-data-table__column-toggle-item,
+  .crewlet-data-table__chrome .crewlet-data-table__page-btn,
+  .crewlet-data-table__chrome .crewlet-data-table__settings-btn,
+  .crewlet-data-table__expand-all-btn,
+  .crewlet-data-table__chevron,
+  .crewlet-data-table__resizer::before,
+  .crewlet-data-table__copy-cell-button {
     transition: none;
   }
 
   /* The bars stay; only the pulse goes. A skeleton that vanished under a
      motion preference would take the answer to "has this loaded" with it. */
   .crewlet-data-table__skeleton-bar {
+    animation: none;
     opacity: 0.6;
   }
 }
