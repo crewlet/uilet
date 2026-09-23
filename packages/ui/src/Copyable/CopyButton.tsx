@@ -88,7 +88,7 @@ export function CopyButton({
   copiedMessage = 'copied to the clipboard',
   failedMessage = 'the browser refused the clipboard',
   size = 'small',
-  variant = 'tertiary',
+  variant = 'ghost',
   title,
   resetMs,
   failedResetMs,

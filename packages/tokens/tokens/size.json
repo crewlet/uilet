@@ -1,8 +1,8 @@
 {
   "size": {
     "control": {
-      "sm": { "value": "28px", "density": true, "floor": "24px", "comment": "The height of a control. The small step carries a floor because 28 x 0.82 is 22.96px, and a target under 24px fails at compact density on a touch screen. Every step is emitted as calc(Npx * var(--density, 1)), so it is unchanged at density 1." },
-      "md": { "value": "32px", "density": true },
+      "sm": { "value": "26px", "density": true, "floor": "24px", "comment": "The height of a control, in the approved design's control rhythm: a button is 30px and a small one 26px, and an icon button, a field in a toolbar and a segmented well stand at the same 30px, so every control on a line shares one height. The small step carries a floor because 26 x 0.82 is 21.32px, and a target under 24px fails at compact density on a touch screen. Every step is emitted as calc(Npx * var(--density, 1)), so it is unchanged at density 1." },
+      "md": { "value": "30px", "density": true, "comment": "The design's button, icon button, toolbar field and segmented well. A chip inside a well is six under it: a 1px boundary and a 2px inset on each side, which leaves exactly the 24px target floor at density 1." },
       "lg": { "value": "44px", "density": true }
     },
     "row": {

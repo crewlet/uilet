@@ -339,7 +339,7 @@ function railFoot(size: 'sm' | 'md') {
 
 /*
  * A chip's height is DERIVED from a control step, and a derived height loses
- * the step's own floor: --size-control-sm is `max(24px, calc(28px * density))`
+ * the step's own floor: --size-control-sm is `max(24px, calc(26px * density))`
  * and subtracting four from it subtracts from the floor too, which is 20px at
  * the compact setting. Its WIDTH was derived from nothing at all, which is
  * worse: a pad around a glyph or a letter, floored by no rule, measured at
@@ -380,8 +380,11 @@ test('the register each chip size draws, at the setting it was drawn for', () =>
     cleanup();
     render(railFoot('md'));
     const medium = screen.getAllByRole('radio')[0]!;
-    expect(length(medium, 'min-height')).toBe(26);
-    expect([length(medium, 'padding-left'), length(medium, 'padding-right')]).toEqual([12, 12]);
+    // The design's chip: 24px, six under the 30px control step, so the well
+    // with its 1px boundary and 2px inset stands exactly at the step, with
+    // 10px inside each end.
+    expect(length(medium, 'min-height')).toBe(24);
+    expect([length(medium, 'padding-left'), length(medium, 'padding-right')]).toEqual([10, 10]);
     expect(length(medium, 'font-size')).toBe(12);
     expect(length(medium.querySelector('.crewlet-tabs__icon')!, 'font-size')).toBe(14);
   } finally {
@@ -454,12 +457,14 @@ test('a chip standing on the floor centres what it draws', () => {
 });
 
 test('a chip takes the corner that nests in its well, from the token', () => {
-  // 6px is the sm step, which is what a chip in an 8px well reads as when it
-  // is drawn concentric with the inset rather than tighter than the well.
+  // 6px is the sm step and the approved design's chip: the well's 8px less its
+  // 1px boundary and 2px inset is a 5px concentric curve, and a chip a pixel
+  // rounder than that reads as sitting IN the well rather than as a second
+  // well inside it.
   const remove = drawAt(1);
   try {
     render(railFoot('sm'));
-    expect(length(screen.getAllByRole('radio')[0]!, 'border-radius')).toBe(7);
+    expect(length(screen.getAllByRole('radio')[0]!, 'border-radius')).toBe(6);
   } finally {
     remove();
   }

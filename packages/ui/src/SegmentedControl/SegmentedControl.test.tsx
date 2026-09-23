@@ -7,9 +7,15 @@
  * looking for the panel each one opened and found none.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, test, vi } from 'vitest';
+import { size, themes as palettes } from '@crewlethq/tokens';
+import { parseHex } from '@crewlethq/tokens/test/palette';
+import { channels, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { SegmentedControl } from './SegmentedControl.js';
 
 afterEach(cleanup);
@@ -339,4 +345,67 @@ test('a manual row says which key chooses, and the caller can word it or silence
   );
   expect(screen.getByRole('radiogroup').getAttribute('aria-describedby')).toBeNull();
   expect(document.querySelector('.crewlet-visually-hidden')).toBeNull();
+});
+
+/*
+ * THE APPROVED SEGMENTED CONTROL, as the cascade paints it: a RAISED well
+ * inside the default hairline, and the chip that is on the CARD's own ground
+ * in the primary ink, with the others in the secondary ink on nothing at all.
+ * The well used to be the translucent inset overlay, which stands almost
+ * nowhere off a card, so the row had no extent and the chips floated.
+ */
+const ranges = [
+  { value: 'today', label: 'Today' },
+  { value: 'week', label: '7 days' },
+  { value: 'month', label: '30 days' },
+];
+
+test('the row is a raised well with a card chip in it, in both palettes', () => {
+  const transparent = (value: string) => value === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(value);
+  for (const theme of ['dark', 'light'] as const) {
+    const uninstall = installThemed(theme, 'Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
+    const { unmount } = render(
+      <SegmentedControl label="Time range" semantics="radio" value="week" options={ranges} onValueChange={() => {}} />,
+    );
+    const palette = palettes[theme].color;
+    const well = getComputedStyle(screen.getByRole('radiogroup', { name: 'Time range' }));
+    expect(channels(well.backgroundColor), `${theme}: the well`).toEqual(parseHex(palette.surface.elevated));
+    expect(well.borderTopStyle, `${theme}: the well's boundary`).toBe('solid');
+    expect(channels(well.borderTopColor), `${theme}: the well's boundary`).toEqual(parseHex(palette.border.default));
+
+    const on = getComputedStyle(screen.getByRole('radio', { name: '7 days' }));
+    expect(channels(on.backgroundColor), `${theme}: the chip that is on`).toEqual(parseHex(palette.surface.subtle));
+    expect(channels(on.color), `${theme}: the chip that is on`).toEqual(parseHex(palette.text.primary));
+
+    const off = getComputedStyle(screen.getByRole('radio', { name: 'Today' }));
+    expect(transparent(off.backgroundColor), `${theme}: a chip that is off, ${off.backgroundColor}`).toBe(true);
+    expect(channels(off.color), `${theme}: a chip that is off`).toEqual(parseHex(palette.text.secondary));
+    unmount();
+    uninstall();
+  }
+});
+
+test('the well stands exactly at the control step, so it lines up with the button beside it', () => {
+  /*
+   * A chip, the well's inset above and below it and its boundary above and
+   * below that: 24 + 2 + 2 + 1 + 1 is the 30px medium control step, the height
+   * of every button, icon button and field on the same line. The chip and the
+   * inset are read from the cascade. The boundary is read from the rule, since
+   * jsdom answers no border width it was given.
+   */
+  const uninstall = installSheets('Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
+  try {
+    render(<SegmentedControl label="Time range" semantics="radio" value="week" options={ranges} onValueChange={() => {}} />);
+    const well = screen.getByRole('radiogroup', { name: 'Time range' });
+    const chip = screen.getByRole('radio', { name: '7 days' });
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../Tabs/Tabs.css'), 'utf8');
+    const boundary = /\.crewlet-tabs--pill\s*\{[^}]*border:\s*(\d+)px solid/.exec(css)?.[1];
+    expect(boundary).toBe('1');
+    const row = px(chip, 'min-height') + px(well, 'padding-top') + px(well, 'padding-bottom') + 2 * Number(boundary);
+    expect(px(chip, 'min-height')).toBe(24);
+    expect(row).toBe(Number.parseFloat(size.control.md));
+    expect(row).toBe(30);
+  } finally {
+    uninstall();
+  }
 });

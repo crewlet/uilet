@@ -40,7 +40,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 
 | Area | Components |
 | ---- | ---------- |
-| Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `tertiary`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
+| Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
 | Content and text | `Text` (the eight registers), `Prose`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload` |
 | Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
@@ -78,8 +78,8 @@ land at once.
   `--color-surface-background`, the sheet; a card, a popover, a menu and a
   dialog body are `--color-surface-subtle`, the card rung, and a `Card` is
   found by the `--color-border-default` hairline it draws round itself rather
-  than by its fill. Rebind a rung on `<html>` and everything standing on it
-  follows.
+  than by its fill or a shadow: the card is flat, and only an `elevated` one
+  lifts. Rebind a rung on `<html>` and everything standing on it follows.
 - **Accent colour.** The primary `Button`, the selected, active and focus
   states and the rail's attention count read `--color-brand-accent` and its
   companions from `@crewlethq/tokens`: `--color-brand-accent-rgb` (the same
@@ -140,7 +140,7 @@ land at once.
   `runPalette({ tokens, themes: themes + override })` from
   `@crewlethq/tokens/test/palette`.
 
-- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-rail` on the compact `DataTable`, and `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface). Override them from a rule that targets the component's root.
+- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-rail` on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
 
 The component stylesheets read only variables that `@crewlethq/tokens` emits or
 that the components declare themselves, and the same check refuses a glyph
@@ -278,7 +278,7 @@ its `matchMedia`, because at exactly 1024px the wide layout fits; it used to
 switch at `(max-width: 900px)`, a pixel before the arithmetic said it had to.
 Everything that changes shape with the shell moves with it and asks the same
 question: `Modal`'s side sheet goes full width, `Toolbar` folds into its
-overflow, `SearchTrigger` drops its label and its hint, and `StatGroup` goes to
+overflow, a `SearchTrigger` in a bar drops its label and its hint, and `StatGroup` goes to
 two columns. `AppShell`'s suite holds every one of them to that query and
 asserts the sum.
 
@@ -455,6 +455,123 @@ ghost of a node being added all draw.
 | `<ImageUpload shape="square">`, or no `shape` | `<ImageUpload>`, or `kind="agent"` |
 | `<ImageUpload shape="circle">` | `<ImageUpload kind="human">` |
 | a stylesheet targeting `.crewlet-image-upload--square` or `.crewlet-image-upload--circle` | `.crewlet-image-upload--agent` or `.crewlet-image-upload--human` |
+
+**The kit's primitives are the approved design's.** A control stands at the
+design's control rhythm: `@crewlethq/tokens` moves `--size-control-md` to 30px
+and `--size-control-sm` to 26px, so a medium `Button` is 30px and a small one
+26px, and so is every icon button, field, select and tab on the same line,
+which read the same steps. `secondary` is the card's own ground inside the
+STRONG hairline, the design's button: a button stands on the very card it is
+filled with, so its boundary is the whole of it, and the default hairline is
+the panel's own divider. It steps up to the raised rung and
+`--color-border-strong-hover` under the pointer. `danger` holds the same weight
+until it is pointed at, and `IconButton`'s `secondary` square follows. The
+borderless button is `ghost`, the word `IconButton`'s borderless square already
+used, so a toolbar holding both is written in one vocabulary; `tertiary` is
+gone. `Menu`'s `triggerVariant`, `ConfirmModal`'s `cancelVariant` and
+`CopyButton`'s `variant` default to it.
+
+**The card is flat.** A `Card` is the card rung inside the default hairline at
+the 12px corner, and nothing else, in both palettes: the `default` variant no
+longer casts `--shadow-xs` or draws a rim of light on its `::after`, and an
+interactive card answers the pointer with its hairline rather than lifting.
+What finds a card on the sheet is the pair the palette suite holds, the rung's
+step and the hairline's. `elevated`, which genuinely stands over the page, is
+the one that lifts. Every copy of the card recipe follows (`StatCard`,
+`StatGroup`, `ErrorBoundary` and `PricingCard`), and in following it drops a
+defect: each carried `box-shadow: var(--shadow-xs), var(--shadow-hairline)`,
+and `--shadow-hairline` is `none` in the light palette, which makes the whole
+list invalid there, so every one of them drew no shadow at all in light and two
+in dark. A selected `PricingCard` draws `--shadow-selection` alone, and the
+glow beside it where it has a discount. The scan that caught this in `Card`
+alone now reads every stylesheet in the package.
+
+**A `Tag` is the design's pill.** The default is 22px with fully round ends,
+the 12px caption step at the medium weight, 9px inside each end and 6px between
+a dot or a glyph and its word. `xs` is the design's 18px count pill at the 11px
+step and `md` a small control's 26px. The neutral tag is the raised rung under
+the secondary ink, the design's quiet pill, rather than the inset overlay; every
+state keeps its soft tint under its ink. A tag that acts still clears 24px.
+
+**A `Kbd` is the design's keycap, and a chord is one cap.** The cap is the
+raised rung inside the strong hairline, flat on every side, in the mono face at
+the 11px step and the tertiary ink; the heavier bottom edge said "raised" a
+second time and stood the cap a pixel taller than its line. `subtle` gives up
+the fill and takes the default hairline. `keys` draws the whole shortcut on ONE
+cap, as the design draws every shortcut it shows: `⌘K` on an Apple platform,
+where the menus run a chord's symbols together, and `Ctrl+K` everywhere else,
+where they join the names with a plus. Each key is a `kbd` inside the cap, and
+the one sentence a screen reader is given is unchanged.
+
+**A segmented row is a raised well with a card chip in it.** `Tabs` with
+`variant="pill"` and `SegmentedControl` draw their well on the raised rung inside
+the default hairline, where the inset overlay stood almost nowhere off a card
+and the chips floated. The chip that is on is the card's own ground in the
+primary ink, lifted by the default hairline and `--shadow-xs`; the others are
+the secondary ink on nothing. A chip is 24px with 10px inside each end and the
+`--radius-sm` corner, so the well with its 1px boundary and 2px inset stands at
+exactly the 30px of the button beside it.
+
+**`SearchTrigger` is the rail's field by default.** The approved design puts
+search in the sidebar: the full width of the rail, 34px tall (the medium
+control and one scale step), on the sheet's ground one rung above the frame,
+with its label and its `⌘K` cap at every width, because under the shell
+breakpoint the rail is a drawer as wide as it ever was. The field a screen
+draws in its own bar is `variant="toolbar"`: the card's ground at the control
+height, 200px at rest, and still the form that folds to its glyph under the
+shell breakpoint.
+
+**A `StatCard` is the design's tile.** Its label is set in sentence case at the
+12px caption step, as the caller wrote it, where it was uppercased and tracked
+open in the column-head register. The value is `--font-size-display`, the
+screen's one display number, in tabular figures. Two slots are new. `trend`
+stands a small figure at the END of the value's line, such as a `Sparkline` or
+a `Meter`, or a small control that acts on the number, in a slot
+`--crewlet-statcard-trend-width` wide (96px); a figure fills it and a control
+keeps its own width at its end. `delta` heads the second line with a change
+against an earlier reading, `{ value, polarity }`, drawn in the ink of whether
+it was WANTED (`good` the success ink, `bad` the danger ink, `neutral` the
+secondary ink) rather than of its direction, which its sign already says:
+"+12% vs previous 7 days". Neither is drawn while the tile is loading. The
+second line reserves exactly one line of its own leading, where a reserve in
+`em` was a line shorter than the one a sub draws, and a value too long for its
+tile now ends in an ellipsis rather than being cut mid-digit.
+
+**A `Sparkline` is the neutral, and `current` marks now in the accent.** The
+line's default colour is `DATA_COLOR_OTHER`, the residual neutral, at the
+design's 1.75 stroke: a shape beside a number is named by that number and not by
+a legend, so a series hue has nothing to be named by. `current` marks the last
+value with one accent point, cut out of its ground by a 2px ring of
+`--crewlet-spark-ground`. The point is its own element over the plot, since the
+plot is stretched to its box and a circle drawn inside it would be an ellipse,
+so the figure's root is a `div.crewlet-spark` holding the plot's
+`svg.crewlet-spark__plot`.
+
+**A `Meter`'s track is 6px** with round ends at both sizes, the design's meter.
+
+| Was | Is |
+|---|---|
+| `<Button variant="tertiary">` or `<ButtonLink variant="tertiary">`, the `ButtonVariant` `'tertiary'` | `variant="ghost"`, `'ghost'` |
+| `<Menu triggerVariant="tertiary">`, `<ConfirmModal cancelVariant="tertiary">`, `<CopyButton variant="tertiary">` | `"ghost"`, which is the default of all three, as `tertiary` was |
+| a stylesheet targeting `.crewlet-btn--tertiary` | `.crewlet-btn--ghost` |
+| a stylesheet relying on the `--color-border-default` boundary of a `secondary` or `danger` `Button`, or a `secondary` `IconButton` | it is `--color-border-strong`, and `--color-border-strong-hover` under the pointer |
+| a layout lined up with a 32px or 28px control | 30px and 26px; read `--size-control-md` and `--size-control-sm` rather than a number |
+| a stylesheet relying on a `default` `Card`'s shadow or its `::after` rim, or on an interactive card lifting on hover | the card is flat; `variant="elevated"` is the one that lifts |
+| a stylesheet relying on the shadow of a `StatCard`, a `StatGroup`, an `ErrorBoundary` or a `PricingCard`, or the rim on a selected `PricingCard` | each is flat; a selected `PricingCard` draws `--shadow-selection` (and `--shadow-glow` with a discount) |
+| a `Tag` measured at 20px with a 4px corner and an 11px label | 22px, `--radius-pill` and `--font-size-xs`; `size="xs"` is 18px at `--font-size-2xs`, `size="md"` is 26px |
+| a stylesheet relying on the neutral `Tag`'s `--color-surface-inset` fill | it is `--color-surface-elevated` |
+| a stylesheet relying on `<Kbd keys>` drawing one `.crewlet-kbd` per key inside `.crewlet-kbd-keys` | one `.crewlet-kbd` cap holds a `kbd.crewlet-kbd__key` per key; `.crewlet-kbd-keys` is gone |
+| a stylesheet relying on a `Kbd`'s 2px bottom edge, its `--color-border-default` boundary or its inset fill | a 1px `--color-border-strong` boundary on `--color-surface-elevated`; `subtle` is `--color-border-default` and no fill |
+| a stylesheet relying on a pill `Tabs` or `SegmentedControl` well on `--color-surface-inset` with no boundary | it is `--color-surface-elevated` inside a 1px `--color-border-default` boundary |
+| a pill chip measured at 26px with 12px side pads and the `--radius-chip` corner, or in the tertiary ink | 24px, 10px and `--radius-sm`, in `--color-text-secondary` |
+| `<SearchTrigger>` in a top bar or a toolbar | `<SearchTrigger variant="toolbar">`; without it, it is the rail's full-width field |
+| `--crewlet-search-trigger-width` set on a `SearchTrigger` | the same property on the `toolbar` form, which is the only one it sizes; its default is 200px rather than 220px |
+| a stylesheet selecting `.crewlet-statcard > .crewlet-statcard__value` | the value is inside `.crewlet-statcard__reading`, beside `.crewlet-statcard__trend` |
+| a `StatCard` label written for the uppercase register | write it in sentence case; it is drawn as written |
+| a `StatCard` value measured at `--font-size-2xl` | `--font-size-display` |
+| a `Sparkline` relying on the accent as its default colour | `DATA_COLOR_OTHER`; pass `color` for another |
+| a stylesheet selecting the `Sparkline` root as an `svg` | the root is `div.crewlet-spark`; the plot is `svg.crewlet-spark__plot` inside it |
+| a `Meter` track measured at 4px | 6px |
 
 ## Breaking changes in 0.3.0
 

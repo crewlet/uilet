@@ -382,10 +382,10 @@ export function DateTimePicker({
 
       <div className="crewlet-datetime__footer">
         <div className="crewlet-datetime__shortcuts">
-          <Button size="small" variant="tertiary" onClick={takeNow}>
+          <Button size="small" variant="ghost" onClick={takeNow}>
             {showTime ? labels.nowLabel : labels.todayLabel}
           </Button>
-          <Button size="small" variant="tertiary" onClick={() => onChange('')}>
+          <Button size="small" variant="ghost" onClick={() => onChange('')}>
             {labels.clearLabel}
           </Button>
         </div>

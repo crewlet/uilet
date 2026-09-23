@@ -3297,7 +3297,7 @@ export const DataTable = <TRow,>({
         )}
         footer={(
           <>
-            <Button variant="tertiary" onClick={cancelTableSettings}>
+            <Button variant="ghost" onClick={cancelTableSettings}>
               {labels.cancel}
             </Button>
             <Button variant="primary" onClick={applyTableSettings}>

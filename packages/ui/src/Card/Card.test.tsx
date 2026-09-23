@@ -13,7 +13,7 @@ import { Card, useCardHeaderSlot } from './index.js';
 import { themes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
-import { channels, inset, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, inset, installSheets, installThemed, pseudoElement, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 /*
  * The stylesheet, in the document, for the guards that ask what the CASCADE
@@ -42,36 +42,45 @@ afterEach(() => {
  */
 const here = dirname(fileURLToPath(import.meta.url));
 
-/** The shadow tokens whose LIGHT value is the keyword `none`. */
-function noneInLight(): string[] {
-  const theme = JSON.parse(
-    readFileSync(join(here, '../../../tokens/tokens/themes/light.json'), 'utf8'),
-  ) as { shadow: Record<string, { value: string }> };
-  return Object.entries(theme.shadow)
-    .filter(([, step]) => step.value.trim() === 'none')
-    .map(([name]) => `--shadow-${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`);
-}
+test('a card is flat: no shadow and no rim, and only an elevated card lifts', () => {
+  /*
+   * THE APPROVED CARD IS FLAT in both palettes: the card rung inside the
+   * default hairline at the 12px corner, and nothing else. What finds it on
+   * the sheet is the pair the palette suite holds, the rung's step and the
+   * hairline's, and a shadow under every panel of a screen made a list of
+   * records into a relief map. So no variant that stands on the card rung
+   * casts one, on itself or on the pseudo element the rim of light used to be
+   * drawn on, and the pointer answers with the hairline alone. The elevated
+   * card is the one that genuinely stands over the page, and it keeps both.
+   */
+  for (const theme of ['dark', 'light'] as const) {
+    uninstall = installThemed(theme, 'Card/Card.css');
+    for (const variant of ['default', 'subtle', 'quiet'] as const) {
+      const { container, unmount } = render(
+        <Card variant={variant} interactive>
+          Monthly spend
+        </Card>,
+      );
+      const card = container.querySelector('.crewlet-card')!;
+      const where = `${theme} ${variant}`;
+      expect(['', 'none'], `${where}: ${getComputedStyle(card).boxShadow}`).toContain(getComputedStyle(card).boxShadow);
+      const rim = getComputedStyle(pseudoElement(card, 'after'));
+      expect(['', 'none'], `${where} ::after: ${rim.boxShadow}`).toContain(rim.boxShadow);
+      unmount();
+    }
+    const { container, unmount } = render(<Card variant="elevated">Monthly spend</Card>);
+    expect(getComputedStyle(container.querySelector('.crewlet-card')!).boxShadow, theme).not.toMatch(/^(none)?$/);
+    unmount();
+    uninstall();
+    uninstall = null;
+  }
 
-test('no shadow list carries a token that is `none` in one theme', () => {
-  // `box-shadow: <shadow>, none` is INVALID: `none` is a value on its own and
-  // never one entry of a list, so the whole declaration is dropped at
-  // computed-value time and the element renders with no shadow at all. The
-  // elevated card composed --shadow-hairline, which is `none` in the light
-  // theme, into its list, and the light card lost the elevation the list was
-  // written for. A token like that goes on an element of its own, where a sole
-  // `none` is valid in both themes.
-  const css = readFileSync(join(here, 'Card.css'), 'utf8');
-  const lists = [...css.matchAll(/box-shadow:\s*([^;}]+)/g)]
-    .map((match) => match[1] ?? '')
-    .filter((value) => value.includes(','));
-  const conditional = noneInLight();
-  // A theme with no such token would make the rule vacuous, and the guard
-  // would go green for the wrong reason.
-  expect(conditional.length).toBeGreaterThan(0);
-  const offenders = lists.flatMap((list) =>
-    conditional.filter((token) => list.includes(token)).map((token) => `${token} in "${list.trim()}"`),
-  );
-  expect(offenders).toEqual([]);
+  // jsdom matches no :hover, so the rule the pointer reaches is read.
+  const css = readFileSync(join(here, 'Card.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const hover = /\.crewlet-card\.is-interactive:hover\s*\{([^}]*)\}/.exec(css)?.[1];
+  expect(hover).toBeDefined();
+  expect(hover).toContain('border-color');
+  expect(hover).not.toMatch(/box-shadow/);
 });
 
 test('no padding prop reaches the DOM, and each one reaches the stylesheet', () => {

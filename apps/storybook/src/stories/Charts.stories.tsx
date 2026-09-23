@@ -208,13 +208,13 @@ export const BesideANumber: Story = {
     <div style={{ padding: 20 }}>
       <Frame
         title="Never on its own"
-        hint="A sparkline has no scale, no axis and no labels, so it cannot be read without the figure it is captioned by. It is hidden from assistive technology for the same reason: the number beside it already says everything the shape could."
+        hint="A sparkline has no scale, no axis and no labels, so it cannot be read without the figure it is captioned by. It is hidden from assistive technology for the same reason: the number beside it already says everything the shape could. The line is the residual neutral, because nothing names it as a series, and the first one here marks its last value as now with one accent point."
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 'var(--spacing-3)', alignItems: 'center' }}>
           <strong style={{ fontVariantNumeric: 'tabular-nums', fontSize: 'var(--font-size-xl)' }}>412k</strong>
-          <Sparkline values={turns.map((point) => point.v)} />
+          <Sparkline values={turns.map((point) => point.v)} current />
           <strong style={{ fontVariantNumeric: 'tabular-nums', fontSize: 'var(--font-size-xl)' }}>96.4k</strong>
-          <Sparkline values={reviews.map((point) => point.v)} color="var(--color-data-2)" />
+          <Sparkline values={reviews.map((point) => point.v)} />
           <strong style={{ fontVariantNumeric: 'tabular-nums', fontSize: 'var(--font-size-xl)' }}>0</strong>
           <Sparkline values={[]} />
         </div>

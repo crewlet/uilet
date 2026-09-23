@@ -47,7 +47,7 @@ export const Basic: Story = {
         <Card.Description>Six worker nodes, last reconciled two minutes ago.</Card.Description>
       </Card.Body>
       <Card.Footer>
-        <Button variant="tertiary" size="small">
+        <Button variant="ghost" size="small">
           Edit
         </Button>
         <Button variant="primary" size="small">
@@ -65,8 +65,8 @@ export const Outlined: Story = { args: { variant: 'outlined' }, render: BasicRen
 export const Subtle: Story = { args: { variant: 'subtle' }, render: BasicRender };
 
 /**
- * THE TILE. `subtle` is the ground a panel stands on with none of its lift,
- * and it takes the tighter inset without being asked: a grid of records is
+ * THE TILE. `subtle` is the card at the tile's inset, and it takes the tighter
+ * inset without being asked: a grid of records is
  * read by scanning down one column of names, and at the panel's own step each
  * tile spends a third of its height on air. Pass a `padding` to overrule it.
  */

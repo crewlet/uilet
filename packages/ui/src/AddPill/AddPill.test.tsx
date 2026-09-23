@@ -253,10 +253,11 @@ describe('the drawing', () => {
       <AddPill label="Add to Engineering" sections={sections(() => {})} size="md" layout="inline" />,
     );
     fireEvent.click(mark());
-    expect(px(mark(), 'width')).toBe(28);
-    expect(px(choices()[0]!, 'width')).toBe(28);
+    // The small control step, 26px, the design's small button.
+    expect(px(mark(), 'width')).toBe(26);
+    expect(px(choices()[0]!, 'width')).toBe(26);
     expect(px(choices()[0]!, 'margin-top')).toBe(0);
-    expect(px(container.querySelector('.crewlet-add-pill__sections')!, 'height')).toBe(28);
+    expect(px(container.querySelector('.crewlet-add-pill__sections')!, 'height')).toBe(26);
     // The mark stays: in a row it is a toggle beside the choices, not the
     // thing they grew out of.
     expect(getComputedStyle(mark()).opacity).not.toBe('0');

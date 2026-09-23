@@ -159,7 +159,7 @@ export function Menu({
   items,
   icon,
   trigger,
-  triggerVariant = 'tertiary',
+  triggerVariant = 'ghost',
   triggerTabIndex,
   open: controlled,
   onOpenChange,

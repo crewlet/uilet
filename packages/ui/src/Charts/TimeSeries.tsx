@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { cx } from '../utils/cx.js';
-import { dataColor } from './dataColor.js';
+import { DATA_COLOR_OTHER, dataColor } from './dataColor.js';
 
 export interface SeriesPoint {
   /** The bucket's start, epoch milliseconds. */
@@ -157,8 +157,23 @@ export function TimeSeries({
 
 export interface SparklineProps {
   values: readonly number[];
-  /** The line's colour. Defaults to the accent, which is what a trend takes. */
+  /**
+   * The line's colour. Defaults to the residual neutral, `DATA_COLOR_OTHER`:
+   * a shape beside a number is named by that number rather than by a legend,
+   * and a series hue is spent only inside a figure that names it.
+   */
   color?: string;
+  /**
+   * Marks the LAST value as now, with a point in the accent at the line's
+   * end: the approved design's "you are here" on a trend. The accent means
+   * where the reader is, and on a trend that is the present.
+   *
+   * The point is cut out of the ground it stands on by a 2px ring of
+   * `--crewlet-spark-ground`, the card by default, because a sparkline sits
+   * beside a number on a card; one drawn on another rung sets the variable on
+   * itself or an ancestor.
+   */
+  current?: boolean | undefined;
   /** How tall the shape is, as a CSS length. */
   height?: string;
   className?: string;
@@ -175,27 +190,41 @@ export interface SparklineProps {
  * already say; a shape that genuinely carries a fact on its own is a
  * TimeSeries, which has a window, a peak and a sentence.
  *
+ * THE LINE IS THE NEUTRAL AND THE PRESENT IS THE ACCENT. With `current` the
+ * last value is marked by one accent point, which is the only colour the
+ * shape spends: the trend is a quiet mark and "now" is where the eye lands.
+ *
+ * THE POINT IS NOT PART OF THE PLOT. The plot is stretched to whatever box it
+ * is given, so a circle drawn in its viewBox would come out as an ellipse as
+ * wide as the box is long; the point is its own element over the plot,
+ * placed by the last value's height as a fraction of the box, and stays
+ * round at every width.
+ *
  * Fewer than two values draw nothing, and the box keeps its height, so a row
  * of figures does not jump as one of them gains its second point.
  */
-export function Sparkline({ values, color = 'var(--color-brand-accent)', height = '1.75rem', className }: SparklineProps) {
+export function Sparkline({
+  values,
+  color = DATA_COLOR_OTHER,
+  current = false,
+  height = '1.75rem',
+  className,
+}: SparklineProps) {
   const width = 200;
   const box = 28;
-  if (values.length < 2) return <div className={cx('crewlet-spark', className)} style={{ height }} aria-hidden />;
+  const classes = cx('crewlet-spark', current && 'crewlet-spark--current', className);
+  if (values.length < 2) return <div className={classes} style={{ height }} aria-hidden />;
   const peak = Math.max(1, ...values);
   const step = width / (values.length - 1);
-  const points = values
-    .map((value, index) => `${(index * step).toFixed(2)},${(box - (value / peak) * (box - 2) - 1).toFixed(2)}`)
-    .join(' ');
+  const y = (value: number) => box - (value / peak) * (box - 2) - 1;
+  const points = values.map((value, index) => `${(index * step).toFixed(2)},${y(value).toFixed(2)}`).join(' ');
+  const last = values[values.length - 1]!;
   return (
-    <svg
-      className={cx('crewlet-spark', className)}
-      viewBox={`0 0 ${width} ${box}`}
-      preserveAspectRatio="none"
-      style={{ height }}
-      aria-hidden
-    >
-      <polyline className="crewlet-chart__series" points={points} stroke={color} vectorEffect="non-scaling-stroke" />
-    </svg>
+    <div className={classes} style={{ height }} aria-hidden>
+      <svg className="crewlet-spark__plot" viewBox={`0 0 ${width} ${box}`} preserveAspectRatio="none">
+        <polyline className="crewlet-chart__series" points={points} stroke={color} vectorEffect="non-scaling-stroke" />
+      </svg>
+      {current ? <span className="crewlet-spark__current" style={{ top: `${((y(last) / box) * 100).toFixed(2)}%` }} /> : null}
+    </div>
   );
 }

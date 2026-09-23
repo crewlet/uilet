@@ -16,10 +16,10 @@ import type { Tone } from '../utils/tone.js';
 export type TagVariant = Tone;
 
 /**
- * How much room the pill takes. The engine draws ONE badge and spends its
- * variation on tone, so these are three heights of that badge rather than
- * three different marks: `sm` is the engine's own geometry and the default,
- * `xs` a denser mark for a packed row, `md` a small control's height for a
+ * How much room the pill takes. The design draws ONE pill and spends its
+ * variation on tone, so these are three heights of that pill rather than
+ * three different marks: `sm` is the design's 22px pill and the default, `xs`
+ * the 18px count pill for a packed row, `md` a small control's height for a
  * toolbar.
  */
 export type TagSize = 'xs' | 'sm' | 'md';
@@ -118,18 +118,21 @@ type TagAll = TagLook &
  * under the tone's `ink`, never the solid fill with a label on it: the fill
  * step is measured as a MARK, at 3:1, and putting text on it would put that
  * text under the 4.5:1 it has to clear. 0.2.0 spelled five dark-theme literals
- * here instead, which measured between 1.14:1 and 1.58:1 on a light page.
+ * here instead, which measured between 1.14:1 and 1.58:1 on a light page. The
+ * neutral tag, which names no state, is the raised rung under the secondary
+ * ink.
  *
- * ITS LINE BOX IS FIXED. The height comes from the size step rather than from
- * the content, so a cell that holds a tag on one row and nothing on the next
- * is the same height on both and a table does not ripple as states arrive.
+ * IT IS A PILL, the approved design's: 22px with round ends at the caption
+ * step. Its line box is fixed. The height comes from the size step rather
+ * than from the content, so a cell that holds a tag on one row and nothing on
+ * the next is the same height on both and a table does not ripple as states
+ * arrive.
  *
- * A TAG THAT ACTS IS FOUR PIXELS TALLER THAN ONE THAT LABELS, and that is the
- * one place this pill departs from the engine's badge. The engine draws its
- * actionable badge at the inert one's 20px, which is a pointer target under
- * the 24px WCAG 2.2 accepts; everything else about the two, the tint, the ink,
- * the radius, the type and the padding, is identical, so a row still reads as
- * one set.
+ * A TAG THAT ACTS IS TWO PIXELS TALLER THAN ONE THAT LABELS, and that is the
+ * one place this pill departs from the design. The design draws its pill at
+ * 22px whatever it does, which is a pointer target under the 24px WCAG 2.2
+ * accepts; everything else about the two, the tint, the ink, the radius, the
+ * type and the padding, is identical, so a row still reads as one set.
  */
 export function Tag(props: TagProps) {
   const {

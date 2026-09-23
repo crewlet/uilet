@@ -1,5 +1,5 @@
 /**
- * Four rules about what a component's SOURCE may contain, which no runtime
+ * Five rules about what a component's SOURCE may contain, which no runtime
  * test can reach because every one of the failures is invisible until somebody
  * looks.
  *
@@ -28,6 +28,16 @@
  *    modifier a stylesheet would have to paint, is bringing it back. The
  *    package's variable check would refuse the token once it is unemitted, as
  *    it refuses any; this names the rule, so the failure says why.
+ *
+ * 5. No shadow LIST carries a token that is `none` in one palette. `none` is a
+ *    value on its own and never one entry of a list, so `box-shadow:
+ *    var(--shadow-xs), var(--shadow-hairline)` is invalid at computed-value
+ *    time wherever the rim is `none`, the whole declaration is dropped, and
+ *    the element draws no shadow at all in that palette while drawing two in
+ *    the other. A browser reports nothing. Card's suite held its own
+ *    stylesheet to this, and four other stylesheets had the same list
+ *    (StatCard, StatGroup, ErrorBoundary and PricingCard), each drawing a
+ *    flat panel in the light palette that the dark one lifted.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -61,7 +71,7 @@ const storybook = ['src', '.storybook', 'scripts']
 
 describe('component source', () => {
   test('the scan reads the files it claims to', () => {
-    // A scan that found nothing would pass both rules below for any tree.
+    // A scan that found nothing would pass every rule below for any tree.
     expect(files.length).toBeGreaterThan(50);
     expect(files.some(({ path }) => path.endsWith('Button/Button.tsx'))).toBe(true);
     expect(files.some(({ path }) => path.endsWith('.css'))).toBe(true);
@@ -99,6 +109,39 @@ describe('component source', () => {
       .filter(({ path }) => !path.endsWith('.css'))
       .filter(({ text }) => /<style[\s>]|createElement\(\s*['"]style['"]/.test(text))
       .map(({ path }) => path);
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('a shadow list', () => {
+  /** The shadow tokens whose value is the keyword `none` in either palette. */
+  const noneSomewhere = (() => {
+    const found = new Set<string>();
+    for (const palette of ['dark', 'light']) {
+      const theme = JSON.parse(
+        readFileSync(join(REPOSITORY, 'packages', 'tokens', 'tokens', 'themes', `${palette}.json`), 'utf8'),
+      ) as { shadow?: Record<string, { value: string }> };
+      for (const [name, step] of Object.entries(theme.shadow ?? {})) {
+        if (step.value.trim() === 'none') {
+          found.add(`--shadow-${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`);
+        }
+      }
+    }
+    return [...found];
+  })();
+
+  test('never carries a token that is `none` in one palette', () => {
+    // A palette with no such token would make the rule vacuous, and the guard
+    // would go green for the wrong reason.
+    expect(noneSomewhere.length).toBeGreaterThan(0);
+    const offenders = files
+      .filter(({ path }) => path.endsWith('.css'))
+      .flatMap(({ path, text }) =>
+        [...text.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/box-shadow:\s*([^;}]+)/g)]
+          .map((match) => match[1] ?? '')
+          .filter((value) => value.includes(','))
+          .flatMap((list) => noneSomewhere.filter((token) => list.includes(token)).map((token) => `${path}: ${token} in "${list.trim()}"`)),
+      );
     expect(offenders).toEqual([]);
   });
 });

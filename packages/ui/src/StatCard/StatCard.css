@@ -4,21 +4,34 @@
  * THE TONE PAINTS THE VALUE, which is what the props always said and what the
  * stylesheet never did: 0.2.0 tinted the ICON, so a caller who passed a tone
  * and no icon got a tile identical to a neutral one. Ink only, and never a
- * fill: a tinted block behind a 24px number reads as a button.
+ * fill: a tinted block behind a 28px number reads as a button.
  */
 
 .crewlet-statcard {
+  /*
+   * The width of the figure at the end of the value's line. 96px is the
+   * approved design's sparkline, and its meters and state bars stand within
+   * four pixels of it: wide enough that a fortnight of points reads as a
+   * shape, narrow enough that five tiles in a row still leave the number its
+   * room.
+   */
+  --crewlet-statcard-trend-width: 96px;
+
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
-  padding: var(--spacing-3) var(--spacing-4);
-  /* The panel recipe: the surface, the hairline, the 12px corner and the
-     elevation the engine gives every card on a screen, so a lone tile is the
-     same object as the panel beside it rather than a flatter cousin. */
+  /* The design's 10px between the three lines, and its 16px inset with 14px
+     under the last line: half a scale step each, derived from the steps so
+     they follow the density with everything else. */
+  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  padding: var(--spacing-4) var(--spacing-4) calc(var(--spacing-3) + var(--spacing-1) / 2);
+  /*
+   * The card recipe: the card's surface, its hairline and its 12px corner,
+   * FLAT, as every card is, so a lone tile is the same object as the panel
+   * beside it rather than a raised cousin of it.
+   */
   background: var(--color-surface-subtle);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs), var(--shadow-hairline);
   color: var(--color-text-primary);
   font-family: var(--font-family-sans);
   min-width: 0;
@@ -30,33 +43,102 @@
   background: transparent;
   border: 0;
   border-radius: var(--radius-none);
-  box-shadow: none;
 }
 
-.crewlet-statcard__value {
+/*
+ * The label: SENTENCE CASE at the caption step, as the design sets it and as
+ * the caller wrote it. The uppercased, tracked-open micro-caps it used to wear
+ * are a table's column head: five of them over five numbers put a heading on
+ * every tile, and uppercasing is a transform a caller's own words should not
+ * have to survive.
+ */
+.crewlet-statcard__label {
   display: flex;
-  align-items: baseline;
-  gap: var(--spacing-2);
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--font-letter-spacing-normal);
+  color: var(--color-text-tertiary);
   min-width: 0;
-  font-size: var(--font-size-2xl);
+}
+
+.crewlet-statcard__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+/*
+ * The value's line: the number at its start, the figure at its end, both on
+ * the line's FOOT, so a 28px number and a 28px sparkline share a baseline
+ * rather than centring on each other.
+ */
+.crewlet-statcard__reading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  min-width: 0;
+}
+
+/*
+ * THE SCREEN'S ONE DISPLAY NUMBER. The display step, semibold, on the tight
+ * track, with tabular figures so a number that ticks up moves nothing beside
+ * it.
+ *
+ * ITS LINE IS THE GLYPH'S OWN HEIGHT (a leading of 1). The value is one line
+ * that never wraps, and any leading over it is air under the digits that
+ * opens between the number and the line below it and stands the number
+ * higher than the figure it shares a foot with.
+ *
+ * A BLOCK, NOT A FLEX ROW, because it is one line of text that has to END
+ * rather than stop: `text-overflow` acts on a block container only, and as a
+ * flex row the number and its unit were anonymous flex items no rule could
+ * reach, so a value too long for its tile was cut mid-digit with nothing to
+ * say a digit was lost. The unit sits on the same line as inline text, on
+ * the number's baseline.
+ */
+.crewlet-statcard__value {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--font-size-display);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-tight);
-  /* 1.1, the engine's, which is tighter than the tight step: a 24px number
-     with 1.2 of leading sits low in its box and opens a gap between the value
-     and the line under it that the 4px gap was already spending. */
-  line-height: 1.1;
-  /* A number that ticks up must not move the label under it. */
+  line-height: 1;
   font-variant-numeric: tabular-nums;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* The unit, "/ 7" after the 4: the quiet ink at a text step, medium, so it
+   reads as part of the figure rather than as a second one. */
 .crewlet-statcard__unit {
+  margin-inline-start: var(--spacing-1);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-medium);
   letter-spacing: var(--font-letter-spacing-normal);
   color: var(--color-text-tertiary);
+}
+
+/*
+ * The figure at the end of the line. A figure (a sparkline, a meter, a state
+ * bar) FILLS the slot, because none of them has a width of its own to offer.
+ * A control keeps its own and stands at the slot's end: "Review" is a small
+ * button beside the number it acts on, not a bar the width of a sparkline.
+ */
+.crewlet-statcard__trend {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: none;
+  width: var(--crewlet-statcard-trend-width);
+  min-width: 0;
+}
+
+.crewlet-statcard__trend > :where(button, a) {
+  align-self: flex-end;
 }
 
 /*
@@ -72,38 +154,38 @@
   background: var(--color-surface-inset);
 }
 
-.crewlet-statcard__label {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--font-letter-spacing-wide);
-  text-transform: uppercase;
-  color: var(--color-text-tertiary);
-  min-width: 0;
-}
-
-.crewlet-statcard__icon {
-  display: inline-flex;
-  flex: none;
-}
-
 /*
  * The second line keeps its space whether or not there is one, so a row of
- * tiles where only some carry a sub still sits on one baseline.
+ * tiles where only some carry one still stands at one height: its leading is
+ * set here and the reserve is exactly one line of it, where a reserve in `em`
+ * was a line shorter than the one a sub actually draws.
  */
 .crewlet-statcard__sub {
-  min-height: 1.2em;
+  min-height: calc(1em * var(--font-line-height-body));
   font-size: var(--font-size-xs);
-  /* The quiet step, with the label. The sub qualifies the number rather than
-     being a second one, and the engine keeps both of them a step under the
-     value they belong to. */
+  line-height: var(--font-line-height-body);
+  /* The quiet step, with the label. The line qualifies the number rather than
+     being a second one. */
   color: var(--color-text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/*
+ * A CHANGE IS COLOURED BY WHETHER IT WAS WANTED, not by its direction: the
+ * sign already says which way the number moved. Good news takes the success
+ * ink and bad news the danger ink, the steps measured as TEXT on every rung;
+ * a change that is neither takes the secondary ink, a step up from the words
+ * after it, so the figure still leads the sentence.
+ */
+.crewlet-statcard__delta {
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-statcard__delta--good { color: var(--color-feedback-success-ink); }
+.crewlet-statcard__delta--bad { color: var(--color-feedback-danger-ink); }
+.crewlet-statcard__delta--neutral { color: var(--color-text-secondary); }
 
 .crewlet-statcard--success .crewlet-statcard__value { color: var(--color-feedback-success-ink); }
 .crewlet-statcard--warning .crewlet-statcard__value { color: var(--color-feedback-warning-ink); }

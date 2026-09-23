@@ -8,7 +8,7 @@ import { SaveGlyph } from '@crewlethq/icons/glyphs';
  *
  * `primary` is the one action on the screen and takes the accent fill;
  * `accent` is the same recipe under the name a call site may already spell.
- * `secondary` is everything else, `tertiary` is for a dense toolbar,
+ * `secondary` is everything else, `ghost` is for a dense toolbar,
  * `outline` is the branded yes on a page that already has a primary, and
  * `danger` is a secondary that has gone red: it holds the neutral weight
  * until it is pointed at, because it sits beside Cancel and it is the one
@@ -26,7 +26,7 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: 'inline-radio',
-      options: ['primary', 'secondary', 'outline', 'tertiary', 'accent', 'danger'],
+      options: ['primary', 'secondary', 'outline', 'ghost', 'accent', 'danger'],
     },
     size: { control: 'inline-radio', options: ['small', 'medium', 'large'] },
     shape: { control: 'inline-radio', options: ['square', 'pill'] },
@@ -42,7 +42,7 @@ export const Secondary: Story = { args: { variant: 'secondary' } };
 
 export const Outline: Story = { args: { variant: 'outline' } };
 
-export const Tertiary: Story = { args: { variant: 'tertiary', children: 'Cancel' } };
+export const Ghost: Story = { args: { variant: 'ghost', children: 'Cancel' } };
 
 export const Accent: Story = { args: { variant: 'accent', children: 'Continue' } };
 
@@ -65,7 +65,7 @@ export const Register: Story = {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {(['small', 'medium', 'large'] as const).map((size) => (
         <div key={size} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {(['primary', 'secondary', 'outline', 'tertiary', 'accent', 'danger'] as const).map((variant) => (
+          {(['primary', 'secondary', 'outline', 'ghost', 'accent', 'danger'] as const).map((variant) => (
             <Button key={variant} variant={variant} size={size}>
               {variant}
             </Button>

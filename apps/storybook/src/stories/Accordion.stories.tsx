@@ -97,7 +97,7 @@ export const AsACardIdentityBlock: Story = {
             meta="connected"
             count={3}
             actions={
-              <Button variant="tertiary" size="small">
+              <Button variant="ghost" size="small">
                 Disconnect
               </Button>
             }

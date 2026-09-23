@@ -124,7 +124,7 @@
  * AND SO DOES WHATEVER ELSE LANDS THERE. `AppShell.RailRow` is the row this
  * package draws, but the slot takes a control from anywhere and an application
  * that already has a status button reaches for that one: the engine drops a
- * tertiary Button into the foot, which arrived centred in a 263px rail on a
+ * ghost Button into the foot, which arrived centred in a 263px rail on a
  * toolbar's inset. The foot claims a direct child instead, which is the same
  * move the nav's badge slot makes on whatever a caller puts in it, and there
  * is no second idea of what a row in this rail is.

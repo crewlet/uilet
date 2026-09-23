@@ -67,8 +67,8 @@ export interface MeterProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'
   polarity?: MeterPolarity | undefined;
   /**
    * `compact` is the bar inside a table cell. Its legend drops a type step;
-   * the track does not, because the track is already the engine's 4px and
-   * there is nothing below four a fill still reads as a proportion in.
+   * the track does not: it is the design's 6px at both sizes, and a thinner
+   * one in a dense row is the one a reader takes for a divider.
    */
   size?: 'default' | 'compact' | undefined;
   /** Keep the label out of the picture. It stays in the accessibility tree. */

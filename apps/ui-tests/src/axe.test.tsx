@@ -37,9 +37,16 @@ import {
   DateTimePicker,
   EmptyValue,
   IconButton,
+  Kbd,
   Menu,
+  Meter,
   Popover,
+  SearchTrigger,
+  SegmentedControl,
+  Sparkline,
+  StatCard,
   StatusDot,
+  Tag,
   TimeWindowPicker,
   VisuallyHidden,
 } from '@crewlethq/ui';
@@ -104,6 +111,59 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
         <AvatarStack members={[{ name: 'SWE' }, { name: 'CTO' }]} decorative /> read by 2 agents today
       </p>
       <VisuallyHidden>Loaded</VisuallyHidden>
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('the restyled primitives carry no violation: the register, the pill, the keycap, the well, the field and the tile', async () => {
+  const { container } = render(
+    <main>
+      <h1>Home</h1>
+      <SearchTrigger label="Ask or jump to…" shortcut={<Kbd keys={['Mod', 'k']} apple />} keyshortcuts="Meta+K" />
+      <SearchTrigger variant="toolbar" label="Search ENG" shortcut={<Kbd>/</Kbd>} keyshortcuts="/" />
+      <SegmentedControl
+        label="Time range"
+        semantics="radio"
+        value="week"
+        options={[
+          { value: 'today', label: 'Today' },
+          { value: 'week', label: '7 days' },
+          { value: 'month', label: '30 days' },
+        ]}
+        onValueChange={() => {}}
+      />
+      <Button variant="secondary" size="small">
+        Ship anyway
+      </Button>
+      <Button variant="ghost" size="small">
+        Reassign
+      </Button>
+      <p>
+        <Tag variant="warning">Needs a person</Tag> <Tag>docs</Tag> <Tag size="xs">3</Tag>
+      </p>
+      <StatCard
+        label="Tasks in progress"
+        value="18"
+        delta={{ value: '+4', polarity: 'neutral' }}
+        sub="vs last week · 2 blocked"
+        trend={<Sparkline values={[3, 5, 4, 8, 7, 9]} current />}
+      />
+      <StatCard
+        label="Tokens · 7 days"
+        value="12.6M"
+        trend={<Meter value={63} max={100} label="Weekly budget" hideLabel />}
+        sub="63% of the weekly budget"
+      />
+      <StatCard
+        label="Waiting on your decision"
+        value="3"
+        trend={
+          <ButtonLink href="#/inbox" size="small" variant="secondary">
+            Review
+          </ButtonLink>
+        }
+      />
     </main>,
   );
   expect(await violations(container)).toEqual([]);

@@ -105,12 +105,12 @@ export const Appearances: Story = {
 };
 
 /**
- * THREE HEIGHTS OF ONE BADGE. `sm` is the engine's own geometry and the
- * default: an 11px label in the medium weight, a 4px corner, one pixel of
- * padding above and below and eight on each side. `xs` is a denser mark for a
- * packed row and stays NON-INTERACTIVE, because a pointer target under 24px
- * fails WCAG 2.2 and the type refuses `onClick` at that step. `md` is a small
- * control's height, for a tag standing in a toolbar.
+ * THREE HEIGHTS OF ONE PILL. `sm` is the approved design's pill and the
+ * default: 22px with round ends, a 12px label in the medium weight and 9px
+ * inside each end. `xs` is the design's 18px count pill for a packed row, at
+ * the 11px step, and stays NON-INTERACTIVE, because a pointer target under
+ * 24px fails WCAG 2.2 and the type refuses `onClick` at that step. `md` is a
+ * small control's 26px, for a tag standing in a toolbar.
  */
 export const Sizes: Story = {
   render: () => (
@@ -129,12 +129,11 @@ export const Sizes: Story = {
 };
 
 /**
- * A TAG THAT ACTS IS FOUR PIXELS TALLER THAN ONE THAT LABELS, and that is the
- * one place this pill departs from the engine's badge: the engine draws its
- * actionable badge at the inert one's 20px, which is a target under the 24px
- * WCAG 2.2 accepts. Everything else about the two is identical, so a row still
- * reads as one set. The same floor lifts a tag whose only control is its
- * remove.
+ * A TAG THAT ACTS IS TWO PIXELS TALLER THAN ONE THAT LABELS, and that is the
+ * one place this pill departs from the design: the design draws its pill at
+ * 22px whatever it does, which is a target under the 24px WCAG 2.2 accepts.
+ * Everything else about the two is identical, so a row still reads as one set.
+ * The same floor lifts a tag whose only control is its remove.
  */
 export const LabelAndTarget: Story = {
   render: function Targets() {

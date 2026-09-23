@@ -14,7 +14,7 @@ import { ExternalLinkGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'tertiary' | 'accent' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'accent' | 'danger';
 export type ButtonSize = 'small' | 'medium' | 'large';
 export type ButtonShape = 'square' | 'pill';
 

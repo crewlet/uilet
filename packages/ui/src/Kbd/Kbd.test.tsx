@@ -10,6 +10,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
+import { themes } from '@crewlethq/tokens';
+import { parseHex } from '@crewlethq/tokens/test/palette';
+import { channels, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import { Kbd, keyGlyph } from './index.js';
 
 afterEach(cleanup);
@@ -73,8 +76,61 @@ test('the glyphs are hidden and one sentence is read instead', () => {
   // names nothing anybody presses.
   const { container } = render(<Kbd keys={['Mod', 'Shift', 'z']} apple />);
   const drawn = container.querySelector("[aria-hidden='true']")!;
-  expect([...drawn.querySelectorAll('kbd')].map((cap) => cap.textContent)).toEqual(['⌘', '⇧', 'Z']);
+  expect([...drawn.querySelectorAll('kbd')].map((key) => key.textContent)).toEqual(['⌘', '⇧', 'Z']);
   expect(container.querySelector('.crewlet-visually-hidden')?.textContent).toBe('Command plus Shift plus Z');
+});
+
+test('a chord is one cap, printed in the platform notation', () => {
+  /*
+   * The keys of a shortcut are pressed together, so they are printed on ONE
+   * cap, as the approved design draws every shortcut it shows: `⌘K`. A cap per
+   * key read as a sequence to press one after another. On an Apple platform
+   * the menus run a chord's symbols together; everywhere else they join the
+   * names with a plus. Each key is still a `kbd` inside the cap, which is how a
+   * key combination is marked up.
+   */
+  const { container, rerender } = render(<Kbd keys={['Mod', 'k']} apple />);
+  const cap = () => [...container.querySelectorAll('.crewlet-kbd')];
+  expect(cap().map((one) => one.textContent)).toEqual(['⌘K']);
+  expect([...cap()[0]!.querySelectorAll('kbd')].map((key) => key.textContent)).toEqual(['⌘', 'K']);
+  expect(cap()[0]!.getAttribute('aria-hidden')).toBe('true');
+
+  rerender(<Kbd keys={['Mod', 'Shift', 'z']} apple={false} />);
+  expect(cap().map((one) => one.textContent)).toEqual(['Ctrl+Shift+Z']);
+  expect([...cap()[0]!.querySelectorAll('kbd')].map((key) => key.textContent)).toEqual(['Ctrl', 'Shift', 'Z']);
+  expect(container.querySelector('.crewlet-visually-hidden')?.textContent).toBe('Control plus Shift plus Z');
+});
+
+test('a cap is the raised rung inside the strong hairline, and a quiet one gives up the fill', () => {
+  /*
+   * The approved design's keycap, as the cascade paints it: the raised rung,
+   * the strong hairline and the tertiary ink, which the palette suite holds
+   * at 4.5:1 on every rung. The quiet cap drops the fill and takes the plain
+   * hairline, and keeps the ink.
+   */
+  const transparent = (value: string) => value === '' || value === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(value);
+  for (const theme of ['dark', 'light'] as const) {
+    const uninstall = installThemed(theme, 'Kbd/Kbd.css');
+    const { unmount } = render(
+      <>
+        <Kbd>Esc</Kbd>
+        <Kbd subtle>Enter</Kbd>
+      </>,
+    );
+    const palette = themes[theme].color;
+    const cap = getComputedStyle(screen.getByText('Esc'));
+    expect(channels(cap.backgroundColor), theme).toEqual(parseHex(palette.surface.elevated));
+    expect(channels(cap.borderTopColor), theme).toEqual(parseHex(palette.border.strong));
+    // Flat on every side: the heavier bottom edge said "raised" a second time.
+    expect(cap.borderBottomWidth, theme).toBe(cap.borderTopWidth);
+    expect(channels(cap.color), theme).toEqual(parseHex(palette.text.tertiary));
+    const quiet = getComputedStyle(screen.getByText('Enter'));
+    expect(transparent(quiet.backgroundColor), `${theme}: ${quiet.backgroundColor}`).toBe(true);
+    expect(channels(quiet.borderTopColor), theme).toEqual(parseHex(palette.border.default));
+    expect(channels(quiet.color), theme).toEqual(parseHex(palette.text.tertiary));
+    unmount();
+    uninstall();
+  }
 });
 
 test('one key with no shortcut is still one keycap, read as itself', () => {

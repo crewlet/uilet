@@ -1,29 +1,56 @@
 /*
  * A button drawn as the field it stands in for.
  *
- * Below the shell breakpoint it keeps the glyph and drops the label and the
- * hint, which is why the name lives on the button rather than in its text.
+ * TWO PLACES, TWO GROUNDS. The approved design draws it in the rail, the
+ * whole width of the sidebar on the frame, and in a screen's own bar on the
+ * sheet. In each it is one rung up from what it stands on, the sheet on the
+ * frame and the card on the sheet, inside the default hairline, so it reads
+ * as a field sunk into neither and lifted off both.
  */
 
 .crewlet-search-trigger {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-2);
-  /* The resting width of the box. A topbar with less room sets it. */
-  --crewlet-search-trigger-width: 220px;
-  min-width: var(--crewlet-search-trigger-width);
-  height: var(--size-control-md);
-  padding: 0 var(--spacing-2) 0 var(--spacing-3);
+  /* The design's 10px inside each end: two steps and a half. */
+  padding: 0 calc(var(--spacing-2) + var(--spacing-1) / 2);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
   color: var(--color-text-tertiary);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-compact);
+  text-align: start;
   cursor: pointer;
   transition:
     border-color var(--motion-duration-fast) var(--motion-easing-default),
     color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/*
+ * THE RAIL'S FIELD: the full width of the sidebar, on the SHEET's ground, and
+ * a step taller than a control. It is the rail's one field and the first
+ * thing in it under the company's name, and the design stands it at 34px,
+ * the medium control and one scale step, so it reads as the way in rather
+ * than as one more button.
+ */
+.crewlet-search-trigger--rail {
+  display: flex;
+  width: 100%;
+  height: calc(var(--size-control-md) + var(--spacing-1));
+  background: var(--color-surface-background);
+}
+
+/*
+ * A SCREEN'S OWN SEARCH, in a bar on the sheet: the CARD's ground, the
+ * control height of the buttons beside it, and a resting width of its own.
+ */
+.crewlet-search-trigger--toolbar {
+  /* The resting width of the box, the design's. A bar with less room sets it. */
+  --crewlet-search-trigger-width: 200px;
+
+  min-width: var(--crewlet-search-trigger-width);
+  height: var(--size-control-md);
+  background: var(--color-surface-subtle);
 }
 
 .crewlet-search-trigger:hover {
@@ -47,7 +74,10 @@
   color: var(--color-text-muted);
 }
 
+/* The label takes the room, so the hint stands at the box's end. */
 .crewlet-search-trigger__label {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -61,15 +91,16 @@
   flex: none;
 }
 
-/* Under the shell's breakpoint, strictly, as the shell switches: the field
-   collapses to its glyph where the rail becomes a drawer. */
+/* Under the shell's breakpoint, strictly, as the shell switches: a toolbar's
+   field collapses to its glyph where the rail becomes a drawer. The rail's
+   own field does not, because the drawer is as wide as the rail was. */
 @media (width < 1024px) {
-  .crewlet-search-trigger {
+  .crewlet-search-trigger--toolbar {
     min-width: 0;
   }
 
-  .crewlet-search-trigger__label,
-  .crewlet-search-trigger__shortcut {
+  .crewlet-search-trigger--toolbar .crewlet-search-trigger__label,
+  .crewlet-search-trigger--toolbar .crewlet-search-trigger__shortcut {
     display: none;
   }
 }

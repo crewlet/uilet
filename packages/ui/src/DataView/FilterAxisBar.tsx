@@ -272,7 +272,7 @@ function OptionListEditor<TRow>({ def, value, labels, onCommit }: EditorProps<TR
       </div>
       {multiple && held.length > 0 ? (
         <div className="crewlet-filter-axis__editor-footer">
-          <Button variant="tertiary" size="small" onClick={() => onCommit([])}>
+          <Button variant="ghost" size="small" onClick={() => onCommit([])}>
             {labels.clear}
           </Button>
           <Button variant="primary" size="small" onClick={() => onCommit(held, { close: true })}>
@@ -499,7 +499,7 @@ export function FilterAxisBar<TRow = unknown>({
       {onClearAll ? (
         <Button
           className="crewlet-filter-axis-bar__clear"
-          variant="tertiary"
+          variant="ghost"
           size="small"
           leadingIcon={<XGlyph size="xs" />}
           onClick={onClearAll}

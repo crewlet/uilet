@@ -128,7 +128,9 @@ function Topbar() {
   return (
     <AppShell.Topbar
       title="Overview"
-      actions={<SearchTrigger shortcut={<Kbd keys={['Mod', 'k']} subtle />} keyshortcuts="Control+K Meta+K /" />}
+      actions={
+        <SearchTrigger variant="toolbar" shortcut={<Kbd keys={['Mod', 'k']} subtle />} keyshortcuts="Control+K Meta+K /" />
+      }
     />
   );
 }
@@ -244,7 +246,7 @@ export const Fill: Story = {
 /**
  * THE FOOT CLAIMS WHAT LANDS IN IT. `AppShell.RailRow` is the row this package
  * draws, but an application with a status control of its own reaches for that
- * one, and the engine dashboard does: a tertiary Button. Dropped in, it takes
+ * one, and the engine dashboard does: a ghost Button. Dropped in, it takes
  * the rail's two insets, its quiet ink and its left alignment, so the two rows
  * below are the same row drawn by two components rather than a rail row and a
  * centred control on a toolbar's inset.
@@ -257,7 +259,7 @@ export const FootTakesADroppedControl: Story = {
           header={<BrandLockup name="Crewlet" mark={<CrewletIcon />} context="Acme Holdings" href="#/" />}
           footer={
             <>
-              <Button variant="tertiary" size="small" leadingIcon={<StatusDot tone="success" />}>
+              <Button variant="ghost" size="small" leadingIcon={<StatusDot tone="success" />}>
                 engine connected
               </Button>
               <AppShell.RailRow icon={<SettingsGlyph size="sm" />} label="Settings" onClick={() => {}}>

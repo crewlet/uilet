@@ -42,10 +42,10 @@
 }
 
 /*
- * A 4px track, which is the engine's. A meter sits under a line of 12px text
- * inside a card, and the 6px bar read as a divider rather than as a reading of
- * something; four is the height at which the fill is still unmistakably a
- * proportion and the bar is unmistakably chrome.
+ * A 6px track with round ends, the approved design's meter, at both sizes. It
+ * stands at the end of a stat tile's value line beside a 28px number and a
+ * 28px sparkline, and under a line of 12px text inside a card; the design
+ * draws it at six in both places, where the engine's older bar was four.
  *
  * The track is RAISED, the approved design's, and a rung rather than a well.
  * The fill is measured against it as a mark, and the palette suite measures a
@@ -60,7 +60,7 @@
  * of the bar, would not be there at all.
  */
 .crewlet-meter__track {
-  height: 4px;
+  height: 6px;
   border-radius: var(--radius-pill);
   background: var(--color-surface-elevated);
   overflow: hidden;

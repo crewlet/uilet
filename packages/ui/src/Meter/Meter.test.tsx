@@ -13,6 +13,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
 import { contrast, deltaE, flatten, OPAQUE_SURFACES, paletteStates, parseHex, RUNG_STEPS } from '@crewlethq/tokens/test/palette';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { Meter, meterTone, progressTone } from './index.js';
 
 afterEach(cleanup);
@@ -299,6 +300,30 @@ describe('Meter', () => {
     }
     expect(measured.length).toBe(3);
     expect(failures).toEqual([]);
+  });
+
+  test('the track is the design six pixels with round ends, at both sizes', () => {
+    /*
+     * The approved design draws every meter at 6px: at the end of a stat
+     * tile's value line beside a 28px number and a 28px sparkline, and under a
+     * line of caption text in a card. The compact size drops a type step in
+     * its legend and never a pixel of its track. Read as the cascade decides
+     * it, so a size rule that overrode the track is caught too.
+     */
+    const uninstall = installSheets('Meter/Meter.css');
+    try {
+      const { container } = render(
+        <>
+          <Meter label="Weekly budget" value={63} max={100} />
+          <Meter label="Seats" value={4} max={7} size="compact" />
+        </>,
+      );
+      const tracks = [...container.querySelectorAll('.crewlet-meter__track')];
+      expect(tracks.map((track) => px(track, 'height'))).toEqual([6, 6]);
+      expect(tracks.map((track) => getComputedStyle(track).borderRadius)).toEqual(['999px', '999px']);
+    } finally {
+      uninstall();
+    }
   });
 
   test('carries no axe violation', async () => {

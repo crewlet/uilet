@@ -18,8 +18,10 @@ import {
   StackedBar,
   TimeSeries,
 } from './index.js';
+import { themes } from '@crewlethq/tokens';
+import { parseHex } from '@crewlethq/tokens/test/palette';
 import { Card } from '../Card/index.js';
-import { inset, installSheets } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, inset, installSheets, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 
 let uninstall: (() => void) | null = null;
 
@@ -296,9 +298,51 @@ test('a sparkline is never announced, and keeps its box before it has a shape', 
   expect((container.firstElementChild as HTMLElement).style.height).toBe('2rem');
   expect(container.querySelector('[aria-hidden="true"]')).toBeTruthy();
 
-  rerender(<Sparkline values={[4, 9]} height="2rem" />);
+  rerender(<Sparkline values={[4, 9]} height="2rem" current />);
   expect(container.querySelector('polyline')).toBeTruthy();
   expect(container.querySelector('[role="img"]')).toBeNull();
+  // The whole figure is hidden, the point included: the one element that
+  // carries a height carries the silence too.
+  expect((container.firstElementChild as HTMLElement).getAttribute('aria-hidden')).toBe('true');
+  expect((container.firstElementChild as HTMLElement).style.height).toBe('2rem');
+});
+
+test('a sparkline is the residual neutral at the design stroke, and its present is one accent point', () => {
+  /*
+   * THE LINE IS QUIET AND THE PRESENT IS THE ACCENT. A shape beside a number
+   * is named by that number rather than by a legend, so it takes the residual
+   * neutral rather than a series hue, at the approved 1.75 stroke; with
+   * `current` the last value is marked by exactly one point in the accent,
+   * which is the only colour the shape spends.
+   */
+  const { container, rerender } = render(<Sparkline values={[3, 8, 5, 10, 6]} />);
+  const line = container.querySelector('polyline')!;
+  expect(line.getAttribute('stroke')).toBe(DATA_COLOR_OTHER);
+  expect(container.querySelectorAll('.crewlet-spark__current')).toHaveLength(0);
+
+  rerender(<Sparkline values={[3, 8, 5, 10, 6]} current />);
+  const points = container.querySelectorAll<HTMLElement>('.crewlet-spark__current');
+  expect(points).toHaveLength(1);
+  /*
+   * ON THE LAST VALUE. The point is its own element over the stretched plot,
+   * so it is placed by that value's height as a fraction of the box, and the
+   * line's own last vertex is the height it has to match.
+   */
+  const coordinates = (line.getAttribute('points') ?? '').trim().split(' ');
+  const [, lastY] = coordinates[coordinates.length - 1]!.split(',').map(Number);
+  const box = Number(container.querySelector('svg')!.getAttribute('viewBox')!.split(' ')[3]);
+  expect(Number.parseFloat(points[0]!.style.top)).toBeCloseTo((lastY! / box) * 100, 1);
+  // Six is not the peak here, so the point stands below the top of the box.
+  expect(Number.parseFloat(points[0]!.style.top)).toBeGreaterThan(10);
+
+  for (const theme of ['dark', 'light'] as const) {
+    uninstall = installThemed(theme, 'Charts/Charts.css');
+    const palette = themes[theme].color;
+    expect(channels(getComputedStyle(points[0]!).backgroundColor), theme).toEqual(parseHex(palette.brand.accent));
+    expect(getComputedStyle(line).strokeWidth || getComputedStyle(line).getPropertyValue('stroke-width')).toBe('1.75');
+    uninstall();
+    uninstall = null;
+  }
 });
 
 test('a bar list with nothing to draw starts where its bars would have', () => {

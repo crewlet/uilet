@@ -22,11 +22,11 @@ test('a scaled step follows the density, and a floor holds under it', () => {
   remove = installSheetsAtDensity(0.82, 'Tabs/Tabs.css');
   document.body.innerHTML = '<div class="crewlet-tabs crewlet-tabs--pill"><button class="crewlet-tabs__tab"></button></div>';
   const chip = document.querySelector('.crewlet-tabs__tab')!;
-  // --spacing-3 is calc(12px * density), and the pill chip spends it on both
-  // sides; --size-control-md is calc(32px * density) and the chip's height is
-  // six under it, clamped against the 24px target floor, which is what holds
-  // at this setting.
-  expect(getComputedStyle(chip).paddingLeft).toBe('9.84px');
+  // The pill chip's side pad is two steps and a half, calc(8px * density)
+  // plus half of calc(4px * density), which is 10 x 0.82; --size-control-md is
+  // calc(30px * density) and the chip's height is six under it, clamped
+  // against the 24px target floor, which is what holds at this setting.
+  expect(getComputedStyle(chip).paddingLeft).toBe('8.2px');
   expect(getComputedStyle(chip).minHeight).toBe('24px');
 });
 

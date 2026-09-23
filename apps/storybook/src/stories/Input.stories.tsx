@@ -139,7 +139,7 @@ export const Sections: Story = {
                 mono
               />
             </FormRow>
-            <FormField label="Backstory" optional labelAction={<Button size="small" variant="tertiary">Generate</Button>}>
+            <FormField label="Backstory" optional labelAction={<Button size="small" variant="ghost">Generate</Button>}>
               {(field) => <Textarea id={field.id} rows={3} placeholder="A few sentences." />}
             </FormField>
           </FormSection>

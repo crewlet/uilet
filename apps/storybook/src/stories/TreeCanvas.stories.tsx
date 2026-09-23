@@ -225,7 +225,7 @@ function Chart({ note }: { note?: string }) {
         renderCard={(id, card) => <Card id={id} card={card} />}
         renderUnder={(id) =>
           ENTITIES[id]!.kind === 'seat' ? null : (
-            <Button size="small" variant="tertiary" tabIndex={-1} leadingIcon={<PlusGlyph />}>
+            <Button size="small" variant="ghost" tabIndex={-1} leadingIcon={<PlusGlyph />}>
               Add
             </Button>
           )
@@ -559,7 +559,7 @@ export const AddingANode: Story = {
                         <input value={name} onChange={(event) => setName(event.target.value)} />
                       </label>
                       <div style={{ display: 'flex', gap: 'var(--spacing-2)', justifyContent: 'flex-end' }}>
-                        <Button variant="tertiary" onClick={() => setAdding(null)}>
+                        <Button variant="ghost" onClick={() => setAdding(null)}>
                           Cancel
                         </Button>
                         <Button variant="primary" type="submit">

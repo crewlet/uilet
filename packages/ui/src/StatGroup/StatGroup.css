@@ -10,14 +10,13 @@
 .crewlet-stat-group {
   display: grid;
   grid-template-columns: repeat(var(--crewlet-stat-group-cols, 4), minmax(0, 1fr));
-  /* The flush-panel recipe: the surface, the hairline, the 12px corner and
-     `overflow: hidden`, which is what lets the tiles inside sit against the
-     corners without their own hairlines escaping past them. The engine puts
-     its stat row inside exactly this. */
+  /* The flush-panel recipe: the card's surface, its hairline and its 12px
+     corner, flat as every card is, and `overflow: hidden`, which is what lets
+     the tiles inside sit against the corners without their own hairlines
+     escaping past them. */
   background: var(--color-surface-subtle);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs), var(--shadow-hairline);
   overflow: hidden;
 }
 
@@ -38,7 +37,6 @@
   background: transparent;
   border: 0;
   border-radius: var(--radius-none);
-  box-shadow: none;
 }
 
 /*

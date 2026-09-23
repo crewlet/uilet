@@ -780,7 +780,7 @@ function Panel({
           {defaultValue ? (
             <Button
               size="small"
-              variant="tertiary"
+              variant="ghost"
               /*
                * Never disabled, even sitting on the default. A control that
                * disables itself the moment it has nothing to do takes focus
@@ -792,7 +792,7 @@ function Panel({
               {labels.resetLabel}
             </Button>
           ) : null}
-          <Button size="small" variant="tertiary" onClick={close}>
+          <Button size="small" variant="ghost" onClick={close}>
             {labels.cancelLabel}
           </Button>
           <Button

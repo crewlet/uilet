@@ -28,11 +28,14 @@ import {
 } from '../utils/headingLevel.js';
 
 export type CardVariant =
-  /** One step above the page. */
+  /**
+   * The card rung inside the default hairline, flat: no shadow and no rim.
+   * What finds it on the sheet is the rung's step and the hairline's.
+   */
   | 'default'
   /**
-   * The TILE: the panel's ground with none of its lift, at the tighter inset,
-   * for one of many records in a grid. Its default padding is `tight`.
+   * The TILE: the card at the tighter inset, for one of many records in a
+   * grid. Its default padding is `tight`.
    */
   | 'subtle'
   /** Transparent, with a strong border. */

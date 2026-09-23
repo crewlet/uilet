@@ -60,7 +60,7 @@ describe('the emitted units', () => {
     // not fire, and a bump that changed that would silently turn every control
     // height into rem.
     assert.match(tokens.get('--size-shell-rail'), /px$/);
-    assert.equal(size.control.md, '32px');
+    assert.equal(size.control.md, '30px');
     assert.equal(spacing['4'], '16px');
   });
 
@@ -73,7 +73,8 @@ describe('the emitted units', () => {
   });
 
   test('a small control or row cannot shrink under 24px at any density', () => {
-    // 28 x 0.82 is 22.96px. The floor is what makes the compact setting safe
+    // 26 x 0.82 is 21.32px for a control, and 28 x 0.82 is 22.96px for a
+    // row. The floor is what makes the compact setting safe
     // for a finger, and it is checked at the three densities the density
     // stylesheet can actually set.
     const densities = { compact: 0.82, normal: 1, comfortable: 1.14 };
@@ -90,7 +91,7 @@ describe('the emitted units', () => {
     }
     // And the floor is not simply a bigger number everywhere: at comfortable
     // density the step grows past it.
-    assert.equal(resolvePx(tokens.get('--size-control-sm'), 1.14), 31.919999999999998);
+    assert.equal(resolvePx(tokens.get('--size-control-sm'), 1.14), 29.639999999999997);
   });
 
   test('the density stylesheet declares the three steps the tokens name', () => {

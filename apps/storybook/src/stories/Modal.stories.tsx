@@ -32,7 +32,7 @@ export const Basic: Story = {
           icon={<PencilGlyph size="md" />}
           footer={
             <>
-              <Button variant="tertiary" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
               <Button variant="primary" onClick={() => setOpen(false)}>Save</Button>
             </>
           }
@@ -119,7 +119,7 @@ export const Stacked: Story = {
           footerStart="Last saved a moment ago"
           footer={
             <>
-              <Button variant="tertiary" onClick={() => setPrompt(true)}>Discard</Button>
+              <Button variant="ghost" onClick={() => setPrompt(true)}>Discard</Button>
               <Button variant="primary" onClick={() => setSheet(false)}>Save</Button>
             </>
           }
@@ -184,7 +184,7 @@ export const FormSubmit: Story = {
           onSubmit={() => { setSaved(name); setOpen(false); }}
           footer={
             <>
-              <Button variant="tertiary" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit" variant="primary">Create</Button>
             </>
           }

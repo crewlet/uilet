@@ -274,16 +274,27 @@ describe('Tag colour', () => {
     expect(failures).toEqual([]);
   });
 
-  test('the neutral default clears 4.5:1 too', () => {
+  test('the neutral default is the raised rung under the secondary ink, and clears 4.5:1 too', () => {
+    /*
+     * The design's quiet pill: a category or a count that is not a state
+     * stands on the raised rung in the secondary ink. The pair is READ from
+     * the base rule, so the measurement follows whatever the rule declares
+     * rather than a pair written down here.
+     */
+    const base = /(?:^|\})\s*\.crewlet-tag\s*\{([^}]*)\}/.exec(css.replace(/\/\*[\s\S]*?\*\//g, ''))?.[1] ?? '';
+    const fill = /--crewlet-tag-fill:\s*var\((--[\w-]+)\)/.exec(base)?.[1];
+    const inkName = /--crewlet-tag-ink:\s*var\((--[\w-]+)\)/.exec(base)?.[1];
+    expect(fill).toBe(token('color-surface-elevated'));
+    expect(inkName).toBe(token('color-text-secondary'));
     const failures: string[] = [];
     for (const [state, values] of Object.entries(states)) {
       if (state === 'base') continue;
       const ground = parseHex(values.get(token('color-surface-background')) ?? '');
       if (ground === null) throw new Error(`${state} has no opaque page colour`);
-      const ink = resolveColour(values, token('color-text-secondary'), ground);
+      const ink = resolveColour(values, inkName ?? '', ground);
       for (const surface of OPAQUE_SURFACES) {
         const beneath = resolveColour(values, surface, ground);
-        const ratio = contrast(ink, flatten(values.get(token('color-surface-inset')) ?? '', beneath));
+        const ratio = contrast(ink, flatten(values.get(fill ?? '') ?? '', beneath));
         if (ratio < 4.5) failures.push(`${state}: neutral on ${surface}: ${ratio.toFixed(2)}:1`);
       }
     }
@@ -414,6 +425,21 @@ describe('Tag geometry', () => {
     if (!found) throw new Error(`Tag.css declares no height for the ${step} step`);
     return found[1] ?? '';
   };
+
+  test('the default is the design pill: 22px, with round ends, at the caption step', () => {
+    // The approved design's pill, and its 18px count pill below it; the md
+    // step is a small control's own 26px, so a tag and a small button in one
+    // toolbar stand on one line.
+    expect(px(heightOf('sm'), 1)).toBe(22);
+    expect(px(heightOf('xs'), 1)).toBe(18);
+    expect(px(heightOf('md'), 1)).toBe(26);
+    const base = /(?:^|\})\s*\.crewlet-tag\s*\{([^}]*)\}/.exec(css.replace(/\/\*[\s\S]*?\*\//g, ''))?.[1] ?? '';
+    expect(base).toMatch(/border-radius:\s*var\(--radius-pill\)/);
+    expect(base).toMatch(/font-size:\s*var\(--font-size-xs\)/);
+    // A split pill's two halves and the remove control follow the round ends
+    // rather than squaring them off.
+    expect(css).not.toMatch(/--radius-xs/);
+  });
 
   test('the size ladder never inverts, at any density the tokens define', () => {
     // The regression this refuses: xs was a flat 18px while sm came down to

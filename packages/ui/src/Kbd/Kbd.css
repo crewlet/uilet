@@ -1,17 +1,22 @@
-/* A keycap: the key's name on a small raised tile. */
+/*
+ * A keycap: the key's name on a small raised tile.
+ *
+ * THE APPROVED DESIGN'S CAP: the raised rung inside the strong hairline, at
+ * the smallest radius, in the mono face at the micro step and the tertiary
+ * ink. The raised fill is what makes it a KEY rather than a word in a box, so
+ * the cap is flat on every side: the heavier bottom edge it used to carry was
+ * a second way of saying "raised" that the fill now says, and it stood the
+ * cap a pixel taller than the line it sits in.
+ */
 .crewlet-kbd {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-1);
+  justify-content: center;
   min-width: 18px;
-  padding: 1px var(--spacing-1);
+  padding: 0 var(--spacing-1);
   border-radius: var(--radius-xs);
-  border: 1px solid var(--color-border-default);
-  /* The thicker bottom edge is the whole of the "cap": one border, drawn
-     heavier on one side, reads as a key without a shadow that forced-colors
-     mode would drop. */
-  border-bottom-width: 2px;
-  background: var(--color-surface-inset);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-elevated);
   /*
    * The MONO face, not the surrounding one. A keycap is a literal: the reader
    * is being told which character is printed on a key, and a proportional face
@@ -32,30 +37,35 @@
 }
 
 /*
+ * A key inside a CHORD's cap. The whole chord is one cap, so each key in it
+ * is text on that cap and nothing more, run together with the next as the
+ * platform prints a chord. It is a `kbd` of its own because that is what a key
+ * inside a key combination is, and a user agent's `kbd` rule would otherwise
+ * set its own face and size on it.
+ */
+.crewlet-kbd__key {
+  font: inherit;
+}
+
+/*
  * A quieter cap: FLATTER, not fainter. The opacity this replaces multiplied
  * the ink as well as the frame, and 0.7 of a text step measures 3.43:1 on the
  * panel, so a hint printing the key a reader is told to press was the one
- * thing on the row they could not read. The cap gives up its raised edge and
- * its fill instead, and keeps the tertiary ink, which is measured at 4.5:1 on
- * every surface the package paints on.
+ * thing on the row they could not read. The cap gives up its raised fill and
+ * takes the plain hairline instead, and keeps the tertiary ink, which is
+ * measured at 4.5:1 on every surface the package paints on.
  */
 .crewlet-kbd--subtle {
-  border-bottom-width: 1px;
+  border-color: var(--color-border-default);
   background: none;
 }
 
 /*
- * A whole shortcut: the caps drawn together, and one sentence read instead of
- * them. The caps are hidden from assistive technology by the component; this
- * only lays them out.
+ * A whole shortcut: the cap drawn, and one sentence read instead of it. The
+ * cap is hidden from assistive technology by the component; this only lays
+ * it out.
  */
 .crewlet-kbd-combo {
   display: inline-flex;
   align-items: center;
-}
-
-.crewlet-kbd-keys {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
 }

@@ -16,9 +16,10 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { EllipsisVerticalGlyph } from '@crewlethq/icons/glyphs';
 import { themes } from '@crewlethq/tokens';
 import { contrast, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
-import { channels, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { Button, ButtonLink } from './index.js';
 import { IconButton } from '../IconButton/index.js';
+import { SearchTrigger } from '../SearchTrigger/index.js';
 
 afterEach(cleanup);
 
@@ -33,7 +34,7 @@ describe('Button', () => {
       <Button
         ref={ref}
         leadingIcon={<EllipsisVerticalGlyph />}
-        variant="tertiary"
+        variant="ghost"
         size="small"
         title="Actions"
         aria-haspopup="menu"
@@ -54,7 +55,7 @@ describe('Button', () => {
     expect(button.getAttribute('data-node')).toBe('seat:ceo');
     expect(button.id).toBe('seat-actions');
     // The recipe is still the primitive's own.
-    expect(button.className).toBe('crewlet-btn crewlet-btn--tertiary crewlet-btn--small crewlet-btn--square');
+    expect(button.className).toBe('crewlet-btn crewlet-btn--ghost crewlet-btn--small crewlet-btn--square');
     fireEvent.keyDown(button, { key: 'ArrowDown' });
     expect(onKeyDown).toHaveBeenCalledTimes(1);
   });
@@ -248,6 +249,80 @@ describe('the primary action', () => {
   });
 });
 
+/**
+ * THE APPROVED REGISTER, as the cascade paints it: the heights a button stands
+ * at, and what the two everyday variants are drawn with. The palette suite
+ * measures every pair these spend; what it cannot see is which ones a
+ * rendered button actually takes.
+ */
+describe('the register', () => {
+  const transparent = (value: string) => value === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(value);
+
+  test('a medium button is the design\'s 30px and a small one its 26px, and every control on the line shares them', () => {
+    /*
+     * THE HEIGHT IS THE CONTROL STEP, never a number of the button's own: the
+     * approved design stands a button, an icon button, a field in a bar and a
+     * segmented well at one 30px line, and a small button at 26px. Asserted as
+     * the design's numbers, because a step that drifted back to 32 would still
+     * be "the token" and would still stand every control two pixels proud of
+     * the line the design draws.
+     */
+    const uninstall = installSheets('Button/Button.css', 'IconButton/IconButton.css', 'SearchTrigger/SearchTrigger.css');
+    try {
+      render(
+        <>
+          <Button>Medium</Button>
+          <Button size="small">Small</Button>
+          <IconButton label="Medium glyph" icon={<EllipsisVerticalGlyph />} />
+          <IconButton label="Small glyph" size="sm" icon={<EllipsisVerticalGlyph />} />
+          <SearchTrigger variant="toolbar" label="Search ENG" />
+        </>,
+      );
+      expect(px(screen.getByRole('button', { name: 'Medium' }), 'min-height')).toBe(30);
+      expect(px(screen.getByRole('button', { name: 'Small' }), 'min-height')).toBe(26);
+      expect(px(screen.getByRole('button', { name: 'Medium glyph' }), 'height')).toBe(30);
+      expect(px(screen.getByRole('button', { name: 'Small glyph' }), 'height')).toBe(26);
+      expect(px(screen.getByRole('button', { name: 'Search ENG' }), 'height')).toBe(30);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('secondary is the card inside the strong hairline, and ghost is no ground and no boundary, in both palettes', () => {
+    /*
+     * A button stands on the very card it is filled with, so its boundary is
+     * the whole of it: the STRONG hairline, the step a reader takes for a
+     * control's edge, where the default one is the panel's own divider.
+     * Danger holds the same weight until it is pointed at. Ghost draws
+     * nothing until it is pointed at, in the secondary ink.
+     */
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installThemed(theme, 'Button/Button.css');
+      const { unmount } = render(
+        <>
+          <Button variant="secondary">Cancel</Button>
+          <Button variant="danger">Delete</Button>
+          <Button variant="ghost">Reassign</Button>
+        </>,
+      );
+      const palette = themes[theme].color;
+      for (const name of ['Cancel', 'Delete']) {
+        const style = getComputedStyle(screen.getByRole('button', { name }));
+        const where = `${theme}: ${name}`;
+        expect(channels(style.backgroundColor), where).toEqual(parseHex(palette.surface.subtle));
+        expect(style.borderTopStyle, where).toBe('solid');
+        expect(channels(style.borderTopColor), where).toEqual(parseHex(palette.border.strong));
+      }
+      const ghost = getComputedStyle(screen.getByRole('button', { name: 'Reassign' }));
+      expect(transparent(ghost.backgroundColor), `${theme}: ghost ground ${ghost.backgroundColor}`).toBe(true);
+      expect(transparent(ghost.borderTopColor), `${theme}: ghost boundary ${ghost.borderTopColor}`).toBe(true);
+      expect(channels(ghost.color), theme).toEqual(parseHex(palette.text.secondary));
+      unmount();
+      uninstall();
+    }
+  });
+});
+
 describe('ButtonLink', () => {
   // A control that goes somewhere is a real link, drawn by the same recipe as
   // the button beside it rather than a class list spelled at the call site.
@@ -260,7 +335,7 @@ describe('ButtonLink', () => {
         <ButtonLink variant="primary" size="small" leadingIcon={<EllipsisVerticalGlyph />} href="#/org?lens=builder">
           Create
         </ButtonLink>
-        <ButtonLink variant="tertiary" leadingIcon={<EllipsisVerticalGlyph />} title="Open" href="#/org" />
+        <ButtonLink variant="ghost" leadingIcon={<EllipsisVerticalGlyph />} title="Open" href="#/org" />
       </>,
     );
     const button = screen.getByRole('button', { name: 'Create' });
@@ -271,7 +346,7 @@ describe('ButtonLink', () => {
     expect(link.getAttribute('target')).toBeNull();
 
     const iconOnly = screen.getByRole('link', { name: 'Open' });
-    expect(iconOnly.className).toBe('crewlet-btn crewlet-btn--tertiary crewlet-btn--medium crewlet-btn--square');
+    expect(iconOnly.className).toBe('crewlet-btn crewlet-btn--ghost crewlet-btn--medium crewlet-btn--square');
   });
 
   test('an external link opens a new tab without handing over the referrer or the opener', () => {

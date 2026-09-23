@@ -167,11 +167,21 @@ The surface ramp was three rungs (`background`, `subtle` and `elevated`) plus fo
 
 Every spacing and size token is emitted as `calc(Npx * var(--density, 1))`, so a density setting is a real change to every gap, pad, row and control rather than to three font sizes, and every value is unchanged at density 1. The stylesheet is a separate import because a product with no density control should not ship the selectors that switch one; the tokens themselves work without it.
 
-`--size-control-sm` and `--size-row-sm` are `max(24px, calc(28px * var(--density, 1)))`. The floor is deliberate: 28 x 0.82 is 22.96px, and a target under 24px is one a finger cannot reliably hit. A test resolves both at all three densities.
+`--size-control-sm` is `max(24px, calc(26px * var(--density, 1)))` and `--size-row-sm` is `max(24px, calc(28px * var(--density, 1)))`. The floor is deliberate: 26 x 0.82 is 21.32px and 28 x 0.82 is 22.96px, and a target under 24px is one a finger cannot reliably hit. A test resolves both at all three densities.
 
-`--size-target-min` (24px) is that same floor, named, for a component that DERIVES a height from a control step rather than taking one. Subtracting from a step subtracts from its floor too, so `calc(var(--size-control-sm) - 4px)` is 20px at compact density; `max(var(--size-target-min), calc(var(--size-control-sm) - 4px))` is the same value at density 1 and still a reachable target at every other.
+The control steps are the approved design's control rhythm: `--size-control-md` is 30px, the height of a button, an icon button, a field in a toolbar and a segmented well, and `--size-control-sm` is 26px, a small button's. Every control on a line takes one of them, so a button beside a field beside a segmented row is one height at every density.
+
+`--size-target-min` (24px) is that same floor, named, for a component that DERIVES a height from a control step rather than taking one. Subtracting from a step subtracts from its floor too, so `calc(var(--size-control-md) - 6px)` is 18.6px at compact density; `max(var(--size-target-min), calc(var(--size-control-md) - 6px))` is the 24px a chip in a segmented well stands at density 1, and still a reachable target at every other.
 
 `--radius-chip` is `calc(var(--radius-md) - 1px)`, the corner of a chip lifted inside a well drawn at `--radius-md`. It is derived rather than written as a step of its own, so it follows the well.
+
+### Changed in 0.5.0: the control steps
+
+No token is renamed; two values moved to the approved design.
+
+| What changed | What to change |
+| --- | --- |
+| `--size-control-md` is 30px (was 32px) and `--size-control-sm` is 26px (was 28px), still floored at 24px. Every control that takes a step (a button, an icon button, a field, a select, a tab) is two pixels shorter. | Nothing, for a stylesheet that reads the tokens. A literal 32 or 28 written to line up with a control reads the token instead. |
 
 ## The document baseline
 
@@ -245,7 +255,7 @@ A media query cannot read a custom property, so a stylesheet that switches layou
 = 1024px  --breakpoint-shell
 ```
 
-At exactly 1024px the sheet is exactly its floor and the wide layout fits, so the switch is **strictly under** the step: `@media (width < 1024px)`, and `matchMedia('(width < 1024px)')` in script. `(max-width: 1024px)` would draw the drawer at the one width the arithmetic says the rail still fits. `@crewlethq/ui`'s `AppShell` switches there, and so does every component that changes shape with the shell (a side sheet going full width, a toolbar folding into its overflow, the search field dropping its label, a stat row going to two columns); its suite holds all of them to the same query and asserts the sum. It shares its number with `--breakpoint-lg` by arithmetic, not by name: a change to the rail or the inset moves the shell step and leaves `lg` where it is.
+At exactly 1024px the sheet is exactly its floor and the wide layout fits, so the switch is **strictly under** the step: `@media (width < 1024px)`, and `matchMedia('(width < 1024px)')` in script. `(max-width: 1024px)` would draw the drawer at the one width the arithmetic says the rail still fits. `@crewlethq/ui`'s `AppShell` switches there, and so does every component that changes shape with the shell (a side sheet going full width, a toolbar folding into its overflow, a toolbar's search field dropping its label, a stat row going to two columns); its suite holds all of them to the same query and asserts the sum. It shares its number with `--breakpoint-lg` by arithmetic, not by name: a change to the rail or the inset moves the shell step and leaves `lg` where it is.
 
 `--breakpoint-phone` (**640px**) is the single-pane layout: under it a screen shows one pane at a time, a detail replacing its list with a way back, rather than the two side by side. It is the Inbox's 320px list twice: under it a detail beside the list would be narrower than the list itself. It switches strictly under the step too, `(width < 640px)`.
 

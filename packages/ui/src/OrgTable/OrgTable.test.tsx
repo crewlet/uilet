@@ -517,8 +517,8 @@ describe('what it draws', () => {
     const { container } = mount();
     const strip = container.querySelector('.crewlet-org-table__actions')!;
     // Three control steps and the two gaps between them, resolved by the
-    // cascade rather than written out: 28 * 3 + 4 * 2.
-    expect(px(strip, 'min-width')).toBe(92);
+    // cascade rather than written out: 26 * 3 + 4 * 2.
+    expect(px(strip, 'min-width')).toBe(86);
     expect(getComputedStyle(strip).justifyContent).toBe('flex-end');
   });
 

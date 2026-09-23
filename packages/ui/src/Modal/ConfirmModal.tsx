@@ -84,7 +84,7 @@ export function ConfirmModal({
   cancelLabel = 'Cancel',
   destructive = false,
   confirmVariant,
-  cancelVariant = 'tertiary',
+  cancelVariant = 'ghost',
   confirmDisabled = false,
   confirmDisabledReason = 'Complete the confirmation above to continue.',
   submitting = false,

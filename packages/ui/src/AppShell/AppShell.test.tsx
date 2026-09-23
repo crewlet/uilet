@@ -652,7 +652,7 @@ describe("the rail's foot", () => {
     /*
      * THE SLOT TAKES A CONTROL FROM ANYWHERE. `AppShell.RailRow` is the row
      * this package draws, but an application with a status button of its own
-     * reaches for that one, and the engine does: a tertiary Button arrived
+     * reaches for that one, and the engine does: a ghost Button arrived
      * centred in a 263px rail, on a toolbar's inset, in a toolbar's ink and at
      * a toolbar's weight. The foot claims a direct child instead.
      */

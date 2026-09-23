@@ -270,8 +270,52 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * THE SPARKLINE: the plot stretched to the box, and, with `current`, one
+ * accent point on the last value.
+ *
+ * The point is the approved design's: an accent disc 5px across, cut out of
+ * the ground by a 2px ring in that ground's colour, so where the line runs
+ * into it the line stops a ring short of the disc rather than crossing it.
+ * The ring is `--crewlet-spark-ground`, the CARD, because a sparkline stands
+ * beside a number on a card; one on another rung sets the variable.
+ *
+ * THE PLOT GIVES UP ITS END TO THE POINT. With a point, the box keeps the
+ * disc's half and its ring back at its inline end, so the whole point stands
+ * inside the box beside whatever follows it, and the line's last value lands
+ * exactly under the disc's centre.
+ */
 .crewlet-spark {
+  --crewlet-spark-ground: var(--color-surface-subtle);
+  --crewlet-spark-point: 5px;
+  --crewlet-spark-ring: 2px;
+
+  position: relative;
   display: block;
+  box-sizing: border-box;
   width: 100%;
   overflow: visible;
+}
+
+.crewlet-spark__plot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.crewlet-spark--current {
+  padding-inline-end: calc(var(--crewlet-spark-point) / 2 + var(--crewlet-spark-ring));
+}
+
+.crewlet-spark__current {
+  position: absolute;
+  inset-inline-end: var(--crewlet-spark-ring);
+  width: var(--crewlet-spark-point);
+  height: var(--crewlet-spark-point);
+  border-radius: var(--radius-circle);
+  background: var(--color-brand-accent);
+  box-shadow: 0 0 0 var(--crewlet-spark-ring) var(--crewlet-spark-ground);
+  transform: translateY(-50%);
+  pointer-events: none;
 }

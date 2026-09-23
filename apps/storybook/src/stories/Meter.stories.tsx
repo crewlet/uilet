@@ -24,11 +24,9 @@ export default meta;
 type Story = StoryObj<typeof Meter>;
 
 /**
- * A 4px track, which is the engine's. A meter sits under a line of 12px text
- * inside a card, and a 6px bar read as a divider rather than as a reading of
- * something; four is the height at which the fill is still unmistakably a
- * proportion and the bar unmistakably chrome. The compact step keeps the same
- * track and drops the legend a type step.
+ * A 6px track with round ends on the raised rung, the approved design's
+ * meter, drawn on a card. The compact step keeps the same track and drops the
+ * legend a type step.
  */
 export const Basic: Story = {};
 

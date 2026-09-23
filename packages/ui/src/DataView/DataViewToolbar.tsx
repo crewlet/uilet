@@ -312,7 +312,7 @@ export function DataViewToolbar<TRow>({
               {sort ? (
                 <div className="crewlet-data-view-toolbar__sort-footer">
                   <Button
-                    variant="tertiary"
+                    variant="ghost"
                     size="small"
                     leadingIcon={<XGlyph size="xs" />}
                     onClick={() => {
