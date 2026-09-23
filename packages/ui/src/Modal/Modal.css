@@ -220,10 +220,11 @@
 }
 
 /*
- * The shell's one breakpoint. Below it there is no content beside a sheet to
- * keep in view, so the sheet takes the whole width and its edge goes with it.
+ * The shell's one breakpoint, strictly under it as the shell switches. Below
+ * it there is no content beside a sheet to keep in view, so the sheet takes
+ * the whole width and its edge goes with it.
  */
-@media (max-width: 900px) {
+@media (width < 1024px) {
   .crewlet-modal--sheet {
     width: 100%;
     border-inline: none;
@@ -249,6 +250,14 @@
  * it on the line the bar behind it draws, and holds the two buttons that
  * commit and abandon the form at a full control step with room around them.
  *
+ * THE HEIGHT IS THE ROOM, NOT THE PADDING. The head centres what it holds, so
+ * the room around the buttons is what the bar's height leaves, and the block
+ * padding is only the least it keeps when a title wraps. It was the 16px step
+ * while the bar was 64px, which a full control step filled exactly; at 52px
+ * the same padding stood the head 12px past the bar behind it. At the 4px step
+ * the head is the bar's height with the control step at every density, 36.48px
+ * at comfortable included, and with a subtitle under the title.
+ *
  * It used to be the tighter band, 49px with a close control alone, and the
  * commit pair sat in a foot below a body that scrolled 1,764px on a seat with
  * a dozen fields: the reader had to travel the whole form to reach Apply, and
@@ -256,7 +265,7 @@
  */
 .crewlet-modal__header--sheet {
   min-height: var(--size-shell-topbar);
-  padding: var(--spacing-4) var(--spacing-6);
+  padding: var(--spacing-1) var(--spacing-6);
   gap: var(--spacing-4);
   box-sizing: border-box;
 }

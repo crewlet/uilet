@@ -9,12 +9,19 @@
 
 /*
  * IT FITS THE BAR IT IS DRAWN BESIDE. The rail's head is the top bar's own
- * height (64px, a fixed token at every density), so the lockup has to come in
+ * height (52px, a fixed token at every density), so the lockup has to come in
  * under that height with its context line on: mark 24 plus one 11px line at
- * the document's own leading plus twice the block padding is 56.5px at the
- * normal density and 58.7px at comfortable. It was 66.5px, which grew the head
- * past the bar and put a visible kink across the window on every deployment
- * that names a company.
+ * the document's own leading (15.95px) plus twice the block padding is 47.95px
+ * at the normal density and 49.07px at comfortable. It was 66.5px once, which
+ * grew the head past the bar and put a visible kink across the window on every
+ * deployment that names a company.
+ *
+ * THE BLOCK PADDING IS THE SMALL STEP for that reason. It was the 8px step
+ * while the bar was 64px; at 52px the same padding made the lockup 55.95px,
+ * past the bar again, and the mark and the context line cannot give anything
+ * up (the mark is the home link's 24px target, the line is the document's).
+ * The head centres the lockup, so the padding is the least room it keeps at
+ * the top and the bottom rather than the room it is drawn with.
  *
  * NO GAP BETWEEN THE TWO LINES. They are one lockup rather than two stacked
  * labels, and the leading is the space between them: a gap on top of it reads
@@ -33,7 +40,7 @@
      link's target height, so it sits on the 24px floor rather than under it.
      A consumer with a wider mark sets this rather than editing two rules. */
   --crewlet-brand-mark: 24px;
-  padding: var(--spacing-2) calc(var(--size-nav-gutter) + var(--size-nav-row-pad));
+  padding: var(--spacing-1) calc(var(--size-nav-gutter) + var(--size-nav-row-pad));
 }
 
 .crewlet-brand__home {
@@ -72,7 +79,7 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-tight);
-  line-height: var(--font-line-height-normal);
+  line-height: var(--font-line-height-body);
   color: var(--color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -99,7 +106,7 @@
      is what a reader scans, so the weight stays there and goes from here. */
   font-weight: var(--font-weight-regular);
   letter-spacing: var(--font-letter-spacing-wide);
-  line-height: var(--font-line-height-normal);
+  line-height: var(--font-line-height-body);
   text-transform: uppercase;
   color: var(--color-text-tertiary);
   overflow: hidden;

@@ -15,8 +15,9 @@
       "rowPad": { "value": "12px", "density": true }
     },
     "shell": {
-      "rail": { "value": "280px", "comment": "The application rail, and the top bar over the pane beside it." },
-      "topbar": { "value": "64px" }
+      "rail": { "value": "236px", "comment": "The application SHELL's geometry, in the approved design's numbers. The rail is the sidebar column, on the frame; breakpoint.shell is derived from it, so a change here moves that step too, and the AppShell suite holds the arithmetic. A fixed width at every density: the rail's rows and gutters scale inside it, and a rail that grew with the density would move the breakpoint the density does not." },
+      "topbar": { "value": "52px", "comment": "The top bar of the sheet, and the rail's head beside it, which stands at the same height so the first nav row starts level with the top of the screen. A side sheet's head (Modal variant=\"sheet\") stands at it too, on the line the bar behind it draws. Fixed at every density, like the rail." },
+      "inset": { "value": "8px", "density": true, "comment": "The gap between the frame's edge and the floating sheet, on its top, its inline end and its bottom; the rail is the gap on the inline start. Density-scaled like every other gap, so it is 6.56px compact and 9.12px comfortable; breakpoint.shell is derived at density 1. It belongs to the wide layout: under breakpoint.shell the design's sheet is full-bleed, with no inset and no corner." }
     },
     "targetMin": { "value": "24px", "comment": "The smallest a hit target may ever stand, and the same floor size.control.sm and size.row.sm carry. It is a token because a component that DERIVES a height from a control step (a chip in a well stands shorter than the control beside it) has to clamp the result itself: max(var(--size-target-min), calc(...)) holds at every density, where the step's own floor no longer can once it has been subtracted from." },
     "measure": { "value": "68ch", "comment": "Prose and forms get a measure. Tables and charts deliberately do not: they are the one content that genuinely wants the whole viewport." },

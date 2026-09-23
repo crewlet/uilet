@@ -3,10 +3,13 @@
  * these three claims, so they are checked here rather than assumed: that the
  * density reaches a scaled step, that a token derived from another token
  * arrives as a number, and that a name the package does not emit drops its
- * declaration instead of poisoning the sheet.
+ * declaration instead of poisoning the sheet. And one claim about the tokens
+ * themselves that only a density can reach: which part of the application
+ * shell's geometry a density setting moves.
  */
 import { afterEach, expect, test } from 'vitest';
-import { atDensity, installSheetsAtDensity } from './density.js';
+import { installCss } from './cascade.js';
+import { atDensity, DENSITIES, installSheetsAtDensity } from './density.js';
 
 let remove: (() => void) | null = null;
 afterEach(() => {
@@ -45,4 +48,29 @@ test('a name the package does not emit takes its own declaration down, and no mo
   // them, which is a token, is not.
   expect(getComputedStyle(row).borderRadius).toContain('8px');
   expect(atDensity('a { color: var(--color-nothing-here); }', 1)).toContain('var(--color-nothing-here)');
+});
+
+test('the shell inset is a gap, so it follows the density like every other', () => {
+  // --size-shell-inset is calc(8px * density): the room between the frame's
+  // edge and the floating sheet. The rail and the bar beside it are fixed, and
+  // breakpoint.shell is derived at density 1, so this is the one part of the
+  // shell's geometry a density setting moves.
+  const expected = { compact: '6.56px', normal: '8px', comfortable: '9.12px' } as const;
+  for (const [name, factor] of DENSITIES) {
+    const remove = installCss(
+      atDensity(
+        '.sheet { margin-top: var(--size-shell-inset); margin-right: var(--size-shell-inset); width: var(--size-shell-rail); }',
+        factor,
+      ),
+    );
+    try {
+      document.body.innerHTML = '<div class="sheet"></div>';
+      const sheet = getComputedStyle(document.querySelector('.sheet')!);
+      expect(sheet.marginTop, name).toBe(expected[name]);
+      expect(sheet.marginRight, name).toBe(expected[name]);
+      expect(sheet.width, name).toBe('236px');
+    } finally {
+      remove();
+    }
+  }
 });

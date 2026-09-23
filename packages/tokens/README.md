@@ -175,17 +175,104 @@ Every spacing and size token is emitted as `calc(Npx * var(--density, 1))`, so a
 
 ## The document baseline
 
-`@crewlethq/tokens/css/base` is the opt-in document baseline: the box-sizing reset, the document's own type and colour (the body on the frame, the lowest of the [four rungs](#surfaces)), headings, controls that inherit the font, `code` and `kbd` in mono with tabular figures, one `:focus-visible` ring, `::selection`, themed scrollbars and the global reduced-motion collapse. Every value comes from a token, so it follows the palette and the density without a rule of its own.
+`@crewlethq/tokens/css/base` is the opt-in document baseline: the box-sizing reset, the document's own type and colour (the body on the frame, the lowest of the [four rungs](#surfaces), in Geist at [13px on the 1.45 leading](#type)), headings, controls that inherit the font, `code` and `kbd` in mono with tabular figures, one `:focus-visible` ring, `::selection`, themed scrollbars and the global reduced-motion collapse. Every value comes from a token, so it follows the palette and the density without a rule of its own.
 
 The focus indicator is an **outline**, never a box-shadow alone. Forced-colors mode drops every box-shadow and keeps outlines, so a ring drawn as a shadow disappears for exactly the readers who most need one. `--shadow-focus` is still there for a component that wants a shadow as well, paired with a transparent outline so forced colors substitutes a system colour for it. `--size-focus-ring-inset-offset` is the offset for a focusable row inside a clipping scroller, where an outset ring is clipped by the scroller and painted over by the next row.
 
 The body's height and overflow are deliberately not here. A page that can scroll as a whole moves an application's rail off the top of the window, so the rule that stops it belongs to the shell that owns the rail.
 
+## Type
+
+The body is **13px on a 1.45 leading**, the approved design's dense base: a board is read by scanning rows rather than paragraphs. `@crewlethq/tokens/css/base` sets it on `body`; everything that does not set a size of its own inherits it.
+
+| Token | px | What it is for |
+| --- | --- | --- |
+| `--font-size-2xs` | 11 | Micro labels, table column heads, a keycap |
+| `--font-size-xs` | 12 | Dense secondary text, a badge, a group label |
+| `--font-size-compact` | 13 | **The body**, and table cells and captions |
+| `--font-size-sm` | 14 | A step over the body: a section heading, a page's title in the top bar |
+| `--font-size-md` to `--font-size-2xl` | 16, 18, 20, 24 | Headings |
+| `--font-size-display` | 28 | The one number on a stat tile, and a page's greeting |
+| `--font-size-3xl` to `--font-size-5xl` | 32, 48, 64 | Large display headings |
+
+Sizes are authored in px and emitted in rem, so a reader who has set a larger default text size gets one; the typed export (`font.size`) carries the pixels. `compact` and `display` are named for their jobs rather than squeezed onto the ramp, so a component reads the role and the step can move without a rename.
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| `--font-line-height-tight` | 1.2 | Headings |
+| `--font-line-height-snug` | 1.4 | A subtitle under a heading |
+| `--font-line-height-body` | 1.45 | **The document's own**: the body's 18.85px line. A keycap, a monogram and the rail's lockup take it, because they are drawn inside a line of the document and have to stand on it |
+| `--font-line-height-normal` | 1.5 | A component's own line: a card title, a rail row |
+| `--font-line-height-relaxed` | 1.7 | Long-form prose |
+
+## Radii
+
+| Token | px | What it is for |
+| --- | --- | --- |
+| `--radius-xs` | 4 | A keycap, inline code, a tag's corner, the focus ring |
+| `--radius-sm` | 6 | A row or a node inside a surface: a table row, an organisation chart's node |
+| `--radius-chip` | 7 | A chip lifted inside a well at `--radius-md`, one hairline tighter (derived from `md`) |
+| `--radius-md` | 8 | A control: a button, a field, a menu, a rail row |
+| `--radius-lg` | 12 | A card, a popover, a stat tile |
+| `--radius-sheet` | 14 | The sheet an application floats on the frame, one step rounder than every card inside it |
+| `--radius-xl` | 16 | A dialog |
+| `--radius-2xl` | 24 | Marketing surfaces |
+| `--radius-pill`, `--radius-circle` | 999px, 50% | A pill, and a dot or an avatar |
+
+## The application shell
+
+The shell is a rail and a floating sheet on the frame (see [Surfaces](#surfaces) for the rungs they stand on):
+
+| Token | Value | What it is |
+| --- | --- | --- |
+| `--size-shell-rail` | 236px | The rail, the sidebar column on the frame. Fixed at every density |
+| `--size-shell-topbar` | 52px | The sheet's top bar, and the rail's head beside it. Fixed at every density |
+| `--size-shell-inset` | 8px | The gap between the frame's edge and the sheet, on its top, its inline end and its bottom. Density-scaled like every gap: 6.56px compact, 9.12px comfortable |
+| `--radius-sheet` | 14px | The sheet's corner |
+
+The rail and the bar do not follow the density because `--breakpoint-shell` is derived from the rail: a rail that grew with the density would move a breakpoint that a density setting cannot move.
+
 ## Breakpoints
 
 A media query cannot read a custom property, so a stylesheet that switches layout at a breakpoint spells the number. `@crewlethq/tokens/css/breakpoint` is the generated partial that says which number, and `breakpoint` in the typed export carries the same values, so a check can compare a query's literal against them instead of trusting a comment.
 
-`--breakpoint-shell` (900px) is where an application shell stops being a rail beside a pane: a 280px rail plus a 620px minimum content column.
+`--breakpoint-shell` (**1024px**) is where the application shell stops being a rail beside a sheet and the rail becomes a drawer. It is derived, at density 1:
+
+```text
+  236px   --size-shell-rail
++   8px   --size-shell-inset
++ 780px   the sheet's floor: the two-pane Inbox, a 320px list beside a 460px detail
+= 1024px  --breakpoint-shell
+```
+
+At exactly 1024px the sheet is exactly its floor and the wide layout fits, so the switch is **strictly under** the step: `@media (width < 1024px)`, and `matchMedia('(width < 1024px)')` in script. `(max-width: 1024px)` would draw the drawer at the one width the arithmetic says the rail still fits. `@crewlethq/ui`'s `AppShell` switches there, and so does every component that changes shape with the shell (a side sheet going full width, a toolbar folding into its overflow, the search field dropping its label, a stat row going to two columns); its suite holds all of them to the same query and asserts the sum. It shares its number with `--breakpoint-lg` by arithmetic, not by name: a change to the rail or the inset moves the shell step and leaves `lg` where it is.
+
+`--breakpoint-phone` (**640px**) is the single-pane layout: under it a screen shows one pane at a time, a detail replacing its list with a way back, rather than the two side by side. It is the Inbox's 320px list twice: under it a detail beside the list would be narrower than the list itself. It switches strictly under the step too, `(width < 640px)`.
+
+### Changed in 0.5.0: the body, the shell and its breakpoint
+
+No token is renamed or removed here; values moved to the approved design, and six tokens are new.
+
+| What changed | What to change |
+| --- | --- |
+| `@crewlethq/tokens/css/base` sets the body at `--font-size-compact` (13px) on `--font-line-height-body` (1.45). It was `--font-size-sm` (14px) on `--font-line-height-normal` (1.5). | Nothing, for text that inherits. A component of your own drawn inside a line of the document on `--font-line-height-normal` (a keycap, a monogram) takes `--font-line-height-body` to stay on it. |
+| `--font-size-sm` is no longer the body step; its comment and role are "a step over the body". | A stylesheet that set body copy at `--font-size-sm` to match the document sets `--font-size-compact`. |
+| `--size-shell-rail` is 236px (was 280px) and `--size-shell-topbar` is 52px (was 64px). | Nothing, for a stylesheet that reads them. A literal 280 or 64 written to line up with the shell reads the token instead. |
+| `--breakpoint-shell` is 1024px (was 900px), derived as above, and the switch is strictly under it. | A query written to switch with the shell, `(max-width: 900px)`, becomes `(width < 1024px)`. |
+| `--font-size-display`, `--font-line-height-body`, `--radius-sheet`, `--size-shell-inset`, `--breakpoint-phone` and `--motion-duration-breath` are new (`font.size.display`, `font.lineHeight.body`, `radius.sheet`, `size.shell.inset`, `breakpoint.phone`, `motion.duration.breath`). | Nothing. |
+
+## Motion
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| `--motion-duration-instant` | 75ms | A tooltip's flash, a dropdown indicator's nudge |
+| `--motion-duration-fast` | 120ms | A hover or an active state |
+| `--motion-duration-base` | 150ms | The default transition |
+| `--motion-duration-moderate` | 200ms | A rail row's hover, a bar's background |
+| `--motion-duration-slow` | 300ms | A dialog entering, a drawer sliding |
+| `--motion-duration-breath` | 2200ms | The PERIOD of a mark saying work is still happening: one full round, out and back, 0.45 cycles a second. Not a transition |
+
+A component that moves states a reduced-motion rule of its own in the same stylesheet, and `@crewlethq/tokens/css/base` collapses motion for the whole document under `prefers-reduced-motion: reduce`.
 
 ## What colour means
 

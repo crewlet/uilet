@@ -255,6 +255,42 @@ and in the `Legend` that names it.
 | a stylesheet targeting `.crewlet-tag--phase-*` or `.crewlet-status-dot--phase-*` | `.crewlet-tag--neutral` or the bare `.crewlet-status-dot`; neither class is drawn any more |
 | `var(--color-phase-*)` in a stylesheet of your own | the neutral text steps for a word, or the series you map the phase to inside a figure |
 
+**The shell is tighter, and the drawer takes over at 1024px.** `@crewlethq/tokens`
+moves the shell to the approved design's geometry: the rail is 236px rather
+than 280px and the top bar 52px rather than 64px, and `--breakpoint-shell` is
+1024px rather than 900px, derived as the rail, the 8px inset between the frame
+and the sheet, and the 780px sheet the two-pane Inbox needs. `AppShell` switches
+to its drawer STRICTLY UNDER the step, `(width < 1024px)` in its stylesheet and in
+its `matchMedia`, because at exactly 1024px the wide layout fits; it used to
+switch at `(max-width: 900px)`, a pixel before the arithmetic said it had to.
+Everything that changes shape with the shell moves with it and asks the same
+question: `Modal`'s side sheet goes full width, `Toolbar` folds into its
+overflow, `SearchTrigger` drops its label and its hint, and `StatGroup` goes to
+two columns. `AppShell`'s suite holds every one of them to that query and
+asserts the sum.
+
+The pieces that stand at the bar's height follow it down. `Modal`'s side-sheet
+head is 52px with 4px over 24px insets rather than 64px with 16px over 24px:
+the head centres what it holds, so the bar's height is the room round its
+buttons, and the 16px padding would have stood it 12px past the bar behind it.
+`BrandLockup`'s block padding is 4px rather than 8px, so the mark and the
+company's line still come in under the rail's head, 47.95px at the normal
+density and 49.07px at comfortable against 52px.
+
+**The document's line is 13px on 1.45.** The baseline sets the body at the
+compact step on the new body leading, and the three components drawn inside a
+line of the document read that leading rather than one of their own: `Kbd`, the
+initials in `Avatar`, and both lines of `BrandLockup`. `StatusDot` is 7px, the
+design's mark, rather than 6px.
+
+| Was | Is |
+|---|---|
+| a stylesheet of your own switching with the shell at `(max-width: 900px)` | `(width < 1024px)`, which is what `AppShell` asks |
+| a literal `280px` or `64px` lined up with the rail or the bar | `var(--size-shell-rail)` or `var(--size-shell-topbar)` |
+| a stylesheet overriding `.crewlet-modal__header--sheet` padding | the head is 52px with 4px over 24px insets; override `--size-shell-topbar` or the rule itself |
+| a stylesheet overriding `.crewlet-brand` padding | its block padding is `--spacing-1` |
+| a layout that reserved 6px for a `StatusDot` | 7px |
+
 ## Breaking changes in 0.3.0
 
 Every one of these is a change a consumer can see. None of them needs an edit

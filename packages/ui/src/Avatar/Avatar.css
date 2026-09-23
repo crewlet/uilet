@@ -32,7 +32,7 @@
      The box is a fixed square that centres whatever line it holds, so the ink
      lands in the same place either way; what the tight step bought was one
      more number in a component that already sets four. */
-  line-height: var(--font-line-height-normal);
+  line-height: var(--font-line-height-body);
   text-transform: uppercase;
   user-select: none;
   box-sizing: border-box;

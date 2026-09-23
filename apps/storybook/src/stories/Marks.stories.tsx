@@ -53,7 +53,7 @@ export const Counts: Story = {
  * assistive technology: a reader who heard both would be told the state twice.
  *
  * The quiet dot takes the tertiary step rather than the decoration one the
- * engine spends there. A 6px mark is read the way a glyph is, so it has to
+ * engine spends there. A 7px mark is read the way a glyph is, so it has to
  * clear 3:1, and the decoration step measures 2.33:1 on a light page. The
  * pulse is the engine's 1.8s breath, which is 0.55 flashes a second.
  *

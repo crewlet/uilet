@@ -61,7 +61,9 @@
   flex: none;
 }
 
-@media (max-width: 900px) {
+/* Under the shell's breakpoint, strictly, as the shell switches: the field
+   collapses to its glyph where the rail becomes a drawer. */
+@media (width < 1024px) {
   .crewlet-search-trigger {
     min-width: 0;
   }

@@ -25,7 +25,7 @@
      sentence, a shortcut in a menu row. Tightened it stood a pixel under the
      line it sits in and the row it was in wobbled by that pixel wherever a
      cap appeared and wherever one did not. */
-  line-height: var(--font-line-height-normal);
+  line-height: var(--font-line-height-body);
   color: var(--color-text-tertiary);
   white-space: nowrap;
   vertical-align: middle;

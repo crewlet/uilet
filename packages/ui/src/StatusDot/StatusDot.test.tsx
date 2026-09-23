@@ -1,7 +1,7 @@
 /**
  * The dot's contract: that it never speaks, and that it can be SEEN.
  *
- * The second half is the one a component test cannot reach. A 6px mark is read
+ * The second half is the one a component test cannot reach. A 7px mark is read
  * the way a glyph is rather than the way text is, so every fill it can take
  * has to clear 3:1 against every surface it can sit on. The fills are read out
  * of StatusDot.css rather than listed here, because a tone added without a
@@ -53,6 +53,16 @@ describe('StatusDot', () => {
     expect(dot?.getAttribute('aria-hidden')).toBe('true');
     // Nothing to read: a dot that announced itself would say the state twice.
     expect(dot?.textContent).toBe('');
+  });
+
+  test("it is the design's 7px mark, square, at every density", () => {
+    // The approved design draws a 7px dot. A density token here would shrink
+    // the mark with the gaps around it, and a round mark needs its two sides
+    // to agree or it is an ellipse.
+    const root = /\.crewlet-status-dot\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(/(?:^|;|\s)width:\s*([^;]+);/.exec(root)?.[1]?.trim()).toBe('7px');
+    expect(/(?:^|;|\s)height:\s*([^;]+);/.exec(root)?.[1]?.trim()).toBe('7px');
+    expect(root).toContain('border-radius: var(--radius-circle)');
   });
 
   test('the suite reads the tones the stylesheet actually declares', () => {

@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
+import { breakpoint } from '@crewlethq/tokens';
 import { TokenGlyph } from '@crewlethq/icons/glyphs';
 import { StatCard } from './index.js';
 import { StatGroup } from '../StatGroup/index.js';
@@ -157,13 +158,14 @@ describe('StatGroup', () => {
   });
 
   test('it drops to two columns where the engine drops its own row', () => {
-    // 900px is the shell breakpoint: a 280px rail plus a 620px content column,
-    // which is the width at which a four-up row of numbers stops having a
-    // column each. A media query cannot read a custom property, so the number
-    // is written out and this is what says it is still that number.
+    // Under the shell breakpoint, strictly, which is where the rail becomes a
+    // drawer and where the engine drops its own stat row. A media query cannot
+    // read a custom property, so the number is written out and this is what
+    // says it is still the shell's number, asked the shell's way.
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../StatGroup/StatGroup.css'), 'utf8');
-    expect(css).toContain('@media (max-width: 900px)');
-    const reduced = css.slice(css.indexOf('@media (max-width: 900px)'));
+    const query = `@media (width < ${breakpoint.shell})`;
+    expect(css).toContain(query);
+    const reduced = css.slice(css.indexOf(query));
     expect(reduced).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   });
 

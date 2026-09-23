@@ -8,7 +8,10 @@
  *
  * The breakpoint is written out because a media query cannot read a custom
  * property. It is the shell step from @crewlethq/tokens, and the CSS check
- * compares the literal against the token.
+ * compares the literal against the token. The query is STRICTLY UNDER it,
+ * (width < 1024px): the step is the rail, the inset and the sheet's floor
+ * added up, so at exactly that width the rail still fits, and the component's
+ * own matchMedia asks the same question.
  */
 
 .crewlet-app-shell {
@@ -342,7 +345,7 @@
   background: var(--color-surface-scrim);
 }
 
-@media (max-width: 900px) {
+@media (width < 1024px) {
   .crewlet-app-shell {
     grid-template-columns: minmax(0, 1fr);
   }

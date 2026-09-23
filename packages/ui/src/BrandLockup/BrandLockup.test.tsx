@@ -161,13 +161,20 @@ test('the lockup comes in under the rail head at every density', () => {
   };
   const markBox = Number(/--crewlet-brand-mark:\s*(\d+)px/.exec(css)?.[1] ?? '0');
   expect(markBox).toBeGreaterThan(0);
-  const leading = Number(
-    /--font-line-height-normal:\s*([\d.]+)/.exec(tokens)?.[1] ?? '0',
-  );
-  expect(leading).toBeGreaterThan(0);
-  const nameLine = step(named('.crewlet-brand__name', 'font-size')) * leading;
-  const contextLine = step(named('.crewlet-brand__context', 'font-size')) * leading;
-  const pad = step('spacing-2');
+  /* The leading each line NAMES, read off the token it names rather than
+     assumed: the two lines take the document's, and the document's moved. */
+  const leading = (selector: string) => {
+    const token = named(selector, 'line-height');
+    const value = Number(new RegExp(`--${token}:\\s*([\\d.]+);`).exec(tokens)?.[1] ?? '0');
+    expect(value).toBeGreaterThan(0);
+    return value;
+  };
+  const nameLine = step(named('.crewlet-brand__name', 'font-size')) * leading('.crewlet-brand__name');
+  const contextLine = step(named('.crewlet-brand__context', 'font-size')) * leading('.crewlet-brand__context');
+  /* The block padding the lockup's own rule names, first of its two values. */
+  const padding = /\.crewlet-brand\s*\{[^}]*?padding:\s*var\((--[\w-]+)\)/.exec(css)?.[1];
+  expect(padding).toBeTruthy();
+  const pad = step((padding ?? '').slice(2));
   const head = step('size-shell-topbar');
   /* The three steps --density takes. The mark and the type are fixed; only the
      padding scales, which is what makes comfortable the tall case. */

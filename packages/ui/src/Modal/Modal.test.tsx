@@ -22,6 +22,7 @@ import { useState } from 'react';
 import { afterEach, expect, test } from 'vitest';
 import { Modal } from './index.js';
 import { installCss, installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { atDensity, DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
 import { LayerHost } from '../Layer/index.js';
 import { HeadingLevelProvider, useHeadingLevel } from '../utils/headingLevel.js';
 
@@ -662,14 +663,51 @@ test("a sheet's head stands at the shell's bar height, and a dialog's does not",
     '<div class="crewlet-modal__header crewlet-modal__header--sheet"></div>' +
       '<div class="crewlet-modal__header"></div>',
   );
-  expect(px(sheetHead!, 'min-height')).toBe(64);
-  expect(px(sheetHead!, 'padding-top')).toBe(16);
+  expect(px(sheetHead!, 'min-height')).toBe(52);
+  expect(px(sheetHead!, 'padding-top')).toBe(4);
   expect(px(sheetHead!, 'padding-left')).toBe(24);
   // The dialog's head is unchanged: it is read in the same glance as the
   // question under it, and a taller band there is a gap before a sentence.
   expect(px(dialogHead!, 'min-height')).toBe(0);
   expect(px(dialogHead!, 'padding-top')).toBe(16);
   expect(px(dialogHead!, 'padding-left')).toBe(16);
+});
+
+/**
+ * AND IT STAYS AT THAT HEIGHT with what it holds. The bar is a fixed height
+ * and the controls scale with the density, so the head is only the bar's
+ * height while its padding and a full control step fit inside it: at 16px of
+ * padding a 32px button stood the head at 64px against a 52px bar, a kink
+ * across the window at the sheet's edge. Checked at the three densities,
+ * because comfortable is where the control step is tallest.
+ */
+test("a sheet's head holds a full control step inside the bar's height, at every density", () => {
+  const probe = (css: string, density: number, property: string) => {
+    const remove = installCss(atDensity(css, density));
+    const [element] = paint('<div class="probe"></div>');
+    try {
+      return px(element!, property);
+    } finally {
+      remove();
+      painted?.remove();
+      painted = null;
+    }
+  };
+  for (const [name, density] of DENSITIES) {
+    const remove = installSheetsAtDensity(density, 'Modal/Modal.css');
+    try {
+      const [head] = paint('<div class="crewlet-modal__header crewlet-modal__header--sheet"></div>');
+      const bar = px(head!, 'min-height');
+      const block = px(head!, 'padding-top') + px(head!, 'padding-bottom');
+      painted?.remove();
+      painted = null;
+      const control = probe('.probe { height: var(--size-control-md); }', density, 'height');
+      expect(control, name).toBeGreaterThan(0);
+      expect(block + control, `${name}: ${block}px of padding around a ${control}px control`).toBeLessThanOrEqual(bar);
+    } finally {
+      remove();
+    }
+  }
 });
 
 test("a sheet's fields start on the line its title does", () => {

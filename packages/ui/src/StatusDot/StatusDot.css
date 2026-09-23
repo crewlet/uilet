@@ -1,16 +1,21 @@
 /*
- * The status dot: a 6px mark in its tone's fill, beside the word it belongs
+ * The status dot: a 7px mark in its tone's fill, beside the word it belongs
  * to. See the component doc for why it is hidden from assistive technology.
+ *
+ * 7px is the approved design's dot. The size is written out rather than
+ * taken from a scale because it is the measure of one mark, not a step
+ * anything else shares, and it is fixed at every density: a mark read the
+ * way a glyph is does not shrink with the gaps around it.
  */
 
 .crewlet-status-dot {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: var(--radius-circle);
   /*
    * The quiet state is still a mark, so it takes the tertiary step rather than
-   * the decoration one the engine spends here: a 6px dot has to clear 3:1 to
+   * the decoration one the engine spends here: a 7px dot has to clear 3:1 to
    * be seen at all, and --color-text-muted measures 2.33:1 on a light page and
    * 2.25:1 on a dark one at their worst grounds. The tertiary step measures
    * 4.87:1 and 4.65:1 on the same pair, and is the nearest step that holds.

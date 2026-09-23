@@ -49,8 +49,15 @@ import { IconButton } from '../IconButton/index.js';
 import { focusables, useModalLayer } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
 
-/** Where the rail stops being a column beside the page and becomes a drawer. */
-const NARROW = `(max-width: ${breakpoint.shell})`;
+/**
+ * Where the rail stops being a column beside the page and becomes a drawer:
+ * STRICTLY UNDER the shell step. The step is the rail, the inset and the
+ * sheet's floor added up, so at exactly that width the wide layout fits, and
+ * `max-width` would draw the drawer at the one width the arithmetic says it
+ * is not needed. AppShell.css switches on the same query, and the suite holds
+ * the two to each other.
+ */
+const NARROW = `(width < ${breakpoint.shell})`;
 
 /** What the shell tells the components inside it. */
 interface AppShellContextValue {

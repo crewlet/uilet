@@ -8,8 +8,9 @@
  */
 
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { breakpoint, size } from '@crewlethq/tokens';
 import axe from 'axe-core';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { useState, type ReactNode } from 'react';
@@ -61,6 +62,58 @@ function installMedia(initial: boolean): { set: (matches: boolean) => void; rest
       if (had) Object.defineProperty(globalThis, 'matchMedia', had);
       else delete (globalThis as Record<string, unknown>).matchMedia;
     },
+  };
+}
+
+/**
+ * A media query list that ANSWERS its query, for a viewport of one width.
+ *
+ * The stub above answers whatever it is told, so it can drive the drawer
+ * across the breakpoint but cannot say WHERE the breakpoint is. This one reads
+ * the query the shell asks and evaluates it the way a browser would, over the
+ * four width features a layout switch is written with, and refuses anything
+ * else: a query it could not read would otherwise answer false and pass as the
+ * wide layout. Every query the shell asks is recorded, so a case can hold the
+ * stylesheet to the same one.
+ */
+function installViewport(width: number, asked: string[]): () => void {
+  const had = Object.getOwnPropertyDescriptor(globalThis, 'matchMedia');
+  const answer = (query: string): boolean => {
+    const feature = /^\((?:(width) ([<>]=?) |(max-width|min-width): )(\d*\.?\d+)px\)$/.exec(query.trim());
+    if (!feature) throw new Error(`the viewport stub cannot evaluate "${query}"`);
+    const limit = Number(feature[4]);
+    switch (feature[2] ?? feature[3]) {
+      case '<':
+        return width < limit;
+      case '<=':
+      case 'max-width':
+        return width <= limit;
+      case '>':
+        return width > limit;
+      default:
+        return width >= limit;
+    }
+  };
+  Object.defineProperty(globalThis, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: (query: string) => {
+      asked.push(query);
+      return {
+        matches: answer(query),
+        media: query,
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      };
+    },
+  });
+  return () => {
+    if (had) Object.defineProperty(globalThis, 'matchMedia', had);
+    else delete (globalThis as Record<string, unknown>).matchMedia;
   };
 }
 
@@ -315,6 +368,111 @@ test('the shell reports the layout and the scroller to what is inside it', () =>
   }
 });
 
+/**
+ * WHERE THE DRAWER TAKES OVER, and why it is there.
+ *
+ * `breakpoint.shell` is derived rather than chosen: the rail, the inset
+ * between the frame and the sheet, and the sheet the design needs to draw a
+ * list beside its detail (the Inbox, a 320px list beside a 460px detail). At
+ * exactly that width the sheet is exactly its floor, so the wide layout holds
+ * there and the drawer takes over one pixel under it.
+ */
+describe('the shell breakpoint', () => {
+  const shell = Number.parseFloat(breakpoint.shell);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
+
+  function Probe() {
+    return <p>narrow: {String(useAppShell().narrow)}</p>;
+  }
+
+  test('it is the rail, the inset and the sheet the two-pane Inbox needs, added up', () => {
+    // The arithmetic is asserted rather than commented, so the rail or the
+    // inset moving without the breakpoint fails here instead of shipping a
+    // wide layout whose sheet is narrower than the panes it has to hold.
+    const INBOX_LIST = 320;
+    const INBOX_DETAIL = 460;
+    const sheetFloor = INBOX_LIST + INBOX_DETAIL;
+    expect(sheetFloor).toBe(780);
+    expect(Number.parseFloat(size.shell.rail) + Number.parseFloat(size.shell.inset) + sheetFloor).toBe(shell);
+    expect(shell).toBe(1024);
+  });
+
+  test('the drawer takes over strictly under it, and not at it', () => {
+    const asked: string[] = [];
+    for (const [width, narrow] of [
+      [shell - 1, true],
+      [shell, false],
+      [shell + 1, false],
+    ] as const) {
+      const restore = installViewport(width, asked);
+      try {
+        render(
+          <AppShell sidebar={<Rail />} topbar={<AppShell.Topbar title="Overview" />}>
+            <Probe />
+          </AppShell>,
+        );
+        expect(screen.getByText(`narrow: ${String(narrow)}`), `at ${width}px`).toBeDefined();
+      } finally {
+        cleanup();
+        restore();
+      }
+    }
+    // One question, asked the same way every time.
+    expect(new Set(asked)).toEqual(new Set([`(width < ${breakpoint.shell})`]));
+  });
+
+  test('the stylesheet switches on the question the component asks', () => {
+    // The layout is drawn by the stylesheet and the drawer is driven by the
+    // component, so the two have to change shape at the same pixel: one
+    // switching at 1024 and the other under it draws the wide grid with the
+    // drawer's control, or a drawer the component does not know is there.
+    const asked: string[] = [];
+    const restore = installViewport(shell, asked);
+    try {
+      render(
+        <AppShell sidebar={<Rail />} topbar={<AppShell.Topbar title="Overview" />}>
+          <Probe />
+        </AppShell>,
+      );
+    } finally {
+      restore();
+    }
+    const queries = new Set(cssRules(css).map((rule) => rule.at).filter((at) => at.startsWith('@media') && !at.includes('prefers-')));
+    expect([...queries]).toEqual([`@media ${asked[0] ?? ''}`]);
+  });
+
+  test('every component that follows the shell switches with it', () => {
+    // A modal sheet going full width, a toolbar folding into its overflow, a
+    // search field dropping its label and a stat row going to two columns all
+    // happen "where the rail becomes a drawer", and each spells the number
+    // because a media query cannot read a token. Spelt as `max-width` it
+    // switches a pixel before the shell does, and at exactly the step the
+    // wide shell is drawn with a narrow toolbar in it.
+    const source = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+    const found: string[] = [];
+    for (const folder of readdirSync(source, { withFileTypes: true })) {
+      if (!folder.isDirectory()) continue;
+      for (const file of readdirSync(resolve(source, folder.name)).filter((name) => name.endsWith('.css'))) {
+        for (const rule of cssRules(readFileSync(resolve(source, folder.name, file), 'utf8'))) {
+          if (rule.at.startsWith('@media') && rule.at.includes(breakpoint.shell)) found.push(`${folder.name}/${file}: ${rule.at}`);
+        }
+      }
+    }
+    const strict = `@media (width < ${breakpoint.shell})`;
+    expect(found.filter((entry) => !entry.endsWith(`: ${strict}`))).toEqual([]);
+    // And the scan found the switches it is about, rather than passing over a
+    // tree it could not read.
+    const files = new Set(found.map((entry) => entry.split(':')[0]));
+    expect([...files].sort()).toEqual([
+      'AppShell/AppShell.css',
+      'Modal/Modal.css',
+      'SearchTrigger/SearchTrigger.css',
+      'StatGroup/StatGroup.css',
+      'Toolbar/Toolbar.css',
+    ]);
+  });
+});
+
 test('the scroller is handed to a ref the application owns', () => {
   const seen: (HTMLElement | null)[] = [];
   render(
@@ -406,7 +564,7 @@ test('nothing the open rail declares can outrank the layout it is drawn in', () 
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
   const rules = cssRules(css);
   const open = rules.filter((rule) => rule.at === '' && rule.selector === ".crewlet-app-shell__rail[data-open='true']");
-  const narrow = rules.filter((rule) => rule.at.startsWith('@media (max-width') && rule.selector === '.crewlet-app-shell__rail');
+  const narrow = rules.filter((rule) => rule.at === `@media (width < ${breakpoint.shell})` && rule.selector === '.crewlet-app-shell__rail');
   // A reading that found neither rule would pass the assertion below for any
   // stylesheet at all.
   expect(open).toHaveLength(1);
