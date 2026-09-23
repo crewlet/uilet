@@ -5,12 +5,15 @@ import { cx } from '../utils/cx.js';
 /**
  * What the bar is saying.
  *
- * `brand` is the ordinary reading, because a budget that is being spent is not
- * in a state; it is just a number. The three that ARE states are derived from
- * the fill unless a caller overrides them, so a bar that is nearly full says
- * so without every call site remembering to.
+ * `quantity` is the ordinary reading, because a budget that is being spent is
+ * not in a state; it is just a number. It is the first data series,
+ * `--color-data-1`: a meter is a figure of one quantity, and the label that
+ * names it is what a data hue asks for, where the accent it used to take
+ * means "act here" and a bar is not an action. The three that ARE states are
+ * derived from the fill unless a caller overrides them, so a bar that is
+ * nearly full says so without every call site remembering to.
  */
-export type MeterTone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral';
+export type MeterTone = 'quantity' | 'success' | 'warning' | 'danger' | 'neutral';
 
 /**
  * WHICH DIRECTION A FULL BAR POINTS, which is the one thing the fill itself
@@ -82,7 +85,7 @@ export interface MeterProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'
 export function meterTone(percent: number): MeterTone {
   if (percent >= 100) return 'danger';
   if (percent >= 75) return 'warning';
-  return 'brand';
+  return 'quantity';
 }
 
 /**
@@ -98,7 +101,7 @@ export function meterTone(percent: number): MeterTone {
  * out of a number the meter cannot interpret.
  */
 export function progressTone(percent: number): MeterTone {
-  return percent >= 100 ? 'success' : 'brand';
+  return percent >= 100 ? 'success' : 'quantity';
 }
 
 const RAMPS: Record<MeterPolarity, (percent: number) => MeterTone> = {

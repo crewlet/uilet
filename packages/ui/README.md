@@ -202,6 +202,39 @@ reader's path rather than taking the accent.
 | a stylesheet tinting `.crewlet-nav-item__row[aria-current='page']` with the accent | drop it: the row is raised with a hairline, and the hairline is its `outline` |
 | a stylesheet relying on `.crewlet-nav-item__badge--attention` being the warning tint | it is `--color-brand-accent` with `--color-text-on-accent` |
 
+**The chart ramp is four series, and a meter's ordinary reading is the first of
+them.** `@crewlethq/tokens` fits the state and chart hues to the approved design
+(info is working, warning needs a person, danger is stopped, success is done)
+and removes `--color-data-5`. `DATA_COLORS` has four entries and `dataColor(4)`
+is `DATA_COLOR_OTHER`, the residual, so every chart that colours by index
+(`BarList`, `Legend`, `StackedBar`, `TimeSeries`) draws its fifth series and
+beyond as "the rest". A series hue is legal only inside a figure that names it:
+a legend for two series or more, the label for one. That is what a `Meter` is,
+so its ordinary reading, the tone that is not a state, is `quantity`, painted in
+`--color-data-1`: the accent it used to take means "act here", and a bar is not
+something to act on. The three state tones and `neutral` are unchanged. The
+track is the raised rung, `--color-surface-elevated`, rather than the inset
+well: the palette suite measures a fill as a mark on the opaque rungs, and on
+the well the light warning and success fills measured 2.84:1 and 2.86:1. So a
+meter is drawn on a card, which is where the design puts every one: the palette
+holds raised a visible step above the card, and on the raised rung itself an
+opaque track has no edge, so the unfilled remainder, and with it the extent of
+the bar, would disappear. Do not draw a meter on a raised surface.
+
+**A failed row in a `List` marks itself with the danger ink.** The rail and the
+glyph of a `tone="danger"` item were the danger fill, which is measured to 3:1
+on the opaque surfaces alone, and a failed row can also be the selected one, on
+the accent tint. Both take `--color-feedback-danger-ink` now, the step the
+palette suite holds on every row ground, as `DataTable`'s rails already did.
+
+| Was | Is |
+|---|---|
+| `var(--color-data-5)`, or `dataColor(4)` read as a fifth hue | `DATA_COLOR_OTHER`: fold a fifth series into the rest, or split the figure |
+| `<Meter tone="brand">`, the `MeterTone` `'brand'`, `meterTone()` or `progressTone()` answering `'brand'` | `'quantity'` |
+| a stylesheet targeting `.crewlet-meter__fill[data-tone='brand']` | `.crewlet-meter__fill[data-tone='quantity']` |
+| a stylesheet relying on `.crewlet-meter__track` being `--color-surface-inset` | it is `--color-surface-elevated` |
+| a stylesheet overriding the `List` danger rail or glyph with `--color-feedback-danger` | `--color-feedback-danger-ink`, or nothing |
+
 ## Breaking changes in 0.3.0
 
 Every one of these is a change a consumer can see. None of them needs an edit

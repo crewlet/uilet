@@ -18,6 +18,9 @@ import { describe, test } from 'node:test';
 import {
   ACTION_STEPS,
   CARD_HAIRLINE,
+  DATA,
+  DATA_ADJACENT_DE,
+  DATA_ADJACENT_NORMAL_DE,
   describeFailure,
   fromOklab,
   hex,
@@ -72,6 +75,15 @@ function editBlock(css, opening, edit) {
  * names back, so a mutation that tripped a neighbour as well would say so.
  */
 function failuresAfter(palette, name, value) {
+  return [...new Set(checksAfter(palette, name, value).map((check) => check.rule))];
+}
+
+/**
+ * The failing checks themselves, for a case that asserts what was MEASURED as
+ * well as which rule went red, each once: light is edited in both of its
+ * blocks, and the attribute block's copy of every check is left out.
+ */
+function checksAfter(palette, name, value) {
   const [openings, states] =
     palette === 'dark'
       ? [[DARK_ROOT], ['dark']]
@@ -80,13 +92,14 @@ function failuresAfter(palette, name, value) {
   for (const opening of openings) {
     themes = editBlock(themes, opening, (body) => body.replace(new RegExp(`${name}: [^;]+;`), `${name}: ${value};`));
   }
-  return [
-    ...new Set(
-      runPalette({ ...sources, themes })
-        .failures.filter((check) => states.includes(check.state))
-        .map((check) => check.rule),
-    ),
-  ];
+  const failing = runPalette({ ...sources, themes }).failures.filter((check) => states.includes(check.state));
+  const seen = new Set();
+  return failing.filter((check) => {
+    const key = `${check.rule}|${check.subject}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /** The structural rules a theme file fails, by name. */
@@ -350,6 +363,89 @@ describe('the accent and the primary action', () => {
     assert.deepEqual(failuresAfter('light', fill, hex({ r: r + 2, g: g + 2, b: b + 2 })), [
       "the rail's current row lifts off the rail",
     ]);
+  });
+});
+
+describe('the state and chart hues', () => {
+  const { checks } = runPalette(sources);
+  const LABEL_RULE = 'a label clears 4.5:1 on its own fill';
+  const STATUS_RULE = 'status hues stay separable';
+  const DANGER_RULE = 'no data hue collides with danger';
+  const MARK_RULE = 'fill step clears 3:1 as a mark';
+  const ADJACENT_RULE = 'adjacent data hues stay separable';
+  const DESTRUCTIVE_RULE = ACTION_STEPS[2][0];
+  const summary = (check) => `${check.rule}: ${check.subject}: ${check.detail}`;
+
+  test('the chart ramp is four series, in every theme state and in the typed export', () => {
+    // A fifth series would have to sit between two of the four in a hue
+    // budget the reserved red and the accent have spent, so it is the
+    // residual; a state that still resolved a fifth would be a hue nothing
+    // measures against its neighbours.
+    assert.deepEqual(DATA, ['--color-data-1', '--color-data-2', '--color-data-3', '--color-data-4']);
+    for (const [state, values] of Object.entries(paletteStates(sources))) {
+      for (const name of DATA) assert.ok(parseHex(values.get(name) ?? ''), `${state}: ${name} is not an opaque colour`);
+      assert.equal(values.get('--color-data-5'), undefined, `${state} still declares --color-data-5`);
+    }
+    for (const palette of ['dark', 'light']) {
+      assert.deepEqual(Object.keys(typed[palette].color.data), ['1', '2', '3', '4', 'other'], palette);
+    }
+    for (const state of THEME_STATES) {
+      const pairs = checks.filter((check) => check.state === state && check.rule === ADJACENT_RULE).map((check) => check.subject);
+      assert.deepEqual(pairs, ['--color-data-1 vs --color-data-2', '--color-data-2 vs --color-data-3', '--color-data-3 vs --color-data-4'], state);
+    }
+  });
+
+  test("the design's stopped red is caught by its label, by deuteranopia and by the chart hues", () => {
+    // The approved #f26d6d carries a destructive action's white label at
+    // 2.92:1, and a deuteranopic reader finds it dE 5.7 from done (5.59
+    // against the design's own green, before either moved). It also sits
+    // under the floors the reserved red keeps from the orange, the aqua
+    // (protanopia 2.0) and the yellow, and under protanopia on the review
+    // phase's green.
+    const failing = checksAfter('dark', '--color-feedback-danger', '#f26d6d').map(summary);
+    assert.deepEqual(failing, [
+      `${LABEL_RULE}: --color-text-on-accent on --color-feedback-danger: 2.92:1 (worst on --color-feedback-danger on --color-surface-frame)`,
+      `${STATUS_RULE}: --color-feedback-success vs --color-feedback-danger: dE n30.4/p15.2/d5.7 >= 10`,
+      'a phase hue clears the status family: --color-phase-review vs --color-feedback-danger: dE n29.9/p2.2/d14.3 >= 8 normal, 6 dichromat',
+      `${DANGER_RULE}: --color-data-2: dE n7.8/p8.3/d7.3 >= 14 normal, 8 dichromat`,
+      `${DANGER_RULE}: --color-data-3: dE n28.7/p2.0/d14.0 >= 14 normal, 8 dichromat`,
+      `${DANGER_RULE}: --color-data-4: dE n13.6/p8.9/d7.0 >= 14 normal, 8 dichromat`,
+    ]);
+  });
+
+  test("the design's light yellow is caught as a mark nobody can see on the frame", () => {
+    // #eda100 on the light frame is 1.85:1, the palest mark the design draws,
+    // and the only rule it breaks: a yellow dark enough to be seen on a light
+    // page is an ochre.
+    assert.deepEqual(checksAfter('light', '--color-data-4', '#eda100').map(summary), [
+      `${MARK_RULE}: --color-data-4: 1.85:1 (worst on --color-surface-frame)`,
+    ]);
+  });
+
+  test('a neighbour that clears every dichromat floor is still caught under normal vision', () => {
+    // An olive fourth series beside the aqua third: dE 12.1 apart under both
+    // protanopia and deuteranopia, which the dichromat floor alone passes,
+    // and 11.6 under normal vision, two shades of one hue to every reader who
+    // sees colour. Nothing else it touches fails, so the normal-vision floor
+    // is the only thing standing between it and a chart.
+    const failing = checksAfter('dark', '--color-data-4', '#5a8100');
+    assert.deepEqual(failing.map(summary), [
+      `${ADJACENT_RULE}: --color-data-3 vs --color-data-4: dE n11.6/p12.1/d12.1 >= ${DATA_ADJACENT_NORMAL_DE} normal, ${DATA_ADJACENT_DE} every vision`,
+    ]);
+    assert.ok(failing[0].value >= DATA_ADJACENT_DE, 'the mutation has to clear the dichromat floor, or it proves nothing about the normal one');
+  });
+
+  test('a destructive action whose hover is its rest state is caught, in both palettes', () => {
+    // The danger fill carries a white label on a toast's destructive action,
+    // and its hover is the whole of the feedback there: a hover that IS the
+    // fill does not answer the pointer, and nothing else measures that.
+    for (const palette of ['dark', 'light']) {
+      const fill = typed[palette].color.feedback.danger;
+      assert.deepEqual(failuresAfter(palette, '--color-feedback-danger-hover', fill), [DESTRUCTIVE_RULE], palette);
+    }
+    for (const state of STATES) {
+      assert.equal(checks.filter((check) => check.state === state && check.rule === DESTRUCTIVE_RULE).length, 1, state);
+    }
   });
 });
 

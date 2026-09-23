@@ -7,7 +7,17 @@
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { ActivityStrip, BarList, dataColor, Legend, Sparkline, StackedBar, TimeSeries } from './index.js';
+import {
+  ActivityStrip,
+  BarList,
+  DATA_COLOR_OTHER,
+  DATA_COLORS,
+  dataColor,
+  Legend,
+  Sparkline,
+  StackedBar,
+  TimeSeries,
+} from './index.js';
 import { Card } from '../Card/index.js';
 import { inset, installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 
@@ -19,11 +29,21 @@ afterEach(() => {
   uninstall = null;
 });
 
-test('the data ramp runs out into the residual rather than round the houses', () => {
+test('the data ramp is four series, then runs out into the residual rather than round the houses', () => {
+  // Four hues, because four is what the palette suite holds apart under every
+  // vision; a fifth series is the residual, never a fifth colour.
+  expect(DATA_COLORS).toEqual([
+    'var(--color-data-1)',
+    'var(--color-data-2)',
+    'var(--color-data-3)',
+    'var(--color-data-4)',
+  ]);
+  expect(DATA_COLORS.length).toBe(4);
   expect(dataColor(0)).toBe('var(--color-data-1)');
-  expect(dataColor(4)).toBe('var(--color-data-5)');
-  expect(dataColor(5)).toBe('var(--color-data-other)');
-  expect(dataColor(97)).toBe('var(--color-data-other)');
+  expect(dataColor(3)).toBe('var(--color-data-4)');
+  expect(dataColor(4)).toBe(DATA_COLOR_OTHER);
+  expect(DATA_COLOR_OTHER).toBe('var(--color-data-other)');
+  expect(dataColor(97)).toBe(DATA_COLOR_OTHER);
 });
 
 test('a legend is a list of series, keyed by id', () => {

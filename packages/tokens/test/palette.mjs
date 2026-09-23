@@ -30,7 +30,7 @@
  * selector: themes.css is imported second and is what paints.
  */
 
-import { cascade, chroma, contrast, deltaE, flatten, parseHex, separation, VISIONS, withAlpha } from './color.mjs';
+import { cascade, chroma, contrast, deltaE, flatten, parseBlocks, parseHex, separation, VISIONS, withAlpha } from './color.mjs';
 
 export * from './color.mjs';
 
@@ -174,7 +174,34 @@ export const STATUS = [
   '--color-feedback-info',
 ];
 export const PHASE = ['--color-phase-onboarding', '--color-phase-execute', '--color-phase-review'];
-export const DATA = ['--color-data-1', '--color-data-2', '--color-data-3', '--color-data-4', '--color-data-5'];
+
+/**
+ * The chart series, in the order a figure assigns them: blue, orange, aqua and
+ * an ochre yellow, the four the approved design draws.
+ *
+ * FOUR, because four is what both floors below can hold at once. The design's
+ * four clear them with room (its tightest neighbours sit dE 19.8 apart under
+ * normal vision), and a fifth would have to sit between two of them in a hue
+ * budget the reserved red, the accent and a dichromat's collapse of red onto
+ * green have already spent.
+ */
+export const DATA = ['--color-data-1', '--color-data-2', '--color-data-3', '--color-data-4'];
+
+/**
+ * How far apart two NEIGHBOURING series sit: dE 9 under every vision, and dE
+ * 15 under normal vision on top of it.
+ *
+ * Neighbours, because a stacked bar, a legend and a line chart assign series
+ * in order and only neighbours touch. The dichromat floor is the budget a
+ * palette can afford once deuteranopia has folded red onto green; on its own
+ * it let a pair sit dE 9 apart for EVERY reader, which to full-colour vision
+ * is two shades of one hue rather than two series. The normal-vision floor is
+ * the companion gate of the validated categorical method the design's four
+ * hues come from: its worst adjacent pair clears dE 15 unsimulated, so a
+ * reader who sees every colour is never the one left squinting at a legend.
+ */
+export const DATA_ADJACENT_DE = 9;
+export const DATA_ADJACENT_NORMAL_DE = 15;
 
 /**
  * A fill with the label a component paints on it: the primary action at rest,
@@ -206,6 +233,13 @@ export const LABEL_ON_FILL = [
  * label rule above catches that number in dark; this rule is what catches the
  * same move in light, where the brightened step still measured 5.01:1 and
  * only its direction was wrong.
+ *
+ * The DESTRUCTIVE action is the other filled action, and it is held the same
+ * way: a toast's destructive action is the danger fill under the same white
+ * label, and its hover is --color-feedback-danger-hover. The danger fill is
+ * fitted from the design's stopped red and the design draws no hover for it,
+ * so this rule is what decides where its hover goes, as it decides the
+ * accent's: a step a reader can see, away from the label.
  */
 export const ACTION_STEPS = [
   ['a hovered primary action is a visible step away from its label', '--color-brand-accent-hover', '--color-brand-accent'],
@@ -213,6 +247,11 @@ export const ACTION_STEPS = [
     'a pressed primary action is a visible step past a hovered one',
     '--color-brand-accent-active',
     '--color-brand-accent-hover',
+  ],
+  [
+    'a hovered destructive action is a visible step away from its label',
+    '--color-feedback-danger-hover',
+    '--color-feedback-danger',
   ],
 ];
 export const ACTION_LABEL = '--color-text-on-accent';
@@ -484,7 +523,7 @@ export const SHADOW_STEPS = [
 ];
 
 // The cross-family floors are lower than the within-family ones because the
-// hue budget is finite (thirteen hues in a space deuteranopia collapses to
+// hue budget is finite (twelve hues in a space deuteranopia collapses to
 // blue, yellow and lightness) and because across families colour is never the
 // only signal: a Tag always renders its label, a status Callout always renders
 // its glyph, and the accent appears only as position. They are floors, not
@@ -497,10 +536,14 @@ const ACCENT_DICHROMAT = 8;
 // because it is the one hue that means the same thing everywhere in a product.
 // Its dichromat floor is the ACCENT's, not the phase family's: both rules
 // protect a RESERVED meaning from being claimed by something else, where the
-// phase rule only asks two ordinary families to stay apart. It is also the
-// most a green can carry. Red and green are one axis to a deuteranopic reader,
-// so the whole separation is lightness and chroma, and pushing this pair past
-// 9.5 takes the fourth series out of the green band altogether.
+// phase rule only asks two ordinary families to stay apart. Red, orange and
+// green fall onto one axis for a dichromat, so this is the floor the chart's
+// orange and aqua spend the most on: the approved aqua sat dE 0.73 from the
+// approved red under protanopia, and the approved orange 9.08 from it under
+// normal vision in dark and 7.45 in light. The fit moves the red further
+// than the orange or the aqua, darker, because it had to darken for its white
+// label anyway, and in dark it turns toward crimson as well, which spares the
+// orange more than it costs the red.
 const DANGER_NORMAL = 14;
 const DANGER_DICHROMAT = 8;
 
@@ -517,6 +560,17 @@ const THEME_ROOT = ':root';
 const LIGHT_MEDIA = '@media (prefers-color-scheme: light)';
 const LIGHT_MEDIA_SELECTOR = ':root:not([data-theme="dark"])';
 const LIGHT_ATTRIBUTE_SELECTOR = ':root[data-theme="light"]';
+
+/**
+ * The two sheets, each parsed ONCE, as sources cascade() reads. A measurement
+ * reads four states and three theme blocks out of them, and parsing both
+ * sheets over again for every read was most of what a runPalette call cost,
+ * which scripts/fit-palette.mjs makes tens of thousands of.
+ */
+const sheetsOf = ({ tokens, themes }) => ({
+  tokens: { name: 'tokens.css', blocks: parseBlocks(tokens) },
+  themes: { name: 'themes.css', blocks: parseBlocks(themes) },
+});
 
 /** The theme file's three blocks, each on its own, as the file declares it. */
 function themeBlocks(themesSource) {
@@ -539,9 +593,14 @@ function themeBlocks(themesSource) {
  * attribute, because they are two declarations a browser reaches by two
  * different routes and either can drift from the other.
  */
-export function paletteStates({ tokens, themes }) {
-  const tokensOnly = [{ name: 'tokens.css', css: tokens }];
-  const both = [...tokensOnly, { name: 'themes.css', css: themes }];
+export function paletteStates(sources) {
+  return statesOf(sheetsOf(sources));
+}
+
+/** paletteStates over sheets already parsed, which runPalette shares with the structural rules. */
+function statesOf(sheets) {
+  const tokensOnly = [sheets.tokens];
+  const both = [...tokensOnly, sheets.themes];
   const bare = (block) => block.atRule === null && block.selector === THEME_ROOT;
   const dark = cascade(both, bare);
   const withLight = (selector, atRule) =>
@@ -851,21 +910,24 @@ function checkState(state, values, profile, push) {
     );
   }
 
-  for (const [set, floor, adjacent, rule] of [
-    [PHASE, 10, false, 'phase hues stay separable'],
-    [STATUS, 10, false, 'status hues stay separable'],
-    [DATA, 9, true, 'adjacent data hues stay separable'],
+  for (const [set, floor, normal, adjacent, rule] of [
+    [PHASE, 10, 10, false, 'phase hues stay separable'],
+    [STATUS, 10, 10, false, 'status hues stay separable'],
+    [DATA, DATA_ADJACENT_DE, DATA_ADJACENT_NORMAL_DE, true, 'adjacent data hues stay separable'],
   ]) {
     // ADJACENT, not every pair, for the data ramp: a legend reader
     // distinguishes series 2 from series 3 because they sit next to each
-    // other, and demanding every pair of six be far apart is what forces a
-    // palette to spread until it is ugly.
+    // other, and demanding every pair be far apart is what forces a palette
+    // to spread until it is ugly. Its second floor is the normal-vision one;
+    // see DATA_ADJACENT_NORMAL_DE.
     const pairs = adjacent
       ? set.slice(0, -1).map((name, i) => [name, set[i + 1]])
       : set.flatMap((name, i) => set.slice(i + 1).map((other) => [name, other]));
+    const floors = normal > floor ? `${normal} normal, ${floor} every vision` : `${floor}`;
     for (const [a, b] of pairs) {
       const measured = separation(colour(a), colour(b));
-      say(rule, Math.min(...measured) >= floor, `${a} vs ${b}`, Math.min(...measured), `dE ${describe(measured)} >= ${floor}`);
+      const ok = Math.min(...measured) >= floor && measured[0] >= normal;
+      say(rule, ok, `${a} vs ${b}`, Math.min(...measured), `dE ${describe(measured)} >= ${floors}`);
     }
   }
 
@@ -884,9 +946,9 @@ function checkState(state, values, profile, push) {
   // Red means "this broke" everywhere in a product. A chart series that
   // happens to be red says so too, to a reader who is scanning for it, and
   // THAT READER IS OFTEN THE DICHROMAT ONE: red and green collapse onto one
-  // axis for them, so a chart's green series is the likeliest thing in the
-  // whole palette to be read as failure. Measured under normal vision alone
-  // this rule passed at dE 24.0 while the light ramp's fourth series sat 6.0
+  // axis for them, so a chart's aqua or orange series is the likeliest thing
+  // in the whole palette to be read as failure. Measured under normal vision
+  // alone this rule once passed at dE 24.0 while a green fourth series sat 6.0
   // from the danger red under deuteranopia.
   for (const name of DATA) {
     const measured = separation(colour(name), colour('--color-feedback-danger'));
@@ -894,10 +956,12 @@ function checkState(state, values, profile, push) {
     say('no data hue collides with danger', ok, name, Math.min(...measured), `dE ${describe(measured)} >= ${DANGER_NORMAL} normal, ${DANGER_DICHROMAT} dichromat`);
   }
 
-  // "The accent is the most saturated hue" cannot be kept on this palette:
-  // danger, both outer phase hues and two data hues out-saturate it. What the
-  // original rule was protecting is that nothing else reads as the selection,
-  // and that is a distance, not a saturation ranking.
+  // "The accent is the most saturated hue" was a rule once, and was dropped
+  // when danger, both outer phase hues and two data hues out-saturated the
+  // indigo it was. It happens to hold of the violet (chroma 23.7 dark, 24.0
+  // light, above every state and series), but a ranking is still not what
+  // protects the selection: nothing else may READ as it, and that is a
+  // distance, measured here under every vision.
   for (const name of [...PHASE, ...STATUS, ...DATA]) {
     const measured = separation(colour(name), colour('--color-brand-accent'));
     const ok = measured[0] >= ACCENT_NORMAL && Math.min(measured[1], measured[2]) >= ACCENT_DICHROMAT;
@@ -1067,14 +1131,15 @@ function checkStructure(sources, states, push) {
  * Measure the whole rule table over one built pair of stylesheets.
  * Returns every check with its measured value, and the failing subset.
  */
-export function runPalette({ tokens, themes }) {
-  const states = paletteStates({ tokens, themes });
+export function runPalette(sources) {
+  const sheets = sheetsOf(sources);
+  const states = statesOf(sheets);
   const checks = [];
   const push = (check) => checks.push(check);
   for (const [name, values] of Object.entries(states)) {
     checkState(name, values, name === 'base' ? 'base' : 'full', push);
   }
-  checkStructure({ themesSource: { name: 'themes.css', css: themes } }, states, push);
+  checkStructure({ themesSource: sheets.themes }, states, push);
   return { states, checks, failures: checks.filter((check) => !check.ok) };
 }
 

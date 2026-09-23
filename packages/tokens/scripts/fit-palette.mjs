@@ -56,24 +56,48 @@
  * cheaper total bought by pulling a passing value off the design, a frame
  * lightened to spare a chart series, is not a least move of the series.
  *
- * THE SEARCH is seeded: mulberry32 at SEED, and BUDGET evaluations of the
- * palette, in three shares. From the anchors it REPAIRS: a failing check is
- * taken in a seeded order, the roles it is about are RESEATED (the nearest
- * point to the role's anchor, on shells of growing radius, where fewer checks
+ * WHAT IT FITS AGAINST: every rule of the suite but the phase family's
+ * (UNFITTED). That family is measured and never fitted, and it is removed
+ * later in this release: held to it at the hues the family had, the search
+ * bends the states round hues that are not staying and ends at a palette the
+ * design moves further for (dE 42.74 against 35.12 in dark, 78.55 against
+ * 77.89 in light). So the phase hues moved out of the fitted states' way
+ * instead, each the least that clears the whole suite, which still holds them
+ * to every rule of their own.
+ *
+ * THE SEARCH is seeded, mulberry32 at SEED. From the anchors it first SEATS
+ * THE KIT'S STEPS, each role anchored at another (a press, a hover of an
+ * action) where its own rule holds, because at its anchor it is the value it
+ * is a step of, which that rule refuses. Then, in SEARCH_BUDGET evaluations of
+ * the palette, it REPAIRS: a failing check is taken in a seeded order, a
+ * role's own floors before a separation between two, the roles it is about
+ * are RESEATED (the nearest point to the role's anchor, on shells of growing
+ * radius that always carry the two ways along lightness, where fewer checks
  * fail and none fails worse), and when no one seat can do it, one role is
  * seated where its check holds and what that breaks is repaired in turn. Once
- * nothing fails it IMPROVES, walking a moved role back toward its anchor, or
- * nudging it and repairing and walking back the roles it shares a check with,
- * which is how a trade is found (the hover overlay against the tertiary step
- * it takes contrast from). The FINISH takes every moved role's profile, every
- * step near where it is as such a trade, and keeps the best; the last share
- * walks every role back once more. Same seed, same budget, same built sheets:
- * the same fit, to the byte.
+ * nothing fails it IMPROVES with what is left, walking a moved role back
+ * toward its anchor, or nudging it and repairing and walking back the roles it
+ * shares a check with, which is how a trade is found (the hover overlay
+ * against the tertiary step it takes contrast from).
  *
- * WHAT IT PRINTS, per palette: every role with its anchor, the value the fit
- * ships, the dE between them and, for a role the fit moved, the BINDING rule:
- * what fails when that role alone goes back to its anchor. Then the tokens
- * whose built value is not the fit, which is the edit the token files owe.
+ * THE FINISH then runs until no move it knows pays. It SETTLES first: every
+ * moved role walked back toward its anchor, and a hue reseated and its
+ * direction from the anchor TURNED until the seat is as near as the floors
+ * allow, again and again until none moves. Only a settled palette pays for a
+ * TRADE: a lightness or alpha step's PROFILE (every step near where it is,
+ * what each breaks repaired, the roles it binds walked back), and a hue's
+ * JOINT SEAT, nearer its anchor together with the roles measured ON it (an ink
+ * on its own fill's soft tint), which are repaired as it moves. After a trade
+ * is kept the palette settles again, and a role is tried again only once a
+ * role that held it has moved. Same seed, same built sheets: the same fit, to
+ * the byte.
+ *
+ * WHAT IT PRINTS, per palette: the evaluations the search and the finish
+ * took, and whether the finish ran until no move paid; every role with its
+ * anchor, the value the fit ships, the dE between them and, for a role the fit
+ * moved, the BINDING rule: what fails when that role alone goes back to its
+ * anchor. Then the tokens whose built value is not the fit, which is the edit
+ * the token files owe.
  *
  * It is a development tool. It is not published, and no test runs it or reads
  * what it prints: the gate is the palette suite, and this is how a value that
@@ -105,21 +129,36 @@ import {
 const SEED = 1;
 
 /**
- * The evaluations each palette is fitted in, every one a runPalette over the
- * candidate sheets. The fit is the best found within them, so a different
- * budget is a different fit; this one is where both palettes come out clean
- * and a larger one changes nothing the dark palette ships. The light palette,
- * which starts with four times as many failing checks, needs about half of it
- * to have none, and at 9000 did not always get there. It is about a minute a
- * palette.
+ * The evaluations the SEARCH is given, every one a runPalette over the
+ * candidate sheets. The light palette, which starts with 86 failing checks,
+ * has none after about 6300 of them, and the rest improve the clean palette
+ * with seeded moves. The seeded moves take a different path at a different
+ * length, and the finish converges from wherever they stop, so this number
+ * chooses among nearby fits rather than bounding one: at 18000 and at 24000
+ * the dark palette is the same palette, and the light one differs only in
+ * its danger red, the red's ink and hover and, at 18000, the success green,
+ * dE 0.19 and 0.80 dearer in all.
  */
-const BUDGET = 12000;
+const SEARCH_BUDGET = 12000;
+
+/**
+ * A ceiling on the FINISH, which runs until no move pays and is not meant to
+ * reach it: the light palette's finish converges in about 17000 evaluations
+ * and the dark's in about 3300, and the two whole fits take about two minutes
+ * and one. It is what stops
+ * a finish that a rule table made grind through ever smaller wins, and the
+ * fit says so when it stopped there, because a finish that did is not a
+ * least move.
+ */
+const FINISH_CEILING = 60000;
 
 /**
  * How far a state or series hue may turn from the design's, in degrees of
- * OKLCh hue, either way. A hue family is a range, and the widest turn the
- * plan's indicative fits make is the light chart yellow's to an ochre, 12
- * degrees; at 15 a red is still a red rather than an orange.
+ * OKLCh hue, either way. A hue family is a range, and the widest turns the fit
+ * makes are the light warning amber's and the light chart yellow's toward
+ * red, darkening to ochres, and the dark danger red's toward crimson, away
+ * from the chart orange: 10.4, 9.9 and 9.9 degrees. At 15 a red is still a
+ * red rather than an orange or a pink.
  */
 const HUE_FAMILY = 15;
 
@@ -134,16 +173,6 @@ const HUE_FAMILY = 15;
  */
 const LADDERS = [OPAQUE_SURFACES, [...TEXT_STEPS.map(([token]) => token), '--color-text-muted']];
 
-/**
- * How the budget is spent. The search is where a palette with failing checks
- * becomes one without, and it gets most; the finish trades what the search
- * left; the rest is the last walk back, every role toward its anchor once,
- * which has to have evaluations left to run at all or the fit ships a step
- * longer than it needs, the one thing it exists to stop.
- */
-const SEARCH_SHARE = 0.6;
-const FINISH_SHARE = 0.3;
-
 /** The least move, in dE, the finish tries to win back: a hundredth of a step a reader can see. */
 const FINISH_FLOOR = 0.03;
 
@@ -156,12 +185,40 @@ const FINISH_FLOOR = 0.03;
 const FINISH_REACH = 8;
 
 /**
+ * How a hue's seat is TURNED toward its anchor: the direction from the anchor
+ * to the seat is rotated REFINE_FIRST degrees each of four ways, and kept where
+ * the least radius along it that clears is nearer; then half that, down to
+ * REFINE_LAST, each direction walked back in REFINE_STEPS halvings. A shell's
+ * twelve drawn directions put one within about 50 degrees of any, and a seat
+ * walked back along one of them is only as near as that direction lets it be:
+ * the light chart aqua shipped dE 6.76 from the design where its own floor,
+ * with every other value held, allowed 6.43. 24 degrees is half that spread;
+ * at 1.5 a turn moves a seat dE 15 out by 0.4, about an 8-bit step, and seven
+ * halvings put the walk back within a 128th of its reach.
+ */
+const REFINE_FIRST = 24;
+const REFINE_LAST = 1.5;
+const REFINE_STEPS = 7;
+
+/**
+ * A JOINT SEAT's reach: on a shell, the JOINT_POINTS points that fail the
+ * fewest checks, each walked back toward the anchor in JOINT_STEPS halvings of
+ * the band between the shell and the one inside it. Every point of a joint
+ * seat is a trade that reseats an ink, tens of evaluations, which makes it the
+ * dearest move the fit has, so it is spent on the points nearest to holding;
+ * five halvings of the widest band a hue walks (dE 8 to 16) land within dE
+ * 0.25 of the least radius.
+ */
+const JOINT_POINTS = 4;
+const JOINT_STEPS = 5;
+
+/**
  * The shells a reseat looks on: radii from SHELL_FIRST to SHELL_LAST dE,
- * doubling, with SHELL_POINTS directions on each for a hue and the two ways
- * along its axis for any other role. The first is under a step a reader could
- * see and the last is past the widest move the plan's indicative fits make
- * (the light chart yellow's, dE 13.6); twelve points put one within about 50
- * degrees of any direction.
+ * doubling, with the two ways along lightness and SHELL_POINTS drawn
+ * directions on each for a hue, and the two ways along its axis for any other
+ * role. The first is under a step a reader could see and the last is past the
+ * widest move the fit makes (the dark danger red's, dE 13.4); twelve drawn
+ * points put one within about 50 degrees of any direction.
  */
 const SHELL_FIRST = 0.25;
 const SHELL_LAST = 32;
@@ -205,6 +262,10 @@ const ANCHORS = {
     why: "a step of the accent: the design's brightness(1.08) moves toward the white label",
   },
   '--color-brand-accent-active': { of: '--color-brand-accent-hover', why: 'the design draws no pressed primary action' },
+  '--color-feedback-danger-hover': {
+    of: '--color-feedback-danger',
+    why: "a step of the danger fill: the design draws no hover for the destructive action",
+  },
 };
 
 /**
@@ -216,6 +277,9 @@ const TIES = {
   '--color-surface-glass': '--color-surface-subtle', // glass is the card at 0.90
   '--color-border-hover': '--color-border-strong', // the hover border keeps the strong step's value
 };
+
+/** The checks the fit does not fit against: every one about a phase hue. See WHAT IT FITS AGAINST. */
+const UNFITTED = /--color-phase-/;
 
 /** The hues that are a family rather than a value: the four states and the chart series. */
 const HUE_FAMILIES = [/^--color-feedback-(info|warning|danger|success)(-ink)?$/, /^--color-data-\d+$/];
@@ -447,6 +511,18 @@ function fitPalette(name, sources, intent) {
   }
 
   /**
+   * How far a role is from its anchor as a reader sees it, which is what the
+   * table prints and what FINISH_FLOOR is compared with: for a translucent
+   * role its farthest rung, where the cost sums the four.
+   */
+  function distanceOf(role, values) {
+    const value = values.get(role.token);
+    const anchor = anchorOf(role, values);
+    if (role.kind === 'hex') return deltaE(parseHex(value), parseHex(anchor));
+    return Math.max(...overRungs(value, anchor, values));
+  }
+
+  /**
    * The anchor in the role's own parameters: no offset for a role anchored at
    * another, the design's OKLCh for a hex role, and for a translucent one the
    * alpha whose composites over the rungs sit closest to the design's.
@@ -480,7 +556,8 @@ function fitPalette(name, sources, intent) {
 
   let evaluations = 0;
   const cache = new Map();
-  const failing = (values) => runPalette(sheets(values)).failures.filter((check) => palette.states.includes(check.state) || check.state === 'the token files');
+  const fitted = (check) => (palette.states.includes(check.state) || check.state === 'the token files') && !UNFITTED.test(check.subject);
+  const failing = (values) => runPalette(sheets(values)).failures.filter(fitted);
   function measure(params) {
     const values = render(params);
     const key = [...values.values()].join('|');
@@ -508,7 +585,7 @@ function fitPalette(name, sources, intent) {
     const rank = failures.some((check) => check.rule === DISORDER) ? Infinity : failures.length;
     return { params, values, failures, rank, cost, kit, keys: new Set(failures.map(keyOf)), failing: new Map(failures.map((check) => [keyOf(check), check])) };
   }
-  let limit = BUDGET;
+  let limit = SEARCH_BUDGET;
   const spent = () => evaluations >= limit;
   const EPSILON = 1e-9;
   const cheaper = (a, b) => a.cost < b.cost - EPSILON || (Math.abs(a.cost - b.cost) <= EPSILON && a.kit < b.kit - EPSILON);
@@ -585,7 +662,7 @@ function fitPalette(name, sources, intent) {
 
   const measured = (values) => {
     evaluations += 1;
-    return runPalette(sheets(values)).checks.filter((check) => palette.states.includes(check.state));
+    return runPalette(sheets(values)).checks.filter((check) => palette.states.includes(check.state) && fitted(check));
   };
   const atStart = new Map(measured(start.values).map((check) => [keyOf(check), check]));
   const SENSE = { L: 0.02, C: 0.02, h: 5, a: 0.02 };
@@ -647,72 +724,183 @@ function fitPalette(name, sources, intent) {
   }
 
   /**
-   * One role's points at a distance from its anchor, in dE: a hue's are
+   * One role's points at a distance from its anchor, in dE: a hue's are the
+   * two ways along lightness, keeping its hue and chroma, and then
    * SHELL_POINTS directions drawn from the seeded stream, in OKLab, inside its
    * hue family; a lightness step's and an alpha's are the two ways along
-   * their one axis.
+   * their one axis. The lightness pair is always there because it is the move
+   * a hue's own floors most often ask for (a mark too light for the frame, a
+   * fill too light for its white label) and the one every hand fit made, and
+   * twelve drawn directions can miss it by 50 degrees: a chart yellow darkened
+   * on a drawn direction instead came back dE 25 from the design, twice the
+   * move lightness alone needed.
    */
   function around(role, anchor, radius) {
     if (role.kind === 'alpha') return [1, -1].map((sign) => clamp(role, { a: anchor.a + (sign * radius) / 100 }));
     if (role.axes.length === 1) return [1, -1].map((sign) => clamp(role, { ...anchor, L: anchor.L + (sign * radius) / 100 }));
-    const centre = { L: anchor.L, a: anchor.C * Math.cos((anchor.h * Math.PI) / 180), b: anchor.C * Math.sin((anchor.h * Math.PI) / 180) };
-    return Array.from({ length: SHELL_POINTS }, () => {
-      const [dL, da, db] = unit();
-      const [a, b] = [centre.a + (da * radius) / 100, centre.b + (db * radius) / 100];
-      return clamp(role, { L: centre.L + (dL * radius) / 100, C: Math.hypot(a, b), h: (Math.atan2(b, a) * 180) / Math.PI });
-    });
+    return [[1, 0, 0], [-1, 0, 0], ...Array.from({ length: SHELL_POINTS }, unit)].map((direction) => pointAt(role, anchor, direction, radius));
+  }
+
+  /** A hue's parameters as an OKLab point. */
+  const labOf = ({ L, C, h }) => ({ L, a: C * Math.cos((h * Math.PI) / 180), b: C * Math.sin((h * Math.PI) / 180) });
+
+  /** A hue's point a distance in dE from its anchor, along a unit OKLab direction, kept inside its family. */
+  function pointAt(role, anchor, [dL, da, db], radius) {
+    const centre = labOf(anchor);
+    const [a, b] = [centre.a + (da * radius) / 100, centre.b + (db * radius) / 100];
+    return clamp(role, { L: centre.L + (dL * radius) / 100, C: Math.hypot(a, b), h: (Math.atan2(b, a) * 180) / Math.PI });
+  }
+
+  /** Where a hue's seat lies from its anchor: the unit OKLab direction and the distance in dE. */
+  function rayOf(anchor, seat) {
+    const [from, to] = [labOf(anchor), labOf(seat)];
+    const v = [to.L - from.L, to.a - from.a, to.b - from.b];
+    const length = Math.hypot(...v);
+    return { direction: length > 0 ? v.map((x) => x / length) : [1, 0, 0], radius: length * 100 };
   }
 
   /**
    * The nearest SEAT for one role that clears checks, the others held where
-   * they are: points on shells round its ANCHOR, of doubling radius, the best
-   * on the first shell that has one, then the least radius along that point's
-   * own direction that still clears as many. Round the anchor, not round
-   * where the role now is: a hue that went the wrong way comes back the
-   * moment the others let it, instead of walking on from its mistake. A red
-   * that must carry a white label and part from a green is darker and a
-   * little bluer, and looking on a shell finds that where walking one axis
-   * and then the next finds the first way out, lighter, which sinks the label.
+   * they are: points on shells round its ANCHOR, of doubling radius, and on
+   * the first shell that has any, every point that leaves the fewest checks
+   * failing is taken back along its own direction to the least radius that
+   * still clears as many, and the nearest of those is the seat. Every such
+   * point rather than the first: on one shell they all cost the shell's
+   * radius, so which of them is nearest is only known once each is walked
+   * back, and the one a shell happened to list first is a random direction.
+   * Round the anchor, not round where the role now is: a hue that went the
+   * wrong way comes back the moment the others let it, instead of walking on
+   * from its mistake. A red that must carry a white label and part from a
+   * green is darker and a little bluer, and looking on a shell finds that
+   * where walking one axis and then the next finds the first way out,
+   * lighter, which sinks the label.
+   *
+   * To IMPROVE a hue, the seat found is then TURNED (below), and so is the
+   * seat the hue already has when no shell holds a nearer one: a seat found
+   * on a drawn direction is the nearest along that direction, not the
+   * nearest there is.
    */
   function reseat(from, role, mode) {
     const anchor = anchorParams(role, from.values);
-    let best = null;
+    let found = [];
     let inside = 0;
+    let reach = 0;
     for (let radius = SHELL_FIRST; radius <= SHELL_LAST && !spent(); radius *= 2) {
       for (const params of around(role, anchor, radius)) {
         const candidate = measure(new Map(from.params).set(role.token, params));
-        if (clears(candidate, from, mode) && (best === null || better(candidate, best.candidate))) best = { candidate, params, radius, inside };
+        if (clears(candidate, from, mode)) found.push({ candidate, params });
       }
-      if (best !== null) break;
+      if (found.length > 0) {
+        reach = radius;
+        break;
+      }
       inside = radius;
     }
-    if (best === null) return null;
-    // Back along the point's own direction to the least radius that clears as many.
+    const turns = mode === 'improve' && role.axes.length > 1;
+    if (found.length === 0) {
+      if (!turns) return null;
+      const turned = turnSeat(from, role, anchor, from, mode);
+      return turned === from ? null : turned;
+    }
+    const fewest = Math.min(...found.map(({ candidate }) => candidate.rank));
+    found = found.filter(({ candidate }) => candidate.rank === fewest);
     const atAnchor = new Map(from.params).set(role.token, anchor);
-    const reach = best.radius;
-    let [low, high] = [best.inside / reach, 1];
-    for (let i = 0; i < 6 && !spent(); i += 1) {
+    let best = null;
+    for (const seat of found) {
+      // Back along the point's own direction to the least radius that clears as many.
+      let [low, high] = [inside / reach, 1];
+      let kept = seat.candidate;
+      for (let i = 0; i < 6 && !spent(); i += 1) {
+        const t = (low + high) / 2;
+        const candidate = measure(toward(atAnchor, role, seat.params, t));
+        if (clears(candidate, from, mode) && candidate.rank <= kept.rank) [high, kept] = [t, candidate];
+        else low = t;
+      }
+      if (best === null || better(kept, best)) best = kept;
+    }
+    return turns ? turnSeat(from, role, anchor, best, mode) : best;
+  }
+
+  /**
+   * A hue's seat TURNED toward its anchor: the direction from the anchor to
+   * the seat rotated REFINE_FIRST degrees each of four ways, and moved to
+   * whichever clears nearer the anchor, until none does; then the same at
+   * half the angle, down to REFINE_LAST. A seat on a smooth floor sits where
+   * the floor is nearest the anchor, and rotating toward that point shortens
+   * the walk back at every step, which drawing more directions only does by
+   * chance.
+   */
+  function turnSeat(from, role, anchor, seat, mode) {
+    const cross = (u, v) => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    const unitOf = (v) => v.map((x) => x / Math.hypot(...v));
+    let best = seat;
+    let { direction, radius } = rayOf(anchor, seat.params.get(role.token));
+    for (let angle = REFINE_FIRST; angle >= REFINE_LAST && !spent(); angle /= 2) {
+      const [cos, sin] = [Math.cos((angle * Math.PI) / 180), Math.sin((angle * Math.PI) / 180)];
+      for (let turned = true; turned && !spent(); ) {
+        turned = false;
+        const across = unitOf(cross(direction, Math.abs(direction[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]));
+        const sideways = cross(direction, across);
+        for (const way of [across, across.map((x) => -x), sideways, sideways.map((x) => -x)]) {
+          const next = nearestAlong(from, role, anchor, unitOf(direction.map((x, i) => x * cos + way[i] * sin)), radius, mode);
+          if (next === null || !better(next, best)) continue;
+          best = next;
+          ({ direction, radius } = rayOf(anchor, best.params.get(role.token)));
+          turned = true;
+          break;
+        }
+      }
+    }
+    return best;
+  }
+
+  /** The least radius along one direction from a hue's anchor, up to `reach`, that clears, or null if even `reach` does not. */
+  function nearestAlong(from, role, anchor, direction, reach, mode) {
+    const at = (t) => measure(new Map(from.params).set(role.token, pointAt(role, anchor, direction, reach * t)));
+    let kept = at(1);
+    if (!clears(kept, from, mode)) return null;
+    let [low, high] = [0, 1];
+    for (let i = 0; i < REFINE_STEPS && !spent(); i += 1) {
       const t = (low + high) / 2;
-      const candidate = measure(toward(atAnchor, role, best.params, t));
-      if (clears(candidate, from, mode) && candidate.rank <= best.candidate.rank) [high, best] = [t, { ...best, candidate }];
+      const candidate = at(t);
+      if (clears(candidate, from, mode)) [high, kept] = [t, candidate];
       else low = t;
     }
-    return best.candidate;
+    return kept;
+  }
+
+  /**
+   * The next failing check a repair takes: one about a single role before one
+   * about a pair, and in a seeded order within each. A check about one role is
+   * a floor of that role's own (a mark too light for the frame, a label under
+   * the text floor), and where it sends the role does not depend on anything
+   * else; a separation between two roles does. Parted first, a pair is parted
+   * from a place one of them is about to leave: the chart orange darkened to
+   * clear a red that its own label then took darker still, and the light
+   * palette ended with its warning fill stranded under 3:1, boxed in by
+   * neighbours that had moved for hues that were not staying.
+   */
+  function nextCheck(checks) {
+    const own = checks.filter((check) => about(check).length === 1);
+    const pool = own.length > 0 ? own : checks;
+    const check = pool[Math.floor(rng() * pool.length)];
+    checks.splice(checks.indexOf(check), 1);
+    return check;
   }
 
   /**
    * The seat that clears a check, and the most checks with it. The failing
-   * checks are taken in a seeded order; for the first that a role it is ABOUT
-   * can clear, each such role is reseated, and the seat leaving the fewest
-   * checks failing is taken, the least dE breaking a tie. A seat that breaks
-   * nothing is preferred to one that trades a failure for a failure, which is
-   * only looked for when no check has one.
+   * checks are taken in the order nextCheck gives; for the first that a role
+   * it is ABOUT can clear, each such role is reseated, and the seat leaving
+   * the fewest checks failing is taken, the least dE breaking a tie. A seat
+   * that breaks nothing is preferred to one that trades a failure for a
+   * failure, which is only looked for when no check has one.
    */
   function repair(from, exclude = null, depth = 1) {
     const fixable = () => from.failures.filter((check) => about(check).some((token) => token !== exclude));
     for (const mode of ['clean', 'net']) {
       for (let checks = fixable(); checks.length > 0 && !spent(); ) {
-        const check = checks.splice(Math.floor(rng() * checks.length), 1)[0];
+        const check = nextCheck(checks);
         let best = null;
         for (const token of about(check)) {
           if (token === exclude) continue;
@@ -730,7 +918,7 @@ function fitPalette(name, sources, intent) {
     // only then does the yellow's seat pay.
     if (depth > LOOKAHEAD) return null;
     for (let checks = fixable(); checks.length > 0 && !spent(); ) {
-      const check = checks.splice(Math.floor(rng() * checks.length), 1)[0];
+      const check = nextCheck(checks);
       for (const token of about(check)) {
         if (token === exclude) continue;
         const seat = reseat(from, roles.get(token), check);
@@ -743,10 +931,10 @@ function fitPalette(name, sources, intent) {
     return null;
   }
 
-  function repairAll(from, exclude = null, steps = Infinity) {
+  function repairAll(from, exclude = null, steps = Infinity, depth = 1) {
     let at = from;
     for (let i = 0; i < steps && at.rank > 0 && !spent(); i += 1) {
-      const next = repair(at, exclude);
+      const next = repair(at, exclude, depth);
       if (next === null) break;
       at = next;
     }
@@ -790,12 +978,24 @@ function fitPalette(name, sources, intent) {
     return best;
   }
 
-  /** Move one role anyway, repair what that breaks with the others, and walk them back. */
-  function trade(from, role, params, partners = coupled.get(role.token)) {
-    let trial = repairAll(measure(params), role.token, 6);
+  /**
+   * Move one role anyway, repair what that breaks with the others, and walk
+   * the partners back: the palette that leaves, clean, or null when what the
+   * move broke could not all be repaired. Whether it is cheaper is the
+   * caller's question, since a finish walking a trade toward the anchor keeps
+   * a point that costs more to learn where the one that costs less lies.
+   */
+  function traded(role, params, partners, depth = 1) {
+    let trial = repairAll(measure(params), role.token, 6, depth);
     if (trial.rank > 0) return null;
     for (const other of partners) trial = relax(trial, roles.get(other)) ?? trial;
-    return cleanAndCheaper(trial, from) ? trial : null;
+    return trial;
+  }
+
+  /** A trade the design moves less for, or null. */
+  function trade(from, role, params, partners = coupled.get(role.token)) {
+    const trial = traded(role, params, partners);
+    return trial !== null && cleanAndCheaper(trial, from) ? trial : null;
   }
 
   /**
@@ -811,7 +1011,7 @@ function fitPalette(name, sources, intent) {
     return moved(from.params, role, axis, (rng() < 0.5 ? -1 : 1) * STEP[axis] * 2 ** (rng() * 8));
   };
 
-  /** One search from a palette: repair until nothing fails, then improve, until its share is spent. */
+  /** One search from a palette: repair until nothing fails, then improve, until SEARCH_BUDGET is spent. */
   function search(from) {
     let current = from;
     for (let idle = 0; !spent() && idle < 1000; ) {
@@ -846,23 +1046,54 @@ function fitPalette(name, sources, intent) {
     return current;
   }
 
-  limit = BUDGET * SEARCH_SHARE;
-  current = search(start);
+  limit = SEARCH_BUDGET;
 
-  // --- the finish: every trade that still pays --------------------------------
+  // THE KIT'S STEPS ARE SEATED FIRST. A role anchored at another starts AT it,
+  // offset zero, which is a point its own rule refuses by construction: a
+  // press that is the hover, a hover that is the rest state. Repaired in turn
+  // with everything else, such a step is often seated last, after every ink
+  // and text step measured on it has been seated against the refused point,
+  // and then it cannot move without breaking all of them at once: the light
+  // palette ended with its pressed row still the hover, under inks that
+  // cleared 4.5:1 on a press that could not ship. So before the search each
+  // is seated where its own checks hold, whatever that breaks, and the design
+  // is repaired around it; the objective still walks it back toward its
+  // anchor as far as the floors let it.
+  let seated = start;
+  for (const role of order) {
+    if (role.of === undefined) continue;
+    for (const check of seated.failures) {
+      if (!about(check).includes(role.token) || !seated.keys.has(keyOf(check))) continue;
+      seated = reseat(seated, role, check) ?? seated;
+    }
+  }
+  current = search(seated);
+  const searched = evaluations;
+
+  // --- the finish: until no move pays -----------------------------------------
   //
-  // The search ends where its share of the budget runs out, which is not
-  // necessarily where no trade helps: a role it pushed early can hold its
-  // neighbours further from the design than they need to be (a hover a step
-  // stronger than it need be holds the tertiary step lighter). So the finish
-  // takes each moved role in turn, the design's own before the kit's and the
-  // dearest first, and takes its PROFILE (below): every step near where it
-  // is, each one repairing what it breaks and walking back the roles it BINDS
-  // (those whose check fails, back at their own anchor, on a measurement this
-  // role moves), and keeps the best if the design moved less. A hue is
-  // reseated instead, nearer its anchor where the others allow. Passes repeat
-  // until one keeps nothing.
-  limit = BUDGET * (SEARCH_SHARE + FINISH_SHARE);
+  // The search ends where its budget runs out, which is not where no move
+  // helps: a role it pushed early can hold its neighbours further from the
+  // design than they need to be, and a hue it seated on a drawn direction is
+  // only as near its anchor as that direction allows. So the finish SETTLES
+  // the palette, and then TRADES, and settles again after every trade it
+  // keeps, until nothing it tries pays.
+  //
+  // To settle, every moved role is walked back toward its anchor (relax), and
+  // a hue that cannot walk is reseated and turned (reseat), over and over
+  // until none moves. A trade is dearer, a repair per step, so it is only
+  // tried on a settled palette: for a lightness or alpha step its PROFILE
+  // (below), for a hue its JOINT SEAT (below). Roles are taken the design's
+  // own before the kit's and the dearest first, and none under FINISH_FLOOR:
+  // an inset whose design is drawn in black where the kit's is drawn in its
+  // own near-black is dE 0.01 away, and trading it against everything drawn
+  // on it buys nothing.
+  //
+  // A role is tried again only once a role that HELD it has moved: one named
+  // by, or moving the measurement of, a check that fails when it alone goes
+  // back to its anchor. A move anywhere else leaves the checks that held it
+  // as they were, so a try that found nothing would find nothing again.
+  limit = searched + FINISH_CEILING;
   const lineage = (token) => (roles.get(token)?.of === undefined ? [token] : [token, ...lineage(roles.get(token).of)]);
   function boundBy(role) {
     const out = [];
@@ -873,55 +1104,155 @@ function fitPalette(name, sources, intent) {
     }
     return out;
   }
+
   /**
-   * A PROFILE of one role along its axis: every offset within FINISH_REACH of
-   * its smallest step either way, each a trade, and the best of them. Every
-   * offset rather than a walk that stops at the first one that does not pay,
-   * because the partners' walks back land on whole hex steps: a hover a
-   * thousandth weaker can leave the tertiary step on the same hex and cost
-   * more, where two thousandths weaker takes it a step back and costs less.
+   * A PROFILE of one lightness or alpha role: each offset along its axis out
+   * to FINISH_REACH of its smallest step either way, each a trade that
+   * repairs what the offset breaks and walks back the roles this one BINDS
+   * (those whose check fails, back at their own anchor, on a measurement this
+   * role moves), and the best of them. Every offset rather than a walk that
+   * stops at the first one that does not pay, because the partners' walks
+   * back land on whole hex steps: a hover a thousandth weaker can leave the
+   * tertiary step on the same hex and cost more, where two thousandths weaker
+   * takes it a step back and costs less. A side does stop at the first offset
+   * whose breakage no repair clears, because the next one breaks as much
+   * again. Its repairs do not look ahead: a trade that needs a chain of seats
+   * is the search's to find.
    */
   function profile(role) {
     const axis = role.axes[0];
     const partners = boundBy(role);
-    if (partners.length === 0) return relax(current, role, 12);
+    if (partners.length === 0) return null;
     let best = null;
-    for (let offset = -FINISH_REACH; offset <= FINISH_REACH && !spent(); offset += 1) {
-      if (offset === 0) continue;
-      const next = trade(current, role, moved(current.params, role, axis, offset * STEP[axis]), partners);
-      if (next !== null && (best === null || better(next, best))) best = next;
+    for (const sign of [-1, 1]) {
+      for (let offset = 1; offset <= FINISH_REACH && !spent(); offset += 1) {
+        const trial = traded(role, moved(current.params, role, axis, sign * offset * STEP[axis]), partners, LOOKAHEAD + 1);
+        if (trial === null) break;
+        if (cleanAndCheaper(trial, current) && (best === null || better(trial, best))) best = trial;
+      }
     }
     return best;
   }
-  // None under FINISH_FLOOR: an inset whose design is drawn in black where the
-  // kit's is drawn in its own near-black costs 0.01, and trading it against
-  // everything drawn on it buys nothing.
-  for (let kept = true; kept && !spent(); ) {
-    kept = false;
-    const finishing = order
-      .map((role) => ({ role, cost: costOf(role, current.values) }))
-      .filter(({ cost }) => cost >= FINISH_FLOOR)
-      .sort((a, b) => (a.role.kit === b.role.kit ? b.cost - a.cost : a.role.kit ? 1 : -1))
+
+  /**
+   * A hue's JOINT SEAT: nearer its anchor TOGETHER with the roles measured ON
+   * it, each repaired as it moves. An ink is held to 4.5:1 on its own fill's
+   * soft tint and on a code chip over that tint, so a fill that walks back
+   * toward the design moves the ground its ink was seated on: the light
+   * danger red, back at the design's hue and chroma and only as dark as its
+   * floors need (#c11930), left its ink at 4.43:1 on the chip, and on its own
+   * no seat of either was nearer than the maroon, #9c3a48, dE 15.19 off the
+   * design, that the fit had ended it at. So the
+   * points of the fill's shells, round its anchor as reseat's are, are taken
+   * where every failing check is about another role and was measured on this
+   * one, which is what a repair of those roles can clear. On the first shell
+   * that has any, the JOINT_POINTS that fail the fewest are each traded and
+   * walked back toward the anchor while the trade still repairs, and the
+   * cheapest palette any step reaches is the seat, if the design moved less.
+   */
+  function jointSeat(from, role) {
+    const anchor = anchorParams(role, from.values);
+    const own = costOf(role, from.values);
+    const partners = coupled.get(role.token);
+    const measuredOn = (check) => {
+      const tokens = (text) => [...text.matchAll(/--[a-z0-9-]+/g)].map(([token]) => owner(token));
+      return !tokens(check.subject).includes(role.token) && tokens(check.detail).includes(role.token) && about(check).some((token) => token !== role.token);
+    };
+    const joint = (candidate) => candidate.rank < Infinity && candidate.failures.every(measuredOn);
+    let inside = 0;
+    for (let radius = SHELL_FIRST; inside < own && radius <= SHELL_LAST && !spent(); radius *= 2) {
+      const points = around(role, anchor, radius)
+        .map((params) => ({ params, plain: measure(new Map(from.params).set(role.token, params)) }))
+        .filter(({ plain }) => joint(plain))
+        .sort((a, b) => a.plain.rank - b.plain.rank)
+        .slice(0, JOINT_POINTS);
+      let best = null;
+      for (const { params } of points) {
+        if (spent()) break;
+        const { direction } = rayOf(anchor, params);
+        const at = (t) => new Map(from.params).set(role.token, pointAt(role, anchor, direction, radius * t));
+        const step = (t) => (joint(measure(at(t))) ? traded(role, at(t), partners, LOOKAHEAD + 1) : null);
+        const whole = step(1);
+        if (whole === null) continue;
+        let found = cleanAndCheaper(whole, from) ? whole : null;
+        let [low, high] = [inside / radius, 1];
+        for (let i = 0; i < JOINT_STEPS && !spent(); i += 1) {
+          const t = (low + high) / 2;
+          const trial = step(t);
+          if (trial === null) {
+            low = t;
+            continue;
+          }
+          high = t;
+          if (cleanAndCheaper(trial, from) && (found === null || better(trial, found))) found = trial;
+        }
+        if (found !== null && (best === null || better(found, best))) best = found;
+      }
+      if (best !== null) return best;
+      inside = radius;
+    }
+    return null;
+  }
+
+  const finishing = () =>
+    order
+      .map((role) => ({ role, distance: distanceOf(role, current.values) }))
+      .filter(({ distance }) => distance >= FINISH_FLOOR)
+      .sort((a, b) => (a.role.kit === b.role.kit ? b.distance - a.distance : a.role.kit ? 1 : -1))
       .map(({ role }) => role);
-    for (const role of finishing) {
-      if (spent()) break;
-      const next = role.axes.length > 1 ? reseat(current, role, 'improve') : profile(role);
-      if (next !== null) [current, kept] = [next, true];
+
+  let kept = 0;
+  const movedAt = new Map(order.map((role) => [role.token, 0]));
+  const heldBy = new Map();
+  const keep = (next) => {
+    kept += 1;
+    for (const role of order) if (next.values.get(role.token) !== current.values.get(role.token)) movedAt.set(role.token, kept);
+    current = next;
+  };
+  const hold = (role) => {
+    const restored = measure(toward(current.params, role, anchorParams(role, current.values), 1));
+    heldBy.set(role.token, new Set([role.token, ...restored.failures.flatMap(mentioned).flatMap(lineage)]));
+  };
+  const due = (tried, role) =>
+    !tried.has(role.token) || !heldBy.has(role.token) || [...heldBy.get(role.token)].some((token) => movedAt.get(token) > tried.get(role.token));
+
+  const settledAt = new Map();
+  function settle() {
+    for (let moving = true; moving && !spent(); ) {
+      moving = false;
+      for (const role of finishing()) {
+        if (spent()) break;
+        if (!due(settledAt, role)) continue;
+        settledAt.set(role.token, kept);
+        const next = relax(current, role, 12) ?? (role.axes.length > 1 ? reseat(current, role, 'improve') : null);
+        if (next === null) hold(role);
+        else {
+          keep(next);
+          moving = true;
+        }
+      }
     }
   }
-  // Last, with the rest of the budget, every role walked back once more, in
-  // order, as far as it will go.
-  limit = BUDGET;
-  for (const role of order) current = relax(current, role, 12) ?? current;
+
+  const tradedAt = new Map();
+  settle();
+  for (let role; !spent() && (role = finishing().find((candidate) => due(tradedAt, candidate))) !== undefined; ) {
+    tradedAt.set(role.token, kept);
+    const next = role.axes.length > 1 ? jointSeat(current, role) : profile(role);
+    if (next === null) hold(role);
+    else {
+      keep(next);
+      settle();
+    }
+  }
+  const finished = { evaluations: evaluations - searched, converged: !spent() };
 
   // --- what forced each move --------------------------------------------------
-
-  const searched = evaluations;
 
   const rows = order.map((role) => {
     const anchor = anchorOf(role, current.values);
     const value = current.values.get(role.token);
-    const distance = role.kind === 'hex' ? deltaE(parseHex(value), parseHex(anchor)) : Math.max(...overRungs(value, anchor, current.values));
+    const distance = distanceOf(role, current.values);
     // What fails when this role alone goes back to its anchor, one check per
     // rule, measured even where going back also breaks the design's order,
     // since the search never measures such a palette and the order is rarely
@@ -935,16 +1266,19 @@ function fitPalette(name, sources, intent) {
     }
     return { role, anchor, value, distance, binding: [...binding.values()] };
   });
-  return { name, rows, followers, start, current, evaluations: searched };
+  return { name, rows, followers, start, current, searched, finished };
 }
 
 // ---------------------------------------------------------------------------
 // Printing
 // ---------------------------------------------------------------------------
 
-function print({ name, rows, followers, start, current, evaluations }) {
+function print({ name, rows, followers, start, current, searched, finished }) {
   const out = [];
-  out.push(`The ${name} palette, fitted with seed ${SEED} in ${evaluations} of ${BUDGET} evaluations.`);
+  const finish = finished.converged
+    ? `the finish ran until no move paid, in ${finished.evaluations}`
+    : `the finish STOPPED AT ITS CEILING of ${FINISH_CEILING} with moves still paying, so this is not a least move`;
+  out.push(`The ${name} palette, fitted with seed ${SEED}: the search in ${searched} of ${SEARCH_BUDGET} evaluations, ${finish}.`);
   out.push(`At the design: ${start.failures.length} failing checks. The fit: ${current.failures.length} failing; the design moved dE ${current.cost.toFixed(2)} in all, the kit's own tokens ${current.kit.toFixed(2)}.`);
   for (const check of current.failures) out.push(`  STILL FAILING: ${check.rule}: ${check.subject}: ${check.detail}`);
   out.push('');

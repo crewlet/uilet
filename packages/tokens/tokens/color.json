@@ -40,32 +40,31 @@
       "strongHover": { "value": "#5a5e65", "comment": "One step past strong, so the strong pair is a real pair." },
       "control": { "value": "#7f848e", "comment": "The boundary of an input, a checkbox or a switch. It clears 3:1 on every surface a control can sit on, the overlay composites included: a checkbox inside a hovered row in a dialog body is the case the opaque surfaces alone do not catch." }
     },
-    "focus": { "value": "#805bff", "comment": "The focus indicator, drawn as an OUTLINE at 2px and offset 2px. Forced-colors mode drops every box-shadow and keeps outlines, so a ring drawn as a shadow alone disappears for exactly the readers who need one. It is the ACCENT, lightened dE 1.24 along lightness: #7c56ff itself measured 2.89:1 on a pressed row inside a raised surface, under the 3:1 a ring has to clear, and the accent cannot make that move for it, because any lighter takes the white label of a primary button under the text floor." },
+    "focus": { "value": "#7e5bff", "comment": "The focus indicator, drawn as an OUTLINE at 2px and offset 2px. Forced-colors mode drops every box-shadow and keeps outlines, so a ring drawn as a shadow alone disappears for exactly the readers who need one. It is the ACCENT, lightened dE 1.06 along lightness, the dark palette's value, which clears this root too (3.01:1): #7c56ff itself measured 2.89:1 on a pressed row inside a raised surface, under the 3:1 a ring has to clear, and the accent cannot make that move for it, because any lighter takes the white label of a primary button under the text floor." },
     "feedback": {
-      "success": { "value": "#14b8a6", "comment": "A good terminal state. The four status meanings never move." },
-      "successInk": { "value": "#5eead4" },
-      "warning": { "value": "#f59e0b", "comment": "A person is needed." },
-      "warningInk": { "value": "#fde68a" },
-      "danger": { "value": "#dc2626", "comment": "Failure, and the fill of a destructive action." },
-      "dangerHover": { "value": "#b91c1c" },
-      "dangerInk": { "value": "#fca5a5" },
-      "info": { "value": "#38bdf8", "comment": "Neutral information." },
-      "infoInk": { "value": "#7dd3fc" }
+      "success": { "value": "#3ecf8f", "comment": "DONE: work that finished. The four states are what a piece of work is doing, and their meanings never move: info is working, warning needs a person, danger is stopped, success is done. The names stay generic because a badge, a callout and a toast mean the same four things. Every value here is the dark palette's, the approved design's moved the least the floors allow; tokens/themes/dark.json says what moved each." },
+      "successInk": { "value": "#72dead" },
+      "warning": { "value": "#f4b221", "comment": "NEEDS A PERSON: work that is waiting on somebody." },
+      "warningInk": { "value": "#f6c86f" },
+      "danger": { "value": "#e50055", "comment": "STOPPED: work that failed or was halted, and the fill of a destructive action. The one hue that means the same thing everywhere in a product, so every chart series is held away from it." },
+      "dangerHover": { "value": "#d6004f", "comment": "The destructive action under the pointer: a visible step darker, away from its white label." },
+      "dangerInk": { "value": "#ff9a9a" },
+      "info": { "value": "#4c9dff", "comment": "WORKING: work under way." },
+      "infoInk": { "value": "#86beff" }
     },
     "phase": {
-      "onboarding": { "value": "#f77ae9", "comment": "The agent phases: onboarding, execute, review. Three, and the only categorical identity outside a chart. Every pair stays dE 10 apart under normal, protan and deutan vision, and clears the status family and the accent under all three." },
+      "onboarding": { "value": "#fa7cde", "comment": "The agent phases: onboarding, execute, review. Three, and the only categorical identity outside a chart. Every pair stays dE 10 apart under normal, protan and deutan vision, and clears the status family and the accent under all three." },
       "onboardingInk": { "value": "#ff82f1" },
-      "execute": { "value": "#ae6dff", "comment": "The dark palette's value, moved with it: #ac6bff lightened dE 0.57, because the accent became #7c56ff and this sat dE 9.6 from it under normal vision and 7.7 under protanopia." },
+      "execute": { "value": "#a665da", "comment": "The dark palette's value, moved with it: tokens/themes/dark.json says why." },
       "executeInk": { "value": "#d697ff" },
-      "review": { "value": "#00a24f" },
+      "review": { "value": "#01975e" },
       "reviewInk": { "value": "#46c872" }
     },
     "data": {
-      "1": { "value": "#a5b4fc", "comment": "Five chart series in a fixed order, plus a neutral residual, and legal ONLY inside a chart that carries a legend. Adjacent pairs are what a legend reader distinguishes, so that is what is measured, under all three visions. Series 1 is deliberately NOT the accent: a series painted in the selection colour claims to be the selection." },
-      "2": { "value": "#facc15" },
-      "3": { "value": "#38bdf8" },
-      "4": { "value": "#86efac" },
-      "5": { "value": "#ec4899" },
+      "1": { "value": "#458adc", "comment": "Four series in a fixed order, blue, orange, aqua and yellow, plus a neutral residual, and legal ONLY inside a figure that names them: a legend for two series or more, the label for one. Neighbours are what a legend reader distinguishes, so that is what is measured: dE 9 apart under every vision and 15 under normal vision. Series 1 is deliberately NOT the accent: a series painted in the selection colour claims to be the selection. The values are the dark palette's." },
+      "2": { "value": "#e4631f" },
+      "3": { "value": "#009c79" },
+      "4": { "value": "#c98500" },
       "other": { "value": "#71717a", "comment": "The residual bucket. Exempt from the separation rules on purpose: a residual that competed with a real series would be claiming to be one." }
     },
     "avatar": {

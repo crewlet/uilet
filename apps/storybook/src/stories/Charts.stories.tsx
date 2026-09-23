@@ -129,11 +129,11 @@ export const Ramp: Story = {
   render: () => (
     <div style={{ padding: 20 }}>
       <Frame
-        title="Five series, and the rest"
-        hint="Five hues a reader can tell apart from each other and from the accent. Everything past the fifth takes the residual."
+        title="Four series, and the rest"
+        hint="Four hues a reader can tell apart from their neighbours, from the danger red and from the accent, under every vision. Everything past the fourth takes the residual."
       >
         <Legend
-          items={['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh'].map((label, index) => ({
+          items={['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'].map((label, index) => ({
             id: label,
             label,
             color: dataColor(index),

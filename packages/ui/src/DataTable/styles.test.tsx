@@ -31,6 +31,7 @@ const SHEETS: Record<string, string> = {
   'TreeGrid/TreeGrid.css': sheet('TreeGrid/TreeGrid.css'),
   'TreeCanvas/TreeCanvas.css': sheet('TreeCanvas/TreeCanvas.css'),
   'DataView/DataView.css': sheet('DataView/DataView.css'),
+  'List/List.css': sheet('List/List.css'),
 };
 
 /** The rule block a selector opens, without its comments. */
@@ -62,7 +63,6 @@ const FILL_STEPS = [
   'data-2',
   'data-3',
   'data-4',
-  'data-5',
   /*
    * Assembled rather than spelt out, because `check-css-variables.mjs` reads
    * a quoted token name in a `.tsx` file as a component DECLARING one, which

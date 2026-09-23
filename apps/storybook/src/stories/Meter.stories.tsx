@@ -12,7 +12,7 @@ const meta: Meta<typeof Meter> = {
     size: 'default',
   },
   argTypes: {
-    tone: { control: 'inline-radio', options: [undefined, 'brand', 'success', 'warning', 'danger', 'neutral'] },
+    tone: { control: 'inline-radio', options: [undefined, 'quantity', 'success', 'warning', 'danger', 'neutral'] },
     polarity: { control: 'inline-radio', options: ['spent', 'progress'] },
     size: { control: 'inline-radio', options: ['default', 'compact'] },
     hideLabel: { control: 'boolean' },

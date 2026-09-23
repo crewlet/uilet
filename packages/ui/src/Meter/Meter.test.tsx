@@ -12,15 +12,15 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
-import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
+import { contrast, deltaE, flatten, OPAQUE_SURFACES, paletteStates, parseHex, RUNG_STEPS } from '@crewlethq/tokens/test/palette';
 import { Meter, meterTone, progressTone } from './index.js';
 
 afterEach(cleanup);
 
 describe('meterTone', () => {
   test('is derived from the fill, so a bar that is nearly full says so', () => {
-    expect(meterTone(0)).toBe('brand');
-    expect(meterTone(74.9)).toBe('brand');
+    expect(meterTone(0)).toBe('quantity');
+    expect(meterTone(74.9)).toBe('quantity');
     expect(meterTone(75)).toBe('warning');
     expect(meterTone(99.9)).toBe('warning');
     expect(meterTone(100)).toBe('danger');
@@ -40,10 +40,10 @@ describe('progressTone', () => {
     // 75 is where the spent ramp turns, and there is deliberately nothing here:
     // "nearly done" is not a warning, and "barely started" is only a fault
     // against a deadline this component is never told.
-    expect(progressTone(0)).toBe('brand');
-    expect(progressTone(74.9)).toBe('brand');
-    expect(progressTone(75)).toBe('brand');
-    expect(progressTone(99.9)).toBe('brand');
+    expect(progressTone(0)).toBe('quantity');
+    expect(progressTone(74.9)).toBe('quantity');
+    expect(progressTone(75)).toBe('quantity');
+    expect(progressTone(99.9)).toBe('quantity');
   });
 });
 
@@ -177,7 +177,19 @@ describe('Meter', () => {
 
   test('the progress ramp stays quiet where the spent ramp warns', () => {
     const { container } = render(<Meter label="Onboarding" value={82} max={100} polarity="progress" />);
-    expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('brand');
+    expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('quantity');
+  });
+
+  test('the ordinary reading is the quantity, painted in the first data series rather than the accent', () => {
+    // The accent means "act here", and a bar is not an action: the reading a
+    // meter shows when it is in no state is a figure of one quantity, which
+    // its label names, and that is what the first data series is for.
+    const { container } = render(<Meter label="Spend" value={40} max={100} />);
+    expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('quantity');
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Meter.css'), 'utf8');
+    const bare = /\.crewlet-meter__fill\s*\{([^}]*)\}/.exec(css.replace(/\/\*[\s\S]*?\*\//g, ''));
+    expect(bare?.[1]).toMatch(/background:\s*var\(--color-data-1\);/);
+    expect(css).not.toMatch(/--color-brand-accent/);
   });
 
   test('spent is the default, so no existing caller moves', () => {
@@ -195,18 +207,17 @@ describe('Meter', () => {
   test('every fill clears 3:1 against the track it sits in, on every rung', () => {
     // MEASURED ON THE TRACK, not on the card. The fill's adjacent colour is
     // the unfilled remainder, and a bar a reader cannot separate from its own
-    // well is a bar with no reading. That also refuses the engine's neutral,
+    // track is a bar with no reading. That also refuses the engine's neutral,
     // which is the decoration step and measures 2.33:1 on a light page.
     //
-    // THERE IS NO NAMED SHORTFALL ANY MORE. The accent and the danger red used
-    // to land at 2.74:1 against a track on the two most raised dark grounds,
-    // because the inset well LIGHTENS in the dark palette and moved them
-    // towards exactly those two mid-luminance fills. The four-rung palette
-    // closed it from the token side, where this suite said it had to be
-    // closed: the well is the approved sunk step at 0.028 rather than 0.05,
-    // and the raised rung is #1b1b20 where the old top step was #22252b. The
-    // tightest composite is now the accent on a track over the raised rung in
-    // dark, at 3.30:1. A fill that falls under the floor again fails here
+    // THE TRACK IS READ FROM THE STYLESHEET, and composited over every rung, so
+    // a track that became translucent again would be measured as the composite
+    // a reader sees. It is the raised rung now, opaque, so it is the same
+    // colour on every ground and the palette suite's own mark rule covers every
+    // pair: the inset well it used to be darkened the light warning and success
+    // fills to 2.84:1 and 2.86:1 over the frame once the states took the
+    // approved hues. The tightest pair is now the light warning on the raised
+    // track, at 3.17:1. A fill that falls under the floor again fails here
     // rather than joining a list.
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Meter.css'), 'utf8');
     const tokensCss = resolve(dirname(fileURLToPath(import.meta.url)), '../../../tokens/dist/css');
@@ -222,6 +233,8 @@ describe('Meter', () => {
       (match) => match[1] ?? '',
     );
     expect(fills.length).toBe(5);
+    const track = /\.crewlet-meter__track\s*\{[^}]*background:\s*var\((--[\w-]+)\)/.exec(css)?.[1] ?? '';
+    expect(track).toBe(token('color-surface-elevated'));
 
     let measured = 0;
     const failures: string[] = [];
@@ -229,15 +242,14 @@ describe('Meter', () => {
       if (state === 'base') continue;
       const page = parseHex(values.get(token('color-surface-background')) ?? '');
       if (page === null) throw new Error(`${state} has no opaque page colour`);
-      const read = (name: string) => {
+      const read = (name: string, ground = page) => {
         const raw = values.get(name);
         if (raw === undefined) throw new Error(`the suite reads ${name}, which @crewlethq/tokens does not emit`);
-        return parseHex(raw) ?? flatten(raw, page);
+        return parseHex(raw) ?? flatten(raw, ground);
       };
       for (const fill of fills) {
         for (const surface of OPAQUE_SURFACES) {
-          const track = flatten(values.get(token('color-surface-inset')) ?? '', read(surface));
-          const ratio = contrast(read(fill), track);
+          const ratio = contrast(read(fill), read(track, read(surface)));
           measured += 1;
           if (ratio < 3) failures.push(`${state}: ${fill} on ${surface}: ${ratio.toFixed(2)}:1`);
         }
@@ -246,6 +258,46 @@ describe('Meter', () => {
     // Three theme states, five fills, four rungs: a reading that found no
     // fill or no rung would pass for any palette at all.
     expect(measured).toBe(3 * 5 * 4);
+    expect(failures).toEqual([]);
+  });
+
+  test('the track is a visible step on the card a meter is drawn on', () => {
+    // THE UNFILLED REMAINDER IS HALF THE READING: forty percent is forty
+    // percent of something, and a reader has to see where that something
+    // ends. The track is the raised rung, and an opaque rung has an edge only
+    // against a ground that is not itself: a meter is drawn on a CARD, which
+    // is where the design puts every one, and the palette holds raised a
+    // visible step above the card (RUNG_STEPS). So the track is read from the
+    // stylesheet and measured against the card in every theme state, at that
+    // same floor: a track moved onto a step that shares the card's value, or
+    // a card that came to share the track's, fails here. On the raised rung
+    // itself the track has no edge at all, which is why the README says a
+    // meter is never drawn there.
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Meter.css'), 'utf8');
+    const tokensCss = resolve(dirname(fileURLToPath(import.meta.url)), '../../../tokens/dist/css');
+    const states = paletteStates({
+      tokens: readFileSync(resolve(tokensCss, 'tokens.css'), 'utf8'),
+      themes: readFileSync(resolve(tokensCss, 'themes.css'), 'utf8'),
+    });
+    const token = (name: string) => `--${name}`;
+    const card = token('color-surface-subtle');
+    const step = RUNG_STEPS.find(([, upper, lower]) => upper === token('color-surface-elevated') && lower === card);
+    if (step === undefined) throw new Error('the palette no longer holds raised a step above the card');
+    const floor = step[3];
+    const track = /\.crewlet-meter__track\s*\{[^}]*background:\s*var\((--[\w-]+)\)/.exec(css)?.[1] ?? '';
+
+    const measured: string[] = [];
+    const failures: string[] = [];
+    for (const [state, values] of Object.entries(states)) {
+      if (state === 'base') continue;
+      const ground = parseHex(values.get(card) ?? '');
+      const raw = values.get(track);
+      if (ground === null || raw === undefined) throw new Error(`${state} has no opaque card or no ${track}`);
+      const separation = deltaE(flatten(raw, ground), ground);
+      measured.push(state);
+      if (separation < floor) failures.push(`${state}: ${track} on ${card}: dE ${separation.toFixed(2)} < ${floor}`);
+    }
+    expect(measured.length).toBe(3);
     expect(failures).toEqual([]);
   });
 

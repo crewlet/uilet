@@ -113,8 +113,23 @@ export const RAIL_CURRENT_ROW: readonly [string, string];
 export const RAIL_CURRENT_LIFT: number;
 
 /**
- * The primary action's steps, each as [rule, the step, the fill it follows]:
- * each clears ACTION_DE against the one before it and raises the contrast of
+ * The four chart series, by custom-property name, in the order a figure
+ * assigns them. Past the fourth a figure takes `--color-data-other`, which is
+ * not a series and is not in the list.
+ */
+export const DATA: readonly string[];
+
+/**
+ * How far apart two neighbouring series sit, in OKLab dE: DATA_ADJACENT_DE
+ * under every vision, and DATA_ADJACENT_NORMAL_DE under normal vision.
+ */
+export const DATA_ADJACENT_DE: number;
+export const DATA_ADJACENT_NORMAL_DE: number;
+
+/**
+ * The filled actions' steps, each as [rule, the step, the fill it follows]:
+ * the primary action's hover and press, and the destructive action's hover.
+ * Each clears ACTION_DE against the one before it and raises the contrast of
  * ACTION_LABEL on it.
  */
 export const ACTION_STEPS: readonly (readonly [string, string, string])[];

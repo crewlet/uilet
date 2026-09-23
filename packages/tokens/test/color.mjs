@@ -81,11 +81,16 @@ export function parseDeclarations(body) {
  * Merge every block that matches, in cascade order, into one token map.
  * `sources` are `{ name, css }` in IMPORT order, because these files share
  * the `:root` selector and the later import is what a browser paints.
+ *
+ * A source may carry `blocks`, its parseBlocks() already taken, in place of
+ * `css`, so a caller that reads several selectors out of one sheet parses it
+ * once. runPalette reads four states and three theme blocks, and parsing the
+ * two sheets once per read was most of what a measurement cost.
  */
 export function cascade(sources, matches) {
   const out = new Map();
   for (const source of sources) {
-    for (const block of parseBlocks(source.css)) {
+    for (const block of source.blocks ?? parseBlocks(source.css)) {
       if (!matches(block)) continue;
       for (const [name, value] of block.declarations) out.set(name, value);
     }
