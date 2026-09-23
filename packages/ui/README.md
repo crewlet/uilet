@@ -8,7 +8,7 @@ Crewlet shared React components. Built on top of `@crewlethq/tokens` (CSS variab
 import '@crewlethq/tokens/css';          // the variables, once at the application entry
 import '@crewlethq/tokens/css/themes';   // light, dark and follow-the-system
 import '@crewlethq/tokens/css/density';  // compact and comfortable, optional
-import '@crewlethq/tokens/css/fonts';    // self-hosted Inter and JetBrains Mono
+import '@crewlethq/tokens/css/fonts';    // self-hosted Geist and Geist Mono
 import '@crewlethq/ui/styles.css';       // every component stylesheet, in one file
 import { Button, Card } from '@crewlethq/ui';
 import { Book2Glyph } from '@crewlethq/icons/glyphs';

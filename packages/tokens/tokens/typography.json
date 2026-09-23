@@ -1,9 +1,9 @@
 {
   "font": {
     "family": {
-      "sans": { "value": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", "comment": "Interface and body type. Inter is self-hosted by @crewlethq/tokens/css/fonts; the system stack covers the moment before it loads and any app that does not import that stylesheet." },
+      "sans": { "value": "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", "comment": "Interface and body type. Geist is self-hosted by @crewlethq/tokens/css/fonts; the system stack covers the moment before it loads and any app that does not import that stylesheet." },
       "display": { "value": "{font.family.sans}", "comment": "Headings and other display type. An alias of the sans family, so a heading costs no extra download. Components keep reading this role token so a dedicated display face would land in one place." },
-      "mono": { "value": "'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace", "comment": "Code, identifiers and tabular values. JetBrains Mono is self-hosted by @crewlethq/tokens/css/fonts." }
+      "mono": { "value": "'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace", "comment": "Code, identifiers and tabular values. Geist Mono is self-hosted by @crewlethq/tokens/css/fonts." }
     },
     "size": {
       "2xs": { "value": "11px", "comment": "Micro labels and table column heads." },

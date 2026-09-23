@@ -5,11 +5,12 @@
  * units, arithmetic and provenance rather than about colour: a font size is a
  * number of pixels in the typed export and a number of rem in the stylesheet,
  * a density-scaled token carries its calc(), a small target cannot shrink
- * under the size a finger can hit, and a soft tint still belongs to the fill
- * it was derived from.
+ * under the size a finger can hit, a soft tint still belongs to the fill it
+ * was derived from, and the font files the package ships are the ones its
+ * family stacks name. What those files are is test/fonts.test.mjs's subject.
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
@@ -111,6 +112,36 @@ describe('the breakpoint partial', () => {
       assert.equal(tokens.get(`--breakpoint-${name}`), value, `--breakpoint-${name} in tokens.css`);
     }
     assert.equal(breakpoint.shell, '900px');
+  });
+});
+
+describe('the font faces', () => {
+  const declared = [...read('fonts.css').matchAll(/@font-face\s*\{([^}]*)\}/g)].map(([, body]) => ({
+    family: /font-family:\s*'([^']+)';/.exec(body)?.[1],
+    file: /url\('[^']*\/([^'/]+)'\)/.exec(body)?.[1],
+  }));
+
+  test('fonts.css declares the Geist and Geist Mono files, and fonts/ ships nothing else', () => {
+    // Every file is also an import path (`@crewlethq/tokens/fonts/<name>`) an
+    // application may preload, so a renamed or dropped file is a breaking
+    // change, and this list is where it shows up in a diff.
+    const files = ['geist-latin-ext.woff2', 'geist-latin.woff2', 'geist-mono-latin-ext.woff2', 'geist-mono-latin.woff2'];
+    assert.deepEqual(declared.map(({ file }) => file).sort(), files);
+    const shipped = readdirSync(fileURLToPath(new URL('../fonts/', import.meta.url))).filter((name) => name.endsWith('.woff2'));
+    assert.deepEqual(shipped.sort(), files);
+  });
+
+  test('each family stack leads with a family fonts.css declares', () => {
+    // A stack that leads with a family no rule declares never loads the
+    // self-hosted files: it renders the next family in the list, and the
+    // files ship for nothing.
+    const lead = (stack) => stack.split(',')[0].trim();
+    assert.equal(lead(font.family.sans), "'Geist'");
+    assert.equal(lead(font.family.mono), "'Geist Mono'");
+    assert.equal(font.family.display, font.family.sans);
+    assert.deepEqual([...new Set(declared.map(({ family }) => family))].sort(), ['Geist', 'Geist Mono']);
+    assert.equal(tokens.get('--font-family-sans'), font.family.sans);
+    assert.equal(tokens.get('--font-family-mono'), font.family.mono);
   });
 });
 

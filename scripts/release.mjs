@@ -74,7 +74,7 @@ const SCOPE = '@crewlethq/';
 const REPOSITORY_URL = 'git+https://github.com/crewlet/uilet.git';
 const REGISTRY = 'https://registry.npmjs.org';
 // The SPDX expression each published package must declare. @crewlethq/tokens
-// ships the Inter and JetBrains Mono font files, which stay under the SIL Open
+// ships the Geist and Geist Mono font files, which stay under the SIL Open
 // Font License, and @crewlethq/icons ships the Material Symbols drawings,
 // which stay under the Apache License 2.0, so MIT alone would misstate the
 // terms of part of either tarball.

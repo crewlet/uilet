@@ -21,7 +21,7 @@ import '@crewlethq/tokens/css/themes';
 //    control; see "Density" below.
 import '@crewlethq/tokens/css/density';
 
-// 4) Optional: self-hosted Inter and JetBrains Mono (see "Fonts" below).
+// 4) Optional: self-hosted Geist and Geist Mono (see "Fonts" below).
 //    Skip this if the app already loads its own fonts at the shell.
 import '@crewlethq/tokens/css/fonts';
 
@@ -165,7 +165,7 @@ expect(failures.map(describeFailure)).toEqual([]);
 
 One implementation, two gates. The constraint is that the floors are kept, not only that the measurement moves, and a tokens bump that lowered a ratio would otherwise reach a consumer through an auto-merged dependency update with nothing measuring a ratio again.
 
-The tarball ships `test/color.mjs`, `test/palette.mjs` and `test/palette.test.mjs`, so `node --test "node_modules/@crewlethq/tokens/test/*.test.mjs"` runs the whole table over the installed version with no configuration at all. `test/build.test.mjs` stays out of it: it reads the token source the build compiles from, which a tarball does not carry.
+The tarball ships `test/color.mjs`, `test/palette.mjs` and `test/palette.test.mjs`, so `node --test "node_modules/@crewlethq/tokens/test/*.test.mjs"` runs the whole table over the installed version with no configuration at all. `test/build.test.mjs` stays out of it: it reads the token source the build compiles from, which a tarball does not carry. So does `test/fonts.test.mjs`, which decodes every file in `fonts/` and holds [`fonts/README.md`](./fonts/README.md), the built `@font-face` rules and [`fonts/OFL.txt`](./fonts/OFL.txt) to what the files say about themselves: a replaced file is caught in this repository, before it is published, not in an installed copy.
 
 ## Fonts
 
@@ -173,13 +173,13 @@ The design system uses two type families, both self-hosted inside this package a
 
 | Token | Family |
 | ----- | ------ |
-| `--font-family-sans` | Inter |
+| `--font-family-sans` | Geist |
 | `--font-family-display` | An alias of `--font-family-sans` (see the note below) |
-| `--font-family-mono` | JetBrains Mono |
+| `--font-family-mono` | Geist Mono |
 
 `--font-family-display` is declared on `:root` as `var(--font-family-sans)`. A custom property that holds `var()` is resolved on the element that declares it and inherited as a finished value, so the alias follows an override of `--font-family-sans` declared on `:root` and no other. An app that overrides the sans family on `body`, a theme class or any narrower selector sets `--font-family-display` in the same rule.
 
-`@crewlethq/tokens/css/fonts` declares `@font-face` rules whose URLs point at the woff2 files in `fonts/`, relative to the stylesheet. A bundler (Vite, webpack, Rollup, esbuild) resolves those URLs and emits the files with the application's other assets, so the fonts render on a closed network and no request leaves for a third-party host. The files are also exported individually (for example `@crewlethq/tokens/fonts/inter-latin.woff2`) for apps that preload them or serve them from their own static directory.
+`@crewlethq/tokens/css/fonts` declares `@font-face` rules whose URLs point at the woff2 files in `fonts/`, relative to the stylesheet. A bundler (Vite, webpack, Rollup, esbuild) resolves those URLs and emits the files with the application's other assets, so the fonts render on a closed network and no request leaves for a third-party host. The files are also exported individually (for example `@crewlethq/tokens/fonts/geist-latin.woff2`) for apps that preload them or serve them from their own static directory.
 
 Versions, subsets and the replacement procedure are in [`fonts/README.md`](./fonts/README.md). The license text and copyright notices are in [`fonts/OFL.txt`](./fonts/OFL.txt), which must accompany the files wherever they are redistributed. An application that bundles the fonts ships it by importing `@crewlethq/tokens/fonts/OFL.txt` as an asset, so the bundler emits it beside the font files, or by copying its text into the application's third-party notices.
 

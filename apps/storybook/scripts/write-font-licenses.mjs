@@ -3,7 +3,7 @@
 //   node scripts/write-font-licenses.mjs <storybook-static directory>
 //
 // The build redistributes two sets of fonts, both under the SIL Open Font
-// License: the Inter and JetBrains Mono files the preview imports from
+// License: the Geist and Geist Mono files the preview imports from
 // @crewlethq/tokens/css/fonts, and the Nunito Sans files Storybook ships for
 // its own interface. The OFL requires its text to accompany every copy, and
 // this build is deployed, so each directory that ends up holding a woff2 file
@@ -32,7 +32,8 @@ const tokensNotice = tokensLicense.slice(0, ruleIndex).trim();
 const licenseText = tokensLicense.slice(ruleIndex);
 
 const FAMILIES = [
-  { prefixes: ['inter-', 'jetbrains-mono-'], notice: tokensNotice },
+  // geist- covers the geist-mono- files as well.
+  { prefixes: ['geist-'], notice: tokensNotice },
   {
     prefixes: ['nunito-sans-'],
     notice: [

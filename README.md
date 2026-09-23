@@ -84,6 +84,6 @@ Report vulnerabilities privately, as described in [SECURITY.md](SECURITY.md). Do
 
 ## License
 
-The code and assets in this repository are licensed under the [MIT License](LICENSE); each published package carries the same `LICENSE` file. The Inter and JetBrains Mono font files in `@crewlethq/tokens` are licensed under the SIL Open Font License 1.1 (see [`packages/tokens/fonts/OFL.txt`](packages/tokens/fonts/OFL.txt)).
+The code and assets in this repository are licensed under the [MIT License](LICENSE); each published package carries the same `LICENSE` file. The Geist and Geist Mono font files in `@crewlethq/tokens` are licensed under the SIL Open Font License 1.1 (see [`packages/tokens/fonts/OFL.txt`](packages/tokens/fonts/OFL.txt)).
 
 The Crewlet name, logo and character are trademarks and are not licensed under the MIT License. See [TRADEMARKS.md](TRADEMARKS.md).

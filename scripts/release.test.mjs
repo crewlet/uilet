@@ -287,7 +287,7 @@ describe('tarballProblems', () => {
 
   it('refuses font files shipped without the OFL.txt beside them', () => {
     const root = repository();
-    const files = new Set(['package.json', 'LICENSE', 'dist/index.js', 'fonts/inter-latin.woff2', 'other/OFL.txt']);
+    const files = new Set(['package.json', 'LICENSE', 'dist/index.js', 'fonts/geist-latin.woff2', 'other/OFL.txt']);
     assert.deepEqual(tarballProblems(root, workspace, filename, files), [
       'crewlethq-icons-1.2.3.tgz: ships font files in fonts/ without the OFL.txt their license requires beside them',
     ]);

@@ -31,7 +31,7 @@ const valid = {
   'index.html': '<!doctype html>',
   'nunito-sans-regular.woff2': 'font',
   'OFL.txt': LICENSE,
-  'assets/inter-latin-abc.woff2': 'font',
+  'assets/geist-latin-abc.woff2': 'font',
   'assets/OFL.txt': LICENSE,
   'third-party/material-symbols/LICENSE': APACHE,
   'third-party/material-symbols/NOTICE': ATTRIBUTION,
@@ -58,7 +58,7 @@ describe('checkStorybookStatic', () => {
 
   for (const [what, path, content] of [
     ['an @import of a remote stylesheet', 'assets/preview.css', "@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');"],
-    ['a url() reaching a host', 'assets/preview.css', '@font-face { src: url(https://cdn.example.com/inter.woff2); }'],
+    ['a url() reaching a host', 'assets/preview.css', '@font-face { src: url(https://cdn.example.com/geist.woff2); }'],
     ['a protocol relative url()', 'assets/preview.css', '.a { background: url(//cdn.example.com/a.png); }'],
     ['a src attribute reaching a host', 'iframe.html', '<script src="https://cdn.example.com/a.js"></script>'],
     ['a <link> reaching a host', 'index.html', '<!doctype html><link rel="stylesheet" href="https://cdn.example.com/a.css">'],

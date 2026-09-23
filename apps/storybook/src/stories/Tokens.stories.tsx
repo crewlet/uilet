@@ -96,10 +96,10 @@ const Typography = () => (
       </div>
     ))}
     <div style={{ marginTop: 'var(--spacing-4)' }}>
-      <span style={{ fontFamily: 'var(--font-family-display)', fontSize: 'var(--font-size-3xl)' }}>Display, Inter (alias of sans)</span>
+      <span style={{ fontFamily: 'var(--font-family-display)', fontSize: 'var(--font-size-3xl)' }}>Display, Geist (alias of sans)</span>
     </div>
     <div>
-      <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: 'var(--font-size-md)' }}>Mono, JetBrains Mono</span>
+      <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: 'var(--font-size-md)' }}>Mono, Geist Mono</span>
     </div>
   </div>
 );
