@@ -259,14 +259,10 @@ describe('Meter', () => {
     }
     expect(failures).toEqual([]);
     expect(short.sort()).toEqual([
-      'dark (attribute): --color-brand-accent on --color-surface-elevated',
-      'dark (attribute): --color-brand-accent on --color-surface-topbar-active',
-      'dark (attribute): --color-feedback-danger on --color-surface-elevated',
-      'dark (attribute): --color-feedback-danger on --color-surface-topbar-active',
-      'dark (media query): --color-brand-accent on --color-surface-elevated',
-      'dark (media query): --color-brand-accent on --color-surface-topbar-active',
-      'dark (media query): --color-feedback-danger on --color-surface-elevated',
-      'dark (media query): --color-feedback-danger on --color-surface-topbar-active',
+      'dark: --color-brand-accent on --color-surface-elevated',
+      'dark: --color-brand-accent on --color-surface-topbar-active',
+      'dark: --color-feedback-danger on --color-surface-elevated',
+      'dark: --color-feedback-danger on --color-surface-topbar-active',
     ]);
   });
 

@@ -45,7 +45,7 @@ function Node({ children }: { children: React.ReactNode }) {
         width: 'max-content',
         minWidth: 180,
         padding: 8,
-        background: 'var(--color-surface-raised)',
+        background: 'var(--color-surface-subtle)',
         border: '1px solid var(--color-border-default)',
         borderRadius: 'var(--radius-md)',
       }}
@@ -63,7 +63,7 @@ function Row({ children }: { children: React.ReactNode }) {
         alignItems: 'center',
         width: 360,
         padding: '6px 8px',
-        borderBottom: '1px solid var(--color-border-subtle)',
+        borderBottom: '1px solid var(--color-border-default)',
         /* The two the table's own root publishes, because a row's ink is the
            TABLE's rather than the label's: without them a row drawn outside a
            table has no accent to read and its mark is left at the name's own

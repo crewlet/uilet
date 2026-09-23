@@ -28,6 +28,7 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const uiSource = join(here, "../../../packages/ui/src");
 const tokenSource = join(here, "../../../packages/tokens/tokens");
+const tokenDist = join(here, "../../../packages/tokens/dist/css");
 
 /**
  * Every token whose value is a LENGTH, by the custom property name the tokens
@@ -283,4 +284,81 @@ function themeTokens(theme: "light" | "dark"): ReadonlyMap<string, string> {
   }
   walk("--color", tokens.themes[theme].color);
   return found;
+}
+
+/**
+ * THE BUILT THEME LAYER, AS A BROWSER ON THE NAMED SYSTEM APPLIES IT.
+ *
+ * jsdom cascades custom properties and matches `:not()` and attribute
+ * selectors, which is everything the theme contract's precedence is made of,
+ * but it evaluates NO media query: a rule inside `@media` is never applied,
+ * whatever the query says. So the one input the contract turns on, the
+ * palette the reader's system asks for, cannot be put to it directly.
+ *
+ * This installs the built `tokens.css` and `themes.css`, in import order, with
+ * each `prefers-color-scheme` query ANSWERED for the system named: a block
+ * whose query matches is unwrapped where it stands, keeping its selector and
+ * its place in the file, and one that does not match is dropped. Nothing else
+ * is decided here. Which block wins is left to jsdom's own cascade, over the
+ * selectors, specificity and source order the build emitted, which is exactly
+ * what decides whether an explicit choice beats the system.
+ *
+ * Any other at-rule in either file is REFUSED rather than guessed at: a query
+ * this cannot answer honestly is one whose block would silently never apply.
+ * Returns the remover, as above.
+ */
+export function installThemes(system: "light" | "dark"): () => void {
+  const css = ["tokens.css", "themes.css"]
+    .map((name) =>
+      answerColorScheme(readFileSync(join(tokenDist, name), "utf8"), system),
+    )
+    .join("\n");
+  return installCss(css);
+}
+
+function answerColorScheme(css: string, system: "light" | "dark"): string {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  let out = "";
+  let from = 0;
+  for (
+    let at = text.indexOf("@", from);
+    at >= 0;
+    at = text.indexOf("@", from)
+  ) {
+    const open = text.indexOf("{", at);
+    if (open < 0)
+      throw new Error(`an at-rule with no block: ${text.slice(at, at + 60)}`);
+    const prelude = text.slice(at, open).trim();
+    const query =
+      /^@media\s*\(\s*prefers-color-scheme\s*:\s*(light|dark)\s*\)$/.exec(
+        prelude,
+      );
+    if (!query) throw new Error(`installThemes cannot answer "${prelude}"`);
+    // The block's end is its MATCHING brace, since the query wraps a rule.
+    let depth = 1;
+    let close = open + 1;
+    for (; depth > 0; close += 1) {
+      if (close >= text.length) throw new Error(`"${prelude}" is never closed`);
+      if (text[close] === "{") depth += 1;
+      else if (text[close] === "}") depth -= 1;
+    }
+    out += text.slice(from, at);
+    if (query[1] === system) out += text.slice(open + 1, close - 1);
+    from = close;
+  }
+  return out + text.slice(from);
+}
+
+/**
+ * Every colour a theme's own blocks declare, by custom-property name, from the
+ * typed export: what the root has to paint when that theme is the one that
+ * won. The build's own suite holds the export to the stylesheet, value for
+ * value, so this is the palette as shipped rather than a list kept here.
+ */
+export function themeColours(
+  theme: "light" | "dark",
+): ReadonlyMap<string, string> {
+  return new Map(
+    [...themeTokens(theme)].filter(([name]) => name.startsWith("--color-")),
+  );
 }

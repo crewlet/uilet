@@ -3,7 +3,7 @@
 Single source of truth for the Crewlet design tokens: color, spacing, size, typography (`font`), radius, shadow, blur, breakpoint, density, motion and z-index. Authored as JSON, compiled by Style Dictionary into:
 
 - `dist/css/tokens.css` (CSS custom properties on `:root`)
-- `dist/css/themes.css` (the light and dark palettes)
+- `dist/css/themes.css` (the dark and light palettes)
 - `dist/css/density.css`, `dist/css/base.css`, `dist/css/breakpoint.css`
 - `dist/index.js` + `dist/index.d.ts` (typed JS object for runtime use)
 
@@ -13,7 +13,7 @@ Single source of truth for the Crewlet design tokens: color, spacing, size, typo
 // 1) Canonical variables. Always import this once at the app entrypoint.
 import '@crewlethq/tokens/css';
 
-// 2) The light and dark palettes, as a three-state contract on <html>.
+// 2) The dark and light palettes, as a three-state contract on <html>.
 //    Import it after the line above; see "Theming" below.
 import '@crewlethq/tokens/css/themes';
 
@@ -41,24 +41,37 @@ for example `var(--color-brand-primary)` or `var(--spacing-4)`.
 
 ## Theming
 
-`@crewlethq/tokens/css/themes` carries the light and dark palettes as three states on the root element:
+`@crewlethq/tokens/css/themes` carries the dark and light palettes as three blocks on the root element, dark first:
 
 ```css
-:root { /* light */ }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { /* dark */ }
+:root { /* dark */ }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) { /* light */ }
 }
-:root[data-theme="dark"] { /* dark */ }
+:root[data-theme="light"] { /* light */ }
 ```
 
-- A document that sets nothing is light, or dark if the reader's system asks for dark.
-- `document.documentElement.dataset.theme = 'dark'` or `'light'` pins one, and wins in both directions, which a media query alone cannot do.
-- Removing the attribute follows the system again.
-- Both dark blocks are generated from one source, `tokens/themes/dark.json`, and the palette suite compares them.
+- A document that sets nothing is dark, or light if the reader's system asks for light. A browser that reports no preference at all gets dark: dark is the palette the product is drawn in, and light is its translation.
+- `document.documentElement.dataset.theme = 'light'` or `'dark'` pins one, and wins in both directions, which a media query alone cannot do. Light wins by a block of its own. Dark wins by keeping the light media block from matching: there is no dark attribute block, because the bare root already is one, and the `:not([data-theme="dark"])` on the media block is what lets an explicit dark beat a light system.
+- Removing the attribute follows the system again. A value the file does not name (`data-theme="system"`, say) passes the media block's guard and misses the light attribute block, so it follows the system as well; `ThemeSwitcher` removes the attribute rather than writing one.
+- Both light blocks are generated from one source, `tokens/themes/light.json`, and the palette suite compares them, key for key and value for value.
 
 Import it **after** `@crewlethq/tokens/css`. The two files share the `:root` selector and neither adds specificity, so the later import is the one that paints. `tokens.css` on its own is the base marketing palette, which is dark, and which carries a value for every themed slot so an application that imports only the token layer is never missing one.
 
-`color-scheme` is set by the theme layer, so form controls, scrollbars and the canvas behind the page follow the palette.
+`color-scheme` is set by each of the three blocks, so form controls, scrollbars and the canvas behind the page follow the palette that won.
+
+An application that overrides a themed token for one palette mirrors the same three selectors: its dark value on `:root`, its light value under both the media block and the attribute block. An override written only under `:root[data-theme="light"]` misses a reader whose system is light and who has chosen nothing.
+
+### Breaking change in 0.5.0
+
+The palette is dark first. `themes.css` used to paint light on the bare root and dark under `@media (prefers-color-scheme: dark) :root:not([data-theme="light"])` and `:root[data-theme="dark"]`; it now paints dark on the bare root and light under `@media (prefers-color-scheme: light) :root:not([data-theme="dark"])` and `:root[data-theme="light"]`. The palettes themselves did not move.
+
+| What changed | What to change |
+| --- | --- |
+| A document with no `data-theme`, in a browser that reports no colour-scheme preference, is dark. It was light. A system that asks for light or for dark still gets what it asks for. | Nothing, if the application follows the system. To keep a page light whatever the browser reports, set `data-theme="light"` on `<html>`. |
+| The `:root[data-theme="dark"]` and `@media (prefers-color-scheme: dark)` blocks are gone; light is painted by `@media (prefers-color-scheme: light) :root:not([data-theme="dark"])` and `:root[data-theme="light"]`. | Move an application's own per-theme overrides to the same shape: dark values on `:root`, light values under both light selectors. |
+| `paletteStates()` in `@crewlethq/tokens/test/palette` returns `base`, `dark`, `light (media query)` and `light (attribute)`. It returned `base`, `light`, `dark (media query)` and `dark (attribute)`. | Rename a state a suite reads: `light` becomes `light (attribute)` (or `light (media query)`), and `dark (media query)` and `dark (attribute)` both become `dark`. |
+| The structural rules `the dark media block is present` and `the two dark blocks agree` are `the light media block is present` and `the two light blocks agree`, and the second compares both blocks in both directions. | Rename a rule a suite filters on or expects. |
 
 ### Breaking change in 0.3.0
 
@@ -147,7 +160,7 @@ A `-soft` step is its own fill at alpha 0.12 and a `-line` step is the same fill
 
 ## The palette suite
 
-`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root, light, dark by media query and dark by attribute. It measures every text step on every surface it can land on (the translucent overlays composited over each opaque ground included), every ink on its own soft tint, every fill as a mark, the focus ring, the control boundary, the hue separations under normal, protan and deuteranopic vision, and the structure of the theme file itself.
+`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the translucent overlays composited over each opaque ground included), every ink on its own soft tint, every fill as a mark, the focus ring, the control boundary, the hue separations under normal, protan and deuteranopic vision, and the structure of the theme file itself.
 
 The module is **published**, as `@crewlethq/tokens/test/palette`, so a consumer runs the same rules over the version it installed:
 

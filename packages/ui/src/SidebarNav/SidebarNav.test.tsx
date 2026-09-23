@@ -255,7 +255,7 @@ describe('the rail colour', () => {
     expect(pair(CURRENT).ink).toBe(token('color-brand-accent-ink'));
     expect(pair(ATTENTION).fill).toBe(token('color-feedback-warning-soft'));
     expect(pair(ATTENTION).ink).toBe(token('color-feedback-warning-ink'));
-    expect(Object.keys(states)).toContain('dark (attribute)');
+    expect(Object.keys(states)).toEqual(['base', 'dark', 'light (media query)', 'light (attribute)']);
   });
 
   test('every ink the rail paints clears 4.5:1 on the ground the row gives it', () => {

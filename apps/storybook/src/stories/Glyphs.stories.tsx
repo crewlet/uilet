@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Icon, type IconName, ICON_NAMES } from '@crewlethq/icons';
 import { GLYPH_NAMES, type GlyphName, type GlyphOpticalSize } from '@crewlethq/icons/glyphs';
 import { glyphByName } from '@crewlethq/icons/glyphs/registry';
+import { themeScope } from '../themeScope';
 
 /*
  * The whole glyph set, at every size it is drawn at, at both vendored optical
@@ -43,11 +44,15 @@ const heading: CSSProperties = {
   margin: '0 0 var(--spacing-3)',
 };
 
-/** One block rendered twice, once per theme, so the pair can be compared. */
+/**
+ * One block rendered twice, each panel in its own palette, so the pair can be
+ * compared. The palette is scoped to the panel by `themeScope`: the theme layer
+ * paints on the root alone, so a data-theme on a panel would paint nothing.
+ */
 const BothThemes = ({ children }: { children: ReactNode }) => (
   <div style={{ display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
     {(['light', 'dark'] as const).map((theme) => (
-      <div key={theme} data-theme={theme} style={panel}>
+      <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
         <p style={heading}>{theme === 'light' ? 'Light' : 'Dark'}</p>
         {children}
       </div>

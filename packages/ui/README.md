@@ -6,7 +6,7 @@ Crewlet shared React components. Built on top of `@crewlethq/tokens` (CSS variab
 
 ```tsx
 import '@crewlethq/tokens/css';          // the variables, once at the application entry
-import '@crewlethq/tokens/css/themes';   // light, dark and follow-the-system
+import '@crewlethq/tokens/css/themes';   // dark, light and follow-the-system
 import '@crewlethq/tokens/css/density';  // compact and comfortable, optional
 import '@crewlethq/tokens/css/fonts';    // self-hosted Geist and Geist Mono
 import '@crewlethq/ui/styles.css';       // every component stylesheet, in one file
@@ -61,10 +61,13 @@ land at once.
 
 ## Theming hooks
 
-- **Light and dark palettes.** Import `@crewlethq/tokens/css/themes` and set
-  `data-theme="light"` or `data-theme="dark"` on `<html>`. With the attribute
-  absent the document follows the system. Every component reads the canonical
-  `--color-*` variables, so no provider is needed.
+- **Dark and light palettes.** Import `@crewlethq/tokens/css/themes` and set
+  `data-theme="dark"` or `data-theme="light"` on `<html>`. With the attribute
+  absent the document follows the system, and is dark in a browser that
+  reports no preference: the palette is dark first. `ThemeSwitcher` writes the
+  attribute for an explicit choice and removes it for "Follow the system".
+  Every component reads the canonical `--color-*` variables, so no provider is
+  needed.
 - **Density.** Import `@crewlethq/tokens/css/density` and set
   `data-density="compact"` or `"comfortable"` on `<html>`. Every spacing and
   size token scales with it, and the small control and row steps floor at 24px

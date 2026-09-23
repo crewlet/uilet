@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { CSSProperties } from 'react';
 import { VENDORS, VendorMark } from '@crewlethq/icons';
+import { themeScope } from '../themeScope';
 
 /*
  * The marks of the third-party tools, which are the one place this design
@@ -54,7 +55,7 @@ export const All: StoryObj = {
   render: () => (
     <div style={{ padding: 'var(--spacing-5)', display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
       {(['light', 'dark'] as const).map((theme) => (
-        <div key={theme} data-theme={theme} style={panel}>
+        <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
           <p style={caption}>{theme}</p>
           <div style={row}>
             {VENDORS.map((vendor) => (

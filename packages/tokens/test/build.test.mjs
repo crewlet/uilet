@@ -215,9 +215,13 @@ describe('the typed themes', () => {
     return out;
   }
 
+  // Dark is the bare root and light the attribute block. The light media
+  // block is not compared here: the palette suite holds it to the attribute
+  // block, key for key and value for value, so it cannot hold anything this
+  // comparison would miss.
   const blocks = {
-    light: cascade(source(themesCss), (block) => block.atRule === null && block.selector === ':root'),
-    dark: cascade(source(themesCss), (block) => block.atRule === null && block.selector === ':root[data-theme="dark"]'),
+    light: cascade(source(themesCss), (block) => block.atRule === null && block.selector === ':root[data-theme="light"]'),
+    dark: cascade(source(themesCss), (block) => block.atRule === null && block.selector === ':root'),
   };
 
   for (const name of ['light', 'dark']) {

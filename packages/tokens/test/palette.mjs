@@ -379,29 +379,49 @@ const DANGER_DICHROMAT = 8;
 // Theme states
 // ---------------------------------------------------------------------------
 
-const DARK_MEDIA = '@media (prefers-color-scheme: dark)';
-const DARK_MEDIA_SELECTOR = ':root:not([data-theme="light"])';
-const DARK_ATTRIBUTE_SELECTOR = ':root[data-theme="dark"]';
+// The theme layer is DARK FIRST: the dark palette is the bare :root, and light
+// is painted over it by two blocks, one for a system that asks for light and
+// one for an explicit choice. There is no dark attribute block, because the
+// bare root already is one; the media block's :not() is what lets an explicit
+// dark beat a light system.
+const THEME_ROOT = ':root';
+const LIGHT_MEDIA = '@media (prefers-color-scheme: light)';
+const LIGHT_MEDIA_SELECTOR = ':root:not([data-theme="dark"])';
+const LIGHT_ATTRIBUTE_SELECTOR = ':root[data-theme="light"]';
+
+/** The theme file's three blocks, each on its own, as the file declares it. */
+function themeBlocks(themesSource) {
+  const block = (atRule, selector) => cascade([themesSource], (b) => b.atRule === atRule && b.selector === selector);
+  return {
+    dark: block(null, THEME_ROOT),
+    lightMedia: block(LIGHT_MEDIA, LIGHT_MEDIA_SELECTOR),
+    lightAttribute: block(null, LIGHT_ATTRIBUTE_SELECTOR),
+  };
+}
 
 /**
  * The four sets of values a browser can end up with.
  *
  * `base` is tokens.css on its own, which is what an application that imports
  * only the token layer paints: the marketing palette. The other three are what
- * the theme layer paints over it.
+ * the theme layer paints over it: `dark`, the bare root, which is what a
+ * document that sets nothing gets and what an explicit dark gets on either
+ * system; and light twice over, once by the media query and once by the
+ * attribute, because they are two declarations a browser reaches by two
+ * different routes and either can drift from the other.
  */
 export function paletteStates({ tokens, themes }) {
   const tokensOnly = [{ name: 'tokens.css', css: tokens }];
   const both = [...tokensOnly, { name: 'themes.css', css: themes }];
-  const bare = (block) => block.atRule === null && block.selector === ':root';
-  const light = cascade(both, bare);
-  const withDark = (selector, atRule) =>
-    new Map([...light, ...cascade(both, (block) => block.atRule === atRule && block.selector === selector)]);
+  const bare = (block) => block.atRule === null && block.selector === THEME_ROOT;
+  const dark = cascade(both, bare);
+  const withLight = (selector, atRule) =>
+    new Map([...dark, ...cascade(both, (block) => block.atRule === atRule && block.selector === selector)]);
   return {
     base: cascade(tokensOnly, bare),
-    light,
-    'dark (media query)': withDark(DARK_MEDIA_SELECTOR, DARK_MEDIA),
-    'dark (attribute)': withDark(DARK_ATTRIBUTE_SELECTOR, null),
+    dark,
+    'light (media query)': withLight(LIGHT_MEDIA_SELECTOR, LIGHT_MEDIA),
+    'light (attribute)': withLight(LIGHT_ATTRIBUTE_SELECTOR, null),
   };
 }
 
@@ -777,17 +797,22 @@ const describe = (measured) => measured.map((value, i) => `${VISIONS[i].slice(0,
 function checkStructure(sources, states, push) {
   const say = (rule, ok, subject, detail) => push({ state: 'the token files', rule, ok, subject, value: null, detail });
 
+  const { dark: darkBlock, lightMedia, lightAttribute: lightBlock } = themeBlocks(sources.themesSource);
+
   // A colour whose only definition is inside the theme layer is a colour that
-  // is missing for an application that imports the token layer alone.
-  const themed = [...states.light.keys()].filter((name) => name.startsWith('--color-') || name.startsWith('--shadow-'));
+  // is missing for an application that imports the token layer alone. Read
+  // off the three blocks themselves, so a slot only one of them declares is
+  // still asked about.
+  const themed = [...new Set([...darkBlock.keys(), ...lightMedia.keys(), ...lightBlock.keys()])].filter(
+    (name) => name.startsWith('--color-') || name.startsWith('--shadow-'),
+  );
   const missing = themed.filter((name) => !states.base.has(name));
   say('every themed token has a value on the bare :root of tokens.css', missing.length === 0, 'tokens.css', missing.length === 0 ? 'none missing' : `missing: ${missing.join(', ')}`);
 
   // The measured rules cannot catch a missing LIGHT slot: the token still has
-  // a value, inherited from tokens.css, and that value is the dark one. So
-  // parity is asserted directly.
-  const lightBlock = cascade([sources.themesSource], (block) => block.atRule === null && block.selector === ':root');
-  const darkBlock = cascade([sources.themesSource], (block) => block.atRule === null && block.selector === DARK_ATTRIBUTE_SELECTOR);
+  // a value, inherited from the dark root under it, and that value is the dark
+  // one. Nor a missing DARK slot, which inherits the marketing palette's from
+  // tokens.css. So parity is asserted directly.
   const onlyLight = [...lightBlock.keys()].filter((name) => !darkBlock.has(name));
   const onlyDark = [...darkBlock.keys()].filter((name) => !lightBlock.has(name));
   say(
@@ -797,14 +822,17 @@ function checkStructure(sources, states, push) {
     onlyLight.length === 0 && onlyDark.length === 0 ? 'the two key sets match' : `light only: ${onlyLight.join(', ') || 'none'}; dark only: ${onlyDark.join(', ') || 'none'}`,
   );
 
-  // The dark palette is written twice on purpose, once so the system setting
+  // The light palette is written twice on purpose, once so the system setting
   // works and once so an explicit choice wins in both directions. A value that
-  // drifts between them means the toggle changes colours the system setting
-  // does not.
-  const media = cascade([sources.themesSource], (block) => block.atRule === DARK_MEDIA && block.selector === DARK_MEDIA_SELECTOR);
-  say('the dark media block is present', media.size > 0, 'themes.css', `${media.size} declarations`);
-  const drift = [...media].filter(([name, value]) => darkBlock.get(name) !== value).map(([name, value]) => `${name}: ${value} vs ${darkBlock.get(name)}`);
-  say('the two dark blocks agree', drift.length === 0, 'themes.css', drift.length === 0 ? 'no drift' : drift.join('; '));
+  // drifts between them means the toggle paints colours the system setting
+  // does not, and a slot one of them lacks is painted DARK in that one alone,
+  // so the comparison runs from both sides: a slot missing from either block
+  // is drift, not agreement.
+  say('the light media block is present', lightMedia.size > 0, 'themes.css', `${lightMedia.size} declarations`);
+  const drift = [...new Set([...lightMedia.keys(), ...lightBlock.keys()])]
+    .filter((name) => lightMedia.get(name) !== lightBlock.get(name))
+    .map((name) => `${name}: ${lightMedia.get(name) ?? 'undeclared'} by media query vs ${lightBlock.get(name) ?? 'undeclared'} by attribute`);
+  say('the two light blocks agree', drift.length === 0, 'themes.css', drift.length === 0 ? 'no drift' : drift.join('; '));
 
   // A dark-tuned shadow on a white page is a smudge, so every step is declared
   // in both blocks rather than inherited from the token layer, AND the two

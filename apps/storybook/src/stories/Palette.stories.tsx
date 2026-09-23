@@ -11,8 +11,8 @@ import themesCss from '@crewlethq/tokens/css/themes?raw';
  * The measured ratio of every pair, generated from the suite's OWN rule table
  * rather than from a list kept beside it. What is printed here is what
  * `packages/tokens/test/palette.test.mjs` asserts, in the same four states a
- * browser can end up in: the marketing root alone, light, dark by media query
- * and dark by attribute.
+ * browser can end up in: the marketing root alone, the dark root, light by
+ * media query and light by attribute.
  *
  * The point of rendering it is that a later edit shows what it costs. A hue
  * moved to fix one pair is a hue that may have closed the gap on another, and

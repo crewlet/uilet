@@ -46,10 +46,13 @@ function root(): HTMLElement | null {
  * Puts the theme on the root element.
  *
  * `system` REMOVES the attribute rather than writing a third value, because
- * the stylesheet's own default is the system's: a document with no attribute
- * is light, or dark where the platform asks for dark. A `data-theme="system"`
- * would match neither selector and paint the light palette on a reader who
- * asked for dark.
+ * following the system IS the absence of a choice, and the stylesheet's own
+ * default is the system's: a document with no attribute is dark, or light
+ * where the platform asks for light. What beats the system is an explicit
+ * value, in both directions: `light` by a block of its own, `dark` by keeping
+ * the light media block from matching. A `data-theme="system"` names no
+ * palette, so it would be a choice only to the code that asks whether the
+ * attribute is there at all, which is the wrong answer to give it.
  */
 export function applyTheme(theme: ThemePreference): void {
   const el = root();

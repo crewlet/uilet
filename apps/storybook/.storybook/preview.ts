@@ -22,7 +22,7 @@ type DensityName = 'normal' | 'compact' | 'comfortable';
 /**
  * Paints the chosen palette on <html>, which is the contract
  * @crewlethq/tokens/css/themes declares: a document with no data-theme is
- * light, or dark if the system asks, and the attribute wins in both
+ * dark, or light if the system asks, and the attribute wins in both
  * directions.
  *
  * SYSTEM REMOVES THE ATTRIBUTE rather than setting a third value, because

@@ -39,9 +39,9 @@ const Card = ({
       flexDirection: 'column',
       gap: 'var(--spacing-2, 8px)',
       padding: 'var(--spacing-3, 14px)',
-      border: '1px solid var(--color-border, rgba(128,128,128,.25))',
+      border: '1px solid var(--color-border-default)',
       borderRadius: 14,
-      background: 'var(--color-surface, rgba(128,128,128,.05))',
+      background: 'var(--color-surface-subtle)',
     }}
   >
     <div
@@ -50,7 +50,7 @@ const Card = ({
         display: 'grid',
         placeItems: 'center',
         borderRadius: 10,
-        background: 'var(--color-canvas, rgba(128,128,128,.08))',
+        background: 'var(--color-surface-inset)',
       }}
     >
       <CrewletFigure motion={motion} color={color} width={132} height={88} />

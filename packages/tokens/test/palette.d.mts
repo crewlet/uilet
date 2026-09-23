@@ -13,7 +13,11 @@
 
 /** One measured rule, over one state of the cascade. */
 export interface PaletteCheck {
-  /** Which set of values: 'base', 'light', 'dark (media)', 'dark (attribute)'. */
+  /**
+   * Which set of values: one of the four `paletteStates` names ('base',
+   * 'dark', 'light (media query)', 'light (attribute)'), or 'the token files'
+   * for a structural rule, which reads the theme file rather than a state.
+   */
   state: string;
   /** The rule being kept, as a sentence. */
   rule: string;
@@ -43,7 +47,12 @@ export interface PaletteResult {
 /** Measure the whole rule table over one built pair of stylesheets. */
 export function runPalette(sources: PaletteSources): PaletteResult;
 
-/** The four sets of values a browser can end up with. */
+/**
+ * The four sets of values a browser can end up with, keyed 'base' (tokens.css
+ * alone, the marketing palette), 'dark' (the theme layer's bare root, which a
+ * document that sets nothing gets), 'light (media query)' and 'light
+ * (attribute)', in that order.
+ */
 export function paletteStates(sources: PaletteSources): Record<string, Map<string, string>>;
 
 /** One line per failing check, for an assertion message. */
