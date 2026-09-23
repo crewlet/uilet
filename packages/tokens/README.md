@@ -39,6 +39,21 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Breaking changes in 0.5.0
+
+0.5.0 is the approved visual system: Geist, a dark-first palette on four surface rungs, a per-palette violet accent that is the primary action, and the four states and four chart series fitted to the palette suite's floors. Every edit a consumer makes is one row below; each links to the section that explains the change and carries the full table for it. `@crewlethq/ui` and `@crewlethq/icons` carry their own "Breaking changes in 0.5.0", and the three packages are upgraded together.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| The type families are Geist and Geist Mono. `inter-latin.woff2`, `inter-latin-ext.woff2`, `jetbrains-mono-latin.woff2` and `jetbrains-mono-latin-ext.woff2` are no longer shipped or exported under `@crewlethq/tokens/fonts/*`. | `'Inter'` becomes `'Geist'` and `'JetBrains Mono'` becomes `'Geist Mono'`; `fonts/inter-*.woff2` becomes `fonts/geist-*.woff2` and `fonts/jetbrains-mono-*.woff2` becomes `fonts/geist-mono-*.woff2` in a preload or a copy. | [Fonts](#breaking-change-in-050-geist-and-geist-mono) |
+| The palette is dark first: the bare root is dark, and light is painted under `@media (prefers-color-scheme: light) :root:not([data-theme="dark"])` and `:root[data-theme="light"]`. | A per-theme override of your own takes the same shape; `data-theme="light"` keeps a page light in a browser that reports no preference. | [Theming](#breaking-change-in-050) |
+| `--color-surface-muted`, `--color-surface-topbar`, `-topbar-lift` and `-topbar-active` are removed; `--color-surface-frame` is new and `css/base` paints `body` with it. | `-muted` and `-topbar-lift` become `--color-surface-subtle`, `-topbar-active` becomes `--color-surface-elevated`, and `-topbar` becomes `--color-surface-frame` (a rail's ground) or `--color-surface-background` (a bar inside the page). | [Surfaces](#breaking-change-in-050-the-four-rungs) |
+| `--color-brand-primary`, `-hover`, `-active` and `--color-text-on-brand` are removed, and the accent is a themed, per-palette violet. | `--color-brand-accent`, `-hover`, `-active`; `--color-text-on-accent` on an accent fill, `--color-text-inverse` on the inverse ground. An accent override mirrors the three theme selectors. | [The accent](#breaking-change-in-050-the-accent-is-the-primary-action) |
+| `--color-data-5` is removed; the four series and the four states take new values. | A fifth series is `--color-data-other`. A figure that relied on a series' colour meaning something takes a state token. | [The states and the chart series](#breaking-change-in-050-the-state-and-chart-hues) |
+| The phase family (`--color-phase-*`, `color.phase`) is removed. | The neutral text steps and the phase's word; inside a figure, a series the application maps the phase to. | [What colour means](#breaking-change-in-050-the-phase-family-is-removed) |
+| `--size-control-md` is 30px and `--size-control-sm` 26px; the rail is 236px, the bar 52px, `--breakpoint-shell` 1024px, and the body 13px on 1.45. | A literal written to line up with any of them reads the token; a query that switched with the shell at `(max-width: 900px)` is `(width < 1024px)`. | [Density](#changed-in-050-the-control-steps), [Breakpoints](#changed-in-050-the-body-the-shell-and-its-breakpoint) |
+| In `@crewlethq/tokens/test/palette`, the state names, several rule names and exports changed (`paletteStates()` returns `light (media query)` and `light (attribute)`; `PHASE` is removed; `OPAQUE_SURFACES` is the four rungs). | Rename a state or a rule a suite filters on, as each section's table lists. | [The palette suite](#the-palette-suite) |
+
 ## Theming
 
 `@crewlethq/tokens/css/themes` carries the dark and light palettes as three blocks on the root element, dark first:
@@ -465,6 +480,8 @@ The fit is a development tool. It is not published, and no test runs it or reads
 
 The fit is held to every rule in the table, and the shipped palette is exactly what it prints: run over this release's stylesheets, it reports that every value it fits ships its fitted value, in both palettes.
 
+The Storybook shows both halves under **Foundations / Palette**. `Tightest Per Rule` is `tightest()` over the whole table: under each rule, the pair that would break first. `The Fit` is every colour `tokens/intent.json` declares, per palette, with what ships for it, the dE between them, and what fails when that value alone goes back to the design: the suite run again over the built `themes.css` with that one declaration put back (an overlay the design drew opaque at the alpha nearest it, and the steps the build derives from a fill following it), reduced to the tightest failure under each rule it breaks. It is measured every time the story renders rather than copied from a comment, so a move that stopped being forced says so there first. Its logic is `apps/storybook/src/paletteFit.ts`, and `apps/storybook/test/paletteFit.test.mjs` holds it.
+
 ## Fonts
 
 The design system uses two type families, both self-hosted inside this package and licensed under the SIL Open Font License 1.1:
@@ -479,7 +496,20 @@ The design system uses two type families, both self-hosted inside this package a
 
 `@crewlethq/tokens/css/fonts` declares `@font-face` rules whose URLs point at the woff2 files in `fonts/`, relative to the stylesheet. A bundler (Vite, webpack, Rollup, esbuild) resolves those URLs and emits the files with the application's other assets, so the fonts render on a closed network and no request leaves for a third-party host. The files are also exported individually (for example `@crewlethq/tokens/fonts/geist-latin.woff2`) for apps that preload them or serve them from their own static directory.
 
+The four files are 83,736 bytes in all, and a page that renders only basic Latin downloads the two `latin` files, 52,528 bytes. The sans `latin` file keeps `tnum`, so the tabular figures the kit sets on every number are Geist's own; Geist Mono needs none, being fixed-pitch.
+
 Versions, subsets and the replacement procedure are in [`fonts/README.md`](./fonts/README.md). The license text and copyright notices are in [`fonts/OFL.txt`](./fonts/OFL.txt), which must accompany the files wherever they are redistributed. An application that bundles the fonts ships it by importing `@crewlethq/tokens/fonts/OFL.txt` as an asset, so the bundler emits it beside the font files, or by copying its text into the application's third-party notices.
+
+### Breaking change in 0.5.0: Geist and Geist Mono
+
+The families were Inter 4.001 and JetBrains Mono 2.211. The fallback stacks after the first name are unchanged, and so is every weight a stylesheet asks for: both new families carry the whole `wght` axis from 100 to 900 (JetBrains Mono stopped at 800).
+
+| What changed | What to change |
+| --- | --- |
+| `@crewlethq/tokens/css/fonts` declares `@font-face` families `'Geist'` and `'Geist Mono'`. It declared `'Inter'` and `'JetBrains Mono'`. | A stylesheet that names a family itself, rather than reading `--font-family-sans` or `--font-family-mono`, renames it; one that names the old family falls back to the system font. |
+| `--font-family-sans` (`font.family.sans`) leads with `'Geist'` and `--font-family-mono` (`font.family.mono`) with `'Geist Mono'`. | Nothing, for a stylesheet that reads the tokens. |
+| `fonts/inter-latin.woff2`, `fonts/inter-latin-ext.woff2`, `fonts/jetbrains-mono-latin.woff2` and `fonts/jetbrains-mono-latin-ext.woff2` are gone, from the package and from its `./fonts/*` export. | `fonts/geist-latin.woff2`, `fonts/geist-latin-ext.woff2`, `fonts/geist-mono-latin.woff2` and `fonts/geist-mono-latin-ext.woff2` in a preload or a copy of your own. |
+| `fonts/OFL.txt` carries the Geist Project Authors' copyright notices rather than Inter's and JetBrains'. | Regenerate an application's third-party notices from the file, or re-copy its text. |
 
 ## Material Symbols
 

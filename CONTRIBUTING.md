@@ -27,7 +27,7 @@ npm ci --ignore-scripts
 npm run build
 npm run lint                     # ESLint, plus the CSS custom property check in packages/ui
 npm run typecheck
-npm test                         # the suites under scripts/
+npm test                         # every workspace's suites, then the ones under scripts/
 npm run release:pack -- "$(mktemp -d)"
 node scripts/check-signoff.mjs
 npm run release:version          # the version a merge of this branch would be released as

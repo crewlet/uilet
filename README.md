@@ -24,9 +24,10 @@ All three are released together under one version, and `@crewlethq/ui` depends o
 
 - npm workspaces
 - Turborepo for caching and task orchestration
-- TypeScript 5 (strict, ES2022, Bundler resolution)
+- TypeScript 6 (strict, ES2022, Bundler resolution)
 - ESLint flat config with `typescript-eslint`
 - Vite 8, Storybook 10 for the showroom
+- Vitest 5 and Testing Library for the jsdom component suite; `node --test` for the tokens, icons, Storybook and release suites
 - Style Dictionary 5 for token transforms
 - SVGR for the icon pipeline
 - tsup for package bundling
@@ -48,7 +49,8 @@ npm run lint && npm run typecheck
 ```
 .
 ├── apps/
-│   └── storybook/             # @crewlethq/storybook (private)
+│   ├── storybook/             # @crewlethq/storybook (private)
+│   └── ui-tests/              # @crewlethq/ui-tests (private): the jsdom suite for @crewlethq/ui
 ├── packages/
 │   ├── tokens/                # @crewlethq/tokens
 │   ├── icons/                 # @crewlethq/icons

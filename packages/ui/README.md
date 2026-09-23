@@ -193,6 +193,16 @@ places:
 
 ## Breaking changes in 0.5.0
 
+0.5.0 draws the kit in the approved visual system: Geist, a violet accent that
+is the primary action, the four state hues and four chart series fitted to the
+palette suite's floors, Lucide stroke glyphs, and the application shell floated
+on a sheet. `@crewlethq/tokens` and `@crewlethq/icons` move with it, and each
+of their READMEs carries its own "Breaking changes in 0.5.0" for the tokens and
+the glyphs; upgrade the three packages together, as always. Below, every change
+a consumer can see is explained where it happens, and each paragraph whose
+change needs an edit ends in a **What to change** table, `Was` on the left and
+`Is` on the right. A paragraph with no table needs no edit.
+
 **The primary action is the violet accent, and it darkens as it is used.**
 `@crewlethq/tokens` makes the accent a per-palette violet (`#7c56ff` in dark,
 `#6b45f0` in light) and removes the monochrome `--color-brand-primary` family
@@ -745,6 +755,11 @@ over five rows; it was 620 by `min(60dvh, 520px)`, sized for a list alone.
 Nothing here is renamed: a palette without scopes behaves as before, Tab
 included.
 
+| Was | Is |
+|---|---|
+| a stylesheet targeting a palette row's hint as `.crewlet-listbox__hint` | `.crewlet-palette__hint`, on the label's line; the row's end is `.crewlet-palette__meta` |
+| a layout or a test that counted on the palette being 620px wide and at most `min(60dvh, 520px)` tall | 720px and `min(74dvh, 680px)`; `--crewlet-modal-width` on the palette still sets the width |
+
 **A highlighted listbox row is outlined in forced-colors mode, and a chord is
 not Enter.** The mode repaints backgrounds to `Canvas`, which took the
 highlight of every `Select`, `Combobox` and `CommandPalette` with it; the
@@ -758,6 +773,11 @@ stop. `useListbox` brings the HIGHLIGHTED row into view by its id rather than
 the first `[aria-selected="true"]` in its scroller, which in a multi-select is
 the first chosen row and in a palette could be a tab in the lead; `TagsInput`
 drops the second reveal it kept to undo that.
+
+| Was | Is |
+|---|---|
+| ⌘Enter, Ctrl+Enter or ⌥Enter relied on to take the highlighted option of a `Select`, a `Combobox`, a `CommandPalette` or a `useListbox` of your own | bind the chord yourself, on the surface's `onKeyDown`; plain Enter takes the option as before |
+| a forced-colors stylesheet of your own outlining a highlighted listbox row | drop it: the row draws a 2px `Highlight` outline itself |
 
 **`ThemeToggle` is new, and the preference controls can be controlled.** The
 design's rail foot carries one button beside the reader's identity row rather
@@ -816,6 +836,11 @@ in light against the 3:1 a connector is held to, so they stay on
 its parent's centre now gets its two corners rather than a vertical that ended
 beside the child. Nothing is renamed.
 
+| Was | Is |
+|---|---|
+| a `TreeCanvas` with no `connector`, relied on for the stepped connector | `connector="step"`; the default is `elbow` |
+| a stylesheet or a test reading a connector's 1px width | 1.5px, still `--color-border-control`; the `node` appearance keeps its 3px |
+
 **A `Meter` takes its thresholds, or its verdict.** The `spent` ramp turned at
 three quarters of the maximum for every caller, so an application whose own
 rule warns elsewhere had to compute the tone itself and pass `tone`, which
@@ -838,8 +863,14 @@ drawn and never spoken, so a refusing budget says so in its `valueText`.
 rule for an application drawing its own figure; `meterTone(percent)` is
 `meterState` at `DEFAULT_METER_THRESHOLDS` (`{ near: 0.75 }`), unchanged.
 `MeterProps` is now a union of `MeterVerdictProps`, `MeterRampProps` and
-`MeterThresholdProps` over the shared props, so an interface that extended it
-extends one of those. A meter given neither prop is drawn exactly as before.
+`MeterThresholdProps` over the shared props, and an interface cannot extend a
+union, so a props type of your own built on it is an intersection. A meter
+given neither prop is drawn exactly as before.
+
+| Was | Is |
+|---|---|
+| `interface BudgetMeterProps extends MeterProps { … }` | `type BudgetMeterProps = MeterProps & { … }` |
+| a `tone` computed from your own rule and passed to `Meter` | `state` with your verdict (`'ok'`, `'near'`, `'refusing'`), or `thresholds={{ near }}` for the fraction; `tone` stays for a paint that is not a state |
 
 ## Breaking changes in 0.3.0
 
