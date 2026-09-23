@@ -85,6 +85,22 @@
   color: var(--color-brand-accent-ink);
 }
 
+/*
+ * FORCED COLORS repaints every author background to Canvas, which took the
+ * highlight with it: the arrows moved through a list in which no row looked
+ * any different, in every Select, Combobox and command palette. An outline is
+ * the one mark the mode keeps, drawn inside the row so the list's own clip
+ * does not cut it, in the system's colour for exactly this.
+ */
+@media (forced-colors: active) {
+  .crewlet-listbox__option[aria-selected='true'] {
+    outline-style: solid;
+    outline-width: 2px;
+    outline-color: Highlight;
+    outline-offset: -2px;
+  }
+}
+
 .crewlet-listbox__option[aria-disabled='true'] {
   color: var(--color-text-tertiary);
   cursor: not-allowed;

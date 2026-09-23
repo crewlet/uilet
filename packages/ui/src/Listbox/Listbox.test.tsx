@@ -106,6 +106,21 @@ test('Enter takes the highlighted option without submitting the form around it',
   expect(onCommit).toHaveBeenCalledWith('b');
 });
 
+test('an Enter held with Command, Control or Option is a chord, and the option is not taken', () => {
+  // A command palette draws "⌘↵ ask an agent" beside a row; taking the row as
+  // well as running the chord ran both.
+  const onCommit = vi.fn();
+  render(<Picker options={['a', 'b']} onCommit={onCommit} />);
+  const input = screen.getByLabelText('query');
+  for (const modifier of ['metaKey', 'ctrlKey', 'altKey'] as const) {
+    // Not prevented either, so whatever owns the chord still sees it whole.
+    expect(fireEvent.keyDown(input, { key: 'Enter', [modifier]: true }), modifier).toBe(true);
+  }
+  expect(onCommit).not.toHaveBeenCalled();
+  expect(fireEvent.keyDown(input, { key: 'Enter' })).toBe(false);
+  expect(onCommit).toHaveBeenCalledWith('a');
+});
+
 test('Tab takes the option only where the list is a completion, and never backwards', () => {
   const onCommit = vi.fn();
   const { rerender } = render(<Picker options={['a']} onCommit={onCommit} />);
@@ -228,6 +243,65 @@ test('the highlighted row is brought into view by scrolling the list and nothing
   expect(highlighted()).toBe('a');
   expect(scrolled).toBe(0);
   expect(outside()).toBe(false);
+});
+
+test('a scroller holding more than the list scrolls to the highlighted ROW, not to the first thing selected in it', () => {
+  // A command palette's scroller carries the answer it leads with, and an
+  // answer can hold a tab or a chip that says it is selected. Found by
+  // `[aria-selected="true"]`, that was the row brought into view.
+  const options = ['a', 'b', 'c', 'd', 'e', 'f'];
+  function Scroller() {
+    const id = useId();
+    const listbox = useListbox({ id, open: true, count: options.length, onCommit: () => {}, onClose: () => {} });
+    return (
+      <>
+        <input
+          aria-label="query"
+          role="combobox"
+          aria-expanded
+          aria-controls={listbox.listId}
+          aria-activedescendant={listbox.optionId(listbox.active)}
+          onKeyDown={listbox.onKeyDown}
+        />
+        <div data-testid="scroller" ref={listbox.listRef}>
+          <div role="tablist" aria-label="lead">
+            <button role="tab" aria-selected="true">
+              chosen
+            </button>
+          </div>
+          <ul role="listbox" id={listbox.listId} aria-label="options">
+            {options.map((o, i) => (
+              <li key={o} id={listbox.optionId(i)} role="option" aria-selected={i === listbox.active}>
+                {o}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </>
+    );
+  }
+  render(<Scroller />);
+  const box = screen.getByTestId('scroller');
+  let scrolled = 0;
+  Object.defineProperty(box, 'scrollTop', {
+    configurable: true,
+    get: () => scrolled,
+    set: (value: number) => {
+      scrolled = value;
+    },
+  });
+  const rect = (top: number, height: number) =>
+    ({ top, height, bottom: top + height, left: 0, right: 0, width: 200, x: 0, y: top }) as DOMRect;
+  box.getBoundingClientRect = () => rect(0, 60);
+  // The selected tab sits above the window, where following it would scroll up.
+  screen.getByRole('tab').getBoundingClientRect = () => rect(-100 - scrolled, 20);
+  for (const [index, option] of screen.getAllByRole('option').entries()) {
+    option.getBoundingClientRect = () => rect(index * 20 - scrolled, 20);
+  }
+  const input = screen.getByLabelText('query');
+  for (let step = 0; step < 4; step++) fireEvent.keyDown(input, { key: 'ArrowDown' });
+  expect(highlighted()).toBe('e');
+  expect(scrolled).toBe(40);
 });
 
 test('a list that is a modal’s whole body leaves Escape and the veil to the modal', () => {

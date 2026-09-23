@@ -672,6 +672,46 @@ track and the remainder `GrayText`, and a `Stepper`'s current step is
 the rule between two steps in `GrayText`. The hues go, as every hue does in
 that mode; the lengths and the current step stay.
 
+**`CommandPalette` takes scopes, a lead and a row's meta.** The design's ⌘K.
+`scopes: { id, label, count? }[]` with a controlled `scope` / `onScopeChange`
+draws a row of tabs under the field (the chosen one in the primary ink over a
+2px bar, a `count` as a `Count`), and they come as a SET: the types refuse
+one without the others, and without `groupsScope`, which names the scope
+`groups` was computed for. Until it is the chosen scope the rows are withheld,
+the list is `aria-busy` and says `pendingMessage` ("Searching…"), so a
+search still answering the scope the reader left never offers its rows, or
+lets Enter open one, under the new one. Focus never leaves the field: Tab and
+Shift+Tab step the scopes, and so do ← and → while the field is empty; a
+press on a tab picks it without taking focus; the results are the chosen
+tab's `tabpanel`, the field is described by that tab, and a change is said in
+a hidden status line. `lead` is what the surface says before its rows, an
+answer drawn on the raised rung: a polite live region OUTSIDE the listbox,
+mounted empty so its first words are read, never an option (Enter still
+takes the highlighted row), and scrolled with the rows in the one scroller.
+Anything a reader should act on belongs in a row. A row's `hint` now runs on
+its label's line in the tertiary ink rather than at the row's end, which is
+kept for the new `meta`: a short fact or a `Kbd` naming an accelerator the
+application binds on the palette's `onKeyDown`. `footer` is the key legend,
+at the `xs` step on the sheet rung. The surface is the design's 720px wide
+and at most `min(74dvh, 680px)` tall, the artboard's 664 of 900 with a lead
+over five rows; it was 620 by `min(60dvh, 520px)`, sized for a list alone.
+Nothing here is renamed: a palette without scopes behaves as before, Tab
+included.
+
+**A highlighted listbox row is outlined in forced-colors mode, and a chord is
+not Enter.** The mode repaints backgrounds to `Canvas`, which took the
+highlight of every `Select`, `Combobox` and `CommandPalette` with it; the
+highlighted row now carries a 2px `Highlight` outline inside its box. Enter
+held with Command, Control or Option no longer takes the highlighted option:
+it is left to whoever owns the chord, so a palette's ⌘Enter does not also
+open the row. And a modal's focus trap no longer moves a Tab a control has
+already taken (`preventDefault`): a `Combobox` with `tabCommits` that was the
+last stop in a dialog took the completion and then lost focus to the first
+stop. `useListbox` brings the HIGHLIGHTED row into view by its id rather than
+the first `[aria-selected="true"]` in its scroller, which in a multi-select is
+the first chosen row and in a palette could be a tab in the lead; `TagsInput`
+drops the second reveal it kept to undo that.
+
 ## Breaking changes in 0.3.0
 
 Every one of these is a change a consumer can see. None of them needs an edit

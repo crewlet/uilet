@@ -1,8 +1,9 @@
 /*
- * The command palette: a field, a list, and a line of keyboard hints.
+ * The command palette: a field, an optional row of scopes, one scroller
+ * holding the lead and the list, and a key legend.
  *
- * It is a Modal with its body's padding dropped, so the three bands run edge to
- * edge and the field reads as the surface rather than as a question on a form.
+ * It is a Modal with its body's padding dropped, so the bands run edge to edge
+ * and the field reads as the surface rather than as a question on a form.
  * The rows are the listbox register (`Listbox.css`), because a result here and
  * a completion in a field are the same thing to a reader and the accent that
  * marks the active row has to mean the same in both.
@@ -14,11 +15,17 @@
  */
 
 .crewlet-modal.crewlet-palette {
-  /* Wider than a prompt and shorter than the window: a launcher is read in one
-     glance, and a list taller than this is a list nobody scans. */
-  --crewlet-modal-width: 620px;
+  /*
+   * THE APPROVED DESIGN'S SURFACE: 720px wide, and as tall as its artboard
+   * draws it with an answer leading five rows, 664px of a 900px window. It was
+   * 620 by min(60dvh, 520px), sized for a list alone, and a lead that size
+   * over it left room for three rows. 74dvh is that artboard's 664/900; the
+   * 680px cap is the same surface with one more row, so a tall window does
+   * not turn a launcher read in one glance into a page.
+   */
+  --crewlet-modal-width: 720px;
 
-  max-height: min(60dvh, 520px);
+  max-height: min(74dvh, 680px);
 }
 
 /*
@@ -67,21 +74,97 @@
  * the stylesheets are concatenated in.
  */
 .crewlet-palette .crewlet-modal__footer {
-  gap: var(--spacing-3);
-  padding: var(--spacing-2) var(--spacing-3);
+  gap: var(--spacing-4);
+  padding: var(--spacing-2) var(--spacing-4);
+  /* The SHEET rung under the card the results sit on, as the design draws the
+     legend: a band a step back from the surface, so it reads as the frame's
+     edge rather than as one more row. */
+  background: var(--color-surface-background);
 }
 
 .crewlet-palette .crewlet-modal__footer-start {
-  gap: var(--spacing-3);
-  font-size: var(--font-size-2xs);
+  gap: var(--spacing-4);
+  font-size: var(--font-size-xs);
 }
 
+/*
+ * THE SCOPES: a strip of words under the field, the current one in the primary
+ * ink over a bar in the same ink. Not `Tabs`, whose tabs are a roving tab stop:
+ * these are never focused (the field drives them), so the row has no ring to
+ * draw and no slider to measure, and the bar is each tab's own edge.
+ */
+.crewlet-palette__scopes {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-4);
+  min-height: var(--size-row-md);
+  padding-inline: var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-default);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.crewlet-palette__scopes::-webkit-scrollbar {
+  display: none;
+}
+
+.crewlet-palette__scope {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-1);
+  border: none;
+  /* The bar is drawn on every tab and coloured only on the chosen one, so a
+     choice moves no label by the bar's width. */
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-tertiary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.crewlet-palette__scope:hover,
+.crewlet-palette__scope.is-active {
+  color: var(--color-text-primary);
+}
+
+.crewlet-palette__scope.is-active {
+  border-bottom-color: var(--color-text-primary);
+}
+
+/*
+ * THE ONE SCROLLER: the lead and the list move together, and the listbox
+ * keeps the highlighted row in view inside this element.
+ */
 .crewlet-palette__results {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--spacing-1);
+}
+
+/*
+ * THE LEAD: an answer on the raised rung above the rows, in the secondary ink
+ * at a reading leading, because it is prose read once rather than a row run
+ * past. Empty, it draws nothing: the region is mounted so a screen reader sees
+ * its first words arrive, and an empty box would be a band saying nothing.
+ */
+.crewlet-palette__lead:not(:empty) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: var(--spacing-2) var(--spacing-3) var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+  line-height: var(--font-line-height-relaxed);
 }
 
 /*
@@ -95,10 +178,46 @@
   flex-shrink: 0;
 }
 
-.crewlet-palette__label {
+/*
+ * THE LABEL AND ITS HINT ARE ONE LINE, cut together: the hint reads as the
+ * rest of the label's sentence ("ENG-420 Flaky e2e, Todo, unassigned"), and
+ * the row's end is kept for its meta. A hint pushed to the end as well would
+ * put two quiet columns side by side, and neither would say which it was.
+ */
+.crewlet-palette__text {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-palette__label {
+  font-weight: var(--font-weight-medium);
+}
+
+/* The quiet ink, until the row is the one the arrows are on, where the whole
+   row takes the register's ink in one piece. */
+.crewlet-palette__hint {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-palette__row[aria-selected='true'] .crewlet-palette__hint,
+.crewlet-palette__row:hover .crewlet-palette__hint {
+  color: inherit;
+}
+
+/*
+ * The row's end: a short fact or an accelerator's keycap. Never cut and never
+ * wrapped, so a column of keycaps stands in one line down the list.
+ */
+.crewlet-palette__meta {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
   white-space: nowrap;
 }
 
@@ -112,4 +231,20 @@
   color: var(--color-text-tertiary);
   font-size: var(--font-size-compact);
   text-align: center;
+}
+
+/*
+ * FORCED COLORS draws a transparent border in the system's own ink, so every
+ * scope would wear the chosen one's bar. The bar is kept where it means
+ * something and painted out everywhere else, in the two colours the mode
+ * leaves as the author wrote them.
+ */
+@media (forced-colors: active) {
+  .crewlet-palette__scope {
+    border-bottom-color: Canvas;
+  }
+
+  .crewlet-palette__scope.is-active {
+    border-bottom-color: CanvasText;
+  }
 }

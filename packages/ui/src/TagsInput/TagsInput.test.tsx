@@ -331,7 +331,11 @@ test('the list scrolls to the row the arrows are on, not to the one already chos
    * jsdom lays nothing out, so the list's own box and its rows are measured
    * here: a 100px tall list whose rows are 40px each, with the fourth row
    * below the fold. The chosen row is the FIRST one and is in view, which is
-   * what made the shared model's reveal do nothing at all.
+   * what made the shared model's reveal do nothing at all while it looked for
+   * `[aria-selected="true"]`, a mark every chosen row of a multi-select
+   * carries. It finds the highlighted row by its id now, and it is the ONLY
+   * reveal: the second one this component kept to undo the first would add
+   * its own step to every press.
    */
   const rect = (top: number, bottom: number) =>
     vi.fn(

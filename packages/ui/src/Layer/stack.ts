@@ -220,6 +220,11 @@ function onKeyDown(event: KeyboardEvent): void {
     return;
   }
   if (event.key !== 'Tab') return;
+  // A Tab a control has TAKEN is not a move. A combobox that commits on Tab
+  // and a palette that steps its scopes on it both prevent the key, which is
+  // what stops the browser moving focus; a trap that moved it anyway undid
+  // the one thing the control had said.
+  if (event.defaultPrevented) return;
   const modal = top('modal');
   const panel = modal?.panel();
   if (!modal || !panel) return;

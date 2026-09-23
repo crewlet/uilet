@@ -171,7 +171,6 @@ export const TagsInput = forwardRef<TagsInputHandle, TagsInputProps>(function Ta
   const [open, setOpen] = useState(false);
   const field = useRef<HTMLInputElement | null>(null);
   const chips = useRef<HTMLUListElement | null>(null);
-  const list = useRef<HTMLElement | null>(null);
   const generatedId = useId();
   const fieldId = id ?? generatedId;
 
@@ -334,24 +333,6 @@ export const TagsInput = forwardRef<TagsInputHandle, TagsInputProps>(function Ta
     },
     onClose: () => setOpen(false),
   });
-
-  /*
-   * THE HIGHLIGHTED ROW STAYS IN VIEW, by scrolling the list element and
-   * nothing else. The shared model reveals `[aria-selected="true"]`, which in
-   * a multi-select is every CHOSEN row rather than the highlighted one, so on
-   * its own it drags the view back to the first choice on every arrow press
-   * and does nothing at all while nothing is chosen. Declared after the hook
-   * so it is the effect that runs last and therefore the one that wins.
-   */
-  useEffect(() => {
-    const box = list.current;
-    const row = box?.querySelector<HTMLElement>('[data-active="true"]');
-    if (!box || !row) return;
-    const bounds = box.getBoundingClientRect();
-    const spot = row.getBoundingClientRect();
-    if (spot.top < bounds.top) box.scrollTop -= bounds.top - spot.top;
-    else if (spot.bottom > bounds.bottom) box.scrollTop += spot.bottom - bounds.bottom;
-  }, [listbox.active, flat.length, lists]);
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     // A word still being composed owns every key, Backspace included: it
@@ -546,10 +527,7 @@ export const TagsInput = forwardRef<TagsInputHandle, TagsInputProps>(function Ta
         />
         {lists ? (
           <div
-            ref={(el) => {
-              list.current = el;
-              listbox.listRef(el);
-            }}
+            ref={listbox.listRef}
             id={listbox.listId}
             className="crewlet-tags-input__list crewlet-listbox"
             role="listbox"
