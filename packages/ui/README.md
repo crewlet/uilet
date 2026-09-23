@@ -72,6 +72,14 @@ land at once.
   `data-density="compact"` or `"comfortable"` on `<html>`. Every spacing and
   size token scales with it, and the small control and row steps floor at 24px
   so no density takes a pointer target under the size a finger can hit.
+- **Surfaces.** The components stand on the four rungs `@crewlethq/tokens`
+  defines, lowest first the frame, the sheet, the card and raised. `AppShell`
+  puts its rail on `--color-surface-frame` and its main column and top bar on
+  `--color-surface-background`, the sheet; a card, a popover, a menu and a
+  dialog body are `--color-surface-subtle`, the card rung, and a `Card` is
+  found by the `--color-border-default` hairline it draws round itself rather
+  than by its fill. Rebind a rung on `<html>` and everything standing on it
+  follows.
 - **Accent colour.** The selected, active and focus states read `--color-brand-accent` and its companions from `@crewlethq/tokens`: `--color-brand-accent-rgb` (the same colour as a comma-separated `r, g, b` triple, for translucent tints), `--color-brand-accent-hover`, `--color-brand-accent-active`, `--color-brand-accent-soft` and `--color-brand-accent-soft-strong`. Rebind them together to retint the components. Every overlay portals into the nearest `LayerHost`, or into `<body>` when
 there is none, so declare the override on `<html>` for those panels to follow
 it.

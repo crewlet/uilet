@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
-import { contrast, flatten, paletteStates, parseHex, type Rgb } from '@crewlethq/tokens/test/palette';
+import { contrast, flatten, paletteStates, parseHex, RAIL_GROUND, type Rgb } from '@crewlethq/tokens/test/palette';
 import { NavGroup, NavItem, SidebarNav } from './index.js';
 
 afterEach(cleanup);
@@ -223,8 +223,12 @@ describe('the rail colour', () => {
    * DECLARATION, and a component may declare only `--crewlet-*` names.
    */
   const token = (name: string) => `--${name}`;
-  /** The rail's own ground, which is the bar's surface rather than the page's. */
-  const RAIL = token('color-surface-topbar');
+  /**
+   * The rail's own ground, the frame rather than the sheet: the ground the
+   * palette suite measures the rail on, and the one the shell paints under it
+   * (asserted below, so the two cannot drift apart).
+   */
+  const RAIL = RAIL_GROUND;
 
   /** The fill and the ink one rule binds, by the tokens it names. */
   function pair(selector: string): { fill: string | null; ink: string } {
@@ -256,6 +260,15 @@ describe('the rail colour', () => {
     expect(pair(ATTENTION).fill).toBe(token('color-feedback-warning-soft'));
     expect(pair(ATTENTION).ink).toBe(token('color-feedback-warning-ink'));
     expect(Object.keys(states)).toEqual(['base', 'dark', 'light (media query)', 'light (attribute)']);
+  });
+
+  test('the shell paints the rail on the ground every measurement here is taken on', () => {
+    // The rail is drawn by AppShell and measured, here and in the palette
+    // suite, on RAIL_GROUND. A shell that moved its rail to another rung would
+    // leave every number in this block measuring a ground nobody sees.
+    const shell = readFileSync(resolve(here, '../AppShell/AppShell.css'), 'utf8');
+    const rule = /\.crewlet-app-shell__rail\s*\{([^}]*)\}/.exec(shell)?.[1] ?? '';
+    expect(/(?:^|;|\s)background:\s*var\((--[\w-]+)\)/.exec(rule)?.[1]).toBe(RAIL);
   });
 
   test('every ink the rail paints clears 4.5:1 on the ground the row gives it', () => {

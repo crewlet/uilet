@@ -98,7 +98,7 @@ const preview: Preview = {
       options: {
         marketing: { name: 'marketing', value: color.surface.background },
         dark: { name: 'dark', value: themes.dark.color.surface.background },
-        topbar: { name: 'topbar', value: themes.dark.color.surface.topbar },
+        frame: { name: 'frame', value: themes.dark.color.surface.frame },
         elevated: { name: 'elevated', value: themes.dark.color.surface.elevated },
         light: { name: 'light', value: themes.light.color.surface.background },
         subtle: { name: 'subtle', value: themes.light.color.surface.subtle },

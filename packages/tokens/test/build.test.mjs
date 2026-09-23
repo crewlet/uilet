@@ -188,6 +188,28 @@ describe('the document baseline', () => {
   test('it honours a reduced-motion preference', () => {
     assert.match(base, /@media \(prefers-reduced-motion: reduce\)/);
   });
+
+  test('it paints the body with the frame, the lowest rung', () => {
+    // Whatever an application floats on the body (a sheet, a rail) brings its
+    // own ground; the body is the application ground under all of it.
+    assert.match(base, /\nbody\s*\{[^}]*background: var\(--color-surface-frame\);/);
+  });
+});
+
+describe('the stylesheets that read tokens', () => {
+  test('every token base.css and legacy.css read is one the token layer declares', () => {
+    // A var() naming a token the build does not emit is dropped by the
+    // browser without a word, and neither file is linted by anything else:
+    // removing a token (the topbar rungs, say) would leave both still pointing
+    // at it, painting nothing, with a green build.
+    for (const name of ['base.css', 'legacy.css']) {
+      const css = read(name).replace(/\/\*[\s\S]*?\*\//g, '');
+      const declared = new Set([...tokens.keys(), ...[...css.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1])]);
+      const used = [...new Set([...css.matchAll(/var\((--[\w-]+)/g)].map((match) => match[1]))];
+      assert.ok(used.length > 5, `${name} reads only ${used.length} tokens`);
+      assert.deepEqual(used.filter((token) => !declared.has(token)), [], `${name} reads tokens nothing declares`);
+    }
+  });
 });
 
 describe('the typed themes', () => {

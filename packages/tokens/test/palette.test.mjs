@@ -15,7 +15,19 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { describeFailure, paletteStates, runPalette, tightest } from './palette.mjs';
+import {
+  CARD_HAIRLINE,
+  describeFailure,
+  OPAQUE_SURFACES,
+  OVERLAY_STEPS,
+  paletteStates,
+  parseHex,
+  runPalette,
+  RUNG_STEPS,
+  tightest,
+  VEIL_ALPHA,
+  withAlpha,
+} from './palette.mjs';
 import { themes as typed } from '../dist/index.js';
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../dist/css/${name}`, import.meta.url)), 'utf8');
@@ -155,3 +167,83 @@ describe('the structure of the theme file', () => {
     assert.deepEqual(structuralFailures(themes), ['the light block declares exactly the key set the dark block declares']);
   });
 });
+
+describe('the four rungs', () => {
+  const { checks } = runPalette(sources);
+  const dark = typed.dark.color;
+
+  /**
+   * The measured rules the DARK state fails once the dark root is edited, by
+   * name and each once. Every case below edits one declaration and expects
+   * exactly one rule back, so a mutation that tripped a neighbour as well
+   * would say so.
+   */
+  const darkFailures = (name, value) =>
+    [
+      ...new Set(
+        runPalette({
+          ...sources,
+          themes: editBlock(sources.themes, DARK_ROOT, (body) =>
+            body.replace(new RegExp(`${name}: [^;]+;`), `${name}: ${value};`),
+          ),
+        })
+          .failures.filter((check) => check.state === 'dark')
+          .map((check) => check.rule),
+      ),
+    ];
+
+  test('four opaque rungs are measured, in every theme state', () => {
+    // A ladder that lost a rung, or a rung that resolved to nothing a rule
+    // could measure, would leave every rule above reading fewer grounds and
+    // passing for it.
+    assert.deepEqual(OPAQUE_SURFACES, [
+      '--color-surface-frame',
+      '--color-surface-background',
+      '--color-surface-subtle',
+      '--color-surface-elevated',
+    ]);
+    const states = paletteStates(sources);
+    for (const state of THEME_STATES) {
+      for (const rung of OPAQUE_SURFACES) {
+        assert.ok(parseHex(states[state].get(rung) ?? ''), `${state}: ${rung} is not an opaque colour`);
+        for (const rule of ['the neutral ramp stays neutral', OVERLAY_STEPS[0][0]]) {
+          assert.ok(
+            checks.some((check) => check.state === state && check.rule === rule && (check.subject === rung || check.subject.endsWith(` on ${rung}`))),
+            `${state}: "${rule}" never measured ${rung}`,
+          );
+        }
+      }
+      const ladder = checks.filter((check) => check.state === state && RUNG_STEPS.some(([rule]) => rule === check.rule));
+      assert.equal(ladder.length, RUNG_STEPS.length, `${state} ran ${ladder.length} steps of the ladder`);
+    }
+  });
+
+  test('a sheet at the frame\'s own value is caught', () => {
+    assert.deepEqual(darkFailures('--color-surface-background', dark.surface.frame), ['the sheet lifts off the frame']);
+  });
+
+  test('a card at the sheet\'s own value is caught', () => {
+    assert.deepEqual(darkFailures('--color-surface-subtle', dark.surface.background), ['a card separates from the sheet']);
+  });
+
+  test('a hairline at the card\'s own value is caught', () => {
+    const [line] = CARD_HAIRLINE;
+    assert.deepEqual(darkFailures(line, dark.surface.subtle), ['the hairline that finds a card is visible on both sides of it']);
+  });
+
+  test('raised at the card\'s own value is caught', () => {
+    assert.deepEqual(darkFailures('--color-surface-elevated', dark.surface.subtle), ['raised separates from the card']);
+  });
+
+  test('a hover overlay nobody can see is caught, and so is a press that looks like a hover', () => {
+    assert.deepEqual(darkFailures('--color-surface-hover', withAlpha(dark.surface.hover, 0.01)), [OVERLAY_STEPS[0][0]]);
+    assert.deepEqual(darkFailures('--color-surface-pressed', dark.surface.hover), [OVERLAY_STEPS[1][0]]);
+  });
+
+  test('a veil drawn in the sheet rather than the frame is caught', () => {
+    assert.deepEqual(darkFailures('--color-surface-veil', withAlpha(dark.surface.background, VEIL_ALPHA)), [
+      "the veil is this root's frame at an alpha, not a colour of its own",
+    ]);
+  });
+});
+

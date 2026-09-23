@@ -49,7 +49,7 @@ export const RailFoot: Story = {
         gap: 'var(--spacing-2)',
         width: 'var(--size-shell-rail)',
         padding: 'var(--spacing-3)',
-        background: 'var(--color-surface-topbar)',
+        background: 'var(--color-surface-frame)',
         borderRadius: 'var(--radius-lg)',
       }}
     >

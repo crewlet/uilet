@@ -13,7 +13,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, test } from 'vitest';
-import { contrast, flatten, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
+import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
 import { StatusDot } from './index.js';
 
 afterEach(cleanup);
@@ -32,14 +32,6 @@ const states = paletteStates({
  * as a DECLARATION, and a component may declare only `--crewlet-*` names.
  */
 const token = (name: string) => `--${name}`;
-const SURFACES = [
-  'color-surface-background',
-  'color-surface-subtle',
-  'color-surface-muted',
-  'color-surface-elevated',
-  'color-surface-topbar',
-].map(token);
-
 /**
  * Every fill the stylesheet binds, the neutral default included. The tone is
  * reported WITHOUT the modifier's leading dashes, because the package's
@@ -90,7 +82,7 @@ describe('StatusDot', () => {
         const raw = values.get(fill);
         if (raw === undefined) throw new Error(`StatusDot.css reads ${fill}, which @crewlethq/tokens does not emit`);
         const mark = parseHex(raw) ?? flatten(raw, ground);
-        for (const surface of SURFACES) {
+        for (const surface of OPAQUE_SURFACES) {
           const beneath = parseHex(values.get(surface) ?? '') ?? flatten(values.get(surface) ?? '', ground);
           const ratio = contrast(mark, beneath);
           if (ratio < 3) failures.push(`${state}: ${tone} (${fill}) on ${surface}: ${ratio.toFixed(2)}:1`);

@@ -61,7 +61,7 @@ const Radii = () => (
   <div style={{ display: 'flex', gap: 'var(--spacing-3)', flexWrap: 'wrap' }}>
     {Object.entries(radius).map(([k, v]) => (
       <div key={k} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-        <div style={{ width: 56, height: 56, borderRadius: v, background: 'var(--color-surface-muted)' }} />
+        <div style={{ width: 56, height: 56, borderRadius: v, background: 'var(--color-surface-subtle)' }} />
         <code style={{ fontSize: 'var(--font-size-xs)' }}>{k}</code>
       </div>
     ))}
@@ -77,7 +77,7 @@ const Shadows = () => (
             width: 96,
             height: 56,
             borderRadius: 'var(--radius-md)',
-            background: 'var(--color-surface-topbar-lift)',
+            background: 'var(--color-surface-subtle)',
             boxShadow: v,
           }}
         />

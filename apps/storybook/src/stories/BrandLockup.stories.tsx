@@ -25,7 +25,7 @@ export const Superadmin: Story = { args: { context: 'Superadmin' } };
 export const ALongCompanyName: Story = {
   args: { context: 'Brightwater Manufacturing and Logistics Group' },
   render: (args) => (
-    <div style={{ width: 'var(--size-shell-rail)', background: 'var(--color-surface-topbar)' }}>
+    <div style={{ width: 'var(--size-shell-rail)', background: 'var(--color-surface-frame)' }}>
       <BrandLockup {...args} />
     </div>
   ),
@@ -46,7 +46,7 @@ export const InTheRailsHead: Story = {
     <div
       style={{
         width: 'var(--size-shell-rail)',
-        background: 'var(--color-surface-topbar)',
+        background: 'var(--color-surface-frame)',
         borderRight: '1px solid var(--color-border-default)',
         borderBottom: '1px dashed var(--color-border-default)',
         minHeight: 'var(--size-shell-topbar)',

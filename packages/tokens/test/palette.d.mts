@@ -76,11 +76,42 @@ export function simulate(colour: Rgb, kind: string): Rgb;
 export function separation(a: Rgb, b: Rgb): number[];
 export const VISIONS: readonly string[];
 
+/**
+ * The four opaque rungs, by custom-property name, lowest first: the frame, the
+ * sheet (`--color-surface-background`), the card (`-subtle`) and raised
+ * (`-elevated`). Every ground a piece of text can end up on; a component suite
+ * measures on these rather than on a copy of them.
+ */
+export const OPAQUE_SURFACES: readonly string[];
+
+/**
+ * The steps of the ladder, each as [rule, upper rung, lower rung, the dE the
+ * upper rung has to sit off the lower one].
+ */
+export const RUNG_STEPS: readonly (readonly [string, string, string, number])[];
+
+/** The line that finds a card, as [border, card, sheet]: it clears HAIRLINE_DE against both. */
+export const CARD_HAIRLINE: readonly [string, string, string];
+export const HAIRLINE_DE: number;
+
+/**
+ * The overlays that have to be seen, each as [rule, overlay, the overlay it is
+ * measured against or null for the bare rung], and the dE each clears.
+ */
+export const OVERLAY_STEPS: readonly (readonly [string, string, string | null])[];
+export const OVERLAY_DE: number;
+
+/** The ground the application rail stands on. */
+export const RAIL_GROUND: string;
+
 /** The token name of the modal veil. */
 export const VEIL: string;
+
+/** The rung the veil is drawn in: each root's own frame. */
+export const VEIL_GROUND: string;
 
 /** The band the veiled page has to stay inside, as [floor, ceiling]. */
 export const VEIL_BAND: readonly number[];
 
-/** The alpha the veil draws its own root's ground at. */
+/** The alpha the veil draws its own root's frame at. */
 export const VEIL_ALPHA: number;

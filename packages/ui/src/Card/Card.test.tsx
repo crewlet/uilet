@@ -10,8 +10,10 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { createPortal } from 'react-dom';
 import { afterEach, expect, test } from 'vitest';
 import { Card, useCardHeaderSlot } from './index.js';
+import { themes } from '@crewlethq/tokens';
+import { parseHex } from '@crewlethq/tokens/test/palette';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
-import { inset, installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { inset, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 /*
  * The stylesheet, in the document, for the guards that ask what the CASCADE
@@ -288,6 +290,43 @@ test('a tile takes the panel ground and the tighter inset, and an explicit paddi
   // DECLARATION by the package's custom property check.
   expect(ground('subtle')).toMatch(/^--color-surface-subtle$/);
   expect(ground('subtle')).toBe(ground('default'));
+});
+
+/** A computed colour as its three channels, whichever notation jsdom answers in. */
+function channels(value: string): { r: number; g: number; b: number } {
+  const hex = parseHex(value.trim());
+  if (hex) return hex;
+  const parts = /rgba?\(([^)]+)\)/
+    .exec(value)?.[1]
+    ?.split(',')
+    .map((one) => Number.parseFloat(one));
+  if (!parts || parts.length < 3) throw new Error(`not a colour: ${value}`);
+  return { r: parts[0]!, g: parts[1]!, b: parts[2]! };
+}
+
+test('a card stands on the card rung and draws the hairline that finds it, in both palettes', () => {
+  // A CARD IS FOUND BY ITS HAIRLINE. It sits only about dE 1.8 off the sheet
+  // around it, near-flat on purpose, and the palette suite holds the other half
+  // of that bargain: the plain border clears dE 3 against the card and against
+  // the sheet. What a palette cannot see is whether a card DRAWS that border,
+  // which is this: every variant that stands on the card rung paints it and
+  // draws the plain border round it, as the cascade decides it, with the
+  // values the theme ships.
+  for (const theme of ['dark', 'light'] as const) {
+    uninstall = installThemed(theme, 'Card/Card.css');
+    for (const variant of ['default', 'subtle', 'quiet'] as const) {
+      const { container, unmount } = render(<Card variant={variant}>Monthly spend</Card>);
+      const style = getComputedStyle(container.querySelector('.crewlet-card')!);
+      const where = `${theme} ${variant}`;
+      expect(channels(style.backgroundColor), where).toEqual(parseHex(themes[theme].color.surface.subtle));
+      expect(style.borderTopStyle, where).toBe('solid');
+      expect(channels(style.borderTopColor), where).toEqual(parseHex(themes[theme].color.border.default));
+      expect(channels(style.borderLeftColor), where).toEqual(parseHex(themes[theme].color.border.default));
+      unmount();
+    }
+    uninstall();
+    uninstall = null;
+  }
 });
 
 test('a title keeps the page leading rather than the baseline heading leading', () => {

@@ -1,26 +1,23 @@
 {
   "color": {
     "surface": {
-      "background": { "value": "#15171c", "comment": "Deliberately not #000. An operator reads an application for hours, and pure black behind near-white text is the combination that halates." },
-      "subtle": { "value": "#1c1e24" },
-      "muted": { "value": "#1c1e24" },
-      "elevated": { "value": "#22252b" },
-      "topbar": { "value": "#15171c" },
-      "topbarLift": { "value": "#1c1e24" },
-      "topbarActive": { "value": "#22252b" },
-      "hover": { "value": "rgba(255, 255, 255, 0.05)" },
-      "pressed": { "value": "rgba(255, 255, 255, 0.08)" },
-      "inset": { "value": "rgba(255, 255, 255, 0.05)" },
-      "glass": { "value": "rgba(28, 30, 36, 0.90)" },
+      "frame": { "value": "#09090b", "comment": "The application ground, and the lowest rung: the rail, and the body around the floating sheet. Deliberately not #000. An operator reads an application for hours, and pure black behind near-white text is the combination that halates." },
+      "background": { "value": "#101013", "comment": "The sheet. The approved #0f0f12, lifted dE 0.46 along lightness alone: it sat dE 2.91 off the frame, under the 3 a sheet has to lift to read as a plane of its own, and here it lifts 3.37." },
+      "subtle": { "value": "#141418", "comment": "The card, dE 1.87 over the sheet: near-flat, because a card is found by its hairline." },
+      "elevated": { "value": "#1b1b20", "comment": "Raised, dE 3.13 over the card." },
+      "hover": { "value": "rgba(255, 255, 255, 0.061)", "comment": "The approved hover is an OPAQUE #222228, and one translucent alpha cannot be one colour on four grounds, so the alpha is fitted: the one that moves the approved design least across the four rungs and the tertiary text step together, because a stronger overlay takes contrast from that step where it lands on raised. At 0.061 a hovered row lands dE 0.42 from the design on the card, 1.69 on the sheet, 2.81 on raised and 4.53 on the frame. Matched to the design on the frame instead, at 0.10, it would have taken tertiary dE 7.21 to #a2a2ac, halfway to the secondary step, and a hovered row would have outread a selected one." },
+      "pressed": { "value": "rgba(255, 255, 255, 0.094)", "comment": "The least alpha that separates a pressed row from a hovered one by dE 3 on every rung. The approved design draws no pressed state." },
+      "inset": { "value": "rgba(255, 255, 255, 0.028)", "comment": "The approved sunk well, unmoved." },
+      "glass": { "value": "rgba(20, 20, 24, 0.90)", "comment": "The card at 0.90." },
       "scrim": { "value": "rgba(0, 0, 0, 0.6)" },
-      "veil": { "value": "rgba(21, 23, 28, 0.72)" },
+      "veil": { "value": "rgba(9, 9, 11, 0.65)", "comment": "The frame at 0.65." },
       "inverse": { "value": "#ffffff" }
     },
     "text": {
-      "primary": { "value": "#fafafa" },
-      "secondary": { "value": "#c9ced8" },
-      "tertiary": { "value": "#95a2b6", "comment": "#8c99ad measured 4.17:1 on a pressed row inside the elevated surface." },
-      "muted": { "value": "#686b70", "comment": "Decoration only. rgba(255, 255, 255, 0.3) measured 2.52:1 on the panel." },
+      "primary": { "value": "#ededf0" },
+      "secondary": { "value": "#b4b4bc" },
+      "tertiary": { "value": "#9797a1", "comment": "The approved #8c8c96, lightened dE 3.63 along lightness: it measured 3.92:1 on a pressed row inside a raised surface, and 4.21:1 on glass over the brand-primary fill." },
+      "muted": { "value": "#5f5f68", "comment": "The approved step, unmoved: 2.91:1 on the card and 3.15:1 on the rail, inside the decoration band." },
       "onBrand": { "value": "#000000" },
       "onAccent": { "value": "#ffffff", "comment": "The accent keeps its value in both palettes, so its label does too. Black on it measured 4.35:1." },
       "inverse": { "value": "#09090b" }
@@ -33,11 +30,11 @@
       "accentSoft": { "value": "rgba(84, 105, 212, 0.18)", "comment": "At 0.10, the alpha both palettes used to share, a selected row separated dE 3.94 from the panel while a plain hover overlay separated 4.68: selected read WEAKER than hovered." }
     },
     "border": {
-      "default": { "value": "#3f4145" },
-      "hover": { "value": "#4a4d52" },
-      "strong": { "value": "#4a4d52" },
-      "strongHover": { "value": "#5a5e65" },
-      "control": { "value": "#7f848e", "comment": "#3f4145 on the page measured 1.75:1, and #767b85 measured 2.83:1 on a pressed row inside a dialog body." }
+      "default": { "value": "#232329" },
+      "hover": { "value": "#303038" },
+      "strong": { "value": "#303038" },
+      "strongHover": { "value": "#3e3e48", "comment": "The default-to-strong step, dE 5.38, taken once more." },
+      "control": { "value": "#797983", "comment": "The approved neutral mark, #6e6e78, lightened dE 3.78: it measured 2.59:1 on a pressed row inside a raised surface." }
     },
     "focus": { "value": "#8b9ff5" },
     "feedback": {
@@ -65,7 +62,7 @@
       "3": { "value": "#38bdf8" },
       "4": { "value": "#86efac" },
       "5": { "value": "#ec4899" },
-      "other": { "value": "#71717a" }
+      "other": { "value": "#6e6e78", "comment": "The approved neutral mark, unmoved." }
     },
     "node": {
       "purple": { "value": "#8e6ed4" },

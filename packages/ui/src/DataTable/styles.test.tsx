@@ -17,6 +17,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { OPAQUE_SURFACES } from '@crewlethq/tokens/test/palette';
 import { expect, test } from 'vitest';
 
 const src = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -250,11 +251,6 @@ test('every surface that names a column writes the name in the same register', (
    inside a dialog, and an opaque hover is right on one of those three and a
    block of the wrong grey on the other two. So the rule is about the value,
    and it is the value that broke real screens. */
-/* Assembled rather than spelt out, for the reason FILL_STEPS is: a quoted
-   token name in a `.tsx` file reads to `check-css-variables.mjs` as a
-   component DECLARING one. */
-const ROW_HOVER_SURFACES = ['subtle', 'elevated', 'muted'].map((step) => `--color-surface-${step}`);
-
 test('a hovered row takes the overlay step, never an opaque surface', () => {
   const opaque: string[] = [];
   for (const [name, css] of Object.entries(SHEETS)) {
@@ -267,7 +263,7 @@ test('a hovered row takes the overlay step, never an opaque surface', () => {
         // so a rule reaching into a cell of a hovered row is not one of these.
         if (!/\btr[^\s]*:hover$/.test(one)) continue;
         const value = resolveLocals(css, paint[1]!);
-        for (const surface of ROW_HOVER_SURFACES) {
+        for (const surface of OPAQUE_SURFACES) {
           if (value.includes(surface)) opaque.push(`${name}: ${one} -> ${paint[1]!.trim()}`);
         }
       }

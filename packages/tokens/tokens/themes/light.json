@@ -1,26 +1,23 @@
 {
   "color": {
     "surface": {
-      "background": { "value": "#ffffff" },
-      "subtle": { "value": "#f4f4f5" },
-      "muted": { "value": "#f4f4f5" },
-      "elevated": { "value": "#ebebee", "comment": "One step lighter than the #e3e3e6 it replaces, which was DARKER than the page and so made a dialog body the tightest ground in the palette: the tertiary step measured 4.53:1 on it and the secondary step sat only dE 1.8 away. At #ebebee the page lifts dE 5.9 and no text value had to move." },
-      "topbar": { "value": "#ffffff" },
-      "topbarLift": { "value": "#f4f4f5" },
-      "topbarActive": { "value": "#ebebee" },
-      "hover": { "value": "rgba(9, 9, 11, 0.04)" },
-      "pressed": { "value": "rgba(9, 9, 11, 0.07)" },
-      "inset": { "value": "rgba(9, 9, 11, 0.05)" },
-      "glass": { "value": "rgba(244, 244, 245, 0.90)" },
+      "frame": { "value": "#ededea", "comment": "The darkest rung in light, so it is where every darkening overlay and the tertiary step come closest." },
+      "background": { "value": "#f9f9f8", "comment": "The sheet, dE 3.67 over the frame." },
+      "subtle": { "value": "#ffffff", "comment": "The card, dE 1.82 over the sheet: near-flat, because a card is found by its hairline." },
+      "elevated": { "value": "#f3f3f1", "comment": "Raised is a step DOWN in light: a chip on a white card reads by being greyer than it, dE 3.65." },
+      "hover": { "value": "rgba(9, 9, 11, 0.045)", "comment": "The approved hover is an OPAQUE #ebebe8, and it sits dE 0.60 off the frame: on the rail a hovered row was not there at all. Fitted as the dark alpha is, and held by the floor that a hovered row separates from every rung by dE 3 (3.10 on the frame): it lands dE 2.50 from the design on the frame, 1.06 on the sheet, 2.80 on the card and 0.75 on raised." },
+      "pressed": { "value": "rgba(9, 9, 11, 0.089)", "comment": "The least alpha that separates a pressed row from a hovered one by dE 3 on every rung. The approved design draws no pressed state." },
+      "inset": { "value": "rgba(9, 9, 11, 0.025)", "comment": "The approved sunk well, unmoved." },
+      "glass": { "value": "rgba(255, 255, 255, 0.90)", "comment": "The card at 0.90." },
       "scrim": { "value": "rgba(0, 0, 0, 0.6)" },
-      "veil": { "value": "rgba(255, 255, 255, 0.72)" },
+      "veil": { "value": "rgba(237, 237, 234, 0.65)", "comment": "The frame at 0.65." },
       "inverse": { "value": "#09090b" }
     },
     "text": {
-      "primary": { "value": "#09090b" },
-      "secondary": { "value": "#52525b", "comment": "#71717a measured 3.77:1 on the elevated surface, under the fact floor." },
-      "tertiary": { "value": "#5b5b64" },
-      "muted": { "value": "#8f8f95", "comment": "Decoration only. rgba(0, 0, 0, 0.4) measured 2.59:1 on the panel, under even the decoration band." },
+      "primary": { "value": "#17171a" },
+      "secondary": { "value": "#46464e" },
+      "tertiary": { "value": "#5e5e67", "comment": "The approved #696972, darkened dE 3.88 along lightness: it measured 3.83:1 on a pressed row on the frame, 4.22:1 on a hovered row in the rail, and 2.94:1 as a sort arrow drawn at 0.7." },
+      "muted": { "value": "#8d8d94", "comment": "Decoration only. The approved #a3a3aa measured 2.51:1 on the card and 2.14:1 on the rail, under even the decoration band; darkened dE 7.20, the least that brings both inside it." },
       "onBrand": { "value": "#ffffff" },
       "onAccent": { "value": "#ffffff" },
       "inverse": { "value": "#fafafa" }
@@ -33,18 +30,18 @@
       "accentSoft": { "value": "rgba(84, 105, 212, 0.14)", "comment": "Per theme, so a selected row separates from its ground by at least as much as a plain hover overlay does and by at least dE 3 from the overlay itself." }
     },
     "border": {
-      "default": { "value": "#e4e4e7" },
-      "hover": { "value": "#d4d4d8" },
-      "strong": { "value": "#d4d4d8" },
-      "strongHover": { "value": "#a1a1aa" },
-      "control": { "value": "#71717a", "comment": "#e4e4e7 on white measured 1.27:1, which is a boundary a reader cannot find." }
+      "default": { "value": "#e4e4e0" },
+      "hover": { "value": "#d3d3ce" },
+      "strong": { "value": "#d3d3ce" },
+      "strongHover": { "value": "#c2c2bc", "comment": "The default-to-strong step, dE 5.23, taken once more." },
+      "control": { "value": "#7a7a82", "comment": "The approved neutral mark, #8e8e96, darkened dE 6.71: it measured 2.29:1 on a pressed row on the frame. The plain border is never a control's edge: #e4e4e7 on white measured 1.27:1, which is a boundary a reader cannot find." }
     },
     "focus": { "value": "#5469d4" },
     "feedback": {
       "success": { "value": "#0f766e", "comment": "#46a758 measured 2.37:1 as a mark, under the 3:1 non-text floor." },
       "successInk": { "value": "#115e59" },
       "warning": { "value": "#b45309", "comment": "#f59e0b measured 1.68:1 as a mark." },
-      "warningInk": { "value": "#92400e" },
+      "warningInk": { "value": "#903f0c", "comment": "#92400e darkened dE 0.50: on the rail's current row, the warning tint over the accent tint over the frame, it measured 4.43:1." },
       "danger": { "value": "#991b1b", "comment": "White on #ef4444 measured 3.76:1, so the label of a destructive button was under the text floor." },
       "dangerHover": { "value": "#7f1d1d" },
       "dangerInk": { "value": "#991b1b" },
@@ -65,7 +62,7 @@
       "3": { "value": "#075985" },
       "4": { "value": "#1c9002", "comment": "A grass green rather than the forest green it was. #166534 sat dE 6.0 from the danger red under deuteranopia and 8.0 under protanopia, so the reader scanning a chart for failure could not tell the fourth series from it. Under normal vision they were 24.0 apart, which is how a rule measured under one vision missed it. This is as far as the reserved red can be pushed while the series is still a green, still clears 3:1 as a mark on white, and still separates from the pink beside it in the ramp." },
       "5": { "value": "#db2777" },
-      "other": { "value": "#71717a" }
+      "other": { "value": "#87878f", "comment": "The approved neutral mark, #8e8e96, darkened dE 2.33: it measured 2.77:1 as a mark on the frame." }
     },
     "node": {
       "purple": { "value": "#7150b3" },

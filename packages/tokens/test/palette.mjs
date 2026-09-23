@@ -42,22 +42,88 @@ export const SOFT_ALPHA = 0.12;
 // ---------------------------------------------------------------------------
 
 /**
- * Every opaque ground a piece of text can end up on.
+ * Every opaque ground a piece of text can end up on: the four RUNGS.
+ *
+ *   frame        the application ground: the rail, and the body around the sheet
+ *   background   the SHEET, the page content sits on
+ *   subtle       the CARD: a card, a popover, a dialog body
+ *   elevated     RAISED: a chip, a well, a key cap, a track, a lifted row
  *
  * This list is the whole point of the exercise. A text ramp anchored to the
  * panel it was designed against and then spent on a selected row inside a
  * dialog body is how a palette ships six steps under 4.5:1 without anybody
  * noticing.
+ *
+ * It is exported so a component suite measures on these grounds rather than
+ * on a copy of them: six suites in @crewlethq/ui each kept a copy of their
+ * own, and five of the six had already drifted from this list.
  */
 export const OPAQUE_SURFACES = [
+  '--color-surface-frame',
   '--color-surface-background',
   '--color-surface-subtle',
-  '--color-surface-muted',
   '--color-surface-elevated',
-  '--color-surface-topbar',
-  '--color-surface-topbar-lift',
-  '--color-surface-topbar-active',
 ];
+
+/**
+ * How far apart each rung sits from the one beneath it, in OKLab dE, and why.
+ *
+ * The four rungs are one ladder, and each step is held to what the step has
+ * to do on its own:
+ *
+ * - THE SHEET OVER THE FRAME is the whole layering device: a content sheet
+ *   floating inside the application ground. At dE 3, the floor this file holds
+ *   every "can a reader notice it" difference to, the sheet reads as a
+ *   separate plane; the approved dark sheet, #0f0f12, measured 2.91 and was
+ *   nudged to clear it.
+ * - A CARD OVER THE SHEET is deliberately near-flat, dE 1.5, because a card is
+ *   found by its HAIRLINE rather than by its fill: a page of cards each lifted
+ *   by dE 3 is a relief map. So the step comes with a second rule, and that is
+ *   the one that carries the card: the plain border (CARD_HAIRLINE) has to be
+ *   a line a reader can see, dE 3 against the card it bounds and against the
+ *   sheet around it. That a card actually DRAWS that border is a component
+ *   rule, held by the Card suite in @crewlethq/ui, because a palette cannot see
+ *   a stylesheet.
+ * - RAISED OVER THE CARD is a chip, a well or a key cap with no border of its
+ *   own, so it is the fill alone that says it is there: dE 3.
+ *
+ * There is deliberately no rule between the card and the frame, or raised and
+ * the sheet: nothing is drawn across two rungs at once, and a rule over a pair
+ * nobody puts side by side is a floor that binds for no reason.
+ */
+export const RUNG_STEPS = [
+  ['the sheet lifts off the frame', '--color-surface-background', '--color-surface-frame', 3],
+  ['a card separates from the sheet', '--color-surface-subtle', '--color-surface-background', 1.5],
+  ['raised separates from the card', '--color-surface-elevated', '--color-surface-subtle', 3],
+];
+
+/**
+ * The line that finds a card, and the two grounds it runs between: the card
+ * inside it and the sheet outside it. See RUNG_STEPS for why the card leans
+ * on it.
+ */
+export const CARD_HAIRLINE = ['--color-border-default', '--color-surface-subtle', '--color-surface-background'];
+export const HAIRLINE_DE = 3;
+
+/**
+ * THE OVERLAY STEPS HAVE TO BE SEEN, on every rung.
+ *
+ * A translucent overlay is one alpha on four grounds, and the alpha is FITTED
+ * (the hover token says how): the approved design paints its hover as one
+ * opaque colour, and a stronger overlay costs the tertiary text step contrast
+ * on the rungs it lightens or darkens most. Left to that trade alone, the
+ * cheapest answer for the text is an overlay nobody sees, and the light
+ * palette's frame kept asking for it: the design's own light hover sits dE
+ * 0.60 off the frame. This is the floor that stops it. A hovered row separates
+ * from its rung by dE 3, and a pressed row from a hovered one by dE 3 more,
+ * because dE 3 is the floor this file holds every "can a reader notice it"
+ * difference to. The marketing root is exempt, as it is from the rungs.
+ */
+export const OVERLAY_STEPS = [
+  ['a hovered row is visible on every rung', '--color-surface-hover', null],
+  ['a pressed row is visible over a hovered one', '--color-surface-pressed', '--color-surface-hover'],
+];
+export const OVERLAY_DE = 3;
 
 /**
  * The translucent overlays composited onto each ground. A hovered or pressed
@@ -144,12 +210,12 @@ export const AVATAR_TINTS = Array.from({ length: 10 }, (_, i) => `--color-avatar
  * reader's own row the tint sits on the accent tint instead, and that third
  * composite is both unmeasured and the tightest of the three.
  *
- * The rail's ground is the topbar surface rather than the page's, which is the
- * other half of why this is a list of its own: every pair is named here, so an
- * edit to the accent, to the warning hue or to either soft alpha shows its
- * cost on the rail rather than only inside a dialog.
+ * The rail's ground is the FRAME rather than the sheet, which is the other
+ * half of why this is a list of its own: every pair is named here, so an edit
+ * to the accent, to the warning hue or to either soft alpha shows its cost on
+ * the rail rather than only inside a dialog.
  */
-export const RAIL_GROUND = '--color-surface-topbar';
+export const RAIL_GROUND = '--color-surface-frame';
 
 /** The three grounds a row in the rail can have, over that ground. */
 export const RAIL_ROWS = [
@@ -204,7 +270,7 @@ export const SCRIM_GROUNDS = ['--color-brand-accent', ...AVATAR_TINTS];
  * The segmented row, which is the one CONTROL that paints a tint on a tint.
  *
  * Its container is the inset well and the option that is on is lifted off it
- * with the panel surface, so the label of the chosen answer sits on a
+ * with the card surface, so the label of the chosen answer sits on a
  * composite of two overlays rather than on a ground any other rule reaches.
  * It is the label a reader looks for first in the row, so it is held to the
  * primary step's own floor rather than to the 4.5 a fact needs.
@@ -215,12 +281,13 @@ export const SCRIM_GROUNDS = ['--color-brand-accent', ...AVATAR_TINTS];
  *
  * WHAT THIS RULE DOES NOT CLAIM, and the next reader should not assume: that
  * the chip's own FACE is separable from the well it sits in. It is not, on
- * every ground. The face is the panel surface and the well is the inset
- * overlay, and on the page ground those land dE 0.43 apart in light and 1.91
- * in dark, against a floor of 3 elsewhere in this file; on a panel they sit
- * 3.54 and 4.68 apart. So a segmented row is drawn on the product's own page
- * exactly as it is at :8020, and which option is on is read there from the
- * INK step, primary against tertiary, and from the chip's shadow. Both inks
+ * every ground. The face is the card surface and the well is the inset
+ * overlay, and on the sheet those land dE 1.17 apart in dark (3.61 in light)
+ * and inside a card 2.89 (1.83 in light), against a floor of 3 elsewhere in
+ * this file; only on the raised rung are they 5.84 and 5.40 apart. So a
+ * segmented row is drawn on the product's own page exactly as it is at
+ * :8020, and which option is on is read there from the INK step, primary
+ * against tertiary, and from the chip's shadow. Both inks
  * are measured, which is why this holds the on label to the primary floor
  * rather than to the 4.5 a fact needs. A restyle that flattened the two ink
  * steps together would take the last thing saying which option is on.
@@ -269,17 +336,30 @@ export const VEIL = '--color-surface-veil';
 export const VEIL_BAND = [1.5, 3];
 
 /**
- * The alpha the band above was measured at, and the only number the veil is
- * free to choose.
+ * The ground the veil is drawn in, and the alpha it is drawn at: the only
+ * number the veil is free to choose.
  *
- * Its COLOUR is not free: a veil is the page seen through less of itself, so
- * it is each root's own ground at this alpha and never a hue of its own. A
- * veil that is a different colour from the page under it is a wash laid over
- * the page, which moves every ground behind it somewhere the ink steps were
- * never measured against, and it does it in the one state where a reader
- * cannot tell a rendering fault from a design.
+ * Its COLOUR is not free: a veil is the application seen through less of
+ * itself, so it is each root's own FRAME at this alpha and never a hue of its
+ * own. The frame rather than the sheet because the veil covers the whole
+ * window, the rail as well as the sheet, and the frame is the ground both of
+ * them stand on: the application recedes into its own ground rather than
+ * under a film of its page. A veil that is a different colour from what is
+ * under it is a wash laid over it, which moves every ground behind it
+ * somewhere the ink steps were never measured against, and it does it in the
+ * one state where a reader cannot tell a rendering fault from a design.
+ *
+ * 0.65 is the approved dark scrim's 0.62 moved the least distance into the
+ * band for every root. At 0.62 the veiled dark page's own primary text still
+ * measured 3.02:1 to 3.15:1 over the four rungs, over the 3:1 ceiling, and the
+ * marketing root, near-white on black, needs 0.65 before its brightest
+ * composite comes under it. At 0.65 dark measures 2.73:1 to 2.84:1, light
+ * 2.18:1 to 2.30:1 and the marketing root 2.75:1 to 2.93:1. The approved light
+ * scrim, a dark wash at 0.28, left the light page at 8.35:1 to 9.64:1: a page
+ * nobody had faded at all.
  */
-export const VEIL_ALPHA = 0.72;
+export const VEIL_GROUND = '--color-surface-frame';
+export const VEIL_ALPHA = 0.65;
 
 // The data surfaces
 // ---------------------------------------------------------------------------
@@ -453,9 +533,9 @@ function resolve(values, name, ground) {
 /**
  * Run every rule over one state's values.
  * `profile` is 'full' for a theme, or 'base' for the marketing root, which is
- * exempt from the separation, ground and card rules: its pure black ground and
- * its single brand hue are a deliberate marketing look rather than a product
- * palette.
+ * exempt from the separation, rail, overlay and rung rules: its one pure black
+ * ground and its single brand hue are a deliberate marketing look rather than
+ * a product palette.
  */
 function checkState(state, values, profile, push) {
   const { ground, opaque, all } = surfacesOf(values);
@@ -592,13 +672,13 @@ function checkState(state, values, profile, push) {
     // THE VEIL, on every ground it can be drawn over. See VEIL.
     const [floor, ceiling] = VEIL_BAND;
     const veil = values.get(VEIL);
-    const own = withAlpha(values.get('--color-surface-background'), VEIL_ALPHA);
+    const own = withAlpha(values.get(VEIL_GROUND), VEIL_ALPHA);
     say(
-      'the veil is this root at an alpha, not a colour of its own',
+      "the veil is this root's frame at an alpha, not a colour of its own",
       veil === own,
       VEIL,
       VEIL_ALPHA,
-      `"${veil}" is the root's own ground at ${VEIL_ALPHA} ("${own}")`,
+      `"${veil}" is the root's own frame at ${VEIL_ALPHA} ("${own}")`,
     );
     const ink = flatten(veil, colour('--color-text-primary'));
     for (const [name, rgb] of opaque) {
@@ -779,12 +859,39 @@ function checkState(state, values, profile, push) {
     say('the neutral ramp stays neutral', measured <= 2.2, name, measured, `chroma ${measured.toFixed(2)} <= 2.2`);
   }
 
+  // THE OVERLAY STEPS. See OVERLAY_STEPS.
+  for (const [rule, overlay, beneath] of OVERLAY_STEPS) {
+    for (const [name, rgb] of opaque) {
+      const from = beneath === null ? rgb : flatten(values.get(beneath), rgb);
+      const measured = deltaE(flatten(values.get(overlay), rgb), from);
+      say(
+        rule,
+        measured >= OVERLAY_DE,
+        `${overlay} on ${name}`,
+        measured,
+        `dE ${measured.toFixed(2)} >= ${OVERLAY_DE} from ${beneath === null ? 'the rung' : `${beneath} on it`}`,
+      );
+    }
+  }
+
+  // THE LADDER. See RUNG_STEPS.
+  for (const [rule, upper, lower, floor] of RUNG_STEPS) {
+    const measured = deltaE(colour(upper), colour(lower));
+    say(rule, measured >= floor, `${upper} over ${lower}`, measured, `dE ${measured.toFixed(2)} >= ${floor}`);
+  }
   {
-    // "The ground is lifted off pure white" re-expressed: uilet's light page
-    // IS white, with grey cards on it, so what has to hold is that the card
-    // differs from the page.
-    const measured = deltaE(flatten(values.get('--color-surface-subtle'), ground), ground);
-    say('the card differs from the page', measured >= 3, '--color-surface-subtle', measured, `dE ${measured.toFixed(1)} >= 3`);
+    // The other half of the card's step. See CARD_HAIRLINE.
+    const [line, card, sheet] = CARD_HAIRLINE;
+    for (const side of [card, sheet]) {
+      const measured = deltaE(colour(line), colour(side));
+      say(
+        'the hairline that finds a card is visible on both sides of it',
+        measured >= HAIRLINE_DE,
+        `${line} on ${side}`,
+        measured,
+        `dE ${measured.toFixed(2)} >= ${HAIRLINE_DE}`,
+      );
+    }
   }
 }
 

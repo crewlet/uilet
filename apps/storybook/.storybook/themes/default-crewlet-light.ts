@@ -26,7 +26,7 @@ export default create({
   colorPrimary: color.brand.accent,
   colorSecondary: color.brand.accent,
 
-  appBg: light.surface.subtle,
+  appBg: light.surface.frame,
   appContentBg: light.surface.background,
   appPreviewBg: light.surface.background,
   appBorderColor: light.border.strong,
@@ -36,7 +36,7 @@ export default create({
   textInverseColor: light.text.inverse,
   textMutedColor: light.text.tertiary,
 
-  barBg: light.surface.topbar,
+  barBg: light.surface.background,
   barTextColor: light.text.tertiary,
   barHoverColor: light.text.primary,
   barSelectedColor: color.brand.accent,

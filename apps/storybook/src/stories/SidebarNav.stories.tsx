@@ -31,7 +31,7 @@ const meta: Meta<typeof SidebarNav> = {
         <div
           style={{
             width: 'var(--size-shell-rail)',
-            background: 'var(--color-surface-topbar)',
+            background: 'var(--color-surface-frame)',
             borderRight: '1px solid var(--color-border-default)',
           }}
         >
@@ -164,7 +164,7 @@ export const OneLongRow: Story = {
 export const EveryRowState: Story = {
   parameters: { bare: true },
   render: () => (
-    <div style={{ display: 'flex', alignItems: 'flex-start', background: 'var(--color-surface-topbar)' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', background: 'var(--color-surface-frame)' }}>
       {(['compact', 'normal', 'comfortable'] as const).map((step) => (
         <div
           key={step}

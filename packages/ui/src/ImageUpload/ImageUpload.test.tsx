@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { contrast, flatten, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
+import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
 import { avatarSquareCorner } from '../Avatar/index.js';
 import { ImageUpload } from './index.js';
 
@@ -110,12 +110,11 @@ describe('ImageUpload', () => {
     // variable check reads a quoted `--name` in a .tsx file as a declaration.
     const token = (name: string) => `--${name}`;
     const grounds = [
-      'surface-background',
-      'surface-subtle',
-      'surface-elevated',
-      'brand-accent',
-      ...Array.from({ length: 10 }, (_, index) => `avatar-tint-${index}`),
-    ].map((name) => token(`color-${name}`));
+      ...OPAQUE_SURFACES,
+      ...['brand-accent', ...Array.from({ length: 10 }, (_, index) => `avatar-tint-${index}`)].map((name) =>
+        token(`color-${name}`),
+      ),
+    ];
 
     const failures: string[] = [];
     for (const [state, values] of Object.entries(states)) {

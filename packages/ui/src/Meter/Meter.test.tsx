@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
-import { contrast, flatten, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
+import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
 import { Meter, meterTone, progressTone } from './index.js';
 
 afterEach(cleanup);
@@ -192,24 +192,22 @@ describe('Meter', () => {
     expect(container.querySelector<HTMLElement>('.crewlet-meter__fill')!.dataset['tone']).toBe('neutral');
   });
 
-  test('every fill clears 3:1 against the track it sits in, with one named shortfall', () => {
+  test('every fill clears 3:1 against the track it sits in, on every rung', () => {
     // MEASURED ON THE TRACK, not on the card. The fill's adjacent colour is
     // the unfilled remainder, and a bar a reader cannot separate from its own
     // well is a bar with no reading. That also refuses the engine's neutral,
     // which is the decoration step and measures 2.33:1 on a light page.
     //
-    // THE ONE SHORTFALL IS NAMED HERE RATHER THAN MEASURED AWAY. Two
-    // mid-luminance hues, the accent and the danger red, land at 2.74:1
-    // against a track on the two deepest dark grounds: the inset well
-    // LIGHTENS in the dark palette, which moves it towards exactly those two.
-    // Neither colour is this component's to change, and every other token
-    // tried as a track is worse: a border step measures 1.07:1 against its own
-    // surface, so the well itself vanishes. Closing it needs a recessed
-    // surface step that darkens in the dark palette, or a lift to those two
-    // fills, and both are @crewlethq/tokens decisions. The set is asserted
-    // EXACTLY, so a third composite falling under, one of these two getting
-    // worse, or the palette fixing them all fails this case and brings
-    // somebody back to read this paragraph.
+    // THERE IS NO NAMED SHORTFALL ANY MORE. The accent and the danger red used
+    // to land at 2.74:1 against a track on the two most raised dark grounds,
+    // because the inset well LIGHTENS in the dark palette and moved them
+    // towards exactly those two mid-luminance fills. The four-rung palette
+    // closed it from the token side, where this suite said it had to be
+    // closed: the well is the approved sunk step at 0.028 rather than 0.05,
+    // and the raised rung is #1b1b20 where the old top step was #22252b. The
+    // tightest composite is now the accent on a track over the raised rung in
+    // dark, at 3.30:1. A fill that falls under the floor again fails here
+    // rather than joining a list.
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Meter.css'), 'utf8');
     const tokensCss = resolve(dirname(fileURLToPath(import.meta.url)), '../../../tokens/dist/css');
     const states = paletteStates({
@@ -219,22 +217,13 @@ describe('Meter', () => {
     // Spelled without the leading dashes and prefixed at use: the package's
     // variable check reads a quoted `--name` in a .tsx file as a declaration.
     const token = (name: string) => `--${name}`;
-    const SURFACES = [
-      'surface-background',
-      'surface-subtle',
-      'surface-muted',
-      'surface-elevated',
-      'surface-topbar',
-      'surface-topbar-lift',
-      'surface-topbar-active',
-    ].map((name) => token(`color-${name}`));
 
     const fills = [...css.matchAll(/\.crewlet-meter__fill[^{]*\{[^}]*background:\s*var\((--[\w-]+)\)/g)].map(
       (match) => match[1] ?? '',
     );
     expect(fills.length).toBe(5);
 
-    const short: string[] = [];
+    let measured = 0;
     const failures: string[] = [];
     for (const [state, values] of Object.entries(states)) {
       if (state === 'base') continue;
@@ -246,24 +235,18 @@ describe('Meter', () => {
         return parseHex(raw) ?? flatten(raw, page);
       };
       for (const fill of fills) {
-        for (const surface of SURFACES) {
+        for (const surface of OPAQUE_SURFACES) {
           const track = flatten(values.get(token('color-surface-inset')) ?? '', read(surface));
           const ratio = contrast(read(fill), track);
-          if (ratio >= 3) continue;
-          short.push(`${state}: ${fill} on ${surface}`);
-          // A floor under the floor: the two known composites may not get any
-          // worse than they are while the palette carries them.
-          if (ratio < 2.7) failures.push(`${state}: ${fill} on ${surface}: ${ratio.toFixed(2)}:1`);
+          measured += 1;
+          if (ratio < 3) failures.push(`${state}: ${fill} on ${surface}: ${ratio.toFixed(2)}:1`);
         }
       }
     }
+    // Three theme states, five fills, four rungs: a reading that found no
+    // fill or no rung would pass for any palette at all.
+    expect(measured).toBe(3 * 5 * 4);
     expect(failures).toEqual([]);
-    expect(short.sort()).toEqual([
-      'dark: --color-brand-accent on --color-surface-elevated',
-      'dark: --color-brand-accent on --color-surface-topbar-active',
-      'dark: --color-feedback-danger on --color-surface-elevated',
-      'dark: --color-feedback-danger on --color-surface-topbar-active',
-    ]);
   });
 
   test('carries no axe violation', async () => {

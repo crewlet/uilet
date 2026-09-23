@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { contrast, flatten, paletteStates, parseHex, type Rgb } from '@crewlethq/tokens/test/palette';
+import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex, type Rgb } from '@crewlethq/tokens/test/palette';
 import { WarningGlyph } from '@crewlethq/icons/glyphs';
 import {
   DENSITIES as DENSITY_SETTINGS,
@@ -227,13 +227,6 @@ describe('Tag colour', () => {
    * spells them in a way the scan does not mistake for one.
    */
   const token = (name: string) => `--${name}`;
-  const SURFACES = [
-    'color-surface-background',
-    'color-surface-subtle',
-    'color-surface-muted',
-    'color-surface-elevated',
-  ].map(token);
-
   /** Every `.crewlet-tag--<variant>` rule that binds a fill and an ink. */
   function declaredPairs(): { variant: string; fill: string; ink: string }[] {
     const found: { variant: string; fill: string; ink: string }[] = [];
@@ -277,7 +270,7 @@ describe('Tag colour', () => {
       if (ground === null) throw new Error(`${state} has no opaque page colour`);
       for (const { variant, fill, ink } of declaredPairs()) {
         const inkRgb = resolveColour(values, ink, ground);
-        for (const surface of SURFACES) {
+        for (const surface of OPAQUE_SURFACES) {
           const beneath = resolveColour(values, surface, ground);
           const ratio = contrast(inkRgb, flatten(values.get(fill) ?? '', beneath));
           if (ratio < 4.5) failures.push(`${state}: ${variant} on ${surface}: ${ratio.toFixed(2)}:1`);
@@ -294,7 +287,7 @@ describe('Tag colour', () => {
       const ground = parseHex(values.get(token('color-surface-background')) ?? '');
       if (ground === null) throw new Error(`${state} has no opaque page colour`);
       const ink = resolveColour(values, token('color-text-secondary'), ground);
-      for (const surface of SURFACES) {
+      for (const surface of OPAQUE_SURFACES) {
         const beneath = resolveColour(values, surface, ground);
         const ratio = contrast(ink, flatten(values.get(token('color-surface-inset')) ?? '', beneath));
         if (ratio < 4.5) failures.push(`${state}: neutral on ${surface}: ${ratio.toFixed(2)}:1`);
@@ -362,7 +355,7 @@ describe('Tag colour', () => {
         // and a feedback tone drop the suffix the same way.
         const mark = fill.replace(/-soft$/, '');
         if (values.get(mark) === undefined) continue;
-        for (const surface of SURFACES) {
+        for (const surface of OPAQUE_SURFACES) {
           const tint = flatten(values.get(fill) ?? '', read(surface));
           if (contrast(read(mark), tint) < 3) fillFailures.push(`${state}: ${variant} on ${surface}`);
           const ratio = contrast(read(ink), tint);

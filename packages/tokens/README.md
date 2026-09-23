@@ -102,11 +102,60 @@ Other changes a consumer may notice, none of which needs an edit:
 ```ts
 import { themes } from '@crewlethq/tokens';
 
-themes.light.color.text.secondary; // '#52525b'
+themes.light.color.text.secondary; // '#46464e'
 themes.dark.color.data['4']; // '#86efac'
 ```
 
 Prefer the custom property wherever CSS can reach: a value read here is taken at build time, so it does not follow a theme the reader changes. The package's own suite compares every exported value against the declaration in `themes.css`, in both directions, because two spellings of one palette is the arrangement that drifts.
+
+## Surfaces
+
+Four opaque rungs, lowest first. Every ground a piece of text can land on is one of these, or a translucent overlay over one of them:
+
+| Rung | Token | Dark | Light | What it is for |
+| --- | --- | --- | --- | --- |
+| Frame | `--color-surface-frame` | `#09090b` | `#ededea` | The application ground: the rail, and the body around the floating sheet. `@crewlethq/tokens/css/base` paints `body` with it. |
+| Sheet | `--color-surface-background` | `#101013` | `#f9f9f8` | The page content sits on: the main column, its top bar, a canvas. It keeps its old name because everything that means "the ground content sits on" already reads it. |
+| Card | `--color-surface-subtle` | `#141418` | `#ffffff` | A card, a popover, a dialog body, a table's header band. |
+| Raised | `--color-surface-elevated` | `#1b1b20` | `#f3f3f1` | A chip, a segmented well, a key cap, a meter track, a lifted row. In light it is a step *down*: a chip on a white card reads by being greyer than it. |
+
+Each step is held to what it has to do, in OKLab dE, by the palette suite:
+
+- **The sheet lifts off the frame by dE 3** (3.37 dark, 3.67 light). That lift is the whole layering device. The approved dark sheet, `#0f0f12`, measured 2.91 and was lifted along lightness alone to `#101013`.
+- **A card separates from the sheet by dE 1.5** (1.87 dark, 1.82 light), near-flat on purpose: a card is found by its **hairline**, and a page of cards each lifted by dE 3 is a relief map. So `--color-border-default` is held to dE 3 against both the card and the sheet (6.57 and 8.44 dark, 8.24 and 6.42 light), and `@crewlethq/ui`'s Card suite holds every card variant that stands on this rung to drawing it.
+- **Raised separates from the card by dE 3** (3.13 dark, 3.65 light), because a chip or a well has no border of its own.
+
+`--color-surface-hover`, `-pressed` and `-inset` stay **translucent**, so a hovered row is right on every rung. The approved design paints its hover as one opaque colour, which one alpha cannot be on four grounds, so the alpha is fitted: the value that moves the design least across the four rungs and the tertiary text step together (a stronger overlay takes contrast from that step where it lands on raised). It is held from below by a floor the suite measures, that a hovered row separates from every rung by dE 3 and a pressed row from a hovered one by dE 3 more: without it the fit's cheapest answer is an overlay nobody sees, and the design's own light hover sits dE 0.60 off the frame. The inset well is the design's own. `--color-surface-glass` is the card at 0.90, and `--color-surface-veil`, the ground a dialog sits on, is each root's own **frame** at 0.65: the application recedes into its own ground rather than under a film of its page.
+
+Where an approved value failed one of the suite's floors on the new rungs, the floor won and the value moved as little as it could along lightness, keeping its hue. Each token's own comment names the value it replaced, the distance it moved and the measurement that forced it:
+
+| Token | Approved | Shipped | Moved (dE) | Because |
+| --- | --- | --- | --- | --- |
+| `--color-surface-background` dark | `#0f0f12` | `#101013` | 0.46 | dE 2.91 off the frame, under 3 |
+| `--color-text-tertiary` dark | `#8c8c96` | `#9797a1` | 3.63 | 3.92:1 on a pressed row inside a raised surface |
+| `--color-text-tertiary` light | `#696972` | `#5e5e67` | 3.88 | 3.83:1 on a pressed row on the frame |
+| `--color-text-muted` light | `#a3a3aa` | `#8d8d94` | 7.20 | 2.51:1 on the card and 2.14:1 on the rail, under the decoration band |
+| `--color-border-control` dark | `#6e6e78` | `#797983` | 3.78 | 2.59:1 on a pressed row inside a raised surface |
+| `--color-border-control` light | `#8e8e96` | `#7a7a82` | 6.71 | 2.29:1 on a pressed row on the frame |
+| `--color-data-other` light | `#8e8e96` | `#87878f` | 2.33 | 2.77:1 as a mark on the frame |
+
+One value outside the neutral family moved with them: the light `--color-feedback-warning-ink`, `#92400e` to `#903f0c` (dE 0.50), because the attention count on the rail's current row, drawn on the warning tint over the accent tint over the frame, measured 4.43:1 there.
+
+### Breaking change in 0.5.0: the four rungs
+
+The surface ramp was three rungs (`background`, `subtle` and `elevated`) plus four names that repeated them: `muted` was byte-identical to `subtle` in both palettes, and the three `topbar` steps held the values of `background`, `subtle` and `elevated`. They are gone, and the frame is new.
+
+| What changed | What to change |
+| --- | --- |
+| `--color-surface-muted` (`color.surface.muted`) is removed. | `--color-surface-subtle`, which held the same value. |
+| `--color-surface-topbar` (`color.surface.topbar`) is removed. | `--color-surface-frame` for the ground a rail stands on; `--color-surface-background` for a top bar inside the page, which is the value it held. |
+| `--color-surface-topbar-lift` (`color.surface.topbarLift`) is removed. | `--color-surface-subtle`, which held the same value. |
+| `--color-surface-topbar-active` (`color.surface.topbarActive`) is removed. | `--color-surface-elevated`, which held the same value. |
+| `--color-surface-frame` (`color.surface.frame`) is new, and `@crewlethq/tokens/css/base` paints `body` with it rather than with `--color-surface-background`. | An application that floats its page on the body paints that page `--color-surface-background` itself; one with its own reset paints its application ground with the frame. |
+| The four rungs, the overlays, the borders, the neutral text steps and `--color-data-other` take the values above: the approved ones, or the least move from them that clears the suite's floors. | Nothing. |
+| `--color-surface-veil` is each root's own frame at 0.65. It was the root's `--color-surface-background` at 0.72. | An application that composed its own veil reads `--color-surface-veil`, or derives it from the frame. |
+| In `@crewlethq/tokens/css/legacy`, `--bg-primary`, `--bg-secondary`, `--bg-tertiary` and `--bg-elevated` read `--color-surface-background`, `-subtle`, `-elevated` and `-elevated`. They read the three `topbar` steps. | Nothing under `@crewlethq/tokens/css/themes`, where those held the same values. With `tokens.css` alone, `--bg-primary` is now the marketing root's black rather than `#15171c`. |
+| In `@crewlethq/tokens/test/palette`, `OPAQUE_SURFACES` is the four rungs and `RAIL_GROUND` is `--color-surface-frame`. The rule `the card differs from the page` is gone; `the sheet lifts off the frame`, `a card separates from the sheet`, `the hairline that finds a card is visible on both sides of it`, `raised separates from the card`, `a hovered row is visible on every rung` and `a pressed row is visible over a hovered one` are new; `the veil is this root at an alpha, not a colour of its own` is `the veil is this root's frame at an alpha, not a colour of its own`, and `VEIL_ALPHA` is 0.65. `VEIL_GROUND`, `RUNG_STEPS`, `CARD_HAIRLINE`, `HAIRLINE_DE`, `OVERLAY_STEPS` and `OVERLAY_DE` are new exports. | Rename a rule a suite filters on, and measure on `OPAQUE_SURFACES` rather than on a list of surface names of its own. |
 
 ## Density
 
@@ -128,7 +177,7 @@ Every spacing and size token is emitted as `calc(Npx * var(--density, 1))`, so a
 
 ## The document baseline
 
-`@crewlethq/tokens/css/base` is the opt-in document baseline: the box-sizing reset, the document's own type and colour, headings, controls that inherit the font, `code` and `kbd` in mono with tabular figures, one `:focus-visible` ring, `::selection`, themed scrollbars and the global reduced-motion collapse. Every value comes from a token, so it follows the palette and the density without a rule of its own.
+`@crewlethq/tokens/css/base` is the opt-in document baseline: the box-sizing reset, the document's own type and colour (the body on the frame, the lowest of the [four rungs](#surfaces)), headings, controls that inherit the font, `code` and `kbd` in mono with tabular figures, one `:focus-visible` ring, `::selection`, themed scrollbars and the global reduced-motion collapse. Every value comes from a token, so it follows the palette and the density without a rule of its own.
 
 The focus indicator is an **outline**, never a box-shadow alone. Forced-colors mode drops every box-shadow and keeps outlines, so a ring drawn as a shadow disappears for exactly the readers who most need one. `--shadow-focus` is still there for a component that wants a shadow as well, paired with a transparent outline so forced colors substitutes a system colour for it. `--size-focus-ring-inset-offset` is the offset for a focusable row inside a clipping scroller, where an outset ring is clipped by the scroller and painted over by the next row.
 
@@ -160,7 +209,7 @@ A `-soft` step is its own fill at alpha 0.12 and a `-line` step is the same fill
 
 ## The palette suite
 
-`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the translucent overlays composited over each opaque ground included), every ink on its own soft tint, every fill as a mark, the focus ring, the control boundary, the hue separations under normal, protan and deuteranopic vision, and the structure of the theme file itself.
+`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), every ink on its own soft tint, every fill as a mark, the focus ring, the control boundary, the steps between the rungs and the hairline that finds a card, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision, and the structure of the theme file itself. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
 
 The module is **published**, as `@crewlethq/tokens/test/palette`, so a consumer runs the same rules over the version it installed:
 

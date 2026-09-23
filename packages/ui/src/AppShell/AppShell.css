@@ -53,12 +53,15 @@
   outline-offset: 2px;
 }
 
+/* The rail stands on the FRAME, the application ground, and the column beside
+   it on the sheet: the two lowest rungs, which are what separate the chrome a
+   reader navigates with from the page they are reading. */
 .crewlet-app-shell__rail {
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  background: var(--color-surface-topbar);
+  background: var(--color-surface-frame);
   border-right: 1px solid var(--color-border-default);
 }
 
@@ -233,7 +236,7 @@
   height: var(--crewlet-app-shell-topbar);
   padding: 0 var(--spacing-4);
   border-bottom: 1px solid var(--color-border-default);
-  background: var(--color-surface-topbar);
+  background: var(--color-surface-background);
 }
 
 .crewlet-app-shell__title {

@@ -1267,7 +1267,7 @@ body.crewlet-data-table-resizing {
   display: inline-block;
   height: var(--spacing-3);
   border-radius: var(--radius-xs);
-  background: var(--color-surface-elevated, var(--color-surface-muted));
+  background: var(--color-surface-elevated);
   animation: crewlet-data-table-skeleton-pulse var(--crewlet-data-table-skeleton-duration) var(--motion-easing-in-out) infinite;
   vertical-align: middle;
 }
