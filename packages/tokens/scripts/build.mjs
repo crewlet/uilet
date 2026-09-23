@@ -19,11 +19,12 @@ const root = resolve(__dirname, '..');
 // The token source
 // ---------------------------------------------------------------------------
 
-// tokens/*.json holds the base: the marketing palette weblet reads, and every
-// token that does not change with a theme. tokens/themes/*.json holds the
-// slots that do. The base carries a value for every themed slot (the marketing
-// palette's, which is dark), so an application that imports tokens.css alone
-// still has a value for all of them; the palette suite asserts it.
+// tokens/*.json holds the base (every file but intent.json, the design record;
+// see INTENT_FILE): the marketing palette weblet reads, and every token that
+// does not change with a theme. tokens/themes/*.json holds the slots that do.
+// The base carries a value for every themed slot (the marketing palette's,
+// which is dark), so an application that imports tokens.css alone still has a
+// value for all of them; the palette suite asserts it.
 const tokensDir = resolve(root, 'tokens');
 const themesDir = resolve(tokensDir, 'themes');
 const fontsDir = resolve(root, 'fonts');
@@ -63,15 +64,22 @@ const NODE_HUES = ['purple', 'cyan', 'green', 'amber', 'rose', 'blue'];
 // its r, g, b to the accent's.
 const ACCENT_LINE_ALPHA = 0.32;
 
+// tokens/intent.json sits beside the token source and is not part of it: it
+// is the approved design every colour here is measured from, keyed by the
+// design's own names, and scripts/fit-palette.mjs is what reads it. Merged as
+// a group it would emit a custom property for every declaration the design
+// makes, under names no stylesheet should ever read.
+const INTENT_FILE = 'intent.json';
+
 async function readTokenFile(path) {
   return JSON.parse(await readFile(path, 'utf8'));
 }
 
-/** Every tokens/*.json merged, in name order, with tokens/themes/ left out. */
+/** Every tokens/*.json merged, in name order, with tokens/themes/ and the design record left out. */
 async function readBaseTokens() {
   const merged = {};
   for (const entry of (await readdir(tokensDir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+    if (!entry.isFile() || !entry.name.endsWith('.json') || entry.name === INTENT_FILE) continue;
     const group = await readTokenFile(resolve(tokensDir, entry.name));
     for (const [name, value] of Object.entries(group)) {
       if (name in merged) throw new Error(`tokens/${entry.name}: the group "${name}" is already declared by another file`);

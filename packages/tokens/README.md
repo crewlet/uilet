@@ -274,7 +274,38 @@ expect(failures.map(describeFailure)).toEqual([]);
 
 One implementation, two gates. The constraint is that the floors are kept, not only that the measurement moves, and a tokens bump that lowered a ratio would otherwise reach a consumer through an auto-merged dependency update with nothing measuring a ratio again.
 
-The tarball ships `test/color.mjs`, `test/palette.mjs` and `test/palette.test.mjs`, so `node --test "node_modules/@crewlethq/tokens/test/*.test.mjs"` runs the whole table over the installed version with no configuration at all. `test/build.test.mjs` stays out of it: it reads the token source the build compiles from, which a tarball does not carry. So does `test/fonts.test.mjs`, which decodes every file in `fonts/` and holds [`fonts/README.md`](./fonts/README.md), the built `@font-face` rules and [`fonts/OFL.txt`](./fonts/OFL.txt) to what the files say about themselves: a replaced file is caught in this repository, before it is published, not in an installed copy.
+The tarball ships `test/color.mjs`, `test/palette.mjs`, `test/palette.d.mts` and `test/palette.test.mjs`, so the whole table runs over the installed version with no configuration at all, from the application's root:
+
+```sh
+node node_modules/@crewlethq/tokens/test/palette.test.mjs
+```
+
+or with the package's own `node --test "test/*.test.mjs"` from inside `node_modules/@crewlethq/tokens`. Not with `node --test` over a path into `node_modules` from outside it: the test runner skips `node_modules`, a glob included, runs no test at all and exits 0. `test/tarball.test.mjs` packs this package with npm, installs the tarball into an empty directory and runs both commands there, counting the tests that ran, and imports the suite by its package name to hold `runPalette`, `paletteStates`, `describeFailure` and `tightest` to the shapes `test/palette.d.mts` declares, which is how an application's own suite reaches them.
+
+`test/build.test.mjs` stays out of the tarball: it reads the token source the build compiles from, which a tarball does not carry. So do `test/intent.test.mjs`, which reads the design record below, `test/tarball.test.mjs`, which packs the package from outside it, and `test/fonts.test.mjs`, which decodes every file in `fonts/` and holds [`fonts/README.md`](./fonts/README.md), the built `@font-face` rules and [`fonts/OFL.txt`](./fonts/OFL.txt) to what the files say about themselves: a replaced file is caught in this repository, before it is published, not in an installed copy.
+
+### The approved palette, and the fit
+
+[`tokens/intent.json`](./tokens/intent.json) is the approved design's palette: the two token blocks every artboard declares (`.app` for dark, `.app.light` for light), declaration for declaration, each with the custom property that ships it, and the colours the artboards spell outside those blocks. It is a record rather than a token file: the build skips it and nothing is emitted from it. `test/intent.test.mjs` holds it to naming only tokens the palettes declare, the same names for the same tokens in both palettes, and values that parse.
+
+The surfaces, the neutral text and border steps and the accent ship the value recorded there, or the least move from it that one of the palette suite's floors forced; the status and chart hues still ship the kit's own earlier values, which the record does not describe. [`scripts/fit-palette.mjs`](./scripts/fit-palette.mjs) is what finds those moves:
+
+```sh
+npm run build --workspace @crewlethq/tokens
+node packages/tokens/scripts/fit-palette.mjs          # both palettes, about two minutes
+node packages/tokens/scripts/fit-palette.mjs light    # one of them
+```
+
+From the recorded values it searches for the palette that moves the design least in all, in OKLab dE, while clearing every rule, each candidate measured by `runPalette` itself over the candidate stylesheets:
+
+- a neutral step and the accent's family move along lightness alone, as every move before the fit was made; a state or chart hue moves inside a hue family 15 degrees either side of the design's; a translucent step moves its alpha;
+- only a value that fails a floor of its own moves, never the ground it was measured on, and never a value that clears every floor it has to spare another;
+- the four rungs keep the design's order, and so does the text ramp, because the suite holds a step to a distance and not to a direction (in light, raised is below the card);
+- a token the design never drew (the focus ring, a pressed row, the primary action's hover and press, a control's boundary) is fitted from the value it is a step of, and only after the design's own values: it never buys a design value back by moving itself.
+
+It is seeded (mulberry32 at seed 1) and spends a fixed budget of palette evaluations, so the same built stylesheets give the same fit, to the byte. For each value it fits it prints the design value, the value the fit ships, the dE between them and the binding rule, which is what fails when that value alone goes back to the design; then every token whose built value is not the fit. A token the floors moved says the same three things in its own comment in `tokens/themes/*.json`: the design value, the dE of the move and the measurement that forced it.
+
+The fit is a development tool. It is not published, and no test runs it or reads what it prints: the gate is the palette suite, and the fit is how a value that passes it is chosen.
 
 ## Fonts
 
@@ -304,7 +335,7 @@ It is the one stylesheet in this package that contacts a third-party host, which
 
 ## Add or change a token
 
-1. Edit a JSON file in `tokens/`, or `tokens/themes/light.json` and `tokens/themes/dark.json` for a slot that changes with the palette. A themed slot needs an entry in **both** theme files and a value in `tokens/color.json`, which the palette suite checks.
+1. Edit a JSON file in `tokens/`, or `tokens/themes/light.json` and `tokens/themes/dark.json` for a slot that changes with the palette. A themed slot needs an entry in **both** theme files and a value in `tokens/color.json`, which the palette suite checks. A colour the design draws starts from its value in `tokens/intent.json`, which changes first when the design does, and `scripts/fit-palette.mjs` gives the least move from it that clears the suite (see [The approved palette, and the fit](#the-approved-palette-and-the-fit)).
 2. Run `npm run build` (or `npm run dev` for watch).
 3. Run `npm test`. A colour change that lowers a measured floor fails here.
 4. The generated `dist/` and `src/index.ts` are regenerated.

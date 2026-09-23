@@ -1,0 +1,162 @@
+{
+  "$comment": [
+    "The approved palette, as the design artboards declare it: the record every shipped colour is measured from. Nothing is emitted from this file; the build reads every other tokens/*.json and skips it.",
+    "dark and light are the artboards' .app and .app.light blocks, declaration for declaration, each with the custom property that ships it (token), or null where the kit has no token for it and a note saying why. The twelve artboards declare the same two blocks byte for byte. literals are the colours the artboards spell outside those blocks, identically in both palettes.",
+    "A token whose shipped value is not the value here names this value in its own comment, with the dE of the move and the rule that forced it. scripts/fit-palette.mjs recomputes those moves from this file: the least total move from these values that clears every rule in test/palette.mjs.",
+    "Values are verbatim but for spelling: a hex in lower case, and an rgba() with a leading zero on its alpha and a space after each comma."
+  ],
+  "artboards": ["Home", "Inbox", "Command palette", "Navigation map", "Board", "Task", "Trace", "Org", "Agent", "Knowledge", "Spend", "Settings"],
+  "dark": {
+    "--bg": { "value": "#09090b", "token": "--color-surface-frame" },
+    "--panel": { "value": "#0f0f12", "token": "--color-surface-background" },
+    "--card": { "value": "#141418", "token": "--color-surface-subtle" },
+    "--raised": { "value": "#1b1b20", "token": "--color-surface-elevated" },
+    "--hover": {
+      "value": "#222228",
+      "token": "--color-surface-hover",
+      "note": "Opaque in the design. The kit's hover is a translucent overlay, so one value is right on every rung, and its alpha is fitted against this colour on the four rungs."
+    },
+    "--sunk": { "value": "rgba(255, 255, 255, 0.028)", "token": "--color-surface-inset" },
+    "--line": { "value": "#232329", "token": "--color-border-default" },
+    "--line-2": { "value": "#303038", "token": "--color-border-strong" },
+    "--mark": { "value": "#6e6e78", "token": "--color-data-other" },
+    "--t1": { "value": "#ededf0", "token": "--color-text-primary" },
+    "--t2": { "value": "#b4b4bc", "token": "--color-text-secondary" },
+    "--t3": { "value": "#8c8c96", "token": "--color-text-tertiary" },
+    "--t4": { "value": "#5f5f68", "token": "--color-text-muted" },
+    "--acc": { "value": "#7c56ff", "token": "--color-brand-accent" },
+    "--acc-ink": { "value": "#b3a1ff", "token": "--color-brand-accent-ink" },
+    "--acc-soft": { "value": "rgba(124, 86, 255, 0.16)", "token": "--color-brand-accent-soft" },
+    "--work": { "value": "#4c9dff", "token": "--color-feedback-info" },
+    "--work-ink": { "value": "#86beff", "token": "--color-feedback-info-ink" },
+    "--work-soft": {
+      "value": "rgba(76, 157, 255, 0.15)",
+      "token": "--color-feedback-info-soft",
+      "note": "The build derives every state's soft tint from its fill at one alpha, SOFT_ALPHA, where the design draws each at its own."
+    },
+    "--need": { "value": "#f2b33d", "token": "--color-feedback-warning" },
+    "--need-ink": { "value": "#f6c86f", "token": "--color-feedback-warning-ink" },
+    "--need-soft": { "value": "rgba(242, 179, 61, 0.14)", "token": "--color-feedback-warning-soft" },
+    "--bad": { "value": "#f26d6d", "token": "--color-feedback-danger" },
+    "--bad-ink": { "value": "#ff9a9a", "token": "--color-feedback-danger-ink" },
+    "--bad-soft": { "value": "rgba(242, 109, 109, 0.14)", "token": "--color-feedback-danger-soft" },
+    "--ok": { "value": "#3fcf8e", "token": "--color-feedback-success" },
+    "--ok-ink": { "value": "#72dead", "token": "--color-feedback-success-ink" },
+    "--ok-soft": { "value": "rgba(63, 207, 142, 0.13)", "token": "--color-feedback-success-soft" },
+    "--s1": { "value": "#3987e5", "token": "--color-data-1" },
+    "--s2": { "value": "#d95926", "token": "--color-data-2" },
+    "--s3": { "value": "#199e70", "token": "--color-data-3" },
+    "--s4": { "value": "#c98500", "token": "--color-data-4" },
+    "--scrim": {
+      "value": "rgba(4, 4, 6, 0.62)",
+      "token": "--color-surface-veil",
+      "note": "The ground a dialog sits on. The kit draws it as each root's own frame at one alpha, VEIL_ALPHA, which the palette suite holds."
+    },
+    "--shadow": {
+      "value": "0 0 0 1px rgba(255, 255, 255, 0.05), 0 24px 60px rgba(0, 0, 0, 0.55)",
+      "token": null,
+      "note": "The command palette's elevation. The palette suite measures colours a reader has to tell apart, and no shadow is one."
+    }
+  },
+  "light": {
+    "--bg": { "value": "#ededea", "token": "--color-surface-frame" },
+    "--panel": { "value": "#f9f9f8", "token": "--color-surface-background" },
+    "--card": { "value": "#ffffff", "token": "--color-surface-subtle" },
+    "--raised": { "value": "#f3f3f1", "token": "--color-surface-elevated" },
+    "--hover": {
+      "value": "#ebebe8",
+      "token": "--color-surface-hover",
+      "note": "Opaque in the design. The kit's hover is a translucent overlay, so one value is right on every rung, and its alpha is fitted against this colour on the four rungs."
+    },
+    "--sunk": { "value": "rgba(0, 0, 0, 0.025)", "token": "--color-surface-inset" },
+    "--line": { "value": "#e4e4e0", "token": "--color-border-default" },
+    "--line-2": { "value": "#d3d3ce", "token": "--color-border-strong" },
+    "--mark": { "value": "#8e8e96", "token": "--color-data-other" },
+    "--t1": { "value": "#17171a", "token": "--color-text-primary" },
+    "--t2": { "value": "#46464e", "token": "--color-text-secondary" },
+    "--t3": { "value": "#696972", "token": "--color-text-tertiary" },
+    "--t4": { "value": "#a3a3aa", "token": "--color-text-muted" },
+    "--acc": { "value": "#6b45f0", "token": "--color-brand-accent" },
+    "--acc-ink": { "value": "#5a33de", "token": "--color-brand-accent-ink" },
+    "--acc-soft": { "value": "rgba(107, 69, 240, 0.10)", "token": "--color-brand-accent-soft" },
+    "--work": { "value": "#2f7fe0", "token": "--color-feedback-info" },
+    "--work-ink": { "value": "#1d63b8", "token": "--color-feedback-info-ink" },
+    "--work-soft": {
+      "value": "rgba(47, 127, 224, 0.10)",
+      "token": "--color-feedback-info-soft",
+      "note": "The build derives every state's soft tint from its fill at one alpha, SOFT_ALPHA, where the design draws each at its own."
+    },
+    "--need": { "value": "#e09a12", "token": "--color-feedback-warning" },
+    "--need-ink": { "value": "#935600", "token": "--color-feedback-warning-ink" },
+    "--need-soft": { "value": "rgba(224, 154, 18, 0.14)", "token": "--color-feedback-warning-soft" },
+    "--bad": { "value": "#e5484d", "token": "--color-feedback-danger" },
+    "--bad-ink": { "value": "#bf282e", "token": "--color-feedback-danger-ink" },
+    "--bad-soft": { "value": "rgba(229, 72, 77, 0.10)", "token": "--color-feedback-danger-soft" },
+    "--ok": { "value": "#23a26d", "token": "--color-feedback-success" },
+    "--ok-ink": { "value": "#17744c", "token": "--color-feedback-success-ink" },
+    "--ok-soft": { "value": "rgba(35, 162, 109, 0.11)", "token": "--color-feedback-success-soft" },
+    "--s1": { "value": "#2a78d6", "token": "--color-data-1" },
+    "--s2": { "value": "#eb6834", "token": "--color-data-2" },
+    "--s3": { "value": "#1baf7a", "token": "--color-data-3" },
+    "--s4": { "value": "#eda100", "token": "--color-data-4" },
+    "--scrim": {
+      "value": "rgba(24, 24, 28, 0.28)",
+      "token": "--color-surface-veil",
+      "note": "The ground a dialog sits on. The kit draws it as each root's own frame at one alpha, VEIL_ALPHA, which the palette suite holds."
+    },
+    "--shadow": {
+      "value": "0 0 0 1px rgba(0, 0, 0, 0.06), 0 24px 60px rgba(0, 0, 0, 0.18)",
+      "token": null,
+      "note": "The command palette's elevation. The palette suite measures colours a reader has to tell apart, and no shadow is one."
+    }
+  },
+  "literals": [
+    {
+      "where": ".btn.pri, .badge, and every label, glyph and stroke drawn on --acc",
+      "value": "#ffffff",
+      "token": "--color-text-on-accent"
+    },
+    {
+      "where": ".btn.pri:hover",
+      "value": "filter: brightness(1.08)",
+      "token": "--color-brand-accent-hover",
+      "note": "A rule rather than a colour: the accent with each sRGB channel scaled by 1.08 and clipped."
+    },
+    {
+      "where": "the key cap on the accent card (Inbox)",
+      "value": "rgba(255, 255, 255, 0.35)",
+      "token": null,
+      "note": "A border drawn on the accent fill, which no kit component draws."
+    },
+    {
+      "where": ".seg button.on",
+      "value": "0 1px 2px rgba(0, 0, 0, 0.18), 0 0 0 1px var(--line)",
+      "token": null,
+      "note": "An elevation, as --shadow is."
+    },
+    {
+      "where": ".kcard",
+      "value": "0 1px 2px rgba(0, 0, 0, 0.12)",
+      "token": null,
+      "note": "An elevation, as --shadow is."
+    },
+    {
+      "where": "an Org chart node",
+      "value": "0 1px 2px rgba(0, 0, 0, 0.15)",
+      "token": null,
+      "note": "An elevation, as --shadow is."
+    },
+    {
+      "where": "the selected Org chart node",
+      "value": "0 0 0 2px var(--acc), 0 8px 24px rgba(0, 0, 0, 0.25)",
+      "token": null,
+      "note": "An elevation, as --shadow is; its ring is the accent."
+    },
+    {
+      "where": "body, the canvas the artboards are laid out on, outside .app",
+      "value": "#09090b",
+      "token": null,
+      "note": "Not part of the application: the dark --bg, behind both palettes' boards."
+    }
+  ]
+}

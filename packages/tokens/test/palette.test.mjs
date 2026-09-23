@@ -21,6 +21,7 @@ import {
   describeFailure,
   fromOklab,
   hex,
+  oklabToLinear,
   OPAQUE_SURFACES,
   OVERLAY_STEPS,
   paletteStates,
@@ -323,6 +324,19 @@ describe('the accent and the primary action', () => {
     assert.deepEqual(failuresAfter('dark', '--color-focus', typed.dark.color.brand.accent), ['the focus ring clears 3:1']);
   });
 
+  test('the selected tint is named as what its check measures, on each rung', () => {
+    // Every measured check names the thing it measures first and the ground it
+    // measured it on after, so a failure reads as what to change. This one
+    // named the rung alone, which is the one thing a fix must not move.
+    for (const state of THEME_STATES) {
+      assert.deepEqual(
+        checks.filter((check) => check.state === state && check.rule === 'the selected tint outreads the hover overlay').map((check) => check.subject),
+        OPAQUE_SURFACES.map((rung) => `--color-brand-accent-soft on ${rung}`),
+        state,
+      );
+    }
+  });
+
   test("the rail's current row is caught when its hairline or its lift is lost", () => {
     const [fill, line] = RAIL_CURRENT_ROW;
     assert.deepEqual([fill, line], ['--color-surface-elevated', '--color-border-default']);
@@ -336,5 +350,37 @@ describe('the accent and the primary action', () => {
     assert.deepEqual(failuresAfter('light', fill, hex({ r: r + 2, g: g + 2, b: b + 2 })), [
       "the rail's current row lifts off the rail",
     ]);
+  });
+});
+
+describe('the colour maths', () => {
+  test('a colour a screen shows round-trips through OKLab, and one past the gamut says so', () => {
+    // fromOklab reads its channels from oklabToLinear and clips them, so a
+    // colour inside sRGB comes back as the same hex with every linear channel
+    // in [0, 1]. A colour past what sRGB can show has a channel outside, which
+    // is the one thing a search that walks chroma needs to know: clipped one
+    // channel at a time, it would come back a different hue without a word.
+    // The published matrices are good to seven places, so white and a channel
+    // at zero land within a millionth of the edge rather than on it.
+    for (const value of ['#000000', '#ffffff', '#7c56ff', '#101013', '#c98500', '#0f766e']) {
+      const lab = toOklab(parseHex(value));
+      assert.equal(hex(fromOklab(lab)), value);
+      assert.ok(Object.values(oklabToLinear(lab)).every((c) => c >= -1e-6 && c <= 1 + 1e-6), `${value} left the gamut`);
+    }
+    // Past the gamut on each side of each channel in turn, the grey that stays
+    // inside it on the other two: the channel says so and the others do not,
+    // so no one channel can be clipped where the others would give it away.
+    for (const channel of ['r', 'g', 'b']) {
+      for (const [value, outside] of [
+        [300, (c) => c > 1],
+        [-30, (c) => c < 0],
+      ]) {
+        const linear = oklabToLinear(toOklab({ r: 128, g: 128, b: 128, [channel]: value }));
+        assert.ok(outside(linear[channel]), `${channel} at ${value} came back as ${linear[channel]}`);
+        for (const other of ['r', 'g', 'b'].filter((name) => name !== channel)) {
+          assert.ok(linear[other] > 0 && linear[other] < 1, `${other} left the gamut with ${channel} at ${value}`);
+        }
+      }
+    }
   });
 });

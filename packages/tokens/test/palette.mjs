@@ -914,7 +914,7 @@ function checkState(state, values, profile, push) {
     const fromGround = deltaE(selected, rgb);
     const fromHover = deltaE(selected, hovered);
     const ok = fromGround >= deltaE(hovered, rgb) && fromHover >= 3;
-    say('the selected tint outreads the hover overlay', ok, name, Math.min(fromGround - deltaE(hovered, rgb), fromHover), `dE ${fromGround.toFixed(2)} from the ground (hover ${deltaE(hovered, rgb).toFixed(2)}), dE ${fromHover.toFixed(2)} apart`);
+    say('the selected tint outreads the hover overlay', ok, `--color-brand-accent-soft on ${name}`, Math.min(fromGround - deltaE(hovered, rgb), fromHover), `dE ${fromGround.toFixed(2)} from the ground (hover ${deltaE(hovered, rgb).toFixed(2)}), dE ${fromHover.toFixed(2)} apart`);
   }
 
   {
