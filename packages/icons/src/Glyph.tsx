@@ -1,18 +1,21 @@
 /**
- * The frame every Material Symbols glyph is drawn in.
+ * The frame every Lucide glyph is drawn in.
  *
- * A glyph is an SVG, never a font ligature. A ligature renders the WORD
- * `keyboard_arrow_down` until a stylesheet has fetched a font from a
- * third-party host, renders that word for good on a closed network, and is
- * read aloud as that word by a screen reader that does not know it is looking
- * at an icon. The drawings ship in the package instead; see symbols/README.md.
+ * A glyph is an SVG, never a font ligature. A ligature renders the WORD it
+ * names until a stylesheet has fetched a font from a third-party host, renders
+ * that word for good on a closed network, and is read aloud as that word by a
+ * screen reader that does not know it is looking at an icon. The drawings ship
+ * in the package instead; see glyphs/README.md.
  *
- * The generated components in src/generated/glyphs carry two path strings and
- * nothing else, so a glyph costs one function and its own drawing where a
- * bundler keeps it, and nothing at all where it does not.
+ * A glyph is a STROKE on the 24 unit grid, with round caps and round joins,
+ * which is how the approved design draws every one of them. The frame owns
+ * all of that and the generated components in src/generated/glyphs carry only
+ * their geometry, so a glyph costs one function and its own elements where a
+ * bundler keeps it, and nothing at all where it does not, and no glyph can be
+ * drawn at a weight the others are not.
  */
 
-import type { SVGProps } from 'react';
+import type { ReactNode, SVGProps } from 'react';
 
 /** The size steps, in px. The type scale's own steps, not a new scale. */
 export const GLYPH_SIZES = { xs: 12, sm: 14, md: 16, lg: 20, xl: 24 } as const;
@@ -21,20 +24,36 @@ export type GlyphSizeStep = keyof typeof GLYPH_SIZES;
 export type GlyphSize = GlyphSizeStep | number | (string & {});
 
 /**
- * Which drawing to use. The optical size axis is a different drawing rather
- * than a scaled one: the 20 px `close` is a 51-unit stroke on the 960 grid and
- * the 24 px one is 56, so the wrong drawing reads as the wrong weight beside
- * anything drawing the right one.
+ * The stroke every glyph draws at, in units of the 24 grid: the approved
+ * design's `.ico` rule, 1.75 where Lucide's own files say 2. It scales with
+ * the glyph, as the design's does, so a 16 px glyph draws a 1.17 px line and a
+ * 24 px one a 1.75 px line.
+ *
+ * `--crewlet-glyph-stroke` on any ancestor moves it for everything beneath,
+ * and it is the one way to: a surface whose glyphs sit at a size where the
+ * line thins past legibility sets the variable once, rather than every glyph
+ * taking a prop that the next glyph added to the surface forgets.
  */
-export type GlyphOpticalSize = 20 | 24;
+export const GLYPH_STROKE = 1.75;
+const STROKE = `var(--crewlet-glyph-stroke, ${GLYPH_STROKE})`;
 
-/** The same glyph at both vendored optical sizes. */
-export interface GlyphDrawing {
-  20: string;
-  24: string;
-}
-
-export interface GlyphProps extends Omit<SVGProps<SVGSVGElement>, 'title'> {
+/**
+ * A glyph's props: its size, its name for assistive technology, and every SVG
+ * attribute a caller legitimately sets on an icon (a class, a style, a colour,
+ * a handler, an aria- or data- attribute).
+ *
+ * WHAT THE FRAME OWNS IS NOT HERE: the viewBox, the fill, the stroke width and
+ * the caps and joins. Each of those changes the drawing rather than where or
+ * how big it is, and each has one right answer for every glyph. `fill` in
+ * particular paints the inside of a stroke drawing, which turns every glyph
+ * with an open line into a blob. The filled state is `filled`, which only a
+ * FILLABLE glyph takes; the weight is `--crewlet-glyph-stroke`.
+ */
+export interface GlyphProps
+  extends Omit<
+    SVGProps<SVGSVGElement>,
+    'title' | 'children' | 'viewBox' | 'fill' | 'strokeWidth' | 'strokeLinecap' | 'strokeLinejoin'
+  > {
   /** A step, a number of px, or any CSS length. Defaults to `1em`. */
   size?: GlyphSize;
   /**
@@ -43,38 +62,16 @@ export interface GlyphProps extends Omit<SVGProps<SVGSVGElement>, 'title'> {
    * the label beside it.
    */
   title?: string;
+}
+
+/** The props of a glyph listed in `FILLABLE`, and of no other. */
+export interface FillableGlyphProps extends GlyphProps {
   /**
-   * Which vendored drawing to render. It follows `size` whenever `size` says
-   * how many px that is, so pass this only when it cannot: a glyph left at the
-   * default `1em` inside a surface whose own stylesheet sets a font size above
-   * 20 px wants `opsz={24}`. CSS cannot hand a computed font size back to the
-   * component that would have to choose, so the choice is a prop.
+   * Paints the drawing's inside in the text colour, for a state the outline
+   * and the solid mark tell apart: a kept item's star. The stroke stays, so
+   * the two states are one silhouette at one size.
    */
-  opsz?: GlyphOpticalSize;
-}
-
-const THRESHOLD = 20;
-
-/**
- * The px a size resolves to, or null when it does not resolve to one. `1em`,
- * `2rem` and `100%` each depend on something only the document knows, so they
- * answer null and leave the optical size to its default.
- */
-export function glyphPixels(size: GlyphSize | undefined): number | null {
-  if (size === undefined) return null;
-  if (typeof size === 'number') return Number.isFinite(size) ? size : null;
-  if (size in GLYPH_SIZES) return GLYPH_SIZES[size as GlyphSizeStep];
-  const px = /^(\d+(?:\.\d+)?)px$/.exec(size.trim());
-  return px === null ? null : Number(px[1]);
-}
-
-/** The drawing a rendered size asks for. */
-export function glyphOpticalSize(size: GlyphSize | undefined): GlyphOpticalSize {
-  const pixels = glyphPixels(size);
-  // The default is the smaller drawing because the default size is 1em, and a
-  // glyph inheriting a font size in this design system sits in body text or a
-  // control label, every step of which is at or below 20 px.
-  return pixels !== null && pixels > THRESHOLD ? 24 : 20;
+  filled?: boolean;
 }
 
 /**
@@ -93,14 +90,21 @@ export function cssLength(size: GlyphSize | undefined): string {
   return size;
 }
 
+/**
+ * The frame itself. Not exported from the package: a glyph is one of the
+ * generated components, each of which hands this its own geometry and says
+ * whether its drawing may be filled.
+ */
 export function Glyph({
-  drawing,
   size,
   title,
-  opsz,
+  filled = false,
+  fillable,
   className,
+  style,
+  children,
   ...rest
-}: GlyphProps & { drawing: GlyphDrawing }) {
+}: FillableGlyphProps & { fillable: boolean; children: ReactNode }) {
   const dimension = cssLength(size);
   /*
    * A titled glyph is named and exposed; an untitled one is hidden and cannot
@@ -114,15 +118,32 @@ export function Glyph({
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 -960 960 960"
       width={dimension}
       height={dimension}
-      fill="currentColor"
+      stroke="currentColor"
       {...semantics}
       className={className === undefined ? 'crewlet-glyph' : `crewlet-glyph ${className}`}
       {...rest}
+      /*
+       * AFTER the caller's attributes, so the frame is the frame even for a
+       * caller the types do not reach.
+       *
+       * The weight is written twice, on purpose. The STYLE carries the
+       * variable, because a presentation attribute is not where every engine
+       * resolves var(), and a style beats an attribute. The ATTRIBUTE carries
+       * the plain number for a page that refuses the style: markup rendered
+       * on a server under a strict style-src loses every style attribute, and
+       * a glyph with neither would draw at the SVG default of 1, three sevenths
+       * lighter than the design.
+       */
+      viewBox="0 0 24 24"
+      fill={fillable && filled ? 'currentColor' : 'none'}
+      strokeWidth={GLYPH_STROKE}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ ...style, strokeWidth: STROKE }}
     >
-      <path d={drawing[opsz ?? glyphOpticalSize(size)]} />
+      {children}
     </svg>
   );
 }

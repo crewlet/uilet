@@ -22,7 +22,7 @@
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { CheckGlyph, CloseGlyph, KeyboardArrowDownGlyph } from '@crewlethq/icons/glyphs';
+import { CheckGlyph, ChevronDownGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { DateTimePicker } from '../DateTimePicker/index.js';
 import { IconButton } from '../IconButton/index.js';
@@ -406,7 +406,7 @@ export function FilterAxisChip<TRow = unknown>({
           <button type="button" className={cx('crewlet-filter-axis-chip__trigger', open && 'is-open')} onClick={toggle}>
             <span className="crewlet-filter-axis-chip__label">{def.label}:</span>
             <span className="crewlet-filter-axis-chip__value">{formatFilterValue(def, value, labels)}</span>
-            <KeyboardArrowDownGlyph className="crewlet-filter-axis-chip__chevron" size="xs" />
+            <ChevronDownGlyph className="crewlet-filter-axis-chip__chevron" size="xs" />
           </button>
         )}
       >
@@ -418,7 +418,7 @@ export function FilterAxisChip<TRow = unknown>({
           size="sm"
           variant="ghost"
           label={labels.remove(def.label)}
-          icon={<CloseGlyph size="xs" />}
+          icon={<XGlyph size="xs" />}
           onClick={onRemove}
         />
       ) : null}
@@ -501,7 +501,7 @@ export function FilterAxisBar<TRow = unknown>({
           className="crewlet-filter-axis-bar__clear"
           variant="tertiary"
           size="small"
-          leadingIcon={<CloseGlyph size="xs" />}
+          leadingIcon={<XGlyph size="xs" />}
           onClick={onClearAll}
         >
           {labels.clearAll}

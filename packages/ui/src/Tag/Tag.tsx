@@ -1,5 +1,5 @@
 import type { HTMLAttributes, MouseEvent, ReactNode } from 'react';
-import { CloseGlyph } from '@crewlethq/icons/glyphs';
+import { XGlyph } from '@crewlethq/icons/glyphs';
 import { StatusDot } from '../StatusDot/index.js';
 import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
@@ -220,7 +220,7 @@ export function Tag(props: TagProps) {
         }}
         aria-label={removeAriaLabel}
       >
-        <CloseGlyph size="xs" />
+        <XGlyph size="xs" />
       </button>
     );
 

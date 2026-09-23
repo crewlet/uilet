@@ -6,7 +6,7 @@ import {
   type MouseEvent,
 } from 'react';
 import { Avatar, avatarSquareCorner, type AvatarShape } from '../Avatar/index.js';
-import { CloseGlyph, PhotoCameraGlyph } from '@crewlethq/icons/glyphs';
+import { CameraGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
 // Omit the DOM "onSelect" event handler so it does not clash with the
 // file-selection callback below, which carries a different signature.
@@ -135,7 +135,7 @@ export const ImageUpload = ({
               <span className="crewlet-image-upload__spinner" />
             ) : (
               <>
-                <PhotoCameraGlyph size="lg" />
+                <CameraGlyph size="lg" />
                 <span className="crewlet-image-upload__overlay-text">
                   {src ? 'Change' : 'Upload'}
                 </span>
@@ -153,7 +153,7 @@ export const ImageUpload = ({
           disabled={uploading}
           aria-label="Remove image"
         >
-          <CloseGlyph size="sm" />
+          <XGlyph size="sm" />
         </button>
       ) : null}
 

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircleFillGlyph, CloseGlyph, ErrorFillGlyph, InfoFillGlyph, WarningFillGlyph } from '@crewlethq/icons/glyphs';
+import { CircleAlertGlyph, CircleCheckGlyph, InfoGlyph, TriangleAlertGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { useLayerContainer } from '../Layer/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
@@ -69,16 +69,20 @@ export interface ToasterProps<TVariant extends string = string> {
 }
 
 /*
- * The FILLED drawing of each status glyph. A toast is a small mark on a tinted
- * strip, where an outlined glyph at 16px is mostly its own hole; the filled one
- * reads as the shape it is at that size, which is what the contrast floor for a
- * mark is measured against.
+ * The status glyphs, as strokes like every other glyph in the design. They
+ * were Material's filled drawings once, chosen because an outline at 16px was
+ * mostly its own hole; a Lucide stroke at the design weight is an outline too,
+ * and a solid disc with the mark knocked out is a drawing a stroke set does not
+ * have, so a toast does not borrow one from somewhere else. The glyph is not
+ * what says what happened: every variant carries its title, the word the
+ * glyph repeats. The mark is painted in the tone's fill step, which the palette
+ * suite measures at 3:1 as a mark on every ground a toast stands on.
  */
 const ICONS: Record<ToastVariant, ReactNode> = {
-  info: <InfoFillGlyph size="md" />,
-  success: <CheckCircleFillGlyph size="md" />,
-  warning: <WarningFillGlyph size="md" />,
-  danger: <ErrorFillGlyph size="md" />,
+  info: <InfoGlyph size="md" />,
+  success: <CircleCheckGlyph size="md" />,
+  warning: <TriangleAlertGlyph size="md" />,
+  danger: <CircleAlertGlyph size="md" />,
 };
 
 /**
@@ -268,7 +272,7 @@ function ToastItem<TVariant extends string>({
       )}
 
       <button type="button" className="crewlet-toast__dismiss" onClick={dismiss} aria-label={dismissLabel}>
-        <CloseGlyph size="sm" />
+        <XGlyph size="sm" />
       </button>
 
       {/*

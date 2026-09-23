@@ -22,7 +22,8 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { themes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
-import { installCss, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installCss, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { UserGlyph } from '@crewlethq/icons/glyphs';
 import { OrgLabel } from './OrgLabel.js';
 
 let uninstall: (() => void) | undefined;
@@ -305,6 +306,32 @@ describe('what each surface used to be missing', () => {
       const svg = container.querySelector('.crewlet-org-label__icon svg')!;
       expect(getComputedStyle(svg).color, layout).not.toBe('rgb(124, 86, 255)');
       own();
+      cleanup();
+    }
+  });
+
+  /*
+   * AND A GLYPH IS NEVER FILLED. The zone's fill rule is for a filled drawing,
+   * a brand mark or an illustration; a glyph is a stroke, and painting its
+   * inside turned a person's head and shoulders, a unit's building and a
+   * warning's triangle into solid blobs in every node of the chart.
+   */
+  test('a glyph keeps the fill its frame decides, in either layout', () => {
+    for (const layout of ['node', 'row'] as const) {
+      painted('dark');
+      // A toned zone, as a chart paints one, written out: the harness resolves
+      // the tokens and not the chart's own variable, and a fill has to have a
+      // colour to resolve to before a test can say it did not take it.
+      const tone = installCss('.crewlet-org-label__icon { color: #1d9e75; }');
+      const { container } = render(<OrgLabel layout={layout} icon={<UserGlyph />} name="Ada" />);
+      const glyph = container.querySelector<SVGElement>('.crewlet-org-label__icon svg.crewlet-glyph')!;
+      expect(glyph.getAttribute('fill'), layout).toBe('none');
+      const ink = channels(getComputedStyle(glyph).color);
+      expect(ink, layout).toEqual(parseHex('#1d9e75'));
+      for (const shape of [glyph, ...glyph.querySelectorAll('path, circle')]) {
+        expect(channels(getComputedStyle(shape).fill), `${layout} ${shape.tagName}`).not.toEqual(ink);
+      }
+      tone();
       cleanup();
     }
   });

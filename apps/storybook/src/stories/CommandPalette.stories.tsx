@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
 import { Button, CommandPalette, Kbd, type CommandPaletteGroup } from '@crewlethq/ui';
 import {
-  DashboardGlyph,
-  DescriptionGlyph,
-  GroupGlyph,
-  PersonGlyph,
-  TimelineGlyph,
+  ChartNoAxesGanttGlyph,
+  FileTextGlyph,
+  LayoutDashboardGlyph,
+  UserGlyph,
+  UsersGlyph,
 } from '@crewlethq/icons/glyphs';
 
 /**
@@ -66,14 +66,14 @@ function Demo({ empty = false }: { empty?: boolean }) {
     const matches = (text: string) => term === '' || text.toLowerCase().includes(term);
     const screens = SCREENS.filter((screen) => matches(screen.name)).map((screen) => ({
       id: `screen-${screen.name}`,
-      icon: <DashboardGlyph size="sm" />,
+      icon: <LayoutDashboardGlyph size="sm" />,
       label: screen.name,
       hint: screen.hint,
       onSelect: () => setChosen(screen.name),
     }));
     const seats = SEATS.filter((seat) => matches(seat.name)).map((seat) => ({
       id: `seat-${seat.handle}`,
-      icon: <PersonGlyph size="sm" />,
+      icon: <UserGlyph size="sm" />,
       label: seat.name,
       hint: `@${seat.handle}`,
       onSelect: () => setChosen(seat.name),
@@ -82,14 +82,14 @@ function Demo({ empty = false }: { empty?: boolean }) {
       ? [
           {
             id: 'search-events',
-            icon: <TimelineGlyph size="sm" />,
+            icon: <ChartNoAxesGanttGlyph size="sm" />,
             label: `Events mentioning ${term}`,
             hint: 'the event log, filtered',
             onSelect: () => setChosen('Activity'),
           },
           {
             id: 'search-knowledge',
-            icon: <DescriptionGlyph size="sm" />,
+            icon: <FileTextGlyph size="sm" />,
             label: `Knowledge base for ${term}`,
             hint: 'live search',
             onSelect: () => setChosen('Knowledge'),
@@ -105,7 +105,7 @@ function Demo({ empty = false }: { empty?: boolean }) {
 
   return (
     <div style={{ display: 'grid', gap: 'var(--spacing-3)', justifyItems: 'start', padding: 'var(--spacing-6)' }}>
-      <Button leadingIcon={<GroupGlyph size="sm" />} onClick={() => setOpen(true)}>
+      <Button leadingIcon={<UsersGlyph size="sm" />} onClick={() => setOpen(true)}>
         Open search
       </Button>
       {chosen ? <p>Opened: {chosen}</p> : null}

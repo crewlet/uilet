@@ -1,22 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon, type IconName, ICON_NAMES } from '@crewlethq/icons';
-import { GLYPH_NAMES, type GlyphName, type GlyphOpticalSize } from '@crewlethq/icons/glyphs';
+import { FILLABLE, GLYPH_NAMES, GLYPH_STROKE, type GlyphName } from '@crewlethq/icons/glyphs';
 import { glyphByName } from '@crewlethq/icons/glyphs/registry';
 import { themeScope } from '../themeScope';
 
 /*
- * The whole glyph set, at every size it is drawn at, at both vendored optical
- * sizes, in both themes.
+ * The whole glyph set, at every size it is drawn at, in both themes.
  *
- * It exists to be judged rather than browsed. The optical size axis is a
- * different drawing and not a scaled one, so the only way to settle which
- * drawing a step should take is to put the two beside each other at that step
- * and look; and a glyph never appears alone, so it is shown beside the
- * signature illustrations it shares a row with in the product.
+ * It exists to be judged rather than browsed. A Lucide glyph is one drawing at
+ * every size, stroked at a weight that scales with it, so what there is to
+ * judge is whether that weight still reads at 12 px and does not shout at 24,
+ * and whether the one filled state reads as the same mark; and a glyph never
+ * appears alone, so it is shown beside the signature illustrations it shares a
+ * row with in the product.
  *
  * The registry entry is what a story wants and what a screen almost never
- * does: rendering all 105 from their names is exactly the case
+ * does: rendering every glyph from its name is exactly the case
  * @crewlethq/icons/glyphs/registry is for.
  */
 
@@ -60,18 +60,18 @@ const BothThemes = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
-const Cell = ({ name, size, opsz }: { name: GlyphName; size: number; opsz?: GlyphOpticalSize }) => {
+const Cell = ({ name, size }: { name: GlyphName; size: number }) => {
   const Drawing = glyphByName(name);
-  return opsz === undefined ? <Drawing size={size} /> : <Drawing size={size} opsz={opsz} />;
+  return <Drawing size={size} />;
 };
 
-const Gallery = ({ opsz }: { opsz?: GlyphOpticalSize }) => (
+const Gallery = () => (
   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 'var(--spacing-4)' }}>
     {GLYPH_NAMES.map((name) => (
       <div key={name} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--spacing-3)', minHeight: 28 }}>
           {SIZES.map((size) => (
-            <Cell key={size} name={name} size={size} {...(opsz === undefined ? {} : { opsz })} />
+            <Cell key={size} name={name} size={size} />
           ))}
         </div>
         <p style={caption}>{name}</p>
@@ -87,7 +87,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'Material Symbols Outlined, weight 400, grade 0, vendored at the 20 px and 24 px optical sizes from google/material-design-icons. Every glyph is an SVG component: no font, no ligature and no request to a third-party host.',
+          `Lucide, vendored unchanged from lucide-static and drawn as the approved design draws it: a stroke on the 24 unit grid at ${GLYPH_STROKE}, with round caps and joins. Every glyph is an SVG component: no font, no ligature and no request to a third-party host.`,
       },
     },
   },
@@ -107,19 +107,34 @@ export const All: StoryObj = {
 };
 
 /**
- * The same five steps with each vendored drawing forced, so the choice the
- * wrapper makes can be checked rather than trusted. The rule is the 20 px
- * drawing at and below 20 px and the 24 px drawing above it, which is what the
- * story above renders.
+ * The weight, moved by `--crewlet-glyph-stroke` on the panel, at every step:
+ * the design's 1.75 between a lighter and a heavier setting, so the choice of
+ * 1.75 can be checked rather than trusted. The stroke scales with the glyph,
+ * so a setting that reads at 24 px is the one to doubt at 12.
  */
-export const OpticalSizes: StoryObj = {
+const STROKES = [1.5, GLYPH_STROKE, 2] as const;
+const STROKE_SAMPLE: GlyphName[] = ['x', 'chevron-down', 'search', 'inbox', 'circle-check', 'triangle-alert', 'users', 'settings'];
+
+export const Stroke: StoryObj = {
   render: () => (
     <div style={{ padding: 'var(--spacing-5)', display: 'grid', gap: 'var(--spacing-6)' }}>
-      {([20, 24] as const).map((opsz) => (
-        <section key={opsz} style={{ display: 'grid', gap: 'var(--spacing-3)' }}>
-          <h2 style={{ ...heading, margin: 0 }}>The {opsz} px drawing at every step</h2>
+      {STROKES.map((stroke) => (
+        <section key={stroke} style={{ display: 'grid', gap: 'var(--spacing-3)' }}>
+          <h2 style={{ ...heading, margin: 0 }}>
+            --crewlet-glyph-stroke: {stroke}
+            {stroke === GLYPH_STROKE ? ' (the default)' : ''}
+          </h2>
           <BothThemes>
-            <Gallery opsz={opsz} />
+            <div style={{ display: 'grid', gap: 'var(--spacing-3)', ['--crewlet-glyph-stroke' as string]: String(stroke) }}>
+              {SIZES.map((size) => (
+                <div key={size} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-4)' }}>
+                  <p style={{ ...caption, width: 40 }}>{size}px</p>
+                  {STROKE_SAMPLE.map((name) => (
+                    <Cell key={name} name={name} size={size} />
+                  ))}
+                </div>
+              ))}
+            </div>
           </BothThemes>
         </section>
       ))}
@@ -127,48 +142,36 @@ export const OpticalSizes: StoryObj = {
   ),
 };
 
-/*
- * The pairs vendored in both states, derived from the set rather than listed,
- * so a glyph that gains a filled variant appears here without an edit.
- */
-const FILL_SUFFIX = '-fill';
-
-const FILLED_PAIRS = GLYPH_NAMES.flatMap((fill) => {
-  if (!fill.endsWith(FILL_SUFFIX)) return [];
-  const outline = GLYPH_NAMES.find((name) => `${name}${FILL_SUFFIX}` === fill);
-  return outline === undefined ? [] : [{ outline, fill }];
-});
-
 /**
- * Each glyph that has a filled state, outline beside fill, at every step.
+ * Each FILLABLE glyph, outline beside filled, at every step.
  *
- * A Material Symbol is a filled path already, so the solid mark is a second
- * drawing rather than a `fill` attribute on the first: a surface that toggles
- * a state swaps the component. The pair is worth looking at together because
- * the two have to read as one mark in two states — same silhouette, same
- * optical weight — and at 12 px a fill that is a shade too heavy stops looking
- * like the outline it replaces.
+ * A Lucide glyph is a stroke, so its filled state is the same drawing with its
+ * inside painted, and it reads as one mark in two states only where the
+ * drawing is one closed silhouette. The pair is worth looking at together
+ * because at 12 px a filled shape a shade too heavy stops looking like the
+ * outline it replaces.
  */
-export const FilledPairs: StoryObj = {
+export const Filled: StoryObj = {
   render: () => (
     <div style={{ padding: 'var(--spacing-5)' }}>
       <BothThemes>
         <div style={{ display: 'grid', gap: 'var(--spacing-4)' }}>
-          {FILLED_PAIRS.map(({ outline, fill }) => (
-            <div key={fill} style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
-              <p style={caption}>
-                {outline} / {fill}
-              </p>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--spacing-4)' }}>
-                {SIZES.map((size) => (
-                  <span key={size} style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 'var(--spacing-1)' }}>
-                    <Cell name={outline} size={size} />
-                    <Cell name={fill} size={size} />
-                  </span>
-                ))}
+          {FILLABLE.map((name) => {
+            const Drawing = glyphByName(name);
+            return (
+              <div key={name} style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
+                <p style={caption}>{name}, and filled</p>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--spacing-4)' }}>
+                  {SIZES.map((size) => (
+                    <span key={size} style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 'var(--spacing-1)' }}>
+                      <Drawing size={size} />
+                      <Drawing size={size} filled />
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </BothThemes>
     </div>
@@ -178,10 +181,11 @@ export const FilledPairs: StoryObj = {
 /**
  * A handful of glyphs beside the signature illustrations, at the sizes a row
  * actually mixes them at. The illustrations are a 1.6 stroke on a 32 unit
- * grid and the glyphs a filled shape on a 960 unit one, so the weights only
- * agree if they are looked at together.
+ * grid and the glyphs a 1.75 stroke on a 24 unit one, which is a heavier line
+ * at the same rendered size, so the weights only agree if they are looked at
+ * together.
  */
-const COMPANIONS: GlyphName[] = ['person', 'smart_toy', 'account_tree', 'chat', 'book_2', 'terminal', 'schedule', 'bolt'];
+const COMPANIONS: GlyphName[] = ['user', 'bot', 'network', 'message-square', 'book-open', 'square-terminal', 'clock', 'zap'];
 
 export const BesideTheSignatureIcons: StoryObj = {
   render: () => (

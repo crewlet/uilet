@@ -11,7 +11,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
 import { breakpoint } from '@crewlethq/tokens';
-import { TokenGlyph } from '@crewlethq/icons/glyphs';
+import { CoinsGlyph } from '@crewlethq/icons/glyphs';
 import { StatCard } from './index.js';
 import { StatGroup } from '../StatGroup/index.js';
 
@@ -93,7 +93,7 @@ describe('StatCard', () => {
       <main>
         <h1>Spend</h1>
         <StatGroup columns={3}>
-          <StatCard flush label="Total tokens" value="831.3K" icon={<TokenGlyph />} sub="722.0K in" />
+          <StatCard flush label="Total tokens" value="831.3K" icon={<CoinsGlyph />} sub="722.0K in" />
           <StatCard flush label="Refusals" value="3" tone="danger" />
           <StatCard flush label="Calls" value="48" loading />
         </StatGroup>

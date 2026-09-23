@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Kbd, Menu, type MenuEntry } from '@crewlethq/ui';
-import { DeleteGlyph, EditGlyph, MoveItemGlyph, PersonGlyph } from '@crewlethq/icons/glyphs';
+import { FolderInputGlyph, PencilGlyph, TrashGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Menu> = {
   title: 'UI/Menu',
@@ -12,11 +12,11 @@ export default meta;
 type Story = StoryObj<typeof Menu>;
 
 const actions: MenuEntry[] = [
-  { key: 'edit', label: 'Edit', icon: <EditGlyph />, onSelect: () => {}, hint: <Kbd keys={['Mod', 'e']} /> },
-  { key: 'move', label: 'Move to', icon: <MoveItemGlyph />, onSelect: () => {} },
-  { key: 'open', label: 'Open seat', icon: <PersonGlyph />, disabled: true, onSelect: () => {} },
+  { key: 'edit', label: 'Edit', icon: <PencilGlyph />, onSelect: () => {}, hint: <Kbd keys={['Mod', 'e']} /> },
+  { key: 'move', label: 'Move to', icon: <FolderInputGlyph />, onSelect: () => {} },
+  { key: 'open', label: 'Open seat', icon: <UserGlyph />, disabled: true, onSelect: () => {} },
   { kind: 'separator', key: 'sep' },
-  { key: 'delete', label: 'Delete', icon: <DeleteGlyph />, danger: true, onSelect: () => {} },
+  { key: 'delete', label: 'Delete', icon: <TrashGlyph />, danger: true, onSelect: () => {} },
 ];
 
 /** An icon trigger, named by its label, which is also its tooltip. */
@@ -88,8 +88,8 @@ export const MixedRows: Story = {
     trigger: 'Actions',
     triggerVariant: 'secondary',
     items: [
-      { key: 'view', label: 'View logs', icon: <EditGlyph />, onSelect: () => {}, hint: <Kbd keys={['Mod', 'l']} /> },
-      { key: 'move', label: 'Move to', icon: <MoveItemGlyph />, onSelect: () => {} },
+      { key: 'view', label: 'View logs', icon: <PencilGlyph />, onSelect: () => {}, hint: <Kbd keys={['Mod', 'l']} /> },
+      { key: 'move', label: 'Move to', icon: <FolderInputGlyph />, onSelect: () => {} },
       {
         key: 'roll',
         label: 'Roll back',
@@ -97,7 +97,7 @@ export const MixedRows: Story = {
         onSelect: () => {},
       },
       { kind: 'separator', key: 'sep' },
-      { key: 'delete', label: 'Delete', icon: <DeleteGlyph />, danger: true, onSelect: () => {} },
+      { key: 'delete', label: 'Delete', icon: <TrashGlyph />, danger: true, onSelect: () => {} },
     ],
   },
 };

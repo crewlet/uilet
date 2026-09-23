@@ -10,7 +10,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { OpenInNewGlyph } from '@crewlethq/icons/glyphs';
+import { ExternalLinkGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -223,7 +223,7 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(functio
   },
   ref,
 ) {
-  const trailing = trailingIcon ?? (external ? <OpenInNewGlyph size="sm" /> : undefined);
+  const trailing = trailingIcon ?? (external ? <ExternalLinkGlyph size="sm" /> : undefined);
   return (
     <a
       {...rest}

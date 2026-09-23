@@ -11,7 +11,7 @@ import {
   type FilterDef,
   type FilterValues,
 } from '@crewlethq/ui';
-import { AddGlyph, ArrowDownwardGlyph } from '@crewlethq/icons/glyphs';
+import { ArrowDownGlyph, PlusGlyph } from '@crewlethq/icons/glyphs';
 
 /*
  * The list screen, whole and in parts.
@@ -120,7 +120,7 @@ export const ListScreen: Story = {
         title="Operators"
         description="Everyone with a platform role. Granting and revoking are recorded in the audit log."
         headerActions={
-          <Button variant="primary" size="small" leadingIcon={<AddGlyph size="sm" />}>
+          <Button variant="primary" size="small" leadingIcon={<PlusGlyph size="sm" />}>
             Grant a role
           </Button>
         }
@@ -215,7 +215,7 @@ export const ToolbarOnly: Story = {
         archivedLabel="revoked"
         archivedCount={1}
         actions={
-          <Button variant="secondary" size="small" leadingIcon={<ArrowDownwardGlyph size="sm" />}>
+          <Button variant="secondary" size="small" leadingIcon={<ArrowDownGlyph size="sm" />}>
             Export
           </Button>
         }

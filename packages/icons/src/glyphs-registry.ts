@@ -9,17 +9,17 @@
  * reaches this module and never pays for it.
  *
  * `GlyphName` is the union of every vendored name, so a name that does not
- * exist is a type error rather than a blank square nobody notices.
+ * exist is a type error rather than a blank square nobody notices. The answer
+ * is the component registered under that name with its own type, so a
+ * FILLABLE name answers with a component that takes `filled` and every other
+ * name with one that does not.
  */
 
-import type { ComponentType } from 'react';
-
-import type { GlyphProps } from './Glyph.js';
 import type { GlyphName } from './generated/glyphs/index.js';
 import { GLYPHS } from './generated/glyphs/registry.js';
 
 export { GLYPHS };
 
-export function glyphByName(name: GlyphName): ComponentType<GlyphProps> {
+export function glyphByName<Name extends GlyphName>(name: Name): (typeof GLYPHS)[Name] {
   return GLYPHS[name];
 }

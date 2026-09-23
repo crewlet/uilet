@@ -1,5 +1,5 @@
 import type { KeyboardEventHandler, ReactNode } from 'react';
-import { KeyboardArrowDownGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
 import { Count } from '../Count/index.js';
 import { cx } from '../utils/cx.js';
 import { headingTag, type HeadingLevel } from '../utils/headingLevel.js';
@@ -72,7 +72,7 @@ export function DisclosureAnatomy({
       onClick={onToggle}
       onKeyDown={onKeyDown}
     >
-      <KeyboardArrowDownGlyph className="crewlet-disclosure__chevron" size="sm" />
+      <ChevronDownGlyph className="crewlet-disclosure__chevron" size="sm" />
       <span className={cx('crewlet-disclosure__title', mono && 'crewlet-disclosure__title--mono')}>{title}</span>
       {/*
         THE SPACES ARE TEXT NODES. The fact and the count are inside the

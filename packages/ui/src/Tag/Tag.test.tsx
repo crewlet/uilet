@@ -16,7 +16,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex, type Rgb } from '@crewlethq/tokens/test/palette';
-import { WarningGlyph } from '@crewlethq/icons/glyphs';
+import { TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
 import {
   DENSITIES as DENSITY_SETTINGS,
   installSheetsAtDensity,
@@ -165,7 +165,7 @@ describe('Tag', () => {
 
   test('the count and the leading glyph keep the label the accessible name', () => {
     render(
-      <Tag variant="warning" size="sm" leadingIcon={<WarningGlyph />} count={4} onClick={() => {}}>
+      <Tag variant="warning" size="sm" leadingIcon={<TriangleAlertGlyph />} count={4} onClick={() => {}}>
         Needs a person
       </Tag>,
     );

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { OrgLabel } from '@crewlethq/ui';
-import { ApartmentGlyph, PersonGlyph, SmartToyGlyph, WarningGlyph } from '@crewlethq/icons/glyphs';
+import { BotGlyph, BuildingComplexGlyph, TriangleAlertGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * UI / OrgLabel.
@@ -85,7 +85,7 @@ export const Node_: Story = {
   render: () => (
     <div style={stack}>
       <Node>
-        <OrgLabel icon={<ApartmentGlyph />} name="Engineering" caption="Department" />
+        <OrgLabel icon={<BuildingComplexGlyph />} name="Engineering" caption="Department" />
       </Node>
       {/* The mark that stands for the THING the chart is about fills three
           quarters of its zone, where a container half-fills it: that is what
@@ -93,7 +93,7 @@ export const Node_: Story = {
           either caption being read. */}
       <Node>
         <OrgLabel
-          icon={<SmartToyGlyph />}
+          icon={<BotGlyph />}
           iconSize="lg"
           name="Dev Agent"
           caption="Crewlet agent"
@@ -105,12 +105,12 @@ export const Node_: Story = {
           somebody who cannot separate hues at all. */}
       <Node>
         <OrgLabel
-          icon={<PersonGlyph />}
+          icon={<UserGlyph />}
           iconRing="dashed"
           iconSize="lg"
           name="Ada Lovelace"
           caption="Human seat"
-          captionMarks={<WarningGlyph />}
+          captionMarks={<TriangleAlertGlyph />}
         />
       </Node>
     </div>
@@ -123,12 +123,12 @@ export const Row_: Story = {
   render: () => (
     <div>
       <Row>
-        <OrgLabel layout="row" icon={<ApartmentGlyph />} name="Engineering" caption="Unit" />
+        <OrgLabel layout="row" icon={<BuildingComplexGlyph />} name="Engineering" caption="Unit" />
       </Row>
       <Row>
         <OrgLabel
           layout="row"
-          icon={<SmartToyGlyph />}
+          icon={<BotGlyph />}
           name="Dev Agent"
           caption="Agent seat"
           tone="purple"
@@ -138,11 +138,11 @@ export const Row_: Story = {
       <Row>
         <OrgLabel
           layout="row"
-          icon={<PersonGlyph />}
+          icon={<UserGlyph />}
           iconRing="dashed"
           name="Ada Lovelace"
           caption="Human seat"
-          captionMarks={<WarningGlyph />}
+          captionMarks={<TriangleAlertGlyph />}
           tone="cyan"
         />
       </Row>
@@ -162,7 +162,7 @@ export const BothLayouts: Story = {
         <p className="t-caption">node</p>
         <Node>
           <OrgLabel
-            icon={<SmartToyGlyph />}
+            icon={<BotGlyph />}
             iconSize="lg"
             name="Dev Agent"
             caption="Crewlet agent"
@@ -175,7 +175,7 @@ export const BothLayouts: Story = {
         <Row>
           <OrgLabel
             layout="row"
-            icon={<SmartToyGlyph />}
+            icon={<BotGlyph />}
             name="Dev Agent"
             caption="Agent seat"
             trailing={<span style={{ fontSize: 11 }}>idle</span>}

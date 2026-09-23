@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { CheckCircleGlyph, ErrorGlyph, InfoGlyph, WarningGlyph } from '@crewlethq/icons/glyphs';
+import { CircleAlertGlyph, CircleCheckGlyph, InfoGlyph, TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
 
@@ -53,9 +53,9 @@ export interface CalloutProps extends Omit<HTMLAttributes<HTMLDivElement>, 'titl
 const GLYPHS: Record<CalloutVariant, ReactNode> = {
   neutral: <InfoGlyph size="md" />,
   info: <InfoGlyph size="md" />,
-  success: <CheckCircleGlyph size="md" />,
-  warning: <WarningGlyph size="md" />,
-  danger: <ErrorGlyph size="md" />,
+  success: <CircleCheckGlyph size="md" />,
+  warning: <TriangleAlertGlyph size="md" />,
+  danger: <CircleAlertGlyph size="md" />,
 };
 
 /**

@@ -41,7 +41,7 @@ function manifest(overrides = {}) {
   return {
     name: '@crewlethq/icons',
     version: '1.2.3',
-    license: 'MIT AND Apache-2.0',
+    license: 'MIT AND ISC',
     repository: { type: 'git', url: 'git+https://github.com/crewlet/uilet.git', directory: 'packages/icons' },
     exports: { '.': './dist/index.js' },
     files: ['dist'],
@@ -218,8 +218,10 @@ describe('check', () => {
     });
 
     it('refuses a license other than the one expected for the package', () => {
-      const root = repository({ 'packages/icons/package.json': manifest({ license: 'ISC' }) });
-      assert.deepEqual(problemsOf(root), ['packages/icons/package.json: "license" must be "MIT AND Apache-2.0"']);
+      // The expression the package shipped before its glyphs were Lucide's:
+      // a manifest still declaring it misstates the terms of the drawings.
+      const root = repository({ 'packages/icons/package.json': manifest({ license: 'MIT AND Apache-2.0' }) });
+      assert.deepEqual(problemsOf(root), ['packages/icons/package.json: "license" must be "MIT AND ISC"']);
     });
   });
 
@@ -295,18 +297,14 @@ describe('tarballProblems', () => {
     assert.deepEqual(tarballProblems(root, workspace, filename, files), []);
   });
 
-  it('refuses vendored drawings shipped without the license and notice beside them', () => {
+  it('refuses vendored drawings shipped without the license beside them', () => {
     const root = repository();
-    const files = new Set(['package.json', 'LICENSE', 'dist/index.js', 'symbols/20/close.svg', 'symbols/24/close.svg']);
+    const files = new Set(['package.json', 'LICENSE', 'dist/index.js', 'glyphs/x.svg', 'glyphs/chevron-down.svg']);
     assert.deepEqual(tarballProblems(root, workspace, filename, files), [
-      'crewlethq-icons-1.2.3.tgz: ships vendored drawings in symbols/ without the LICENSE their license requires beside them',
-      'crewlethq-icons-1.2.3.tgz: ships vendored drawings in symbols/ without the NOTICE their license requires beside them',
+      'crewlethq-icons-1.2.3.tgz: ships vendored drawings in glyphs/ without the LICENSE their license requires beside them',
     ]);
-    files.add('symbols/LICENSE');
-    assert.deepEqual(tarballProblems(root, workspace, filename, files), [
-      'crewlethq-icons-1.2.3.tgz: ships vendored drawings in symbols/ without the NOTICE their license requires beside them',
-    ]);
-    files.add('symbols/NOTICE');
+    // The package's own LICENSE at the root is not the drawings' notice.
+    files.add('glyphs/LICENSE');
     assert.deepEqual(tarballProblems(root, workspace, filename, files), []);
   });
 

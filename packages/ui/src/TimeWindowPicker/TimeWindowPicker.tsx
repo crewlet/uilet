@@ -8,10 +8,10 @@ import {
 } from 'react';
 import {
   CheckGlyph,
+  ChevronDownGlyph,
   ChevronLeftGlyph,
   ChevronRightGlyph,
-  KeyboardArrowDownGlyph,
-  ScheduleGlyph,
+  ClockGlyph,
 } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import {
@@ -650,9 +650,9 @@ export function TimeWindowPicker({
            */
           aria-label={labels.triggerName(ariaLabel, shown)}
         >
-          <ScheduleGlyph className="crewlet-time-window__icon" size="sm" />
+          <ClockGlyph className="crewlet-time-window__icon" size="sm" />
           <span className={cx('crewlet-time-window__label', !isSet && 'is-placeholder')}>{shown}</span>
-          <KeyboardArrowDownGlyph className="crewlet-time-window__chevron" size="sm" />
+          <ChevronDownGlyph className="crewlet-time-window__chevron" size="sm" />
         </button>
       )}
     >

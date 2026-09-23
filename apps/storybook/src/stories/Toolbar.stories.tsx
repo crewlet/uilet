@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
-import { FullscreenExitGlyph, FullscreenGlyph, RedoGlyph, UndoGlyph } from '@crewlethq/icons/glyphs';
+import { MaximizeGlyph, MinimizeGlyph, RedoGlyph, UndoGlyph } from '@crewlethq/icons/glyphs';
 import { Button, IconButton, Menu, Spacer, Stack, Toolbar, useFullscreen } from '@crewlethq/ui';
 
 const meta: Meta<typeof Toolbar> = {
@@ -71,7 +71,7 @@ export const BuilderToolbar: Story = {
             <IconButton
               label={active ? 'Leave fullscreen' : 'Fullscreen'}
               size="sm"
-              icon={active ? <FullscreenExitGlyph size="sm" /> : <FullscreenGlyph size="sm" />}
+              icon={active ? <MinimizeGlyph size="sm" /> : <MaximizeGlyph size="sm" />}
               onClick={toggle}
             />
           ) : null}

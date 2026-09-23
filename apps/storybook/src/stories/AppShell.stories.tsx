@@ -2,15 +2,15 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
 import { CrewletIcon } from '@crewlethq/icons';
 import {
-  AccountTreeGlyph,
-  DashboardGlyph,
-  DnsGlyph,
-  GroupGlyph,
+  ClockGlyph,
+  CoinsGlyph,
   KeyGlyph,
-  ScheduleGlyph,
+  LayoutDashboardGlyph,
+  NetworkGlyph,
+  ServerGlyph,
   SettingsGlyph,
-  TerminalGlyph,
-  TokenGlyph,
+  SquareTerminalGlyph,
+  UsersGlyph,
 } from '@crewlethq/icons/glyphs';
 import {
   AppShell,
@@ -96,23 +96,23 @@ function Rail({ context = 'Acme Holdings' }: { context?: string }) {
           <NavItem
             href="#/"
             label="Overview"
-            icon={<DashboardGlyph size="sm" />}
+            icon={<LayoutDashboardGlyph size="sm" />}
             current
             badge={<Count value={3} label="need a person" />}
             badgeTone="attention"
           />
         </NavGroup>
         <NavGroup label="Company">
-          <NavItem href="#/people" label="People" icon={<GroupGlyph size="sm" />} badge={<Count value="4 live" />} />
-          <NavItem href="#/org" label="Org chart" icon={<AccountTreeGlyph size="sm" />} />
+          <NavItem href="#/people" label="People" icon={<UsersGlyph size="sm" />} badge={<Count value="4 live" />} />
+          <NavItem href="#/org" label="Org chart" icon={<NetworkGlyph size="sm" />} />
         </NavGroup>
         <NavGroup label="Work">
-          <NavItem href="#/runs" label="Coding runs" icon={<TerminalGlyph size="sm" />} />
-          <NavItem href="#/schedules" label="Schedules" icon={<ScheduleGlyph size="sm" />} />
+          <NavItem href="#/runs" label="Coding runs" icon={<SquareTerminalGlyph size="sm" />} />
+          <NavItem href="#/schedules" label="Schedules" icon={<ClockGlyph size="sm" />} />
         </NavGroup>
         <NavGroup label="Operations">
-          <NavItem href="#/fleet" label="Fleet" icon={<DnsGlyph size="sm" />} />
-          <NavItem href="#/spend" label="Spend and budgets" icon={<TokenGlyph size="sm" />} />
+          <NavItem href="#/fleet" label="Fleet" icon={<ServerGlyph size="sm" />} />
+          <NavItem href="#/spend" label="Spend and budgets" icon={<CoinsGlyph size="sm" />} />
           <NavItem
             label="Secrets"
             icon={<KeyGlyph size="sm" />}
@@ -268,10 +268,10 @@ export const FootTakesADroppedControl: Story = {
         >
           <SidebarNav label="Sections">
             <NavGroup label="">
-              <NavItem href="#/" label="Overview" icon={<DashboardGlyph size="sm" />} current />
+              <NavItem href="#/" label="Overview" icon={<LayoutDashboardGlyph size="sm" />} current />
             </NavGroup>
             <NavGroup label="Operations">
-              <NavItem href="#/fleet" label="Fleet" icon={<DnsGlyph size="sm" />} />
+              <NavItem href="#/fleet" label="Fleet" icon={<ServerGlyph size="sm" />} />
             </NavGroup>
           </SidebarNav>
         </AppShell.Rail>

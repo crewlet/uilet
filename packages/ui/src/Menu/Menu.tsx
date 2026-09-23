@@ -68,7 +68,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckGlyph, MoreVertGlyph } from '@crewlethq/icons/glyphs';
+import { CheckGlyph, EllipsisVerticalGlyph } from '@crewlethq/icons/glyphs';
 import {
   LAYER_GAP,
   LAYER_REPOSITION_EVENT,
@@ -462,7 +462,7 @@ export function Menu({
   return (
     <span className="crewlet-menu-anchor">
       {trigger === undefined ? (
-        <IconButton {...shared} label={label} icon={icon ?? <MoreVertGlyph />} size="sm" />
+        <IconButton {...shared} label={label} icon={icon ?? <EllipsisVerticalGlyph />} size="sm" />
       ) : (
         <Button {...shared} variant={triggerVariant} size="small" leadingIcon={icon}>
           {trigger}

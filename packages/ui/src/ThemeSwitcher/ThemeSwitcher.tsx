@@ -1,4 +1,4 @@
-import { ComputerGlyph, DarkModeGlyph, LightModeGlyph } from '@crewlethq/icons/glyphs';
+import { MonitorGlyph, MoonGlyph, SunGlyph } from '@crewlethq/icons/glyphs';
 import { SegmentedControl } from '../SegmentedControl/index.js';
 import {
   useDensityPreference,
@@ -50,9 +50,9 @@ export function ThemeSwitcher({
       value={theme}
       onValueChange={choose}
       options={[
-        { value: 'light', icon: <LightModeGlyph />, srLabel: lightLabel, title: lightLabel },
-        { value: 'system', icon: <ComputerGlyph />, srLabel: systemLabel, title: systemLabel },
-        { value: 'dark', icon: <DarkModeGlyph />, srLabel: darkLabel, title: darkLabel },
+        { value: 'light', icon: <SunGlyph />, srLabel: lightLabel, title: lightLabel },
+        { value: 'system', icon: <MonitorGlyph />, srLabel: systemLabel, title: systemLabel },
+        { value: 'dark', icon: <MoonGlyph />, srLabel: darkLabel, title: darkLabel },
       ]}
     />
   );

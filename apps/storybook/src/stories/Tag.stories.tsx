@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Tag } from '@crewlethq/ui';
-import { WarningGlyph } from '@crewlethq/icons/glyphs';
+import { TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Tag> = {
   title: 'UI/Tag',
@@ -159,7 +159,7 @@ export const WithMarkAndCount: Story = {
       <Tag variant="info" dot>
         Working
       </Tag>
-      <Tag variant="warning" dot leadingIcon={<WarningGlyph />}>
+      <Tag variant="warning" dot leadingIcon={<TriangleAlertGlyph />}>
         Needs a person
       </Tag>
       <Tag variant="danger" count={3}>

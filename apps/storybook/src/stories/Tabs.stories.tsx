@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button, TabPanel, Tabs } from '@crewlethq/ui';
-import { InboxGlyph, TerminalGlyph, TimelineGlyph } from '@crewlethq/icons/glyphs';
+import { ChartNoAxesGanttGlyph, InboxGlyph, SquareTerminalGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Tabs> = {
   title: 'UI/Tabs',
@@ -12,8 +12,8 @@ export default meta;
 type Story = StoryObj<typeof Tabs>;
 
 const SECTIONS = [
-  { value: 'turns', label: 'Turns', icon: <TimelineGlyph />, count: 12 },
-  { value: 'tools', label: 'Tools', icon: <TerminalGlyph />, count: 4 },
+  { value: 'turns', label: 'Turns', icon: <ChartNoAxesGanttGlyph />, count: 12 },
+  { value: 'tools', label: 'Tools', icon: <SquareTerminalGlyph />, count: 4 },
   { value: 'inbox', label: 'Inbox', icon: <InboxGlyph />, count: 0 },
 ];
 

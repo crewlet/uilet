@@ -1,9 +1,9 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import {
-  AddGlyph,
-  ArrowDownwardGlyph,
-  ArrowUpwardGlyph,
-  CloseGlyph,
+  ArrowDownGlyph,
+  ArrowUpGlyph,
+  PlusGlyph,
+  XGlyph,
 } from '@crewlethq/icons/glyphs';
 import { announce } from '../Announcer/index.js';
 import { IconButton } from '../IconButton/index.js';
@@ -269,7 +269,7 @@ export function ListInput({
           size="sm"
           variant="soft-brand"
           label={addLabel(itemName)}
-          icon={<AddGlyph />}
+          icon={<PlusGlyph />}
           disabled={disabled || draft.trim() === ''}
           onClick={add}
         />
@@ -344,7 +344,7 @@ export function ListInput({
                     <IconButton
                       size="sm"
                       label={moveUpLabel(itemName, position)}
-                      icon={<ArrowUpwardGlyph />}
+                      icon={<ArrowUpGlyph />}
                       disabled={disabled || index === 0}
                       onClick={() => move(index, -1, 'up')}
                       ref={(el) => {
@@ -355,7 +355,7 @@ export function ListInput({
                     <IconButton
                       size="sm"
                       label={moveDownLabel(itemName, position)}
-                      icon={<ArrowDownwardGlyph />}
+                      icon={<ArrowDownGlyph />}
                       disabled={disabled || index === count - 1}
                       onClick={() => move(index, 1, 'down')}
                       ref={(el) => {
@@ -368,7 +368,7 @@ export function ListInput({
                     size="sm"
                     variant="ghost-danger"
                     label={removeLabel(itemName, position)}
-                    icon={<CloseGlyph />}
+                    icon={<XGlyph />}
                     disabled={disabled}
                     onClick={() => remove(index)}
                   />

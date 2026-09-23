@@ -6,7 +6,8 @@
  * 1. A glyph is an SVG, never a font ligature. A component that spells
  *    `material-symbols-outlined` renders a word until a stylesheet it does not
  *    own has fetched a font from a third-party host, and renders that word for
- *    good on a closed network. @crewlethq/icons ships the drawings.
+ *    good on a closed network. @crewlethq/icons ships the drawings, in
+ *    `glyphs/`, and the Material Symbols tree it carried before is gone.
  *
  * 2. Nothing injects a `<style>` element. A style element inside an inline SVG
  *    applies to the WHOLE document, and a strict Content-Security-Policy
@@ -43,17 +44,20 @@ const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const ROOTS = ['ui', 'icons'].map((name) => join(REPOSITORY, 'packages', name, 'src'));
 const SOURCE = /\.(tsx?|css)$/;
 
-function sources(directory: string): string[] {
+function sources(directory: string, pattern: RegExp = SOURCE): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(directory)) {
     const path = join(directory, entry);
-    if (statSync(path).isDirectory()) found.push(...sources(path));
-    else if (SOURCE.test(entry)) found.push(path);
+    if (statSync(path).isDirectory()) found.push(...sources(path, pattern));
+    else if (pattern.test(entry)) found.push(path);
   }
   return found;
 }
 
-const files = ROOTS.flatMap(sources).map((path) => ({ path: relative(REPOSITORY, path), text: readFileSync(path, 'utf8') }));
+const files = ROOTS.flatMap((root) => sources(root)).map((path) => ({ path: relative(REPOSITORY, path), text: readFileSync(path, 'utf8') }));
+const storybook = ['src', '.storybook', 'scripts']
+  .flatMap((folder) => sources(join(REPOSITORY, 'apps', 'storybook', folder), /\.(tsx?|css|mjs)$/))
+  .map((path) => ({ path: relative(REPOSITORY, path), text: readFileSync(path, 'utf8') }));
 
 describe('component source', () => {
   test('the scan reads the files it claims to', () => {
@@ -65,6 +69,22 @@ describe('component source', () => {
 
   test('no component draws a glyph as a Material Symbols ligature', () => {
     const offenders = files.filter(({ text }) => text.includes('material-symbols-outlined')).map(({ path }) => path);
+    expect(offenders).toEqual([]);
+  });
+
+  test('nothing reaches for the retired Material Symbols tree', () => {
+    /*
+     * `@crewlethq/icons/symbols/*` was the Material drawings' export until the
+     * glyphs became Lucide's, and the package no longer carries it: an import
+     * of one resolves to nothing, and a notice script copying its LICENSE
+     * ships a site with no license for the drawings it does carry. The
+     * Storybook's sources and scripts are read here too, because they are the
+     * other consumer in this repository.
+     */
+    const offenders = [...files, ...storybook]
+      .filter(({ text }) => /@crewlethq\/icons\/symbols|icons\/symbols\//.test(text))
+      .map(({ path }) => path);
+    expect(storybook.length, 'the Storybook scan read nothing').toBeGreaterThan(20);
     expect(offenders).toEqual([]);
   });
 

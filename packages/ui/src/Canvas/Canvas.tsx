@@ -87,7 +87,7 @@ import {
   type Ref,
   type TransitionEvent as ReactTransitionEvent,
 } from 'react';
-import { FitScreenGlyph, ZoomInGlyph, ZoomOutGlyph } from '@crewlethq/icons/glyphs';
+import { FullscreenGlyph, ZoomInGlyph, ZoomOutGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { LAYER_REPOSITION_EVENT, LayerHost } from '../Layer/index.js';
@@ -810,7 +810,7 @@ export function Canvas({
                   <IconButton
                     size="sm"
                     label={text.fit}
-                    icon={<FitScreenGlyph />}
+                    icon={<FullscreenGlyph />}
                     onClick={() => content && apply(fitView(content, sizeNow.current), 'near')}
                     disabled={!ready}
                   />

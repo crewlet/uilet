@@ -17,16 +17,16 @@ import {
 } from '@crewlethq/ui';
 import { CrewletFigure } from '@crewlethq/icons';
 import {
-  AccountTreeGlyph,
-  AddGlyph,
-  ApartmentGlyph,
+  BuildingComplexGlyph,
+  ChevronDownGlyph,
   ChevronRightGlyph,
-  CreateNewFolderGlyph,
-  DeleteGlyph,
-  EditGlyph,
-  KeyboardArrowDownGlyph,
-  PersonAddGlyph,
-  PersonGlyph,
+  FolderPlusGlyph,
+  NetworkGlyph,
+  PencilGlyph,
+  PlusGlyph,
+  TrashGlyph,
+  UserGlyph,
+  UserPlusGlyph,
 } from '@crewlethq/icons/glyphs';
 
 /**
@@ -154,7 +154,7 @@ function Card({ id, card }: { id: string; card: TreeCardContext }) {
           <IconButton
             size="sm"
             label={`${open ? 'Collapse' : 'Expand'} ${entity.name}`}
-            icon={open ? <KeyboardArrowDownGlyph /> : <ChevronRightGlyph />}
+            icon={open ? <ChevronDownGlyph /> : <ChevronRightGlyph />}
             tabIndex={-1}
             onClick={(event) => {
               event.stopPropagation();
@@ -229,7 +229,7 @@ function Chart({ note }: { note?: string }) {
         renderCard={(id, card) => <Card id={id} card={card} />}
         renderUnder={(id) =>
           ENTITIES[id]!.kind === 'seat' ? null : (
-            <Button size="small" variant="tertiary" tabIndex={-1} leadingIcon={<AddGlyph />}>
+            <Button size="small" variant="tertiary" tabIndex={-1} leadingIcon={<PlusGlyph />}>
               Add
             </Button>
           )
@@ -317,11 +317,11 @@ function NodeCard({ id, card }: { id: string; card: TreeCardContext }) {
   const open = card.expanded(id);
   const icon =
     entity.kind === 'company' ? (
-      <ApartmentGlyph />
+      <BuildingComplexGlyph />
     ) : entity.kind === 'unit' ? (
-      <AccountTreeGlyph />
+      <NetworkGlyph />
     ) : entity.human === true ? (
-      <PersonGlyph size="sm" />
+      <UserGlyph size="sm" />
     ) : (
       <CrewletFigure motion="idle" />
     );
@@ -356,7 +356,7 @@ function NodeCard({ id, card }: { id: string; card: TreeCardContext }) {
           <IconButton
             size="sm"
             label={`${open ? 'Collapse' : 'Expand'} ${entity.name}`}
-            icon={open ? <KeyboardArrowDownGlyph /> : <ChevronRightGlyph />}
+            icon={open ? <ChevronDownGlyph /> : <ChevronRightGlyph />}
             tabIndex={-1}
             onClick={(event) => {
               event.stopPropagation();
@@ -368,13 +368,13 @@ function NodeCard({ id, card }: { id: string; card: TreeCardContext }) {
       <div {...card.actions(id)}>
         <Menu
           label={`Actions for ${entity.name}`}
-          icon={<EditGlyph />}
+          icon={<PencilGlyph />}
           items={[{ key: 'edit', label: 'Edit', onSelect: () => {} }]}
           triggerTabIndex={-1}
         />
         <Menu
           label={`Delete ${entity.name}`}
-          icon={<DeleteGlyph />}
+          icon={<TrashGlyph />}
           items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => {} }]}
           triggerTabIndex={-1}
           open={card.menuOpen(id)}
@@ -456,7 +456,7 @@ export const OrgChart: Story = {
                   {
                     key: 'unit',
                     label: 'Add a unit',
-                    icon: <CreateNewFolderGlyph />,
+                    icon: <FolderPlusGlyph />,
                     onSelect: () => {},
                   },
                   {
@@ -468,7 +468,7 @@ export const OrgChart: Story = {
                   {
                     key: 'human',
                     label: 'Add a human seat',
-                    icon: <PersonAddGlyph />,
+                    icon: <UserPlusGlyph />,
                     onSelect: () => {},
                   },
                 ]}
@@ -524,7 +524,7 @@ export const AddingANode: Story = {
                   {
                     key: 'unit',
                     label: 'Add a unit',
-                    icon: <CreateNewFolderGlyph />,
+                    icon: <FolderPlusGlyph />,
                     onSelect: () => {
                       setName('');
                       setAdding(id);

@@ -11,11 +11,11 @@ import '@crewlethq/tokens/css/density';  // compact and comfortable, optional
 import '@crewlethq/tokens/css/fonts';    // self-hosted Geist and Geist Mono
 import '@crewlethq/ui/styles.css';       // every component stylesheet, in one file
 import { Button, Card } from '@crewlethq/ui';
-import { Book2Glyph } from '@crewlethq/icons/glyphs';
+import { BookOpenGlyph } from '@crewlethq/icons/glyphs';
 
 <Card>
   <Card.Body>
-    <Button variant="primary" leadingIcon={<Book2Glyph />}>
+    <Button variant="primary" leadingIcon={<BookOpenGlyph />}>
       Open documentation
     </Button>
     <Button variant="outline">Cancel</Button>
@@ -290,6 +290,31 @@ design's mark, rather than 6px.
 | a stylesheet overriding `.crewlet-modal__header--sheet` padding | the head is 52px with 4px over 24px insets; override `--size-shell-topbar` or the rule itself |
 | a stylesheet overriding `.crewlet-brand` padding | its block padding is `--spacing-1` |
 | a layout that reserved 6px for a `StatusDot` | 7px |
+
+**Every glyph is a Lucide stroke.** `@crewlethq/icons` replaces the Material
+Symbols set with Lucide drawings, stroked at the approved design's 1.75 on the
+24 grid with round caps and joins, so every glyph a component draws changes
+drawing, and the names a component imported change with them; the package's
+README has the full table. Nothing here takes a glyph by name, so a component's
+own glyphs need no edit from you. Two kinds of stylesheet do.
+
+A rule that sets `fill` on an SVG it does not own now paints the INSIDE of a
+stroke drawing, which turns a closed shape solid and an open one into a smear.
+`AddPill` and `OrgLabel` both had one, to take a brand mark's own fill away,
+and both now leave a `.crewlet-glyph` alone and give it their ink through its
+`color`, which the stroke follows. A glyph's weight is
+`--crewlet-glyph-stroke` on an ancestor, which is the one way to move it.
+
+The `Toaster`'s status glyphs were Material's FILLED drawings, a solid disc or
+triangle with the mark knocked out. A stroke set has no such drawing, so a toast
+draws the outline, in the same tone, beside the same title word.
+
+| Was | Is |
+|---|---|
+| a glyph passed to a component under its Material name (`icon={<CloseGlyph />}`) | its Lucide successor from `@crewlethq/icons`' table (`icon={<XGlyph />}`) |
+| a stylesheet of your own setting `fill` on the SVGs inside a component, or on `.crewlet-glyph` | `color` on the element; the glyph's stroke is `currentColor` |
+| a stylesheet setting `stroke-width` on `.crewlet-glyph` | `--crewlet-glyph-stroke` on an ancestor |
+| a toast relying on the filled status glyph | the outline, in the same `--crewlet-toast-mark` tone |
 
 ## Breaking changes in 0.3.0
 

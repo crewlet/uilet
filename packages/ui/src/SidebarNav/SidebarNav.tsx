@@ -17,7 +17,7 @@
  */
 
 import { useId, useState, type MouseEventHandler, type ReactNode } from 'react';
-import { KeyboardArrowDownGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -251,7 +251,7 @@ export function NavItem({
         {inside}
         {nested ? (
           <span className={cx('crewlet-nav-item__chevron', open && 'crewlet-nav-item__chevron--open')} aria-hidden>
-            <KeyboardArrowDownGlyph size="sm" />
+            <ChevronDownGlyph size="sm" />
           </span>
         ) : null}
       </button>
@@ -284,7 +284,7 @@ export function NavItem({
             onClick={toggle}
           >
             <span className={cx('crewlet-nav-item__chevron', open && 'crewlet-nav-item__chevron--open')} aria-hidden>
-              <KeyboardArrowDownGlyph size="sm" />
+              <ChevronDownGlyph size="sm" />
             </span>
           </button>
         ) : null}

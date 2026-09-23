@@ -7,7 +7,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { OpenInNewGlyph } from '@crewlethq/icons/glyphs';
+import { ExternalLinkGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -83,7 +83,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   // somebody looking at it and nothing at all to somebody listening.
   const externalMark = external ? (
     <>
-      <OpenInNewGlyph className="crewlet-link__external" size="sm" />
+      <ExternalLinkGlyph className="crewlet-link__external" size="sm" />
       {/*
         The space is a TEXT NODE BESIDE the sentence, not inside it. An
         accessible name is the concatenation of an element's parts with nothing

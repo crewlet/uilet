@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { StatCard, StatGroup } from '@crewlethq/ui';
-import { TokenGlyph } from '@crewlethq/icons/glyphs';
+import { CoinsGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof StatCard> = {
   title: 'UI/StatCard',
@@ -43,7 +43,7 @@ export const WithIcon: Story = {
     label: 'Tokens (7d)',
     value: '831.3K',
     sub: '722.0K in, 109.3K out',
-    icon: <TokenGlyph size="sm" />,
+    icon: <CoinsGlyph size="sm" />,
   },
 };
 

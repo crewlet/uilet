@@ -12,11 +12,11 @@
 // 2. The third-party licenses travel with what they cover. The SIL Open Font
 //    License requires its text beside every redistributed copy of the font
 //    files, so every directory holding a woff2 file must also hold an OFL.txt
-//    with the license text. The Material Symbols drawings the preview bundles
-//    into its JavaScript are Apache-2.0, whose section 4(a) requires a copy of
-//    the license to reach every recipient, and nothing about the built site
-//    would otherwise say the drawings are in it. Both are written by
-//    apps/storybook/scripts/write-font-licenses.mjs.
+//    with the license text. The Lucide drawings the preview bundles into its
+//    JavaScript are ISC, and those derived from Feather MIT as well, and both
+//    licenses require their notice to reach every recipient, where nothing
+//    about the built site would otherwise say the drawings are in it. Both
+//    are written by apps/storybook/scripts/write-font-licenses.mjs.
 // 3. Nothing is fetched from a host. The built site is what gets deployed, and
 //    every asset it needs ships with it, so a stylesheet or a document that
 //    loads a font, a script, an image or a stylesheet from somewhere else is a
@@ -39,8 +39,10 @@ import { pathToFileURL } from 'node:url';
 
 const FORBIDDEN_AT_ROOT = ['_worker.js', '_routes.json', '_headers', '_redirects'];
 const LICENSE_MARKER = 'SIL OPEN FONT LICENSE Version 1.1';
-const SYMBOLS_NOTICE_DIRECTORY = 'third-party/material-symbols';
-const SYMBOLS_NOTICES = { LICENSE: 'Apache License', NOTICE: 'Material Symbols by Google' };
+const GLYPHS_LICENSE = 'third-party/lucide/LICENSE';
+// Both halves of upstream's LICENSE: a file carrying the ISC text alone would
+// leave the Feather icons without the MIT notice their license asks for.
+const GLYPHS_LICENSE_MARKERS = { 'ISC License': 'the ISC License text', 'Cole Bemis': 'the Feather MIT notice' };
 
 /*
  * A resource the page LOADS from a host: a CSS url() or @import, or an HTML
@@ -95,13 +97,13 @@ export function checkStorybookStatic(root) {
       problems.push(`${where}/OFL.txt does not contain the SIL Open Font License text`);
     }
   }
-  for (const [notice, marker] of Object.entries(SYMBOLS_NOTICES)) {
-    const where = join(SYMBOLS_NOTICE_DIRECTORY, notice);
-    const path = join(root, where);
-    if (!statSync(path, { throwIfNoEntry: false })?.isFile()) {
-      problems.push(`${where} is missing; the preview bundles the Material Symbols drawings, whose license travels with them`);
-    } else if (!readFileSync(path, 'utf8').includes(marker)) {
-      problems.push(`${where} does not contain the ${notice === 'LICENSE' ? 'Apache License 2.0 text' : 'Material Symbols attribution'}`);
+  const glyphsLicense = join(root, GLYPHS_LICENSE);
+  if (!statSync(glyphsLicense, { throwIfNoEntry: false })?.isFile()) {
+    problems.push(`${GLYPHS_LICENSE} is missing; the preview bundles the Lucide drawings, whose license travels with them`);
+  } else {
+    const text = readFileSync(glyphsLicense, 'utf8');
+    for (const [marker, what] of Object.entries(GLYPHS_LICENSE_MARKERS)) {
+      if (!text.includes(marker)) problems.push(`${GLYPHS_LICENSE} does not contain ${what}`);
     }
   }
   for (const path of loadedFiles(root)) {

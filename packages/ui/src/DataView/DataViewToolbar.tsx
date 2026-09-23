@@ -25,18 +25,18 @@
 
 import { useMemo, type KeyboardEvent, type ReactNode } from 'react';
 import {
-  ArrowDownwardGlyph,
-  ArrowUpwardGlyph,
-  CloseGlyph,
-  KeyboardArrowDownGlyph,
+  ArrowDownGlyph,
+  ArrowUpDownGlyph,
+  ArrowUpGlyph,
+  ChevronDownGlyph,
+  ClockGlyph,
+  EyeGlyph,
+  EyeOffGlyph,
+  HashGlyph,
   ListGlyph,
-  ScheduleGlyph,
   SearchGlyph,
-  SwapVertGlyph,
-  TagGlyph,
-  TuneGlyph,
-  VisibilityGlyph,
-  VisibilityOffGlyph,
+  SlidersVerticalGlyph,
+  XGlyph,
 } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { Count } from '../Count/index.js';
@@ -104,9 +104,9 @@ function glyphForKind<TRow>(def: FilterDef<TRow>): ReactNode {
     case 'select':
       return <ListGlyph size="sm" />;
     case 'datetime':
-      return <ScheduleGlyph size="sm" />;
+      return <ClockGlyph size="sm" />;
     case 'number':
-      return <TagGlyph size="sm" />;
+      return <HashGlyph size="sm" />;
     default:
       return <SearchGlyph size="sm" />;
   }
@@ -229,12 +229,12 @@ export function DataViewToolbar<TRow>({
         <Menu
           label={labels.addFilter}
           items={filterItems}
-          icon={<TuneGlyph size="sm" />}
+          icon={<SlidersVerticalGlyph size="sm" />}
           triggerVariant="secondary"
           trigger={
             <span className="crewlet-data-view-toolbar__menu-label">
               {labels.filter}
-              <KeyboardArrowDownGlyph size="xs" />
+              <ChevronDownGlyph size="xs" />
             </span>
           }
         />
@@ -251,20 +251,20 @@ export function DataViewToolbar<TRow>({
               variant="secondary"
               size="small"
               pressed={sort !== null}
-              leadingIcon={<SwapVertGlyph size="sm" />}
+              leadingIcon={<ArrowUpDownGlyph size="sm" />}
               onClick={toggle}
             >
               <span className="crewlet-data-view-toolbar__menu-label">
                 {sort && sortedName ? (
                   <>
                     {labels.sortedBy(String(sortedName))}
-                    {sort.direction === 'asc' ? <ArrowUpwardGlyph size="xs" /> : <ArrowDownwardGlyph size="xs" />}
+                    {sort.direction === 'asc' ? <ArrowUpGlyph size="xs" /> : <ArrowDownGlyph size="xs" />}
                     <VisuallyHidden>{sort.direction === 'asc' ? labels.ascendingWord : labels.descendingWord}</VisuallyHidden>
                   </>
                 ) : (
                   <>
                     {labels.sort}
-                    <KeyboardArrowDownGlyph size="xs" />
+                    <ChevronDownGlyph size="xs" />
                   </>
                 )}
               </span>
@@ -287,7 +287,7 @@ export function DataViewToolbar<TRow>({
                           variant="ghost"
                           pressed={isAscending}
                           label={labels.ascending(name)}
-                          icon={<ArrowUpwardGlyph size="xs" />}
+                          icon={<ArrowUpGlyph size="xs" />}
                           onClick={() => {
                             onSortChange({ key: column.key, direction: 'asc' });
                             close();
@@ -298,7 +298,7 @@ export function DataViewToolbar<TRow>({
                           variant="ghost"
                           pressed={isDescending}
                           label={labels.descending(name)}
-                          icon={<ArrowDownwardGlyph size="xs" />}
+                          icon={<ArrowDownGlyph size="xs" />}
                           onClick={() => {
                             onSortChange({ key: column.key, direction: 'desc' });
                             close();
@@ -314,7 +314,7 @@ export function DataViewToolbar<TRow>({
                   <Button
                     variant="tertiary"
                     size="small"
-                    leadingIcon={<CloseGlyph size="xs" />}
+                    leadingIcon={<XGlyph size="xs" />}
                     onClick={() => {
                       onSortChange(null);
                       close();
@@ -334,7 +334,7 @@ export function DataViewToolbar<TRow>({
           variant="secondary"
           size="small"
           pressed={showArchived}
-          leadingIcon={showArchived ? <VisibilityGlyph size="sm" /> : <VisibilityOffGlyph size="sm" />}
+          leadingIcon={showArchived ? <EyeGlyph size="sm" /> : <EyeOffGlyph size="sm" />}
           onClick={() => onShowArchivedChange(!showArchived)}
         >
           <span className="crewlet-data-view-toolbar__menu-label">

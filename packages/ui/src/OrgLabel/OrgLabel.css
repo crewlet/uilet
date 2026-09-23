@@ -73,6 +73,16 @@
      had the fill alone and therefore the same defect; one rule now answers for
      both surfaces. */
   color: inherit;
+}
+
+/* THE FILL IS FOR A FILLED DRAWING, and a glyph is a stroke. Painting the
+   inside of a Lucide glyph turns every closed shape in it solid and every
+   open one into a smear (a person's head and shoulders, a unit's building, a
+   warning's triangle, each a blob), so a `.crewlet-glyph` keeps the fill its
+   own frame decides and takes the ink through its stroke. */
+.crewlet-org-label__icon svg:not(.crewlet-glyph),
+.crewlet-org-label__icon svg:not(.crewlet-glyph) g,
+.crewlet-org-label__icon svg:not(.crewlet-glyph) path {
   fill: currentColor;
 }
 

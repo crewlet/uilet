@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import {
-  AccountTreeGlyph,
-  DashboardGlyph,
-  DnsGlyph,
-  GroupGlyph,
+  ClockGlyph,
+  CoinsGlyph,
   KeyGlyph,
-  ScheduleGlyph,
-  TerminalGlyph,
-  TokenGlyph,
+  LayoutDashboardGlyph,
+  NetworkGlyph,
+  ServerGlyph,
+  SquareTerminalGlyph,
+  UsersGlyph,
 } from '@crewlethq/icons/glyphs';
 import { density } from '@crewlethq/tokens';
 import { Count, NavGroup, NavItem, SidebarNav } from '@crewlethq/ui';
@@ -63,7 +63,7 @@ export const Sections: Story = {
           <NavItem
             href="#/"
             label="Overview"
-            icon={<DashboardGlyph size="sm" />}
+            icon={<LayoutDashboardGlyph size="sm" />}
             current={at === 'overview'}
             onClick={go('overview')}
             badge={<Count value={3} label="need a person" />}
@@ -74,7 +74,7 @@ export const Sections: Story = {
           <NavItem
             href="#/people"
             label="People"
-            icon={<GroupGlyph size="sm" />}
+            icon={<UsersGlyph size="sm" />}
             current={at === 'people'}
             onClick={go('people')}
             badge={<Count value="4 live" />}
@@ -82,7 +82,7 @@ export const Sections: Story = {
           <NavItem
             href="#/org"
             label="Org chart"
-            icon={<AccountTreeGlyph size="sm" />}
+            icon={<NetworkGlyph size="sm" />}
             current={at === 'org'}
             onClick={go('org')}
             defaultExpanded
@@ -96,14 +96,14 @@ export const Sections: Story = {
           <NavItem
             href="#/runs"
             label="Coding runs"
-            icon={<TerminalGlyph size="sm" />}
+            icon={<SquareTerminalGlyph size="sm" />}
             current={at === 'runs'}
             onClick={go('runs')}
           />
           <NavItem
             href="#/schedules"
             label="Schedules"
-            icon={<ScheduleGlyph size="sm" />}
+            icon={<ClockGlyph size="sm" />}
             current={at === 'schedules'}
             onClick={go('schedules')}
           />
@@ -112,14 +112,14 @@ export const Sections: Story = {
           <NavItem
             href="#/fleet"
             label="Fleet"
-            icon={<DnsGlyph size="sm" />}
+            icon={<ServerGlyph size="sm" />}
             current={at === 'fleet'}
             onClick={go('fleet')}
           />
           <NavItem
             href="#/spend"
             label="Spend and budgets"
-            icon={<TokenGlyph size="sm" />}
+            icon={<CoinsGlyph size="sm" />}
             current={at === 'spend'}
             onClick={go('spend')}
           />
@@ -140,7 +140,7 @@ export const OneLongRow: Story = {
       <NavItem
         href="#/conversations"
         label="Agent-to-agent conversations across the whole company"
-        icon={<GroupGlyph size="sm" />}
+        icon={<UsersGlyph size="sm" />}
         badge={<Count value={128} label="conversations" />}
       />
     </SidebarNav>
@@ -192,15 +192,15 @@ export const EveryRowState: Story = {
             <NavItem
               href="#/"
               label="Overview"
-              icon={<DashboardGlyph size="sm" />}
+              icon={<LayoutDashboardGlyph size="sm" />}
               current
               badge={<Count value={3} label="need a person" />}
               badgeTone="attention"
             />
-            <NavItem href="#/people" label="People" icon={<GroupGlyph size="sm" />} badge={<Count value="4 live" />} />
-            <NavItem href="#/runs" label="Coding runs" icon={<TerminalGlyph size="sm" />} />
+            <NavItem href="#/people" label="People" icon={<UsersGlyph size="sm" />} badge={<Count value="4 live" />} />
+            <NavItem href="#/runs" label="Coding runs" icon={<SquareTerminalGlyph size="sm" />} />
             <NavGroup label="Operations">
-              <NavItem href="#/fleet" label="Fleet" icon={<DnsGlyph size="sm" />} />
+              <NavItem href="#/fleet" label="Fleet" icon={<ServerGlyph size="sm" />} />
               <NavItem
                 label="Secrets"
                 icon={<KeyGlyph size="sm" />}

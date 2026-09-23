@@ -1,12 +1,12 @@
 # @crewlethq/icons
 
-Everything a Crewlet surface draws that is not text: the Material Symbols glyph set, the marks of the applications the platform integrates with, and the Crewlet signature illustrations.
+Everything a Crewlet surface draws that is not text: the Lucide glyph set, the marks of the applications the platform integrates with, and the Crewlet signature illustrations.
 
 All three are React components compiled from SVG files that ship in the package. Nothing here fetches a font, a sprite or an image from another host, so a closed network draws exactly what an open one does.
 
 | What | Import from | Looks like |
 | ---- | ----------- | ---------- |
-| Glyphs (105 Material Symbols) | `@crewlethq/icons/glyphs` | `<CloseGlyph size="md" />` |
+| Glyphs (Lucide, stroke on the 24 grid) | `@crewlethq/icons/glyphs` | `<XGlyph size="md" />` |
 | A glyph chosen from a value | `@crewlethq/icons/glyphs/registry` | `glyphByName(name)` |
 | Vendor marks | `@crewlethq/icons` | `<VendorMark vendor="slack" />` |
 | Signature illustrations | `@crewlethq/icons` | `<AgentReading />`, `<Icon name="AgentReading" />` |
@@ -15,33 +15,42 @@ All three are React components compiled from SVG files that ship in the package.
 ## Glyphs
 
 ```tsx
-import { CloseGlyph, KeyboardArrowDownGlyph } from '@crewlethq/icons/glyphs';
+import { StarGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
-<CloseGlyph size="md" />
-<CloseGlyph size="lg" title="Close" />
+<XGlyph size="md" />
+<XGlyph size="lg" title="Close" />
+<StarGlyph filled={kept} />
 ```
 
-Material Symbols Outlined, weight 400, grade 0, vendored at the 20 px and 24 px optical sizes from `google/material-design-icons`. [`symbols/README.md`](./symbols/README.md) records the provenance, the checksums and how to add or replace one.
+Lucide drawings, vendored unchanged from `lucide-static` and drawn as the approved design draws them: a stroke on the 24 unit grid at a weight of 1.75, with round caps and round joins. [`glyphs/README.md`](./glyphs/README.md) records which glyphs the set carries and why, their provenance, the checksums and how to add or replace one.
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
 | `size` | `'xs' \| 'sm' \| 'md' \| 'lg' \| 'xl'` (12, 14, 16, 20, 24), a number of px, or any CSS length | `'1em'` | How big it draws. |
 | `title` | string | none | Names the glyph for assistive technology. Without one the glyph is `aria-hidden` and unfocusable, which is right wherever a label sits beside it. |
-| `opsz` | `20 \| 24` | follows `size` | Which vendored drawing to use. |
+| `filled` | boolean | `false` | Paints the drawing's inside in the text colour. Only a glyph listed in `FILLABLE` takes it; see below. |
 
-Every SVG attribute passes through, and `className` is added to the component's own `crewlet-glyph`.
+Every other SVG attribute a caller sets on an icon passes through (a class, a style, a colour, a handler, an `aria-` or `data-` attribute), and `className` is added to the component's own `crewlet-glyph`. What the frame owns does not: `viewBox`, `fill`, `strokeWidth`, `strokeLinecap` and `strokeLinejoin` are not props, and the frame keeps them even against a caller the types do not reach, because each changes the drawing rather than where it sits or how big it is.
 
-**Names carry a `Glyph` suffix** because the bare words collide: `Timeline`, `List`, `Menu`, `Tag`, `Link` and `Code` are all `@crewlethq/ui` components, and a glyph taking one of those names would shadow the component at every import site that wanted both. `close` is `CloseGlyph`, `keyboard_arrow_down` is `KeyboardArrowDownGlyph`, `check_circle-fill` is `CheckCircleFillGlyph`.
+**Names are Lucide's, with a `Glyph` suffix,** because the bare words collide: `Timeline`, `List`, `Menu`, `Tag`, `Link` and `Code` are all `@crewlethq/ui` components, and a glyph taking one of those names would shadow the component at every import site that wanted both. `x` is `XGlyph`, `chevron-down` is `ChevronDownGlyph`, `columns-3` is `Columns3Glyph`. `GLYPH_NAMES` lists every vendored name and `GlyphName` is the union of them, so a name the package does not ship is a compile error.
 
-**A filled state is its own name**, not a `fill` attribute: a Material Symbol is a filled path already, so `fill` paints the outline's own shape rather than solidifying it. Five glyphs ship both drawings — `check_circle` / `check_circle-fill`, `error` / `error-fill`, `info` / `info-fill`, `star` / `star-fill` and `warning` / `warning-fill` — so a surface that toggles a state swaps the component rather than a prop.
+### The stroke
 
-`GLYPH_NAMES` lists every vendored name and `GlyphName` is the union of them, so a name the package does not ship is a compile error.
+The weight is 1.75 units of the 24 grid, where Lucide's own files say 2, and it scales with the glyph as the design's does: a 16 px glyph draws a 1.17 px line and a 24 px one a 1.75 px line. `--crewlet-glyph-stroke` moves it for every glyph beneath the element that sets it, and it is the one way to:
 
-### The optical size
+```css
+.dense-toolbar {
+  --crewlet-glyph-stroke: 2;
+}
+```
 
-The optical size axis is a different drawing, not a scaled one: the 20 px `close` is a 51-unit stroke on the 960 unit grid and the 24 px one is 56. `Glyph` takes the 20 px drawing at and below 20 px and the 24 px drawing above it, which it can work out whenever `size` says how many px it is.
+The glyph carries the weight twice: as a style that reads the variable, and as a plain `stroke-width="1.75"` attribute beneath it, so markup rendered on a server under a `style-src` policy that refuses style attributes still draws at the design weight rather than at the SVG default of 1. `GLYPH_STROKE` is the number, for a drawing of your own that stands beside a glyph.
 
-It cannot when `size` is left at `1em` and an ancestor's `font-size` decides, because CSS has no way to hand a computed font size back to the component that would have to choose. The default there is the 20 px drawing, on the grounds that a glyph inheriting a font size sits in body text or a control label, every step of which is at or below 20 px. A surface that sets a larger font size passes `opsz={24}`.
+### The filled state
+
+**Only a `FILLABLE` glyph takes `filled`.** A stroke drawing with its inside painted reads as the mark only where the drawing is one closed silhouette: `bell` has an open clapper and would fill into a blob with a line through it, and `compass` and `target` are closed but would fill into a disc with nothing left to say which disc it is. So `FILLABLE` is a decision about meaning rather than a property of the geometry, the build refuses a name there whose drawing has an open stroke, and the component of every other glyph has no `filled` prop at all, so passing one is a compile error. It is `['star']` today: the kept state of the Crewlet console's favourite toggle.
+
+A glyph a surface draws in two states that `FILLABLE` does not cover changes colour or changes glyph, rather than filling.
 
 ### Choosing a glyph from a value
 
@@ -49,7 +58,7 @@ It cannot when `size` is left at `1em` and an ancestor's `font-size` decides, be
 import { glyphByName } from '@crewlethq/icons/glyphs/registry';
 ```
 
-**This entry pulls in every glyph**, because a lookup by name is a lookup over all of them. That is the right trade where the name really is data (a navigation table, an event category, a configured integration kind) and the wrong one everywhere else, which is why it is a separate entry: code that imports one glyph never reaches it.
+**This entry pulls in every glyph**, because a lookup by name is a lookup over all of them. That is the right trade where the name really is data (a navigation table, an event category, a configured integration kind) and the wrong one everywhere else, which is why it is a separate entry: code that imports one glyph never reaches it. The answer is the component registered under the name, with its own type: `glyphByName('star')` takes `filled` and `glyphByName('x')` does not.
 
 ## Vendor marks
 
@@ -105,7 +114,7 @@ The source SVGs ship in the package and are exported as `@crewlethq/icons/svg/*`
 import markUrl from '@crewlethq/icons/svg/crewlet-icon.svg';
 ```
 
-A bundler resolves the import to a URL. Outside a bundler, resolve the same specifier with `import.meta.resolve('@crewlethq/icons/svg/crewlet-icon.svg')` to get the file on disk. The vendored glyph drawings are exported the same way, as `@crewlethq/icons/symbols/20/close.svg`.
+A bundler resolves the import to a URL. Outside a bundler, resolve the same specifier with `import.meta.resolve('@crewlethq/icons/svg/crewlet-icon.svg')` to get the file on disk. The vendored glyph drawings are exported the same way, as `@crewlethq/icons/glyphs/x.svg`, and so is the license that travels with them, as `@crewlethq/icons/glyphs/LICENSE`. A raw file is upstream's drawing at upstream's stroke of 2; the components are what draw it at the design's 1.75.
 
 ### Favicons
 
@@ -155,7 +164,7 @@ Loading the built entry in plain Node, with no bundler, therefore fails on the s
 2. Run `npm run build`.
 3. The new illustration is exported from `@crewlethq/icons` and appears in `ICON_NAMES`.
 
-A vendor mark goes into `svg/vendor/` instead, and is added to the `VENDORS` list and the `Vendor` union in `src/VendorMark.tsx`. A glyph is vendored rather than drawn; see [`symbols/README.md`](./symbols/README.md).
+A vendor mark goes into `svg/vendor/` instead, and is added to the `VENDORS` list and the `Vendor` union in `src/VendorMark.tsx`. A glyph is vendored rather than drawn; see [`glyphs/README.md`](./glyphs/README.md).
 
 ## Conventions for source SVGs
 
@@ -180,10 +189,143 @@ Signature illustrations follow these rules so they recolor from CSS and sit on o
 
 **Vendor marks** (`svg/vendor/`): each application's own drawing in its own colours, on its own viewBox. The root element declares the fill it wants, because the build only supplies `currentColor` where a source declares none.
 
+## Breaking changes in 0.5.0
+
+**The glyphs are Lucide's stroke drawings, and the Material Symbols set is gone.** The approved design draws every glyph as a stroke on the 24 grid with round caps and joins, and a filled Material Symbol beside one reads as a mark from another set, so `@crewlethq/icons/glyphs` now carries Lucide drawings under Lucide's names. Every glyph changes drawing, and most change name. The `symbols/` tree, its `@crewlethq/icons/symbols/*` export and `scripts/vendor-symbols.mjs` are removed; the drawings are in `glyphs/`, exported as `@crewlethq/icons/glyphs/*`. The package's license is `MIT AND ISC` rather than `MIT AND Apache-2.0`, and the notice an application's third-party notices carry for the glyphs is `@crewlethq/icons/glyphs/LICENSE` rather than `@crewlethq/icons/symbols/LICENSE` and `NOTICE`.
+
+The optical size axis goes with Material: a Lucide drawing is one drawing at every size, so `opsz` and the two functions that chose it are removed. A filled state is a prop rather than a second glyph, and only on a glyph that can carry one: Material's `check_circle-fill`, `error-fill`, `info-fill` and `warning-fill` were solid discs and triangles with the mark knocked out, which a stroke drawing cannot be, so they take the outline, and the tone around them carries the state as it already did.
+
+**One name survives with a different meaning, and it is not a compile error**, so look for it: `FullscreenGlyph` is Lucide's `fullscreen`, the corners with a screen inside that succeed Material's `fit_screen`, and Material's `fullscreen`, the bare corners, is now `MaximizeGlyph`. `TagGlyph` is gone rather than repurposed: Material's `tag` was a hash sign, which is `HashGlyph`, and Lucide's own `tag` is a price label that under the old name would have drawn a different thing without a word.
+
+| Was | Is |
+| --- | --- |
+| a glyph imported by its Material name | its Lucide successor, from the table below |
+| `opsz={20}` or `opsz={24}` on a glyph | nothing: remove the prop |
+| `glyphOpticalSize()`, `glyphPixels()`, the `GlyphOpticalSize` and `GlyphDrawing` types | nothing; `cssLength()` still says what length a size means |
+| `<StarFillGlyph />` | `<StarGlyph filled />` |
+| `fill="currentColor"` or `fill` in a stylesheet to solidify a glyph | `filled` on a `FILLABLE` glyph; a stylesheet `fill` paints a stroke drawing's inside, so drop it from any rule that reaches a `.crewlet-glyph` |
+| a stylesheet or `strokeWidth` changing a glyph's weight | `--crewlet-glyph-stroke` on an ancestor |
+| `@crewlethq/icons/symbols/20/<name>.svg` or `/24/<name>.svg` | `@crewlethq/icons/glyphs/<lucide-name>.svg` |
+| `@crewlethq/icons/symbols/LICENSE` and `NOTICE` in your third-party notices | `@crewlethq/icons/glyphs/LICENSE` |
+| a license scan expecting `MIT AND Apache-2.0` | `MIT AND ISC` |
+| `glyphByName('close')` and the other Material names in a `GlyphName` | the Lucide name, from the table below |
+
+Every Material Symbols name the package shipped, and its successor. A row's Lucide name is also the `GlyphName` for `glyphByName`.
+
+<!-- The migration table: every Material Symbols name 0.4 shipped, once. test/migration.test.mjs holds it to that. -->
+
+| Material Symbols name | Was | Lucide name | Is |
+| --------------------- | --- | ----------- | -- |
+| `account_tree` | `AccountTreeGlyph` | `network` | `NetworkGlyph` |
+| `add` | `AddGlyph` | `plus` | `PlusGlyph` |
+| `apartment` | `ApartmentGlyph` | `building-complex` | `BuildingComplexGlyph` |
+| `arrow_downward` | `ArrowDownwardGlyph` | `arrow-down` | `ArrowDownGlyph` |
+| `arrow_forward` | `ArrowForwardGlyph` | `arrow-right` | `ArrowRightGlyph` |
+| `arrow_outward` | `ArrowOutwardGlyph` | `arrow-up-right` | `ArrowUpRightGlyph` |
+| `arrow_upward` | `ArrowUpwardGlyph` | `arrow-up` | `ArrowUpGlyph` |
+| `autorenew` | `AutorenewGlyph` | `refresh-cw` | `RefreshCwGlyph` |
+| `block` | `BlockGlyph` | `ban` | `BanGlyph` |
+| `bolt` | `BoltGlyph` | `zap` | `ZapGlyph` |
+| `book_2` | `Book2Glyph` | `book-open` | `BookOpenGlyph` |
+| `bug_report` | `BugReportGlyph` | `bug` | `BugGlyph` |
+| `build` | `BuildGlyph` | `wrench` | `WrenchGlyph` |
+| `cable` | `CableGlyph` | `plug` | `PlugGlyph` |
+| `cached` | `CachedGlyph` | `refresh-ccw` | `RefreshCcwGlyph` |
+| `calendar_clock` | `CalendarClockGlyph` | `calendar-clock` | `CalendarClockGlyph` |
+| `calendar_today` | `CalendarTodayGlyph` | `calendar` | `CalendarGlyph` |
+| `chat` | `ChatGlyph` | `message-square` | `MessageSquareGlyph` |
+| `check` | `CheckGlyph` | `check` | `CheckGlyph` |
+| `check_circle` | `CheckCircleGlyph` | `circle-check` | `CircleCheckGlyph` |
+| `check_circle-fill` | `CheckCircleFillGlyph` | `circle-check` | `CircleCheckGlyph` |
+| `chevron_left` | `ChevronLeftGlyph` | `chevron-left` | `ChevronLeftGlyph` |
+| `chevron_right` | `ChevronRightGlyph` | `chevron-right` | `ChevronRightGlyph` |
+| `close` | `CloseGlyph` | `x` | `XGlyph` |
+| `code` | `CodeGlyph` | `code` | `CodeGlyph` |
+| `computer` | `ComputerGlyph` | `monitor` | `MonitorGlyph` |
+| `content_copy` | `ContentCopyGlyph` | `copy` | `CopyGlyph` |
+| `create_new_folder` | `CreateNewFolderGlyph` | `folder-plus` | `FolderPlusGlyph` |
+| `crown` | `CrownGlyph` | `crown` | `CrownGlyph` |
+| `cycle` | `CycleGlyph` | `repeat-2` | `Repeat2Glyph` |
+| `dark_mode` | `DarkModeGlyph` | `moon` | `MoonGlyph` |
+| `dashboard` | `DashboardGlyph` | `layout-dashboard` | `LayoutDashboardGlyph` |
+| `database` | `DatabaseGlyph` | `database` | `DatabaseGlyph` |
+| `delete` | `DeleteGlyph` | `trash` | `TrashGlyph` |
+| `description` | `DescriptionGlyph` | `file-text` | `FileTextGlyph` |
+| `difference` | `DifferenceGlyph` | `diff` | `DiffGlyph` |
+| `dns` | `DnsGlyph` | `server` | `ServerGlyph` |
+| `drag_indicator` | `DragIndicatorGlyph` | `grip-vertical` | `GripVerticalGlyph` |
+| `edit` | `EditGlyph` | `pencil` | `PencilGlyph` |
+| `error` | `ErrorGlyph` | `circle-alert` | `CircleAlertGlyph` |
+| `error-fill` | `ErrorFillGlyph` | `circle-alert` | `CircleAlertGlyph` |
+| `explore` | `ExploreGlyph` | `compass` | `CompassGlyph` |
+| `fit_screen` | `FitScreenGlyph` | `fullscreen` | `FullscreenGlyph` |
+| `flag` | `FlagGlyph` | `flag` | `FlagGlyph` |
+| `folder` | `FolderGlyph` | `folder` | `FolderGlyph` |
+| `fork_right` | `ForkRightGlyph` | `split` | `SplitGlyph` |
+| `fullscreen` | `FullscreenGlyph` | `maximize` | `MaximizeGlyph` |
+| `fullscreen_exit` | `FullscreenExitGlyph` | `minimize` | `MinimizeGlyph` |
+| `group` | `GroupGlyph` | `users` | `UsersGlyph` |
+| `help` | `HelpGlyph` | `circle-question-mark` | `CircleQuestionMarkGlyph` |
+| `inbox` | `InboxGlyph` | `inbox` | `InboxGlyph` |
+| `info` | `InfoGlyph` | `info` | `InfoGlyph` |
+| `info-fill` | `InfoFillGlyph` | `info` | `InfoGlyph` |
+| `key` | `KeyGlyph` | `key` | `KeyGlyph` |
+| `keyboard_arrow_down` | `KeyboardArrowDownGlyph` | `chevron-down` | `ChevronDownGlyph` |
+| `keyboard_arrow_up` | `KeyboardArrowUpGlyph` | `chevron-up` | `ChevronUpGlyph` |
+| `keyboard_double_arrow_left` | `KeyboardDoubleArrowLeftGlyph` | `chevrons-left` | `ChevronsLeftGlyph` |
+| `keyboard_double_arrow_right` | `KeyboardDoubleArrowRightGlyph` | `chevrons-right` | `ChevronsRightGlyph` |
+| `layers` | `LayersGlyph` | `layers` | `LayersGlyph` |
+| `light_mode` | `LightModeGlyph` | `sun` | `SunGlyph` |
+| `link` | `LinkGlyph` | `link` | `LinkGlyph` |
+| `list` | `ListGlyph` | `list` | `ListGlyph` |
+| `manufacturing` | `ManufacturingGlyph` | `cog` | `CogGlyph` |
+| `memory` | `MemoryGlyph` | `cpu` | `CpuGlyph` |
+| `menu` | `MenuGlyph` | `menu` | `MenuGlyph` |
+| `more_vert` | `MoreVertGlyph` | `ellipsis-vertical` | `EllipsisVerticalGlyph` |
+| `move_item` | `MoveItemGlyph` | `folder-input` | `FolderInputGlyph` |
+| `neurology` | `NeurologyGlyph` | `brain` | `BrainGlyph` |
+| `notifications` | `NotificationsGlyph` | `bell` | `BellGlyph` |
+| `open_in_new` | `OpenInNewGlyph` | `external-link` | `ExternalLinkGlyph` |
+| `package_2` | `Package2Glyph` | `package` | `PackageGlyph` |
+| `pause` | `PauseGlyph` | `pause` | `PauseGlyph` |
+| `person` | `PersonGlyph` | `user` | `UserGlyph` |
+| `person_add` | `PersonAddGlyph` | `user-plus` | `UserPlusGlyph` |
+| `photo_camera` | `PhotoCameraGlyph` | `camera` | `CameraGlyph` |
+| `power_settings_new` | `PowerSettingsNewGlyph` | `power` | `PowerGlyph` |
+| `redo` | `RedoGlyph` | `redo` | `RedoGlyph` |
+| `refresh` | `RefreshGlyph` | `rotate-cw` | `RotateCwGlyph` |
+| `remove` | `RemoveGlyph` | `minus` | `MinusGlyph` |
+| `save` | `SaveGlyph` | `save` | `SaveGlyph` |
+| `schedule` | `ScheduleGlyph` | `clock` | `ClockGlyph` |
+| `search` | `SearchGlyph` | `search` | `SearchGlyph` |
+| `settings` | `SettingsGlyph` | `settings` | `SettingsGlyph` |
+| `settings_backup_restore` | `SettingsBackupRestoreGlyph` | `rotate-ccw` | `RotateCcwGlyph` |
+| `shield` | `ShieldGlyph` | `shield` | `ShieldGlyph` |
+| `shield_person` | `ShieldPersonGlyph` | `shield-user` | `ShieldUserGlyph` |
+| `smart_toy` | `SmartToyGlyph` | `bot` | `BotGlyph` |
+| `star` | `StarGlyph` | `star` | `StarGlyph` |
+| `star-fill` | `StarFillGlyph` | `star` | `<StarGlyph filled />` |
+| `swap_vert` | `SwapVertGlyph` | `arrow-up-down` | `ArrowUpDownGlyph` |
+| `tag` | `TagGlyph` | `hash` | `HashGlyph` |
+| `target` | `TargetGlyph` | `target` | `TargetGlyph` |
+| `terminal` | `TerminalGlyph` | `square-terminal` | `SquareTerminalGlyph` |
+| `timeline` | `TimelineGlyph` | `chart-no-axes-gantt` | `ChartNoAxesGanttGlyph` |
+| `token` | `TokenGlyph` | `coins` | `CoinsGlyph` |
+| `tune` | `TuneGlyph` | `sliders-vertical` | `SlidersVerticalGlyph` |
+| `undo` | `UndoGlyph` | `undo` | `UndoGlyph` |
+| `unfold_more` | `UnfoldMoreGlyph` | `chevrons-up-down` | `ChevronsUpDownGlyph` |
+| `view_column` | `ViewColumnGlyph` | `columns-3` | `Columns3Glyph` |
+| `visibility` | `VisibilityGlyph` | `eye` | `EyeGlyph` |
+| `visibility_off` | `VisibilityOffGlyph` | `eye-off` | `EyeOffGlyph` |
+| `warning` | `WarningGlyph` | `triangle-alert` | `TriangleAlertGlyph` |
+| `warning-fill` | `WarningFillGlyph` | `triangle-alert` | `TriangleAlertGlyph` |
+| `zoom_in` | `ZoomInGlyph` | `zoom-in` | `ZoomInGlyph` |
+| `zoom_out` | `ZoomOutGlyph` | `zoom-out` | `ZoomOutGlyph` |
+
 ## License
 
-MIT AND Apache-2.0.
+MIT AND ISC.
 
-The package's own code and artwork are MIT; the license text is in [`LICENSE`](./LICENSE), which ships in the package. The vendored Material Symbols drawings in `symbols/` are Google's, under the Apache License 2.0, whose text and attribution are in [`symbols/LICENSE`](./symbols/LICENSE) and [`symbols/NOTICE`](./symbols/NOTICE) and ship beside them.
+The package's own code and artwork are MIT; the license text is in [`LICENSE`](./LICENSE), which ships in the package. The vendored Lucide drawings in `glyphs/` are under the ISC License, and those Lucide derives from Feather are under Feather's MIT License as well; upstream's own [`glyphs/LICENSE`](./glyphs/LICENSE) carries both texts and ships beside them.
 
 Both licenses cover copyright only. The Crewlet name, logo and character are trademarks, and so are the third-party marks in `svg/vendor/`. [`TRADEMARKS.md`](./TRADEMARKS.md), which also ships in the package, says how each may be used.

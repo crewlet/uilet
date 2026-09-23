@@ -41,7 +41,7 @@ import {
   TimeWindowPicker,
   VisuallyHidden,
 } from '@crewlethq/ui';
-import { AddGlyph, CloseGlyph } from '@crewlethq/icons/glyphs';
+import { PlusGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
 afterEach(cleanup);
 
@@ -65,7 +65,7 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
     <main>
       <h1>Seats</h1>
       <Button variant="primary">Save</Button>
-      <Button variant="danger" leadingIcon={<AddGlyph />}>
+      <Button variant="danger" leadingIcon={<PlusGlyph />}>
         Delete
       </Button>
       <Button loading>Saving</Button>
@@ -73,8 +73,8 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
       <ButtonLink href="https://example.com" external>
         Documentation
       </ButtonLink>
-      <IconButton label="Close" icon={<CloseGlyph />} />
-      <IconButton label="Pin" icon={<AddGlyph />} pressed />
+      <IconButton label="Close" icon={<XGlyph />} />
+      <IconButton label="Pin" icon={<PlusGlyph />} pressed />
       <p>
         Open incidents <Count value={3} label="open incidents" />
       </p>
@@ -97,7 +97,7 @@ test('an open menu carries no violation', async () => {
       <Menu
         label="Actions for Software Engineer"
         items={[
-          { key: 'edit', label: 'Edit', icon: <AddGlyph />, onSelect: () => {} },
+          { key: 'edit', label: 'Edit', icon: <PlusGlyph />, onSelect: () => {} },
           { kind: 'separator', key: 'divider' },
           { key: 'lead', label: 'Unit lead', checked: true, onSelect: () => {} },
           { key: 'member', label: 'Member', checked: false, onSelect: () => {} },

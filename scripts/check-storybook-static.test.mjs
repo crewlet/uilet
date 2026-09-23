@@ -12,8 +12,7 @@ after(() => {
 });
 
 const LICENSE = 'Copyright notice\n\nSIL OPEN FONT LICENSE Version 1.1 - 26 February 2007\n';
-const APACHE = '                              Apache License\n                        Version 2.0, January 2004\n';
-const ATTRIBUTION = 'Material Symbols by Google, licensed under the Apache License 2.0\n';
+const LUCIDE = 'ISC License\n\nCopyright (c) 2026 Lucide Icons and Contributors\n\nThe MIT License (MIT) (for the icons listed above)\n\nCopyright (c) 2013-present Cole Bemis\n';
 
 // A build shaped like the real one: the Storybook interface fonts at the root
 // and the preview's fonts under assets/, each directory with its license.
@@ -33,8 +32,7 @@ const valid = {
   'OFL.txt': LICENSE,
   'assets/geist-latin-abc.woff2': 'font',
   'assets/OFL.txt': LICENSE,
-  'third-party/material-symbols/LICENSE': APACHE,
-  'third-party/material-symbols/NOTICE': ATTRIBUTION,
+  'third-party/lucide/LICENSE': LUCIDE,
 };
 
 describe('checkStorybookStatic', () => {
@@ -90,29 +88,30 @@ describe('checkStorybookStatic', () => {
 
   it('refuses a directory with no fonts, which means the wrong directory was checked', () => {
     const problems = checkStorybookStatic(build({ 'index.html': '<!doctype html>' }));
-    assert.equal(problems.length, 3);
+    assert.equal(problems.length, 2);
     assert.match(problems[0], /^no font files found/);
   });
 
   it('refuses a build without the license of the drawings it bundles', () => {
-    const { 'third-party/material-symbols/LICENSE': _omitted, ...files } = valid;
+    const { 'third-party/lucide/LICENSE': _omitted, ...files } = valid;
     assert.deepEqual(checkStorybookStatic(build(files)), [
-      'third-party/material-symbols/LICENSE is missing; the preview bundles the Material Symbols drawings, whose license travels with them',
+      'third-party/lucide/LICENSE is missing; the preview bundles the Lucide drawings, whose license travels with them',
     ]);
   });
 
   it('refuses a drawings license that does not hold the license text', () => {
-    const files = { ...valid, 'third-party/material-symbols/LICENSE': 'Some other terms\n' };
+    const files = { ...valid, 'third-party/lucide/LICENSE': 'Some other terms\n' };
     assert.deepEqual(checkStorybookStatic(build(files)), [
-      'third-party/material-symbols/LICENSE does not contain the Apache License 2.0 text',
+      'third-party/lucide/LICENSE does not contain the ISC License text',
+      'third-party/lucide/LICENSE does not contain the Feather MIT notice',
     ]);
   });
 
-  it('refuses a build without the attribution of the drawings it bundles', () => {
-    const { 'third-party/material-symbols/NOTICE': _omitted, ...files } = valid;
-    assert.deepEqual(checkStorybookStatic(build(files)), [
-      'third-party/material-symbols/NOTICE is missing; the preview bundles the Material Symbols drawings, whose license travels with them',
-    ]);
+  it('refuses a drawings license that has lost the Feather half', () => {
+    // The icons Lucide derives from Feather are MIT, and their notice is the
+    // second half of the same file: the ISC text alone does not cover them.
+    const files = { ...valid, 'third-party/lucide/LICENSE': LUCIDE.slice(0, LUCIDE.indexOf('The MIT License')) };
+    assert.deepEqual(checkStorybookStatic(build(files)), ['third-party/lucide/LICENSE does not contain the Feather MIT notice']);
   });
 
   it('refuses a path that is not a directory', () => {

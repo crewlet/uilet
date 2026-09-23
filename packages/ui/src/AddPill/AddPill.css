@@ -402,6 +402,15 @@
      `currentcolor` under that root then resolves to THAT: the fill was
      overridden and landed on the same purple it started from. */
   color: inherit;
+}
+
+/* THE FILL IS FOR A FILLED DRAWING, and a glyph is a stroke. Painting the
+   inside of a Lucide glyph turns every closed shape in it solid and every
+   open one into a smear, so a `.crewlet-glyph` keeps the fill its own frame
+   decides and takes the ink through its stroke, which is `currentColor`. */
+.crewlet-add-pill__section svg:not(.crewlet-glyph),
+.crewlet-add-pill__section svg:not(.crewlet-glyph) g,
+.crewlet-add-pill__section svg:not(.crewlet-glyph) path {
   fill: currentcolor;
 }
 

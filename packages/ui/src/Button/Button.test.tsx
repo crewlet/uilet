@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { MoreVertGlyph } from '@crewlethq/icons/glyphs';
+import { EllipsisVerticalGlyph } from '@crewlethq/icons/glyphs';
 import { themes } from '@crewlethq/tokens';
 import { contrast, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
@@ -32,7 +32,7 @@ describe('Button', () => {
     render(
       <Button
         ref={ref}
-        leadingIcon={<MoreVertGlyph />}
+        leadingIcon={<EllipsisVerticalGlyph />}
         variant="tertiary"
         size="small"
         title="Actions"
@@ -62,9 +62,9 @@ describe('Button', () => {
   test('an icon button is named by its title unless the caller names it more precisely', () => {
     render(
       <>
-        <Button leadingIcon={<MoreVertGlyph />} title="Move up" />
-        <Button leadingIcon={<MoreVertGlyph />} title="Move up" aria-label="Move goal 2 of 3 up" />
-        <Button leadingIcon={<MoreVertGlyph />}>Add</Button>
+        <Button leadingIcon={<EllipsisVerticalGlyph />} title="Move up" />
+        <Button leadingIcon={<EllipsisVerticalGlyph />} title="Move up" aria-label="Move goal 2 of 3 up" />
+        <Button leadingIcon={<EllipsisVerticalGlyph />}>Add</Button>
       </>,
     );
     const [plain, named, labelled] = screen.getAllByRole('button');
@@ -88,14 +88,14 @@ describe('Button', () => {
     // action finishes.
     const onClick = vi.fn();
     const { rerender } = render(
-      <Button leadingIcon={<MoreVertGlyph />} onClick={onClick}>
+      <Button leadingIcon={<EllipsisVerticalGlyph />} onClick={onClick}>
         Save
       </Button>,
     );
     const button = screen.getByRole('button', { name: 'Save' });
     button.focus();
     rerender(
-      <Button leadingIcon={<MoreVertGlyph />} loading onClick={onClick}>
+      <Button leadingIcon={<EllipsisVerticalGlyph />} loading onClick={onClick}>
         Save
       </Button>,
     );
@@ -254,13 +254,13 @@ describe('ButtonLink', () => {
   test('is an anchor wearing exactly the class list the matching Button wears', () => {
     render(
       <>
-        <Button variant="primary" size="small" leadingIcon={<MoreVertGlyph />}>
+        <Button variant="primary" size="small" leadingIcon={<EllipsisVerticalGlyph />}>
           Create
         </Button>
-        <ButtonLink variant="primary" size="small" leadingIcon={<MoreVertGlyph />} href="#/org?lens=builder">
+        <ButtonLink variant="primary" size="small" leadingIcon={<EllipsisVerticalGlyph />} href="#/org?lens=builder">
           Create
         </ButtonLink>
-        <ButtonLink variant="tertiary" leadingIcon={<MoreVertGlyph />} title="Open" href="#/org" />
+        <ButtonLink variant="tertiary" leadingIcon={<EllipsisVerticalGlyph />} title="Open" href="#/org" />
       </>,
     );
     const button = screen.getByRole('button', { name: 'Create' });
@@ -291,7 +291,7 @@ describe('ButtonLink', () => {
 
 describe('IconButton', () => {
   test('is named by its label, which is also what its tooltip says', () => {
-    render(<IconButton label="Row actions" icon={<MoreVertGlyph />} />);
+    render(<IconButton label="Row actions" icon={<EllipsisVerticalGlyph />} />);
     const button = screen.getByRole('button', { name: 'Row actions' });
     // The LABEL names it. The tooltip repeats the same words, so a name read
     // out of the title alone would look right while the prop did nothing.
@@ -303,7 +303,7 @@ describe('IconButton', () => {
   test('its smallest step is a control step, so no density takes it under the target floor', () => {
     // 22px squares are what it used to draw, which is under the 24px a pointer
     // target needs, and compact density took them to 18.
-    render(<IconButton label="Copy" size="sm" icon={<MoreVertGlyph />} />);
+    render(<IconButton label="Copy" size="sm" icon={<EllipsisVerticalGlyph />} />);
     expect(screen.getByRole('button').className).toContain('crewlet-icon-btn--sm');
   });
 
@@ -314,9 +314,9 @@ describe('IconButton', () => {
    * no label and squared it off with a stylesheet of its own.
    */
   test('draws the bordered square when it is asked for, and stays borderless otherwise', () => {
-    const { rerender } = render(<IconButton label="Previous month" variant="secondary" icon={<MoreVertGlyph />} />);
+    const { rerender } = render(<IconButton label="Previous month" variant="secondary" icon={<EllipsisVerticalGlyph />} />);
     expect(screen.getByRole('button').className).toContain('crewlet-icon-btn--secondary');
-    rerender(<IconButton label="Previous month" icon={<MoreVertGlyph />} />);
+    rerender(<IconButton label="Previous month" icon={<EllipsisVerticalGlyph />} />);
     expect(screen.getByRole('button').className).toContain('crewlet-icon-btn--ghost');
     expect(screen.getByRole('button').className).not.toContain('crewlet-icon-btn--secondary');
   });

@@ -34,7 +34,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
-import { KeyboardArrowDownGlyph, KeyboardArrowUpGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronDownGlyph, ChevronUpGlyph } from '@crewlethq/icons/glyphs';
 import { AddPill, type AddPillProps } from '../AddPill/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { OrgLabel, type OrgLabelContent } from '../OrgLabel/index.js';
@@ -156,14 +156,14 @@ export function OrgTable({
             size="sm"
             label={text.expandAll}
             title={text.expandAll}
-            icon={<KeyboardArrowDownGlyph />}
+            icon={<ChevronDownGlyph />}
             onClick={() => grid.current?.expandAll()}
           />
           <IconButton
             size="sm"
             label={text.collapseAll}
             title={text.collapseAll}
-            icon={<KeyboardArrowUpGlyph />}
+            icon={<ChevronUpGlyph />}
             onClick={() => grid.current?.collapseAll()}
           />
         </div>

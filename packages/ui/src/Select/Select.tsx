@@ -13,7 +13,7 @@ import {
   type SelectHTMLAttributes,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckGlyph, KeyboardArrowDownGlyph, SearchGlyph } from '@crewlethq/icons/glyphs';
+import { CheckGlyph, ChevronDownGlyph, SearchGlyph } from '@crewlethq/icons/glyphs';
 import {
   LAYER_GAP,
   LAYER_REPOSITION_EVENT,
@@ -374,7 +374,7 @@ const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(function N
           </option>
         ))}
       </select>
-      <KeyboardArrowDownGlyph className="crewlet-select__chevron" size="sm" />
+      <ChevronDownGlyph className="crewlet-select__chevron" size="sm" />
     </div>
   );
 });
@@ -1009,7 +1009,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         ) : (
           <span className={cx('crewlet-select__label', !hasValue && 'is-placeholder')}>{label}</span>
         )}
-        <KeyboardArrowDownGlyph className="crewlet-select__chevron" size="sm" />
+        <ChevronDownGlyph className="crewlet-select__chevron" size="sm" />
       </button>
       {panelNode && container ? createPortal(panelNode, container) : null}
     </div>

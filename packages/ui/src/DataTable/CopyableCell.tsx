@@ -1,5 +1,5 @@
 import { type MouseEvent, type ReactNode } from 'react';
-import { CheckGlyph, ContentCopyGlyph, ErrorGlyph } from '@crewlethq/icons/glyphs';
+import { CheckGlyph, CircleAlertGlyph, CopyGlyph } from '@crewlethq/icons/glyphs';
 import { useClipboard } from '../utils/useClipboard.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -64,9 +64,9 @@ export const CopyableCell = ({
             {clipboard.state === 'copied' ? (
               <CheckGlyph size="sm" />
             ) : clipboard.state === 'failed' ? (
-              <ErrorGlyph size="sm" />
+              <CircleAlertGlyph size="sm" />
             ) : (
-              <ContentCopyGlyph size="sm" />
+              <CopyGlyph size="sm" />
             )}
           </button>
           {/*

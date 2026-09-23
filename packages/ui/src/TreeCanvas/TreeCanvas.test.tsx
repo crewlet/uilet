@@ -25,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createRef, useMemo, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { KeyboardArrowDownGlyph, ChevronRightGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronDownGlyph, ChevronRightGlyph } from '@crewlethq/icons/glyphs';
 import { themes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
 import { IconButton } from '../IconButton/index.js';
@@ -334,7 +334,7 @@ function Toggle({ id, card }: { id: string; card: TreeCardContext }) {
     <IconButton
       size="sm"
       label={`${open ? 'Collapse' : 'Expand'} ${nameOf(id)}`}
-      icon={open ? <KeyboardArrowDownGlyph /> : <ChevronRightGlyph />}
+      icon={open ? <ChevronDownGlyph /> : <ChevronRightGlyph />}
       tabIndex={-1}
       onClick={(event) => {
         event.stopPropagation();

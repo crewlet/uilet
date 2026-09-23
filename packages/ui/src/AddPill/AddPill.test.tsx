@@ -22,6 +22,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { motion, themes } from '@crewlethq/tokens';
 import { contrast, flatten, parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installCss, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { UserPlusGlyph } from '@crewlethq/icons/glyphs';
 import { AddPill, ADD_PILL_MS, type AddPillSection } from './AddPill.js';
 
 const Glyph = () => <svg data-testid="glyph" />;
@@ -432,6 +433,31 @@ describe('the drawing', () => {
     // own green rather than to the brand purple either way.
     expect(channels(getComputedStyle(path).fill)).toEqual(parseHex(themes.dark.color.node.green));
     own();
+  });
+
+  /*
+   * BUT A GLYPH KEEPS ITS OWN FILL, which is none: it is a stroke, and the
+   * rule above painted the inside of every path it reached. A person-with-a-
+   * plus glyph filled in the pill's ink is a head and a body gone solid with
+   * the plus smeared across them. The glyph takes the ink through its stroke,
+   * which is `currentColor`, so the `color` half of the rule still reaches it.
+   */
+  test('a glyph in a choice takes the pill ink through its stroke and is never filled', () => {
+    uninstall = installThemed('dark', 'AddPill/AddPill.css');
+    const { container } = render(
+      <AddPill
+        label="Add to Engineering"
+        sections={[{ key: 'human', label: 'Add a human seat', icon: <UserPlusGlyph />, onSelect: () => {} }]}
+      />,
+    );
+    fireEvent.click(mark());
+    const glyph = container.querySelector<SVGElement>('.crewlet-add-pill__section svg.crewlet-glyph')!;
+    const ink = parseHex(themes.dark.color.node.green);
+    expect(channels(getComputedStyle(glyph).color)).toEqual(ink);
+    expect(glyph.getAttribute('fill')).toBe('none');
+    for (const shape of [glyph, ...glyph.querySelectorAll('path, circle')]) {
+      expect(channels(getComputedStyle(shape).fill), shape.tagName).not.toEqual(ink);
+    }
   });
 
   /*
