@@ -14,6 +14,16 @@
  * what carries a middle click into a new tab. Neither is right everywhere, so
  * neither is built in: the engine keeps plain anchors and the console passes
  * its router's NavLink.
+ *
+ * A FIGURE AT THE END OF A ROW IS ONE OF TWO THINGS, and the two are two props
+ * rather than one prop with a tone. A `count` is how many of something the
+ * destination holds (the open tasks in a project), a quiet figure in the
+ * tertiary ink; a `badge` is how many things are waiting on the reader (the
+ * unread in the inbox), the one filled pill in the chrome. Both are READ as
+ * part of the row's name, with the words the caller gives them ("Inbox, 5
+ * unread"), because a bare "5" after a name says nothing about what it counts,
+ * and both carry those words as required props, so a figure without them does
+ * not type-check.
  */
 
 import { useId, useState, type MouseEventHandler, type ReactNode } from 'react';
@@ -32,6 +42,25 @@ export interface SidebarNavProps {
   children?: ReactNode;
 }
 
+/**
+ * The one control a group's heading can carry at its end: the add beside
+ * "Projects".
+ *
+ * A DESCRIPTION RATHER THAN AN ELEMENT, because the rail is what draws it: a
+ * square at the pointer-target floor, which is exactly the heading's height,
+ * named by `label`, with its ring inside its own box like every row in a
+ * clipping scroller. A control handed in whole would bring its own step, and
+ * the smallest one in the kit is two pixels taller than the heading it sits
+ * in.
+ */
+export interface NavGroupAction {
+  /** What pressing it does, in words: "New project". It is the control's name. */
+  label: string;
+  /** The glyph. Decoration: the label is the name. */
+  icon: ReactNode;
+  onClick: MouseEventHandler<HTMLButtonElement>;
+}
+
 export interface NavGroupProps {
   /**
    * The group's heading. Without one the rows are simply a run of rows, and an
@@ -40,6 +69,13 @@ export interface NavGroupProps {
    * rail spent on nothing.
    */
   label?: ReactNode;
+  /**
+   * A control at the end of the heading. It is a sibling of the heading's
+   * words rather than part of them, so the group is still named by its label
+   * alone, and it takes its own place in the tab order before the group's
+   * first row.
+   */
+  action?: NavGroupAction | undefined;
   className?: string | undefined;
   children?: ReactNode;
 }
@@ -54,22 +90,32 @@ export interface NavLinkProps {
 }
 
 /**
- * How loudly a row's badge is drawn.
+ * A figure at the end of a row, and what it counts.
  *
- * `neutral` is a quiet figure at the end of the row, in the row's own ink.
- * `attention` is the one badge in the chrome allowed a hue, and it is the
- * accent: a count of what is waiting on the reader is the one thing in the
- * rail that asks them to act, and the one thing that should pull the eye out
- * of whatever screen they are on. It is a filled pill carrying a label rather
- * than a word in a hue, so it still reads to somebody who cannot separate the
- * hue.
- *
- * A TONE RATHER THAN A COMPONENT THE CALLER PASSES IN, because the pair has to
- * clear its floor on every ground a ROW can have, the reader's own raised row
- * included. That is a fact about the rail, measured in the rail's own
- * stylesheet, and not something a call site can be asked to know.
+ * VALUES RATHER THAN AN ELEMENT, because the rail is what paints them: the
+ * pair has to clear its floor on every ground a ROW can have, the reader's
+ * own raised row included, and that is a fact about the rail, measured in the
+ * rail's own stylesheet, not something a call site can be asked to know.
  */
-export type NavBadgeTone = 'neutral' | 'attention';
+export interface NavFigure {
+  /** The figure, drawn as given, so the caller decides its formatting. */
+  value: number | string;
+  /**
+   * What is counted, read after the figure as part of the row's name:
+   * `unread` makes the inbox row "Inbox, 5 unread". Required, because a
+   * figure read with no word after it is a number nobody can place.
+   */
+  label: string;
+}
+
+/** A quiet figure: how many of something the destination holds. */
+export interface NavCount extends NavFigure {
+  /**
+   * A mark before the figure: the working dot beside a count of agents at
+   * work. Decoration, because the label says the same thing in words.
+   */
+  mark?: ReactNode;
+}
 
 export interface NavItemProps {
   /** What the row is called. */
@@ -77,13 +123,27 @@ export interface NavItemProps {
   /** The row's glyph. Decoration: the label beside it carries the meaning. */
   icon?: ReactNode;
   /**
-   * A count or a state at the end of the row. The slot draws it: whatever is
-   * passed contributes its text and the name a screen reader reads after the
-   * row's own, so a `<Count>` here is a figure rather than a second pill.
+   * A short key drawn as a chip before the label, in place of a glyph: a
+   * project's `ENG`. It is text, and READ as the start of the row's name
+   * ("ENG Core platform"), because it is the prefix every item in that project
+   * is filed under and a reader who hears it can find them. A string rather
+   * than an element, because the rail paints the chip and measures it.
    */
-  badge?: ReactNode;
-  /** How loudly. Neutral unless this row is what needs a person. */
-  badgeTone?: NavBadgeTone | undefined;
+  lead?: string | undefined;
+  /**
+   * How many of something the destination holds, as a quiet figure at the end
+   * of the row in the tertiary ink: the open tasks in a project.
+   */
+  count?: NavCount | undefined;
+  /**
+   * How many things at this destination are waiting on the reader, as the one
+   * filled pill in the chrome, in the accent: the unread in the inbox. A count
+   * of what is waiting on the reader is the one thing in the rail that asks
+   * them to act, which is what the accent means; it is a FILL carrying a
+   * figure rather than a figure in a hue, so it still reads to somebody who
+   * cannot separate the hue. Anything else is a `count`.
+   */
+  badge?: NavFigure | undefined;
   href?: string | undefined;
   /** Whether this row is the screen the reader is on. */
   current?: boolean | undefined;
@@ -127,7 +187,7 @@ export function SidebarNav({ label, className, children }: SidebarNavProps) {
  * `<div>` here still carries the label's own padding, which put sixteen blank
  * pixels at the top of the rail and named a group nothing could read.
  */
-export function NavGroup({ label, className, children }: NavGroupProps) {
+export function NavGroup({ label, action, className, children }: NavGroupProps) {
   const id = useId();
   const named = label !== undefined && label !== null && label !== false && label !== '';
   return (
@@ -136,11 +196,25 @@ export function NavGroup({ label, className, children }: NavGroupProps) {
       // A group is only a group to a screen reader when it has a name; an
       // unnamed one would add a level to walk through that says nothing.
       role={named ? 'group' : undefined}
+      // The WORDS alone, never the head: the action inside the head is a
+      // control with a name of its own, and "Projects New project" is not the
+      // name of a group.
       aria-labelledby={named ? id : undefined}
     >
-      {named ? (
-        <div className="crewlet-nav-group__label" id={id}>
-          {label}
+      {named || action ? (
+        <div className="crewlet-nav-group__head">
+          {named ? (
+            <span className="crewlet-nav-group__label" id={id}>
+              {label}
+            </span>
+          ) : null}
+          {action ? (
+            <button type="button" className="crewlet-nav-group__action" aria-label={action.label} onClick={action.onClick}>
+              <span className="crewlet-nav-group__action-icon" aria-hidden>
+                {action.icon}
+              </span>
+            </button>
+          ) : null}
         </div>
       ) : null}
       {children}
@@ -148,12 +222,47 @@ export function NavGroup({ label, className, children }: NavGroupProps) {
   );
 }
 
+/**
+ * A figure at the end of a row, drawn for the eye and hidden from assistive
+ * technology: what it says is read in words at the end of the row's label
+ * (`spoken`), so each reader is told it once.
+ */
+function Figure({ figure, className, mark }: { figure: NavFigure; className: string; mark?: ReactNode }) {
+  return (
+    <span className={className} aria-hidden>
+      <span className="crewlet-nav-item__figure">
+        {mark ? <span className="crewlet-nav-item__mark">{mark}</span> : null}
+        {figure.value}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * What a row's figures say, as the end of its name: ", 12 open, 2 unread".
+ *
+ * ONE STRING, INSIDE THE LABEL, rather than a sentence beside each figure. A
+ * name is assembled from the row's parts, and a part laid out as a box (every
+ * figure is an inline flex box) is joined to its neighbour with a space: a
+ * comma written at the head of the figure's own sentence was read "Inbox , 5
+ * unread". Written after the label's last word, in the same box, the comma
+ * lands where it belongs and the pause it buys falls between the destination
+ * and its figures.
+ */
+function spoken(figures: (NavFigure | undefined)[]): string {
+  return figures
+    .filter((figure): figure is NavFigure => figure !== undefined)
+    .map((figure) => `, ${String(figure.value)} ${figure.label}`)
+    .join('');
+}
+
 /** One row: a glyph, a label, an optional badge, and optionally rows beneath. */
 export function NavItem({
   label,
   icon,
+  lead,
+  count,
   badge,
-  badgeTone = 'neutral',
   href,
   current = false,
   disabledReason,
@@ -185,12 +294,17 @@ export function NavItem({
           {icon}
         </span>
       ) : null}
-      <span className="crewlet-nav-item__label">{label}</span>
-      {badge ? (
-        <span className={cx('crewlet-nav-item__badge', badgeTone === 'attention' && 'crewlet-nav-item__badge--attention')}>
-          {badge}
-        </span>
-      ) : null}
+      {lead ? <span className="crewlet-nav-item__lead">{lead}</span> : null}
+      {/* A space the layout ignores and a name reads: a flex container draws
+          no whitespace between its items, and without it the chip and the
+          label run together into "ENGCore platform". */}
+      {lead ? ' ' : null}
+      <span className="crewlet-nav-item__label">
+        {label}
+        {count || badge ? <VisuallyHidden>{spoken([count, badge])}</VisuallyHidden> : null}
+      </span>
+      {count ? <Figure figure={count} mark={count.mark} className="crewlet-nav-item__count" /> : null}
+      {badge ? <Figure figure={badge} className="crewlet-nav-item__badge" /> : null}
     </>
   );
 

@@ -644,10 +644,31 @@ function answerFeature(
   answer: string,
   caller: string,
 ): string {
-  const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const exact = new RegExp(
     `^@media\\s*\\(\\s*${feature}\\s*:\\s*(${values.join("|")})\\s*\\)$`,
   );
+  return answerQueries(
+    css,
+    (prelude) => prelude.includes(feature),
+    (prelude) => {
+      const query = exact.exec(prelude);
+      if (!query) throw new Error(`${caller} cannot answer "${prelude}"`);
+      return query[1] === answer;
+    },
+  );
+}
+
+/**
+ * The walk both answerers share: every `@media` block whose prelude `about`
+ * claims is unwrapped where it stands when `matches` says so and dropped when
+ * it does not, and every other at-rule is left exactly where it was.
+ */
+function answerQueries(
+  css: string,
+  about: (prelude: string) => boolean,
+  matches: (prelude: string) => boolean,
+): string {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
   let out = "";
   let from = 0;
   for (
@@ -667,18 +688,78 @@ function answerFeature(
       if (text[close] === "{") depth += 1;
       else if (text[close] === "}") depth -= 1;
     }
-    if (!prelude.includes(feature)) {
+    if (!about(prelude)) {
       out += text.slice(from, close);
       from = close;
       continue;
     }
-    const query = exact.exec(prelude);
-    if (!query) throw new Error(`${caller} cannot answer "${prelude}"`);
     out += text.slice(from, at);
-    if (query[1] === answer) out += text.slice(open + 1, close - 1);
+    if (matches(prelude)) out += text.slice(open + 1, close - 1);
     from = close;
   }
   return out + text.slice(from);
+}
+
+/**
+ * A COMPONENT'S SHEETS AS A BROWSER APPLIES THEM IN A VIEWPORT OF ONE WIDTH,
+ * with every token resolved for the named palette as `installForcedColors`
+ * resolves them.
+ *
+ * jsdom evaluates no media query, so a layout's narrow block is never in the
+ * cascade here, and the only way a stylesheet's full-bleed shape was ever
+ * checked was to read the block's source: exactly the guard that passes while
+ * a rule of two classes above it keeps an inset the narrow block's one class
+ * was meant to take back. So each width query is ANSWERED for the width
+ * named, as the motion and colour-mode helpers answer theirs, and jsdom's own
+ * cascade then decides which rule wins. Returns the remover, as above.
+ */
+export function installAtWidth(
+  width: number,
+  theme: "light" | "dark",
+  ...paths: string[]
+): () => void {
+  const table = themeTokens(theme);
+  const source = paths
+    .map((path) => readFileSync(join(uiSource, path), "utf8"))
+    .join("\n")
+    .replace(
+      /var\((--[\w-]+)\)/g,
+      (whole, name: string) => table.get(name) ?? whole,
+    );
+  return installCss(answerWidth(resolveOwn(resolveLengths(source)), width));
+}
+
+/**
+ * The stylesheet with every width query answered for a viewport `width`
+ * pixels wide: `(width < N)`, `(width <= N)`, `(width > N)`, `(width >= N)`,
+ * `(max-width: N)` and `(min-width: N)`, in px. A query that names the width
+ * in any other form, or combines it with anything else, is refused rather
+ * than guessed at, and every other at-rule is left where it was.
+ */
+export function answerWidth(css: string, width: number): string {
+  return answerQueries(
+    css,
+    (prelude) => /\bwidth\b/.test(prelude),
+    (prelude) => {
+      const query =
+        /^@media\s*\(\s*(?:width\s*([<>]=?)|(max-width|min-width)\s*:)\s*(\d*\.?\d+)px\s*\)$/.exec(
+          prelude,
+        );
+      if (!query) throw new Error(`answerWidth cannot answer "${prelude}"`);
+      const limit = Number(query[3]);
+      switch (query[1] ?? query[2]) {
+        case "<":
+          return width < limit;
+        case "<=":
+        case "max-width":
+          return width <= limit;
+        case ">":
+          return width > limit;
+        default:
+          return width >= limit;
+      }
+    },
+  );
 }
 
 /**

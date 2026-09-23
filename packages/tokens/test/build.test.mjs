@@ -164,6 +164,7 @@ describe('the display, body, sheet, shell, breakpoint and breath tokens', () => 
     ['size.shell.rail', '236px', '236px'],
     ['size.shell.topbar', '52px', '52px'],
     ['size.shell.inset', '8px', 'calc(8px * var(--density, 1))'],
+    ['size.nav.row', '30px', 'calc(30px * var(--density, 1))'],
     ['breakpoint.shell', '1024px', '1024px'],
     ['breakpoint.phone', '640px', '640px'],
     ['motion.duration.breath', '2200ms', '2200ms'],

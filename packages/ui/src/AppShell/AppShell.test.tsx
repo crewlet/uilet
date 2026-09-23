@@ -1,5 +1,6 @@
 /**
- * The shell's landmarks, its skip link, and the drawer.
+ * The shell's landmarks, its skip link, the frame and its floating sheet, and
+ * the drawer.
  *
  * The drawer cases are ported from the engine dashboard's `app/Shell.test.tsx`,
  * where the rail was a veil with a click handler and nothing else: Escape did
@@ -8,13 +9,15 @@
  */
 
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { breakpoint, size } from '@crewlethq/tokens';
+import { breakpoint, radius, size, themes } from '@crewlethq/tokens';
+import { parseHex } from '@crewlethq/tokens/test/palette';
 import axe from 'axe-core';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { channels, installAtWidth, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { useModalLayer } from '../Layer/index.js';
 import { NavGroup, NavItem, SidebarNav } from '../SidebarNav/index.js';
 import { AppShell, useAppShell } from './index.js';
@@ -473,6 +476,144 @@ describe('the shell breakpoint', () => {
   });
 });
 
+/**
+ * THE FRAME AND THE SHEET, as the cascade applies them at a width either side
+ * of the step, in both palettes.
+ *
+ * The rail stands on the frame, and everything the reader reads is one sheet a
+ * rung above it: inset from the frame on its top, right and bottom, drawn
+ * round with the plain hairline and rounded at the sheet's corner. Under the
+ * step the sheet is the window. Measured through jsdom's own cascade with the
+ * values each theme ships, so a later rule winning on source order, a selector
+ * that matches nothing the shell renders, or a heavier rule the narrow block
+ * cannot take back shows up here.
+ */
+describe('the frame and the sheet', () => {
+  const step = Number.parseFloat(breakpoint.shell);
+  const inset = size.shell.inset;
+
+  function parts(container: HTMLElement) {
+    const root = container.firstElementChild as HTMLElement;
+    const sheet = root.querySelector<HTMLElement>('.crewlet-app-shell__sheet');
+    if (!sheet) throw new Error('the shell rendered no sheet');
+    return { root, sheet, rail: root.querySelector<HTMLElement>('.crewlet-app-shell__rail') };
+  }
+
+  test('wide, the rail stands on the frame and the screen on a sheet floated off it', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installAtWidth(step, theme, 'AppShell/AppShell.css');
+      try {
+        const { container } = render(<Console banner={<p>Reconnecting to the engine.</p>} />);
+        const { root, sheet, rail } = parts(container);
+        const palette = themes[theme].color;
+        const where = (what: string) => `${theme}: ${what}`;
+        expect(channels(getComputedStyle(root).backgroundColor), where('the frame')).toEqual(parseHex(palette.surface.frame));
+        expect(channels(getComputedStyle(rail!).backgroundColor), where('the rail')).toEqual(parseHex(palette.surface.frame));
+        const drawn = getComputedStyle(sheet);
+        expect(channels(drawn.backgroundColor), where('the sheet')).toEqual(parseHex(palette.surface.background));
+        expect(channels(drawn.borderTopColor), where('the hairline')).toEqual(parseHex(palette.border.default));
+        expect([drawn.borderTopStyle, drawn.borderTopWidth], where('the hairline')).toEqual(['solid', '1px']);
+        expect(drawn.borderRadius, where('the corner')).toBe(radius.sheet);
+        // Held off the frame on three sides; the rail is the gap on the fourth.
+        expect([drawn.marginTop, drawn.marginRight, drawn.marginBottom, drawn.marginLeft], where('the inset')).toEqual([
+          inset,
+          inset,
+          inset,
+          '0px',
+        ]);
+        // It clips what it holds to its corner, which is what lets the bar and
+        // the scroller run square to its edges.
+        expect(drawn.overflow, where('the clip')).toBe('hidden');
+        // The rail draws no edge of its own: the sheet's hairline is the one.
+        expect(getComputedStyle(rail!).borderRightStyle, where("the rail's edge")).not.toBe('solid');
+        cleanup();
+      } finally {
+        uninstall();
+      }
+    }
+  });
+
+  test('everything the reader reads is on the one sheet, and the rail is not', () => {
+    const { container } = render(<Console banner={<p>Reconnecting to the engine.</p>} />);
+    const { sheet, rail } = parts(container);
+    // One element rather than a background each part paints, because the
+    // corner has to clip all of them and the hairline run round all of them.
+    expect(sheet.contains(screen.getByRole('banner'))).toBe(true);
+    expect(sheet.contains(screen.getByText('Reconnecting to the engine.'))).toBe(true);
+    expect(sheet.contains(screen.getByRole('main'))).toBe(true);
+    expect(sheet.contains(rail)).toBe(false);
+  });
+
+  test('under the step the sheet is the whole window: no inset, no corner, no hairline', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installAtWidth(step - 1, theme, 'AppShell/AppShell.css');
+      try {
+        const { container } = render(<Console />);
+        const drawn = getComputedStyle(parts(container).sheet);
+        expect([drawn.marginTop, drawn.marginRight, drawn.marginBottom, drawn.marginLeft], theme).toEqual([
+          '0px',
+          '0px',
+          '0px',
+          '0px',
+        ]);
+        expect(px(parts(container).sheet, 'border-radius'), theme).toBe(0);
+        expect(drawn.borderTopWidth, theme).toBe('0px');
+        cleanup();
+      } finally {
+        uninstall();
+      }
+    }
+  });
+
+  test('without a rail the sheet is inset from the frame on its left too, and full bleed under the step', () => {
+    const shell = (width: number) => {
+      const uninstall = installAtWidth(width, 'dark', 'AppShell/AppShell.css');
+      try {
+        const { container } = render(
+          <AppShell topbar={<AppShell.Topbar title="Sign in" />}>
+            <p>screen</p>
+          </AppShell>,
+        );
+        const { root, sheet } = parts(container);
+        // One column, so the sheet is not dropped into the rail's empty cell.
+        expect(root.classList.contains('crewlet-app-shell--no-rail')).toBe(true);
+        const measured = [px(root, 'padding-left') + px(sheet, 'margin-left'), px(sheet, 'margin-right')];
+        cleanup();
+        return measured;
+      } finally {
+        uninstall();
+      }
+    };
+    expect(shell(step)).toEqual([Number.parseFloat(inset), Number.parseFloat(inset)]);
+    expect(shell(step - 1)).toEqual([0, 0]);
+  });
+
+  test('a shell with a rail is not the one-column shape', () => {
+    const { container } = render(<Console />);
+    expect(parts(container).root.classList.contains('crewlet-app-shell--no-rail')).toBe(false);
+  });
+
+  test("the rail's head stands beside the bar: under the inset wide, at the window's top narrow", () => {
+    const head = (width: number) => {
+      const uninstall = installAtWidth(width, 'dark', 'AppShell/AppShell.css');
+      try {
+        const { container } = render(<Console />);
+        const element = container.querySelector('.crewlet-app-shell__rail-head')!;
+        const measured = [px(element, 'padding-top'), px(element, 'min-height')];
+        cleanup();
+        return measured;
+      } finally {
+        uninstall();
+      }
+    };
+    const bar = Number.parseFloat(size.shell.topbar);
+    // Wide, what the head holds is centred on the line the bar's title is on:
+    // the inset above it, then the bar's own height.
+    expect(head(step)).toEqual([Number.parseFloat(inset), Number.parseFloat(inset) + bar]);
+    expect(head(step - 1)).toEqual([0, bar]);
+  });
+});
+
 test('the scroller is handed to a ref the application owns', () => {
   const seen: (HTMLElement | null)[] = [];
   render(
@@ -691,8 +832,9 @@ describe("the rail's foot", () => {
     // same height reads as one rule running the width of the window, with the
     // brand and the screen title above it like a second bar.
     const head = /\.crewlet-app-shell__rail-head\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(head).toContain('min-height: var(--crewlet-app-shell-topbar)');
-    expect(head).not.toMatch(/border/);
+    expect(head).toContain('min-height: calc(var(--size-shell-inset) + var(--crewlet-app-shell-topbar))');
+    // A border PROPERTY, not the word: the head is sized as a border box.
+    expect(head).not.toMatch(/(?:^|;|\s)border[\w-]*:/);
     // The foot's rule is the one rule inside the rail, and it stays.
     expect(/\.crewlet-app-shell__rail-foot\s*\{([^}]*)\}/.exec(css)?.[1]).toContain('border-top');
   });

@@ -3,15 +3,17 @@ import { useState } from 'react';
 import {
   ClockGlyph,
   CoinsGlyph,
+  InboxGlyph,
   KeyGlyph,
   LayoutDashboardGlyph,
   NetworkGlyph,
+  PlusGlyph,
   ServerGlyph,
   SquareTerminalGlyph,
   UsersGlyph,
 } from '@crewlethq/icons/glyphs';
 import { density } from '@crewlethq/tokens';
-import { Count, NavGroup, NavItem, SidebarNav } from '@crewlethq/ui';
+import { NavGroup, NavItem, SidebarNav, StatusDot } from '@crewlethq/ui';
 
 const meta: Meta<typeof SidebarNav> = {
   title: 'UI/SidebarNav',
@@ -28,13 +30,7 @@ const meta: Meta<typeof SidebarNav> = {
       context.parameters['bare'] === true ? (
         <Story />
       ) : (
-        <div
-          style={{
-            width: 'var(--size-shell-rail)',
-            background: 'var(--color-surface-frame)',
-            borderRight: '1px solid var(--color-border-default)',
-          }}
-        >
+        <div style={{ width: 'var(--size-shell-rail)', background: 'var(--color-surface-frame)' }}>
           <Story />
         </div>
       ),
@@ -66,8 +62,14 @@ export const Sections: Story = {
             icon={<LayoutDashboardGlyph size="sm" />}
             current={at === 'overview'}
             onClick={go('overview')}
-            badge={<Count value={3} label="need a person" />}
-            badgeTone="attention"
+          />
+          <NavItem
+            href="#/inbox"
+            label="Inbox"
+            icon={<InboxGlyph size="sm" />}
+            current={at === 'inbox'}
+            onClick={go('inbox')}
+            badge={{ value: 3, label: 'need a person' }}
           />
         </NavGroup>
         <NavGroup label="Company">
@@ -77,7 +79,7 @@ export const Sections: Story = {
             icon={<UsersGlyph size="sm" />}
             current={at === 'people'}
             onClick={go('people')}
-            badge={<Count value="4 live" />}
+            count={{ value: 4, label: 'working', mark: <StatusDot tone="info" pulse /> }}
           />
           <NavItem
             href="#/org"
@@ -91,6 +93,27 @@ export const Sections: Story = {
             <NavItem href="#/org" label="Directory" current={at === 'directory'} onClick={go('directory')} />
             <NavItem href="#/org" label="Charter" current={at === 'charter'} onClick={go('charter')} />
           </NavItem>
+        </NavGroup>
+        <NavGroup
+          label="Projects"
+          action={{ label: 'New project', icon: <PlusGlyph size="sm" />, onClick: () => {} }}
+        >
+          <NavItem
+            href="#/work/eng"
+            label="Core platform"
+            lead="ENG"
+            current={at === 'eng'}
+            onClick={go('eng')}
+            count={{ value: 23, label: 'open' }}
+          />
+          <NavItem
+            href="#/work/prod"
+            label="Product"
+            lead="PROD"
+            current={at === 'prod'}
+            onClick={go('prod')}
+            count={{ value: 11, label: 'open' }}
+          />
         </NavGroup>
         <NavGroup label="Work">
           <NavItem
@@ -141,7 +164,7 @@ export const OneLongRow: Story = {
         href="#/conversations"
         label="Agent-to-agent conversations across the whole company"
         icon={<UsersGlyph size="sm" />}
-        badge={<Count value={128} label="conversations" />}
+        count={{ value: 128, label: 'conversations' }}
       />
     </SidebarNav>
   ),
@@ -153,10 +176,11 @@ export const OneLongRow: Story = {
  * The rail is chrome: it is read at a glance, and what has to be legible at a
  * glance is which row the reader is on. The current row stands on the raised
  * rung with a hairline round it, and no hue: it is found by its lift and its
- * line, by a reader who sees colour and by one who does not. The attention
- * count is the one badge in the chrome allowed a hue, and it is the accent's
- * fill, because a count of what is waiting on the reader is the one thing in
- * the rail that asks them to act.
+ * line, by a reader who sees colour and by one who does not. The badge is the
+ * one figure in the chrome allowed a hue, and it is the accent's fill, because
+ * a count of what is waiting on the reader is the one thing in the rail that
+ * asks them to act; a count is the quiet figure, and it lifts to the row's ink
+ * on the reader's own row. A project's key is a chip on the raised rung.
  *
  * Switch the Theme toolbar to see both palettes. Every pair here is measured
  * on the rail's own grounds by `SidebarNav.test.tsx` and by the palette suite
@@ -194,12 +218,16 @@ export const EveryRowState: Story = {
               label="Overview"
               icon={<LayoutDashboardGlyph size="sm" />}
               current
-              badge={<Count value={3} label="need a person" />}
-              badgeTone="attention"
+              count={{ value: 12, label: 'open' }}
             />
-            <NavItem href="#/people" label="People" icon={<UsersGlyph size="sm" />} badge={<Count value="4 live" />} />
+            <NavItem href="#/inbox" label="Inbox" icon={<InboxGlyph size="sm" />} badge={{ value: 3, label: 'need a person' }} />
+            <NavItem href="#/people" label="People" icon={<UsersGlyph size="sm" />} count={{ value: 4, label: 'live' }} />
+            <NavItem href="#/work/eng" label="Core platform" lead="ENG" count={{ value: 23, label: 'open' }} />
             <NavItem href="#/runs" label="Coding runs" icon={<SquareTerminalGlyph size="sm" />} />
-            <NavGroup label="Operations">
+            <NavGroup
+              label="Operations"
+              action={{ label: 'Add a node', icon: <PlusGlyph size="sm" />, onClick: () => {} }}
+            >
               <NavItem href="#/fleet" label="Fleet" icon={<ServerGlyph size="sm" />} />
               <NavItem
                 label="Secrets"

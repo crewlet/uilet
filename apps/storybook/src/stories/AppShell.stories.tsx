@@ -2,22 +2,26 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
 import { CrewletIcon } from '@crewlethq/icons';
 import {
-  ClockGlyph,
+  ActivityGlyph,
+  BookOpenGlyph,
+  CircleCheckGlyph,
   CoinsGlyph,
+  HouseGlyph,
+  InboxGlyph,
   KeyGlyph,
   LayoutDashboardGlyph,
   NetworkGlyph,
+  PinGlyph,
+  PlusGlyph,
   ServerGlyph,
   SettingsGlyph,
-  SquareTerminalGlyph,
-  UsersGlyph,
+  SquareKanbanGlyph,
 } from '@crewlethq/icons/glyphs';
 import {
   AppShell,
   BrandLockup,
   Button,
   Callout,
-  Count,
   Kbd,
   NavGroup,
   NavItem,
@@ -52,10 +56,14 @@ export default meta;
 type Story = StoryObj<typeof AppShell>;
 
 /*
- * THE RAIL THE ENGINE RENDERS, as far as this package can draw it: the brand
- * over the company, the sections, the one badge allowed a status hue, and a
- * foot whose status line takes the rail's own insets so its mark lands on the
- * line every nav glyph above it sits on.
+ * THE RAIL THE APPROVED DESIGN DRAWS, as far as this package can draw it: the
+ * brand over the company, the three destinations every reader starts from
+ * (the inbox carrying the one badge in the chrome, the reader's own work a
+ * quiet count), the workspace, the projects under a heading that can add one
+ * and each led by its key, the pinned views, and a foot whose status line
+ * takes the rail's own insets so its mark lands on the line every nav glyph
+ * above it sits on. Beside it the screen floats on the sheet, inset from the
+ * frame.
  *
  * It is the whole surface the Theme and Density toolbars are for. Switch
  * either and nothing here moves off that line: the two insets and every row
@@ -93,26 +101,30 @@ function Rail({ context = 'Acme Holdings' }: { context?: string }) {
         {/* The first run has no name, which a rail built from a list spells as
             an empty label: no heading box is drawn and no level is added. */}
         <NavGroup label="">
+          <NavItem href="#/" label="Home" icon={<HouseGlyph size="sm" />} current />
+          <NavItem href="#/inbox" label="Inbox" icon={<InboxGlyph size="sm" />} badge={{ value: 5, label: 'unread' }} />
+          <NavItem href="#/mine" label="My work" icon={<CircleCheckGlyph size="sm" />} count={{ value: 3, label: 'open' }} />
+        </NavGroup>
+        <NavGroup label="Workspace">
+          <NavItem href="#/work" label="Work" icon={<SquareKanbanGlyph size="sm" />} />
           <NavItem
-            href="#/"
-            label="Overview"
-            icon={<LayoutDashboardGlyph size="sm" />}
-            current
-            badge={<Count value={3} label="need a person" />}
-            badgeTone="attention"
+            href="#/agents"
+            label="Agents"
+            icon={<NetworkGlyph size="sm" />}
+            count={{ value: 4, label: 'working', mark: <StatusDot tone="info" pulse /> }}
           />
+          <NavItem href="#/live" label="Live" icon={<ActivityGlyph size="sm" />} />
+          <NavItem href="#/knowledge" label="Knowledge" icon={<BookOpenGlyph size="sm" />} />
+          <NavItem href="#/spend" label="Spend" icon={<CoinsGlyph size="sm" />} />
         </NavGroup>
-        <NavGroup label="Company">
-          <NavItem href="#/people" label="People" icon={<UsersGlyph size="sm" />} badge={<Count value="4 live" />} />
-          <NavItem href="#/org" label="Org chart" icon={<NetworkGlyph size="sm" />} />
+        <NavGroup label="Projects" action={{ label: 'New project', icon: <PlusGlyph size="sm" />, onClick: () => {} }}>
+          <NavItem href="#/work/eng" label="Core platform" lead="ENG" count={{ value: 23, label: 'open' }} />
+          <NavItem href="#/work/prod" label="Product" lead="PROD" count={{ value: 11, label: 'open' }} />
+          <NavItem href="#/work/lead" label="Leadership" lead="LEAD" count={{ value: 4, label: 'open' }} />
         </NavGroup>
-        <NavGroup label="Work">
-          <NavItem href="#/runs" label="Coding runs" icon={<SquareTerminalGlyph size="sm" />} />
-          <NavItem href="#/schedules" label="Schedules" icon={<ClockGlyph size="sm" />} />
-        </NavGroup>
-        <NavGroup label="Operations">
-          <NavItem href="#/fleet" label="Fleet" icon={<ServerGlyph size="sm" />} />
-          <NavItem href="#/spend" label="Spend and budgets" icon={<CoinsGlyph size="sm" />} />
+        <NavGroup label="Pinned">
+          <NavItem href="#/views/blocked" label="Blocked, org-wide" icon={<PinGlyph size="sm" />} count={{ value: 2, label: 'open' }} />
+          <NavItem href="#/views/release" label="2.4 release" icon={<PinGlyph size="sm" />} count={{ value: 9, label: 'open' }} />
           <NavItem
             label="Secrets"
             icon={<KeyGlyph size="sm" />}
@@ -127,7 +139,7 @@ function Rail({ context = 'Acme Holdings' }: { context?: string }) {
 function Topbar() {
   return (
     <AppShell.Topbar
-      title="Overview"
+      title="Home"
       actions={
         <SearchTrigger variant="toolbar" shortcut={<Kbd keys={['Mod', 'k']} subtle />} keyshortcuts="Control+K Meta+K /" />
       }
@@ -139,7 +151,7 @@ function Screen({ children }: { children?: ReactNode }) {
   return (
     <>
       <PageHeader
-        title="Overview"
+        title="Home"
         description="What needs a person, what the company is doing, and what it has cost."
         actions={<Button size="small">Refresh</Button>}
       />
@@ -153,6 +165,13 @@ function Screen({ children }: { children?: ReactNode }) {
   );
 }
 
+/**
+ * The rail on the frame, and the screen on a sheet floated beside it: inset
+ * from the frame on its top, right and bottom, drawn round with the plain
+ * hairline and rounded at the sheet's corner. The bar and the one scroller are
+ * inside the sheet, so the screen scrolls under the bar and is clipped by the
+ * corner.
+ */
 export const Wide: Story = {
   render: () => (
     <AppShell sidebar={<Rail />} topbar={<Topbar />}>
@@ -179,8 +198,9 @@ export const WithABanner: Story = {
 };
 
 /**
- * Below the shell breakpoint the rail is gone from the layout and the control
- * that opens it as a drawer appears at the head of the bar. The search trigger
+ * Below the shell breakpoint the rail is gone from the layout, the sheet is the
+ * whole window (its inset, corner and hairline collapsed to nothing), and the
+ * control that opens the rail as a drawer appears at the head of the bar. The search trigger
  * keeps its name where it has dropped its label.
  */
 export const Narrow: Story = {
@@ -285,7 +305,10 @@ export const FootTakesADroppedControl: Story = {
   ),
 };
 
-/** Without a rail there is no drawer and no control for one. */
+/**
+ * Without a rail there is no drawer and no control for one, and the sheet is
+ * inset from the frame on all four sides.
+ */
 export const NoRail: Story = {
   render: () => (
     <AppShell topbar={<AppShell.Topbar title="Sign in" />}>

@@ -1,5 +1,6 @@
 /**
- * The application frame: a rail, a top bar, and ONE scroll container.
+ * The application frame: a rail on the frame, and beside it a floating sheet
+ * holding a top bar and ONE scroll container.
  *
  * WHY THE SHELL OWNS THE GRID NOW. It used to be passive: the slots positioned
  * themselves with `position: fixed` and the shell only reserved a matching
@@ -8,6 +9,14 @@
  * and a change to either meant editing four places that nothing compared. The
  * grid is sized from `--size-shell-rail` and `--size-shell-topbar` here, and
  * the slots simply fill their cells.
+ *
+ * THE SCREEN FLOATS ON A SHEET. The rail stands on the frame, the lowest rung,
+ * and everything the reader reads (the bar, a banner, the screen, a footer) is
+ * one sheet a rung above it, held off the frame's edges by `--size-shell-inset`
+ * and rounded at `--radius-sheet`. It is one element rather than a background
+ * the bar and the scroller each paint, because the corner has to clip both and
+ * the hairline has to run round both: two surfaces that each drew half of it
+ * would meet in a seam under the bar.
  *
  * THE DOCUMENT DOES NOT SCROLL. `100dvh` with `overflow: hidden` on the root,
  * and one scroller inside it, which is what lets a router restore a scroll
@@ -21,7 +30,8 @@
  * and `main` is a focusable target for the skip link that precedes everything.
  *
  * NARROW IS A DIFFERENT SHAPE, NOT A SMALLER ONE. Below the shell breakpoint
- * the rail is a modal drawer on the shared layer stack: it takes Escape, traps
+ * the sheet is the whole window, its inset, corner and hairline collapsed to
+ * nothing, and the rail is a modal drawer on the shared layer stack: it takes Escape, traps
  * Tab, hands focus back to the toggle, and closes on a navigation and when the
  * layout it belongs to ends. Hidden rather than merely moved off screen, too,
  * because a rail translated out of view keeps every link in the tab order and
@@ -124,7 +134,7 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
    * while the screen scrolls under it.
    */
   banner?: ReactNode;
-  /** A strip under the screen, in the content column and outside `main`. */
+  /** A strip under the screen, on the sheet and outside `main`. */
   footer?: ReactNode;
   /** The id of the `main` element, which the skip link points at. */
   mainId?: string | undefined;
@@ -223,7 +233,14 @@ export function AppShell({
     <AppShellContext.Provider value={shell}>
       <div
         {...rest}
-        className={cx('crewlet-app-shell', fill && 'crewlet-app-shell--fill', className)}
+        className={cx(
+          'crewlet-app-shell',
+          fill && 'crewlet-app-shell--fill',
+          // Named on the root rather than read off the tree by a selector,
+          // because a shell with no rail is one column whatever else it holds.
+          !shell.hasRail && 'crewlet-app-shell--no-rail',
+          className,
+        )}
         style={drawerZ === null ? style : { ...style, ['--crewlet-app-shell-drawer-z' as string]: String(drawerZ) }}
       >
         {/*
@@ -262,7 +279,7 @@ export function AppShell({
             {sidebar}
           </aside>
         ) : null}
-        <div className="crewlet-app-shell__column">
+        <div className="crewlet-app-shell__sheet">
           {topbar}
           {banner ? <div className="crewlet-app-shell__banner">{banner}</div> : null}
           <main id={main} ref={setMain} className="crewlet-app-shell__main" tabIndex={-1}>

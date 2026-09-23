@@ -74,8 +74,10 @@ land at once.
   so no density takes a pointer target under the size a finger can hit.
 - **Surfaces.** The components stand on the four rungs `@crewlethq/tokens`
   defines, lowest first the frame, the sheet, the card and raised. `AppShell`
-  puts its rail on `--color-surface-frame` and its main column and top bar on
-  `--color-surface-background`, the sheet; a card, a popover, a menu and a
+  paints the window and its rail on `--color-surface-frame` and floats the
+  screen, its top bar and its one scroller on a sheet of
+  `--color-surface-background`, inset from the frame by `--size-shell-inset`
+  inside the `--color-border-default` hairline at `--radius-sheet`; a card, a popover, a menu and a
   dialog body are `--color-surface-subtle`, the card rung, and a `Card` is
   found by the `--color-border-default` hairline it draws round itself rather
   than by its fill or a shadow: the card is flat, and only an `elevated` one
@@ -200,9 +202,9 @@ second primary on every screen, so the current row now stands on
 round it inside the row, and keeps the rail's full ink. The hairline is an
 OUTLINE rather than an inset shadow, so it survives forced-colors mode, which
 drops shadows and backgrounds; a focused current row draws the focus ring in
-its place. A `NavItem` with `badgeTone="attention"` is the one hue in the
-chrome, and it is now the accent's fill with the on-accent label rather than
-the warning tint and ink: a count of what is waiting on the reader asks them
+its place. A `NavItem`'s `badge` (it was `badgeTone="attention"`, see the
+rail's rows below) is the one hue in the chrome, and it is now the accent's
+fill with the on-accent label rather than the warning tint and ink: a count of what is waiting on the reader asks them
 to act, which is what the accent means, and warning is kept for state. The
 indent guide beside a nested run steps up to `--color-border-strong` on the
 reader's path rather than taking the accent.
@@ -213,7 +215,7 @@ reader's path rather than taking the accent.
 | `--color-text-on-brand` | `--color-text-on-accent` |
 | an accent override declared on `:root` or `body` alone | the same values under the three theme selectors, as above |
 | a stylesheet tinting `.crewlet-nav-item__row[aria-current='page']` with the accent | drop it: the row is raised with a hairline, and the hairline is its `outline` |
-| a stylesheet relying on `.crewlet-nav-item__badge--attention` being the warning tint | it is `--color-brand-accent` with `--color-text-on-accent` |
+| a stylesheet relying on `.crewlet-nav-item__badge--attention` being the warning tint | `.crewlet-nav-item__badge`, which is `--color-brand-accent` with `--color-text-on-accent` |
 
 **The chart ramp is four series, and a meter's ordinary reading is the first of
 them.** `@crewlethq/tokens` fits the state and chart hues to the approved design
@@ -303,6 +305,54 @@ design's mark, rather than 6px.
 | a stylesheet overriding `.crewlet-modal__header--sheet` padding | the head is 52px with 4px over 24px insets; override `--size-shell-topbar` or the rule itself |
 | a stylesheet overriding `.crewlet-brand` padding | its block padding is `--spacing-1` |
 | a layout that reserved 6px for a `StatusDot` | 7px |
+
+**The screen floats on a sheet, and the rail's rows are the design's.**
+`AppShell` paints the window on the frame and draws everything the reader
+reads (the bar, a banner, the one scroller, a footer) on ONE sheet beside the
+rail: `--color-surface-background` inside the `--color-border-default`
+hairline, rounded at `--radius-sheet` (14px) and held `--size-shell-inset`
+(8px) off the frame on its top, right and bottom, the rail being the gap on its
+left. It is one element because the corner has to clip the bar and the scroller
+alike and the hairline has to run round both. The rail draws no right border
+any more: the sheet's own hairline is the edge between them. The rail's head
+stands the inset plus the bar's height tall, with the inset above it, so the
+lockup is centred on the line the bar's title is on. Under the shell step the
+sheet is the whole window, its inset, corner and hairline collapsed to nothing,
+and the drawer draws the right border the wide rail does not. A shell with no
+rail is one column (`crewlet-app-shell--no-rail`), its sheet inset on the left
+as well; it used to be dropped into the empty rail's 236px cell.
+
+`SidebarNav` draws the approved rail. A row is 30px, the new
+`--size-nav-row` (it was `--size-row-md`, 36px), with 10px between its glyph and
+its word, and the rows of a group stand 2px apart rather than flush. A group's
+name is a sentence-case word at the caption step in the tertiary ink rather
+than an uppercase micro-label, on a heading that stands at the 24px target
+floor, and `NavGroup` takes an `action` (`{ label, icon, onClick }`): a control
+at the heading's end, the add beside "Projects", named by its label and
+reached from the keyboard between the row above and the group's first row. A
+figure at the end of a row is one of two props now, where it was a `badge` of
+any element with a `badgeTone`: `count` is how many of something the
+destination holds, a quiet tabular figure in the tertiary ink with an optional
+`mark` before it, and `badge` is how many things are waiting on the reader, the
+one filled pill in the chrome, in the accent. Both are values (`{ value, label }`),
+the rail paints them, and both are read as the end of the row's name with their
+words: "Inbox, 5 unread", "Triage, 12 open, 2 unread". `lead` is a short key
+drawn as a chip in the glyph's place, a project's `ENG` on the raised rung in
+mono, and read as the start of the name: "ENG Core platform".
+
+| Was | Is |
+|---|---|
+| a stylesheet targeting `.crewlet-app-shell__column` | `.crewlet-app-shell__sheet` |
+| a stylesheet relying on `.crewlet-app-shell` being `--color-surface-background` | it is `--color-surface-frame`; the sheet is `--color-surface-background` |
+| a stylesheet relying on the rail's `border-right` | the sheet's hairline is the edge; the rail draws one only as the narrow drawer |
+| a stylesheet relying on `.crewlet-app-shell__rail-head` standing at `--crewlet-app-shell-topbar` | it stands `--size-shell-inset` plus that, with the inset as its top padding, and at the bar's height under the step |
+| `<NavItem badge={<Count value={3} label="need a person" />} badgeTone="attention">` | `<NavItem badge={{ value: 3, label: 'need a person' }}>` |
+| `<NavItem badge={<Count value="4 live" />}>`, a badge with no tone | `<NavItem count={{ value: 4, label: 'live' }}>` |
+| the `NavBadgeTone` type, or `badgeTone` | gone: `badge` is the accent pill and `count` the quiet figure |
+| a stylesheet targeting `.crewlet-nav-item__badge--attention` | `.crewlet-nav-item__badge`, which is always the accent pill; the quiet figure is `.crewlet-nav-item__count` |
+| a stylesheet styling what was passed into `.crewlet-nav-item__badge` | nothing is passed in: the figure is drawn by the rail, `aria-hidden`, and its words are read at the end of `.crewlet-nav-item__label` |
+| a layout that counted on a rail row standing 36px | `--size-nav-row`, 30px |
+| a stylesheet relying on `.crewlet-nav-group__label` carrying the heading's padding, uppercase and tracked | the padding is on `.crewlet-nav-group__head`; the label is sentence case at `--font-size-xs` |
 
 **A working dot breathes rather than fades, and every stop is one that wins.**
 A pulsing `StatusDot` keeps its fill and breathes a halo out round it, in its

@@ -89,21 +89,20 @@
 /* Indented to the name above it by the mark's own box, and truncated: a
    company name is as long as somebody registered it.
 
-   THE RAIL'S OWN MICRO-LABEL REGISTER, which is the wide step rather than the
-   wider one an Eyebrow takes: this line and the nav's group labels are the two
-   uppercase runs in the rail, they sit twenty pixels apart, and at the wider
-   step the company's name was visibly broader than the sections under it
-   rather than quieter than them. The suite holds the two together. */
+   THE RAIL'S ONE UPPERCASE RUN, on the wide step rather than the wider one an
+   Eyebrow takes: at the wider step the company's name was visibly broader
+   than the sections under it rather than quieter than them. The nav's group
+   labels twenty pixels below are sentence-case words at the caption step, so
+   the case and the size are what hold the two apart; the suite holds that. */
 .crewlet-brand__context {
   padding-left: calc(var(--crewlet-brand-mark) + var(--spacing-2));
   font-family: var(--font-family-sans);
   font-size: var(--font-size-2xs);
-  /* THE REGULAR WEIGHT, which is the one thing that separates this line from
-     the nav's group labels below it. The two are the only uppercase runs in
-     the rail and they sit twenty pixels apart; drawn at the same size, the
-     same tracking and the same weight they read as two headings of one list
-     rather than as the company's name above the sections in it. A group name
-     is what a reader scans, so the weight stays there and goes from here. */
+  /* THE REGULAR WEIGHT: the company's name is a quiet line under the product
+     name, not a heading. It used to be the one thing separating this line
+     from the nav's group labels, when both were uppercase at this size; the
+     labels are sentence case at the caption step now, and the weight stays
+     here because the line is still meant to be read past. */
   font-weight: var(--font-weight-regular);
   letter-spacing: var(--font-letter-spacing-wide);
   line-height: var(--font-line-height-body);

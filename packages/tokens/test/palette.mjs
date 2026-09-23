@@ -263,8 +263,10 @@ export const AVATAR_TINTS = Array.from({ length: 10 }, (_, i) => `--color-avatar
  * The rail stands on the FRAME rather than on the sheet, which no other
  * column of text does. Its rows have three grounds: the frame itself, the
  * frame under the hover overlay, and RAISED for the row the reader is on
- * (RAIL_CURRENT_ROW). The attention count is the one hue in it, an opaque
- * accent fill carrying the on-accent label.
+ * (RAIL_CURRENT_ROW). The badge, a count of what is waiting on the reader, is
+ * the one hue in it, an opaque accent fill carrying the on-accent label; a
+ * project's key chip is the raised rung inside the plain hairline, carrying
+ * the secondary ink, on every row alike.
  *
  * WHAT THIS TABLE IS, HONESTLY. Every ink in it is also reached by a rule
  * above, which measures the same composites over every rung: the text steps
@@ -317,10 +319,17 @@ export const RAIL_ROWS = [
 export const RAIL_PAINTS = [
   ["a row's label", '--color-text-secondary', null, ['a row'], 4.5],
   ['a hovered row, label and glyph', '--color-text-primary', null, ['a hovered row'], 4.5],
-  ['the current row, label, glyph and quiet badge', '--color-text-primary', null, ['the row the reader is on'], 4.5],
-  ['a group label, a quiet badge, a foot row', '--color-text-tertiary', null, ['a row', 'a hovered row'], 4.5],
+  ['the current row, label, glyph and count', '--color-text-primary', null, ['the row the reader is on'], 4.5],
+  ['a group label and its action, a count, a foot row', '--color-text-tertiary', null, ['a row', 'a hovered row'], 4.5],
   [
-    'the attention count',
+    "a project's key chip",
+    '--color-text-secondary',
+    '--color-surface-elevated',
+    ['a row', 'a hovered row', 'the row the reader is on'],
+    4.5,
+  ],
+  [
+    'the badge, what is waiting on the reader',
     '--color-text-on-accent',
     '--color-brand-accent',
     ['a row', 'a hovered row', 'the row the reader is on'],

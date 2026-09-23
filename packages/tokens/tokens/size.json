@@ -12,7 +12,8 @@
     },
     "nav": {
       "gutter": { "value": "8px", "density": true, "comment": "The rail's geometry in TWO parts, because a row's EDGE and a row's TEXT want different insets. The gutter insets the rail, which is where a row's background begins; the row pad insets the content inside the row. Splitting it is what lets the rows widen without moving a glyph: shrink the gutter, grow the pad by the same step, and the line every mark, group label and item text starts on does not move." },
-      "rowPad": { "value": "12px", "density": true }
+      "rowPad": { "value": "12px", "density": true },
+      "row": { "value": "30px", "density": true, "comment": "The height of a row in the rail: a destination, a project, a pinned view. The approved design draws it at 30px, the control rhythm's own height, and a rail row is a step of its own rather than size.row.md (36px, a list's row) because a rail holds fifteen destinations and more in a column the height of the window, where six pixels a row is the difference between the last one on screen and behind the foot. No floor is needed: 30 x 0.82 is 24.6px, over the 24px target at every density." }
     },
     "shell": {
       "rail": { "value": "236px", "comment": "The application SHELL's geometry, in the approved design's numbers. The rail is the sidebar column, on the frame; breakpoint.shell is derived from it, so a change here moves that step too, and the AppShell suite holds the arithmetic. A fixed width at every density: the rail's rows and gutters scale inside it, and a rail that grew with the density would move the breakpoint the density does not." },

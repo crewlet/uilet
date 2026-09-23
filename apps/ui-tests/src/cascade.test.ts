@@ -6,14 +6,15 @@
  * length token arrives as its number, that a selector list is scored and
  * matched member by member (jsdom does neither, and the harness corrects it),
  * that a pseudo-element is measured on a stand-in only its own rules reach
- * (jsdom computes no style for one), and that a reduced-motion query is
- * answered where it stands, so its stop wins or loses exactly as it would in
- * a browser.
+ * (jsdom computes no style for one), and that a reduced-motion query or a
+ * width query is answered where it stands, so its rule wins or loses exactly
+ * as it would in a browser.
  */
 import { afterEach, expect, test } from 'vitest';
 import {
   answerForcedColors,
   answerMotion,
+  answerWidth,
   inset,
   installCss,
   installMotion,
@@ -270,6 +271,50 @@ test('each answerer leaves the other feature’s blocks where they were, and ref
   expect(() =>
     answerForcedColors('@media (forced-colors: active) and (prefers-color-scheme: dark) { .a { color: red; } }', 'active'),
   ).toThrow(/answerForcedColors cannot answer/);
+});
+
+test('a width query is answered for the viewport named, at the edge as a browser answers it', () => {
+  /*
+   * A layout's narrow block is never in jsdom's cascade, so a rule above it
+   * that outweighs it (a no-rail inset written with two classes, say) keeps
+   * its value at every width while a source read of the block says it is
+   * taken back. Answered, the block is where the stylesheet wrote it.
+   */
+  const sheet =
+    '.a { margin: 8px; }\n@media (width < 1024px) { .a { margin: 0px; } }\n' +
+    '.b.c { margin: 8px; }\n@media (width < 1024px) { .c { margin: 0px; } }';
+  document.body.innerHTML = '<i class="a"></i><i class="b c"></i>';
+  const [a, bc] = [...document.body.children];
+  for (const [width, margin] of [
+    [1023, '0px'],
+    [1024, '8px'],
+    [1025, '8px'],
+  ] as const) {
+    remove = installCss(answerWidth(sheet, width));
+    expect(getComputedStyle(a!).margin, `at ${width}px`).toBe(margin);
+    // The heavier rule wins at every width, which is the defect in miniature.
+    expect(getComputedStyle(bc!).margin, `at ${width}px`).toBe('8px');
+    remove();
+    remove = null;
+  }
+});
+
+test('every spelling of a width query is evaluated, and anything else about the width is refused', () => {
+  const block = (query: string) => `@media ${query} { .a { top: 0; } }`;
+  const kept = (query: string, width: number) => answerWidth(block(query), width).includes('.a');
+  expect([kept('(width < 640px)', 639), kept('(width < 640px)', 640)]).toEqual([true, false]);
+  expect([kept('(width <= 640px)', 640), kept('(width <= 640px)', 641)]).toEqual([true, false]);
+  expect([kept('(width > 640px)', 641), kept('(width > 640px)', 640)]).toEqual([true, false]);
+  expect([kept('(width >= 640px)', 640), kept('(width >= 640px)', 639)]).toEqual([true, false]);
+  expect([kept('(max-width: 640px)', 640), kept('(max-width: 640px)', 641)]).toEqual([true, false]);
+  expect([kept('(min-width: 640px)', 640), kept('(min-width: 640px)', 639)]).toEqual([true, false]);
+  // Every other at-rule stays exactly where it was.
+  const other = '@media (prefers-reduced-motion: reduce) { .a { animation: none; } }';
+  expect(answerWidth(other, 100)).toBe(other);
+  expect(() => answerWidth(block('(width < 64rem)'), 100)).toThrow(/answerWidth cannot answer/);
+  expect(() => answerWidth(block('(width < 640px) and (prefers-reduced-motion: reduce)'), 100)).toThrow(
+    /answerWidth cannot answer/,
+  );
 });
 
 test('a calc() jsdom has folded to one length is read as that length, and one it could not fold as 0', () => {

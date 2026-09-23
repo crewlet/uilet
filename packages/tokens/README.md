@@ -239,6 +239,7 @@ The shell is a rail and a floating sheet on the frame (see [Surfaces](#surfaces)
 | `--size-shell-topbar` | 52px | The sheet's top bar, and the rail's head beside it. Fixed at every density |
 | `--size-shell-inset` | 8px | The gap between the frame's edge and the sheet, on its top, its inline end and its bottom. Density-scaled like every gap: 6.56px compact, 9.12px comfortable |
 | `--radius-sheet` | 14px | The sheet's corner |
+| `--size-nav-row` | 30px | A row in the rail: a destination, a project, a pinned view. Density-scaled, and 24.6px at compact, so it needs no floor |
 
 The rail and the bar do not follow the density because `--breakpoint-shell` is derived from the rail: a rail that grew with the density would move a breakpoint that a density setting cannot move.
 
@@ -261,7 +262,7 @@ At exactly 1024px the sheet is exactly its floor and the wide layout fits, so th
 
 ### Changed in 0.5.0: the body, the shell and its breakpoint
 
-No token is renamed or removed here; values moved to the approved design, and six tokens are new.
+No token is renamed or removed here; values moved to the approved design, and seven tokens are new.
 
 | What changed | What to change |
 | --- | --- |
@@ -270,6 +271,7 @@ No token is renamed or removed here; values moved to the approved design, and si
 | `--size-shell-rail` is 236px (was 280px) and `--size-shell-topbar` is 52px (was 64px). | Nothing, for a stylesheet that reads them. A literal 280 or 64 written to line up with the shell reads the token instead. |
 | `--breakpoint-shell` is 1024px (was 900px), derived as above, and the switch is strictly under it. | A query written to switch with the shell, `(max-width: 900px)`, becomes `(width < 1024px)`. |
 | `--font-size-display`, `--font-line-height-body`, `--radius-sheet`, `--size-shell-inset`, `--breakpoint-phone` and `--motion-duration-breath` are new (`font.size.display`, `font.lineHeight.body`, `radius.sheet`, `size.shell.inset`, `breakpoint.phone`, `motion.duration.breath`). | Nothing. |
+| `--size-nav-row` (`size.nav.row`, 30px) is new: the rail's own row step, which `@crewlethq/ui`'s `SidebarNav` draws its rows at in place of `--size-row-md` (36px). | Nothing. |
 
 ## Motion
 
