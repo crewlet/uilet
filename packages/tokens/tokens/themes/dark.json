@@ -47,14 +47,6 @@
       "info": { "value": "#4c9dff", "comment": "Working. The approved step, unmoved." },
       "infoInk": { "value": "#86beff", "comment": "The approved step, unmoved." }
     },
-    "phase": {
-      "onboarding": { "value": "#fa7cde", "comment": "#f77ae9 moved dE 1.88 because staying green forced it: the design's info fill, #4c9dff, sat dE 4.1 from it under protanopia, under the 6 a phase keeps from a state. The phase family is removed later in this series, so it moves out of the fitted states' way rather than binding them." },
-      "onboardingInk": { "value": "#ff82f1" },
-      "execute": { "value": "#a665da", "comment": "#ae6dff moved dE 5.74 because staying green forced it: the design's info fill sat dE 0.5 from it under deuteranopia, under 6." },
-      "executeInk": { "value": "#d697ff" },
-      "review": { "value": "#01975e", "comment": "#00a24f moved dE 4.31 because staying green forced it: the fitted danger fill, #e50055, sat dE 2.0 from it under deuteranopia, under 6." },
-      "reviewInk": { "value": "#46c872" }
-    },
     "data": {
       "1": { "value": "#458adc", "comment": "The approved blue, #3987e5, moved dE 1.95 inside its hue family: it sat dE 6.0 from the accent under deuteranopia, under the 8 no hue may come within." },
       "2": { "value": "#e4631f", "comment": "The approved orange, #d95926, moved dE 3.22 inside its hue family, lighter and toward yellow: it sat dE 12.0 from the danger fill under normal vision and 5.6 under deuteranopia, against the 14 and 8 the reserved red keeps from every series." },

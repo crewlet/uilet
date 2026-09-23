@@ -40,7 +40,6 @@ const fontsUrlBase = relative(cssDir, fontsDir).split(sep).join('/');
 const SOFT_ALPHA = 0.12;
 const LINE_ALPHA = 0.3;
 const SOFT_AND_LINE = ['success', 'warning', 'danger', 'info'];
-const SOFT_ONLY = ['onboarding', 'execute', 'review'];
 
 // A node hue's three drawn steps, on the same principle: the hue is the one
 // source and every alpha follows it. They are their own numbers rather than
@@ -102,9 +101,6 @@ function deriveTints(tokens, where) {
   for (const name of SOFT_AND_LINE) {
     tokens.color.feedback[`${name}Soft`] = { value: withAlpha(fill('feedback', name), SOFT_ALPHA) };
     tokens.color.feedback[`${name}Line`] = { value: withAlpha(fill('feedback', name), LINE_ALPHA) };
-  }
-  for (const name of SOFT_ONLY) {
-    tokens.color.phase[`${name}Soft`] = { value: withAlpha(fill('phase', name), SOFT_ALPHA) };
   }
   for (const name of NODE_HUES) {
     tokens.color.node[`${name}Fill`] = { value: withAlpha(fill('node', name), NODE_FILL_ALPHA) };

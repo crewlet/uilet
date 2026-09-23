@@ -155,10 +155,6 @@ describe('the derived tints', () => {
         assert.equal(values.get(`--color-feedback-${family}-soft`), withAlpha(fill, SOFT_ALPHA), `${state} ${family} soft`);
         assert.equal(values.get(`--color-feedback-${family}-line`), withAlpha(fill, 0.3), `${state} ${family} line`);
       }
-      for (const family of ['onboarding', 'execute', 'review']) {
-        const fill = values.get(`--color-phase-${family}`);
-        assert.equal(values.get(`--color-phase-${family}-soft`), withAlpha(fill, SOFT_ALPHA), `${state} ${family} soft`);
-      }
     }
   });
 

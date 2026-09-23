@@ -1,5 +1,5 @@
 /**
- * The two colour vocabularies a component is allowed to take as a prop.
+ * The one colour vocabulary a component is allowed to take as a prop.
  *
  * ONE SPELLING. The package shipped `warn` in Tag and Toaster and `warning` in
  * StatCard and Callout, and `danger` beside `error`, so the same state had two
@@ -10,17 +10,11 @@
  * info are states, `brand` is where the reader is, and everything else is
  * neutral. Identity (a seat, a node, a vendor, a tool) takes neutral colour and
  * is carried by its name, its glyph and its position.
+ *
+ * So does a CATEGORY. A phase, a unit or a model is neutral with its word, and
+ * inside a figure it is a series its legend names, from the data ramp the
+ * application maps it onto. There used to be a second vocabulary here, three
+ * phase hues, and it spent three of the hues the states and the series are held
+ * apart in on a word the label already said.
  */
 export type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'brand';
-
-/**
- * The phase vocabulary, and nothing else.
- *
- * Three phases, because that is the whole of the engine's phase model. A
- * per-model or per-worker breakdown is a CHART SERIES SET and takes the data
- * ramp (`--color-data-1` and the rest) inside a legend, not this family: a
- * reader compares phase marks against each other, so the three are separated
- * from one another and from every status hue, which a growing set of series
- * could not be.
- */
-export type PhaseTone = 'phase-onboarding' | 'phase-execute' | 'phase-review';

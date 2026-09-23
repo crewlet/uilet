@@ -1,6 +1,7 @@
 /**
- * Two rules about what a component's SOURCE may contain, which no runtime test
- * can reach because both failures are invisible until somebody looks.
+ * Four rules about what a component's SOURCE may contain, which no runtime
+ * test can reach because every one of the failures is invisible until somebody
+ * looks.
  *
  * 1. A glyph is an SVG, never a font ligature. A component that spells
  *    `material-symbols-outlined` renders a word until a stylesheet it does not
@@ -18,6 +19,14 @@
  *    suite only catches this where it has not installed a stub. Four call
  *    sites guarded and one did not, which is exactly the shape a convention
  *    held by memory decays into, so it is a scan rather than a habit.
+ *
+ * 4. A phase has no colour. It is a category, drawn in the neutral colour with
+ *    its word, and inside a figure it is a series the application maps it
+ *    onto. @crewlethq/tokens shipped a phase family once, three hues and their
+ *    inks and tints, and a component that reads one again, or draws a phase
+ *    modifier a stylesheet would have to paint, is bringing it back. The
+ *    package's variable check would refuse the token once it is unemitted, as
+ *    it refuses any; this names the rule, so the failure says why.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -71,6 +80,26 @@ describe('component source', () => {
       .filter(({ text }) => /<style[\s>]|createElement\(\s*['"]style['"]/.test(text))
       .map(({ path }) => path);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('a phase', () => {
+  test('is never a colour: no component reads a phase hue or draws a phase modifier', () => {
+    /*
+     * Both spellings the family had: the token a stylesheet reads, and the
+     * BEM modifier a component built from a phase tone (`crewlet-tag--phase-…`,
+     * `crewlet-status-dot--phase-…`). Named by the file and the line, so a hit
+     * says where. A suite is left out, because the Tag and StatusDot suites
+     * spell the modifier to assert that nothing draws it.
+     */
+    const offenders: string[] = [];
+    for (const { path, text } of files) {
+      if (path.includes('.test.')) continue;
+      for (const [index, line] of text.split('\n').entries()) {
+        if (/--color-phase-|crewlet-[\w-]+--phase-/.test(line)) offenders.push(`${path}:${index + 1}`);
+      }
+    }
+    expect(offenders, 'a phase is the neutral colour and its word').toEqual([]);
   });
 });
 

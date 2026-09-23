@@ -189,12 +189,11 @@ A media query cannot read a custom property, so a stylesheet that switches layou
 
 ## What colour means
 
-Four families, and the meanings never move:
+Three families, and the meanings never move:
 
 | Use | Meaning | Tokens |
 | --- | --- | --- |
 | State | what a piece of work is doing: `info` is working, `warning` needs a person, `danger` is stopped, `success` is done. The names stay generic, because a badge, a callout and a toast mean the same four things | `--color-feedback-{success,warning,danger,info}` and their `-ink`, `-soft` and `-line` steps, and `--color-feedback-danger-hover` |
-| Phase | onboarding, execute, review | `--color-phase-{onboarding,execute,review}` and their `-ink` and `-soft` steps |
 | Accent | what to act on, and what is chosen: the primary action's fill, the focus ring, the selected row, the filter that is on, the count of what is waiting on the reader | `--color-brand-accent`, `-hover`, `-active`, `-ink`, `-soft`, `-soft-strong`, `-rgb`, and `--color-focus` |
 | Data | a series, and only inside a figure that names it: a legend for two series or more, the label for one | `--color-data-1` to `-4`, in that order, and `--color-data-other` for the rest |
 
@@ -202,6 +201,8 @@ Two rules travel with them:
 
 - **A fill step is never text, and an `-ink` step is never a background.** A fill clears 3:1 as a mark; an ink clears 4.5:1 as text, including on its own soft tint.
 - **Everything else is neutral.** A category with no state in it takes neutral colour, and its identity is carried by its name, its glyph and its position.
+
+A phase is a category. The agent's phases (onboarding, execute, review, and whatever an engine adds) are drawn in the neutral colour with their word: a neutral tag, or the word itself, beside the state badge that says what the work is doing. There is no phase hue: a hue per phase spends the budget the four states and the four series are held apart in, and asks a reader to learn a second colour vocabulary that says nothing the word does not. Inside a figure a phase is a series like any other: the application declares which phase takes which series (`--color-data-1` to `-4`), keeps that mapping in every figure it draws, and the legend names each one.
 
 A `-soft` step is its own fill at alpha 0.12 and a `-line` step is the same fill at alpha 0.30. They are derived by the build from the fill, per palette, so a tint cannot come to belong to a hue the fill no longer is.
 
@@ -236,9 +237,6 @@ Where an approved value failed a floor, the floor won and the value moved the le
 | `--color-brand-accent-hover` light | `#744bff`, the approved `brightness(1.08)` | `#633ae5` | | it moved toward the label; the shipped step is darker by dE 3.03 |
 | `--color-focus` dark | `#7c56ff`, the accent | `#7e5bff` | 1.06 | 2.88:1 on a pressed row inside a raised surface |
 | `--color-brand-accent-soft` light | 0.10 | 0.108 | | a selected row sat dE 2.67 from a hovered one on the frame, under 3 |
-| `--color-phase-execute` light | `#5b37da` | `#480fbe` | 8.14 | dE 5.2 from the new accent under every vision; the least move that also keeps it 10 from onboarding |
-
-The dark `--color-phase-execute` moved for the accent too, and then again for the fitted states: see [the phase family, for now](#the-phase-family-for-now).
 
 ### Breaking change in 0.5.0: the accent is the primary action
 
@@ -290,18 +288,7 @@ In light, two series land on a state's own value: the aqua on done's green (`#00
 - **The reserved red is kept away from every series**: dE 14 under normal vision and 8 under protanopia and deuteranopia, where red, orange and green fall onto one axis. The approved aqua sat dE 0.73 from the approved red under protanopia.
 - **Neighbouring series** sit dE 9 apart under every vision and dE 15 under normal vision. The second floor is new: on its own, the dichromat floor let a pair sit dE 9 apart for every reader, which to full-colour vision is two shades of one hue.
 
-#### The phase family, for now
-
-The phase hues are measured and not fitted, and the family is removed later in this release, so where a fitted state landed on one of them, the phase hue moved out of its way rather than binding it. Each move is the least that clears the suite, and each token's comment says so:
-
-| Token | Palette | Was | Shipped | Moved (dE) | Because |
-| --- | --- | --- | --- | --- | --- |
-| `--color-phase-onboarding` | dark | `#f77ae9` | `#fa7cde` | 1.88 | dE 4.1 from the info fill under protanopia |
-| `--color-phase-execute` | dark | `#ae6dff` | `#a665da` | 5.74 | dE 0.5 from the info fill under deuteranopia |
-| `--color-phase-review` | dark | `#00a24f` | `#01975e` | 4.31 | dE 2.0 from the danger fill under deuteranopia |
-| `--color-phase-review` | light | `#078543` | `#018348` | 1.02 | dE 5.0 from the danger fill under deuteranopia |
-
-The marketing root takes the dark palette's state, series and phase values.
+The marketing root takes the dark palette's state and series values.
 
 ### Breaking change in 0.5.0: the state and chart hues
 
@@ -312,6 +299,13 @@ The marketing root takes the dark palette's state, series and phase values.
 | The four state fills, their inks and `--color-feedback-danger-hover` take the values above, and so do their derived `-soft` and `-line` steps. The dark fills were a teal, an amber, a red and a sky blue, and the light ones a dark teal, a brown, a dark red and a dark blue. | Nothing, for a stylesheet that reads the tokens. |
 | Nine neutral and accent steps move by one 8-bit step or one thousandth of alpha, because the fit places them jointly with the state inks drawn on them: in light, `--color-surface-hover` 0.045 to 0.044, `--color-surface-pressed` 0.089 to 0.088, `--color-surface-inset` 0.025 to 0.026, `--color-text-tertiary` `#5e5e67` to `#5f5e67`, `--color-data-other` `#87878f` to `#88888f`, `--color-brand-accent-soft` 0.109 to 0.108 and `--color-brand-accent-active` `#5b2dda` to `#5b2eda`; in dark and on the marketing root, `--color-focus` `#805bff` to `#7e5bff`; in dark, `--color-border-control` `#797983` to `#787983`. | Nothing. |
 | In `@crewlethq/tokens/test/palette`, `DATA` is the four series, and `adjacent data hues stay separable` holds a neighbouring pair to dE 15 under normal vision as well as 9 under every vision (the new exports `DATA_ADJACENT_DE` and `DATA_ADJACENT_NORMAL_DE`). `ACTION_STEPS` gains `a hovered destructive action is a visible step away from its label`. | Rename a subject a suite filters on. |
+
+### Breaking change in 0.5.0: the phase family is removed
+
+| What changed | What to change |
+| --- | --- |
+| `--color-phase-onboarding`, `--color-phase-execute` and `--color-phase-review`, with their `-ink` and `-soft` steps, are removed from every palette, and so is `color.phase` (and `themes.*.color.phase`) in the typed export. | A phase is drawn in the neutral colour with its word: `--color-text-secondary` or `--color-text-tertiary` for the word, on a neutral ground, never a hue of its own. Inside a figure, map each phase to a series, `--color-data-1` to `-4`, and name it in the legend. |
+| In `@crewlethq/tokens/test/palette`, the `PHASE` export is removed, `INK_STEPS` and `FILL_STEPS` no longer carry the phase steps, and the rules `phase hues stay separable` and `a phase hue clears the status family` are removed. | Drop a suite's filter on those rule names. |
 
 ## The palette suite
 
@@ -369,7 +363,7 @@ It is seeded (mulberry32 at seed 1). The search spends a fixed budget of palette
 
 The fit is a development tool. It is not published, and no test runs it or reads what it prints: the gate is the palette suite, and the fit is how a value that passes it is chosen.
 
-The phase family is the one part of the rule table the fit leaves alone (`UNFITTED` in the script), and it is removed later in this release. The fit is held to every other rule, and the shipped palette is exactly what it prints. Held to the phase rules as well, at the hues the family had, the search bends the states round hues that are not staying and ends at a palette that moves the design more (dE 42.74 against 35.12 in dark, 78.55 against 77.89 in light), so the phase hues moved out of the fitted states' way instead, each the least that clears the whole suite ([the phase family, for now](#the-phase-family-for-now)).
+The fit is held to every rule in the table, and the shipped palette is exactly what it prints: run over this release's stylesheets, it reports that every value it fits ships its fitted value, in both palettes.
 
 ## Fonts
 

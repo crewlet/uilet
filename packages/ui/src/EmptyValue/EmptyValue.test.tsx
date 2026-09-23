@@ -60,9 +60,8 @@ test('a status dot is hidden, because the word beside it is the status', () => {
   expect(dot.className).not.toContain('is-pulsing');
 });
 
-test('a phase dot takes the phase family, not a status hue', () => {
-  render(<StatusDot tone="phase-execute" pulse />);
+test('a dot for work still under way pulses, in its state and nothing else', () => {
+  render(<StatusDot tone="info" pulse />);
   const dot = document.querySelector('.crewlet-status-dot')!;
-  expect(dot.className).toContain('crewlet-status-dot--phase-execute');
-  expect(dot.className).toContain('is-pulsing');
+  expect(dot.className).toBe('crewlet-status-dot crewlet-status-dot--info is-pulsing');
 });

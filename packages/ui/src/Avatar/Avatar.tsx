@@ -18,8 +18,8 @@ export type AvatarShape = 'circle' | 'square';
  *
  * `neutral` is the default, and the change from 0.2.0. A hash of a name
  * carries no information: rename the seat and its colour changes, which is the
- * proof it never meant anything. Worse, the eight families a hash spreads over
- * are the same eight the product spends on states and phases, so one amber
+ * proof it never meant anything. Worse, the eight families a hash spread over
+ * were the same eight the product spent on states and phases, so one amber
  * meant "the execute phase", "needs a person" and "the Analyst" at once.
  * Identity is the monogram and the name beside it.
  *

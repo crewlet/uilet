@@ -47,14 +47,6 @@
       "info": { "value": "#3081de", "comment": "Working. The approved #2f7fe0, moved dE 0.67 inside its hue family: it sat dE 7.4 from the accent under deuteranopia, under the 8 no hue may come within." },
       "infoInk": { "value": "#1a5eb3", "comment": "The approved #1d63b8, darkened dE 1.56: it measured 4.21:1 on a pressed row on the frame, 4.45:1 on its own soft tint and 4.22:1 on a code chip inside its own callout." }
     },
-    "phase": {
-      "onboarding": { "value": "#980099", "comment": "#86198f sat dE 3.1 from the info fill under deuteranopia, so an onboarding tag read as an info badge." },
-      "onboardingInk": { "value": "#8e0090" },
-      "execute": { "value": "#480fbe", "comment": "#5b37da darkened dE 8.14 along lightness: once the accent became #6b45f0 it sat dE 5.2 from it under every vision, against the 10 and 8 no hue may come within. The first step dark enough for that, dE 6, took it within 10 of onboarding under protanopia; this is the least move that holds both." },
-      "executeInk": { "value": "#552dd1" },
-      "review": { "value": "#018348", "comment": "#078543 moved dE 1.02 because staying green forced it: the fitted danger fill, #c01d32, sat dE 5.0 from it under deuteranopia, under the 6 a phase keeps from a state. The phase family is removed later in this series, so it moves out of the fitted states' way rather than binding them." },
-      "reviewInk": { "value": "#006121" }
-    },
     "data": {
       "1": { "value": "#3879ce", "comment": "The approved blue, #2a78d6, moved dE 1.58 inside its hue family: it sat dE 6.5 from the accent under deuteranopia, under the 8 no hue may come within." },
       "2": { "value": "#e45f28", "comment": "The approved orange, #eb6834, darkened dE 2.39: it measured 2.73:1 as a mark on the frame, and sat dE 7.7 from the fitted aqua under protanopia, under the 9 neighbouring series keep." },

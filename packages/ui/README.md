@@ -235,6 +235,26 @@ palette suite holds on every row ground, as `DataTable`'s rails already did.
 | a stylesheet relying on `.crewlet-meter__track` being `--color-surface-inset` | it is `--color-surface-elevated` |
 | a stylesheet overriding the `List` danger rail or glyph with `--color-feedback-danger` | `--color-feedback-danger-ink`, or nothing |
 
+**A phase is a category, and a category has no colour.** `@crewlethq/tokens`
+removes the phase family (`--color-phase-onboarding`, `-execute`, `-review`
+and their `-ink` and `-soft` steps), so `Tag` and `StatusDot` lose the three
+phase tones they painted with it, and the `PhaseTone` type is gone. A phase is
+drawn as the neutral tag, or the neutral dot, with its word: beside a state
+badge the state is the one coloured thing on the row, and the phase is the
+word that says where the work is. The phase tag's uppercase, tracked-open
+register goes with its hue, so every tag is set as the word it says. Inside a
+figure a phase is a series: map each phase to an index of `DATA_COLORS` once,
+in your own code, and pass `dataColor(index)` as its colour in every figure
+and in the `Legend` that names it.
+
+| Was | Is |
+|---|---|
+| `<Tag variant="phase-onboarding">`, `"phase-execute"` or `"phase-review"` | `<Tag>` (neutral) with the phase's word |
+| `<StatusDot tone="phase-onboarding">`, `"phase-execute"` or `"phase-review"` | `<StatusDot>` (neutral) beside the phase's word |
+| the `PhaseTone` type, or `TagVariant` read as including it | `Tone`; `TagVariant` is `Tone` |
+| a stylesheet targeting `.crewlet-tag--phase-*` or `.crewlet-status-dot--phase-*` | `.crewlet-tag--neutral` or the bare `.crewlet-status-dot`; neither class is drawn any more |
+| `var(--color-phase-*)` in a stylesheet of your own | the neutral text steps for a word, or the series you map the phase to inside a figure |
+
 ## Breaking changes in 0.3.0
 
 Every one of these is a change a consumer can see. None of them needs an edit

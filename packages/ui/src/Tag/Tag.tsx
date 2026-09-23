@@ -2,15 +2,18 @@ import type { HTMLAttributes, MouseEvent, ReactNode } from 'react';
 import { CloseGlyph } from '@crewlethq/icons/glyphs';
 import { StatusDot } from '../StatusDot/index.js';
 import { cx } from '../utils/cx.js';
-import type { PhaseTone, Tone } from '../utils/tone.js';
+import type { Tone } from '../utils/tone.js';
 
 /**
- * Which vocabulary a tag speaks: a state, or a phase. Both, because the same
- * pill draws "failed" on the Model screen and "execute" on the turn beside it,
- * and a second component for the second vocabulary would be one recipe spelled
- * twice.
+ * What a tag's colour says: a state, the accent, or nothing at all.
+ *
+ * The same pill draws "failed" on the Model screen and "execute" on the turn
+ * beside it, and only the first is a state. The second is a CATEGORY, a phase,
+ * and a category is the neutral tag with its word: a hue per phase was a second
+ * colour vocabulary that said nothing the word did not, spent from the hues the
+ * states are held apart in.
  */
-export type TagVariant = Tone | PhaseTone;
+export type TagVariant = Tone;
 
 /**
  * How much room the pill takes. The engine draws ONE badge and spends its
@@ -34,7 +37,7 @@ export type InteractiveTagSize = Exclude<TagSize, 'xs'>;
 export type TagAppearance = 'soft' | 'outline';
 
 interface TagLook {
-  /** The state or the phase this tag names. Neutral by default. */
+  /** The state this tag names. Neutral by default, which is what a category such as a phase takes. */
   variant?: TagVariant | undefined;
   /** A tinted fill, or a boundary over the surface beneath. */
   appearance?: TagAppearance | undefined;
@@ -104,7 +107,7 @@ type TagAll = TagLook &
   };
 
 /**
- * A small pill that names a state, a phase or a value.
+ * A small pill that names a state, a category or a value.
  *
  * COLOUR IS NEVER THE ONLY CARRIER. Every tag renders its label, in every
  * variant, so a reader who cannot separate the warning hue from the danger one

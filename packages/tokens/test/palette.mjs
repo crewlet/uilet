@@ -150,9 +150,6 @@ export const INK_STEPS = [
   '--color-feedback-warning-ink',
   '--color-feedback-danger-ink',
   '--color-feedback-info-ink',
-  '--color-phase-onboarding-ink',
-  '--color-phase-execute-ink',
-  '--color-phase-review-ink',
 ];
 
 /** A hue used as a MARK, or as a fill behind a label. */
@@ -162,9 +159,6 @@ export const FILL_STEPS = [
   '--color-feedback-warning',
   '--color-feedback-danger',
   '--color-feedback-info',
-  '--color-phase-onboarding',
-  '--color-phase-execute',
-  '--color-phase-review',
 ];
 
 export const STATUS = [
@@ -173,7 +167,6 @@ export const STATUS = [
   '--color-feedback-danger',
   '--color-feedback-info',
 ];
-export const PHASE = ['--color-phase-onboarding', '--color-phase-execute', '--color-phase-review'];
 
 /**
  * The chart series, in the order a figure assigns them: blue, orange, aqua and
@@ -522,28 +515,34 @@ export const SHADOW_STEPS = [
   '--shadow-glow',
 ];
 
-// The cross-family floors are lower than the within-family ones because the
-// hue budget is finite (twelve hues in a space deuteranopia collapses to
-// blue, yellow and lightness) and because across families colour is never the
-// only signal: a Tag always renders its label, a status Callout always renders
-// its glyph, and the accent appears only as position. They are floors, not
+// Two cross-family rules, and both protect a RESERVED meaning from being
+// claimed by another family: nothing may read as the accent, which is what to
+// act on and what is chosen, and no series may read as the danger red. Their
+// dichromat floors are lower than the within-family ones because the hue
+// budget is finite (nine hues, the accent, four states and four series, in a
+// space deuteranopia collapses to blue, yellow and lightness) and because
+// across families colour is never the only signal: a Tag always renders its
+// label, a status Callout always renders its glyph, a series is named by its
+// legend, and the accent appears only as position. They are floors, not
 // targets, and every measured value is reported so a later edit shows its cost.
-const CROSS_NORMAL = 8;
-const CROSS_DICHROMAT = 6;
+//
+// No floor here is about a CATEGORY. A phase, a unit or a model is drawn in the
+// neutral colour with its word, and inside a figure as the series its legend
+// names, so no category family spends this budget. The phase family did: three
+// hues held apart from each other, from the four states and from the accent,
+// which is three hues fewer for everything that carries a meaning.
 const ACCENT_NORMAL = 10;
 const ACCENT_DICHROMAT = 8;
 // The reserved red keeps the highest normal floor of any cross-family pair,
-// because it is the one hue that means the same thing everywhere in a product.
-// Its dichromat floor is the ACCENT's, not the phase family's: both rules
-// protect a RESERVED meaning from being claimed by something else, where the
-// phase rule only asks two ordinary families to stay apart. Red, orange and
-// green fall onto one axis for a dichromat, so this is the floor the chart's
-// orange and aqua spend the most on: the approved aqua sat dE 0.73 from the
-// approved red under protanopia, and the approved orange 9.08 from it under
-// normal vision in dark and 7.45 in light. The fit moves the red further
-// than the orange or the aqua, darker, because it had to darken for its white
-// label anyway, and in dark it turns toward crimson as well, which spares the
-// orange more than it costs the red.
+// because it is the one hue that means the same thing everywhere in a product,
+// and the accent's dichromat floor. Red, orange and green fall onto one axis
+// for a dichromat, so this is the floor the chart's orange and aqua spend the
+// most on: the approved aqua sat dE 0.73 from the approved red under
+// protanopia, and the approved orange 9.08 from it under normal vision in dark
+// and 7.45 in light. The fit moves the red further than the orange or the
+// aqua, darker, because it had to darken for its white label anyway, and in
+// dark it turns toward crimson as well, which spares the orange more than it
+// costs the red.
 const DANGER_NORMAL = 14;
 const DANGER_DICHROMAT = 8;
 
@@ -677,7 +676,7 @@ function checkState(state, values, profile, push) {
   // An ink on its OWN soft tint: a badge, a callout, a diff line. The tint is
   // recomputed from the fill here rather than read from the token, so a
   // hand-edited tint that no longer belongs to its fill fails.
-  for (const fill of [...STATUS, ...PHASE]) {
+  for (const fill of STATUS) {
     const { r, g, b } = colour(fill);
     const tints = opaque.map(([name, rgb]) => [
       `${fill} soft on ${name}`,
@@ -911,7 +910,6 @@ function checkState(state, values, profile, push) {
   }
 
   for (const [set, floor, normal, adjacent, rule] of [
-    [PHASE, 10, 10, false, 'phase hues stay separable'],
     [STATUS, 10, 10, false, 'status hues stay separable'],
     [DATA, DATA_ADJACENT_DE, DATA_ADJACENT_NORMAL_DE, true, 'adjacent data hues stay separable'],
   ]) {
@@ -928,18 +926,6 @@ function checkState(state, values, profile, push) {
       const measured = separation(colour(a), colour(b));
       const ok = Math.min(...measured) >= floor && measured[0] >= normal;
       say(rule, ok, `${a} vs ${b}`, Math.min(...measured), `dE ${describe(measured)} >= ${floors}`);
-    }
-  }
-
-  // A phase tag must not be read as a status badge beside it. Measured under
-  // every vision: the first draft of this palette put an onboarding tag dE 3.1
-  // from an info badge for a deuteranopic reader and passed under normal
-  // vision alone.
-  for (const phase of PHASE) {
-    for (const status of STATUS) {
-      const measured = separation(colour(phase), colour(status));
-      const ok = measured[0] >= CROSS_NORMAL && Math.min(measured[1], measured[2]) >= CROSS_DICHROMAT;
-      say('a phase hue clears the status family', ok, `${phase} vs ${status}`, Math.min(...measured), `dE ${describe(measured)} >= ${CROSS_NORMAL} normal, ${CROSS_DICHROMAT} dichromat`);
     }
   }
 
@@ -962,7 +948,7 @@ function checkState(state, values, profile, push) {
   // light, above every state and series), but a ranking is still not what
   // protects the selection: nothing else may READ as it, and that is a
   // distance, measured here under every vision.
-  for (const name of [...PHASE, ...STATUS, ...DATA]) {
+  for (const name of [...STATUS, ...DATA]) {
     const measured = separation(colour(name), colour('--color-brand-accent'));
     const ok = measured[0] >= ACCENT_NORMAL && Math.min(measured[1], measured[2]) >= ACCENT_DICHROMAT;
     say('no hue is read as the accent', ok, name, Math.min(...measured), `dE ${describe(measured)} >= ${ACCENT_NORMAL} normal, ${ACCENT_DICHROMAT} dichromat`);

@@ -15,17 +15,7 @@ const meta: Meta<typeof Tag> = {
   argTypes: {
     variant: {
       control: 'inline-radio',
-      options: [
-        'neutral',
-        'info',
-        'success',
-        'warning',
-        'danger',
-        'brand',
-        'phase-onboarding',
-        'phase-execute',
-        'phase-review',
-      ],
+      options: ['neutral', 'info', 'success', 'warning', 'danger', 'brand'],
     },
     appearance: { control: 'inline-radio', options: ['soft', 'outline'] },
     size: { control: 'inline-radio', options: ['xs', 'sm', 'md'] },
@@ -47,37 +37,47 @@ export const Basic: Story = {};
 /**
  * Every tone renders its own word. A reader who cannot separate the warning
  * hue from the danger one still reads two different states, which is the rule
- * the whole palette is built to keep.
+ * the whole palette is built to keep. The four states say what a piece of
+ * work is doing: info is working, warning needs a person, danger is stopped,
+ * success is done.
  */
 export const Tones: Story = {
   render: () => (
     <Row>
       <Tag>Neutral</Tag>
-      <Tag variant="info">Info</Tag>
-      <Tag variant="success">Working</Tag>
+      <Tag variant="info">Working</Tag>
       <Tag variant="warning">Needs a person</Tag>
-      <Tag variant="danger">Broken</Tag>
+      <Tag variant="danger">Stopped</Tag>
+      <Tag variant="success">Done</Tag>
       <Tag variant="brand">Selected</Tag>
     </Row>
   ),
 };
 
 /**
- * The engine's whole phase vocabulary, and nothing else takes these hues.
+ * A phase is a CATEGORY, and a category is the neutral tag with its word.
  *
- * A PHASE IS SET IN THE MICRO-LABEL REGISTER, uppercase and tracked open,
- * where a state is set in the badge's own. Phase is the one categorical
- * identity the product spends colour on outside a chart, and the second
- * register is what separates it at a glance from the state badge beside it on
- * the same row, for a reader who cannot separate the two hues.
+ * Beside the state it is in, a phase reads as what it is: the state is the
+ * one coloured thing on the row, and the phase is the word that says where
+ * the work is. A hue per phase was a second colour vocabulary that said
+ * nothing the word did not, spent from the hues the states are held apart in.
  */
 export const Phases: Story = {
   render: () => (
-    <Row>
-      <Tag variant="phase-onboarding">onboarding</Tag>
-      <Tag variant="phase-execute">execute</Tag>
-      <Tag variant="phase-review">review</Tag>
-    </Row>
+    <div style={{ display: 'grid', gap: 12 }}>
+      <Row>
+        <Tag>Onboarding</Tag>
+        <Tag variant="success">Done</Tag>
+      </Row>
+      <Row>
+        <Tag>Execute</Tag>
+        <Tag variant="info">Working</Tag>
+      </Row>
+      <Row>
+        <Tag>Review</Tag>
+        <Tag variant="warning">Needs a person</Tag>
+      </Row>
+    </div>
   ),
 };
 
@@ -141,11 +141,11 @@ export const LabelAndTarget: Story = {
     const [on, setOn] = useState(false);
     return (
       <Row>
-        <Tag variant="success">Working</Tag>
-        <Tag variant="success" pressed={on} onClick={() => setOn((value) => !value)}>
+        <Tag variant="info">Working</Tag>
+        <Tag variant="info" pressed={on} onClick={() => setOn((value) => !value)}>
           Working
         </Tag>
-        <Tag variant="success" onRemove={() => {}} removeAriaLabel="Remove working">
+        <Tag variant="info" onRemove={() => {}} removeAriaLabel="Remove working">
           Working
         </Tag>
       </Row>
@@ -156,7 +156,7 @@ export const LabelAndTarget: Story = {
 export const WithMarkAndCount: Story = {
   render: () => (
     <Row>
-      <Tag variant="success" dot>
+      <Tag variant="info" dot>
         Working
       </Tag>
       <Tag variant="warning" dot leadingIcon={<WarningGlyph />}>

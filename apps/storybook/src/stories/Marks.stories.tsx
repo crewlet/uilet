@@ -56,6 +56,9 @@ export const Counts: Story = {
  * engine spends there. A 6px mark is read the way a glyph is, so it has to
  * clear 3:1, and the decoration step measures 2.33:1 on a light page. The
  * pulse is the engine's 1.8s breath, which is 0.55 flashes a second.
+ *
+ * Only a state has a hue. A phase is a category, and a category's dot is the
+ * quiet one, with the word beside it saying which phase.
  */
 export const StatusDots: Story = {
   render: () => (
@@ -64,13 +67,10 @@ export const StatusDots: Story = {
         [
           ['neutral', 'Quiet'],
           ['info', 'Working'],
-          ['success', 'Done'],
           ['warning', 'Needs a person'],
-          ['danger', 'Broken'],
+          ['danger', 'Stopped'],
+          ['success', 'Done'],
           ['brand', 'Selected'],
-          ['phase-onboarding', 'Onboarding'],
-          ['phase-execute', 'Execute'],
-          ['phase-review', 'Review'],
         ] as const
       ).map(([tone, word]) => (
         <div key={tone} style={row}>

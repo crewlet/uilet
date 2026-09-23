@@ -11,9 +11,15 @@
  *
  * A DATA HUE IS ONLY EVER USED INSIDE A FIGURE THAT NAMES IT: a legend for two
  * series or more, the label for one. It says "this series", and a mark nothing
- * names says nothing at all. State, phase and the accent have their own
- * families for exactly that reason: a chart colour never means done or
- * stopped, and never means "you are here".
+ * names says nothing at all. State and the accent have their own families for
+ * exactly that reason: a chart colour never means done or stopped, and never
+ * means "you are here".
+ *
+ * A CATEGORY IS A SERIES HERE, and only here. A phase, a unit or a model has no
+ * hue of its own anywhere else in the kit, so a figure that draws one per phase
+ * takes its series from this ramp in an order the APPLICATION declares, phase
+ * to index, and keeps that order across every figure it draws them in; the
+ * legend is what says which is which.
  */
 export const DATA_COLORS = [
   'var(--color-data-1)',

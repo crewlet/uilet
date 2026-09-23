@@ -1,5 +1,5 @@
 /*
- * The tag: a small pill naming a state, a phase or a value.
+ * The tag: a small pill naming a state, a category or a value.
  *
  * THREE VARIABLES CARRY EVERY VARIANT. A tag is its tone's `soft` tint under
  * its tone's `ink`, with the `line` step as the boundary it grows when it can
@@ -186,43 +186,6 @@
   --crewlet-tag-fill: var(--color-brand-accent-soft);
   --crewlet-tag-ink: var(--color-brand-accent-ink);
   --crewlet-tag-line: var(--color-brand-accent-soft-strong);
-}
-
-/*
- * The phase family has a soft step and no line step, because nothing else in
- * the system needed a phase boundary. The ink is the boundary here: it is the
- * same hue at a strength a 1px rule can be seen at, and a border is not text,
- * so the rule that an ink step is never a BACKGROUND is untouched.
- *
- * A PHASE IS SET IN THE MICRO-LABEL REGISTER, uppercase and tracked open,
- * where a state is set in the badge's own. Phase is the one categorical
- * identity the product spends colour on outside a chart, and it is what a
- * reader follows across four screens; the second register is what separates it
- * at a glance from the state badge sitting beside it on the same row.
- */
-.crewlet-tag--phase-onboarding,
-.crewlet-tag--phase-execute,
-.crewlet-tag--phase-review {
-  letter-spacing: var(--font-letter-spacing-wide);
-  text-transform: uppercase;
-}
-
-.crewlet-tag--phase-onboarding {
-  --crewlet-tag-fill: var(--color-phase-onboarding-soft);
-  --crewlet-tag-ink: var(--color-phase-onboarding-ink);
-  --crewlet-tag-line: var(--color-phase-onboarding-ink);
-}
-
-.crewlet-tag--phase-execute {
-  --crewlet-tag-fill: var(--color-phase-execute-soft);
-  --crewlet-tag-ink: var(--color-phase-execute-ink);
-  --crewlet-tag-line: var(--color-phase-execute-ink);
-}
-
-.crewlet-tag--phase-review {
-  --crewlet-tag-fill: var(--color-phase-review-soft);
-  --crewlet-tag-ink: var(--color-phase-review-ink);
-  --crewlet-tag-line: var(--color-phase-review-ink);
 }
 
 /* ── appearance ────────────────────────────────────────────────────────── */

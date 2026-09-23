@@ -32,9 +32,6 @@ const TONES: TagVariant[] = [
   'warning',
   'danger',
   'brand',
-  'phase-onboarding',
-  'phase-execute',
-  'phase-review',
 ];
 
 describe('Tag', () => {
@@ -254,9 +251,6 @@ describe('Tag colour', () => {
       'brand',
       'danger',
       'info',
-      'phase-execute',
-      'phase-onboarding',
-      'phase-review',
       'success',
       'warning',
     ]);
@@ -306,16 +300,21 @@ describe('Tag colour', () => {
     expect(/height:\s*max\(\s*var\(--crewlet-tag-height\)\s*,\s*var\(--crewlet-tag-floor\)\s*\)/.test(css)).toBe(true);
   });
 
-  test('a phase tag is set in the micro-label register, a state tag in the badge one', () => {
-    // Phase is the one categorical identity outside a chart, and the second
-    // register is what separates it at a glance from the state badge on the
-    // same row. Colour alone could not: a reader who cannot separate the hues
-    // still reads two differently SET words.
-    const phase = /\.crewlet-tag--phase-onboarding,\s*\.crewlet-tag--phase-execute,\s*\.crewlet-tag--phase-review\s*\{([^}]*)\}/.exec(css);
-    expect(phase?.[1]).toContain('text-transform: uppercase');
-    expect(phase?.[1]).toContain(token('font-letter-spacing-wide'));
-    const base = /\.crewlet-tag\s*\{([^}]*)\}/.exec(css);
-    expect(base?.[1]).not.toContain('text-transform');
+  test('a phase is the neutral tag and its word: no variant spends a hue or a register on it', () => {
+    /*
+     * A phase is a CATEGORY. It used to take a hue of its own and a second
+     * register, uppercase and tracked open, so it could be told from the state
+     * badge beside it; a category is the neutral tag now, and what tells it
+     * from a state is that a state is coloured and a word is not. So the type
+     * refuses a phase variant (the `@ts-expect-error` is the assertion, run by
+     * `npm run typecheck`), and no rule in the stylesheet sets any tag in a
+     * register of its own: every tag is set as the word it says.
+     */
+    // @ts-expect-error a phase is a category: it takes the neutral tag, not a hue
+    const phase: TagVariant = 'phase-execute';
+    expect(phase).toBe('phase-execute');
+    expect(css).not.toMatch(/crewlet-tag--phase-/);
+    expect(css).not.toMatch(/text-transform|font-letter-spacing-wide/);
   });
 
   test('a pressed tag does not repaint its ground', () => {

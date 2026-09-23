@@ -732,24 +732,41 @@ const runColumns = {
 /*
  * A row that navigates is a LINK: the leading cell carries an anchor whose
  * hit area covers the row, so the row opens in a new tab, its address can be
- * copied, and it is read as the link it is. One tab stop per row.
+ * copied, and it is read as the link it is. One tab stop per row, plus one
+ * for each control inside it: the phase chip filters the table to its phase
+ * rather than opening the row. A phase is a category, so its chip is the
+ * neutral tag and its word.
  */
 export const RowLink: Story = {
   name: 'States / Row link',
-  render: () => (
-    <div style={{ padding: 20, maxWidth: 900 }}>
-      <SettingsHint>Every row is an anchor. The Phase chip inside a row keeps its own press.</SettingsHint>
-      <DataTable<Run>
-        variant="compact"
-        data={runs}
-        columns={runColumns}
-        getRowKey={(row) => row.id}
-        getRowHref={(row) => `#/runs/${row.id}`}
-        paginated={false}
-        showSettings={false}
-      />
-    </div>
-  ),
+  render: function RowLinkStory() {
+    const [phase, setPhase] = useState<string | null>(null);
+    const columns = {
+      ...runColumns,
+      phase: {
+        ...runColumns.phase,
+        render: (row: Run) => (
+          <Tag pressed={phase === row.phase} onClick={() => setPhase((was) => (was === row.phase ? null : row.phase))}>
+            {row.phase}
+          </Tag>
+        ),
+      },
+    };
+    return (
+      <div style={{ padding: 20, maxWidth: 900 }}>
+        <SettingsHint>Every row is an anchor. The Phase chip inside a row keeps its own press: it filters to that phase.</SettingsHint>
+        <DataTable<Run>
+          variant="compact"
+          data={phase === null ? runs : runs.filter((row) => row.phase === phase)}
+          columns={columns}
+          getRowKey={(row) => row.id}
+          getRowHref={(row) => `#/runs/${row.id}`}
+          paginated={false}
+          showSettings={false}
+        />
+      </div>
+    );
+  },
 };
 
 /*

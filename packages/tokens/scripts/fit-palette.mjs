@@ -56,14 +56,10 @@
  * cheaper total bought by pulling a passing value off the design, a frame
  * lightened to spare a chart series, is not a least move of the series.
  *
- * WHAT IT FITS AGAINST: every rule of the suite but the phase family's
- * (UNFITTED). That family is measured and never fitted, and it is removed
- * later in this release: held to it at the hues the family had, the search
- * bends the states round hues that are not staying and ends at a palette the
- * design moves further for (dE 42.74 against 35.12 in dark, 78.55 against
- * 77.89 in light). So the phase hues moved out of the fitted states' way
- * instead, each the least that clears the whole suite, which still holds them
- * to every rule of their own.
+ * WHAT IT FITS AGAINST: every rule of the suite, over the states that paint
+ * the palette being fitted (PALETTES) and the structural rules over the theme
+ * file. No rule is left out: a rule the fit did not hold would be a floor the
+ * shipped palette clears by the accident of where the search stopped.
  *
  * THE SEARCH is seeded, mulberry32 at SEED. From the anchors it first SEATS
  * THE KIT'S STEPS, each role anchored at another (a press, a hover of an
@@ -277,9 +273,6 @@ const TIES = {
   '--color-surface-glass': '--color-surface-subtle', // glass is the card at 0.90
   '--color-border-hover': '--color-border-strong', // the hover border keeps the strong step's value
 };
-
-/** The checks the fit does not fit against: every one about a phase hue. See WHAT IT FITS AGAINST. */
-const UNFITTED = /--color-phase-/;
 
 /** The hues that are a family rather than a value: the four states and the chart series. */
 const HUE_FAMILIES = [/^--color-feedback-(info|warning|danger|success)(-ink)?$/, /^--color-data-\d+$/];
@@ -556,8 +549,8 @@ function fitPalette(name, sources, intent) {
 
   let evaluations = 0;
   const cache = new Map();
-  const fitted = (check) => (palette.states.includes(check.state) || check.state === 'the token files') && !UNFITTED.test(check.subject);
-  const failing = (values) => runPalette(sheets(values)).failures.filter(fitted);
+  const ours = (check) => palette.states.includes(check.state) || check.state === 'the token files';
+  const failing = (values) => runPalette(sheets(values)).failures.filter(ours);
   function measure(params) {
     const values = render(params);
     const key = [...values.values()].join('|');
@@ -616,9 +609,9 @@ function fitPalette(name, sources, intent) {
    * measurement taken on it. The one turn in that grammar is a label on its
    * fill (LABEL_ON_FILL), which is about the FILL: the label is white on every
    * fill, and it is the fill that is dark enough or is not. A check that names
-   * no role it is about (a phase hue against the accent, where only the accent
-   * is fitted) falls back to the roles that move its measurement, the four
-   * rungs excepted.
+   * no role it is about (the white label on the scrim, where neither the label
+   * nor the scrim is fitted) falls back to the roles that move its
+   * measurement, the four rungs excepted.
    */
   const GROUNDS = new Set(OPAQUE_SURFACES);
   const LABELLED = new Set(LABEL_ON_FILL.map(([label, fill]) => `${label} on ${fill}`));
@@ -662,7 +655,7 @@ function fitPalette(name, sources, intent) {
 
   const measured = (values) => {
     evaluations += 1;
-    return runPalette(sheets(values)).checks.filter((check) => palette.states.includes(check.state) && fitted(check));
+    return runPalette(sheets(values)).checks.filter((check) => palette.states.includes(check.state));
   };
   const atStart = new Map(measured(start.values).map((check) => [keyOf(check), check]));
   const SENSE = { L: 0.02, C: 0.02, h: 5, a: 0.02 };

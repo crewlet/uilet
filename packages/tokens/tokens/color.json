@@ -52,14 +52,6 @@
       "info": { "value": "#4c9dff", "comment": "WORKING: work under way." },
       "infoInk": { "value": "#86beff" }
     },
-    "phase": {
-      "onboarding": { "value": "#fa7cde", "comment": "The agent phases: onboarding, execute, review. Three, and the only categorical identity outside a chart. Every pair stays dE 10 apart under normal, protan and deutan vision, and clears the status family and the accent under all three." },
-      "onboardingInk": { "value": "#ff82f1" },
-      "execute": { "value": "#a665da", "comment": "The dark palette's value, moved with it: tokens/themes/dark.json says why." },
-      "executeInk": { "value": "#d697ff" },
-      "review": { "value": "#01975e" },
-      "reviewInk": { "value": "#46c872" }
-    },
     "data": {
       "1": { "value": "#458adc", "comment": "Four series in a fixed order, blue, orange, aqua and yellow, plus a neutral residual, and legal ONLY inside a figure that names them: a legend for two series or more, the label for one. Neighbours are what a legend reader distinguishes, so that is what is measured: dE 9 apart under every vision and 15 under normal vision. Series 1 is deliberately NOT the accent: a series painted in the selection colour claims to be the selection. The values are the dark palette's." },
       "2": { "value": "#e4631f" },

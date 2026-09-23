@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
-import { StatusDot } from './index.js';
+import { StatusDot, type StatusDotProps } from './index.js';
 
 afterEach(cleanup);
 
@@ -61,12 +61,23 @@ describe('StatusDot', () => {
       'danger',
       'info',
       'neutral',
-      'phase-execute',
-      'phase-onboarding',
-      'phase-review',
       'success',
       'warning',
     ]);
+  });
+
+  test('a phase is not a tone: the type refuses one', () => {
+    /*
+     * The `@ts-expect-error` is the ASSERTION, and `npm run typecheck` is where
+     * it runs: the build fails if the error ever stops happening. A phase is a
+     * category, and a category is the neutral dot beside its word; the three
+     * phase hues this dot used to take are gone from the palette, so a tone
+     * that named one would draw a class no stylesheet paints.
+     */
+    // @ts-expect-error a phase takes the neutral dot and its word, not a hue
+    const phase: StatusDotProps['tone'] = 'phase-execute';
+    const category: StatusDotProps['tone'] = 'neutral';
+    expect([phase, category]).toHaveLength(2);
   });
 
   test('every fill clears 3:1 as a mark, on every surface, in both palettes', () => {

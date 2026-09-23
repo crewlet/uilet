@@ -39,18 +39,6 @@
   background: var(--color-brand-accent);
 }
 
-.crewlet-status-dot--phase-onboarding {
-  background: var(--color-phase-onboarding);
-}
-
-.crewlet-status-dot--phase-execute {
-  background: var(--color-phase-execute);
-}
-
-.crewlet-status-dot--phase-review {
-  background: var(--color-phase-review);
-}
-
 /*
  * Still happening. Three things are deliberate: the pulse never goes to
  * nothing, because a mark that disappears reads as a fault rather than as work

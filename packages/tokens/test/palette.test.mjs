@@ -37,7 +37,7 @@ import {
   VEIL_ALPHA,
   withAlpha,
 } from './palette.mjs';
-import { themes as typed } from '../dist/index.js';
+import { color, themes as typed } from '../dist/index.js';
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../dist/css/${name}`, import.meta.url)), 'utf8');
 // tokens.css first, themes.css second: they share the :root selector, neither
@@ -395,18 +395,30 @@ describe('the state and chart hues', () => {
     }
   });
 
+  test('a phase is a category, so no palette spends a hue on one', () => {
+    // A phase, like a unit or a model, is drawn in the neutral colour with its
+    // word, and inside a figure as the series its legend names. A category
+    // family would spend hues the rule table holds apart for meanings, and a
+    // family the table did not name would ship with nothing measuring it at
+    // all, so the removed one stays removed in every state and in the typed
+    // export, where an application reads a colour by name.
+    for (const [state, values] of Object.entries(paletteStates(sources))) {
+      assert.deepEqual([...values.keys()].filter((name) => name.startsWith('--color-phase-')), [], state);
+    }
+    assert.equal(Object.hasOwn(color, 'phase'), false, 'color');
+    for (const palette of ['dark', 'light']) assert.equal(Object.hasOwn(typed[palette].color, 'phase'), false, palette);
+  });
+
   test("the design's stopped red is caught by its label, by deuteranopia and by the chart hues", () => {
     // The approved #f26d6d carries a destructive action's white label at
     // 2.92:1, and a deuteranopic reader finds it dE 5.7 from done (5.59
     // against the design's own green, before either moved). It also sits
     // under the floors the reserved red keeps from the orange, the aqua
-    // (protanopia 2.0) and the yellow, and under protanopia on the review
-    // phase's green.
+    // (protanopia 2.0) and the yellow.
     const failing = checksAfter('dark', '--color-feedback-danger', '#f26d6d').map(summary);
     assert.deepEqual(failing, [
       `${LABEL_RULE}: --color-text-on-accent on --color-feedback-danger: 2.92:1 (worst on --color-feedback-danger on --color-surface-frame)`,
       `${STATUS_RULE}: --color-feedback-success vs --color-feedback-danger: dE n30.4/p15.2/d5.7 >= 10`,
-      'a phase hue clears the status family: --color-phase-review vs --color-feedback-danger: dE n29.9/p2.2/d14.3 >= 8 normal, 6 dichromat',
       `${DANGER_RULE}: --color-data-2: dE n7.8/p8.3/d7.3 >= 14 normal, 8 dichromat`,
       `${DANGER_RULE}: --color-data-3: dE n28.7/p2.0/d14.0 >= 14 normal, 8 dichromat`,
       `${DANGER_RULE}: --color-data-4: dE n13.6/p8.9/d7.0 >= 14 normal, 8 dichromat`,

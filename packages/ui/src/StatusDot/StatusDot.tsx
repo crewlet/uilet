@@ -1,9 +1,12 @@
 import { cx } from '../utils/cx.js';
-import type { PhaseTone, Tone } from '../utils/tone.js';
+import type { Tone } from '../utils/tone.js';
 
 export interface StatusDotProps {
-  /** Which state, or which phase. Neutral says "nothing in particular". */
-  tone?: Tone | PhaseTone | undefined;
+  /**
+   * Which state. Neutral says "nothing in particular", and it is also the dot
+   * beside a category's word, such as a phase's: a category has no hue.
+   */
+  tone?: Tone | undefined;
   /**
    * A slow pulse, for a state that is still happening. Held still under a
    * reduced-motion preference, where the mark still reads as its tone.
