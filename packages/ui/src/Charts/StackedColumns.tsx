@@ -1,7 +1,8 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 import { ChartTooltip } from './ChartTooltip.js';
 import { dataColor } from './dataColor.js';
+import { Legend } from './Legend.js';
 import { useChartHover } from './useChartHover.js';
 
 export interface StackedColumnsSeries {
@@ -19,6 +20,18 @@ export interface StackedColumnsBucket {
   values: Readonly<Record<string, number>>;
 }
 
+/**
+ * Where the chart draws its legend.
+ *
+ * `below`, the default, under the dates. `head` at the END of the chart's head
+ * row, top right, where the design's Spend card draws it beside the card's
+ * title: pass that title as `head` and the two share one line. `none` draws no
+ * legend, for a screen that names the series somewhere the chart cannot reach;
+ * the chart is then that screen's to caption, and a stacked figure without its
+ * legend is a picture of some numbers.
+ */
+export type StackedColumnsLegend = 'below' | 'head' | 'none';
+
 export interface StackedColumnsProps {
   /**
    * Every series the figure CAN draw, in stacking order: the first stands on
@@ -35,6 +48,13 @@ export interface StackedColumnsProps {
   hidden?: readonly string[];
   /** What the chart is, read in place of the picture: "tokens per day by phase". */
   label: string;
+  /** Where the legend goes: see the type. Defaults to `below`. */
+  legend?: StackedColumnsLegend;
+  /**
+   * The chart's head: a title and what qualifies it, drawn at the START of a
+   * row over the plot, with the legend at its end when `legend` is `head`.
+   */
+  head?: ReactNode;
   /** How tall the plot is, as a CSS length. */
   height?: string;
   /** How a value reads out, on the scale and in the tooltip. Defaults to a compact number. */
@@ -98,6 +118,13 @@ const COMPACT = new Intl.NumberFormat(undefined, { notation: 'compact', maximumF
  * the total (see `useChartHover`); the tooltip is the live region, so a screen
  * reader hears the same.
  *
+ * IT DRAWS ITS OWN LEGEND, from the same list and in the same colours, with
+ * the hidden series left out. A legend written beside the chart by its caller
+ * was a second copy of `series` that had to be kept in step by hand, and the
+ * figure is never meant to be drawn without one; `legend` says only WHERE,
+ * under the dates or at the end of the chart's head, top right, as the
+ * design's Spend card has it.
+ *
  * All of it is HTML positioned by style properties, so it holds a crisp 2px
  * gap and a true 4px corner at any width, which a stretched SVG cannot, and no
  * style element is ever drawn.
@@ -107,6 +134,8 @@ export function StackedColumns({
   buckets,
   hidden = [],
   label,
+  legend = 'below',
+  head,
   height = '11.5rem',
   format = (value) => COMPACT.format(value),
   formatTime = (at) => new Date(at).toLocaleDateString(),
@@ -150,8 +179,23 @@ export function StackedColumns({
           .map((one) => `${one.name} ${format(one.total)}`)
           .join(', ')}.`;
 
+  const key =
+    legend === 'none' ? null : (
+      <Legend
+        className={cx('crewlet-stacked-columns__legend', `crewlet-stacked-columns__legend--${legend}`)}
+        items={shown.map((one) => ({ id: one.id, label: one.name, color: one.color }))}
+      />
+    );
+  const hasHead = head !== undefined && head !== null && head !== false;
+
   return (
     <figure className={cx('crewlet-stacked-columns', className)}>
+      {hasHead || legend === 'head' ? (
+        <div className="crewlet-stacked-columns__head">
+          {hasHead ? <div className="crewlet-stacked-columns__heading">{head}</div> : null}
+          {legend === 'head' ? key : null}
+        </div>
+      ) : null}
       <div className="crewlet-stacked-columns__axis" aria-hidden style={{ height }}>
         {ticks.map((tick) => (
           <span key={tick} className="crewlet-stacked-columns__tick">
@@ -230,6 +274,7 @@ export function StackedColumns({
         )}
         <span>{last == null || last === first ? '' : formatTime(last)}</span>
       </figcaption>
+      {legend === 'below' ? key : null}
     </figure>
   );
 }

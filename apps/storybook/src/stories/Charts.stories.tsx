@@ -339,12 +339,9 @@ function DailyByPhase() {
         onValueChange={setOnly}
         options={[{ value: 'all', label: 'All' }, ...phases.map((phase) => ({ value: phase.id, label: phase.name }))]}
       />
+      {/* The chart draws its own legend, under the dates by default, from the
+          same series in the same colours, and leaves out what is hidden. */}
       <StackedColumns label="Daily tokens by phase" series={phases} buckets={daily} hidden={hidden} formatTime={shortDate} />
-      <Legend
-        items={phases
-          .map((phase, index) => ({ id: phase.id, label: phase.name, color: dataColor(index) }))
-          .filter((item) => !hidden.includes(item.id))}
-      />
     </Frame>
   );
 }
@@ -354,6 +351,46 @@ export const Columns: Story = {
   render: () => (
     <div style={{ padding: 20 }}>
       <DailyByPhase />
+    </div>
+  ),
+};
+
+/**
+ * THE LEGEND IN THE CARD'S HEAD, as the design's Spend screen draws this
+ * chart: `legend="head"` puts it at the end of the chart's head row, top
+ * right, and `head` is the title and the sentence at that row's start.
+ */
+export const ColumnsLegendInHead: Story = {
+  name: 'StackedColumns / Legend in the head',
+  render: () => (
+    <div style={{ padding: 20 }}>
+      <section
+        style={{
+          maxWidth: 780,
+          padding: 'var(--spacing-4) var(--spacing-5)',
+          background: 'var(--color-surface-subtle)',
+          border: '1px solid var(--color-border-default)',
+          borderRadius: 'var(--radius-lg)',
+        }}
+      >
+        <StackedColumns
+          label="Daily tokens by phase"
+          legend="head"
+          head={
+            <>
+              <h3 style={{ margin: 0, font: 'var(--font-weight-semibold) var(--font-size-sm)/1.3 var(--font-family-sans)' }}>
+                Daily tokens by phase
+              </h3>
+              <p style={{ margin: 'var(--spacing-1) 0 0', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
+                Execute does the work; review, workers and auxiliary calls are the overhead
+              </p>
+            </>
+          }
+          series={phases}
+          buckets={daily}
+          formatTime={shortDate}
+        />
+      </section>
     </div>
   ),
 };

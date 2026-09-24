@@ -289,8 +289,14 @@ Content-Security-Policy. `ChartTooltip` and
 `StackedColumns` takes `series` (`{ id, name, color? }`, stacked first at the
 baseline) and `buckets` (`{ t, values }`, `values` keyed by series id). A
 series' colour is its place in `series`, and a filter is `hidden` (ids), never
-a shorter list, so hiding one series never repaints the others; a `Legend`
-beside it passes each `color` or lists the same series in the same order. The
+a shorter list, so hiding one series never repaints the others. It draws its
+OWN legend, from `series` in the same colours with the hidden ones left out,
+because a stacked figure is never drawn without one and a `Legend` written
+beside it by hand was a second copy of the series to keep in step. `legend`
+says where: `below` (the default) under the dates, `head` at the end of the
+chart's head row, top right, as the design's Spend card draws it, beside the
+title and sentence passed as `head`; or `none`, for a screen that names the
+series itself. The
 scale is round (`niceScale`: about four steps of 1, 2, 2.5 or 5), the parts of a
 column stand 2px apart with the gap taken out of the parts, and only the value
 end is rounded, at `--radius-xs`.

@@ -8,7 +8,7 @@
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
   ActivityStrip,
   BarList,
@@ -514,6 +514,65 @@ function reading(container: HTMLElement): string[] | null {
     (line) => [...line.querySelectorAll('span, p')].map((part) => part.textContent).filter(Boolean).join(' ') || line.textContent!,
   );
 }
+
+describe('the stacked columns legend', () => {
+  const names = (list: Element) => [...list.querySelectorAll('.crewlet-legend__label')].map((one) => one.textContent);
+  const swatches = (list: Element) =>
+    [...list.querySelectorAll<HTMLElement>('.crewlet-legend__swatch')].map((one) =>
+      one.style.getPropertyValue('--crewlet-legend-swatch-color'),
+    );
+
+  test('is drawn by the chart itself, under the dates by default, in the series order and colours', () => {
+    const { container } = render(columns());
+    const figure = container.querySelector('figure')!;
+    const legend = figure.querySelector('.crewlet-legend')!;
+    expect(legend.classList.contains('crewlet-stacked-columns__legend--below')).toBe(true);
+    // After the dates, and the last thing in the figure.
+    expect(legend.previousElementSibling!.tagName).toBe('FIGCAPTION');
+    expect(figure.lastElementChild).toBe(legend);
+    expect(names(legend)).toEqual(['Execute', 'Review', 'Workers', 'Auxiliary']);
+    expect(swatches(legend)).toEqual([dataColor(0), dataColor(1), dataColor(2), dataColor(3)]);
+    // No head row is drawn when nothing asked for one.
+    expect(figure.querySelector('.crewlet-stacked-columns__head')).toBeNull();
+  });
+
+  test('a hidden series leaves the legend, and the rest keep their colours', () => {
+    const { container } = render(columns({ hidden: ['review'] }));
+    const legend = container.querySelector('.crewlet-legend')!;
+    expect(names(legend)).toEqual(['Execute', 'Workers', 'Auxiliary']);
+    expect(swatches(legend)).toEqual([dataColor(0), dataColor(2), dataColor(3)]);
+  });
+
+  test('in the head, it stands at the end of the row the chart\'s title starts', () => {
+    const { container } = render(
+      columns({ legend: 'head', head: <h2 className="title">Daily tokens by phase</h2> }),
+    );
+    const figure = container.querySelector('figure')!;
+    const head = figure.firstElementChild!;
+    expect(head.className).toBe('crewlet-stacked-columns__head');
+    expect(head.firstElementChild!.className).toBe('crewlet-stacked-columns__heading');
+    expect(head.firstElementChild!.textContent).toBe('Daily tokens by phase');
+    expect(head.lastElementChild!.classList.contains('crewlet-stacked-columns__legend--head')).toBe(true);
+    // One legend, not one in the head and another under the dates.
+    expect(figure.querySelectorAll('.crewlet-legend')).toHaveLength(1);
+    // Flushed to the END of the row, which is what puts it top right.
+    uninstall = installThemed('dark', 'Charts/Charts.css');
+    expect(getComputedStyle(head.lastElementChild!).justifyContent).toBe('flex-end');
+    expect(getComputedStyle(head.lastElementChild!).marginInlineStart).toBe('auto');
+    expect(getComputedStyle(head).gridColumn).toBe('1 / -1');
+    uninstall();
+    uninstall = null;
+  });
+
+  test('the head alone, with no title, still puts the legend top right; none draws no legend', () => {
+    const { container, rerender } = render(columns({ legend: 'head' }));
+    const head = container.querySelector('.crewlet-stacked-columns__head')!;
+    expect([...head.children].map((one) => one.classList.contains('crewlet-legend'))).toEqual([true]);
+    rerender(columns({ legend: 'none' }));
+    expect(container.querySelector('.crewlet-legend')).toBeNull();
+    expect(container.querySelector('.crewlet-stacked-columns__head')).toBeNull();
+  });
+});
 
 test('pointing at a column reads every part of it and the total', () => {
   const { container } = render(columns());

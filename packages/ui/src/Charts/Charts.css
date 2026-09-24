@@ -428,6 +428,38 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * THE HEAD AND THE LEGEND span both of the figure's columns, the axis's and
+ * the plot's. The head is one row: what the chart is at its start, and the
+ * legend at its END, top right, where the design's Spend card draws it; the
+ * legend is flushed to the end of that row and wraps from there. Below, the
+ * legend starts under the axis, a step clear of the dates.
+ */
+.crewlet-stacked-columns__head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-3);
+  min-width: 0;
+}
+
+.crewlet-stacked-columns__heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crewlet-stacked-columns__legend--head {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  margin-inline-start: auto;
+}
+
+.crewlet-stacked-columns__legend--below {
+  grid-column: 1 / -1;
+  margin-top: var(--spacing-2);
+}
+
 /* The middle label stands on the column it names (a style property). */
 .crewlet-stacked-columns__middle {
   position: absolute;
