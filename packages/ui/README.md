@@ -716,7 +716,12 @@ secondary ink) rather than of its direction, which its sign already says:
 "+12% vs previous 7 days". Neither is drawn while the tile is loading. The
 second line reserves exactly one line of its own leading, where a reserve in
 `em` was a line shorter than the one a sub draws, and a value too long for its
-tile now ends in an ellipsis rather than being cut mid-digit.
+tile now ends in an ellipsis rather than being cut mid-digit. `subTone` is new:
+the second line in a state's ink (`success`, `warning`, `danger` or `info`, the
+`-ink` step), for a line that reports a state rather than a fact, as the
+design's "Oldest waiting 2h 10m" is a person kept waiting and takes the warning
+ink. It paints the line and never the value, a `delta` in the line keeps its
+own polarity's ink, and the default, `neutral`, is the quiet ink as before.
 
 **A `Sparkline` is the neutral, and `current` marks now in the accent.** The
 line's default colour is `DATA_COLOR_OTHER`, the residual neutral, at the

@@ -78,6 +78,8 @@ export const TheHomeRow: Story = {
           </ButtonLink>
         }
         sub="Oldest waiting 2h 10m"
+        // A person kept waiting is a state, so the line takes the warning ink.
+        subTone="warning"
       />
       <StatCard
         label="Tasks in progress"

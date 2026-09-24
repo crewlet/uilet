@@ -47,6 +47,14 @@ export interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
   /** The second line: "vs last week · 2 blocked". Its line is reserved either way. */
   sub?: ReactNode;
   /**
+   * The STATE the second line reports, when it reports one: "Oldest waiting
+   * 2h 10m" is a person being kept waiting, so it is `warning`. Paints the
+   * line in that tone's ink, the step measured as text on every rung. The
+   * same rule as `tone`: most second lines are a fact, not a state, and stay
+   * in the quiet ink. A `delta` keeps the ink of its own polarity.
+   */
+  subTone?: StatCardTone;
+  /**
    * A change against an earlier reading, drawn first on the second line in
    * the ink of its polarity, with `sub` after it: "+12% vs previous 7 days".
    */
@@ -104,6 +112,7 @@ export const StatCard = ({
   value,
   unit,
   sub,
+  subTone = 'neutral',
   delta,
   trend,
   icon,
@@ -148,7 +157,7 @@ export const StatCard = ({
       </div>
       {/* Rendered whether or not there is one: a row where one tile has a second
           line and the rest do not would otherwise sit at two different heights. */}
-      <div className="crewlet-statcard__sub">
+      <div className={cx('crewlet-statcard__sub', subTone !== 'neutral' && `crewlet-statcard__sub--${subTone}`)}>
         {change ? (
           <span className={cx('crewlet-statcard__delta', `crewlet-statcard__delta--${change.polarity}`)}>
             {change.value}

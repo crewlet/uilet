@@ -187,6 +187,17 @@
 .crewlet-statcard__delta--bad { color: var(--color-feedback-danger-ink); }
 .crewlet-statcard__delta--neutral { color: var(--color-text-secondary); }
 
+/*
+ * A SECOND LINE THAT REPORTS A STATE takes that state's ink ("Oldest waiting
+ * 2h 10m" is a person kept waiting: warning), the step measured as text on
+ * every rung, as the value's tone does. The delta inside the line keeps its
+ * own ink, which is a class on the delta and outranks this one on the line.
+ */
+.crewlet-statcard__sub--success { color: var(--color-feedback-success-ink); }
+.crewlet-statcard__sub--warning { color: var(--color-feedback-warning-ink); }
+.crewlet-statcard__sub--danger { color: var(--color-feedback-danger-ink); }
+.crewlet-statcard__sub--info { color: var(--color-feedback-info-ink); }
+
 .crewlet-statcard--success .crewlet-statcard__value { color: var(--color-feedback-success-ink); }
 .crewlet-statcard--warning .crewlet-statcard__value { color: var(--color-feedback-warning-ink); }
 .crewlet-statcard--danger .crewlet-statcard__value { color: var(--color-feedback-danger-ink); }

@@ -124,6 +124,47 @@ describe('StatCard', () => {
     }
   });
 
+  test('a second line that reports a state takes its ink, and a delta in it keeps its own', () => {
+    /*
+     * "Oldest waiting 2h 10m" is a person kept waiting, which is the warning
+     * state; the approved Home row draws that line in the warning ink. A line
+     * that is a fact keeps the quiet ink, which is the default.
+     */
+    const { container } = render(
+      <>
+        <StatCard label="Waiting on your decision" value="3" sub="Oldest waiting 2h 10m" subTone="warning" />
+        <StatCard label="Stopped" value="1" sub="budget exhausted" subTone="danger" delta={{ value: '−2', polarity: 'good' }} />
+        <StatCard label="Tasks in progress" value="18" sub="vs last week" />
+      </>,
+    );
+    const subs = [...container.querySelectorAll('.crewlet-statcard__sub')];
+    expect(subs.map((sub) => sub.className)).toEqual([
+      'crewlet-statcard__sub crewlet-statcard__sub--warning',
+      'crewlet-statcard__sub crewlet-statcard__sub--danger',
+      'crewlet-statcard__sub',
+    ]);
+    // The line's tone paints the line and never the value.
+    expect(container.querySelector('.crewlet-statcard')!.className).toBe('crewlet-statcard crewlet-statcard--neutral');
+
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installThemed(theme, 'StatCard/StatCard.css');
+      const palette = themes[theme].color;
+      const ink = (element: Element) => channels(getComputedStyle(element).color);
+      expect(ink(subs[0]!), `${theme}: warning`).toEqual(parseHex(palette.feedback.warningInk));
+      expect(ink(subs[1]!), `${theme}: danger`).toEqual(parseHex(palette.feedback.dangerInk));
+      expect(ink(subs[2]!), `${theme}: a fact`).toEqual(parseHex(palette.text.tertiary));
+      // The value stays in the primary ink: the line's state is the line's.
+      expect(ink(container.querySelector('.crewlet-statcard__value')!), `${theme}: value`).toEqual(
+        parseHex(palette.text.primary),
+      );
+      // A delta inside a toned line keeps the ink of its own polarity.
+      expect(ink(subs[1]!.querySelector('.crewlet-statcard__delta')!), `${theme}: delta`).toEqual(
+        parseHex(palette.feedback.successInk),
+      );
+      uninstall();
+    }
+  });
+
   test('the trend stands at the end of the value line, and waits with the value while it loads', () => {
     const { container, rerender } = render(
       <StatCard label="Tasks in progress" value="18" trend={<Sparkline values={[3, 5, 4, 8]} current />} />,
