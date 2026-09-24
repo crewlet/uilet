@@ -381,8 +381,19 @@ interface RailRowContent {
    * vertical line as every nav glyph above it.
    */
   icon?: ReactNode;
-  /** A value at the end of the row: a count, a tag, a time. */
+  /**
+   * A value at the end of the row: a count, a tag, a time. It stands beside
+   * the words while both fit on the rail, and drops under them when they do
+   * not, so it never takes the room the words need.
+   */
   trailing?: ReactNode;
+  /**
+   * A second line under the row's words: "3 nodes · config epoch 42" under
+   * "Engine healthy". Given one, the row is the design's STATUS BLOCK, drawn
+   * on the card rung inside a hairline, its words in the primary ink over this
+   * line in the quiet one.
+   */
+  detail?: ReactNode;
   className?: string | undefined;
   /** What the row says. */
   children?: ReactNode;
@@ -431,7 +442,17 @@ export type AppShellRailRowProps = StaticRailRowProps | ActionRailRowProps;
  * toolbar's inset. This is still the one to reach for, because it is also the
  * thing that decides whether the row is a control at all.
  */
-export function AppShellRailRow({ icon, trailing, onClick, label, className, children }: AppShellRailRowProps) {
+export function AppShellRailRow({ icon, trailing, detail, onClick, label, className, children }: AppShellRailRowProps) {
+  const block = detail !== undefined && detail !== null && detail !== false && detail !== '';
+  /*
+   * THE WORDS ARE NEVER CUT. A status line says what a node is doing, and the
+   * row used to give its words whatever the mark and the trailing value left
+   * and end them in an ellipsis, so a pill beside "engine connected" left
+   * "engine conn…": the one part of the row that was the point. The words and
+   * the value now share a wrapping line, so the value stands beside the words
+   * while both fit and drops under them when they do not, and words longer
+   * than the rail wrap rather than end.
+   */
   const inside = (
     <>
       {icon ? (
@@ -439,15 +460,37 @@ export function AppShellRailRow({ icon, trailing, onClick, label, className, chi
           {icon}
         </span>
       ) : null}
-      <span className="crewlet-app-shell__rail-row-label">{children}</span>
-      {trailing ? <span className="crewlet-app-shell__rail-row-trailing">{trailing}</span> : null}
+      {/*
+       * The spaces between the parts are REAL, so a control named by its
+       * content reads "Engine healthy 3 nodes" rather than "Engine healthy3
+       * nodes". A flex container draws no text node of whitespace alone
+       * between its items, so they cost the layout nothing.
+       */}
+      <span className="crewlet-app-shell__rail-row-body">
+        <span className="crewlet-app-shell__rail-row-text">
+          <span className="crewlet-app-shell__rail-row-label">{children}</span>
+          {block ? (
+            <>
+              {' '}
+              <span className="crewlet-app-shell__rail-row-detail">{detail}</span>
+            </>
+          ) : null}
+        </span>
+        {trailing ? (
+          <>
+            {' '}
+            <span className="crewlet-app-shell__rail-row-trailing">{trailing}</span>
+          </>
+        ) : null}
+      </span>
     </>
   );
-  if (onClick === undefined) return <div className={cx('crewlet-app-shell__rail-row', className)}>{inside}</div>;
+  const shape = cx('crewlet-app-shell__rail-row', block && 'crewlet-app-shell__rail-row--block', className);
+  if (onClick === undefined) return <div className={shape}>{inside}</div>;
   return (
     <button
       type="button"
-      className={cx('crewlet-app-shell__rail-row', 'crewlet-app-shell__rail-row--action', className)}
+      className={cx(shape, 'crewlet-app-shell__rail-row--action')}
       aria-label={label}
       onClick={onClick}
     >

@@ -875,6 +875,88 @@ describe("the rail's foot", () => {
     expect(document.querySelector('[data-mark="dot"]')?.closest('[aria-hidden="true"]')).not.toBeNull();
   });
 
+  test("a foot row's words are never cut: they wrap, and the trailing value drops under them", () => {
+    /*
+     * The status line used to take what the pill beside it left and end in an
+     * ellipsis, so "engine connected" beside "2 turns in flight" read "engine
+     * conn…". The words and the value share one WRAPPING line now, so the
+     * value moves under the words rather than the words being cut.
+     */
+    const label = body(css, '.crewlet-app-shell__rail-row-label');
+    expect(label).not.toMatch(/text-overflow|white-space:\s*nowrap|overflow:\s*hidden/);
+    expect(label).toContain('overflow-wrap: anywhere');
+    const line = body(css, '.crewlet-app-shell__rail-row-body');
+    expect(line).toContain('flex-wrap: wrap');
+    // The words take their own width up to the whole line, which is what
+    // breaks the line before the value exactly when the two do not fit, and
+    // grow into the rest of it, which is what puts a value that fits at the end.
+    const words = body(css, '.crewlet-app-shell__rail-row-text');
+    expect(words).toContain('flex: 1 0 auto');
+    expect(words).toContain('max-width: 100%');
+    // No margin pushing the value to the far side: wrapped, it starts under the words.
+    expect(body(css, '.crewlet-app-shell__rail-row-trailing')).not.toContain('margin-left: auto');
+    // And a control dropped into the foot keeps the same promise.
+    const dropped = body(css, '.crewlet-app-shell__rail-foot > .crewlet-btn > .crewlet-btn__label');
+    expect(dropped).not.toMatch(/text-overflow|white-space:\s*nowrap/);
+    expect(dropped).toContain('white-space: normal');
+  });
+
+  test('a row with a detail is the status block: its words over the detail, then the value', () => {
+    render(
+      <AppShell
+        sidebar={
+          <AppShell.Rail
+            footer={
+              <>
+                <AppShell.RailRow
+                  icon={<span data-mark="dot" />}
+                  detail="3 nodes · config epoch 42"
+                  trailing={<span data-value>2 turns in flight</span>}
+                  onClick={() => {}}
+                >
+                  Engine healthy
+                </AppShell.RailRow>
+                <AppShell.RailRow label="Settings" onClick={() => {}}>
+                  Settings
+                </AppShell.RailRow>
+              </>
+            }
+          >
+            <p>rows</p>
+          </AppShell.Rail>
+        }
+      >
+        <p>screen</p>
+      </AppShell>,
+    );
+    const [status, settings] = [...document.querySelectorAll('.crewlet-app-shell__rail-row')];
+    expect(status!.classList.contains('crewlet-app-shell__rail-row--block')).toBe(true);
+    // Only the row that was given one: a row without a detail keeps the row shape.
+    expect(settings!.classList.contains('crewlet-app-shell__rail-row--block')).toBe(false);
+    expect(settings!.querySelector('.crewlet-app-shell__rail-row-detail')).toBeNull();
+    // Title over detail, in one column, and the value after that column.
+    const text = status!.querySelector('.crewlet-app-shell__rail-row-text')!;
+    expect([...text.children].map((child) => child.className)).toEqual([
+      'crewlet-app-shell__rail-row-label',
+      'crewlet-app-shell__rail-row-detail',
+    ]);
+    expect(text.nextElementSibling?.className).toBe('crewlet-app-shell__rail-row-trailing');
+    // With no label of its own, the control is named by everything it says.
+    expect(screen.getByRole('button', { name: 'Engine healthy 3 nodes · config epoch 42 2 turns in flight' })).toBe(status);
+    // The block's shape is the design's: the card rung inside the plain hairline,
+    // the words in the primary ink over a detail in the quiet one.
+    const block = body(css, '.crewlet-app-shell__rail-row--block');
+    expect(block).toContain('background: var(--color-surface-subtle)');
+    expect(block).toContain('border-color: var(--color-border-default)');
+    expect(body(css, '.crewlet-app-shell__rail-row--block .crewlet-app-shell__rail-row-label')).toContain(
+      'color: var(--color-text-primary)',
+    );
+    // The detail's OWN rule, not the one it shares with the words for wrapping.
+    expect(/(?<!,)\n\.crewlet-app-shell__rail-row-detail\s*\{([^}]*)\}/.exec(css)?.[1]).toContain(
+      'color: var(--color-text-tertiary)',
+    );
+  });
+
   test('a foot row that presses has no accessibility violations', async () => {
     const view = render(
       <AppShell

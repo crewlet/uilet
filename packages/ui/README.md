@@ -407,8 +407,25 @@ words: "Inbox, 5 unread", "Triage, 12 open, 2 unread". `lead` is a short key
 drawn as a chip in the glyph's place, a project's `ENG` on the raised rung in
 mono, and read as the start of the name: "ENG Core platform".
 
+The rail's foot never cuts what a row says. An `AppShell.RailRow`'s words took
+whatever its mark and its `trailing` value left them and ended in an ellipsis,
+so a pill beside the engine's status left "engine conn…". The words and the
+value now share one wrapping line: the value stands at the end of the words'
+line while both fit, and drops to the start of a line under them when they do
+not, and words wider than the rail wrap. A `Button` dropped into the foot wraps
+its label the same way. `detail` is new: a second line under the words, which
+makes the row the design's status block ("Engine healthy" over "3 nodes ·
+config epoch 42"), on `--color-surface-subtle` inside the
+`--color-border-default` hairline at `--radius-lg`, the words in the primary
+ink at the medium weight and the detail at `--font-size-2xs` in the tertiary
+ink. The row keeps its inline pad, so its mark stays on the nav glyphs' line.
+A row with no `detail` is drawn as before. The row's content is now wrapped in
+`.crewlet-app-shell__rail-row-body`, holding `.crewlet-app-shell__rail-row-text`
+(the label and the detail) and the trailing value.
+
 | Was | Is |
 |---|---|
+| a stylesheet relying on `.crewlet-app-shell__rail-row-label` truncating, or on `.crewlet-app-shell__rail-row-trailing` being a direct child of the row pushed to its end by `margin-left: auto` | the label wraps; the trailing value is inside `.crewlet-app-shell__rail-row-body` and moves under the words when both do not fit |
 | a stylesheet targeting `.crewlet-app-shell__column` | `.crewlet-app-shell__sheet` |
 | a stylesheet relying on `.crewlet-app-shell` being `--color-surface-background` | it is `--color-surface-frame`; the sheet is `--color-surface-background` |
 | a stylesheet relying on the rail's `border-right` | the sheet's hairline is the edge; the rail draws one only as the narrow drawer |

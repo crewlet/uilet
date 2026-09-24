@@ -75,9 +75,20 @@ function Rail({ context = 'Acme Holdings' }: { context?: string }) {
       header={<BrandLockup name="Crewlet" mark={<CrewletIcon />} context={context} href="#/" />}
       footer={
         <>
+          {/* The engine puts its theme and density switchers here too. They
+              are the preview's own toolbar in this story, because a switcher
+              in the canvas and a switcher in the toolbar write the same
+              attribute on the same root and would undo each other. */}
+          <AppShell.RailRow icon={<SettingsGlyph size="sm" />} label="Settings" onClick={() => {}}>
+            Settings
+          </AppShell.RailRow>
+          {/* The design's status block: the state over what it is made of,
+              and the value beside the words when both fit on the rail and
+              under them when, as here, they do not. The words are never cut. */}
           <AppShell.RailRow
             icon={<StatusDot tone="success" />}
-            label="What this node is running, and since when"
+            detail="3 nodes · config epoch 42"
+            label="Engine healthy, 2 turns in flight: open the engine panel"
             trailing={
               <Tag variant="info" size="xs">
                 2 turns in flight
@@ -85,14 +96,7 @@ function Rail({ context = 'Acme Holdings' }: { context?: string }) {
             }
             onClick={() => {}}
           >
-            engine connected
-          </AppShell.RailRow>
-          {/* The engine puts its theme and density switchers here too. They
-              are the preview's own toolbar in this story, because a switcher
-              in the canvas and a switcher in the toolbar write the same
-              attribute on the same root and would undo each other. */}
-          <AppShell.RailRow icon={<SettingsGlyph size="sm" />} label="Settings" onClick={() => {}}>
-            Settings
+            Engine healthy
           </AppShell.RailRow>
         </>
       }
