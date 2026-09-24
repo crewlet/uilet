@@ -281,7 +281,7 @@ export const RAIL_GROUND = '--color-surface-frame';
 
 /**
  * The row the reader is on, as [fill, hairline]: raised, with the plain
- * border drawn round it INSIDE the row, and the rail's own ink.
+ * border drawn round it INSIDE the row, and the primary ink.
  *
  * It is found the way a card is found. Its fill is allowed to be near-flat on
  * the frame, RAIL_CURRENT_LIFT, because in light raised is only dE 1.84 off
@@ -311,13 +311,13 @@ export const RAIL_ROWS = [
  * What the rail paints: the ink, the fill it is drawn on (null for the row's
  * own ground), which rows carry it, and the floor it clears.
  *
- * The resting glyph is deliberately not in this list. It is the decoration
- * step, it is `aria-hidden` beside its own label, and it has a band rather
- * than a floor; it gets a rule of its own below. On a hovered row and on the
- * reader's own it takes the row's colour, so there it IS the label's entry.
+ * The glyph has no entry of its own: it is drawn in the row's colour on
+ * every row, at rest as much as pointed or current, so each label entry below
+ * is the glyph's too. A resting row is the secondary step, as the approved
+ * design draws it, and a hovered or current one lifts to the primary.
  */
 export const RAIL_PAINTS = [
-  ["a row's label", '--color-text-secondary', null, ['a row'], 4.5],
+  ["a row's label and glyph", '--color-text-secondary', null, ['a row'], 4.5],
   ['a hovered row, label and glyph', '--color-text-primary', null, ['a hovered row'], 4.5],
   ['the current row, label, glyph and count', '--color-text-primary', null, ['the row the reader is on'], 4.5],
   ['a group label and its action, a count, a foot row', '--color-text-tertiary', null, ['a row', 'a hovered row'], 4.5],
@@ -676,9 +676,14 @@ function checkState(state, values, profile, push) {
     // It exists for a hairline glyph and a disabled affordance. The assertion
     // is that it stays BELOW the fact floor: a step that quietly crept up to
     // 4.5 would invite itself into a table cell, which is the whole failure
-    // the separate name prevents.
-    const ratio = contrast(colour('--color-text-muted'), flatten(values.get('--color-surface-subtle'), ground));
-    say('text-muted is decoration', ratio > 2.8 && ratio < 4.5, '--color-text-muted', ratio, `2.8 < ${ratio.toFixed(2)}:1 < 4.5 on the panel`);
+    // the separate name prevents. And that it stays ABOVE the band's floor on
+    // the three grounds a glyph beside its word is drawn on: the frame (the
+    // rail and the drawer), the sheet and a card. Raised is not one of them:
+    // it is a chip's or a well's fill, and what a chip carries is its label.
+    for (const [name, surface] of opaque.filter(([rung]) => rung !== '--color-surface-elevated')) {
+      const ratio = contrast(colour('--color-text-muted'), surface);
+      say('text-muted is decoration', ratio > 2.8 && ratio < 4.5, '--color-text-muted', ratio, `2.8 < ${ratio.toFixed(2)}:1 < 4.5 on ${name}`);
+    }
   }
 
   for (const name of INK_STEPS) {
@@ -886,21 +891,6 @@ function checkState(state, values, profile, push) {
         );
       }
     }
-    // The resting glyph has a band rather than a floor, for the same reason
-    // --color-text-muted does anywhere: it is decoration, aria-hidden beside
-    // the word that carries the meaning, and a step that crept up to the fact
-    // floor would invite itself into a row that means something. What it must
-    // not do is vanish, so the band is asserted from both ends on the rail's
-    // own ground, which is the only one it is ever drawn on.
-    const glyph = contrast(colour('--color-text-muted'), rail);
-    say(
-      "the rail's resting glyph stays decoration",
-      glyph > 2.8 && glyph < 4.5,
-      '--color-text-muted',
-      glyph,
-      `2.8 < ${glyph.toFixed(2)}:1 < 4.5 on the rail`,
-    );
-
     // THE ROW THE READER IS ON, found as a card is. See RAIL_CURRENT_ROW.
     const [fill, line] = RAIL_CURRENT_ROW;
     const current = rows.get('the row the reader is on');

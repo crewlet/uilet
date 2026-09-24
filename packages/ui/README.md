@@ -218,7 +218,7 @@ ring every component draws follows the accent too.
 accent ink. With the accent spent on the primary action that would read as a
 second primary on every screen, so the current row now stands on
 `--color-surface-elevated` with a `--color-border-default` hairline drawn
-round it inside the row, and keeps the rail's full ink. The hairline is an
+round it inside the row, in the primary ink. The hairline is an
 OUTLINE rather than an inset shadow, so it survives forced-colors mode, which
 drops shadows and backgrounds; a focused current row draws the focus ring in
 its place. A `NavItem`'s `badge` (it was `badgeTone="attention"`, see the
@@ -227,6 +227,16 @@ fill with the on-accent label rather than the warning tint and ink: a count of w
 to act, which is what the accent means, and warning is kept for state. The
 indent guide beside a nested run steps up to `--color-border-strong` on the
 reader's path rather than taking the accent.
+
+**A resting rail row is the secondary ink again.** 0.4 drew every row at
+`--color-text-primary` and its glyph on the decoration step. A row at rest now
+takes `--color-text-secondary`, as the approved design draws it, and a hovered
+row and the current one lift to `--color-text-primary`, so the step between
+them says which row is which before the fill does. The glyph has no colour of
+its own any more: it is drawn in the row's ink on every row, where it used to
+be `--color-text-muted` until the row was hovered or current. Nothing in the
+API changes; a stylesheet of your own that set `.crewlet-nav-item__icon svg`'s
+colour to match the old ramp can drop the rule.
 
 | Was | Is |
 |---|---|

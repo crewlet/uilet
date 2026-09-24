@@ -17,7 +17,7 @@
       "primary": { "value": "#17171a" },
       "secondary": { "value": "#46464e" },
       "tertiary": { "value": "#5f5e67", "comment": "The approved #696972, darkened dE 3.79 along lightness: it measured 3.84:1 on a pressed row on the frame, 4.23:1 on a hovered row in the rail, 4.37:1 on glass over the inverse ground, and 2.94:1 as a sort arrow drawn at 0.7." },
-      "muted": { "value": "#8d8d94", "comment": "Decoration only. The approved #a3a3aa measured 2.51:1 on the card and 2.14:1 on the rail, under even the decoration band; darkened dE 7.20, the least that brings both inside it." },
+      "muted": { "value": "#8d8d94", "comment": "Decoration only. The approved #a3a3aa measured 2.51:1 on the card and 2.14:1 on the frame, under even the decoration band; darkened dE 7.20, the least that brings both inside it." },
       "onAccent": { "value": "#ffffff" },
       "inverse": { "value": "#fafafa" }
     },

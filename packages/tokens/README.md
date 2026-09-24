@@ -149,7 +149,7 @@ Where an approved value failed one of the suite's floors on the new rungs, the f
 | `--color-surface-background` dark | `#0f0f12` | `#101013` | 0.46 | dE 2.91 off the frame, under 3 |
 | `--color-text-tertiary` dark | `#8c8c96` | `#9797a1` | 3.63 | 3.92:1 on a pressed row inside a raised surface |
 | `--color-text-tertiary` light | `#696972` | `#5f5e67` | 3.79 | 3.84:1 on a pressed row on the frame |
-| `--color-text-muted` light | `#a3a3aa` | `#8d8d94` | 7.20 | 2.51:1 on the card and 2.14:1 on the rail, under the decoration band |
+| `--color-text-muted` light | `#a3a3aa` | `#8d8d94` | 7.20 | 2.51:1 on the card and 2.14:1 on the frame, under the decoration band |
 | `--color-border-control` dark | `#6e6e78` | `#787983` | 3.70 | 2.59:1 on a pressed row inside a raised surface |
 | `--color-border-control` light | `#8e8e96` | `#7a7a82` | 6.71 | 2.29:1 on a pressed row on the frame |
 | `--color-data-other` light | `#8e8e96` | `#88888f` | 2.03 | 2.77:1 as a mark on the frame |

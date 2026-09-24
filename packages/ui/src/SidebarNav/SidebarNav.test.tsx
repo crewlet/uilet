@@ -397,6 +397,7 @@ describe('the rail colour', () => {
   }
 
   const RESTING = '.crewlet-nav-item__row';
+  const HOVERED = '.crewlet-nav-item__row:hover';
   const CURRENT = ".crewlet-nav-item__row[aria-current='page']";
   const ATTENTION = '.crewlet-nav-item__badge';
   const LEAD = '.crewlet-nav-item__lead';
@@ -410,7 +411,9 @@ describe('the rail colour', () => {
   test('the suite reads the pairs the stylesheet actually binds', () => {
     // A reading that found nothing would pass every measurement below for any
     // stylesheet at all.
-    expect(pair(RESTING).ink).toBe(token('color-text-primary'));
+    expect(pair(RESTING).ink).toBe(token('color-text-secondary'));
+    expect(pair(HOVERED).fill).toBe(token('color-surface-hover'));
+    expect(pair(HOVERED).ink).toBe(token('color-text-primary'));
     expect(pair(CURRENT).fill).toBe(token('color-surface-elevated'));
     expect(pair(CURRENT).ink).toBe(token('color-text-primary'));
     expect(pair(ATTENTION).fill).toBe(token('color-brand-accent'));
@@ -457,6 +460,7 @@ describe('the rail colour', () => {
 
   test('every ink the rail paints clears 4.5:1 on the ground the row gives it', () => {
     const resting = pair(RESTING);
+    const hover = pair(HOVERED);
     const current = pair(CURRENT);
     const attention = pair(ATTENTION);
     const lead = pair(LEAD);
@@ -481,9 +485,10 @@ describe('the rail colour', () => {
       const [, railGround] = rows[0] as [string, Rgb];
       const [, hovered] = rows[1] as [string, Rgb];
       const [, chosen] = rows[2] as [string, Rgb];
+      // The label AND the glyph on every row: the glyph is drawn in the row's
+      // own colour, at rest as much as pointed or current.
       measure("a row's label", colour(values, resting.ink, page), railGround, 'a row');
-      measure('a hovered row', colour(values, resting.ink, page), hovered, 'a hovered row');
-      // The label AND the glyph: the glyph takes the row's own colour there.
+      measure('a hovered row', colour(values, hover.ink, page), hovered, 'a hovered row');
       measure('the current row', colour(values, current.ink, page), chosen, 'the row the reader is on');
       for (const [on, ground] of [rows[0], rows[1]] as [string, Rgb][]) {
         measure('a count, a group label and its action', colour(values, token('color-text-tertiary'), page), ground, on);
@@ -547,7 +552,7 @@ describe('the rail colour', () => {
     /*
      * The tertiary step is measured on the rail and under the hover overlay,
      * never on the raised row, so the count lifts to the row's own ink there.
-     * The badge must NOT follow it: the rail's full ink on the accent fill is
+     * The badge must NOT follow it: the primary ink on the accent fill is
      * a pair nobody measured. Asserted through the cascade, which is what
      * decides it, rather than by reading the rule.
      */
@@ -572,13 +577,14 @@ describe('the rail colour', () => {
     }
   });
 
-  test('the glyph follows the label rather than keeping a ramp of its own', () => {
+  test('the glyph is drawn in the label\'s ink rather than keeping a ramp of its own', () => {
     // A second ramp is how a row comes to paint its label and its glyph two
-    // different answers to "where am I".
-    const rest = /\.crewlet-nav-item__icon svg\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(rest).toContain('color: var(--color-text-muted)');
-    const follows = /:hover \.crewlet-nav-item__icon svg,\s*[^{]*\.crewlet-nav-item__icon svg\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(follows).toContain('color: inherit');
+    // different answers to "where am I". The glyph is Lucide's currentColor,
+    // so no rule may give it, or the box around it, a colour of its own.
+    const source = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const icon = [...source.matchAll(/([^{}]*\.crewlet-nav-item__icon[^{}]*)\{([^}]*)\}/g)];
+    expect(icon.length).toBeGreaterThan(0);
+    expect(icon.filter(([, , body]) => /(?:^|;|\s)color:/.test(body ?? '')).map(([, selector]) => selector?.trim())).toEqual([]);
   });
 
   test('a group label is a word in sentence case, not an uppercase micro-label', () => {
@@ -590,16 +596,18 @@ describe('the rail colour', () => {
     expect(label).not.toMatch(/text-transform|letter-spacing/);
   });
 
-  test('hover is the tint, because the resting row is already at full ink', () => {
+  test('a resting row is the secondary step, and a hovered or current one lifts to the primary', () => {
     /*
-     * There is no ink step above the resting one now, so a hover rule naming a
-     * colour would either be a no-op somebody has to read or a step DOWN. The
-     * tint and the glyph are what say a row is pointed at.
+     * The step between them is what tells the reader's own row, and the one
+     * under the pointer, from the rest before any fill does. At full ink every
+     * row carried the current row's own weight, and the rail read heavier than
+     * the approved design, which draws resting rows in t2.
      */
-    const hover = /\.crewlet-nav-item__row:hover \{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(hover).toContain('background: var(--color-surface-hover)');
-    expect(hover).not.toMatch(/(^|;|\s)color:/);
-    expect(pair(RESTING).ink).toBe(token('color-text-primary'));
+    expect(pair(RESTING).ink).toBe(token('color-text-secondary'));
+    expect(pair(HOVERED).ink).toBe(token('color-text-primary'));
+    expect(pair(CURRENT).ink).toBe(token('color-text-primary'));
+    // An unavailable row does not lift when pointed at: it has nowhere to go.
+    expect(pair(".crewlet-nav-item__row[aria-disabled='true']:hover").ink).toBe(token('color-text-secondary'));
   });
 
   test('every transition the rail declares is collapsed under reduced motion', () => {
@@ -640,6 +648,7 @@ describe('the rail colour', () => {
 
       const resting = getComputedStyle(screen.getByRole('link', { name: /^People/ }));
       expect(resting.outline, `${theme}: a resting row`).toBe('');
+      expect(channels(resting.color), `${theme}: a resting row`).toEqual(parseHex(palette.text.secondary));
 
       const badge = getComputedStyle(current.querySelector('.crewlet-nav-item__badge')!);
       expect(channels(badge.backgroundColor), `${theme}: the attention count`).toEqual(parseHex(palette.brand.accent));

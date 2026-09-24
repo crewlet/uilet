@@ -148,18 +148,19 @@
   border-radius: var(--radius-md);
   background: transparent;
   /*
-   * THE RAIL READS AT FULL INK. A destination is not secondary text: a rail of
-   * fifteen rows in the quiet step is a column of grey a reader has to hunt
-   * through, and the step down bought nothing the row's own tint does not
-   * already say. It is also the darker of the two on light and the lighter on
-   * dark, so the contrast on every ground the row can have goes up rather than
-   * down.
+   * A RESTING ROW IS THE SECONDARY STEP, and the reader's own row and a
+   * pointed one lift to the primary. That step is what says which row is
+   * which before the fill does: at full ink every row carried the current
+   * row's own weight, so the rail read heavier and brighter than the approved
+   * design and the current row was found by its lift alone. The secondary step
+   * is held at 4.5:1 on the rail and under the hover overlay by
+   * @crewlethq/tokens (RAIL_PAINTS), so quieter is not fainter.
    *
-   * WHAT CARRIES HOVER IS THEREFORE THE TINT, not an ink step: there is no
-   * step left above this one. The glyph is the second half of it, lifting from
-   * the decoration ramp to the row's own ink.
+   * The glyph has no colour of its own: it is drawn in currentColor and so is
+   * this ink, on every row, which is what keeps a row from painting its word
+   * and its glyph two different answers to "where am I".
    */
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   font-family: var(--font-family-sans);
   /* THE CHROME IS NOT BODY TEXT. A rail row names a destination; it is read at
      a glance and never read through, so it takes the compact step in the
@@ -178,12 +179,13 @@
 
 .crewlet-nav-item__row:hover {
   background: var(--color-surface-hover);
+  color: var(--color-text-primary);
   text-decoration: none;
 }
 
 /*
  * WHERE THE READER IS: the row stands on RAISED, with the plain border drawn
- * round it as a hairline INSIDE the row, and keeps the rail's own ink.
+ * round it as a hairline INSIDE the row, and lifts to the primary ink.
  *
  * It is found the way a card is found. In light, raised is only dE 1.84 off
  * the frame the rail stands on, so the fill alone is a lift a reader may not
@@ -224,7 +226,7 @@
 
 .crewlet-nav-item__row[aria-disabled='true']:hover {
   background: transparent;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
 }
 
 /*
@@ -240,32 +242,15 @@
 }
 
 /*
- * THE GLYPH FOLLOWS THE LABEL. At rest it is quieter than the word beside it
- * and takes the decoration step; on a hovered row and on the reader's own it
- * takes the row's own colour, the rail's full ink.
- *
- * ONE inherit rather than a second ramp, because a second ramp is how a row
- * comes to paint its label and its glyph two different answers to "where am
- * I". The colour is set on the DRAWING rather than on the box around it, which
- * is what says the decoration step is being spent on a glyph and not on text:
- * the package's variable check holds that rule, and it is the rule the step
- * exists for.
+ * THE GLYPH IS THE LABEL'S INK. Lucide draws in currentColor, so the glyph
+ * takes whatever the row is painted in, at rest, pointed and current alike,
+ * and there is no second ramp to fall out of step with the word beside it.
  */
 .crewlet-nav-item__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-}
-
-.crewlet-nav-item__icon svg {
-  color: var(--color-text-muted);
-  transition: color var(--motion-duration-fast) var(--motion-easing-default);
-}
-
-.crewlet-nav-item__row:hover .crewlet-nav-item__icon svg,
-.crewlet-nav-item__row[aria-current='page'] .crewlet-nav-item__icon svg {
-  color: inherit;
 }
 
 .crewlet-nav-item__label {
@@ -326,7 +311,7 @@
 }
 
 /* The count takes the row's ink on the current row, lifting from the tertiary
-   step to the rail's full ink with the row it sits in: the tertiary step is
+   step to the primary ink with the row it sits in: the tertiary step is
    measured on the rail and under the hover overlay, and the raised row is a
    ground it was never held to. */
 .crewlet-nav-item__row[aria-current='page'] .crewlet-nav-item__count {
@@ -433,7 +418,6 @@
 @media (prefers-reduced-motion: reduce) {
   .crewlet-nav-group__action,
   .crewlet-nav-item__row,
-  .crewlet-nav-item__icon svg,
   .crewlet-nav-item__chevron {
     transition: none;
   }
