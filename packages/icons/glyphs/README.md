@@ -15,6 +15,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **The successors of the 105 Material Symbols** the package carried until 0.4, one per name, as the [migration table](../README.md#breaking-changes-in-050) lists them. That covers every glyph `@crewlethq/ui` and the Storybook imported, and every glyph the Crewlet console imports, including the four it had vendored for itself (`star`, the filled star, `bug_report` and `view_column`), which the Material set had since taken in.
 - **The 59 drawings on the approved design's artboards** (Home, Inbox, the command palette, the navigation map, the board, a task, a trace, the org chart, an agent, knowledge, spend and settings). Each is the artboard's own rendering of a Lucide icon on the same grid, at the same 1.75 stroke, and is vendored as that icon: `activity`, `arrow-down-to-line`, `arrow-right`, `arrow-up-right`, `bell`, `book-open`, `brain`, `calendar`, `chart-no-axes-gantt`, `check`, `chevron-down`, `chevron-right`, `chevron-up`, `circle-check`, `clock`, `code`, `coins`, `columns-3`, `command`, `corner-down-left`, `cpu`, `database`, `ellipsis`, `file-text`, `globe`, `hash`, `house`, `inbox`, `info`, `key`, `link`, `list`, `list-filter`, `maximize-2`, `message-square`, `minus`, `network`, `paperclip`, `pause`, `pin`, `plug`, `plus`, `search`, `send`, `server`, `settings-2`, `shield`, `sliders-vertical`, `square-kanban`, `star`, `sun`, `table`, `triangle-alert`, `user`, `users`, `wand-sparkles`, `wrench`, `x` and `zap`.
 - **`badge-percent`**, the discount note on the Storybook's `PricingCard`, which drew Material's `tag`, a hash sign, beside "Save $5 (10% off)".
+- **`circle`**, the Todo state a task row leads with in the command palette's Storybook story, beside `circle-check` for Done. The artboard draws both states as marks of its own on a 14 unit grid (a bare ring, and a filled disc with a check cut out of it) rather than as Lucide icons, so neither is among the 59 above; the ring is Lucide's `circle` stroke for stroke, and Done keeps `circle-check` in the success ink rather than a filled disc, because `FILLABLE` paints a drawing's inside in the same colour as its stroke, which would fill the check in.
 
 ## Provenance
 
@@ -72,6 +73,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `chevrons-left` | `ChevronsLeftGlyph` | `package/icons/chevrons-left.svg` |
 | `chevrons-right` | `ChevronsRightGlyph` | `package/icons/chevrons-right.svg` |
 | `chevrons-up-down` | `ChevronsUpDownGlyph` | `package/icons/chevrons-up-down.svg` |
+| `circle` | `CircleGlyph` | `package/icons/circle.svg` |
 | `circle-alert` | `CircleAlertGlyph` | `package/icons/circle-alert.svg` |
 | `circle-check` | `CircleCheckGlyph` | `package/icons/circle-check.svg` |
 | `circle-question-mark` | `CircleQuestionMarkGlyph` | `package/icons/circle-question-mark.svg` |
