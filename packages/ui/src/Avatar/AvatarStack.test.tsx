@@ -96,7 +96,7 @@ describe('what a stack draws', () => {
     const members: AvatarStackMember[] = [{ name: 'Jane Founder', kind: 'human' }, ...AGENTS];
     const { container } = render(<AvatarStack members={members} />);
     const badges = [...container.querySelectorAll('.crewlet-avatar')];
-    expect(badges.map((badge) => badge.textContent)).toEqual(['JF', 'S', 'C', 'P']);
+    expect(badges.map((badge) => badge.textContent)).toEqual(['JF', 'SW', 'CT', 'PM']);
     expect(badges[0]?.className).toContain('crewlet-avatar--human');
     expect(badges[1]?.className).toContain('crewlet-avatar--agent');
     const more = container.querySelector('.crewlet-avatar-stack__more')!;

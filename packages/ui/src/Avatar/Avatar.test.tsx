@@ -69,7 +69,32 @@ describe('getInitials', () => {
     expect(getInitials('backend-engineer')).toBe('BE');
     expect(getInitials('sre_lead')).toBe('SL');
     expect(getInitials('carlos.diaz')).toBe('CD');
-    expect(getInitials('Acme')).toBe('A');
+  });
+
+  test('a single word still gives two letters: at its case humps, or its first two', () => {
+    /*
+     * The org chart names its seats in one word, and one letter each made the
+     * CEO and the CTO the same C. The artboard draws CE, SW, PM and DR.
+     */
+    expect(getInitials('CEO')).toBe('CE');
+    expect(getInitials('CTO')).toBe('CT');
+    expect(getInitials('SWE')).toBe('SW');
+    expect(getInitials('PM')).toBe('PM');
+    // Two words run together, which the case says: the first letter of each.
+    expect(getInitials('DevRel')).toBe('DR');
+    expect(getInitials('McCall')).toBe('MC');
+    // One word in one case: its first two letters, capitalised.
+    expect(getInitials('Acme')).toBe('AC');
+    expect(getInitials('planner')).toBe('PL');
+    // More than two humps still gives two letters.
+    expect(getInitials('DevRelOps')).toBe('DR');
+    // Words still win over humps: a name of two words is read as two words.
+    expect(getInitials('DevRel lead')).toBe('DL');
+  });
+
+  test('a one-character name is that character', () => {
+    expect(getInitials('x')).toBe('X');
+    expect(getInitials(' q ')).toBe('Q');
   });
 
   test('answers a question mark rather than nothing at all', () => {
@@ -81,6 +106,7 @@ describe('getInitials', () => {
   test('keeps an astral character whole', () => {
     // charAt would hand back half a surrogate pair, which renders as U+FFFD.
     expect(getInitials('𝒜cme team')).toBe('𝒜T');
+    expect(getInitials('𝒜𝒞')).toBe('𝒜𝒞');
   });
 });
 

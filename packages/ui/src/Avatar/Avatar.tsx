@@ -98,23 +98,42 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
 }
 
 /**
- * Up to two uppercase initials.
+ * Two uppercase initials, or one where the name has only one letter to give.
  *
  * SPLIT ON WHITESPACE, HYPHEN, UNDERSCORE AND DOT, because half the names this
  * draws are handles rather than names: `backend-engineer` gives BE,
  * `sre_lead` gives SL and `carlos.diaz` gives CD, where splitting on spaces
  * alone gives B, S and C and a roster of identical badges.
+ *
+ * A SINGLE WORD STILL GIVES TWO LETTERS, because the seats an org chart names
+ * in one word are the ones it draws most (CEO, SWE, PM, DevRel), and a badge
+ * of one letter each made the CEO and the CTO the same `C`. The word is read
+ * in two ways, in order:
+ *
+ * 1. Where its case says it is two words run together (a lower-case letter
+ *    followed by a capital, as in `DevRel` or `McCall`), the first letter of
+ *    each of the first two: DR, MC.
+ * 2. Otherwise its first two characters: `CEO` gives CE, `SWE` SW, `PM` PM
+ *    and `Acme` AC. An acronym is not split at its capitals, since every
+ *    letter of it is one and the first two are its start.
+ *
+ * A one-character word is its one character.
  */
 export const getInitials = (name?: string): string => {
   if (!name) return '?';
   const words = name.trim().split(/[\s\-_.]+/).filter(Boolean);
   if (words.length === 0) return '?';
+  // Array.from keeps astral characters (emoji, combined scripts) intact where
+  // charAt would split a surrogate pair.
+  const first = (word: string) => (Array.from(word)[0] ?? '').toUpperCase();
+  if (words.length >= 2) return words.slice(0, 2).map(first).join('') || '?';
+  const word = words[0]!;
+  const humps = word.split(/(?<=\p{Ll})(?=\p{Lu})/u);
+  if (humps.length >= 2) return humps.slice(0, 2).map(first).join('');
   return (
-    words
+    Array.from(word)
       .slice(0, 2)
-      // Array.from keeps astral characters (emoji, combined scripts) intact
-      // where charAt would split a surrogate pair.
-      .map((word) => (Array.from(word)[0] ?? '').toUpperCase())
+      .map((character) => character.toUpperCase())
       .join('') || '?'
   );
 };

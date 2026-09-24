@@ -527,6 +527,18 @@ by setting the same `--crewlet-avatar-size`; where the browser draws
 stands as deep at the diagonal as that corner does. The neutral badge is the
 design's: the raised rung, the strong hairline and the secondary ink.
 
+A name of ONE word now gives two initials too, as the design's org chart draws
+its seats (`getInitials`, which the badge uses). Words split on whitespace,
+hyphens, underscores and dots as before and give the first letter of each of
+the first two; a single word gives the first letters of its first two case
+humps where its case says it is two words run together (`DevRel` is DR,
+`McCall` MC), and its first two characters otherwise (`CEO` is CE, `SWE` SW,
+`PM` PM, `Acme` AC). One letter each made the CEO and the CTO the same `C`.
+
+| Was | Is |
+|---|---|
+| a test or a layout that counted on a one-word name giving one initial (`Acme` as `A`) | two: `AC`, and `DR` for `DevRel` |
+
 The `brand` tone is gone, because the accent means where the reader is, the
 primary action and focus, and a badge filled with it was identity drawn in that
 colour. A new `ring` draws a state instead: a 1.5px outline 2px outside the
