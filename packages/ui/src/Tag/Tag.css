@@ -1,5 +1,5 @@
 /*
- * The tag: a small pill naming a state, a phase or a value.
+ * The tag: a small pill naming a state, a category or a value.
  *
  * THREE VARIABLES CARRY EVERY VARIANT. A tag is its tone's `soft` tint under
  * its tone's `ink`, with the `line` step as the boundary it grows when it can
@@ -19,39 +19,49 @@
 
 .crewlet-tag {
   /*
-   * THE ENGINE'S BADGE. Its line box is 11px at the document's 1.5 leading
-   * plus a pixel of padding and a pixel of border on each side, which lands on
-   * 20.5px; the step below is the whole pixel that renders, and it scales with
-   * density the way every size token does.
+   * THE APPROVED DESIGN'S PILL: 22px tall with fully round ends, the caption
+   * step at the medium weight, and 9px of room inside each end, which is the
+   * step a rounded end eats before the first letter clears it.
    *
    * The height is a STEP and the floor is separate, because the two answer
-   * different questions. A tag that only labels takes the engine's geometry
-   * exactly. A tag that ACTS is a pointer target, and 20px fails WCAG 2.2, so
-   * it takes the 24px floor as well: the engine draws its actionable badge at
-   * the inert one's height, which is the one place its look and the target
-   * rule disagree. Nothing else about the pill changes, so a row of tags still
-   * reads as one set.
+   * different questions. A tag that only labels takes the design's geometry
+   * exactly. A tag that ACTS is a pointer target, and 22px fails WCAG 2.2, so
+   * it takes the 24px floor as well. Nothing else about the pill changes, so a
+   * row of tags still reads as one set.
+   *
+   * THE NEUTRAL PILL IS THE RAISED RUNG under the secondary ink, the design's
+   * quiet pill: a category, a count, a word that is not a state. Every other
+   * variant below is its tone's soft tint under its ink.
+   *
+   * The boundary at rest is `--crewlet-tag-edge`: transparent for a tinted
+   * pill, whose hue already separates it from any neutral ground, and the
+   * strong border step for the neutral one (see its rule below).
    */
-  --crewlet-tag-height: calc(20px * var(--density, 1));
+  --crewlet-tag-height: calc(22px * var(--density, 1));
   --crewlet-tag-floor: 0px;
-  --crewlet-tag-fill: var(--color-surface-inset);
+  /* The design's 9px inside each round end: two steps and a quarter, so it
+     follows the density with every other gap. The remove control and the
+     press half of a split pill read it too, to reach the pill's own ends. */
+  --crewlet-tag-pad: calc(var(--spacing-2) + var(--spacing-1) / 4);
+  --crewlet-tag-fill: var(--color-surface-elevated);
   --crewlet-tag-ink: var(--color-text-secondary);
   --crewlet-tag-line: var(--color-border-hover);
+  --crewlet-tag-edge: transparent;
 
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-1);
+  /* The design's 6px between a dot or a glyph and the word: a step and a
+     half. */
+  gap: calc(var(--spacing-1) * 1.5);
   height: max(var(--crewlet-tag-height), var(--crewlet-tag-floor));
-  padding: 0 var(--spacing-2);
-  border: 1px solid transparent;
-  border-radius: var(--radius-xs);
+  padding: 0 var(--crewlet-tag-pad);
+  border: 1px solid var(--crewlet-tag-edge);
+  border-radius: var(--radius-pill);
   background: var(--crewlet-tag-fill);
   color: var(--crewlet-tag-ink);
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  /* The engine tracks the badge a hundredth of an em open, which is the
-     normal step at this size: a hundredth of 11px is a tenth of a pixel. */
   letter-spacing: var(--font-letter-spacing-normal);
   line-height: 1;
   /* A tag is an atomic token: its label never breaks across lines inside the
@@ -104,53 +114,54 @@
 /* ── sizes ─────────────────────────────────────────────────────────────── */
 
 /*
- * THREE HEIGHTS OF ONE BADGE. The engine draws a single pill and spends its
+ * THREE HEIGHTS OF ONE PILL. The design draws a single pill and spends its
  * variation on tone rather than on size, so the steps here differ by how much
- * room the pill takes and not by what it is: the type, the radius, the weight
- * and the tracking are the engine's at every one of them.
+ * room the pill takes and not by what it is: the radius, the weight and the
+ * tracking are the design's at every one of them.
  *
- * xs is an 18px pill and is NON-INTERACTIVE for that reason: it is under the
- * 24px target floor, and the component refuses a press at this step. It is for
- * a mark inside a dense row, where the label is still the carrier.
+ * xs is the design's 18px count pill, the one a rail row carries, and is
+ * NON-INTERACTIVE for that reason: it is under the 24px target floor, and the
+ * component refuses a press at this step. It is for a mark inside a dense
+ * row, where the label is still the carrier, and it takes the micro step, the
+ * design's 10.5px at the scale's floor.
  *
  * EVERY STEP SCALES WITH DENSITY, which is not decoration: written as a flat
- * 18px, this one stayed put while the badge above it came down to
- * 20 x 0.82 = 16.4px, so the dense mark rendered TALLER than the badge it is
- * meant to sit inside a row of. A step that does not move with the rest of the
- * scale is a step that overtakes one of its neighbours at some density.
+ * 18px, this one stayed put while the pill above it came down with the
+ * density, so the dense mark rendered TALLER than the pill it is meant to sit
+ * inside a row of. A step that does not move with the rest of the scale is a
+ * step that overtakes one of its neighbours at some density.
  */
 .crewlet-tag--xs {
   --crewlet-tag-height: calc(18px * var(--density, 1));
-  padding: 0 var(--spacing-1);
-  gap: 3px;
+  --crewlet-tag-pad: calc(var(--spacing-1) * 1.5);
+  gap: var(--spacing-1);
+  font-size: var(--font-size-2xs);
 }
 
-/* The engine's badge, and the default. */
+/* The design's pill, and the default. */
 .crewlet-tag--sm {
-  --crewlet-tag-height: calc(20px * var(--density, 1));
+  --crewlet-tag-height: calc(22px * var(--density, 1));
 }
 
 /* The md step is a small control's own height, so a tag and a small button in
-   one toolbar sit on the same baseline. One type step up with it: 11px inside
-   a 28px pill reads as a label that lost its box. */
+   one toolbar sit on the same line. */
 .crewlet-tag--md {
   --crewlet-tag-height: var(--size-control-sm);
-  font-size: var(--font-size-xs);
 }
 
 /*
  * A TAG THAT ACTS CLEARS 24px, at every density and every step. Last among the
  * steps so it is the floor whichever one is drawn, and a floor rather than a
- * height so the md step keeps its 28px.
+ * height so the md step keeps its 26px.
  */
 .crewlet-tag--acts {
   --crewlet-tag-floor: max(24px, calc(24px * var(--density, 1)));
 }
 
-/* One step down from the sans, where there is a step to take: a mono face
-   draws larger than the sans at the same size, and a machine value beside a
-   word has to read as the same line. At the two smaller steps the sans is
-   already at the bottom of the scale and the mono stays beside it. */
+/* One step down from the sans: a mono face draws larger than the sans at the
+   same size, and a machine value beside a word has to read as the same line.
+   At xs the sans is already at the bottom of the scale and the mono stays
+   beside it. */
 .crewlet-tag--monospace .crewlet-tag__label {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-2xs);
@@ -188,43 +199,6 @@
   --crewlet-tag-line: var(--color-brand-accent-soft-strong);
 }
 
-/*
- * The phase family has a soft step and no line step, because nothing else in
- * the system needed a phase boundary. The ink is the boundary here: it is the
- * same hue at a strength a 1px rule can be seen at, and a border is not text,
- * so the rule that an ink step is never a BACKGROUND is untouched.
- *
- * A PHASE IS SET IN THE MICRO-LABEL REGISTER, uppercase and tracked open,
- * where a state is set in the badge's own. Phase is the one categorical
- * identity the product spends colour on outside a chart, and it is what a
- * reader follows across four screens; the second register is what separates it
- * at a glance from the state badge sitting beside it on the same row.
- */
-.crewlet-tag--phase-onboarding,
-.crewlet-tag--phase-execute,
-.crewlet-tag--phase-review {
-  letter-spacing: var(--font-letter-spacing-wide);
-  text-transform: uppercase;
-}
-
-.crewlet-tag--phase-onboarding {
-  --crewlet-tag-fill: var(--color-phase-onboarding-soft);
-  --crewlet-tag-ink: var(--color-phase-onboarding-ink);
-  --crewlet-tag-line: var(--color-phase-onboarding-ink);
-}
-
-.crewlet-tag--phase-execute {
-  --crewlet-tag-fill: var(--color-phase-execute-soft);
-  --crewlet-tag-ink: var(--color-phase-execute-ink);
-  --crewlet-tag-line: var(--color-phase-execute-ink);
-}
-
-.crewlet-tag--phase-review {
-  --crewlet-tag-fill: var(--color-phase-review-soft);
-  --crewlet-tag-ink: var(--color-phase-review-ink);
-  --crewlet-tag-line: var(--color-phase-review-ink);
-}
-
 /* ── appearance ────────────────────────────────────────────────────────── */
 
 /*
@@ -235,6 +209,31 @@
 .crewlet-tag--outline {
   background: transparent;
   border-color: var(--crewlet-tag-line);
+}
+
+/*
+ * THE NEUTRAL PILL CARRIES A BOUNDARY, because its fill IS a surface. The
+ * raised rung is also the ground of a palette's lead block, a raised card and
+ * the rail's current row, and on any of them a raised pill with a transparent
+ * boundary was the colour of what it stood on: the pill vanished and its words
+ * read as loose text with odd gaps between them.
+ *
+ * THE STRONG STEP, NOT THE DEFAULT ONE. The design's own chip is found by 1px
+ * of its line step (`.chip`), which is the default border here, and that
+ * measured under the hairline dE of 3 on five grounds a pill lands on: 2.76 on
+ * the light frame, 2.86 on a pressed row over a light card, 2.77 and 2.71 on an
+ * inset well inside a raised surface, and 2.08 on a hovered row over the dark
+ * sheet. The strong step is the design's line-2, the boundary it draws round a
+ * key cap (`.kbd`), and it clears 3 on every rung and every overlay in both
+ * themes. The suite measures all of them.
+ *
+ * The hover takes the strong step once more, because the press line a tinted
+ * pill moves to on hover IS the strong step in both themes, and a hover that
+ * lands on the resting boundary draws no hover at all.
+ */
+.crewlet-tag--neutral.crewlet-tag--soft {
+  --crewlet-tag-edge: var(--color-border-strong);
+  --crewlet-tag-line: var(--color-border-strong-hover);
 }
 
 /* The neutral outline is the engine's `.badge.outline`: the hairline step as
@@ -295,9 +294,9 @@
   align-self: stretch;
   gap: inherit;
   min-width: 0;
-  padding: 0 var(--spacing-2);
+  padding: 0 var(--crewlet-tag-pad);
   border: 0;
-  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
   background: transparent;
   /* A button inherits none of these. */
   color: inherit;
@@ -354,10 +353,10 @@
   min-width: 24px;
   margin-block-start: -1px;
   margin-block-end: -1px;
-  margin-right: calc(var(--spacing-2) * -1);
+  margin-right: calc(var(--crewlet-tag-pad) * -1);
   padding: 0 var(--spacing-1);
   border: 0;
-  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
   background: transparent;
   color: inherit;
   cursor: pointer;

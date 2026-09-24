@@ -40,7 +40,7 @@ export const AlignEnd: Story = {
         )}
       >
         <div style={{ padding: 12, minWidth: 180 }}>
-          <Button size="small" variant="tertiary">Edit</Button>
+          <Button size="small" variant="ghost">Edit</Button>
           <Button size="small" variant="danger">Delete</Button>
         </div>
       </Popover>

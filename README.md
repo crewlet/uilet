@@ -7,7 +7,7 @@ Crewlet design system. One repository, three published packages, and a Storybook
 | Package             | Purpose                                                                                                   |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
 | `@crewlethq/tokens` | Design tokens (color, spacing, typography, radius, shadow, blur, breakpoint, motion, z-index) and fonts |
-| `@crewlethq/icons`  | Signature illustrated icons as React components                                                           |
+| `@crewlethq/icons`  | The Lucide glyph set, vendor marks and the signature illustrations as React components                   |
 | `@crewlethq/ui`     | Cross-app React components built on tokens and icons                                                      |
 
 ## Install
@@ -24,9 +24,10 @@ All three are released together under one version, and `@crewlethq/ui` depends o
 
 - npm workspaces
 - Turborepo for caching and task orchestration
-- TypeScript 5 (strict, ES2022, Bundler resolution)
+- TypeScript 6 (strict, ES2022, Bundler resolution)
 - ESLint flat config with `typescript-eslint`
 - Vite 8, Storybook 10 for the showroom
+- Vitest 5 and Testing Library for the jsdom component suite; `node --test` for the tokens, icons, Storybook and release suites
 - Style Dictionary 5 for token transforms
 - SVGR for the icon pipeline
 - tsup for package bundling
@@ -48,7 +49,8 @@ npm run lint && npm run typecheck
 ```
 .
 ├── apps/
-│   └── storybook/             # @crewlethq/storybook (private)
+│   ├── storybook/             # @crewlethq/storybook (private)
+│   └── ui-tests/              # @crewlethq/ui-tests (private): the jsdom suite for @crewlethq/ui
 ├── packages/
 │   ├── tokens/                # @crewlethq/tokens
 │   ├── icons/                 # @crewlethq/icons
@@ -56,7 +58,7 @@ npm run lint && npm run typecheck
 ├── scripts/
 │   ├── release.mjs            # release version, consistency check, build, pack and registry comparison
 │   ├── check-signoff.mjs      # Signed-off-by gate for pull requests and main
-│   └── check-storybook-static.mjs  # static-site and font license check for the Storybook build
+│   └── check-storybook-static.mjs  # static-site, license and page-icon check for the Storybook build
 └── .github/
     ├── actions/               # composite actions the workflows share
     └── workflows/             # ci, release
@@ -84,6 +86,6 @@ Report vulnerabilities privately, as described in [SECURITY.md](SECURITY.md). Do
 
 ## License
 
-The code and assets in this repository are licensed under the [MIT License](LICENSE); each published package carries the same `LICENSE` file. The Inter and JetBrains Mono font files in `@crewlethq/tokens` are licensed under the SIL Open Font License 1.1 (see [`packages/tokens/fonts/OFL.txt`](packages/tokens/fonts/OFL.txt)).
+The code and assets in this repository are licensed under the [MIT License](LICENSE); each published package carries the same `LICENSE` file. The Geist and Geist Mono font files in `@crewlethq/tokens` are licensed under the SIL Open Font License 1.1 (see [`packages/tokens/fonts/OFL.txt`](packages/tokens/fonts/OFL.txt)). The Lucide glyph drawings in `@crewlethq/icons` are licensed under the ISC License, and those Lucide derives from Feather under the MIT License as well (see [`packages/icons/glyphs/LICENSE`](packages/icons/glyphs/LICENSE)).
 
 The Crewlet name, logo and character are trademarks and are not licensed under the MIT License. See [TRADEMARKS.md](TRADEMARKS.md).

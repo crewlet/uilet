@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 import { BrandLockup } from './index.js';
 
 afterEach(cleanup);
@@ -60,44 +60,41 @@ test('a router draws the link itself and keeps the name', () => {
   expect(home.className).toContain('crewlet-brand__home');
 });
 
-test('the context line and the group labels in the rail are one register', () => {
-  /*
-   * The two uppercase runs in the rail sit twenty pixels apart, and nothing
-   * but this compares them: a letter spacing changed in one file and not the
-   * other is a difference a reader sees and no build reports.
-   */
+/**
+ * The context line and the rail's group labels, which sit twenty pixels apart
+ * and must not read as two headings of one list. They used to be one register
+ * (uppercase, the wide tracking, the 2xs step) told apart by weight alone. The
+ * group labels are sentence-case words at the caption step now, the approved
+ * design's, so the context line is the ONE uppercase run in the rail and the
+ * case and the size are what hold the two apart. Nothing but this compares the
+ * two files.
+ */
+describe('the context line against the group labels', () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const read = (path: string) => readFileSync(resolve(here, path), 'utf8');
-  const spacing = (css: string, selector: string) => {
+  const body = (css: string, selector: string) => {
     const rule = new RegExp(`${selector.replace(/[.[\]]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(css);
     if (!rule) throw new Error(`no rule for ${selector}`);
-    return /letter-spacing:\s*var\((--[\w-]+)\)/.exec(rule[1] ?? '')?.[1] ?? null;
+    return rule[1] ?? '';
   };
-  /* The token name is spelt without its leading dashes and prefixed at use:
+  const context = body(read('BrandLockup.css'), '.crewlet-brand__context');
+  const group = body(read('../SidebarNav/SidebarNav.css'), '.crewlet-nav-group__label');
+  /* Token names are spelt without their leading dashes and prefixed at use:
      the package's variable check reads a quoted `--name` in a .tsx file as a
      DECLARATION, and a component may declare only `--crewlet-*` names. */
-  const context = spacing(read('BrandLockup.css'), '.crewlet-brand__context');
-  expect(context).toBe(`--${'font-letter-spacing-wide'}`);
-  expect(spacing(read('../SidebarNav/SidebarNav.css'), '.crewlet-nav-group__label')).toBe(context);
-});
+  const token = (name: string) => `var(--${name})`;
 
-test('the weight is what separates the context line from the group labels', () => {
-  /*
-   * Same size, same tracking, same case and twenty pixels apart: the weight is
-   * the only thing left that says the company's name is not a third section
-   * heading. Drawn at the group label's medium it read as one, which is what
-   * this holds apart.
-   */
-  const here = dirname(fileURLToPath(import.meta.url));
-  const read = (path: string) => readFileSync(resolve(here, path), 'utf8');
-  const weight = (css: string, selector: string) => {
-    const rule = new RegExp(`${selector.replace(/[.[\]]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(css);
-    if (!rule) throw new Error(`no rule for ${selector}`);
-    return /font-weight:\s*var\((--[\w-]+)\)/.exec(rule[1] ?? '')?.[1] ?? null;
-  };
-  const context = weight(read('BrandLockup.css'), '.crewlet-brand__context');
-  expect(context).toBe(`--${'font-weight-regular'}`);
-  expect(weight(read('../SidebarNav/SidebarNav.css'), '.crewlet-nav-group__label')).not.toBe(context);
+  test('the context line is the one uppercase run in the rail, on the wide tracking', () => {
+    expect(context).toContain('text-transform: uppercase');
+    expect(context).toContain(`letter-spacing: ${token('font-letter-spacing-wide')}`);
+    expect(group).not.toMatch(/text-transform|letter-spacing/);
+  });
+
+  test('the size separates them as well as the case, and the context line keeps the quiet weight', () => {
+    expect(context).toContain(`font-size: ${token('font-size-2xs')}`);
+    expect(group).toContain(`font-size: ${token('font-size-xs')}`);
+    expect(context).toContain(`font-weight: ${token('font-weight-regular')}`);
+  });
 });
 
 test('both lines are set on the document\'s own leading, which is the space between them', () => {
@@ -161,13 +158,20 @@ test('the lockup comes in under the rail head at every density', () => {
   };
   const markBox = Number(/--crewlet-brand-mark:\s*(\d+)px/.exec(css)?.[1] ?? '0');
   expect(markBox).toBeGreaterThan(0);
-  const leading = Number(
-    /--font-line-height-normal:\s*([\d.]+)/.exec(tokens)?.[1] ?? '0',
-  );
-  expect(leading).toBeGreaterThan(0);
-  const nameLine = step(named('.crewlet-brand__name', 'font-size')) * leading;
-  const contextLine = step(named('.crewlet-brand__context', 'font-size')) * leading;
-  const pad = step('spacing-2');
+  /* The leading each line NAMES, read off the token it names rather than
+     assumed: the two lines take the document's, and the document's moved. */
+  const leading = (selector: string) => {
+    const token = named(selector, 'line-height');
+    const value = Number(new RegExp(`--${token}:\\s*([\\d.]+);`).exec(tokens)?.[1] ?? '0');
+    expect(value).toBeGreaterThan(0);
+    return value;
+  };
+  const nameLine = step(named('.crewlet-brand__name', 'font-size')) * leading('.crewlet-brand__name');
+  const contextLine = step(named('.crewlet-brand__context', 'font-size')) * leading('.crewlet-brand__context');
+  /* The block padding the lockup's own rule names, first of its two values. */
+  const padding = /\.crewlet-brand\s*\{[^}]*?padding:\s*var\((--[\w-]+)\)/.exec(css)?.[1];
+  expect(padding).toBeTruthy();
+  const pad = step((padding ?? '').slice(2));
   const head = step('size-shell-topbar');
   /* The three steps --density takes. The mark and the type are fixed; only the
      padding scales, which is what makes comfortable the tall case. */

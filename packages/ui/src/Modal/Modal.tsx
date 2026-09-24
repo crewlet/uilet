@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { CloseGlyph } from '@crewlethq/icons/glyphs';
+import { XGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { focusables, useBodyScrollLock, useLayerContainer, useModalLayer } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
@@ -334,7 +334,7 @@ function ModalFrame({
             <IconButton
               className="crewlet-modal__close"
               label={closeLabel}
-              icon={<CloseGlyph size="md" />}
+              icon={<XGlyph size="md" />}
               onClick={onClose}
               disabledReason={dismissable ? undefined : closeDisabledReason}
             />

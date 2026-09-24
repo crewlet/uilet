@@ -5,16 +5,18 @@
  * units, arithmetic and provenance rather than about colour: a font size is a
  * number of pixels in the typed export and a number of rem in the stylesheet,
  * a density-scaled token carries its calc(), a small target cannot shrink
- * under the size a finger can hit, and a soft tint still belongs to the fill
- * it was derived from.
+ * under the size a finger can hit, a soft tint still belongs to the fill it
+ * was derived from, and the font files the package ships are the ones its
+ * family stacks name. What those files are is test/fonts.test.mjs's subject.
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { cascade, parseHex, parseRgba, withAlpha } from './color.mjs';
 import { SOFT_ALPHA, paletteStates } from './palette.mjs';
+import * as exported from '../dist/index.js';
 import { breakpoint, font, size, spacing, themes } from '../dist/index.js';
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../dist/css/${name}`, import.meta.url)), 'utf8');
@@ -58,7 +60,7 @@ describe('the emitted units', () => {
     // not fire, and a bump that changed that would silently turn every control
     // height into rem.
     assert.match(tokens.get('--size-shell-rail'), /px$/);
-    assert.equal(size.control.md, '32px');
+    assert.equal(size.control.md, '30px');
     assert.equal(spacing['4'], '16px');
   });
 
@@ -71,7 +73,8 @@ describe('the emitted units', () => {
   });
 
   test('a small control or row cannot shrink under 24px at any density', () => {
-    // 28 x 0.82 is 22.96px. The floor is what makes the compact setting safe
+    // 26 x 0.82 is 21.32px for a control, and 28 x 0.82 is 22.96px for a
+    // row. The floor is what makes the compact setting safe
     // for a finger, and it is checked at the three densities the density
     // stylesheet can actually set.
     const densities = { compact: 0.82, normal: 1, comfortable: 1.14 };
@@ -88,7 +91,7 @@ describe('the emitted units', () => {
     }
     // And the floor is not simply a bigger number everywhere: at comfortable
     // density the step grows past it.
-    assert.equal(resolvePx(tokens.get('--size-control-sm'), 1.14), 31.919999999999998);
+    assert.equal(resolvePx(tokens.get('--size-control-sm'), 1.14), 29.639999999999997);
   });
 
   test('the density stylesheet declares the three steps the tokens name', () => {
@@ -110,7 +113,125 @@ describe('the breakpoint partial', () => {
       assert.equal(partial.get(`--breakpoint-${name}`), value, `--breakpoint-${name} in breakpoint.css`);
       assert.equal(tokens.get(`--breakpoint-${name}`), value, `--breakpoint-${name} in tokens.css`);
     }
-    assert.equal(breakpoint.shell, '900px');
+    assert.equal(breakpoint.shell, '1024px');
+    assert.equal(breakpoint.phone, '640px');
+  });
+});
+
+describe('the display, body, sheet, shell, breakpoint and breath tokens', () => {
+  /**
+   * The type a TypeScript consumer sees, read out of the generated
+   * declaration file: every leaf as its dotted path and its literal type.
+   * The export is `as const`, so a token is typed as its own value; a leaf
+   * that arrived as `string` (a build that lost the assertion) or not at all
+   * is missing here, and the consumer that spells it gets no check.
+   */
+  function declaredLiterals(declarations) {
+    const found = new Map();
+    const path = [];
+    for (const raw of declarations.split('\n')) {
+      const line = raw.trim();
+      const group = /^export declare const (\w+): \{$/.exec(line);
+      if (group) {
+        path.splice(0, path.length, group[1]);
+        continue;
+      }
+      const branch = /^readonly ("?)([\w-]+)\1: \{$/.exec(line);
+      if (branch) {
+        path.push(branch[2]);
+        continue;
+      }
+      const leaf = /^readonly ("?)([\w-]+)\1: ("(?:[^"\\]|\\.)*");$/.exec(line);
+      if (leaf) {
+        found.set([...path, leaf[2]].join('.'), JSON.parse(leaf[3]));
+        continue;
+      }
+      if (line === '};') path.pop();
+    }
+    return found;
+  }
+
+  const declarations = readFileSync(fileURLToPath(new URL('../dist/index.d.ts', import.meta.url)), 'utf8');
+  const typed = declaredLiterals(declarations);
+
+  // Each one: its path in the typed export, the value authored, and what the
+  // stylesheet carries for it. A font size is emitted in rem and a gap in
+  // its density calc(); everything else as authored.
+  const added = [
+    ['font.size.display', '28px', '1.75rem'],
+    ['font.lineHeight.body', '1.45', '1.45'],
+    ['radius.sheet', '14px', '14px'],
+    ['size.shell.rail', '236px', '236px'],
+    ['size.shell.topbar', '52px', '52px'],
+    ['size.shell.inset', '8px', 'calc(8px * var(--density, 1))'],
+    ['size.nav.row', '30px', 'calc(30px * var(--density, 1))'],
+    ['breakpoint.shell', '1024px', '1024px'],
+    ['breakpoint.phone', '640px', '640px'],
+    ['motion.duration.breath', '2200ms', '2200ms'],
+  ];
+  const property = (path) => `--${path.split('.').map((part) => part.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()).join('-')}`;
+
+  test('the declaration reader finds every leaf the export has', () => {
+    // Without this, a reader that matched nothing would make every case
+    // below fail for the wrong reason, and one that matched too little would
+    // make the next token added look untyped.
+    const leaves = (tree) =>
+      Object.values(tree).reduce((count, value) => count + (value !== null && typeof value === 'object' ? leaves(value) : 1), 0);
+    const expected = Object.entries(exported)
+      .filter(([name]) => name !== 'themes')
+      .reduce((count, [, tree]) => count + leaves(tree), 0);
+    assert.equal(typed.size, expected);
+  });
+
+  for (const [path, authored, emitted] of added) {
+    test(`${path} is emitted, exported and typed`, () => {
+      const value = path.split('.').reduce((node, key) => node?.[key], exported);
+      assert.equal(value, authored, `${path} in the typed export`);
+      assert.equal(typed.get(path), authored, `${path} in index.d.ts`);
+      assert.equal(tokens.get(property(path)), emitted, `${property(path)} in tokens.css`);
+    });
+  }
+
+  test('the shell inset scales with the density, and the rail and the bar do not', () => {
+    // The inset is a gap, and every gap follows the density. The rail and
+    // the bar are fixed, because breakpoint.shell is derived from the rail
+    // and a rail that grew with the density would move a breakpoint that a
+    // density cannot move.
+    assert.equal(resolvePx(tokens.get('--size-shell-inset'), 0.82), 6.56);
+    assert.equal(resolvePx(tokens.get('--size-shell-inset'), 1.14), 9.12);
+    for (const fixed of ['--size-shell-rail', '--size-shell-topbar']) {
+      assert.equal(resolvePx(tokens.get(fixed), 0.82), resolvePx(tokens.get(fixed), 1.14), fixed);
+    }
+  });
+});
+
+describe('the font faces', () => {
+  const declared = [...read('fonts.css').matchAll(/@font-face\s*\{([^}]*)\}/g)].map(([, body]) => ({
+    family: /font-family:\s*'([^']+)';/.exec(body)?.[1],
+    file: /url\('[^']*\/([^'/]+)'\)/.exec(body)?.[1],
+  }));
+
+  test('fonts.css declares the Geist and Geist Mono files, and fonts/ ships nothing else', () => {
+    // Every file is also an import path (`@crewlethq/tokens/fonts/<name>`) an
+    // application may preload, so a renamed or dropped file is a breaking
+    // change, and this list is where it shows up in a diff.
+    const files = ['geist-latin-ext.woff2', 'geist-latin.woff2', 'geist-mono-latin-ext.woff2', 'geist-mono-latin.woff2'];
+    assert.deepEqual(declared.map(({ file }) => file).sort(), files);
+    const shipped = readdirSync(fileURLToPath(new URL('../fonts/', import.meta.url))).filter((name) => name.endsWith('.woff2'));
+    assert.deepEqual(shipped.sort(), files);
+  });
+
+  test('each family stack leads with a family fonts.css declares', () => {
+    // A stack that leads with a family no rule declares never loads the
+    // self-hosted files: it renders the next family in the list, and the
+    // files ship for nothing.
+    const lead = (stack) => stack.split(',')[0].trim();
+    assert.equal(lead(font.family.sans), "'Geist'");
+    assert.equal(lead(font.family.mono), "'Geist Mono'");
+    assert.equal(font.family.display, font.family.sans);
+    assert.deepEqual([...new Set(declared.map(({ family }) => family))].sort(), ['Geist', 'Geist Mono']);
+    assert.equal(tokens.get('--font-family-sans'), font.family.sans);
+    assert.equal(tokens.get('--font-family-mono'), font.family.mono);
   });
 });
 
@@ -124,11 +245,32 @@ describe('the derived tints', () => {
         assert.equal(values.get(`--color-feedback-${family}-soft`), withAlpha(fill, SOFT_ALPHA), `${state} ${family} soft`);
         assert.equal(values.get(`--color-feedback-${family}-line`), withAlpha(fill, 0.3), `${state} ${family} line`);
       }
-      for (const family of ['onboarding', 'execute', 'review']) {
-        const fill = values.get(`--color-phase-${family}`);
-        assert.equal(values.get(`--color-phase-${family}-soft`), withAlpha(fill, SOFT_ALPHA), `${state} ${family} soft`);
-      }
     }
+  });
+
+  test("the accent's companions are the accent, in every palette", () => {
+    // The accent is per palette, so a companion copied from one palette into
+    // another is a tint of a hue that palette does not have. The triple and
+    // the strong line are derived by the build; the soft fill is written per
+    // palette, because its alpha is fitted per palette, and it is held here
+    // to the accent's own channels.
+    const accents = new Set();
+    for (const [state, values] of Object.entries(paletteStates({ tokens: tokensCss, themes: themesCss }))) {
+      const accent = values.get('--color-brand-accent');
+      const { r, g, b } = parseHex(accent);
+      accents.add(accent);
+      assert.equal(values.get('--color-brand-accent-rgb'), `${r}, ${g}, ${b}`, `${state} accent-rgb`);
+      assert.equal(values.get('--color-brand-accent-soft-strong'), withAlpha(accent, 0.32), `${state} accent-soft-strong`);
+      const soft = parseRgba(values.get('--color-brand-accent-soft'));
+      assert.deepEqual(soft?.rgb, { r, g, b }, `${state} accent-soft is a tint of ${accent}`);
+      assert.ok(soft.a > 0 && soft.a < 1, `${state} accent-soft is translucent`);
+      // The glow is the accent's own light, composed from the triple, so an
+      // application that rebinds the accent retints it too.
+      assert.match(values.get('--shadow-glow'), /rgba\(var\(--color-brand-accent-rgb\), 0\.\d+\)/, `${state} glow`);
+    }
+    // And the palettes really do differ, which is what makes the above a check
+    // rather than one value compared with itself four times.
+    assert.ok(accents.size >= 2, `every state resolved one accent, ${[...accents].join(', ')}`);
   });
 });
 
@@ -157,6 +299,39 @@ describe('the document baseline', () => {
   test('it honours a reduced-motion preference', () => {
     assert.match(base, /@media \(prefers-reduced-motion: reduce\)/);
   });
+
+  test('it paints the body with the frame, the lowest rung', () => {
+    // Whatever an application floats on the body (a sheet, a rail) brings its
+    // own ground; the body is the application ground under all of it.
+    assert.match(base, /\nbody\s*\{[^}]*background: var\(--color-surface-frame\);/);
+  });
+
+  test("it sets the body on the design's dense base: 13px on the body leading", () => {
+    // The document's own type is what every component that does not set a
+    // size of its own inherits, and what the ones set on the document's line
+    // (a keycap, a monogram, the rail's lockup) read their leading from.
+    const body = /\nbody\s*\{([^}]*)\}/.exec(base.replace(/\/\*[\s\S]*?\*\//g, ''))?.[1] ?? '';
+    assert.match(body, /font-size: var\(--font-size-compact\);/);
+    assert.match(body, /line-height: var\(--font-line-height-body\);/);
+    assert.equal(font.size.compact, '13px');
+    assert.equal(font.lineHeight.body, '1.45');
+  });
+});
+
+describe('the stylesheets that read tokens', () => {
+  test('every token base.css and legacy.css read is one the token layer declares', () => {
+    // A var() naming a token the build does not emit is dropped by the
+    // browser without a word, and neither file is linted by anything else:
+    // removing a token (the topbar rungs, say) would leave both still pointing
+    // at it, painting nothing, with a green build.
+    for (const name of ['base.css', 'legacy.css']) {
+      const css = read(name).replace(/\/\*[\s\S]*?\*\//g, '');
+      const declared = new Set([...tokens.keys(), ...[...css.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1])]);
+      const used = [...new Set([...css.matchAll(/var\((--[\w-]+)/g)].map((match) => match[1]))];
+      assert.ok(used.length > 5, `${name} reads only ${used.length} tokens`);
+      assert.deepEqual(used.filter((token) => !declared.has(token)), [], `${name} reads tokens nothing declares`);
+    }
+  });
 });
 
 describe('the typed themes', () => {
@@ -184,9 +359,13 @@ describe('the typed themes', () => {
     return out;
   }
 
+  // Dark is the bare root and light the attribute block. The light media
+  // block is not compared here: the palette suite holds it to the attribute
+  // block, key for key and value for value, so it cannot hold anything this
+  // comparison would miss.
   const blocks = {
-    light: cascade(source(themesCss), (block) => block.atRule === null && block.selector === ':root'),
-    dark: cascade(source(themesCss), (block) => block.atRule === null && block.selector === ':root[data-theme="dark"]'),
+    light: cascade(source(themesCss), (block) => block.atRule === null && block.selector === ':root[data-theme="light"]'),
+    dark: cascade(source(themesCss), (block) => block.atRule === null && block.selector === ':root'),
   };
 
   for (const name of ['light', 'dark']) {

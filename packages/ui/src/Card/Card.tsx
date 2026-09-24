@@ -28,11 +28,14 @@ import {
 } from '../utils/headingLevel.js';
 
 export type CardVariant =
-  /** One step above the page. */
+  /**
+   * The card rung inside the default hairline, flat: no shadow and no rim.
+   * What finds it on the sheet is the rung's step and the hairline's.
+   */
   | 'default'
   /**
-   * The TILE: the panel's ground with none of its lift, at the tighter inset,
-   * for one of many records in a grid. Its default padding is `tight`.
+   * The TILE: the card at the tighter inset, for one of many records in a
+   * grid. Its default padding is `tight`.
    */
   | 'subtle'
   /** Transparent, with a strong border. */
@@ -50,8 +53,9 @@ export type CardVariant =
   /** Lifted off the page. */
   | 'elevated'
   /**
-   * A dashed boundary: something that is not quite a record yet. A seat held
-   * by a person rather than an agent, a slot waiting to be filled.
+   * A dashed boundary: something that is not quite a record yet, a slot
+   * waiting to be filled. Never a person: a seat a person holds is a record
+   * like any other, and its badge's circle is what says who holds it.
    */
   | 'dashed';
 

@@ -35,12 +35,18 @@ html {
 
 body {
   margin: 0;
-  background: var(--color-surface-background);
+  /* The FRAME, the lowest of the four rungs: what an application floats on
+     the body (a sheet, a rail) brings its own ground, and the body is the
+     application ground rather than a page. */
+  background: var(--color-surface-frame);
   color: var(--color-text-primary);
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-sm);
+  /* The approved design's dense base, 13px on an 18.85px line: a board is
+     read by scanning rows, not paragraphs. The size is the compact step,
+     which is the body now, and the leading is the body's own step. */
+  font-size: var(--font-size-compact);
   font-weight: var(--font-weight-regular);
-  line-height: var(--font-line-height-normal);
+  line-height: var(--font-line-height-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

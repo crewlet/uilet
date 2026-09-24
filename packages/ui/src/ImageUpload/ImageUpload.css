@@ -17,10 +17,11 @@
      of the six places that read it: a fallback repeated six times is six
      places for the default to drift apart. */
   --crewlet-image-upload-size: 64px;
-  /* The corner that box takes, set per instance beside the size. Declared here
-     for the same reason the size is: a default repeated as a var() fallback at
-     each place that reads it is several places for one default to drift. */
-  --crewlet-image-upload-corner: var(--radius-lg);
+  /* The corner that box takes, set per instance beside the size from Avatar's
+     own `avatarCorner`, which is the one statement of the ladder a script can
+     read. There is deliberately NO default here: the only right value is a
+     proportion of the size, and a stylesheet can only restate that proportion,
+     which is how the trigger and the picture under it came apart before. */
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
@@ -40,19 +41,32 @@
   cursor: pointer;
 }
 
-/* Shape modifiers keep the trigger, the overlay and the Avatar corners in step. */
-.crewlet-image-upload--circle .crewlet-image-upload__trigger,
-.crewlet-image-upload--circle .crewlet-image-upload__overlay {
+/* The kind modifiers keep the trigger, the overlay and the Avatar outlines in
+   step. A person's picture is a circle. */
+.crewlet-image-upload--human .crewlet-image-upload__trigger,
+.crewlet-image-upload--human .crewlet-image-upload__overlay {
   border-radius: var(--radius-circle);
 }
 
 /* THE SAME CORNER THE PICTURE INSIDE TAKES, which is why it is a variable
-   rather than a step: Avatar moves a square badge's radius with its box, so a
+   rather than a step: Avatar moves an agent badge's corner with its box, so a
    trigger pinned to one step is rounder or squarer than the badge under it at
    every size but one, and the badge's corners show through the overlay. */
-.crewlet-image-upload--square .crewlet-image-upload__trigger,
-.crewlet-image-upload--square .crewlet-image-upload__overlay {
+.crewlet-image-upload--agent .crewlet-image-upload__trigger,
+.crewlet-image-upload--agent .crewlet-image-upload__overlay {
   border-radius: var(--crewlet-image-upload-corner);
+}
+
+/* AND THE SAME SQUIRCLE, where the browser draws one, for the same reason:
+   Avatar.css states why its squircle is a whole one at the circle token, and
+   this is that rule for the two frames over the picture. The suite holds the
+   two blocks to one declaration list. */
+@supports (corner-shape: squircle) {
+  .crewlet-image-upload--agent .crewlet-image-upload__trigger,
+  .crewlet-image-upload--agent .crewlet-image-upload__overlay {
+    corner-shape: squircle;
+    border-radius: var(--radius-circle);
+  }
 }
 
 .crewlet-image-upload__trigger:disabled {

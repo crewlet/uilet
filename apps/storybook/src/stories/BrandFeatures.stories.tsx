@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { CSSProperties, ReactNode } from 'react';
 import { CodeSandbox, CompanyAsCode, Hierarchy, HumanInLoop, Knowledge, TurnEngine } from '@crewlethq/icons';
+import { themeScope } from '../themeScope';
 
 /*
  * The six feature illustrations, as a set.
@@ -67,11 +68,15 @@ const grid: CSSProperties = {
 
 const cell: CSSProperties = { display: 'grid', gap: 'var(--spacing-2)', justifyItems: 'center', textAlign: 'center' };
 
-/** One block rendered twice, once per theme, so the pair can be compared. */
+/**
+ * One block rendered twice, each panel in its own palette, so the pair can be
+ * compared. The palette is scoped to the panel by `themeScope`: the theme layer
+ * paints on the root alone, so a data-theme on a panel would paint nothing.
+ */
 const BothThemes = ({ children }: { children: ReactNode }) => (
   <div style={{ display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))' }}>
     {(['light', 'dark'] as const).map((theme) => (
-      <div key={theme} data-theme={theme} style={panel}>
+      <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
         <p style={heading}>{theme === 'light' ? 'Light' : 'Dark'}</p>
         {children}
       </div>

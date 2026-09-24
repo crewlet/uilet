@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { OrgLabel } from '@crewlethq/ui';
-import { ApartmentGlyph, PersonGlyph, SmartToyGlyph, WarningGlyph } from '@crewlethq/icons/glyphs';
+import { BotGlyph, BuildingComplexGlyph, TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * UI / OrgLabel.
@@ -45,7 +45,7 @@ function Node({ children }: { children: React.ReactNode }) {
         width: 'max-content',
         minWidth: 180,
         padding: 8,
-        background: 'var(--color-surface-raised)',
+        background: 'var(--color-surface-subtle)',
         border: '1px solid var(--color-border-default)',
         borderRadius: 'var(--radius-md)',
       }}
@@ -63,7 +63,7 @@ function Row({ children }: { children: React.ReactNode }) {
         alignItems: 'center',
         width: 360,
         padding: '6px 8px',
-        borderBottom: '1px solid var(--color-border-subtle)',
+        borderBottom: '1px solid var(--color-border-default)',
         /* The two the table's own root publishes, because a row's ink is the
            TABLE's rather than the label's: without them a row drawn outside a
            table has no accent to read and its mark is left at the name's own
@@ -85,7 +85,7 @@ export const Node_: Story = {
   render: () => (
     <div style={stack}>
       <Node>
-        <OrgLabel icon={<ApartmentGlyph />} name="Engineering" caption="Department" />
+        <OrgLabel icon={<BuildingComplexGlyph />} name="Engineering" caption="Department" />
       </Node>
       {/* The mark that stands for the THING the chart is about fills three
           quarters of its zone, where a container half-fills it: that is what
@@ -93,24 +93,32 @@ export const Node_: Story = {
           either caption being read. */}
       <Node>
         <OrgLabel
-          icon={<SmartToyGlyph />}
+          icon={<BotGlyph />}
           iconSize="lg"
           name="Dev Agent"
           caption="Crewlet agent"
           trailing={<span style={{ fontSize: 11 }}>idle</span>}
         />
       </Node>
-      {/* A dashed ring is the boundary something standing for somebody outside
-          the system wears: a boundary rather than a hue, so it reads to
-          somebody who cannot separate hues at all. */}
+      {/* A SEAT LEADS WITH ITS BADGE, and the badge's outline is its kind: a
+          squircle for an agent, a circle for a person. A boundary rather than
+          a hue, so it reads to somebody who cannot separate hues at all. It is
+          the approved org chart's 26px badge, larger than a container's glyph
+          beside it, so a seat never reads as a unit. */}
       <Node>
         <OrgLabel
-          icon={<PersonGlyph />}
-          iconRing="dashed"
-          iconSize="lg"
+          avatar={{ name: 'Dev Agent', kind: 'agent' }}
+          name="Dev Agent"
+          caption="Crewlet agent"
+          trailing={<span style={{ fontSize: 11 }}>working</span>}
+        />
+      </Node>
+      <Node>
+        <OrgLabel
+          avatar={{ name: 'Ada Lovelace', kind: 'human' }}
           name="Ada Lovelace"
           caption="Human seat"
-          captionMarks={<WarningGlyph />}
+          captionMarks={<TriangleAlertGlyph />}
         />
       </Node>
     </div>
@@ -123,12 +131,12 @@ export const Row_: Story = {
   render: () => (
     <div>
       <Row>
-        <OrgLabel layout="row" icon={<ApartmentGlyph />} name="Engineering" caption="Unit" />
+        <OrgLabel layout="row" icon={<BuildingComplexGlyph />} name="Engineering" caption="Unit" />
       </Row>
       <Row>
         <OrgLabel
           layout="row"
-          icon={<SmartToyGlyph />}
+          icon={<BotGlyph />}
           name="Dev Agent"
           caption="Agent seat"
           tone="purple"
@@ -138,11 +146,10 @@ export const Row_: Story = {
       <Row>
         <OrgLabel
           layout="row"
-          icon={<PersonGlyph />}
-          iconRing="dashed"
+          avatar={{ name: 'Ada Lovelace', kind: 'human' }}
           name="Ada Lovelace"
           caption="Human seat"
-          captionMarks={<WarningGlyph />}
+          captionMarks={<TriangleAlertGlyph />}
           tone="cyan"
         />
       </Row>
@@ -162,7 +169,7 @@ export const BothLayouts: Story = {
         <p className="t-caption">node</p>
         <Node>
           <OrgLabel
-            icon={<SmartToyGlyph />}
+            icon={<BotGlyph />}
             iconSize="lg"
             name="Dev Agent"
             caption="Crewlet agent"
@@ -175,7 +182,7 @@ export const BothLayouts: Story = {
         <Row>
           <OrgLabel
             layout="row"
-            icon={<SmartToyGlyph />}
+            icon={<BotGlyph />}
             name="Dev Agent"
             caption="Agent seat"
             trailing={<span style={{ fontSize: 11 }}>idle</span>}

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { SegmentedControl, TabPanel } from '@crewlethq/ui';
-import { AccountTreeGlyph, GroupGlyph, ListGlyph } from '@crewlethq/icons/glyphs';
+import { ListGlyph, NetworkGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof SegmentedControl> = {
   title: 'UI/SegmentedControl',
@@ -54,9 +54,9 @@ export const Sections: Story = {
             value={lens}
             onValueChange={setLens}
             options={[
-              { value: 'chart', label: 'Chart', icon: <AccountTreeGlyph /> },
+              { value: 'chart', label: 'Chart', icon: <NetworkGlyph /> },
               { value: 'directory', label: 'Directory', icon: <ListGlyph />, count: 24 },
-              { value: 'charter', label: 'Charter', icon: <GroupGlyph /> },
+              { value: 'charter', label: 'Charter', icon: <UsersGlyph /> },
             ]}
           />
           <TabPanel id="org-lens" value={lens}>

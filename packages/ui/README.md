@@ -6,16 +6,16 @@ Crewlet shared React components. Built on top of `@crewlethq/tokens` (CSS variab
 
 ```tsx
 import '@crewlethq/tokens/css';          // the variables, once at the application entry
-import '@crewlethq/tokens/css/themes';   // light, dark and follow-the-system
+import '@crewlethq/tokens/css/themes';   // dark, light and follow-the-system
 import '@crewlethq/tokens/css/density';  // compact and comfortable, optional
-import '@crewlethq/tokens/css/fonts';    // self-hosted Inter and JetBrains Mono
+import '@crewlethq/tokens/css/fonts';    // self-hosted Geist and Geist Mono
 import '@crewlethq/ui/styles.css';       // every component stylesheet, in one file
 import { Button, Card } from '@crewlethq/ui';
-import { Book2Glyph } from '@crewlethq/icons/glyphs';
+import { BookOpenGlyph } from '@crewlethq/icons/glyphs';
 
 <Card>
   <Card.Body>
-    <Button variant="primary" leadingIcon={<Book2Glyph />}>
+    <Button variant="primary" leadingIcon={<BookOpenGlyph />}>
       Open documentation
     </Button>
     <Button variant="outline">Cancel</Button>
@@ -40,16 +40,18 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 
 | Area | Components |
 | ---- | ---------- |
-| Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `tertiary`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
+| Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
 | Content and text | `Text` (the eight registers), `Prose`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload` |
-| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `PricingCard`, `Avatar`, `CodeBlock`, `Skeleton`, `Eyebrow` |
+| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
+| Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx` |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure` |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar` and `useAppShell`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
+| Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences` |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -61,39 +63,116 @@ land at once.
 
 ## Theming hooks
 
-- **Light and dark palettes.** Import `@crewlethq/tokens/css/themes` and set
-  `data-theme="light"` or `data-theme="dark"` on `<html>`. With the attribute
-  absent the document follows the system. Every component reads the canonical
-  `--color-*` variables, so no provider is needed.
+- **Dark and light palettes.** Import `@crewlethq/tokens/css/themes` and set
+  `data-theme="dark"` or `data-theme="light"` on `<html>`. With the attribute
+  absent the document follows the system, and is dark in a browser that
+  reports no preference: the palette is dark first. `ThemeSwitcher` writes the
+  attribute for an explicit choice and removes it for "Follow the system";
+  `ThemeToggle` flips the palette actually on the screen and writes the
+  explicit opposite. Every component reads the canonical `--color-*`
+  variables, so no provider is needed. Every stored control on one
+  `storageKey` shows one value; an application that owns the preference holds
+  it with one `useThemePreference` and passes `value` and `onChange` to each
+  control, which then writes nothing of its own.
 - **Density.** Import `@crewlethq/tokens/css/density` and set
   `data-density="compact"` or `"comfortable"` on `<html>`. Every spacing and
   size token scales with it, and the small control and row steps floor at 24px
   so no density takes a pointer target under the size a finger can hit.
-- **Accent colour.** The selected, active and focus states read `--color-brand-accent` and its companions from `@crewlethq/tokens`: `--color-brand-accent-rgb` (the same colour as a comma-separated `r, g, b` triple, for translucent tints), `--color-brand-accent-hover`, `--color-brand-accent-active`, `--color-brand-accent-soft` and `--color-brand-accent-soft-strong`. Rebind them together to retint the components. Every overlay portals into the nearest `LayerHost`, or into `<body>` when
-there is none, so declare the override on `<html>` for those panels to follow
-it.
+- **Surfaces.** The components stand on the four rungs `@crewlethq/tokens`
+  defines, lowest first the frame, the sheet, the card and raised. `AppShell`
+  paints the window and its rail on `--color-surface-frame` and floats the
+  screen, its top bar and its one scroller on a sheet of
+  `--color-surface-background`, inset from the frame by `--size-shell-inset`
+  inside the `--color-border-default` hairline at `--radius-sheet`; a card, a popover, a menu and a
+  dialog body are `--color-surface-subtle`, the card rung, and a `Card` is
+  found by the `--color-border-default` hairline it draws round itself rather
+  than by its fill or a shadow: the card is flat, and only an `elevated` one
+  lifts. Rebind a rung on `<html>` and everything standing on it follows.
+- **Accent colour.** The primary `Button`, the selected, active and focus
+  states and the rail's attention count read `--color-brand-accent` and its
+  companions from `@crewlethq/tokens`: `--color-brand-accent-rgb` (the same
+  colour as a comma-separated `r, g, b` triple, for translucent tints),
+  `--color-brand-accent-hover`, `--color-brand-accent-active`,
+  `--color-brand-accent-ink`, `--color-brand-accent-soft`,
+  `--color-brand-accent-soft-strong` and `--color-focus`. The accent is PER
+  PALETTE (`#7c56ff` dark, `#6b45f0` light), so rebind the set together, and
+  under the same three selectors the theme layer paints it with: an override
+  on `:root` alone is beaten by `:root[data-theme="light"]` in light. Declare
+  it on the root rather than on `<body>` or a wrapper: `--shadow-focus`,
+  `--shadow-selection` and `--shadow-glow` are composed from the accent where
+  the tokens declare them, on the root, so they follow only an override
+  declared there.
 
 ```css
-/* Retint every accent state to the brand slate. */
-body {
-  --color-brand-accent: var(--color-brand-slate);
-  --color-brand-accent-hover: var(--color-brand-slate);
-  --color-brand-accent-active: var(--color-brand-slate);
-  --color-brand-accent-rgb: 60, 64, 82;
-  --color-brand-accent-soft: rgba(60, 64, 82, 0.10);
-  --color-brand-accent-soft-strong: rgba(60, 64, 82, 0.32);
+/* Retint every accent state to an indigo, in both palettes. The hover and the
+   press step DARKER, so the white label gains contrast as the button is used.
+   Import it after @crewlethq/tokens/css/themes: each block here weighs the
+   same as the one it overrides, so the later one wins. */
+:root {
+  --color-brand-accent: #5469d4;
+  --color-brand-accent-hover: #4a5cc2;
+  --color-brand-accent-active: #3e50b8;
+  --color-brand-accent-ink: #8b9ff5;
+  --color-brand-accent-rgb: 84, 105, 212;
+  --color-brand-accent-soft: rgba(84, 105, 212, 0.18);
+  --color-brand-accent-soft-strong: rgba(84, 105, 212, 0.32);
+  --color-focus: #8b9ff5;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --color-brand-accent: #5469d4;
+    --color-brand-accent-hover: #4a5cc2;
+    --color-brand-accent-active: #3e50b8;
+    --color-brand-accent-ink: #3e50b8;
+    --color-brand-accent-rgb: 84, 105, 212;
+    --color-brand-accent-soft: rgba(84, 105, 212, 0.14);
+    --color-brand-accent-soft-strong: rgba(84, 105, 212, 0.32);
+    --color-focus: #5469d4;
+  }
+}
+:root[data-theme="light"] {
+  --color-brand-accent: #5469d4;
+  --color-brand-accent-hover: #4a5cc2;
+  --color-brand-accent-active: #3e50b8;
+  --color-brand-accent-ink: #3e50b8;
+  --color-brand-accent-rgb: 84, 105, 212;
+  --color-brand-accent-soft: rgba(84, 105, 212, 0.14);
+  --color-brand-accent-soft-strong: rgba(84, 105, 212, 0.32);
+  --color-focus: #5469d4;
 }
 ```
 
-- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-tint-rgb` on the compact `DataTable`, and `--crewlet-avatar-tint-fg` for the initials on a tinted `Avatar`. Override them from a rule that targets the component's root.
+  That is the accent this kit shipped before 0.5.0, and it clears every floor
+  the violet is held to. Hold a retint of your own to the same floors by
+  appending it to the theme layer the palette suite reads:
+  `runPalette({ tokens, themes: themes + override })` from
+  `@crewlethq/tokens/test/palette`.
+
+- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-rail` on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), `--crewlet-bar-list-label-width` (128px) and `--crewlet-bar-list-value-room` (`6ch` and a gap) for the words' column and the value's room in a `BarList layout="beside"`, and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
 
 The component stylesheets read only variables that `@crewlethq/tokens` emits or
 that the components declare themselves, and the same check refuses a glyph
 drawn as a ligature, anything loaded from a host, a theme painted on a body
 class, the decoration step used as text, and a focus rule that turns the
-outline off without putting one back. `npm run lint` in this package runs it,
-and `npx crewlet-css-check <folder>` runs it and the literal check over an
+outline off without putting one back. A second, literal check refuses a colour,
+font size, radius, duration or z-index spelled out where a token belongs, a
+`color-mix()`, a media query off the breakpoint steps and a hover overlay drawn
+on a pseudo element. `npm run lint` in this package runs both over every
+stylesheet in `src`, and `npx crewlet-css-check <folder>` runs both over an
 application's own stylesheets.
+
+The literal check also pairs every motion with a stop that WINS. A rule that
+starts an animation or a transition is named again, selector for selector, by a
+later rule in the same file inside `@media (prefers-reduced-motion: reduce)`
+that sets it to `none` (or takes the element out with `display: none`), unless
+the motion only starts inside `@media (prefers-reduced-motion: no-preference)`.
+The same selector, later, is the one arrangement the cascade guarantees: the
+two tie on specificity and the stop wins on source order. A stop that names a
+broader selector, a shorter one, or sits above the rule it stops is refused,
+because each of those can lose, and each of them did in this package. "Later"
+is where a browser places it: in nested CSS, declarations written after a
+block nested in their rule come after that block, so a motion written below a
+nested stop beats it and is refused.
 
 ## Overlays
 
@@ -111,6 +190,791 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Breaking changes in 0.5.0
+
+0.5.0 draws the kit in the approved visual system: Geist, a violet accent that
+is the primary action, the four state hues and four chart series fitted to the
+palette suite's floors, Lucide stroke glyphs, and the application shell floated
+on a sheet. `@crewlethq/tokens` and `@crewlethq/icons` move with it, and each
+of their READMEs carries its own "Breaking changes in 0.5.0" for the tokens and
+the glyphs; upgrade the three packages together, as always. Below, every change
+a consumer can see is explained where it happens, and each paragraph whose
+change needs an edit ends in a **What to change** table, `Was` on the left and
+`Is` on the right. A paragraph with no table needs no edit.
+
+**The primary action is the violet accent, and it darkens as it is used.**
+`@crewlethq/tokens` makes the accent a per-palette violet (`#7c56ff` in dark,
+`#6b45f0` in light) and removes the monochrome `--color-brand-primary` family
+and `--color-text-on-brand`. `Button`'s `primary` and `accent` variants already
+painted the accent, so they change colour and nothing else: the fill is the
+new violet, the label is white in both palettes, and hover and press each step
+DARKER rather than brighter, because a brighter fill is a step toward a white
+label (the approved design's brightening hover measured 4.18:1). The focus
+ring every component draws follows the accent too.
+
+**The rail's current row is raised, and the attention count is the accent.**
+`SidebarNav` drew the row the reader is on in the accent's soft tint with the
+accent ink. With the accent spent on the primary action that would read as a
+second primary on every screen, so the current row now stands on
+`--color-surface-elevated` with a `--color-border-default` hairline drawn
+round it inside the row, in the primary ink. The hairline is an
+OUTLINE rather than an inset shadow, so it survives forced-colors mode, which
+drops shadows and backgrounds; a focused current row draws the focus ring in
+its place. A `NavItem`'s `badge` (it was `badgeTone="attention"`, see the
+rail's rows below) is the one hue in the chrome, and it is now the accent's
+fill with the on-accent label rather than the warning tint and ink: a count of what is waiting on the reader asks them
+to act, which is what the accent means, and warning is kept for state. The
+indent guide beside a nested run steps up to `--color-border-strong` on the
+reader's path rather than taking the accent.
+
+**A resting rail row is the secondary ink again.** 0.4 drew every row at
+`--color-text-primary` and its glyph on the decoration step. A row at rest now
+takes `--color-text-secondary`, as the approved design draws it, and a hovered
+row and the current one lift to `--color-text-primary`, so the step between
+them says which row is which before the fill does. The glyph has no colour of
+its own any more: it is drawn in the row's ink on every row, where it used to
+be `--color-text-muted` until the row was hovered or current. Nothing in the
+API changes; a stylesheet of your own that set `.crewlet-nav-item__icon svg`'s
+colour to match the old ramp can drop the rule.
+
+| Was | Is |
+|---|---|
+| `--color-brand-primary`, `-hover`, `-active` in a stylesheet of your own | `--color-brand-accent`, `-hover`, `-active` |
+| `--color-text-on-brand` | `--color-text-on-accent` |
+| an accent override declared on `:root` or `body` alone | the same values under the three theme selectors, as above |
+| a stylesheet tinting `.crewlet-nav-item__row[aria-current='page']` with the accent | drop it: the row is raised with a hairline, and the hairline is its `outline` |
+| a stylesheet relying on `.crewlet-nav-item__badge--attention` being the warning tint | `.crewlet-nav-item__badge`, which is `--color-brand-accent` with `--color-text-on-accent` |
+
+**The chart ramp is four series, and a meter's ordinary reading is the first of
+them.** `@crewlethq/tokens` fits the state and chart hues to the approved design
+(info is working, warning needs a person, danger is stopped, success is done)
+and removes `--color-data-5`. `DATA_COLORS` has four entries and `dataColor(4)`
+is `DATA_COLOR_OTHER`, the residual, so every chart that colours by index
+(`BarList`, `Legend`, `StackedBar`, `TimeSeries`) draws its fifth series and
+beyond as "the rest". A series hue is legal only inside a figure that names it:
+a legend for two series or more, the label for one. That is what a `Meter` is,
+so its ordinary reading, the tone that is not a state, is `quantity`, painted in
+`--color-data-1`: the accent it used to take means "act here", and a bar is not
+something to act on. The three state tones and `neutral` are unchanged. The
+track is the raised rung, `--color-surface-elevated`, rather than the inset
+well: the palette suite measures a fill as a mark on the opaque rungs, and on
+the well the light warning and success fills measured 2.84:1 and 2.86:1. So a
+meter is drawn on a card, which is where the design puts every one: the palette
+holds raised a visible step above the card, and on the raised rung itself an
+opaque track has no edge, so the unfilled remainder, and with it the extent of
+the bar, would disappear. Do not draw a meter on a raised surface.
+
+**A chart can be read mark by mark, by pointer and by keyboard, and
+`StackedColumns` is new.** `TimeSeries` stands a crosshair on the nearest
+instant under the pointer and reads every series there in a tooltip;
+`StackedColumns` reads a column's every part and its total; `StackedBar` reads
+the part under the pointer with its value, its share and the whole, and gains
+an optional `format` for those values and its default sentence, which is now
+also the bar's accessible name. `BarList` takes no reading, because every row
+already prints its value beside its bar. Each plot is one
+tab stop, `←`/`→` walk its marks (`Home` and `End` jump to the ends, and the
+first `←` opens on the newest), and `Escape` closes the reading, stopping there
+only when it closed one, so a chart inside a `Modal` does not close the modal.
+The tooltip is the live region, so a screen reader hears each reading, and its
+words are text tokens only: a series' hue is its swatch, never the colour of a
+word. Its ground is `--color-surface-glass` frosted by `--blur-sm`, not the
+card: it stands over the marks beside the one it reads, and the card, a 5%
+wash in the marketing palette, let every data hue through it, where the glass
+keeps every word over 4.5:1 on each of them. It is placed by a React style
+property (`left`) and never by a style element, so it works under a strict
+Content-Security-Policy. `ChartTooltip` and
+`useChartHover` are exported for a figure of your own.
+
+`StackedColumns` takes `series` (`{ id, name, color? }`, stacked first at the
+baseline) and `buckets` (`{ t, values }`, `values` keyed by series id). A
+series' colour is its place in `series`, and a filter is `hidden` (ids), never
+a shorter list, so hiding one series never repaints the others. It draws its
+OWN legend, from `series` in the same colours with the hidden ones left out,
+because a stacked figure is never drawn without one and a `Legend` written
+beside it by hand was a second copy of the series to keep in step. `legend`
+says where: `below` (the default) under the dates, `head` at the end of the
+chart's head row, top right, as the design's Spend card draws it, beside the
+title and sentence passed as `head`; or `none`, for a screen that names the
+series itself. The
+scale is round (`niceScale`: about four steps of 1, 2, 2.5 or 5), the parts of a
+column stand 2px apart with the gap taken out of the parts, and only the value
+end is rounded, at `--radius-xs`.
+
+Marks change shape with no API change. A `BarList` bar and its track, and a
+`StackedBar`'s track, are rounded at the VALUE END only (the inline end, at
+`--radius-xs`) and square on the baseline, where they were pills. A
+`StackedBar`'s parts stand 2px apart and grow by their value rather than
+taking a percentage width. A `TimeSeries` line is 2px (it was 1.75, which a
+`Sparkline` keeps). A stylesheet of your own that set a part's `width` or
+relied on the pill ends should drop it.
+
+`BarList` takes a `layout`. `stacked`, the default, is the list as it was: the
+label and its value on a line, a thin bar across the row under them. `beside`
+is the design's ranked figure, the Home screen's "Tokens by team" and Spend's
+"By model": the label over its `sub` (at `--font-size-2xs`) in a column of their own
+(`--crewlet-bar-list-label-width`, 128px, so every bar starts on one
+baseline), then a 12px bar rounded at its value end, then the value at the
+BAR's end in the primary ink, in a 30px row (`--size-control-md`). It has no
+track. A bar is its share of the SCALE, the plot less the room kept for the
+longest bar's value (`--crewlet-bar-list-value-room`, `6ch` and the gap), so
+the longest value still fits and every bar is measured against one length.
+The parts of a row are now separated by real spaces, in both layouts, so a
+row that is a link or a button is named "planner 180" rather than
+"planner180".
+
+**A failed row in a `List` marks itself with the danger ink.** The rail and the
+glyph of a `tone="danger"` item were the danger fill, which is measured to 3:1
+on the opaque surfaces alone, and a failed row can also be the selected one, on
+the accent tint. Both take `--color-feedback-danger-ink` now, the step the
+palette suite holds on every row ground, as `DataTable`'s rails already did.
+
+| Was | Is |
+|---|---|
+| `var(--color-data-5)`, or `dataColor(4)` read as a fifth hue | `DATA_COLOR_OTHER`: fold a fifth series into the rest, or split the figure |
+| `<Meter tone="brand">`, the `MeterTone` `'brand'`, `meterTone()` or `progressTone()` answering `'brand'` | `'quantity'` |
+| a stylesheet targeting `.crewlet-meter__fill[data-tone='brand']` | `.crewlet-meter__fill[data-tone='quantity']` |
+| a stylesheet relying on `.crewlet-meter__track` being `--color-surface-inset` | it is `--color-surface-elevated` |
+| a stylesheet overriding the `List` danger rail or glyph with `--color-feedback-danger` | `--color-feedback-danger-ink`, or nothing |
+
+**A phase is a category, and a category has no colour.** `@crewlethq/tokens`
+removes the phase family (`--color-phase-onboarding`, `-execute`, `-review`
+and their `-ink` and `-soft` steps), so `Tag` and `StatusDot` lose the three
+phase tones they painted with it, and the `PhaseTone` type is gone. A phase is
+drawn as the neutral tag, or the neutral dot, with its word: beside a state
+badge the state is the one coloured thing on the row, and the phase is the
+word that says where the work is. The phase tag's uppercase, tracked-open
+register goes with its hue, so every tag is set as the word it says. Inside a
+figure a phase is a series: map each phase to an index of `DATA_COLORS` once,
+in your own code, and pass `dataColor(index)` as its colour in every figure
+and in the `Legend` that names it.
+
+| Was | Is |
+|---|---|
+| `<Tag variant="phase-onboarding">`, `"phase-execute"` or `"phase-review"` | `<Tag>` (neutral) with the phase's word |
+| `<StatusDot tone="phase-onboarding">`, `"phase-execute"` or `"phase-review"` | `<StatusDot>` (neutral) beside the phase's word |
+| the `PhaseTone` type, or `TagVariant` read as including it | `Tone`; `TagVariant` is `Tone` |
+| a stylesheet targeting `.crewlet-tag--phase-*` or `.crewlet-status-dot--phase-*` | `.crewlet-tag--neutral` or the bare `.crewlet-status-dot`; neither class is drawn any more |
+| `var(--color-phase-*)` in a stylesheet of your own | the neutral text steps for a word, or the series you map the phase to inside a figure |
+
+**The shell is tighter, and the drawer takes over at 1024px.** `@crewlethq/tokens`
+moves the shell to the approved design's geometry: the rail is 236px rather
+than 280px and the top bar 52px rather than 64px, and `--breakpoint-shell` is
+1024px rather than 900px, derived as the rail, the 8px inset between the frame
+and the sheet, and the 780px sheet the two-pane Inbox needs. `AppShell` switches
+to its drawer STRICTLY UNDER the step, `(width < 1024px)` in its stylesheet and in
+its `matchMedia`, because at exactly 1024px the wide layout fits; it used to
+switch at `(max-width: 900px)`, a pixel before the arithmetic said it had to.
+Everything that changes shape with the shell moves with it and asks the same
+question: `Modal`'s side sheet goes full width, `Toolbar` folds into its
+overflow, a `SearchTrigger` in a bar drops its label and its hint, and `StatGroup` goes to
+two columns. `AppShell`'s suite holds every one of them to that query and
+asserts the sum.
+
+The pieces that stand at the bar's height follow it down. `Modal`'s side-sheet
+head is 52px with 4px over 24px insets rather than 64px with 16px over 24px:
+the head centres what it holds, so the bar's height is the room round its
+buttons, and the 16px padding would have stood it 12px past the bar behind it.
+`BrandLockup`'s block padding is 4px rather than 8px, so the mark and the
+company's line still come in under the rail's head, 47.95px at the normal
+density and 49.07px at comfortable against 52px.
+
+**The document's line is 13px on 1.45.** The baseline sets the body at the
+compact step on the new body leading, and the three components drawn inside a
+line of the document read that leading rather than one of their own: `Kbd`, the
+initials in `Avatar`, and both lines of `BrandLockup`. `StatusDot` is 7px, the
+design's mark, rather than 6px.
+
+| Was | Is |
+|---|---|
+| a stylesheet of your own switching with the shell at `(max-width: 900px)` | `(width < 1024px)`, which is what `AppShell` asks |
+| a literal `280px` or `64px` lined up with the rail or the bar | `var(--size-shell-rail)` or `var(--size-shell-topbar)` |
+| a stylesheet overriding `.crewlet-modal__header--sheet` padding | the head is 52px with 4px over 24px insets; override `--size-shell-topbar` or the rule itself |
+| a stylesheet overriding `.crewlet-brand` padding | its block padding is `--spacing-1` |
+| a layout that reserved 6px for a `StatusDot` | 7px |
+
+**The screen floats on a sheet, and the rail's rows are the design's.**
+`AppShell` paints the window on the frame and draws everything the reader
+reads (the bar, a banner, the one scroller, a footer) on ONE sheet beside the
+rail: `--color-surface-background` inside the `--color-border-default`
+hairline, rounded at `--radius-sheet` (14px) and held `--size-shell-inset`
+(8px) off the frame on its top, right and bottom, the rail being the gap on its
+left. It is one element because the corner has to clip the bar and the scroller
+alike and the hairline has to run round both. The rail draws no right border
+any more: the sheet's own hairline is the edge between them. The rail's head
+stands the inset plus the bar's height tall, with the inset above it, so the
+lockup is centred on the line the bar's title is on. Under the shell step the
+sheet is the whole window, its inset, corner and hairline collapsed to nothing,
+and the drawer draws the right border the wide rail does not. A shell with no
+rail is one column (`crewlet-app-shell--no-rail`), its sheet inset on the left
+as well; it used to be dropped into the empty rail's 236px cell.
+
+`SidebarNav` draws the approved rail. A row is 30px, the new
+`--size-nav-row` (it was `--size-row-md`, 36px), with 10px between its glyph and
+its word, and the rows of a group stand 2px apart rather than flush. A group's
+name is a sentence-case word at the caption step in the tertiary ink rather
+than an uppercase micro-label, on a heading that stands at the 24px target
+floor, and `NavGroup` takes an `action` (`{ label, icon, onClick }`): a control
+at the heading's end, the add beside "Projects", named by its label and
+reached from the keyboard between the row above and the group's first row. A
+figure at the end of a row is one of two props now, where it was a `badge` of
+any element with a `badgeTone`: `count` is how many of something the
+destination holds, a quiet tabular figure in the tertiary ink with an optional
+`mark` before it, and `badge` is how many things are waiting on the reader, the
+one filled pill in the chrome, in the accent. Both are values (`{ value, label }`),
+the rail paints them, and both are read as the end of the row's name with their
+words: "Inbox, 5 unread", "Triage, 12 open, 2 unread". `lead` is a short key
+drawn as a chip in the glyph's place, a project's `ENG` on the raised rung in
+mono, and read as the start of the name: "ENG Core platform".
+
+The rail's foot never cuts what a row says. An `AppShell.RailRow`'s words took
+whatever its mark and its `trailing` value left them and ended in an ellipsis,
+so a pill beside the engine's status left "engine conn…". The words and the
+value now share one wrapping line: the value stands at the end of the words'
+line while both fit, and drops to the start of a line under them when they do
+not, and words wider than the rail wrap. A `Button` dropped into the foot wraps
+its label the same way. `detail` is new: a second line under the words, which
+makes the row the design's status block ("Engine healthy" over "3 nodes ·
+config epoch 42"), on `--color-surface-subtle` inside the
+`--color-border-default` hairline at `--radius-lg`, the words in the primary
+ink at the medium weight and the detail at `--font-size-2xs` in the tertiary
+ink. The row keeps its inline pad, so its mark stays on the nav glyphs' line.
+A row with no `detail` is drawn as before. The row's content is now wrapped in
+`.crewlet-app-shell__rail-row-body`, holding `.crewlet-app-shell__rail-row-text`
+(the label and the detail) and the trailing value.
+
+| Was | Is |
+|---|---|
+| a stylesheet relying on `.crewlet-app-shell__rail-row-label` truncating, or on `.crewlet-app-shell__rail-row-trailing` being a direct child of the row pushed to its end by `margin-left: auto` | the label wraps; the trailing value is inside `.crewlet-app-shell__rail-row-body` and moves under the words when both do not fit |
+| a stylesheet targeting `.crewlet-app-shell__column` | `.crewlet-app-shell__sheet` |
+| a stylesheet relying on `.crewlet-app-shell` being `--color-surface-background` | it is `--color-surface-frame`; the sheet is `--color-surface-background` |
+| a stylesheet relying on the rail's `border-right` | the sheet's hairline is the edge; the rail draws one only as the narrow drawer |
+| a stylesheet relying on `.crewlet-app-shell__rail-head` standing at `--crewlet-app-shell-topbar` | it stands `--size-shell-inset` plus that, with the inset as its top padding, and at the bar's height under the step |
+| `<NavItem badge={<Count value={3} label="need a person" />} badgeTone="attention">` | `<NavItem badge={{ value: 3, label: 'need a person' }}>` |
+| `<NavItem badge={<Count value="4 live" />}>`, a badge with no tone | `<NavItem count={{ value: 4, label: 'live' }}>` |
+| the `NavBadgeTone` type, or `badgeTone` | gone: `badge` is the accent pill and `count` the quiet figure |
+| a stylesheet targeting `.crewlet-nav-item__badge--attention` | `.crewlet-nav-item__badge`, which is always the accent pill; the quiet figure is `.crewlet-nav-item__count` |
+| a stylesheet styling what was passed into `.crewlet-nav-item__badge` | nothing is passed in: the figure is drawn by the rail, `aria-hidden`, and its words are read at the end of `.crewlet-nav-item__label` |
+| a layout that counted on a rail row standing 36px | `--size-nav-row`, 30px |
+| a stylesheet relying on `.crewlet-nav-group__label` carrying the heading's padding, uppercase and tracked | the padding is on `.crewlet-nav-group__head`; the label is sentence case at `--font-size-xs` |
+
+**A working dot breathes rather than fades, and every stop is one that wins.**
+A pulsing `StatusDot` keeps its fill and breathes a halo out round it, in its
+tone's own soft step: out to 5px and back, once every `--motion-duration-breath`
+(2.2s), the approved design's working pulse. It used to fade the dot itself to
+0.35 and back every 1.8s, and at the bottom of that fade every fill measured
+1.35:1 to 2.17:1 against its ground, under the 3:1 a mark clears. The design
+casts the halo from the dot itself, where it would touch the dot for the whole
+round and become its ground: on their own soft step the light info, success and
+warning fills measure 2.65:1 to 2.95:1, the same fault at a smaller size. So the
+halo is a `box-shadow` cast by the dot's `::after`, a ring box 2px outside it
+(the offset the `Avatar` state ring stands at), and a shadow is never painted
+inside the box that casts it: 2px of the real ground always stands between the
+dot and its halo, and the halo spreads 3px beyond that, to the design's 5px. It
+takes no room and moves nothing beside the dot. The pulsing dot is the ring's
+containing block through a `:where()` rule, which weighs nothing, so a
+`position` of your own on it still wins. The neutral dot, whose family has no
+soft step, breathes in `--color-surface-pressed`. Every halo stands at least
+dE 3 off every surface, the floor the palette suite holds every "can a reader
+notice it" difference to. Under `prefers-reduced-motion: reduce` the pulse is
+held: the dot rests at its fill with no halo, and the word beside it still says
+the work is under way.
+
+Because the halo takes no room, a word set beside a pulsing dot at an ordinary
+mark's 4px was struck by it at every peak. `StatusDot` takes that word now, as
+its `children`: `<StatusDot tone="info" pulse>Reviewing !231</StatusDot>` is one
+line, `.crewlet-status` (which then takes `className`), the hidden dot and the
+read word 7px apart, which is the halo's 5px reach and the 2px of ground that
+stands between the dot and its halo again on the far side. The gap is fixed at
+every density, like the dot and its halo, and the same for every tone, pulsing
+or not, so a column of statuses starts its words on one line. The word is one
+line and ends in an ellipsis rather than the dot giving way. A dot with no
+children is drawn exactly as before.
+
+The literal check behind `crewlet-css-check` used to accept any stylesheet that
+MENTIONED `prefers-reduced-motion`, and three components here passed it while
+still moving for a reader who had asked them not to. `DataTable` stopped its
+motion with one catch-all, `.crewlet-data-table.crewlet-data-table *`, and its
+row's own hover transition outranked it, so the row still eased; `TreeCanvas`
+stopped the ghost card of a node being added by its own class, one class short
+of the rule that starts its arrival; and its `node` appearance stopped its quiet
+controls in a rule above the ones that fade them in, so source order handed
+every tie back to the fade. Each is now stopped by name, after the rule it
+stops, and the check refuses anything else (see "Theming hooks" above).
+`DataTable` stops exactly what its own stylesheet starts, so motion of your own
+inside a table is stopped by your own stylesheet rather than by the table's.
+The check also reads a top-level media query now: it read only rule selectors,
+so a query outside every block was never checked against the breakpoint scale.
+In nested CSS it reads declarations written after a nested block where a
+browser places them, after that block, so a motion written below a nested stop
+is refused rather than read as coming first.
+
+| Was | Is |
+|---|---|
+| a stylesheet relying on a pulsing `StatusDot` fading, or setting its `opacity` | the dot never fades; the pulse is a `box-shadow` halo on its `::after` |
+| a `::after` of your own on a pulsing `StatusDot` | the pulse draws its ring there; decorate a wrapper instead |
+| a pulsing `StatusDot` left `position: static` | it is `position: relative` at no specificity, as the ring's containing block; a `position` of your own still wins, and any but `static` keeps the ring on the dot |
+| motion of your own inside a `DataTable`, left to the table's reduced-motion catch-all | a stop in your own stylesheet: the table no longer stops what it did not start |
+| a stylesheet `crewlet-css-check` passed because it mentioned `prefers-reduced-motion` | name each selector that starts a motion again, in a later `@media (prefers-reduced-motion: reduce)` rule, set to `none` |
+| a top-level `@media` query of your own at a length off the breakpoint scale | one of the `--breakpoint-*` steps; the check reads the query now |
+
+**Every glyph is a Lucide stroke.** `@crewlethq/icons` replaces the Material
+Symbols set with Lucide drawings, stroked at the approved design's 1.75 on the
+24 grid with round caps and joins, so every glyph a component draws changes
+drawing, and the names a component imported change with them; the package's
+README has the full table. Nothing here takes a glyph by name, so a component's
+own glyphs need no edit from you. Two kinds of stylesheet do.
+
+A rule that sets `fill` on an SVG it does not own now paints the INSIDE of a
+stroke drawing, which turns a closed shape solid and an open one into a smear.
+`AddPill` and `OrgLabel` both had one, to take a brand mark's own fill away,
+and both now leave a `.crewlet-glyph` alone and give it their ink through its
+`color`, which the stroke follows. A glyph's weight is
+`--crewlet-glyph-stroke` on an ancestor, which is the one way to move it.
+
+The `Toaster`'s status glyphs were Material's FILLED drawings, a solid disc or
+triangle with the mark knocked out. A stroke set has no such drawing, so a toast
+draws the outline, in the same tone, beside the same title word.
+
+| Was | Is |
+|---|---|
+| a glyph passed to a component under its Material name (`icon={<CloseGlyph />}`) | its Lucide successor from `@crewlethq/icons`' table (`icon={<XGlyph />}`) |
+| a stylesheet of your own setting `fill` on the SVGs inside a component, or on `.crewlet-glyph` | `color` on the element; the glyph's stroke is `currentColor` |
+| a stylesheet setting `stroke-width` on `.crewlet-glyph` | `--crewlet-glyph-stroke` on an ancestor |
+| a toast relying on the filled status glyph | the outline, in the same `--crewlet-toast-mark` tone |
+
+**An agent is a squircle and a person a circle, and a state is a ring.**
+`Avatar` takes a `kind` in place of its `shape` and its `variant`: `agent`, the
+default, is a squircle with its initials in the mono face, and `human` is a
+circle with them in the sans face. That outline is the one cue telling the two
+apart. There were two, a square or a circle and a solid or a dashed edge, and
+nothing stopped them disagreeing; the dashed edge is gone, from the badge and
+from everything that drew it (`EntityChip`, the dashed ring `OrgLabel` drew
+round a glyph and the dashed card `TreeCanvas` drew for a person's seat). An
+agent's corner is 0.29 of its box, the approved design's 7px at 24 and 9px at 30
+as one proportion, and a numeric size now goes through the same rule as a step
+by setting the same `--crewlet-avatar-size`; where the browser draws
+`corner-shape: squircle` it is a whole squircle, at the circle token, which
+stands as deep at the diagonal as that corner does. The neutral badge is the
+design's: the raised rung, the strong hairline and the secondary ink.
+
+A name of ONE word now gives two initials too, as the design's org chart draws
+its seats (`getInitials`, which the badge uses). Words split on whitespace,
+hyphens, underscores and dots as before and give the first letter of each of
+the first two; a single word gives the first letters of its first two case
+humps where its case says it is two words run together (`DevRel` is DR,
+`McCall` MC), and its first two characters otherwise (`CEO` is CE, `SWE` SW,
+`PM` PM, `Acme` AC). One letter each made the CEO and the CTO the same `C`.
+
+| Was | Is |
+|---|---|
+| a test or a layout that counted on a one-word name giving one initial (`Acme` as `A`) | two: `AC`, and `DR` for `DevRel` |
+
+The `brand` tone is gone, because the accent means where the reader is, the
+primary action and focus, and a badge filled with it was identity drawn in that
+colour. A new `ring` draws a state instead: a 1.5px outline 2px outside the
+badge in `info`, `warning`, `danger` or `success`'s own fill, or the accent for
+`brand`, which means selected. The gap is transparent, so the ring reads on any
+ground, and it is an outline, so forced-colors mode keeps it; in that mode every
+ring is one system colour, so say the state in words beside the badge. An image
+keeps its kind's outline and its ring.
+
+`AvatarStack` is new: badges that overlap by 6px, each cut out of the one before
+by a 2px ring of `--crewlet-avatar-stack-ground` (the sheet by default, where
+the design draws every stack; a stack on a card sets it to the card's rung),
+with the members past `max` (four by default) counted in a pill. Its badges are
+the `sm` step by default rather than the design's 22px: the design sets their
+initials at 9px, under this kit's 11px floor, and `sm` is the smallest step at
+which the overlap hides no more of two initials than the design's own stack
+does. It is one image to a screen reader, named for how many of each kind and
+every name, "2 agents and 1 person: Jane Founder, CTO, SWE", or by a `label` of
+your own, or silent with `decorative` where the words beside it already say it.
+
+`OrgLabel`, and so `OrgNodeLabel` and `OrgTableName`, lead a seat with its
+badge: `avatar={{ name, kind }}` in place of `icon`, read by nobody, since the
+name is beside it. It is the approved org chart's 26px badge (the `sm` step) in
+a node and the smallest step, 20px, in a row, larger than a container's glyph in
+either, so a seat never reads as a unit. `ImageUpload` takes the picture's
+`kind` in place of its `shape`; `agent` is the squircle and is what a company's
+mark takes too, since the circle is a person's.
+
+`TreeCanvas`'s `cardOutline` is removed, with the
+`.crewlet-tree-canvas__card--outline` class it set. It drew a dashed edge round
+the card of a seat a person holds, which was the same second cue drawn in a
+card's frame, and the approved org chart draws a person's seat on the same solid
+card as an agent's, with the badge's circle saying who holds it. For the same
+reason a `Card` of the `dashed` variant no longer stands for a person's seat. A
+dashed edge stands for a person nowhere in the kit now: it marks a place nothing
+fills yet, which is what that `Card` variant, a unit's missing lead and the
+ghost of a node being added all draw.
+
+| Was | Is |
+|---|---|
+| `<Avatar shape="square">`, or no `shape` | `<Avatar>`, or `kind="agent"` |
+| `<Avatar shape="circle">` | `<Avatar kind="human">` |
+| `<Avatar variant="dashed">` | `<Avatar kind="human">` |
+| `<Avatar variant="solid">` | drop it |
+| `<Avatar tone="brand">` for the reader's own badge or a selected one | `<Avatar ring="brand">`, on the neutral badge |
+| the `AvatarShape` and `AvatarVariant` types | `AvatarKind`; `AvatarTone` is `'neutral' \| 'seeded'` |
+| `avatarSquareCorner(px)`, which answered a radius token | `avatarCorner(px)`, which answers the corner in px (`px * AVATAR_CORNER_RATIO`) |
+| a stylesheet targeting `.crewlet-avatar--square` or `.crewlet-avatar--circle` | `.crewlet-avatar--agent` or `.crewlet-avatar--human` |
+| a stylesheet targeting `.crewlet-avatar--dashed` or `.crewlet-avatar--brand` | nothing is drawn with either any more |
+| a stylesheet relying on the neutral badge's `--color-border-default` hairline | it is `--color-border-strong` |
+| a stylesheet reading a numeric badge's inline `width` and `height` | its inline `--crewlet-avatar-size` |
+| `<EntityChip variant="human">`, and the `EntityChipVariant` type | `<EntityChip kind="human">`, typed `AvatarKind` |
+| `<OrgNodeLabel iconRing="dashed" icon={…}>`, or the same on `OrgLabel` or `OrgTableName` | `avatar={{ name, kind: 'human' }}` in place of `icon` |
+| `iconRing="none"` | drop it |
+| a stylesheet targeting `.crewlet-org-label__icon--dashed` | the badge inside the zone, `.crewlet-org-label__icon .crewlet-avatar--human` |
+| `interface … extends OrgLabelContent`, `OrgLabelNodeProps`, `OrgLabelRowProps` or `OrgTableNameProps` | an intersection: each is a type now, over `OrgLabelMark` (a glyph or a badge, never both) |
+| `<TreeCanvas cardOutline={…}>` | drop it: a person's seat is the same solid card as an agent's, and its badge's circle says who holds it |
+| a stylesheet targeting `.crewlet-tree-canvas__card--outline` | nothing is drawn with it any more |
+| `<Card variant="dashed">` round a seat a person holds | the card it would take for an agent's seat; the badge's circle says who holds it |
+| `<ImageUpload shape="square">`, or no `shape` | `<ImageUpload>`, or `kind="agent"` |
+| `<ImageUpload shape="circle">` | `<ImageUpload kind="human">` |
+| a stylesheet targeting `.crewlet-image-upload--square` or `.crewlet-image-upload--circle` | `.crewlet-image-upload--agent` or `.crewlet-image-upload--human` |
+
+**The kit's primitives are the approved design's.** A control stands at the
+design's control rhythm: `@crewlethq/tokens` moves `--size-control-md` to 30px
+and `--size-control-sm` to 26px, so a medium `Button` is 30px and a small one
+26px, and so is every icon button, field, select and tab on the same line,
+which read the same steps. `secondary` is the card's own ground inside the
+STRONG hairline, the design's button: a button stands on the very card it is
+filled with, so its boundary is the whole of it, and the default hairline is
+the panel's own divider. It steps up to the raised rung and
+`--color-border-strong-hover` under the pointer. `danger` holds the same weight
+until it is pointed at, and `IconButton`'s `secondary` square follows. The
+borderless button is `ghost`, the word `IconButton`'s borderless square already
+used, so a toolbar holding both is written in one vocabulary; `tertiary` is
+gone. `Menu`'s `triggerVariant`, `ConfirmModal`'s `cancelVariant` and
+`CopyButton`'s `variant` default to it.
+
+**The card is flat.** A `Card` is the card rung inside the default hairline at
+the 12px corner, and nothing else, in both palettes: the `default` variant no
+longer casts `--shadow-xs` or draws a rim of light on its `::after`, and an
+interactive card answers the pointer with its hairline rather than lifting.
+What finds a card on the sheet is the pair the palette suite holds, the rung's
+step and the hairline's. `elevated`, which genuinely stands over the page, is
+the one that lifts. Every copy of the card recipe follows (`StatCard`,
+`StatGroup`, `ErrorBoundary` and `PricingCard`), and in following it drops a
+defect: each carried `box-shadow: var(--shadow-xs), var(--shadow-hairline)`,
+and `--shadow-hairline` is `none` in the light palette, which makes the whole
+list invalid there, so every one of them drew no shadow at all in light and two
+in dark. A selected `PricingCard` draws `--shadow-selection` alone, and the
+glow beside it where it has a discount. The scan that caught this in `Card`
+alone now reads every stylesheet in the package.
+
+**A `Tag` is the design's pill.** The default is 22px with fully round ends,
+the 12px caption step at the medium weight, 9px inside each end and 6px between
+a dot or a glyph and its word. `xs` is the design's 18px count pill at the 11px
+step and `md` a small control's 26px. The neutral tag is the raised rung under
+the secondary ink, the design's quiet pill, rather than the inset overlay, and
+it is drawn inside the strong hairline: its fill IS a surface, so on a raised
+ground (a palette's lead block, a raised card, the rail's current row) a
+borderless one vanished into loose words. Under the pointer an acting neutral
+tag takes the strong step once more. Every state keeps its soft tint under its
+ink and no resting boundary. A tag that acts still clears 24px.
+
+**A `Kbd` is the design's keycap, and a chord is one cap.** The cap is the
+raised rung inside the strong hairline, flat on every side, in the mono face at
+the 11px step and the tertiary ink; the heavier bottom edge said "raised" a
+second time and stood the cap a pixel taller than its line. `subtle` gives up
+the fill and takes the default hairline. `keys` draws the whole shortcut on ONE
+cap, as the design draws every shortcut it shows: `⌘K` on an Apple platform,
+where the menus run a chord's symbols together, and `Ctrl+K` everywhere else,
+where they join the names with a plus. Each key is a `kbd` inside the cap, and
+the one sentence a screen reader is given is unchanged.
+
+**A segmented row is a raised well with a card chip in it.** `Tabs` with
+`variant="pill"` and `SegmentedControl` draw their well on the raised rung inside
+the default hairline, where the inset overlay stood almost nowhere off a card
+and the chips floated. The chip that is on is the card's own ground in the
+primary ink, lifted by the default hairline and `--shadow-xs`; the others are
+the secondary ink on nothing. A chip is 24px with 10px inside each end and the
+`--radius-sm` corner, so the well with its 1px boundary and 2px inset stands at
+exactly the 30px of the button beside it.
+
+**`SearchTrigger` is the rail's field by default.** The approved design puts
+search in the sidebar: the full width of the rail, 34px tall (the medium
+control and one scale step), on the sheet's ground one rung above the frame,
+with its label and its `⌘K` cap at every width, because under the shell
+breakpoint the rail is a drawer as wide as it ever was. The field a screen
+draws in its own bar is `variant="toolbar"`: the card's ground at the control
+height, 200px at rest, and still the form that folds to its glyph under the
+shell breakpoint.
+
+**A `StatCard` is the design's tile.** Its label is set in sentence case at the
+12px caption step, as the caller wrote it, where it was uppercased and tracked
+open in the column-head register. The value is `--font-size-display`, the
+screen's one display number, in tabular figures. Two slots are new. `trend`
+stands a small figure at the END of the value's line, such as a `Sparkline`,
+a `Meter` or a `SegmentedMeter`, or a small control that acts on the number,
+in a slot `--crewlet-statcard-trend-width` wide (96px); a figure fills it and a control
+keeps its own width at its end. `delta` heads the second line with a change
+against an earlier reading, `{ value, polarity }`, drawn in the ink of whether
+it was WANTED (`good` the success ink, `bad` the danger ink, `neutral` the
+secondary ink) rather than of its direction, which its sign already says:
+"+12% vs previous 7 days". Neither is drawn while the tile is loading. The
+second line reserves exactly one line of its own leading, where a reserve in
+`em` was a line shorter than the one a sub draws, and a value too long for its
+tile now ends in an ellipsis rather than being cut mid-digit. `subTone` is new:
+the second line in a state's ink (`success`, `warning`, `danger` or `info`, the
+`-ink` step), for a line that reports a state rather than a fact, as the
+design's "Oldest waiting 2h 10m" is a person kept waiting and takes the warning
+ink. It paints the line and never the value, a `delta` in the line keeps its
+own polarity's ink, and the default, `neutral`, is the quiet ink as before.
+
+**A `Sparkline` is the neutral, and `current` marks now in the accent.** The
+line's default colour is `DATA_COLOR_OTHER`, the residual neutral, at the
+design's 1.75 stroke: a shape beside a number is named by that number and not by
+a legend, so a series hue has nothing to be named by. `current` marks the last
+value with one accent point, cut out of its ground by a 2px ring of
+`--crewlet-spark-ground`. The point is its own element over the plot, since the
+plot is stretched to its box and a circle drawn inside it would be an ellipse,
+so the figure's root is a `div.crewlet-spark` holding the plot's
+`svg.crewlet-spark__plot`.
+
+**A `Meter`'s track is 6px** with round ends at both sizes, the design's meter.
+
+| Was | Is |
+|---|---|
+| `<Button variant="tertiary">` or `<ButtonLink variant="tertiary">`, the `ButtonVariant` `'tertiary'` | `variant="ghost"`, `'ghost'` |
+| `<Menu triggerVariant="tertiary">`, `<ConfirmModal cancelVariant="tertiary">`, `<CopyButton variant="tertiary">` | `"ghost"`, which is the default of all three, as `tertiary` was |
+| a stylesheet targeting `.crewlet-btn--tertiary` | `.crewlet-btn--ghost` |
+| a stylesheet relying on the `--color-border-default` boundary of a `secondary` or `danger` `Button`, or a `secondary` `IconButton` | it is `--color-border-strong`, and `--color-border-strong-hover` under the pointer |
+| a layout lined up with a 32px or 28px control | 30px and 26px; read `--size-control-md` and `--size-control-sm` rather than a number |
+| a stylesheet relying on a `default` `Card`'s shadow or its `::after` rim, or on an interactive card lifting on hover | the card is flat; `variant="elevated"` is the one that lifts |
+| a stylesheet relying on the shadow of a `StatCard`, a `StatGroup`, an `ErrorBoundary` or a `PricingCard`, or the rim on a selected `PricingCard` | each is flat; a selected `PricingCard` draws `--shadow-selection` (and `--shadow-glow` with a discount) |
+| a `Tag` measured at 20px with a 4px corner and an 11px label | 22px, `--radius-pill` and `--font-size-xs`; `size="xs"` is 18px at `--font-size-2xs`, `size="md"` is 26px |
+| a stylesheet relying on the neutral `Tag`'s `--color-surface-inset` fill, or on its transparent boundary | it is `--color-surface-elevated` inside a 1px `--color-border-strong` boundary, and `--color-border-strong-hover` under the pointer |
+| a stylesheet relying on `<Kbd keys>` drawing one `.crewlet-kbd` per key inside `.crewlet-kbd-keys` | one `.crewlet-kbd` cap holds a `kbd.crewlet-kbd__key` per key; `.crewlet-kbd-keys` is gone |
+| a stylesheet relying on a `Kbd`'s 2px bottom edge, its `--color-border-default` boundary or its inset fill | a 1px `--color-border-strong` boundary on `--color-surface-elevated`; `subtle` is `--color-border-default` and no fill |
+| a stylesheet relying on a pill `Tabs` or `SegmentedControl` well on `--color-surface-inset` with no boundary | it is `--color-surface-elevated` inside a 1px `--color-border-default` boundary |
+| a pill chip measured at 26px with 12px side pads and the `--radius-chip` corner, or in the tertiary ink | 24px, 10px and `--radius-sm`, in `--color-text-secondary` |
+| `<SearchTrigger>` in a top bar or a toolbar | `<SearchTrigger variant="toolbar">`; without it, it is the rail's full-width field |
+| `--crewlet-search-trigger-width` set on a `SearchTrigger` | the same property on the `toolbar` form, which is the only one it sizes; its default is 200px rather than 220px |
+| a stylesheet selecting `.crewlet-statcard > .crewlet-statcard__value` | the value is inside `.crewlet-statcard__reading`, beside `.crewlet-statcard__trend` |
+| a `StatCard` label written for the uppercase register | write it in sentence case; it is drawn as written |
+| a `StatCard` value measured at `--font-size-2xl` | `--font-size-display` |
+| a `Sparkline` relying on the accent as its default colour | `DATA_COLOR_OTHER`; pass `color` for another |
+| a stylesheet selecting the `Sparkline` root as an `svg` | the root is `div.crewlet-spark`; the plot is `svg.crewlet-spark__plot` inside it |
+| a `Meter` track measured at 4px | 6px |
+
+**`SegmentedMeter` is new: the design's state bar.** A whole divided into the
+states its parts are in, `segments: { id, value, tone, label }[]` against a
+`total`: how many seats are working (`info`), waiting on a person (`warning`),
+stopped (`danger`) and done (`success`), or how much of a project is done,
+active and still to do. Each part is its share of the whole, 2px from the
+next, in its tone's fill step; what the parts leave of `total` is the
+remainder, drawn last in `--color-border-strong`, which stands at least dE
+7.99 off every rung, so the whole bar is seen on any ground. There is no
+neutral part, because the quiet part of a whole IS the remainder. The bar is
+8px, the figure at the end of a stat tile's value line (the `trend` slot takes
+it), and `size="compact"` is the design's 6px progress bar under a project's
+name. A part of 0 is not drawn at all, so it leaves no gap behind it, and no
+part is ever narrower than the kit's 7px status dot, or than an equal share of
+the bar where so many parts would not fit at 7px. It is one image to a screen
+reader, named for every part it draws and the whole, "4 working, 1 waiting,
+1 stopped, 1 idle of 7", with `remainderLabel` naming the remainder;
+`segmentedMeterLabel()` answers the same words, `label` replaces them for a
+figure with a unit, and `decorative` silences a bar whose figures are written
+beside it. A total under its parts draws the parts against their own sum and
+keeps the figures it was given in the name, as a `Meter` past its maximum
+does; a negative or non-finite count, and two parts with one id, are refused
+with a `RangeError` that names them.
+
+**`Stepper` is new: where a sequence has got to.** The design's step row, an
+ordered list of `steps: { id, label }[]` with `current` naming the step under
+way: the steps before it are done, in the secondary ink behind a check and
+said as "Done" before their words (`doneLabel` for another language); the
+current one is a pill of its tone's soft tint under its ink with the tone's
+dot, `info` by default (`warning`, `danger`, `success` and `brand` for a step
+parked, stopped, finished or where the reader is), and carries
+`aria-current="step"`; the steps after it are the tertiary ink. A 10px rule in
+`--color-border-strong` joins two steps. `current={null}` is a finished
+sequence, every step done and none current, which is how a turn's history is
+drawn. `pulse` breathes the current dot with `StatusDot`'s own pulse, held
+still under a reduced-motion preference. The tone is drawn and never spoken,
+so a step whose state is not ordinary work says so in its own words ("Review ·
+sent back"). A `current` that names none of the steps, and two steps with one
+id, are refused with a `RangeError` that names them.
+
+**A `Meter`, and both new figures, are drawn in forced-colors mode.** The mode
+repaints every author background to `Canvas`, and a meter's track and fill are
+nothing but backgrounds, so the whole bar used to disappear for the reader who
+asked for more contrast. A system colour an author writes is kept, so in that
+mode a `Meter`'s fill and a `SegmentedMeter`'s parts are `CanvasText`, the
+track and the remainder `GrayText`, and a `Stepper`'s current step is
+`HighlightText` on `Highlight`, the system's own drawing of a selection, with
+the rule between two steps in `GrayText`. The hues go, as every hue does in
+that mode; the lengths and the current step stay.
+
+**`CommandPalette` takes scopes, a lead and a row's meta.** The design's ⌘K.
+`scopes: { id, label, count? }[]` with a controlled `scope` / `onScopeChange`
+draws a row of tabs under the field (the chosen one in the primary ink over a
+2px bar, a `count` as a `Count`), and they come as a SET: the types refuse
+one without the others, and without `groupsScope`, which names the scope
+`groups` was computed for. Until it is the chosen scope the rows are withheld,
+the list is `aria-busy` and says `pendingMessage` ("Searching…"), so a
+search still answering the scope the reader left never offers its rows, or
+lets Enter open one, under the new one. Focus never leaves the field: Tab and
+Shift+Tab step the scopes, and so do ← and → while the field is empty; a
+press on a tab picks it without taking focus; the results are the chosen
+tab's `tabpanel`, the field is described by that tab, and a change is said in
+a hidden status line. `lead` is what the surface says before its rows, an
+answer drawn on the raised rung: a polite live region OUTSIDE the listbox,
+mounted empty so its first words are read, never an option (Enter still
+takes the highlighted row), and scrolled with the rows in the one scroller.
+Anything a reader should act on belongs in a row. A row's `hint` now runs on
+its label's line in the tertiary ink rather than at the row's end, which is
+kept for the new `meta`: a short fact or a `Kbd` naming an accelerator the
+application binds on the palette's `onKeyDown`. `footer` is the key legend,
+at the `xs` step on the sheet rung. The surface is the design's 720px wide
+and at most `min(74dvh, 680px)` tall, the artboard's 664 of 900 with a lead
+over five rows; it was 620 by `min(60dvh, 520px)`, sized for a list alone.
+The field row is the design's too: a search glyph always leads the query, in
+the field's own leading slot, and `escapeHint` draws an `Esc` keycap at its
+end (off by default, since it names a key and only the application knows
+whether every reader of its palette has one). Both take no pointer, so a press
+anywhere on the row lands in the text, and both are hidden from assistive
+technology: the glyph restates the field's name and the keycap what a
+dialog's Escape does. Nothing here is renamed: a palette without scopes
+behaves as before, Tab included.
+
+| Was | Is |
+|---|---|
+| a stylesheet targeting a palette row's hint as `.crewlet-listbox__hint` | `.crewlet-palette__hint`, on the label's line; the row's end is `.crewlet-palette__meta` |
+| a layout or a test that counted on the palette being 620px wide and at most `min(60dvh, 520px)` tall | 720px and `min(74dvh, 680px)`; `--crewlet-modal-width` on the palette still sets the width |
+
+**The row under the arrows is raised, not violet.** Every listbox row (a
+`Select`, a `Combobox`, a `TagsInput` and a `CommandPalette` alike) drew its
+highlighted and hovered row in the accent's soft tint with the accent ink.
+The accent is the primary action's fill and the focus ring now, so that row
+read as a second primary on every surface that offers a list. It now stands
+on `--color-surface-elevated`, the raised rung @crewlethq/tokens holds dE 3 off
+the card every list opens on, and its label lifts from the register's
+secondary step to `--color-text-primary`, as the approved palette draws it.
+A palette row's `hint` stays in the tertiary ink on the highlighted row
+rather than taking the row's colour. What the accent still marks in a list is
+a choice made, a multi-select's tick. Nothing is renamed.
+
+| Was | Is |
+|---|---|
+| a test or a stylesheet reading `--color-brand-accent-soft` / `-ink` off a highlighted `.crewlet-listbox__option` | `--color-surface-elevated` and `--color-text-primary` |
+
+**A highlighted listbox row is outlined in forced-colors mode, and a chord is
+not Enter.** The mode repaints backgrounds to `Canvas`, which took the
+highlight of every `Select`, `Combobox` and `CommandPalette` with it; the
+highlighted row now carries a 2px `Highlight` outline inside its box. Enter
+held with Command, Control or Option no longer takes the highlighted option:
+it is left to whoever owns the chord, so a palette's ⌘Enter does not also
+open the row. And a modal's focus trap no longer moves a Tab a control has
+already taken (`preventDefault`): a `Combobox` with `tabCommits` that was the
+last stop in a dialog took the completion and then lost focus to the first
+stop. `useListbox` brings the HIGHLIGHTED row into view by its id rather than
+the first `[aria-selected="true"]` in its scroller, which in a multi-select is
+the first chosen row and in a palette could be a tab in the lead; `TagsInput`
+drops the second reveal it kept to undo that.
+
+| Was | Is |
+|---|---|
+| ⌘Enter, Ctrl+Enter or ⌥Enter relied on to take the highlighted option of a `Select`, a `Combobox`, a `CommandPalette` or a `useListbox` of your own | bind the chord yourself, on the surface's `onKeyDown`; plain Enter takes the option as before |
+| a forced-colors stylesheet of your own outlining a highlighted listbox row | drop it: the row draws a 2px `Highlight` outline itself |
+
+**`ThemeToggle` is new, and the preference controls can be controlled.** The
+design's rail foot carries one button beside the reader's identity row rather
+than the three-way row. `ThemeToggle` resolves the preference against the
+platform, through the same `(prefers-color-scheme: light)` query the theme
+layer answers (so a browser reporting no preference is dark, as it is
+painted), and a press writes the EXPLICIT opposite: on a dark system a reader
+following it gets `light`, and a second press `dark`, never `system`, which
+repaints nothing. It is named for what a press does ("Switch to the light
+theme", `toLightLabel` / `toDarkLabel`) and draws the palette it goes to, a
+sun on a dark page and a moon on a light one; it carries no `aria-pressed`,
+because neither palette is the other's "on". `ThemeSwitcher`,
+`DensitySwitcher` and `ThemeToggle` take `value` / `onChange`: given a
+`value`, a control draws it, reports a pick and writes NOTHING, neither the
+root attribute nor storage, and the types refuse a `storageKey` beside it.
+Without one a control is stored as before, and `onChange` is told after the
+pick is applied and kept. Stored controls on one key now read ONE value: each
+held its own copy, so a press on a toggle left a settings row showing the
+choice it had replaced, and a choice another tab writes now reaches every
+control and the root. A choice storage refuses (a private window, blocked site
+data) is held for the visit, so the control shows the pick it just made rather
+than re-reading an empty store. `useSystemTheme` and `resolveTheme` are
+exported for an application that draws its own. Nothing is renamed.
+
+**`TreeCanvas` boxes a unit round its seats, and its connectors are elbows.**
+The design's org chart. `groups: { id, label, lead?, memberIds }[]` draws a
+DASHED `--color-border-strong` box on `--color-surface-subtle` round a run of
+sibling cards (the seats that report to one lead), with `label` along its top
+in the tertiary ink at 12px and `lead` (the project key chip) AHEAD of it, as
+the design reads a unit: "ENG Engineering · Core", which is also the
+description each member card is given. The edge is dashed because a box round
+cards drawn with a solid edge read as one more, larger card, and it takes the
+strong step because a dash spends half its length on gaps. The box is room the LAYOUT keeps rather than a frame over it:
+`layoutForest` takes `groups` (`{ id, members, inset }`, each member's outline
+widened by the box's padding and header), so a card outside a unit is held a
+gap clear of the unit's box, two boxes never overlap, a short member's
+children start below the box, and `ForestLayout.groups` is each box's
+rectangle, exactly its members' extent plus the padding (`--spacing-3`, the
+label's own inset) and the header's measured height. Members must be
+consecutive children of one card (or consecutive roots), since a rectangle
+round anything else encloses what lies between; anything else is refused by
+name. A member not drawn right now is left out and a group with none drawn is
+not drawn. The box and its label are hidden drawing, like the connectors; each
+member card's node is described by the label (`aria-describedby`), and the
+label rides over the branches on the box's own fill. `connector` gains
+`elbow`, now the default, and `straight`: an elbow is orthogonal, down, a 6px
+corner (`--radius-sm`) drawn as a true arc, across, another corner and down,
+and the run across a parent's children is drawn halfway through the clear
+space between the parent (or its box) and the box its children are in, so it
+never passes through a label. On shared ranks that run is between the RANKS:
+it used to be halfway below a short parent centred in a tall band, inside its
+rank, and a children's row reaching under a taller neighbour ran through that
+neighbour's card. `step` and `curve` are unchanged; a chart that relied on the
+old default asks for `connector="step"`. Connectors are 1.5px, the design's
+weight (the `node` appearance keeps its 3). The design draws them in
+`--color-border-strong`, which measures 1.45:1 on the canvas in dark and 1.43:1
+in light against the 3:1 a connector is held to, so they stay on
+`--color-border-control` (4.40:1 and 4.04:1). A child a fraction of a pixel off
+its parent's centre now gets its two corners rather than a vertical that ended
+beside the child. Nothing is renamed.
+
+| Was | Is |
+|---|---|
+| a `TreeCanvas` with no `connector`, relied on for the stepped connector | `connector="step"`; the default is `elbow` |
+| a stylesheet or a test reading a connector's 1px width | 1.5px, still `--color-border-control`; the `node` appearance keeps its 3px |
+
+**A `Meter` takes its thresholds, or its verdict.** The `spent` ramp turned at
+three quarters of the maximum for every caller, so an application whose own
+rule warns elsewhere had to compute the tone itself and pass `tone`, which
+names a paint rather than a state. Two props replace that. `thresholds={{ near:
+0.9 }}` moves the middle step to the given FRACTION of the limit and keeps the
+rest of the ramp: at or past the maximum the bar is `danger`, at or past `near`
+it is `warning`, below that it is the ordinary `quantity`. The fraction is
+compared with `value / max` as given, so `near: 0.9` flips at exactly 90 of
+100, and one outside (0, 1] is refused with a `RangeError` that names it (at 1
+there is no middle step). `state` is the VERDICT of a consumer that owns the
+rule, such as the engine that enforces a budget: `'ok'`, `'near'` or
+`'refusing'`, painted `quantity`, `warning` and `danger`. Given a state the
+meter derives nothing, whatever the fill; the bar is still drawn at the value
+against the maximum, and an unknown state is refused rather than drawn as the
+ordinary reading. The types refuse a second opinion beside either one: a
+`state` with a `tone`, a `polarity` or `thresholds`, and `thresholds` with a
+`tone` or with `polarity="progress"`, whose ramp has no middle step. The tone is
+drawn and never spoken, so a refusing budget says so in its `valueText`.
+`meterState(fraction, thresholds?)` and `meterStateTone(state)` are the same
+rule for an application drawing its own figure; `meterTone(percent)` is
+`meterState` at `DEFAULT_METER_THRESHOLDS` (`{ near: 0.75 }`), unchanged.
+`MeterProps` is now a union of `MeterVerdictProps`, `MeterRampProps` and
+`MeterThresholdProps` over the shared props, and an interface cannot extend a
+union, so a props type of your own built on it is an intersection. A meter
+given neither prop is drawn exactly as before.
+
+| Was | Is |
+|---|---|
+| `interface BudgetMeterProps extends MeterProps { … }` | `type BudgetMeterProps = MeterProps & { … }` |
+| a `tone` computed from your own rule and passed to `Meter` | `state` with your verdict (`'ok'`, `'near'`, `'refusing'`), or `thresholds={{ near }}` for the fraction; `tone` stays for a paint that is not a state |
 
 ## Breaking changes in 0.3.0
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AddGlyph, ArrowForwardGlyph, DifferenceGlyph, RemoveGlyph } from '@crewlethq/icons/glyphs';
+import { ArrowRightGlyph, DiffGlyph, MinusGlyph, PlusGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -40,9 +40,9 @@ export interface DiffListProps {
 }
 
 const GLYPHS = {
-  added: AddGlyph,
-  removed: RemoveGlyph,
-  changed: DifferenceGlyph,
+  added: PlusGlyph,
+  removed: MinusGlyph,
+  changed: DiffGlyph,
 } as const;
 
 /**
@@ -114,7 +114,7 @@ export function DiffList({ rows, emptyMessage, labels: overrides, className }: D
               ) : (
                 <>
                   <span className="crewlet-diff-list__from">{row.from}</span>
-                  <ArrowForwardGlyph className="crewlet-diff-list__arrow" size="sm" />
+                  <ArrowRightGlyph className="crewlet-diff-list__arrow" size="sm" />
                   <VisuallyHidden>{labels.to}</VisuallyHidden>
                   <span className="crewlet-diff-list__to">{row.to}</span>
                 </>

@@ -108,7 +108,7 @@ function Harness({
     if (parent !== null) {
       const which = ADD_BUTTONS[column - 1]!;
       return (
-        <Button size="small" variant="tertiary" tabIndex={grid.tabStop(id, column) ? 0 : -1} onClick={() => onAdd?.(parent, which)}>
+        <Button size="small" variant="ghost" tabIndex={grid.tabStop(id, column) ? 0 : -1} onClick={() => onAdd?.(parent, which)}>
           {which}
         </Button>
       );

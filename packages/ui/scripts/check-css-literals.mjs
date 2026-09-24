@@ -1,17 +1,11 @@
 #!/usr/bin/env node
 // Refuses a value a component should have taken from a token, over the folders
-// it is given.
+// it is given. The package's own lint runs it over all of src/, so every
+// component keeps these rules at every commit.
 //
-// WHY IT TAKES FOLDERS. Its sibling, check-css-variables.mjs, runs over the
-// whole package and holds rules no component may break at any point. This one
-// holds the rules a folder OPTS INTO as it is rewritten onto the token layer,
-// so a component that has not been rewritten yet does not have to be
-// allow-listed to keep the build green. The list of folders in the package's
-// lint script is the record of which are done; when the last one lands, the
-// list becomes `src` and this paragraph goes with it.
-//
-// It is also the published bin, `crewlet-css-check`, so a consumer can hold
-// its own stylesheets to the same rules.
+// WHY IT TAKES FOLDERS. It is also the published bin, `crewlet-css-check`, so
+// a consumer can hold its own stylesheets to the same rules, and a consumer's
+// stylesheets live wherever its build puts them.
 //
 // THE RULES.
 //
@@ -25,9 +19,27 @@
 //     off the scale is a component that drifts from the one beside it.
 //  3. No color-mix(). Mixing two tokens produces a third colour nobody
 //     measured, which is how a "warning text" step ended up at 4.41:1.
-//  4. An animation or a transition is paired with a reduced-motion rule IN THE
-//     SAME FILE. The document baseline collapses motion too, but a component
-//     is also used in an application that does not import the baseline.
+//  4. EVERY MOTION IS PAIRED WITH ITS STOP. A rule that starts an animation or
+//     a transition is named again, selector for selector, by a later rule in
+//     the same file inside `@media (prefers-reduced-motion: reduce)` that sets
+//     it to `none` (or takes the element out with `display: none`), unless it
+//     only starts inside `@media (prefers-reduced-motion: no-preference)`.
+//     The document baseline collapses motion too, but a component is also
+//     used in an application that does not import the baseline.
+//     THE SAME SELECTOR, LATER, because that is the one arrangement the
+//     cascade guarantees: the two tie on specificity and the stop wins on
+//     source order. The rule was "the file mentions prefers-reduced-motion",
+//     and three components passed it while still moving for a reader who had
+//     asked them not to. DataTable stopped everything under a catch-all,
+//     `.crewlet-data-table.crewlet-data-table *`, which is two classes, and
+//     its row's transition was two classes and two elements. TreeCanvas
+//     stopped `.crewlet-tree-canvas__card--composing`, one class, where the
+//     ghost's arrival started on two. And TreeCanvas stopped its node
+//     controls ABOVE the rules that started them, so source order handed
+//     every tie back to the motion. A stop that looks broader is not one the
+//     check can verify, and all three of those looked right. LATER is where
+//     a browser places it: declarations written after a block nested in their
+//     rule come after that block, so a motion below a nested stop beats it.
 //  5. A media query's length is one of the breakpoint tokens. A media query
 //     cannot read a custom property, so the number has to be written out; this
 //     is what says it is still the same number.
@@ -53,6 +65,17 @@ const LENGTH_IN_QUERY = /(\d*\.?\d+)px/g;
 const COLOUR_PROPERTY =
   /^(color|background|background-color|border(-(top|right|bottom|left))?-color|border|border-(top|right|bottom|left)|outline|outline-color|fill|stroke|box-shadow|text-shadow|caret-color|column-rule-color|text-decoration-color|accent-color|scrollbar-color|--crewlet-[\w-]*)$/;
 
+/** The declarations that start a motion, and the one each belongs to. */
+const MOTION = new Map([
+  ['animation', 'animation'],
+  ['animation-name', 'animation'],
+  ['transition', 'transition'],
+  ['transition-property', 'transition'],
+]);
+
+/** The one query a stop is read inside: exactly this, with nothing else around it. */
+const REDUCE = /^@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)$/;
+
 function declarations(body) {
   const found = [];
   for (const part of body.split(';')) {
@@ -76,6 +99,123 @@ function withoutTokens(value) {
 }
 
 /**
+ * One selector, spelled one way: whitespace collapsed, none round a combinator,
+ * and one kind of quote. Two spellings of one selector are one selector here,
+ * so a stop is never refused for its layout.
+ */
+function normalSelector(selector) {
+  return selector
+    .replace(/\s+/g, ' ')
+    .replace(/\s*([>+~])\s*/g, '$1')
+    .replace(/"/g, "'")
+    .trim();
+}
+
+/** A selector list split at its own commas, not the ones inside `:not(…)` or `[…]`. */
+function selectorList(list) {
+  const parts = [];
+  let depth = 0;
+  let from = 0;
+  for (let at = 0; at < list.length; at += 1) {
+    const char = list[at];
+    if (char === '(' || char === '[') depth += 1;
+    else if (char === ')' || char === ']') depth -= 1;
+    else if (char === ',' && depth === 0) {
+      parts.push(list.slice(from, at));
+      from = at + 1;
+    }
+  }
+  parts.push(list.slice(from));
+  return parts;
+}
+
+/**
+ * The selectors a block's own declarations apply to, with any nesting
+ * resolved, or null for a block that declares for no element: a top-level
+ * at-rule, or a keyframe.
+ */
+function appliesTo(block) {
+  let list = null;
+  for (const head of [...block.context, block.selector]) {
+    if (/^@keyframes\b/.test(head)) return null;
+    if (head.startsWith('@')) continue;
+    const parts = selectorList(head);
+    list =
+      list === null
+        ? parts
+        : list.flatMap((parent) => parts.map((part) => (part.includes('&') ? part.replaceAll('&', parent) : `${parent} ${part}`)));
+  }
+  return list === null ? null : list.map(normalSelector);
+}
+
+/** The conditional heads a block sits under, its own included when it is one. */
+function conditions(block) {
+  return [...block.context, block.selector].filter((head) => head.startsWith('@')).map((head) => head.replace(/\s+/g, ' '));
+}
+
+/**
+ * Whether a block's declarations reach a browser only when the reader has NOT
+ * asked for less motion. Only a plain conjunction counts: under `not`, `or` or
+ * a comma list the same block also applies to a reader who has.
+ */
+function onlyWithMotion(heads) {
+  return heads.some(
+    (head) =>
+      /^@media\b/.test(head) && /\(\s*prefers-reduced-motion\s*:\s*no-preference\s*\)/.test(head) && !/,|\bor\b|\bnot\b/.test(head),
+  );
+}
+
+/**
+ * Rule 4: every rule that starts a motion, answered selector for selector by a
+ * later stop in the same file. Returns the findings.
+ */
+function unpairedMotion(file) {
+  const starts = [];
+  const stops = [];
+  for (const block of rules(file.text)) {
+    const selectors = appliesTo(block);
+    if (selectors === null) continue;
+    const heads = conditions(block);
+    const reduced = heads.some((head) => /prefers-reduced-motion\s*:\s*reduce/.test(head));
+    const isStop = heads.length === 1 && REDUCE.test(heads[0] ?? '');
+    for (const { property, value } of declarations(block.body)) {
+      const important = /!\s*important\s*$/i.test(value);
+      const bare = value.replace(/!\s*important\s*$/i, '').trim().toLowerCase();
+      if (isStop && property === 'display' && bare === 'none') {
+        for (const family of ['animation', 'transition']) stops.push({ family, selectors, index: block.index, important });
+        continue;
+      }
+      const family = MOTION.get(property);
+      if (family === undefined) continue;
+      if (isStop && bare === 'none') stops.push({ family, selectors, index: block.index, important });
+      // Motion declared for a reader who asked for less is a deliberate
+      // alternative, such as a fade in place of a slide, and motion declared
+      // only for a reader who did not ask needs no stop.
+      if (reduced || onlyWithMotion(heads) || bare === 'none') continue;
+      starts.push({ family, property, selectors, index: block.index, important });
+    }
+  }
+
+  const problems = [];
+  for (const start of starts) {
+    for (const selector of start.selectors) {
+      const stopped = stops.some(
+        (stop) =>
+          stop.family === start.family &&
+          stop.index > start.index &&
+          (stop.important || !start.important) &&
+          stop.selectors.includes(selector),
+      );
+      if (stopped) continue;
+      problems.push(
+        `${file.where}:${lineOf(file.text, start.index)}: ${start.property} on ${selector} has no reduced-motion stop. Name the same selector in a later rule of this file inside @media (prefers-reduced-motion: reduce) and set ${start.family}: none, or start it inside @media (prefers-reduced-motion: no-preference): a stop naming another selector can lose on specificity, and one above the rule it stops loses on source order`,
+      );
+    }
+  }
+  return problems;
+}
+
+/**
  * The breakpoint steps, from the tokens package's own typed export.
  *
  * `import.meta.resolve` rather than `createRequire().resolve`: the tokens
@@ -94,13 +234,13 @@ export async function findings(roots, base = packageRoot) {
 
   for (const file of files) {
     const at = (index) => `${file.where}:${lineOf(file.text, index)}`;
-    const hasReducedMotion = file.text.includes('prefers-reduced-motion');
 
-    for (const { selector, body, index } of rules(file.text)) {
+    for (const { selector, body, index, nestedDeclarations } of rules(file.text)) {
       const where = at(index);
-      const inQuery = /@media/.test(selector);
 
-      if (inQuery) {
+      // Declarations resumed after a nested block carry their block's head
+      // again, and the head was read with the block.
+      if (/^@media\b/.test(selector) && !nestedDeclarations) {
         for (const match of selector.matchAll(LENGTH_IN_QUERY)) {
           if (!allowed.has(Number(match[1]))) {
             problems.push(
@@ -142,11 +282,7 @@ export async function findings(roots, base = packageRoot) {
       }
     }
 
-    if (!hasReducedMotion && /(^|[;{\s])(animation|transition)\s*:/.test(file.text)) {
-      problems.push(
-        `${file.where}: animates or transitions with no prefers-reduced-motion rule in the file. The document baseline is opt-in, so a component states its own`,
-      );
-    }
+    problems.push(...unpairedMotion(file));
   }
 
   return { problems, checked: `${files.length} stylesheets in ${roots.length} folder(s)` };

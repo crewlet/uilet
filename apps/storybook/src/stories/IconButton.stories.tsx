@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { IconButton } from '@crewlethq/ui';
 import {
-  AddGlyph,
-  CloseGlyph,
-  ContentCopyGlyph,
-  DeleteGlyph,
-  DragIndicatorGlyph,
+  CopyGlyph,
+  GripVerticalGlyph,
+  PlusGlyph,
   SettingsGlyph,
+  TrashGlyph,
+  XGlyph,
 } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof IconButton> = {
@@ -16,7 +16,7 @@ const meta: Meta<typeof IconButton> = {
     label: 'Add',
     size: 'md',
     variant: 'soft-brand',
-    icon: <AddGlyph />,
+    icon: <PlusGlyph />,
   },
   argTypes: {
     size: { control: 'inline-radio', options: ['sm', 'md', 'lg'] },
@@ -41,23 +41,23 @@ export const Secondary: Story = {
 };
 
 export const SoftBrandAdd: Story = {
-  args: { variant: 'soft-brand', icon: <AddGlyph />, label: 'Add policy' },
+  args: { variant: 'soft-brand', icon: <PlusGlyph />, label: 'Add policy' },
 };
 
 export const GhostCopy: Story = {
-  args: { variant: 'ghost-brand', icon: <ContentCopyGlyph />, label: 'Copy to clipboard' },
+  args: { variant: 'ghost-brand', icon: <CopyGlyph />, label: 'Copy to clipboard' },
 };
 
 export const GhostDangerRemove: Story = {
-  args: { variant: 'ghost-danger', icon: <CloseGlyph />, label: 'Remove tag' },
+  args: { variant: 'ghost-danger', icon: <XGlyph />, label: 'Remove tag' },
 };
 
 export const GhostNeutralDrag: Story = {
-  args: { variant: 'ghost', icon: <DragIndicatorGlyph />, label: 'Drag to reorder' },
+  args: { variant: 'ghost', icon: <GripVerticalGlyph />, label: 'Drag to reorder' },
 };
 
 export const Disabled: Story = {
-  args: { variant: 'soft-brand', disabled: true, icon: <AddGlyph />, label: 'Add disabled' },
+  args: { variant: 'soft-brand', disabled: true, icon: <PlusGlyph />, label: 'Add disabled' },
 };
 
 /**
@@ -67,7 +67,7 @@ export const Disabled: Story = {
 export const WithDisabledReason: Story = {
   args: {
     variant: 'ghost-danger',
-    icon: <DeleteGlyph />,
+    icon: <TrashGlyph />,
     label: 'Delete unit',
     disabledReason: 'A unit with seats in it cannot be deleted',
   },
@@ -87,10 +87,10 @@ export const Sizes: Story = {
 export const AllVariants: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-      <IconButton variant="soft-brand" label="Soft brand" icon={<AddGlyph />} />
+      <IconButton variant="soft-brand" label="Soft brand" icon={<PlusGlyph />} />
       <IconButton variant="ghost" label="Ghost" icon={<SettingsGlyph />} />
-      <IconButton variant="ghost-brand" label="Ghost brand" icon={<ContentCopyGlyph />} />
-      <IconButton variant="ghost-danger" label="Ghost danger" icon={<CloseGlyph />} />
+      <IconButton variant="ghost-brand" label="Ghost brand" icon={<CopyGlyph />} />
+      <IconButton variant="ghost-danger" label="Ghost danger" icon={<XGlyph />} />
     </div>
   ),
 };

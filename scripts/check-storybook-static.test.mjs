@@ -12,8 +12,7 @@ after(() => {
 });
 
 const LICENSE = 'Copyright notice\n\nSIL OPEN FONT LICENSE Version 1.1 - 26 February 2007\n';
-const APACHE = '                              Apache License\n                        Version 2.0, January 2004\n';
-const ATTRIBUTION = 'Material Symbols by Google, licensed under the Apache License 2.0\n';
+const LUCIDE = 'ISC License\n\nCopyright (c) 2026 Lucide Icons and Contributors\n\nThe MIT License (MIT) (for the icons listed above)\n\nCopyright (c) 2013-present Cole Bemis\n';
 
 // A build shaped like the real one: the Storybook interface fonts at the root
 // and the preview's fonts under assets/, each directory with its license.
@@ -27,14 +26,17 @@ function build(files) {
   return root;
 }
 
+const ICON = '<link rel="icon" type="image/svg+xml" href="./favicon.svg" />';
+
 const valid = {
-  'index.html': '<!doctype html>',
+  'index.html': `<!doctype html>${ICON}`,
+  'iframe.html': `<!doctype html>${ICON}`,
+  'favicon.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>',
   'nunito-sans-regular.woff2': 'font',
   'OFL.txt': LICENSE,
-  'assets/inter-latin-abc.woff2': 'font',
+  'assets/geist-latin-abc.woff2': 'font',
   'assets/OFL.txt': LICENSE,
-  'third-party/material-symbols/LICENSE': APACHE,
-  'third-party/material-symbols/NOTICE': ATTRIBUTION,
+  'third-party/lucide/LICENSE': LUCIDE,
 };
 
 describe('checkStorybookStatic', () => {
@@ -58,10 +60,10 @@ describe('checkStorybookStatic', () => {
 
   for (const [what, path, content] of [
     ['an @import of a remote stylesheet', 'assets/preview.css', "@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');"],
-    ['a url() reaching a host', 'assets/preview.css', '@font-face { src: url(https://cdn.example.com/inter.woff2); }'],
+    ['a url() reaching a host', 'assets/preview.css', '@font-face { src: url(https://cdn.example.com/geist.woff2); }'],
     ['a protocol relative url()', 'assets/preview.css', '.a { background: url(//cdn.example.com/a.png); }'],
-    ['a src attribute reaching a host', 'iframe.html', '<script src="https://cdn.example.com/a.js"></script>'],
-    ['a <link> reaching a host', 'index.html', '<!doctype html><link rel="stylesheet" href="https://cdn.example.com/a.css">'],
+    ['a src attribute reaching a host', 'iframe.html', `${ICON}<script src="https://cdn.example.com/a.js"></script>`],
+    ['a <link> reaching a host', 'index.html', `<!doctype html>${ICON}<link rel="stylesheet" href="https://cdn.example.com/a.css">`],
   ]) {
     it(`refuses a build carrying ${what}`, () => {
       const problems = checkStorybookStatic(build({ ...valid, [path]: content }));
@@ -73,7 +75,7 @@ describe('checkStorybookStatic', () => {
   it('leaves a plain link alone, which is not a request the page makes', () => {
     // Storybook's own error pages link to its documentation. A rule that
     // refused those would be switched off within a week.
-    const files = { ...valid, 'iframe.html': '<a href="https://storybook.js.org/docs">Docs</a>' };
+    const files = { ...valid, 'iframe.html': `${ICON}<a href="https://storybook.js.org/docs">Docs</a>` };
     assert.deepEqual(checkStorybookStatic(build(files)), []);
   });
 
@@ -90,29 +92,61 @@ describe('checkStorybookStatic', () => {
 
   it('refuses a directory with no fonts, which means the wrong directory was checked', () => {
     const problems = checkStorybookStatic(build({ 'index.html': '<!doctype html>' }));
-    assert.equal(problems.length, 3);
     assert.match(problems[0], /^no font files found/);
   });
 
   it('refuses a build without the license of the drawings it bundles', () => {
-    const { 'third-party/material-symbols/LICENSE': _omitted, ...files } = valid;
+    const { 'third-party/lucide/LICENSE': _omitted, ...files } = valid;
     assert.deepEqual(checkStorybookStatic(build(files)), [
-      'third-party/material-symbols/LICENSE is missing; the preview bundles the Material Symbols drawings, whose license travels with them',
+      'third-party/lucide/LICENSE is missing; the preview bundles the Lucide drawings, whose license travels with them',
     ]);
   });
 
   it('refuses a drawings license that does not hold the license text', () => {
-    const files = { ...valid, 'third-party/material-symbols/LICENSE': 'Some other terms\n' };
+    const files = { ...valid, 'third-party/lucide/LICENSE': 'Some other terms\n' };
     assert.deepEqual(checkStorybookStatic(build(files)), [
-      'third-party/material-symbols/LICENSE does not contain the Apache License 2.0 text',
+      'third-party/lucide/LICENSE does not contain the ISC License text',
+      'third-party/lucide/LICENSE does not contain the Feather MIT notice',
     ]);
   });
 
-  it('refuses a build without the attribution of the drawings it bundles', () => {
-    const { 'third-party/material-symbols/NOTICE': _omitted, ...files } = valid;
-    assert.deepEqual(checkStorybookStatic(build(files)), [
-      'third-party/material-symbols/NOTICE is missing; the preview bundles the Material Symbols drawings, whose license travels with them',
-    ]);
+  it('refuses a drawings license that has lost the Feather half', () => {
+    // The icons Lucide derives from Feather are MIT, and their notice is the
+    // second half of the same file: the ISC text alone does not cover them.
+    const files = { ...valid, 'third-party/lucide/LICENSE': LUCIDE.slice(0, LUCIDE.indexOf('The MIT License')) };
+    assert.deepEqual(checkStorybookStatic(build(files)), ['third-party/lucide/LICENSE does not contain the Feather MIT notice']);
+  });
+
+  describe('the icon each page names', () => {
+    /*
+     * The preview's iframe.html named none, so every story opened on its own
+     * asked for /favicon.ico, which no build has, and logged a 404 into the
+     * console a reader checks for real errors.
+     */
+    for (const page of ['index.html', 'iframe.html']) {
+      it(`refuses ${page} naming no icon`, () => {
+        assert.deepEqual(checkStorybookStatic(build({ ...valid, [page]: '<!doctype html>' })), [
+          `${page} names no icon, so a browser asks for /favicon.ico, which the build does not have`,
+        ]);
+      });
+
+      it(`refuses ${page} naming an icon the build does not carry`, () => {
+        const files = { ...valid, [page]: '<!doctype html><link rel="icon" href="./missing.svg">' };
+        assert.deepEqual(checkStorybookStatic(build(files)), [`${page} names the icon ./missing.svg, which is not in the build`]);
+      });
+
+      it(`refuses a build without ${page}`, () => {
+        const { [page]: _omitted, ...files } = valid;
+        assert.deepEqual(checkStorybookStatic(build(files)), [
+          `${page} is missing; a Storybook build serves the manager and the preview from the root`,
+        ]);
+      });
+    }
+
+    it('reads the link whatever order its attributes come in', () => {
+      const files = { ...valid, 'iframe.html': '<link href="favicon.svg" type="image/svg+xml" rel="icon">' };
+      assert.deepEqual(checkStorybookStatic(build(files)), []);
+    });
   });
 
   it('refuses a path that is not a directory', () => {

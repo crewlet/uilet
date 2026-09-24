@@ -1,17 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import {
-  AccountTreeGlyph,
-  DashboardGlyph,
-  DnsGlyph,
-  GroupGlyph,
+  ClockGlyph,
+  CoinsGlyph,
+  InboxGlyph,
   KeyGlyph,
-  ScheduleGlyph,
-  TerminalGlyph,
-  TokenGlyph,
+  LayoutDashboardGlyph,
+  NetworkGlyph,
+  PlusGlyph,
+  ServerGlyph,
+  SquareTerminalGlyph,
+  UsersGlyph,
 } from '@crewlethq/icons/glyphs';
 import { density } from '@crewlethq/tokens';
-import { Count, NavGroup, NavItem, SidebarNav } from '@crewlethq/ui';
+import { NavGroup, NavItem, SidebarNav, StatusDot } from '@crewlethq/ui';
 
 const meta: Meta<typeof SidebarNav> = {
   title: 'UI/SidebarNav',
@@ -28,13 +30,7 @@ const meta: Meta<typeof SidebarNav> = {
       context.parameters['bare'] === true ? (
         <Story />
       ) : (
-        <div
-          style={{
-            width: 'var(--size-shell-rail)',
-            background: 'var(--color-surface-topbar)',
-            borderRight: '1px solid var(--color-border-default)',
-          }}
-        >
+        <div style={{ width: 'var(--size-shell-rail)', background: 'var(--color-surface-frame)' }}>
           <Story />
         </div>
       ),
@@ -63,26 +59,32 @@ export const Sections: Story = {
           <NavItem
             href="#/"
             label="Overview"
-            icon={<DashboardGlyph size="sm" />}
+            icon={<LayoutDashboardGlyph size="sm" />}
             current={at === 'overview'}
             onClick={go('overview')}
-            badge={<Count value={3} label="need a person" />}
-            badgeTone="attention"
+          />
+          <NavItem
+            href="#/inbox"
+            label="Inbox"
+            icon={<InboxGlyph size="sm" />}
+            current={at === 'inbox'}
+            onClick={go('inbox')}
+            badge={{ value: 3, label: 'need a person' }}
           />
         </NavGroup>
         <NavGroup label="Company">
           <NavItem
             href="#/people"
             label="People"
-            icon={<GroupGlyph size="sm" />}
+            icon={<UsersGlyph size="sm" />}
             current={at === 'people'}
             onClick={go('people')}
-            badge={<Count value="4 live" />}
+            count={{ value: 4, label: 'working', mark: <StatusDot tone="info" pulse /> }}
           />
           <NavItem
             href="#/org"
             label="Org chart"
-            icon={<AccountTreeGlyph size="sm" />}
+            icon={<NetworkGlyph size="sm" />}
             current={at === 'org'}
             onClick={go('org')}
             defaultExpanded
@@ -92,18 +94,39 @@ export const Sections: Story = {
             <NavItem href="#/org" label="Charter" current={at === 'charter'} onClick={go('charter')} />
           </NavItem>
         </NavGroup>
+        <NavGroup
+          label="Projects"
+          action={{ label: 'New project', icon: <PlusGlyph size="sm" />, onClick: () => {} }}
+        >
+          <NavItem
+            href="#/work/eng"
+            label="Core platform"
+            lead="ENG"
+            current={at === 'eng'}
+            onClick={go('eng')}
+            count={{ value: 23, label: 'open' }}
+          />
+          <NavItem
+            href="#/work/prod"
+            label="Product"
+            lead="PROD"
+            current={at === 'prod'}
+            onClick={go('prod')}
+            count={{ value: 11, label: 'open' }}
+          />
+        </NavGroup>
         <NavGroup label="Work">
           <NavItem
             href="#/runs"
             label="Coding runs"
-            icon={<TerminalGlyph size="sm" />}
+            icon={<SquareTerminalGlyph size="sm" />}
             current={at === 'runs'}
             onClick={go('runs')}
           />
           <NavItem
             href="#/schedules"
             label="Schedules"
-            icon={<ScheduleGlyph size="sm" />}
+            icon={<ClockGlyph size="sm" />}
             current={at === 'schedules'}
             onClick={go('schedules')}
           />
@@ -112,14 +135,14 @@ export const Sections: Story = {
           <NavItem
             href="#/fleet"
             label="Fleet"
-            icon={<DnsGlyph size="sm" />}
+            icon={<ServerGlyph size="sm" />}
             current={at === 'fleet'}
             onClick={go('fleet')}
           />
           <NavItem
             href="#/spend"
             label="Spend and budgets"
-            icon={<TokenGlyph size="sm" />}
+            icon={<CoinsGlyph size="sm" />}
             current={at === 'spend'}
             onClick={go('spend')}
           />
@@ -140,8 +163,8 @@ export const OneLongRow: Story = {
       <NavItem
         href="#/conversations"
         label="Agent-to-agent conversations across the whole company"
-        icon={<GroupGlyph size="sm" />}
-        badge={<Count value={128} label="conversations" />}
+        icon={<UsersGlyph size="sm" />}
+        count={{ value: 128, label: 'conversations' }}
       />
     </SidebarNav>
   ),
@@ -151,20 +174,22 @@ export const OneLongRow: Story = {
  * Every state a row can be in, at all three densities, side by side.
  *
  * The rail is chrome: it is read at a glance, and what has to be legible at a
- * glance is which row the reader is on. The current row takes the accent
- * TWICE, as its tint and as its ink, so it is found by a reader who sees the
- * hue and by one who does not; the attention count is the one badge in the
- * chrome allowed a status hue, because a count of what is waiting on a person
- * is the one thing that should pull the eye off the screen they are on.
+ * glance is which row the reader is on. The current row stands on the raised
+ * rung with a hairline round it, and no hue: it is found by its lift and its
+ * line, by a reader who sees colour and by one who does not. The badge is the
+ * one figure in the chrome allowed a hue, and it is the accent's fill, because
+ * a count of what is waiting on the reader is the one thing in the rail that
+ * asks them to act; a count is the quiet figure, and it lifts to the row's ink
+ * on the reader's own row. A project's key is a chip on the raised rung.
  *
  * Switch the Theme toolbar to see both palettes. Every pair here is measured
- * on the rail's own composites by `SidebarNav.test.tsx` and by the palette
- * suite in @crewlethq/tokens, the attention tint on the accent tint included.
+ * on the rail's own grounds by `SidebarNav.test.tsx` and by the palette suite
+ * in @crewlethq/tokens, the current row's lift and hairline included.
  */
 export const EveryRowState: Story = {
   parameters: { bare: true },
   render: () => (
-    <div style={{ display: 'flex', alignItems: 'flex-start', background: 'var(--color-surface-topbar)' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', background: 'var(--color-surface-frame)' }}>
       {(['compact', 'normal', 'comfortable'] as const).map((step) => (
         <div
           key={step}
@@ -191,15 +216,19 @@ export const EveryRowState: Story = {
             <NavItem
               href="#/"
               label="Overview"
-              icon={<DashboardGlyph size="sm" />}
+              icon={<LayoutDashboardGlyph size="sm" />}
               current
-              badge={<Count value={3} label="need a person" />}
-              badgeTone="attention"
+              count={{ value: 12, label: 'open' }}
             />
-            <NavItem href="#/people" label="People" icon={<GroupGlyph size="sm" />} badge={<Count value="4 live" />} />
-            <NavItem href="#/runs" label="Coding runs" icon={<TerminalGlyph size="sm" />} />
-            <NavGroup label="Operations">
-              <NavItem href="#/fleet" label="Fleet" icon={<DnsGlyph size="sm" />} />
+            <NavItem href="#/inbox" label="Inbox" icon={<InboxGlyph size="sm" />} badge={{ value: 3, label: 'need a person' }} />
+            <NavItem href="#/people" label="People" icon={<UsersGlyph size="sm" />} count={{ value: 4, label: 'live' }} />
+            <NavItem href="#/work/eng" label="Core platform" lead="ENG" count={{ value: 23, label: 'open' }} />
+            <NavItem href="#/runs" label="Coding runs" icon={<SquareTerminalGlyph size="sm" />} />
+            <NavGroup
+              label="Operations"
+              action={{ label: 'Add a node', icon: <PlusGlyph size="sm" />, onClick: () => {} }}
+            >
+              <NavItem href="#/fleet" label="Fleet" icon={<ServerGlyph size="sm" />} />
               <NavItem
                 label="Secrets"
                 icon={<KeyGlyph size="sm" />}

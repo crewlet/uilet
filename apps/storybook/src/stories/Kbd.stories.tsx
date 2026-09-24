@@ -14,8 +14,10 @@ type Story = StoryObj<typeof Kbd>;
 export const Basic: Story = {};
 export const Subtle: Story = { args: { subtle: true } };
 /**
- * A whole shortcut. `Mod` is Command on an Apple platform and Control
- * everywhere else, so one hint is right on both, and the caps are hidden from
+ * A whole shortcut, as ONE cap: the keys are pressed together, so they are
+ * printed together, run together on an Apple platform and joined by a plus
+ * everywhere else. `Mod` is Command on an Apple platform and Control
+ * everywhere else, so one hint is right on both, and the cap is hidden from
  * assistive technology in favour of one sentence: a screen reader handed the
  * glyphs reads "place of interest sign K", which names nothing anybody
  * presses.
@@ -45,9 +47,9 @@ export const OneKey: Story = {
 };
 
 /**
- * The cap on the ground it is actually drawn on. It is the inset well at the
- * tertiary ink, the same chip an identifier takes, so a shortcut hint in a
- * menu row and a `${'{'}VAR{'}'}` in a sentence beside it read as one family.
+ * The cap on the ground it is actually drawn on: the raised rung inside the
+ * strong hairline, at the tertiary ink, the approved design's keycap. A chord
+ * is one cap, `⌘K`, printed as the platform prints it.
  *
  * Switch the Theme toolbar to see both palettes.
  */

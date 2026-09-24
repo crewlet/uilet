@@ -29,19 +29,33 @@ import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test } from 'vitest';
 import {
+  Avatar,
+  AvatarStack,
   Button,
   ButtonLink,
   Count,
   DateTimePicker,
   EmptyValue,
   IconButton,
+  Kbd,
   Menu,
+  Meter,
   Popover,
+  SearchTrigger,
+  SegmentedControl,
+  SegmentedMeter,
+  Sparkline,
+  StatCard,
   StatusDot,
+  Stepper,
+  Tag,
+  ThemeSwitcher,
+  ThemeToggle,
+  DensitySwitcher,
   TimeWindowPicker,
   VisuallyHidden,
 } from '@crewlethq/ui';
-import { AddGlyph, CloseGlyph } from '@crewlethq/icons/glyphs';
+import { PlusGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
 afterEach(cleanup);
 
@@ -65,7 +79,7 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
     <main>
       <h1>Seats</h1>
       <Button variant="primary">Save</Button>
-      <Button variant="danger" leadingIcon={<AddGlyph />}>
+      <Button variant="danger" leadingIcon={<PlusGlyph />}>
         Delete
       </Button>
       <Button loading>Saving</Button>
@@ -73,8 +87,8 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
       <ButtonLink href="https://example.com" external>
         Documentation
       </ButtonLink>
-      <IconButton label="Close" icon={<CloseGlyph />} />
-      <IconButton label="Pin" icon={<AddGlyph />} pressed />
+      <IconButton label="Close" icon={<XGlyph />} />
+      <IconButton label="Pin" icon={<PlusGlyph />} pressed />
       <p>
         Open incidents <Count value={3} label="open incidents" />
       </p>
@@ -84,7 +98,153 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
       <p>
         Cost <EmptyValue />
       </p>
+      <p>
+        <Avatar name="Software Engineer" ring="info" /> <Avatar name="Jane Founder" kind="human" ring="brand" />
+      </p>
+      <p>
+        <AvatarStack
+          members={[
+            { name: 'Jane Founder', kind: 'human' },
+            { name: 'CTO', ring: 'warning' },
+            { name: 'SWE' },
+            { name: 'PM' },
+            { name: 'AI Systems' },
+          ]}
+        />
+      </p>
+      <p>
+        <AvatarStack members={[{ name: 'SWE' }, { name: 'CTO' }]} decorative /> read by 2 agents today
+      </p>
       <VisuallyHidden>Loaded</VisuallyHidden>
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('the restyled primitives carry no violation: the register, the pill, the keycap, the well, the field and the tile', async () => {
+  const { container } = render(
+    <main>
+      <h1>Home</h1>
+      <SearchTrigger label="Ask or jump to…" shortcut={<Kbd keys={['Mod', 'k']} apple />} keyshortcuts="Meta+K" />
+      <SearchTrigger variant="toolbar" label="Search ENG" shortcut={<Kbd>/</Kbd>} keyshortcuts="/" />
+      <SegmentedControl
+        label="Time range"
+        semantics="radio"
+        value="week"
+        options={[
+          { value: 'today', label: 'Today' },
+          { value: 'week', label: '7 days' },
+          { value: 'month', label: '30 days' },
+        ]}
+        onValueChange={() => {}}
+      />
+      <Button variant="secondary" size="small">
+        Ship anyway
+      </Button>
+      <Button variant="ghost" size="small">
+        Reassign
+      </Button>
+      <p>
+        <Tag variant="warning">Needs a person</Tag> <Tag>docs</Tag> <Tag size="xs">3</Tag>
+      </p>
+      <StatCard
+        label="Tasks in progress"
+        value="18"
+        delta={{ value: '+4', polarity: 'neutral' }}
+        sub="vs last week · 2 blocked"
+        trend={<Sparkline values={[3, 5, 4, 8, 7, 9]} current />}
+      />
+      <StatCard
+        label="Tokens · 7 days"
+        value="12.6M"
+        trend={<Meter value={63} max={100} label="Weekly budget" hideLabel />}
+        sub="63% of the weekly budget"
+      />
+      <StatCard
+        label="Waiting on your decision"
+        value="3"
+        trend={
+          <ButtonLink href="#/inbox" size="small" variant="secondary">
+            Review
+          </ButtonLink>
+        }
+      />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('the preference controls carry no violation, stored and controlled, before and after a press', async () => {
+  function Owned() {
+    const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('system');
+    return (
+      <>
+        <ThemeToggle value={theme} onChange={setTheme} />
+        <ThemeSwitcher value={theme} onChange={setTheme} label="Theme, owned" />
+      </>
+    );
+  }
+  const { container } = render(
+    <main>
+      <h1>Preferences</h1>
+      <ThemeToggle storageKey="axe_theme" />
+      <ThemeSwitcher storageKey="axe_theme" />
+      <DensitySwitcher storageKey="axe_density" />
+      <Owned />
+    </main>,
+  );
+  try {
+    expect(await violations(container)).toEqual([]);
+    // The toggle is renamed by a press, so the name it takes is checked too.
+    for (const toggle of screen.getAllByRole('button', { name: /switch to the/i })) fireEvent.click(toggle);
+    expect(await violations(container)).toEqual([]);
+  } finally {
+    // The stored controls write the root and storage, which every later case
+    // in this file shares.
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.removeItem('axe_theme');
+  }
+});
+
+test('the state bar and the step row carry no violation, in a tile, a list and a card', async () => {
+  const crew = [
+    { id: 'working', value: 4, tone: 'info', label: 'working' },
+    { id: 'waiting', value: 1, tone: 'warning', label: 'waiting' },
+    { id: 'stopped', value: 1, tone: 'danger', label: 'stopped' },
+  ] as const;
+  const turn = [
+    { id: 'context', label: 'Context' },
+    { id: 'execute', label: 'Execute · round 7' },
+    { id: 'review', label: 'Review' },
+  ];
+  const { container } = render(
+    <main>
+      <h1>Home</h1>
+      <StatCard
+        label="Agents working now"
+        value="4"
+        unit="/ 7"
+        trend={<SegmentedMeter segments={crew} total={7} remainderLabel="idle" />}
+        sub="1 waiting · 1 stopped · 1 idle"
+      />
+      <ul>
+        <li>
+          Core platform
+          <SegmentedMeter
+            size="compact"
+            segments={[
+              { id: 'done', value: 38, tone: 'success', label: 'done' },
+              { id: 'active', value: 12, tone: 'info', label: 'active' },
+            ]}
+            total={61}
+            remainderLabel="to do"
+          />
+        </li>
+      </ul>
+      <section aria-label="Live now">
+        <Stepper label="Turn progress" steps={turn} current="execute" pulse />
+        <Stepper label="Turn 1 progress" steps={turn} current={null} />
+      </section>
     </main>,
   );
   expect(await violations(container)).toEqual([]);
@@ -97,7 +257,7 @@ test('an open menu carries no violation', async () => {
       <Menu
         label="Actions for Software Engineer"
         items={[
-          { key: 'edit', label: 'Edit', icon: <AddGlyph />, onSelect: () => {} },
+          { key: 'edit', label: 'Edit', icon: <PlusGlyph />, onSelect: () => {} },
           { kind: 'separator', key: 'divider' },
           { key: 'lead', label: 'Unit lead', checked: true, onSelect: () => {} },
           { key: 'member', label: 'Member', checked: false, onSelect: () => {} },

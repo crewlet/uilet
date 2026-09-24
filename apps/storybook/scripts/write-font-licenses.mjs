@@ -3,7 +3,7 @@
 //   node scripts/write-font-licenses.mjs <storybook-static directory>
 //
 // The build redistributes two sets of fonts, both under the SIL Open Font
-// License: the Inter and JetBrains Mono files the preview imports from
+// License: the Geist and Geist Mono files the preview imports from
 // @crewlethq/tokens/css/fonts, and the Nunito Sans files Storybook ships for
 // its own interface. The OFL requires its text to accompany every copy, and
 // this build is deployed, so each directory that ends up holding a woff2 file
@@ -32,7 +32,8 @@ const tokensNotice = tokensLicense.slice(0, ruleIndex).trim();
 const licenseText = tokensLicense.slice(ruleIndex);
 
 const FAMILIES = [
-  { prefixes: ['inter-', 'jetbrains-mono-'], notice: tokensNotice },
+  // geist- covers the geist-mono- files as well.
+  { prefixes: ['geist-'], notice: tokensNotice },
   {
     prefixes: ['nunito-sans-'],
     notice: [
@@ -46,9 +47,9 @@ const FAMILIES = [
   },
 ];
 
-// Where the drawings' own notices land in the built site. The same path
-// scripts/check-storybook-static.mjs looks for.
-const SYMBOLS_NOTICE_DIRECTORY = 'third-party/material-symbols';
+// Where the glyph drawings' own license lands in the built site. The same
+// path scripts/check-storybook-static.mjs looks for.
+const GLYPHS_NOTICE_DIRECTORY = 'third-party/lucide';
 
 const [root, ...extra] = process.argv.slice(2);
 if (!root || extra.length > 0) {
@@ -83,13 +84,12 @@ for (const [directory, fonts] of fontsByDirectory) {
 const written = fontsByDirectory.size;
 console.warn(`[storybook] wrote OFL.txt into ${written} font director${written === 1 ? 'y' : 'ies'}`);
 
-// The Material Symbols drawings, which the preview bundles into its JavaScript
-// rather than into a file of their own, so nothing about the built site says
-// they are there. The Apache License 2.0 still requires its text to reach
-// every recipient, and this deployment has thousands of them.
-const symbolsDirectory = join(root, SYMBOLS_NOTICE_DIRECTORY);
-mkdirSync(symbolsDirectory, { recursive: true });
-for (const notice of ['LICENSE', 'NOTICE']) {
-  copyFileSync(require.resolve(`@crewlethq/icons/symbols/${notice}`), join(symbolsDirectory, notice));
-}
-console.warn(`[storybook] wrote the Material Symbols license into ${SYMBOLS_NOTICE_DIRECTORY}/`);
+// The Lucide drawings, which the preview bundles into its JavaScript rather
+// than into a file of their own, so nothing about the built site says they are
+// there. The ISC License, and Feather's MIT License for the icons derived from
+// it, still require their notice to reach every recipient, and this deployment
+// has thousands of them. Upstream's LICENSE carries both.
+const glyphsDirectory = join(root, GLYPHS_NOTICE_DIRECTORY);
+mkdirSync(glyphsDirectory, { recursive: true });
+copyFileSync(require.resolve('@crewlethq/icons/glyphs/LICENSE'), join(glyphsDirectory, 'LICENSE'));
+console.warn(`[storybook] wrote the Lucide license into ${GLYPHS_NOTICE_DIRECTORY}/`);

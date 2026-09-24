@@ -84,21 +84,29 @@
 
 /* ─── Pill (segmented control) ────────────────────────────────── */
 /*
- * A WELL WITH CHIPS IN IT, not a panel with buttons in it. The container is
- * the inset surface and carries no boundary of its own: the chip that is on
- * is what the reader looks for, and it is found by being the one thing lifted
- * off the well rather than by a border around the whole set.
+ * A WELL WITH CHIPS IN IT, not a panel with buttons in it: the approved
+ * design's segmented control. The well is the RAISED rung inside the default
+ * hairline, and the chip that is on is the CARD's own ground, lifted by a
+ * hairline and a small shadow, so it is found by being the one thing that
+ * matches the panel the row sits on.
+ *
+ * A RUNG AND A HAIRLINE, NOT A TRANSLUCENT WELL. The inset overlay it used to
+ * be stands almost nowhere off a card, so the well had no extent and the
+ * chips floated; the raised rung is held a visible step above the card by the
+ * palette suite, and the hairline finds it on any other ground.
  *
  * The inset is 2px, which is smaller than the scale's first step on purpose:
- * it is the gap a chip needs to read as sitting IN the well, and a 4px one
- * makes the row a control step taller than the button beside it.
+ * it is the gap a chip needs to read as sitting IN the well. With the 1px
+ * boundary it is three pixels a side, and a 24px chip makes a 30px row: the
+ * medium control step, the height of the button beside it.
  */
 .crewlet-tabs--pill {
   --crewlet-tabs-pill-inset: 2px;
 
   gap: var(--crewlet-tabs-pill-inset);
   padding: var(--crewlet-tabs-pill-inset);
-  background: var(--color-surface-inset);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   width: fit-content;
 }
@@ -186,19 +194,22 @@
 
 /*
  * A CHIP STANDS SHORTER THAN THE CONTROL IT SITS BESIDE, and it is the row
- * that has to match: the well adds its inset above and below every chip, so a
- * chip at a full control step makes the whole segmented row taller than the
- * button next to it. Six pixels off the md step and four off the sm one is
- * what the engine's own segmented row has always drawn.
+ * that has to match: the well adds its boundary and its inset above and below
+ * every chip, so a chip at a full control step makes the whole segmented row
+ * taller than the button next to it. Six pixels off the md step is exactly
+ * that boundary and inset, and it leaves the design's 24px chip in a 30px row.
  *
- * AND THE FLOOR IS TAKEN AGAIN AFTER THE SUBTRACTION. --size-control-sm
- * carries a 24px floor of its own, but subtracting from a step subtracts from
- * its floor too: at compact density `calc(var(--size-control-sm) - 4px)` is
- * 20px, under the target a finger can hit. max() against --size-target-min
- * leaves the value exactly 24px at density 1 and reachable at every other.
+ * AND THE FLOOR IS TAKEN AGAIN AFTER THE SUBTRACTION. Subtracting from a step
+ * subtracts from its floor too: at compact density
+ * `calc(var(--size-control-md) - 6px)` is 18.6px, under the target a finger
+ * can hit. max() against --size-target-min holds every density at 24px or
+ * more, and at density 1 the two agree.
  *
- * The corner is one hairline tighter than the well around it rather than a
- * step of its own, which is what reads as a chip sitting IN the well.
+ * The corner is the small radius, the design's: the well's 8px less its 1px
+ * boundary and 2px inset is 5px, and a chip a pixel rounder than that
+ * concentric curve is what reads as a chip sitting IN the well rather than a
+ * second well inside it. The side pad is the design's 10px, two steps and a
+ * half.
  *
  * AND THE CONTENT IS CENTRED IN THE CHIP. It was aligned to the start, for a
  * chip stretched on a grid track, which is a case the pill chrome's own
@@ -212,8 +223,9 @@
  */
 .crewlet-tabs--pill .crewlet-tabs__tab {
   min-height: max(var(--size-target-min), calc(var(--size-control-md) - 6px));
-  padding: 0 var(--spacing-3);
-  border-radius: var(--radius-chip);
+  padding: 0 calc(var(--spacing-2) + var(--spacing-1) / 2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 
@@ -221,12 +233,12 @@
  * THE SMALL CHIP IS THE QUIET ONE. It is the register the rail's foot wears,
  * where a theme row and a density row sit beside a status pill and are read
  * past rather than read, so its side pad is the scale's first step rather
- * than its second and its glyph is the step under the label register's.
+ * than two and a half and its glyph is the step under the label register's.
  *
- * The height does not follow: at the reader's default density this chip is
- * already exactly --size-target-min, so a shorter one would be a target a
- * finger misses. The whole reduction comes out of the width, where the pad is
- * spent, and the floor above catches what is left.
+ * The height does not follow: the medium chip is already exactly
+ * --size-target-min at the reader's default density, so a shorter one would be
+ * a target a finger misses. The whole reduction comes out of the width, where
+ * the pad is spent, and the floor catches what the subtraction leaves.
  */
 .crewlet-tabs--pill.crewlet-tabs--sm .crewlet-tabs__tab {
   min-height: max(var(--size-target-min), calc(var(--size-control-sm) - 4px));
@@ -253,9 +265,17 @@
   color: var(--color-text-primary);
 }
 
+/*
+ * The chip that is on: the CARD's ground and the primary ink, lifted by the
+ * default hairline drawn round it and the smallest shadow under it, the
+ * design's chip. The hairline is the half that finds it: on a dark palette a
+ * shadow over a dark well is nearly invisible. Both are one shadow list, and
+ * neither token in it is ever `none`, which would drop the whole list.
+ */
 .crewlet-tabs--pill .crewlet-tabs__tab.is-active {
   background: var(--color-surface-subtle);
-  box-shadow: var(--shadow-xs);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-xs), 0 0 0 1px var(--color-border-default);
 }
 
 /*

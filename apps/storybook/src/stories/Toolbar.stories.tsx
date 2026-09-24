@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
-import { FullscreenExitGlyph, FullscreenGlyph, RedoGlyph, UndoGlyph } from '@crewlethq/icons/glyphs';
+import { MaximizeGlyph, MinimizeGlyph, RedoGlyph, UndoGlyph } from '@crewlethq/icons/glyphs';
 import { Button, IconButton, Menu, Spacer, Stack, Toolbar, useFullscreen } from '@crewlethq/ui';
 
 const meta: Meta<typeof Toolbar> = {
@@ -21,7 +21,7 @@ function Segmented({ label, options }: { label: string; options: string[] }) {
           key={option}
           role="radio"
           size="small"
-          variant={value === option ? 'secondary' : 'tertiary'}
+          variant={value === option ? 'secondary' : 'ghost'}
           aria-checked={value === option}
           tabIndex={value === option ? 0 : -1}
           onClick={() => setValue(option)}
@@ -48,10 +48,10 @@ export const BuilderToolbar: Story = {
           <Toolbar.Wide>
             <IconButton label="Undo" size="sm" icon={<UndoGlyph size="sm" />} />
             <IconButton label="Redo" size="sm" icon={<RedoGlyph size="sm" />} />
-            <Button size="small" variant="tertiary">
+            <Button size="small" variant="ghost">
               Expand all
             </Button>
-            <Button size="small" variant="tertiary">
+            <Button size="small" variant="ghost">
               Collapse all
             </Button>
           </Toolbar.Wide>
@@ -71,7 +71,7 @@ export const BuilderToolbar: Story = {
             <IconButton
               label={active ? 'Leave fullscreen' : 'Fullscreen'}
               size="sm"
-              icon={active ? <FullscreenExitGlyph size="sm" /> : <FullscreenGlyph size="sm" />}
+              icon={active ? <MinimizeGlyph size="sm" /> : <MaximizeGlyph size="sm" />}
               onClick={toggle}
             />
           ) : null}
@@ -92,10 +92,10 @@ export const StickyFilters: Story = {
     <Stack gap={0}>
       <Toolbar label="Filters" mode="group" sticky>
         <input aria-label="Filter by name" placeholder="Filter by name" />
-        <Button size="small" variant="tertiary">
+        <Button size="small" variant="ghost">
           State
         </Button>
-        <Button size="small" variant="tertiary">
+        <Button size="small" variant="ghost">
           Unit
         </Button>
       </Toolbar>

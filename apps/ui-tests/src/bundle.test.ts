@@ -11,7 +11,7 @@
  * entry, collecting the stylesheets it would have to keep. A number this test
  * prints is the number a consumer pays.
  */
-import { readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
@@ -22,6 +22,7 @@ import { describe, expect, test } from 'vitest';
  * the second form answers with an http URL into the dev server.
  */
 const DIST = resolve(dirname(fileURLToPath(import.meta.url)), '../../../packages/ui/dist');
+const GLYPHS = resolve(dirname(fileURLToPath(import.meta.url)), '../../../packages/icons/glyphs');
 
 const IMPORTS = /(?:^|[\s;])(?:import|export)\s*(?:[^'"]*?\sfrom\s*)?['"]([^'"]+)['"]/g;
 
@@ -107,7 +108,12 @@ describe('a single-component import', () => {
       .map((path) => readFileSync(path, 'utf8'))
       .join('\n');
     expect(text).toMatch(/@crewlethq\/icons\/glyphs/);
-    // And not a drawing's path data, which is what an inlined glyph looks like.
-    expect(text).not.toMatch(/viewBox="0 -960 960 960"/);
+    // And not a drawing's path data, which is what an inlined glyph looks like:
+    // every `d` the vendored set draws, long enough to be nobody else's.
+    const drawings = readdirSync(GLYPHS)
+      .filter((file) => file.endsWith('.svg'))
+      .flatMap((file) => [...readFileSync(join(GLYPHS, file), 'utf8').matchAll(/\sd="([^"]{12,})"/g)].map((match) => match[1]!));
+    expect(drawings.length).toBeGreaterThan(100);
+    expect(drawings.filter((d) => text.includes(d))).toEqual([]);
   });
 });

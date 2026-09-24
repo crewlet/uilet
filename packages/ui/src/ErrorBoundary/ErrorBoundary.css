@@ -10,14 +10,14 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--spacing-3);
-  /* The panel's own body inset and its lift: a fallback is still a panel of
-     the product, and one drawn without the rim read as a block of unstyled
-     text where the screen should have been. */
+  /* The card's own recipe and its body inset: a fallback is still a panel of
+     the product, and one drawn without the card's ground and hairline read as
+     a block of unstyled text where the screen should have been. Flat, as
+     every card is. */
   padding: var(--spacing-4);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
   background: var(--color-surface-subtle);
-  box-shadow: var(--shadow-xs), var(--shadow-hairline);
   max-width: var(--size-measure);
 }
 

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "storybook dev -p 3006 --no-open --disable-telemetry",
     "build": "storybook build -o storybook-static --disable-telemetry && node scripts/write-font-licenses.mjs storybook-static && node ../../scripts/check-storybook-static.mjs storybook-static",
-    "lint": "eslint src .storybook scripts",
+    "lint": "eslint src .storybook scripts test",
+    "test": "node --test \"test/*.test.mjs\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf storybook-static"
   },

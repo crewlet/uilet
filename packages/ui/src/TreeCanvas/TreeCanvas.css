@@ -31,7 +31,10 @@
 .crewlet-tree-canvas__card,
 .crewlet-tree-canvas__links,
 .crewlet-tree-canvas__gap,
-.crewlet-tree-canvas__margin {
+.crewlet-tree-canvas__margin,
+.crewlet-tree-canvas__group,
+.crewlet-tree-canvas__group-head,
+.crewlet-tree-canvas__group-pad {
   position: absolute;
   top: 0;
   left: 0;
@@ -168,15 +171,6 @@
   --crewlet-tree-canvas-card-halo: var(--color-node-blue-halo);
   --crewlet-tree-canvas-card-ink: var(--color-node-blue-ink);
   --crewlet-tree-canvas-card-accent: var(--color-node-blue);
-}
-
-/*
- * A card that stands for somebody outside the system takes the dashed edge
- * every such seat wears. The BOUNDARY says it rather than a hue, so it reads
- * to somebody who cannot separate the hue at all.
- */
-.crewlet-tree-canvas__card--outline {
-  border-style: dashed;
 }
 
 /*
@@ -338,13 +332,13 @@
 /*
  * A reveal is a state change rather than an entrance, so under reduced motion
  * it simply happens. The control is still shown and still reached the same way.
+ * The `node` appearance's own quiet controls are stopped in its own section,
+ * below the rules that start them: named here, above those rules, the stops
+ * tied with them on specificity and lost on source order.
  */
 @media (prefers-reduced-motion: reduce) {
   .crewlet-tree-canvas__actions,
-  .crewlet-tree-canvas__under,
-  .crewlet-tree-canvas--node .crewlet-tree-canvas__under > :not(.crewlet-add-pill),
-  .crewlet-tree-canvas--node .crewlet-org-node__leading,
-  .crewlet-tree-canvas--node .crewlet-org-node-lead__clear {
+  .crewlet-tree-canvas__under {
     transition: none;
   }
 }
@@ -377,6 +371,92 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * A GROUP: a box round a run of sibling cards, with a label along its top.
+ *
+ * The approved design's unit box: a hairline on the card rung with the unit's
+ * name in the tertiary ink at 12px, and the project key chip at the end of
+ * that line. The hairline is `--color-border-default` over
+ * `--color-surface-subtle` standing on the canvas's own ground, which is the
+ * pair the palette suite already holds to a visible step (the card hairline
+ * rule); a card inside the box is the same rung and is found by its own
+ * hairline, exactly as a card on a sheet is.
+ *
+ * THE ROOM IS THE LAYOUT'S. The padding round the members is the probe below,
+ * and the room above them is the header's own measured height, so the box is
+ * never drawn over a card it does not hold and a branch is never run through
+ * it: both are reserved by `layoutForest` before anything is placed.
+ * ------------------------------------------------------------------------- */
+
+/*
+ * The room beside and below a group's members, as a token: `--spacing-3`,
+ * which is also the label's own inset, so the label starts on the line the
+ * first member's edge does.
+ */
+.crewlet-tree-canvas__group-pad {
+  width: var(--spacing-3);
+  height: var(--spacing-3);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*
+ * THE BOX IS DASHED, as the approved org chart draws a unit: a card's own
+ * edge is solid, and a box round several cards drawn the same way read as one
+ * more, larger card. A dash says the edge is a grouping rather than a thing.
+ * It is the STRONG border step, the artboard's, because a dash spends half its
+ * length on gaps: at the plain hairline's step the edge all but disappeared
+ * against the box's own fill.
+ */
+.crewlet-tree-canvas__group {
+  box-sizing: border-box;
+  background: var(--color-surface-subtle);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  pointer-events: none;
+}
+
+/*
+ * THE LABEL'S LINE, and what the room above the members is measured from: one
+ * line, at the box's width, truncated rather than wrapped, because a label
+ * that wrapped would move every rank below it.
+ */
+.crewlet-tree-canvas__group-head {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/*
+ * ON THE BOX'S OWN FILL, over the branches: a branch dropping into a member
+ * passes behind the words rather than striking through them, and the fill is
+ * the box's, so nothing about the label reads as a second surface.
+ */
+.crewlet-tree-canvas__group-label,
+.crewlet-tree-canvas__group-lead {
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-tree-canvas__group-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The key AHEAD of the name, a project key chip, never cut: the name after
+   it is what gives way when the line is short. */
+.crewlet-tree-canvas__group-lead {
+  display: inline-flex;
+  flex: none;
+}
+
+/* ---------------------------------------------------------------------------
  * THE CHART ARRIVING, AND REARRANGING.
  *
  * A card waiting its turn is drawn at nothing and is still MEASURED, because
@@ -392,11 +472,16 @@
  * ------------------------------------------------------------------------- */
 
 .crewlet-tree-canvas__card[data-enter='waiting'],
-.crewlet-tree-canvas__links path[data-enter='waiting'] {
+.crewlet-tree-canvas__links path[data-enter='waiting'],
+.crewlet-tree-canvas__group[data-enter='waiting'],
+.crewlet-tree-canvas__group-head[data-enter='waiting'] {
   opacity: 0;
 }
 
-.crewlet-tree-canvas__card[data-enter='shown'] {
+/* A group arrives with its first member, at the card's pace. */
+.crewlet-tree-canvas__card[data-enter='shown'],
+.crewlet-tree-canvas__group[data-enter='shown'],
+.crewlet-tree-canvas__group-head[data-enter='shown'] {
   animation: crewlet-tree-canvas-arrive var(--motion-duration-slow) var(--motion-easing-default) both;
 }
 
@@ -422,9 +507,20 @@
  * when the setting changed.
  */
 @media (prefers-reduced-motion: reduce) {
+  /* Drawn, whatever step of the entrance it had reached: a card still WAITING
+     is otherwise held at nothing. */
   .crewlet-tree-canvas__card[data-enter],
-  .crewlet-tree-canvas__links path[data-enter] {
+  .crewlet-tree-canvas__links path[data-enter],
+  .crewlet-tree-canvas__group[data-enter],
+  .crewlet-tree-canvas__group-head[data-enter] {
     opacity: 1;
+  }
+
+  /* And the entrance stopped by the selectors that start it. */
+  .crewlet-tree-canvas__card[data-enter='shown'],
+  .crewlet-tree-canvas__links path[data-enter='shown'],
+  .crewlet-tree-canvas__group[data-enter='shown'],
+  .crewlet-tree-canvas__group-head[data-enter='shown'] {
     animation: none;
   }
 }
@@ -436,10 +532,11 @@
 
 /*
  * THE CONNECTORS ARE THE CONTENT, and they take the step that is measured to
- * be resolvable. The SHAPE is `layoutConnectors`, which draws a rounded step
- * from each parent's bottom into each child's top; what is decided here is only
- * how dark it is, and that the joins are round so a corner reads as a turn
- * rather than as two lines meeting.
+ * be resolvable. The SHAPE is `layoutConnectors`, which draws an orthogonal
+ * elbow from each parent's bottom into each child's top, in SVG attributes
+ * the layout computes rather than in a style a policy has to allow; what is
+ * decided here is only how dark and how heavy it is, and that the joins are
+ * round so a corner reads as a turn rather than as two lines meeting.
  *
  * A connector is the only thing on the chart that says who reports to whom:
  * remove it and the picture is a scatter of cards. That makes it a graphical
@@ -450,11 +547,22 @@
  * boundary step, which the palette suite already holds at 3:1 on every ground,
  * measures 4.83:1 and 4.78:1. Darker than the chart this is drawn from, and
  * deliberately: there the hierarchy was a line a reader had to hunt for.
+ *
+ * THE APPROVED DESIGN DRAWS IT IN `--color-border-strong`, AND THE FLOOR WINS.
+ * The artboard's connector is the strong border step at 1.5px, and on the
+ * canvas's ground that step measures 1.45:1 in dark and 1.43:1 in light (1.40
+ * and 1.50 on a group box's card rung): a line a reader cannot make out, for
+ * the one mark that says who reports to whom. The palette suite's data-mark
+ * table holds a chart's connector to 3:1 on `--color-border-control`, so the
+ * value moves up the border family to the first step that clears it, 4.40:1
+ * and 4.04:1 (4.25 and 4.26 on the card rung). The WEIGHT is the design's:
+ * 1.5px, heavier than the hairline this used to be, so a branch between two
+ * ranks of 90px cards reads as a line of the chart rather than as a seam.
  */
 .crewlet-tree-canvas__links path {
   fill: none;
   stroke: var(--color-border-control);
-  stroke-width: 1;
+  stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -830,6 +938,20 @@
 }
 
 /*
+ * The node's quiet controls arrive as a state change too, so under reduced
+ * motion they simply appear. Stopped HERE, after the rules that start their
+ * fades: the three selectors tie with those rules on specificity, so the stop
+ * has to come later in the file to win.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-tree-canvas--node .crewlet-tree-canvas__under > :not(.crewlet-add-pill),
+  .crewlet-tree-canvas--node .crewlet-org-node__leading,
+  .crewlet-tree-canvas--node .crewlet-org-node-lead__clear {
+    transition: none;
+  }
+}
+
+/*
  * THE BRANCHES ARE HEAVIER HERE. A node is half the height of a card, so a
  * hairline between two ranks of them is a thread; this is the console chart's
  * own weight, at the same ratio to a node's height.
@@ -929,12 +1051,11 @@
  * chart this package is drawn to match does exactly this, and every step below
  * is its step.
  *
- * IT IS THE ONLY DASHED THING ON THE CHART THAT IS NOT A HUMAN SEAT, and the
- * two never collide: `cardOutline` marks a node of the data and this marks a
- * node that is not one yet, so no card can carry both. What tells them apart
- * is the hue and the breath: a human seat's edge is the chart's own boundary
- * step and does not move, and this one is the accent, with a ring outside it
- * that pulses for as long as the form is open.
+ * IT IS THE ONLY DASHED CARD ON THE CHART, because a dashed edge marks a
+ * place nothing fills yet and this is the one card that is not a node of the
+ * data. Every node's card is solid, a person's seat included: who holds a seat
+ * is its badge's outline, never the card's frame, which is why the chart has
+ * no second dashed card for a person to be confused with this one.
  *
  * ITS GROUND IS EVERY OTHER CARD'S. The ghost holds a real form with real
  * labels, helps and refusals in it, so it is NOT tinted: every contrast
@@ -1078,8 +1199,11 @@
 @media (prefers-reduced-motion: reduce) {
   /* NOT `transform` on the card itself: its transform is where the layout
      put it, written as an inline style, and a rule here saying `none` would
-     be a rule that only ever fires when something else drops that style. */
-  .crewlet-tree-canvas__card--composing,
+     be a rule that only ever fires when something else drops that style.
+     Named with the chart's class, as the rule that starts its arrival names
+     it: by its own class alone the stop was one class short of that rule,
+     and the arrival played for a reader who had asked for none. */
+  .crewlet-tree-canvas .crewlet-tree-canvas__card--composing,
   .crewlet-tree-canvas__links path[data-composing='true'] {
     opacity: 1;
     animation: none;

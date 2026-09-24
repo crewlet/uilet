@@ -10,14 +10,13 @@
 .crewlet-stat-group {
   display: grid;
   grid-template-columns: repeat(var(--crewlet-stat-group-cols, 4), minmax(0, 1fr));
-  /* The flush-panel recipe: the surface, the hairline, the 12px corner and
-     `overflow: hidden`, which is what lets the tiles inside sit against the
-     corners without their own hairlines escaping past them. The engine puts
-     its stat row inside exactly this. */
+  /* The flush-panel recipe: the card's surface, its hairline and its 12px
+     corner, flat as every card is, and `overflow: hidden`, which is what lets
+     the tiles inside sit against the corners without their own hairlines
+     escaping past them. */
   background: var(--color-surface-subtle);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs), var(--shadow-hairline);
   overflow: hidden;
 }
 
@@ -38,7 +37,6 @@
   background: transparent;
   border: 0;
   border-radius: var(--radius-none);
-  box-shadow: none;
 }
 
 /*
@@ -57,13 +55,14 @@
 
 /*
  * Two columns under the shell breakpoint, which is where the engine drops its
- * own stat row: 900px is a 280px rail plus a 620px content column, so it is
- * the width at which a four-up row of numbers stops having a column each. The
+ * own stat row, and strictly under it, as the shell switches. The step is
+ * 1024px, a 236px rail, the 8px inset and a 780px floor for the sheet, and it
+ * is the width at which the shell stops holding the page beside the rail. The
  * rules are written for the general case rather than per column count: the
  * first tile of each pair loses its left hairline, and everything on the
  * second row and below gains a top one.
  */
-@media (max-width: 900px) {
+@media (width < 1024px) {
   .crewlet-stat-group {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

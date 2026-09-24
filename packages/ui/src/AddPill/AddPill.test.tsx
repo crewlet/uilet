@@ -21,7 +21,8 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { motion, themes } from '@crewlethq/tokens';
 import { contrast, flatten, parseHex } from '@crewlethq/tokens/test/palette';
-import { installCss, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installCss, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { UserPlusGlyph } from '@crewlethq/icons/glyphs';
 import { AddPill, ADD_PILL_MS, type AddPillSection } from './AddPill.js';
 
 const Glyph = () => <svg data-testid="glyph" />;
@@ -194,18 +195,6 @@ describe('the keyboard', () => {
  * nothing, or a value that was never the winner.
  */
 
-/** A colour the cascade reports, as the three channels. jsdom answers `rgb(r, g, b)`. */
-function channels(value: string): { r: number; g: number; b: number } {
-  const hex = parseHex(value.trim());
-  if (hex) return hex;
-  const parts = /rgba?\(([^)]+)\)/
-    .exec(value)?.[1]
-    ?.split(',')
-    .map((one) => Number.parseFloat(one));
-  if (!parts || parts.length < 3) throw new Error(`not a colour: ${value}`);
-  return { r: parts[0]!, g: parts[1]!, b: parts[2]! };
-}
-
 /** A flattened colour back as a hex string, which is what `painted` takes. */
 function hexOf({ r, g, b }: { r: number; g: number; b: number }): string {
   const byte = (one: number) =>
@@ -264,10 +253,11 @@ describe('the drawing', () => {
       <AddPill label="Add to Engineering" sections={sections(() => {})} size="md" layout="inline" />,
     );
     fireEvent.click(mark());
-    expect(px(mark(), 'width')).toBe(28);
-    expect(px(choices()[0]!, 'width')).toBe(28);
+    // The small control step, 26px, the design's small button.
+    expect(px(mark(), 'width')).toBe(26);
+    expect(px(choices()[0]!, 'width')).toBe(26);
     expect(px(choices()[0]!, 'margin-top')).toBe(0);
-    expect(px(container.querySelector('.crewlet-add-pill__sections')!, 'height')).toBe(28);
+    expect(px(container.querySelector('.crewlet-add-pill__sections')!, 'height')).toBe(26);
     // The mark stays: in a row it is a toggle beside the choices, not the
     // thing they grew out of.
     expect(getComputedStyle(mark()).opacity).not.toBe('0');
@@ -444,6 +434,31 @@ describe('the drawing', () => {
     // own green rather than to the brand purple either way.
     expect(channels(getComputedStyle(path).fill)).toEqual(parseHex(themes.dark.color.node.green));
     own();
+  });
+
+  /*
+   * BUT A GLYPH KEEPS ITS OWN FILL, which is none: it is a stroke, and the
+   * rule above painted the inside of every path it reached. A person-with-a-
+   * plus glyph filled in the pill's ink is a head and a body gone solid with
+   * the plus smeared across them. The glyph takes the ink through its stroke,
+   * which is `currentColor`, so the `color` half of the rule still reaches it.
+   */
+  test('a glyph in a choice takes the pill ink through its stroke and is never filled', () => {
+    uninstall = installThemed('dark', 'AddPill/AddPill.css');
+    const { container } = render(
+      <AddPill
+        label="Add to Engineering"
+        sections={[{ key: 'human', label: 'Add a human seat', icon: <UserPlusGlyph />, onSelect: () => {} }]}
+      />,
+    );
+    fireEvent.click(mark());
+    const glyph = container.querySelector<SVGElement>('.crewlet-add-pill__section svg.crewlet-glyph')!;
+    const ink = parseHex(themes.dark.color.node.green);
+    expect(channels(getComputedStyle(glyph).color)).toEqual(ink);
+    expect(glyph.getAttribute('fill')).toBe('none');
+    for (const shape of [glyph, ...glyph.querySelectorAll('path, circle')]) {
+      expect(channels(getComputedStyle(shape).fill), shape.tagName).not.toEqual(ink);
+    }
   });
 
   /*

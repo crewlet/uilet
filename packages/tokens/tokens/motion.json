@@ -5,7 +5,8 @@
       "fast": { "value": "120ms", "comment": "Menu hover and active state changes." },
       "base": { "value": "150ms", "comment": "Default UI transition." },
       "moderate": { "value": "200ms", "comment": "Nav hover, topbar background changes." },
-      "slow": { "value": "300ms", "comment": "Modal enter, drawer slide." }
+      "slow": { "value": "300ms", "comment": "Modal enter, drawer slide." },
+      "breath": { "value": "2200ms", "comment": "The PERIOD of a mark saying that work is still happening: one full round, out and back. 0.45 cycles a second, the approved design's 2.2s, slow enough to read as breathing rather than as an alert and far under the three flashes a second that are a seizure risk. A PERIOD rather than a transition: nothing uses it to move a surface from one place to another." }
     },
     "easing": {
       "default": { "value": "ease" },

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Tag } from '@crewlethq/ui';
-import { WarningGlyph } from '@crewlethq/icons/glyphs';
+import { TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Tag> = {
   title: 'UI/Tag',
@@ -15,17 +15,7 @@ const meta: Meta<typeof Tag> = {
   argTypes: {
     variant: {
       control: 'inline-radio',
-      options: [
-        'neutral',
-        'info',
-        'success',
-        'warning',
-        'danger',
-        'brand',
-        'phase-onboarding',
-        'phase-execute',
-        'phase-review',
-      ],
+      options: ['neutral', 'info', 'success', 'warning', 'danger', 'brand'],
     },
     appearance: { control: 'inline-radio', options: ['soft', 'outline'] },
     size: { control: 'inline-radio', options: ['xs', 'sm', 'md'] },
@@ -47,37 +37,47 @@ export const Basic: Story = {};
 /**
  * Every tone renders its own word. A reader who cannot separate the warning
  * hue from the danger one still reads two different states, which is the rule
- * the whole palette is built to keep.
+ * the whole palette is built to keep. The four states say what a piece of
+ * work is doing: info is working, warning needs a person, danger is stopped,
+ * success is done.
  */
 export const Tones: Story = {
   render: () => (
     <Row>
       <Tag>Neutral</Tag>
-      <Tag variant="info">Info</Tag>
-      <Tag variant="success">Working</Tag>
+      <Tag variant="info">Working</Tag>
       <Tag variant="warning">Needs a person</Tag>
-      <Tag variant="danger">Broken</Tag>
+      <Tag variant="danger">Stopped</Tag>
+      <Tag variant="success">Done</Tag>
       <Tag variant="brand">Selected</Tag>
     </Row>
   ),
 };
 
 /**
- * The engine's whole phase vocabulary, and nothing else takes these hues.
+ * A phase is a CATEGORY, and a category is the neutral tag with its word.
  *
- * A PHASE IS SET IN THE MICRO-LABEL REGISTER, uppercase and tracked open,
- * where a state is set in the badge's own. Phase is the one categorical
- * identity the product spends colour on outside a chart, and the second
- * register is what separates it at a glance from the state badge beside it on
- * the same row, for a reader who cannot separate the two hues.
+ * Beside the state it is in, a phase reads as what it is: the state is the
+ * one coloured thing on the row, and the phase is the word that says where
+ * the work is. A hue per phase was a second colour vocabulary that said
+ * nothing the word did not, spent from the hues the states are held apart in.
  */
 export const Phases: Story = {
   render: () => (
-    <Row>
-      <Tag variant="phase-onboarding">onboarding</Tag>
-      <Tag variant="phase-execute">execute</Tag>
-      <Tag variant="phase-review">review</Tag>
-    </Row>
+    <div style={{ display: 'grid', gap: 12 }}>
+      <Row>
+        <Tag>Onboarding</Tag>
+        <Tag variant="success">Done</Tag>
+      </Row>
+      <Row>
+        <Tag>Execute</Tag>
+        <Tag variant="info">Working</Tag>
+      </Row>
+      <Row>
+        <Tag>Review</Tag>
+        <Tag variant="warning">Needs a person</Tag>
+      </Row>
+    </div>
   ),
 };
 
@@ -105,12 +105,12 @@ export const Appearances: Story = {
 };
 
 /**
- * THREE HEIGHTS OF ONE BADGE. `sm` is the engine's own geometry and the
- * default: an 11px label in the medium weight, a 4px corner, one pixel of
- * padding above and below and eight on each side. `xs` is a denser mark for a
- * packed row and stays NON-INTERACTIVE, because a pointer target under 24px
- * fails WCAG 2.2 and the type refuses `onClick` at that step. `md` is a small
- * control's height, for a tag standing in a toolbar.
+ * THREE HEIGHTS OF ONE PILL. `sm` is the approved design's pill and the
+ * default: 22px with round ends, a 12px label in the medium weight and 9px
+ * inside each end. `xs` is the design's 18px count pill for a packed row, at
+ * the 11px step, and stays NON-INTERACTIVE, because a pointer target under
+ * 24px fails WCAG 2.2 and the type refuses `onClick` at that step. `md` is a
+ * small control's 26px, for a tag standing in a toolbar.
  */
 export const Sizes: Story = {
   render: () => (
@@ -129,23 +129,22 @@ export const Sizes: Story = {
 };
 
 /**
- * A TAG THAT ACTS IS FOUR PIXELS TALLER THAN ONE THAT LABELS, and that is the
- * one place this pill departs from the engine's badge: the engine draws its
- * actionable badge at the inert one's 20px, which is a target under the 24px
- * WCAG 2.2 accepts. Everything else about the two is identical, so a row still
- * reads as one set. The same floor lifts a tag whose only control is its
- * remove.
+ * A TAG THAT ACTS IS TWO PIXELS TALLER THAN ONE THAT LABELS, and that is the
+ * one place this pill departs from the design: the design draws its pill at
+ * 22px whatever it does, which is a target under the 24px WCAG 2.2 accepts.
+ * Everything else about the two is identical, so a row still reads as one set.
+ * The same floor lifts a tag whose only control is its remove.
  */
 export const LabelAndTarget: Story = {
   render: function Targets() {
     const [on, setOn] = useState(false);
     return (
       <Row>
-        <Tag variant="success">Working</Tag>
-        <Tag variant="success" pressed={on} onClick={() => setOn((value) => !value)}>
+        <Tag variant="info">Working</Tag>
+        <Tag variant="info" pressed={on} onClick={() => setOn((value) => !value)}>
           Working
         </Tag>
-        <Tag variant="success" onRemove={() => {}} removeAriaLabel="Remove working">
+        <Tag variant="info" onRemove={() => {}} removeAriaLabel="Remove working">
           Working
         </Tag>
       </Row>
@@ -156,10 +155,10 @@ export const LabelAndTarget: Story = {
 export const WithMarkAndCount: Story = {
   render: () => (
     <Row>
-      <Tag variant="success" dot>
+      <Tag variant="info" dot>
         Working
       </Tag>
-      <Tag variant="warning" dot leadingIcon={<WarningGlyph />}>
+      <Tag variant="warning" dot leadingIcon={<TriangleAlertGlyph />}>
         Needs a person
       </Tag>
       <Tag variant="danger" count={3}>

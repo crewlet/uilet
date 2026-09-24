@@ -23,12 +23,15 @@ export {
 } from './model.js';
 export type { TreeInput, TreeModel, TypeAheadState } from './model.js';
 
-export { layoutConnectors, layoutForest } from './layout.js';
+export { layoutConnectors, layoutForest, placeGroups } from './layout.js';
 export type {
   ForestLayout,
   LayoutGaps,
+  LayoutGroup,
+  LayoutGroupInset,
   LayoutNode,
   LayoutRanks,
+  PlacedGroup,
   PlacedNode,
   TreeConnector,
   TreeConnectorShape,

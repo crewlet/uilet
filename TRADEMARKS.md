@@ -34,6 +34,6 @@ Crewlet claims no rights in these marks. They are excluded from the MIT License'
 
 ## The glyph set
 
-The Material Symbols drawings in `packages/icons/symbols/` are Google's, under the Apache License 2.0. That license grants a copyright license and explicitly grants no trademark rights, so the drawings may be used and redistributed while "Material Symbols" and "Google" remain Google's marks. `packages/icons/symbols/LICENSE` and `NOTICE` carry the terms and ship in the package.
+The Lucide drawings in `packages/icons/glyphs/` are Lucide's, under the ISC License, and those Lucide derives from Feather are under Feather's MIT License as well. Both licenses grant copyright permissions and say nothing about names, so the drawings may be used and redistributed, while "Lucide" and "Feather" stay the names of those projects: nothing this repository publishes is called by either, and neither project endorses it. `packages/icons/glyphs/LICENSE` carries both texts and ships in the package.
 
 For any use this page does not allow, ask the maintainers first by opening an issue in this repository.

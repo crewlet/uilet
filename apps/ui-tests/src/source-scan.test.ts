@@ -1,11 +1,13 @@
 /**
- * Two rules about what a component's SOURCE may contain, which no runtime test
- * can reach because both failures are invisible until somebody looks.
+ * Five rules about what a component's SOURCE may contain, which no runtime
+ * test can reach because every one of the failures is invisible until somebody
+ * looks.
  *
  * 1. A glyph is an SVG, never a font ligature. A component that spells
  *    `material-symbols-outlined` renders a word until a stylesheet it does not
  *    own has fetched a font from a third-party host, and renders that word for
- *    good on a closed network. @crewlethq/icons ships the drawings.
+ *    good on a closed network. @crewlethq/icons ships the drawings, in
+ *    `glyphs/`, and the Material Symbols tree it carried before is gone.
  *
  * 2. Nothing injects a `<style>` element. A style element inside an inline SVG
  *    applies to the WHOLE document, and a strict Content-Security-Policy
@@ -18,6 +20,24 @@
  *    suite only catches this where it has not installed a stub. Four call
  *    sites guarded and one did not, which is exactly the shape a convention
  *    held by memory decays into, so it is a scan rather than a habit.
+ *
+ * 4. A phase has no colour. It is a category, drawn in the neutral colour with
+ *    its word, and inside a figure it is a series the application maps it
+ *    onto. @crewlethq/tokens shipped a phase family once, three hues and their
+ *    inks and tints, and a component that reads one again, or draws a phase
+ *    modifier a stylesheet would have to paint, is bringing it back. The
+ *    package's variable check would refuse the token once it is unemitted, as
+ *    it refuses any; this names the rule, so the failure says why.
+ *
+ * 5. No shadow LIST carries a token that is `none` in one palette. `none` is a
+ *    value on its own and never one entry of a list, so `box-shadow:
+ *    var(--shadow-xs), var(--shadow-hairline)` is invalid at computed-value
+ *    time wherever the rim is `none`, the whole declaration is dropped, and
+ *    the element draws no shadow at all in that palette while drawing two in
+ *    the other. A browser reports nothing. Card's suite held its own
+ *    stylesheet to this, and four other stylesheets had the same list
+ *    (StatCard, StatGroup, ErrorBoundary and PricingCard), each drawing a
+ *    flat panel in the light palette that the dark one lifted.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -34,21 +54,24 @@ const REPOSITORY = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const ROOTS = ['ui', 'icons'].map((name) => join(REPOSITORY, 'packages', name, 'src'));
 const SOURCE = /\.(tsx?|css)$/;
 
-function sources(directory: string): string[] {
+function sources(directory: string, pattern: RegExp = SOURCE): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(directory)) {
     const path = join(directory, entry);
-    if (statSync(path).isDirectory()) found.push(...sources(path));
-    else if (SOURCE.test(entry)) found.push(path);
+    if (statSync(path).isDirectory()) found.push(...sources(path, pattern));
+    else if (pattern.test(entry)) found.push(path);
   }
   return found;
 }
 
-const files = ROOTS.flatMap(sources).map((path) => ({ path: relative(REPOSITORY, path), text: readFileSync(path, 'utf8') }));
+const files = ROOTS.flatMap((root) => sources(root)).map((path) => ({ path: relative(REPOSITORY, path), text: readFileSync(path, 'utf8') }));
+const storybook = ['src', '.storybook', 'scripts']
+  .flatMap((folder) => sources(join(REPOSITORY, 'apps', 'storybook', folder), /\.(tsx?|css|mjs)$/))
+  .map((path) => ({ path: relative(REPOSITORY, path), text: readFileSync(path, 'utf8') }));
 
 describe('component source', () => {
   test('the scan reads the files it claims to', () => {
-    // A scan that found nothing would pass both rules below for any tree.
+    // A scan that found nothing would pass every rule below for any tree.
     expect(files.length).toBeGreaterThan(50);
     expect(files.some(({ path }) => path.endsWith('Button/Button.tsx'))).toBe(true);
     expect(files.some(({ path }) => path.endsWith('.css'))).toBe(true);
@@ -56,6 +79,22 @@ describe('component source', () => {
 
   test('no component draws a glyph as a Material Symbols ligature', () => {
     const offenders = files.filter(({ text }) => text.includes('material-symbols-outlined')).map(({ path }) => path);
+    expect(offenders).toEqual([]);
+  });
+
+  test('nothing reaches for the retired Material Symbols tree', () => {
+    /*
+     * `@crewlethq/icons/symbols/*` was the Material drawings' export until the
+     * glyphs became Lucide's, and the package no longer carries it: an import
+     * of one resolves to nothing, and a notice script copying its LICENSE
+     * ships a site with no license for the drawings it does carry. The
+     * Storybook's sources and scripts are read here too, because they are the
+     * other consumer in this repository.
+     */
+    const offenders = [...files, ...storybook]
+      .filter(({ text }) => /@crewlethq\/icons\/symbols|icons\/symbols\//.test(text))
+      .map(({ path }) => path);
+    expect(storybook.length, 'the Storybook scan read nothing').toBeGreaterThan(20);
     expect(offenders).toEqual([]);
   });
 
@@ -71,6 +110,59 @@ describe('component source', () => {
       .filter(({ text }) => /<style[\s>]|createElement\(\s*['"]style['"]/.test(text))
       .map(({ path }) => path);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('a shadow list', () => {
+  /** The shadow tokens whose value is the keyword `none` in either palette. */
+  const noneSomewhere = (() => {
+    const found = new Set<string>();
+    for (const palette of ['dark', 'light']) {
+      const theme = JSON.parse(
+        readFileSync(join(REPOSITORY, 'packages', 'tokens', 'tokens', 'themes', `${palette}.json`), 'utf8'),
+      ) as { shadow?: Record<string, { value: string }> };
+      for (const [name, step] of Object.entries(theme.shadow ?? {})) {
+        if (step.value.trim() === 'none') {
+          found.add(`--shadow-${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`);
+        }
+      }
+    }
+    return [...found];
+  })();
+
+  test('never carries a token that is `none` in one palette', () => {
+    // A palette with no such token would make the rule vacuous, and the guard
+    // would go green for the wrong reason.
+    expect(noneSomewhere.length).toBeGreaterThan(0);
+    const offenders = files
+      .filter(({ path }) => path.endsWith('.css'))
+      .flatMap(({ path, text }) =>
+        [...text.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/box-shadow:\s*([^;}]+)/g)]
+          .map((match) => match[1] ?? '')
+          .filter((value) => value.includes(','))
+          .flatMap((list) => noneSomewhere.filter((token) => list.includes(token)).map((token) => `${path}: ${token} in "${list.trim()}"`)),
+      );
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('a phase', () => {
+  test('is never a colour: no component reads a phase hue or draws a phase modifier', () => {
+    /*
+     * Both spellings the family had: the token a stylesheet reads, and the
+     * BEM modifier a component built from a phase tone (`crewlet-tag--phase-…`,
+     * `crewlet-status-dot--phase-…`). Named by the file and the line, so a hit
+     * says where. A suite is left out, because the Tag and StatusDot suites
+     * spell the modifier to assert that nothing draws it.
+     */
+    const offenders: string[] = [];
+    for (const { path, text } of files) {
+      if (path.includes('.test.')) continue;
+      for (const [index, line] of text.split('\n').entries()) {
+        if (/--color-phase-|crewlet-[\w-]+--phase-/.test(line)) offenders.push(`${path}:${index + 1}`);
+      }
+    }
+    expect(offenders, 'a phase is the neutral colour and its word').toEqual([]);
   });
 });
 

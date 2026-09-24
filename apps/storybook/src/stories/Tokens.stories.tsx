@@ -1,6 +1,8 @@
+import { useSyncExternalStore } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { ThemeName } from '@crewlethq/tokens';
+import { swatchesFor, type SwatchRoot, type TokenSwatch } from '../tokenSwatches';
 import {
-  color,
   spacing,
   radius,
   shadow,
@@ -11,7 +13,7 @@ import {
   blur,
 } from '@crewlethq/tokens';
 
-const Swatch = ({ name, value }: { name: string; value: string }) => (
+const Swatch = ({ name, value, source }: TokenSwatch) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
     <div
       style={{
@@ -23,34 +25,68 @@ const Swatch = ({ name, value }: { name: string; value: string }) => (
       }}
     />
     <code style={{ fontSize: 'var(--font-size-sm)' }}>
-      {name} <span style={{ color: 'var(--color-text-muted)' }}>{value}</span>
+      {name} <span style={{ color: 'var(--color-text-tertiary)' }}>{value}</span>
+      {source === 'base' ? <span style={{ color: 'var(--color-text-tertiary)' }}> (every root)</span> : null}
     </code>
   </div>
 );
 
-const flatten = (obj: Record<string, unknown>, prefix = ''): [string, string][] => {
-  const out: [string, string][] = [];
-  for (const [k, v] of Object.entries(obj)) {
-    const path = prefix ? `${prefix}.${k}` : k;
-    if (typeof v === 'string') out.push([path, v]);
-    else if (v && typeof v === 'object') out.push(...flatten(v as Record<string, unknown>, path));
-  }
-  return out;
-};
-
-const Palette = () => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-    {flatten(color).map(([name, value]) => (
-      <Swatch key={name} name={name} value={value} />
+const SwatchList = ({ title, note, root }: { title: string; note: string; root: SwatchRoot }) => (
+  <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
+    <h2 style={{ margin: 0, fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)' }}>{title}</h2>
+    <p style={{ margin: '0 0 var(--spacing-2)', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-compact)' }}>
+      {note}
+    </p>
+    {swatchesFor(root).map((swatch) => (
+      <Swatch key={swatch.name} {...swatch} />
     ))}
-  </div>
+  </section>
 );
+
+const LIGHT_QUERY = '(prefers-color-scheme: light)';
+
+/** The palette the system asks for, followed live, as the theme layer does. */
+function useSystemTheme(): ThemeName {
+  return useSyncExternalStore(
+    (change) => {
+      const query = window.matchMedia(LIGHT_QUERY);
+      query.addEventListener('change', change);
+      return () => query.removeEventListener('change', change);
+    },
+    () => (window.matchMedia(LIGHT_QUERY).matches ? 'light' : 'dark'),
+    () => 'dark',
+  );
+}
+
+/**
+ * THE PALETTE THE TOOLBAR SELECTED, and the base root beneath it under its own
+ * heading. See `swatchesFor` for why the typed `color` export alone is the
+ * wrong list here.
+ */
+const Palette = ({ theme }: { theme: 'system' | ThemeName }) => {
+  const system = useSystemTheme();
+  const shown = theme === 'system' ? system : theme;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-8)' }}>
+      <SwatchList
+        root={shown}
+        title={`The ${shown} palette${theme === 'system' ? ', which the system asks for' : ''}`}
+        note={`What an application loading @crewlethq/tokens/css/themes paints in the ${shown} palette: themes.${shown}.color over the base root. A value marked (every root) is one the palette does not declare, so it paints the base root's.`}
+      />
+      <SwatchList
+        root="base"
+        title="The base root, with no theme layer"
+        note="What @crewlethq/tokens/css alone paints, and what the typed color export holds: the marketing palette on its black page. An application does not see these grounds."
+      />
+    </div>
+  );
+};
 
 const Spacing = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
     {Object.entries(spacing).map(([k, v]) => (
       <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
-        <div style={{ width: v, height: 16, background: 'var(--color-brand-primary)' }} />
+        <div style={{ width: v, height: 16, background: 'var(--color-border-control)' }} />
         <code style={{ fontSize: 'var(--font-size-sm)' }}>spacing.{k} = {v}</code>
       </div>
     ))}
@@ -61,7 +97,7 @@ const Radii = () => (
   <div style={{ display: 'flex', gap: 'var(--spacing-3)', flexWrap: 'wrap' }}>
     {Object.entries(radius).map(([k, v]) => (
       <div key={k} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-        <div style={{ width: 56, height: 56, borderRadius: v, background: 'var(--color-surface-muted)' }} />
+        <div style={{ width: 56, height: 56, borderRadius: v, background: 'var(--color-surface-subtle)' }} />
         <code style={{ fontSize: 'var(--font-size-xs)' }}>{k}</code>
       </div>
     ))}
@@ -77,7 +113,7 @@ const Shadows = () => (
             width: 96,
             height: 56,
             borderRadius: 'var(--radius-md)',
-            background: 'var(--color-surface-topbar-lift)',
+            background: 'var(--color-surface-subtle)',
             boxShadow: v,
           }}
         />
@@ -96,10 +132,10 @@ const Typography = () => (
       </div>
     ))}
     <div style={{ marginTop: 'var(--spacing-4)' }}>
-      <span style={{ fontFamily: 'var(--font-family-display)', fontSize: 'var(--font-size-3xl)' }}>Display, Inter (alias of sans)</span>
+      <span style={{ fontFamily: 'var(--font-family-display)', fontSize: 'var(--font-size-3xl)' }}>Display, Geist (alias of sans)</span>
     </div>
     <div>
-      <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: 'var(--font-size-md)' }}>Mono, JetBrains Mono</span>
+      <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: 'var(--font-size-md)' }}>Mono, Geist Mono</span>
     </div>
   </div>
 );
@@ -190,7 +226,9 @@ const meta: Meta = {
 
 export default meta;
 
-export const Colors: StoryObj = { render: () => <Palette /> };
+export const Colors: StoryObj = {
+  render: (_, { globals }) => <Palette theme={(globals.theme as 'system' | ThemeName | undefined) ?? 'dark'} />,
+};
 export const SpacingScale: StoryObj = { render: () => <Spacing /> };
 export const RadiusScale: StoryObj = { render: () => <Radii /> };
 export const ShadowScale: StoryObj = { render: () => <Shadows /> };

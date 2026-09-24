@@ -10,11 +10,11 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { OpenInNewGlyph } from '@crewlethq/icons/glyphs';
+import { ExternalLinkGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'tertiary' | 'accent' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'accent' | 'danger';
 export type ButtonSize = 'small' | 'medium' | 'large';
 export type ButtonShape = 'square' | 'pill';
 
@@ -23,7 +23,12 @@ interface ButtonLook {
   variant?: ButtonVariant | undefined;
   size?: ButtonSize | undefined;
   shape?: ButtonShape | undefined;
-  /** Drawn before the label. A glyph component, not a name. */
+  /**
+   * Drawn before the label. A glyph component, not a name: a glyph strokes in
+   * `currentColor`, so it takes the label's ink on every variant. A brand
+   * mark such as `CrewletIcon` paints its own accent fill and disappears on
+   * the primary and accent fills, so it does not belong in this slot.
+   */
   leadingIcon?: ReactNode;
   /** Drawn after the label: a chevron, an external mark, a count. */
   trailingIcon?: ReactNode;
@@ -223,7 +228,7 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(functio
   },
   ref,
 ) {
-  const trailing = trailingIcon ?? (external ? <OpenInNewGlyph size="sm" /> : undefined);
+  const trailing = trailingIcon ?? (external ? <ExternalLinkGlyph size="sm" /> : undefined);
   return (
     <a
       {...rest}

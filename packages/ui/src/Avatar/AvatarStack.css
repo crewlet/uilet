@@ -1,0 +1,72 @@
+/*
+ * Several badges as one mark (AvatarStack.tsx).
+ *
+ * THE DESIGN'S STACK: each badge overlaps the one before it by 6px and is cut
+ * out of it by a 2px ring in the ground's own colour, so the overlap reads as
+ * badges standing in front of each other rather than as one blot. The ring is
+ * a SHADOW rather than a border, because it has to fall outside the badge
+ * without moving it, and it is decoration: forced-colors mode drops it and the
+ * badges' own hairlines still separate them.
+ *
+ * THE GROUND IS A VARIABLE because a stack stands on whatever it is put on,
+ * and a cut-out in the sheet's colour on a card is a band of the wrong grey
+ * round every badge. It defaults to the SHEET, because that is where the
+ * approved design draws every stack it has: in the top bar of a page, over a
+ * board and over a knowledge page, and in a task's side column, all of them on
+ * the sheet, with the design's own cut-out drawn in the sheet's colour. A stack
+ * that stands on a card, or on anything else, sets it on the stack itself.
+ *
+ * Every rule is two classes deep, so it outweighs the badge's own one-class
+ * rules whichever order the stylesheets are bundled in.
+ */
+
+.crewlet-avatar-stack {
+  --crewlet-avatar-stack-ground: var(--color-surface-background);
+  /* The badges' box, which the component sets from the step it was given; the
+     default is the default step's, sm. The chip reads it, so it stands exactly
+     as tall as the badges beside it. */
+  --crewlet-avatar-stack-size: 26px;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.crewlet-avatar-stack > .crewlet-avatar-stack__member {
+  box-shadow: 0 0 0 2px var(--crewlet-avatar-stack-ground);
+}
+
+/* The design's 6px, a little under a third of its 22px badge: enough that the
+   stack is one mark, little enough that every monogram stays readable. */
+.crewlet-avatar-stack > .crewlet-avatar-stack__member + .crewlet-avatar-stack__member {
+  margin-inline-start: -6px;
+}
+
+/*
+ * THE COUNT OF THE REST. A PILL, where every badge is a squircle or a circle:
+ * it is a number rather than somebody, and drawn in either kind's outline it
+ * would read as one more agent or one more person. Otherwise it is the neutral
+ * badge exactly (the raised rung, the strong hairline, the secondary ink), in
+ * the sans face with tabular figures so "+9" and "+12" sit alike.
+ */
+.crewlet-avatar-stack > .crewlet-avatar-stack__more {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: var(--crewlet-avatar-stack-size);
+  height: var(--crewlet-avatar-stack-size);
+  padding-inline: var(--spacing-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--font-line-height-tight);
+  white-space: nowrap;
+  user-select: none;
+}

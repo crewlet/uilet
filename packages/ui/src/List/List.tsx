@@ -10,7 +10,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { ErrorGlyph } from '@crewlethq/icons/glyphs';
+import { CircleAlertGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -131,7 +131,7 @@ export function ListItem({
     <>
       {tone === 'danger' ? (
         <>
-          <ErrorGlyph className="crewlet-list__danger-mark" size="sm" />
+          <CircleAlertGlyph className="crewlet-list__danger-mark" size="sm" />
           <VisuallyHidden>{dangerLabel}</VisuallyHidden>
           {/*
             A TEXT NODE BESIDE the sentence, as `Link` draws one. An accessible

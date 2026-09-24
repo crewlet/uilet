@@ -13,7 +13,11 @@
 
 /** One measured rule, over one state of the cascade. */
 export interface PaletteCheck {
-  /** Which set of values: 'base', 'light', 'dark (media)', 'dark (attribute)'. */
+  /**
+   * Which set of values: one of the four `paletteStates` names ('base',
+   * 'dark', 'light (media query)', 'light (attribute)'), or 'the token files'
+   * for a structural rule, which reads the theme file rather than a state.
+   */
   state: string;
   /** The rule being kept, as a sentence. */
   rule: string;
@@ -43,7 +47,12 @@ export interface PaletteResult {
 /** Measure the whole rule table over one built pair of stylesheets. */
 export function runPalette(sources: PaletteSources): PaletteResult;
 
-/** The four sets of values a browser can end up with. */
+/**
+ * The four sets of values a browser can end up with, keyed 'base' (tokens.css
+ * alone, the marketing palette), 'dark' (the theme layer's bare root, which a
+ * document that sets nothing gets), 'light (media query)' and 'light
+ * (attribute)', in that order.
+ */
 export function paletteStates(sources: PaletteSources): Record<string, Map<string, string>>;
 
 /** One line per failing check, for an assertion message. */
@@ -67,11 +76,87 @@ export function simulate(colour: Rgb, kind: string): Rgb;
 export function separation(a: Rgb, b: Rgb): number[];
 export const VISIONS: readonly string[];
 
+/**
+ * The four opaque rungs, by custom-property name, lowest first: the frame, the
+ * sheet (`--color-surface-background`), the card (`-subtle`) and raised
+ * (`-elevated`). Every ground a piece of text can end up on; a component suite
+ * measures on these rather than on a copy of them.
+ */
+export const OPAQUE_SURFACES: readonly string[];
+
+/**
+ * The neutral text steps that carry a FACT, each as [custom property, the
+ * contrast floor it clears on every opaque rung].
+ */
+export const TEXT_STEPS: readonly (readonly [string, number])[];
+
+/**
+ * The steps of the ladder, each as [rule, upper rung, lower rung, the dE the
+ * upper rung has to sit off the lower one].
+ */
+export const RUNG_STEPS: readonly (readonly [string, string, string, number])[];
+
+/** The line that finds a card, as [border, card, sheet]: it clears HAIRLINE_DE against both. */
+export const CARD_HAIRLINE: readonly [string, string, string];
+export const HAIRLINE_DE: number;
+
+/**
+ * The overlays that have to be seen, each as [rule, overlay, the overlay it is
+ * measured against or null for the bare rung], and the dE each clears.
+ */
+export const OVERLAY_STEPS: readonly (readonly [string, string, string | null])[];
+export const OVERLAY_DE: number;
+
+/**
+ * The translucent overlays composited onto each opaque rung: a hovered row, a
+ * pressed row and an inset well. A component suite measuring what a mark
+ * stands on includes these grounds as well as the bare rungs.
+ */
+export const OVERLAYS: readonly string[];
+
+/** The ground the application rail stands on. */
+export const RAIL_GROUND: string;
+
+/**
+ * The row the reader is on in the rail, as [fill, hairline]: raised, with the
+ * plain border drawn round it. The fill lifts off the rail by
+ * RAIL_CURRENT_LIFT and the hairline clears HAIRLINE_DE on the fill.
+ */
+export const RAIL_CURRENT_ROW: readonly [string, string];
+export const RAIL_CURRENT_LIFT: number;
+
+/**
+ * The four chart series, by custom-property name, in the order a figure
+ * assigns them. Past the fourth a figure takes `--color-data-other`, which is
+ * not a series and is not in the list.
+ */
+export const DATA: readonly string[];
+
+/**
+ * How far apart two neighbouring series sit, in OKLab dE: DATA_ADJACENT_DE
+ * under every vision, and DATA_ADJACENT_NORMAL_DE under normal vision.
+ */
+export const DATA_ADJACENT_DE: number;
+export const DATA_ADJACENT_NORMAL_DE: number;
+
+/**
+ * The filled actions' steps, each as [rule, the step, the fill it follows]:
+ * the primary action's hover and press, and the destructive action's hover.
+ * Each clears ACTION_DE against the one before it and raises the contrast of
+ * ACTION_LABEL on it.
+ */
+export const ACTION_STEPS: readonly (readonly [string, string, string])[];
+export const ACTION_LABEL: string;
+export const ACTION_DE: number;
+
 /** The token name of the modal veil. */
 export const VEIL: string;
+
+/** The rung the veil is drawn in: each root's own frame. */
+export const VEIL_GROUND: string;
 
 /** The band the veiled page has to stay inside, as [floor, ceiling]. */
 export const VEIL_BAND: readonly number[];
 
-/** The alpha the veil draws its own root's ground at. */
+/** The alpha the veil draws its own root's frame at. */
 export const VEIL_ALPHA: number;

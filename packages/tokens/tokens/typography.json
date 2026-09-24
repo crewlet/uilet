@@ -1,19 +1,20 @@
 {
   "font": {
     "family": {
-      "sans": { "value": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", "comment": "Interface and body type. Inter is self-hosted by @crewlethq/tokens/css/fonts; the system stack covers the moment before it loads and any app that does not import that stylesheet." },
+      "sans": { "value": "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji'", "comment": "Interface and body type. Geist is self-hosted by @crewlethq/tokens/css/fonts; the system stack covers the moment before it loads and any app that does not import that stylesheet." },
       "display": { "value": "{font.family.sans}", "comment": "Headings and other display type. An alias of the sans family, so a heading costs no extra download. Components keep reading this role token so a dedicated display face would land in one place." },
-      "mono": { "value": "'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace", "comment": "Code, identifiers and tabular values. JetBrains Mono is self-hosted by @crewlethq/tokens/css/fonts." }
+      "mono": { "value": "'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace", "comment": "Code, identifiers and tabular values. Geist Mono is self-hosted by @crewlethq/tokens/css/fonts." }
     },
     "size": {
       "2xs": { "value": "11px", "comment": "Micro labels and table column heads." },
       "xs": { "value": "12px", "comment": "Dense secondary text and badges." },
-      "compact": { "value": "13px", "comment": "Table cells and captions. It sits between xs and sm rather than extending the ramp at either end, so it is named for its job." },
-      "sm": { "value": "14px", "comment": "Body." },
+      "compact": { "value": "13px", "comment": "The BODY: the document's own size (@crewlethq/tokens/css/base sets it on body, at font.lineHeight.body), and table cells and captions. The approved design sets every screen on a 13px base, a step under the 14px most interfaces read at, because a dense board is read by scanning rows rather than by reading paragraphs. It sits between xs and sm rather than extending the ramp at either end, so it is named for its job, and it kept that name when it became the body rather than taking a second one." },
+      "sm": { "value": "14px", "comment": "A step over the body: a section heading, a page's title in the top bar, a product name in the rail. It was the body until the body moved to font.size.compact." },
       "md": { "value": "16px" },
       "lg": { "value": "18px" },
       "xl": { "value": "20px" },
       "2xl": { "value": "24px" },
+      "display": { "value": "28px", "comment": "ONE number per screen: the value on a stat tile and a page's greeting, set tabular at the semibold weight with the tight tracking. It sits between 2xl and 3xl, where the approved design draws it, and is named for its job rather than squeezed onto the ramp as a 2.5xl, so a component reads the role (--font-size-display) and the step can move without a rename." },
       "3xl": { "value": "32px" },
       "4xl": { "value": "48px" },
       "5xl": { "value": "64px" }
@@ -28,6 +29,7 @@
     "lineHeight": {
       "tight": { "value": "1.2" },
       "snug": { "value": "1.4" },
+      "body": { "value": "1.45", "comment": "The document's own leading, set on body with the 13px font.size.compact by @crewlethq/tokens/css/base: an 18.85px line, the approved design's. It sits between snug and normal and is named for its job, like font.size.compact. A component whose text is drawn INSIDE a line of the document (a keycap, a monogram, the rail's lockup) takes this step rather than one of its own, so it stands on the same line as the words around it." },
       "normal": { "value": "1.5" },
       "relaxed": { "value": "1.7" }
     },

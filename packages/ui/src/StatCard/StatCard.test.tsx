@@ -10,9 +10,15 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
-import { TokenGlyph } from '@crewlethq/icons/glyphs';
+import { breakpoint, font, themes } from '@crewlethq/tokens';
+import { parseHex } from '@crewlethq/tokens/test/palette';
+import { CoinsGlyph } from '@crewlethq/icons/glyphs';
+import { channels, installSheets, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import { StatCard } from './index.js';
 import { StatGroup } from '../StatGroup/index.js';
+import { Sparkline } from '../Charts/index.js';
+import { Meter } from '../Meter/index.js';
+import { ButtonLink } from '../Button/index.js';
 
 afterEach(cleanup);
 
@@ -28,25 +34,189 @@ describe('StatCard', () => {
   });
 
   test('the label comes first, which is the order a board is read and heard in', () => {
-    const { container } = render(<StatCard label="Live nodes" value="4" sub="holding a lease" />);
+    const { container } = render(
+      <StatCard label="Tasks in progress" value="18" delta={{ value: '+4', polarity: 'neutral' }} sub="vs last week" />,
+    );
     const tile = container.querySelector('.crewlet-statcard')!;
     const order = [...tile.children].map((child) => child.className);
-    expect(order).toEqual(['crewlet-statcard__label', 'crewlet-statcard__value', 'crewlet-statcard__sub']);
+    expect(order).toEqual(['crewlet-statcard__label', 'crewlet-statcard__reading', 'crewlet-statcard__sub']);
     // The reading order is the point as much as the look: a screen reader says
-    // "live nodes, four, holding a lease" rather than "four, live nodes".
-    expect(tile.textContent).toBe('Live nodes4holding a lease');
+    // "tasks in progress, 18, +4 vs last week" rather than "18, tasks in
+    // progress", and the change and the words after it are one sentence.
+    expect(tile.textContent).toBe('Tasks in progress18+4 vs last week');
   });
 
-  test('a lone tile is the same object as the panel beside it', () => {
-    // The engine's stat row lives inside a panel, so a tile that stands on its
-    // own has to bring that panel's whole recipe rather than a flatter cousin
-    // of it: the surface, the hairline, the corner AND the elevation.
-    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'StatCard.css'), 'utf8');
-    const rule = /\.crewlet-statcard\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(rule).toMatch(/box-shadow:\s*var\(--shadow-xs\),\s*var\(--shadow-hairline\)/);
-    // And gives it back when the row draws the card instead, or the tile casts
-    // a shadow inside one.
-    expect(/\.crewlet-statcard--flush\s*\{[^}]*box-shadow:\s*none/.test(css)).toBe(true);
+  test('a lone tile is the same object as the card beside it: flat, on the card rung, inside the hairline', () => {
+    /*
+     * THE CARD IS FLAT, and a lone tile is one: the card's ground, its default
+     * hairline and its 12px corner, and no shadow or rim of its own. It used to
+     * carry `var(--shadow-xs), var(--shadow-hairline)`, a list that is INVALID
+     * in the light palette, where the rim is `none`, so the light tile drew no
+     * shadow at all while the dark one drew two.
+     */
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installThemed(theme, 'StatCard/StatCard.css');
+      const { container, unmount } = render(<StatCard label="Seats" value="7" />);
+      const style = getComputedStyle(container.querySelector('.crewlet-statcard')!);
+      const palette = themes[theme].color;
+      expect(channels(style.backgroundColor), theme).toEqual(parseHex(palette.surface.subtle));
+      expect(style.borderTopStyle, theme).toBe('solid');
+      expect(channels(style.borderTopColor), theme).toEqual(parseHex(palette.border.default));
+      expect(style.borderRadius, theme).toBe('12px');
+      expect(['', 'none'], `${theme}: ${style.boxShadow}`).toContain(style.boxShadow);
+      unmount();
+      uninstall();
+    }
+  });
+
+  test('the label is set as it is written, and the value is the display step in tabular figures', () => {
+    /*
+     * Sentence case at the caption step: the uppercased, tracked-open register
+     * is a table's column head, and five of them over five numbers put a
+     * heading on every tile. The value is the screen's one display number, and
+     * a number that ticks up must not move anything beside it.
+     */
+    const uninstall = installThemed('dark', 'StatCard/StatCard.css');
+    try {
+      const { container } = render(<StatCard label="Tasks in progress" value="18" />);
+      const label = getComputedStyle(container.querySelector('.crewlet-statcard__label')!);
+      expect(['', 'none']).toContain(label.textTransform);
+      expect(label.fontSize).toBe(font.size.xs);
+      expect(['', '0', '0px', 'normal']).toContain(label.letterSpacing);
+      const value = getComputedStyle(container.querySelector('.crewlet-statcard__value')!);
+      expect(value.fontSize).toBe(font.size.display);
+      expect(value.fontVariantNumeric).toBe('tabular-nums');
+      const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'StatCard.css'), 'utf8');
+      expect(css).not.toMatch(/text-transform:\s*uppercase/);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('a change is drawn in the ink of whether it was wanted, never of its direction', () => {
+    // The sign says which way the number moved; whether that was good news is
+    // the caller's to say, because more work completed is good and more
+    // tokens spent may not be.
+    const { container } = render(
+      <>
+        <StatCard label="Completed" value="41" delta={{ value: '+12%', polarity: 'good' }} sub="vs previous 7 days" />
+        <StatCard label="Tokens" value="12.6M" delta={{ value: '+30%', polarity: 'bad' }} />
+        <StatCard label="In progress" value="18" delta={{ value: '+4', polarity: 'neutral' }} sub="vs last week" />
+      </>,
+    );
+    const deltas = [...container.querySelectorAll('.crewlet-statcard__delta')];
+    expect(deltas.map((delta) => [delta.textContent, delta.className])).toEqual([
+      ['+12%', 'crewlet-statcard__delta crewlet-statcard__delta--good'],
+      ['+30%', 'crewlet-statcard__delta crewlet-statcard__delta--bad'],
+      ['+4', 'crewlet-statcard__delta crewlet-statcard__delta--neutral'],
+    ]);
+    // With nothing after it, the change is the whole line and takes no space.
+    expect(deltas[1]!.parentElement!.textContent).toBe('+30%');
+
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installThemed(theme, 'StatCard/StatCard.css');
+      const palette = themes[theme].color;
+      const ink = (index: number) => channels(getComputedStyle(deltas[index]!).color);
+      expect(ink(0), `${theme}: good`).toEqual(parseHex(palette.feedback.successInk));
+      expect(ink(1), `${theme}: bad`).toEqual(parseHex(palette.feedback.dangerInk));
+      expect(ink(2), `${theme}: neutral`).toEqual(parseHex(palette.text.secondary));
+      uninstall();
+    }
+  });
+
+  test('a second line that reports a state takes its ink, and a delta in it keeps its own', () => {
+    /*
+     * "Oldest waiting 2h 10m" is a person kept waiting, which is the warning
+     * state; the approved Home row draws that line in the warning ink. A line
+     * that is a fact keeps the quiet ink, which is the default.
+     */
+    const { container } = render(
+      <>
+        <StatCard label="Waiting on your decision" value="3" sub="Oldest waiting 2h 10m" subTone="warning" />
+        <StatCard label="Stopped" value="1" sub="budget exhausted" subTone="danger" delta={{ value: '−2', polarity: 'good' }} />
+        <StatCard label="Tasks in progress" value="18" sub="vs last week" />
+      </>,
+    );
+    const subs = [...container.querySelectorAll('.crewlet-statcard__sub')];
+    expect(subs.map((sub) => sub.className)).toEqual([
+      'crewlet-statcard__sub crewlet-statcard__sub--warning',
+      'crewlet-statcard__sub crewlet-statcard__sub--danger',
+      'crewlet-statcard__sub',
+    ]);
+    // The line's tone paints the line and never the value.
+    expect(container.querySelector('.crewlet-statcard')!.className).toBe('crewlet-statcard crewlet-statcard--neutral');
+
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installThemed(theme, 'StatCard/StatCard.css');
+      const palette = themes[theme].color;
+      const ink = (element: Element) => channels(getComputedStyle(element).color);
+      expect(ink(subs[0]!), `${theme}: warning`).toEqual(parseHex(palette.feedback.warningInk));
+      expect(ink(subs[1]!), `${theme}: danger`).toEqual(parseHex(palette.feedback.dangerInk));
+      expect(ink(subs[2]!), `${theme}: a fact`).toEqual(parseHex(palette.text.tertiary));
+      // The value stays in the primary ink: the line's state is the line's.
+      expect(ink(container.querySelector('.crewlet-statcard__value')!), `${theme}: value`).toEqual(
+        parseHex(palette.text.primary),
+      );
+      // A delta inside a toned line keeps the ink of its own polarity.
+      expect(ink(subs[1]!.querySelector('.crewlet-statcard__delta')!), `${theme}: delta`).toEqual(
+        parseHex(palette.feedback.successInk),
+      );
+      uninstall();
+    }
+  });
+
+  test('the trend stands at the end of the value line, and waits with the value while it loads', () => {
+    const { container, rerender } = render(
+      <StatCard label="Tasks in progress" value="18" trend={<Sparkline values={[3, 5, 4, 8]} current />} />,
+    );
+    const reading = container.querySelector('.crewlet-statcard__reading')!;
+    expect([...reading.children].map((child) => child.className)).toEqual([
+      'crewlet-statcard__value',
+      'crewlet-statcard__trend',
+    ]);
+    expect(reading.querySelector('.crewlet-statcard__trend .crewlet-spark')).toBeTruthy();
+
+    // A trend and a change are readings of the number, so neither is drawn
+    // before the number has arrived.
+    rerender(
+      <StatCard
+        label="Tasks in progress"
+        value="18"
+        loading
+        delta={{ value: '+4', polarity: 'neutral' }}
+        trend={<Sparkline values={[3, 5, 4, 8]} current />}
+      />,
+    );
+    expect(container.querySelector('.crewlet-statcard__trend')).toBeNull();
+    expect(container.querySelector('.crewlet-statcard__delta')).toBeNull();
+  });
+
+  test('a figure fills the trend slot and a control keeps its own width, at the slot end', () => {
+    // A sparkline or a meter has no width to offer and fills the slot; a
+    // small button is a button beside the number it acts on, not a bar.
+    const uninstall = installSheets('StatCard/StatCard.css');
+    try {
+      const { container } = render(
+        <>
+          <StatCard label="Tokens" value="12.6M" trend={<Meter value={63} max={100} label="Weekly budget" hideLabel />} />
+          <StatCard
+            label="Waiting on your decision"
+            value="3"
+            trend={
+              <ButtonLink href="#/inbox" size="small" variant="secondary">
+                Review
+              </ButtonLink>
+            }
+          />
+        </>,
+      );
+      const [figure, control] = [...container.querySelectorAll('.crewlet-statcard__trend > *')];
+      expect(getComputedStyle(figure!).alignSelf).not.toBe('flex-end');
+      expect(getComputedStyle(control!).alignSelf).toBe('flex-end');
+      expect(getComputedStyle(container.querySelector('.crewlet-statcard__trend')!).width).toBe('96px');
+    } finally {
+      uninstall();
+    }
   });
 
   test('a loading tile is busy and says so, rather than drawing two dashes', () => {
@@ -92,8 +262,23 @@ describe('StatCard', () => {
       <main>
         <h1>Spend</h1>
         <StatGroup columns={3}>
-          <StatCard flush label="Total tokens" value="831.3K" icon={<TokenGlyph />} sub="722.0K in" />
+          <StatCard flush label="Total tokens" value="831.3K" icon={<CoinsGlyph />} sub="722.0K in" />
+          <StatCard
+            flush
+            label="Completed"
+            value="41"
+            delta={{ value: '+12%', polarity: 'good' }}
+            sub="vs previous 7 days"
+            trend={<Sparkline values={[3, 5, 4, 8]} current />}
+          />
           <StatCard flush label="Refusals" value="3" tone="danger" />
+          <StatCard
+            flush
+            label="Tokens"
+            value="12.6M"
+            trend={<Meter value={63} max={100} label="Weekly budget" hideLabel />}
+            sub="63% of the weekly budget"
+          />
           <StatCard flush label="Calls" value="48" loading />
         </StatGroup>
       </main>,
@@ -157,13 +342,14 @@ describe('StatGroup', () => {
   });
 
   test('it drops to two columns where the engine drops its own row', () => {
-    // 900px is the shell breakpoint: a 280px rail plus a 620px content column,
-    // which is the width at which a four-up row of numbers stops having a
-    // column each. A media query cannot read a custom property, so the number
-    // is written out and this is what says it is still that number.
+    // Under the shell breakpoint, strictly, which is where the rail becomes a
+    // drawer and where the engine drops its own stat row. A media query cannot
+    // read a custom property, so the number is written out and this is what
+    // says it is still the shell's number, asked the shell's way.
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../StatGroup/StatGroup.css'), 'utf8');
-    expect(css).toContain('@media (max-width: 900px)');
-    const reduced = css.slice(css.indexOf('@media (max-width: 900px)'));
+    const query = `@media (width < ${breakpoint.shell})`;
+    expect(css).toContain(query);
+    const reduced = css.slice(css.indexOf(query));
     expect(reduced).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   });
 

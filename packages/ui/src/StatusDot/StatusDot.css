@@ -1,84 +1,186 @@
 /*
- * The status dot: a 6px mark in its tone's fill, beside the word it belongs
+ * The status dot: a 7px mark in its tone's fill, beside the word it belongs
  * to. See the component doc for why it is hidden from assistive technology.
+ *
+ * 7px is the approved design's dot. The size is written out rather than
+ * taken from a scale because it is the measure of one mark, not a step
+ * anything else shares, and it is fixed at every density: a mark read the
+ * way a glyph is does not shrink with the gaps around it.
+ *
+ * TWO VALUES PER TONE: the fill the dot is painted in, and the HALO a pulsing
+ * dot breathes out in, which is the same tone's soft step. The halo is held to
+ * being SEEN rather than to a contrast ratio: it never touches the dot (see the
+ * pulse below), so the dot clears 3:1 against the surface it stands on at every
+ * point of the round, and the word beside it says the state. The halo only has
+ * to stand off its ground by the dE 3 the palette suite holds every "can a
+ * reader notice it" difference to. Every soft step does, by 4.48 at the least.
  */
 
 .crewlet-status-dot {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: var(--radius-circle);
   /*
    * The quiet state is still a mark, so it takes the tertiary step rather than
-   * the decoration one the engine spends here: a 6px dot has to clear 3:1 to
+   * the decoration one the engine spends here: a 7px dot has to clear 3:1 to
    * be seen at all, and --color-text-muted measures 2.33:1 on a light page and
    * 2.25:1 on a dark one at their worst grounds. The tertiary step measures
    * 4.87:1 and 4.65:1 on the same pair, and is the nearest step that holds.
    */
   background: var(--color-text-tertiary);
+  /*
+   * The neutral family has no soft step, because it has no hue to tint with,
+   * so its halo is a translucent overlay. Pressed is the one that reads like
+   * the tones' halos: it stands dE 6.09 off its faintest ground (the light
+   * frame) and 8.84 in dark, inside the 4.48 to 8.50 the soft steps span. The
+   * hover overlay stands 3.03, on the floor, and the inset well 1.79, under it.
+   */
+  --crewlet-status-dot-halo: var(--color-surface-pressed);
   flex: none;
 }
 
 .crewlet-status-dot--info {
   background: var(--color-feedback-info);
+  --crewlet-status-dot-halo: var(--color-feedback-info-soft);
 }
 
 .crewlet-status-dot--success {
   background: var(--color-feedback-success);
+  --crewlet-status-dot-halo: var(--color-feedback-success-soft);
 }
 
 .crewlet-status-dot--warning {
   background: var(--color-feedback-warning);
+  --crewlet-status-dot-halo: var(--color-feedback-warning-soft);
 }
 
 .crewlet-status-dot--danger {
   background: var(--color-feedback-danger);
+  --crewlet-status-dot-halo: var(--color-feedback-danger-soft);
 }
 
 .crewlet-status-dot--brand {
   background: var(--color-brand-accent);
-}
-
-.crewlet-status-dot--phase-onboarding {
-  background: var(--color-phase-onboarding);
-}
-
-.crewlet-status-dot--phase-execute {
-  background: var(--color-phase-execute);
-}
-
-.crewlet-status-dot--phase-review {
-  background: var(--color-phase-review);
+  --crewlet-status-dot-halo: var(--color-brand-accent-soft);
 }
 
 /*
- * Still happening. Three things are deliberate: the pulse never goes to
- * nothing, because a mark that disappears reads as a fault rather than as work
- * in progress; it alternates rather than sawtooths, so the mark comes back the
- * way it went; and the round trip is 1.8s, which is the engine's own breath
- * and is 0.55 flashes a second, well clear of the three that are a seizure
- * risk. Three of the slow step each way makes that round trip.
+ * STILL HAPPENING: a halo breathes out round the dot and back in, the approved
+ * design's working pulse. Five things are deliberate.
+ *
+ * THE DOT NEVER FADES. The halo is a box-shadow and it is the only property
+ * the keyframes touch, so the fill stays at the step measured to 3:1 through
+ * the whole round. The pulse this replaced faded the dot itself to 0.35, and
+ * at the bottom of that fade every fill measured 1.35:1 to 2.17:1 against the
+ * surfaces it sits on: for part of every round, a mark under its own floor.
+ *
+ * NOR DOES THE HALO TOUCH IT. The design casts the halo from the dot itself,
+ * and a spread shadow starts at the edge of the box that casts it, so for the
+ * whole round the dot's ground would be its own soft step on the surface
+ * rather than the surface. On that ground the light info, success and warning
+ * fills measure 2.65:1 to 2.95:1 (warning and success on the frame, where they
+ * clear 3.00:1 and 3.01:1 bare): the same fault as the fade, smaller. So the
+ * halo is cast by a RING BOX 2px outside the dot, the offset the Avatar state
+ * ring and the outer focus ring stand at, and an outer shadow is never painted
+ * inside the box that casts it: a band of the real ground always stands
+ * between the dot and its halo, so the dot always stands on the surface its
+ * fill was measured against. The fill does not move. Nothing in this kit
+ * holds a mark to its own soft step, which is also why a Tag draws its dot in
+ * its ink.
+ *
+ * A SHADOW ON A PSEUDO-ELEMENT, not an outline at the same offset, because an
+ * outline's width is snapped to whole device pixels, as a border's is: at 1x
+ * a width breathing to 3px is drawn 1px and then 2px and reaches 3px for an
+ * instant, a flicker between two rings rather than a breath, where a spread
+ * shadow grows smoothly. The ring box is absolutely positioned, so it takes
+ * no room, and the pulsing dot is its containing block through a rule written
+ * in :where(), which weighs nothing, so a position of your own on the dot
+ * still wins, and any position but static keeps the ring on it.
+ *
+ * IT REACHES THE DESIGN'S 5PX, 2 of ground and 3 of halo, painted outside
+ * every box, so it moves nothing beside the dot. Like the 7px it surrounds,
+ * it is the measure of this one mark and is fixed at every density.
+ *
+ * ONE ROUND IS --motion-duration-breath, which is a PERIOD rather than a
+ * transition: out by the half, back by the end, and no `alternate`, which
+ * would play each half as a whole duration and take twice as long. That is
+ * 0.45 rounds a second, far under the three flashes a second that are a
+ * seizure risk, and the in-out ease makes both ends a rest. The halo is read
+ * through the custom property each tone sets above, which the ring box
+ * inherits, so whichever tone pulses breathes in its own soft step.
  */
-.crewlet-status-dot.is-pulsing {
-  animation: crewlet-status-dot-pulse calc(var(--motion-duration-slow) * 3) var(--motion-easing-default) infinite
-    alternate;
+:where(.crewlet-status-dot.is-pulsing) {
+  position: relative;
 }
 
+.crewlet-status-dot.is-pulsing::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-circle);
+  /* Paint, never a target: the box reaches 2px past the dot. */
+  pointer-events: none;
+  animation: crewlet-status-dot-pulse var(--motion-duration-breath) var(--motion-easing-in-out) infinite;
+}
+
+/*
+ * The spread moves and nothing else: the rests and the peak are one shadow in
+ * one colour, so the only thing that interpolates is how far it reaches.
+ */
 @keyframes crewlet-status-dot-pulse {
-  from {
-    opacity: 1;
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--crewlet-status-dot-halo);
   }
-  to {
-    opacity: 0.35;
+
+  50% {
+    box-shadow: 0 0 0 3px var(--crewlet-status-dot-halo);
   }
 }
 
 /*
- * A mark that cannot move should not pretend to. The dot still reads as its
- * tone, and the word beside it still says what is happening.
+ * A DOT WITH ITS WORD: one line, the dot and then the word, the way every
+ * dot in this kit is meant to be read.
+ *
+ * THE GAP CLEARS THE HALO. A pulsing dot's halo reaches 5px past its edge, 2
+ * of ground and 3 of halo, painted outside every box, so it takes no room and
+ * a gap narrower than that puts the halo on the first letter at every peak:
+ * at the 4px an ordinary mark stands off its word, it struck the R of
+ * "Reviewing". 7px is that reach and 2px of ground on the far side of it, the
+ * same band that stands between the dot and its halo, so at the peak the word
+ * stands off the halo exactly as the halo stands off the dot. It is written in
+ * pixels, not a spacing step, because what it clears is fixed at every
+ * density like the dot and the halo themselves, and it is the same for EVERY
+ * tone, pulsing or not, so a column of statuses starts its words on one line
+ * whichever of them is breathing.
+ */
+.crewlet-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* A status is one line, and the word is what gives way: the dot never does. */
+.crewlet-status__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * HELD, not slowed: a mark that loops for as long as the work runs is exactly
+ * what the setting is for. The stop names the selector that starts the pulse
+ * and comes after it, so it wins on source order at the same specificity,
+ * which is the pairing the package's literal check holds every stylesheet to.
+ * The dot rests at its own fill with no halo, and the word beside it still
+ * says the work is under way.
  */
 @media (prefers-reduced-motion: reduce) {
-  .crewlet-status-dot.is-pulsing {
+  .crewlet-status-dot.is-pulsing::after {
     animation: none;
   }
 }

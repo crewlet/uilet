@@ -10,7 +10,7 @@
         "stylesheets/**",
         "fonts/**",
         "svg/**",
-        "symbols/**",
+        "glyphs/**",
         "scripts/**",
         ".storybook/**",
         "package.json",
@@ -42,7 +42,7 @@
     },
     "test": {
       "dependsOn": ["^build", "build"],
-      "inputs": ["src/**", "test/**", "tokens/**", "stylesheets/**", "symbols/**", "svg/**", "vitest.config.*", "package.json"]
+      "inputs": ["src/**", "test/**", "tokens/**", "stylesheets/**", "fonts/**", "glyphs/**", "svg/**", "vitest.config.*", "package.json"]
     },
     "clean": {
       "cache": false

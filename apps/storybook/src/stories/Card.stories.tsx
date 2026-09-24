@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button, Card, DescriptionList, IconButton, List, ListItem, RelativeTime, Tag, Text } from '@crewlethq/ui';
 import { density } from '@crewlethq/tokens';
-import { MoreVertGlyph, TerminalGlyph } from '@crewlethq/icons/glyphs';
+import { EllipsisVerticalGlyph, SquareTerminalGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Card> = {
   title: 'UI/Card',
@@ -47,7 +47,7 @@ export const Basic: Story = {
         <Card.Description>Six worker nodes, last reconciled two minutes ago.</Card.Description>
       </Card.Body>
       <Card.Footer>
-        <Button variant="tertiary" size="small">
+        <Button variant="ghost" size="small">
           Edit
         </Button>
         <Button variant="primary" size="small">
@@ -65,8 +65,8 @@ export const Outlined: Story = { args: { variant: 'outlined' }, render: BasicRen
 export const Subtle: Story = { args: { variant: 'subtle' }, render: BasicRender };
 
 /**
- * THE TILE. `subtle` is the ground a panel stands on with none of its lift,
- * and it takes the tighter inset without being asked: a grid of records is
+ * THE TILE. `subtle` is the card at the tile's inset, and it takes the tighter
+ * inset without being asked: a grid of records is
  * read by scanning down one column of names, and at the panel's own step each
  * tile spends a third of its height on air. Pass a `padding` to overrule it.
  */
@@ -157,10 +157,10 @@ export const AFlushPanel: Story = {
   render: (args) => (
     <Card {...args} as="section" style={{ maxWidth: 480 }}>
       <Card.Header
-        icon={<TerminalGlyph size="sm" />}
+        icon={<SquareTerminalGlyph size="sm" />}
         count={3}
         subtitle="every run started in the last hour"
-        actions={<IconButton label="More actions" icon={<MoreVertGlyph />} size="sm" />}
+        actions={<IconButton label="More actions" icon={<EllipsisVerticalGlyph />} size="sm" />}
       >
         <Card.Title>Coding runs</Card.Title>
       </Card.Header>
@@ -191,7 +191,7 @@ export const AFlushPanel: Story = {
 export const ContentWithNoBody: Story = {
   render: (args) => (
     <Card {...args} as="section" style={{ maxWidth: 400 }}>
-      <Card.Header icon={<TerminalGlyph size="sm" />} subtitle="from each completion's own report">
+      <Card.Header icon={<SquareTerminalGlyph size="sm" />} subtitle="from each completion's own report">
         <Card.Title>By model</Card.Title>
       </Card.Header>
       <Text variant="cell" as="p">
@@ -223,7 +223,7 @@ export const ALongTitle: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 'var(--spacing-4)', gridTemplateColumns: '1fr 1fr', maxWidth: 560 }}>
       <Card as="section">
-        <Card.Header icon={<TerminalGlyph size="sm" />} count={12} subtitle="last hour">
+        <Card.Header icon={<SquareTerminalGlyph size="sm" />} count={12} subtitle="last hour">
           <Card.Title>Platform Reliability and Developer Experience</Card.Title>
         </Card.Header>
         <Card.Body>
@@ -231,7 +231,7 @@ export const ALongTitle: Story = {
         </Card.Body>
       </Card>
       <Card as="section">
-        <Card.Header icon={<TerminalGlyph size="sm" />} count={12} subtitle="last hour">
+        <Card.Header icon={<SquareTerminalGlyph size="sm" />} count={12} subtitle="last hour">
           <Card.Title truncate>Platform Reliability and Developer Experience</Card.Title>
         </Card.Header>
         <Card.Body>

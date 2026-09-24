@@ -1,5 +1,6 @@
 /**
- * The shell's landmarks, its skip link, and the drawer.
+ * The shell's landmarks, its skip link, the frame and its floating sheet, and
+ * the drawer.
  *
  * The drawer cases are ported from the engine dashboard's `app/Shell.test.tsx`,
  * where the rail was a veil with a click handler and nothing else: Escape did
@@ -8,12 +9,15 @@
  */
 
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { breakpoint, radius, size, themes } from '@crewlethq/tokens';
+import { parseHex } from '@crewlethq/tokens/test/palette';
 import axe from 'axe-core';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { channels, installAtWidth, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { useModalLayer } from '../Layer/index.js';
 import { NavGroup, NavItem, SidebarNav } from '../SidebarNav/index.js';
 import { AppShell, useAppShell } from './index.js';
@@ -61,6 +65,58 @@ function installMedia(initial: boolean): { set: (matches: boolean) => void; rest
       if (had) Object.defineProperty(globalThis, 'matchMedia', had);
       else delete (globalThis as Record<string, unknown>).matchMedia;
     },
+  };
+}
+
+/**
+ * A media query list that ANSWERS its query, for a viewport of one width.
+ *
+ * The stub above answers whatever it is told, so it can drive the drawer
+ * across the breakpoint but cannot say WHERE the breakpoint is. This one reads
+ * the query the shell asks and evaluates it the way a browser would, over the
+ * four width features a layout switch is written with, and refuses anything
+ * else: a query it could not read would otherwise answer false and pass as the
+ * wide layout. Every query the shell asks is recorded, so a case can hold the
+ * stylesheet to the same one.
+ */
+function installViewport(width: number, asked: string[]): () => void {
+  const had = Object.getOwnPropertyDescriptor(globalThis, 'matchMedia');
+  const answer = (query: string): boolean => {
+    const feature = /^\((?:(width) ([<>]=?) |(max-width|min-width): )(\d*\.?\d+)px\)$/.exec(query.trim());
+    if (!feature) throw new Error(`the viewport stub cannot evaluate "${query}"`);
+    const limit = Number(feature[4]);
+    switch (feature[2] ?? feature[3]) {
+      case '<':
+        return width < limit;
+      case '<=':
+      case 'max-width':
+        return width <= limit;
+      case '>':
+        return width > limit;
+      default:
+        return width >= limit;
+    }
+  };
+  Object.defineProperty(globalThis, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: (query: string) => {
+      asked.push(query);
+      return {
+        matches: answer(query),
+        media: query,
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      };
+    },
+  });
+  return () => {
+    if (had) Object.defineProperty(globalThis, 'matchMedia', had);
+    else delete (globalThis as Record<string, unknown>).matchMedia;
   };
 }
 
@@ -315,6 +371,249 @@ test('the shell reports the layout and the scroller to what is inside it', () =>
   }
 });
 
+/**
+ * WHERE THE DRAWER TAKES OVER, and why it is there.
+ *
+ * `breakpoint.shell` is derived rather than chosen: the rail, the inset
+ * between the frame and the sheet, and the sheet the design needs to draw a
+ * list beside its detail (the Inbox, a 320px list beside a 460px detail). At
+ * exactly that width the sheet is exactly its floor, so the wide layout holds
+ * there and the drawer takes over one pixel under it.
+ */
+describe('the shell breakpoint', () => {
+  const shell = Number.parseFloat(breakpoint.shell);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
+
+  function Probe() {
+    return <p>narrow: {String(useAppShell().narrow)}</p>;
+  }
+
+  test('it is the rail, the inset and the sheet the two-pane Inbox needs, added up', () => {
+    // The arithmetic is asserted rather than commented, so the rail or the
+    // inset moving without the breakpoint fails here instead of shipping a
+    // wide layout whose sheet is narrower than the panes it has to hold.
+    const INBOX_LIST = 320;
+    const INBOX_DETAIL = 460;
+    const sheetFloor = INBOX_LIST + INBOX_DETAIL;
+    expect(sheetFloor).toBe(780);
+    expect(Number.parseFloat(size.shell.rail) + Number.parseFloat(size.shell.inset) + sheetFloor).toBe(shell);
+    expect(shell).toBe(1024);
+  });
+
+  test('the drawer takes over strictly under it, and not at it', () => {
+    const asked: string[] = [];
+    for (const [width, narrow] of [
+      [shell - 1, true],
+      [shell, false],
+      [shell + 1, false],
+    ] as const) {
+      const restore = installViewport(width, asked);
+      try {
+        render(
+          <AppShell sidebar={<Rail />} topbar={<AppShell.Topbar title="Overview" />}>
+            <Probe />
+          </AppShell>,
+        );
+        expect(screen.getByText(`narrow: ${String(narrow)}`), `at ${width}px`).toBeDefined();
+      } finally {
+        cleanup();
+        restore();
+      }
+    }
+    // One question, asked the same way every time.
+    expect(new Set(asked)).toEqual(new Set([`(width < ${breakpoint.shell})`]));
+  });
+
+  test('the stylesheet switches on the question the component asks', () => {
+    // The layout is drawn by the stylesheet and the drawer is driven by the
+    // component, so the two have to change shape at the same pixel: one
+    // switching at 1024 and the other under it draws the wide grid with the
+    // drawer's control, or a drawer the component does not know is there.
+    const asked: string[] = [];
+    const restore = installViewport(shell, asked);
+    try {
+      render(
+        <AppShell sidebar={<Rail />} topbar={<AppShell.Topbar title="Overview" />}>
+          <Probe />
+        </AppShell>,
+      );
+    } finally {
+      restore();
+    }
+    const queries = new Set(cssRules(css).map((rule) => rule.at).filter((at) => at.startsWith('@media') && !at.includes('prefers-')));
+    expect([...queries]).toEqual([`@media ${asked[0] ?? ''}`]);
+  });
+
+  test('every component that follows the shell switches with it', () => {
+    // A modal sheet going full width, a toolbar folding into its overflow, a
+    // search field dropping its label and a stat row going to two columns all
+    // happen "where the rail becomes a drawer", and each spells the number
+    // because a media query cannot read a token. Spelt as `max-width` it
+    // switches a pixel before the shell does, and at exactly the step the
+    // wide shell is drawn with a narrow toolbar in it.
+    const source = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+    const found: string[] = [];
+    for (const folder of readdirSync(source, { withFileTypes: true })) {
+      if (!folder.isDirectory()) continue;
+      for (const file of readdirSync(resolve(source, folder.name)).filter((name) => name.endsWith('.css'))) {
+        for (const rule of cssRules(readFileSync(resolve(source, folder.name, file), 'utf8'))) {
+          if (rule.at.startsWith('@media') && rule.at.includes(breakpoint.shell)) found.push(`${folder.name}/${file}: ${rule.at}`);
+        }
+      }
+    }
+    const strict = `@media (width < ${breakpoint.shell})`;
+    expect(found.filter((entry) => !entry.endsWith(`: ${strict}`))).toEqual([]);
+    // And the scan found the switches it is about, rather than passing over a
+    // tree it could not read.
+    const files = new Set(found.map((entry) => entry.split(':')[0]));
+    expect([...files].sort()).toEqual([
+      'AppShell/AppShell.css',
+      'Modal/Modal.css',
+      'SearchTrigger/SearchTrigger.css',
+      'StatGroup/StatGroup.css',
+      'Toolbar/Toolbar.css',
+    ]);
+  });
+});
+
+/**
+ * THE FRAME AND THE SHEET, as the cascade applies them at a width either side
+ * of the step, in both palettes.
+ *
+ * The rail stands on the frame, and everything the reader reads is one sheet a
+ * rung above it: inset from the frame on its top, right and bottom, drawn
+ * round with the plain hairline and rounded at the sheet's corner. Under the
+ * step the sheet is the window. Measured through jsdom's own cascade with the
+ * values each theme ships, so a later rule winning on source order, a selector
+ * that matches nothing the shell renders, or a heavier rule the narrow block
+ * cannot take back shows up here.
+ */
+describe('the frame and the sheet', () => {
+  const step = Number.parseFloat(breakpoint.shell);
+  const inset = size.shell.inset;
+
+  function parts(container: HTMLElement) {
+    const root = container.firstElementChild as HTMLElement;
+    const sheet = root.querySelector<HTMLElement>('.crewlet-app-shell__sheet');
+    if (!sheet) throw new Error('the shell rendered no sheet');
+    return { root, sheet, rail: root.querySelector<HTMLElement>('.crewlet-app-shell__rail') };
+  }
+
+  test('wide, the rail stands on the frame and the screen on a sheet floated off it', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installAtWidth(step, theme, 'AppShell/AppShell.css');
+      try {
+        const { container } = render(<Console banner={<p>Reconnecting to the engine.</p>} />);
+        const { root, sheet, rail } = parts(container);
+        const palette = themes[theme].color;
+        const where = (what: string) => `${theme}: ${what}`;
+        expect(channels(getComputedStyle(root).backgroundColor), where('the frame')).toEqual(parseHex(palette.surface.frame));
+        expect(channels(getComputedStyle(rail!).backgroundColor), where('the rail')).toEqual(parseHex(palette.surface.frame));
+        const drawn = getComputedStyle(sheet);
+        expect(channels(drawn.backgroundColor), where('the sheet')).toEqual(parseHex(palette.surface.background));
+        expect(channels(drawn.borderTopColor), where('the hairline')).toEqual(parseHex(palette.border.default));
+        expect([drawn.borderTopStyle, drawn.borderTopWidth], where('the hairline')).toEqual(['solid', '1px']);
+        expect(drawn.borderRadius, where('the corner')).toBe(radius.sheet);
+        // Held off the frame on three sides; the rail is the gap on the fourth.
+        expect([drawn.marginTop, drawn.marginRight, drawn.marginBottom, drawn.marginLeft], where('the inset')).toEqual([
+          inset,
+          inset,
+          inset,
+          '0px',
+        ]);
+        // It clips what it holds to its corner, which is what lets the bar and
+        // the scroller run square to its edges.
+        expect(drawn.overflow, where('the clip')).toBe('hidden');
+        // The rail draws no edge of its own: the sheet's hairline is the one.
+        expect(getComputedStyle(rail!).borderRightStyle, where("the rail's edge")).not.toBe('solid');
+        cleanup();
+      } finally {
+        uninstall();
+      }
+    }
+  });
+
+  test('everything the reader reads is on the one sheet, and the rail is not', () => {
+    const { container } = render(<Console banner={<p>Reconnecting to the engine.</p>} />);
+    const { sheet, rail } = parts(container);
+    // One element rather than a background each part paints, because the
+    // corner has to clip all of them and the hairline run round all of them.
+    expect(sheet.contains(screen.getByRole('banner'))).toBe(true);
+    expect(sheet.contains(screen.getByText('Reconnecting to the engine.'))).toBe(true);
+    expect(sheet.contains(screen.getByRole('main'))).toBe(true);
+    expect(sheet.contains(rail)).toBe(false);
+  });
+
+  test('under the step the sheet is the whole window: no inset, no corner, no hairline', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installAtWidth(step - 1, theme, 'AppShell/AppShell.css');
+      try {
+        const { container } = render(<Console />);
+        const drawn = getComputedStyle(parts(container).sheet);
+        expect([drawn.marginTop, drawn.marginRight, drawn.marginBottom, drawn.marginLeft], theme).toEqual([
+          '0px',
+          '0px',
+          '0px',
+          '0px',
+        ]);
+        expect(px(parts(container).sheet, 'border-radius'), theme).toBe(0);
+        expect(drawn.borderTopWidth, theme).toBe('0px');
+        cleanup();
+      } finally {
+        uninstall();
+      }
+    }
+  });
+
+  test('without a rail the sheet is inset from the frame on its left too, and full bleed under the step', () => {
+    const shell = (width: number) => {
+      const uninstall = installAtWidth(width, 'dark', 'AppShell/AppShell.css');
+      try {
+        const { container } = render(
+          <AppShell topbar={<AppShell.Topbar title="Sign in" />}>
+            <p>screen</p>
+          </AppShell>,
+        );
+        const { root, sheet } = parts(container);
+        // One column, so the sheet is not dropped into the rail's empty cell.
+        expect(root.classList.contains('crewlet-app-shell--no-rail')).toBe(true);
+        const measured = [px(root, 'padding-left') + px(sheet, 'margin-left'), px(sheet, 'margin-right')];
+        cleanup();
+        return measured;
+      } finally {
+        uninstall();
+      }
+    };
+    expect(shell(step)).toEqual([Number.parseFloat(inset), Number.parseFloat(inset)]);
+    expect(shell(step - 1)).toEqual([0, 0]);
+  });
+
+  test('a shell with a rail is not the one-column shape', () => {
+    const { container } = render(<Console />);
+    expect(parts(container).root.classList.contains('crewlet-app-shell--no-rail')).toBe(false);
+  });
+
+  test("the rail's head stands beside the bar: under the inset wide, at the window's top narrow", () => {
+    const head = (width: number) => {
+      const uninstall = installAtWidth(width, 'dark', 'AppShell/AppShell.css');
+      try {
+        const { container } = render(<Console />);
+        const element = container.querySelector('.crewlet-app-shell__rail-head')!;
+        const measured = [px(element, 'padding-top'), px(element, 'min-height')];
+        cleanup();
+        return measured;
+      } finally {
+        uninstall();
+      }
+    };
+    const bar = Number.parseFloat(size.shell.topbar);
+    // Wide, what the head holds is centred on the line the bar's title is on:
+    // the inset above it, then the bar's own height.
+    expect(head(step)).toEqual([Number.parseFloat(inset), Number.parseFloat(inset) + bar]);
+    expect(head(step - 1)).toEqual([0, bar]);
+  });
+});
+
 test('the scroller is handed to a ref the application owns', () => {
   const seen: (HTMLElement | null)[] = [];
   render(
@@ -406,7 +705,7 @@ test('nothing the open rail declares can outrank the layout it is drawn in', () 
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
   const rules = cssRules(css);
   const open = rules.filter((rule) => rule.at === '' && rule.selector === ".crewlet-app-shell__rail[data-open='true']");
-  const narrow = rules.filter((rule) => rule.at.startsWith('@media (max-width') && rule.selector === '.crewlet-app-shell__rail');
+  const narrow = rules.filter((rule) => rule.at === `@media (width < ${breakpoint.shell})` && rule.selector === '.crewlet-app-shell__rail');
   // A reading that found neither rule would pass the assertion below for any
   // stylesheet at all.
   expect(open).toHaveLength(1);
@@ -494,7 +793,7 @@ describe("the rail's foot", () => {
     /*
      * THE SLOT TAKES A CONTROL FROM ANYWHERE. `AppShell.RailRow` is the row
      * this package draws, but an application with a status button of its own
-     * reaches for that one, and the engine does: a tertiary Button arrived
+     * reaches for that one, and the engine does: a ghost Button arrived
      * centred in a 263px rail, on a toolbar's inset, in a toolbar's ink and at
      * a toolbar's weight. The foot claims a direct child instead.
      */
@@ -533,8 +832,9 @@ describe("the rail's foot", () => {
     // same height reads as one rule running the width of the window, with the
     // brand and the screen title above it like a second bar.
     const head = /\.crewlet-app-shell__rail-head\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(head).toContain('min-height: var(--crewlet-app-shell-topbar)');
-    expect(head).not.toMatch(/border/);
+    expect(head).toContain('min-height: calc(var(--size-shell-inset) + var(--crewlet-app-shell-topbar))');
+    // A border PROPERTY, not the word: the head is sized as a border box.
+    expect(head).not.toMatch(/(?:^|;|\s)border[\w-]*:/);
     // The foot's rule is the one rule inside the rail, and it stays.
     expect(/\.crewlet-app-shell__rail-foot\s*\{([^}]*)\}/.exec(css)?.[1]).toContain('border-top');
   });
@@ -573,6 +873,88 @@ describe("the rail's foot", () => {
     expect(screen.getAllByRole('button', { name: 'What this node is running' })).toHaveLength(1);
     // And the mark is decoration, because the words beside it say the same.
     expect(document.querySelector('[data-mark="dot"]')?.closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  test("a foot row's words are never cut: they wrap, and the trailing value drops under them", () => {
+    /*
+     * The status line used to take what the pill beside it left and end in an
+     * ellipsis, so "engine connected" beside "2 turns in flight" read "engine
+     * conn…". The words and the value share one WRAPPING line now, so the
+     * value moves under the words rather than the words being cut.
+     */
+    const label = body(css, '.crewlet-app-shell__rail-row-label');
+    expect(label).not.toMatch(/text-overflow|white-space:\s*nowrap|overflow:\s*hidden/);
+    expect(label).toContain('overflow-wrap: anywhere');
+    const line = body(css, '.crewlet-app-shell__rail-row-body');
+    expect(line).toContain('flex-wrap: wrap');
+    // The words take their own width up to the whole line, which is what
+    // breaks the line before the value exactly when the two do not fit, and
+    // grow into the rest of it, which is what puts a value that fits at the end.
+    const words = body(css, '.crewlet-app-shell__rail-row-text');
+    expect(words).toContain('flex: 1 0 auto');
+    expect(words).toContain('max-width: 100%');
+    // No margin pushing the value to the far side: wrapped, it starts under the words.
+    expect(body(css, '.crewlet-app-shell__rail-row-trailing')).not.toContain('margin-left: auto');
+    // And a control dropped into the foot keeps the same promise.
+    const dropped = body(css, '.crewlet-app-shell__rail-foot > .crewlet-btn > .crewlet-btn__label');
+    expect(dropped).not.toMatch(/text-overflow|white-space:\s*nowrap/);
+    expect(dropped).toContain('white-space: normal');
+  });
+
+  test('a row with a detail is the status block: its words over the detail, then the value', () => {
+    render(
+      <AppShell
+        sidebar={
+          <AppShell.Rail
+            footer={
+              <>
+                <AppShell.RailRow
+                  icon={<span data-mark="dot" />}
+                  detail="3 nodes · config epoch 42"
+                  trailing={<span data-value>2 turns in flight</span>}
+                  onClick={() => {}}
+                >
+                  Engine healthy
+                </AppShell.RailRow>
+                <AppShell.RailRow label="Settings" onClick={() => {}}>
+                  Settings
+                </AppShell.RailRow>
+              </>
+            }
+          >
+            <p>rows</p>
+          </AppShell.Rail>
+        }
+      >
+        <p>screen</p>
+      </AppShell>,
+    );
+    const [status, settings] = [...document.querySelectorAll('.crewlet-app-shell__rail-row')];
+    expect(status!.classList.contains('crewlet-app-shell__rail-row--block')).toBe(true);
+    // Only the row that was given one: a row without a detail keeps the row shape.
+    expect(settings!.classList.contains('crewlet-app-shell__rail-row--block')).toBe(false);
+    expect(settings!.querySelector('.crewlet-app-shell__rail-row-detail')).toBeNull();
+    // Title over detail, in one column, and the value after that column.
+    const text = status!.querySelector('.crewlet-app-shell__rail-row-text')!;
+    expect([...text.children].map((child) => child.className)).toEqual([
+      'crewlet-app-shell__rail-row-label',
+      'crewlet-app-shell__rail-row-detail',
+    ]);
+    expect(text.nextElementSibling?.className).toBe('crewlet-app-shell__rail-row-trailing');
+    // With no label of its own, the control is named by everything it says.
+    expect(screen.getByRole('button', { name: 'Engine healthy 3 nodes · config epoch 42 2 turns in flight' })).toBe(status);
+    // The block's shape is the design's: the card rung inside the plain hairline,
+    // the words in the primary ink over a detail in the quiet one.
+    const block = body(css, '.crewlet-app-shell__rail-row--block');
+    expect(block).toContain('background: var(--color-surface-subtle)');
+    expect(block).toContain('border-color: var(--color-border-default)');
+    expect(body(css, '.crewlet-app-shell__rail-row--block .crewlet-app-shell__rail-row-label')).toContain(
+      'color: var(--color-text-primary)',
+    );
+    // The detail's OWN rule, not the one it shares with the words for wrapping.
+    expect(/(?<!,)\n\.crewlet-app-shell__rail-row-detail\s*\{([^}]*)\}/.exec(css)?.[1]).toContain(
+      'color: var(--color-text-tertiary)',
+    );
   });
 
   test('a foot row that presses has no accessibility violations', async () => {

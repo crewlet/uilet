@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // The rules EVERY component in the package keeps, checked over all of src/.
 //
-// Its sibling, check-css-literals.mjs, holds the rules a folder opts into as
-// it is rewritten onto the token layer. These are the ones nothing may break
-// at any point, because each of them fails silently in production:
+// Its sibling, check-css-literals.mjs, holds the rules about VALUES: which
+// colour, size, radius, duration and depth a component may spell out, and how
+// every motion is stopped. These are the rules about which names a stylesheet
+// reads, what it loads and how it draws text and focus, and each of them fails
+// silently in production:
 //
 //   1. A name in a token namespace (--color-*, --font-*, --spacing-* and the
 //      rest of TOKEN_PREFIXES) must be one the @crewlethq/tokens build emits,

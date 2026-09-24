@@ -12,7 +12,7 @@ import {
   type DataTableItemsPerPage,
   type TimeWindowValue,
 } from '@crewlethq/ui';
-import { ArrowForwardGlyph, BlockGlyph, CachedGlyph, DeleteGlyph, GroupGlyph } from '@crewlethq/icons/glyphs';
+import { ArrowRightGlyph, BanGlyph, RefreshCcwGlyph, TrashGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof DataTable> = {
   title: 'UI/DataTable',
@@ -116,7 +116,7 @@ export const WithRowAction: Story = {
         storageKey="story-people-actions"
         onRowAction={(row) => alert(`Deleting ${row.name}`)}
         actionLabel="Delete"
-        actionIcon={<DeleteGlyph size="sm" />}
+        actionIcon={<TrashGlyph size="sm" />}
         getRowKey={(row) => row.id}
       />
     </div>
@@ -156,7 +156,7 @@ export const CustomRender: Story = {
               <span style={{
                 padding: '2px 8px',
                 borderRadius: 6,
-                background: value === 'Owner' ? 'rgba(84, 105, 212, 0.18)' : 'rgba(100, 100, 100, 0.15)',
+                background: value === 'Owner' ? 'var(--color-brand-accent-soft)' : 'rgba(100, 100, 100, 0.15)',
                 fontSize: 12,
                 fontWeight: 600,
               }}>{String(value)}</span>
@@ -247,7 +247,7 @@ export const APanelCard: Story = {
       </SettingsHint>
       <Card as="section" padding="none">
         <Card.Header
-          icon={<GroupGlyph size="sm" />}
+          icon={<UsersGlyph size="sm" />}
           count={people.length}
           actions={<Button size="small" variant="secondary">Invite</Button>}
         >
@@ -282,7 +282,7 @@ export const APanelCard: Story = {
 
 /*
  * Section card with leading icon. Same as Card section but the header
- * carries a Material Symbols icon on the left of the title so the
+ * carries a glyph on the left of the title so the
  * section reads as a settings card.
  */
 export const SectionWithIcon: Story = {
@@ -483,8 +483,8 @@ export const RowActions: Story = {
           status:    { label: 'Status' },
         }}
         rowActions={(key) => [
-          key.status === 'active' && { label: 'Rotate key', icon: <CachedGlyph size="sm" />, onClick: () => alert(`Rotate ${key.name}`) },
-          key.status === 'active' && { label: 'Revoke key', icon: <BlockGlyph size="sm" />, onClick: () => alert(`Revoke ${key.name}`), danger: true },
+          key.status === 'active' && { label: 'Rotate key', icon: <RefreshCcwGlyph size="sm" />, onClick: () => alert(`Rotate ${key.name}`) },
+          key.status === 'active' && { label: 'Revoke key', icon: <BanGlyph size="sm" />, onClick: () => alert(`Revoke ${key.name}`), danger: true },
         ]}
       />
     </div>
@@ -684,7 +684,7 @@ export const SettingsFrameOnACard: Story = {
         storageKey="story-settings-frame-card"
         title="Projects"
         description="A header changes the table's chrome, not its settings."
-        icon={<GroupGlyph size="md" />}
+        icon={<UsersGlyph size="md" />}
         rowKey="project_id"
         data={projects}
         columns={{
@@ -732,24 +732,41 @@ const runColumns = {
 /*
  * A row that navigates is a LINK: the leading cell carries an anchor whose
  * hit area covers the row, so the row opens in a new tab, its address can be
- * copied, and it is read as the link it is. One tab stop per row.
+ * copied, and it is read as the link it is. One tab stop per row, plus one
+ * for each control inside it: the phase chip filters the table to its phase
+ * rather than opening the row. A phase is a category, so its chip is the
+ * neutral tag and its word.
  */
 export const RowLink: Story = {
   name: 'States / Row link',
-  render: () => (
-    <div style={{ padding: 20, maxWidth: 900 }}>
-      <SettingsHint>Every row is an anchor. The Phase chip inside a row keeps its own press.</SettingsHint>
-      <DataTable<Run>
-        variant="compact"
-        data={runs}
-        columns={runColumns}
-        getRowKey={(row) => row.id}
-        getRowHref={(row) => `#/runs/${row.id}`}
-        paginated={false}
-        showSettings={false}
-      />
-    </div>
-  ),
+  render: function RowLinkStory() {
+    const [phase, setPhase] = useState<string | null>(null);
+    const columns = {
+      ...runColumns,
+      phase: {
+        ...runColumns.phase,
+        render: (row: Run) => (
+          <Tag pressed={phase === row.phase} onClick={() => setPhase((was) => (was === row.phase ? null : row.phase))}>
+            {row.phase}
+          </Tag>
+        ),
+      },
+    };
+    return (
+      <div style={{ padding: 20, maxWidth: 900 }}>
+        <SettingsHint>Every row is an anchor. The Phase chip inside a row keeps its own press: it filters to that phase.</SettingsHint>
+        <DataTable<Run>
+          variant="compact"
+          data={phase === null ? runs : runs.filter((row) => row.phase === phase)}
+          columns={columns}
+          getRowKey={(row) => row.id}
+          getRowHref={(row) => `#/runs/${row.id}`}
+          paginated={false}
+          showSettings={false}
+        />
+      </div>
+    );
+  },
 };
 
 /*
@@ -1143,7 +1160,7 @@ function ConletFixture() {
                   }}
                 >
                   Invoices
-                  <ArrowForwardGlyph size="sm" aria-hidden />
+                  <ArrowRightGlyph size="sm" aria-hidden />
                 </a>
               ),
             },
@@ -1205,7 +1222,7 @@ export const FrozenAndTooNarrow: Story = {
                     }}
                   >
                     Profile
-                    <ArrowForwardGlyph size="sm" aria-hidden />
+                    <ArrowRightGlyph size="sm" aria-hidden />
                   </a>
                 ),
               },

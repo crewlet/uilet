@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button, ToastProvider, Toaster, useToast, type Toast } from '@crewlethq/ui';
-import { ShieldPersonGlyph } from '@crewlethq/icons/glyphs';
+import { ShieldUserGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Toaster> = {
   title: 'UI/Toaster',
@@ -103,7 +103,7 @@ export const Quota: Story = {
       () => ({
         id: nextId(),
         variant: 'quota',
-        icon: <ShieldPersonGlyph size="md" />,
+        icon: <ShieldUserGlyph size="md" />,
         title: 'Usage limit reached',
         message: 'This company has used its token allowance for the month.',
         action: { label: 'See plans', href: '#/billing' },

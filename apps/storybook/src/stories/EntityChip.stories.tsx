@@ -4,9 +4,9 @@ import { EntityChip } from '@crewlethq/ui';
 const meta: Meta<typeof EntityChip> = {
   title: 'UI/EntityChip',
   component: EntityChip,
-  args: { name: 'Carlos Diaz', href: '#/seats/carlos', variant: 'agent', size: 'sm' },
+  args: { name: 'Carlos Diaz', href: '#/seats/carlos', kind: 'agent', size: 'sm' },
   argTypes: {
-    variant: { control: 'inline-radio', options: ['agent', 'human'] },
+    kind: { control: 'inline-radio', options: ['agent', 'human'] },
     size: { control: 'inline-radio', options: ['xs', 'sm', 'md', 'lg'] },
     href: { control: 'text' },
   },
@@ -18,11 +18,12 @@ type Story = StoryObj<typeof EntityChip>;
 export const Basic: Story = {};
 
 /**
- * A human seat is drawn rather than tinted: the engine does not run it, which
- * is structure and not status.
+ * A human seat's badge is a circle where an agent's is a squircle: the engine
+ * does not run it, which is structure and not status, so it is the outline
+ * that says so rather than a hue.
  */
 export const HumanSeat: Story = {
-  args: { name: 'Ada Byron', variant: 'human' },
+  args: { name: 'Ada Byron', kind: 'human' },
 };
 
 /** Without a target the chip is text: a name with its badge, and no affordance. */
@@ -43,9 +44,9 @@ export const InAList: Story = {
         ['Chief Technology Officer', 'agent'],
         ['Software Engineer', 'agent'],
         ['Ada Byron', 'human'],
-      ].map(([name, variant]) => (
+      ].map(([name, kind]) => (
         <li key={name}>
-          <EntityChip name={name!} variant={variant as 'agent' | 'human'} href={`#/seats/${name}`} />
+          <EntityChip name={name!} kind={kind as 'agent' | 'human'} href={`#/seats/${name}`} />
         </li>
       ))}
     </ul>

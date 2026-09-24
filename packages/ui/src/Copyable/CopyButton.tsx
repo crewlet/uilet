@@ -1,5 +1,5 @@
 import { useCallback, type ReactNode } from 'react';
-import { CheckGlyph, ContentCopyGlyph, ErrorGlyph } from '@crewlethq/icons/glyphs';
+import { CheckGlyph, CircleAlertGlyph, CopyGlyph } from '@crewlethq/icons/glyphs';
 import { Button, type ButtonSize, type ButtonVariant } from '../Button/index.js';
 import { useClipboard, type ClipboardState } from '../utils/useClipboard.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -7,8 +7,8 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 /** What a copy control draws for each state. */
 export function copyGlyph(state: ClipboardState): ReactNode {
   if (state === 'copied') return <CheckGlyph size="sm" />;
-  if (state === 'failed') return <ErrorGlyph size="sm" />;
-  return <ContentCopyGlyph size="sm" />;
+  if (state === 'failed') return <CircleAlertGlyph size="sm" />;
+  return <CopyGlyph size="sm" />;
 }
 
 export interface CopyStatusProps {
@@ -88,7 +88,7 @@ export function CopyButton({
   copiedMessage = 'copied to the clipboard',
   failedMessage = 'the browser refused the clipboard',
   size = 'small',
-  variant = 'tertiary',
+  variant = 'ghost',
   title,
   resetMs,
   failedResetMs,

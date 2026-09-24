@@ -4,6 +4,7 @@ import { CrewletIcon } from '@crewlethq/icons';
 import adminFavicon from '@crewlethq/icons/favicon/crewlet-admin.svg';
 import favicon from '@crewlethq/icons/favicon/crewlet.svg';
 import rasterFavicon from '@crewlethq/icons/favicon/crewlet.ico';
+import { themeScope } from '../themeScope';
 
 /*
  * The Crewlet mark, and the icon-slot files cut from it.
@@ -55,11 +56,15 @@ const row: CSSProperties = { display: 'flex', alignItems: 'flex-end', gap: 'var(
 
 const stack: CSSProperties = { display: 'grid', gap: 'var(--spacing-2)', justifyItems: 'center' };
 
-/** One block rendered twice, once per theme, so the pair can be compared. */
+/**
+ * One block rendered twice, each panel in its own palette, so the pair can be
+ * compared. The palette is scoped to the panel by `themeScope`: the theme layer
+ * paints on the root alone, so a data-theme on a panel would paint nothing.
+ */
 const BothThemes = ({ children }: { children: ReactNode }) => (
   <div style={{ display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
     {(['light', 'dark'] as const).map((theme) => (
-      <div key={theme} data-theme={theme} style={panel}>
+      <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
         <p style={heading}>{theme === 'light' ? 'Light' : 'Dark'}</p>
         {children}
       </div>

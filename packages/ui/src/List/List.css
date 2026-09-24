@@ -144,14 +144,24 @@
  * A row that failed. The rail is the scannable half and the glyph beside it is
  * the honest one: a reader who cannot tell the rail's hue from the row above
  * still meets a mark and a word.
+ *
+ * Both take the danger INK step, not the fill, because both are drawn on the
+ * row, and the row is sometimes the accent tint: a failed row can also be the
+ * one the reader is on. The fill is measured to 3:1 on the opaque surfaces and
+ * no further, so a fill rail on a selected or hovered row clears it only by
+ * the luck of the current palette (the red this list drew measured 3.00:1 on
+ * a hovered row inside a raised surface in dark); the ink clears 4.5:1 on
+ * every row ground, the accent tint included, which is where the palette
+ * suite holds a row's state rail (DATA_MARKS) and where the DataTable suite's
+ * sheet scan now holds this one.
  */
 .crewlet-list__item--danger > .crewlet-list__row {
-  box-shadow: inset 2px 0 0 var(--color-feedback-danger);
+  box-shadow: inset 2px 0 0 var(--color-feedback-danger-ink);
 }
 
 .crewlet-list__danger-mark {
   flex: none;
-  color: var(--color-feedback-danger);
+  color: var(--color-feedback-danger-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {

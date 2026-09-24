@@ -11,7 +11,7 @@ const meta: Meta<typeof ImageUpload> = {
   args: {
     name: 'Carlos Diaz',
     size: 80,
-    shape: 'square',
+    kind: 'agent',
     onSelect: noop,
     onRemove: noop,
   },
@@ -19,7 +19,7 @@ const meta: Meta<typeof ImageUpload> = {
     src: { control: 'text' },
     name: { control: 'text' },
     size: { control: { type: 'number', min: 32, max: 160, step: 4 } },
-    shape: { control: 'inline-radio', options: ['circle', 'square'] },
+    kind: { control: 'inline-radio', options: ['agent', 'human'] },
     readOnly: { control: 'boolean' },
     uploading: { control: 'boolean' },
   },
@@ -51,13 +51,14 @@ export const ReadOnly: Story = {
   args: { src: samplePortrait, name: 'Carlos Diaz', size: 80, readOnly: true, onSelect: noop },
 };
 
-/* A round badge, for the one case that is a PERSON rather than a company. */
-export const CircleEmpty: Story = {
-  args: { name: 'Carlos Diaz', size: 80, shape: 'circle', onSelect: noop },
+/* A round badge, for the one case that is a PERSON rather than an agent or a
+   company's mark. */
+export const PersonEmpty: Story = {
+  args: { name: 'Carlos Diaz', size: 80, kind: 'human', onSelect: noop },
 };
 
-export const CircleWithImage: Story = {
-  args: { src: samplePortrait, name: 'Carlos Diaz', size: 80, shape: 'circle', onSelect: noop, onRemove: noop },
+export const PersonWithImage: Story = {
+  args: { src: samplePortrait, name: 'Carlos Diaz', size: 80, kind: 'human', onSelect: noop, onRemove: noop },
 };
 
 /**

@@ -4,9 +4,9 @@
  * SIX VARIANTS, AND THEY ARE A HIERARCHY RATHER THAN A PALETTE. primary is the
  * one action on the screen and takes the accent fill; secondary is everything
  * else; outline is the branded yes on a page that already has a primary;
- * tertiary is for a dense toolbar; danger is destructive, and the only one
- * that spends the critical hue. accent is primary's own recipe under the name
- * a caller may already have written.
+ * ghost is for a dense toolbar and the quiet second answer beside a primary;
+ * danger is destructive, and the only one that spends the critical hue. accent
+ * is primary's own recipe under the name a caller may already have written.
  *
  * THE ONE ACTION IS THE ACCENT FILL. It reads as the answer a screen is
  * asking for, which is what a filled monochrome button could not do beside a
@@ -16,9 +16,12 @@
  *
  * Every size is a --size-control-* step, so a button, a select and an input in
  * one row are the same height at every density, and none of them can fall
- * under the 24px a finger can hit. The padding ramp is one spacing step per
- * size, so a small button in a toolbar is tight and a large one on a landing
- * page is not.
+ * under the 24px a finger can hit. The steps are the approved design's own
+ * control rhythm, 30px and 26px for the medium and the small button, and they
+ * live in the tokens rather than here because the field and the segmented
+ * row beside a button stand at the same height. The padding ramp is one
+ * spacing step per size, so a small button in a toolbar is tight and a large
+ * one on a landing page is not.
  */
 
 .crewlet-btn {
@@ -136,8 +139,15 @@
  * Primary: the accent fill, and the one action on the screen.
  *
  * `accent` is the same recipe under the other name it is written as. They are
- * one rule rather than two, so the pair cannot drift into two blues, and the
+ * one rule rather than two, so the pair cannot drift into two violets, and the
  * name stays because call sites already spell it.
+ *
+ * UNDER THE POINTER AND PRESSED IT DARKENS, a step each, and never brightens.
+ * The label is the on-accent white in both palettes, so a brighter fill is a
+ * step toward it: the approved design's brightness(1.08) hover took the dark
+ * accent's label from 4.53:1 to 4.18:1, under the text floor at the one moment
+ * the reader is about to press. The steps are tokens rather than a filter, so
+ * @crewlethq/tokens can measure them.
  *
  * THE BORDER IS TRANSPARENT rather than the fill: a filled control needs no
  * boundary, and one drawn in the fill's own colour makes the button a step
@@ -163,16 +173,30 @@
   border-color: transparent;
 }
 
-/* Secondary: a surface with a visible boundary. Everything else. */
+/*
+ * Secondary: everything else. The CARD's own ground inside the STRONG
+ * hairline, the approved design's button.
+ *
+ * STRONG, NOT DEFAULT, because a button stands on the very card it is filled
+ * with: every panel's actions sit on a card, and there the fill is no edge at
+ * all and the boundary is the whole of the button. The default hairline is
+ * the one that finds a CARD on the sheet, and a button drawn with it was a
+ * card-shaped outline of the panel's own divider; the strong step is the one
+ * a reader takes for a control's edge.
+ *
+ * Under the pointer it steps up a rung, to the raised ground, which the
+ * palette suite holds a visible step above the card, with the boundary a
+ * step stronger again; pressed, the pressed overlay.
+ */
 .crewlet-btn--secondary {
   background: var(--color-surface-subtle);
   color: var(--color-text-primary);
-  border-color: var(--color-border-default);
+  border-color: var(--color-border-strong);
 }
 
 .crewlet-btn--secondary:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-elevated);
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-strong-hover);
 }
 
 .crewlet-btn--secondary:active:not(:disabled):not([aria-disabled='true']) {
@@ -191,19 +215,25 @@
   background: var(--color-brand-accent-soft);
 }
 
-/* Tertiary: borderless, for a dense toolbar. */
-.crewlet-btn--tertiary {
+/*
+ * Ghost: no ground and no boundary, for a dense toolbar and for the quiet
+ * answer beside a primary ("Reassign" next to "Raise budget"). It is the word
+ * IconButton's borderless square uses, so a toolbar holding both is written
+ * in one vocabulary. Under the pointer it takes the hover overlay, the one
+ * every row takes, and its ink steps up to the primary text.
+ */
+.crewlet-btn--ghost {
   background: transparent;
   color: var(--color-text-secondary);
   border-color: transparent;
 }
 
-.crewlet-btn--tertiary:hover:not(:disabled):not([aria-disabled='true']) {
+.crewlet-btn--ghost:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
 
-.crewlet-btn--tertiary:active:not(:disabled):not([aria-disabled='true']) {
+.crewlet-btn--ghost:active:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-pressed);
 }
 
@@ -212,15 +242,16 @@
  *
  * A SECONDARY THAT HAS GONE RED, not a red slab. It sits in the same row as
  * Cancel and it is the button a reader must not press by reflex, so it holds
- * the secondary's own weight until it is pointed at and states itself in its
- * INK, which is the step measured as text; the red fill it used to carry
- * pulled the eye to the destructive answer first on every dialog that had one.
- * The hue arrives on hover, as the tint plus the full fill on the boundary.
+ * the secondary's own weight, the card inside the strong hairline, until it
+ * is pointed at and states itself in its INK, which is the step measured as
+ * text; the red fill it used to carry pulled the eye to the destructive
+ * answer first on every dialog that had one. The hue arrives on hover, as the
+ * tint plus the full fill on the boundary.
  */
 .crewlet-btn--danger {
   background: var(--color-surface-subtle);
   color: var(--color-feedback-danger-ink);
-  border-color: var(--color-border-default);
+  border-color: var(--color-border-strong);
 }
 
 .crewlet-btn--danger:hover:not(:disabled):not([aria-disabled='true']) {

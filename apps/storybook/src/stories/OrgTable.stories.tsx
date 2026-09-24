@@ -14,15 +14,14 @@ import {
   type TreeInput,
 } from '@crewlethq/ui';
 import {
-  AccountTreeGlyph,
-  ApartmentGlyph,
-  CreateNewFolderGlyph,
-  DeleteGlyph,
-  EditGlyph,
-  MoreVertGlyph,
-  PersonAddGlyph,
-  PersonGlyph,
-  SmartToyGlyph,
+  BotGlyph,
+  BuildingComplexGlyph,
+  EllipsisVerticalGlyph,
+  FolderPlusGlyph,
+  NetworkGlyph,
+  PencilGlyph,
+  TrashGlyph,
+  UserPlusGlyph,
 } from '@crewlethq/icons/glyphs';
 
 /**
@@ -147,11 +146,11 @@ function forest(): TreeInput[] {
   return [node(COMPANY)];
 }
 
-const ICONS: Record<Kind, typeof PersonGlyph> = {
-  company: ApartmentGlyph,
-  unit: AccountTreeGlyph,
-  agent: SmartToyGlyph,
-  human: PersonGlyph,
+/* A container's glyph. A seat is drawn as its badge instead, whose outline is
+   its kind: a squircle for an agent, a circle for a person. */
+const ICONS: Record<'company' | 'unit', typeof NetworkGlyph> = {
+  company: BuildingComplexGlyph,
+  unit: NetworkGlyph,
 };
 
 function Demo() {
@@ -161,17 +160,19 @@ function Demo() {
 
   const cell = (id: string, column: number, grid: TreeGridContext) => {
     const entity = ENTITIES[id]!;
-    const Icon = ICONS[entity.kind];
     if (column === 1) {
-      return (
-        <OrgTableName
-          icon={<Icon />}
-          iconRing={entity.kind === 'human' ? 'dashed' : 'none'}
-          name={entity.name}
-          caption={entity.caption}
-          tone={entity.tone}
-        />
-      );
+      if (entity.kind === 'agent' || entity.kind === 'human') {
+        return (
+          <OrgTableName
+            avatar={{ name: entity.name, kind: entity.kind }}
+            name={entity.name}
+            caption={entity.caption}
+            tone={entity.tone}
+          />
+        );
+      }
+      const Icon = ICONS[entity.kind];
+      return <OrgTableName icon={<Icon />} name={entity.name} caption={entity.caption} tone={entity.tone} />;
     }
     if (column === 2) return entity.handle ?? '';
     if (column === 3) return entity.lead ?? '';
@@ -191,48 +192,48 @@ function Demo() {
               {
                 key: 'unit',
                 label: 'Add a unit',
-                icon: <CreateNewFolderGlyph />,
+                icon: <FolderPlusGlyph />,
                 onSelect: () => setAdded(`a unit in ${entity.name}`),
               },
               {
                 key: 'agent',
                 label: 'Add an agent seat',
-                icon: <SmartToyGlyph />,
+                icon: <BotGlyph />,
                 onSelect: () => setAdded(`an agent seat in ${entity.name}`),
               },
               {
                 key: 'human',
                 label: 'Add a human seat',
-                icon: <PersonAddGlyph />,
+                icon: <UserPlusGlyph />,
                 onSelect: () => setAdded(`a human seat in ${entity.name}`),
               },
             ]}
           />
         )}
         <OrgTableActions>
-          <IconButton size="sm" label={`Edit ${entity.name}`} icon={<EditGlyph />} />
+          <IconButton size="sm" label={`Edit ${entity.name}`} icon={<PencilGlyph />} />
           {entity.kind !== 'company' && (
             <IconButton
               size="sm"
               variant="ghost-danger"
               label={`Delete ${entity.name}`}
-              icon={<DeleteGlyph />}
+              icon={<TrashGlyph />}
             />
           )}
           <Menu
             label="Row actions"
-            icon={<MoreVertGlyph />}
+            icon={<EllipsisVerticalGlyph />}
             align="end"
             open={grid.menuOpen(id)}
             onOpenChange={(open) => grid.setMenuOpen(id, open)}
             items={[
-              { key: 'edit', label: 'Edit', icon: <EditGlyph />, onSelect: () => {} },
-              { key: 'move', label: 'Move to', icon: <AccountTreeGlyph />, onSelect: () => {} },
+              { key: 'edit', label: 'Edit', icon: <PencilGlyph />, onSelect: () => {} },
+              { key: 'move', label: 'Move to', icon: <NetworkGlyph />, onSelect: () => {} },
               { kind: 'separator', key: 'sep' },
               {
                 key: 'delete',
                 label: 'Delete',
-                icon: <DeleteGlyph />,
+                icon: <TrashGlyph />,
                 danger: true,
                 onSelect: () => {},
               },

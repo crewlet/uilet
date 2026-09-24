@@ -30,7 +30,7 @@
 //     it, no source map is, it carries the root LICENSE (and TRADEMARKS.md,
 //     when it ships one) unchanged, every directory of font files carries the
 //     OFL.txt the font license requires, and vendored third-party drawings
-//     carry the LICENSE and NOTICE theirs requires.
+//     carry the LICENSE theirs requires.
 //
 //   node scripts/release.mjs compare <directory>
 //     Compares every tarball `pack` wrote into <directory> with the latest
@@ -74,13 +74,14 @@ const SCOPE = '@crewlethq/';
 const REPOSITORY_URL = 'git+https://github.com/crewlet/uilet.git';
 const REGISTRY = 'https://registry.npmjs.org';
 // The SPDX expression each published package must declare. @crewlethq/tokens
-// ships the Inter and JetBrains Mono font files, which stay under the SIL Open
-// Font License, and @crewlethq/icons ships the Material Symbols drawings,
-// which stay under the Apache License 2.0, so MIT alone would misstate the
-// terms of part of either tarball.
+// ships the Geist and Geist Mono font files, which stay under the SIL Open
+// Font License, and @crewlethq/icons ships the Lucide drawings, which stay
+// under the ISC License (and, for those Lucide derives from Feather, the MIT
+// License the package already names), so MIT alone would misstate the terms
+// of part of either tarball.
 const LICENSES = {
   '@crewlethq/tokens': 'MIT AND OFL-1.1',
-  '@crewlethq/icons': 'MIT AND Apache-2.0',
+  '@crewlethq/icons': 'MIT AND ISC',
   '@crewlethq/ui': 'MIT',
 };
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
@@ -90,11 +91,11 @@ const LOCKFILES = ['package-lock.json'];
 // every tarball; the others are verified whenever a tarball carries them.
 const REQUIRED_NOTICES = ['LICENSE'];
 const OPTIONAL_NOTICES = ['TRADEMARKS.md'];
-// The vendored third-party drawings, and the notices their own license makes
-// travel with them. These are NOT copies of a root file: they are upstream's
-// terms, which the package's MIT LICENSE does not cover.
-const SYMBOLS_DIRECTORY = 'symbols';
-const SYMBOLS_NOTICES = ['LICENSE', 'NOTICE'];
+// The vendored third-party drawings, and the notice their own license makes
+// travel with them. This is NOT a copy of a root file: it is upstream's terms,
+// which the package's MIT LICENSE does not cover.
+const GLYPHS_DIRECTORY = 'glyphs';
+const GLYPHS_NOTICES = ['LICENSE'];
 // Trusted publishing (the OIDC exchange) arrived in npm 11.5.1; an older npm
 // finds no credential and fails the publish with ENEEDAUTH.
 const MINIMUM_NPM = [11, 5, 1];
@@ -567,15 +568,15 @@ export function tarballProblems(root, { directory, manifest }, filename, files) 
       problems.push(`${filename}: ships font files in ${fontDirectory}/ without the OFL.txt their license requires beside them`);
     }
   }
-  // The same rule for the vendored Material Symbols drawings, whose Apache
-  // License 2.0 requires its text, and the NOTICE beside it, to travel with
-  // every copy. They sit one level above the optical size directories, so the
-  // check keys on the tree rather than on each file's own directory.
-  if ([...files].some((file) => file.startsWith(`${SYMBOLS_DIRECTORY}/`) && file.endsWith('.svg'))) {
-    for (const notice of SYMBOLS_NOTICES) {
-      if (!files.has(posix.join(SYMBOLS_DIRECTORY, notice))) {
+  // The same rule for the vendored Lucide drawings, whose ISC License (and
+  // Feather's MIT License, for the icons derived from it) requires its notice
+  // to travel with every copy. Keyed on the tree rather than on each file's
+  // own directory, so a drawing moved into a subdirectory is still covered.
+  if ([...files].some((file) => file.startsWith(`${GLYPHS_DIRECTORY}/`) && file.endsWith('.svg'))) {
+    for (const notice of GLYPHS_NOTICES) {
+      if (!files.has(posix.join(GLYPHS_DIRECTORY, notice))) {
         problems.push(
-          `${filename}: ships vendored drawings in ${SYMBOLS_DIRECTORY}/ without the ${notice} their license requires beside them`,
+          `${filename}: ships vendored drawings in ${GLYPHS_DIRECTORY}/ without the ${notice} their license requires beside them`,
         );
       }
     }

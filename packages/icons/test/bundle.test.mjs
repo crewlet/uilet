@@ -1,17 +1,26 @@
 /**
  * What a consumer's build actually carries.
  *
- * This package ships 105 glyph drawings and a 670 KB illustration, so the whole
- * question is whether importing one of them brings the rest. Nothing else in
- * the build says: the bundle is valid, the types are right, every test passes,
- * and the page is half a megabyte heavier than it should be.
+ * This package ships over a hundred glyph drawings and a 670 KB illustration,
+ * so the whole question is whether importing one of them brings the rest.
+ * Nothing else in the build says: the bundle is valid, the types are right,
+ * every test passes, and the page is half a megabyte heavier than it should
+ * be.
  *
  * Two module-scope shapes cost exactly that, and both looked harmless:
  * `Component.displayName = 'Component'` is a statement a bundler cannot prove
  * is safe to drop, and `export * as Icons` compiles to a call that names every
- * member. One glyph carried every one of them (67 KB against 1 KB) and one illustration
- * carried all thirteen (515 KB against 4 KB). Neither has a symptom a reader
- * would notice.
+ * member. One glyph carried every one of them (67 KB against 1 KB) and one
+ * illustration carried all thirteen (515 KB against 4 KB). Neither has a
+ * symptom a reader would notice.
+ *
+ * A glyph is identified in a bundle by its elements, each as the props object
+ * the build hands React: `{d:"M18 6 6 18"}`, `{cx:"12",cy:"12",r:"10"}`. A
+ * single value is not enough, because nineteen glyphs draw nothing another
+ * glyph does not also draw somewhere (`minus` is the bar of `plus`), while
+ * no two glyphs draw the same SET of elements. The positive case below reads
+ * the same signature, so a bundler that printed the props differently fails
+ * loudly there rather than making the negative case pass on nothing.
  */
 
 import assert from 'node:assert/strict';
@@ -21,7 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import { build } from 'esbuild';
 
-import { readGlyphs } from '../scripts/symbols.mjs';
+import { readGlyphs } from '../scripts/glyphs.mjs';
 
 const PACKAGE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const glyphs = await readGlyphs();
@@ -46,29 +55,32 @@ async function bundle(source) {
   return result.outputFiles[0].text;
 }
 
-const oneGlyph = await bundle("import { CloseGlyph } from './dist/glyphs.js';\nconsole.log(CloseGlyph);\n");
+const oneGlyph = await bundle("import { XGlyph } from './dist/glyphs.js';\nconsole.log(XGlyph);\n");
 const oneIllustration = await bundle("import { CrewletIcon } from './dist/index.js';\nconsole.log(CrewletIcon);\n");
+
+/** A glyph's elements as a minified bundle prints them. */
+const signature = (elements) =>
+  elements.map(({ attrs }) => `{${Object.entries(attrs).map(([key, value]) => `${key}:${JSON.stringify(value)}`).join(',')}}`);
+
+/** Whether a bundle draws every element of a glyph. */
+const carries = (output, elements) => signature(elements).every((element) => output.includes(element));
 
 describe('a build that imports one glyph', () => {
   const output = oneGlyph;
 
   it('carries that glyph', () => {
-    assert.ok(output.includes(glyphs.get('close')[20]), 'the close drawing is missing from the bundle');
-    assert.ok(output.includes(glyphs.get('close')[24]), 'the close drawing is missing one optical size');
+    assert.ok(carries(output, glyphs.get('x')), 'the x drawing is missing from the bundle');
   });
 
   it('carries no other glyph', () => {
-    const others = [...glyphs]
-      .filter(([name]) => name !== 'close')
-      .filter(([, drawing]) => output.includes(drawing[20]) || output.includes(drawing[24]))
-      .map(([name]) => name);
+    const others = [...glyphs].filter(([name, elements]) => name !== 'x' && carries(output, elements)).map(([name]) => name);
     assert.deepEqual(others, []);
   });
 
   it('stays under 4 KB', () => {
-    // Both drawings, the frame around them and the JSX call. A number rather
-    // than a ratio, because the failure this catches is the whole set
-    // arriving, which is seventy times this.
+    // The drawing, the frame around it and the JSX call. A number rather than
+    // a ratio, because the failure this catches is the whole set arriving,
+    // which is ten times this.
     assert.ok(output.length < 4 * 1024, `one glyph bundles to ${output.length} bytes`);
   });
 });
@@ -97,9 +109,9 @@ describe('a build that imports one illustration', () => {
 describe('a build that looks a glyph up by name', () => {
   it('carries every glyph, which is what the registry is for', async () => {
     const output = await bundle(
-      "import { glyphByName } from './dist/glyphs-registry.js';\nconsole.log(glyphByName('close'));\n",
+      "import { glyphByName } from './dist/glyphs-registry.js';\nconsole.log(glyphByName('x'));\n",
     );
-    const missing = [...glyphs].filter(([, drawing]) => !output.includes(drawing[20])).map(([name]) => name);
+    const missing = [...glyphs].filter(([, elements]) => !carries(output, elements)).map(([name]) => name);
     assert.deepEqual(missing, []);
   });
 });

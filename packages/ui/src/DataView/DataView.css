@@ -182,10 +182,11 @@
  * and without the boundary a reader reads them as a row of the table's own.
  *
  * A SOLID HAIRLINE. The fence was dashed, and a dashed edge MEANS SOMETHING
- * ELSE here: it is the mark a card or a node wears when it stands for somebody
- * outside the system, on the canvas and in every chart. Two meanings for one
- * stroke is how a reader learns neither. Every boundary in this system is the
- * same hairline; what differs is where it is drawn.
+ * ELSE here: it marks a place nothing fills yet, an empty card slot, a unit
+ * with no lead, the ghost of a node being added. A fence round chips that are
+ * there is not one of those, and two meanings for one stroke is how a reader
+ * learns neither. Every boundary in this system is the same hairline; what
+ * differs is where it is drawn.
  */
 .crewlet-filter-axis-bar {
   display: flex;

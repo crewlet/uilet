@@ -1,5 +1,6 @@
 /**
- * The application frame: a rail, a top bar, and ONE scroll container.
+ * The application frame: a rail on the frame, and beside it a floating sheet
+ * holding a top bar and ONE scroll container.
  *
  * WHY THE SHELL OWNS THE GRID NOW. It used to be passive: the slots positioned
  * themselves with `position: fixed` and the shell only reserved a matching
@@ -8,6 +9,14 @@
  * and a change to either meant editing four places that nothing compared. The
  * grid is sized from `--size-shell-rail` and `--size-shell-topbar` here, and
  * the slots simply fill their cells.
+ *
+ * THE SCREEN FLOATS ON A SHEET. The rail stands on the frame, the lowest rung,
+ * and everything the reader reads (the bar, a banner, the screen, a footer) is
+ * one sheet a rung above it, held off the frame's edges by `--size-shell-inset`
+ * and rounded at `--radius-sheet`. It is one element rather than a background
+ * the bar and the scroller each paint, because the corner has to clip both and
+ * the hairline has to run round both: two surfaces that each drew half of it
+ * would meet in a seam under the bar.
  *
  * THE DOCUMENT DOES NOT SCROLL. `100dvh` with `overflow: hidden` on the root,
  * and one scroller inside it, which is what lets a router restore a scroll
@@ -21,7 +30,8 @@
  * and `main` is a focusable target for the skip link that precedes everything.
  *
  * NARROW IS A DIFFERENT SHAPE, NOT A SMALLER ONE. Below the shell breakpoint
- * the rail is a modal drawer on the shared layer stack: it takes Escape, traps
+ * the sheet is the whole window, its inset, corner and hairline collapsed to
+ * nothing, and the rail is a modal drawer on the shared layer stack: it takes Escape, traps
  * Tab, hands focus back to the toggle, and closes on a navigation and when the
  * layout it belongs to ends. Hidden rather than merely moved off screen, too,
  * because a rail translated out of view keeps every link in the tab order and
@@ -49,8 +59,15 @@ import { IconButton } from '../IconButton/index.js';
 import { focusables, useModalLayer } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
 
-/** Where the rail stops being a column beside the page and becomes a drawer. */
-const NARROW = `(max-width: ${breakpoint.shell})`;
+/**
+ * Where the rail stops being a column beside the page and becomes a drawer:
+ * STRICTLY UNDER the shell step. The step is the rail, the inset and the
+ * sheet's floor added up, so at exactly that width the wide layout fits, and
+ * `max-width` would draw the drawer at the one width the arithmetic says it
+ * is not needed. AppShell.css switches on the same query, and the suite holds
+ * the two to each other.
+ */
+const NARROW = `(width < ${breakpoint.shell})`;
 
 /** What the shell tells the components inside it. */
 interface AppShellContextValue {
@@ -117,7 +134,7 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
    * while the screen scrolls under it.
    */
   banner?: ReactNode;
-  /** A strip under the screen, in the content column and outside `main`. */
+  /** A strip under the screen, on the sheet and outside `main`. */
   footer?: ReactNode;
   /** The id of the `main` element, which the skip link points at. */
   mainId?: string | undefined;
@@ -216,7 +233,14 @@ export function AppShell({
     <AppShellContext.Provider value={shell}>
       <div
         {...rest}
-        className={cx('crewlet-app-shell', fill && 'crewlet-app-shell--fill', className)}
+        className={cx(
+          'crewlet-app-shell',
+          fill && 'crewlet-app-shell--fill',
+          // Named on the root rather than read off the tree by a selector,
+          // because a shell with no rail is one column whatever else it holds.
+          !shell.hasRail && 'crewlet-app-shell--no-rail',
+          className,
+        )}
         style={drawerZ === null ? style : { ...style, ['--crewlet-app-shell-drawer-z' as string]: String(drawerZ) }}
       >
         {/*
@@ -255,7 +279,7 @@ export function AppShell({
             {sidebar}
           </aside>
         ) : null}
-        <div className="crewlet-app-shell__column">
+        <div className="crewlet-app-shell__sheet">
           {topbar}
           {banner ? <div className="crewlet-app-shell__banner">{banner}</div> : null}
           <main id={main} ref={setMain} className="crewlet-app-shell__main" tabIndex={-1}>
@@ -357,8 +381,19 @@ interface RailRowContent {
    * vertical line as every nav glyph above it.
    */
   icon?: ReactNode;
-  /** A value at the end of the row: a count, a tag, a time. */
+  /**
+   * A value at the end of the row: a count, a tag, a time. It stands beside
+   * the words while both fit on the rail, and drops under them when they do
+   * not, so it never takes the room the words need.
+   */
   trailing?: ReactNode;
+  /**
+   * A second line under the row's words: "3 nodes · config epoch 42" under
+   * "Engine healthy". Given one, the row is the design's STATUS BLOCK, drawn
+   * on the card rung inside a hairline, its words in the primary ink over this
+   * line in the quiet one.
+   */
+  detail?: ReactNode;
   className?: string | undefined;
   /** What the row says. */
   children?: ReactNode;
@@ -407,7 +442,17 @@ export type AppShellRailRowProps = StaticRailRowProps | ActionRailRowProps;
  * toolbar's inset. This is still the one to reach for, because it is also the
  * thing that decides whether the row is a control at all.
  */
-export function AppShellRailRow({ icon, trailing, onClick, label, className, children }: AppShellRailRowProps) {
+export function AppShellRailRow({ icon, trailing, detail, onClick, label, className, children }: AppShellRailRowProps) {
+  const block = detail !== undefined && detail !== null && detail !== false && detail !== '';
+  /*
+   * THE WORDS ARE NEVER CUT. A status line says what a node is doing, and the
+   * row used to give its words whatever the mark and the trailing value left
+   * and end them in an ellipsis, so a pill beside "engine connected" left
+   * "engine conn…": the one part of the row that was the point. The words and
+   * the value now share a wrapping line, so the value stands beside the words
+   * while both fit and drops under them when they do not, and words longer
+   * than the rail wrap rather than end.
+   */
   const inside = (
     <>
       {icon ? (
@@ -415,15 +460,37 @@ export function AppShellRailRow({ icon, trailing, onClick, label, className, chi
           {icon}
         </span>
       ) : null}
-      <span className="crewlet-app-shell__rail-row-label">{children}</span>
-      {trailing ? <span className="crewlet-app-shell__rail-row-trailing">{trailing}</span> : null}
+      {/*
+       * The spaces between the parts are REAL, so a control named by its
+       * content reads "Engine healthy 3 nodes" rather than "Engine healthy3
+       * nodes". A flex container draws no text node of whitespace alone
+       * between its items, so they cost the layout nothing.
+       */}
+      <span className="crewlet-app-shell__rail-row-body">
+        <span className="crewlet-app-shell__rail-row-text">
+          <span className="crewlet-app-shell__rail-row-label">{children}</span>
+          {block ? (
+            <>
+              {' '}
+              <span className="crewlet-app-shell__rail-row-detail">{detail}</span>
+            </>
+          ) : null}
+        </span>
+        {trailing ? (
+          <>
+            {' '}
+            <span className="crewlet-app-shell__rail-row-trailing">{trailing}</span>
+          </>
+        ) : null}
+      </span>
     </>
   );
-  if (onClick === undefined) return <div className={cx('crewlet-app-shell__rail-row', className)}>{inside}</div>;
+  const shape = cx('crewlet-app-shell__rail-row', block && 'crewlet-app-shell__rail-row--block', className);
+  if (onClick === undefined) return <div className={shape}>{inside}</div>;
   return (
     <button
       type="button"
-      className={cx('crewlet-app-shell__rail-row', 'crewlet-app-shell__rail-row--action', className)}
+      className={cx(shape, 'crewlet-app-shell__rail-row--action')}
       aria-label={label}
       onClick={onClick}
     >

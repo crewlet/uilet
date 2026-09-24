@@ -1,8 +1,8 @@
 {
   "name": "@crewlethq/icons",
   "version": "0.2.0",
-  "description": "Crewlet signature illustrated icons, vendor marks, and the Material Symbols glyph set as React components.",
-  "license": "MIT AND Apache-2.0",
+  "description": "Crewlet signature illustrated icons, vendor marks, and the Lucide glyph set as React components.",
+  "license": "MIT AND ISC",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/crewlet/uilet.git",
@@ -33,14 +33,14 @@
       "import": "./dist/glyphs-registry.js"
     },
     "./favicon/*": "./favicon/*",
-    "./svg/*": "./svg/*",
-    "./symbols/*": "./symbols/*"
+    "./glyphs/*": "./glyphs/*",
+    "./svg/*": "./svg/*"
   },
   "files": [
     "dist",
     "favicon",
+    "glyphs",
     "svg",
-    "symbols",
     "TRADEMARKS.md"
   ],
   "scripts": {
@@ -49,7 +49,7 @@
     "lint": "node scripts/build.mjs && eslint src scripts test",
     "typecheck": "node scripts/build.mjs && tsc -p tsconfig.json --noEmit",
     "test": "node --import ./test/css-stub.mjs --test \"test/*.test.mjs\"",
-    "vendor-symbols": "node scripts/vendor-symbols.mjs",
+    "vendor-glyphs": "node scripts/vendor-glyphs.mjs",
     "clean": "rm -rf dist src/generated"
   },
   "peerDependencies": {

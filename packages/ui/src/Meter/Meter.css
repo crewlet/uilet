@@ -42,22 +42,41 @@
 }
 
 /*
- * A 4px track, which is the engine's. A meter sits under a line of 12px text
- * inside a card, and the 6px bar read as a divider rather than as a reading of
- * something; four is the height at which the fill is still unmistakably a
- * proportion and the bar is unmistakably chrome.
+ * A 6px track with round ends, the approved design's meter, at both sizes. It
+ * stands at the end of a stat tile's value line beside a 28px number and a
+ * 28px sparkline, and under a line of 12px text inside a card; the design
+ * draws it at six in both places, where the engine's older bar was four.
+ *
+ * The track is RAISED, the approved design's, and a rung rather than a well.
+ * The fill is measured against it as a mark, and the palette suite measures a
+ * mark on the four opaque rungs: on the inset well this track used to be, the
+ * light warning and success fills measured 2.84:1 and 2.86:1 over the frame
+ * once the states took the approved hues, a pair no palette rule could see.
+ *
+ * An opaque track has an edge only against a ground that is not itself, so a
+ * meter is drawn on a CARD, where the design puts every one and where the
+ * palette holds raised a visible step above the ground (dE 3.13 dark, 3.65
+ * light). On the raised rung the unfilled remainder, and with it the extent
+ * of the bar, would not be there at all.
  */
 .crewlet-meter__track {
-  height: 4px;
+  height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--color-surface-inset);
+  background: var(--color-surface-elevated);
   overflow: hidden;
 }
 
+/*
+ * The ordinary reading, `quantity`, is the first data series. A meter is a
+ * figure of ONE quantity and its label names it, which is all a data hue
+ * asks for; the accent it used to take means "act here", and a bar is not
+ * something to act on. Every other tone below is a state, derived from the
+ * fill or passed by the caller.
+ */
 .crewlet-meter__fill {
   height: 100%;
   border-radius: var(--radius-pill);
-  background: var(--color-brand-accent);
+  background: var(--color-data-1);
   transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);
 }
 
@@ -83,5 +102,25 @@
 @media (prefers-reduced-motion: reduce) {
   .crewlet-meter__fill {
     transition: none;
+  }
+}
+
+/*
+ * FORCED COLORS. The mode repaints every author background to Canvas, and the
+ * track and the fill are nothing but backgrounds, so the bar used to disappear
+ * whole, track and reading together, for exactly the reader who asked for
+ * more contrast. A system colour an author writes is kept, so the fill is
+ * drawn in CanvasText and the track in GrayText, the system's own pair for
+ * "there" and "quieter", which is what a SegmentedMeter draws its parts and
+ * its remainder in. The tone goes, as every hue does in this mode; the length
+ * is the reading, and it stays.
+ */
+@media (forced-colors: active) {
+  .crewlet-meter__track {
+    background: GrayText;
+  }
+
+  .crewlet-meter__fill[data-tone] {
+    background: CanvasText;
   }
 }

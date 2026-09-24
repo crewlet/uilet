@@ -33,9 +33,20 @@ describe('EntityChip', () => {
     expect(container.querySelector('.crewlet-entity-chip')?.className).not.toContain('entity-chip--link');
   });
 
-  test('a human seat is drawn with the dashed edge', () => {
-    const { container } = render(<EntityChip name="Ada Byron" variant="human" href="#/seats/ada" />);
-    expect(container.querySelector('.crewlet-avatar')?.className).toContain('crewlet-avatar--dashed');
+  test("the badge takes the chip's kind: an agent is a squircle and a human seat a circle", () => {
+    // The kind is Avatar's own, passed through rather than restated: the chip
+    // used to map its `human` onto a dashed edge of its own, which was a second
+    // cue for the one fact the outline now carries.
+    const { container } = render(
+      <>
+        <EntityChip name="Carlos Diaz" href="#/seats/carlos" />
+        <EntityChip name="Ada Byron" kind="human" href="#/seats/ada" />
+      </>,
+    );
+    const [agent, human] = [...container.querySelectorAll('.crewlet-avatar')];
+    expect(agent?.className).toContain('crewlet-avatar--agent');
+    expect(human?.className).toContain('crewlet-avatar--human');
+    for (const badge of [agent, human]) expect(badge?.className).not.toContain('dashed');
   });
 
   test('asChild puts the look on a router link and keeps its navigation', () => {
@@ -86,7 +97,7 @@ describe('EntityChip', () => {
       <main>
         <h1>Directory</h1>
         <EntityChip name="Carlos Diaz" href="#/seats/carlos" />
-        <EntityChip name="Ada Byron" variant="human" />
+        <EntityChip name="Ada Byron" kind="human" />
       </main>,
     );
     const result = await axe.run(container, {

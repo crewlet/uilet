@@ -11,20 +11,20 @@ import { cx } from '../utils/cx.js';
 import { CopyableCell } from './CopyableCell.js';
 import { RowActionsMenu } from './RowActionsMenu.js';
 import {
-  ArrowDownwardGlyph,
-  ArrowUpwardGlyph,
+  ArrowDownGlyph,
+  ArrowUpGlyph,
   CheckGlyph,
+  ChevronDownGlyph,
   ChevronLeftGlyph,
   ChevronRightGlyph,
-  DeleteGlyph,
-  DragIndicatorGlyph,
-  KeyboardArrowDownGlyph,
-  KeyboardArrowUpGlyph,
-  KeyboardDoubleArrowLeftGlyph,
-  KeyboardDoubleArrowRightGlyph,
-  SettingsBackupRestoreGlyph,
+  ChevronsLeftGlyph,
+  ChevronsRightGlyph,
+  ChevronsUpDownGlyph,
+  ChevronUpGlyph,
+  GripVerticalGlyph,
+  RotateCcwGlyph,
   SettingsGlyph,
-  UnfoldMoreGlyph,
+  TrashGlyph,
 } from '@crewlethq/icons/glyphs';
 
 /**
@@ -860,7 +860,7 @@ export const DataTable = <TRow,>({
   itemsPerPageOptions = [5, 10, 20, 50, 100],
   onRowAction = null,
   actionLabel = 'Delete',
-  actionIcon = <DeleteGlyph size="md" />,
+  actionIcon = <TrashGlyph size="md" />,
   getRowKey,
   rowKey,
   emptyMessage = 'No data available',
@@ -2313,14 +2313,14 @@ export const DataTable = <TRow,>({
     const isSortable = column.sortable !== false;
     const isActive = effectiveSort.key === columnKey && effectiveSort.direction !== null;
     /*
-      * The glyph, not its name. `unfold_more` is the both-ways mark a sortable
+      * The glyph, not its name. `chevrons-up-down` is the both-ways mark a sortable
       * column that is not the current sort carries, so the affordance is
       * visible before anybody presses it.
       */
     const arrow = !isSortable ? null : isActive ? (
-      effectiveSort.direction === 'asc' ? <ArrowUpwardGlyph size="sm" /> : <ArrowDownwardGlyph size="sm" />
+      effectiveSort.direction === 'asc' ? <ArrowUpGlyph size="sm" /> : <ArrowDownGlyph size="sm" />
     ) : (
-      <UnfoldMoreGlyph size="sm" />
+      <ChevronsUpDownGlyph size="sm" />
     );
     const ariaSort = isActive
       ? effectiveSort.direction === 'asc'
@@ -2503,7 +2503,7 @@ export const DataTable = <TRow,>({
           aria-label={labels.resetColumns}
           title={labels.resetColumns}
         >
-          <SettingsBackupRestoreGlyph size="md" />
+          <RotateCcwGlyph size="md" />
         </button>
         <button
           type="button"
@@ -2804,7 +2804,7 @@ export const DataTable = <TRow,>({
             onClick={() => goToPage(1)}
             disabled={currentPage <= 1}
             label={labels.firstPage}
-            icon={<KeyboardDoubleArrowLeftGlyph size="md" />}
+            icon={<ChevronsLeftGlyph size="md" />}
           />
           <IconButton
             size="sm"
@@ -2851,7 +2851,7 @@ export const DataTable = <TRow,>({
             onClick={() => goToPage(totalPages)}
             disabled={currentPage >= totalPages}
             label={labels.lastPage}
-            icon={<KeyboardDoubleArrowRightGlyph size="md" />}
+            icon={<ChevronsRightGlyph size="md" />}
           />
         </div>
       )}
@@ -3297,7 +3297,7 @@ export const DataTable = <TRow,>({
         )}
         footer={(
           <>
-            <Button variant="tertiary" onClick={cancelTableSettings}>
+            <Button variant="ghost" onClick={cancelTableSettings}>
               {labels.cancel}
             </Button>
             <Button variant="primary" onClick={applyTableSettings}>
@@ -3386,7 +3386,7 @@ export const DataTable = <TRow,>({
                   size="sm"
                   className="crewlet-data-table__column-drag-handle"
                   label={labels.reorder(name)}
-                  icon={<DragIndicatorGlyph size="md" />}
+                  icon={<GripVerticalGlyph size="md" />}
                   aria-describedby={reorderHintId}
                   draggable
                   onDragStart={(e) => handleDragStart(e, key)}
@@ -3431,14 +3431,14 @@ export const DataTable = <TRow,>({
                   <IconButton
                     size="sm"
                     label={labels.moveUp(name)}
-                    icon={<KeyboardArrowUpGlyph size="sm" />}
+                    icon={<ChevronUpGlyph size="sm" />}
                     {...(index === 0 ? { disabledReason: labels.atTop(name) } : {})}
                     onClick={() => moveColumn(key, -1)}
                   />
                   <IconButton
                     size="sm"
                     label={labels.moveDown(name)}
-                    icon={<KeyboardArrowDownGlyph size="sm" />}
+                    icon={<ChevronDownGlyph size="sm" />}
                     {...(index === draftColumnOrder.length - 1
                       ? { disabledReason: labels.atBottom(name) }
                       : {})}

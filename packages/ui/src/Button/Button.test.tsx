@@ -7,12 +7,19 @@
  * `ui/primitives.test.tsx`; the rest are what the merged API adds.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { MoreVertGlyph } from '@crewlethq/icons/glyphs';
+import { EllipsisVerticalGlyph } from '@crewlethq/icons/glyphs';
+import { themes } from '@crewlethq/tokens';
+import { contrast, paletteStates, parseHex } from '@crewlethq/tokens/test/palette';
+import { channels, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { Button, ButtonLink } from './index.js';
 import { IconButton } from '../IconButton/index.js';
+import { SearchTrigger } from '../SearchTrigger/index.js';
 
 afterEach(cleanup);
 
@@ -26,8 +33,8 @@ describe('Button', () => {
     render(
       <Button
         ref={ref}
-        leadingIcon={<MoreVertGlyph />}
-        variant="tertiary"
+        leadingIcon={<EllipsisVerticalGlyph />}
+        variant="ghost"
         size="small"
         title="Actions"
         aria-haspopup="menu"
@@ -48,7 +55,7 @@ describe('Button', () => {
     expect(button.getAttribute('data-node')).toBe('seat:ceo');
     expect(button.id).toBe('seat-actions');
     // The recipe is still the primitive's own.
-    expect(button.className).toBe('crewlet-btn crewlet-btn--tertiary crewlet-btn--small crewlet-btn--square');
+    expect(button.className).toBe('crewlet-btn crewlet-btn--ghost crewlet-btn--small crewlet-btn--square');
     fireEvent.keyDown(button, { key: 'ArrowDown' });
     expect(onKeyDown).toHaveBeenCalledTimes(1);
   });
@@ -56,9 +63,9 @@ describe('Button', () => {
   test('an icon button is named by its title unless the caller names it more precisely', () => {
     render(
       <>
-        <Button leadingIcon={<MoreVertGlyph />} title="Move up" />
-        <Button leadingIcon={<MoreVertGlyph />} title="Move up" aria-label="Move goal 2 of 3 up" />
-        <Button leadingIcon={<MoreVertGlyph />}>Add</Button>
+        <Button leadingIcon={<EllipsisVerticalGlyph />} title="Move up" />
+        <Button leadingIcon={<EllipsisVerticalGlyph />} title="Move up" aria-label="Move goal 2 of 3 up" />
+        <Button leadingIcon={<EllipsisVerticalGlyph />}>Add</Button>
       </>,
     );
     const [plain, named, labelled] = screen.getAllByRole('button');
@@ -82,14 +89,14 @@ describe('Button', () => {
     // action finishes.
     const onClick = vi.fn();
     const { rerender } = render(
-      <Button leadingIcon={<MoreVertGlyph />} onClick={onClick}>
+      <Button leadingIcon={<EllipsisVerticalGlyph />} onClick={onClick}>
         Save
       </Button>,
     );
     const button = screen.getByRole('button', { name: 'Save' });
     button.focus();
     rerender(
-      <Button leadingIcon={<MoreVertGlyph />} loading onClick={onClick}>
+      <Button leadingIcon={<EllipsisVerticalGlyph />} loading onClick={onClick}>
         Save
       </Button>,
     );
@@ -137,19 +144,198 @@ describe('Button', () => {
   });
 });
 
+/**
+ * THE PRIMARY ACTION IS THE ACCENT, at rest, under the pointer and pressed,
+ * with the on-accent label on all three. @crewlethq/tokens measures those
+ * three fills against that label; what it cannot see is which tokens this
+ * stylesheet spends, so the pairs are read back out of the CSS here, and the
+ * cascade is asked what a rendered button actually paints.
+ */
+describe('the primary action', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const css = readFileSync(resolve(here, 'Button.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const tokensCss = resolve(here, '../../../tokens/dist/css');
+  const states = paletteStates({
+    tokens: readFileSync(resolve(tokensCss, 'tokens.css'), 'utf8'),
+    themes: readFileSync(resolve(tokensCss, 'themes.css'), 'utf8'),
+  });
+  /*
+   * Token names are written without their leading dashes and prefixed at use:
+   * the package's variable check reads a quoted `--name` in a .tsx file as a
+   * DECLARATION, and a component may declare only `--crewlet-*` names.
+   */
+  const token = (name: string) => `--${name}`;
+  const PRESSABLE = ":not(:disabled):not([aria-disabled='true'])";
+  const STEPS = [
+    ['at rest', '', 'color-brand-accent'],
+    ['under the pointer', `:hover${PRESSABLE}`, 'color-brand-accent-hover'],
+    ['pressed', `:active${PRESSABLE}`, 'color-brand-accent-active'],
+  ] as const;
+
+  /** The one rule whose selector list names `selector`, and what it binds. */
+  function rule(selector: string): { selectors: string[]; fill: string | null; ink: string | null } {
+    const found = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .map(([, list, body]) => ({ selectors: (list ?? '').split(',').map((one) => one.trim()), body: body ?? '' }))
+      .filter(({ selectors }) => selectors.includes(selector));
+    if (found.length !== 1) throw new Error(`Button.css has ${found.length} rules for ${selector}`);
+    const { selectors, body } = found[0]!;
+    return {
+      selectors,
+      fill: /(?:^|;|\s)background:\s*var\((--[\w-]+)\)/.exec(body)?.[1] ?? null,
+      ink: /(?:^|;|\s)color:\s*var\((--[\w-]+)\)/.exec(body)?.[1] ?? null,
+    };
+  }
+
+  test('primary and accent are one recipe, and it paints the accent in each of its three states', () => {
+    for (const [when, state, fill] of STEPS) {
+      const bound = rule(`.crewlet-btn--primary${state}`);
+      // One rule for both names, so the pair cannot drift into two violets.
+      expect(bound.selectors, when).toContain(`.crewlet-btn--accent${state}`);
+      expect(bound.fill, when).toBe(token(fill));
+      // The label is set once, at rest, and a state that named its own would
+      // be a second answer the palette suite never measured.
+      expect(bound.ink, when).toBe(state === '' ? token('color-text-on-accent') : null);
+    }
+  });
+
+  test('its label clears 4.5:1 on every fill it takes, and gains as the button is pressed, in every palette', () => {
+    const failures: string[] = [];
+    for (const [name, values] of Object.entries(states)) {
+      const label = parseHex(values.get(token('color-text-on-accent')) ?? '');
+      if (label === null) throw new Error(`${name} has no opaque on-accent label`);
+      let previous = 0;
+      for (const [when, , fill] of STEPS) {
+        const ground = parseHex(values.get(token(fill)) ?? '');
+        if (ground === null) throw new Error(`${name}: ${fill} is not an opaque colour`);
+        const ratio = contrast(label, ground);
+        if (ratio < 4.5) failures.push(`${name}: the label ${when}: ${ratio.toFixed(2)}:1`);
+        // A hover that brightens moves the fill TOWARD a white label, which is
+        // how the approved design's hover took it under the floor.
+        if (ratio <= previous) failures.push(`${name}: the label ${when} loses contrast (${ratio.toFixed(2)}:1)`);
+        previous = ratio;
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test('as the cascade decides it, a primary button, an accent one and a link drawn as one paint the accent', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installThemed(theme, 'Button/Button.css');
+      const { unmount } = render(
+        <>
+          <Button>Default</Button>
+          <Button variant="primary">Create</Button>
+          <Button variant="accent">Continue</Button>
+          <ButtonLink variant="primary" href="#/tasks/new">
+            New task
+          </ButtonLink>
+        </>,
+      );
+      const palette = themes[theme].color;
+      for (const element of [
+        screen.getByRole('button', { name: 'Default' }),
+        screen.getByRole('button', { name: 'Create' }),
+        screen.getByRole('button', { name: 'Continue' }),
+        screen.getByRole('link', { name: 'New task' }),
+      ]) {
+        const style = getComputedStyle(element);
+        const where = `${theme}: ${element.textContent}`;
+        expect(channels(style.backgroundColor), where).toEqual(parseHex(palette.brand.accent));
+        expect(channels(style.color), where).toEqual(parseHex(palette.text.onAccent));
+      }
+      unmount();
+      uninstall();
+    }
+  });
+});
+
+/**
+ * THE APPROVED REGISTER, as the cascade paints it: the heights a button stands
+ * at, and what the two everyday variants are drawn with. The palette suite
+ * measures every pair these spend; what it cannot see is which ones a
+ * rendered button actually takes.
+ */
+describe('the register', () => {
+  const transparent = (value: string) => value === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(value);
+
+  test('a medium button is the design\'s 30px and a small one its 26px, and every control on the line shares them', () => {
+    /*
+     * THE HEIGHT IS THE CONTROL STEP, never a number of the button's own: the
+     * approved design stands a button, an icon button, a field in a bar and a
+     * segmented well at one 30px line, and a small button at 26px. Asserted as
+     * the design's numbers, because a step that drifted back to 32 would still
+     * be "the token" and would still stand every control two pixels proud of
+     * the line the design draws.
+     */
+    const uninstall = installSheets('Button/Button.css', 'IconButton/IconButton.css', 'SearchTrigger/SearchTrigger.css');
+    try {
+      render(
+        <>
+          <Button>Medium</Button>
+          <Button size="small">Small</Button>
+          <IconButton label="Medium glyph" icon={<EllipsisVerticalGlyph />} />
+          <IconButton label="Small glyph" size="sm" icon={<EllipsisVerticalGlyph />} />
+          <SearchTrigger variant="toolbar" label="Search ENG" />
+        </>,
+      );
+      expect(px(screen.getByRole('button', { name: 'Medium' }), 'min-height')).toBe(30);
+      expect(px(screen.getByRole('button', { name: 'Small' }), 'min-height')).toBe(26);
+      expect(px(screen.getByRole('button', { name: 'Medium glyph' }), 'height')).toBe(30);
+      expect(px(screen.getByRole('button', { name: 'Small glyph' }), 'height')).toBe(26);
+      expect(px(screen.getByRole('button', { name: 'Search ENG' }), 'height')).toBe(30);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('secondary is the card inside the strong hairline, and ghost is no ground and no boundary, in both palettes', () => {
+    /*
+     * A button stands on the very card it is filled with, so its boundary is
+     * the whole of it: the STRONG hairline, the step a reader takes for a
+     * control's edge, where the default one is the panel's own divider.
+     * Danger holds the same weight until it is pointed at. Ghost draws
+     * nothing until it is pointed at, in the secondary ink.
+     */
+    for (const theme of ['dark', 'light'] as const) {
+      const uninstall = installThemed(theme, 'Button/Button.css');
+      const { unmount } = render(
+        <>
+          <Button variant="secondary">Cancel</Button>
+          <Button variant="danger">Delete</Button>
+          <Button variant="ghost">Reassign</Button>
+        </>,
+      );
+      const palette = themes[theme].color;
+      for (const name of ['Cancel', 'Delete']) {
+        const style = getComputedStyle(screen.getByRole('button', { name }));
+        const where = `${theme}: ${name}`;
+        expect(channels(style.backgroundColor), where).toEqual(parseHex(palette.surface.subtle));
+        expect(style.borderTopStyle, where).toBe('solid');
+        expect(channels(style.borderTopColor), where).toEqual(parseHex(palette.border.strong));
+      }
+      const ghost = getComputedStyle(screen.getByRole('button', { name: 'Reassign' }));
+      expect(transparent(ghost.backgroundColor), `${theme}: ghost ground ${ghost.backgroundColor}`).toBe(true);
+      expect(transparent(ghost.borderTopColor), `${theme}: ghost boundary ${ghost.borderTopColor}`).toBe(true);
+      expect(channels(ghost.color), theme).toEqual(parseHex(palette.text.secondary));
+      unmount();
+      uninstall();
+    }
+  });
+});
+
 describe('ButtonLink', () => {
   // A control that goes somewhere is a real link, drawn by the same recipe as
   // the button beside it rather than a class list spelled at the call site.
   test('is an anchor wearing exactly the class list the matching Button wears', () => {
     render(
       <>
-        <Button variant="primary" size="small" leadingIcon={<MoreVertGlyph />}>
+        <Button variant="primary" size="small" leadingIcon={<EllipsisVerticalGlyph />}>
           Create
         </Button>
-        <ButtonLink variant="primary" size="small" leadingIcon={<MoreVertGlyph />} href="#/org?lens=builder">
+        <ButtonLink variant="primary" size="small" leadingIcon={<EllipsisVerticalGlyph />} href="#/org?lens=builder">
           Create
         </ButtonLink>
-        <ButtonLink variant="tertiary" leadingIcon={<MoreVertGlyph />} title="Open" href="#/org" />
+        <ButtonLink variant="ghost" leadingIcon={<EllipsisVerticalGlyph />} title="Open" href="#/org" />
       </>,
     );
     const button = screen.getByRole('button', { name: 'Create' });
@@ -160,7 +346,7 @@ describe('ButtonLink', () => {
     expect(link.getAttribute('target')).toBeNull();
 
     const iconOnly = screen.getByRole('link', { name: 'Open' });
-    expect(iconOnly.className).toBe('crewlet-btn crewlet-btn--tertiary crewlet-btn--medium crewlet-btn--square');
+    expect(iconOnly.className).toBe('crewlet-btn crewlet-btn--ghost crewlet-btn--medium crewlet-btn--square');
   });
 
   test('an external link opens a new tab without handing over the referrer or the opener', () => {
@@ -180,7 +366,7 @@ describe('ButtonLink', () => {
 
 describe('IconButton', () => {
   test('is named by its label, which is also what its tooltip says', () => {
-    render(<IconButton label="Row actions" icon={<MoreVertGlyph />} />);
+    render(<IconButton label="Row actions" icon={<EllipsisVerticalGlyph />} />);
     const button = screen.getByRole('button', { name: 'Row actions' });
     // The LABEL names it. The tooltip repeats the same words, so a name read
     // out of the title alone would look right while the prop did nothing.
@@ -192,7 +378,7 @@ describe('IconButton', () => {
   test('its smallest step is a control step, so no density takes it under the target floor', () => {
     // 22px squares are what it used to draw, which is under the 24px a pointer
     // target needs, and compact density took them to 18.
-    render(<IconButton label="Copy" size="sm" icon={<MoreVertGlyph />} />);
+    render(<IconButton label="Copy" size="sm" icon={<EllipsisVerticalGlyph />} />);
     expect(screen.getByRole('button').className).toContain('crewlet-icon-btn--sm');
   });
 
@@ -203,9 +389,9 @@ describe('IconButton', () => {
    * no label and squared it off with a stylesheet of its own.
    */
   test('draws the bordered square when it is asked for, and stays borderless otherwise', () => {
-    const { rerender } = render(<IconButton label="Previous month" variant="secondary" icon={<MoreVertGlyph />} />);
+    const { rerender } = render(<IconButton label="Previous month" variant="secondary" icon={<EllipsisVerticalGlyph />} />);
     expect(screen.getByRole('button').className).toContain('crewlet-icon-btn--secondary');
-    rerender(<IconButton label="Previous month" icon={<MoreVertGlyph />} />);
+    rerender(<IconButton label="Previous month" icon={<EllipsisVerticalGlyph />} />);
     expect(screen.getByRole('button').className).toContain('crewlet-icon-btn--ghost');
     expect(screen.getByRole('button').className).not.toContain('crewlet-icon-btn--secondary');
   });

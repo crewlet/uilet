@@ -10,7 +10,10 @@ workspace `private` keeps it out of both the pack job and the registry.
 
 The suites live BESIDE the components they cover, at
 `packages/ui/src/<Name>/<Name>.test.tsx`, as uilet's conventions ask. Only the
-runner, its setup file and the rules about component source live here.
+runner, its setup file, the cascade harness (`src/cascade.ts`) and the rules
+about component source live here, with the suite for the package's literal
+check (`src/css-literals.test.ts`), which runs the published script as a
+command over stylesheets of its own, the way a consumer's build runs it.
 
 ```sh
 npm test --workspace @crewlethq/ui-tests     # one run

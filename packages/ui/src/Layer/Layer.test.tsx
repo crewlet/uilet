@@ -179,6 +179,30 @@ test('Tab wraps inside the modal in both directions, and comes back in from outs
   expect(document.activeElement).toBe(first);
 });
 
+test('a Tab a control has taken for itself is not moved by the trap', () => {
+  // A completion that commits on Tab and a palette that steps its scopes on it
+  // both PREVENT the key, which is what stops a browser moving focus. From the
+  // last stop the trap wrapped focus to the first anyway, undoing the one thing
+  // the control had said.
+  render(
+    <Dialog title="Form" onClose={() => {}}>
+      <button>first</button>
+      <input
+        aria-label="takes Tab"
+        onKeyDown={(event) => {
+          if (event.key === 'Tab') event.preventDefault();
+        }}
+      />
+    </Dialog>,
+  );
+  const field = screen.getByLabelText('takes Tab');
+  field.focus();
+  expect(press('Tab')).toBe(false);
+  expect(document.activeElement).toBe(field);
+  expect(press('Tab', { shiftKey: true })).toBe(false);
+  expect(document.activeElement).toBe(field);
+});
+
 test('a press on the veil closes the modal, and a press inside it does not', () => {
   function One() {
     const [open, setOpen] = useState(true);

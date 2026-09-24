@@ -15,8 +15,18 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { contrast, flatten, paletteStates, parseHex, type Rgb } from '@crewlethq/tokens/test/palette';
-import { WarningGlyph } from '@crewlethq/icons/glyphs';
+import {
+  contrast,
+  deltaE,
+  flatten,
+  HAIRLINE_DE,
+  OPAQUE_SURFACES,
+  OVERLAYS,
+  paletteStates,
+  parseHex,
+  type Rgb,
+} from '@crewlethq/tokens/test/palette';
+import { TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
 import {
   DENSITIES as DENSITY_SETTINGS,
   installSheetsAtDensity,
@@ -32,9 +42,6 @@ const TONES: TagVariant[] = [
   'warning',
   'danger',
   'brand',
-  'phase-onboarding',
-  'phase-execute',
-  'phase-review',
 ];
 
 describe('Tag', () => {
@@ -168,7 +175,7 @@ describe('Tag', () => {
 
   test('the count and the leading glyph keep the label the accessible name', () => {
     render(
-      <Tag variant="warning" size="sm" leadingIcon={<WarningGlyph />} count={4} onClick={() => {}}>
+      <Tag variant="warning" size="sm" leadingIcon={<TriangleAlertGlyph />} count={4} onClick={() => {}}>
         Needs a person
       </Tag>,
     );
@@ -227,13 +234,6 @@ describe('Tag colour', () => {
    * spells them in a way the scan does not mistake for one.
    */
   const token = (name: string) => `--${name}`;
-  const SURFACES = [
-    'color-surface-background',
-    'color-surface-subtle',
-    'color-surface-muted',
-    'color-surface-elevated',
-  ].map(token);
-
   /** Every `.crewlet-tag--<variant>` rule that binds a fill and an ink. */
   function declaredPairs(): { variant: string; fill: string; ink: string }[] {
     const found: { variant: string; fill: string; ink: string }[] = [];
@@ -261,9 +261,6 @@ describe('Tag colour', () => {
       'brand',
       'danger',
       'info',
-      'phase-execute',
-      'phase-onboarding',
-      'phase-review',
       'success',
       'warning',
     ]);
@@ -277,7 +274,7 @@ describe('Tag colour', () => {
       if (ground === null) throw new Error(`${state} has no opaque page colour`);
       for (const { variant, fill, ink } of declaredPairs()) {
         const inkRgb = resolveColour(values, ink, ground);
-        for (const surface of SURFACES) {
+        for (const surface of OPAQUE_SURFACES) {
           const beneath = resolveColour(values, surface, ground);
           const ratio = contrast(inkRgb, flatten(values.get(fill) ?? '', beneath));
           if (ratio < 4.5) failures.push(`${state}: ${variant} on ${surface}: ${ratio.toFixed(2)}:1`);
@@ -287,18 +284,75 @@ describe('Tag colour', () => {
     expect(failures).toEqual([]);
   });
 
-  test('the neutral default clears 4.5:1 too', () => {
+  test('the neutral default is the raised rung under the secondary ink, and clears 4.5:1 too', () => {
+    /*
+     * The design's quiet pill: a category or a count that is not a state
+     * stands on the raised rung in the secondary ink. The pair is READ from
+     * the base rule, so the measurement follows whatever the rule declares
+     * rather than a pair written down here.
+     */
+    const base = /(?:^|\})\s*\.crewlet-tag\s*\{([^}]*)\}/.exec(css.replace(/\/\*[\s\S]*?\*\//g, ''))?.[1] ?? '';
+    const fill = /--crewlet-tag-fill:\s*var\((--[\w-]+)\)/.exec(base)?.[1];
+    const inkName = /--crewlet-tag-ink:\s*var\((--[\w-]+)\)/.exec(base)?.[1];
+    expect(fill).toBe(token('color-surface-elevated'));
+    expect(inkName).toBe(token('color-text-secondary'));
     const failures: string[] = [];
     for (const [state, values] of Object.entries(states)) {
       if (state === 'base') continue;
       const ground = parseHex(values.get(token('color-surface-background')) ?? '');
       if (ground === null) throw new Error(`${state} has no opaque page colour`);
-      const ink = resolveColour(values, token('color-text-secondary'), ground);
-      for (const surface of SURFACES) {
+      const ink = resolveColour(values, inkName ?? '', ground);
+      for (const surface of OPAQUE_SURFACES) {
         const beneath = resolveColour(values, surface, ground);
-        const ratio = contrast(ink, flatten(values.get(token('color-surface-inset')) ?? '', beneath));
+        const ratio = contrast(ink, flatten(values.get(fill ?? '') ?? '', beneath));
         if (ratio < 4.5) failures.push(`${state}: neutral on ${surface}: ${ratio.toFixed(2)}:1`);
       }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test('the neutral pill stays drawn on every ground it can land on, its own rung included', () => {
+    /*
+     * The neutral fill IS the raised rung, so on a raised ground (a palette's
+     * lead block, a raised card, the rail's current row) the fill alone draws
+     * nothing and the pill vanished into loose words. What is measured here is
+     * the pill's outer boundary against the ground: the fill OR the resting
+     * edge has to clear the hairline dE, on every opaque rung and on every
+     * overlay a hovered, pressed or inset row composites onto each one. Both
+     * values are READ from the stylesheet, so a rule that dropped the edge
+     * goes red on the raised rung.
+     */
+    const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const base = /(?:^|\})\s*\.crewlet-tag\s*\{([^}]*)\}/.exec(bare)?.[1] ?? '';
+    const neutral = /\.crewlet-tag--neutral\.crewlet-tag--soft\s*\{([^}]*)\}/.exec(bare)?.[1] ?? '';
+    const fill = /--crewlet-tag-fill:\s*var\((--[\w-]+)\)/.exec(base)?.[1] ?? '';
+    const edgeDecl = /--crewlet-tag-edge:\s*([^;]+);/.exec(neutral)?.[1]?.trim() ?? 'transparent';
+    const edgeName = /^var\((--[\w-]+)\)$/.exec(edgeDecl)?.[1];
+    expect(/border:\s*1px solid var\(--crewlet-tag-edge\)/.test(base)).toBe(true);
+    const failures: string[] = [];
+    for (const [state, values] of Object.entries(states)) {
+      if (state === 'base') continue;
+      const page = parseHex(values.get(token('color-surface-background')) ?? '');
+      if (page === null) throw new Error(`${state} has no opaque page colour`);
+      for (const surface of OPAQUE_SURFACES) {
+        const rung = resolveColour(values, surface, page);
+        const grounds: [string, Rgb][] = [
+          [surface, rung],
+          ...OVERLAYS.map((overlay): [string, Rgb] => [`${overlay} over ${surface}`, flatten(values.get(overlay) ?? '', rung)]),
+        ];
+        for (const [where, ground] of grounds) {
+          const filled = flatten(values.get(fill) ?? '', ground);
+          const edged = edgeName === undefined ? filled : flatten(values.get(edgeName) ?? '', filled);
+          const drawn = Math.max(deltaE(filled, ground), deltaE(edged, ground));
+          if (drawn < HAIRLINE_DE) failures.push(`${state}: neutral pill on ${where}: dE ${drawn.toFixed(2)}`);
+        }
+      }
+      // A neutral pill that acts moves its boundary on hover, so the hover
+      // line has to be told from the resting edge it replaces.
+      const lineName = /--crewlet-tag-line:\s*var\((--[\w-]+)\)/.exec(neutral)?.[1] ?? '';
+      const onFill = resolveColour(values, fill, page);
+      const hover = deltaE(flatten(values.get(lineName) ?? '', onFill), flatten(values.get(edgeName ?? '') ?? '', onFill));
+      if (hover < HAIRLINE_DE) failures.push(`${state}: neutral pill hover line sits dE ${hover.toFixed(2)} off its resting edge`);
     }
     expect(failures).toEqual([]);
   });
@@ -313,16 +367,21 @@ describe('Tag colour', () => {
     expect(/height:\s*max\(\s*var\(--crewlet-tag-height\)\s*,\s*var\(--crewlet-tag-floor\)\s*\)/.test(css)).toBe(true);
   });
 
-  test('a phase tag is set in the micro-label register, a state tag in the badge one', () => {
-    // Phase is the one categorical identity outside a chart, and the second
-    // register is what separates it at a glance from the state badge on the
-    // same row. Colour alone could not: a reader who cannot separate the hues
-    // still reads two differently SET words.
-    const phase = /\.crewlet-tag--phase-onboarding,\s*\.crewlet-tag--phase-execute,\s*\.crewlet-tag--phase-review\s*\{([^}]*)\}/.exec(css);
-    expect(phase?.[1]).toContain('text-transform: uppercase');
-    expect(phase?.[1]).toContain(token('font-letter-spacing-wide'));
-    const base = /\.crewlet-tag\s*\{([^}]*)\}/.exec(css);
-    expect(base?.[1]).not.toContain('text-transform');
+  test('a phase is the neutral tag and its word: no variant spends a hue or a register on it', () => {
+    /*
+     * A phase is a CATEGORY. It used to take a hue of its own and a second
+     * register, uppercase and tracked open, so it could be told from the state
+     * badge beside it; a category is the neutral tag now, and what tells it
+     * from a state is that a state is coloured and a word is not. So the type
+     * refuses a phase variant (the `@ts-expect-error` is the assertion, run by
+     * `npm run typecheck`), and no rule in the stylesheet sets any tag in a
+     * register of its own: every tag is set as the word it says.
+     */
+    // @ts-expect-error a phase is a category: it takes the neutral tag, not a hue
+    const phase: TagVariant = 'phase-execute';
+    expect(phase).toBe('phase-execute');
+    expect(css).not.toMatch(/crewlet-tag--phase-/);
+    expect(css).not.toMatch(/text-transform|font-letter-spacing-wide/);
   });
 
   test('a pressed tag does not repaint its ground', () => {
@@ -339,14 +398,18 @@ describe('Tag colour', () => {
   test('a dot inside a pill takes the pill ink, because the fill step is measured elsewhere', () => {
     // StatusDot paints the FILL step, which is measured as a mark against the
     // opaque surfaces a page is made of. Inside a tag the dot lands on the
-    // tone's own soft tint, which is a different composite and one nothing in
-    // the palette suite reaches. This case measures both: the fill step would
-    // fail there, and the ink step, which is what the pill actually draws,
-    // holds. A rule that reverted to the fill would go red on the second half.
+    // tone's own soft tint instead, a composite the palette suite measures
+    // for an INK and never for a fill, and one that sits close to the mark
+    // floor: the brand dot measured 2.95:1 on its tint over the dark raised
+    // rung with the indigo accent this kit shipped before 0.5.0, and 3.21:1
+    // with the violet. So the dot is drawn in the pill's ink, the step that IS
+    // held on that tint, here and by the palette suite, and a tone an
+    // application rebinds cannot take the dot under the floor without taking
+    // the label with it. A rule that reverted to the fill goes red on the
+    // first assertion.
     const rule = /\.crewlet-tag \.crewlet-tag__dot\s*\{([^}]*)\}/.exec(css);
     expect(rule?.[1]).toContain('background: currentColor');
 
-    const fillFailures: string[] = [];
     const inkFailures: string[] = [];
     for (const [state, values] of Object.entries(states)) {
       if (state === 'base') continue;
@@ -358,13 +421,8 @@ describe('Tag colour', () => {
         return parseHex(raw) ?? flatten(raw, page);
       };
       for (const { variant, fill, ink } of declaredPairs()) {
-        // The fill step a bare StatusDot would paint for this tone. A phase
-        // and a feedback tone drop the suffix the same way.
-        const mark = fill.replace(/-soft$/, '');
-        if (values.get(mark) === undefined) continue;
-        for (const surface of SURFACES) {
+        for (const surface of OPAQUE_SURFACES) {
           const tint = flatten(values.get(fill) ?? '', read(surface));
-          if (contrast(read(mark), tint) < 3) fillFailures.push(`${state}: ${variant} on ${surface}`);
           const ratio = contrast(read(ink), tint);
           if (ratio < 3) inkFailures.push(`${state}: ${variant} on ${surface}: ${ratio.toFixed(2)}:1`);
         }
@@ -372,9 +430,6 @@ describe('Tag colour', () => {
     }
     // The ink holds everywhere, which is why the pill can spend it.
     expect(inkFailures).toEqual([]);
-    // And the fill does not, which is why this rule is load-bearing rather
-    // than a preference: delete it and a dot goes under the mark floor.
-    expect(fillFailures.length).toBeGreaterThan(0);
   });
 });
 
@@ -426,6 +481,21 @@ describe('Tag geometry', () => {
     if (!found) throw new Error(`Tag.css declares no height for the ${step} step`);
     return found[1] ?? '';
   };
+
+  test('the default is the design pill: 22px, with round ends, at the caption step', () => {
+    // The approved design's pill, and its 18px count pill below it; the md
+    // step is a small control's own 26px, so a tag and a small button in one
+    // toolbar stand on one line.
+    expect(px(heightOf('sm'), 1)).toBe(22);
+    expect(px(heightOf('xs'), 1)).toBe(18);
+    expect(px(heightOf('md'), 1)).toBe(26);
+    const base = /(?:^|\})\s*\.crewlet-tag\s*\{([^}]*)\}/.exec(css.replace(/\/\*[\s\S]*?\*\//g, ''))?.[1] ?? '';
+    expect(base).toMatch(/border-radius:\s*var\(--radius-pill\)/);
+    expect(base).toMatch(/font-size:\s*var\(--font-size-xs\)/);
+    // A split pill's two halves and the remove control follow the round ends
+    // rather than squaring them off.
+    expect(css).not.toMatch(/--radius-xs/);
+  });
 
   test('the size ladder never inverts, at any density the tokens define', () => {
     // The regression this refuses: xs was a flat 18px while sm came down to

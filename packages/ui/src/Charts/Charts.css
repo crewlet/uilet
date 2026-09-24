@@ -1,5 +1,5 @@
-/* The chart kit: a legend, a ranked bar list, a stacked bar and an activity
-   strip. Hand-drawn rather than a charting library, for one reason that
+/* The chart kit: a legend, a ranked bar list, a stacked bar, stacked
+   columns, an activity strip, a time series and the reading layer they share. Hand-drawn rather than a charting library, for one reason that
    decides it: every mark here reads tokens, in two themes, at the contrast
    floors the palette suite measures, and a library's theming surface is a
    second design system to keep in step with this one. */
@@ -117,10 +117,24 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * A BAR IS ROUNDED AT ITS VALUE END ONLY. The start is the baseline every row
+ * shares, so it is square and the bars read as measured from one line; the end
+ * is where the value is, and the smallest radius step marks it as an end
+ * rather than a cut. The track is the scale at full length, so it takes the
+ * same shape: a bar at the top of the scale is exactly the track.
+ *
+ * Written as LOGICAL corners, because the value end is the inline end: in a
+ * right-to-left document the bars grow leftward and their value end is the
+ * left one.
+ */
 .crewlet-bar-list__track {
   display: block;
   height: 5px;
-  border-radius: var(--radius-pill);
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  border-start-end-radius: var(--radius-xs);
+  border-end-end-radius: var(--radius-xs);
   background: var(--color-surface-inset);
   overflow: hidden;
 }
@@ -128,7 +142,10 @@
 .crewlet-bar-list__bar {
   display: block;
   height: 100%;
-  border-radius: var(--radius-pill);
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  border-start-end-radius: var(--radius-xs);
+  border-end-end-radius: var(--radius-xs);
   background: var(--crewlet-bar-list-bar-color, var(--color-data-other));
 }
 
@@ -168,18 +185,406 @@
   white-space: nowrap;
 }
 
+/*
+ * BESIDE: the design's ranked figure. The words in a column of their own, the
+ * bar, and the value at the bar's end, one row 30px tall: the design's, and
+ * the control step's, --size-control-md, so it follows the density. Two
+ * component variables set its geometry, because both depend on what a screen
+ * puts in it rather than on the kit:
+ *
+ * --crewlet-bar-list-label-width, the words' column (128px, the Home card's):
+ * one width for every row, so the bars share one baseline.
+ *
+ * --crewlet-bar-list-value-room, what the scale keeps free at its end for the
+ * value of the longest bar (6ch of tabular figures and the gap before them,
+ * "412.3k"). The SCALE is the plot less that room, a bar is its share of the
+ * scale, and the value follows the bar, so the longest bar's value stands in
+ * the room and every shorter bar's value just past its own end.
+ *
+ * The bar is 12px thick, the design's, and square on its baseline with the
+ * value end rounded, as the stacked register's is. It has no track: the
+ * longest bar IS the end of the scale, and a track under the rest would be a
+ * second baseline to read against.
+ */
+.crewlet-bar-list--beside {
+  --crewlet-bar-list-label-width: 128px;
+  --crewlet-bar-list-value-room: calc(6ch + var(--spacing-2));
+
+  gap: calc(var(--spacing-1) * 1.5);
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-height: var(--size-control-md);
+}
+
+.crewlet-bar-list__names {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--crewlet-bar-list-label-width);
+  min-width: 0;
+  line-height: var(--font-line-height-tight);
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__label {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__row--pressable:hover .crewlet-bar-list__label {
+  color: var(--color-text-primary);
+}
+
+.crewlet-bar-list__plot {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crewlet-bar-list__scale {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: calc(100% - var(--crewlet-bar-list-value-room));
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__bar {
+  flex: none;
+  height: 12px;
+}
+
+/* What the row is, under its name at the micro step, as the design sets it:
+   in a column 128px wide a caption at the list's own step wrapped a word. */
+.crewlet-bar-list--beside .crewlet-bar-list__sub {
+  font-size: var(--font-size-2xs);
+}
+
+/* The number the row is about: the primary ink, a step heavier than the name. */
+.crewlet-bar-list--beside .crewlet-bar-list__value {
+  flex: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
 /* ─── Stacked bar ─────────────────────────────────────────────── */
+
+/*
+ * THE PARTS STAND 2PX APART. Butted together, two neighbouring hues meet at an
+ * edge the eye reads as one mark in two colours; the gap is the ground showing
+ * through, which is what makes each part a part. Two pixels, the approved
+ * artboard's own, and not a spacing step, because it is a hairline of ground
+ * rather than a space and a density setting must not widen it. Each part GROWS
+ * by its value (a style property on the part), so the gaps come out of the
+ * parts and the whole still fills the track exactly.
+ *
+ * The value end is rounded and the start is square, as a bar list's bar is.
+ */
 .crewlet-stacked-bar__track {
   display: flex;
+  gap: 2px;
   height: 6px;
-  border-radius: var(--radius-pill);
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  border-start-end-radius: var(--radius-xs);
+  border-end-end-radius: var(--radius-xs);
   background: var(--color-surface-inset);
   overflow: hidden;
 }
 
 .crewlet-stacked-bar__segment {
+  flex-grow: 0;
+  flex-shrink: 1;
+  flex-basis: 0;
+  min-width: 0;
   height: 100%;
   background: var(--crewlet-stacked-bar-segment-color, var(--color-data-other));
+}
+
+/* ─── Stacked columns ─────────────────────────────────────────── */
+
+/*
+ * The scale's words stand in a column of their own at the start, sized by the
+ * widest of them, and the time under the plot starts where the plot does.
+ */
+.crewlet-stacked-columns {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--spacing-2);
+  row-gap: var(--spacing-1);
+  margin: 0;
+  min-width: 0;
+}
+
+/*
+ * EACH WORD IS A BOX OF NO HEIGHT, spread from the top of the plot to its
+ * baseline, with the word centred on it: so every word stands exactly on the
+ * line it names, whatever the plot's height, with nothing measured.
+ */
+.crewlet-stacked-columns__axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.crewlet-stacked-columns__tick {
+  display: flex;
+  align-items: center;
+  height: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.crewlet-stacked-columns__plot {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.crewlet-stacked-columns__grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+/* The scale's lines: hairlines, because they are where a value is read against
+   rather than something to read. The last is the baseline. */
+.crewlet-stacked-columns__grid-line {
+  display: block;
+  height: 0;
+  border-top: 1px solid var(--color-border-default);
+}
+
+/*
+ * A SLOT IS THE COLUMN'S WHOLE SHARE OF THE WIDTH, and the pointer's target:
+ * the gaps between columns belong to a column, so the reading never drops out
+ * as the pointer crosses one. The column stands in its middle at the approved
+ * artboard's proportion, 14 of a 22.2 slot, and never wider than a finger's
+ * worth, so a week of seven buckets does not draw seven slabs.
+ */
+.crewlet-stacked-columns__slot {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-stacked-columns__slot.is-active {
+  background: var(--color-surface-hover);
+}
+
+/*
+ * THE COLUMN IS ITS TOTAL'S HEIGHT (a style property), and its parts share it
+ * by value, first series at the baseline. They stand 2px apart for the reason
+ * a stacked bar's do, and the gap comes out of the parts.
+ */
+.crewlet-stacked-columns__column {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  width: 63%;
+  max-width: var(--spacing-7);
+}
+
+.crewlet-stacked-columns__segment {
+  display: block;
+  flex-grow: 0;
+  flex-shrink: 1;
+  flex-basis: 0;
+  min-height: 0;
+  background: var(--crewlet-stacked-columns-segment-color, var(--color-data-other));
+}
+
+/* The VALUE END: the top of the topmost part, rounded at the smallest step.
+   The foot stays square on the baseline every column shares. */
+.crewlet-stacked-columns__segment:last-child {
+  border-top-left-radius: var(--radius-xs);
+  border-top-right-radius: var(--radius-xs);
+}
+
+.crewlet-stacked-columns__scale {
+  position: relative;
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * THE HEAD AND THE LEGEND span both of the figure's columns, the axis's and
+ * the plot's. The head is one row: what the chart is at its start, and the
+ * legend at its END, top right, where the design's Spend card draws it; the
+ * legend is flushed to the end of that row and wraps from there. Below, the
+ * legend starts under the axis, a step clear of the dates.
+ */
+.crewlet-stacked-columns__head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-3);
+  min-width: 0;
+}
+
+.crewlet-stacked-columns__heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crewlet-stacked-columns__legend--head {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  margin-inline-start: auto;
+}
+
+.crewlet-stacked-columns__legend--below {
+  grid-column: 1 / -1;
+  margin-top: var(--spacing-2);
+}
+
+/* The middle label stands on the column it names (a style property). */
+.crewlet-stacked-columns__middle {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* ─── The reading layer: a focusable plot and its tooltip ─────── */
+
+/*
+ * THE PLOT IS ONE TAB STOP, and the positioning context its tooltip stands in.
+ * Its ring is drawn on `:focus-visible` only, so a keyboard reader sees it and
+ * a click that focuses the plot on the way to a pointer reading draws none.
+ */
+.crewlet-chart-frame {
+  position: relative;
+  min-width: 0;
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-chart-frame:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/*
+ * The box stands beside the mark, at the top of the plot. Its one varying
+ * value, `left`, is a style property on the element (see ChartTooltip); the
+ * side it stands on is a class, and the gap between it and the mark is a step.
+ * It never takes the pointer, so it can never steal the reading from the mark
+ * under it.
+ *
+ * IT STANDS OVER THE DATA, BY DESIGN, and that decides its ground. A kit
+ * Tooltip or Popover floats over interface; this one floats over the columns
+ * next to the one being read and over the lines and areas of a time series. So
+ * it is not the card: in the marketing palette the card is a 5% white wash,
+ * and every data hue showed through it, taking the title to 1.12:1 and the
+ * values to 2.77:1. It is the GLASS, frosted by --blur-sm, which the palette
+ * suite holds every text step over 4.5:1 on in every palette with each data
+ * hue, the residual and the inverse ground behind it (the inverse being the far
+ * end of the palette from the glass, and so the worst backdrop anything can
+ * put there). The hairline and the medium shadow are the kit's overlay edge,
+ * and every word is a TEXT step.
+ */
+.crewlet-chart-tooltip {
+  position: absolute;
+  top: 0;
+  z-index: var(--z-index-raised);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 140px;
+  max-width: 260px;
+  padding: var(--spacing-2);
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(var(--blur-sm));
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.crewlet-chart-tooltip--after {
+  transform: translateX(var(--spacing-2));
+}
+
+.crewlet-chart-tooltip--before {
+  transform: translateX(calc(-100% - var(--spacing-2)));
+}
+
+.crewlet-chart-tooltip__title {
+  margin: 0;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-chart-tooltip__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-chart-tooltip__row,
+.crewlet-chart-tooltip__total {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0;
+}
+
+/* The key to the series: a swatch, drawn as the legend's is. It is the one
+   place a data hue appears in the tooltip, and it is a mark, never a word. */
+.crewlet-chart-tooltip__swatch {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: calc(var(--radius-xs) / 2);
+  background: var(--crewlet-chart-tooltip-swatch-color, var(--color-data-other));
+}
+
+.crewlet-chart-tooltip__name {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-chart-tooltip__value {
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-chart-tooltip__total {
+  padding-top: var(--spacing-1);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-chart-tooltip__total .crewlet-chart-tooltip__value {
+  font-weight: var(--font-weight-semibold);
 }
 
 /* ─── Activity strip ──────────────────────────────────────────── */
@@ -250,13 +655,23 @@
 /*
  * The series line. It is painted with the colour passed on the element,
  * because a series' hue is data rather than style; the shape of the stroke is
- * the one thing that is the same for all of them.
+ * the one thing that is the same for all of them. Two pixels, which is what a
+ * line a reader follows across a plot is drawn at; a sparkline's quieter
+ * stroke is its own, below.
  */
 .crewlet-chart__series {
   fill: none;
-  stroke-width: 1.75;
+  stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+
+/* The reading's crosshair: a hairline in the strong border, from the top of
+   the plot to its baseline, on the instant being read. */
+.crewlet-chart__crosshair {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+  pointer-events: none;
 }
 
 /* The window's two ends and its peak, under the plot: the scale, as words. */
@@ -270,8 +685,58 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * THE SPARKLINE: the plot stretched to the box, and, with `current`, one
+ * accent point on the last value.
+ *
+ * The point is the approved design's: an accent disc 5px across, cut out of
+ * the ground by a 2px ring in that ground's colour, so where the line runs
+ * into it the line stops a ring short of the disc rather than crossing it.
+ * The ring is `--crewlet-spark-ground`, the CARD, because a sparkline stands
+ * beside a number on a card; one on another rung sets the variable.
+ *
+ * THE PLOT GIVES UP ITS END TO THE POINT. With a point, the box keeps the
+ * disc's half and its ring back at its inline end, so the whole point stands
+ * inside the box beside whatever follows it, and the line's last value lands
+ * exactly under the disc's centre.
+ */
 .crewlet-spark {
+  --crewlet-spark-ground: var(--color-surface-subtle);
+  --crewlet-spark-point: 5px;
+  --crewlet-spark-ring: 2px;
+
+  position: relative;
   display: block;
+  box-sizing: border-box;
   width: 100%;
   overflow: visible;
+}
+
+.crewlet-spark__plot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* A shape beside a number is drawn quieter than a plot's line: the approved
+   design's 1.75 stroke, under the 2 a line across a plot takes. */
+.crewlet-spark__plot .crewlet-chart__series {
+  stroke-width: 1.75;
+}
+
+.crewlet-spark--current {
+  padding-inline-end: calc(var(--crewlet-spark-point) / 2 + var(--crewlet-spark-ring));
+}
+
+.crewlet-spark__current {
+  position: absolute;
+  inset-inline-end: var(--crewlet-spark-ring);
+  width: var(--crewlet-spark-point);
+  height: var(--crewlet-spark-point);
+  border-radius: var(--radius-circle);
+  background: var(--color-brand-accent);
+  box-shadow: 0 0 0 var(--crewlet-spark-ring) var(--crewlet-spark-ground);
+  transform: translateY(-50%);
+  pointer-events: none;
 }

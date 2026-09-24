@@ -17,6 +17,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { OPAQUE_SURFACES } from '@crewlethq/tokens/test/palette';
 import { expect, test } from 'vitest';
 
 const src = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -30,6 +31,7 @@ const SHEETS: Record<string, string> = {
   'TreeGrid/TreeGrid.css': sheet('TreeGrid/TreeGrid.css'),
   'TreeCanvas/TreeCanvas.css': sheet('TreeCanvas/TreeCanvas.css'),
   'DataView/DataView.css': sheet('DataView/DataView.css'),
+  'List/List.css': sheet('List/List.css'),
 };
 
 /** The rule block a selector opens, without its comments. */
@@ -54,14 +56,10 @@ const FILL_STEPS = [
   'feedback-warning',
   'feedback-danger',
   'feedback-info',
-  'phase-onboarding',
-  'phase-execute',
-  'phase-review',
   'data-1',
   'data-2',
   'data-3',
   'data-4',
-  'data-5',
   /*
    * Assembled rather than spelt out, because `check-css-variables.mjs` reads
    * a quoted token name in a `.tsx` file as a component DECLARING one, which
@@ -250,11 +248,6 @@ test('every surface that names a column writes the name in the same register', (
    inside a dialog, and an opaque hover is right on one of those three and a
    block of the wrong grey on the other two. So the rule is about the value,
    and it is the value that broke real screens. */
-/* Assembled rather than spelt out, for the reason FILL_STEPS is: a quoted
-   token name in a `.tsx` file reads to `check-css-variables.mjs` as a
-   component DECLARING one. */
-const ROW_HOVER_SURFACES = ['subtle', 'elevated', 'muted'].map((step) => `--color-surface-${step}`);
-
 test('a hovered row takes the overlay step, never an opaque surface', () => {
   const opaque: string[] = [];
   for (const [name, css] of Object.entries(SHEETS)) {
@@ -267,7 +260,7 @@ test('a hovered row takes the overlay step, never an opaque surface', () => {
         // so a rule reaching into a cell of a hovered row is not one of these.
         if (!/\btr[^\s]*:hover$/.test(one)) continue;
         const value = resolveLocals(css, paint[1]!);
-        for (const surface of ROW_HOVER_SURFACES) {
+        for (const surface of OPAQUE_SURFACES) {
           if (value.includes(surface)) opaque.push(`${name}: ${one} -> ${paint[1]!.trim()}`);
         }
       }
@@ -531,59 +524,60 @@ test('the table draws its own chrome at its own size, over the icon button', () 
   expect(glyph).toContain('width: var(--font-size-lg)');
 });
 
-test('the reduced-motion block outranks every rule it has to cancel', () => {
+test('the reduced-motion block names every rule it has to cancel, after it', () => {
   /*
-   * A CANCELLATION IS ONLY ONE IF IT OUTRANKS WHAT IT CANCELS. Written once,
-   * `.crewlet-data-table *` is a single class, and the rules it had to beat
-   * carry two: the row hover, the sort control, the action button, and the
-   * pager and the cog all kept their transitions for a reader who had asked
-   * for stillness. Only the document-wide rule in @crewlethq/tokens, which is
-   * `!important`, was holding the promise, and a consumer that loads the
-   * components without that sheet had nothing at all.
+   * A CANCELLATION IS ONLY ONE IF IT OUTRANKS WHAT IT CANCELS, and the only
+   * arrangement that is sure to is the SAME SELECTOR, LATER: the two tie on
+   * specificity and the stop wins on source order. This block used to be a
+   * catch-all, and it lost twice. Written as `.crewlet-data-table *` it was
+   * one class against the two of the row hover, the sort control, the action
+   * button, the pager and the cog. Doubled to two classes, and held here to
+   * "at least as specific as anything it cancels" by a count of CLASSES, it
+   * still lost to the row's own rule, which is two classes AND two elements
+   * (`… tbody tr`): the count could not see an element, so it passed while the
+   * row eased its hover for a reader who had asked for stillness. Only the
+   * document-wide `!important` rule in @crewlethq/tokens held the promise, and
+   * a consumer that loads the components without that sheet had nothing.
    *
-   * Two facts decide it, and both are read off the sheet: the block has to be
-   * at least as specific as anything it cancels, and it has to come after it,
-   * since equal specificity is settled by order.
+   * So every selector that starts a motion is named in the block, and the
+   * block comes after all of them. `npm run lint` holds every stylesheet to
+   * the same pairing, and DataTable.test.tsx puts the result to the cascade.
    */
   const css = SHEETS['DataTable/DataTable.css']!.replace(/\/\*[\s\S]*?\*\//g, '');
-  const specificity = (selector: string): number =>
-    (selector.match(/\.[A-Za-z0-9_-]+/g) ?? []).length
-    + (selector.match(/:(?!:)[a-z-]/g) ?? []).length;
+  const selectors = (list: string) => list.split(',').map((part) => part.trim().replace(/\s+/g, ' ')).filter(Boolean);
 
   const reduceAt = css.indexOf('@media (prefers-reduced-motion: reduce)');
   expect(reduceAt).toBeGreaterThan(0);
-  const stilled = block(css, '@media (prefers-reduced-motion: reduce)');
-  // The selector list is what follows the media query's own brace.
-  const cancels = stilled.split('{')[1]!.split(',').map((part) => part.trim()).filter(Boolean);
-  expect(cancels.length).toBeGreaterThan(5);
-  const floor = Math.min(...cancels.map(specificity));
+  const stops = new Set<string>();
+  for (const rule of css.slice(reduceAt).matchAll(/([^{}@]+)\{([^{}]*)\}/g)) {
+    if (/(transition|animation)\s*:\s*none/.test(rule[2] ?? '')) for (const one of selectors(rule[1] ?? '')) stops.add(one);
+  }
 
-  const animated: string[] = [];
+  const starts: string[] = [];
   for (const rule of css.matchAll(/([^{}@]+)\{([^{}]*)\}/g)) {
-    if ((rule.index ?? 0) > reduceAt) continue;
     const body = rule[2] ?? '';
     if (!/(^|\s)(transition|animation)\s*:/m.test(body)) continue;
     if (/(transition|animation)\s*:\s*none/.test(body)) continue;
-    for (const part of (rule[1] ?? '').split(',')) {
-      const selector = part.trim();
-      if (!selector || /^\d/.test(selector) || selector.startsWith('%')) continue;
-      animated.push(selector);
-    }
+    // A keyframe's stops are not rules that start anything.
+    starts.push(...selectors(rule[1] ?? '').filter((one) => !/^\d/.test(one) && one !== 'from' && one !== 'to'));
+    // Every start is above the block, so the tie goes to the stop.
+    if ((rule.index ?? 0) > reduceAt) starts.push(`after the block: ${rule[1]?.trim()}`);
   }
   // A sheet with nothing to cancel would pass for the wrong reason.
-  expect(animated.length).toBeGreaterThan(5);
-  const outranking = animated.filter((selector) => specificity(selector) > floor);
-  expect(outranking).toEqual([]);
+  expect(starts.length).toBeGreaterThan(5);
+  expect(starts.filter((one) => !stops.has(one))).toEqual([]);
 
-  // And the three parts of the table that are DRAWN SOMEWHERE ELSE, where the
-  // root is no ancestor: the chrome row a card's header takes, and the two
-  // controls inside the settings dialog.
+  // Among them the four parts of the table DRAWN SOMEWHERE ELSE, where the
+  // root is no ancestor and no catch-all through it could reach: the pager
+  // and the cog on the chrome row a card's header takes, and the two controls
+  // inside the settings dialog.
   for (const drawn of [
-    '.crewlet-data-table__chrome.crewlet-data-table__chrome *',
-    '.crewlet-data-table__items-per-page-btn.crewlet-data-table__items-per-page-btn',
-    '.crewlet-data-table__column-toggle-item.crewlet-data-table__column-toggle-item',
+    '.crewlet-data-table__chrome .crewlet-data-table__page-btn',
+    '.crewlet-data-table__chrome .crewlet-data-table__settings-btn',
+    '.crewlet-data-table__items-per-page-btn',
+    '.crewlet-data-table__column-toggle-item',
   ]) {
-    expect(cancels).toContain(drawn);
+    expect(stops).toContain(drawn);
   }
 });
 

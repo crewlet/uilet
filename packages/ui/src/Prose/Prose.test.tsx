@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { contrast, flatten, paletteStates, parseHex, type Rgb } from '@crewlethq/tokens/test/palette';
+import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex, type Rgb } from '@crewlethq/tokens/test/palette';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { Prose } from './index.js';
@@ -19,13 +19,6 @@ afterEach(cleanup);
  */
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (path: string) => readFileSync(join(here, path), 'utf8');
-
-/*
- * The surfaces a block of prose can sit on, assembled rather than spelled: the
- * package's variable check refuses a whole token name as a string literal in a
- * component source, because that is how an inline style declares one.
- */
-const SURFACES = ['background', 'subtle', 'elevated'].map((step) => `--color-surface-${step}`);
 
 /** The ink one rule sets, as a token name. */
 const inkOf = (rule: RegExpExecArray | null): string =>
@@ -65,7 +58,7 @@ test('a dimmed block still clears the floor for text, whichever tone it carries'
     for (const tone of ['default', 'muted'] as const) {
       const ink = parseHex(values.get(dimmedInk(css, tone)) ?? '');
       expect(ink).not.toBeNull();
-      for (const name of SURFACES) {
+      for (const name of OPAQUE_SURFACES) {
         const ground = parseHex(values.get(name) ?? '');
         expect(ground).not.toBeNull();
         const dimmed = flatten(`rgba(${ink?.r}, ${ink?.g}, ${ink?.b}, ${opacity})`, ground as Rgb);
@@ -76,7 +69,7 @@ test('a dimmed block still clears the floor for text, whichever tone it carries'
     }
   }
   // Nothing measured would be a green run over an empty list.
-  expect(measured.length).toBe(18);
+  expect(measured.length).toBe(24);
   expect(failures).toEqual([]);
 });
 

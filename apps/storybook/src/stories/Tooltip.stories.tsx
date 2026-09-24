@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button, IconButton, LayerHost, Tooltip } from '@crewlethq/ui';
-import { HelpGlyph, ScheduleGlyph } from '@crewlethq/icons/glyphs';
+import { CircleQuestionMarkGlyph, ClockGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * UI / Tooltip.
@@ -21,7 +21,7 @@ export const Basic: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 'var(--spacing-4)', padding: 'var(--spacing-10)' }}>
       <Tooltip content="Runs at 09:00 in Europe/Berlin">
-        <Button variant="secondary" leadingIcon={<ScheduleGlyph size="sm" />}>
+        <Button variant="secondary" leadingIcon={<ClockGlyph size="sm" />}>
           Schedule
         </Button>
       </Tooltip>
@@ -41,7 +41,7 @@ export const Hoverable: Story = {
   render: () => (
     <div style={{ padding: 'var(--spacing-10)' }}>
       <Tooltip content="The window is the last full hour the store can answer for, which is why an hour that has not finished is not offered.">
-        <IconButton label="What this means" icon={<HelpGlyph size="md" />} />
+        <IconButton label="What this means" icon={<CircleQuestionMarkGlyph size="md" />} />
       </Tooltip>
     </div>
   ),
@@ -63,7 +63,7 @@ export const OnADisabledControl: Story = {
         </Button>
       </Tooltip>
       <Tooltip content="A machine user holds one key at a time.">
-        <IconButton label="Add a key" icon={<ScheduleGlyph size="md" />} disabledReason="A machine user holds one key at a time." />
+        <IconButton label="Add a key" icon={<ClockGlyph size="md" />} disabledReason="A machine user holds one key at a time." />
       </Tooltip>
     </div>
   ),

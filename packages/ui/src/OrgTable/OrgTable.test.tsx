@@ -95,13 +95,21 @@ function mount(options: { ref?: React.Ref<TreeViewHandle>; controls?: boolean } 
       {...(options.ref === undefined ? {} : { ref: options.ref })}
       renderCell={(id, column, grid: TreeGridContext) =>
         column === 1 ? (
-          <OrgTableName
-            name={id === 'company' ? 'Nimbus' : id === 'unit:eng' ? 'Engineering' : 'Developer'}
-            caption={id === 'seat:dev' ? 'Agent seat' : 'Unit'}
-            icon={<svg />}
-            iconRing={id === 'seat:dev' ? 'dashed' : 'none'}
-            tone={TONES[id]}
-          />
+          id === 'seat:dev' ? (
+            <OrgTableName
+              name="Developer"
+              caption="Human seat"
+              avatar={{ name: 'Developer', kind: 'human' }}
+              tone={TONES[id]}
+            />
+          ) : (
+            <OrgTableName
+              name={id === 'company' ? 'Nimbus' : 'Engineering'}
+              caption="Unit"
+              icon={<svg />}
+              tone={TONES[id]}
+            />
+          )
         ) : (
           <>
             <OrgTableAdd
@@ -418,12 +426,16 @@ describe('a row name', () => {
     );
   });
 
-  /* The boundary a row standing for somebody outside the system wears, so it
-     reads to somebody who cannot separate hues at all. */
-  test('a dashed ring is a boundary rather than a hue', () => {
+  /* A seat's row leads with its badge, whose OUTLINE says what kind of seat it
+     is, so it reads to somebody who cannot separate hues at all. */
+  test("a seat's row leads with its badge, its kind as the outline", () => {
     const { container } = mount();
-    // What the ring is DRAWN as is the shared label's, and measured there.
-    expect(container.querySelector('.crewlet-org-label__icon--dashed')).not.toBeNull();
+    // What the badge is DRAWN as is the shared label's and Avatar's, and
+    // measured there; what is held here is that a row reaches it.
+    const badge = container.querySelector('.crewlet-org-label--row .crewlet-org-label__icon .crewlet-avatar');
+    expect(badge?.className).toContain('crewlet-avatar--human');
+    expect(badge?.className).toContain('crewlet-avatar--xs');
+    expect(container.innerHTML).not.toContain('dashed');
   });
 });
 
@@ -505,8 +517,8 @@ describe('what it draws', () => {
     const { container } = mount();
     const strip = container.querySelector('.crewlet-org-table__actions')!;
     // Three control steps and the two gaps between them, resolved by the
-    // cascade rather than written out: 28 * 3 + 4 * 2.
-    expect(px(strip, 'min-width')).toBe(92);
+    // cascade rather than written out: 26 * 3 + 4 * 2.
+    expect(px(strip, 'min-width')).toBe(86);
     expect(getComputedStyle(strip).justifyContent).toBe('flex-end');
   });
 

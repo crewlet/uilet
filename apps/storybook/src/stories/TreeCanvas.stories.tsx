@@ -2,13 +2,18 @@ import { useState, type CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   AddPill,
+  Avatar,
   Button,
   IconButton,
   Menu,
   OrgNodeDisclosure,
   OrgNodeLabel,
   OrgNodeLead,
+  StatusDot,
+  Tag,
   TreeCanvas,
+  type AvatarRing,
+  type TreeCanvasGroup,
   type TreeCardContext,
   type TreeCardInput,
   type TreeCardTone,
@@ -17,16 +22,15 @@ import {
 } from '@crewlethq/ui';
 import { CrewletFigure } from '@crewlethq/icons';
 import {
-  AccountTreeGlyph,
-  AddGlyph,
-  ApartmentGlyph,
+  BuildingComplexGlyph,
+  ChevronDownGlyph,
   ChevronRightGlyph,
-  CreateNewFolderGlyph,
-  DeleteGlyph,
-  EditGlyph,
-  KeyboardArrowDownGlyph,
-  PersonAddGlyph,
-  PersonGlyph,
+  FolderPlusGlyph,
+  NetworkGlyph,
+  PencilGlyph,
+  PlusGlyph,
+  TrashGlyph,
+  UserPlusGlyph,
 } from '@crewlethq/icons/glyphs';
 
 /**
@@ -55,7 +59,11 @@ interface Entity {
   name: string;
   kind: Kind;
   parent: string | null;
-  /** A human seat is drawn with the dashed edge every human seat has. */
+  /**
+   * A seat a person holds. Its card is the same as an agent's: what tells the
+   * two apart is the words under the name here, and the badge's outline in
+   * the org chart below, a circle for a person and a squircle for an agent.
+   */
   human?: boolean;
 }
 
@@ -105,11 +113,11 @@ function cards(model: TreeModel, expanded: ReadonlySet<string>): TreeCardInput[]
 
 /*
  * THE FRAME IS NOT HERE ANY MORE. The surface, the boundary, the radius, the
- * lift, the dashed edge of a human seat and the accent ring on the selected
- * node were all spelled out in this file, which is how two charts in one
- * product came to draw four different cards. TreeCanvas draws the card and the
- * two states a node can be in; `cardOutline` is what says a card stands for
- * somebody outside the system. What is left here is what a card SAYS.
+ * lift and the accent ring on the selected node were all spelled out in this
+ * file, which is how two charts in one product came to draw four different
+ * cards. TreeCanvas draws the card and the two states a node can be in, and
+ * every card the same edge, a person's seat included. What is left here is
+ * what a card SAYS.
  *
  * The pointer's controls are not drawn here either: `card.actions(id)` is the
  * whole of the strip beside a node and `renderUnder` is what hangs below a
@@ -154,7 +162,7 @@ function Card({ id, card }: { id: string; card: TreeCardContext }) {
           <IconButton
             size="sm"
             label={`${open ? 'Collapse' : 'Expand'} ${entity.name}`}
-            icon={open ? <KeyboardArrowDownGlyph /> : <ChevronRightGlyph />}
+            icon={open ? <ChevronDownGlyph /> : <ChevronRightGlyph />}
             tabIndex={-1}
             onClick={(event) => {
               event.stopPropagation();
@@ -188,14 +196,7 @@ function Card({ id, card }: { id: string; card: TreeCardContext }) {
           }}
         >
           {rows.map((row) => (
-            <div
-              key={row}
-              role="none"
-              style={{
-                border: `1px ${ENTITIES[row]!.human ? 'dashed' : 'solid'} ${ENTITIES[row]!.human ? 'var(--color-border-default)' : 'transparent'}`,
-                borderRadius: 'var(--radius-md)',
-              }}
-            >
+            <div key={row} role="none">
               <div {...card.item(row)} style={body}>
                 <span>{ENTITIES[row]!.name}</span>
                 <span style={metaText}>{ENTITIES[row]!.human ? 'Human seat' : 'Agent seat'}</span>
@@ -229,12 +230,11 @@ function Chart({ note }: { note?: string }) {
         renderCard={(id, card) => <Card id={id} card={card} />}
         renderUnder={(id) =>
           ENTITIES[id]!.kind === 'seat' ? null : (
-            <Button size="small" variant="tertiary" tabIndex={-1} leadingIcon={<AddGlyph />}>
+            <Button size="small" variant="ghost" tabIndex={-1} leadingIcon={<PlusGlyph />}>
               Add
             </Button>
           )
         }
-        cardOutline={(id) => ENTITIES[id]?.human === true}
         hasNodeMenu={() => true}
         onNodeKey={() => true}
         selectedId={selected}
@@ -267,15 +267,15 @@ function Chart({ note }: { note?: string }) {
 }
 
 /**
- * Dashed cards for the human seats, one selected node, and a menu in the
- * overlay that the zoom neither scales nor clips.
+ * One selected node, and a menu in the overlay that the zoom neither scales
+ * nor clips.
  *
- * Every frame on this canvas is the component's: the card, its dashed variant,
- * the inset on each node, the accent ring on the selected one and the ring a
- * keyboard leaves behind it. The canvas stands on the page's own ground so the
- * cards read as objects on a field rather than as one sheet, and the connectors
- * curve from each parent's bottom into each child's top, dark enough to be
- * measured rather than the hairline they were.
+ * Every frame on this canvas is the component's: the card, the inset on each
+ * node, the accent ring on the selected one and the ring a keyboard leaves
+ * behind it. The canvas stands on the page's own ground so the cards read as
+ * objects on a field rather than as one sheet, and the connectors are elbows
+ * from each parent's bottom into each child's top, dark enough to be measured
+ * rather than the hairline they were.
  *
  * At rest the chart is cards and connectors: point at one and its controls
  * appear over the card's end, and the control that adds a child appears on the
@@ -315,22 +315,19 @@ const LEADS: Record<string, string> = {
 function NodeCard({ id, card }: { id: string; card: TreeCardContext }) {
   const entity = ENTITIES[id]!;
   const open = card.expanded(id);
-  const icon =
-    entity.kind === 'company' ? (
-      <ApartmentGlyph />
-    ) : entity.kind === 'unit' ? (
-      <AccountTreeGlyph />
-    ) : entity.human === true ? (
-      <PersonGlyph size="sm" />
-    ) : (
-      <CrewletFigure motion="idle" />
-    );
+  /* A container is a glyph; a seat is its badge, whose outline is its kind: a
+     squircle for an agent and a circle for a person. */
+  const mark =
+    entity.kind === 'company'
+      ? { icon: <BuildingComplexGlyph /> }
+      : entity.kind === 'unit'
+        ? { icon: <NetworkGlyph /> }
+        : { avatar: { name: entity.name, kind: entity.human === true ? ('human' as const) : ('agent' as const) } };
   return (
     <>
       <div {...card.item(id)}>
         <OrgNodeLabel
-          icon={icon}
-          iconRing={entity.human === true ? 'dashed' : 'none'}
+          {...mark}
           name={entity.name}
           caption={
             entity.kind === 'company'
@@ -356,7 +353,7 @@ function NodeCard({ id, card }: { id: string; card: TreeCardContext }) {
           <IconButton
             size="sm"
             label={`${open ? 'Collapse' : 'Expand'} ${entity.name}`}
-            icon={open ? <KeyboardArrowDownGlyph /> : <ChevronRightGlyph />}
+            icon={open ? <ChevronDownGlyph /> : <ChevronRightGlyph />}
             tabIndex={-1}
             onClick={(event) => {
               event.stopPropagation();
@@ -368,13 +365,13 @@ function NodeCard({ id, card }: { id: string; card: TreeCardContext }) {
       <div {...card.actions(id)}>
         <Menu
           label={`Actions for ${entity.name}`}
-          icon={<EditGlyph />}
+          icon={<PencilGlyph />}
           items={[{ key: 'edit', label: 'Edit', onSelect: () => {} }]}
           triggerTabIndex={-1}
         />
         <Menu
           label={`Delete ${entity.name}`}
-          icon={<DeleteGlyph />}
+          icon={<TrashGlyph />}
           items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => {} }]}
           triggerTabIndex={-1}
           open={card.menuOpen(id)}
@@ -430,8 +427,9 @@ function nodeCards(model: TreeModel, expanded: ReadonlySet<string>): TreeCardInp
  *
  * Everything the `card` appearance guarantees is still here: the tree pattern
  * and its keys, the roving tab stop, the focus ring drawn inside the clipping
- * viewport, the reveal of every pointer-only control by focus as well as by
- * hover, and the dashed boundary on a seat nobody inside the system holds.
+ * viewport, and the reveal of every pointer-only control by focus as well as
+ * by hover. A person's seat is the same solid card as an agent's: its badge's
+ * circle is what says a person holds it.
  */
 export const OrgChart: Story = {
   render: function OrgChartStory() {
@@ -456,7 +454,7 @@ export const OrgChart: Story = {
                   {
                     key: 'unit',
                     label: 'Add a unit',
-                    icon: <CreateNewFolderGlyph />,
+                    icon: <FolderPlusGlyph />,
                     onSelect: () => {},
                   },
                   {
@@ -468,14 +466,13 @@ export const OrgChart: Story = {
                   {
                     key: 'human',
                     label: 'Add a human seat',
-                    icon: <PersonAddGlyph />,
+                    icon: <UserPlusGlyph />,
                     onSelect: () => {},
                   },
                 ]}
               />
             )
           }
-          cardOutline={(id) => ENTITIES[id]?.human === true}
           hasNodeMenu={() => true}
           onNodeKey={() => true}
           selectedId={selected}
@@ -524,7 +521,7 @@ export const AddingANode: Story = {
                   {
                     key: 'unit',
                     label: 'Add a unit',
-                    icon: <CreateNewFolderGlyph />,
+                    icon: <FolderPlusGlyph />,
                     onSelect: () => {
                       setName('');
                       setAdding(id);
@@ -543,7 +540,6 @@ export const AddingANode: Story = {
               />
             )
           }
-          cardOutline={(id) => ENTITIES[id]?.human === true}
           hasNodeMenu={() => true}
           onNodeKey={() => true}
           composing={
@@ -568,7 +564,7 @@ export const AddingANode: Story = {
                         <input value={name} onChange={(event) => setName(event.target.value)} />
                       </label>
                       <div style={{ display: 'flex', gap: 'var(--spacing-2)', justifyContent: 'flex-end' }}>
-                        <Button variant="tertiary" onClick={() => setAdding(null)}>
+                        <Button variant="ghost" onClick={() => setAdding(null)}>
                           Cancel
                         </Button>
                         <Button variant="primary" type="submit">
@@ -579,6 +575,153 @@ export const AddingANode: Story = {
                   ),
                 }
           }
+        />
+      </div>
+    );
+  },
+};
+
+/* -------------------------------------------------------------------------
+ * Units as boxes, and elbow connectors: the approved org chart.
+ * ---------------------------------------------------------------------- */
+
+type SeatState = 'working' | 'needs' | 'stopped' | 'idle';
+
+interface Seat {
+  name: string;
+  human?: boolean;
+  unit: string;
+  state: SeatState;
+  line: string;
+  reportsTo: string | null;
+}
+
+/** The artboard's company: a founder, a CEO, two leads and the four seats under them. */
+const SEATS: Record<string, Seat> = {
+  founder: { name: 'Jane Founder', human: true, unit: 'Founder', state: 'idle', line: 'Human · reviews releases', reportsTo: null },
+  ceo: { name: 'CEO', unit: 'Leadership · Executives', state: 'idle', line: 'Idle · last turn 24m ago', reportsTo: 'founder' },
+  cto: { name: 'CTO', unit: 'Leadership · Executives', state: 'working', line: 'Reviewing !231', reportsTo: 'ceo' },
+  pm: { name: 'PM', unit: 'Product · Management', state: 'working', line: 'Drafting the launch brief', reportsTo: 'ceo' },
+  swe: { name: 'SWE', unit: 'Engineering · Core', state: 'working', line: 'Executing ENG-412', reportsTo: 'cto' },
+  fe: { name: 'Frontend SWE', unit: 'Engineering · Core', state: 'needs', line: 'Needs you · run parked', reportsTo: 'cto' },
+  ai: { name: 'AI Systems', unit: 'Engineering · Core', state: 'working', line: '3 workers on ENG-405', reportsTo: 'cto' },
+  devrel: { name: 'DevRel', unit: 'Product · Developer Relations', state: 'stopped', line: 'Stopped · budget', reportsTo: 'pm' },
+};
+
+/** What a seat is DOING is its ring and its dot, never who it is: the dashboard's own mapping. */
+const RING: Record<SeatState, AvatarRing | undefined> = {
+  working: 'info',
+  needs: 'warning',
+  stopped: 'danger',
+  idle: undefined,
+};
+const DOT = { working: 'info', needs: 'warning', stopped: 'danger', idle: 'neutral' } as const;
+
+const SEAT_NODES: TreeInput[] = (function build() {
+  const node = (id: string): TreeInput => ({
+    id,
+    label: SEATS[id]!.name,
+    children: Object.keys(SEATS)
+      .filter((child) => SEATS[child]!.reportsTo === id)
+      .map(node),
+  });
+  return [node('founder')];
+})();
+
+/** A unit round the seats in it that report to one lead, with the project key its work is filed under. */
+const UNIT_GROUPS: TreeCanvasGroup[] = [
+  {
+    id: 'unit:eng-core',
+    label: 'Engineering · Core',
+    lead: (
+      <Tag size="xs" monospace>
+        ENG
+      </Tag>
+    ),
+    memberIds: ['swe', 'fe', 'ai'],
+  },
+  {
+    id: 'unit:devrel',
+    label: 'Developer Relations',
+    lead: (
+      <Tag size="xs" monospace>
+        PROD
+      </Tag>
+    ),
+    memberIds: ['devrel'],
+  },
+];
+
+function SeatCard({ id, card }: { id: string; card: TreeCardContext }) {
+  const seat = SEATS[id]!;
+  return (
+    <div {...card.item(id)} style={body}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+        <Avatar name={seat.name} size="sm" kind={seat.human ? 'human' : 'agent'} ring={RING[seat.state]} decorative />
+        <strong style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {seat.name}
+        </strong>
+        <Tag size="xs">{seat.human ? 'Human' : 'Agent'}</Tag>
+      </span>
+      <span style={metaText}>{seat.unit}</span>
+      {/* The dot and its word as one line, so the room between them is the
+          kit's and clears the working dot's halo. */}
+      <span style={metaText}>
+        <StatusDot tone={DOT[seat.state]} pulse={seat.state === 'working'}>
+          {seat.line}
+        </StatusDot>
+      </span>
+    </div>
+  );
+}
+
+function seatCards(model: TreeModel, expanded: ReadonlySet<string>): TreeCardInput[] {
+  const card = (id: string): TreeCardInput => ({
+    id,
+    children: expanded.has(id) ? (model.children.get(id) ?? []).map(card) : [],
+  });
+  return model.roots.map(card);
+}
+
+/**
+ * Units drawn as boxes round the seats in them, joined by elbows.
+ *
+ * `groups` encloses a run of sibling cards in a dashed box on the card rung,
+ * with the unit's name along its top in the tertiary ink and the project key
+ * its work is filed under ahead of it, as the org chart reads it: "ENG
+ * Engineering · Core". Each agent's monogram is two letters even where its
+ * name is one word (CEO is CE, DevRel is DR), which is `Avatar`'s own rule. The box is room the layout
+ * keeps, not a frame drawn over it: a seat outside a unit is held a gap clear
+ * of the unit's BOX, and two units never overlap. The label is drawn over the
+ * branches on the box's own fill, and each member card is described by it, so
+ * a screen reader walking the tree hears which unit a seat is in.
+ *
+ * The connectors are the default `elbow`: down, a 6px corner, across above the
+ * box a parent's children are in, another corner and down, every piece of it
+ * vertical or horizontal. They are drawn at the design's 1.5px in the control
+ * border step, because the strong border step the artboard draws them in
+ * measures 1.45:1 on the canvas and a connector is held to 3:1.
+ *
+ * Close the CTO (Left on its card) and its unit's box goes with its seats;
+ * open it again (Right) and the box comes back round them.
+ */
+export const UnitGroups: Story = {
+  render: function UnitGroupsStory() {
+    const [selected, setSelected] = useState<string | null>('swe');
+    return (
+      <div style={{ height: '80vh', padding: 'var(--spacing-4)' }}>
+        <TreeCanvas
+          label="Org chart"
+          nodes={SEAT_NODES}
+          cards={seatCards}
+          cardOf={(id) => id}
+          ranks="shared"
+          groups={UNIT_GROUPS}
+          renderCard={(id, card) => <SeatCard id={id} card={card} />}
+          hasNodeMenu={() => false}
+          onNodeKey={() => true}
+          selectedId={selected}
+          onSelect={setSelected}
         />
       </div>
     );

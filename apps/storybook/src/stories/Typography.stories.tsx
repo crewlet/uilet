@@ -14,8 +14,9 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
-const SIZES = ['2xs', 'xs', 'compact', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl'];
+const SIZES = ['2xs', 'xs', 'compact', 'sm', 'md', 'lg', 'xl', '2xl', 'display', '3xl', '4xl', '5xl'];
 const WEIGHTS = ['regular', 'medium', 'semibold', 'bold', 'extrabold'];
+const LEADING = ['tight', 'snug', 'body', 'normal', 'relaxed'];
 const TRACKING = ['tight', 'snug', 'normal', 'wide', 'wider'];
 const CONTROLS = ['sm', 'md', 'lg'];
 const ROWS = ['sm', 'md', 'lg'];
@@ -29,7 +30,8 @@ export const TypeScale: Story = {
       <section>
         <h2>Size</h2>
         <p style={{ color: 'var(--color-text-secondary)' }}>
-          Emitted in rem, so a reader who has set a larger default text size gets one.
+          Emitted in rem, so a reader who has set a larger default text size gets one. The body is{' '}
+          <code>compact</code>, 13px, and <code>display</code> is the one number on a tile and a page's greeting.
         </p>
         {SIZES.map((step) => (
           <div key={step} style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--spacing-4)' }}>
@@ -45,6 +47,22 @@ export const TypeScale: Story = {
           <div key={step} style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--spacing-4)' }}>
             <code style={{ ...quiet, minWidth: '10ch' }}>{step}</code>
             <span style={{ fontWeight: `var(--font-weight-${step})` }}>A company of agents, reporting.</span>
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <h2>Line height</h2>
+        <p style={{ color: 'var(--color-text-secondary)' }}>
+          Each step sets two lines of the body size, so the space between them is the step. <code>body</code> is the
+          document's own, and what a keycap, a monogram and the rail's lockup take to stand on the line around them.
+        </p>
+        {LEADING.map((step) => (
+          <div key={step} style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--spacing-4)' }}>
+            <code style={{ ...quiet, minWidth: '10ch' }}>{step}</code>
+            <span style={{ fontSize: 'var(--font-size-compact)', lineHeight: `var(--font-line-height-${step})`, maxWidth: '24ch' }}>
+              A company of agents, reporting on what each of them did today.
+            </span>
           </div>
         ))}
       </section>

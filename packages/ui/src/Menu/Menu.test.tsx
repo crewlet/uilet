@@ -12,7 +12,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import axe from 'axe-core';
 import { useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { EditGlyph, MoveItemGlyph } from '@crewlethq/icons/glyphs';
+import { FolderInputGlyph, PencilGlyph } from '@crewlethq/icons/glyphs';
 import { LAYER_REPOSITION_EVENT, LayerHost, useModalLayer } from '../Layer/index.js';
 import { Menu, type MenuEntry } from './index.js';
 
@@ -97,8 +97,8 @@ test('a destructive row that cannot be pressed is drawn unavailable, its glyph w
 
 function entries(overrides: { onEdit?: () => void; onDelete?: () => void } = {}): MenuEntry[] {
   return [
-    { key: 'edit', label: 'Edit', icon: <EditGlyph />, onSelect: overrides.onEdit ?? (() => {}) },
-    { key: 'move', label: 'Move to', icon: <MoveItemGlyph />, onSelect: () => {} },
+    { key: 'edit', label: 'Edit', icon: <PencilGlyph />, onSelect: overrides.onEdit ?? (() => {}) },
+    { key: 'move', label: 'Move to', icon: <FolderInputGlyph />, onSelect: () => {} },
     { key: 'open', label: 'Open seat', disabled: true, onSelect: () => {} },
     { kind: 'separator', key: 'sep' },
     { key: 'delete', label: 'Delete', danger: true, onSelect: overrides.onDelete ?? (() => {}) },
@@ -451,11 +451,11 @@ test('the open menu carries no accessibility violation', async () => {
         { key: 'none', label: 'No lead', checked: false, onSelect: () => {} },
         { key: 'vpe', label: 'VP Engineering', checked: true, onSelect: () => {} },
         { kind: 'separator', key: 'sep' },
-        { key: 'edit', label: 'Edit', icon: <EditGlyph />, hint: 'E', onSelect: () => {} },
+        { key: 'edit', label: 'Edit', icon: <PencilGlyph />, hint: 'E', onSelect: () => {} },
         {
           key: 'move',
           label: 'Move to',
-          icon: <MoveItemGlyph />,
+          icon: <FolderInputGlyph />,
           description: 'Pick a new unit for this seat',
           onSelect: () => {},
         },

@@ -10,7 +10,7 @@ import { dirname, relative, resolve, sep } from 'node:path';
 // the soft and line steps below are the theme's own fill at a fixed alpha, and
 // a second hex-to-rgba helper here would be the first place a tint could drift
 // from the one the palette suite measures.
-import { withAlpha } from '../test/color.mjs';
+import { parseHex, withAlpha } from '../test/color.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -19,10 +19,12 @@ const root = resolve(__dirname, '..');
 // The token source
 // ---------------------------------------------------------------------------
 
-// tokens/*.json holds the base: the marketing palette weblet reads, and every
-// token that does not change with a theme. tokens/themes/*.json holds the
-// slots that do. The base carries the DARK value of every themed slot, so an
-// application that imports tokens.css alone still has a value for all of them.
+// tokens/*.json holds the base (every file but intent.json, the design record;
+// see INTENT_FILE): the marketing palette weblet reads, and every token that
+// does not change with a theme. tokens/themes/*.json holds the slots that do.
+// The base carries a value for every themed slot (the marketing palette's,
+// which is dark), so an application that imports tokens.css alone still has a
+// value for all of them; the palette suite asserts it.
 const tokensDir = resolve(root, 'tokens');
 const themesDir = resolve(tokensDir, 'themes');
 const fontsDir = resolve(root, 'fonts');
@@ -38,7 +40,6 @@ const fontsUrlBase = relative(cssDir, fontsDir).split(sep).join('/');
 const SOFT_ALPHA = 0.12;
 const LINE_ALPHA = 0.3;
 const SOFT_AND_LINE = ['success', 'warning', 'danger', 'info'];
-const SOFT_ONLY = ['onboarding', 'execute', 'review'];
 
 // A node hue's three drawn steps, on the same principle: the hue is the one
 // source and every alpha follows it. They are their own numbers rather than
@@ -52,15 +53,32 @@ const NODE_LINE_ALPHA = 0.38;
 const NODE_HALO_ALPHA = 0.16;
 const NODE_HUES = ['purple', 'cyan', 'green', 'amber', 'rose', 'blue'];
 
+// The accent's two companions, on the same principle, and per palette because
+// the accent is: `accentRgb` is the accent as an r, g, b triple, for a
+// stylesheet composing a translucent tint of its own, and `accentSoftStrong`
+// is the accent at this alpha, the border paired with the soft fill. Neither
+// has a free parameter per palette, so neither is written down. The soft fill
+// itself IS written, in each palette's file, because its alpha is fitted per
+// palette against the hover overlay it has to outread; the build suite holds
+// its r, g, b to the accent's.
+const ACCENT_LINE_ALPHA = 0.32;
+
+// tokens/intent.json sits beside the token source and is not part of it: it
+// is the approved design every colour here is measured from, keyed by the
+// design's own names, and scripts/fit-palette.mjs is what reads it. Merged as
+// a group it would emit a custom property for every declaration the design
+// makes, under names no stylesheet should ever read.
+const INTENT_FILE = 'intent.json';
+
 async function readTokenFile(path) {
   return JSON.parse(await readFile(path, 'utf8'));
 }
 
-/** Every tokens/*.json merged, in name order, with tokens/themes/ left out. */
+/** Every tokens/*.json merged, in name order, with tokens/themes/ and the design record left out. */
 async function readBaseTokens() {
   const merged = {};
   for (const entry of (await readdir(tokensDir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+    if (!entry.isFile() || !entry.name.endsWith('.json') || entry.name === INTENT_FILE) continue;
     const group = await readTokenFile(resolve(tokensDir, entry.name));
     for (const [name, value] of Object.entries(group)) {
       if (name in merged) throw new Error(`tokens/${entry.name}: the group "${name}" is already declared by another file`);
@@ -84,14 +102,15 @@ function deriveTints(tokens, where) {
     tokens.color.feedback[`${name}Soft`] = { value: withAlpha(fill('feedback', name), SOFT_ALPHA) };
     tokens.color.feedback[`${name}Line`] = { value: withAlpha(fill('feedback', name), LINE_ALPHA) };
   }
-  for (const name of SOFT_ONLY) {
-    tokens.color.phase[`${name}Soft`] = { value: withAlpha(fill('phase', name), SOFT_ALPHA) };
-  }
   for (const name of NODE_HUES) {
     tokens.color.node[`${name}Fill`] = { value: withAlpha(fill('node', name), NODE_FILL_ALPHA) };
     tokens.color.node[`${name}Line`] = { value: withAlpha(fill('node', name), NODE_LINE_ALPHA) };
     tokens.color.node[`${name}Halo`] = { value: withAlpha(fill('node', name), NODE_HALO_ALPHA) };
   }
+  const accent = parseHex(fill('brand', 'accent'));
+  if (accent === null) throw new Error(`${where}: color.brand.accent is "${fill('brand', 'accent')}"; the accent is authored as #rrggbb, and its companions are derived from it`);
+  tokens.color.brand.accentRgb = { value: `${accent.r}, ${accent.g}, ${accent.b}` };
+  tokens.color.brand.accentSoftStrong = { value: withAlpha(fill('brand', 'accent'), ACCENT_LINE_ALPHA) };
   return tokens;
 }
 
@@ -319,20 +338,22 @@ const legacyAliases = `/* Generated by style-dictionary. Legacy aliases mapping 
    so an alias resolved there follows a theme switch. Override an alias on
    :root or on a descendant of it. */
 :root {
-  /* Brand */
-  --accent: var(--color-brand-primary);
-  --primary-blue: var(--color-brand-primary);
-  --accent-purple: var(--color-brand-primary);
+  /* Brand. The three names a pre-token stylesheet spelled its one brand
+     colour with all read the accent, which is the primary action's fill. */
+  --accent: var(--color-brand-accent);
+  --primary-blue: var(--color-brand-accent);
+  --accent-purple: var(--color-brand-accent);
   --accent-purple-deep: var(--color-brand-accent-deep);
   --accent-pink: var(--color-brand-highlight);
   --accent-slate: var(--color-brand-slate);
   --accent-gradient: var(--color-brand-gradient);
 
-  /* Surface ramp */
-  --bg-primary: var(--color-surface-topbar);
-  --bg-secondary: var(--color-surface-topbar-lift);
-  --bg-tertiary: var(--color-surface-topbar-active);
-  --bg-elevated: var(--color-surface-topbar-active);
+  /* Surface ramp: the sheet, the card and raised. A stylesheet written
+     before the frame existed has no name for it; its page is the sheet. */
+  --bg-primary: var(--color-surface-background);
+  --bg-secondary: var(--color-surface-subtle);
+  --bg-tertiary: var(--color-surface-elevated);
+  --bg-elevated: var(--color-surface-elevated);
 
   /* Text */
   --text-primary: var(--color-text-primary);
@@ -350,58 +371,76 @@ const legacyAliases = `/* Generated by style-dictionary. Legacy aliases mapping 
 `;
 
 /**
- * The theme contract, in three states.
+ * The theme contract, in three blocks, DARK FIRST.
  *
- *   :root                                                  light
- *   @media (prefers-color-scheme: dark) :root:not([data-theme="light"])   dark
- *   :root[data-theme="dark"]                               dark
+ *   :root                                                                   dark
+ *   @media (prefers-color-scheme: light) :root:not([data-theme="dark"])     light
+ *   :root[data-theme="light"]                                               light
  *
- * Light on the bare :root, so a document that sets nothing is light; the media
- * block for a reader whose system asks for dark; the attribute block so an
- * explicit choice wins in BOTH directions, which a media query alone cannot
- * do. The two dark blocks are written from one generated string, and the
- * palette suite compares them anyway.
+ * Dark on the bare :root, because dark is the palette the product is drawn in:
+ * a document that sets nothing, and a browser that reports no preference at
+ * all, get the palette every screen was designed against rather than its
+ * translation. The media block is for a reader whose system asks for light;
+ * the attribute block is so an explicit choice wins in BOTH directions, which
+ * a media query alone cannot do.
+ *
+ * THE GUARD ON THE MEDIA BLOCK IS WHAT MAKES AN EXPLICIT DARK WIN. There is no
+ * dark attribute block, because the bare root already is one: an explicit
+ * dark has only to stop the light media block from matching, and
+ * `:not([data-theme="dark"])` is what does that. Without it a reader on a
+ * light system who chose dark would be repainted light by the media block,
+ * which comes later in the file at the same specificity. The guard names
+ * "dark" rather than "any attribute" so a value nobody declares (a
+ * `data-theme="system"` somebody wrote by hand) still follows the system
+ * instead of freezing the page dark.
+ *
+ * The two light blocks are written from one generated string, and the palette
+ * suite compares them anyway. The ui-tests ThemeSwitcher suite drives the
+ * built file through both systems and all three choices.
  *
  * This file is imported AFTER tokens.css. Both use the :root selector and
  * neither adds specificity, so the later import is the one that paints, and
  * the palette suite reads the cascade in that same order.
  */
 function themeOverrides(light, dark) {
-  return `/* Generated by style-dictionary. The light and dark palettes, as a
+  return `/* Generated by style-dictionary. The dark and light palettes, as a
    three-state contract on the root element. Import it after tokens.css:
        import '@crewlethq/tokens/css';
        import '@crewlethq/tokens/css/themes';
 
-   A document with no data-theme attribute is light, or dark if its system
-   asks for dark. Setting data-theme="light" or data-theme="dark" on
-   <html> pins one, and wins in both directions. Remove the attribute to
-   follow the system again. Both dark blocks are generated from one source. */
+   Dark first: a document with no data-theme attribute is dark, or light if
+   its system asks for light. Setting data-theme="dark" or data-theme="light"
+   on <html> pins one, and wins in both directions. Remove the attribute to
+   follow the system again. Both light blocks are generated from one
+   source. */
 
-/* Light. The default, on the bare root, so a document that sets nothing gets
-   a complete palette. */
+/* Dark. The default, on the bare root, so a document that sets nothing, and a
+   browser that reports no preference, get a complete palette. */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-${light}
+${dark}
 }
 
-/* Dark, for a reader whose system asks for it and who has not pinned light. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
+/* Light, for a reader whose system asks for it and who has not pinned dark.
+   The :not() is what lets an explicit dark win on a light system: there is no
+   dark attribute block, because the bare root above already is one. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
 
-${dark
+${light
   .split('\n')
   .map((line) => (line === '' ? line : `  ${line}`))
   .join('\n')}
   }
 }
 
-/* An explicit choice, which wins whichever way the system is set. */
-:root[data-theme="dark"] {
-  color-scheme: dark;
+/* An explicit light, which wins whichever way the system is set. */
+:root[data-theme="light"] {
+  color-scheme: light;
 
-${dark}
+${light}
 }
 `;
 }
@@ -476,12 +515,16 @@ ${declarations}
 // fonts/SHA256SUMS for the checksum every file is verified against below.
 //
 // The unicode ranges are the latin and latin-ext ranges from the same Google
-// Fonts stylesheet responses the files were downloaded from, so a page that
-// renders only basic Latin text downloads a single file per family.
-// latin-ext is declared first: the two ranges share
-// U+0304, U+0308 and U+0329, and when faces with identical descriptors
-// overlap the browser checks the one declared last first, so those combining
-// marks resolve from the latin file a Latin page has already downloaded.
+// Fonts stylesheet responses the files were downloaded from (the Geist and
+// Geist Mono responses declare identical ones), so a page that renders only
+// basic Latin text downloads a single file per family.
+// latin-ext is declared first. The two ranges share U+0131, U+0152-0153,
+// U+0304, U+0308, U+0329 and U+2020, and where faces with identical
+// descriptors overlap the browser tries the one declared last first, so a
+// shared character resolves from the latin file a Latin page has already
+// downloaded whenever that file draws it. In Geist and Geist Mono it draws all
+// of them but U+2020 (the dagger, which only latin-ext draws) and U+0329
+// (which neither draws).
 const FONT_SUBSETS = [
   {
     name: 'latin-ext',
@@ -495,14 +538,16 @@ const FONT_SUBSETS = [
   },
 ];
 
-// `weight` is the wght axis range recorded in each shipped file's fvar table
-// (Inter 100 to 900, JetBrains Mono 100 to 800). Declaring the real range lets
-// the browser render every font.weight token inside it from the variable font
-// instead of synthesising bold; a narrower range would clamp the heavier
-// weights the file can actually draw.
+// `family` is the name ID 1 every file of the family carries, and `weight` is
+// the wght axis range recorded in each file's fvar table (100 to 900 for both
+// Geist and Geist Mono). Declaring the real range lets the browser render
+// every font.weight token inside it from the variable font instead of
+// synthesising bold; a narrower range would clamp the heavier weights the file
+// can actually draw. test/fonts.test.mjs reads both out of the files and holds
+// the emitted rules to them.
 const FONT_FAMILIES = [
-  { family: 'Inter', file: 'inter', weight: '100 900' },
-  { family: 'JetBrains Mono', file: 'jetbrains-mono', weight: '100 800' },
+  { family: 'Geist', file: 'geist', weight: '100 900' },
+  { family: 'Geist Mono', file: 'geist-mono', weight: '100 900' },
 ];
 
 // Reads fonts/SHA256SUMS (the `shasum -a 256` output format) into a map of
@@ -566,7 +611,7 @@ const fontFacesHeader = `/* Generated by style-dictionary. Self-hosted faces for
        import '@crewlethq/tokens/css/fonts';
    Apps that already load these fonts at the shell can skip this file.
 
-   Inter and JetBrains Mono are licensed under the SIL Open Font License 1.1.
+   Geist and Geist Mono are licensed under the SIL Open Font License 1.1.
    See fonts/OFL.txt in this package. */
 `;
 

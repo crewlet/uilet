@@ -1,5 +1,5 @@
 import { forwardRef, useRef, useState, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react';
-import { CloseGlyph } from '@crewlethq/icons/glyphs';
+import { XGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
@@ -150,7 +150,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       {trailing ? <span className="crewlet-input__trailing">{trailing}</span> : null}
       {onClear && filled ? (
         <span className="crewlet-input__clear">
-          <IconButton size="sm" variant="ghost" label={clearLabel} icon={<CloseGlyph size="xs" />} onClick={clear} disabled={disabled} />
+          <IconButton size="sm" variant="ghost" label={clearLabel} icon={<XGlyph size="xs" />} onClick={clear} disabled={disabled} />
         </span>
       ) : null}
     </div>

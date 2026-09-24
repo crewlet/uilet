@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import { Fragment, type HTMLAttributes, type ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -56,9 +56,12 @@ export interface KbdProps extends HTMLAttributes<HTMLElement> {
    * A shortcut as the keys it is pressed with, in order: `['Mod', 'Shift',
    * 'z']`. `Mod` is the platform's command key, so one hint is right on both.
    *
-   * With `keys`, the caps are drawn hidden and ONE SENTENCE is read instead:
-   * "Command plus Shift plus Z". A screen reader given the glyphs reads
-   * "place of interest sign Z", which names nothing anybody presses.
+   * The chord is drawn as ONE cap, in the platform's own notation: `⌘⇧Z` on
+   * an Apple platform, where the menus print a chord's symbols run together,
+   * and `Ctrl+Shift+Z` everywhere else, where they print them joined by a
+   * plus. The cap is drawn hidden and ONE SENTENCE is read instead: "Command
+   * plus Shift plus Z". A screen reader given the glyphs reads "place of
+   * interest sign Z", which names nothing anybody presses.
    */
   keys?: readonly string[] | undefined;
   /** Overrides platform detection, for a suite or a screenshot. */
@@ -74,11 +77,19 @@ export interface KbdProps extends HTMLAttributes<HTMLElement> {
  * `keys` is a whole shortcut, which needs the platform mapping and the spoken
  * sentence. A hint that says Ctrl+Z to somebody on a Mac names a key they do
  * not press.
+ *
+ * A CHORD IS ONE CAP. The keys of a shortcut are pressed together, so they
+ * are printed together, `⌘K` as the approved design draws every shortcut it
+ * shows; a cap per key read as a sequence to press one after another. Each
+ * key is still its own `kbd` inside the cap, which is how a key combination
+ * is marked up. Two shortcuts are two `Kbd`s: `↑` and `↓` beside "to move" are
+ * two keys that each do it, not a chord.
  */
 export const Kbd = ({ subtle = false, keys, apple, className, children, ...rest }: KbdProps) => {
+  const cap = cx('crewlet-kbd', subtle && 'crewlet-kbd--subtle');
   if (keys === undefined) {
     return (
-      <kbd {...rest} className={cx('crewlet-kbd', subtle && 'crewlet-kbd--subtle', className)}>
+      <kbd {...rest} className={cx(cap, className)}>
         {children}
       </kbd>
     );
@@ -87,13 +98,14 @@ export const Kbd = ({ subtle = false, keys, apple, className, children, ...rest 
   const mapped = keys.map((key) => keyGlyph(key, onApple));
   return (
     <span {...rest} className={cx('crewlet-kbd-combo', className)}>
-      <span className="crewlet-kbd-keys" aria-hidden>
+      <kbd className={cap} aria-hidden>
         {mapped.map((key, index) => (
-          <kbd key={index} className={cx('crewlet-kbd', subtle && 'crewlet-kbd--subtle')}>
-            {key.glyph}
-          </kbd>
+          <Fragment key={index}>
+            {index > 0 && !onApple ? '+' : null}
+            <kbd className="crewlet-kbd__key">{key.glyph}</kbd>
+          </Fragment>
         ))}
-      </span>
+      </kbd>
       <VisuallyHidden>{mapped.map((key) => key.spoken).join(' plus ')}</VisuallyHidden>
     </span>
   );

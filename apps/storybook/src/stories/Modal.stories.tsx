@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button, ConfirmModal, Checkbox, FormField, Input, Modal } from '@crewlethq/ui';
-import { EditGlyph } from '@crewlethq/icons/glyphs';
+import { PencilGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * UI / Modal.
@@ -29,10 +29,10 @@ export const Basic: Story = {
           onClose={() => setOpen(false)}
           title="Edit project name"
           subtitle="Visible to project members only."
-          icon={<EditGlyph size="md" />}
+          icon={<PencilGlyph size="md" />}
           footer={
             <>
-              <Button variant="tertiary" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
               <Button variant="primary" onClick={() => setOpen(false)}>Save</Button>
             </>
           }
@@ -119,7 +119,7 @@ export const Stacked: Story = {
           footerStart="Last saved a moment ago"
           footer={
             <>
-              <Button variant="tertiary" onClick={() => setPrompt(true)}>Discard</Button>
+              <Button variant="ghost" onClick={() => setPrompt(true)}>Discard</Button>
               <Button variant="primary" onClick={() => setSheet(false)}>Save</Button>
             </>
           }
@@ -184,7 +184,7 @@ export const FormSubmit: Story = {
           onSubmit={() => { setSaved(name); setOpen(false); }}
           footer={
             <>
-              <Button variant="tertiary" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit" variant="primary">Create</Button>
             </>
           }

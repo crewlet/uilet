@@ -27,23 +27,24 @@
 }
 
 /*
- * TWO GROUNDS, TWO DEVICES. On light the shadow is the elevation; on dark a
- * shadow over a dark page is nearly invisible, so the hairline along the top
- * edge does the job instead.
+ * THE CARD IS FLAT: the card rung inside the default hairline, at the 12px
+ * corner, and nothing else, which is the approved design's card in both
+ * palettes. It casts no shadow and draws no rim of light, because what finds a
+ * card on the sheet is the pair the palette suite holds together: the rung a
+ * visible step off the sheet, and the hairline a clear step off both. A
+ * shadow under every panel of a screen made a list of records into a relief
+ * map, and a rim along every top edge was a second hairline nobody measured.
+ * Lift belongs to what genuinely stands OVER the page, which is `elevated`.
  *
- * THE HAIRLINE IS ON ITS OWN ELEMENT, and that is the whole reason the rule is
- * two rules. `--shadow-hairline` is `none` in the light theme, and `none` is a
- * value a shadow list may not carry: `box-shadow: <shadow>, none` is invalid at
- * computed-value time, so the declaration is dropped and the light card loses
- * the elevation the list was built around. Alone on a pseudo element the same
- * token is valid in both themes, and it composes with the selection ring
- * rather than replacing whichever was declared last, exactly as the rail does.
+ * THE RIM IS ON ITS OWN ELEMENT where it is still drawn, and that is the whole
+ * reason the elevated card's rule is two rules. `--shadow-hairline` is `none`
+ * in the light theme, and `none` is a value a shadow list may not carry:
+ * `box-shadow: <shadow>, none` is invalid at computed-value time, so the
+ * declaration is dropped and the light card loses the elevation the list was
+ * built around. Alone on a pseudo element the same token is valid in both
+ * themes, and it composes with the selection ring rather than replacing
+ * whichever was declared last, exactly as the rail does.
  */
-.crewlet-card--default:not(.crewlet-card--flush) {
-  box-shadow: var(--shadow-xs);
-}
-
-.crewlet-card--default:not(.crewlet-card--flush)::after,
 .crewlet-card--elevated::after {
   content: '';
   position: absolute;
@@ -58,8 +59,9 @@
 }
 
 /*
- * THE TILE: the panel's ground with none of its lift. One of many in a grid,
- * where a shadow under every card turns a list of records into a relief map.
+ * THE TILE: the card at the tile's tighter inset. One of many records in a
+ * grid, where at the panel's own step each tile spends a third of its height
+ * on air.
  *
  * It used to take the PAGE's ground, which is a card drawn in the colour of
  * the thing behind it: on the light palette a white tile on a white page, held
@@ -186,9 +188,14 @@
     box-shadow var(--motion-duration-base) var(--motion-easing-default);
 }
 
+/*
+ * Under the pointer the hairline steps up and nothing lifts: a flat card that
+ * rose on hover would be the one shadow on the screen, and it would move as
+ * the pointer crossed a grid of them. The approved design's card answers the
+ * pointer with its boundary alone.
+ */
 .crewlet-card.is-interactive:hover {
   border-color: var(--color-border-hover);
-  box-shadow: var(--shadow-md);
 }
 
 .crewlet-card.is-interactive:focus-visible {

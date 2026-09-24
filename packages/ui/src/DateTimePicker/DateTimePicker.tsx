@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  CalendarTodayGlyph,
+  CalendarGlyph,
+  ChevronDownGlyph,
   ChevronLeftGlyph,
   ChevronRightGlyph,
-  KeyboardArrowDownGlyph,
-  KeyboardDoubleArrowLeftGlyph,
-  KeyboardDoubleArrowRightGlyph,
+  ChevronsLeftGlyph,
+  ChevronsRightGlyph,
 } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import {
@@ -307,7 +307,7 @@ export function DateTimePicker({
         <IconButton
           size="sm"
           label={labels.previousYearLabel}
-          icon={<KeyboardDoubleArrowLeftGlyph />}
+          icon={<ChevronsLeftGlyph />}
           onClick={() => step(-12)}
         />
         <IconButton
@@ -332,7 +332,7 @@ export function DateTimePicker({
         <IconButton
           size="sm"
           label={labels.nextYearLabel}
-          icon={<KeyboardDoubleArrowRightGlyph />}
+          icon={<ChevronsRightGlyph />}
           onClick={() => step(12)}
         />
       </div>
@@ -382,10 +382,10 @@ export function DateTimePicker({
 
       <div className="crewlet-datetime__footer">
         <div className="crewlet-datetime__shortcuts">
-          <Button size="small" variant="tertiary" onClick={takeNow}>
+          <Button size="small" variant="ghost" onClick={takeNow}>
             {showTime ? labels.nowLabel : labels.todayLabel}
           </Button>
-          <Button size="small" variant="tertiary" onClick={() => onChange('')}>
+          <Button size="small" variant="ghost" onClick={() => onChange('')}>
             {labels.clearLabel}
           </Button>
         </div>
@@ -441,11 +441,11 @@ export function DateTimePicker({
             value ? formatLabel(value, showTime) : labels.unsetLabel,
           )}
         >
-          <CalendarTodayGlyph className="crewlet-datetime__icon" size="sm" />
+          <CalendarGlyph className="crewlet-datetime__icon" size="sm" />
           <span className={cx('crewlet-datetime__label', !value && 'is-placeholder')}>
             {value ? formatLabel(value, showTime) : placeholder}
           </span>
-          <KeyboardArrowDownGlyph className="crewlet-datetime__chevron" size="sm" />
+          <ChevronDownGlyph className="crewlet-datetime__chevron" size="sm" />
         </button>
       )}
     >

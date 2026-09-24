@@ -6,7 +6,11 @@
  * spent on phases and event categories, so one amber meant "the execute
  * phase", "the decision category" and "the Analyst" at once. A hash of a name
  * carries no information: rename the seat and its colour changes, which is the
- * proof it never meant anything. Identity is the monogram and the name.
+ * proof it never meant anything. Identity is the OUTLINE (a squircle for an
+ * agent, a circle for a person), the monogram and the name.
+ *
+ * THE ONE HUE A BADGE CARRIES IS A STATE, as a ring round it, and the ring is
+ * the component's only coloured line.
  *
  * The seeded tints stay for the one case that earns them, a roster somebody
  * scans, and their grounds are TOKENS: measured under white initials and held
@@ -32,7 +36,7 @@
      The box is a fixed square that centres whatever line it holds, so the ink
      lands in the same place either way; what the tight step bought was one
      more number in a component that already sets four. */
-  line-height: var(--font-line-height-normal);
+  line-height: var(--font-line-height-body);
   text-transform: uppercase;
   user-select: none;
   box-sizing: border-box;
@@ -40,8 +44,10 @@
 
 /*
  * The four steps. Each pairs its box with a type step, so two initials sit
- * inside the circle at every one of them; a numeric size computes its own,
- * because nothing in the scale can answer for an arbitrary box.
+ * inside the outline at every one of them. A numeric size sets the same
+ * `--crewlet-avatar-size` inline and computes its own type, because nothing in
+ * the scale can answer for an arbitrary box; everything else it takes from the
+ * rules below exactly as a step does.
  */
 .crewlet-avatar--xs {
   --crewlet-avatar-size: 20px;
@@ -63,35 +69,47 @@
   font-size: var(--font-size-sm);
 }
 
+/* ── kinds ─────────────────────────────────────────────────────────────── */
+
 /*
- * Shapes. THE SQUARE IS THE DEFAULT, which is the change: the engine's
- * identity mark is a rounded square and it is what a reader sees in every seat
- * chip, every list row and every header on that product. A circle stays for a
- * PERSON, where the round badge is the platform convention a member list
- * already speaks.
+ * AN AGENT IS A SQUIRCLE, set in the mono face: what the engine runs, named
+ * the way a handle is written.
  *
- * The square's radius moves with the box rather than sitting at one step. The
- * engine draws 4px at 20, 8px at 26 and 12px at 40, which is a roughly
- * constant proportion; one radius across the four steps reads as a pill at the
- * smallest and as a plain box at the largest. A NUMERIC SIZE OBEYS THE SAME
- * LADDER, from `avatarSquareCorner` in the component, which picks the corner
- * of the step nearest the box it was given: taking one fixed step there is how
- * `size={80}` ended up drawn squarer than `size="lg"` at half its width.
+ * THE CORNER MOVES WITH THE BOX, at 0.29 of it (`AVATAR_CORNER_RATIO` in the
+ * component, which the suite holds equal to this number): the approved
+ * design's 7px at 24 and 9px at 30, as one proportion. It is computed here from
+ * the size property every step and every numeric size sets, so there is ONE
+ * ladder. There used to be two, a step table here and a numeric table in the
+ * component, and they disagreed: `size={80}` drew a squarer badge than
+ * `size="lg"` at half its width.
+ *
+ * WHERE THE BROWSER DRAWS A SQUIRCLE, IT IS A WHOLE ONE. `corner-shape:
+ * squircle` is a superellipse of exponent 4, which at a given radius reaches
+ * much closer to the box's corner than a circular arc does: at the 45 degree
+ * point it stands 0.159 of the radius in from each edge, against 0.293 for an
+ * arc. Kept at 0.29 of the box, that corner would stand 0.046 of the box in,
+ * half the design's depth and a nearly square badge. At half the box it stands
+ * 0.0795 of the box in, against the design's 0.0849 (0.13px at 24px), with the
+ * continuous curvature a squircle is for. So the corner is the circle token
+ * there, and the fallback above is what every other browser draws.
  */
-.crewlet-avatar--circle {
+.crewlet-avatar--agent {
+  border-radius: calc(var(--crewlet-avatar-size) * 0.29);
+  font-family: var(--font-family-mono);
+}
+
+@supports (corner-shape: squircle) {
+  .crewlet-avatar--agent {
+    corner-shape: squircle;
+    border-radius: var(--radius-circle);
+  }
+}
+
+/* A PERSON IS A CIRCLE, set in the sans face, the round badge every member list
+   a reader has used already speaks. */
+.crewlet-avatar--human {
   border-radius: var(--radius-circle);
-}
-
-.crewlet-avatar--square {
-  border-radius: var(--radius-md);
-}
-
-.crewlet-avatar--square.crewlet-avatar--xs {
-  border-radius: var(--radius-xs);
-}
-
-.crewlet-avatar--square.crewlet-avatar--lg {
-  border-radius: var(--radius-lg);
+  font-family: var(--font-family-sans);
 }
 
 .crewlet-avatar--image {
@@ -105,21 +123,13 @@
   border: 1px solid transparent;
 }
 
+/* The design's badge: the raised rung with the strong hairline round it and
+   the secondary ink, so a badge on a card reads as a mark standing on it
+   rather than as a hole in it. */
 .crewlet-avatar--neutral {
   background: var(--color-surface-elevated);
-  border-color: var(--color-border-default);
+  border-color: var(--color-border-strong);
   color: var(--color-text-secondary);
-}
-
-/*
- * The label on the accent fill is the on-accent step, not the on-brand one.
- * The themes repaint the brand fill monochrome and leave the accent where it
- * is, so on-brand is black in the dark palette and black on the accent
- * measures 4.35:1. On-accent is white in every palette and measures 4.83:1.
- */
-.crewlet-avatar--brand {
-  background: var(--color-brand-accent);
-  color: var(--color-text-on-accent);
 }
 
 .crewlet-avatar--seeded {
@@ -137,20 +147,54 @@
 .crewlet-avatar--tint-8 { background: var(--color-avatar-tint-8); }
 .crewlet-avatar--tint-9 { background: var(--color-avatar-tint-9); }
 
+/* ── the state ring ────────────────────────────────────────────────────── */
+
 /*
- * A HUMAN SEAT IS DRAWN, NOT TINTED. The engine does not run it, which is a
- * structural fact rather than a status, so it takes the edge and no fill at
- * all. Last, so it wins over whichever tone it is paired with.
+ * A 1.5px LINE 2px OUTSIDE THE BADGE, which is the design's ring: it draws a
+ * 3.5px shadow over a 2px one in the card's colour, and 3.5 less 2 is 1.5.
  *
- * The whole border rather than its style alone: the badge is the same person
- * whether or not they have uploaded a photo, and an image draws no border of
- * its own for a style to change.
+ * AN OUTLINE RATHER THAN THAT SHADOW PAIR, for three reasons. The gap is
+ * TRANSPARENT, so the ring reads on whatever the badge stands on, where the
+ * design's gap is the card's own fill and cuts a card-coloured band into any
+ * other ground. An outline follows the corner, the squircle's included, in
+ * every engine this package supports. And forced-colors mode keeps an outline
+ * and drops every shadow, so the ring is still drawn for the readers who most
+ * need a boundary; it is drawn in the system colour there, which is why the
+ * state is always said in words beside the badge as well.
+ *
+ * LONGHANDS, so the tone rules below set the colour alone and cannot reset the
+ * geometry, whichever order they are read in. Each fill is measured at 3:1 as
+ * a mark on every opaque surface by @crewlethq/tokens, which is the floor a
+ * boundary a reader has to see is held to.
  */
-.crewlet-avatar--dashed {
-  background: transparent;
-  /* The same hairline the solid neutral badge draws, so the human seat differs
-     by its LINE STYLE and its missing fill rather than by a second grey a
-     reader would have to hold two of in mind. */
-  border: 1px dashed var(--color-border-default);
-  color: var(--color-text-secondary);
+.crewlet-avatar--ring-info,
+.crewlet-avatar--ring-warning,
+.crewlet-avatar--ring-danger,
+.crewlet-avatar--ring-success,
+.crewlet-avatar--ring-brand {
+  outline-style: solid;
+  outline-width: 1.5px;
+  outline-offset: 2px;
+}
+
+.crewlet-avatar--ring-info {
+  outline-color: var(--color-feedback-info);
+}
+
+.crewlet-avatar--ring-warning {
+  outline-color: var(--color-feedback-warning);
+}
+
+.crewlet-avatar--ring-danger {
+  outline-color: var(--color-feedback-danger);
+}
+
+.crewlet-avatar--ring-success {
+  outline-color: var(--color-feedback-success);
+}
+
+/* SELECTED, in the accent, which is what the accent means: where the reader
+   is. It is the only place a badge spends the accent. */
+.crewlet-avatar--ring-brand {
+  outline-color: var(--color-brand-accent);
 }

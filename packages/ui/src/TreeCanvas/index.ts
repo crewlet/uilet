@@ -3,6 +3,7 @@ import './TreeCanvas.css';
 export { TreeCanvas } from './TreeCanvas.js';
 export type {
   TreeActionsProps,
+  TreeCanvasGroup,
   TreeCanvasHandle,
   TreeCanvasProps,
   TreeCardContext,

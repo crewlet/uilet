@@ -1,14 +1,26 @@
 /*
- * The application frame.
+ * The application frame: a rail on the FRAME, and the screen on a SHEET that
+ * floats beside it.
  *
  * The rail's width and the bar's height are read from the token layer through
  * two component variables, so an application with a narrower rail sets ONE
  * value rather than repeating a number in its own stylesheet, which is what
  * every consumer of the passive shell had to do.
  *
+ * THE SHEET IS INSET FROM THE FRAME, rounded, and drawn round with the plain
+ * hairline, which is the approved design's frame: the rail stands on the
+ * lowest rung and the screen a rung above it, so where the navigation ends
+ * and the page begins is a difference of ground, a line and a corner rather
+ * than a divider the rail draws. The inset is --size-shell-inset on the
+ * sheet's top, right and bottom; the rail is the gap on its left. The sheet clips what it holds to its corner, and the ONE scroller is
+ * inside it, so a screen scrolls under the bar and never past the corner.
+ *
  * The breakpoint is written out because a media query cannot read a custom
  * property. It is the shell step from @crewlethq/tokens, and the CSS check
- * compares the literal against the token.
+ * compares the literal against the token. The query is STRICTLY UNDER it,
+ * (width < 1024px): the step is the rail, the inset and the sheet's floor
+ * added up, so at exactly that width the rail still fits, and the component's
+ * own matchMedia asks the same question.
  */
 
 .crewlet-app-shell {
@@ -20,13 +32,32 @@
   --crewlet-app-shell-drawer-z: var(--z-index-overlay);
   display: grid;
   grid-template-columns: var(--crewlet-app-shell-rail) minmax(0, 1fr);
+  /* One row, the viewport's height less nothing: the sheet's own margin is
+     what holds it off the frame's edges, and a row sized by its content would
+     let a tall screen push the sheet's bottom edge off the window. */
+  grid-template-rows: minmax(0, 1fr);
   /* THE DOCUMENT DOES NOT SCROLL: exactly the viewport, and nothing may grow
      past it. A page that can also scroll as a whole carries the rail off the
      top of the window. */
   height: 100dvh;
   overflow: hidden;
-  background: var(--color-surface-background);
+  /* The FRAME, the lowest rung: what the rail stands on and what shows round
+     the sheet's inset. */
+  background: var(--color-surface-frame);
   color: var(--color-text-primary);
+}
+
+/*
+ * A shell with no rail is one column, and the sheet is inset on its left as
+ * well, from the frame's edge rather than from a rail. The inset is
+ * the ROOT's padding rather than a second margin rule on the sheet, so the
+ * narrow block below takes it back with a rule of the same weight declared
+ * after this one; a margin here would have needed two classes, and would have
+ * beaten the narrow block's one.
+ */
+.crewlet-app-shell--no-rail {
+  grid-template-columns: minmax(0, 1fr);
+  padding-left: var(--size-shell-inset);
 }
 
 /* The skip link, drawn only while it holds focus, over everything. */
@@ -53,13 +84,22 @@
   outline-offset: 2px;
 }
 
+/*
+ * The rail stands on the FRAME, the application ground, and the screen beside
+ * it on the sheet: the two lowest rungs, which are what separate the chrome a
+ * reader navigates with from the page they are reading.
+ *
+ * AND IT DRAWS NO EDGE OF ITS OWN in the wide layout. It carried a right
+ * border when the screen beside it was flush against it; the sheet draws its
+ * own hairline now, an inset away, and a second line at the rail's edge would
+ * run the height of the window parallel to it, eight pixels off.
+ */
 .crewlet-app-shell__rail {
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  background: var(--color-surface-topbar);
-  border-right: 1px solid var(--color-border-default);
+  background: var(--color-surface-frame);
 }
 
 .crewlet-app-shell__rail-inner {
@@ -70,8 +110,13 @@
 }
 
 /*
- * The head sits at the top bar's own height, so the first nav row starts level
- * with the top of the screen beside it.
+ * The head stands BESIDE the top bar: the inset the sheet is held off the
+ * frame by, then the bar's own height, so what the head holds (the lockup) is
+ * centred on the same line as the screen's title in the bar beside it, and the
+ * first nav row starts level with the top of the screen under the bar. The
+ * box is sized as a border box whatever the document says, because the height
+ * is written as the inset plus the bar and the padding is the inset: counted
+ * outside the height, the head would stand an inset taller than the bar.
  *
  * AND IT DRAWS NO LINE OF ITS OWN. It carried a bottom border, which put a
  * divider across the rail at the same height as the bar's, and the two read as
@@ -84,7 +129,9 @@
   display: flex;
   align-items: center;
   flex: none;
-  min-height: var(--crewlet-app-shell-topbar);
+  box-sizing: border-box;
+  min-height: calc(var(--size-shell-inset) + var(--crewlet-app-shell-topbar));
+  padding-top: var(--size-shell-inset);
 }
 
 .crewlet-app-shell__rail-body {
@@ -118,7 +165,7 @@
  * AND SO DOES WHATEVER ELSE LANDS THERE. `AppShell.RailRow` is the row this
  * package draws, but the slot takes a control from anywhere and an application
  * that already has a status button reaches for that one: the engine drops a
- * tertiary Button into the foot, which arrived centred in a 263px rail on a
+ * ghost Button into the foot, which arrived centred in a 263px rail on a
  * toolbar's inset. The foot claims a direct child instead, which is the same
  * move the nav's badge slot makes on whatever a caller puts in it, and there
  * is no second idea of what a row in this rail is.
@@ -171,17 +218,17 @@
   color: var(--color-text-primary);
 }
 
-/* A row in the foot fills the rail, so its label takes whatever the glyph and
-   the trailing slot leave it and truncates rather than pushing them off the
-   end: a status line says what a node is doing, and what it says is as long as
-   the sentence the application wrote. */
+/* A row in the foot fills the rail, so its label takes whatever the glyph
+   leaves it and WRAPS rather than ending in an ellipsis: a status line says
+   what a node is doing, and what it says is as long as the sentence the
+   application wrote. Cut, it kept the half that said nothing ("engine
+   conn…"). */
 .crewlet-app-shell__rail-foot > .crewlet-btn > .crewlet-btn__label {
   display: block;
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 /*
@@ -202,27 +249,102 @@
   flex: none;
 }
 
-.crewlet-app-shell__rail-row-label {
+/*
+ * THE WORDS AND THE TRAILING VALUE SHARE ONE WRAPPING LINE, and the words are
+ * never cut.
+ *
+ * The words take their own width up to the whole line (`flex-basis: auto`
+ * with `max-width: 100%`), so the line breaks BEFORE the value exactly when
+ * the words and the value together are wider than the rail: the value stands
+ * at the end of the words' line while both fit, and at the start of a line
+ * of its own under them when they do not. The words grow into what is left
+ * on their line, which is what puts a value that fits at the row's end
+ * without a margin that would also push a wrapped one to the far side. And
+ * words wider than the rail wrap, at any character if they must, rather than
+ * end in an ellipsis: they are the part of the row that was the point.
+ */
+.crewlet-app-shell__rail-row-body {
+  display: flex;
   flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* Pushed to the end of the row whatever the label's length. */
+.crewlet-app-shell__rail-row-text {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.crewlet-app-shell__rail-row-label,
+.crewlet-app-shell__rail-row-detail {
+  overflow-wrap: anywhere;
+}
+
 .crewlet-app-shell__rail-row-trailing {
   display: inline-flex;
   align-items: center;
   flex: none;
-  margin-left: auto;
 }
 
-.crewlet-app-shell__column {
+/*
+ * THE STATUS BLOCK: a row given a `detail` is the approved design's engine
+ * status, its words over a second line, on the card rung inside the plain
+ * hairline, so the one row in the foot that reports on the fleet stands off
+ * the rows that only go somewhere. The words step up to the primary ink at the
+ * medium weight, since they are the state, and the detail keeps the row's
+ * quiet ink a step smaller. Both are set on the snug leading, where the
+ * design's two lines sit as one block rather than as two rows.
+ *
+ * It keeps the row's own inline pad and its transparent-border arithmetic, so
+ * its mark still lands on the line every nav glyph above it sits on; the block
+ * inset grows by a pixel for the second line, the design's 10px around the
+ * words with the border counted in.
+ */
+.crewlet-app-shell__rail-row--block {
+  padding-block: calc(var(--spacing-2) + 1px);
+  border-color: var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-app-shell__rail-row--block .crewlet-app-shell__rail-row-label {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-app-shell__rail-row-detail {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+}
+
+/*
+ * THE SHEET: the bar, a banner, the one scroller and a footer, floated on the
+ * frame. It stands on --color-surface-background, the sheet rung, inside the
+ * plain hairline and at the sheet's own corner, a step rounder than every
+ * card drawn inside it. It clips to that corner, which is what lets the bar
+ * and the scroller run square to its edges and still be rounded by it.
+ *
+ * Physical margins, as every other edge in this file is physical: the drawer
+ * slides in from the left and the rail's column is the grid's first, so the
+ * shell is drawn left to right throughout, and one logical margin in it would
+ * be a promise about a direction nothing else here keeps.
+ */
+.crewlet-app-shell__sheet {
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  margin: var(--size-shell-inset) var(--size-shell-inset) var(--size-shell-inset) 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sheet);
+  background: var(--color-surface-background);
+  overflow: hidden;
 }
 
 .crewlet-app-shell__topbar {
@@ -233,7 +355,7 @@
   height: var(--crewlet-app-shell-topbar);
   padding: 0 var(--spacing-4);
   border-bottom: 1px solid var(--color-border-default);
-  background: var(--color-surface-topbar);
+  background: var(--color-surface-background);
 }
 
 .crewlet-app-shell__title {
@@ -339,17 +461,48 @@
   background: var(--color-surface-scrim);
 }
 
-@media (max-width: 900px) {
+@media (width < 1024px) {
   .crewlet-app-shell {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .crewlet-app-shell--no-rail {
+    padding-left: 0;
+  }
+
+  /*
+   * FULL BLEED. Under the step the rail is not beside the sheet, so there is
+   * nothing for the sheet to be held off: the inset, the corner and the
+   * hairline all collapse to nothing, and the sheet is the window. A corner
+   * kept here would round the screen into the viewport's own corners, and a
+   * hairline would draw a line round the window's edge.
+   */
+  .crewlet-app-shell__sheet {
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+  }
+
+  /* Beside a full-bleed sheet the bar starts at the window's top, and so does
+     the drawer's head. */
+  .crewlet-app-shell__rail-head {
+    min-height: var(--crewlet-app-shell-topbar);
+    padding-top: 0;
+  }
+
+  /*
+   * The drawer draws the edge the wide rail does not: it slides over the
+   * screen rather than standing beside a sheet that draws its own, and in
+   * light the frame and the sheet it covers are close enough that the shadow
+   * alone does not say where the drawer ends.
+   */
   .crewlet-app-shell__rail {
     position: fixed;
     inset: 0 auto 0 0;
     width: var(--crewlet-app-shell-rail);
     max-width: 100%;
     transform: translateX(-100%);
+    border-right: 1px solid var(--color-border-default);
     box-shadow: var(--shadow-xl);
     /*
      * HIDDEN, not only moved. A rail translated off screen keeps every link

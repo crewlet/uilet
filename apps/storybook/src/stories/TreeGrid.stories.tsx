@@ -83,7 +83,7 @@ function Outline({ readOnly = false }: { readOnly?: boolean }) {
     if (parent !== null) {
       const which = ADD_BUTTONS[column - 1]!;
       return (
-        <Button size="small" variant="tertiary" tabIndex={grid.tabStop(id, column) ? 0 : -1} onClick={() => {}}>
+        <Button size="small" variant="ghost" tabIndex={grid.tabStop(id, column) ? 0 : -1} onClick={() => {}}>
           {which}
         </Button>
       );

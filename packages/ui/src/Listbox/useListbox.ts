@@ -17,6 +17,8 @@
  *   so the highlight stays on a row that exists instead of jumping to the top.
  * - ENTER TAKES THE HIGHLIGHTED OPTION and is prevented, because the field is
  *   usually inside a form that submits on Enter, and choosing is not saving.
+ *   Enter held with Command, Control or Option is not Enter: it is left to
+ *   whatever owns that chord.
  *   Tab takes it too where the list is a completion (`tabCommits`); a
  *   multi-select leaves Tab to move focus, as every form control does.
  * - ESCAPE CLOSES THE LIST AND NOTHING ELSE. It stops there, so the dialog or
@@ -147,13 +149,22 @@ export function useListbox({
 
   useEffect(() => {
     const box = list.current;
-    const row = box?.querySelector<HTMLElement>('[aria-selected="true"]');
-    if (!box || !row) return;
+    /*
+     * BY THE HIGHLIGHTED ROW'S OWN ID, not by the first `[aria-selected=
+     * "true"]` inside the box. In a multi-select that attribute marks every
+     * CHOSEN row, so the view was dragged back to the first choice on every
+     * arrow press (TagsInput carried a second reveal of its own to undo it);
+     * and a scroller can hold more than the list (a command palette's carries
+     * the answer it leads with), where a tab or a chip that says it is
+     * selected was the row scrolled to.
+     */
+    const row = active >= 0 ? document.getElementById(`${listId}-${active}`) : null;
+    if (!box || !row || !box.contains(row)) return;
     const bounds = box.getBoundingClientRect();
     const spot = row.getBoundingClientRect();
     if (spot.top < bounds.top) box.scrollTop -= bounds.top - spot.top;
     else if (spot.bottom > bounds.bottom) box.scrollTop += spot.bottom - bounds.bottom;
-  }, [active, count, open]);
+  }, [active, count, open, listId]);
 
   function onKeyDown(event: KeyboardEvent<HTMLElement>): boolean {
     if (!open || isComposing(event)) return false;
@@ -175,6 +186,11 @@ export function useListbox({
         setAt((active - 1 + count) % count);
         return true;
       case 'Enter':
+        // A CHORD IS NOT ENTER. Command, Control or Option held with it is an
+        // accelerator the surface around the field owns (a palette's "ask an
+        // agent", a form's submit), and taking the highlighted option as well
+        // ran both.
+        if (event.metaKey || event.ctrlKey || event.altKey) return false;
         event.preventDefault();
         onCommit(active);
         return true;

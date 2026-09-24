@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AddPill } from '@crewlethq/ui';
 import { CrewletFigure } from '@crewlethq/icons';
-import { CreateNewFolderGlyph, PersonAddGlyph } from '@crewlethq/icons/glyphs';
+import { FolderPlusGlyph, UserPlusGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * UI / AddPill.
@@ -35,9 +35,9 @@ export default meta;
 type Story = StoryObj<typeof AddPill>;
 
 const SECTIONS = [
-  { key: 'unit', label: 'Add a unit', icon: <CreateNewFolderGlyph />, onSelect: () => {} },
+  { key: 'unit', label: 'Add a unit', icon: <FolderPlusGlyph />, onSelect: () => {} },
   { key: 'agent', label: 'Add an agent seat', icon: <CrewletFigure />, onSelect: () => {} },
-  { key: 'human', label: 'Add a human seat', icon: <PersonAddGlyph />, onSelect: () => {} },
+  { key: 'human', label: 'Add a human seat', icon: <UserPlusGlyph />, onSelect: () => {} },
 ];
 
 export const Default: Story = {

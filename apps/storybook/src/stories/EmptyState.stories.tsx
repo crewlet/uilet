@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button, EmptyState } from '@crewlethq/ui';
-import { CableGlyph, ErrorGlyph, InboxGlyph } from '@crewlethq/icons/glyphs';
+import { CircleAlertGlyph, InboxGlyph, PlugGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof EmptyState> = {
   title: 'UI/EmptyState',
@@ -45,7 +45,7 @@ export const TheThreeEmpties: Story = {
       </div>
       <div style={{ border: '1px solid var(--color-border-default)', borderRadius: 12 }}>
         <EmptyState
-          icon={<ErrorGlyph size={32} />}
+          icon={<CircleAlertGlyph size={32} />}
           title="Nothing could be read"
           description="The event store on this node did not answer. The work may have happened."
           action={<Button size="small">Try again</Button>}
@@ -53,7 +53,7 @@ export const TheThreeEmpties: Story = {
       </div>
       <div style={{ border: '1px solid var(--color-border-default)', borderRadius: 12 }}>
         <EmptyState
-          icon={<CableGlyph size={32} />}
+          icon={<PlugGlyph size={32} />}
           title="Slack is not connected"
           description="Connect a workspace to let a seat answer a mention in a channel."
           action={<Button size="small">Connect Slack</Button>}

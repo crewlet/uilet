@@ -52,7 +52,7 @@ describe('the runner', () => {
 
 describe('the jsdom gaps the setup file fills', () => {
   test('matchMedia, ResizeObserver and scrollTo answer', () => {
-    expect(globalThis.matchMedia('(min-width: 900px)').matches).toBe(false);
+    expect(globalThis.matchMedia('(width < 1024px)').matches).toBe(false);
     expect(typeof globalThis.ResizeObserver).toBe('function');
     expect(typeof globalThis.scrollTo).toBe('function');
   });

@@ -3,10 +3,13 @@
  * these three claims, so they are checked here rather than assumed: that the
  * density reaches a scaled step, that a token derived from another token
  * arrives as a number, and that a name the package does not emit drops its
- * declaration instead of poisoning the sheet.
+ * declaration instead of poisoning the sheet. And one claim about the tokens
+ * themselves that only a density can reach: which part of the application
+ * shell's geometry a density setting moves.
  */
 import { afterEach, expect, test } from 'vitest';
-import { atDensity, installSheetsAtDensity } from './density.js';
+import { installCss } from './cascade.js';
+import { atDensity, DENSITIES, installSheetsAtDensity } from './density.js';
 
 let remove: (() => void) | null = null;
 afterEach(() => {
@@ -19,11 +22,11 @@ test('a scaled step follows the density, and a floor holds under it', () => {
   remove = installSheetsAtDensity(0.82, 'Tabs/Tabs.css');
   document.body.innerHTML = '<div class="crewlet-tabs crewlet-tabs--pill"><button class="crewlet-tabs__tab"></button></div>';
   const chip = document.querySelector('.crewlet-tabs__tab')!;
-  // --spacing-3 is calc(12px * density), and the pill chip spends it on both
-  // sides; --size-control-md is calc(32px * density) and the chip's height is
-  // six under it, clamped against the 24px target floor, which is what holds
-  // at this setting.
-  expect(getComputedStyle(chip).paddingLeft).toBe('9.84px');
+  // The pill chip's side pad is two steps and a half, calc(8px * density)
+  // plus half of calc(4px * density), which is 10 x 0.82; --size-control-md is
+  // calc(30px * density) and the chip's height is six under it, clamped
+  // against the 24px target floor, which is what holds at this setting.
+  expect(getComputedStyle(chip).paddingLeft).toBe('8.2px');
   expect(getComputedStyle(chip).minHeight).toBe('24px');
 });
 
@@ -45,4 +48,29 @@ test('a name the package does not emit takes its own declaration down, and no mo
   // them, which is a token, is not.
   expect(getComputedStyle(row).borderRadius).toContain('8px');
   expect(atDensity('a { color: var(--color-nothing-here); }', 1)).toContain('var(--color-nothing-here)');
+});
+
+test('the shell inset is a gap, so it follows the density like every other', () => {
+  // --size-shell-inset is calc(8px * density): the room between the frame's
+  // edge and the floating sheet. The rail and the bar beside it are fixed, and
+  // breakpoint.shell is derived at density 1, so this is the one part of the
+  // shell's geometry a density setting moves.
+  const expected = { compact: '6.56px', normal: '8px', comfortable: '9.12px' } as const;
+  for (const [name, factor] of DENSITIES) {
+    const remove = installCss(
+      atDensity(
+        '.sheet { margin-top: var(--size-shell-inset); margin-right: var(--size-shell-inset); width: var(--size-shell-rail); }',
+        factor,
+      ),
+    );
+    try {
+      document.body.innerHTML = '<div class="sheet"></div>';
+      const sheet = getComputedStyle(document.querySelector('.sheet')!);
+      expect(sheet.marginTop, name).toBe(expected[name]);
+      expect(sheet.marginRight, name).toBe(expected[name]);
+      expect(sheet.width, name).toBe('236px');
+    } finally {
+      remove();
+    }
+  }
 });

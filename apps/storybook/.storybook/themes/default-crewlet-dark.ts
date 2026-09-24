@@ -1,5 +1,5 @@
 import { create } from 'storybook/theming';
-import { color, font, radius, themes } from '@crewlethq/tokens';
+import { font, radius, themes } from '@crewlethq/tokens';
 
 // default-crewlet-dark
 // The default Storybook chrome theme for the crewlet design system, so the
@@ -21,12 +21,13 @@ export default create({
   brandTitle: 'Crewlet Design System',
   brandTarget: '_self',
 
-  // The accent is the same in every palette: it is the one colour that means
-  // "here", and where the reader is does not depend on the theme.
-  colorPrimary: color.brand.accent,
-  colorSecondary: color.brand.accent,
+  // The accent is per palette: the primary action's fill, and the one colour
+  // that means "here". This palette's own, so the tool's selection reads as
+  // the canvas's does.
+  colorPrimary: dark.brand.accent,
+  colorSecondary: dark.brand.accent,
 
-  appBg: dark.surface.topbar,
+  appBg: dark.surface.frame,
   appContentBg: dark.surface.background,
   appPreviewBg: dark.surface.background,
   appBorderColor: dark.border.strong,
@@ -36,10 +37,10 @@ export default create({
   textInverseColor: dark.text.inverse,
   textMutedColor: dark.text.tertiary,
 
-  barBg: dark.surface.topbarLift,
+  barBg: dark.surface.background,
   barTextColor: dark.text.tertiary,
   barHoverColor: dark.text.primary,
-  barSelectedColor: color.brand.accent,
+  barSelectedColor: dark.brand.accent,
 
   inputBg: dark.surface.subtle,
   inputBorder: dark.border.default,

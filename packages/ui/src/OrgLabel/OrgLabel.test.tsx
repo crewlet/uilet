@@ -22,7 +22,9 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { themes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
-import { installCss, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installCss, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { UserGlyph } from '@crewlethq/icons/glyphs';
+import { AVATAR_SIZES, type AvatarSizeStep } from '../Avatar/index.js';
 import { OrgLabel } from './OrgLabel.js';
 
 let uninstall: (() => void) | undefined;
@@ -310,6 +312,32 @@ describe('what each surface used to be missing', () => {
   });
 
   /*
+   * AND A GLYPH IS NEVER FILLED. The zone's fill rule is for a filled drawing,
+   * a brand mark or an illustration; a glyph is a stroke, and painting its
+   * inside turned a person's head and shoulders, a unit's building and a
+   * warning's triangle into solid blobs in every node of the chart.
+   */
+  test('a glyph keeps the fill its frame decides, in either layout', () => {
+    for (const layout of ['node', 'row'] as const) {
+      painted('dark');
+      // A toned zone, as a chart paints one, written out: the harness resolves
+      // the tokens and not the chart's own variable, and a fill has to have a
+      // colour to resolve to before a test can say it did not take it.
+      const tone = installCss('.crewlet-org-label__icon { color: #1d9e75; }');
+      const { container } = render(<OrgLabel layout={layout} icon={<UserGlyph />} name="Ada" />);
+      const glyph = container.querySelector<SVGElement>('.crewlet-org-label__icon svg.crewlet-glyph')!;
+      expect(glyph.getAttribute('fill'), layout).toBe('none');
+      const ink = channels(getComputedStyle(glyph).color);
+      expect(ink, layout).toEqual(parseHex('#1d9e75'));
+      for (const shape of [glyph, ...glyph.querySelectorAll('path, circle')]) {
+        expect(channels(getComputedStyle(shape).fill), `${layout} ${shape.tagName}`).not.toEqual(ink);
+      }
+      tone();
+      cleanup();
+    }
+  });
+
+  /*
    * EVERY CHILD OF THE CAPTION BUT THE WORD KEEPS ITS SIZE, so a label is the
    * same height with three marks as with none. A mark arrives as a bare glyph
    * or as a glyph inside a span that names it for a reader who cannot see it,
@@ -346,16 +374,101 @@ describe('what each surface used to be missing', () => {
 
 describe('the marks and the words', () => {
   /*
-   * THE DASHED RING is the boundary something standing for somebody outside the
-   * system wears, around the mark rather than instead of it. A boundary rather
-   * than a hue, so it reads to somebody who cannot separate hues at all.
+   * A SEAT LEADS WITH ITS BADGE, and the badge's OUTLINE is its kind: a
+   * squircle for an agent, a circle for a person. That is a boundary rather
+   * than a hue, so it reads to somebody who cannot separate hues at all, and
+   * it is the ONLY cue: a human seat used to wear a dashed ring round a glyph
+   * as well, and two cues for one fact are two things to keep agreeing.
    */
-  test('the dashed ring is drawn as a boundary, not as a colour', () => {
-    const { container } = render(<OrgLabel name="Ada" iconRing="dashed" />);
-    expect(container.querySelector('.crewlet-org-label__icon--dashed')).not.toBeNull();
-    expect(rule('.crewlet-org-label__icon--dashed::before')).toContain('border: 1px dashed');
-    const { container: none } = render(<OrgLabel name="Ada" />);
-    expect(none.querySelector('.crewlet-org-label__icon--dashed')).toBeNull();
+  test("a seat's badge carries its kind as its outline, in either layout, and says nothing", () => {
+    for (const layout of ['node', 'row'] as const) {
+      cleanup();
+      const { container } = render(
+        <>
+          <OrgLabel layout={layout} name="CTO" avatar={{ name: 'CTO', kind: 'agent' }} />
+          <OrgLabel layout={layout} name="Jane Founder" avatar={{ name: 'Jane Founder', kind: 'human' }} />
+        </>,
+      );
+      const zones = [...container.querySelectorAll('.crewlet-org-label__icon')];
+      const [agent, human] = zones.map((zone) => zone.querySelector('.crewlet-avatar'));
+      expect(agent?.className, layout).toContain('crewlet-avatar--agent');
+      expect(human?.className, layout).toContain('crewlet-avatar--human');
+      expect(human?.textContent, layout).toBe('JF');
+      // The name is printed beside it, so neither the zone nor the badge is
+      // read: "CTO avatar, CTO" at every node would be the name twice.
+      for (const zone of zones) expect(zone.getAttribute('aria-hidden'), layout).toBe('true');
+      expect(screen.queryAllByRole('img'), layout).toEqual([]);
+      // And nothing draws the second cue the outline replaced.
+      expect(container.innerHTML, layout).not.toContain('dashed');
+    }
+    expect(SHEET).not.toContain('dashed');
+  });
+
+  /*
+   * A SEAT'S BADGE IS THE DESIGN'S. The approved org chart draws every node's
+   * badge at 26px, which is the `sm` step and fails no floor, and the design's
+   * lists draw a badge on a line of text at 18 to 20px, which is the smallest
+   * step. Either way it stands larger than a CONTAINER's glyph in the same
+   * zone, so a seat never reads as a unit, and inside the zone it is in.
+   */
+  test("a seat's badge is the design's in either layout, and never a container's size", () => {
+    styled();
+    /** The org chart's node badge, from the approved artboard. */
+    const DESIGN_NODE_BADGE = 26;
+    const glyph = (layout: 'node' | 'row') => {
+      cleanup();
+      const { container } = render(<OrgLabel layout={layout} name="Eng" icon={<svg />} iconSize="md" />);
+      return px(part(container, 'icon'), 'font-size');
+    };
+    const zone = (layout: 'node' | 'row') => {
+      cleanup();
+      const { container } = render(<OrgLabel layout={layout} name="Eng" />);
+      return px(part(container, 'icon'), 'width');
+    };
+    const badge = (layout: 'node' | 'row') => {
+      cleanup();
+      const { container } = render(<OrgLabel layout={layout} name="CTO" avatar={{ name: 'CTO', kind: 'agent' }} />);
+      const classes = [...part(container, 'icon').querySelector('.crewlet-avatar')!.classList];
+      const step = (Object.keys(AVATAR_SIZES) as AvatarSizeStep[]).find((name) =>
+        classes.includes(`crewlet-avatar--${name}`),
+      );
+      if (step === undefined) throw new Error(`the ${layout} badge names no step`);
+      return AVATAR_SIZES[step];
+    };
+    expect(badge('node')).toBe(DESIGN_NODE_BADGE);
+    expect(badge('row')).toBe(Math.min(...Object.values(AVATAR_SIZES)));
+    for (const layout of ['node', 'row'] as const) {
+      expect(badge(layout), layout).toBeGreaterThan(glyph(layout));
+      expect(badge(layout), layout).toBeLessThanOrEqual(zone(layout));
+    }
+  });
+
+  test('one mark or the other, never both, and a badge takes no glyph size', () => {
+    // The zone holds one mark, so the type refuses the pair rather than
+    // picking one of them silently. A label that draws no mark at all still
+    // takes either layout from one variable.
+    const layouts = ['node', 'row'] as const;
+    for (const layout of layouts) {
+      cleanup();
+      const { container } = render(<OrgLabel layout={layout} name="Eng" />);
+      expect(part(container, 'icon').childElementCount, layout).toBe(0);
+    }
+    // @ts-expect-error a glyph and a badge in one zone
+    void (<OrgLabel name="CTO" icon={<svg />} avatar={{ name: 'CTO', kind: 'agent' }} />);
+    // @ts-expect-error a glyph size on a badge, which nothing would read
+    void (<OrgLabel name="CTO" iconSize="lg" avatar={{ name: 'CTO', kind: 'agent' }} />);
+    // @ts-expect-error a seat's badge states its kind
+    void (<OrgLabel name="CTO" avatar={{ name: 'CTO' }} />);
+  });
+
+  test("a seat's picture is drawn in place of the initials", () => {
+    const { container } = render(
+      <OrgLabel name="CTO" avatar={{ name: 'CTO', kind: 'agent', src: 'https://example.com/cto.png' }} />,
+    );
+    const picture = part(container, 'icon').querySelector('img')!;
+    expect(picture.getAttribute('src')).toBe('https://example.com/cto.png');
+    expect(picture.className).toContain('crewlet-avatar--agent');
+    expect(picture.getAttribute('alt')).toBe('');
   });
 
   /*
