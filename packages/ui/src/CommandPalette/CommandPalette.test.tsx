@@ -584,7 +584,7 @@ describe('a row', () => {
     expect(onOpen).not.toHaveBeenCalled();
   });
 
-  test('its meta sits at the end in the quiet ink, and its hint turns with the row under the arrows', () => {
+  test('its meta sits at the end in the quiet ink, and its hint stays quiet on the row under the arrows', () => {
     for (const theme of ['dark', 'light'] as const) {
       uninstall?.();
       uninstall = installThemed(theme, 'Listbox/Listbox.css', 'CommandPalette/CommandPalette.css');
@@ -599,9 +599,39 @@ describe('a row', () => {
       expect(channels(meta.color), theme).toEqual(tertiary);
       // The second row is not the highlighted one: its hint is quiet.
       expect(page!.getAttribute('aria-selected')).toBe('false');
-      // The highlighted row's hint takes the row's own ink, the accent's.
+      // The highlighted row's hint keeps the tertiary step: the rest of the
+      // label's sentence, a step under it, as the approved palette draws it.
+      expect(ask!.getAttribute('aria-selected')).toBe('true');
       const hint = getComputedStyle(ask!.querySelector('.crewlet-palette__hint')!);
-      expect(channels(hint.color), theme).toEqual(parseHex(palette.get(token('color-brand-accent-ink')) ?? ''));
+      expect(channels(hint.color), theme).toEqual(tertiary);
+    }
+  });
+
+  test('the row under the arrows is raised in the primary ink, never the accent', () => {
+    /*
+     * The accent is the primary action's fill and the focus ring. A violet row
+     * under the arrows read as a second primary on the one surface a reader
+     * opens to act, so the highlight is the raised rung the approved palette
+     * draws, and the label lifts from the register's secondary step to the
+     * primary. Asserted through the cascade, both stylesheets loaded, so a
+     * palette rule that painted over the register shows up here.
+     */
+    for (const theme of ['dark', 'light'] as const) {
+      uninstall?.();
+      uninstall = installThemed(theme, 'Listbox/Listbox.css', 'CommandPalette/CommandPalette.css');
+      cleanup();
+      const palette = themeColours(theme);
+      const colour = (name: string) => parseHex(palette.get(token(name)) ?? '');
+      render(<Rows />);
+      const [active, rest] = screen.getAllByRole('option');
+      expect(active!.getAttribute('aria-selected')).toBe('true');
+      const on = getComputedStyle(active!);
+      expect(channels(on.backgroundColor), theme).toEqual(colour('color-surface-elevated'));
+      expect(channels(on.color), theme).toEqual(colour('color-text-primary'));
+      expect(channels(on.backgroundColor), theme).not.toEqual(colour('color-brand-accent'));
+      expect(channels(on.color), theme).not.toEqual(colour('color-brand-accent-ink'));
+      const off = getComputedStyle(rest!);
+      expect(channels(off.color), theme).toEqual(colour('color-text-secondary'));
     }
   });
 });

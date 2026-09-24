@@ -770,6 +770,22 @@ included.
 | a stylesheet targeting a palette row's hint as `.crewlet-listbox__hint` | `.crewlet-palette__hint`, on the label's line; the row's end is `.crewlet-palette__meta` |
 | a layout or a test that counted on the palette being 620px wide and at most `min(60dvh, 520px)` tall | 720px and `min(74dvh, 680px)`; `--crewlet-modal-width` on the palette still sets the width |
 
+**The row under the arrows is raised, not violet.** Every listbox row (a
+`Select`, a `Combobox`, a `TagsInput` and a `CommandPalette` alike) drew its
+highlighted and hovered row in the accent's soft tint with the accent ink.
+The accent is the primary action's fill and the focus ring now, so that row
+read as a second primary on every surface that offers a list. It now stands
+on `--color-surface-elevated`, the raised rung @crewlethq/tokens holds dE 3 off
+the card every list opens on, and its label lifts from the register's
+secondary step to `--color-text-primary`, as the approved palette draws it.
+A palette row's `hint` stays in the tertiary ink on the highlighted row
+rather than taking the row's colour. What the accent still marks in a list is
+a choice made, a multi-select's tick. Nothing is renamed.
+
+| Was | Is |
+|---|---|
+| a test or a stylesheet reading `--color-brand-accent-soft` / `-ink` off a highlighted `.crewlet-listbox__option` | `--color-surface-elevated` and `--color-text-primary` |
+
 **A highlighted listbox row is outlined in forced-colors mode, and a chord is
 not Enter.** The mode repaints backgrounds to `Canvas`, which took the
 highlight of every `Select`, `Combobox` and `CommandPalette` with it; the

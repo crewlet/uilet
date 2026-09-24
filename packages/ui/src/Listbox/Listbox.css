@@ -62,8 +62,8 @@
    * The SECONDARY step, not the primary one. A list of candidates is read by
    * running the eye down it for the one that matches, and rows drawn at full
    * strength all shout at once; the row the reader is actually on is the one
-   * that takes the accent and its ink. The step is held at 4.5:1 on every
-   * ground a row can sit on, so quieter is not fainter.
+   * that lifts to the primary ink. The step is held at 4.5:1 on every ground a
+   * row can sit on, so quieter is not fainter.
    */
   color: var(--color-text-secondary);
   font-size: var(--font-size-compact);
@@ -75,14 +75,23 @@
 }
 
 /*
- * The active row, whether the arrows put it there or a hover did. The accent
- * is what means "here", and it is a tint plus its ink step rather than a fill
- * with a label on it.
+ * The active row, whether the arrows put it there or a hover did: the RAISED
+ * rung with the label lifted to the primary ink, as the approved palette draws
+ * it. Every list here opens on a card (a popover, a dialog), and raised is held
+ * dE 3 off the card by @crewlethq/tokens because a chip or a well has no border
+ * of its own, which is what this row is; every text step clears 4.5:1 on it.
+ *
+ * It used to be the accent's soft tint with the accent ink. The accent is the
+ * primary action's fill and the focus ring, so a violet row under the arrows
+ * read as a second primary on every surface that offers a list, the same
+ * reason the rail's current row stopped wearing it. What the accent still
+ * marks in a list is a CHOICE made (a multi-select's tick), not where the
+ * arrows are.
  */
 .crewlet-listbox__option[aria-selected='true'],
 .crewlet-listbox__option:hover {
-  background: var(--color-brand-accent-soft);
-  color: var(--color-brand-accent-ink);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
 }
 
 /*
