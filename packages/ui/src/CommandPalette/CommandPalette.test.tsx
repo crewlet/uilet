@@ -259,6 +259,52 @@ test('the palette carries no accessibility violation', async () => {
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
 
+describe('the field row', () => {
+  function row({ escapeHint }: { escapeHint?: boolean } = {}) {
+    render(
+      <CommandPalette open onClose={() => {}} query="" onQueryChange={() => {}} groups={[]} escapeHint={escapeHint} />,
+    );
+    const field = screen.getByRole('combobox', { name: 'Search' });
+    return field.closest('.crewlet-palette__field')!;
+  }
+
+  test('leads with a search glyph that assistive technology never hears', () => {
+    const container = row();
+    const leading = container.querySelector('.crewlet-input__leading');
+    // BEFORE the field, in the field's own slot, so a press on it lands in the text.
+    expect(leading).not.toBeNull();
+    expect(leading!.nextElementSibling).toBe(screen.getByRole('combobox'));
+    const glyph = leading!.querySelector('svg');
+    expect(glyph).not.toBeNull();
+    expect(glyph!.getAttribute('aria-hidden')).toBe('true');
+    // The field is still named once, by its label, and by nothing the glyph adds.
+    expect(screen.getByRole('combobox').getAttribute('aria-label')).toBe('Search');
+  });
+
+  test('draws no Esc keycap unless asked, and asked draws one at the end, hidden from the reader', () => {
+    const plain = row();
+    expect(plain.querySelector('.crewlet-input__trailing')).toBeNull();
+    expect(plain.querySelector('kbd')).toBeNull();
+    cleanup();
+
+    const hinted = row({ escapeHint: true });
+    const trailing = hinted.querySelector('.crewlet-input__trailing');
+    expect(trailing).not.toBeNull();
+    expect(trailing!.previousElementSibling).toBe(screen.getByRole('combobox'));
+    const cap = trailing!.querySelector('kbd.crewlet-palette__escape');
+    expect(cap?.textContent).toBe('Esc');
+    expect(cap?.classList.contains('crewlet-kbd--subtle')).toBe(true);
+    expect(cap?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  test('the hint only draws the key: Escape closes the surface with or without it', () => {
+    const onClose = vi.fn();
+    render(<CommandPalette open onClose={onClose} query="" onQueryChange={() => {}} groups={[]} escapeHint />);
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
 /** The design's five scopes, and a row set per scope that says which it is. */
 const SCOPES: CommandPaletteScope[] = [
   { id: 'all', label: 'All' },
@@ -319,6 +365,7 @@ function Scoped({
         groupsScope={shownFor}
         groups={rowsFor(shownFor, onOpen)}
         lead={lead}
+        escapeHint
       />
     </>
   );

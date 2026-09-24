@@ -1,6 +1,8 @@
 import { useId, useMemo, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import { SearchGlyph } from '@crewlethq/icons/glyphs';
 import { Count } from '../Count/index.js';
 import { Input } from '../Input/index.js';
+import { Kbd } from '../Kbd/index.js';
 import { isComposing } from '../Layer/stack.js';
 import { useListbox } from '../Listbox/index.js';
 import { Modal } from '../Modal/index.js';
@@ -108,6 +110,15 @@ export type CommandPaletteProps = Omit<
     lead?: ReactNode;
     /** The key legend under the results, usually `Kbd` keycaps with a word each. */
     footer?: ReactNode;
+    /**
+     * Draws an `Esc` keycap at the END of the field, the approved design's
+     * reminder of how the surface closes. Off by default: it names a key, so
+     * it belongs on a surface a keyboard reaches, and an application that also
+     * opens the palette from a touch target decides whether that is the one
+     * every reader of it has. The key itself always closes the surface; this
+     * only draws it.
+     */
+    escapeHint?: boolean | undefined;
     /** Said when the query matches nothing. Name the kind of nothing it is. */
     emptyMessage?: string | undefined;
     /** Said while the rows handed over answer a scope the reader has left. */
@@ -191,6 +202,7 @@ function Palette({
   placeholder = 'Search',
   lead,
   footer,
+  escapeHint = false,
   emptyMessage = 'Nothing matches that search.',
   pendingMessage = 'Searching…',
   resultsLabel = 'Results',
@@ -272,9 +284,26 @@ function Palette({
       // has none.
       footerStart={footer}
     >
+      {/*
+       * THE FIELD ROW IS THE DESIGN'S: a search glyph at its start, the query,
+       * and the optional Esc keycap at its end. Both are drawn in the field's
+       * own slots, which take no pointer, so a press anywhere on the row still
+       * lands in the text. Both are hidden from assistive technology: the
+       * glyph is the word "search" the field is already named with, and the
+       * keycap restates what a dialog's Escape does by definition, so read
+       * aloud each is the name of something the reader already has.
+       */}
       <Input
         appearance="command"
         containerClassName="crewlet-palette__field"
+        leading={<SearchGlyph size="sm" />}
+        trailing={
+          escapeHint ? (
+            <Kbd subtle aria-hidden className="crewlet-palette__escape">
+              Esc
+            </Kbd>
+          ) : undefined
+        }
         value={query}
         onChange={(event) => {
           onQueryChange(event.target.value);

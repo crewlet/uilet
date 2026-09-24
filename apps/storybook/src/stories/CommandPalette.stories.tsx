@@ -6,11 +6,11 @@ import {
   BotGlyph,
   ChartNoAxesGanttGlyph,
   CircleCheckGlyph,
+  CircleGlyph,
   FileTextGlyph,
   LayoutDashboardGlyph,
   MessageSquareGlyph,
   PlusGlyph,
-  SquareKanbanGlyph,
   UserGlyph,
   UsersGlyph,
 } from '@crewlethq/icons/glyphs';
@@ -146,6 +146,18 @@ export const NothingMatches: Story = {
 };
 
 const SCOPES = ['all', 'tasks', 'pages', 'agents', 'actions'] as const;
+
+/** A task's key in the code face and the quiet ink, ahead of its title, as the design sets it. */
+function TaskTitle({ id, title }: { id: string; title: string }) {
+  return (
+    <>
+      <span style={{ fontFamily: 'var(--font-family-mono)', fontWeight: 'var(--font-weight-regular)', color: 'var(--color-text-tertiary)' }}>
+        {id}
+      </span>{' '}
+      {title}
+    </>
+  );
+}
 type Scope = (typeof SCOPES)[number];
 
 /**
@@ -176,15 +188,18 @@ function ScopedDemo() {
       items: [
         {
           id: 'eng-420',
-          icon: <SquareKanbanGlyph size="sm" />,
-          label: 'ENG-420 Flaky e2e: cluster join under packet loss',
+          // A task row leads with its STATE, as the design's does: the bare
+          // ring is Todo, in the quiet ink, and the check is Done, in the
+          // success ink, because done is the one state that hue means.
+          icon: <CircleGlyph size="sm" style={{ color: 'var(--color-text-tertiary)' }} />,
+          label: <TaskTitle id="ENG-420" title="Flaky e2e: cluster join under packet loss" />,
           hint: 'Todo · unassigned',
           onSelect: () => setChosen('ENG-420'),
         },
         {
           id: 'eng-387',
-          icon: <CircleCheckGlyph size="sm" />,
-          label: 'ENG-387 Cluster join: retry on partition',
+          icon: <CircleCheckGlyph size="sm" style={{ color: 'var(--color-feedback-success-ink)' }} />,
+          label: <TaskTitle id="ENG-387" title="Cluster join: retry on partition" />,
           hint: 'Done · SWE · Aug 30',
           onSelect: () => setChosen('ENG-387'),
         },
@@ -299,6 +314,7 @@ function ScopedDemo() {
         groupsScope={answered}
         groups={groups}
         lead={lead}
+        escapeHint
         footer={
           <>
             <span>
@@ -329,7 +345,11 @@ function ScopedDemo() {
   );
 }
 
-/** Scopes, an answer leading the rows, accelerators at the rows' ends, and a key legend. */
+/**
+ * Scopes, an answer leading the rows, accelerators at the rows' ends, and a key
+ * legend, under the design's field row: the search glyph the palette always
+ * draws, and the `Esc` keycap `escapeHint` asks for.
+ */
 export const Scoped: Story = {
   render: () => <ScopedDemo />,
 };

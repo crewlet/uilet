@@ -766,8 +766,14 @@ application binds on the palette's `onKeyDown`. `footer` is the key legend,
 at the `xs` step on the sheet rung. The surface is the design's 720px wide
 and at most `min(74dvh, 680px)` tall, the artboard's 664 of 900 with a lead
 over five rows; it was 620 by `min(60dvh, 520px)`, sized for a list alone.
-Nothing here is renamed: a palette without scopes behaves as before, Tab
-included.
+The field row is the design's too: a search glyph always leads the query, in
+the field's own leading slot, and `escapeHint` draws an `Esc` keycap at its
+end (off by default, since it names a key and only the application knows
+whether every reader of its palette has one). Both take no pointer, so a press
+anywhere on the row lands in the text, and both are hidden from assistive
+technology: the glyph restates the field's name and the keycap what a
+dialog's Escape does. Nothing here is renamed: a palette without scopes
+behaves as before, Tab included.
 
 | Was | Is |
 |---|---|
