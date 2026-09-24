@@ -399,10 +399,18 @@
   pointer-events: none;
 }
 
+/*
+ * THE BOX IS DASHED, as the approved org chart draws a unit: a card's own
+ * edge is solid, and a box round several cards drawn the same way read as one
+ * more, larger card. A dash says the edge is a grouping rather than a thing.
+ * It is the STRONG border step, the artboard's, because a dash spends half its
+ * length on gaps: at the plain hairline's step the edge all but disappeared
+ * against the box's own fill.
+ */
 .crewlet-tree-canvas__group {
   box-sizing: border-box;
   background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-default);
+  border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-xl);
   pointer-events: none;
 }
@@ -431,7 +439,7 @@
  * the box's, so nothing about the label reads as a second surface.
  */
 .crewlet-tree-canvas__group-label,
-.crewlet-tree-canvas__group-meta {
+.crewlet-tree-canvas__group-lead {
   background: var(--color-surface-subtle);
 }
 
@@ -441,11 +449,11 @@
   text-overflow: ellipsis;
 }
 
-/* The fact at the END of the line: a project key chip, a count. */
-.crewlet-tree-canvas__group-meta {
+/* The key AHEAD of the name, a project key chip, never cut: the name after
+   it is what gives way when the line is short. */
+.crewlet-tree-canvas__group-lead {
   display: inline-flex;
   flex: none;
-  margin-inline-start: auto;
 }
 
 /* ---------------------------------------------------------------------------

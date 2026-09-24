@@ -633,7 +633,7 @@ const UNIT_GROUPS: TreeCanvasGroup[] = [
   {
     id: 'unit:eng-core',
     label: 'Engineering · Core',
-    meta: (
+    lead: (
       <Tag size="xs" monospace>
         ENG
       </Tag>
@@ -643,7 +643,7 @@ const UNIT_GROUPS: TreeCanvasGroup[] = [
   {
     id: 'unit:devrel',
     label: 'Developer Relations',
-    meta: (
+    lead: (
       <Tag size="xs" monospace>
         PROD
       </Tag>
@@ -664,9 +664,12 @@ function SeatCard({ id, card }: { id: string; card: TreeCardContext }) {
         <Tag size="xs">{seat.human ? 'Human' : 'Agent'}</Tag>
       </span>
       <span style={metaText}>{seat.unit}</span>
-      <span style={{ ...metaText, display: 'flex', alignItems: 'center', gap: 'var(--spacing-1)' }}>
-        <StatusDot tone={DOT[seat.state]} pulse={seat.state === 'working'} />
-        {seat.line}
+      {/* The dot and its word as one line, so the room between them is the
+          kit's and clears the working dot's halo. */}
+      <span style={metaText}>
+        <StatusDot tone={DOT[seat.state]} pulse={seat.state === 'working'}>
+          {seat.line}
+        </StatusDot>
       </span>
     </div>
   );
@@ -683,9 +686,11 @@ function seatCards(model: TreeModel, expanded: ReadonlySet<string>): TreeCardInp
 /**
  * Units drawn as boxes round the seats in them, joined by elbows.
  *
- * `groups` encloses a run of sibling cards in a hairline box on the card rung,
+ * `groups` encloses a run of sibling cards in a dashed box on the card rung,
  * with the unit's name along its top in the tertiary ink and the project key
- * its work is filed under at the end of that line. The box is room the layout
+ * its work is filed under ahead of it, as the org chart reads it: "ENG
+ * Engineering · Core". Each agent's monogram is two letters even where its
+ * name is one word (CEO is CE, DevRel is DR), which is `Avatar`'s own rule. The box is room the layout
  * keeps, not a frame drawn over it: a seat outside a unit is held a gap clear
  * of the unit's BOX, and two units never overlap. The label is drawn over the
  * branches on the box's own fill, and each member card is described by it, so

@@ -817,12 +817,15 @@ test("every node's card takes the same edge, and the only dashed card is the gho
   expect(drawn.length).toBeGreaterThan(1);
   for (const card of drawn) expect(card.className).toBe('crewlet-tree-canvas__card');
 
-  // And nothing in the stylesheet draws a dashed edge on anything but the
-  // ghost: every rule declaring one is the composing card's.
+  // And nothing in the stylesheet draws a dashed edge on a CARD but the
+  // ghost: every rule declaring one is the composing card's, or the unit box
+  // round several cards, which is not a card and is dashed to say so.
   const rules = [...SHEET.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)];
   const dashed = rules.filter(([, , body]) => /\bdashed\b/.test(body!)).map(([, selector]) => selector!.trim());
-  expect(dashed.length).toBeGreaterThan(0);
-  for (const selector of dashed) expect(selector).toContain('crewlet-tree-canvas__card--composing');
+  expect(dashed.filter((selector) => selector.includes('crewlet-tree-canvas__card--composing')).length).toBeGreaterThan(0);
+  for (const selector of dashed) {
+    expect(selector === '.crewlet-tree-canvas__group' || selector.includes('crewlet-tree-canvas__card--composing'), selector).toBe(true);
+  }
 });
 
 /*
@@ -1223,7 +1226,7 @@ describe('groups', () => {
     {
       id: 'units',
       label: 'Engineering · Core',
-      meta: <span className="key">ENG</span>,
+      lead: <span className="key">ENG</span>,
       memberIds: ['unit:eng', 'unit:sales'],
     },
   ];
@@ -1259,13 +1262,18 @@ describe('groups', () => {
     expect(translateOf(drawn).x - (ceo.x + CARD_WIDTH)).toBe(24);
   });
 
-  test('the label is the group\'s, with its meta at the end of the line', () => {
+  test("the label is the group's, with its key chip AHEAD of it, as the org chart reads it", () => {
     const { container } = mount({ groups: UNITS });
     const line = head(container);
     expect(line.querySelector('.crewlet-tree-canvas__group-label')!.textContent).toBe('Engineering · Core');
-    expect(line.lastElementChild!.className).toBe('crewlet-tree-canvas__group-meta');
-    expect(line.lastElementChild!.textContent).toBe('ENG');
+    expect(line.firstElementChild!.className).toBe('crewlet-tree-canvas__group-lead');
+    expect(line.firstElementChild!.textContent).toBe('ENG');
+    expect(line.lastElementChild!.className).toBe('crewlet-tree-canvas__group-label');
+    // Nothing pushes the key to the far end of the line any more.
+    expect(/\.crewlet-tree-canvas__group-lead\s*\{([^}]*)\}/.exec(SHEET)?.[1]).not.toContain('margin-inline-start: auto');
   });
+
+
 
   test('the drawing is hidden, and each member card is described by what the box says', () => {
     const { container } = mount({ groups: UNITS });
@@ -1273,7 +1281,7 @@ describe('groups', () => {
     expect(head(container).getAttribute('aria-hidden')).toBe('true');
     const described = item('Engineering').getAttribute('aria-describedby');
     expect(described).toBe(head(container).id);
-    expect(document.getElementById(described!)!.textContent).toBe('Engineering · CoreENG');
+    expect(document.getElementById(described!)!.textContent).toBe('ENG Engineering · Core');
     expect(item('Sales').getAttribute('aria-describedby')).toBe(described);
     // A node that is not a member, and a ROW inside a member card, say nothing.
     expect(item('CEO').hasAttribute('aria-describedby')).toBe(false);
@@ -1319,7 +1327,7 @@ describe('groups', () => {
     for (const y of runs) expect(y).toBeLessThanOrEqual(top);
   });
 
-  test('a box and its label are painted in tokens: the card rung, its hairline and the tertiary ink at 12px', () => {
+  test('a box and its label are painted in tokens: the card rung, a dashed strong edge and the tertiary ink at 12px', () => {
     const uninstall = installThemed('dark', 'TreeCanvas/TreeCanvas.css');
     const { container } = mount({ groups: UNITS });
     const rgb = (hex: string) => {
@@ -1328,7 +1336,10 @@ describe('groups', () => {
     };
     const drawn = getComputedStyle(box(container));
     expect(drawn.backgroundColor).toBe(rgb(themes.dark.color.surface.subtle));
-    expect(drawn.borderTopColor).toBe(rgb(themes.dark.color.border.default));
+    // DASHED, as the org chart draws a unit: a box round cards drawn solid
+    // read as one more card. In the strong step, since a dash is half gaps.
+    expect(drawn.borderTopStyle).toBe('dashed');
+    expect(drawn.borderTopColor).toBe(rgb(themes.dark.color.border.strong));
     expect(drawn.borderTopWidth).toBe('1px');
     const line = getComputedStyle(head(container));
     expect(line.color).toBe(rgb(themes.dark.color.text.tertiary));

@@ -879,11 +879,14 @@ than re-reading an empty store. `useSystemTheme` and `resolveTheme` are
 exported for an application that draws its own. Nothing is renamed.
 
 **`TreeCanvas` boxes a unit round its seats, and its connectors are elbows.**
-The design's org chart. `groups: { id, label, meta?, memberIds }[]` draws a
-hairline `--color-border-default` box on `--color-surface-subtle` round a run
-of sibling cards (the seats that report to one lead), with `label` along its
-top in the tertiary ink at 12px and `meta` (the project key chip) at the end
-of that line. The box is room the LAYOUT keeps rather than a frame over it:
+The design's org chart. `groups: { id, label, lead?, memberIds }[]` draws a
+DASHED `--color-border-strong` box on `--color-surface-subtle` round a run of
+sibling cards (the seats that report to one lead), with `label` along its top
+in the tertiary ink at 12px and `lead` (the project key chip) AHEAD of it, as
+the design reads a unit: "ENG Engineering · Core", which is also the
+description each member card is given. The edge is dashed because a box round
+cards drawn with a solid edge read as one more, larger card, and it takes the
+strong step because a dash spends half its length on gaps. The box is room the LAYOUT keeps rather than a frame over it:
 `layoutForest` takes `groups` (`{ id, members, inset }`, each member's outline
 widened by the box's padding and header), so a card outside a unit is held a
 gap clear of the unit's box, two boxes never overlap, a short member's

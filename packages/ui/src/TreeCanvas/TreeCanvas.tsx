@@ -306,10 +306,12 @@ export interface TreeCanvasGroup {
    */
   label: string;
   /**
-   * A short fact at the END of the label's line, such as the project key chip
-   * a unit's work is filed under. Drawn and described with the label.
+   * A short key AHEAD of the label, such as the project key chip a unit's
+   * work is filed under: "ENG Engineering · Core", as the approved org chart
+   * reads it and as a rail row's `lead` puts a project's key before its name.
+   * Drawn and described with the label.
    */
-  meta?: ReactNode | undefined;
+  lead?: ReactNode | undefined;
   /**
    * The CARDS it encloses: ids `cards` returns, all children of one card (or
    * all roots) and consecutive among them. A member that is not drawn right
@@ -1132,10 +1134,16 @@ export function TreeCanvas({
               data-enter={enterOf(members, arrived)}
               style={placedStyle(placed, false)}
             >
-              <span className="crewlet-tree-canvas__group-label">{group.label}</span>
-              {group.meta === undefined || group.meta === null ? null : (
-                <span className="crewlet-tree-canvas__group-meta">{group.meta}</span>
+              {/* The space is REAL, so the description every member card is
+                  given reads "ENG Engineering · Core" rather than running the
+                  key into the name; the line is a flex row, which draws no
+                  text node of whitespace alone, so it costs the layout nothing. */}
+              {group.lead === undefined || group.lead === null ? null : (
+                <>
+                  <span className="crewlet-tree-canvas__group-lead">{group.lead}</span>{' '}
+                </>
               )}
+              <span className="crewlet-tree-canvas__group-label">{group.label}</span>
             </div>
           );
         })}
