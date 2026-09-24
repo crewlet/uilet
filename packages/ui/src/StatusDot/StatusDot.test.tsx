@@ -362,3 +362,47 @@ describe('StatusDot', () => {
     for (const { dot, ring } of still) expect(getComputedStyle(ring).animation, dot.className).toBe('');
   });
 });
+
+describe('a dot with its word', () => {
+  test('is one line: the hidden dot, then the word a reader hears, with the class on the line', () => {
+    const { container } = render(
+      <StatusDot tone="info" pulse className="seat-status">
+        Reviewing !231
+      </StatusDot>,
+    );
+    const line = container.firstElementChild!;
+    expect(line.className).toBe('crewlet-status seat-status');
+    const [dot, word] = [...line.children];
+    expect(dot!.className).toBe('crewlet-status-dot crewlet-status-dot--info is-pulsing');
+    expect(dot!.getAttribute('aria-hidden')).toBe('true');
+    expect(word!.className).toBe('crewlet-status__label');
+    expect(word!.textContent).toBe('Reviewing !231');
+    // A real space, so text joined across the line never runs the two together.
+    expect(line.textContent).toBe(' Reviewing !231');
+  });
+
+  test('without a word it is the bare dot it always was, the class on the dot', () => {
+    const { container } = render(<StatusDot tone="warning" className="mine" />);
+    expect(container.firstElementChild!.className).toBe('crewlet-status-dot crewlet-status-dot--warning mine');
+    expect(container.querySelector('.crewlet-status')).toBeNull();
+  });
+
+  test("the gap clears the halo's full reach, whatever the tone and whether or not it pulses", () => {
+    /*
+     * The halo is painted outside every box and takes no room, so a gap under
+     * its reach puts it on the first letter at every peak: at 4px it struck
+     * the R of "Reviewing". The reach is read from the rules that draw it, so
+     * a halo that grows without the gap following fails here.
+     */
+    const frames = /@keyframes crewlet-status-dot-pulse\s*\{([\s\S]*?)\n\}/.exec(code)?.[1] ?? '';
+    const spread = Math.max(...[...frames.matchAll(/0 0 0 ([\d.]+)px/g)].map((match) => Number(match[1])));
+    const reach = haloGap() + spread;
+    const rule = /\.crewlet-status\s*\{([^}]*)\}/.exec(code)?.[1] ?? '';
+    const gap = Number(/(?:^|[;{\s])gap:\s*([\d.]+)px/.exec(rule)?.[1]);
+    expect(reach).toBe(5);
+    // Two pixels of ground past the halo's peak, the band between the dot and its halo.
+    expect(gap - reach).toBe(haloGap());
+    // One rule for every tone: the gap is not keyed on pulsing, so words line up down a column.
+    expect(code).not.toMatch(/\.crewlet-status[^{]*is-pulsing[^{]*\{[^}]*gap/);
+  });
+});

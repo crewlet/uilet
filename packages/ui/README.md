@@ -460,6 +460,17 @@ notice it" difference to. Under `prefers-reduced-motion: reduce` the pulse is
 held: the dot rests at its fill with no halo, and the word beside it still says
 the work is under way.
 
+Because the halo takes no room, a word set beside a pulsing dot at an ordinary
+mark's 4px was struck by it at every peak. `StatusDot` takes that word now, as
+its `children`: `<StatusDot tone="info" pulse>Reviewing !231</StatusDot>` is one
+line, `.crewlet-status` (which then takes `className`), the hidden dot and the
+read word 7px apart, which is the halo's 5px reach and the 2px of ground that
+stands between the dot and its halo again on the far side. The gap is fixed at
+every density, like the dot and its halo, and the same for every tone, pulsing
+or not, so a column of statuses starts its words on one line. The word is one
+line and ends in an ellipsis rather than the dot giving way. A dot with no
+children is drawn exactly as before.
+
 The literal check behind `crewlet-css-check` used to accept any stylesheet that
 MENTIONED `prefers-reduced-motion`, and three components here passed it while
 still moving for a reader who had asked them not to. `DataTable` stopped its

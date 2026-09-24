@@ -140,6 +140,38 @@
 }
 
 /*
+ * A DOT WITH ITS WORD: one line, the dot and then the word, the way every
+ * dot in this kit is meant to be read.
+ *
+ * THE GAP CLEARS THE HALO. A pulsing dot's halo reaches 5px past its edge, 2
+ * of ground and 3 of halo, painted outside every box, so it takes no room and
+ * a gap narrower than that puts the halo on the first letter at every peak:
+ * at the 4px an ordinary mark stands off its word, it struck the R of
+ * "Reviewing". 7px is that reach and 2px of ground on the far side of it, the
+ * same band that stands between the dot and its halo, so at the peak the word
+ * stands off the halo exactly as the halo stands off the dot. It is written in
+ * pixels, not a spacing step, because what it clears is fixed at every
+ * density like the dot and the halo themselves, and it is the same for EVERY
+ * tone, pulsing or not, so a column of statuses starts its words on one line
+ * whichever of them is breathing.
+ */
+.crewlet-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* A status is one line, and the word is what gives way: the dot never does. */
+.crewlet-status__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
  * HELD, not slowed: a mark that loops for as long as the work runs is exactly
  * what the setting is for. The stop names the selector that starts the pulse
  * and comes after it, so it wins on source order at the same specificity,
