@@ -26,8 +26,12 @@ function build(files) {
   return root;
 }
 
+const ICON = '<link rel="icon" type="image/svg+xml" href="./favicon.svg" />';
+
 const valid = {
-  'index.html': '<!doctype html>',
+  'index.html': `<!doctype html>${ICON}`,
+  'iframe.html': `<!doctype html>${ICON}`,
+  'favicon.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>',
   'nunito-sans-regular.woff2': 'font',
   'OFL.txt': LICENSE,
   'assets/geist-latin-abc.woff2': 'font',
@@ -58,8 +62,8 @@ describe('checkStorybookStatic', () => {
     ['an @import of a remote stylesheet', 'assets/preview.css', "@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');"],
     ['a url() reaching a host', 'assets/preview.css', '@font-face { src: url(https://cdn.example.com/geist.woff2); }'],
     ['a protocol relative url()', 'assets/preview.css', '.a { background: url(//cdn.example.com/a.png); }'],
-    ['a src attribute reaching a host', 'iframe.html', '<script src="https://cdn.example.com/a.js"></script>'],
-    ['a <link> reaching a host', 'index.html', '<!doctype html><link rel="stylesheet" href="https://cdn.example.com/a.css">'],
+    ['a src attribute reaching a host', 'iframe.html', `${ICON}<script src="https://cdn.example.com/a.js"></script>`],
+    ['a <link> reaching a host', 'index.html', `<!doctype html>${ICON}<link rel="stylesheet" href="https://cdn.example.com/a.css">`],
   ]) {
     it(`refuses a build carrying ${what}`, () => {
       const problems = checkStorybookStatic(build({ ...valid, [path]: content }));
@@ -71,7 +75,7 @@ describe('checkStorybookStatic', () => {
   it('leaves a plain link alone, which is not a request the page makes', () => {
     // Storybook's own error pages link to its documentation. A rule that
     // refused those would be switched off within a week.
-    const files = { ...valid, 'iframe.html': '<a href="https://storybook.js.org/docs">Docs</a>' };
+    const files = { ...valid, 'iframe.html': `${ICON}<a href="https://storybook.js.org/docs">Docs</a>` };
     assert.deepEqual(checkStorybookStatic(build(files)), []);
   });
 
@@ -88,7 +92,6 @@ describe('checkStorybookStatic', () => {
 
   it('refuses a directory with no fonts, which means the wrong directory was checked', () => {
     const problems = checkStorybookStatic(build({ 'index.html': '<!doctype html>' }));
-    assert.equal(problems.length, 2);
     assert.match(problems[0], /^no font files found/);
   });
 
@@ -112,6 +115,38 @@ describe('checkStorybookStatic', () => {
     // second half of the same file: the ISC text alone does not cover them.
     const files = { ...valid, 'third-party/lucide/LICENSE': LUCIDE.slice(0, LUCIDE.indexOf('The MIT License')) };
     assert.deepEqual(checkStorybookStatic(build(files)), ['third-party/lucide/LICENSE does not contain the Feather MIT notice']);
+  });
+
+  describe('the icon each page names', () => {
+    /*
+     * The preview's iframe.html named none, so every story opened on its own
+     * asked for /favicon.ico, which no build has, and logged a 404 into the
+     * console a reader checks for real errors.
+     */
+    for (const page of ['index.html', 'iframe.html']) {
+      it(`refuses ${page} naming no icon`, () => {
+        assert.deepEqual(checkStorybookStatic(build({ ...valid, [page]: '<!doctype html>' })), [
+          `${page} names no icon, so a browser asks for /favicon.ico, which the build does not have`,
+        ]);
+      });
+
+      it(`refuses ${page} naming an icon the build does not carry`, () => {
+        const files = { ...valid, [page]: '<!doctype html><link rel="icon" href="./missing.svg">' };
+        assert.deepEqual(checkStorybookStatic(build(files)), [`${page} names the icon ./missing.svg, which is not in the build`]);
+      });
+
+      it(`refuses a build without ${page}`, () => {
+        const { [page]: _omitted, ...files } = valid;
+        assert.deepEqual(checkStorybookStatic(build(files)), [
+          `${page} is missing; a Storybook build serves the manager and the preview from the root`,
+        ]);
+      });
+    }
+
+    it('reads the link whatever order its attributes come in', () => {
+      const files = { ...valid, 'iframe.html': '<link href="favicon.svg" type="image/svg+xml" rel="icon">' };
+      assert.deepEqual(checkStorybookStatic(build(files)), []);
+    });
   });
 
   it('refuses a path that is not a directory', () => {

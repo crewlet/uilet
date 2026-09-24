@@ -28,6 +28,12 @@
 //    @import of a Google Fonts URL, and one preview import away it would be
 //    inlined into the site's CSS with nothing to say so. A plain <a href> is
 //    left alone: a link a reader may click is not a request the page makes.
+// 4. Both pages name an icon the build carries. The manager's index.html and
+//    the preview's iframe.html are each opened on their own (a story linked
+//    by itself, a screenshot, a test), and a page that names no icon makes
+//    the browser ask for /favicon.ico, which no build has: a 404 on every
+//    story, in the very console a reader checks for real errors. So each page
+//    links one, and the file it links is in the build.
 //
 // It depends on nothing but Node, so the Storybook build runs it on its own
 // output, and anything that publishes that output can run it on the files it
@@ -38,6 +44,9 @@ import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const FORBIDDEN_AT_ROOT = ['_worker.js', '_routes.json', '_headers', '_redirects'];
+// The two pages a reader opens: the manager, and the preview each story is.
+const PAGES = ['index.html', 'iframe.html'];
+const ICON_LINK = /<link\b[^>]*\brel\s*=\s*['"](?:shortcut )?icon['"][^>]*>/i;
 const LICENSE_MARKER = 'SIL OPEN FONT LICENSE Version 1.1';
 const GLYPHS_LICENSE = 'third-party/lucide/LICENSE';
 // Both halves of upstream's LICENSE: a file carrying the ISC text alone would
@@ -104,6 +113,20 @@ export function checkStorybookStatic(root) {
     const text = readFileSync(glyphsLicense, 'utf8');
     for (const [marker, what] of Object.entries(GLYPHS_LICENSE_MARKERS)) {
       if (!text.includes(marker)) problems.push(`${GLYPHS_LICENSE} does not contain ${what}`);
+    }
+  }
+  for (const page of PAGES) {
+    const path = join(root, page);
+    if (!statSync(path, { throwIfNoEntry: false })?.isFile()) {
+      problems.push(`${page} is missing; a Storybook build serves the manager and the preview from the root`);
+      continue;
+    }
+    const link = ICON_LINK.exec(readFileSync(path, 'utf8'));
+    const href = link && /\bhref\s*=\s*['"]([^'"]+)['"]/i.exec(link[0])?.[1];
+    if (!href) {
+      problems.push(`${page} names no icon, so a browser asks for /favicon.ico, which the build does not have`);
+    } else if (!/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(href) && !statSync(join(root, href.replace(/[?#].*$/, '')), { throwIfNoEntry: false })?.isFile()) {
+      problems.push(`${page} names the icon ${href}, which is not in the build`);
     }
   }
   for (const path of loadedFiles(root)) {

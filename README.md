@@ -58,7 +58,7 @@ npm run lint && npm run typecheck
 ├── scripts/
 │   ├── release.mjs            # release version, consistency check, build, pack and registry comparison
 │   ├── check-signoff.mjs      # Signed-off-by gate for pull requests and main
-│   └── check-storybook-static.mjs  # static-site and font license check for the Storybook build
+│   └── check-storybook-static.mjs  # static-site, license and page-icon check for the Storybook build
 └── .github/
     ├── actions/               # composite actions the workflows share
     └── workflows/             # ci, release
