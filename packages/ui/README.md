@@ -607,8 +607,12 @@ alone now reads every stylesheet in the package.
 the 12px caption step at the medium weight, 9px inside each end and 6px between
 a dot or a glyph and its word. `xs` is the design's 18px count pill at the 11px
 step and `md` a small control's 26px. The neutral tag is the raised rung under
-the secondary ink, the design's quiet pill, rather than the inset overlay; every
-state keeps its soft tint under its ink. A tag that acts still clears 24px.
+the secondary ink, the design's quiet pill, rather than the inset overlay, and
+it is drawn inside the strong hairline: its fill IS a surface, so on a raised
+ground (a palette's lead block, a raised card, the rail's current row) a
+borderless one vanished into loose words. Under the pointer an acting neutral
+tag takes the strong step once more. Every state keeps its soft tint under its
+ink and no resting boundary. A tag that acts still clears 24px.
 
 **A `Kbd` is the design's keycap, and a chord is one cap.** The cap is the
 raised rung inside the strong hairline, flat on every side, in the mono face at
@@ -676,7 +680,7 @@ so the figure's root is a `div.crewlet-spark` holding the plot's
 | a stylesheet relying on a `default` `Card`'s shadow or its `::after` rim, or on an interactive card lifting on hover | the card is flat; `variant="elevated"` is the one that lifts |
 | a stylesheet relying on the shadow of a `StatCard`, a `StatGroup`, an `ErrorBoundary` or a `PricingCard`, or the rim on a selected `PricingCard` | each is flat; a selected `PricingCard` draws `--shadow-selection` (and `--shadow-glow` with a discount) |
 | a `Tag` measured at 20px with a 4px corner and an 11px label | 22px, `--radius-pill` and `--font-size-xs`; `size="xs"` is 18px at `--font-size-2xs`, `size="md"` is 26px |
-| a stylesheet relying on the neutral `Tag`'s `--color-surface-inset` fill | it is `--color-surface-elevated` |
+| a stylesheet relying on the neutral `Tag`'s `--color-surface-inset` fill, or on its transparent boundary | it is `--color-surface-elevated` inside a 1px `--color-border-strong` boundary, and `--color-border-strong-hover` under the pointer |
 | a stylesheet relying on `<Kbd keys>` drawing one `.crewlet-kbd` per key inside `.crewlet-kbd-keys` | one `.crewlet-kbd` cap holds a `kbd.crewlet-kbd__key` per key; `.crewlet-kbd-keys` is gone |
 | a stylesheet relying on a `Kbd`'s 2px bottom edge, its `--color-border-default` boundary or its inset fill | a 1px `--color-border-strong` boundary on `--color-surface-elevated`; `subtle` is `--color-border-default` and no fill |
 | a stylesheet relying on a pill `Tabs` or `SegmentedControl` well on `--color-surface-inset` with no boundary | it is `--color-surface-elevated` inside a 1px `--color-border-default` boundary |

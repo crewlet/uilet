@@ -107,6 +107,13 @@ export const HAIRLINE_DE: number;
 export const OVERLAY_STEPS: readonly (readonly [string, string, string | null])[];
 export const OVERLAY_DE: number;
 
+/**
+ * The translucent overlays composited onto each opaque rung: a hovered row, a
+ * pressed row and an inset well. A component suite measuring what a mark
+ * stands on includes these grounds as well as the bare rungs.
+ */
+export const OVERLAYS: readonly string[];
+
 /** The ground the application rail stands on. */
 export const RAIL_GROUND: string;
 

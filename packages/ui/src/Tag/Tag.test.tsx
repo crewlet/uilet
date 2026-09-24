@@ -15,7 +15,17 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { contrast, flatten, OPAQUE_SURFACES, paletteStates, parseHex, type Rgb } from '@crewlethq/tokens/test/palette';
+import {
+  contrast,
+  deltaE,
+  flatten,
+  HAIRLINE_DE,
+  OPAQUE_SURFACES,
+  OVERLAYS,
+  paletteStates,
+  parseHex,
+  type Rgb,
+} from '@crewlethq/tokens/test/palette';
 import { TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
 import {
   DENSITIES as DENSITY_SETTINGS,
@@ -297,6 +307,52 @@ describe('Tag colour', () => {
         const ratio = contrast(ink, flatten(values.get(fill ?? '') ?? '', beneath));
         if (ratio < 4.5) failures.push(`${state}: neutral on ${surface}: ${ratio.toFixed(2)}:1`);
       }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test('the neutral pill stays drawn on every ground it can land on, its own rung included', () => {
+    /*
+     * The neutral fill IS the raised rung, so on a raised ground (a palette's
+     * lead block, a raised card, the rail's current row) the fill alone draws
+     * nothing and the pill vanished into loose words. What is measured here is
+     * the pill's outer boundary against the ground: the fill OR the resting
+     * edge has to clear the hairline dE, on every opaque rung and on every
+     * overlay a hovered, pressed or inset row composites onto each one. Both
+     * values are READ from the stylesheet, so a rule that dropped the edge
+     * goes red on the raised rung.
+     */
+    const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const base = /(?:^|\})\s*\.crewlet-tag\s*\{([^}]*)\}/.exec(bare)?.[1] ?? '';
+    const neutral = /\.crewlet-tag--neutral\.crewlet-tag--soft\s*\{([^}]*)\}/.exec(bare)?.[1] ?? '';
+    const fill = /--crewlet-tag-fill:\s*var\((--[\w-]+)\)/.exec(base)?.[1] ?? '';
+    const edgeDecl = /--crewlet-tag-edge:\s*([^;]+);/.exec(neutral)?.[1]?.trim() ?? 'transparent';
+    const edgeName = /^var\((--[\w-]+)\)$/.exec(edgeDecl)?.[1];
+    expect(/border:\s*1px solid var\(--crewlet-tag-edge\)/.test(base)).toBe(true);
+    const failures: string[] = [];
+    for (const [state, values] of Object.entries(states)) {
+      if (state === 'base') continue;
+      const page = parseHex(values.get(token('color-surface-background')) ?? '');
+      if (page === null) throw new Error(`${state} has no opaque page colour`);
+      for (const surface of OPAQUE_SURFACES) {
+        const rung = resolveColour(values, surface, page);
+        const grounds: [string, Rgb][] = [
+          [surface, rung],
+          ...OVERLAYS.map((overlay): [string, Rgb] => [`${overlay} over ${surface}`, flatten(values.get(overlay) ?? '', rung)]),
+        ];
+        for (const [where, ground] of grounds) {
+          const filled = flatten(values.get(fill) ?? '', ground);
+          const edged = edgeName === undefined ? filled : flatten(values.get(edgeName) ?? '', filled);
+          const drawn = Math.max(deltaE(filled, ground), deltaE(edged, ground));
+          if (drawn < HAIRLINE_DE) failures.push(`${state}: neutral pill on ${where}: dE ${drawn.toFixed(2)}`);
+        }
+      }
+      // A neutral pill that acts moves its boundary on hover, so the hover
+      // line has to be told from the resting edge it replaces.
+      const lineName = /--crewlet-tag-line:\s*var\((--[\w-]+)\)/.exec(neutral)?.[1] ?? '';
+      const onFill = resolveColour(values, fill, page);
+      const hover = deltaE(flatten(values.get(lineName) ?? '', onFill), flatten(values.get(edgeName ?? '') ?? '', onFill));
+      if (hover < HAIRLINE_DE) failures.push(`${state}: neutral pill hover line sits dE ${hover.toFixed(2)} off its resting edge`);
     }
     expect(failures).toEqual([]);
   });

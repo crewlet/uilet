@@ -120,7 +120,8 @@ type TagAll = TagLook &
  * text under the 4.5:1 it has to clear. 0.2.0 spelled five dark-theme literals
  * here instead, which measured between 1.14:1 and 1.58:1 on a light page. The
  * neutral tag, which names no state, is the raised rung under the secondary
- * ink.
+ * ink, inside the strong hairline: its fill is a surface, and on a raised
+ * ground a borderless one would draw nothing.
  *
  * IT IS A PILL, the approved design's: 22px with round ends at the caption
  * step. Its line box is fixed. The height comes from the size step rather

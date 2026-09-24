@@ -32,6 +32,10 @@
    * THE NEUTRAL PILL IS THE RAISED RUNG under the secondary ink, the design's
    * quiet pill: a category, a count, a word that is not a state. Every other
    * variant below is its tone's soft tint under its ink.
+   *
+   * The boundary at rest is `--crewlet-tag-edge`: transparent for a tinted
+   * pill, whose hue already separates it from any neutral ground, and the
+   * strong border step for the neutral one (see its rule below).
    */
   --crewlet-tag-height: calc(22px * var(--density, 1));
   --crewlet-tag-floor: 0px;
@@ -42,6 +46,7 @@
   --crewlet-tag-fill: var(--color-surface-elevated);
   --crewlet-tag-ink: var(--color-text-secondary);
   --crewlet-tag-line: var(--color-border-hover);
+  --crewlet-tag-edge: transparent;
 
   display: inline-flex;
   align-items: center;
@@ -50,7 +55,7 @@
   gap: calc(var(--spacing-1) * 1.5);
   height: max(var(--crewlet-tag-height), var(--crewlet-tag-floor));
   padding: 0 var(--crewlet-tag-pad);
-  border: 1px solid transparent;
+  border: 1px solid var(--crewlet-tag-edge);
   border-radius: var(--radius-pill);
   background: var(--crewlet-tag-fill);
   color: var(--crewlet-tag-ink);
@@ -204,6 +209,31 @@
 .crewlet-tag--outline {
   background: transparent;
   border-color: var(--crewlet-tag-line);
+}
+
+/*
+ * THE NEUTRAL PILL CARRIES A BOUNDARY, because its fill IS a surface. The
+ * raised rung is also the ground of a palette's lead block, a raised card and
+ * the rail's current row, and on any of them a raised pill with a transparent
+ * boundary was the colour of what it stood on: the pill vanished and its words
+ * read as loose text with odd gaps between them.
+ *
+ * THE STRONG STEP, NOT THE DEFAULT ONE. The design's own chip is found by 1px
+ * of its line step (`.chip`), which is the default border here, and that
+ * measured under the hairline dE of 3 on five grounds a pill lands on: 2.76 on
+ * the light frame, 2.86 on a pressed row over a light card, 2.77 and 2.71 on an
+ * inset well inside a raised surface, and 2.08 on a hovered row over the dark
+ * sheet. The strong step is the design's line-2, the boundary it draws round a
+ * key cap (`.kbd`), and it clears 3 on every rung and every overlay in both
+ * themes. The suite measures all of them.
+ *
+ * The hover takes the strong step once more, because the press line a tinted
+ * pill moves to on hover IS the strong step in both themes, and a hover that
+ * lands on the resting boundary draws no hover at all.
+ */
+.crewlet-tag--neutral.crewlet-tag--soft {
+  --crewlet-tag-edge: var(--color-border-strong);
+  --crewlet-tag-line: var(--color-border-strong-hover);
 }
 
 /* The neutral outline is the engine's `.badge.outline`: the hairline step as
