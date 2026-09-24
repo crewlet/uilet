@@ -49,10 +49,18 @@
  * than at a control's. It is the first thing on the surface and the only thing
  * with focus, so it is the surface's headline as much as its input.
  */
+/*
+ * THE ROW'S TWO ENDS ARE INSET ONE STEP LESS THAN THE BANDS BELOW IT. The
+ * search glyph and the Esc keycap each carry a slot inset of their own (the
+ * glyph's, a step less than text's, see Input.css), so at the bands' 16px the
+ * glyph stood 24px in and the keycap 28px from the edge; at 12px they stand
+ * 20px and 16px in, where the approved palette draws them, and the query still
+ * starts on the line the design's does.
+ */
 .crewlet-input.crewlet-palette__field {
   flex-shrink: 0;
   min-height: var(--size-row-lg);
-  padding-inline: var(--spacing-4);
+  padding-inline: var(--spacing-3);
   border: none;
   border-bottom: 1px solid var(--color-border-default);
   border-radius: 0;
@@ -61,6 +69,10 @@
 
 .crewlet-input.crewlet-palette__field .crewlet-input__control {
   font-size: var(--font-size-md);
+}
+
+.crewlet-input.crewlet-palette__field .crewlet-input__trailing {
+  padding-right: var(--spacing-1);
 }
 
 /*
