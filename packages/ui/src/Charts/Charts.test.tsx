@@ -129,6 +129,87 @@ test('a bar row is a link when it has a destination, and a button when it has an
   expect(onSelect).toHaveBeenCalledTimes(1);
 });
 
+test("a row that leads somewhere is named with a space between its parts, in both layouts", () => {
+  /*
+   * A link is named by its content, and the parts are spans: joined with
+   * nothing between them the row was "planner180".
+   */
+  for (const layout of ['stacked', 'beside'] as const) {
+    render(
+      <BarList
+        layout={layout}
+        data={[{ id: 'a', label: 'planner', value: 180, display: '180', sub: 'last run 4m ago', href: '#/planner' }]}
+      />,
+    );
+    const name = screen.getByRole('link').textContent!.replace(/\s+/g, ' ').trim();
+    expect(name, layout).toMatch(/^planner /);
+    expect(name, layout).toContain(' 180');
+    expect(name, layout).toContain(' last run 4m ago');
+    cleanup();
+  }
+});
+
+test('beside: the words in their own column, then the bar, then the value at the bar\'s end', () => {
+  /*
+   * The design's "Tokens by team" and "By model": label and sub stacked in a
+   * column, a bar at most 12px thick, and the value straight after the bar,
+   * not at the far end of the row.
+   */
+  const { container } = render(
+    <BarList
+      layout="beside"
+      data={[
+        { id: 'eng', label: 'Engineering', sub: '3 agents', value: 7.9, display: '7.9M' },
+        { id: 'lead', label: 'Leadership', sub: '2 agents', value: 2.4, display: '2.4M' },
+        { id: 'idle', label: 'Idle', value: 0, display: '0' },
+      ]}
+    />,
+  );
+  expect(container.querySelector('.crewlet-bar-list')!.classList.contains('crewlet-bar-list--beside')).toBe(true);
+  const rows = [...container.querySelectorAll<HTMLElement>('.crewlet-bar-list__row')];
+  const [first] = rows;
+  // Words first, in one column: the label over the sub.
+  const names = first!.firstElementChild!;
+  expect(names.className).toBe('crewlet-bar-list__names');
+  expect([...names.children].map((one) => one.className)).toEqual(['crewlet-bar-list__label', 'crewlet-bar-list__sub']);
+  // Then the plot: the bar and, straight after it, the value.
+  const scale = first!.querySelector('.crewlet-bar-list__plot > .crewlet-bar-list__scale')!;
+  expect([...scale.children].map((one) => one.className)).toEqual(['crewlet-bar-list__bar', 'crewlet-bar-list__value']);
+  expect(scale.lastElementChild!.textContent).toBe('7.9M');
+  // No track: the bar stands on nothing.
+  expect(container.querySelector('.crewlet-bar-list__track')).toBeNull();
+  // A share of the largest value, as ever, and hidden, as ever.
+  const bars = [...container.querySelectorAll<HTMLElement>('.crewlet-bar-list__bar')];
+  expect(bars.map((bar) => bar.style.width)).toEqual(['100%', `${(2.4 / 7.9) * 100}%`]);
+  for (const bar of bars) expect(bar.getAttribute('aria-hidden')).toBe('true');
+  // A zero draws no bar, and its value stands where the bar would start.
+  expect([...rows[2]!.querySelector('.crewlet-bar-list__scale')!.children].map((one) => one.className)).toEqual([
+    'crewlet-bar-list__value',
+  ]);
+});
+
+test('beside: the bar is at most 12px, rounded at its value end, on a scale that keeps room for the value', () => {
+  uninstall = installThemed('dark', 'Charts/Charts.css');
+  const { container } = render(
+    <BarList layout="beside" data={[{ id: 'eng', label: 'Engineering', value: 7.9, display: '7.9M' }]} />,
+  );
+  const bar = container.querySelector('.crewlet-bar-list__bar')!;
+  expect(px(bar, 'height')).toBeLessThanOrEqual(12);
+  expect(px(bar, 'height')).toBeGreaterThan(5);
+  expect(px(bar, 'border-start-start-radius')).toBe(0);
+  expect(px(bar, 'border-start-end-radius')).toBeGreaterThan(0);
+  // The scale is the plot less the value's room, so the longest bar's value still fits.
+  const scale = container.querySelector('.crewlet-bar-list__scale')!;
+  expect(getComputedStyle(scale).width).toBe('calc(100% - var(--crewlet-bar-list-value-room))');
+  // And the default layout is still the underline register, track and all.
+  cleanup();
+  const stacked = render(<BarList data={[{ id: 'eng', label: 'Engineering', value: 7.9 }]} />).container;
+  expect(stacked.querySelector('.crewlet-bar-list')!.classList.contains('crewlet-bar-list--stacked')).toBe(true);
+  expect(stacked.querySelector('.crewlet-bar-list__track')).not.toBeNull();
+  uninstall();
+  uninstall = null;
+});
+
 test('the tail is a count the caller phrases, and an empty list says why', () => {
   const { rerender } = render(
     <BarList

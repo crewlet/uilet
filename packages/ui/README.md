@@ -148,7 +148,7 @@ land at once.
   `runPalette({ tokens, themes: themes + override })` from
   `@crewlethq/tokens/test/palette`.
 
-- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-rail` on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
+- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-rail` on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), `--crewlet-bar-list-label-width` (128px) and `--crewlet-bar-list-value-room` (`6ch` and a gap) for the words' column and the value's room in a `BarList layout="beside"`, and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
 
 The component stylesheets read only variables that `@crewlethq/tokens` emits or
 that the components declare themselves, and the same check refuses a glyph
@@ -302,6 +302,20 @@ Marks change shape with no API change. A `BarList` bar and its track, and a
 taking a percentage width. A `TimeSeries` line is 2px (it was 1.75, which a
 `Sparkline` keeps). A stylesheet of your own that set a part's `width` or
 relied on the pill ends should drop it.
+
+`BarList` takes a `layout`. `stacked`, the default, is the list as it was: the
+label and its value on a line, a thin bar across the row under them. `beside`
+is the design's ranked figure, the Home screen's "Tokens by team" and Spend's
+"By model": the label over its `sub` (at `--font-size-2xs`) in a column of their own
+(`--crewlet-bar-list-label-width`, 128px, so every bar starts on one
+baseline), then a 12px bar rounded at its value end, then the value at the
+BAR's end in the primary ink, in a 30px row (`--size-control-md`). It has no
+track. A bar is its share of the SCALE, the plot less the room kept for the
+longest bar's value (`--crewlet-bar-list-value-room`, `6ch` and the gap), so
+the longest value still fits and every bar is measured against one length.
+The parts of a row are now separated by real spaces, in both layouts, so a
+row that is a link or a button is named "planner 180" rather than
+"planner180".
 
 **A failed row in a `List` marks itself with the danger ink.** The rail and the
 glyph of a `tone="danger"` item were the danger fill, which is measured to 3:1

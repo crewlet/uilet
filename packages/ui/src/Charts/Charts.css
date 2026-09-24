@@ -185,6 +185,92 @@
   white-space: nowrap;
 }
 
+/*
+ * BESIDE: the design's ranked figure. The words in a column of their own, the
+ * bar, and the value at the bar's end, one row 30px tall: the design's, and
+ * the control step's, --size-control-md, so it follows the density. Two
+ * component variables set its geometry, because both depend on what a screen
+ * puts in it rather than on the kit:
+ *
+ * --crewlet-bar-list-label-width, the words' column (128px, the Home card's):
+ * one width for every row, so the bars share one baseline.
+ *
+ * --crewlet-bar-list-value-room, what the scale keeps free at its end for the
+ * value of the longest bar (6ch of tabular figures and the gap before them,
+ * "412.3k"). The SCALE is the plot less that room, a bar is its share of the
+ * scale, and the value follows the bar, so the longest bar's value stands in
+ * the room and every shorter bar's value just past its own end.
+ *
+ * The bar is 12px thick, the design's, and square on its baseline with the
+ * value end rounded, as the stacked register's is. It has no track: the
+ * longest bar IS the end of the scale, and a track under the rest would be a
+ * second baseline to read against.
+ */
+.crewlet-bar-list--beside {
+  --crewlet-bar-list-label-width: 128px;
+  --crewlet-bar-list-value-room: calc(6ch + var(--spacing-2));
+
+  gap: calc(var(--spacing-1) * 1.5);
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-height: var(--size-control-md);
+}
+
+.crewlet-bar-list__names {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--crewlet-bar-list-label-width);
+  min-width: 0;
+  line-height: var(--font-line-height-tight);
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__label {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__row--pressable:hover .crewlet-bar-list__label {
+  color: var(--color-text-primary);
+}
+
+.crewlet-bar-list__plot {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crewlet-bar-list__scale {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: calc(100% - var(--crewlet-bar-list-value-room));
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__bar {
+  flex: none;
+  height: 12px;
+}
+
+/* What the row is, under its name at the micro step, as the design sets it:
+   in a column 128px wide a caption at the list's own step wrapped a word. */
+.crewlet-bar-list--beside .crewlet-bar-list__sub {
+  font-size: var(--font-size-2xs);
+}
+
+/* The number the row is about: the primary ink, a step heavier than the name. */
+.crewlet-bar-list--beside .crewlet-bar-list__value {
+  flex: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
 /* ─── Stacked bar ─────────────────────────────────────────────── */
 
 /*

@@ -60,6 +60,69 @@ export const Ranked: Story = {
   ),
 };
 
+/** A card on the design's grid, holding one figure under its head. */
+const Panel = ({ title, sub, aside, children }: { title: string; sub: string; aside?: string; children: React.ReactNode }) => (
+  <section
+    style={{
+      width: 360,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 'var(--spacing-3)',
+      padding: 'var(--spacing-4) var(--spacing-5)',
+      background: 'var(--color-surface-subtle)',
+      border: '1px solid var(--color-border-default)',
+      borderRadius: 'var(--radius-lg)',
+    }}
+  >
+    <header style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-3)' }}>
+      <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <h3 style={{ margin: 0, font: 'var(--font-weight-semibold) var(--font-size-sm)/1.3 var(--font-family-sans)' }}>{title}</h3>
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>{sub}</span>
+      </span>
+      {aside ? <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>{aside}</span> : null}
+    </header>
+    {children}
+  </section>
+);
+
+/**
+ * THE DESIGN'S RANKED FIGURE: `layout="beside"`. The name and what it is in a
+ * column of their own, a bar up to 12px thick, and the value at the bar's end,
+ * as the Home screen's "Tokens by team" and Spend's "By model" draw it. One
+ * quantity across categories, so one hue: the label names it.
+ */
+export const RankedBeside: Story = {
+  name: 'BarList / Beside the label',
+  render: () => {
+    const one = dataColor(0);
+    return (
+      <div style={{ padding: 20, display: 'flex', gap: 'var(--spacing-4)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <Panel title="Tokens by team" sub="Last 7 days · 12.6M total">
+          <BarList
+            layout="beside"
+            data={[
+              { id: 'eng', label: 'Engineering', sub: '3 agents', value: 7.9, display: '7.9M', color: one },
+              { id: 'lead', label: 'Leadership', sub: '2 agents', value: 2.4, display: '2.4M', color: one },
+              { id: 'product', label: 'Product', sub: 'PM', value: 1.8, display: '1.8M', color: one },
+              { id: 'devrel', label: 'Developer Relations', sub: 'DevRel', value: 0.5, display: '0.5M', color: one },
+            ]}
+          />
+        </Panel>
+        <Panel title="By model" sub="Tokens per model entry" aside="30 days">
+          <BarList
+            layout="beside"
+            data={[
+              { id: 'main', label: 'anthropic-main', sub: 'engineers, PM', value: 31.2, display: '31.2M', color: one },
+              { id: 'exec', label: 'anthropic-exec', sub: 'CEO, CTO', value: 12.7, display: '12.7M', color: one },
+              { id: 'aux', label: 'openai-aux', sub: 'judges, summaries', value: 4.7, display: '4.7M', color: one },
+            ]}
+          />
+        </Panel>
+      </div>
+    );
+  },
+};
+
 /**
  * NOTHING TO DRAW IS STILL A BOX. The sentence stands where the bars would
  * have, at the inset the panel holding them carries, so it reads as this chart
