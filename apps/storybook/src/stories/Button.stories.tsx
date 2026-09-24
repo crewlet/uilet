@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button } from '@crewlethq/ui';
-import { Icon } from '@crewlethq/icons';
-import { SaveGlyph } from '@crewlethq/icons/glyphs';
+import { BookOpenGlyph, SaveGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * The button, and the hierarchy its variants are.
@@ -103,9 +102,15 @@ export const Small: Story = { args: { size: 'small' } };
 
 export const Large: Story = { args: { size: 'large' } };
 
+/**
+ * The leading slot takes a GLYPH, which strokes in `currentColor` and so draws
+ * in the button's own label ink on every variant. A brand mark carries its own
+ * fill, the accent, and on the primary button that is violet on violet: the
+ * slot reads as an empty gap before the label.
+ */
 export const WithLeadingIcon: Story = {
   args: {
-    leadingIcon: <Icon name="CrewletIcon" />,
+    leadingIcon: <BookOpenGlyph />,
     children: 'Read the docs',
   },
 };

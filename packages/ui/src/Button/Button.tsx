@@ -23,7 +23,12 @@ interface ButtonLook {
   variant?: ButtonVariant | undefined;
   size?: ButtonSize | undefined;
   shape?: ButtonShape | undefined;
-  /** Drawn before the label. A glyph component, not a name. */
+  /**
+   * Drawn before the label. A glyph component, not a name: a glyph strokes in
+   * `currentColor`, so it takes the label's ink on every variant. A brand
+   * mark such as `CrewletIcon` paints its own accent fill and disappears on
+   * the primary and accent fills, so it does not belong in this slot.
+   */
   leadingIcon?: ReactNode;
   /** Drawn after the label: a chevron, an external mark, a count. */
   trailingIcon?: ReactNode;
