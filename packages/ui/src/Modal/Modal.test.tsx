@@ -597,6 +597,22 @@ test("the veil's blur is drawn, in the one spelling the bundler keeps", () => {
   expect(names.filter((name) => name.startsWith('-webkit-'))).toEqual([]);
 });
 
+/**
+ * THE PAGE STAYS STILL WHILE A SHEET ARRIVES. The sheet enters from past the
+ * overlay's edge, and focus lands in it as it opens. Inside a LayerHost the
+ * overlay is positioned absolutely, so an entrance it did not clip widened the
+ * page's scrollable area by the sheet's width, and the focus scrolled the page
+ * sideways into it: everything behind the veil jumped by the sheet's width and
+ * slid back. jsdom lays nothing out, so what is held here is the condition: the
+ * overlay clips what it holds, and clips without becoming a box that scrolls.
+ */
+test('the overlay clips a surface entering past its edge, without becoming a box that scrolls', () => {
+  withLengths();
+  const [overlayEl] = paint('<div class="crewlet-modal-overlay crewlet-modal-overlay--in-host crewlet-modal-overlay--sheet"></div>');
+  expect(getComputedStyle(overlayEl!).getPropertyValue('overflow')).toBe('clip');
+  expect(declared('.crewlet-modal-overlay')).toContain('overflow');
+});
+
 /*
  * THE FORM IS NOT A BOX. It sits between the frame and the three bands so the
  * dialog can be a plain element that may carry `role="dialog"`, and every rule

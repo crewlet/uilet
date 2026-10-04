@@ -41,6 +41,18 @@
    * stylesheet, because the source text here has always been correct.
    */
   backdrop-filter: blur(var(--blur-xs));
+  /*
+   * CLIPPED, AND NOT A BOX THAT SCROLLS. A sheet enters from past the
+   * overlay's edge, and inside a LayerHost the overlay is positioned
+   * absolutely, so for the length of that entrance the sheet widened the
+   * page's own scrollable area by its whole width. The surface takes focus as
+   * it opens, and focus scrolls whatever it must to show the control it lands
+   * on: the page jumped sideways by the width of the sheet and slid back as the
+   * sheet arrived, the content behind the veil with it. `clip` cuts the
+   * entrance at the overlay's edge without making the overlay a box that can be
+   * scrolled, which `hidden` would.
+   */
+  overflow: clip;
   animation: crewlet-modal-veil-in var(--motion-duration-base) var(--motion-easing-default);
 }
 
