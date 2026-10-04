@@ -1,58 +1,58 @@
 {
   "color": {
     "surface": {
-      "frame": { "value": "#ededea", "comment": "The darkest rung in light, so it is where every darkening overlay and the tertiary step come closest." },
-      "background": { "value": "#f9f9f8", "comment": "The sheet, dE 3.67 over the frame." },
-      "subtle": { "value": "#ffffff", "comment": "The card, dE 1.82 over the sheet: near-flat, because a card is found by its hairline." },
-      "elevated": { "value": "#f3f3f1", "comment": "Raised is a step DOWN in light: a chip on a white card reads by being greyer than it, dE 3.65." },
-      "hover": { "value": "rgba(9, 9, 11, 0.044)", "comment": "The approved hover is an OPAQUE #ebebe8, and it sits dE 0.60 off the frame: on the rail a hovered row was not there at all. Fitted as the dark alpha is, and held by the floor that a hovered row separates from every rung by dE 3, which 0.044 is the least alpha to clear (3.03 on the frame): it lands dE 2.43 from the design on the frame, 1.13 on the sheet, 2.88 on the card and 0.68 on raised." },
-      "pressed": { "value": "rgba(9, 9, 11, 0.088)", "comment": "The least alpha that separates a pressed row from a hovered one by dE 3 on every rung (3.06 on the frame; 0.087 measured 2.99). The approved design draws no pressed state." },
-      "inset": { "value": "rgba(9, 9, 11, 0.026)", "comment": "The approved sunk well, rgba(0, 0, 0, 0.025), drawn in the kit's own near-black: 0.026 is the alpha whose composites over the four rungs sit closest to it, dE 0.01 away." },
-      "glass": { "value": "rgba(255, 255, 255, 0.90)", "comment": "The card at 0.90." },
+      "frame": { "value": "#e9ecf3", "comment": "The darkest rung in light, so it is where every darkening overlay and the tertiary step come closest." },
+      "background": { "value": "#f6f7fb", "comment": "The sheet, dE 3.40 over the frame." },
+      "subtle": { "value": "#fcfcfc", "comment": "The card, dE 1.55 over the sheet: near-flat, because a card is found by its hairline." },
+      "elevated": { "value": "#f1f2f6", "comment": "Raised is a step DOWN in light: a chip on a white card reads by being greyer than it, dE 3.00. The approved #fafafa sat dE 0.60 off the card, under the 3 raised keeps from it, and is darkened dE 2.42." },
+      "hover": { "value": "rgba(7, 8, 13, 0.044)", "comment": "The approved overlay, unmoved, and the least alpha that separates a hovered row from every rung by dE 3 (3.04 on the frame, where 0.043 measured 2.97)." },
+      "pressed": { "value": "rgba(7, 8, 13, 0.088)", "comment": "The design record draws no pressed row, so a press is the hover overlay made stronger: the least alpha that separates the two by dE 3 on every rung (3.06 on the frame, where 0.087 measured 2.99)." },
+      "inset": { "value": "rgba(7, 8, 13, 0.026)", "comment": "The approved sunk well, unmoved." },
+      "glass": { "value": "rgba(252, 252, 252, 0.90)", "comment": "The card at 0.90." },
       "scrim": { "value": "rgba(0, 0, 0, 0.6)" },
-      "veil": { "value": "rgba(237, 237, 234, 0.65)", "comment": "The frame at 0.65." },
-      "inverse": { "value": "#09090b" }
+      "veil": { "value": "rgba(233, 236, 243, 0.65)", "comment": "The frame at 0.65." },
+      "inverse": { "value": "#07080d" }
     },
     "text": {
-      "primary": { "value": "#17171a" },
-      "secondary": { "value": "#46464e" },
-      "tertiary": { "value": "#5f5e67", "comment": "The approved #696972, darkened dE 3.79 along lightness: it measured 3.84:1 on a pressed row on the frame, 4.23:1 on a hovered row in the rail, 4.37:1 on glass over the inverse ground, and 2.94:1 as a sort arrow drawn at 0.7." },
-      "muted": { "value": "#8d8d94", "comment": "Decoration only. The approved #a3a3aa measured 2.51:1 on the card and 2.14:1 on the frame, under even the decoration band; darkened dE 7.20, the least that brings both inside it." },
+      "primary": { "value": "#121625" },
+      "secondary": { "value": "#3e4459" },
+      "tertiary": { "value": "#585e73", "comment": "The approved #5a6075, darkened dE 0.71 along lightness: it measured 4.37:1 on a pressed row on the frame." },
+      "muted": { "value": "#878d9f", "comment": "Decoration only. The approved #8a90a3 measured 2.69:1 on the frame, under the decoration band, and is darkened dE 1.04 to bring it inside (2.80:1)." },
       "onAccent": { "value": "#ffffff" },
-      "inverse": { "value": "#fafafa" }
+      "inverse": { "value": "#f6f7fb" }
     },
     "brand": {
-      "accent": { "value": "#6b45f0", "comment": "The approved violet for light, and the primary action's fill. White clears 5.62:1 on it." },
-      "accentHover": { "value": "#633ae5", "comment": "A step darker: the least move along lightness a reader can see (dE 3.03), taking white to 6.43:1. The approved brightening hover, #744bff, still cleared the floor here (5.01:1), but it moved toward the label rather than away from it." },
-      "accentActive": { "value": "#5b2eda", "comment": "dE 3.08 past the hover. White clears 7.37:1." },
-      "accentInk": { "value": "#5a33de", "comment": "The approved step, unmoved: 5.00:1 at its tightest, on a pressed row on the frame." },
-      "accentSoft": { "value": "rgba(107, 69, 240, 0.108)", "comment": "The approved 0.10, raised to 0.108: at 0.10 a selected row sat only dE 2.67 from a hovered one on the frame (2.70 on raised), under the dE 3 that tells the two apart, and 0.108 is the least alpha that clears it on every rung (3.01 on the frame). It cannot rise far: at 0.14 the control boundary on a selected row on the frame falls under 3:1." }
+      "accent": { "value": "#735af2", "comment": "The approved violet for light, and the primary action's fill. White clears 4.69:1 on it." },
+      "accentHover": { "value": "#674ee4", "comment": "The approved hover, unmoved: a step darker than the accent (dE 3.92), which takes white from 4.69:1 to 5.55:1." },
+      "accentActive": { "value": "#5b3dc7", "comment": "The approved press, unmoved: dE 6.14 past the hover. White clears 7.15:1." },
+      "accentInk": { "value": "#4f51bd", "comment": "The approved #696fdd, darkened dE 9.70: it measured 2.99:1 on a pressed row on the frame, under the 4.5:1 an ink clears as text. Here it clears 4.53:1." },
+      "accentSoft": { "value": "rgba(115, 90, 242, 0.125)", "comment": "The approved 0.108, raised to 0.125: at 0.108 a selected row on the frame sat only dE 2.40 from a hovered one, under the dE 3 that tells the two apart, and 0.125 is the least alpha that clears it on every rung (3.02 on the frame)." }
     },
     "border": {
-      "default": { "value": "#e4e4e0" },
-      "hover": { "value": "#d3d3ce" },
-      "strong": { "value": "#d3d3ce" },
-      "strongHover": { "value": "#c2c2bc", "comment": "The default-to-strong step, dE 5.23, taken once more." },
-      "control": { "value": "#7a7a82", "comment": "The approved neutral mark, #8e8e96, darkened dE 6.71: it measured 2.29:1 on a pressed row on the frame. The plain border is never a control's edge: #e4e4e7 on white measured 1.27:1, which is a boundary a reader cannot find." }
+      "default": { "value": "#e7e8ec", "comment": "The approved #f5f5f5, darkened dE 3.92: it sat dE 0.84 off the sheet and 1.02 off raised, where a hairline has to clear dE 3 to be seen." },
+      "hover": { "value": "#c9cfdc" },
+      "strong": { "value": "#c9cfdc" },
+      "strongHover": { "value": "#acb6cc", "comment": "The default-to-strong step, dE 7.88, taken once more." },
+      "control": { "value": "#777a83", "comment": "The neutral mark, #a5a8b1, darkened dE 15.20: it measured 1.66:1 on a pressed row on the frame. The plain border is never a control's edge: it measures 1.19:1 on the card, which is a boundary a reader cannot find." }
     },
-    "focus": { "value": "#6b45f0", "comment": "The accent, unmoved: 3.97:1 at its tightest, on a pressed row on the frame." },
+    "focus": { "value": "#735af2", "comment": "The accent, unmoved: 3.29:1 at its tightest, on a pressed row on the frame." },
     "feedback": {
-      "success": { "value": "#009b74", "comment": "Done, and still a green. The approved #23a26d, moved dE 2.80 inside its hue family: it measured 2.77:1 as a mark on the frame, under the 3:1 non-text floor, and sat dE 9.4 from the warning fill under protanopia, under the 10 the four states keep between them." },
-      "successInk": { "value": "#106d46", "comment": "The approved #17744c, darkened dE 2.28: it measured 4.08:1 on a pressed row on the frame, 4.32:1 on its own soft tint and 4.10:1 on a code chip inside its own callout." },
-      "warning": { "value": "#c57600", "comment": "Needs a person. The approved #e09a12, darkened dE 10.32 to an ochre inside its hue family: it measured 2.03:1 as a mark on the frame." },
-      "warningInk": { "value": "#8e5000", "comment": "The approved #935600, darkened dE 1.89: it measured 4.16:1 on a pressed row on the frame, 4.44:1 on its own soft tint and 4.21:1 on a code chip inside its own callout." },
-      "danger": { "value": "#c01d32", "comment": "Stopped. The approved #e5484d, darkened dE 10.40 with its hue and chroma all but kept, where three floors met: the white label of a destructive action measured 3.91:1 on it, it sat dE 8.4 from the success fill under protanopia against the 10 the states keep, and dE 6.3 from the chart orange under normal vision and 4.2 under deuteranopia, against the 14 and 8 the reserved red keeps from every series. Its ink is fitted with it, because the ink is measured on this fill's soft tint. White clears 6.06:1 on it." },
-      "dangerHover": { "value": "#b5092a", "comment": "The destructive action under the pointer: a step darker than the danger fill, the least a reader can see (dE 3.04), taking white from 6.06:1 to 6.91:1. The design draws no hover for it." },
-      "dangerInk": { "value": "#b61426", "comment": "The approved #bf282e, darkened dE 3.05: it measured 4.17:1 on a pressed row on the frame, 4.16:1 on the fitted danger fill's soft tint and 3.94:1 on a code chip inside its own callout." },
-      "info": { "value": "#3081de", "comment": "Working. The approved #2f7fe0, moved dE 0.67 inside its hue family: it sat dE 7.4 from the accent under deuteranopia, under the 8 no hue may come within." },
-      "infoInk": { "value": "#1a5eb3", "comment": "The approved #1d63b8, darkened dE 1.56: it measured 4.21:1 on a pressed row on the frame, 4.45:1 on its own soft tint and 4.22:1 on a code chip inside its own callout." }
+      "success": { "value": "#0b9a74", "comment": "Done, and still a green. The approved #34c98b, moved dE 13.87 inside its hue family: it measured 1.80:1 as a mark on the frame, under the 3:1 non-text floor." },
+      "successInk": { "value": "#0b6a4b", "comment": "The approved step, unmoved." },
+      "warning": { "value": "#c17300", "comment": "Needs a person. The approved #ffb300, darkened dE 19.65 to an ochre inside its hue family: it measured 1.52:1 as a mark on the frame." },
+      "warningInk": { "value": "#8c4e00", "comment": "The approved #db9a00, darkened dE 24.95: it measured 1.70:1 on a pressed row on the frame, 1.81:1 on its own soft tint and 1.72:1 on a code chip inside its own callout." },
+      "danger": { "value": "#b9112c", "comment": "Stopped. The approved #cc2a4a, darkened dE 5.75: it sat dE 7.2 from the success fill under deuteranopia, against the 10 the states keep, and dE 6.9 from the chart green under deuteranopia, against the 8 the reserved red keeps from every series. White clears 6.61:1 on it." },
+      "dangerHover": { "value": "#ad0023", "comment": "The destructive action under the pointer: a step darker than the danger fill, the least a reader can see (dE 3.02), taking white from 6.61:1 to 7.50:1. The design record draws no hover for it." },
+      "dangerInk": { "value": "#b20d23", "comment": "The approved #e65656, darkened dE 15.89: it measured 2.52:1 on a pressed row on the frame, 2.49:1 on its own soft tint and 2.36:1 on a code chip inside its own callout." },
+      "info": { "value": "#2f92b4", "comment": "Working. The approved #039cdd, moved dE 6.14 inside its hue family: it measured 2.61:1 as a mark on the frame." },
+      "infoInk": { "value": "#1a6588", "comment": "The approved #367da1, darkened dE 8.11: it measured 3.19:1 on a pressed row on the frame, 3.42:1 on its own soft tint and 3.24:1 on a code chip inside its own callout." }
     },
     "data": {
-      "1": { "value": "#3879ce", "comment": "The approved blue, #2a78d6, moved dE 1.58 inside its hue family: it sat dE 6.5 from the accent under deuteranopia, under the 8 no hue may come within." },
-      "2": { "value": "#e45f28", "comment": "The approved orange, #eb6834, darkened dE 2.39: it measured 2.73:1 as a mark on the frame, and sat dE 7.7 from the fitted aqua under protanopia, under the 9 neighbouring series keep." },
-      "3": { "value": "#009b74", "comment": "The approved aqua, #1baf7a, darkened and turned toward blue inside its hue family, dE 6.04: it measured 2.40:1 as a mark on the frame. It lands on the success fill's own value, both greens darkened onto the same floor at the edge of the gamut, and a series is only ever read inside a figure that names it." },
-      "4": { "value": "#c57600", "comment": "The approved yellow, #eda100, darkened dE 13.09 to an ochre: it measured 1.85:1 as a mark on the frame, the palest mark the design draws, and a yellow dark enough to be seen on a light page is an ochre. It lands on the warning fill's own value, both yellows darkened onto the same floor, and a series is only ever read inside a figure that names it." },
-      "other": { "value": "#88888f", "comment": "The approved neutral mark, #8e8e96, darkened dE 2.03: it measured 2.77:1 as a mark on the frame." }
+      "1": { "value": "#5c76c3", "comment": "The approved blue, #4381e5, moved dE 5.71 inside its hue family: it sat dE 4.5 from the accent under deuteranopia, under the 8 no hue may come within." },
+      "2": { "value": "#dd5920", "comment": "The approved orange, #ed810c, moved dE 9.59 inside its hue family: it measured 2.29:1 as a mark on the frame." },
+      "3": { "value": "#00956e", "comment": "The approved green, #2f9d4c, moved dE 5.75 inside its hue family, toward aqua: it measured 2.94:1 as a mark on the frame, sat dE 5.6 from the yellow under protanopia and 8.1 under deuteranopia, against the 9 neighbouring series keep, and dE 7.9 from the danger fill under deuteranopia, against the 8 the reserved red keeps." },
+      "4": { "value": "#c27600", "comment": "The approved yellow, #edb302, darkened dE 17.33 to an ochre: it measured 1.61:1 as a mark on the frame, and a yellow dark enough to be seen on a light page is an ochre. It sits beside the warning fill, both yellows darkened onto the same floor, and a series is only ever read inside a figure that names it." },
+      "other": { "value": "#85868d", "comment": "The approved neutral mark, #a5a8b1, darkened dE 11.05: it measured 2.01:1 as a mark on the frame." }
     },
     "node": {
       "purple": { "value": "#7150b3" },
@@ -68,19 +68,19 @@
       "blue": { "value": "#4062a7" },
       "blueInk": { "value": "#264588" }
     },
-    "scrollbar": { "value": "rgba(9, 9, 11, 0.2)" },
-    "scrollbarHover": { "value": "rgba(9, 9, 11, 0.32)" }
+    "scrollbar": { "value": "rgba(7, 8, 13, 0.2)" },
+    "scrollbarHover": { "value": "rgba(7, 8, 13, 0.32)" }
   },
   "shadow": {
-    "xs": { "value": "0 1px 2px rgba(9, 9, 11, 0.06)" },
-    "sm": { "value": "0 2px 8px rgba(9, 9, 11, 0.07)" },
-    "md": { "value": "0 4px 12px rgba(9, 9, 11, 0.08), 0 1px 3px rgba(9, 9, 11, 0.06)" },
-    "lg": { "value": "0 8px 24px rgba(9, 9, 11, 0.12)" },
-    "xl": { "value": "0 16px 40px rgba(9, 9, 11, 0.16), 0 2px 8px rgba(9, 9, 11, 0.08)" },
-    "sheet": { "value": "-16px 0 40px rgba(9, 9, 11, 0.16), -2px 0 8px rgba(9, 9, 11, 0.08)", "comment": "The xl step turned onto the inline axis. The alphas are the light palette's own: a 0.4 black cast 8px into a near-white page is a smear rather than an edge." },
-    "2xl": { "value": "0 16px 64px rgba(9, 9, 11, 0.20)" },
-    "card": { "value": "0 8px 24px rgba(9, 9, 11, 0.07)" },
-    "rimLit": { "value": "0 4px 24px rgba(9, 9, 11, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.6)" },
+    "xs": { "value": "0 1px 2px rgba(7, 8, 13, 0.06)" },
+    "sm": { "value": "0 2px 8px rgba(7, 8, 13, 0.07)" },
+    "md": { "value": "0 4px 12px rgba(7, 8, 13, 0.08), 0 1px 3px rgba(7, 8, 13, 0.06)" },
+    "lg": { "value": "0 8px 24px rgba(7, 8, 13, 0.12)" },
+    "xl": { "value": "0 16px 40px rgba(7, 8, 13, 0.16), 0 2px 8px rgba(7, 8, 13, 0.08)" },
+    "sheet": { "value": "-16px 0 40px rgba(7, 8, 13, 0.16), -2px 0 8px rgba(7, 8, 13, 0.08)", "comment": "The xl step turned onto the inline axis. The alphas are the light palette's own: a 0.4 black cast 8px into a near-white page is a smear rather than an edge." },
+    "2xl": { "value": "0 16px 64px rgba(7, 8, 13, 0.20)" },
+    "card": { "value": "0 8px 24px rgba(7, 8, 13, 0.07)" },
+    "rimLit": { "value": "0 4px 24px rgba(7, 8, 13, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.6)" },
     "hairline": { "value": "none", "comment": "On a light ground a panel is lifted by its shadow. The top-edge rim light is a dark-palette device and would be invisible here." },
     "focus": { "value": "0 0 0 2px var(--color-surface-background), 0 0 0 4px var(--color-focus)" },
     "selection": { "value": "inset 0 0 0 2px var(--color-brand-accent)" },

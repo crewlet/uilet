@@ -42,8 +42,8 @@ test('the two palettes paint their own grounds, not the base root\'s black', () 
   const grounds = ['surface.frame', 'surface.background', 'surface.subtle'];
   const dark = swatchesFor('dark');
   const light = swatchesFor('light');
-  assert.deepEqual(grounds.map((name) => valueOf(dark, name)), ['#09090b', '#101013', '#141418']);
-  assert.deepEqual(grounds.map((name) => valueOf(light, name)), ['#ededea', '#f9f9f8', '#ffffff']);
+  assert.deepEqual(grounds.map((name) => valueOf(dark, name)), ['#07080d', '#0c0e16', '#11141d']);
+  assert.deepEqual(grounds.map((name) => valueOf(light, name)), ['#e9ecf3', '#f6f7fb', '#fcfcfc']);
   // The frame and the sheet are two rungs in either palette.
   assert.notEqual(valueOf(dark, 'surface.frame'), valueOf(dark, 'surface.background'));
   assert.notEqual(valueOf(light, 'surface.frame'), valueOf(light, 'surface.background'));

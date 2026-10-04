@@ -30,6 +30,7 @@ import {
   paletteStates,
   parseHex,
   RAIL_CURRENT_ROW,
+  RAISED_CHIP,
   runPalette,
   RUNG_STEPS,
   tightest,
@@ -257,6 +258,18 @@ describe('the four rungs', () => {
     assert.deepEqual(darkFailures(line, dark.surface.subtle), ['the hairline that finds a card is visible on both sides of it']);
   });
 
+  test('a raised chip is measured in every theme state, and one whose edge is its own fill is caught', () => {
+    const CHIP_RULE = 'the strong hairline finds a raised chip on every ground';
+    const [fill, edge] = RAISED_CHIP;
+    assert.deepEqual([fill, edge], ['--color-surface-elevated', '--color-border-strong']);
+    for (const state of THEME_STATES) {
+      assert.equal(checks.filter((check) => check.state === state && check.rule === CHIP_RULE).length, 1, state);
+    }
+    // The edge drawn in the chip's own fill: on a raised ground the chip is
+    // loose words, and nothing else the palette measures notices.
+    assert.deepEqual(darkFailures(edge, dark.surface.elevated), [CHIP_RULE]);
+  });
+
   test('raised at the card\'s own value is caught', () => {
     assert.deepEqual(darkFailures('--color-surface-elevated', dark.surface.subtle), ['raised separates from the card']);
   });
@@ -279,8 +292,8 @@ describe('the accent and the primary action', () => {
   const [HOVER_RULE, PRESS_RULE] = ACTION_STEPS.map(([rule]) => rule);
 
   /**
-   * What `filter: brightness(1.08)` does to a colour, which is the hover the
-   * approved design drew: each sRGB channel scaled and clipped.
+   * What `filter: brightness(1.08)` does to a colour, the usual way to light a
+   * button under the pointer: each sRGB channel scaled and clipped.
    */
   const brightened = (value) => {
     const { r, g, b } = parseHex(value);
@@ -303,18 +316,33 @@ describe('the accent and the primary action', () => {
     }
   });
 
-  test("the approved design's brightening hover is caught in both palettes", () => {
-    // In dark it takes the white label under the text floor (4.18:1), which
-    // the label rule sees; in light it still clears 5.01:1, and only the step
-    // rule sees that it moved toward the label rather than away from it.
-    assert.equal(brightened(typed.dark.color.brand.accent), '#865dff');
-    assert.deepEqual(failuresAfter('dark', '--color-brand-accent-hover', brightened(typed.dark.color.brand.accent)), [
-      LABEL_RULE,
-      HOVER_RULE,
-    ]);
-    assert.deepEqual(failuresAfter('light', '--color-brand-accent-hover', brightened(typed.light.color.brand.accent)), [
-      HOVER_RULE,
-    ]);
+  test('a hover that brightens the fill is caught in both palettes', () => {
+    // It takes the white label under the text floor (4.25:1 in dark, 4.19:1
+    // in light), which the label rule sees, and the step rule sees that it
+    // moved toward the label rather than away from it.
+    assert.equal(brightened(typed.dark.color.brand.accent), '#7b62f8');
+    for (const palette of ['dark', 'light']) {
+      assert.deepEqual(
+        failuresAfter(palette, '--color-brand-accent-hover', brightened(typed[palette].color.brand.accent)),
+        [LABEL_RULE, HOVER_RULE],
+        palette,
+      );
+    }
+  });
+
+  test('a visible step toward the label is caught while the label still clears', () => {
+    // The accent dulled to 0.8 of its chroma at its own lightness: a step a
+    // reader sees (dE 3.94 in dark), under which the white label still clears
+    // the floor (4.72:1), and which moves toward the label all the same. Only
+    // the step rule's direction stands between it and a hover that fades.
+    const dulled = (value) => {
+      const lab = toOklab(parseHex(value));
+      return hex(fromOklab({ L: lab.L, a: lab.a * 0.8, b: lab.b * 0.8 }));
+    };
+    assert.equal(dulled(typed.dark.color.brand.accent), '#7164d1');
+    for (const palette of ['dark', 'light']) {
+      assert.deepEqual(failuresAfter(palette, '--color-brand-accent-hover', dulled(typed[palette].color.brand.accent)), [HOVER_RULE], palette);
+    }
   });
 
   test('a step nobody can see is caught, even one in the right direction', () => {
@@ -357,10 +385,12 @@ describe('the accent and the primary action', () => {
     assert.deepEqual(failuresAfter('dark', line, typed.dark.color.surface.elevated), [
       "the hairline round the rail's current row is visible on it",
     ]);
-    // Raised two steps off the light frame: every other rule raised is held
-    // to still holds, and the row is no longer there.
-    const { r, g, b } = parseHex(typed.light.color.surface.frame);
-    assert.deepEqual(failuresAfter('light', fill, hex({ r: r + 2, g: g + 2, b: b + 2 })), [
+    // Raised two steps off the dark frame: every other rule raised is held
+    // to still holds, and the row is no longer there. In light the hairline
+    // sits dE 1.23 from the frame, so a row lowered onto the frame loses its
+    // line as well, and only dark shows the lift on its own.
+    const { r, g, b } = parseHex(typed.dark.color.surface.frame);
+    assert.deepEqual(failuresAfter('dark', fill, hex({ r: r + 2, g: g + 2, b: b + 2 })), [
       "the rail's current row lifts off the rail",
     ]);
   });
@@ -410,39 +440,37 @@ describe('the state and chart hues', () => {
   });
 
   test("the design's stopped red is caught by its label, by deuteranopia and by the chart hues", () => {
-    // The approved #f26d6d carries a destructive action's white label at
-    // 2.92:1, and a deuteranopic reader finds it dE 5.7 from done (5.59
-    // against the design's own green, before either moved). It also sits
-    // under the floors the reserved red keeps from the orange, the aqua
-    // (protanopia 2.0) and the yellow.
-    const failing = checksAfter('dark', '--color-feedback-danger', '#f26d6d').map(summary);
+    // The approved #f0506e carries a destructive action's white label at
+    // 3.46:1, and a deuteranopic reader finds it dE 5.9 from done. It also
+    // sits under the floors the reserved red keeps from the orange (11.4
+    // under normal vision, 6.8 under deuteranopia) and from the green
+    // (deuteranopia 5.1).
+    const failing = checksAfter('dark', '--color-feedback-danger', '#f0506e').map(summary);
     assert.deepEqual(failing, [
-      `${LABEL_RULE}: --color-text-on-accent on --color-feedback-danger: 2.92:1 (worst on --color-feedback-danger on --color-surface-frame)`,
-      `${STATUS_RULE}: --color-feedback-success vs --color-feedback-danger: dE n30.4/p15.2/d5.7 >= 10`,
-      `${DANGER_RULE}: --color-data-2: dE n7.8/p8.3/d7.3 >= 14 normal, 8 dichromat`,
-      `${DANGER_RULE}: --color-data-3: dE n28.7/p2.0/d14.0 >= 14 normal, 8 dichromat`,
-      `${DANGER_RULE}: --color-data-4: dE n13.6/p8.9/d7.0 >= 14 normal, 8 dichromat`,
+      `${LABEL_RULE}: --color-text-on-accent on --color-feedback-danger: 3.46:1 (worst on --color-feedback-danger on --color-surface-frame)`,
+      `${STATUS_RULE}: --color-feedback-success vs --color-feedback-danger: dE n34.5/p18.6/d5.9 >= 10`,
+      `${DANGER_RULE}: --color-data-2: dE n11.4/p9.9/d6.8 >= 14 normal, 8 dichromat`,
+      `${DANGER_RULE}: --color-data-3: dE n32.4/p12.7/d5.1 >= 14 normal, 8 dichromat`,
     ]);
   });
 
   test("the design's light yellow is caught as a mark nobody can see on the frame", () => {
-    // #eda100 on the light frame is 1.85:1, the palest mark the design draws,
-    // and the only rule it breaks: a yellow dark enough to be seen on a light
-    // page is an ochre.
-    assert.deepEqual(checksAfter('light', '--color-data-4', '#eda100').map(summary), [
-      `${MARK_RULE}: --color-data-4: 1.85:1 (worst on --color-surface-frame)`,
+    // #edb302 on the light frame is 1.61:1, and that is the only rule it
+    // breaks: a yellow dark enough to be seen on a light page is an ochre.
+    assert.deepEqual(checksAfter('light', '--color-data-4', '#edb302').map(summary), [
+      `${MARK_RULE}: --color-data-4: 1.61:1 (worst on --color-surface-frame)`,
     ]);
   });
 
   test('a neighbour that clears every dichromat floor is still caught under normal vision', () => {
-    // An olive fourth series beside the aqua third: dE 12.1 apart under both
-    // protanopia and deuteranopia, which the dichromat floor alone passes,
-    // and 11.6 under normal vision, two shades of one hue to every reader who
-    // sees colour. Nothing else it touches fails, so the normal-vision floor
-    // is the only thing standing between it and a chart.
-    const failing = checksAfter('dark', '--color-data-4', '#5a8100');
+    // A teal fourth series beside the aqua green third: dE 13.0 apart under
+    // protanopia and 12.3 under deuteranopia, which the dichromat floor alone
+    // passes, and 12.9 under normal vision, two shades of one hue to every
+    // reader who sees colour. Nothing else it touches fails, so the
+    // normal-vision floor is the only thing standing between it and a chart.
+    const failing = checksAfter('dark', '--color-data-4', '#008c87');
     assert.deepEqual(failing.map(summary), [
-      `${ADJACENT_RULE}: --color-data-3 vs --color-data-4: dE n11.6/p12.1/d12.1 >= ${DATA_ADJACENT_NORMAL_DE} normal, ${DATA_ADJACENT_DE} every vision`,
+      `${ADJACENT_RULE}: --color-data-3 vs --color-data-4: dE n12.9/p13.0/d12.3 >= ${DATA_ADJACENT_NORMAL_DE} normal, ${DATA_ADJACENT_DE} every vision`,
     ]);
     assert.ok(failing[0].value >= DATA_ADJACENT_DE, 'the mutation has to clear the dichromat floor, or it proves nothing about the normal one');
   });

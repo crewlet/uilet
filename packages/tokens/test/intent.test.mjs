@@ -90,9 +90,7 @@ describe('the design record', () => {
     }
     for (const literal of intent.literals) {
       if (literal.token === null) assert.ok(typeof literal.note === 'string' && literal.note.length > 0, `${literal.where} maps to no token and gives no reason`);
-      // The one literal that is a rule rather than a colour, the design's
-      // hover, says so rather than passing as one.
-      else assert.ok(colour(literal.value) || typeof literal.note === 'string', `${literal.where} is "${literal.value}"`);
+      else assert.ok(colour(literal.value), `${literal.where} is "${literal.value}"`);
     }
   });
 
@@ -101,7 +99,7 @@ describe('the design record', () => {
     // colour in the package goes through, so the record cannot hold a value
     // only the regex accepts.
     for (const palette of PALETTES) {
-      for (const [where, entry] of Object.entries(intent[palette])) {
+      for (const [where, entry] of entriesOf(palette)) {
         if (entry.token === null) continue;
         const parsed = parseHex(entry.value) ?? parseRgba(entry.value)?.rgb;
         assert.ok(parsed && [parsed.r, parsed.g, parsed.b].every((c) => c >= 0 && c <= 255), `${palette} ${where}: ${entry.value}`);

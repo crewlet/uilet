@@ -219,13 +219,12 @@
  * read as loose text with odd gaps between them.
  *
  * THE STRONG STEP, NOT THE DEFAULT ONE. The design's own chip is found by 1px
- * of its line step (`.chip`), which is the default border here, and that
- * measured under the hairline dE of 3 on five grounds a pill lands on: 2.76 on
- * the light frame, 2.86 on a pressed row over a light card, 2.77 and 2.71 on an
- * inset well inside a raised surface, and 2.08 on a hovered row over the dark
- * sheet. The strong step is the design's line-2, the boundary it draws round a
- * key cap (`.kbd`), and it clears 3 on every rung and every overlay in both
- * themes. The suite measures all of them.
+ * of its line step (`.chip`), which is the default border here, and a pill
+ * found by that step alone went missing on grounds it lands on, a hovered,
+ * pressed or inset row among them. The strong step is the design's line-2,
+ * the boundary it draws round a key cap (`.kbd`), and @crewlethq/tokens holds
+ * it to the hairline dE of 3 against every rung and every overlay in both
+ * themes (`RAISED_CHIP`).
  *
  * The hover takes the strong step once more, because the press line a tinted
  * pill moves to on hover IS the strong step in both themes, and a hover that

@@ -36,8 +36,8 @@
  * THE OBJECTIVE is the total dE the design moves, the principle every moved
  * token states: a hex role costs its distance from its anchor, and a
  * translucent one the sum of its distances over the four rungs it is drawn on
- * (OPAQUE_SURFACES), because an overlay is one alpha on four grounds while the
- * design's hover is one opaque colour. The kit's own tokens (ANCHORS) are
+ * (OPAQUE_SURFACES), because an overlay is one alpha on four grounds, and a
+ * design may draw one as an opaque colour. The kit's own tokens (ANCHORS) are
  * summed apart and weigh only between palettes that move the design equally,
  * so a focus ring never buys a design value back by moving itself. A palette
  * with a failing check is worse than any palette without one, whatever it
@@ -253,11 +253,6 @@ const ANCHORS = {
   '--color-focus': { of: '--color-brand-accent', why: 'the ring is drawn in the accent' },
   '--color-border-control': { design: '--mark', why: "the design draws no control boundary; it starts from the neutral mark" },
   '--color-surface-pressed': { of: '--color-surface-hover', beyond: true, why: 'the design draws no pressed row; a press is a stronger hover' },
-  '--color-brand-accent-hover': {
-    of: '--color-brand-accent',
-    why: "a step of the accent: the design's brightness(1.08) moves toward the white label",
-  },
-  '--color-brand-accent-active': { of: '--color-brand-accent-hover', why: 'the design draws no pressed primary action' },
   '--color-feedback-danger-hover': {
     of: '--color-feedback-danger',
     why: "a step of the danger fill: the design draws no hover for the destructive action",

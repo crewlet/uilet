@@ -39,6 +39,19 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Changed in 0.6.0: the default palette
+
+The dark and light themes take the default palette approved on 4 October 2026: blue-black neutrals, a violet accent (`#725be6` in dark, `#735af2` in light) and a cyan working state. No token is renamed or removed; the themed values change. [`tokens/intent.json`](./tokens/intent.json) records the approved values, and every value the palette suite's floors moved names its approved value, the distance and the measurement in its own comment. The marketing root, `tokens.css` on its own, keeps its values.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| The four surface rungs, the borders and the neutral text steps take the approved palette's values, or a move from them that the suite's floors forced. | Nothing, for a stylesheet that reads the tokens. A literal spelled to match an old value reads the token instead. | [Surfaces](#surfaces) |
+| The accent and every step of it, and the focus ring, take new values in both themes. The hover and the press are the approved palette's own colours, a step darker each. | Nothing, for a stylesheet that reads the tokens. An application that rebinds the accent rebinds the whole set, as before. | [The accent](#the-accent) |
+| The four states, their inks and the destructive hover, and the four chart series, take new values in both themes. | Nothing, for a figure that reads the tokens and names its series. | [The states and the chart series](#the-states-and-the-chart-series) |
+| In light, the overlays and the shadows are drawn in the dark frame's near-black, `rgba(7, 8, 13, …)`. They were drawn in `rgba(9, 9, 11, …)`. | Nothing. | [Surfaces](#surfaces) |
+| `themes.dark` and `themes.light` in the typed export carry the same values. | A test that asserts a palette value by its literal updates the literal. | [The palettes in JavaScript](#the-palettes-in-javascript) |
+| In `@crewlethq/tokens/test/palette`, the rule `the strong hairline finds a raised chip on every ground` is new, with the export `RAISED_CHIP`: a chip on the raised rung inside the strong hairline, whose boundary clears dE 3 on every rung and every overlay on one. | Nothing, unless an application's own palette override draws the strong border within dE 3 of a ground a raised chip lands on. | [The palette suite](#the-palette-suite) |
+
 ## Breaking changes in 0.5.0
 
 0.5.0 is the approved visual system: Geist, a dark-first palette on four surface rungs, a per-palette violet accent that is the primary action, and the four states and four chart series fitted to the palette suite's floors. Every edit a consumer makes is one row below; each links to the section that explains the change and carries the full table for it. `@crewlethq/ui` and `@crewlethq/icons` carry their own "Breaking changes in 0.5.0", and the three packages are upgraded together.
@@ -117,8 +130,8 @@ Other changes a consumer may notice, none of which needs an edit:
 ```ts
 import { themes } from '@crewlethq/tokens';
 
-themes.light.color.text.secondary; // '#46464e'
-themes.dark.color.data['4']; // '#c98500'
+themes.light.color.text.secondary; // '#3e4459'
+themes.dark.color.data['4']; // '#eab106'
 ```
 
 Prefer the custom property wherever CSS can reach: a value read here is taken at build time, so it does not follow a theme the reader changes. The package's own suite compares every exported value against the declaration in `themes.css`, in both directions, because two spellings of one palette is the arrangement that drifts.
@@ -129,30 +142,35 @@ Four opaque rungs, lowest first. Every ground a piece of text can land on is one
 
 | Rung | Token | Dark | Light | What it is for |
 | --- | --- | --- | --- | --- |
-| Frame | `--color-surface-frame` | `#09090b` | `#ededea` | The application ground: the rail, and the body around the floating sheet. `@crewlethq/tokens/css/base` paints `body` with it. |
-| Sheet | `--color-surface-background` | `#101013` | `#f9f9f8` | The page content sits on: the main column, its top bar, a canvas. It keeps its old name because everything that means "the ground content sits on" already reads it. |
-| Card | `--color-surface-subtle` | `#141418` | `#ffffff` | A card, a popover, a dialog body, a table's header band. |
-| Raised | `--color-surface-elevated` | `#1b1b20` | `#f3f3f1` | A chip, a segmented well, a key cap, a meter track, a lifted row. In light it is a step *down*: a chip on a white card reads by being greyer than it. |
+| Frame | `--color-surface-frame` | `#07080d` | `#e9ecf3` | The application ground: the rail, and the body around the floating sheet. `@crewlethq/tokens/css/base` paints `body` with it. |
+| Sheet | `--color-surface-background` | `#0c0e16` | `#f6f7fb` | The page content sits on: the main column, its top bar, a canvas. It keeps its old name because everything that means "the ground content sits on" already reads it. |
+| Card | `--color-surface-subtle` | `#11141d` | `#fcfcfc` | A card, a popover, a dialog body, a table's header band. |
+| Raised | `--color-surface-elevated` | `#242833` | `#f1f2f6` | A chip, a segmented well, a key cap, a meter track, a lifted row. In light it is a step *down*: a chip on a white card reads by being greyer than it. |
 
 Each step is held to what it has to do, in OKLab dE, by the palette suite:
 
-- **The sheet lifts off the frame by dE 3** (3.37 dark, 3.67 light). That lift is the whole layering device. The approved dark sheet, `#0f0f12`, measured 2.91 and was lifted along lightness alone to `#101013`.
-- **A card separates from the sheet by dE 1.5** (1.87 dark, 1.82 light), near-flat on purpose: a card is found by its **hairline**, and a page of cards each lifted by dE 3 is a relief map. So `--color-border-default` is held to dE 3 against both the card and the sheet (6.57 and 8.44 dark, 8.24 and 6.42 light), and `@crewlethq/ui`'s Card suite holds every card variant that stands on this rung to drawing it.
-- **Raised separates from the card by dE 3** (3.13 dark, 3.65 light), because a chip or a well has no border of its own.
+- **The sheet lifts off the frame by dE 3** (3.05 dark, 3.40 light). That lift is the whole layering device. The approved dark sheet, `#0c0e15`, measured 2.96 and was lifted along lightness alone to `#0c0e16`.
+- **A card separates from the sheet by dE 1.5** (2.69 dark, 1.55 light), near-flat on purpose: a card is found by its **hairline**, and a page of cards each lifted by dE 3 is a relief map. So `--color-border-default` is held to dE 3 against both the card and the sheet (3.09 and 5.69 dark, 5.99 and 4.51 light), and `@crewlethq/ui`'s Card suite holds every card variant that stands on this rung to drawing it.
+- **Raised separates from the card by dE 3** (8.52 dark, 3.00 light), because a well has no border of its own. A chip on raised does carry one: the strong hairline round it is held to dE 3 against every rung and every overlay on one (`RAISED_CHIP`), because on a raised ground its fill draws nothing.
 
-`--color-surface-hover`, `-pressed` and `-inset` stay **translucent**, so a hovered row is right on every rung. The approved design paints its hover as one opaque colour, which one alpha cannot be on four grounds, so the alpha is fitted: the value that moves the design least across the four rungs and the tertiary text step together (a stronger overlay takes contrast from that step where it lands on raised). It is held from below by a floor the suite measures, that a hovered row separates from every rung by dE 3 and a pressed row from a hovered one by dE 3 more: without it the fit's cheapest answer is an overlay nobody sees, and the design's own light hover sits dE 0.60 off the frame. The inset well is the design's own. `--color-surface-glass` is the card at 0.90, frosted by `--blur-sm`: the ground of what floats over CONTENT rather than over interface, a canvas's bars and a chart's reading, and the suite holds every text step over 4.5:1 on it with each data hue, the residual and the inverse ground behind it. And `--color-surface-veil`, the ground a dialog sits on, is each root's own **frame** at 0.65: the application recedes into its own ground rather than under a film of its page.
+`--color-surface-hover`, `-pressed` and `-inset` stay **translucent**, so a hovered row is right on every rung. The approved palette draws its hover and its sunk well as overlays too (the hover at 0.061 in dark and 0.044 in light), and both ship as drawn. The suite holds the overlays from below, a hovered row dE 3 off every rung and a pressed row dE 3 off a hovered one: the light hover clears the first at exactly its approved alpha (3.04 on the frame), and the pressed overlay is the least alpha that clears the second (0.098 dark, 0.088 light). In light the overlays and the shadows are drawn in the dark frame's near-black. `--color-surface-glass` is the card at 0.90, frosted by `--blur-sm`: the ground of what floats over CONTENT rather than over interface, a canvas's bars and a chart's reading, and the suite holds every text step over 4.5:1 on it with each data hue, the residual and the inverse ground behind it. And `--color-surface-veil`, the ground a dialog sits on, is each root's own **frame** at 0.65: the application recedes into its own ground rather than under a film of its page.
 
-Where an approved value failed one of the suite's floors on the new rungs, the floor won and the value moved as little as it could along lightness, keeping its hue. Each token's own comment names the value it replaced, the distance it moved and the measurement that forced it:
+Where an approved value failed one of the suite's floors, the floor won and the value moved along lightness, keeping its hue. Each token's own comment names the value it replaced, the distance it moved and the measurement that forced it:
 
 | Token | Approved | Shipped | Moved (dE) | Because |
 | --- | --- | --- | --- | --- |
-| `--color-surface-background` dark | `#0f0f12` | `#101013` | 0.46 | dE 2.91 off the frame, under 3 |
-| `--color-text-tertiary` dark | `#8c8c96` | `#9797a1` | 3.63 | 3.92:1 on a pressed row inside a raised surface |
-| `--color-text-tertiary` light | `#696972` | `#5f5e67` | 3.79 | 3.84:1 on a pressed row on the frame |
-| `--color-text-muted` light | `#a3a3aa` | `#8d8d94` | 7.20 | 2.51:1 on the card and 2.14:1 on the frame, under the decoration band |
-| `--color-border-control` dark | `#6e6e78` | `#787983` | 3.70 | 2.59:1 on a pressed row inside a raised surface |
-| `--color-border-control` light | `#8e8e96` | `#7a7a82` | 6.71 | 2.29:1 on a pressed row on the frame |
-| `--color-data-other` light | `#8e8e96` | `#88888f` | 2.03 | 2.77:1 as a mark on the frame |
+| `--color-surface-background` dark | `#0c0e15` | `#0c0e16` | 0.22 | dE 2.96 off the frame, under 3 |
+| `--color-surface-elevated` dark | `#262a36` | `#242833` | 0.88 | tertiary text on a pressed row on it 4.38:1, the focus ring and the control boundary 2.93:1, a raised chip's edge dE 2.39 on an inset well; its chroma, 2.28, over the neutral ramp's 2.2 |
+| `--color-surface-elevated` light | `#fafafa` | `#f1f2f6` | 2.42 | dE 0.60 off the card, under 3 |
+| `--color-border-default` dark | `#14151a` | `#191b20` | 2.53 | dE 0.99 off the card, under 3 |
+| `--color-border-default` light | `#f5f5f5` | `#e7e8ec` | 3.92 | dE 0.84 off the sheet and 1.02 off raised, under 3 |
+| `--color-border-strong` dark | `#2b3245` | `#2d3448` | 0.85 | dE 2.43 as a raised chip's edge on an inset well inside a raised surface, under 3 |
+| `--color-text-tertiary` dark | `#8a91a6` | `#9fa7bc` | 7.08 | 3.45:1 on a pressed row inside a raised surface |
+| `--color-text-tertiary` light | `#5a6075` | `#585e73` | 0.71 | 4.37:1 on a pressed row on the frame |
+| `--color-text-muted` light | `#8a90a3` | `#878d9f` | 1.04 | 2.69:1 on the frame, under the decoration band |
+| `--color-border-control` dark | `#6a7186`, the neutral mark | `#7f879c` | 7.38 | 2.23:1 on a pressed row inside a raised surface |
+| `--color-border-control` light | `#a5a8b1`, the neutral mark | `#777a83` | 15.20 | 1.66:1 on a pressed row on the frame |
+| `--color-data-other` light | `#a5a8b1` | `#85868d` | 11.05 | 2.01:1 as a mark on the frame |
 
 ### Breaking change in 0.5.0: the four rungs
 
@@ -324,33 +342,32 @@ A `-soft` step is its own fill at alpha 0.12 and a `-line` step is the same fill
 
 The accent is a violet, and it is **per palette**:
 
-| Token | Dark (and the marketing root) | Light | What it is |
+| Token | Dark | Light | What it is |
 | --- | --- | --- | --- |
-| `--color-brand-accent` | `#7c56ff` | `#6b45f0` | The fill of the primary action, a selected card's ring, a selected row's rail, the attention count. A fill and a mark, never text. |
-| `--color-brand-accent-hover` | `#744bf4` | `#633ae5` | The primary action under the pointer. |
-| `--color-brand-accent-active` | `#6c40e9` | `#5b2eda` | The primary action pressed. |
-| `--color-brand-accent-ink` | `#b3a1ff` | `#5a33de` | The accent as text: a link, an outline button's label. |
-| `--color-brand-accent-soft` | the accent at 0.16 | the accent at 0.108 | The tint behind a selected row or a toggle that is on. |
+| `--color-brand-accent` | `#725be6` | `#735af2` | The fill of the primary action, a selected card's ring, a selected row's rail, the attention count. A fill and a mark, never text. |
+| `--color-brand-accent-hover` | `#674ee4` | `#674ee4` | The primary action under the pointer. |
+| `--color-brand-accent-active` | `#5b3dc7` | `#5b3dc7` | The primary action pressed. |
+| `--color-brand-accent-ink` | `#a9b0ff` | `#4f51bd` | The accent as text: a link, an outline button's label. |
+| `--color-brand-accent-soft` | the accent at 0.16 | the accent at 0.125 | The tint behind a selected row or a toggle that is on. |
 | `--color-brand-accent-soft-strong` | the accent at 0.32 | the accent at 0.32 | The border paired with the soft tint. |
-| `--color-brand-accent-rgb` | `124, 86, 255` | `107, 69, 240` | The accent as an `r, g, b` triple, for a translucent tint of a stylesheet's own. `--shadow-glow` is composed from it. |
-| `--color-focus` | `#7e5bff` | `#6b45f0` | The focus ring. |
+| `--color-brand-accent-rgb` | `114, 91, 230` | `115, 90, 242` | The accent as an `r, g, b` triple, for a translucent tint of a stylesheet's own. `--shadow-glow` is composed from it. |
+| `--color-focus` | `#8572fe` | `#735af2` | The focus ring. |
 | `--color-text-on-accent` | `#ffffff` | `#ffffff` | The label on the accent's three fills, and on the danger fill. |
 
-`-rgb` and `-soft-strong` are derived from the accent by the build, per palette, and the build suite holds the written `-soft` to the accent's own channels.
+`-rgb` and `-soft-strong` are derived from the accent by the build, per palette, and the build suite holds the written `-soft` to the accent's own channels. The marketing root keeps the brand's `#7c56ff` and its own steps (`tokens/color.json`).
 
-- **The primary action is the accent.** The monochrome `--color-brand-primary` (white on dark, black on light) is gone: a white primary beside a light-grey secondary was one pair of greys. White clears 4.53:1 on the dark accent and 5.62:1 on the light one.
-- **Its hover and its press are darker, a step each, never brighter.** The label is white, so a brighter fill is a step toward it: the approved design's `brightness(1.08)` hover took the dark accent's label to 4.18:1, under the text floor at the moment the reader is about to press. Each step is the least move along lightness a reader can see, dE 3, and the palette suite holds both halves: `a hovered primary action is a visible step away from its label` and `a pressed primary action is a visible step past a hovered one`.
-- **The focus ring is the accent**, except where the floor forbids it. The dark accent measured 2.88:1 on a pressed row inside a raised surface, under the 3:1 a ring clears, and it cannot lighten itself without taking the primary action's label under 4.5:1; so the dark ring is the accent lifted dE 1.06, the least lift that clears it.
+- **The primary action is the accent.** The monochrome `--color-brand-primary` (white on dark, black on light) is gone: a white primary beside a light-grey secondary was one pair of greys. White clears 4.82:1 on the dark accent and 4.69:1 on the light one.
+- **Its hover and its press are darker, a step each, never brighter.** The label is white, so a brighter fill is a step toward it: a `brightness(1.08)` hover takes the dark accent's label to 4.25:1, under the text floor at the moment the reader is about to press. The approved palette's hover and press are a darker step each (the hover dE 3.44 off the accent in dark and 3.92 in light, the press dE 6.14 past the hover), and the palette suite holds both halves: `a hovered primary action is a visible step away from its label` and `a pressed primary action is a visible step past a hovered one`.
+- **The focus ring is the accent**, except where the floor forbids it. The dark accent measured 2.25:1 on a pressed row inside a raised surface, under the 3:1 a ring clears, and it cannot lighten itself that far without taking the primary action's label under 4.5:1; so the dark ring is the accent lifted dE 7.01, the least lift that clears it.
 - **Where the reader is in a rail is not the accent.** The rail's current row stands on raised with the plain border round it (`RAIL_CURRENT_ROW`), and the rail's one hue is the attention count, the accent's fill with the on-accent label: the one thing in the chrome that asks the reader to act.
 
-Where an approved value failed a floor, the floor won and the value moved the least it could, keeping its hue. Each token's comment names the value it replaced, the distance and the measurement:
+Where an approved value failed a floor, the floor won and the value moved, keeping its hue. Each token's comment names the value it replaced, the distance and the measurement:
 
 | Token | Was | Shipped | Moved (dE) | Because |
 | --- | --- | --- | --- | --- |
-| `--color-brand-accent-hover` dark | `#865dff`, the approved `brightness(1.08)` | `#744bf4` | | 4.18:1 under the white label; the shipped step is darker by dE 3.08 |
-| `--color-brand-accent-hover` light | `#744bff`, the approved `brightness(1.08)` | `#633ae5` | | it moved toward the label; the shipped step is darker by dE 3.03 |
-| `--color-focus` dark | `#7c56ff`, the accent | `#7e5bff` | 1.06 | 2.88:1 on a pressed row inside a raised surface |
-| `--color-brand-accent-soft` light | 0.10 | 0.108 | | a selected row sat dE 2.67 from a hovered one on the frame, under 3 |
+| `--color-focus` dark | `#725be6`, the accent | `#8572fe` | 7.01 | 2.25:1 on a pressed row inside a raised surface |
+| `--color-brand-accent-ink` light | `#696fdd` | `#4f51bd` | 9.70 | 2.99:1 on a pressed row on the frame |
+| `--color-brand-accent-soft` light | 0.108 | 0.125 | | a selected row sat dE 2.40 from a hovered one on the frame, under 3 |
 
 ### Breaking change in 0.5.0: the accent is the primary action
 
@@ -370,40 +387,37 @@ Where an approved value failed a floor, the floor won and the value moved the le
 
 The four states say what a piece of work is doing, and nothing else: **info is working, warning needs a person, danger is stopped, success is done**. Done stays a green in both palettes. The token names stay generic (`success`, `warning`, `danger`, `info`), because a badge, a callout and a toast mean the same four things wherever they are drawn.
 
-The chart ramp is **four series**, blue, orange, aqua and yellow in that order, and `--color-data-other` for everything past the fourth. A series hue is legal only inside a figure that names it: a legend when it carries two series or more, the label when it carries one, which is what a `Meter` is.
+The chart ramp is **four series**, blue, orange, green and yellow in that order, and `--color-data-other` for everything past the fourth. A series hue is legal only inside a figure that names it: a legend when it carries two series or more, the label when it carries one, which is what a `Meter` is.
 
-Both families are the approved design's hues, or the least move from them that the palette suite's floors forced, found by [the fit](#the-approved-palette-and-the-fit). A state or a series moves inside its own hue family, 15 degrees either way, and each moved token's comment names the design value, the distance and the measurement:
+Both families are the approved palette's hues, or a move from them that the palette suite's floors forced (see [the fit](#the-approved-palette-and-the-fit)). A state or a series moves inside its own hue family, 15 degrees either way, and each moved token's comment names the design value, the distance and the measurement:
 
 | Token | Palette | Design | Shipped | Moved (dE) | Because |
 | --- | --- | --- | --- | --- | --- |
-| `--color-feedback-danger` | dark | `#f26d6d` | `#e50055` | 13.35 | white on it 2.92:1; dE 5.7 from done under deuteranopia; dE 7.8 from the chart orange under normal vision. It turns toward crimson as well as darkening, which is what lets the orange stay within dE 3.22 of the design |
-| `--color-feedback-danger` | light | `#e5484d` | `#c01d32` | 10.40 | white on it 3.91:1; dE 8.4 from done under protanopia; dE 6.3 from the chart orange under normal vision |
-| `--color-feedback-warning` | dark | `#f2b33d` | `#f4b221` | 1.32 | dE 8.5 from done under protanopia |
-| `--color-feedback-warning` | light | `#e09a12` | `#c57600` | 10.32 | 2.03:1 as a mark on the frame |
-| `--color-feedback-success` | dark | `#3fcf8e` | `#3ecf8f` | 0.13 | dE 9.9 from warning under protanopia |
-| `--color-feedback-success` | light | `#23a26d` | `#009b74` | 2.80 | 2.77:1 as a mark on the frame |
-| `--color-feedback-info` | light | `#2f7fe0` | `#3081de` | 0.67 | dE 7.4 from the accent under deuteranopia |
-| `--color-feedback-info-ink` | light | `#1d63b8` | `#1a5eb3` | 1.56 | 4.21:1 on a pressed row on the frame |
-| `--color-feedback-warning-ink` | light | `#935600` | `#8e5000` | 1.89 | 4.16:1 on a pressed row on the frame |
-| `--color-feedback-danger-ink` | light | `#bf282e` | `#b61426` | 3.05 | 4.17:1 on a pressed row on the frame, and 3.94:1 on a code chip over the fitted fill's soft tint |
-| `--color-feedback-success-ink` | light | `#17744c` | `#106d46` | 2.28 | 4.08:1 on a pressed row on the frame |
-| `--color-data-1` | dark | `#3987e5` | `#458adc` | 1.95 | dE 6.0 from the accent under deuteranopia |
-| `--color-data-1` | light | `#2a78d6` | `#3879ce` | 1.58 | dE 6.5 from the accent under deuteranopia |
-| `--color-data-2` | dark | `#d95926` | `#e4631f` | 3.22 | dE 12.0 from danger under normal vision |
-| `--color-data-2` | light | `#eb6834` | `#e45f28` | 2.39 | 2.73:1 as a mark on the frame |
-| `--color-data-3` | dark | `#199e70` | `#009c79` | 1.62 | dE 6.3 from danger under deuteranopia |
-| `--color-data-3` | light | `#1baf7a` | `#009b74` | 6.04 | 2.40:1 as a mark on the frame |
-| `--color-data-4` | light | `#eda100` | `#c57600` | 13.09 | 1.85:1 as a mark on the frame: a yellow dark enough to be seen on a light page is an ochre |
+| `--color-feedback-danger` | dark | `#f0506e` | `#d93855` | 6.66 | white on it 3.46:1; dE 5.9 from done under deuteranopia; dE 5.1 from the chart green under deuteranopia |
+| `--color-feedback-danger` | light | `#cc2a4a` | `#b9112c` | 5.75 | dE 7.2 from done under deuteranopia; dE 6.9 from the chart green under deuteranopia |
+| `--color-feedback-warning` | dark | `#f0b429` | `#f0b425` | 0.17 | dE 9.8 from done under protanopia |
+| `--color-feedback-warning` | light | `#ffb300` | `#c17300` | 19.65 | 1.52:1 as a mark on the frame |
+| `--color-feedback-success` | light | `#34c98b` | `#0b9a74` | 13.87 | 1.80:1 as a mark on the frame |
+| `--color-feedback-info` | light | `#039cdd` | `#2f92b4` | 6.14 | 2.61:1 as a mark on the frame |
+| `--color-feedback-info-ink` | light | `#367da1` | `#1a6588` | 8.11 | 3.19:1 on a pressed row on the frame |
+| `--color-feedback-warning-ink` | light | `#db9a00` | `#8c4e00` | 24.95 | 1.70:1 on a pressed row on the frame |
+| `--color-feedback-danger-ink` | light | `#e65656` | `#b20d23` | 15.89 | 2.52:1 on a pressed row on the frame, and 2.36:1 on a code chip inside its own callout |
+| `--color-data-1` | dark | `#3c7fec` | `#4d8ff6` | 4.75 | dE 9.7 from the accent under normal vision and 3.3 under deuteranopia |
+| `--color-data-1` | light | `#4381e5` | `#5c76c3` | 5.71 | dE 4.5 from the accent under deuteranopia |
+| `--color-data-2` | light | `#ed810c` | `#dd5920` | 9.59 | 2.29:1 as a mark on the frame |
+| `--color-data-3` | dark | `#2fa24e` | `#26b583` | 7.39 | dE 0.9 from danger under deuteranopia; dE 2.6 from the orange under protanopia |
+| `--color-data-3` | light | `#2f9d4c` | `#00956e` | 5.75 | 2.94:1 as a mark on the frame; dE 5.6 from the yellow under protanopia; dE 7.9 from danger under deuteranopia |
+| `--color-data-4` | light | `#edb302` | `#c27600` | 17.33 | 1.61:1 as a mark on the frame: a yellow dark enough to be seen on a light page is an ochre |
 
-Every other state and series step ships as designed: the dark inks, dark info, and the dark yellow. The design's soft tints are drawn at their own alphas; the kit derives every `-soft` step at 0.12 and every `-line` step at 0.30 from the fill, per palette.
+Every other state and series step ships as approved: the dark inks, dark success and info, the dark orange and yellow, and the light success ink. The approved palette draws every soft tint at 0.12, which is the alpha the kit derives every `-soft` step at, and every `-line` step is the fill at 0.30, per palette.
 
-In light, two series land on a state's own value: the aqua on done's green (`#009b74`) and the yellow on the warning ochre (`#c57600`). The design drew each pair a few steps apart, and each was darkened onto the same floor, a mark that clears 3:1 on the frame, where the two meet at the edge of what a screen can show. Nothing in the suite keeps a series from a state other than the reserved red, and a series is read only inside a figure that names it.
+In light, the yellow series sits beside the warning ochre (`#c27600` and `#c17300`). The approved palette drew the two a few steps apart, and both were darkened onto the same floor, a mark that clears 3:1 on the frame. Nothing in the suite keeps a series from a state other than the reserved red, and a series is read only inside a figure that names it.
 
-- **The danger fill carries a white label**, on a toast's destructive action and on an upload's remove button, so it is dark enough for 4.5:1 in both palettes (4.71:1 dark, 6.06:1 light), and its hover, `--color-feedback-danger-hover`, is a step darker again, the least a reader can see (dE 3.14 dark, 3.04 light). The palette suite holds the hover as it holds the primary action's: `a hovered destructive action is a visible step away from its label`.
-- **The reserved red is kept away from every series**: dE 14 under normal vision and 8 under protanopia and deuteranopia, where red, orange and green fall onto one axis. The approved aqua sat dE 0.73 from the approved red under protanopia.
+- **The danger fill carries a white label**, on a toast's destructive action and on an upload's remove button, so it is dark enough for 4.5:1 in both palettes (4.52:1 dark, 6.61:1 light), and its hover, `--color-feedback-danger-hover`, is a step darker again, the least a reader can see (dE 3.03 dark, 3.02 light). The palette suite holds the hover as it holds the primary action's: `a hovered destructive action is a visible step away from its label`.
+- **The reserved red is kept away from every series**: dE 14 under normal vision and 8 under protanopia and deuteranopia, where red, orange and green fall onto one axis. The approved chart green sat dE 0.9 from the shipped red under deuteranopia.
 - **Neighbouring series** sit dE 9 apart under every vision and dE 15 under normal vision. The second floor is new: on its own, the dichromat floor let a pair sit dE 9 apart for every reader, which to full-colour vision is two shades of one hue.
 
-The marketing root takes the dark palette's state and series values.
+The marketing root keeps its own state and series values (`tokens/color.json`), which the suite measures in the `base` state.
 
 ### Breaking change in 0.5.0: the state and chart hues
 
@@ -424,7 +438,7 @@ The marketing root takes the dark palette's state and series values.
 
 ## The palette suite
 
-`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), every ink on its own soft tint, every fill as a mark, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs and the hairline that finds a card, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), and the structure of the theme file itself. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
+`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), every ink on its own soft tint, every fill as a mark, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs, the hairline that finds a card and the strong hairline round a raised chip, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), and the structure of the theme file itself. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
 
 The module is **published**, as `@crewlethq/tokens/test/palette`, so a consumer runs the same rules over the version it installed:
 
@@ -454,7 +468,7 @@ or with the package's own `node --test "test/*.test.mjs"` from inside `node_modu
 
 ### The approved palette, and the fit
 
-[`tokens/intent.json`](./tokens/intent.json) is the approved design's palette: the two token blocks every artboard declares (`.app` for dark, `.app.light` for light), declaration for declaration, each with the custom property that ships it, and the colours the artboards spell outside those blocks. It is a record rather than a token file: the build skips it and nothing is emitted from it. `test/intent.test.mjs` holds it to naming only tokens the palettes declare, the same names for the same tokens in both palettes, and values that parse.
+[`tokens/intent.json`](./tokens/intent.json) is the approved palette: the default dark and light themes approved on 4 October 2026, recorded under the custom property names the design artboards declare, each with the custom property that ships it, and the values the design draws outside those two blocks (the primary action's label, hover and press among them). It is a record rather than a token file: the build skips it and nothing is emitted from it. `test/intent.test.mjs` holds it to naming only tokens the palettes declare, the same names for the same tokens in both palettes, and values that parse.
 
 Every colour the record names ships the value recorded there, or the least move from it that one of the palette suite's floors forced: the surfaces, the neutral text and border steps, the accent, the four states and their inks, and the four chart series. [`scripts/fit-palette.mjs`](./scripts/fit-palette.mjs) is what finds those moves:
 
@@ -469,16 +483,16 @@ From the recorded values it searches for the palette that moves the design least
 - a neutral step and the accent's family move along lightness alone, as every move before the fit was made; a state or chart hue moves inside a hue family 15 degrees either side of the design's; a translucent step moves its alpha;
 - only a value that fails a floor of its own moves, never the ground it was measured on, and never a value that clears every floor it has to spare another;
 - the four rungs keep the design's order, and so does the text ramp, because the suite holds a step to a distance and not to a direction (in light, raised is below the card);
-- a token the design never drew (the focus ring, a pressed row, the primary action's hover and press, the destructive action's hover, a control's boundary) is fitted from the value it is a step of, and only after the design's own values: it never buys a design value back by moving itself. A step is seated first, where its own rule holds, because at the value it is a step of that rule refuses it, and the design is then repaired around it;
+- a token the design never drew (the focus ring, a pressed row, the destructive action's hover, a control's boundary) is fitted from the value it is a step of, and only after the design's own values: it never buys a design value back by moving itself. A step is seated first, where its own rule holds, because at the value it is a step of that rule refuses it, and the design is then repaired around it;
 - a value's own floors are repaired before a separation between two values, because where a hue's floor sends it does not depend on anything else;
 - a hue is looked for along lightness first, keeping its hue and chroma, the move every hand fit made, and then in drawn directions inside its family; and a seat found along a drawn direction is then turned toward the design, the direction rotated in halving angles until no turn brings the seat nearer, because a seat on a drawn direction is only as near as that direction lets it be;
-- a value that another is measured ON moves together with it: a state's ink is held to 4.5:1 on its own fill's soft tint and on a code chip over that tint, so a fill walked back toward the design takes its ink with it, the ink repaired at every step. Moved one at a time, neither could go nearer, and the light danger red ended as a muted maroon dE 15.19 from the design where the red and its ink moved together need 10.40 and 3.05.
+- a value that another is measured ON moves together with it: a state's ink is held to 4.5:1 on its own fill's soft tint and on a code chip over that tint, so a fill walked back toward the design takes its ink with it, the ink repaired at every step. Moved one at a time, neither could go nearer: on the palette before this one, the light danger red ended as a muted maroon dE 15.19 from its design, where the red and its ink moved together needed 10.40 and 3.05.
 
 It is seeded (mulberry32 at seed 1). The search spends a fixed budget of palette evaluations repairing and improving the palette, and the finish then runs until no move it knows pays, so the same built stylesheets give the same fit, to the byte. The fit is the best it finds, not a proof that nothing moves the design less; its first line says how many evaluations the search and the finish took, and says so plainly if the finish ever stopped at its ceiling with moves still paying. For each value it fits it prints the design value, the value the fit ships, the dE between them and the binding rule, which is what fails when that value alone goes back to the design; then every token whose built value is not the fit. A token the floors moved says the same three things in its own comment in `tokens/themes/*.json`: the design value, the dE of the move and the measurement that forced it.
 
 The fit is a development tool. It is not published, and no test runs it or reads what it prints: the gate is the palette suite, and the fit is how a value that passes it is chosen.
 
-The fit is held to every rule in the table, and the shipped palette is exactly what it prints: run over this release's stylesheets, it reports that every value it fits ships its fitted value, in both palettes.
+The fit is held to every rule in the table. Run over this release's stylesheets, it reports that every dark value it fits ships its fitted value. Light is the exception: within its budget the search leaves two light floors failing (the warning fill as a mark on the frame, and raised against the card), so the shipped light values were placed by a walk from a passing palette back toward the approved values, each step kept only while every rule holds. Each moved light token states its move in its comment like any other, and the palette suite, which is the gate, passes in every state.
 
 The Storybook shows both halves under **Foundations / Palette**. `Tightest Per Rule` is `tightest()` over the whole table: under each rule, the pair that would break first. `The Fit` is every colour `tokens/intent.json` declares, per palette, with what ships for it, the dE between them, and what fails when that value alone goes back to the design: the suite run again over the built `themes.css` with that one declaration put back (an overlay the design drew opaque at the alpha nearest it, and the steps the build derives from a fill following it), reduced to the tightest failure under each rule it breaks. It is measured every time the story renders rather than copied from a comment, so a move that stopped being forced says so there first. Its logic is `apps/storybook/src/paletteFit.ts`, and `apps/storybook/test/paletteFit.test.mjs` holds it.
 

@@ -126,6 +126,12 @@ export const RAIL_CURRENT_ROW: readonly [string, string];
 export const RAIL_CURRENT_LIFT: number;
 
 /**
+ * A chip on the raised rung inside the strong hairline, as [fill, edge]: its
+ * boundary clears HAIRLINE_DE on every opaque rung and every overlay on one.
+ */
+export const RAISED_CHIP: readonly [string, string];
+
+/**
  * The four chart series, by custom-property name, in the order a figure
  * assigns them. Past the fourth a figure takes `--color-data-other`, which is
  * not a series and is not in the list.
