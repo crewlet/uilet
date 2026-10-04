@@ -14,7 +14,7 @@
       "inverse": { "value": "#fcfcfc" }
     },
     "text": {
-      "primary": { "value": "#e6e9f2" },
+      "primary": { "value": "#e7eaf3", "comment": "The approved #e6e9f2, lifted dE 0.30 along lightness: it sat 1.98:1 from the tertiary step, under the 2:1 that keeps a dimmed word a step from the word being read." },
       "secondary": { "value": "#a9b0c3" },
       "tertiary": { "value": "#9fa7bc", "comment": "The approved #8a91a6, lightened dE 7.08 along lightness: it measured 3.45:1 on a pressed row inside a raised surface, and 4.49:1 on glass over the inverse ground." },
       "muted": { "value": "#5a6176", "comment": "The approved step, unmoved: 2.98:1 on the card and 3.25:1 on the rail, inside the decoration band." },
@@ -41,8 +41,8 @@
       "successInk": { "value": "#74dcae", "comment": "The approved step, unmoved." },
       "warning": { "value": "#f0b425", "comment": "Needs a person. The approved #f0b429, moved dE 0.17 inside its hue family: it sat dE 9.8 from the success fill under protanopia, under the 10 the four states keep between them." },
       "warningInk": { "value": "#f6cd72", "comment": "The approved step, unmoved." },
-      "danger": { "value": "#d93855", "comment": "Stopped. The approved #f0506e, darkened dE 6.66 inside its hue family, where three floors met: the white label of a destructive action measured 3.46:1 on it, it sat dE 5.9 from the success fill under deuteranopia against the 10 the states keep, and dE 5.1 from the chart green under deuteranopia against the 8 the reserved red keeps from every series. White clears 4.52:1 on it." },
-      "dangerHover": { "value": "#ce2c4d", "comment": "The destructive action under the pointer: a step darker than the danger fill, the least a reader can see (dE 3.03), taking white from 4.52:1 to 5.13:1. The design record draws no hover for it." },
+      "danger": { "value": "#d73756", "comment": "Stopped. The approved #f0506e, darkened dE 7.04 inside its hue family, where three floors met: the white label of a destructive action measured 3.46:1 on it, it sat dE 5.9 from the success fill under deuteranopia against the 10 the states keep, and dE 4.9 from the chart green under deuteranopia against the 8 the reserved red keeps from every series. White clears 4.59:1 on it." },
+      "dangerHover": { "value": "#cc2b4e", "comment": "The destructive action under the pointer: a step darker than the danger fill, the least a reader can see (dE 3.03), taking white from 4.59:1 to 5.22:1. The design record draws no hover for it." },
       "dangerInk": { "value": "#ff9fb0", "comment": "The approved step, unmoved." },
       "info": { "value": "#61d0ff", "comment": "Working. The approved step, unmoved." },
       "infoInk": { "value": "#8ad6fb", "comment": "The approved step, unmoved." }
@@ -50,7 +50,7 @@
     "data": {
       "1": { "value": "#4d8ff6", "comment": "The approved blue, #3c7fec, moved dE 4.75 inside its hue family: it sat dE 9.7 from the accent under normal vision and 3.3 under deuteranopia, against the 10 and 8 no hue may come within." },
       "2": { "value": "#e67737", "comment": "The approved orange, unmoved." },
-      "3": { "value": "#26b583", "comment": "The approved green, #2fa24e, moved dE 7.39 inside its hue family, toward aqua: it sat dE 0.9 from the danger fill under deuteranopia, against the 8 the reserved red keeps from every series, and dE 2.6 from the orange under protanopia, under the 9 neighbouring series keep." },
+      "3": { "value": "#26b582", "comment": "The approved green, #2fa24e, moved dE 7.30 inside its hue family, toward aqua: it sat dE 0.6 from the danger fill under deuteranopia, against the 8 the reserved red keeps from every series, and dE 2.6 from the orange under protanopia, under the 9 neighbouring series keep." },
       "4": { "value": "#eab106", "comment": "The approved yellow, unmoved." },
       "other": { "value": "#6a7186", "comment": "The approved neutral mark, unmoved." }
     },

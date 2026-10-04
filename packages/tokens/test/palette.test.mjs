@@ -22,6 +22,7 @@ import {
   DATA_ADJACENT_DE,
   DATA_ADJACENT_NORMAL_DE,
   describeFailure,
+  DIMMED_TEXT,
   fromOklab,
   hex,
   oklabToLinear,
@@ -154,6 +155,17 @@ describe('the palette', () => {
     const onBase = [...byRule].filter(([, states]) => states.has('base')).map(([rule]) => rule);
     assert.ok(onBase.length > 10, `only ${onBase.length} rules ran on the marketing root`);
     assert.ok(onBase.includes('text step clears its floor'));
+  });
+
+  test('a dimmed word is measured in every state, and one a rounding from the word being read is caught', () => {
+    const DIMMED_RULE = 'a dimmed word is a step from the word being read';
+    assert.deepEqual(DIMMED_TEXT, ['--color-text-primary', '--color-text-tertiary', 2]);
+    for (const state of STATES) {
+      assert.equal(checks.filter((check) => check.state === state && check.rule === DIMMED_RULE).length, 1, state);
+    }
+    // The tertiary step lifted onto the secondary one: each clears its own
+    // floor, and the step between the first and the third is gone.
+    assert.deepEqual(failuresAfter('dark', '--color-text-tertiary', typed.dark.color.text.secondary), [DIMMED_RULE]);
   });
 
   test('the theme layer is dark first, and wins over the token layer', () => {
@@ -444,13 +456,13 @@ describe('the state and chart hues', () => {
     // 3.46:1, and a deuteranopic reader finds it dE 5.9 from done. It also
     // sits under the floors the reserved red keeps from the orange (11.4
     // under normal vision, 6.8 under deuteranopia) and from the green
-    // (deuteranopia 5.1).
+    // (deuteranopia 4.9).
     const failing = checksAfter('dark', '--color-feedback-danger', '#f0506e').map(summary);
     assert.deepEqual(failing, [
       `${LABEL_RULE}: --color-text-on-accent on --color-feedback-danger: 3.46:1 (worst on --color-feedback-danger on --color-surface-frame)`,
       `${STATUS_RULE}: --color-feedback-success vs --color-feedback-danger: dE n34.5/p18.6/d5.9 >= 10`,
       `${DANGER_RULE}: --color-data-2: dE n11.4/p9.9/d6.8 >= 14 normal, 8 dichromat`,
-      `${DANGER_RULE}: --color-data-3: dE n32.4/p12.7/d5.1 >= 14 normal, 8 dichromat`,
+      `${DANGER_RULE}: --color-data-3: dE n32.5/p12.7/d4.9 >= 14 normal, 8 dichromat`,
     ]);
   });
 
@@ -465,12 +477,12 @@ describe('the state and chart hues', () => {
   test('a neighbour that clears every dichromat floor is still caught under normal vision', () => {
     // A teal fourth series beside the aqua green third: dE 13.0 apart under
     // protanopia and 12.3 under deuteranopia, which the dichromat floor alone
-    // passes, and 12.9 under normal vision, two shades of one hue to every
+    // passes, and 13.0 under normal vision, two shades of one hue to every
     // reader who sees colour. Nothing else it touches fails, so the
     // normal-vision floor is the only thing standing between it and a chart.
     const failing = checksAfter('dark', '--color-data-4', '#008c87');
     assert.deepEqual(failing.map(summary), [
-      `${ADJACENT_RULE}: --color-data-3 vs --color-data-4: dE n12.9/p13.0/d12.3 >= ${DATA_ADJACENT_NORMAL_DE} normal, ${DATA_ADJACENT_DE} every vision`,
+      `${ADJACENT_RULE}: --color-data-3 vs --color-data-4: dE n13.0/p13.0/d12.3 >= ${DATA_ADJACENT_NORMAL_DE} normal, ${DATA_ADJACENT_DE} every vision`,
     ]);
     assert.ok(failing[0].value >= DATA_ADJACENT_DE, 'the mutation has to clear the dichromat floor, or it proves nothing about the normal one');
   });

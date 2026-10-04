@@ -91,6 +91,12 @@ export const OPAQUE_SURFACES: readonly string[];
 export const TEXT_STEPS: readonly (readonly [string, number])[];
 
 /**
+ * A dimmed word against the word being read, as [read, dimmed, contrast]: the
+ * two text steps clear that contrast between themselves.
+ */
+export const DIMMED_TEXT: readonly [string, string, number];
+
+/**
  * The steps of the ladder, each as [rule, upper rung, lower rung, the dE the
  * upper rung has to sit off the lower one].
  */

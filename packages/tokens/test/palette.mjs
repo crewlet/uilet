@@ -155,6 +155,18 @@ export const TEXT_STEPS = [
   ['--color-text-tertiary', 4.5],
 ];
 
+/**
+ * A DIMMED word against the word being read, as [read, dimmed, contrast]: the
+ * primary step and the tertiary one. A screen dims what is not its subject by
+ * dropping it from the first step to the third (a calendar's days from the
+ * neighbouring month, a resolved row under an open one), and both are facts,
+ * so each clears its own floor above. What this holds is that the two are a
+ * STEP apart rather than a rounding: 2:1 between the inks themselves. A ramp
+ * squeezed from both ends, a dimmer primary over a tertiary lifted for its
+ * floor on a pressed raised row, can keep every floor and lose the step.
+ */
+export const DIMMED_TEXT = ['--color-text-primary', '--color-text-tertiary', 2];
+
 /** A hue used as TEXT on a surface. */
 export const INK_STEPS = [
   '--color-brand-accent-ink',
@@ -680,6 +692,12 @@ function checkState(state, values, profile, push) {
   for (const [name, floor] of TEXT_STEPS) {
     const low = worst(colour(name), all);
     say('text step clears its floor', low.ratio >= floor, name, low.ratio, `${low.ratio.toFixed(2)}:1 >= ${floor} (worst on ${low.name})`);
+  }
+  {
+    // A dimmed word against the word being read. See DIMMED_TEXT.
+    const [read, dimmed, floor] = DIMMED_TEXT;
+    const ratio = contrast(colour(read), colour(dimmed));
+    say('a dimmed word is a step from the word being read', ratio >= floor, `${read} vs ${dimmed}`, ratio, `${ratio.toFixed(2)}:1 >= ${floor}`);
   }
 
   {
