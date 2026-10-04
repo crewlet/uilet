@@ -95,7 +95,7 @@ land at once.
   `--color-brand-accent-hover`, `--color-brand-accent-active`,
   `--color-brand-accent-ink`, `--color-brand-accent-soft`,
   `--color-brand-accent-soft-strong` and `--color-focus`. The accent is PER
-  PALETTE (`#7c56ff` dark, `#6b45f0` light), so rebind the set together, and
+  PALETTE (`#725be6` dark, `#735af2` light), so rebind the set together, and
   under the same three selectors the theme layer paints it with: an override
   on `:root` alone is beaten by `:root[data-theme="light"]` in light. Declare
   it on the root rather than on `<body>` or a wrapper: `--shadow-focus`,

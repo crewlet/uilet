@@ -74,7 +74,7 @@ export const OPAQUE_SURFACES = [
  * - THE SHEET OVER THE FRAME is the whole layering device: a content sheet
  *   floating inside the application ground. At dE 3, the floor this file holds
  *   every "can a reader notice it" difference to, the sheet reads as a
- *   separate plane; the approved dark sheet, #0f0f12, measured 2.91 and was
+ *   separate plane; the approved dark sheet, #0c0e15, measured 2.96 and was
  *   nudged to clear it.
  * - A CARD OVER THE SHEET is deliberately near-flat, dE 1.5, because a card is
  *   found by its HAIRLINE rather than by its fill: a page of cards each lifted
@@ -106,15 +106,27 @@ export const CARD_HAIRLINE = ['--color-border-default', '--color-surface-subtle'
 export const HAIRLINE_DE = 3;
 
 /**
+ * A chip drawn on the raised rung inside the strong hairline, as [fill,
+ * edge]: the neutral pill, and a key cap. Its fill IS raised, so on a raised
+ * ground (a lead block, a raised card, the rail's current row) the fill alone
+ * draws nothing, and what finds the chip is its edge. So the chip's boundary,
+ * the fill or the edge, whichever stands further off its ground, is held to
+ * HAIRLINE_DE on every ground it can land on: each opaque rung, and each
+ * overlay a hovered, pressed or inset row composites onto one. A component
+ * suite holds the chip to drawing this pair; this is what keeps a palette
+ * from taking the edge away.
+ */
+export const RAISED_CHIP = ['--color-surface-elevated', '--color-border-strong'];
+
+/**
  * THE OVERLAY STEPS HAVE TO BE SEEN, on every rung.
  *
- * A translucent overlay is one alpha on four grounds, and the alpha is FITTED
- * (the hover token says how): the approved design paints its hover as one
- * opaque colour, and a stronger overlay costs the tertiary text step contrast
- * on the rungs it lightens or darkens most. Left to that trade alone, the
- * cheapest answer for the text is an overlay nobody sees, and the light
- * palette's frame kept asking for it: the design's own light hover sits dE
- * 0.60 off the frame. This is the floor that stops it. A hovered row separates
+ * A translucent overlay is one alpha on four grounds, and a stronger overlay
+ * costs the tertiary text step contrast on the rungs it lightens or darkens
+ * most. Left to that trade alone, the cheapest answer for the text is an
+ * overlay nobody sees, and a light frame keeps asking for it: an overlay that
+ * clears the sheet and the card can still sit under dE 3 on the frame. This
+ * is the floor that stops it. A hovered row separates
  * from its rung by dE 3, and a pressed row from a hovered one by dE 3 more,
  * because dE 3 is the floor this file holds every "can a reader notice it"
  * difference to. The marketing root is exempt, as it is from the rungs.
@@ -169,11 +181,11 @@ export const STATUS = [
 ];
 
 /**
- * The chart series, in the order a figure assigns them: blue, orange, aqua and
- * an ochre yellow, the four the approved design draws.
+ * The chart series, in the order a figure assigns them: blue, orange, green
+ * and yellow, the four the approved palette draws.
  *
- * FOUR, because four is what both floors below can hold at once. The design's
- * four clear them with room (its tightest neighbours sit dE 19.8 apart under
+ * FOUR, because four is what both floors below can hold at once. The shipped
+ * four clear them with room (their tightest neighbours sit dE 20.6 apart under
  * normal vision), and a fifth would have to sit between two of them in a hue
  * budget the reserved red, the accent and a dichromat's collapse of red onto
  * green have already spent.
@@ -219,13 +231,13 @@ export const LABEL_ON_FILL = [
  * the fill is the whole of the feedback, so every step clears two things. It
  * is SEEN: ACTION_DE, the floor this file holds every "can a reader notice
  * it" difference to. And it moves AWAY from its label, which is ACTION_LABEL
- * on every fill: a hover or a press only ever gains contrast. The approved
- * design brightened its hover instead (brightness(1.08)), which is the step
- * TOWARD a white label, and on the dark accent it took white from 4.53:1 to
- * 4.18:1, under the text floor at the moment a reader is about to press. The
- * label rule above catches that number in dark; this rule is what catches the
- * same move in light, where the brightened step still measured 5.01:1 and
- * only its direction was wrong.
+ * on every fill: a hover or a press only ever gains contrast. A hover drawn as
+ * brightness(1.08) is the step TOWARD a white label: on either accent it
+ * takes white under the text floor (4.25:1 in dark, 4.19:1 in light) at the
+ * moment a reader is about to press, which the label rule above catches. This
+ * rule is what catches a step toward the label that still clears it: the
+ * accent dulled at its own lightness reads as a step and keeps its label over
+ * 4.5:1, and only its direction is wrong.
  *
  * The DESTRUCTIVE action is the other filled action, and it is held the same
  * way: a toast's destructive action is the danger fill under the same white
@@ -284,12 +296,12 @@ export const RAIL_GROUND = '--color-surface-frame';
  * border drawn round it INSIDE the row, and the primary ink.
  *
  * It is found the way a card is found. Its fill is allowed to be near-flat on
- * the frame, RAIL_CURRENT_LIFT, because in light raised is only dE 1.84 off
+ * the frame, RAIL_CURRENT_LIFT, because in light raised is only dE 1.93 off
  * the frame (the design draws it there); what carries the row is the
  * hairline, held to HAIRLINE_DE against the fill it is drawn on. The hairline
- * is also what tells the current row from a HOVERED one, which draws none: in
- * dark the two fills land dE 1.56 apart, because the fitted hover overlay
- * lifts the frame almost to raised.
+ * is also what tells the current row from a HOVERED one, which draws none: a
+ * hover overlay strong enough to be seen on the frame can lift it close to
+ * raised, and nothing else keeps the two apart.
  *
  * It used to be the accent's own soft tint with the label in the accent ink.
  * The accent is the primary action's fill now, so a violet row in the rail
@@ -443,14 +455,13 @@ export const VEIL_BAND = [1.5, 3];
  * somewhere the ink steps were never measured against, and it does it in the
  * one state where a reader cannot tell a rendering fault from a design.
  *
- * 0.65 is the approved dark scrim's 0.62 moved the least distance into the
- * band for every root. At 0.62 the veiled dark page's own primary text still
- * measured 3.02:1 to 3.15:1 over the four rungs, over the 3:1 ceiling, and the
- * marketing root, near-white on black, needs 0.65 before its brightest
- * composite comes under it. At 0.65 dark measures 2.73:1 to 2.84:1, light
- * 2.18:1 to 2.30:1 and the marketing root 2.75:1 to 2.93:1. The approved light
- * scrim, a dark wash at 0.28, left the light page at 8.35:1 to 9.64:1: a page
- * nobody had faded at all.
+ * 0.65 is the least alpha that brings every root into the band: the marketing
+ * root, near-white on black, needs it before its brightest composite comes
+ * under the 3:1 ceiling, and the approved palette draws its veil at it in both
+ * themes. At 0.65 dark measures 2.56:1 to 2.76:1, light 2.18:1 to 2.29:1 and
+ * the marketing root 2.75:1 to 2.93:1. A light veil drawn as a dark wash
+ * instead leaves the light page's text readable through it: a page nobody has
+ * faded at all.
  */
 export const VEIL_GROUND = '--color-surface-frame';
 export const VEIL_ALPHA = 0.65;
@@ -550,12 +561,11 @@ const ACCENT_DICHROMAT = 8;
 // because it is the one hue that means the same thing everywhere in a product,
 // and the accent's dichromat floor. Red, orange and green fall onto one axis
 // for a dichromat, so this is the floor the chart's orange and aqua spend the
-// most on: the approved aqua sat dE 0.73 from the approved red under
-// protanopia, and the approved orange 9.08 from it under normal vision in dark
-// and 7.45 in light. The fit moves the red further than the orange or the
-// aqua, darker, because it had to darken for its white label anyway, and in
-// dark it turns toward crimson as well, which spares the orange more than it
-// costs the red.
+// most on: the approved green sat dE 6.79 from the approved red under
+// deuteranopia in dark and 2.30 in light, and the approved orange 11.39 from
+// it under normal vision in dark. The fit moves the red darker, because it had
+// to darken for its white label anyway, and turns the green toward aqua, which
+// takes it off the axis the red falls on.
 const DANGER_NORMAL = 14;
 const DANGER_DICHROMAT = 8;
 
@@ -1041,6 +1051,29 @@ function checkState(state, values, profile, push) {
         `dE ${measured.toFixed(2)} >= ${HAIRLINE_DE}`,
       );
     }
+  }
+  {
+    // A chip on every ground it can land on. See RAISED_CHIP.
+    const [fill, edge] = RAISED_CHIP;
+    const grounds = [
+      ...opaque,
+      ...OVERLAYS.flatMap((overlay) => opaque.map(([name, rgb]) => [`${overlay} on ${name}`, flatten(values.get(overlay), rgb)])),
+    ];
+    const low = grounds.reduce(
+      (least, [name, ground]) => {
+        const filled = flatten(values.get(fill), ground);
+        const drawn = Math.max(deltaE(filled, ground), deltaE(flatten(values.get(edge), filled), ground));
+        return drawn < least.drawn ? { drawn, name } : least;
+      },
+      { drawn: Infinity, name: '' },
+    );
+    say(
+      'the strong hairline finds a raised chip on every ground',
+      low.drawn >= HAIRLINE_DE,
+      `${edge} round ${fill}`,
+      low.drawn,
+      `dE ${low.drawn.toFixed(2)} >= ${HAIRLINE_DE} (worst on ${low.name})`,
+    );
   }
 }
 

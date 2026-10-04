@@ -128,10 +128,13 @@ export function restore(themes: string, openings: readonly string[], token: stri
   });
 }
 
+/** The design record's shape: tokens/intent.json, or a case that stands in for it. */
+export type DesignRecord = typeof intent;
+
 /** Every colour one palette of the design declares, with the token that ships it. */
-function declarations(name: 'dark' | 'light') {
-  const own = Object.entries(intent[name]).map(([variable, entry]) => ({ label: variable, value: entry.value, token: entry.token }));
-  const literals = intent.literals.map((entry) => ({ label: entry.where, value: entry.value, token: entry.token }));
+function declarations(record: DesignRecord, name: 'dark' | 'light') {
+  const own = Object.entries(record[name]).map(([variable, entry]) => ({ label: variable, value: entry.value, token: entry.token }));
+  const literals = record.literals.map((entry) => ({ label: entry.where, value: entry.value, token: entry.token }));
   return [...own, ...literals].filter(
     (entry): entry is { label: string; value: string; token: string } => entry.token !== null && channels(entry.value) !== null,
   );
@@ -139,7 +142,7 @@ function declarations(name: 'dark' | 'light') {
 
 const keyOf = (check: PaletteCheck) => `${check.state}\u0000${check.rule}\u0000${check.subject}`;
 
-export function fitPalettes(sources: PaletteSources): FitPalette[] {
+export function fitPalettes(sources: PaletteSources, record: DesignRecord = intent): FitPalette[] {
   const states = paletteStates(sources);
   // What already fails as built is no answer to what one declaration put back
   // breaks: a failure of the shipped palette would otherwise be reported on
@@ -160,7 +163,7 @@ export function fitPalettes(sources: PaletteSources): FitPalette[] {
       return Math.max(...rungs.map((rung) => deltaE(flatten(a, rung), flatten(b, rung))));
     };
 
-    const rows = declarations(name).map(({ label, value, token }): FitRow => {
+    const rows = declarations(record, name).map(({ label, value, token }): FitRow => {
       const shipped = built.get(token);
       if (shipped === undefined) throw new Error(`${name}: the design names ${token}, which the built palette does not declare`);
       const own = channels(shipped);
