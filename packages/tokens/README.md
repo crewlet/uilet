@@ -39,6 +39,15 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Changed in 0.6.1: the dark text ramp
+
+In 0.6.0 the dark primary and tertiary text steps sat 1.98:1 apart, so a word a screen dims from the first step to the third (a calendar's days from the neighbouring month) read as a rounding rather than a step. The dark primary is lifted dE 0.30, and the palette suite now holds the step in every state.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| `--color-text-primary` in dark is `#e7eaf3`. It was `#e6e9f2`. The fit placed the danger fill, its hover and the third chart series one 8-bit step from their 0.6.0 values beside it. | Nothing, for a stylesheet that reads the tokens. | [Surfaces](#surfaces) |
+| In `@crewlethq/tokens/test/palette`, the rule `a dimmed word is a step from the word being read` is new, with the export `DIMMED_TEXT`: the primary and tertiary text steps clear 2:1 between themselves. | Nothing, unless an application's own palette override draws the two steps closer. | [The palette suite](#the-palette-suite) |
+
 ## Changed in 0.6.0: the default palette
 
 The dark and light themes take the default palette approved on 4 October 2026: blue-black neutrals, a violet accent (`#725be6` in dark, `#735af2` in light) and a cyan working state. No token is renamed or removed; the themed values change. [`tokens/intent.json`](./tokens/intent.json) records the approved values, and every value the palette suite's floors moved names its approved value, the distance and the measurement in its own comment. The marketing root, `tokens.css` on its own, keeps its values.
@@ -165,6 +174,7 @@ Where an approved value failed one of the suite's floors, the floor won and the 
 | `--color-border-default` dark | `#14151a` | `#191b20` | 2.53 | dE 0.99 off the card, under 3 |
 | `--color-border-default` light | `#f5f5f5` | `#e7e8ec` | 3.92 | dE 0.84 off the sheet and 1.02 off raised, under 3 |
 | `--color-border-strong` dark | `#2b3245` | `#2d3448` | 0.85 | dE 2.43 as a raised chip's edge on an inset well inside a raised surface, under 3 |
+| `--color-text-primary` dark | `#e6e9f2` | `#e7eaf3` | 0.30 | 1.98:1 from the tertiary step, under the 2:1 a dimmed word keeps |
 | `--color-text-tertiary` dark | `#8a91a6` | `#9fa7bc` | 7.08 | 3.45:1 on a pressed row inside a raised surface |
 | `--color-text-tertiary` light | `#5a6075` | `#585e73` | 0.71 | 4.37:1 on a pressed row on the frame |
 | `--color-text-muted` light | `#8a90a3` | `#878d9f` | 1.04 | 2.69:1 on the frame, under the decoration band |
@@ -393,7 +403,7 @@ Both families are the approved palette's hues, or a move from them that the pale
 
 | Token | Palette | Design | Shipped | Moved (dE) | Because |
 | --- | --- | --- | --- | --- | --- |
-| `--color-feedback-danger` | dark | `#f0506e` | `#d93855` | 6.66 | white on it 3.46:1; dE 5.9 from done under deuteranopia; dE 5.1 from the chart green under deuteranopia |
+| `--color-feedback-danger` | dark | `#f0506e` | `#d73756` | 7.04 | white on it 3.46:1; dE 5.9 from done under deuteranopia; dE 4.9 from the chart green under deuteranopia |
 | `--color-feedback-danger` | light | `#cc2a4a` | `#b9112c` | 5.75 | dE 7.2 from done under deuteranopia; dE 6.9 from the chart green under deuteranopia |
 | `--color-feedback-warning` | dark | `#f0b429` | `#f0b425` | 0.17 | dE 9.8 from done under protanopia |
 | `--color-feedback-warning` | light | `#ffb300` | `#c17300` | 19.65 | 1.52:1 as a mark on the frame |
@@ -405,7 +415,7 @@ Both families are the approved palette's hues, or a move from them that the pale
 | `--color-data-1` | dark | `#3c7fec` | `#4d8ff6` | 4.75 | dE 9.7 from the accent under normal vision and 3.3 under deuteranopia |
 | `--color-data-1` | light | `#4381e5` | `#5c76c3` | 5.71 | dE 4.5 from the accent under deuteranopia |
 | `--color-data-2` | light | `#ed810c` | `#dd5920` | 9.59 | 2.29:1 as a mark on the frame |
-| `--color-data-3` | dark | `#2fa24e` | `#26b583` | 7.39 | dE 0.9 from danger under deuteranopia; dE 2.6 from the orange under protanopia |
+| `--color-data-3` | dark | `#2fa24e` | `#26b582` | 7.30 | dE 0.6 from danger under deuteranopia; dE 2.6 from the orange under protanopia |
 | `--color-data-3` | light | `#2f9d4c` | `#00956e` | 5.75 | 2.94:1 as a mark on the frame; dE 5.6 from the yellow under protanopia; dE 7.9 from danger under deuteranopia |
 | `--color-data-4` | light | `#edb302` | `#c27600` | 17.33 | 1.61:1 as a mark on the frame: a yellow dark enough to be seen on a light page is an ochre |
 
@@ -413,8 +423,8 @@ Every other state and series step ships as approved: the dark inks, dark success
 
 In light, the yellow series sits beside the warning ochre (`#c27600` and `#c17300`). The approved palette drew the two a few steps apart, and both were darkened onto the same floor, a mark that clears 3:1 on the frame. Nothing in the suite keeps a series from a state other than the reserved red, and a series is read only inside a figure that names it.
 
-- **The danger fill carries a white label**, on a toast's destructive action and on an upload's remove button, so it is dark enough for 4.5:1 in both palettes (4.52:1 dark, 6.61:1 light), and its hover, `--color-feedback-danger-hover`, is a step darker again, the least a reader can see (dE 3.03 dark, 3.02 light). The palette suite holds the hover as it holds the primary action's: `a hovered destructive action is a visible step away from its label`.
-- **The reserved red is kept away from every series**: dE 14 under normal vision and 8 under protanopia and deuteranopia, where red, orange and green fall onto one axis. The approved chart green sat dE 0.9 from the shipped red under deuteranopia.
+- **The danger fill carries a white label**, on a toast's destructive action and on an upload's remove button, so it is dark enough for 4.5:1 in both palettes (4.59:1 dark, 6.61:1 light), and its hover, `--color-feedback-danger-hover`, is a step darker again, the least a reader can see (dE 3.03 dark, 3.02 light). The palette suite holds the hover as it holds the primary action's: `a hovered destructive action is a visible step away from its label`.
+- **The reserved red is kept away from every series**: dE 14 under normal vision and 8 under protanopia and deuteranopia, where red, orange and green fall onto one axis. The approved chart green sat dE 0.6 from the shipped red under deuteranopia.
 - **Neighbouring series** sit dE 9 apart under every vision and dE 15 under normal vision. The second floor is new: on its own, the dichromat floor let a pair sit dE 9 apart for every reader, which to full-colour vision is two shades of one hue.
 
 The marketing root keeps its own state and series values (`tokens/color.json`), which the suite measures in the `base` state.
@@ -438,7 +448,7 @@ The marketing root keeps its own state and series values (`tokens/color.json`), 
 
 ## The palette suite
 
-`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), every ink on its own soft tint, every fill as a mark, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs, the hairline that finds a card and the strong hairline round a raised chip, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), and the structure of the theme file itself. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
+`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), the step between a word and a dimmed one, every ink on its own soft tint, every fill as a mark, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs, the hairline that finds a card and the strong hairline round a raised chip, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), and the structure of the theme file itself. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
 
 The module is **published**, as `@crewlethq/tokens/test/palette`, so a consumer runs the same rules over the version it installed:
 
