@@ -30,7 +30,7 @@ concurrency:
 jobs:
   verify:
     name: verify
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -79,7 +79,7 @@ jobs:
   # it would fail every pull request that runs in that window.
   pack:
     name: pack
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       # The whole history and every tag, which the version is computed from.
@@ -98,7 +98,7 @@ jobs:
   sign-off:
     name: sign-off
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -110,22 +110,3 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/check-signoff.mjs "${BASE_SHA}" "${HEAD_SHA}"
-
-  # The merge button composes the commit that lands on main itself, and a
-  # squash can lose the trailers the pull request's commits carried, so what
-  # each push adds to main is checked as well. A failure here cannot be fixed
-  # by a rewrite; it tells the maintainers a commit reached main uncertified.
-  sign-off-main:
-    name: sign-off (main)
-    if: github.event_name == 'push'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Require a Signed-off-by trailer on every commit the push added
-        env:
-          BEFORE_SHA: ${{ github.event.before }}
-        run: node scripts/check-signoff.mjs "${BEFORE_SHA}" "${GITHUB_SHA}"

@@ -16,7 +16,10 @@ name: release
 # types of the commits since that tag, and writes it into the manifests of its
 # own checkout only. A merge whose packed contents equal the latest published
 # version of every package (documentation, CI or Storybook changes, for
-# example) publishes, tags and releases nothing. See scripts/release.mjs.
+# example) publishes, tags and releases nothing, and so does a merge after
+# which every commit since the previous release is a Dependabot update: the
+# next merge that brings any other commit releases those with it. See
+# scripts/release.mjs.
 #
 # The work is split so that no job that installs dependencies or runs project
 # code holds a credential worth stealing, and so that the bytes that receive
@@ -57,7 +60,16 @@ permissions: {}
 # run waiting in a group, so when a third merge lands while one run is in
 # progress and another waits, the waiting run is replaced by the newer one.
 # Nothing is lost: the newer run's commit contains the older one, and its
-# version and contents cover both.
+# version and contents cover both. That holds when the newer run is a
+# Dependabot merge's too: a run decides whether to release from every commit
+# since the previous release, not from its own commit alone, so it releases
+# the older merge's changes.
+#
+# The group holds only while a run is in progress. A run that fails after
+# publishing and before tagging lets the waiting run start, and that run
+# computes the same version from the same tags and is refused, in pack or in
+# publish, until the failed run's jobs are re-run. That is why the publish job
+# waits as long as npm takes to scan a new version instead of failing first.
 concurrency:
   group: release-main
   cancel-in-progress: false
@@ -65,7 +77,7 @@ concurrency:
 jobs:
   verify:
     name: verify the merged commit
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
@@ -90,7 +102,7 @@ jobs:
 
   pack:
     name: build, version and pack the published packages
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # The build takes a few minutes; compare can wait up to five more for the
     # registry to serve the previous release.
     timeout-minutes: 25
@@ -146,6 +158,10 @@ jobs:
           if [ "${release}" = true ]; then
             echo "::notice::releasing ${version}"
             printf '### Releasing %s\n\n%s\n' "${version}" "${packages}" >>"${GITHUB_STEP_SUMMARY}"
+          elif [ "$(jq -r .dependabotOnly "${metadata}")" = true ]; then
+            base="$(jq -r .base "${metadata}")"
+            echo "::notice::nothing to release: every commit since ${base} is a Dependabot update, so nothing is published, tagged or released until a merge brings any other commit"
+            printf '### Nothing to release\n\nEvery commit since %s is a Dependabot update, so this merge publishes, tags and releases nothing. The next merge that brings any other commit releases them.\n\n%s\n' "${base}" "${packages}" >>"${GITHUB_STEP_SUMMARY}"
           else
             echo "::notice::nothing to release: no package differs from its latest version on npm, so nothing is published, tagged or released"
             printf '### Nothing to release\n\nNo package differs from its latest version on npm, so this merge publishes, tags and releases nothing.\n\n%s\n' "${packages}" >>"${GITHUB_STEP_SUMMARY}"
@@ -168,12 +184,13 @@ jobs:
     name: publish to npm
     needs: [verify, pack]
     if: needs.pack.outputs.release == 'true'
-    runs-on: ubuntu-24.04
-    # Publishing takes seconds. The budget is for the read-back below, which
-    # waits up to five minutes per package for the registry to serve what it
-    # just accepted, so three packages can legitimately hold the job a quarter
-    # of an hour.
-    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    # Publishing takes seconds; being served takes longer. npm scans every new
+    # version for malware before the registry serves it, typically for about
+    # five minutes and for fifteen or more at peak times, and the read-back
+    # below waits up to thirty minutes per package, so three packages can
+    # legitimately hold the job an hour and a half.
+    timeout-minutes: 100
     environment: npm-publish
     permissions:
       contents: read # the sparse checkout and the commit verification
@@ -352,11 +369,19 @@ jobs:
 
             npm publish "${file}" --provenance --ignore-scripts --access public --tag latest
 
-            # The registry can take a moment to serve a new version.
+            # npm accepts a version well before it serves it: it scans every
+            # new version for malware first, which takes about five minutes and
+            # fifteen or more at peak times, and holds or blocks what the scan
+            # flags. Thirty minutes covers the scan with room to spare. Giving
+            # up sooner leaves the version published with no tag recording it,
+            # and the next merge's run then computes the same version and is
+            # refused too. Waiting here, before the next package is published,
+            # is also what makes tokens and icons installable before the ui
+            # version that pins them is.
             attempt=1
             until [ "$(fetch_packument "${package}")" = 200 ] && [ "$(published_integrity)" != "null" ]; do
-              if [ "${attempt}" -ge 30 ]; then
-                echo "::error::${name}@${version} was published, but the registry did not serve it within five minutes. Check it on the registry before re-running."
+              if [ "${attempt}" -ge 180 ]; then
+                echo "::error::${name}@${version} was published, but the registry did not serve it within thirty minutes. npm may be holding it for review or have blocked it: check it on npmjs.com before re-running. A re-run while npm still holds it fails with 409 \"Cannot publish over previously staged version\"."
                 exit 1
               fi
               attempt=$((attempt + 1))
@@ -380,7 +405,7 @@ jobs:
   release:
     name: tag and create the GitHub release
     needs: publish
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write # creating the tag and the GitHub release

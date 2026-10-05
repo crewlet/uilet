@@ -60,6 +60,14 @@
 // Publishing those would put versions on the registry that differ from their
 // predecessor in nothing but the number, so `compare` looks at the bytes that
 // would be published instead of at the paths a merge touched.
+//
+// Why Dependabot's updates wait for another change: Dependabot opens its pull
+// requests in weekly batches, and releasing each one would put a run of
+// versions on the registry that each move one dependency. A commit is not
+// released when every non-merge commit since the previous release is one
+// Dependabot wrote alone. The next merge that brings any other commit releases
+// them with it, because its version and contents cover everything since the
+// previous tag.
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -119,8 +127,9 @@ const REQUEST_ATTEMPTS = 3;
 // How long `compare` waits for the registry to serve a version the previous
 // release published. Releases run one after another, so the run for the next
 // merge can start seconds after the last publish, while a registry edge may
-// still serve the previous record. Thirty checks ten seconds apart is the same
-// five minutes the publish job waits for a version it published to appear.
+// still serve the previous record. That publish job already waited out npm's
+// scan of the version until the registry served it, so all that is left is an
+// edge catching up, and thirty checks ten seconds apart is ample for that.
 const REGISTRY_LAG_ATTEMPTS = 30;
 const REGISTRY_LAG_INTERVAL_MS = 10_000;
 export const TIMING = {
@@ -397,7 +406,26 @@ export function bumpVersion(version, change) {
   return `${major}.${minor}.${patch + 1}`;
 }
 
-// The version <head> is released as. See "How the release version is chosen"
+// Whether Dependabot wrote a commit alone. A Dependabot pull request lands as
+// the commit Dependabot pushed (a merge commit or a rebase keeps it as it is)
+// or as the squash of it, to which GitHub adds a Co-authored-by trailer for
+// the authors of the branch's commits. A commit is Dependabot's only when
+// Dependabot is its author and every co-author, so a fix a person pushed onto
+// a Dependabot branch is released like any other change.
+//
+// The address is the one GitHub writes Dependabot's commits with, and it
+// carries Dependabot's account ID. Anyone can write it into a commit, but all
+// that buys is a release that waits for the next change; it never causes one.
+const DEPENDABOT_EMAIL = '49699333+dependabot[bot]@users.noreply.github.com';
+const TRAILER_ADDRESS = /<([^<>]*)>\s*$/;
+
+export function isDependabotCommit(email, coAuthors) {
+  if (email.toLowerCase() !== DEPENDABOT_EMAIL) return false;
+  return coAuthors.every((coAuthor) => TRAILER_ADDRESS.exec(coAuthor)?.[1].toLowerCase() === DEPENDABOT_EMAIL);
+}
+
+// The version <head> is released as, and whether every commit since the
+// previous release is Dependabot's. See "How the release version is chosen"
 // at the top of this file.
 export function releasePlan({ root = ROOT, head = 'HEAD', seed }) {
   // A shallow clone knows neither the tags below its boundary nor the commits
@@ -418,23 +446,47 @@ export function releasePlan({ root = ROOT, head = 'HEAD', seed }) {
   }
   if (base === null) {
     if (!EXACT_RELEASE.test(seed ?? '')) throw new ReleaseError(`the manifest version "${seed}" is not MAJOR.MINOR.PATCH`);
-    return { version: seed, base: null, change: null, commits: 0 };
+    return { version: seed, base: null, change: null, commits: 0, dependabotOnly: false };
   }
 
   // refs/tags/ in full, so a branch that happens to carry a tag's name cannot
   // stand in for it.
   const range = `refs/tags/${base}..${commit}`;
   if (git(root, ['rev-list', '--count', range]).trim() === '0') {
-    return { version: base.slice(1), base, change: null, commits: 0 };
+    return { version: base.slice(1), base, change: null, commits: 0, dependabotOnly: false };
   }
   // Merge commits are skipped: their subject is whatever the merge button
   // wrote, and the commits they bring in are in the range themselves. A range
-  // holding nothing but merges still changed the tree, so it is a patch.
-  const output = git(root, ['log', '--no-merges', '--no-show-signature', '-z', '--format=%B', range]);
-  const messages = output === '' ? [] : output.split('\0');
-  if (messages.at(-1) === '') messages.pop();
-  const change = messages.map(changeOf).reduce((highest, next) => (CHANGE_RANK[next] > CHANGE_RANK[highest] ? next : highest), 'fix');
-  return { version: bumpVersion(base.slice(1), change), base, change, commits: messages.length };
+  // holding nothing but merges still changed the tree, so it is a patch, and
+  // not a range of Dependabot's commits. Each commit is three fields, each
+  // ended by a NUL, which none of them can hold: the author's address, the
+  // Co-authored-by trailers one per line (git's parsed trailer block, never
+  // the raw message, so a trailer quoted in a body is not one), and the
+  // message.
+  const output = git(root, [
+    'log',
+    '--no-merges',
+    '--no-show-signature',
+    '-z',
+    '--format=%ae%x00%(trailers:key=Co-authored-by,valueonly,unfold)%x00%B',
+    range,
+  ]);
+  const fields = output.split('\0');
+  const commits = [];
+  for (let index = 0; index + 2 < fields.length; index += 3) {
+    const [email, coAuthors, message] = fields.slice(index, index + 3);
+    commits.push({ message, dependabot: isDependabotCommit(email, coAuthors.split('\n').filter(Boolean)) });
+  }
+  const change = commits
+    .map(({ message }) => changeOf(message))
+    .reduce((highest, next) => (CHANGE_RANK[next] > CHANGE_RANK[highest] ? next : highest), 'fix');
+  return {
+    version: bumpVersion(base.slice(1), change),
+    base,
+    change,
+    commits: commits.length,
+    dependabotOnly: commits.length > 0 && commits.every(({ dependabot }) => dependabot),
+  };
 }
 
 export function describePlan(plan) {
@@ -444,12 +496,16 @@ export function describePlan(plan) {
   if (plan.change === null) {
     return `This commit is ${plan.base} itself, so its version is ${plan.version}.`;
   }
+  const commits = plan.commits === 1 ? '1 commit' : `${plan.commits} commits`;
+  if (plan.dependabotOnly) {
+    const [are, them] = plan.commits === 1 ? ['is a Dependabot update', 'it'] : ['are all Dependabot updates', 'them'];
+    return `The ${commits} since ${plan.base} (merge commits aside) ${are}, so this commit is not released: the next merge that brings any other commit releases ${them}. Its version would be ${plan.version}.`;
+  }
   const found = {
     breaking: 'include a breaking change',
     feature: 'include a feature and no breaking change',
     fix: 'include no feature and no breaking change',
   }[plan.change];
-  const commits = plan.commits === 1 ? '1 commit' : `${plan.commits} commits`;
   return `The ${commits} since ${plan.base} (merge commits aside) ${found}, so this commit is released as ${plan.version}.`;
 }
 
@@ -841,10 +897,11 @@ export function registryProblems(plan, packages, released = new Set()) {
 }
 
 // Whether anything is to be released: a package that is not on the registry
-// yet, or one whose contents differ from its latest version. A commit that is
-// itself the latest release has nothing new to publish, so contents that
-// differ there mean the build did not reproduce the published bytes, and
-// publishing would be refused as a replacement of that version.
+// yet, or one whose contents differ from its latest version, unless every
+// commit since the previous release is Dependabot's. A commit that is itself
+// the latest release has nothing new to publish, so contents that differ there
+// mean the build did not reproduce the published bytes, and publishing would
+// be refused as a replacement of that version.
 export function releaseDecision(plan, packages) {
   const changed = packages.filter(({ previous, differences }) => previous === null || differences.length > 0);
   const rebuilt = changed.filter(({ previous }) => previous !== null && previous === plan.version);
@@ -853,7 +910,7 @@ export function releaseDecision(plan, packages) {
       `${rebuilt.map(({ name }) => name).join(', ')} at ${plan.version} is already on the registry, but this commit packs different contents for it. The build is not reproducible; find what differs before releasing anything`,
     );
   }
-  return changed.length > 0;
+  return changed.length > 0 && !plan.dependabotOnly;
 }
 
 async function registryRequest(url, { accept, what, timing }) {
@@ -1022,6 +1079,7 @@ export async function compare({ root = ROOT, directory, registry = REGISTRY, tim
   const metadata = {
     version,
     release,
+    dependabotOnly: plan.dependabotOnly,
     base: plan.base,
     packages: packages.map(({ name, previous, differences }) => {
       const { file, bytes } = tarballs.get(name);
@@ -1029,11 +1087,13 @@ export async function compare({ root = ROOT, directory, registry = REGISTRY, tim
     }),
   };
   writeJson(join(target, 'release.json'), metadata);
-  log(
-    release
-      ? `Release ${version}: at least one package differs from its latest published version, so all ${names.length} are released at ${version}.`
-      : `Nothing to release: no package differs from its latest published version.`,
-  );
+  if (release) {
+    log(`Release ${version}: at least one package differs from its latest published version, so all ${names.length} are released at ${version}.`);
+  } else if (plan.dependabotOnly) {
+    log(`Nothing to release: every commit since ${plan.base} is a Dependabot update, and those are released by the next merge that brings any other commit.`);
+  } else {
+    log(`Nothing to release: no package differs from its latest published version.`);
+  }
   return metadata;
 }
 
