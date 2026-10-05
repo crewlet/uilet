@@ -15,6 +15,7 @@ import {
   compare,
   describePlan,
   integrityOf,
+  isDependabotCommit,
   readTarball,
   registryProblems,
   releasedPackagesOf,
@@ -357,6 +358,37 @@ function tag(cwd, name) {
   git(cwd, 'tag', '-a', name, '-m', name);
 }
 
+const DEPENDABOT_ADDRESS = '49699333+dependabot[bot]@users.noreply.github.com';
+
+// A bump as GitHub squashes one of Dependabot's pull requests onto main, which
+// is how most of them land: Dependabot's message and trailers, and Dependabot
+// as the author.
+const SQUASHED_BUMP = [
+  'build(deps): bump turbo from 2.10.13 to 2.11.3 (#22)',
+  '',
+  'Bumps [turbo](https://github.com/vercel/turborepo) from 2.10.13 to 2.11.3.',
+  '',
+  '---',
+  'updated-dependencies:',
+  '- dependency-name: turbo',
+  '  dependency-version: 2.11.3',
+  '  dependency-type: direct:development',
+  '  update-type: version-update:semver-minor',
+  '...',
+  '',
+  'Signed-off-by: dependabot[bot] <support@github.com>',
+  `Co-authored-by: dependabot[bot] <${DEPENDABOT_ADDRESS}>`,
+].join('\n');
+
+function dependabotCommit(cwd, message = SQUASHED_BUMP) {
+  const result = spawnSync('git', ['commit', '--quiet', '--allow-empty', '-m', message], {
+    cwd,
+    encoding: 'utf8',
+    env: { ...GIT_ENV, GIT_AUTHOR_NAME: 'dependabot[bot]', GIT_AUTHOR_EMAIL: DEPENDABOT_ADDRESS },
+  });
+  assert.equal(result.status, 0, result.stderr);
+}
+
 describe('changeOf', () => {
   const cases = [
     ['feat: add a date picker', 'feature'],
@@ -395,12 +427,25 @@ describe('bumpVersion', () => {
   });
 });
 
+describe('isDependabotCommit', () => {
+  it('accepts a commit Dependabot wrote, with or without itself as co-author', () => {
+    assert.equal(isDependabotCommit(DEPENDABOT_ADDRESS, []), true);
+    assert.equal(isDependabotCommit(DEPENDABOT_ADDRESS, [`dependabot[bot] <${DEPENDABOT_ADDRESS}>`]), true);
+  });
+
+  it('refuses another author, another co-author, and a co-author without an address', () => {
+    assert.equal(isDependabotCommit('author@example.com', []), false);
+    assert.equal(isDependabotCommit(DEPENDABOT_ADDRESS, [`dependabot[bot] <${DEPENDABOT_ADDRESS}>`, 'A Maintainer <maintainer@example.com>']), false);
+    assert.equal(isDependabotCommit(DEPENDABOT_ADDRESS, ['dependabot[bot]']), false);
+  });
+});
+
 describe('releasePlan', () => {
   it('releases the manifest version while no release tag exists, whatever the commits say', () => {
     const cwd = history();
     commit(cwd, 'feat!: the first commit');
     commit(cwd, 'feat(ui): a feature');
-    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.0', base: null, change: null, commits: 0 });
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.0', base: null, change: null, commits: 0, dependabotOnly: false });
   });
 
   it('moves the patch number when no commit is a feature or a breaking change', () => {
@@ -410,7 +455,7 @@ describe('releasePlan', () => {
     commit(cwd, 'fix(ui): correct the focus ring');
     commit(cwd, 'docs: explain the release');
     commit(cwd, 'Update README.md');
-    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 3 });
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 3, dependabotOnly: false });
   });
 
   it('moves the minor number for a feature', () => {
@@ -427,7 +472,7 @@ describe('releasePlan', () => {
     commit(cwd, 'chore: released');
     tag(cwd, 'v0.2.7');
     commit(cwd, 'refactor(ui)!: rename the Button export');
-    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.3.0', base: 'v0.2.7', change: 'breaking', commits: 1 });
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.3.0', base: 'v0.2.7', change: 'breaking', commits: 1, dependabotOnly: false });
   });
 
   it('moves the major number for a breaking change from 1.0.0 on', () => {
@@ -456,7 +501,7 @@ describe('releasePlan', () => {
     assert.equal(releasePlan({ root: cwd, seed: '0.2.0' }).version, '0.5.0');
     commit(cwd, 'chore: d\n\nBREAKING CHANGE: e');
     commit(cwd, 'fix: f');
-    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.5.0', base: 'v0.4.1', change: 'breaking', commits: 5 });
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.5.0', base: 'v0.4.1', change: 'breaking', commits: 5, dependabotOnly: false });
     tag(cwd, 'v0.5.0');
     commit(cwd, 'feat: g');
     commit(cwd, 'fix: h');
@@ -472,7 +517,7 @@ describe('releasePlan', () => {
     git(cwd, 'checkout', '--quiet', 'main');
     commit(cwd, 'docs: on main');
     git(cwd, 'merge', '--quiet', '--no-ff', 'topic', '-m', 'feat!: a merge message that is not a change');
-    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 2 });
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 2, dependabotOnly: false });
   });
 
   it('moves the patch number for a range that holds nothing but a merge commit', () => {
@@ -483,7 +528,7 @@ describe('releasePlan', () => {
     tag(cwd, 'v0.2.0');
     git(cwd, 'checkout', '--quiet', 'main');
     git(cwd, 'merge', '--quiet', '--no-ff', 'side', '-m', 'Merge branch side');
-    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 0 });
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 0, dependabotOnly: false });
   });
 
   it('ignores pre-release tags and tags that are not release versions', () => {
@@ -496,7 +541,7 @@ describe('releasePlan', () => {
     tag(cwd, 'v01.0.0');
     tag(cwd, 'version-9.0.0');
     commit(cwd, 'fix: b');
-    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 2 });
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 2, dependabotOnly: false });
   });
 
   it('builds on the highest release tag reachable from the commit, compared as versions', () => {
@@ -510,14 +555,55 @@ describe('releasePlan', () => {
     tag(cwd, 'v5.0.0');
     git(cwd, 'checkout', '--quiet', 'main');
     commit(cwd, 'fix: c');
-    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.10.1', base: 'v0.10.0', change: 'fix', commits: 2 });
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.10.1', base: 'v0.10.0', change: 'fix', commits: 2, dependabotOnly: false });
   });
 
   it('gives a commit that is itself a release tag the version of that tag', () => {
     const cwd = history();
     commit(cwd, 'feat: released');
     tag(cwd, 'v0.3.0');
-    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.3.0', base: 'v0.3.0', change: null, commits: 0 });
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.3.0', base: 'v0.3.0', change: null, commits: 0, dependabotOnly: false });
+  });
+
+  it('marks a range in which Dependabot wrote every commit, and versions it as usual', () => {
+    const cwd = history();
+    commit(cwd, 'chore: released');
+    tag(cwd, 'v0.2.0');
+    dependabotCommit(cwd);
+    dependabotCommit(cwd, 'build(deps): bump eslint from 10.10.0 to 10.11.0\n\nSigned-off-by: dependabot[bot] <support@github.com>');
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 2, dependabotOnly: true });
+    commit(cwd, 'docs: a change of a person');
+    assert.deepEqual(releasePlan({ root: cwd, seed: '0.2.0' }), { version: '0.2.1', base: 'v0.2.0', change: 'fix', commits: 3, dependabotOnly: false });
+  });
+
+  it('reads a Dependabot branch merged with a merge commit by the commits it brings in', () => {
+    const cwd = history();
+    commit(cwd, 'chore: released');
+    tag(cwd, 'v0.2.0');
+    git(cwd, 'checkout', '--quiet', '-b', 'dependabot/npm_and_yarn/turbo-2.11.3');
+    dependabotCommit(cwd, 'build(deps): bump turbo from 2.10.13 to 2.11.3\n\nSigned-off-by: dependabot[bot] <support@github.com>');
+    git(cwd, 'checkout', '--quiet', 'main');
+    git(cwd, 'merge', '--quiet', '--no-ff', 'dependabot/npm_and_yarn/turbo-2.11.3', '-m', 'Merge pull request #22 from crewlet/dependabot/npm_and_yarn/turbo-2.11.3');
+    assert.equal(releasePlan({ root: cwd, seed: '0.2.0' }).dependabotOnly, true);
+  });
+
+  it('counts a Dependabot commit that a person co-authored as theirs', () => {
+    const cwd = history();
+    commit(cwd, 'chore: released');
+    tag(cwd, 'v0.2.0');
+    dependabotCommit(cwd, `${SQUASHED_BUMP}\nCo-authored-by: A Maintainer <maintainer@example.com>`);
+    assert.equal(releasePlan({ root: cwd, seed: '0.2.0' }).dependabotOnly, false);
+  });
+
+  it('reads co-authors from the trailer block, not from a line the body quotes', () => {
+    const cwd = history();
+    commit(cwd, 'chore: released');
+    tag(cwd, 'v0.2.0');
+    dependabotCommit(
+      cwd,
+      'build(deps): bump lucide from 1.0.0 to 1.1.0\n\nRelease notes:\nCo-authored-by: An Upstream Author <upstream@example.com>\n\nSigned-off-by: dependabot[bot] <support@github.com>',
+    );
+    assert.equal(releasePlan({ root: cwd, seed: '0.2.0' }).dependabotOnly, true);
   });
 
   it('refuses a shallow clone, which cannot see every tag and commit', () => {
@@ -539,6 +625,14 @@ describe('releasePlan', () => {
     assert.equal(
       describePlan({ version: '0.3.0', base: 'v0.2.4', change: 'feature', commits: 3 }),
       'The 3 commits since v0.2.4 (merge commits aside) include a feature and no breaking change, so this commit is released as 0.3.0.',
+    );
+    assert.equal(
+      describePlan({ version: '0.2.5', base: 'v0.2.4', change: 'fix', commits: 2, dependabotOnly: true }),
+      'The 2 commits since v0.2.4 (merge commits aside) are all Dependabot updates, so this commit is not released: the next merge that brings any other commit releases them. Its version would be 0.2.5.',
+    );
+    assert.equal(
+      describePlan({ version: '0.2.5', base: 'v0.2.4', change: 'fix', commits: 1, dependabotOnly: true }),
+      'The 1 commit since v0.2.4 (merge commits aside) is a Dependabot update, so this commit is not released: the next merge that brings any other commit releases it. Its version would be 0.2.5.',
     );
   });
 });
@@ -671,6 +765,11 @@ describe('the release decision', () => {
     assert.equal(releaseDecision(tagged, packages), true);
   });
 
+  it('releases nothing while every commit since the previous release is Dependabot\'s, whatever changed', () => {
+    const packages = [...INTERNAL_NAMES].map((name) => ({ name, previous: '0.2.0', differences: ['changed dist/index.js'] }));
+    assert.equal(releaseDecision({ ...tagged, dependabotOnly: true }, packages), false);
+  });
+
   it('refuses contents that differ from a version this commit already released', () => {
     assert.throws(
       () =>
@@ -778,8 +877,9 @@ const QUICK = { retryDelayMs: 0, lagAttempts: 3, lagIntervalMs: 0 };
 // The fixture workspace in a git repository: released as v1.2.3, followed by
 // one fix, and packed at 1.2.4 as the pack job would after `version --write`.
 // With addedAfterRelease, the package was private when v1.2.3 was tagged, so
-// that release did not publish it.
-function releasedWorkspace({ build = 'export const icon = 1;\n', addedAfterRelease = false } = {}) {
+// that release did not publish it. With dependabot, the commit after the
+// release is a Dependabot update instead of the fix.
+function releasedWorkspace({ build = 'export const icon = 1;\n', addedAfterRelease = false, dependabot = false } = {}) {
   const root = repository({
     'packages/icons/dist/index.js': 'export const icon = 1;\n',
     ...(addedAfterRelease ? { 'packages/icons/package.json': manifest({ private: true }) } : {}),
@@ -789,7 +889,8 @@ function releasedWorkspace({ build = 'export const icon = 1;\n', addedAfterRelea
   commit(root, 'feat(icons): the first icons');
   tag(root, 'v1.2.3');
   const published = packDirectory(join(root, 'packages/icons'));
-  commit(root, 'fix(icons): the next change');
+  if (dependabot) dependabotCommit(root);
+  else commit(root, 'fix(icons): the next change');
   writeFileSync(join(root, 'packages/icons/package.json'), `${JSON.stringify(manifest({ version: '1.2.4' }), null, 2)}\n`);
   writeFileSync(join(root, 'packages/icons/dist/index.js'), build);
   const directory = mkdtempSync(join(tmpdir(), 'release-packages-'));
@@ -826,6 +927,7 @@ describe('compare', () => {
     const expected = {
       version: '1.2.4',
       release: false,
+      dependabotOnly: false,
       base: 'v1.2.3',
       packages: [
         { name: '@crewlethq/icons', file, integrity: integrityOf(readFileSync(join(directory, file))), previous: '1.2.3', changed: false },
@@ -836,11 +938,26 @@ describe('compare', () => {
     assert.equal(lines.at(-1), 'Nothing to release: no package differs from its latest published version.');
   });
 
+  it('releases nothing when every commit since the previous release is Dependabot\'s, even with changed contents', async (t) => {
+    const { root, directory, published } = releasedWorkspace({ build: 'export const icon = 2;\n', dependabot: true });
+    const registry = await startRegistry(t, { '@crewlethq/icons': { latest: '1.2.3', tarballs: { '1.2.3': published } } });
+    const { result, lines } = await compareQuietly({ root, directory, registry });
+    assert.equal(result.release, false);
+    assert.equal(result.dependabotOnly, true);
+    assert.equal(result.packages[0].changed, true);
+    assert.deepEqual(JSON.parse(readFileSync(join(directory, 'release.json'), 'utf8')), result);
+    assert.equal(
+      lines.at(-1),
+      'Nothing to release: every commit since v1.2.3 is a Dependabot update, and those are released by the next merge that brings any other commit.',
+    );
+  });
+
   it('releases when a published file changed, and lists what changed', async (t) => {
     const { root, directory, published } = releasedWorkspace({ build: 'export const icon = 2;\n' });
     const registry = await startRegistry(t, { '@crewlethq/icons': { latest: '1.2.3', tarballs: { '1.2.3': published } } });
     const { result, lines } = await compareQuietly({ root, directory, registry });
     assert.equal(result.release, true);
+    assert.equal(result.dependabotOnly, false);
     assert.equal(result.packages[0].changed, true);
     assert.ok(lines.includes('  changed dist/index.js'), lines.join('\n'));
   });

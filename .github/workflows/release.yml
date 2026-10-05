@@ -16,7 +16,10 @@ name: release
 # types of the commits since that tag, and writes it into the manifests of its
 # own checkout only. A merge whose packed contents equal the latest published
 # version of every package (documentation, CI or Storybook changes, for
-# example) publishes, tags and releases nothing. See scripts/release.mjs.
+# example) publishes, tags and releases nothing, and so does a merge after
+# which every commit since the previous release is a Dependabot update: the
+# next merge that brings any other commit releases those with it. See
+# scripts/release.mjs.
 #
 # The work is split so that no job that installs dependencies or runs project
 # code holds a credential worth stealing, and so that the bytes that receive
@@ -57,7 +60,10 @@ permissions: {}
 # run waiting in a group, so when a third merge lands while one run is in
 # progress and another waits, the waiting run is replaced by the newer one.
 # Nothing is lost: the newer run's commit contains the older one, and its
-# version and contents cover both.
+# version and contents cover both. That holds when the newer run is a
+# Dependabot merge's too: a run decides whether to release from every commit
+# since the previous release, not from its own commit alone, so it releases
+# the older merge's changes.
 #
 # The group holds only while a run is in progress. A run that fails after
 # publishing and before tagging lets the waiting run start, and that run
@@ -152,6 +158,10 @@ jobs:
           if [ "${release}" = true ]; then
             echo "::notice::releasing ${version}"
             printf '### Releasing %s\n\n%s\n' "${version}" "${packages}" >>"${GITHUB_STEP_SUMMARY}"
+          elif [ "$(jq -r .dependabotOnly "${metadata}")" = true ]; then
+            base="$(jq -r .base "${metadata}")"
+            echo "::notice::nothing to release: every commit since ${base} is a Dependabot update, so nothing is published, tagged or released until a merge brings any other commit"
+            printf '### Nothing to release\n\nEvery commit since %s is a Dependabot update, so this merge publishes, tags and releases nothing. The next merge that brings any other commit releases them.\n\n%s\n' "${base}" "${packages}" >>"${GITHUB_STEP_SUMMARY}"
           else
             echo "::notice::nothing to release: no package differs from its latest version on npm, so nothing is published, tagged or released"
             printf '### Nothing to release\n\nNo package differs from its latest version on npm, so this merge publishes, tags and releases nothing.\n\n%s\n' "${packages}" >>"${GITHUB_STEP_SUMMARY}"

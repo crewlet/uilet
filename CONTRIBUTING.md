@@ -67,7 +67,7 @@ Every merge to `main` is released automatically, and nobody picks the version: i
   While the major number is `0` it moves the minor number, and from `1.0.0` on the major number.
 - **Every other type** (`fix`, `docs`, `refactor`, `build`, and the rest) moves the patch number.
 
-The largest change among the merged commits decides one bump. How the pull request is merged decides which commits count: with a merge commit or a rebase, every commit on your branch; with a squash, the squashed commit alone, whose subject is the pull request title and whose body carries your commit messages (so a `BREAKING CHANGE:` footer in any commit still counts, but a `feat` or `!` in a commit subject does not). A merge that changes nothing the packages publish (documentation, CI, tests, the Storybook) is not released at all. [RELEASING.md](RELEASING.md#how-the-version-is-chosen) has the details.
+The largest change among the merged commits decides one bump. How the pull request is merged decides which commits count: with a merge commit or a rebase, every commit on your branch; with a squash, the squashed commit alone, whose subject is the pull request title and whose body carries your commit messages (so a `BREAKING CHANGE:` footer in any commit still counts, but a `feat` or `!` in a commit subject does not). A merge that changes nothing the packages publish (documentation, CI, tests, the Storybook) is not released at all, and neither is one that brings nothing but Dependabot's updates: those are released by the next merge that brings any other commit. [RELEASING.md](RELEASING.md#how-the-version-is-chosen) has the details.
 
 ### Sign your work
 
