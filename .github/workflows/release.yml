@@ -77,7 +77,7 @@ concurrency:
 jobs:
   verify:
     name: verify the merged commit
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
@@ -102,7 +102,7 @@ jobs:
 
   pack:
     name: build, version and pack the published packages
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # The build takes a few minutes; compare can wait up to five more for the
     # registry to serve the previous release.
     timeout-minutes: 25
@@ -184,7 +184,7 @@ jobs:
     name: publish to npm
     needs: [verify, pack]
     if: needs.pack.outputs.release == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # Publishing takes seconds; being served takes longer. npm scans every new
     # version for malware before the registry serves it, typically for about
     # five minutes and for fifteen or more at peak times, and the read-back
@@ -405,7 +405,7 @@ jobs:
   release:
     name: tag and create the GitHub release
     needs: publish
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write # creating the tag and the GitHub release

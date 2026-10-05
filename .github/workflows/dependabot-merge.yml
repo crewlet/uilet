@@ -47,7 +47,7 @@ permissions: {}
 jobs:
   approve-and-merge:
     name: approve and queue the merge
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
 
     # BOTH halves are load-bearing and neither implies the other. The author
