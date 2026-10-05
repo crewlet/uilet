@@ -57,7 +57,7 @@ npm run lint && npm run typecheck
 │   └── ui/                    # @crewlethq/ui
 ├── scripts/
 │   ├── release.mjs            # release version, consistency check, build, pack and registry comparison
-│   ├── check-signoff.mjs      # Signed-off-by gate for pull requests and main
+│   ├── check-signoff.mjs      # Signed-off-by gate for pull requests
 │   └── check-storybook-static.mjs  # static-site, license and page-icon check for the Storybook build
 └── .github/
     ├── actions/               # composite actions the workflows share
