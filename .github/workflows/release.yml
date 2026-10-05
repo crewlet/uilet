@@ -58,6 +58,12 @@ permissions: {}
 # progress and another waits, the waiting run is replaced by the newer one.
 # Nothing is lost: the newer run's commit contains the older one, and its
 # version and contents cover both.
+#
+# The group holds only while a run is in progress. A run that fails after
+# publishing and before tagging lets the waiting run start, and that run
+# computes the same version from the same tags and is refused, in pack or in
+# publish, until the failed run's jobs are re-run. That is why the publish job
+# waits as long as npm takes to scan a new version instead of failing first.
 concurrency:
   group: release-main
   cancel-in-progress: false
@@ -169,11 +175,12 @@ jobs:
     needs: [verify, pack]
     if: needs.pack.outputs.release == 'true'
     runs-on: ubuntu-24.04
-    # Publishing takes seconds. The budget is for the read-back below, which
-    # waits up to five minutes per package for the registry to serve what it
-    # just accepted, so three packages can legitimately hold the job a quarter
-    # of an hour.
-    timeout-minutes: 20
+    # Publishing takes seconds; being served takes longer. npm scans every new
+    # version for malware before the registry serves it, typically for about
+    # five minutes and for fifteen or more at peak times, and the read-back
+    # below waits up to thirty minutes per package, so three packages can
+    # legitimately hold the job an hour and a half.
+    timeout-minutes: 100
     environment: npm-publish
     permissions:
       contents: read # the sparse checkout and the commit verification
@@ -352,11 +359,19 @@ jobs:
 
             npm publish "${file}" --provenance --ignore-scripts --access public --tag latest
 
-            # The registry can take a moment to serve a new version.
+            # npm accepts a version well before it serves it: it scans every
+            # new version for malware first, which takes about five minutes and
+            # fifteen or more at peak times, and holds or blocks what the scan
+            # flags. Thirty minutes covers the scan with room to spare. Giving
+            # up sooner leaves the version published with no tag recording it,
+            # and the next merge's run then computes the same version and is
+            # refused too. Waiting here, before the next package is published,
+            # is also what makes tokens and icons installable before the ui
+            # version that pins them is.
             attempt=1
             until [ "$(fetch_packument "${package}")" = 200 ] && [ "$(published_integrity)" != "null" ]; do
-              if [ "${attempt}" -ge 30 ]; then
-                echo "::error::${name}@${version} was published, but the registry did not serve it within five minutes. Check it on the registry before re-running."
+              if [ "${attempt}" -ge 180 ]; then
+                echo "::error::${name}@${version} was published, but the registry did not serve it within thirty minutes. npm may be holding it for review or have blocked it: check it on npmjs.com before re-running. A re-run while npm still holds it fails with 409 \"Cannot publish over previously staged version\"."
                 exit 1
               fi
               attempt=$((attempt + 1))

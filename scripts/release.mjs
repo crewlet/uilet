@@ -119,8 +119,9 @@ const REQUEST_ATTEMPTS = 3;
 // How long `compare` waits for the registry to serve a version the previous
 // release published. Releases run one after another, so the run for the next
 // merge can start seconds after the last publish, while a registry edge may
-// still serve the previous record. Thirty checks ten seconds apart is the same
-// five minutes the publish job waits for a version it published to appear.
+// still serve the previous record. That publish job already waited out npm's
+// scan of the version until the registry served it, so all that is left is an
+// edge catching up, and thirty checks ten seconds apart is ample for that.
 const REGISTRY_LAG_ATTEMPTS = 30;
 const REGISTRY_LAG_INTERVAL_MS = 10_000;
 export const TIMING = {
