@@ -61,7 +61,7 @@ npm run lint && npm run typecheck
 │   └── check-storybook-static.mjs  # static-site, license and page-icon check for the Storybook build
 └── .github/
     ├── actions/               # composite actions the workflows share
-    └── workflows/             # ci, release
+    └── workflows/             # ci, release, dependabot-merge
 ```
 
 ## Adding a new package
@@ -74,7 +74,7 @@ npm run lint && npm run typecheck
 
 ## Releasing
 
-Every merge to `main` that changes what the packages publish is released to npm automatically, through npm trusted publishing with provenance, and tagged `v<version>`. Dependabot's updates are released with the next merge that brings any other commit. The version is computed from the Conventional Commits types merged since the previous release; `npm run release:version` prints the version the current commit would be released as. See [RELEASING.md](RELEASING.md) for the full runbook.
+Every merge to `main` that changes what the packages publish is released to npm automatically, through npm trusted publishing with provenance, and tagged `v<version>`. Dependabot's updates are approved and queued to merge by a workflow, and are released with the next merge that brings any other commit. The version is computed from the Conventional Commits types merged since the previous release; `npm run release:version` prints the version the current commit would be released as. See [RELEASING.md](RELEASING.md) for the full runbook.
 
 ## Contributing
 

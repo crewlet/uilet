@@ -1,0 +1,124 @@
+name: dependabot-merge
+
+# Dependabot's own pull requests, approved and queued to merge without waiting
+# on a person, as far as the main branch ruleset allows (below). Nothing else
+# about them changes: ci.yml runs on a bump exactly as it runs on anything
+# else, and `--auto` holds the merge until every check the ruleset requires
+# has gone green. This shortens the WAIT, not the gate.
+#
+# Four repository settings are load-bearing and none of them is in this file
+# (RELEASING.md, "One-time setup", has them):
+#
+#   - "Allow auto-merge" (Settings, General) must be on, or `gh pr merge
+#     --auto` fails outright. That failure is loud, a red check on the bump,
+#     which is the right way for it to fail.
+#   - "Allow GitHub Actions to create and approve pull requests" (Settings,
+#     Actions, General) must be on, or the approval step fails the same way.
+#   - The main branch ruleset must REQUIRE ci.yml's checks. `--auto` waits for
+#     the checks a rule names and for nothing else, so with no rule it merges
+#     the moment the pull request is mergeable and this workflow becomes an
+#     unreviewed push straight to main. The ruleset IS the gate; the workflow
+#     only queues behind it.
+#   - "Require review from Code Owners" in that ruleset must be off for a bump
+#     to merge by itself. The approval below is GitHub Actions', which is not a
+#     member of the team .github/CODEOWNERS names, so while that rule is on the
+#     bump still waits for a maintainer's approval, and merges the moment it
+#     has one.
+#
+# A merged bump is not released on its own. A merge this workflow queued is
+# made with GITHUB_TOKEN, and a push GITHUB_TOKEN makes starts no workflow, so
+# neither ci.yml nor release.yml runs for it on main. And scripts/release.mjs
+# releases nothing while every commit since the previous release is
+# Dependabot's, which covers a bump a person merges by hand. The next merge
+# that brings any other commit releases the bumps with it.
+
+on:
+  pull_request:
+    # `synchronize` earns its place as much as `opened` does. Dependabot
+    # force-pushes a rebase when a bump conflicts with main after a push there,
+    # when its schedule runs, and on `@dependabot rebase`, and the ruleset
+    # dismisses stale approvals, so it throws the approval away with the old
+    # head. Without this the rebased pull request sits approved by nobody,
+    # forever, and the auto-merge it is queued for never fires.
+    types: [opened, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  approve-and-merge:
+    name: approve and queue the merge
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    # BOTH halves are load-bearing and neither implies the other. The author
+    # check is what limits this to a bump. The ACTOR check is what stops it
+    # approving a commit a PERSON pushed onto a Dependabot branch: anyone with
+    # write access can push one, and without this condition the workflow hands
+    # that commit the approval the ruleset asks for, which is a way to have
+    # your own change approved by the repository itself.
+    #
+    # The cost, under a ruleset that dismisses stale approvals, is that a
+    # maintainer's own "Update branch" click leaves the pull request
+    # unapproved, because the run it triggers is skipped. `@dependabot
+    # recreate` from a person with push access re-pushes as Dependabot and
+    # recovers it. Not `rebase`: the merge commit that click made is one
+    # Dependabot did not write, and it refuses to rebase a branch that holds
+    # one.
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.actor == 'dependabot[bot]'
+
+    # A run Dependabot triggers gets a read-only GITHUB_TOKEN whatever the
+    # repository default is. This block is what lifts that scope, and the `if`
+    # above is the only thing keeping the lift off everything else.
+    permissions:
+      contents: write # queueing the auto-merge
+      pull-requests: write # submitting the approval
+
+    steps:
+      # There is no dependabot/fetch-metadata step, and its absence is
+      # deliberate rather than an omission. That action answers what KIND of
+      # update a bump is, and nothing here would branch on the answer: CI runs
+      # the same checks for a patch as for a major, so the update type is not
+      # what decides whether this lands. A step whose outputs nothing reads is
+      # a gate that is not there, and it reads like one that is. No action runs
+      # here at all, only the gh the runner image carries, so nothing
+      # third-party ever holds this job's write scopes.
+
+      # Approve only while GitHub still says a review is needed. This runs on
+      # `opened` and on each push Dependabot makes (a rebase), and under a rule
+      # that keeps approvals across pushes every run after the first would stack
+      # another review for nothing. `reviewDecision` is GitHub's own answer for
+      # the rules that govern the base branch: APPROVED means nothing to do, and
+      # CHANGES_REQUESTED is somebody's objection this approval would not clear.
+      # Anything else approves, an EMPTY decision included. GitHub leaves it
+      # empty when nothing requires a review, and has been reported to leave it
+      # empty while a ruleset's requirement still blocks the merge
+      # (radius-project/radius#13111), so a skip on doubt could stall every bump
+      # with nothing red to show for it.
+      - name: Approve, if an approval is still needed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+          decision="$(gh pr view "${PR_URL}" --json reviewDecision --jq .reviewDecision)"
+          case "${decision}" in
+            APPROVED | CHANGES_REQUESTED) echo "The review decision is ${decision}: nothing to approve." ;;
+            *) gh pr review --approve "${PR_URL}" ;;
+          esac
+
+      # --squash, not --merge: a bump lands as ONE commit whose subject is the
+      # pull request title, which is the build(deps) subject
+      # .github/dependabot.yml pins, and that same title is the line the
+      # generated release notes carry. It is also how the bumps already in main
+      # landed.
+      #
+      # --auto queues the merge behind the checks the ruleset requires. Without
+      # it this step goes red while that rule stands, and with no such rule it
+      # would merge on the spot, before a single check has reported.
+      - name: Queue the merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "${PR_URL}"
