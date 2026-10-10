@@ -213,24 +213,67 @@
   gap: calc(var(--spacing-1) * 1.5);
 }
 
-.crewlet-bar-list--beside .crewlet-bar-list__row {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--spacing-3);
+/*
+ * THE BAR STANDS ON THE NAME'S LINE, AND A SPLIT BAR'S KEY ON THE SUB'S. An
+ * item is a grid of two columns, the words' and the plot, and two lines. The
+ * row spans it and lends its parts to it (`subgrid`), and the words' wrapper
+ * lends its own two lines in turn (`display: contents`), so the name and the
+ * plot share the first line and are centred on each other, and the sub and a
+ * split bar's key share the second, the key starting where the bar starts.
+ * Centred on the words' whole column instead, a row with a sub drew its bar,
+ * and the value at its end, between the name and the sub, a few pixels below
+ * the name it belongs to; and the key stood on a third line of its own, under
+ * the sub, where it read as one more bar. A row with neither is one line,
+ * centred in the item's height.
+ *
+ * THE KEY LETS THE POINTER THROUGH. It is outside the row in the markup,
+ * because a row that leads somewhere is a link or a button and holds no list,
+ * so it is drawn over the row's second line rather than inside it, and a
+ * press on it is a press on the row.
+ */
+.crewlet-bar-list--beside .crewlet-bar-list__item {
+  display: grid;
+  grid-template-columns: var(--crewlet-bar-list-label-width) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  column-gap: var(--spacing-3);
   min-height: var(--size-control-md);
 }
 
+/* `gap: normal` is what hands a subgrid its parent's gaps: the stacked
+   register's own gap on every row would otherwise move the plot off the
+   column the key stands in. */
+.crewlet-bar-list--beside .crewlet-bar-list__row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  grid-template-columns: subgrid;
+  grid-template-rows: subgrid;
+  align-items: center;
+  gap: normal;
+}
+
 .crewlet-bar-list__names {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  width: var(--crewlet-bar-list-label-width);
-  min-width: 0;
+  display: contents;
   line-height: var(--font-line-height-tight);
 }
 
+.crewlet-bar-list--beside .crewlet-bar-list__names > .crewlet-bar-list__label {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__plot {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__names > .crewlet-bar-list__sub {
+  grid-row: 2;
+  grid-column: 1;
+}
+
 .crewlet-bar-list--beside .crewlet-bar-list__label {
-  flex: none;
   color: var(--color-text-secondary);
 }
 
@@ -240,7 +283,6 @@
 
 .crewlet-bar-list__plot {
   display: block;
-  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -296,10 +338,10 @@
 }
 
 /*
- * THE KEY UNDER A SPLIT BAR, at the caption step, starting where the bar
- * starts: under the plot in the BESIDE register, past the words' column and
- * the gap after it, so each name stands under the bar it keys rather than
- * under the row's own name.
+ * THE KEY UNDER A SPLIT BAR, at the caption step. In the BESIDE register it
+ * stands on the row's second line, under the bar it keys (see the item's
+ * grid above), so each name stands under its part rather than under the
+ * row's own name.
  */
 .crewlet-bar-list__key {
   margin-top: var(--spacing-1);
@@ -307,8 +349,11 @@
 }
 
 .crewlet-bar-list--beside .crewlet-bar-list__key {
+  grid-row: 2;
+  grid-column: 2;
+  align-self: center;
   margin-top: 0;
-  padding-inline-start: calc(var(--crewlet-bar-list-label-width) + var(--spacing-3));
+  pointer-events: none;
 }
 
 /* ─── Stacked bar ─────────────────────────────────────────────── */

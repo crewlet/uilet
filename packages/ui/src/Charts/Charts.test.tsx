@@ -210,6 +210,39 @@ test('beside: the bar is at most 12px, rounded at its value end, on a scale that
   uninstall = null;
 });
 
+test("beside: the bar stands on the name's line, and the sub is the line under the name", () => {
+  /*
+   * Centred on the words' whole column, a row with a sub drew its bar, and
+   * the value at its end, between the name and the sub: a few pixels below
+   * the name it belongs to. The row is a grid of the words' column and the
+   * plot, the words' wrapper lends its two lines to that grid, and the name
+   * and the plot share the first line.
+   */
+  uninstall = installThemed('dark', 'Charts/Charts.css');
+  const { container } = render(
+    <BarList layout="beside" data={[{ id: 'eng', label: 'Engineering', sub: '3 agents', value: 7.9, display: '7.9M' }]} />,
+  );
+  const style = (selector: string) => getComputedStyle(container.querySelector(selector)!);
+  const item = style('.crewlet-bar-list__item');
+  expect(item.display).toBe('grid');
+  expect(item.getPropertyValue('grid-template-columns')).toBe('var(--crewlet-bar-list-label-width) minmax(0, 1fr)');
+  const row = style('.crewlet-bar-list__row');
+  expect(row.display).toBe('grid');
+  expect(row.getPropertyValue('grid-template-columns')).toBe('subgrid');
+  expect(row.getPropertyValue('grid-template-rows')).toBe('subgrid');
+  expect(row.alignItems).toBe('center');
+  expect(style('.crewlet-bar-list__names').display).toBe('contents');
+  const place = (selector: string) => [
+    style(selector).getPropertyValue('grid-row'),
+    style(selector).getPropertyValue('grid-column'),
+  ];
+  expect(place('.crewlet-bar-list__label')).toEqual(['1', '1']);
+  expect(place('.crewlet-bar-list__plot')).toEqual(['1', '2']);
+  expect(place('.crewlet-bar-list__sub')).toEqual(['2', '1']);
+  uninstall();
+  uninstall = null;
+});
+
 /** A team of eight split by seat, beside a team of four that is not split. */
 const SPLIT_TEAM = {
   id: 'eng',
@@ -284,18 +317,20 @@ test('a split bar is keyed under itself, after its row, with each part\'s name a
   expect(result.violations.map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.html).join(', ')}`)).toEqual([]);
 });
 
-test("a split bar's parts stand 2px apart inside it, and its key starts where the bar does", () => {
+test("a split bar's parts stand 2px apart inside it, and its key stands on the sub's line under the bar", () => {
   uninstall = installThemed('dark', 'Charts/Charts.css');
-  const { container } = render(<BarList layout="beside" data={[SPLIT_TEAM]} />);
+  const { container } = render(<BarList layout="beside" data={[{ ...SPLIT_TEAM, sub: '2 agents' }]} />);
   const bar = getComputedStyle(container.querySelector('.crewlet-bar-list__bar--parts')!);
   expect(bar.display).toBe('flex');
   expect(bar.getPropertyValue('gap')).toBe('2px');
   // Clipped, so the last part takes the bar's rounded value end.
   expect(bar.overflow).toBe('hidden');
-  // Past the words' column and the row's gap after it, so each name stands
-  // under the bar it keys.
+  // The second line, in the plot's column: beside the sub and under the bar
+  // it keys, rather than a line of its own that reads as one more bar. A press
+  // on it is a press on the row it is drawn over.
   const key = getComputedStyle(container.querySelector('.crewlet-bar-list__key')!);
-  expect(key.getPropertyValue('padding-inline-start')).toMatch(/^calc\(var\(--crewlet-bar-list-label-width\) \+ /);
+  expect([key.getPropertyValue('grid-row'), key.getPropertyValue('grid-column')]).toEqual(['2', '2']);
+  expect(key.pointerEvents).toBe('none');
   uninstall();
   uninstall = null;
 });
