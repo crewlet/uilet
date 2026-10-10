@@ -72,8 +72,8 @@
  * the whole reason they sit above the field instead of inside it.
  */
 .crewlet-tags-input__box:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: var(--size-focus-ring-inset-offset);
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
 }
 
 .crewlet-tags-input.is-disabled {

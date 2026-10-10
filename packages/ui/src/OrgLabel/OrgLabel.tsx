@@ -90,14 +90,22 @@ export type OrgLabelMark =
        * so this moves nothing: only what is drawn inside it.
        */
       iconSize?: 'md' | 'lg' | undefined;
+      /**
+       * A DASHED RING ROUND THE GLYPH, which is how the console chart draws a
+       * person's seat: a figure inside a boundary, because a person is the
+       * one seat the engine does not run. Drawn in a node only; a row draws
+       * the glyph alone, as the console table does.
+       */
+      iconRing?: boolean | undefined;
       avatar?: undefined;
     }
   | {
       /**
        * A SEAT'S BADGE, with its kind as its outline: a squircle for an agent,
-       * a circle for a person, which is the one cue that tells them apart.
-       * There used to be a second, a dashed ring round a glyph for a human
-       * seat, and two cues for one fact are two things to keep agreeing.
+       * a circle for a person, for a surface that names seats by their
+       * initials. A surface drawn as the console chart draws one marks a seat
+       * with a glyph instead (the Crewlet figure for an agent, a person inside
+       * a dashed ring for a human) and takes the other branch.
        *
        * The layout sizes it and nothing here does: the approved org chart's
        * 26px badge in a node and the smallest step, 20px, in a row.
@@ -108,6 +116,7 @@ export type OrgLabelMark =
       avatar?: OrgLabelAvatar | undefined;
       icon?: undefined;
       iconSize?: undefined;
+      iconRing?: undefined;
     };
 
 /** What both layouts say besides the mark, in the order they say it. */
@@ -167,7 +176,11 @@ export function OrgLabel(props: OrgLabelProps) {
   const zone =
     props.avatar === undefined ? (
       <span
-        className={cx('crewlet-org-label__icon', props.iconSize === 'lg' && 'crewlet-org-label__icon--lg')}
+        className={cx(
+          'crewlet-org-label__icon',
+          props.iconSize === 'lg' && 'crewlet-org-label__icon--lg',
+          props.iconRing === true && 'crewlet-org-label__icon--ring',
+        )}
         aria-hidden="true"
       >
         {props.icon}

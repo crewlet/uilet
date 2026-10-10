@@ -242,8 +242,12 @@ export function AddPill({
             is painted with is a promise, and a pseudo element is the one
             drawing no cascade can report. */}
         <span className="crewlet-add-pill__disc" aria-hidden="true" />
+        {/* THE CONSOLE'S ADD-CIRCLE: a ring at the disc's edge and a plus half
+            its size inside it, so the mark reads as one round control rather
+            than as a plus standing on a disc it nearly fills. */}
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <path d="M8 3.5v9M3.5 8h9" />
+          <circle cx="8" cy="8" r="7" />
+          <path d="M8 4.5v7M4.5 8h7" />
         </svg>
       </button>
       {phase !== 'closed' && (

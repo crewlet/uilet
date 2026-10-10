@@ -78,10 +78,12 @@
   transition: transform var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+/* One ring, over the link's own boundary rather than 2px off it, which is two
+   edges with a gap between them: the rule every field keeps (see Input.css). */
 .crewlet-app-shell__skip:focus-visible {
   transform: translateY(0);
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 /*

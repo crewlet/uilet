@@ -20,6 +20,19 @@
   border-radius: var(--radius-lg);
 }
 
+/*
+ * A DOTTED FIELD, for content that is moved by dragging the field itself: the
+ * dots say it pans before anybody drags it. They are the strong hairline's ink
+ * in both themes, one spacing step apart so density scales the grid with the
+ * cards on it, and drawn on the frame rather than on the world, so they stay
+ * put while the content moves over them. Longhands, so the ground under them
+ * is the canvas's own.
+ */
+.crewlet-canvas[data-ground='dotted'] {
+  background-image: radial-gradient(var(--color-border-strong) 1px, transparent 1.2px);
+  background-size: var(--spacing-5) var(--spacing-5);
+}
+
 .crewlet-canvas__viewport {
   position: absolute;
   inset: 0;

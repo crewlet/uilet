@@ -68,8 +68,8 @@
  * leave the other bare.
  */
 .crewlet-select:focus-within {
-  outline: 2px solid var(--color-focus);
-  outline-offset: var(--size-focus-ring-inset-offset);
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
 }
 
 /*
@@ -347,8 +347,8 @@ svg.crewlet-select__chevron {
  * outset ring on the input would be cut by the menu's own `overflow: hidden`.
  */
 .crewlet-select__search:focus-within {
-  outline: 2px solid var(--color-focus);
-  outline-offset: var(--size-focus-ring-inset-offset);
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
 }
 
 .crewlet-select__search {

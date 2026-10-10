@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { SegmentedControl, TabPanel } from '@crewlethq/ui';
+import { Input, SegmentedControl, TabPanel } from '@crewlethq/ui';
 import { ListGlyph, NetworkGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof SegmentedControl> = {
@@ -145,6 +145,51 @@ export const Cards: Story = {
                 description: 'Nothing but the founder. Every seat is added by hand.',
               },
             ]}
+          />
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/**
+ * A row of separate chips, for a setting with more choices than a well holds
+ * on one line: the console's row of unit types. The chips wrap with the panel,
+ * the chosen one is filled with the accent, and the last one asks for a value
+ * of the reader's own: the box it asks for sits in the row after it, outside
+ * the options the arrow keys walk.
+ */
+export const Chips: Story = {
+  render: () => {
+    function Demo() {
+      const presets = ['division', 'department', 'group', 'team', 'squad', 'pod', 'guild', 'chapter', 'unit'];
+      const [type, setType] = useState('team');
+      const [custom, setCustom] = useState('');
+      return (
+        <div style={{ width: 460 }}>
+          <SegmentedControl
+            label="Unit type"
+            semantics="radio"
+            layout="chips"
+            value={type}
+            onValueChange={setType}
+            options={[
+              ...presets.map((value) => ({ value, label: value.charAt(0).toUpperCase() + value.slice(1) })),
+              { value: 'custom', label: 'Custom' },
+            ]}
+            trailing={
+              type === 'custom' ? (
+                <Input
+                  inputSize="sm"
+                  width="xs"
+                  aria-label="Custom type"
+                  placeholder="Custom type"
+                  value={custom}
+                  onChange={(event) => setCustom(event.target.value)}
+                />
+              ) : null
+            }
           />
         </div>
       );

@@ -264,11 +264,38 @@
   box-shadow: inset 0 0 0 1px var(--crewlet-tag-ink);
 }
 
+/*
+ * ONE RING, ON THE PILL'S OWN EDGE, never off it. A pill draws a border
+ * whenever it is neutral, pointed at or pressed, and a ring standing off that
+ * border is two edges with a gap between them, which reads as a second
+ * outline rather than as focus. So every control here rings over the pill's
+ * border, and the offset that puts it there is each control's own, because
+ * the three boxes meet that border in different places:
+ *
+ * - a whole actionable tag IS the pill, so -1px covers the border and one
+ *   pixel outside it;
+ * - the press half of a split pill stops at the border's inside edge, so 0
+ *   puts its ring on the same two pixels;
+ * - the remove reaches over the border at the top and the bottom (see its
+ *   rule below), so -1px puts its ring there as well.
+ *
+ * ONE PIXEL INTO THE PILL AT MOST, not a field's two, because a pressed tag
+ * says so in an ink line just inside its border: a ring two pixels deep would
+ * cover the one change that pressing it makes.
+ */
 .crewlet-tag--actionable:focus-visible,
 .crewlet-tag__press:focus-visible,
 .crewlet-tag__remove:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+}
+
+.crewlet-tag--actionable:focus-visible,
+.crewlet-tag__remove:focus-visible {
+  outline-offset: -1px;
+}
+
+.crewlet-tag__press:focus-visible {
+  outline-offset: 0;
 }
 
 /* ── the pill that holds two controls ──────────────────────────────────── */

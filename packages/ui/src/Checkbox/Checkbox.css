@@ -105,7 +105,15 @@
   opacity: 0.6;
 }
 
+/*
+ * OUTSIDE THE BOX, AND AGAINST IT. The box IS the target, and 2px eaten off a
+ * 16px square leaves no middle, so the ring stays outside it. But it stands on
+ * the box's own edge rather than 2px off it: a ring with a gap round a box
+ * that already draws its own boundary is two edges, which reads as a second
+ * outline rather than as focus. Flush, the ring and the box are one edge, and
+ * the ring is still drawn whole on the ground around it.
+ */
 .crewlet-checkbox__control:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: 0;
 }

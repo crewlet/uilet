@@ -73,6 +73,24 @@
   outline-offset: 2px;
 }
 
+/*
+ * ONE RING, OVER THE BOUNDARY, on every button that draws one. A secondary,
+ * an outline, a danger and a pressed toggle each carry a visible border, and a
+ * ring standing 2px off it was two edges with a gap between them, which reads
+ * as a second outline rather than as focus. On the inset offset the ring
+ * covers the border instead, the rule every field keeps (see Input.css).
+ *
+ * A FILLED OR BORDERLESS BUTTON KEEPS THE OUTSET RING. There is no edge for it
+ * to double, and an inset ring on the accent fill would be drawn in nearly the
+ * fill's own colour, which is a focus nobody can see.
+ */
+.crewlet-btn--secondary:focus-visible,
+.crewlet-btn--outline:focus-visible,
+.crewlet-btn--danger:focus-visible,
+.crewlet-btn[aria-pressed='true']:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
 .crewlet-btn:disabled,
 .crewlet-btn[aria-disabled='true'] {
   opacity: 0.5;

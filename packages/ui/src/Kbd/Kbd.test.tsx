@@ -42,6 +42,19 @@ test('a quieter cap gives up its frame, never its ink', () => {
   expect(subtle?.[1]).not.toMatch(/opacity\s*:/);
 });
 
+test('a key inside a chord takes no box of its own, whatever the page says about kbd', () => {
+  /*
+   * ONE CHORD, ONE CAP. An application rule drawing every bare `kbd` as a cap
+   * reached the keys inside a chord and framed each one inside the chord's
+   * own frame. The key states its whole box, so no rule of that kind can.
+   */
+  const here = dirname(fileURLToPath(import.meta.url));
+  const key = /\.crewlet-kbd__key\s*\{([^}]*)\}/.exec(readFileSync(join(here, 'Kbd.css'), 'utf8'))?.[1] ?? '';
+  for (const declaration of ['padding: 0', 'background: none', 'border: 0', 'border-radius: 0', 'color: inherit']) {
+    expect(key).toContain(declaration);
+  }
+});
+
 test('a cap is set on the line it sits in, not on a line of its own', () => {
   /*
    * A keycap is drawn INSIDE a run of text and never beside it: a hint at the

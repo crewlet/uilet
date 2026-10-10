@@ -191,6 +191,115 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.7.0
+
+0.7.0 draws the org surfaces (`TreeCanvas`'s `node` appearance, `OrgTable`,
+`OrgLabel`, `OrgNode` and `AddPill`) at the console org chart's own
+proportions, and holds every box in the kit to ONE line: no card, field, chip
+or control draws a second border or a second ring beside its own. A paragraph
+whose change needs an edit ends in a **What to change** table, `Was` on the
+left and `Is` on the right.
+
+**A focused control shows ONE ring, and it lies on the control's own edge.**
+Every bordered control drew its focus ring 2px outside its border, which is
+two edges with a gap between them. That was the secondary, danger and outline
+buttons and a pressed toggle; the secondary, soft brand and ghost brand icon
+buttons; a filter chip, a search trigger, an interactive or pricing card, a
+focused popover, the new items pill and a page size chip; the skip link, an
+image's remove badge, a tag, a pill chip and a card option; and the date and
+time window triggers, which recoloured their border as well, with the time
+window's typed boxes drawing `--shadow-focus` on top of that. Each now rings
+OVER its boundary, the rule the field register already kept. A box takes
+`--size-focus-ring-inset-offset`, which covers a 1px border and one pixel
+inside it. A boxed FIELD (`Input`, `Textarea`, `Select` and its search box,
+`TagsInput`, and the date and time window boxes) goes further and rings at
+one pixel, laid exactly on its own hairline with `outline-offset: -1px`: the
+boundary drawn in the focus colour, which is how the console's fields say
+focus, where two pixels was a heavy band round every box a caret landed in. A tag and its remove control take `-1px`, so a pressed tag's ink
+line stays visible inside the ring. A checkbox, a switch, a pill chip and a
+split tag's press half ring flush at `0`, because each is too small to ring
+inside itself or stops where the edge it rings on begins. A control that draws
+no edge (a filled or ghost button, a ghost icon button, a link, a borderless
+tab, a filled toast action) keeps the outset ring, because there the ring is
+the only line and an inset one on the accent fill would be drawn in nearly the
+fill's own colour. No stylesheet in the package draws `--shadow-focus` any
+more, and `apps/ui-tests` lists every ring that still stands off its element,
+with the reason it may. What to change: nothing in a call site. A stylesheet of
+your own that set one of these rings' `outline-offset`, or recoloured the
+border under it, now competes with the new rule; set the offset on the same
+selector, or leave the ring to the component.
+
+**No card draws two lines.** A toned `TreeCanvas` card drew a halo ring 3px
+outside its boundary, the ghost of a node being composed breathed a second ring
+in the same place, and a selected node drew an accent ring inside its card's
+boundary: each was two parallel lines round one box. A toned card is now its
+fill and its boundary in the hue, and the ghost's own dashed boundary is what
+breathes. Where a card's own node (its direct child treeitem) is selected, the
+card's boundary takes the accent; where it has focus, the ring is drawn on the
+card, over that boundary, so it also holds whatever the card carries under the
+node (a unit's lead), which a ring on the treeitem stopped short of. A row
+deeper inside a card keeps its ring inside it.
+
+| Was | Is |
+|---|---|
+| `--crewlet-tree-canvas-card-halo` in a stylesheet of your own | removed: nothing draws a halo |
+| a rule on `.crewlet-tree-canvas__card [role='treeitem'][aria-selected='true']` for a card's own node | the same rule on `.crewlet-tree-canvas__card:has(> [role='treeitem'][aria-selected='true'])` |
+
+**A unit's lead is a ground, not a frame.** `OrgNodeLead` drew its pill with a
+hairline 4px inside the node's own frame and ruled a line across the top of
+its strip, so a unit's node was a box drawn twice. A set lead is raised on
+`--color-surface-elevated` with no boundary, and the strip draws no rule. An
+empty one stays an empty slot, with no ground, a dashed edge in the hover step
+and the word in the tertiary ink, because the dash is what says a place is
+waiting rather than a frame round a value. The control inside the pill now
+fills it through whatever wraps it (a `Menu`'s anchor), and the whole pill
+takes the hover step while it is pointed at or its menu is open, where the
+control's own hover was a patch the size of its word.
+
+**A chart can lay its field with dots.** `Canvas` and `TreeCanvas` take
+`ground="dotted"`: a grid of dots in the strong hairline's ink, one spacing
+step apart, drawn on the frame so they stay put while the content moves over
+them. It says the field pans before anybody drags it. `plain`, the default, is
+unchanged.
+
+| Was | Is |
+|---|---|
+| a stylesheet of your own laying a `radial-gradient` on `.crewlet-canvas` | `ground="dotted"` |
+
+**A row of choices can be separate chips.** `SegmentedControl` takes
+`layout="chips"`: a row of separate chips that wraps, each on the raised
+ground a chip with no edge of its own takes, the chosen one filled with the
+accent, for a setting with more choices than a well holds on one line (the
+console's row of unit types). `trailing` draws what completes the last choice
+in the row after the options and outside the arrow keys, such as the box a
+Custom chip asks for. `pill`, the default, is unchanged.
+
+**A person's seat can be drawn the way the console chart draws it.**
+`OrgLabel` (and `OrgNodeLabel`) take `iconRing` beside `icon`: a dashed ring
+the size of the large zone round the glyph, on a chart node. A table row draws
+the glyph alone. The `avatar` form is unchanged and never takes the ring, so a
+badge keeps its outline as its one cue.
+
+**The add control is the console's size.** `AddPill`'s mark is the console's
+add-circle, with no second ring round the disc under it. A row's pill is 18px
+tall (it was the row's whole control step, a second row of buttons inside the
+row), its mark 18px and its choices' glyphs 10px, and each choice is hit at
+the control step by an overhang whose tint is clipped to the pill, as the
+branch's choices already were.
+
+**An org table's trunk is one line.** `OrgTable` stretches each row's first
+cell to the row's full height, so the trunk's segments meet across rows (they
+stopped short of both edges of every row and read as one dash per row), covers
+the rule between rows, and ends at the last row's branch instead of running on
+to the table's edge. The trunk and the wire arriving at a neutral row are both
+the strong hairline step.
+
+**A key inside a chord takes no box of its own.** `Kbd` with `keys` draws a
+chord as one cap, and each key inside it now states its whole box (no padding,
+ground, border or radius). An application rule drawing every bare `kbd` as a
+cap used to reach each key inside the chord and frame it inside the chord's
+own frame.
+
 ## Breaking changes in 0.5.0
 
 0.5.0 draws the kit in the approved visual system: Geist, a violet accent that

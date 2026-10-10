@@ -63,9 +63,12 @@
   color: var(--color-text-primary);
 }
 
+/* One ring, over the dashed boundary rather than 2px off it, which is two
+   edges with a gap between them: the rule every field keeps (see Input.css).
+   The list above has no edge of its own, so its ring stays outset. */
 .crewlet-tag-group__more:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 @media (prefers-reduced-motion: reduce) {

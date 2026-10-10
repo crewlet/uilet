@@ -181,9 +181,13 @@
   cursor: default;
 }
 
+/* One ring, drawn OVER the badge's knockout ring rather than 2px outside it:
+   over the image the knockout is an edge of its own, and a ring standing off
+   it was two rings round one small disc. On the inset offset the focus ring
+   takes the knockout's place, which still parts the disc from the image. */
 .crewlet-image-upload__remove:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-image-upload__input {

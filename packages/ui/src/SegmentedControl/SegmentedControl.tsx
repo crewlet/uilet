@@ -7,6 +7,9 @@ import { cx } from '../utils/cx.js';
 
 export type SegmentedSize = 'sm' | 'md';
 
+/** How the options are drawn: see [SegmentedControlProps.layout]. */
+export type SegmentedLayout = 'pill' | 'chips';
+
 export interface SegmentedOption<T extends string = string> {
   value: T;
   /** What is drawn. An empty label makes the option icon-only. */
@@ -35,6 +38,22 @@ interface SegmentedShared<T extends string> {
   value: T;
   onValueChange: (value: T) => void;
   size?: SegmentedSize | undefined;
+  /**
+   * How the options are drawn. `pill`, the default, is a row of chips in one
+   * tinted well, for a lens, a setting or a compact switch. `chips` is a row of
+   * SEPARATE chips that wraps, for a setting with more choices than a well
+   * holds on one line (a unit's type): each chip a raised ground of its own,
+   * the chosen one filled with the accent. A row whose options carry a
+   * description is drawn as cards whatever this says.
+   */
+  layout?: SegmentedLayout | undefined;
+  /**
+   * Drawn at the end of the row, after the last option and outside the
+   * choices themselves: the field that completes the last choice, such as the
+   * box a "Custom" chip asks for. It takes no part in the arrow keys, so a
+   * caret moves inside it as it does in any field.
+   */
+  trailing?: ReactNode | undefined;
   className?: string | undefined;
 }
 
@@ -124,6 +143,8 @@ export function SegmentedControl<T extends string = string>({
   value,
   onValueChange,
   size = 'md',
+  layout = 'pill',
+  trailing,
   className = '',
   semantics,
   panelId,
@@ -166,10 +187,11 @@ export function SegmentedControl<T extends string = string>({
          * Tabs.css is bundled last), so the cards were drawn inside a pill
          * bar sized to its content, which is what the mode exists to avoid.
          */
-        !cards && 'crewlet-tabs--pill',
+        !cards && layout === 'pill' && 'crewlet-tabs--pill',
         `crewlet-tabs--${size}`,
         'crewlet-segmented',
         cards && 'crewlet-segmented--cards',
+        !cards && layout === 'chips' && 'crewlet-segmented--chips',
         className,
       )}
       role={radio ? 'radiogroup' : 'tablist'}
@@ -238,6 +260,13 @@ export function SegmentedControl<T extends string = string>({
           </button>
         );
       })}
+      {/*
+       * IN THE ROW, so it wraps with the chips and sits where the choice it
+       * completes was made, and outside the option list the arrow keys walk:
+       * the roving handlers are on the options, so a key pressed in here is
+       * the field's own.
+       */}
+      {trailing ? <span className="crewlet-segmented__trailing">{trailing}</span> : null}
       {/*
        * Inside the row, because the component is one element and a sibling
        * would change the box a caller lays out. It is out of flow, so it

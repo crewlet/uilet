@@ -24,8 +24,11 @@
    */
   --crewlet-org-table-indent: var(--spacing-8);
   /* The wire arriving at a row, and what it fades to at the row's own end.
-     Rebound per hue below. */
-  --crewlet-org-table-wire: var(--color-border-control);
+     It leaves the trunk in the TRUNK'S own step, as the console table's does,
+     so the two read as one line; started brighter than the trunk, every
+     branch was a dash floating beside a trunk nobody could see. Rebound per
+     hue below. */
+  --crewlet-org-table-wire: var(--color-border-strong);
   --crewlet-org-table-wire-fade: var(--color-border-default);
   /* What a row's name and its mark are drawn in. Rebound per hue below. */
   --crewlet-org-table-ink: var(--color-text-primary);
@@ -134,8 +137,15 @@
  * follows, so the trunk is one line down the whole table rather than one per
  * level. The cell's padding is taken back and the wire element carries the
  * level instead.
+ *
+ * AND THE CELL IS THE ROW'S FULL HEIGHT, because the wire in it is. The grid
+ * centres its cells in a row taller than they are, and a trunk drawn down a
+ * centred cell stopped short of both edges of every row, so the line its
+ * segments were meant to stack into read as one dash per row. The cell still
+ * centres what it holds.
  */
 .crewlet-org-table [role='gridcell']:first-child {
+  align-self: stretch;
   padding-inline-start: var(--spacing-2);
 }
 
@@ -170,18 +180,32 @@
  * segments stack into one line. Neutral, always: it belongs to the table
  * rather than to any row, and a trunk that took each row's hue in turn would
  * be a striped line saying nothing.
+ *
+ * IN THE STRONG STEP, where the console table draws its trunk a notch above
+ * the row's ground. In the plain border step it all but vanished on the
+ * table's own ground, and the branches beside it read as loose dashes.
+ *
+ * It starts one hairline above the cell, over the grid's rule between rows,
+ * so the segments meet rather than being cut by that rule.
  */
 .crewlet-org-table__wire[data-trunk]::before {
-  inset-block: 0;
+  inset-block: -1px 0;
   inset-inline-start: 0;
   width: 2px;
-  background: var(--color-border-default);
+  background: var(--color-border-strong);
 }
 
 /* A root row's trunk starts at the row's middle: nothing hangs above the
    first row of the table. */
 .crewlet-org-table__wire[data-root][data-trunk]::before {
   inset-block-start: 50%;
+}
+
+/* The last row a root shows ends the trunk at its own branch: no row below it
+   hangs off the line, and a trunk run on to the next tree or the table's edge
+   is a line to nowhere. */
+.crewlet-org-table__wire[data-last][data-trunk]::before {
+  inset-block-end: 50%;
 }
 
 /*

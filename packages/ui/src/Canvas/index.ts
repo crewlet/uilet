@@ -1,7 +1,7 @@
 import './Canvas.css';
 
 export { Canvas } from './Canvas.js';
-export type { CanvasHandle, CanvasLabels, CanvasProps } from './Canvas.js';
+export type { CanvasGround, CanvasHandle, CanvasLabels, CanvasProps } from './Canvas.js';
 
 export {
   CANVAS_COMPOSE_CONTEXT,

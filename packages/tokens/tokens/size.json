@@ -26,7 +26,7 @@
     "contentMax": { "value": "1600px" },
     "focusRingInsetOffset": {
       "value": "-2px",
-      "comment": "The outline offset for a focusable row INSIDE a clipping scroller: a tree row, a grid row, a card header. An outset ring there is clipped by the scroller on the first and last rows and painted over by the next row, so the indicator has to be drawn inside the row's own box."
+      "comment": "The outline offset for a ring drawn INSIDE its own box. Two kinds of focusable take it. A row inside a clipping scroller (a tree row, a grid row, a card header), because an outset ring there is clipped by the scroller on the first and last rows and painted over by the next row. And any control that draws a visible boundary of its own (a field, a bordered button, a chip, a card, a panel), because a ring standing off a drawn border is two edges with a gap between them, which reads as a second outline rather than as focus: at -2px the 2px ring covers a 1px border and one pixel inside it, so focus is one edge."
     }
   }
 }

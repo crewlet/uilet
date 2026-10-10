@@ -89,7 +89,6 @@
  * card's own translucent step, in one declaration, which is exactly what a
  * node is painted with: the two are the same grey wherever the chart is
  * scrolled to, and the pair is OPAQUE, which the card's step alone is not.
- * The resting hairline and the 150ms it fades over are that chart's as well.
  *
  * FULLY OPAQUE, ALWAYS. It used to fade with the rest of the control at rest,
  * and a mask at a little over half opacity is not a mask: the branch was drawn
@@ -101,11 +100,12 @@
   height: var(--spacing-4);
   background-color: var(--color-surface-background);
   background-image: linear-gradient(var(--color-surface-subtle), var(--color-surface-subtle));
-  border: 1px solid var(--color-border-default);
+  /* NO BOUNDARY OF ITS OWN: the mark drawn over it is the console's
+     add-circle, whose ring sits at the disc's edge, and a hairline under it
+     was a second ring a pixel outside the first. */
+  border: 0;
   border-radius: var(--radius-circle);
-  transition:
-    background-color var(--motion-duration-base) var(--motion-easing-default),
-    border-color var(--motion-duration-base) var(--motion-easing-default);
+  transition: background-color var(--motion-duration-base) var(--motion-easing-default);
 }
 
 /* A row has no branch to mask, so there is no disc and no boundary either:
@@ -116,11 +116,6 @@
   background-color: transparent;
   background-image: none;
   border-color: transparent;
-}
-
-.crewlet-add-pill__mark:hover .crewlet-add-pill__disc,
-.crewlet-add-pill__mark:focus-visible .crewlet-add-pill__disc {
-  border-color: var(--color-node-green-line);
 }
 
 /*
@@ -142,9 +137,11 @@
   transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+/* The console table's own add-circle, 18px across: at the 20px step the plus
+   stood heavier than every other control on the row. */
 .crewlet-add-pill[data-size='md'] .crewlet-add-pill__mark svg {
-  width: var(--spacing-5);
-  height: var(--spacing-5);
+  width: calc(var(--spacing-4) + var(--spacing-1) / 2);
+  height: calc(var(--spacing-4) + var(--spacing-1) / 2);
 }
 
 .crewlet-add-pill__mark:hover svg,
@@ -192,8 +189,10 @@
   animation: crewlet-add-pill-open var(--motion-duration-moderate) var(--motion-easing-spring);
 }
 
+/* The console table's pill is 18px tall, under half the row: drawn at the
+   row's whole control step it was a second row of buttons inside the row. */
 .crewlet-add-pill[data-size='md'] .crewlet-add-pill__sections {
-  height: var(--size-control-sm);
+  height: calc(var(--spacing-4) + var(--spacing-1) / 2);
 }
 
 .crewlet-add-pill[data-layout='split'] .crewlet-add-pill__sections {
@@ -302,12 +301,14 @@
     background-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-/* A row's step is the target, so there is no overhang and nothing to clip. */
+/* A ROW'S CHOICE IS HIT AT THE ROW'S CONTROL STEP, by the same overhang the
+   branch's pill takes: padding past the drawn 18px pill, with the tint clipped
+   to its content box, so a hovered choice tints the pill and stops at its
+   edges. Its width is the pointer-target floor every choice keeps. */
 .crewlet-add-pill[data-size='md'] .crewlet-add-pill__section {
-  width: var(--size-control-sm);
   height: var(--size-control-sm);
-  margin: 0;
-  padding: 0;
+  margin: calc((var(--spacing-4) + var(--spacing-1) / 2 - var(--size-control-sm)) / 2) 0;
+  padding: calc((var(--size-control-sm) - var(--spacing-4) - var(--spacing-1) / 2) / 2) 0;
 }
 
 /*
@@ -335,7 +336,7 @@
 }
 
 .crewlet-add-pill[data-size='md'] .crewlet-add-pill__divider {
-  height: var(--spacing-5);
+  height: var(--spacing-3);
 }
 
 /*
@@ -390,8 +391,8 @@
  * of each caller, because the pill is what decides it is drawn in one colour.
  */
 .crewlet-add-pill__section svg {
-  width: var(--spacing-3);
-  height: var(--spacing-3);
+  width: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  height: calc(var(--spacing-2) + var(--spacing-1) / 2);
 }
 
 .crewlet-add-pill__section svg,
@@ -415,8 +416,8 @@
 }
 
 .crewlet-add-pill[data-size='md'] .crewlet-add-pill__section svg {
-  width: var(--spacing-4);
-  height: var(--spacing-4);
+  width: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  height: calc(var(--spacing-2) + var(--spacing-1) / 2);
 }
 
 /*

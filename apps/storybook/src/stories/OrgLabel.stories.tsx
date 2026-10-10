@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { OrgLabel } from '@crewlethq/ui';
-import { BotGlyph, BuildingComplexGlyph, TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
+import { BotGlyph, BuildingComplexGlyph, TriangleAlertGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * UI / OrgLabel.
@@ -120,6 +120,13 @@ export const Node_: Story = {
           caption="Human seat"
           captionMarks={<TriangleAlertGlyph />}
         />
+      </Node>
+      {/* THE CONSOLE CHART'S PERSON: a person's glyph inside a dashed ring
+          (`iconRing`), the drawing the console org chart gives a human seat
+          beside the figure it gives an agent. One ring round one glyph; a
+          table row draws the glyph alone. */}
+      <Node>
+        <OrgLabel icon={<UserGlyph size="sm" />} iconRing name="Ada Lovelace" caption="Human seat" />
       </Node>
     </div>
   ),

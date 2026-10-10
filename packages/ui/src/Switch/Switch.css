@@ -111,14 +111,17 @@
  * control's own :focus-visible. The track is the same box: the control is
  * `inset: 0` over it.
  *
- * OUTSET, like a Checkbox's and unlike a text field's. A 20px pill has no
- * room to draw a ring inside itself, and there is no boundary to cover out
- * there either: the track's own border goes the accent colour of its fill
- * when the switch is on, so the ring is the only edge in that space.
+ * OUTSIDE THE TRACK, like a Checkbox's and unlike a text field's: a 20px pill
+ * has no room to draw a ring inside itself. But AGAINST it, not 2px off it.
+ * Off, the track draws a real boundary of its own, and a ring standing off
+ * that boundary was two edges with a gap between them, which reads as a
+ * second outline rather than as focus. Flush, the ring and the track are one
+ * edge in both states, and the ring is still drawn whole on the ground around
+ * the pill, where it is measured.
  */
 .crewlet-switch__track:has(.crewlet-switch__control:focus-visible) {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: 0;
 }
 
 .crewlet-switch__text {

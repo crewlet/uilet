@@ -90,6 +90,24 @@ export const Default: Story = {
 };
 
 /**
+ * A dotted field, for content that is moved by dragging the field itself.
+ *
+ * The dots say the field pans before anybody drags it. They are drawn on the
+ * frame rather than on the content, so they stay put while the cards move over
+ * them: pan and zoom, and only the cards travel. One spacing step apart, so
+ * density scales the grid with the cards on it.
+ */
+export const DottedGround: Story = {
+  render: () => (
+    <Frame>
+      <Canvas label="Organization chart" content={CONTENT} ground="dotted">
+        <Chart />
+      </Canvas>
+    </Frame>
+  ),
+};
+
+/**
  * A note over the viewport.
  *
  * It is drawn in the untransformed overlay, so it neither scales with the zoom

@@ -41,12 +41,17 @@
  * Focus and open are drawn alike, and the ring is an OUTLINE: forced-colors
  * mode drops every box-shadow and keeps outlines, so a ring drawn as a shadow
  * disappears for exactly the readers who most need one.
+ *
+ * ONE RING, OVER THE BOUNDARY. It stood 2px off the box with the border
+ * recoloured to the focus colour as well, which is an accent hairline, a gap
+ * and an accent band: two rings from one state. On the inset offset the ring
+ * covers the border, and the border keeps its own colour under it, the rule
+ * every field keeps (see Input.css).
  */
 .crewlet-datetime:focus-visible,
 .crewlet-datetime.is-open {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-  border-color: var(--color-focus);
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
 }
 
 .crewlet-datetime.is-disabled,
@@ -169,10 +174,10 @@ svg.crewlet-datetime__chevron {
   margin: 0;
 }
 
+/* The same one ring the trigger draws, over the box's own boundary. */
 .crewlet-datetime__time-input:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-  border-color: var(--color-focus);
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
 }
 
 .crewlet-datetime__footer {

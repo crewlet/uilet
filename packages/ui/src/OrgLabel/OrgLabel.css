@@ -86,6 +86,44 @@
   fill: currentColor;
 }
 
+/*
+ * A PERSON IS A FIGURE INSIDE A DASHED RING, as the console chart draws one:
+ * the boundary says this seat is held by someone outside the system. The ring
+ * is the 24px target step and the figure inside it a step smaller than a
+ * container's glyph, which leaves the air a boundary needs to read as one: at
+ * the zone's own step the figure touched the ring on every side.
+ *
+ * THE RING IS DECORATION, drawn in the step kept for it, and the figure is the
+ * mark: the ring says how the seat is held, never what it is.
+ */
+.crewlet-org-label__icon--ring {
+  position: relative;
+}
+
+.crewlet-org-label__icon--ring::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--size-target-min);
+  height: var(--size-target-min);
+  border: 1px dashed var(--color-text-muted);
+  border-radius: var(--radius-circle);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.crewlet-org-label__icon--ring > svg {
+  width: var(--font-size-md);
+  height: var(--font-size-md);
+}
+
+/* A ROW DRAWS THE FIGURE ALONE, as the console table does: a ring on a line
+   of text is a second boundary inside the row's own. */
+.crewlet-org-label--row .crewlet-org-label__icon--ring::before {
+  content: none;
+}
+
 /* ---- The name and its caption -------------------------------------------- */
 
 /*

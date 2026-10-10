@@ -8,6 +8,7 @@ export { SegmentedControl } from './SegmentedControl.js';
 export type {
   SegmentedActivation,
   SegmentedControlProps,
+  SegmentedLayout,
   SegmentedOption,
   SegmentedSize,
 } from './SegmentedControl.js';
