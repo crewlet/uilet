@@ -94,6 +94,7 @@ import {
   CANVAS_COMPOSE_CONTEXT,
   CANVAS_FIT_MAX_ZOOM,
   Canvas,
+  type CanvasGround,
   type CanvasHandle,
   type CanvasLabels,
   type CanvasRect,
@@ -142,9 +143,9 @@ export interface TreeCardInput {
  * with no such choice derives from a stable identity.
  *
  * A NAMED SET RATHER THAN A COLOUR. A caller that could hand in any colour
- * would hand in a literal, and the fill, the border, the halo and the ink of a
- * tinted card are four measured steps of one hue rather than one value with
- * three alphas applied by whoever drew it last.
+ * would hand in a literal, and the fill, the border and the ink of a tinted
+ * card are measured steps of one hue rather than one value with alphas applied
+ * by whoever drew it last.
  */
 export type TreeCardTone = 'purple' | 'cyan' | 'green' | 'amber' | 'rose' | 'blue';
 
@@ -330,9 +331,9 @@ const GAP_PROBE = 'crewlet:tree-canvas-gap';
  * ITS OWN PROBE rather than a number, for the reason the gaps have one: the
  * margin is a spacing token, so density scales it with everything else, and a
  * constant in TypeScript could not. It is a LAYOUT value and not padding on
- * the scroller, because the canvas clips: drawn as padding, the outermost
- * card's halo, its focus ring and the control under it are cut off at the
- * frame exactly when a reader has panned to that card.
+ * the scroller, because the canvas clips: drawn as padding, the control under
+ * the outermost card is cut off at the frame exactly when a reader has panned
+ * to that card.
  */
 const MARGIN_PROBE = 'crewlet:tree-canvas-margin';
 
@@ -503,6 +504,8 @@ export interface TreeCanvasProps {
    * which says WHICH node the surface is about.
    */
   dimmed?: boolean | undefined;
+  /** What the field under the chart is drawn as: see [CanvasProps.ground]. */
+  ground?: CanvasGround | undefined;
   /**
    * A node being composed in the chart rather than in a surface over it: see
    * [TreeComposing]. Null, and the chart is the data and nothing else.
@@ -538,6 +541,7 @@ export function TreeCanvas({
   controlsBelow,
   hint,
   dimmed = false,
+  ground,
   composing = null,
   labels,
   ref,
@@ -1063,6 +1067,7 @@ export function TreeCanvas({
         controlsBelow={controlsBelow}
         hint={hint}
         dimmed={dimmed}
+        ground={ground}
         /*
          * HOW FAR IN THE ZOOM GOES is the widest card: a reader pressing Zoom
          * in is asking to look at ONE node, and this component is the only

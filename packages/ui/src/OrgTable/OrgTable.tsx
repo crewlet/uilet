@@ -38,7 +38,12 @@ import { ChevronDownGlyph, ChevronUpGlyph } from '@crewlethq/icons/glyphs';
 import { AddPill, type AddPillProps } from '../AddPill/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { OrgLabel, type OrgLabelContent } from '../OrgLabel/index.js';
-import { createTreeModel, type TreeViewHandle } from '../Tree/index.js';
+import {
+  createTreeModel,
+  treeParent,
+  type TreeModel,
+  type TreeViewHandle,
+} from '../Tree/index.js';
 import {
   TreeGrid,
   type TreeGridContext,
@@ -98,9 +103,10 @@ export function OrgTable({
    * THE DEPTH COMES FROM THE SAME MODEL THE GRID BUILDS, over the same forest,
    * so a wire is never drawn at a level the grid does not put the row at. It
    * is the tree model's own arithmetic rather than a second walk of the rows
-   * here, which is the walk that would disagree.
+   * here, which is the walk that would disagree. Where the trunk ends is read
+   * from the same model.
    */
-  const depths = useMemo(() => createTreeModel(rows).depth, [rows]);
+  const tree = useMemo(() => createTreeModel(rows), [rows]);
 
   const grid = useRef<TreeViewHandle | null>(null);
   useImperativeHandle(
@@ -122,7 +128,8 @@ export function OrgTable({
   const cell = useCallback(
     (id: string, column: number, context: TreeGridContext): ReactNode => {
       if (column !== 1) return renderCell(id, column, context);
-      const depth = depths.get(id) ?? 0;
+      const depth = tree.depth.get(id) ?? 0;
+      const open = context.expandable(id) && context.expanded(id);
       return (
         <>
           <OrgTableWire
@@ -131,13 +138,14 @@ export function OrgTable({
             // A root row's trunk starts at its own middle and runs down into
             // the rows below, so nothing is drawn above the first row and
             // nothing hangs off a root with nothing under it.
-            trunk={depth > 0 || (context.expandable(id) && context.expanded(id))}
+            trunk={depth > 0 || open}
+            last={!open && lastUnderRoot(tree, id)}
           />
           {renderCell(id, column, context)}
         </>
       );
     },
-    [depths, renderCell, tone],
+    [tree, renderCell, tone],
   );
 
   return (
@@ -181,28 +189,45 @@ export function OrgTable({
 }
 
 /**
+ * Whether a row that is not open is the last one its root shows: the last
+ * child at every level from the root down to it. The next row is then another
+ * root or none, so the trunk ends at this row's branch.
+ */
+function lastUnderRoot(tree: TreeModel, id: string): boolean {
+  for (let at = id, up = treeParent(tree, id); up !== null; at = up, up = treeParent(tree, up)) {
+    const siblings = tree.children.get(up) ?? [];
+    if (siblings[siblings.length - 1] !== at) return false;
+  }
+  return true;
+}
+
+/**
  * One row's share of the tree's wires, which is also its indent.
  *
  * ONE TRUNK, AND A BRANCH PER ROW. The trunk is a segment down the gutter on
  * every row inside the tree, so the segments stack into the single line the
  * console chart's table draws; the branch runs from it to the row's own mark,
- * and is as long as the row is deep. Hidden from assistive technology, because
- * the level it draws is already on the row as `aria-level`.
+ * and is as long as the row is deep. The last row a root shows ends the trunk
+ * at its branch. Hidden from assistive technology, because the level it draws
+ * is already on the row as `aria-level`.
  */
 function OrgTableWire({
   depth,
   tone,
   trunk,
+  last,
 }: {
   depth: number;
   tone: OrgTableTone | undefined;
   trunk: boolean;
+  last: boolean;
 }) {
   return (
     <span
       className="crewlet-org-table__wire"
       aria-hidden="true"
       data-trunk={trunk ? '' : undefined}
+      data-last={last ? '' : undefined}
       data-root={depth === 0 ? '' : undefined}
       data-tone={tone}
       style={{ '--crewlet-org-table-depth': depth } as CSSProperties}

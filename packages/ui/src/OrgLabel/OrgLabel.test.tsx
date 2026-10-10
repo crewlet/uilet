@@ -374,11 +374,12 @@ describe('what each surface used to be missing', () => {
 
 describe('the marks and the words', () => {
   /*
-   * A SEAT LEADS WITH ITS BADGE, and the badge's OUTLINE is its kind: a
-   * squircle for an agent, a circle for a person. That is a boundary rather
-   * than a hue, so it reads to somebody who cannot separate hues at all, and
-   * it is the ONLY cue: a human seat used to wear a dashed ring round a glyph
-   * as well, and two cues for one fact are two things to keep agreeing.
+   * A SEAT DRAWN WITH ITS BADGE leads with it, and the badge's OUTLINE is its
+   * kind: a squircle for an agent, a circle for a person. That is a boundary
+   * rather than a hue, so it reads to somebody who cannot separate hues at
+   * all, and in this form it is the ONLY cue: the dashed ring the glyph form
+   * draws round a person (`iconRing`, below) is never drawn round a badge,
+   * because two cues for one fact are two things to keep agreeing.
    */
   test("a seat's badge carries its kind as its outline, in either layout, and says nothing", () => {
     for (const layout of ['node', 'row'] as const) {
@@ -400,8 +401,33 @@ describe('the marks and the words', () => {
       expect(screen.queryAllByRole('img'), layout).toEqual([]);
       // And nothing draws the second cue the outline replaced.
       expect(container.innerHTML, layout).not.toContain('dashed');
+      expect(container.querySelector('.crewlet-org-label__icon--ring'), layout).toBeNull();
     }
-    expect(SHEET).not.toContain('dashed');
+    // The one dashed line in the sheet is the glyph form's ring.
+    expect(SHEET.match(/dashed/g)).toHaveLength(1);
+    expect(rule('.crewlet-org-label__icon--ring::before')).toContain('dashed');
+  });
+
+  /*
+   * THE CONSOLE CHART'S PERSON: a glyph inside a dashed ring, on a chart node.
+   * In a table row the console draws the glyph alone, so the row layout keeps
+   * the ring's class and draws nothing for it. The ring is one line round one
+   * glyph; it is never drawn round a badge, which is framed already.
+   */
+  test('a ringed glyph draws its dashed ring on a node and not in a row', () => {
+    for (const layout of ['node', 'row'] as const) {
+      cleanup();
+      const { container } = render(
+        <OrgLabel layout={layout} name="Ada" icon={<svg />} iconRing />,
+      );
+      const zone = container.querySelector('.crewlet-org-label__icon')!;
+      expect(zone.className, layout).toContain('crewlet-org-label__icon--ring');
+    }
+    const ring = rule('.crewlet-org-label__icon--ring::before');
+    expect(ring).toContain('border: 1px dashed var(--color-text-muted)');
+    expect(ring).toContain('border-radius: var(--radius-circle)');
+    expect(ring).toContain('pointer-events: none');
+    expect(rule('.crewlet-org-label--row .crewlet-org-label__icon--ring::before')).toContain('content: none');
   });
 
   /*

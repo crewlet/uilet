@@ -243,21 +243,29 @@ describe('the drawing', () => {
   });
 
   /*
-   * ONE GESTURE, TWO STEPS. A table row has a control step to fill, and the
-   * drawing IS the target there; it was a second component with its own size,
-   * its own ground and no animation at all.
+   * ONE GESTURE, TWO STEPS. A table row has a control step to hit, and the
+   * console table draws its pill well inside it: 18px tall with an 18px
+   * add-circle, under half the row. Drawn at the row's whole control step it
+   * was a second row of buttons inside the row, and the plus stood heavier
+   * than every other control on it.
    */
-  test('the row step draws and hits one control step, with no disc to mask a branch', () => {
+  test("the row step draws the console table's 18px pill and hits the control step", () => {
     uninstall = installThemed('dark', 'AddPill/AddPill.css');
     const { container } = render(
       <AddPill label="Add to Engineering" sections={sections(() => {})} size="md" layout="inline" />,
     );
     fireEvent.click(mark());
-    // The small control step, 26px, the design's small button.
+    // The mark is hit at the small control step, 26px, the design's small
+    // button, and drawn at the console table's 18.
     expect(px(mark(), 'width')).toBe(26);
-    expect(px(choices()[0]!, 'width')).toBe(26);
-    expect(px(choices()[0]!, 'margin-top')).toBe(0);
-    expect(px(container.querySelector('.crewlet-add-pill__sections')!, 'height')).toBe(26);
+    expect(px(mark().querySelector('svg')!, 'width')).toBe(18);
+    expect(px(container.querySelector('.crewlet-add-pill__sections')!, 'height')).toBe(18);
+    // A choice is the pointer-target floor across and the control step tall,
+    // grown past the 18px pill top and bottom: (18 - 26) / 2.
+    const choice = choices()[0]!;
+    expect(px(choice, 'width')).toBe(24);
+    expect(px(choice, 'height')).toBe(26);
+    expect(px(choice, 'margin-top')).toBe(-4);
     // The mark stays: in a row it is a toggle beside the choices, not the
     // thing they grew out of.
     expect(getComputedStyle(mark()).opacity).not.toBe('0');
@@ -320,15 +328,19 @@ describe('the drawing', () => {
     expect(style.backgroundClip).toBe('content-box');
   });
 
-  /* A row's step IS the target, so there is no overhang to clip away. */
-  test('a row draws no overhang, so its choice fills its own control step', () => {
+  /* A row's choice overhangs its pill the way a branch's does, and a hovered
+     one tints the pill rather than the target around it. */
+  test("a row's choice is hit past its pill and tints only the pill", () => {
     uninstall = installThemed('dark', 'AddPill/AddPill.css');
     render(
       <AddPill label="Add to Engineering" sections={sections(() => {})} size="md" layout="inline" />,
     );
     fireEvent.click(mark());
-    expect(px(choices()[0]!, 'padding-top')).toBe(0);
-    expect(px(choices()[0]!, 'padding-bottom')).toBe(0);
+    const choice = choices()[0]!;
+    // The overhang, top and bottom: (26 - 18) / 2.
+    expect(px(choice, 'padding-top')).toBe(4);
+    expect(px(choice, 'padding-bottom')).toBe(4);
+    expect(getComputedStyle(choice).backgroundClip).toBe('content-box');
   });
 
   /*
@@ -368,7 +380,7 @@ describe('the drawing', () => {
    * through the three marks a reader is choosing between. The page's ground
    * with the card's step over it is what a node itself is painted with.
    */
-  test('the disc and the pill carry the node ground, opaque, and a resting edge', () => {
+  test('the disc and the pill carry the node ground, opaque, and the disc draws no ring', () => {
     for (const theme of ['dark', 'light'] as const) {
       uninstall?.();
       uninstall = installThemed(theme, 'AddPill/AddPill.css');
@@ -377,7 +389,7 @@ describe('the drawing', () => {
       // The disc is read AT REST, before anything is pointed at: what it is
       // painted with while a chart is merely being looked at is the promise.
       const disc = getComputedStyle(container.querySelector('.crewlet-add-pill__disc')!);
-      const resting = { edge: disc.borderTopColor, fade: disc.transition };
+      const resting = { edge: disc.borderTopWidth, fade: disc.transition };
       fireEvent.click(mark());
       const pill = getComputedStyle(container.querySelector('.crewlet-add-pill__sections')!);
       for (const [name, style] of [
@@ -390,9 +402,11 @@ describe('the drawing', () => {
         const { r, g, b } = parseHex(themes[theme].color.surface.subtle)!;
         expect(style.backgroundImage, `${theme} ${name}`).toContain(`rgb(${r}, ${g}, ${b})`);
       }
-      // The disc's own boundary is drawn at rest, at the separator step, and
-      // fades over the console chart's own 150ms.
-      expect(channels(resting.edge)).toEqual(parseHex(themes[theme].color.border.default));
+      // NO RING UNDER THE MARK'S OWN. The mark is the console's add-circle,
+      // whose ring sits at the disc's edge, and a hairline round the disc was
+      // a second ring a pixel outside the first. Its ground still changes over
+      // the console chart's own 150ms.
+      expect(['0px', ''], theme).toContain(resting.edge);
       expect(resting.fade).toContain(motion.duration.base);
     }
   });

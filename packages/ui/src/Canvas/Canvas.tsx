@@ -221,6 +221,12 @@ interface Pinching {
   ids: [number, number];
 }
 
+/**
+ * What the field under the content is drawn as. `plain` is the page's own
+ * ground; `dotted` lays a grid of dots on it. See [CanvasProps.ground].
+ */
+export type CanvasGround = 'plain' | 'dotted';
+
 export interface CanvasProps {
   /** The accessible name of the viewport, such as "Organization chart". */
   label: string;
@@ -295,6 +301,16 @@ export interface CanvasProps {
    */
   dimmed?: boolean | undefined;
   /**
+   * What the field under the content is drawn as.
+   *
+   * `dotted` is for a surface whose content is moved by dragging the field
+   * itself, such as an organization chart: the dots say the field pans before
+   * anybody drags it. They are drawn on the frame rather than on the content,
+   * so they stay put while the content moves over them. `plain`, the default,
+   * is the page's own ground and nothing else.
+   */
+  ground?: CanvasGround | undefined;
+  /**
    * Whether one finger can pan the canvas at all.
    *
    * On by default, behind the tap that activates it. Turned off, one finger
@@ -322,6 +338,7 @@ export function Canvas({
   hint,
   largestItemWidth,
   dimmed = false,
+  ground = 'plain',
   touch = true,
   labels,
   onReady,
@@ -728,6 +745,7 @@ export function Canvas({
       className={cx('crewlet-canvas', className)}
       ref={root}
       data-dimmed={dimmed}
+      data-ground={ground}
       data-ready={ready}
       data-animate={animate === false ? 'false' : animate}
       data-panning={panning}

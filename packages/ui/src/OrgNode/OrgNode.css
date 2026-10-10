@@ -33,6 +33,15 @@
 
 /* ---- A unit's lead ------------------------------------------------------ */
 
+/*
+ * NO LINE OF ITS OWN. The console chart rules a hairline over this strip and
+ * frames a set lead's pill inside it, 4px in from the node's own edge: inside
+ * a card that is already framed, that is a box drawn twice, with a second line
+ * running beside the card's edge on three sides and a third across the top.
+ * A set lead is a ground instead, and a ground needs no line to divide it from
+ * the name above. Only an EMPTY slot keeps an edge, dashed (below), because
+ * the dash is what says a place is waiting rather than a frame round a value.
+ */
 .crewlet-org-node-lead {
   position: relative;
   display: flex;
@@ -42,27 +51,10 @@
 }
 
 /*
- * THE SEPARATOR IS INSET, like every hairline inside a node of the console
- * chart (it draws this one from 4 to `nw - 4`). Edge to edge it cut the card
- * in two and the node read as two stacked cells rather than as a card with a
- * fact along its bottom edge. Drawn rather than bordered for that reason
- * alone: a border cannot be shorter than the box it is on.
- */
-.crewlet-org-node-lead::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: var(--spacing-1);
-  left: var(--spacing-1);
-  height: 1px;
-  background: var(--color-border-default);
-}
-
-/*
  * A PILL RATHER THAN A LINE OF TEXT, so the lead reads as one value attached
- * to this unit rather than as a second caption. The empty state is the same
- * pill with a dashed edge and the word alone: a unit with no lead has a place
- * for one, which is what invites the reader to set it.
+ * to this unit rather than as a second caption. RAISED, on the step a chip
+ * with no boundary of its own takes (the palette suite holds it off the card
+ * on both themes), so it is found by its ground rather than by a frame.
  */
 .crewlet-org-node-lead__pill {
   display: flex;
@@ -77,32 +69,30 @@
   font-weight: var(--font-weight-medium);
   line-height: var(--font-line-height-tight);
   color: var(--color-text-secondary);
-  /*
-   * THE BOUNDARY IS THE HOVER STEP, not the resting hairline, which is what
-   * the console chart draws around this one pill and nowhere else inside a
-   * node: every other line in there is the separator step and this is a
-   * boundary around a value. At the separator's own alpha the pill was a
-   * rectangle a reader had to look for, on the one fact a unit's node states.
-   */
-  border: 1px solid var(--color-border-hover);
+  background: var(--color-surface-elevated);
   border-radius: var(--radius-sm);
 }
 
 /*
- * AND AN EMPTY ONE IS THE SAME PILL, DASHED. The console chart separates the
- * two by the DASH and by the ink, and its two boundary alphas are 0.15 and
- * 0.12, which is one step of this ramp: written as two tokens the difference
- * would be invisible beside the dash that already carries it.
+ * AND AN EMPTY ONE IS AN EMPTY SLOT: no ground, a dashed edge and the word
+ * alone in the quieter ink, as the console chart draws it. A unit with no lead
+ * has a place for one, and the dash is what says the place is waiting to be
+ * filled, which is what invites the reader to set it. It is the one edge drawn
+ * inside a node, and only while the slot is empty: a set lead is a raised
+ * ground with no edge at all. The edge is the hover step rather than the
+ * resting hairline, because at the hairline's own step the slot was a
+ * rectangle a reader had to look for.
  */
 .crewlet-org-node-lead__pill--empty {
   color: var(--color-text-tertiary);
-  border-style: dashed;
+  background: none;
+  border: 1px dashed var(--color-border-hover);
 }
 
 /*
  * A LEAD THAT CAN BE CHANGED IS STILL A LEAD. Where the pill holds a control
  * rather than a word, the control IS the pill: it fills it, carries the pill's
- * own type and ink, and draws no second boundary inside the one already there.
+ * own type and ink, and draws no boundary or ground of its own on the pill's.
  * Left at its own size, a control step inside a half-rank strip is a button
  * that overflows the node it sits in.
  *
@@ -129,6 +119,35 @@
   color: var(--color-text-primary);
 }
 
+/*
+ * WHATEVER WRAPS THE CONTROL FILLS THE PILL TOO. A menu's trigger arrives
+ * inside the menu's own anchor, and the anchor was a shrink-wrapped item of
+ * the pill's row: the control was the width of the word "Lead" in a pill as
+ * wide as the node, and a press anywhere else in the pill did nothing.
+ */
+.crewlet-org-node-lead__pill > :has(> .crewlet-btn) {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+ * REACHED, THE WHOLE PILL LIGHTS, because the whole pill is the control. The
+ * ghost control's own hover and press grounds were a patch the size of the
+ * word inside the pill, so it paints neither, and the pill takes the row hover
+ * step over its own ground while the control is pointed at or its menu is
+ * open. Its ink still goes to full, above.
+ */
+.crewlet-org-node-lead__pill
+  .crewlet-btn:is(:hover, :active):not(:disabled):not([aria-disabled='true']) {
+  background: none;
+}
+
+.crewlet-org-node-lead__pill:has(.crewlet-btn:hover:not(:disabled):not([aria-disabled='true'])),
+.crewlet-org-node-lead__pill:has(.crewlet-btn[aria-expanded='true']) {
+  background-image: linear-gradient(var(--color-surface-hover), var(--color-surface-hover));
+}
+
 /* The name of the lead, not the chevron beside it, is what truncates. */
 .crewlet-org-node-lead__pill .crewlet-btn > span {
   overflow: hidden;
@@ -147,25 +166,42 @@
  *
  * DRAWN SMALL, HIT FULL SIZE, the rule the whole node keeps: the strip is half
  * a rank, so the target is grown past the pill's own edge into the node's
- * bottom padding, exactly as the lead's own control is. It takes its room from
- * the pill rather than overlaying the name, so the lead truncates beside it
- * instead of running under it: the console chart shifts its text 5px left for
- * the same reason, which a row of flex items does on its own.
+ * bottom padding, exactly as the lead's own control is.
+ *
+ * AND IT DOES NOT MOVE THE NAME. Taking its room from the row, it pushed the
+ * name half its own width off the pill's middle, so "Lead: Ada" sat left of
+ * centre on every unit that had one. It is drawn over the pill's right end
+ * instead, out of the row, and the lead's control keeps the same room at both
+ * of its ends while it is there: the name is centred on the whole pill and
+ * truncates before it reaches the clear, and the control is still the whole
+ * pill to press.
  */
 .crewlet-org-node-lead__clear {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  right: 0;
+  z-index: 1;
   display: inline-flex;
-  flex: none;
   align-items: center;
   justify-content: center;
+  transform: translateY(-50%);
+}
+
+.crewlet-org-node-lead__pill:has(> .crewlet-org-node-lead__clear) {
+  position: relative;
+}
+
+.crewlet-org-node-lead__pill:has(> .crewlet-org-node-lead__clear)
+  .crewlet-btn:not(.crewlet-org-node-lead__clear *) {
+  padding-inline: var(--spacing-4);
 }
 
 /*
- * THE GROUND IS A STEP OFF THE CARD'S, rather than that chart's own alpha. Its
- * 0.08 of white over a dark card is a disc a reader can see; on this package's
- * LIGHT theme the step at that alpha is the card's own value, so the disc
- * would disappear on half the deployments. The step past the card is the same
- * relationship in both themes, which is what the drawing was after.
+ * THE DISC IS ITS RING. Its ground is the raised step the pill itself is
+ * drawn on, rather than that chart's own alpha (0.08 of white is the card's
+ * own value on this package's light theme, so a disc drawn by its ground
+ * would disappear on half the deployments), and so what draws it on the pill
+ * is the hairline round it.
  */
 .crewlet-org-node-lead__disc {
   position: absolute;
@@ -201,6 +237,14 @@
  */
 .crewlet-org-node-lead__clear .crewlet-icon-btn:hover {
   color: var(--color-text-primary);
+}
+
+/* AND NOTHING ELSE FILLS EITHER: a ghost control's own hover and press grounds
+   are painted on its whole 24px target, which drew a circle twice the disc's
+   size round a 12px mark the moment it was pointed at. */
+.crewlet-org-node-lead__clear
+  :is(.crewlet-btn, .crewlet-icon-btn):is(:hover, :active):not(:disabled):not([aria-disabled='true']) {
+  background: none;
 }
 
 .crewlet-org-node-lead__clear:hover .crewlet-org-node-lead__disc {

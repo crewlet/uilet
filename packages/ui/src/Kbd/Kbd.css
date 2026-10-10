@@ -42,9 +42,20 @@
  * platform prints a chord. It is a `kbd` of its own because that is what a key
  * inside a key combination is, and a user agent's `kbd` rule would otherwise
  * set its own face and size on it.
+ *
+ * AND IT TAKES NO BOX FROM ANYBODY ELSE. An application stylesheet that draws
+ * a bare `kbd` as a cap of its own (a common enough rule) reached each key in
+ * here and framed it, so one chord drew a frame round a run of framed keys.
+ * The key states every part of its box, so whatever a page says about `kbd`,
+ * a chord is one cap.
  */
 .crewlet-kbd__key {
   font: inherit;
+  color: inherit;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
 }
 
 /*

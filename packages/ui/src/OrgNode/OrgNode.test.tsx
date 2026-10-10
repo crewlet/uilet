@@ -119,29 +119,73 @@ describe('a lead', () => {
    * the reader to set it; a blank strip along the bottom edge says nothing at
    * all and reads as a rendering fault.
    */
-  test('with nothing set it is drawn as the outline of a pill', () => {
-    const { container } = render(<OrgNodeLead empty>Lead</OrgNodeLead>);
-    const pill = container.querySelector('.crewlet-org-node-lead__pill--empty');
-    expect(pill).not.toBeNull();
-    expect(rule('.crewlet-org-node-lead__pill--empty')).toContain('border-style: dashed');
+  test('with nothing set it is an empty slot: no ground, a dashed edge, the quieter ink', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      drawn(theme);
+      cleanup();
+      const { container } = render(<OrgNodeLead empty>Lead</OrgNodeLead>);
+      const pill = container.querySelector('.crewlet-org-node-lead__pill--empty');
+      expect(pill, theme).not.toBeNull();
+      const style = getComputedStyle(pill!);
+      expect(['transparent', 'rgba(0, 0, 0, 0)'], theme).toContain(style.backgroundColor);
+      expect(style.borderTopStyle, theme).toBe('dashed');
+      expect(style.borderTopWidth, theme).toBe('1px');
+      expect(channels(style.borderTopColor), theme).toEqual(channels(themes[theme].color.border.hover));
+      expect(channels(style.color), theme).toEqual(channels(themes[theme].color.text.tertiary));
+    }
   });
 
   /*
-   * IT IS SEPARATED FROM THE NAME ABOVE, so the node reads as a thing with a
-   * lead rather than as two lines of text that happen to be in one box.
+   * NEVER A FRAME ROUND A VALUE. The node it sits in is already framed, and a
+   * frame 4px inside that one round a set lead (or a rule across the top of
+   * the strip) is two lines round one thing, so a set lead is told apart by
+   * its ground. Only an empty slot keeps an edge, and that edge is dashed.
    */
-  test('a hairline divides it from the name above, inset at both ends', () => {
+  test('a set lead draws no line of its own: neither a rule over the strip nor a frame round the pill', () => {
     drawn();
     const { container } = render(<OrgNodeLead>Lead: Ada</OrgNodeLead>);
-    const strip = container.querySelector('.crewlet-org-node-lead')!;
-    // Drawn rather than bordered, because every hairline inside a node of the
-    // console chart is inset by the node's own 4px and a border cannot be
-    // shorter than the box it is on.
-    expect(getComputedStyle(strip).borderTopWidth).not.toBe('1px');
-    const drawnRule = rule('.crewlet-org-node-lead::before');
-    expect(drawnRule).toContain('left: var(--spacing-1)');
-    expect(drawnRule).toContain('right: var(--spacing-1)');
-    expect(drawnRule).toContain('height: 1px');
+    expect(getComputedStyle(container.querySelector('.crewlet-org-node-lead')!).borderTopWidth).not.toBe(
+      '1px',
+    );
+    expect(getComputedStyle(container.querySelector('.crewlet-org-node-lead__pill')!).borderTopStyle).not.toBe(
+      'dashed',
+    );
+    expect(SHEET).not.toContain('.crewlet-org-node-lead::before');
+    expect(rule('.crewlet-org-node-lead__pill')).not.toMatch(/border(-style)?:/);
+    expect(rule('.crewlet-org-node-lead__pill--empty')).toContain('border: 1px dashed');
+  });
+
+  /*
+   * THE WHOLE PILL IS THE CONTROL, AND THE WHOLE PILL LIGHTS. A menu's trigger
+   * arrives inside the menu's own anchor, which left the control the width of
+   * its word and its ghost hover a patch round that word in the middle of the
+   * pill. The wrapper fills the pill, the control paints no ground of its own,
+   * and the pill takes the hover step while the control is reached or open.
+   */
+  test('a control in the pill fills it through its wrapper, and the pill is what lights', () => {
+    drawn();
+    const { container } = render(
+      <OrgNodeLead empty>
+        <span className="anchor">
+          <button type="button" className="crewlet-btn crewlet-btn--ghost">
+            Lead
+          </button>
+        </span>
+      </OrgNodeLead>,
+    );
+    const anchor = container.querySelector('.anchor')!;
+    expect(getComputedStyle(anchor).display).toBe('flex');
+    expect(getComputedStyle(anchor).flexGrow).toBe('1');
+    expect(rule('.crewlet-org-node-lead__pill > :has(> .crewlet-btn)')).toContain('flex: 1');
+    const quiet = rule(
+      ".crewlet-org-node-lead__pill\n  .crewlet-btn:is(:hover, :active):not(:disabled):not([aria-disabled='true'])",
+    );
+    expect(quiet).toContain('background: none');
+    const lit = rule(".crewlet-org-node-lead__pill:has(.crewlet-btn[aria-expanded='true'])");
+    expect(lit).toContain('var(--color-surface-hover)');
+    expect(SHEET).toContain(
+      ".crewlet-org-node-lead__pill:has(.crewlet-btn:hover:not(:disabled):not([aria-disabled='true'])),",
+    );
   });
 
   /*
@@ -162,6 +206,43 @@ describe('a lead', () => {
     const clear = container.querySelector('.crewlet-org-node-lead__clear')!;
     expect(clear.closest('.crewlet-org-node-lead__pill')).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Clear the lead of Engineering' })).toBeDefined();
+  });
+
+  /*
+   * THE CLEAR DOES NOT MOVE THE NAME. In the row it pushed "Lead: Ada" half its
+   * own width off the pill's middle; drawn over the pill's end, with the same
+   * room kept at both ends of the lead's control, the name is centred on the
+   * whole pill and stops short of the clear.
+   */
+  test('the clear is drawn over the pill end, and the name stays centred on the whole pill', () => {
+    drawn();
+    const { container } = render(
+      <OrgNodeLead clear={<button type="button" className="crewlet-icon-btn" aria-label="Clear" />}>
+        <span className="anchor">
+          <button type="button" className="crewlet-btn crewlet-btn--ghost">
+            Lead: Ada
+          </button>
+        </span>
+      </OrgNodeLead>,
+    );
+    expect(getComputedStyle(container.querySelector('.crewlet-org-node-lead__clear')!).position).toBe('absolute');
+    const control = rule(
+      '.crewlet-org-node-lead__pill:has(> .crewlet-org-node-lead__clear)\n  .crewlet-btn:not(.crewlet-org-node-lead__clear *)',
+    );
+    expect(control).toContain('padding-inline: var(--spacing-4)');
+  });
+
+  /*
+   * POINTED AT, THE CLEAR PAINTS NO GROUND. A ghost control fills its whole
+   * 24px target on hover, which drew a circle twice the disc's size round a
+   * 12px mark; the clear brightens instead.
+   */
+  test('the clear fills nothing when it is pointed at or pressed', () => {
+    expect(
+      rule(
+        ".crewlet-org-node-lead__clear\n  :is(.crewlet-btn, .crewlet-icon-btn):is(:hover, :active):not(:disabled):not([aria-disabled='true'])",
+      ),
+    ).toContain('background: none');
   });
 
   /*
@@ -209,10 +290,9 @@ describe('a lead', () => {
       expect(px(disc, 'width'), theme).toBe(12);
       expect(px(disc, 'height'), theme).toBe(12);
       expect(getComputedStyle(disc).pointerEvents, theme).toBe('none');
-      // A STEP PAST THE CARD, in both themes. The console chart draws this at
-      // white 0.08, which over its dark card is a disc a reader can see and on
-      // a light one is the card's own value: the disc would vanish on half the
-      // deployments. The step past the card is that relationship in both.
+      // THE PILL'S OWN RAISED STEP, in both themes, so the disc is drawn by its
+      // ring. The console chart's white 0.08 is the card's own value on a light
+      // theme: a disc drawn by its ground would vanish on half the deployments.
       expect(channels(getComputedStyle(disc).backgroundColor), theme).toEqual(
         channels(themes[theme].color.surface.elevated),
       );
@@ -226,17 +306,22 @@ describe('a lead', () => {
   });
 
   /*
-   * THE PILL IS A BOUNDARY AROUND A VALUE, at the step the console chart draws
-   * it: every other line inside a node there is the separator's, and this one
-   * is heavier. At the separator's own alpha the pill was a rectangle a reader
-   * had to look for, on the one fact a unit's node states.
+   * THE PILL IS A RAISED GROUND AROUND A VALUE, on the step a chip with no
+   * boundary of its own takes, which the palette suite holds off the card on
+   * both themes: found by its ground, on the one fact a unit's node states.
    */
-  test('the pill is bounded at the hover step and its words carry weight', () => {
+  test('the pill is raised rather than framed, and its words carry weight', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      drawn(theme);
+      cleanup();
+      const { container } = render(<OrgNodeLead>Lead: Ada</OrgNodeLead>);
+      const pill = getComputedStyle(container.querySelector('.crewlet-org-node-lead__pill')!);
+      expect(channels(pill.backgroundColor), theme).toEqual(channels(themes[theme].color.surface.elevated));
+      expect(pill.fontWeight, theme).toBe(font.weight.medium);
+    }
     drawn();
+    cleanup();
     const { container } = render(<OrgNodeLead>Lead: Ada</OrgNodeLead>);
-    const pill = getComputedStyle(container.querySelector('.crewlet-org-node-lead__pill')!);
-    expect(channels(pill.borderTopColor)).toEqual(channels(themes.dark.color.border.hover));
-    expect(pill.fontWeight).toBe(font.weight.medium);
     // Half a rank, which is the strip the console chart draws: 14 units of its
     // own 18, taken up by the ratio between its 10px name and this scale's.
     expect(px(container.querySelector('.crewlet-org-node-lead__pill')!, 'min-height')).toBe(20);

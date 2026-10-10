@@ -30,6 +30,7 @@ import {
   PencilGlyph,
   PlusGlyph,
   TrashGlyph,
+  UserGlyph,
   UserPlusGlyph,
 } from '@crewlethq/icons/glyphs';
 
@@ -315,14 +316,17 @@ const LEADS: Record<string, string> = {
 function NodeCard({ id, card }: { id: string; card: TreeCardContext }) {
   const entity = ENTITIES[id]!;
   const open = card.expanded(id);
-  /* A container is a glyph; a seat is its badge, whose outline is its kind: a
-     squircle for an agent and a circle for a person. */
+  /* A container is a glyph; a seat is the console chart's own mark: the
+     Crewlet figure at the larger step for an agent, and a person's glyph in a
+     dashed ring for a person. */
   const mark =
     entity.kind === 'company'
       ? { icon: <BuildingComplexGlyph /> }
       : entity.kind === 'unit'
         ? { icon: <NetworkGlyph /> }
-        : { avatar: { name: entity.name, kind: entity.human === true ? ('human' as const) : ('agent' as const) } };
+        : entity.human === true
+          ? { icon: <UserGlyph size="sm" />, iconRing: true }
+          : { icon: <CrewletFigure />, iconSize: 'lg' as const };
   return (
     <>
       <div {...card.item(id)}>
@@ -428,8 +432,10 @@ function nodeCards(model: TreeModel, expanded: ReadonlySet<string>): TreeCardInp
  * Everything the `card` appearance guarantees is still here: the tree pattern
  * and its keys, the roving tab stop, the focus ring drawn inside the clipping
  * viewport, and the reveal of every pointer-only control by focus as well as
- * by hover. A person's seat is the same solid card as an agent's: its badge's
- * circle is what says a person holds it.
+ * by hover. A person's seat is the same solid card as an agent's, marked by a
+ * person's glyph in a dashed ring. The field is dotted, as the console chart's
+ * is, and every card is one line round one box: selected, its boundary takes
+ * the accent; focused, the ring is drawn over that boundary.
  */
 export const OrgChart: Story = {
   render: function OrgChartStory() {
@@ -439,6 +445,7 @@ export const OrgChart: Story = {
         <TreeCanvas
           label="Structure chart"
           appearance="node"
+          ground="dotted"
           connector="curve"
           nodes={NODES}
           cards={nodeCards}

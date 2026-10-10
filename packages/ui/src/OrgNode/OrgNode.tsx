@@ -88,8 +88,9 @@ export function OrgNodeDisclosure({ children, className, ...rest }: OrgNodeDiscl
 
 export interface OrgNodeLeadProps {
   /**
-   * Nothing is set, so the pill is drawn as the outline of one: a unit with no
-   * lead is a fact about the organization and a blank strip says nothing.
+   * Nothing is set, so the pill is drawn as an empty slot: no ground, a dashed
+   * edge and the word in the quieter ink. A unit with no lead is a fact about
+   * the organization and a blank strip says nothing.
    */
   empty?: boolean | undefined;
   /**
@@ -113,8 +114,10 @@ export interface OrgNodeLeadProps {
  * IT STAYS DRAWN, where the controls that edit the node do not: who leads a
  * unit is a FACT ABOUT THE ORGANIZATION rather than a tool for changing it,
  * and a chart that hid it until the pointer arrived would be a chart you could
- * not read the leads off. Separated from the name above by a hairline, so the
- * node reads as a thing with a lead rather than as two lines of text.
+ * not read the leads off. A pill on a ground of its own rather than a line of
+ * text, so the node reads as a thing with a lead rather than as two lines of
+ * text; never framed while a lead is set, because the node it sits in already
+ * is, and dashed while none is, because an empty place is what it then says.
  */
 export function OrgNodeLead({ empty = false, clear, children, className }: OrgNodeLeadProps) {
   return (
@@ -126,7 +129,7 @@ export function OrgNodeLead({ empty = false, clear, children, className }: OrgNo
         {clear === undefined ? null : (
           <span className="crewlet-org-node-lead__clear">
             {/* THE DISC IS DRAWN AND THE BUTTON IS HIT. The console chart draws
-                a small disc with a ground and a boundary of its own and a glyph
+                a small disc with a ring of its own and a glyph
                 barely a third of it; at the pointer target's size that disc
                 would be a button as tall as the strip it sits in. Drawn as an
                 element rather than as the control's own pseudo, because what a

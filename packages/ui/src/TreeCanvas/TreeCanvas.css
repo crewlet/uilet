@@ -103,32 +103,21 @@
 }
 
 /*
- * The halo: a hairline ring OUTSIDE the card's own boundary, at the lightest
- * of the hue's three alphas. It is what says a card is toned at all from the
- * far end of a chart, where the fill is a few pixels of tint; drawn as its own
- * ring rather than a second border so it never competes with the boundary that
- * says where the card ends. Pointer-transparent, because it is drawn over the
- * gap the next card's controls reach into.
- */
-.crewlet-tree-canvas__card[data-tone]::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border: 1px solid var(--crewlet-tree-canvas-card-halo);
-  border-radius: var(--radius-lg);
-  pointer-events: none;
-}
-
-/*
- * The six hues, each as the four steps a toned card draws: the fill it sits
- * on, the boundary around it, the halo outside that, and the ink its name is
- * written in. The ink is published as a variable rather than applied here
- * because WHICH text is the name is the caller's to say.
+ * ONE BOUNDARY, AND NO HALO. A toned card used to carry a second hairline ring
+ * 3px outside its boundary, at the lightest of the hue's alphas, so a toned
+ * card was framed twice: two parallel lines round one node read as a double
+ * border, which is the one thing no box in this package draws. The fill and
+ * the boundary in the hue already say the card is toned from across a chart.
+ *
+ * The six hues, each as the steps a toned card draws: the fill it sits on, the
+ * boundary around it, the ink its name is written in and the accent its mark
+ * takes. The ink and the accent are published as variables rather than applied
+ * here because WHICH text is the name and which drawing the mark is are the
+ * caller's to say.
  */
 .crewlet-tree-canvas__card[data-tone='purple'] {
   --crewlet-tree-canvas-card-fill: var(--color-node-purple-fill);
   --crewlet-tree-canvas-card-line: var(--color-node-purple-line);
-  --crewlet-tree-canvas-card-halo: var(--color-node-purple-halo);
   --crewlet-tree-canvas-card-ink: var(--color-node-purple-ink);
   --crewlet-tree-canvas-card-accent: var(--color-node-purple);
 }
@@ -136,7 +125,6 @@
 .crewlet-tree-canvas__card[data-tone='cyan'] {
   --crewlet-tree-canvas-card-fill: var(--color-node-cyan-fill);
   --crewlet-tree-canvas-card-line: var(--color-node-cyan-line);
-  --crewlet-tree-canvas-card-halo: var(--color-node-cyan-halo);
   --crewlet-tree-canvas-card-ink: var(--color-node-cyan-ink);
   --crewlet-tree-canvas-card-accent: var(--color-node-cyan);
 }
@@ -144,7 +132,6 @@
 .crewlet-tree-canvas__card[data-tone='green'] {
   --crewlet-tree-canvas-card-fill: var(--color-node-green-fill);
   --crewlet-tree-canvas-card-line: var(--color-node-green-line);
-  --crewlet-tree-canvas-card-halo: var(--color-node-green-halo);
   --crewlet-tree-canvas-card-ink: var(--color-node-green-ink);
   --crewlet-tree-canvas-card-accent: var(--color-node-green);
 }
@@ -152,7 +139,6 @@
 .crewlet-tree-canvas__card[data-tone='amber'] {
   --crewlet-tree-canvas-card-fill: var(--color-node-amber-fill);
   --crewlet-tree-canvas-card-line: var(--color-node-amber-line);
-  --crewlet-tree-canvas-card-halo: var(--color-node-amber-halo);
   --crewlet-tree-canvas-card-ink: var(--color-node-amber-ink);
   --crewlet-tree-canvas-card-accent: var(--color-node-amber);
 }
@@ -160,7 +146,6 @@
 .crewlet-tree-canvas__card[data-tone='rose'] {
   --crewlet-tree-canvas-card-fill: var(--color-node-rose-fill);
   --crewlet-tree-canvas-card-line: var(--color-node-rose-line);
-  --crewlet-tree-canvas-card-halo: var(--color-node-rose-halo);
   --crewlet-tree-canvas-card-ink: var(--color-node-rose-ink);
   --crewlet-tree-canvas-card-accent: var(--color-node-rose);
 }
@@ -168,7 +153,6 @@
 .crewlet-tree-canvas__card[data-tone='blue'] {
   --crewlet-tree-canvas-card-fill: var(--color-node-blue-fill);
   --crewlet-tree-canvas-card-line: var(--color-node-blue-line);
-  --crewlet-tree-canvas-card-halo: var(--color-node-blue-halo);
   --crewlet-tree-canvas-card-ink: var(--color-node-blue-ink);
   --crewlet-tree-canvas-card-accent: var(--color-node-blue);
 }
@@ -204,16 +188,41 @@
  * canvas clips, so an outset ring is cut away on the cards nearest the frame.
  * This component hands out the tab stop, so the indicator is its to draw; left
  * to the caller it was drawn on some charts and on others not at all.
+ *
+ * A CARD'S OWN NODE RINGS THE WHOLE CARD. Where the treeitem is the card's
+ * direct child, the card's edge IS the node's edge, and a ring drawn on the
+ * treeitem did two things wrong: it stopped short of anything the card holds
+ * under the node (a unit's lead), and it stood beside the card's boundary as a
+ * second line. So the ring is drawn on the card, over its boundary, and the
+ * treeitem draws none in any state, the way a field's control leaves its ring
+ * to the field. A row deeper inside a card (`*` between the two, because a row
+ * is always inside something the caller drew) has no boundary of its own, and
+ * keeps its ring.
  */
-.crewlet-tree-canvas__card [role='treeitem']:focus-visible {
+.crewlet-tree-canvas__card * [role='treeitem']:focus-visible,
+.crewlet-tree-canvas__card:has(> [role='treeitem']:focus-visible) {
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-tree-canvas__card > [role='treeitem'] {
+  outline: none;
 }
 
 /* The selection is where the reader is, so it takes the accent. Inset, for the
    same reason the ring is. */
 .crewlet-tree-canvas__card [role='treeitem'][aria-selected='true'] {
   box-shadow: inset 0 0 0 1px var(--color-brand-accent);
+}
+
+/* On a card's own node the selection IS the card's boundary, in the accent: an
+   inset ring beside the boundary drew two lines where one says it. */
+.crewlet-tree-canvas__card:has(> [role='treeitem'][aria-selected='true']) {
+  border-color: var(--color-brand-accent);
+}
+
+.crewlet-tree-canvas__card > [role='treeitem'][aria-selected='true'] {
+  box-shadow: none;
 }
 
 /*
@@ -360,8 +369,8 @@
  * The space around the whole chart, as a token, for the reason the gaps are
  * one. None by default: a chart of panels is read inside its own frame, and
  * the space around it is the page's. The `node` appearance takes the console
- * chart's own margin below, which is what keeps the outermost node's halo and
- * its focus ring off the canvas's clip.
+ * chart's own margin below, which is what keeps the control hanging under the
+ * outermost node off the canvas's clip.
  */
 .crewlet-tree-canvas__margin {
   width: var(--spacing-0);
@@ -635,8 +644,8 @@
  *   drawn distance is the same number either way, and the room simply moved
  *   from the card's box into the gap with the control that needs it.
  * - AROUND: `--spacing-8`, 40px against 36, and deliberately the step above
- *   rather than below: the canvas CLIPS, and the outermost node's halo and
- *   focus ring have to clear the frame.
+ *   rather than below: the canvas CLIPS, and what hangs under the outermost
+ *   node has to clear the frame.
  */
 .crewlet-tree-canvas--node .crewlet-tree-canvas__gap {
   width: var(--spacing-9);
@@ -981,6 +990,27 @@
 }
 
 /*
+ * AND THEY ANSWER THE POINTER WITH THEIR INK, NOT A GROUND, as the console
+ * chart's do: the edit mark turns to the accent and the trash to the critical
+ * hue, and nothing is painted under either. A cell is a whole share of the
+ * node's corner, so a ground painted over it was a square standing past the
+ * card's rounded corner, the one place on a node with no room for a square.
+ */
+.crewlet-tree-canvas--node
+  .crewlet-tree-canvas__actions
+  .crewlet-icon-btn:hover:not(:disabled):not([aria-disabled='true']) {
+  background: none;
+  border-color: transparent;
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-tree-canvas--node
+  .crewlet-tree-canvas__actions
+  .crewlet-icon-btn--ghost-danger:hover:not(:disabled):not([aria-disabled='true']) {
+  color: var(--color-feedback-danger-ink);
+}
+
+/*
  * A CONTROL ON AN EDGE IS A DISC: a ground of its own, so the line it sits on,
  * or the card it straddles, stops at its edge rather than running through it.
  *
@@ -1081,38 +1111,29 @@
   background-image: linear-gradient(var(--color-surface-subtle), var(--color-surface-subtle));
   border: 1px dashed var(--color-brand-accent-soft-strong);
   box-shadow: var(--shadow-md);
-  animation: crewlet-tree-canvas-ghost-card var(--motion-duration-slow) var(--motion-easing-emphasized)
-    var(--motion-duration-base) both;
-}
-
-/*
- * THE RING THAT BREATHES, outside the boundary, exactly where a toned card's
- * halo is: it is what says the card is waiting for the reader from the far
- * end of a chart, where a dashed hairline is a few pixels. It is decoration
- * over the gap the next card's controls reach into, so it takes no pointer.
- */
-.crewlet-tree-canvas__card--composing::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border: 1px solid var(--color-brand-accent-soft-strong);
-  border-radius: var(--radius-lg);
-  pointer-events: none;
+  /*
+   * THE BOUNDARY BREATHES, which is what says the card is waiting for the
+   * reader from the far end of a chart, where a dashed hairline is a few
+   * pixels. It used to be a second ring 3px outside the boundary that
+   * breathed instead, two lines round one card where every box in this
+   * package draws one, so the dashed boundary itself moves between the soft
+   * accent and the full one.
+   */
   animation:
-    crewlet-tree-canvas-ghost-glow var(--motion-duration-slow) var(--motion-easing-default)
-      var(--motion-duration-moderate) both,
+    crewlet-tree-canvas-ghost-card var(--motion-duration-slow) var(--motion-easing-emphasized)
+      var(--motion-duration-base) both,
     /* A BREATH RATHER THAN A TRANSITION, so it is a multiple of the scale's
        longest step (1.8s) rather than a number off it: the scale tops out at
        one UI transition, and a pulse held there would strobe. The console
-       chart's own is 2s. It starts where the fade in ends. */
+       chart's own is 2s. It starts where the card's arrival ends. */
       crewlet-tree-canvas-ghost-pulse calc(var(--motion-duration-slow) * 6)
-      var(--motion-easing-in-out)
-      calc(var(--motion-duration-moderate) + var(--motion-duration-slow)) infinite;
+      var(--motion-easing-in-out) calc(var(--motion-duration-base) + var(--motion-duration-slow))
+      infinite;
 }
 
 /*
  * THE FORM ARRIVES LAST, and from slightly above and behind: the wire, then
- * the card, then the glow, then what is inside it, which is the order a reader
+ * the card, then what is inside it, which is the order a reader
  * follows from the node they pressed to the thing they have to fill in. The
  * caller's own element, whatever it drew, because the ghost's contents are
  * entirely the caller's.
@@ -1156,24 +1177,14 @@
   }
 }
 
-@keyframes crewlet-tree-canvas-ghost-glow {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
 @keyframes crewlet-tree-canvas-ghost-pulse {
   0%,
   100% {
-    opacity: 0.5;
+    border-color: var(--color-brand-accent-soft-strong);
   }
 
   50% {
-    opacity: 1;
+    border-color: var(--color-brand-accent);
   }
 }
 
@@ -1193,8 +1204,8 @@
  * A READER WHO ASKED FOR LESS gets the ghost DRAWN, in place, at once. Nothing
  * about the add is behind the motion: the chart still makes room, the branch
  * is still dashed, the view still moves onto it and focus still lands in the
- * form. Only the arrival, the breath and the rise are dropped, and the ring
- * stays at the bright end of the pulse rather than wherever it was stopped.
+ * form. Only the arrival, the breath and the rise are dropped, and the
+ * boundary rests at the soft step it breathes from.
  */
 @media (prefers-reduced-motion: reduce) {
   /* NOT `transform` on the card itself: its transform is where the layout
@@ -1212,11 +1223,6 @@
   .crewlet-tree-canvas__card--composing > * {
     opacity: 1;
     transform: none;
-    animation: none;
-  }
-
-  .crewlet-tree-canvas__card--composing::after {
-    opacity: 1;
     animation: none;
   }
 }

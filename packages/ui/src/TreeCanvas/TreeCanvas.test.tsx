@@ -940,10 +940,11 @@ describe('what hangs under a card', () => {
  */
 
 /*
- * A TONE IS ONE ANSWER REACHING FIVE THINGS: the card's fill, its edge, its
- * halo, the ink of its name and the branch that arrives at it. Each of those
- * used to be a decision a consumer made for itself, which is how two charts in
- * one product came to tint the card and leave the branch neutral.
+ * A TONE IS ONE ANSWER REACHING FIVE THINGS: the card's fill, its edge, the
+ * ink of its name, the accent of its mark and the branch that arrives at it.
+ * Each of those used to be a decision a consumer made for itself, which is how
+ * two charts in one product came to tint the card and leave the branch
+ * neutral.
  */
 describe('a toned node', () => {
   const tone = (id: string) => (kindOf(id) === 'seat' ? ('purple' as const) : undefined);
@@ -984,7 +985,7 @@ describe('a toned node', () => {
       // here for a component declaring a token.
       const step = (name: string) =>
         new RegExp(`--crewlet-tree-canvas-card-${name}:\\s*var\\(--[\\w-]*${hue}[\\w-]*\\)`);
-      for (const name of ['fill', 'line', 'halo', 'ink', 'accent']) {
+      for (const name of ['fill', 'line', 'ink', 'accent']) {
         expect(card, `${hue} ${name}`).toMatch(step(name));
       }
       expect(rule(`.crewlet-tree-canvas__links path[data-tone='${hue}']`)).toMatch(
@@ -1391,6 +1392,51 @@ describe('the stylesheet', () => {
   });
 
   /*
+   * ONE LINE ROUND ONE CARD. A toned card carried a halo ring 3px outside its
+   * boundary and the ghost a breathing ring in the same place, and a selected
+   * node drew an accent ring inside the card's boundary: each was two parallel
+   * lines round one box. None of them may come back.
+   */
+  test('no card draws a ring beside its own boundary', () => {
+    expect(SHEET).not.toContain('.crewlet-tree-canvas__card[data-tone]::after');
+    expect(SHEET).not.toContain('.crewlet-tree-canvas__card--composing::after');
+    expect(SHEET).not.toMatch(/--crewlet-tree-canvas-card-halo/);
+  });
+
+  test("a selected card's own node is the card's boundary in the accent", () => {
+    expect(rule(".crewlet-tree-canvas__card:has(> [role='treeitem'][aria-selected='true'])")).toContain(
+      'border-color: var(--color-brand-accent)',
+    );
+    expect(rule(".crewlet-tree-canvas__card > [role='treeitem'][aria-selected='true']")).toContain(
+      'box-shadow: none',
+    );
+  });
+
+  /*
+   * THE RING IS THE CARD'S, OVER ITS BOUNDARY. On the treeitem it stopped
+   * short of whatever the card holds under the node (a unit's lead), and stood
+   * a line inside the card's own edge.
+   */
+  test("a focused card's own node rings the whole card, over its boundary", () => {
+    const ring = rule(".crewlet-tree-canvas__card:has(> [role='treeitem']:focus-visible)");
+    expect(ring).toContain('outline: 2px solid var(--color-focus)');
+    expect(ring).toContain('outline-offset: var(--size-focus-ring-inset-offset)');
+    // The card's own node never rings itself, in any state; a row inside a
+    // card (something between the two) still does.
+    expect(rule(".crewlet-tree-canvas__card > [role='treeitem']")).toContain('outline: none');
+    expect(SHEET).toContain(".crewlet-tree-canvas__card * [role='treeitem']:focus-visible,");
+  });
+
+  /* The ghost waits by its own boundary, which breathes, rather than by a ring. */
+  test("the ghost's boundary is what breathes", () => {
+    const pulse = SHEET.slice(SHEET.indexOf('@keyframes crewlet-tree-canvas-ghost-pulse'));
+    expect(pulse.slice(0, pulse.indexOf('\n}\n'))).toContain('border-color');
+    expect(rule('.crewlet-tree-canvas .crewlet-tree-canvas__card--composing')).toContain(
+      'crewlet-tree-canvas-ghost-pulse',
+    );
+  });
+
+  /*
    * EVERY CARD IS PLACED BY ITS TRANSFORM AND BY NOTHING ELSE. This rule said
    * `relative` for a while, one rule after the block above had said `absolute`
    * for the same element at the same specificity; the later word won, every
@@ -1598,8 +1644,8 @@ describe('where the ranks sit', () => {
 
   /*
    * THE MARGIN IS A LAYOUT VALUE. The canvas clips, so space drawn as padding
-   * on the scroller is space the outermost card's halo and focus ring are cut
-   * off in. It arrives through a probe, like the gaps, so density scales it.
+   * on the scroller is space the control under the outermost card is cut off
+   * in. It arrives through a probe, like the gaps, so density scales it.
    */
   test('the space around the chart is measured from its own probe', () => {
     MARGIN = 36;
@@ -2344,11 +2390,10 @@ describe('the ghost in the stylesheet', () => {
       '.crewlet-tree-canvas .crewlet-tree-canvas__card--composing,',
       ".crewlet-tree-canvas__links path[data-composing='true'] {",
       '.crewlet-tree-canvas__card--composing > * {',
-      '.crewlet-tree-canvas__card--composing::after {',
     ]) {
       expect(guarded).toContain(selector);
     }
-    expect(guarded.match(/animation: none/g)).toHaveLength(3);
+    expect(guarded.match(/animation: none/g)).toHaveLength(2);
     expect(guarded).toContain('opacity: 1');
 
     stillness(true);
@@ -2373,6 +2418,7 @@ describe('the ghost in the stylesheet', () => {
     expect(form.length).toBeGreaterThan(0);
     let uninstall = installMotion('no-preference', 'TreeCanvas/TreeCanvas.css');
     expect(getComputedStyle(card).animation).toContain('crewlet-tree-canvas-ghost-card');
+    expect(getComputedStyle(card).animation).toContain('crewlet-tree-canvas-ghost-pulse');
     for (const part of form) expect(getComputedStyle(part).animation).toContain('crewlet-tree-canvas-ghost-form');
     uninstall();
     uninstall = installMotion('reduce', 'TreeCanvas/TreeCanvas.css');

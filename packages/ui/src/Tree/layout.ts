@@ -100,9 +100,9 @@ export interface LayoutGaps {
    *
    * IT IS PART OF THE LAYOUT rather than padding on whatever draws it, because
    * the canvas scrolls and CLIPS: a margin drawn as padding is outside the
-   * scrollable content, so the outermost card's halo, its focus ring and the
-   * control hanging under it are cut off at the frame at exactly the moment a
-   * reader has panned to that card. Unset, none.
+   * scrollable content, so the control hanging under the outermost card is cut
+   * off at the frame at exactly the moment a reader has panned to that card.
+   * Unset, none.
    */
   margin?: number | undefined;
 }
