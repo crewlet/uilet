@@ -9,6 +9,7 @@ import {
   StackedBar,
   StackedColumns,
   TimeSeries,
+  DATA_COLOR_OTHER,
   dataColor,
 } from '@crewlethq/ui';
 
@@ -121,6 +122,61 @@ export const RankedBeside: Story = {
       </div>
     );
   },
+};
+
+/**
+ * A ROW SPLIT INTO ITS PARTS: `parts` on a datum. The bar keeps the row's
+ * length, so the teams still rank against each other, and is divided by seat
+ * in proportion, 2px apart, with the row keyed under its own bar. A part's hue
+ * is its place in the row's list, so each row is read with its own key; past
+ * the four data hues the tail folds into one part in the residual hue, as the
+ * fifth series of every chart here does.
+ */
+export const RankedSplit: Story = {
+  name: 'BarList / Split into parts',
+  render: () => (
+    <div style={{ padding: 20, display: 'flex', gap: 'var(--spacing-4)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <Panel title="Tokens by team" sub="Last 7 days · 12.6M total">
+        <BarList
+          layout="beside"
+          data={[
+            {
+              id: 'eng',
+              label: 'Engineering',
+              sub: '6 agents',
+              value: 7.9,
+              display: '7.9M',
+              parts: [
+                { id: 'swe', label: 'SWE', value: 3.1, display: '3.1M' },
+                { id: 'fe', label: 'FE', value: 2.2, display: '2.2M' },
+                { id: 'cto', label: 'CTO', value: 1.4, display: '1.4M' },
+                { id: 'more', label: '3 more', value: 1.2, display: '1.2M', color: DATA_COLOR_OTHER },
+              ],
+            },
+            {
+              id: 'lead',
+              label: 'Leadership',
+              sub: '2 agents',
+              value: 2.4,
+              display: '2.4M',
+              parts: [
+                { id: 'ceo', label: 'CEO', value: 1.6, display: '1.6M' },
+                { id: 'coo', label: 'COO', value: 0.8, display: '0.8M' },
+              ],
+            },
+            {
+              id: 'product',
+              label: 'Product',
+              sub: '1 agent',
+              value: 1.8,
+              display: '1.8M',
+              parts: [{ id: 'pm', label: 'PM', value: 1.8, display: '1.8M' }],
+            },
+          ]}
+        />
+      </Panel>
+    </div>
+  ),
 };
 
 /**
