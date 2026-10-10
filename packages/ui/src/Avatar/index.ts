@@ -2,6 +2,7 @@ import './Avatar.css';
 import './AvatarStack.css';
 
 export {
+  AVATAR_CHARACTER_FULL_DETAIL,
   AVATAR_CORNER_RATIO,
   AVATAR_SIZES,
   Avatar,

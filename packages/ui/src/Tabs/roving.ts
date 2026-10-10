@@ -39,6 +39,14 @@ export interface RovingOptions {
    * a refinement of it.
    */
   followFocus?: boolean | undefined;
+  /**
+   * How many options a row of a GRID holds, for options laid out in rows and
+   * columns (a picker of tiles): Up and Down then move a whole row, to the
+   * option above or below, and stop at the grid's edge rather than wrap into
+   * another column. Left and Right still walk the options in reading order.
+   * Unset, the options are one line.
+   */
+  columns?: number | undefined;
 }
 
 /**
@@ -66,7 +74,7 @@ export interface RovingOptions {
 export function useRoving(
   count: number,
   select: ((index: number) => void) | null,
-  { followFocus = false }: RovingOptions = {},
+  { followFocus = false, columns }: RovingOptions = {},
 ) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   /*
@@ -87,8 +95,19 @@ export function useRoving(
     return null;
   }
 
+  /** The option a whole row above or below, or null past the grid's edge or onto one that cannot take focus. */
+  function rowStep(at: number, by: 1 | -1, across: number): number | null {
+    const target = at + by * across;
+    if (target < 0 || target >= count) return null;
+    const el = buttons.current[target];
+    return el && !el.disabled ? target : null;
+  }
+
   function moveTo(key: string, at: number, vertical: boolean): number | null {
     if (count === 0) return null;
+    if (columns !== undefined && (key === 'ArrowDown' || key === 'ArrowUp')) {
+      return rowStep(at, key === 'ArrowDown' ? 1 : -1, columns);
+    }
     switch (key) {
       case 'ArrowRight':
         return step(at + 1, 1);

@@ -1,21 +1,28 @@
 /*
  * The identity badge.
  *
- * IT IS NEUTRAL, and that is the whole rule. The system this replaces coloured
- * a seat by `PALETTE[hash(name) % 8]`, over the same eight families it also
- * spent on phases and event categories, so one amber meant "the execute
- * phase", "the decision category" and "the Analyst" at once. A hash of a name
- * carries no information: rename the seat and its colour changes, which is the
- * proof it never meant anything. Identity is the OUTLINE (a squircle for an
- * agent, a circle for a person), the monogram and the name.
+ * IT IS NEUTRAL UNLESS SOMEBODY CHOSE OTHERWISE, and a hash never chooses. The
+ * system this replaces coloured a seat by `PALETTE[hash(name) % 8]`, over the
+ * same eight families it also spent on phases and event categories, so one
+ * amber meant "the execute phase", "the decision category" and "the Analyst"
+ * at once. A hash of a name carries no information: rename the seat and its
+ * colour changes, which is the proof it never meant anything. Identity is the
+ * OUTLINE (a squircle for an agent, a circle for a person), the monogram and
+ * the name, and for an agent an operator gave one, its character and its hue.
  *
- * THE ONE HUE A BADGE CARRIES IS A STATE, as a ring round it, and the ring is
- * the component's only coloured line.
+ * THE ONE HUE A BADGE CARRIES AS A LINE IS A STATE, as a ring round it, and the
+ * ring is the component's only coloured line outside its own plate.
  *
  * The seeded tints stay for the one case that earns them, a roster somebody
  * scans, and their grounds are TOKENS: measured under white initials and held
  * at 4.5:1 by the palette suite. Spelled as literals, five of the ten sat
  * under that floor while the suite measured ten values nothing painted with.
+ *
+ * AN AGENT'S OWN HUE IS NOT A HASH. An agent an operator gave a Crewlet
+ * character and a hue is drawn as that character, in that hue, on a plate of
+ * it: the hue was chosen for the seat and survives a rename, which a hash of
+ * the name never did. It is one of the six node hues (`NodeHue`), each a
+ * measured set of steps rather than a colour with alphas applied here.
  */
 
 .crewlet-avatar {
@@ -146,6 +153,63 @@
 .crewlet-avatar--tint-7 { background: var(--color-avatar-tint-7); }
 .crewlet-avatar--tint-8 { background: var(--color-avatar-tint-8); }
 .crewlet-avatar--tint-9 { background: var(--color-avatar-tint-9); }
+
+/* ── an agent's character ─────────────────────────────────────────────── */
+
+/*
+ * THE CHARACTER FILLS MOST OF THE PLATE, centred by its own frame (it frames
+ * every silhouette square on what it draws), with the plate's corner clear of
+ * it: a wide character such as the original Crewlet reaches the plate's
+ * sides, a tall one its top and its foot, and none touches the curve.
+ */
+.crewlet-avatar--character {
+  border: 1px solid transparent;
+}
+
+.crewlet-avatar__character {
+  display: block;
+  flex: none;
+  width: 74%;
+  height: 74%;
+}
+
+/* The plate an agent's hue is drawn on: the hue's fill, its line round the
+   badge and the hue itself as the character's ink. */
+.crewlet-avatar--hue-purple {
+  background: var(--color-node-purple-fill);
+  border-color: var(--color-node-purple-line);
+  color: var(--color-node-purple);
+}
+
+.crewlet-avatar--hue-cyan {
+  background: var(--color-node-cyan-fill);
+  border-color: var(--color-node-cyan-line);
+  color: var(--color-node-cyan);
+}
+
+.crewlet-avatar--hue-green {
+  background: var(--color-node-green-fill);
+  border-color: var(--color-node-green-line);
+  color: var(--color-node-green);
+}
+
+.crewlet-avatar--hue-amber {
+  background: var(--color-node-amber-fill);
+  border-color: var(--color-node-amber-line);
+  color: var(--color-node-amber);
+}
+
+.crewlet-avatar--hue-rose {
+  background: var(--color-node-rose-fill);
+  border-color: var(--color-node-rose-line);
+  color: var(--color-node-rose);
+}
+
+.crewlet-avatar--hue-blue {
+  background: var(--color-node-blue-fill);
+  border-color: var(--color-node-blue-line);
+  color: var(--color-node-blue);
+}
 
 /* ── the state ring ────────────────────────────────────────────────────── */
 

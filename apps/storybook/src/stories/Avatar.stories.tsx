@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Avatar, AvatarStack, Card } from '@crewlethq/ui';
+import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
+import { Avatar, AvatarStack, Card, NODE_HUES } from '@crewlethq/ui';
 import samplePortrait from '../fixtures/sample-portrait.svg';
 
 const meta: Meta<typeof Avatar> = {
@@ -177,6 +178,31 @@ export const IdentityTints: Story = {
  * image: "2 agents and 1 person: Jane Founder, Chief Technology, Software
  * Engineer".
  */
+/**
+ * An agent drawn as the Crewlet character an operator chose for it, in its
+ * hue: every character, through the six hues in turn. A badge of 56px and up
+ * draws the character's keyline and visor gap; a smaller one draws it compact.
+ */
+export const Characters: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 24 }}>
+      {([96, 'lg', 'sm'] as const).map((size) => (
+        <div key={size} style={row}>
+          {CREWLET_CHARACTERS.map((character, i) => (
+            <Avatar
+              key={character}
+              name={character}
+              character={character}
+              hue={NODE_HUES[i % NODE_HUES.length]}
+              size={size}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  ),
+};
+
 export const Stack: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 16, padding: 16, background: 'var(--color-surface-background)' }}>

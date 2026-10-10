@@ -1,0 +1,42 @@
+/*
+ * The grid of characters.
+ *
+ * SIX COLUMNS, ALWAYS, and the tiles share the width: the arrow keys move a
+ * whole row on Up and Down, so a row has to hold the same options at every
+ * width (`CHARACTER_PICKER_COLUMNS`). A tile is a target the size of the
+ * badge it holds and the gap round it, never smaller than the kit's control
+ * floor.
+ */
+
+.crewlet-character-picker {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--spacing-1);
+  justify-items: center;
+}
+
+.crewlet-character-picker__option {
+  display: grid;
+  place-items: center;
+  min-width: var(--size-control-lg);
+  min-height: var(--size-control-lg);
+  padding: var(--spacing-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+}
+
+.crewlet-character-picker__option:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-character-picker__option:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-character-picker__option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

@@ -125,6 +125,7 @@ import {
 } from '../Tree/index.js';
 import { useEntrance, useReflow, useStillness } from './motion.js';
 import { cx } from '../utils/cx.js';
+import type { NodeHue } from '../utils/nodeHue.js';
 import type { CanvasPoint } from '../Canvas/geometry.js';
 
 /** A card of the layout: its id and the cards nested under it. */
@@ -134,20 +135,11 @@ export interface TreeCardInput {
 }
 
 /**
- * The six hues a card can be tinted with, and the connector arriving at it.
- *
- * DECORATIVE AND PER ENTITY, never a series: two cards sharing a hue say
- * nothing, so the palette is not measured for separability and the chart owes
- * no legend (`--color-node-*` in the tokens package says the same). It is what
- * an operator picks for one agent so they can find it again, and what a chart
- * with no such choice derives from a stable identity.
- *
- * A NAMED SET RATHER THAN A COLOUR. A caller that could hand in any colour
- * would hand in a literal, and the fill, the border and the ink of a tinted
- * card are measured steps of one hue rather than one value with alphas applied
- * by whoever drew it last.
+ * The hue a card is tinted with, and the connector arriving at it: one of the
+ * six an operator chooses an entity's hue from ([NodeHue]), so an agent's card
+ * wears the same hue as its avatar and its row.
  */
-export type TreeCardTone = 'purple' | 'cyan' | 'green' | 'amber' | 'rose' | 'blue';
+export type TreeCardTone = NodeHue;
 
 /**
  * The props that make an element the pointer-only strip of controls beside a

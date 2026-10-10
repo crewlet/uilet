@@ -2,5 +2,7 @@ export { cx } from './cx.js';
 export { useClipboard, writeClipboard } from './useClipboard.js';
 export type { Clipboard, ClipboardOptions, ClipboardState } from './useClipboard.js';
 export type { Tone } from './tone.js';
+export { NODE_HUES, NODE_HUE_NAMES, isNodeHue } from './nodeHue.js';
+export type { NodeHue } from './nodeHue.js';
 export { HeadingLevelProvider, headingTag, nextHeadingLevel, useHeadingLevel } from './headingLevel.js';
 export type { HeadingLevel, HeadingLevelProviderProps } from './headingLevel.js';

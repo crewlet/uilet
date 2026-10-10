@@ -137,6 +137,9 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'Tabs/Tabs.css | .crewlet-tabs__tab:focus-visible',
       // A list that takes focus when it expands, with no edge of its own.
       'TagGroup/TagGroup.css | .crewlet-tag-group:focus-visible',
+      // A character tile, which draws no edge: the badge inside it carries the
+      // chosen option's ring, so the focus ring stands off the tile round both.
+      'CharacterPicker/CharacterPicker.css | .crewlet-character-picker__option:focus-visible',
     ].sort(),
   );
 });

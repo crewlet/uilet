@@ -32,6 +32,7 @@ export default defineConfig({
     alias: [
       { find: '@crewlethq/icons/glyphs/registry', replacement: packages('icons/src/glyphs-registry.ts') },
       { find: '@crewlethq/icons/glyphs', replacement: packages('icons/src/glyphs.ts') },
+      { find: '@crewlethq/icons/characters', replacement: packages('icons/src/characters.ts') },
       { find: '@crewlethq/icons', replacement: packages('icons/src/index.ts') },
       { find: '@crewlethq/ui', replacement: packages('ui/src/index.ts') },
     ],
