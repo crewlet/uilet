@@ -2,6 +2,7 @@ export { Icon } from './Icon.js';
 export type { IconProps, IconSize } from './Icon.js';
 export { default as CrewletFigure } from './CrewletFigure.js';
 export type { CrewletFigureProps, CrewletMotion } from './CrewletFigure.js';
+export * from './characters.js';
 export { VendorMark, VENDORS } from './VendorMark.js';
 export type { Vendor, VendorMarkProps } from './VendorMark.js';
 // Every illustration under its own name, plus ICON_NAMES and IconName.

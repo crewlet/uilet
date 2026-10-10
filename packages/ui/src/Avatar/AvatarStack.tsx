@@ -1,5 +1,7 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
 import { cx } from '../utils/cx.js';
+import type { CrewletCharacterId } from '@crewlethq/icons/characters';
+import type { NodeHue } from '../utils/nodeHue.js';
 import { AVATAR_SIZES, Avatar, type AvatarKind, type AvatarRing, type AvatarSizeStep } from './Avatar.js';
 
 /** One badge in a stack. */
@@ -11,6 +13,10 @@ export interface AvatarStackMember {
   src?: string | undefined;
   /** A state ring on this badge, as `Avatar` draws it. */
   ring?: AvatarRing | undefined;
+  /** The Crewlet character an agent member is drawn as, as `Avatar` draws it. */
+  character?: CrewletCharacterId | undefined;
+  /** The hue an agent member's character is drawn in, as `Avatar` draws it. */
+  hue?: NodeHue | undefined;
   /**
    * What tells two members apart when their names do not (a seat's handle, a
    * person's id), unique within the stack. The name is used when it is absent.
@@ -130,6 +136,8 @@ export function AvatarStack({
           kind={member.kind}
           src={member.src}
           ring={member.ring}
+          character={member.character}
+          hue={member.hue}
           size={size}
           decorative
         />

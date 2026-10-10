@@ -11,6 +11,7 @@ All three are React components compiled from SVG files that ship in the package.
 | Vendor marks | `@crewlethq/icons` | `<VendorMark vendor="slack" />` |
 | Signature illustrations | `@crewlethq/icons` | `<AgentReading />`, `<Icon name="AgentReading" />` |
 | The Crewlet character | `@crewlethq/icons` | `<CrewletFigure motion="wave" />` |
+| The thirty agent characters | `@crewlethq/icons/characters` | `<CrewletCharacter character="hexlet" />` |
 
 ## Glyphs
 
@@ -151,6 +152,25 @@ import { CrewletFigure } from '@crewlethq/icons';
 | `fillGaps` | boolean | `true` | Backs each joint with body, so a moving limb never uncovers a gap. `false` renders the plain trim, where the pieces meet with visible seams. |
 
 The figure is sized in `em` like the icons (set `font-size` or pass `width` and `height`) and is `aria-hidden`; give the surrounding element an accessible name when the figure carries meaning. Every motion stops when the user prefers reduced motion. The geometry lives in `src/crewletParts.ts` and the motions in `src/CrewletFigure.css`, which the component imports.
+
+### CrewletCharacter
+
+`CrewletCharacter` draws one of the thirty Crewlet characters an agent can be drawn as, in the current text colour:
+
+```tsx
+import { CrewletCharacter, CREWLET_CHARACTERS, isCrewletCharacter } from '@crewlethq/icons/characters';
+
+<CrewletCharacter character="hexlet" style={{ fontSize: 64, color: 'var(--color-node-cyan)' }} />
+```
+
+| Prop | Type | Default | Purpose |
+| ---- | ---- | ------- | ------- |
+| `character` | `CrewletCharacterId`, one of `CREWLET_CHARACTERS` | required | Which character to draw. `crewlet`, the first, is the mark itself. |
+| `detail` | `'full' \| 'compact'` | `'full'` | `full` draws the keyline floating off the body and the gap round the visor; `compact` leaves both out and opens the eyes, for a character too small for a hairline gap to read. |
+
+Every character is cut from the mark's own rules: every corner chamfered at 45 degrees, a keyline at the mark's own proportions, a visor with two upright slits measured from the visor itself, a V notch on a flat crown and block legs under a flat base. A character is framed square and centred on what it draws, so it sits in the middle of any box it is given. Its face and holes are cut out of the body with a mask rather than painted over it, so it is transparent where it is cut and stands on any ground; every instance takes its own mask ids.
+
+An id is what a configuration stores, so the set is a contract: `CREWLET_CHARACTERS` lists the ids in the order a picker offers them, `CREWLET_CHARACTER_GEOMETRY` gives each one's name and a few words on its shape, and `isCrewletCharacter` tells an id this build draws from anything else read off the wire. The geometry lives in `src/crewletCharacters.ts`; the original Crewlet is drawn from `svg/crewlet-icon.svg` itself, which `test/characters.test.mjs` holds. `@crewlethq/ui`'s `Avatar` draws a character on a plate in an agent's hue.
 
 ## Stylesheets
 

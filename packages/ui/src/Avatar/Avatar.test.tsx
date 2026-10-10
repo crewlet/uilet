@@ -22,7 +22,10 @@ import { afterEach, describe, expect, test } from 'vitest';
 import { font } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installSheets, installThemed, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
+import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
+import { NODE_HUES } from '../utils/nodeHue.js';
 import {
+  AVATAR_CHARACTER_FULL_DETAIL,
   AVATAR_CORNER_RATIO,
   AVATAR_SIZES,
   Avatar,
@@ -467,5 +470,83 @@ describe('Avatar', () => {
       resultTypes: ['violations'],
     });
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+});
+
+/*
+ * An agent an operator gave a character and a hue is drawn as that character,
+ * in that hue. The suite holds the three things a reader relies on: the face
+ * is the chosen character and nothing else, the hue is the chosen one and
+ * every hue has its plate, and what the badge SAYS is unchanged by any of it.
+ */
+describe('an agent drawn as its character', () => {
+  const characterOf = (container: HTMLElement) => container.querySelector('svg[data-character]');
+
+  test('draws the chosen character in place of the initials', () => {
+    const { container } = render(<Avatar name="Backend Engineer" character="hexlet" hue="cyan" />);
+    expect(characterOf(container)?.getAttribute('data-character')).toBe('hexlet');
+    expect(container.textContent).toBe('');
+  });
+
+  test('wears its hue on a plate of the same hue, and the neutral plate without one', () => {
+    const tinted = render(<Avatar name="SWE" character="octlet" hue="amber" />).container.firstElementChild!;
+    expect(tinted.classList).toContain('crewlet-avatar--hue-amber');
+    expect(tinted.classList).not.toContain('crewlet-avatar--neutral');
+    cleanup();
+    const plain = render(<Avatar name="SWE" character="octlet" />).container.firstElementChild!;
+    expect(plain.classList).toContain('crewlet-avatar--neutral');
+  });
+
+  test('says what any badge says: the name, or nothing when decorative', () => {
+    render(<Avatar name="Backend Engineer" character="hexlet" hue="cyan" />);
+    expect(screen.getByRole('img', { name: 'Backend Engineer avatar' })).toBeTruthy();
+    cleanup();
+    const { container } = render(<Avatar name="Backend Engineer" character="hexlet" decorative />);
+    expect(container.firstElementChild!.getAttribute('aria-hidden')).toBe('true');
+    expect(container.firstElementChild!.getAttribute('role')).toBeNull();
+  });
+
+  test('is an agent\'s face only: a person keeps the circle and the initials', () => {
+    const { container } = render(<Avatar name="Jane Founder" kind="human" character="hexlet" hue="cyan" />);
+    expect(characterOf(container)).toBeNull();
+    expect(container.textContent).toBe('JF');
+  });
+
+  test('wins over an image, since it is the face an operator chose', () => {
+    const { container } = render(
+      <Avatar name="Backend Engineer" character="foxlet" hue="rose" src="https://example.com/b.png" />,
+    );
+    expect(container.querySelector('img')).toBeNull();
+    expect(characterOf(container)?.getAttribute('data-character')).toBe('foxlet');
+  });
+
+  test('drops the keyline under the size it can be seen at, and keeps it from there up', () => {
+    const detail = (size: number | 'lg') =>
+      characterOf(render(<Avatar name="SWE" character="gemlet" size={size} />).container)?.getAttribute('data-detail');
+    expect(detail('lg')).toBe('compact');
+    cleanup();
+    expect(detail(AVATAR_CHARACTER_FULL_DETAIL - 1)).toBe('compact');
+    cleanup();
+    expect(detail(AVATAR_CHARACTER_FULL_DETAIL)).toBe('full');
+  });
+
+  test('draws every character', () => {
+    for (const character of CREWLET_CHARACTERS) {
+      const { container } = render(<Avatar name="Seat" character={character} hue="blue" />);
+      expect(characterOf(container)?.getAttribute('data-character'), character).toBe(character);
+      cleanup();
+    }
+  });
+
+  test('has a plate for every hue, drawn from that hue\'s own steps', () => {
+    // Matched rather than compared, so the package's variable check does not
+    // take a token name written out here for one this suite declares.
+    const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Avatar.css'), 'utf8');
+    for (const hue of NODE_HUES) {
+      const body = new RegExp(`\\.crewlet-avatar--hue-${hue}\\s*\\{([^}]*)\\}`).exec(sheet)?.[1] ?? '';
+      expect(body, hue).toMatch(new RegExp(`background:\\s*var\\(--color-node-${hue}-fill\\)`));
+      expect(body, hue).toMatch(new RegExp(`border-color:\\s*var\\(--color-node-${hue}-line\\)`));
+      expect(body, hue).toMatch(new RegExp(`color:\\s*var\\(--color-node-${hue}\\)`));
+    }
   });
 });

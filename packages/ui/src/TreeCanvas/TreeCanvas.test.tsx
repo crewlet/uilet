@@ -36,6 +36,7 @@ import { OrgNodeDisclosure, OrgNodeLead } from '../OrgNode/index.js';
 import { ENTRANCE_STEP_MS, REFLOW_MS, entranceOrder } from './motion.js';
 import type { TreeInput, TreeModel } from '../Tree/index.js';
 import { installMotion, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { NODE_HUES } from '../utils/nodeHue.js';
 import {
   TreeCanvas,
   type TreeCanvasGroup,
@@ -978,7 +979,7 @@ describe('a toned node', () => {
    * its own: the union and the stylesheet are two lists that have to agree.
    */
   test('every tone the type offers has its four steps and its branch', () => {
-    for (const hue of ['purple', 'cyan', 'green', 'amber', 'rose', 'blue']) {
+    for (const hue of NODE_HUES) {
       const card = rule(`.crewlet-tree-canvas__card[data-tone='${hue}']`);
       // Matched rather than compared, because the package's own variable check
       // reads this file for token names too and would take a written-out one

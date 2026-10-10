@@ -270,3 +270,20 @@ describe('what a stack draws', () => {
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 });
+
+test('draws an agent member as its character, in its hue', () => {
+  const { container } = render(
+    <AvatarStack
+      members={[
+        { name: 'CTO', character: 'hexlet', hue: 'cyan' },
+        { name: 'Jane Founder', kind: 'human', character: 'hexlet', hue: 'cyan' },
+      ]}
+    />,
+  );
+  const [agent, person] = [...container.querySelectorAll('.crewlet-avatar-stack__member')];
+  expect(agent!.querySelector('svg[data-character="hexlet"]')).not.toBeNull();
+  expect(agent!.classList).toContain('crewlet-avatar--hue-cyan');
+  expect(person!.querySelector('svg[data-character]')).toBeNull();
+  expect(person!.textContent).toBe('JF');
+});
+

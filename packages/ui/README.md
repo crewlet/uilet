@@ -42,13 +42,13 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | ---- | ---------- |
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
 | Content and text | `Text` (the eight registers), `Prose`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
-| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload` |
+| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker` |
 | Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
-| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx` |
+| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure` |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar` and `useAppShell`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences` |
@@ -190,6 +190,16 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.9.0
+
+0.9.0 gives an agent a face of its own: one of the thirty Crewlet characters in `@crewlethq/icons/characters`, drawn in one of the six node hues an operator chooses for it.
+
+**An agent's badge can be its character.** `Avatar` takes `character` and `hue`. An agent badge with a `character` draws that character, centred, on a plate of its hue (the hue's `-fill`, its `-line` round the badge and the hue itself as the ink), in place of its initials and of any image. A badge of `AVATAR_CHARACTER_FULL_DETAIL` (56px) and up draws the character's keyline and visor gap; a smaller one draws it compact, where a hairline would be a blur. A `human` badge ignores both and keeps its circle and initials, and what any badge says to a screen reader is unchanged. An `AvatarStack` member takes the same two fields, for a stack of agents drawn as themselves. What to change: nothing; a badge with neither prop draws as it did.
+
+**The node hues are one exported set.** `NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue` and the `NodeHue` type name the six hues an entity is told apart by, where somebody chose one. `TreeCardTone` (and so `OrgTableTone`) is now `NodeHue`, so an agent's card, row and badge are drawn from one list. What to change: nothing; the six names are the same.
+
+**Two pickers choose them.** `CharacterPicker` is a radio group of every character, laid out in rows of six (`CHARACTER_PICKER_COLUMNS`), each drawn as the badge it would make in the agent's hue; Left and Right walk the characters, Up and Down move a whole row, and the chosen badge carries the kit's selected ring. `HuePicker` is a `SegmentedControl` radio row of the six hues, each a swatch and the hue's name. Both take `disabled`, which keeps the choice shown and lets nothing in the group take focus or a press. Wrap either in `FormField as="fieldset"` for a labelled field.
 
 ## Changes in 0.7.0
 

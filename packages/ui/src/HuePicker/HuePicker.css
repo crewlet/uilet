@@ -1,0 +1,18 @@
+/*
+ * A hue's swatch: the hue itself, as a dot beside its name. The name carries
+ * the choice; the dot is there so the row can be scanned for a colour.
+ */
+
+.crewlet-hue-picker__swatch {
+  display: block;
+  width: var(--spacing-3);
+  height: var(--spacing-3);
+  border-radius: var(--radius-circle);
+}
+
+.crewlet-hue-picker__swatch--purple { background: var(--color-node-purple); }
+.crewlet-hue-picker__swatch--cyan { background: var(--color-node-cyan); }
+.crewlet-hue-picker__swatch--green { background: var(--color-node-green); }
+.crewlet-hue-picker__swatch--amber { background: var(--color-node-amber); }
+.crewlet-hue-picker__swatch--rose { background: var(--color-node-rose); }
+.crewlet-hue-picker__swatch--blue { background: var(--color-node-blue); }

@@ -33,9 +33,12 @@ import {
   AvatarStack,
   Button,
   ButtonLink,
+  CharacterPicker,
   Count,
   DateTimePicker,
   EmptyValue,
+  FormField,
+  HuePicker,
   IconButton,
   Kbd,
   Menu,
@@ -100,6 +103,8 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
       </p>
       <p>
         <Avatar name="Software Engineer" ring="info" /> <Avatar name="Jane Founder" kind="human" ring="brand" />
+        <Avatar name="Backend Engineer" character="hexlet" hue="cyan" />{' '}
+        <Avatar name="Frontend Engineer" character="crewlet" hue="purple" size={96} ring="success" />
       </p>
       <p>
         <AvatarStack
@@ -116,6 +121,21 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
         <AvatarStack members={[{ name: 'SWE' }, { name: 'CTO' }]} decorative /> read by 2 agents today
       </p>
       <VisuallyHidden>Loaded</VisuallyHidden>
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('the agent identity pickers carry no violation: the character grid and the hue chips', async () => {
+  const { container } = render(
+    <main>
+      <h1>Edit seat</h1>
+      <FormField label="Character" as="fieldset">
+        <CharacterPicker label="Character" value="hexlet" hue="cyan" onValueChange={() => {}} />
+      </FormField>
+      <FormField label="Color" as="fieldset">
+        <HuePicker label="Color" value="cyan" onValueChange={() => {}} />
+      </FormField>
     </main>,
   );
   expect(await violations(container)).toEqual([]);

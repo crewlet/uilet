@@ -26,7 +26,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,7 +63,11 @@ let tarballs;
 
 before(() => {
   tarballs = mkdtempSync(join(tmpdir(), 'crewlet-tokens-tarball-'));
-  consumer = mkdtempSync(join(tmpdir(), 'crewlet-tokens-consumer-'));
+  // By its REAL path, because the module resolver answers with one: on
+  // macOS the temporary directory is reached through a link (`/tmp` and
+  // `/var/folders` both live under `/private`), so a path built from the
+  // linked name never equals what a consumer's import resolves to.
+  consumer = realpathSync(mkdtempSync(join(tmpdir(), 'crewlet-tokens-consumer-')));
   const [{ filename }] = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', tarballs], packageDir));
   installed = join(consumer, 'node_modules', '@crewlethq', 'tokens');
   mkdirSync(installed, { recursive: true });

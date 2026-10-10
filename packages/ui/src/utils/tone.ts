@@ -9,7 +9,10 @@
  * A tone says what a thing IS, never who it is: success, warning, danger and
  * info are states, `brand` is where the reader is, and everything else is
  * neutral. Identity (a seat, a node, a vendor, a tool) takes neutral colour and
- * is carried by its name, its glyph and its position.
+ * is carried by its name, its glyph and its position, with ONE exception that
+ * is not a tone: an agent an operator has given a hue of its own wears it
+ * ([NodeHue] in `nodeHue.ts`), because a hue somebody chose names that agent
+ * the way its name does, where a hue hashed from the name named nothing.
  *
  * So does a CATEGORY. A phase, a unit or a model is neutral with its word, and
  * inside a figure it is a series its legend names, from the data ramp the

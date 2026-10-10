@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties, HTMLAttributes } from 'react';
+import { CrewletCharacter, type CrewletCharacterId } from '@crewlethq/icons/characters';
 import { cx } from '../utils/cx.js';
+import type { NodeHue } from '../utils/nodeHue.js';
 import type { Tone } from '../utils/tone.js';
 
 /**
@@ -95,7 +97,27 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
    * outlives a rename, so the colour does too. Only read with `tone="seeded"`.
    */
   colorSeed?: string | undefined;
+  /**
+   * The Crewlet character an AGENT is drawn as, in place of its initials and
+   * of any image. A person is never drawn as one: on a `human` badge this is
+   * ignored, and the circle and the initials stay.
+   */
+  character?: CrewletCharacterId | undefined;
+  /**
+   * The hue the agent's character is drawn in, on a plate of the same hue.
+   * Read only with `character`; a character with no hue is drawn in the
+   * neutral badge's ink, on its plate.
+   */
+  hue?: NodeHue | undefined;
 }
+
+/**
+ * The smallest badge, in px, a character is drawn at full detail: its keyline
+ * and its visor gap. Under it both are hairlines finer than a pixel, which a
+ * screen draws as a blur round the body, so the character is drawn compact
+ * (see `CrewletCharacterDetail`).
+ */
+export const AVATAR_CHARACTER_FULL_DETAIL = 56;
 
 /**
  * Two uppercase initials, or one where the name has only one letter to give.
@@ -178,7 +200,7 @@ export function avatarCorner(pixels: number): number {
 }
 
 /**
- * An identity badge: an image, or the initials behind it.
+ * An identity badge: an agent's character, an image, or the initials behind it.
  *
  * If the image fails to load (a stale CDN URL, an expired signature) it
  * degrades to the initials rather than to a broken-image glyph. Either way it
@@ -194,6 +216,8 @@ export const Avatar = ({
   ring,
   decorative = false,
   colorSeed,
+  character,
+  hue,
   className,
   style,
   ...rest
@@ -234,6 +258,35 @@ export const Avatar = ({
     ring === undefined ? null : `crewlet-avatar--ring-${ring}`,
     className,
   );
+
+  /*
+   * AN AGENT'S CHARACTER IS ITS FACE, and it wins over an image: it is the
+   * identity an operator chose for the seat, where an image is whatever a
+   * profile happened to carry. It is centred by the character itself, which
+   * frames every silhouette square on its own extent.
+   */
+  if (character !== undefined && kind === 'agent') {
+    return (
+      <span
+        {...rest}
+        className={cx(
+          classes,
+          'crewlet-avatar--character',
+          hue === undefined ? 'crewlet-avatar--neutral' : `crewlet-avatar--hue-${hue}`,
+        )}
+        style={{ ...measured, ...style }}
+        role={decorative ? undefined : 'img'}
+        aria-hidden={decorative ? true : undefined}
+        aria-label={decorative ? undefined : name ? `${name} avatar` : 'Avatar'}
+      >
+        <CrewletCharacter
+          className="crewlet-avatar__character"
+          character={character}
+          detail={pixels >= AVATAR_CHARACTER_FULL_DETAIL ? 'full' : 'compact'}
+        />
+      </span>
+    );
+  }
 
   if (src && !imageFailed) {
     return (
