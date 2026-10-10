@@ -74,11 +74,14 @@
  * forced-colors mode drops every box-shadow and keeps outlines: a ring drawn
  * as a shadow disappears for exactly the readers who most need one.
  *
- * It is drawn INSIDE the box, on the offset every focusable in a clipping
- * scroller takes, so it covers the boundary rather than standing outside it.
- * Two things follow: a scroller cannot clip it, and the field does not grow a
- * four-pixel halo the moment a caret lands in it, which is what a filter box
- * in a toolbar of them did to the row it sits in.
+ * It is ONE PIXEL, LAID EXACTLY ON THE BOUNDARY: the field's own hairline,
+ * drawn in the focus colour, which is how the console's fields say focus. At
+ * two pixels it was a heavy band round every box a caret landed in, and on a
+ * form of them the field being typed in read as the loudest thing on the page.
+ * Drawn on the boundary rather than outside it, a scroller cannot clip it and
+ * the field does not grow a halo the moment a caret lands in it, which is what
+ * a filter box in a toolbar of them did to the row it sits in. Every boxed
+ * field in the package rings this way (`Input.test.tsx` holds them to it).
  *
  * THE BORDER IS LEFT ALONE. Recolouring it under the ring says nothing the
  * ring has not already said, and it is what cost the error state its own
@@ -94,8 +97,8 @@
  * on a pointer press as well as on a tab.
  */
 .crewlet-input:has(.crewlet-input__control:focus-visible) {
-  outline: 2px solid var(--color-focus);
-  outline-offset: var(--size-focus-ring-inset-offset);
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
 }
 
 .crewlet-input.is-error {
@@ -354,8 +357,8 @@
    on the control itself: a textarea is the field, with nothing wrapped round
    it and nothing focusable inside it. */
 .crewlet-textarea:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: var(--size-focus-ring-inset-offset);
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
 }
 
 .crewlet-textarea.is-error {
@@ -371,10 +374,37 @@
   cursor: not-allowed;
 }
 
+/*
+ * ONE LINE THAT GROWS STARTS AT THE SINGLE-LINE FIELD'S HEIGHT. A box that
+ * grows to fit what is typed was drawn at the large control step while it held
+ * one line, so the box a list item is written in stood sixteen pixels taller
+ * than the fields above and below it. One line now stands at the medium step,
+ * the height of every single-line field, with the line centred in it as an
+ * input's is: the block padding is what that step leaves once the two border
+ * pixels and one line are paid for. Each line past the first grows it from
+ * there.
+ */
 .crewlet-textarea.is-auto-resize {
   resize: none;
   overflow: hidden;
-  min-height: var(--size-control-lg);
+  min-height: var(--size-control-md);
+  padding-block: max(
+    0px,
+    calc((var(--size-control-md) - 2px - var(--font-line-height-normal) * var(--font-size-compact)) / 2)
+  );
+}
+
+/*
+ * AND WHAT TRAILS IT SITS ON ITS FIRST LINE, centred in the band one line
+ * takes, which is exactly where an input's trailing hint sits. Pinned a spacing
+ * step from the top, it sat above the line's middle and level with nothing;
+ * on the first line it stays put as the box grows under it.
+ */
+.crewlet-textarea-shell:has(> .crewlet-textarea.is-auto-resize) > .crewlet-input__trailing {
+  top: 0;
+  display: flex;
+  align-items: center;
+  height: var(--size-control-md);
 }
 
 .crewlet-textarea::placeholder {

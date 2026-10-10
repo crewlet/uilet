@@ -64,9 +64,13 @@
   border-color: var(--color-brand-accent-soft-strong);
 }
 
+/* One ring, over the card's own boundary rather than 2px off it, which is two
+   edges with a gap between them: the rule every field keeps (see Input.css).
+   The chosen plan keeps an accent line inside the ring, since the selection
+   ring below is two pixels deep and the focus ring covers one of them. */
 .crewlet-pricing-card:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 /* The chosen plan takes the selection ring, which is the same inset rule

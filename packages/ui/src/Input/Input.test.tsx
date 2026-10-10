@@ -254,6 +254,12 @@ const FIELD_SHEETS = [
   // so, rather than a scan that quietly never looked.
   'Combobox/Combobox.css',
   'ListInput/ListInput.css',
+  // The two pickers are fields too: a box on the control boundary, with typed
+  // boxes inside their panels. Both drew the old indicator (a recoloured
+  // border under a ring 2px off it, and the masked box --shadow-focus as well)
+  // because they were outside this table, so nothing asked them.
+  'DateTimePicker/DateTimePicker.css',
+  'TimeWindowPicker/TimeWindowPicker.css',
 ];
 
 /**
@@ -368,11 +374,20 @@ test('one element draws the ring, and it is the one a reader reads as the field'
       '.crewlet-select__search:focus-within',
       '.crewlet-tags-input__box:focus-visible',
       // The two small controls that ARE their own target, so their ring is
-      // outset: an inset one on a 16px box is a box with no middle left.
+      // outside them: an inset one on a 16px box is a box with no middle left.
       '.crewlet-checkbox__control:focus-visible',
       // On the TRACK, not on the control: the control is at zero opacity, and
       // an outline on an element at zero alpha is drawn for nobody.
       '.crewlet-switch__track:has(.crewlet-switch__control:focus-visible)',
+      // The pickers' triggers, which ring for focus and for open alike: the
+      // open state is the panel's anchor, never inside another ring.
+      '.crewlet-datetime:focus-visible, .crewlet-datetime.is-open',
+      '.crewlet-time-window:focus-visible, .crewlet-time-window.is-open',
+      // And the boxes inside their panels, which are portalled out of the
+      // trigger's subtree, so neither is drawn inside the trigger's ring.
+      '.crewlet-datetime__time-input:focus-visible',
+      '.crewlet-time-window__preset:focus-visible',
+      '.crewlet-time-window__masked:has(.crewlet-time-window__masked-input:focus-visible)',
     ].sort(),
   );
 
@@ -389,7 +404,12 @@ test('one element draws the ring, and it is the one a reader reads as the field'
    * document baseline's :focus-visible, each of these would paint a second
    * ring inside the frame's; the frame is what a reader reads as the field.
    */
-  const suppressed = ['.crewlet-input__control', '.crewlet-select__native', '.crewlet-select__trigger'];
+  const suppressed = [
+    '.crewlet-input__control',
+    '.crewlet-select__native',
+    '.crewlet-select__trigger',
+    '.crewlet-time-window__masked-input',
+  ];
   const silent = sheetRules().filter(
     (rule) => !rule.selector.includes(':focus') && rule.declared.get('outline') === 'none',
   );
@@ -421,22 +441,26 @@ test('one element draws the ring, and it is the one a reader reads as the field'
   expect(drawnOnNothing).toEqual([]);
 });
 
-test('every field rings on one geometry, and a boxed one rings inside its own boundary', () => {
+test('every field rings on one geometry, and a boxed one rings on its own boundary', () => {
   /*
-   * ONE OUTLINE, --color-focus, at one width, and two offsets for one reason.
+   * ONE OUTLINE, --color-focus, and two geometries for one reason.
    *
-   * A BOXED FIELD RINGS INSIDE ITSELF, on the offset the token exists for: an
-   * outset ring is clipped by a scroller, and a filter box lives in a toolbar
-   * inside one. Inset, it also COVERS the boundary rather than standing off
-   * it, so the field neither grows a halo when a caret lands in it nor shows
-   * a second edge under the ring.
+   * A BOXED FIELD RINGS ON ITS OWN BOUNDARY, one pixel laid exactly over its
+   * one-pixel hairline, which is the console's own focused field: the
+   * boundary drawn in the focus colour. At two pixels inset it was a heavy
+   * band round every box a caret landed in. On the boundary it is clipped by
+   * no scroller, grows no halo, and shows no second edge under the ring.
    *
    * A CHECKBOX AND A SWITCH RING OUTSIDE, because each IS its own target
    * rather than a frame around one: 2px eaten off a 16px box is a box with no
-   * middle left, and there is no boundary to cover because the ring is the
-   * only thing drawn out there.
+   * middle left. But FLUSH against it, at offset 0, never 2px off it: the box
+   * and the track each draw a boundary of their own, and a ring with a gap
+   * round a drawn boundary is two edges, which reads as a second outline
+   * rather than as focus.
    */
-  const inset = 'var(--size-focus-ring-inset-offset)';
+  const onBoundary = ['1px', '-1px'] as const;
+  const inset = ['2px', 'var(--size-focus-ring-inset-offset)'] as const;
+  const flush = ['2px', '0'] as const;
   const geometry = focusRules()
     .filter((rule) => rule.declared.get('outline')?.includes('var(--color-focus)'))
     .map((rule) => `${rule.selector} | ${rule.declared.get('outline')} | ${rule.declared.get('outline-offset')}`)
@@ -444,18 +468,25 @@ test('every field rings on one geometry, and a boxed one rings inside its own bo
   expect(geometry).toEqual(
     (
       [
-        ['.crewlet-input:has(.crewlet-input__control:focus-visible)', inset],
-        ['.crewlet-textarea:focus-visible', inset],
-        ['.crewlet-select:focus-within', inset],
-        // Inset for the boxed reason AND for a second one: the panel it sits
-        // in clips, so an outset ring on the band would be cut by it.
-        ['.crewlet-select__search:focus-within', inset],
-        ['.crewlet-tags-input__box:focus-visible', inset],
-        ['.crewlet-checkbox__control:focus-visible', '2px'],
-        ['.crewlet-switch__track:has(.crewlet-switch__control:focus-visible)', '2px'],
+        ['.crewlet-input:has(.crewlet-input__control:focus-visible)', onBoundary],
+        ['.crewlet-textarea:focus-visible', onBoundary],
+        ['.crewlet-select:focus-within', onBoundary],
+        // On its boundary for the boxed reason AND for a second one: the
+        // panel it sits in clips, so an outset ring on the band would be cut.
+        ['.crewlet-select__search:focus-within', onBoundary],
+        ['.crewlet-tags-input__box:focus-visible', onBoundary],
+        ['.crewlet-checkbox__control:focus-visible', flush],
+        ['.crewlet-switch__track:has(.crewlet-switch__control:focus-visible)', flush],
+        ['.crewlet-datetime:focus-visible, .crewlet-datetime.is-open', onBoundary],
+        ['.crewlet-datetime__time-input:focus-visible', onBoundary],
+        ['.crewlet-time-window:focus-visible, .crewlet-time-window.is-open', onBoundary],
+        // A preset is a chip in the panel's rail rather than a box a caret
+        // lands in, so it rings as the package's chips do, inside itself.
+        ['.crewlet-time-window__preset:focus-visible', inset],
+        ['.crewlet-time-window__masked:has(.crewlet-time-window__masked-input:focus-visible)', onBoundary],
       ] as const
     )
-      .map(([selector, offset]) => `${selector} | 2px solid var(--color-focus) | ${offset}`)
+      .map(([selector, [width, offset]]) => `${selector} | ${width} solid var(--color-focus) | ${offset}`)
       .sort(),
   );
 
@@ -662,6 +693,29 @@ test('an uncontrolled auto-resizing textarea re-measures as it is typed into', (
   } finally {
     delete (HTMLTextAreaElement.prototype as unknown as Record<string, unknown>).scrollHeight;
   }
+});
+
+/*
+ * ONE LINE THAT GROWS STANDS AT THE SINGLE-LINE FIELD'S HEIGHT, and what
+ * trails it sits on that first line. At the large step it stood sixteen pixels
+ * taller than the fields round it, with its hint pinned near the top.
+ */
+test('a one-line auto-resizing box is a single-line field tall, and its hint sits on its first line', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const css = readFileSync(resolve(here, 'Input.css'), 'utf8');
+  const box = /\.crewlet-textarea\.is-auto-resize\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(box).toContain('min-height: var(--size-control-md)');
+  // The block padding is what the step leaves after the border and one line.
+  expect(box.replace(/\s+/g, ' ')).toContain(
+    'calc((var(--size-control-md) - 2px - var(--font-line-height-normal) * var(--font-size-compact)) / 2)',
+  );
+  const hint =
+    /\.crewlet-textarea-shell:has\(> \.crewlet-textarea\.is-auto-resize\) > \.crewlet-input__trailing\s*\{([^}]*)\}/.exec(
+      css,
+    )?.[1] ?? '';
+  expect(hint).toContain('top: 0');
+  expect(hint).toContain('align-items: center');
+  expect(hint).toContain('height: var(--size-control-md)');
 });
 
 test('and it adds back the border scrollHeight leaves out', () => {

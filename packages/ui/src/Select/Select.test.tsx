@@ -713,9 +713,10 @@ test('the search box draws a focus ring where the frame cannot reach', () => {
   const css = selectCss();
   const cleared = /\.crewlet-select__search-input\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(cleared).toMatch(/outline:\s*none/);
-  // On the band, and INSET, because the panel clips: an outset ring on the
-  // input itself would be cut by the menu's own overflow.
+  // On the band, and ON ITS BOUNDARY rather than outside it, because the panel
+  // clips: an outset ring on the input itself would be cut by the menu's own
+  // overflow. One pixel, as every boxed field rings (`Input.test.tsx`).
   const ring = /\.crewlet-select__search:focus-within\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-  expect(ring).toMatch(/outline:\s*2px solid var\(--color-focus\)/);
-  expect(ring).toMatch(/outline-offset:\s*var\(--size-focus-ring-inset-offset\)/);
+  expect(ring).toMatch(/outline:\s*1px solid var\(--color-focus\)/);
+  expect(ring).toMatch(/outline-offset:\s*-1px/);
 });

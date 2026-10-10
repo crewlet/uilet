@@ -288,6 +288,18 @@
   outline-offset: 2px;
 }
 
+/*
+ * A CHIP RINGS ON ITS OWN EDGE, flush rather than 2px off it. The chip that
+ * is on draws a hairline round itself, and a ring standing off that hairline
+ * was two edges with a gap between them, which reads as a second outline
+ * rather than as focus. Flush, the ring covers the hairline, and it stays
+ * inside the well's 2px inset: two pixels wide, it meets the well's own
+ * boundary rather than leaving a sliver of the well between the two.
+ */
+.crewlet-tabs--pill .crewlet-tabs__tab:focus-visible {
+  outline-offset: 0;
+}
+
 .crewlet-tabs__tab.is-disabled,
 .crewlet-tabs__tab:disabled {
   opacity: 0.55;

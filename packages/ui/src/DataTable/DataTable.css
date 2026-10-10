@@ -379,8 +379,19 @@ body.crewlet-data-table-resizing {
   color: var(--color-text-on-accent);
 }
 
+/*
+ * One ring, over the chip's own boundary rather than 2px off it, which is two
+ * edges with a gap between them: the rule every field keeps (see Input.css).
+ * The active size is filled with the accent and its border is the fill, so
+ * there is no edge to double there, and an inset ring on that fill would be
+ * drawn in nearly the fill's own colour: it keeps the outset ring.
+ */
 .crewlet-data-table__items-per-page-btn:focus-visible {
   outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-data-table__items-per-page-btn.is-active:focus-visible {
   outline-offset: 2px;
 }
 

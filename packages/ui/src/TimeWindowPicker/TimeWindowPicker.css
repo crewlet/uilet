@@ -37,11 +37,17 @@
   border-color: var(--color-border-hover);
 }
 
+/*
+ * ONE RING, OVER THE BOUNDARY, for focus and for open alike. It stood 2px off
+ * the box with the border recoloured to the focus colour as well, which is an
+ * accent hairline, a gap and an accent band: two rings from one state. On the
+ * inset offset the ring covers the border, and the border keeps its own colour
+ * under it, the rule every field keeps (see Input.css).
+ */
 .crewlet-time-window:focus-visible,
 .crewlet-time-window.is-open {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-  border-color: var(--color-focus);
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
 }
 
 .crewlet-time-window.is-disabled,
@@ -301,11 +307,18 @@ svg.crewlet-time-window__tick {
   transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-.crewlet-time-window__masked:focus-within {
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-  border-color: var(--color-focus);
-  box-shadow: var(--shadow-focus);
+/*
+ * THE BOX RINGS ONCE, AS A FIELD DOES. It drew the field register's old
+ * indicator: the border recoloured to the focus colour AND --shadow-focus,
+ * which is itself a ring (a background-coloured gap, then a band), so a
+ * focused box showed two accent edges with a gap between them, and the
+ * transparent outline under them was a third that forced-colors mode paints.
+ * What is left is the field's one outline on the inset offset, over the box's
+ * own boundary (see Input.css), keyed on the box's own input.
+ */
+.crewlet-time-window__masked:has(.crewlet-time-window__masked-input:focus-visible) {
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
 }
 
 .crewlet-time-window__masked-input {
