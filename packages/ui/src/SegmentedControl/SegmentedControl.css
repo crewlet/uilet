@@ -47,12 +47,104 @@
   font-size: var(--font-size-compact);
 }
 
+/* One ring, over the card's own boundary rather than 2px off it, which is two
+   edges with a gap between them: the rule every field keeps (see Input.css).
+   The chosen card still says so under the ring, in its tint and its ink. */
+.crewlet-segmented--cards .crewlet-segmented__option:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
 /* The one card that is chosen takes the accent, which is what "here, this
    one" means everywhere else in the product. */
 .crewlet-segmented--cards .crewlet-segmented__option.is-active {
   border-color: var(--color-brand-accent);
   background: var(--color-brand-accent-soft);
   color: var(--color-brand-accent-ink);
+}
+
+/*
+ * A ROW OF SEPARATE CHIPS, for a setting with more choices than a well holds
+ * on one line: the console's own row of unit types. It wraps rather than
+ * running off the panel it sits in, and each chip stands on the raised ground
+ * a chip with no edge of its own takes (held off the card by the palette
+ * suite), so no chip draws a frame inside the panel's. Two classes, for the
+ * reason the card row gives above.
+ */
+.crewlet-tabs.crewlet-segmented--chips {
+  /* The chip's own drawing (below) is the --crewlet-segmented-chip-height
+     band inside a target-floor box, so it is the same height at every
+     density the console's 11px chip is drawn at. */
+  --crewlet-segmented-chip-height: calc(var(--size-target-min) - var(--spacing-1));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  /* No gap between ROWS: each chip's target already overhangs its drawing by
+     half a step above and below, so two rows' drawings stand a whole step
+     apart while their targets meet. */
+  gap: 0 var(--spacing-1);
+}
+
+/*
+ * SMALL, AS THE CONSOLE'S ARE, AND DRAWN SMALL BUT HIT FULL SIZE, the rule the
+ * org chart's own controls keep. A chip is a word in the 11px face with a step
+ * of room either side, drawn as a band shorter than the pointer-target floor;
+ * the button around it stays at the floor, so the band can be the console's
+ * size without being a target a finger misses. At the small control step a
+ * row of ten was a second row of buttons under the field's label rather than a
+ * row of answers to it.
+ *
+ * The band is the button's own ::before, behind the label, rather than its
+ * background clipped to the content box: a clip takes the corner's curve in by
+ * the padding it removes, and a chip this small would lose its radius.
+ */
+.crewlet-segmented--chips .crewlet-segmented__option {
+  position: relative;
+  isolation: isolate;
+  min-height: var(--size-target-min);
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-segmented--chips .crewlet-segmented__option::before {
+  content: '';
+  position: absolute;
+  inset: calc((var(--size-target-min) - var(--crewlet-segmented-chip-height)) / 2) 0;
+  z-index: -1;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  pointer-events: none;
+}
+
+/* The chosen chip is FILLED with the accent: on a row of up to ten raised
+   chips, a fill is the one thing that says "this one" at a glance, as the
+   console's row says it. Its ring stands off it, because an edge drawn on an
+   accent fill in the focus colour is nearly the fill's own colour. */
+.crewlet-segmented--chips .crewlet-segmented__option.is-active {
+  color: var(--color-text-on-accent);
+}
+
+.crewlet-segmented--chips .crewlet-segmented__option.is-active::before {
+  background: var(--color-brand-accent);
+}
+
+/* What completes the last choice sits in the row, at the chips' own height
+   and in their face: a field at its own control step stood taller than every
+   chip beside it. */
+.crewlet-segmented__trailing {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.crewlet-segmented--chips .crewlet-segmented__trailing .crewlet-input {
+  min-height: var(--crewlet-segmented-chip-height);
+}
+
+.crewlet-segmented--chips .crewlet-segmented__trailing .crewlet-input__control {
+  font-size: var(--font-size-2xs);
 }
 
 .crewlet-segmented__description {

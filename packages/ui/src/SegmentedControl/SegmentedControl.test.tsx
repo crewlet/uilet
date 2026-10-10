@@ -15,7 +15,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, test, vi } from 'vitest';
 import { size, themes as palettes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
-import { channels, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installSheets, installThemed, pseudoElement, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { SegmentedControl } from './SegmentedControl.js';
 
 afterEach(cleanup);
@@ -383,6 +383,127 @@ test('the row is a raised well with a card chip in it, in both palettes', () => 
     unmount();
     uninstall();
   }
+});
+
+/*
+ * A ROW OF SEPARATE CHIPS, the console's row of unit types: no well, a row
+ * that wraps, each chip on the raised ground a chip with no edge takes, and
+ * the chosen one FILLED with the accent.
+ */
+const types = [
+  { value: 'department', label: 'Department' },
+  { value: 'team', label: 'Team' },
+  { value: 'custom', label: 'Custom' },
+];
+
+test('the chips layout is separate raised chips that wrap, the chosen one filled with the accent', () => {
+  const transparent = (value: string) => value === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(value);
+  for (const theme of ['dark', 'light'] as const) {
+    const uninstall = installThemed(theme, 'Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
+    const { unmount } = render(
+      <SegmentedControl
+        label="Unit type"
+        semantics="radio"
+        layout="chips"
+        value="team"
+        options={types}
+        onValueChange={() => {}}
+      />,
+    );
+    const palette = palettes[theme].color;
+    const group = screen.getByRole('radiogroup', { name: 'Unit type' });
+    expect(group.className, theme).toContain('crewlet-segmented--chips');
+    expect(group.className, theme).not.toContain('crewlet-tabs--pill');
+    const row = getComputedStyle(group);
+    expect(row.flexWrap, `${theme}: the row wraps`).toBe('wrap');
+    expect(transparent(row.backgroundColor), `${theme}: no well`).toBe(true);
+
+    // The chip's drawing is its band (the ::before), behind the label: the
+    // button around it is the target and paints nothing of its own.
+    const onChip = screen.getByRole('radio', { name: 'Team' });
+    const on = getComputedStyle(pseudoElement(onChip, 'before'));
+    expect(channels(on.backgroundColor), `${theme}: the chip that is on`).toEqual(parseHex(palette.brand.accent));
+    expect(channels(getComputedStyle(onChip).color), `${theme}: its word`).toEqual(parseHex(palette.text.onAccent));
+    expect(transparent(getComputedStyle(onChip).backgroundColor), `${theme}: the target paints nothing`).toBe(true);
+
+    const offChip = screen.getByRole('radio', { name: 'Department' });
+    const off = getComputedStyle(pseudoElement(offChip, 'before'));
+    expect(channels(off.backgroundColor), `${theme}: a chip that is off`).toEqual(parseHex(palette.surface.elevated));
+    expect(channels(getComputedStyle(offChip).color), `${theme}: its word`).toEqual(parseHex(palette.text.secondary));
+    unmount();
+    uninstall();
+  }
+});
+
+/*
+ * SMALL, AS THE CONSOLE'S CHIPS ARE: the 11px face, at the pointer-target
+ * floor and no taller. At the small control step a row of ten read as a second
+ * row of buttons under the field's label.
+ */
+test('a chip is drawn smaller than the target floor and hit at it, in the micro face', () => {
+  const uninstall = installThemed('dark', 'Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
+  render(
+    <SegmentedControl
+      label="Unit type"
+      semantics="radio"
+      layout="chips"
+      value="team"
+      options={types}
+      onValueChange={() => {}}
+    />,
+  );
+  const chip = screen.getByRole('radio', { name: 'Team' });
+  // HIT at the floor...
+  expect(px(chip, 'min-height')).toBe(24);
+  expect(getComputedStyle(chip).fontSize).toBe('11px');
+  // ...and DRAWN as a band half a step in from it, top and bottom.
+  const band = getComputedStyle(pseudoElement(chip, 'before'));
+  expect(band.position).toBe('absolute');
+  expect(band.pointerEvents).toBe('none');
+  // jsdom folds no calc() that still holds a variable, so the band's inset is
+  // read from the rule: half of what the floor stands over the drawing.
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SegmentedControl.css'), 'utf8');
+  const drawing = /\.crewlet-segmented--chips \.crewlet-segmented__option::before\s*\{([^}]*)\}/.exec(sheet)?.[1] ?? '';
+  expect(drawing).toContain('inset: calc((var(--size-target-min) - var(--crewlet-segmented-chip-height)) / 2) 0');
+  expect(sheet).toContain('--crewlet-segmented-chip-height: calc(var(--size-target-min) - var(--spacing-1))');
+  // Rows meet at their targets, so their drawings stand a whole step apart.
+  const row = /\.crewlet-tabs\.crewlet-segmented--chips\s*\{([^}]*)\}/.exec(sheet)?.[1] ?? '';
+  expect(row).toContain('gap: 0 var(--spacing-1)');
+  uninstall();
+});
+
+/*
+ * WHAT COMPLETES THE LAST CHOICE IS IN THE ROW AND OUT OF THE ARROWS: a box a
+ * "Custom" chip asks for wraps with the chips, and a caret moves inside it
+ * rather than the arrow keys walking the options from it.
+ */
+test('a trailing field sits in the row after the options, and the arrows never land in it', () => {
+  const onValueChange = vi.fn();
+  render(
+    <SegmentedControl
+      label="Unit type"
+      semantics="radio"
+      layout="chips"
+      value="custom"
+      options={types}
+      onValueChange={onValueChange}
+      trailing={<input aria-label="Custom type" defaultValue="tribe" />}
+    />,
+  );
+  const group = screen.getByRole('radiogroup', { name: 'Unit type' });
+  const field = within(group).getByRole('textbox', { name: 'Custom type' });
+  expect(group.lastElementChild?.contains(field)).toBe(true);
+  // From the last option the arrow wraps to the first, past the field.
+  const last = screen.getByRole('radio', { name: 'Custom' });
+  last.focus();
+  fireEvent.keyDown(last, { key: 'ArrowRight' });
+  expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Department' }));
+  // And an arrow pressed in the field is the field's own.
+  onValueChange.mockClear();
+  field.focus();
+  fireEvent.keyDown(field, { key: 'ArrowLeft' });
+  expect(document.activeElement).toBe(field);
+  expect(onValueChange).not.toHaveBeenCalled();
 });
 
 test('the well stands exactly at the control step, so it lines up with the button beside it', () => {
