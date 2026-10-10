@@ -30,6 +30,16 @@ test('chooses as the arrows move', () => {
   expect(onValueChange).toHaveBeenLastCalledWith('green');
 });
 
+test('when disabled, still says the chosen hue and takes no press', () => {
+  const onValueChange = vi.fn();
+  render(<HuePicker label="Color" value="rose" onValueChange={onValueChange} disabled />);
+  const radios = screen.getAllByRole('radio');
+  expect(radios.every((radio) => (radio as HTMLButtonElement).disabled)).toBe(true);
+  expect(screen.getByRole('radio', { checked: true }).textContent).toBe('Rose');
+  fireEvent.click(screen.getByRole('radio', { name: 'Blue' }));
+  expect(onValueChange).not.toHaveBeenCalled();
+});
+
 test('draws each swatch in its own hue', () => {
   const { container } = render(<HuePicker label="Color" value="blue" onValueChange={() => {}} />);
   const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'HuePicker.css'), 'utf8');

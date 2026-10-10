@@ -21,3 +21,8 @@ function Chosen() {
 }
 
 export const Default: Story = { render: () => <Chosen /> };
+
+/** Read only: the chosen hue is still shown, and nothing takes focus or a press. */
+export const Disabled: Story = {
+  render: () => <HuePicker label="Color" value="rose" onValueChange={() => {}} disabled />,
+};

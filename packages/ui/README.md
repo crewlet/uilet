@@ -199,7 +199,7 @@ places:
 
 **The node hues are one exported set.** `NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue` and the `NodeHue` type name the six hues an entity is told apart by, where somebody chose one. `TreeCardTone` (and so `OrgTableTone`) is now `NodeHue`, so an agent's card, row and badge are drawn from one list. What to change: nothing; the six names are the same.
 
-**Two pickers choose them.** `CharacterPicker` is a radio group of every character, laid out in rows of six (`CHARACTER_PICKER_COLUMNS`), each drawn as the badge it would make in the agent's hue; Left and Right walk the characters, Up and Down move a whole row, and the chosen badge carries the kit's selected ring. `HuePicker` is a `SegmentedControl` radio row of the six hues, each a swatch and the hue's name. Wrap either in `FormField as="fieldset"` for a labelled field.
+**Two pickers choose them.** `CharacterPicker` is a radio group of every character, laid out in rows of six (`CHARACTER_PICKER_COLUMNS`), each drawn as the badge it would make in the agent's hue; Left and Right walk the characters, Up and Down move a whole row, and the chosen badge carries the kit's selected ring. `HuePicker` is a `SegmentedControl` radio row of the six hues, each a swatch and the hue's name. Both take `disabled`, which keeps the choice shown and lets nothing in the group take focus or a press. Wrap either in `FormField as="fieldset"` for a labelled field.
 
 ## Changes in 0.7.0
 
