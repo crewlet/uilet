@@ -271,6 +271,46 @@
   white-space: nowrap;
 }
 
+/*
+ * A SPLIT BAR: one bar divided into its parts, as a stacked bar is. The parts
+ * stand 2px apart for the stacked bar's reason, the ground showing through is
+ * what makes each part a part, and each part GROWS by its value (a style
+ * property on the part) so the gaps come out of the parts and the bar keeps
+ * its length. The bar clips its parts, so the last part takes the bar's
+ * rounded value end and the first its square start.
+ */
+.crewlet-bar-list__bar--parts {
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+  background: none;
+}
+
+.crewlet-bar-list__part {
+  flex-grow: 0;
+  flex-shrink: 1;
+  flex-basis: 0;
+  min-width: 0;
+  height: 100%;
+  background: var(--crewlet-bar-list-part-color, var(--color-data-other));
+}
+
+/*
+ * THE KEY UNDER A SPLIT BAR, at the caption step, starting where the bar
+ * starts: under the plot in the BESIDE register, past the words' column and
+ * the gap after it, so each name stands under the bar it keys rather than
+ * under the row's own name.
+ */
+.crewlet-bar-list__key {
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-bar-list--beside .crewlet-bar-list__key {
+  margin-top: 0;
+  padding-inline-start: calc(var(--crewlet-bar-list-label-width) + var(--spacing-3));
+}
+
 /* ─── Stacked bar ─────────────────────────────────────────────── */
 
 /*

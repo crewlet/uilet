@@ -210,6 +210,96 @@ test('beside: the bar is at most 12px, rounded at its value end, on a scale that
   uninstall = null;
 });
 
+/** A team of eight split by seat, beside a team of four that is not split. */
+const SPLIT_TEAM = {
+  id: 'eng',
+  label: 'Engineering',
+  value: 8,
+  display: '8k',
+  href: '#/eng',
+  parts: [
+    { id: 'pm', label: 'PM', value: 3, display: '3k' },
+    { id: 'idle', label: 'Idle', value: 0, display: '0' },
+    { id: 'swe', label: 'SWE', value: 5, display: '5k', color: 'var(--color-data-4)' },
+  ],
+};
+
+test("a split bar is the row's bar divided: the row's length, each part growing by its value", () => {
+  /*
+   * ONE BAR, DIVIDED. A team split by seat ranks against the others exactly as
+   * it did whole, and the parts share its length out in proportion: a part
+   * that spent nothing is not drawn, and a part's hue is its place in the
+   * list unless it names one.
+   */
+  const { container } = render(
+    <BarList layout="beside" data={[SPLIT_TEAM, { id: 'ops', label: 'Ops', value: 4, display: '4k' }]} />,
+  );
+  const [split, whole] = [...container.querySelectorAll<HTMLElement>('.crewlet-bar-list__bar')];
+  expect(split!.classList.contains('crewlet-bar-list__bar--parts')).toBe(true);
+  expect(split!.style.width).toBe('100%');
+  expect(split!.style.getPropertyValue('--crewlet-bar-list-bar-color')).toBe('');
+  const parts = [...split!.querySelectorAll<HTMLElement>('.crewlet-bar-list__part')];
+  expect(parts.map((part) => part.style.flexGrow)).toEqual(['3', '5']);
+  expect(parts.map((part) => part.style.getPropertyValue('--crewlet-bar-list-part-color'))).toEqual([
+    'var(--color-data-1)',
+    'var(--color-data-4)',
+  ]);
+  // A row with no parts is the bar it always was.
+  expect(whole!.classList.contains('crewlet-bar-list__bar--parts')).toBe(false);
+  expect(whole!.style.width).toBe('50%');
+  expect(whole!.children).toHaveLength(0);
+});
+
+test('a split bar is keyed under itself, after its row, with each part\'s name and number', async () => {
+  /*
+   * THE KEY IS THE BAR'S WORDS. A split bar with no key is a picture of some
+   * numbers, so every split row is keyed, under its own bar, with what each
+   * part is and how much it holds; it is a list beside the row rather than
+   * inside it, so the row that leads somewhere keeps its own name.
+   */
+  const { container } = render(
+    <main>
+      <BarList layout="beside" data={[SPLIT_TEAM, { id: 'ops', label: 'Ops', value: 4, display: '4k' }]} />
+    </main>,
+  );
+  const keys = [...container.querySelectorAll<HTMLElement>('.crewlet-bar-list__key')];
+  expect(keys).toHaveLength(1);
+  const key = keys[0]!;
+  expect(key.tagName).toBe('UL');
+  expect(key.getAttribute('role')).toBe('list');
+  expect(key.previousElementSibling).toBe(container.querySelector('.crewlet-bar-list__row'));
+  expect([...key.querySelectorAll('li')].map((item) => item.textContent)).toEqual(['PM3k', 'SWE5k']);
+  const swatches = [...key.querySelectorAll<HTMLElement>('.crewlet-legend__swatch')];
+  expect(swatches.map((swatch) => swatch.style.getPropertyValue('--crewlet-legend-swatch-color'))).toEqual([
+    'var(--color-data-1)',
+    'var(--color-data-4)',
+  ]);
+  const link = screen.getByRole('link');
+  expect(link.textContent).not.toContain('PM');
+  const result = await axe.run(container, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations.map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.html).join(', ')}`)).toEqual([]);
+});
+
+test("a split bar's parts stand 2px apart inside it, and its key starts where the bar does", () => {
+  uninstall = installThemed('dark', 'Charts/Charts.css');
+  const { container } = render(<BarList layout="beside" data={[SPLIT_TEAM]} />);
+  const bar = getComputedStyle(container.querySelector('.crewlet-bar-list__bar--parts')!);
+  expect(bar.display).toBe('flex');
+  expect(bar.getPropertyValue('gap')).toBe('2px');
+  // Clipped, so the last part takes the bar's rounded value end.
+  expect(bar.overflow).toBe('hidden');
+  // Past the words' column and the row's gap after it, so each name stands
+  // under the bar it keys.
+  const key = getComputedStyle(container.querySelector('.crewlet-bar-list__key')!);
+  expect(key.getPropertyValue('padding-inline-start')).toMatch(/^calc\(var\(--crewlet-bar-list-label-width\) \+ /);
+  uninstall();
+  uninstall = null;
+});
+
 test('the tail is a count the caller phrases, and an empty list says why', () => {
   const { rerender } = render(
     <BarList

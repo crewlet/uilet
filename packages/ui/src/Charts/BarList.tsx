@@ -1,6 +1,19 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 import { dataColor } from './dataColor.js';
+import { Legend } from './Legend.js';
+
+/** One part of a row's value: see [BarDatum.parts]. */
+export interface BarPart {
+  /** Keyed by id, so a push that re-ranks the parts moves no other part. */
+  id: string;
+  label: ReactNode;
+  value: number;
+  /** What the part's number reads as in the row's key. Defaults to the value. */
+  display?: ReactNode;
+  /** Defaults to the part's place in the row's `parts`, in the data ramp. */
+  color?: string;
+}
 
 export interface BarDatum {
   /**
@@ -23,6 +36,18 @@ export interface BarDatum {
   href?: string;
   /** What pressing the row does, where it is not a destination. */
   onSelect?: () => void;
+  /**
+   * What the row's value is made of, such as a team's tokens by seat. The
+   * row's bar is split into these, in proportion to each part's value and
+   * 2px apart, and the row is keyed under its bar with each part's name and
+   * number: a split bar with no key is a picture of some numbers. A part's
+   * hue is its place in this list unless it names one, so every row is keyed
+   * under itself and two rows may use one hue for different parts. A part
+   * with nothing in it is neither drawn nor keyed, and keeps its hue's place.
+   * The parts are the caller's to sum to `value`: the bar's length is the
+   * row's value, and the parts only divide it.
+   */
+  parts?: BarPart[];
 }
 
 /**
@@ -100,16 +125,38 @@ export function BarList({
     <ul role="list" className={cx('crewlet-bar-list', `crewlet-bar-list--${layout}`, className)}>
       {shown.map((datum, index) => {
         const width = top > 0 && datum.value > 0 ? Math.max(1, (datum.value / top) * 100) : 0;
+        /*
+         * A SPLIT BAR IS ONE BAR, divided. Its length is still the row's share
+         * of the scale, so a team split by seat ranks against the others as it
+         * did whole, and each part GROWS by its value into that length less
+         * the gaps, as a stacked bar's parts do, so the gaps come out of the
+         * parts rather than pushing the last one past the bar's end.
+         */
+        const parts = (datum.parts ?? [])
+          .map((part, at) => ({ ...part, color: part.color ?? dataColor(at) }))
+          .filter((part) => part.value > 0);
         const bar =
           width > 0 ? (
             <span
-              className="crewlet-bar-list__bar"
+              className={cx('crewlet-bar-list__bar', parts.length > 0 && 'crewlet-bar-list__bar--parts')}
               aria-hidden
-              style={{
-                width: `${width}%`,
-                '--crewlet-bar-list-bar-color': datum.color ?? dataColor(index),
-              } as CSSProperties}
-            />
+              style={
+                parts.length > 0
+                  ? { width: `${width}%` }
+                  : ({
+                      width: `${width}%`,
+                      '--crewlet-bar-list-bar-color': datum.color ?? dataColor(index),
+                    } as CSSProperties)
+              }
+            >
+              {parts.map((part) => (
+                <span
+                  key={part.id}
+                  className="crewlet-bar-list__part"
+                  style={{ flexGrow: part.value, '--crewlet-bar-list-part-color': part.color } as CSSProperties}
+                />
+              ))}
+            </span>
           ) : null;
         const value = <span className="crewlet-bar-list__value">{datum.display ?? datum.value.toLocaleString()}</span>;
         /*
@@ -182,6 +229,25 @@ export function BarList({
               </button>
             ) : (
               <span className="crewlet-bar-list__row">{body}</span>
+            )}
+            {/*
+             * THE KEY STANDS UNDER THE BAR IT KEYS, beside the row rather than
+             * inside it: a row that leads somewhere is a link or a button,
+             * which holds no list, and a key read as part of the row's name
+             * would turn "Engineering 7.9M" into every seat's name and number.
+             * Read after the row, it is the bar's words, which the bar itself
+             * is hidden from assistive technology for already having.
+             */}
+            {parts.length > 0 && (
+              <Legend
+                className="crewlet-bar-list__key"
+                items={parts.map((part) => ({
+                  id: part.id,
+                  label: part.label,
+                  color: part.color,
+                  value: part.display ?? part.value.toLocaleString(),
+                }))}
+              />
             )}
           </li>
         );
