@@ -113,6 +113,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `link` | `LinkGlyph` | `package/icons/link.svg` |
 | `list` | `ListGlyph` | `package/icons/list.svg` |
 | `list-filter` | `ListFilterGlyph` | `package/icons/list-filter.svg` |
+| `lock` | `LockGlyph` | `package/icons/lock.svg` |
 | `maximize` | `MaximizeGlyph` | `package/icons/maximize.svg` |
 | `maximize-2` | `Maximize2Glyph` | `package/icons/maximize-2.svg` |
 | `menu` | `MenuGlyph` | `package/icons/menu.svg` |
