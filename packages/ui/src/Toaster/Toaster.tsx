@@ -79,10 +79,10 @@ export interface ToasterProps<TVariant extends string = string> {
  * suite measures at 3:1 as a mark on every ground a toast stands on.
  */
 const ICONS: Record<ToastVariant, ReactNode> = {
-  info: <InfoGlyph size="md" />,
-  success: <CircleCheckGlyph size="md" />,
-  warning: <TriangleAlertGlyph size="md" />,
-  danger: <CircleAlertGlyph size="md" />,
+  info: <InfoGlyph size="lg" />,
+  success: <CircleCheckGlyph size="lg" />,
+  warning: <TriangleAlertGlyph size="lg" />,
+  danger: <CircleAlertGlyph size="lg" />,
 };
 
 /**

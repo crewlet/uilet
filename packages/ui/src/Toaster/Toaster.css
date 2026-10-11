@@ -1,96 +1,93 @@
 /*
- * The toast stack.
+ * The toast stack, drawn as the first release drew it (24a60c3): a dark strip
+ * on the page's deepest ground with the large shadow and the rim light, a
+ * 12px corner, the variant said by its mark alone, never a flood of its hue,
+ * and the countdown as a wash behind the words that drains from the right.
  *
- * ITS SURFACE IS A THEME TOKEN. 0.2.0 mixed the subtle surface 60 percent with
- * black, which is a dark strip whatever palette is painting: on a light page
- * the toast's own text measured 1.56:1 against it.
+ * IN TOKENS RATHER THAN ITS LITERALS, so it follows every theme. The strip is
+ * --color-surface-background: the first release mixed the panel with black,
+ * which read as a dark bar on a light page, where its words measured 1.56:1.
+ * The marks are the feedback INK steps, the soft moss, amber and rose it drew,
+ * measured as text on every theme. The washes are the feedback SOFT steps.
  *
- * THE DRAIN IS A RULE ALONG THE FOOT, not a wash behind the words. A tinted
- * layer under the message is a composite nothing measured, and it moves while
- * the message is being read; a 2px bar at the edge says the same thing and
- * touches no text at all. It is decoration either way: the dismissal is a
- * timer now, so a reader who asks for reduced motion still gets the toast
- * taken away.
+ * The wash is decoration: the dismissal is a timer, so a reader who asks for
+ * reduced motion gets no wash and still gets the toast taken away.
  */
-
 .crewlet-toaster {
   position: fixed;
   z-index: var(--z-index-toast);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2);
-  /* The engine's 420px, held under the viewport at the width a phone has.
-     The strip is one or two lines of 13px text and an action; at 380 the
-     commonest failure message wrapped onto a third. */
-  width: min(420px, calc(100vw - var(--spacing-9)));
+  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  width: min(380px, calc(100vw - 2 * var(--spacing-6)));
   /* The stack itself takes no presses, so the screen under it stays live
      while nothing is up; each toast takes them back for its own strip. */
   pointer-events: none;
 }
 
 .crewlet-toaster--bottom-right {
-  bottom: var(--spacing-4);
-  right: var(--spacing-4);
+  bottom: var(--spacing-6);
+  right: var(--spacing-6);
 }
 
 .crewlet-toaster--top-right {
-  top: var(--spacing-4);
-  right: var(--spacing-4);
+  top: var(--spacing-6);
+  right: var(--spacing-6);
 }
 
 .crewlet-toaster--bottom-left {
-  bottom: var(--spacing-4);
-  left: var(--spacing-4);
+  bottom: var(--spacing-6);
+  left: var(--spacing-6);
 }
 
 .crewlet-toaster--top-left {
-  top: var(--spacing-4);
-  left: var(--spacing-4);
+  top: var(--spacing-6);
+  left: var(--spacing-6);
 }
 
 .crewlet-toast {
+  /* The mark and the wash are the two places a variant spends its hue. */
   --crewlet-toast-mark: var(--color-text-secondary);
-  /*
-   * The boundary and the two inks are variables so a tone can spend them. Only
-   * one does: a failure, which is the engine's one toned strip.
-   */
-  --crewlet-toast-line: var(--color-border-default);
-  --crewlet-toast-ink: var(--color-text-primary);
-  --crewlet-toast-ink-quiet: var(--color-text-secondary);
+  --crewlet-toast-wash: var(--color-surface-pressed);
+  /* 14px at the normal density, and the corner the dismiss sits in beside it. */
+  --crewlet-toast-inset: calc(var(--spacing-3) + var(--spacing-1) / 2);
 
   pointer-events: auto;
   position: relative;
   display: flex;
   align-items: flex-start;
-  /* The panel's own gap and padding, and the panel's own surface: the engine
-     draws a toast as a small panel that happens to float, so it sits on the
-     same ground, the same hairline and the same corner as everything the
-     screen behind it is made of. */
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-8) var(--spacing-2) var(--spacing-3);
-  background: var(--color-surface-subtle);
-  border: 1px solid var(--crewlet-toast-line);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  color: var(--crewlet-toast-ink);
+  gap: var(--spacing-3);
+  padding: var(--crewlet-toast-inset) calc(var(--spacing-7) + var(--spacing-1) * 1.5) var(--crewlet-toast-inset)
+    var(--crewlet-toast-inset);
+  background: var(--color-surface-background);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl), var(--shadow-hairline);
+  color: var(--color-text-primary);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-compact);
-  line-height: var(--font-line-height-normal);
+  line-height: var(--font-line-height-body);
   letter-spacing: var(--font-letter-spacing-snug);
   overflow: hidden;
-  animation: crewlet-toast-in var(--motion-duration-base) var(--motion-easing-emphasized);
+  animation: crewlet-toast-in var(--motion-duration-slow) var(--motion-easing-emphasized);
 }
 
 @keyframes crewlet-toast-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateX(var(--spacing-4));
   }
-
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
+}
+
+/* The words sit over the wash: every child is raised, and the dismiss and the
+   wash below take their own places back. */
+.crewlet-toast > * {
+  position: relative;
+  z-index: var(--z-index-raised);
 }
 
 .crewlet-toast__icon {
@@ -100,34 +97,26 @@
   color: var(--crewlet-toast-mark);
 }
 
-/* The mark is the tone's FILL step, which is measured at 3:1 as a mark. The
-   words beside it stay in the primary ink: a coloured sentence on a coloured
-   strip is the pair that has to be measured, and this one does not exist. */
+/*
+ * A VARIANT IS ITS MARK AND ITS WASH. The words stay in the strip's own inks
+ * and the edge stays the hairline, so a failure is a rose mark on a faint rose
+ * wash rather than a red strip: the outcome is said by the glyph and the title,
+ * and the sentence beside them is read in the ink every sentence is read in.
+ * Information is the neutral mark on the neutral wash.
+ */
 .crewlet-toast--success {
-  --crewlet-toast-mark: var(--color-feedback-success);
+  --crewlet-toast-mark: var(--color-feedback-success-ink);
+  --crewlet-toast-wash: var(--color-feedback-success-soft);
 }
 
 .crewlet-toast--warning {
-  --crewlet-toast-mark: var(--color-feedback-warning);
+  --crewlet-toast-mark: var(--color-feedback-warning-ink);
+  --crewlet-toast-wash: var(--color-feedback-warning-soft);
 }
 
-/*
- * A FAILURE IS THE ONE TONED STRIP. It is the outcome that is news rather than
- * confirmation and the one that does not take itself away, so the engine gives
- * it the hue twice: the fill step on the edge, where 3:1 is the floor a
- * boundary has to clear, and the INK step on every word, which is the measured
- * text pair on this surface. Never the fill behind a word: that is the swap
- * the whole soft-and-ink split exists to stop.
- */
 .crewlet-toast--danger {
-  --crewlet-toast-mark: var(--color-feedback-danger);
-  --crewlet-toast-line: var(--color-feedback-danger);
-  --crewlet-toast-ink: var(--color-feedback-danger-ink);
-  --crewlet-toast-ink-quiet: var(--color-feedback-danger-ink);
-}
-
-.crewlet-toast--info {
-  --crewlet-toast-mark: var(--color-feedback-info);
+  --crewlet-toast-mark: var(--color-feedback-danger-ink);
+  --crewlet-toast-wash: var(--color-feedback-danger-soft);
 }
 
 /* A usage limit notice is the application's own variant: it paints the glyph
@@ -149,12 +138,12 @@
 }
 
 .crewlet-toast__message {
-  color: var(--crewlet-toast-ink-quiet);
+  color: var(--color-text-secondary);
   overflow-wrap: anywhere;
 }
 
 .crewlet-toast__actions {
-  margin-top: var(--spacing-2);
+  margin-top: calc(var(--spacing-2) + var(--spacing-1) / 2);
   display: flex;
   gap: var(--spacing-2);
 }
@@ -186,6 +175,7 @@
   border-color: var(--color-brand-accent-hover);
 }
 
+/* A failure's one filled thing is the way out of it. */
 .crewlet-toast--danger .crewlet-toast__action-btn,
 .crewlet-toast--danger .crewlet-toast__action-link {
   background: var(--color-feedback-danger);
@@ -207,8 +197,9 @@
 }
 
 /* The dismiss sits absolute in the corner so a multi-line message flows
-   under it rather than around it. 24px square: the smallest target
-   WCAG 2.2 accepts. */
+   under it rather than around it, and after the body in the document, so it
+   is drawn over the words at the same raised step. 24px square: the smallest
+   target WCAG 2.2 accepts. */
 .crewlet-toast__dismiss {
   position: absolute;
   top: var(--spacing-2);
@@ -222,10 +213,7 @@
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
-  /* The strip's own quiet ink rather than the neutral tertiary step, so the
-     close on a failure is part of the failure rather than the one grey thing
-     inside it. */
-  color: var(--crewlet-toast-ink-quiet);
+  color: var(--color-text-tertiary);
   cursor: pointer;
   transition:
     background var(--motion-duration-fast) var(--motion-easing-default),
@@ -233,25 +221,28 @@
 }
 
 .crewlet-toast__dismiss:hover {
-  background: var(--color-surface-hover);
-  color: var(--crewlet-toast-ink);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
 }
 
+/*
+ * THE COUNTDOWN IS A WASH BEHIND THE WORDS, the variant's soft step over the
+ * whole strip, draining from the right as the time runs out. It sits under
+ * every raised child, and it is the timer's picture, not the timer.
+ */
 .crewlet-toast__progress {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
+  inset: 0;
+  z-index: var(--z-index-base);
   transform-origin: left center;
-  background: var(--crewlet-toast-mark);
+  background: var(--crewlet-toast-wash);
   pointer-events: none;
   animation-name: crewlet-toast-drain;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
 }
 
-/* Paused by the class rather than by :hover, so the bar and the timer that
+/* Paused by the class rather than by :hover, so the wash and the timer that
    actually dismisses are stopped by the same event. */
 .crewlet-toast__progress.is-paused {
   animation-play-state: paused;
@@ -261,7 +252,6 @@
   from {
     transform: scaleX(1);
   }
-
   to {
     transform: scaleX(0);
   }
@@ -287,8 +277,8 @@
 
 /*
  * The strip still arrives and still goes; it just does not slide, and the
- * countdown bar holds still. The timer is untouched: a reader who asked for
- * less motion did not ask to be left with a toast that never leaves.
+ * wash is not drawn. The timer is untouched: a reader who asked for less
+ * motion did not ask to be left with a toast that never leaves.
  */
 @media (prefers-reduced-motion: reduce) {
   .crewlet-toast {
