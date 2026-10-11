@@ -61,8 +61,8 @@ function installSystem(initial: System): { set: (next: System) => void; restore:
   };
 }
 
-const TO_LIGHT = 'Switch to the light theme';
-const TO_DARK = 'Switch to the dark theme';
+const TO_LIGHT = 'Switch to light mode';
+const TO_DARK = 'Switch to dark mode';
 const theme = () => document.documentElement.getAttribute('data-theme');
 
 let platform: ReturnType<typeof installSystem> | null = null;

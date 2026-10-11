@@ -42,7 +42,7 @@ export type PreferenceControl<T extends string> =
     };
 
 interface ThemeRowProps {
-  /** Names the group. */
+  /** Names the group. Mode by default: the theme is the palette, and this row chooses its light or dark half. */
   label?: string | undefined;
   /** What each choice is called out loud. The glyphs say nothing on their own. */
   lightLabel?: string | undefined;
@@ -97,7 +97,7 @@ function StoredThemeSwitcher({
 function ThemeRow({
   value,
   onChange,
-  label = 'Theme',
+  label = 'Mode',
   lightLabel = 'Light',
   systemLabel = 'Follow the system',
   darkLabel = 'Dark',

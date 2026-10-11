@@ -39,7 +39,7 @@ export type ThemeToggleProps = ToggleButtonProps & PreferenceControl<ThemePrefer
  * full `ThemeSwitcher`, which is where a settings screen offers it.
  *
  * NAMED FOR THE ACTION, drawn as the destination. The name changes with the
- * palette ("Switch to the light theme" on a dark page), so a screen reader
+ * mode ("Switch to light mode" on a dark page), so a screen reader
  * hears what a press will do, and the glyph is the palette it goes to: a sun
  * on a dark page, a moon on a light one. It is NOT `aria-pressed`, because
  * neither palette is the "on" state of the other, and a pressed state beside a
@@ -75,8 +75,8 @@ function StoredThemeToggle({
 function ToggleButton({
   value,
   onChange,
-  toLightLabel = 'Switch to the light theme',
-  toDarkLabel = 'Switch to the dark theme',
+  toLightLabel = 'Switch to light mode',
+  toDarkLabel = 'Switch to dark mode',
   size = 'sm',
   variant = 'ghost',
   className,

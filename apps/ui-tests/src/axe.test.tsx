@@ -219,7 +219,7 @@ test('the preference controls carry no violation, stored and controlled, before 
   try {
     expect(await violations(container)).toEqual([]);
     // The toggle is renamed by a press, so the name it takes is checked too.
-    for (const toggle of screen.getAllByRole('button', { name: /switch to the/i })) fireEvent.click(toggle);
+    for (const toggle of screen.getAllByRole('button', { name: /switch to (light|dark) mode/i })) fireEvent.click(toggle);
     expect(await violations(container)).toEqual([]);
   } finally {
     // The stored controls write the root and storage, which every later case

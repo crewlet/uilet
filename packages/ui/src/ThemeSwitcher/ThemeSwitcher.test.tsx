@@ -24,9 +24,9 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-test('the theme row is a named radio group, and each choice is a word', () => {
+test('the mode row is a named radio group, and each choice is a word', () => {
   render(<ThemeSwitcher />);
-  const group = screen.getByRole('radiogroup', { name: 'Theme' });
+  const group = screen.getByRole('radiogroup', { name: 'Mode' });
   expect(group).toBeTruthy();
   expect(screen.queryByRole('tab')).toBeNull();
   for (const name of ['Light', 'Follow the system', 'Dark']) {
