@@ -175,7 +175,7 @@ test('the lockup comes in under the rail head at every density', () => {
   const head = step('size-shell-topbar');
   /* The three steps --density takes. The mark and the type are fixed; only the
      padding scales, which is what makes comfortable the tall case. */
-  for (const density of [0.82, 1, 1.14]) {
+  for (const density of [0.82, 1, 1.16]) {
     const tall = 2 * pad * density + Math.max(markBox, nameLine) + contextLine;
     expect(tall).toBeLessThanOrEqual(head);
   }

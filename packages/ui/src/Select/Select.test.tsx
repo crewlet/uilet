@@ -757,10 +757,11 @@ test("an option's leading mark is drawn before its label, hidden, and on the tri
   const row = screen.getByRole('option', { name: /Abyss/ });
   const mark = within(row).getByTestId('swatch-abyss');
   expect(mark.closest('.crewlet-select__option-leading')?.getAttribute('aria-hidden')).toBe('true');
-  // Drawn between the tick column and the label.
+  // The mark starts the row and the label follows it; the tick ends the row.
   const parts = [...row.children].map((child) => child.className);
-  expect(parts.indexOf('crewlet-select__option-leading')).toBe(parts.indexOf('crewlet-select__option-tick') + 1);
-  expect(parts.indexOf('crewlet-select__option-body')).toBe(parts.indexOf('crewlet-select__option-leading') + 1);
+  expect(parts[0]).toBe('crewlet-select__option-leading');
+  expect(parts[1]).toBe('crewlet-select__option-body');
+  expect(parts[parts.length - 1]).toBe('crewlet-select__option-tick crewlet-select__option-tick--end');
   fireEvent.mouseDown(row);
   expect(within(field).getByTestId('swatch-abyss')).toBeTruthy();
 });
@@ -844,4 +845,42 @@ test('a list handed new option objects for the same rows tells nothing new', () 
   fireEvent.click(screen.getByRole('combobox', { name: 'Theme' }));
   fireEvent.click(screen.getByRole('button', { name: 'Again' }));
   expect(told).toEqual(['crewlet']);
+});
+
+/*
+ * THE TICK MOVES ONLY FOR MARKS. A list whose rows lead with a mark ends each
+ * row with the tick, after the hint, so the marks start at the panel's edge;
+ * a list of words keeps the tick's column first, where the labels line up.
+ */
+test('a list of marked rows ends each row with its tick, and a list of words keeps it first', () => {
+  render(<ThemePicker />);
+  fireEvent.click(screen.getByRole('combobox', { name: 'Theme' }));
+  const chosenRow = screen.getByRole('option', { name: /Crewlet/ });
+  const last = chosenRow.lastElementChild;
+  expect(last?.classList.contains('crewlet-select__option-tick--end')).toBe(true);
+  expect(last?.querySelector('svg')).toBeTruthy();
+  // After the hint, which is what takes the row's free space.
+  expect(last?.previousElementSibling?.className).toBe('crewlet-listbox__hint');
+  cleanup();
+
+  render(<Picker />);
+  fireEvent.click(trigger());
+  const row = screen.getByRole('option', { name: /Software Engineer/ });
+  expect(row.firstElementChild?.className).toBe('crewlet-select__option-tick');
+  expect(row.querySelector('.crewlet-select__option-tick--end')).toBeNull();
+});
+
+/*
+ * THE PANEL'S HEIGHT IS THE LIST'S. The shared listbox register caps a list
+ * at min(360px, 60vh), and inside a Select's panel that cap overrode a taller
+ * `--crewlet-select-menu-max-height`, so a caller asking for room got the same
+ * short list. The panel now holds the cap on the window, and the list inside
+ * it, scoped for the weight, has none of its own.
+ */
+test("a taller panel is a taller list, and the panel keeps the window's cap", () => {
+  const css = selectCss();
+  const menu = /\.crewlet-select__menu\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(menu).toMatch(/max-height:\s*min\(var\(--crewlet-select-menu-max-height\),\s*60vh\)/);
+  const list = /\.crewlet-select__menu\s+\.crewlet-select__list\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(list).toMatch(/max-height:\s*none/);
 });

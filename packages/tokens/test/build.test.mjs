@@ -87,7 +87,7 @@ describe('the emitted units', () => {
     // row. The floor is what makes the compact setting safe
     // for a finger, and it is checked at the three densities the density
     // stylesheet can actually set.
-    const densities = { compact: 0.82, normal: 1, comfortable: 1.14 };
+    const densities = { compact: 0.82, normal: 1, comfortable: 1.16 };
     const declared = root(read('density.css'));
     for (const [name, value] of Object.entries(densities)) {
       const selector = name === 'normal' ? declared.get('--density') : null;
@@ -101,14 +101,14 @@ describe('the emitted units', () => {
     }
     // And the floor is not simply a bigger number everywhere: at comfortable
     // density the step grows past it.
-    assert.equal(resolvePx(tokens.get('--size-control-sm'), 1.14), 29.639999999999997);
+    assert.equal(resolvePx(tokens.get('--size-control-sm'), 1.16), 30.159999999999997);
   });
 
   test('the density stylesheet declares the three steps the tokens name', () => {
     const density = read('density.css');
     assert.match(density, /:root\s*\{\s*--density: 1;/);
     assert.match(density, /:root\[data-density="compact"\]\s*\{\s*--density: 0\.82;/);
-    assert.match(density, /:root\[data-density="comfortable"\]\s*\{\s*--density: 1\.14;/);
+    assert.match(density, /:root\[data-density="comfortable"\]\s*\{\s*--density: 1\.16;/);
   });
 });
 
@@ -211,9 +211,9 @@ describe('the display, body, sheet, shell, breakpoint and breath tokens', () => 
     // and a rail that grew with the density would move a breakpoint that a
     // density cannot move.
     assert.equal(resolvePx(tokens.get('--size-shell-inset'), 0.82), 6.56);
-    assert.equal(resolvePx(tokens.get('--size-shell-inset'), 1.14), 9.12);
+    assert.equal(resolvePx(tokens.get('--size-shell-inset'), 1.16), 9.28);
     for (const fixed of ['--size-shell-rail', '--size-shell-topbar']) {
-      assert.equal(resolvePx(tokens.get(fixed), 0.82), resolvePx(tokens.get(fixed), 1.14), fixed);
+      assert.equal(resolvePx(tokens.get(fixed), 0.82), resolvePx(tokens.get(fixed), 1.16), fixed);
     }
   });
 });

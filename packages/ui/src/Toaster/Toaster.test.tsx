@@ -88,21 +88,21 @@ describe('Toaster', () => {
     expect(region('polite')?.textContent).toBe('Erledigt');
   });
 
-  test('a failure spends its hue on the edge and on the words, never behind them', () => {
-    // The fill step on the boundary, where 3:1 is the floor a rule has to
-    // clear, and the ink step on every word, which is the measured text pair
-    // on this surface. A `background` here would be the fill behind a label,
-    // which is the swap the whole soft-and-ink split exists to stop.
-    const rule = /\.crewlet-toast--danger\s*\{([^}]*)\}/.exec(toasterCss())?.[1] ?? '';
-    expect(rule).toContain('--crewlet-toast-line: var(--color-feedback-danger)');
-    expect(rule).toContain('--crewlet-toast-ink: var(--color-feedback-danger-ink)');
-    expect(rule).toContain('--crewlet-toast-ink-quiet: var(--color-feedback-danger-ink)');
-    expect(rule).not.toMatch(/(^|;|\s)background/);
-    // And the strip reads them, rather than declaring them and painting the
-    // neutral steps anyway.
+  test('a variant spends its hue on its mark and its wash, never on its words or its edge', () => {
+    // The first release's rule: a failure is a soft rose mark on a faint rose
+    // wash, never a red flood. The mark is the ink step, measured as text on
+    // every theme, and the wash is the soft step behind the words.
     const css = toasterCss().replace(/\/\*[\s\S]*?\*\//g, ' ');
-    expect(css).toMatch(/\.crewlet-toast\s*\{[^}]*color:\s*var\(--crewlet-toast-ink\)/);
-    expect(css).toMatch(/\.crewlet-toast__message\s*\{[^}]*color:\s*var\(--crewlet-toast-ink-quiet\)/);
+    const rule = /\.crewlet-toast--danger\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toContain('--crewlet-toast-mark: var(--color-feedback-danger-ink)');
+    expect(rule).toContain('--crewlet-toast-wash: var(--color-feedback-danger-soft)');
+    expect(rule).not.toMatch(/(^|;|\s)(color|border|border-color|background):/);
+    // The strip reads them: the mark on the glyph and the wash on the countdown,
+    // and the words keep the strip's own inks on the strip's own hairline.
+    expect(css).toMatch(/\.crewlet-toast__icon\s*\{[^}]*color:\s*var\(--crewlet-toast-mark\)/);
+    expect(css).toMatch(/\.crewlet-toast__progress\s*\{[^}]*background:\s*var\(--crewlet-toast-wash\)/);
+    expect(css).toMatch(/\.crewlet-toast\s*\{[^}]*border:\s*1px solid var\(--color-border-default\)/);
+    expect(css).toMatch(/\.crewlet-toast__message\s*\{[^}]*color:\s*var\(--color-text-secondary\)/);
   });
 
   test('no toast is a live region of its own', () => {

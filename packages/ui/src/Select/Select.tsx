@@ -523,6 +523,14 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     return out;
   }, [offered]);
   const flat = useMemo(() => groups.flatMap((group) => group.items), [groups]);
+  /*
+   * A LIST WHOSE ROWS LEAD WITH A MARK ENDS THEM WITH THE TICK. The tick's
+   * column is held open on every row so the labels line up, and in front of
+   * a mark (a swatch, an avatar, a glyph) it set every mark a column in from
+   * the panel's edge, where the row is read from. The tick follows the words
+   * instead, after the hint when there is one.
+   */
+  const tickAtEnd = useMemo(() => flat.some((option) => option.leading !== undefined), [flat]);
 
   const close = useCallback((returnFocus: boolean) => {
     setOpen(false);
@@ -898,6 +906,14 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       const at = index;
       const selected = isChosen(option.value);
       const highlighted = at === listbox.active;
+      const tick = (
+        <span
+          className={cx('crewlet-select__option-tick', tickAtEnd && 'crewlet-select__option-tick--end')}
+          aria-hidden="true"
+        >
+          {selected ? <CheckGlyph size="sm" /> : null}
+        </span>
+      );
       return (
         <div
           key={String(option.value)}
@@ -926,9 +942,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
             renderOption(option, { active: highlighted, selected })
           ) : (
             <>
-              <span className="crewlet-select__option-tick" aria-hidden="true">
-                {selected ? <CheckGlyph size="sm" /> : null}
-              </span>
+              {tickAtEnd ? null : tick}
               {option.leading !== undefined ? (
                 <span className="crewlet-select__option-leading" aria-hidden="true">
                   {option.leading}
@@ -947,6 +961,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
                   <span className="crewlet-listbox__hint">{option.hint}</span>
                 </>
               ) : null}
+              {tickAtEnd ? tick : null}
             </>
           )}
         </div>

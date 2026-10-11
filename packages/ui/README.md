@@ -198,6 +198,22 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.14.0
+
+0.14.0 draws toasts as the first release did and quiets the pickers.
+
+**Toasts are the first release's strip again**: a dark strip on `--color-surface-background` with the large shadow and the rim light, a 12px corner, a 20px mark, a slide in from the right, and the countdown as a wash behind the words that drains from the right. A variant spends its hue on its mark (the feedback ink step) and its wash (the feedback soft step) only, so a failure is a rose mark on a faint rose wash with a rose action, never red words on a red edge. Reduced motion keeps the strip still and draws no wash.
+
+**A picker's boundary is a button's.** `Select`, `DateTimePicker` and `TimeWindowPicker` draw their trigger on `--color-border-strong`, as the secondary button does, and step to `--color-border-strong-hover` under the pointer. Text boxes, checkboxes and switches keep `--color-border-control` at 3:1, as do the typed boxes inside the pickers' panels.
+
+**A `Select` list that leads with marks ends its rows with the tick**, so a swatch, an avatar or a glyph starts at the panel's edge. A list of words keeps the tick's column first.
+
+**`--crewlet-select-menu-max-height` is the list's height.** The shared listbox cap of min(360px, 60vh) no longer overrides a taller panel; the panel keeps the 60vh cap on the window.
+
+`@crewlethq/tokens`: Origin's dark `--color-border-default` is #2e2e30, and the comfortable density is 1.16 (it was 1.14), a shade larger at every gap, pad, row and control.
+
+What to change: a test that reads a failure toast's red edge or red words, or a picker's control boundary, reads the new ones. Everything else is unchanged.
+
 ## Changes in 0.13.0
 
 0.13.0 adds the parts the engine console's themes, project switcher, inbox and knowledge base are built with, and calls the light and dark choice Mode.

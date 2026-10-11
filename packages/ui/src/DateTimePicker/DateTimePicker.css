@@ -1,7 +1,8 @@
 /*
  * DateTimePicker: a Select-shaped trigger over a calendar dialog.
  *
- * The trigger borrows the Select's geometry so a date box and a picker line
+ * The trigger borrows the Select's geometry and its button boundary
+ * (--color-border-strong; see Select.css) so a date box and a picker line
  * up in the same toolbar; the panel holds the shared CalendarGrid, so the
  * month looks and behaves the same here as in every other picker.
  */
@@ -17,7 +18,7 @@
      height. */
   padding: 0 var(--spacing-2) 0 var(--spacing-3);
   background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-control);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font-family: inherit;
@@ -34,7 +35,7 @@
 }
 
 .crewlet-datetime:hover:not(:disabled) {
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-strong-hover);
 }
 
 /*
