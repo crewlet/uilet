@@ -1,0 +1,91 @@
+/*
+ * The gallery of themes: each group's heading over a grid of cards.
+ *
+ * A ROW HOLDS THE SAME NUMBER OF CARDS IN EVERY GROUP (`columns`, three by
+ * default), so a group of one draws a card the size of every other card
+ * rather than one stretched across the row, and the swatches line up from
+ * group to group.
+ */
+
+.crewlet-theme-gallery__groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.crewlet-theme-gallery__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.crewlet-theme-gallery__heading {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-normal);
+}
+
+.crewlet-theme-gallery__cards {
+  display: grid;
+  grid-template-columns: repeat(var(--crewlet-theme-gallery-columns), minmax(0, 1fr));
+  gap: var(--spacing-2);
+}
+
+/*
+ * A CARD IS ITS BORDER. Resting, the plain hairline; under the pointer, the
+ * strong one; chosen, the accent. One line round the card in every state, so
+ * the chosen card is never a card inside a frame.
+ */
+.crewlet-theme-gallery__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.crewlet-theme-gallery__card:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+
+.crewlet-theme-gallery__card.is-chosen {
+  border-color: var(--color-brand-accent);
+}
+
+/* The ring is drawn OVER the border, inset by its width, never a second line outside it. */
+.crewlet-theme-gallery__card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -1px;
+}
+
+.crewlet-theme-gallery__card:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.crewlet-theme-gallery__name {
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * FORCED COLORS keeps the border and drops the accent, so the chosen card
+ * would look like every other; the system's own selected colour says it.
+ */
+@media (forced-colors: active) {
+  .crewlet-theme-gallery__card.is-chosen {
+    border-color: Highlight;
+    border-width: 2px;
+  }
+}
