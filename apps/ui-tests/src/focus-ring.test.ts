@@ -140,6 +140,9 @@ test('a ring stands off its element only where the element draws no edge', () =>
       // A character tile, which draws no edge: the badge inside it carries the
       // chosen option's ring, so the focus ring stands off the tile round both.
       'CharacterPicker/CharacterPicker.css | .crewlet-character-picker__option:focus-visible',
+      // The badge as a button, which draws no edge of its own: the ring stands
+      // off it round the badge, as a character tile's does.
+      'AvatarPicker/AvatarPicker.css | button.crewlet-avatar-picker:focus-visible',
     ].sort(),
   );
 });

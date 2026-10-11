@@ -1,0 +1,54 @@
+/*
+ * The badge as a button, with a pencil pip on its corner saying it changes
+ * the badge. No chrome of its own beyond the focus ring: the badge is the
+ * control's face.
+ */
+.crewlet-avatar-picker {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: none;
+  cursor: pointer;
+}
+
+button.crewlet-avatar-picker:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-avatar-picker__pip {
+  position: absolute;
+  right: calc(var(--spacing-1) * -1);
+  bottom: calc(var(--spacing-1) * -1);
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-circle);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+}
+
+button.crewlet-avatar-picker:hover .crewlet-avatar-picker__pip {
+  color: var(--color-text-primary);
+}
+
+.crewlet-avatar-picker__body {
+  display: grid;
+  gap: var(--spacing-2);
+  width: max-content;
+  max-width: 100%;
+  padding: var(--spacing-3);
+}
+
+.crewlet-avatar-picker__label {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}

@@ -22,6 +22,8 @@ export interface ListInputProps {
   multiline?: boolean | undefined;
   /** Where the values come from, or what shape they take. */
   helper?: ReactNode | undefined;
+  /** Show the helper only while the list has focus, as `FormField`'s `helperOnFocus`. */
+  helperOnFocus?: boolean | undefined;
   /** Why the last value was refused. */
   error?: ReactNode | undefined;
   /** Shown in the new-item box. */
@@ -93,6 +95,7 @@ export function ListInput({
   onChange,
   multiline = false,
   helper,
+  helperOnFocus,
   error,
   placeholder,
   disabled = false,
@@ -256,6 +259,7 @@ export function ListInput({
       label={label}
       optional={optional}
       helper={helper}
+      helperOnFocus={helperOnFocus}
       error={error}
       className="crewlet-list-input"
       /*

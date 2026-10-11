@@ -42,7 +42,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | ---- | ---------- |
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
 | Content and text | `Text` (the eight registers), `Prose`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
-| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker` |
+| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList` |
 | Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
@@ -190,6 +190,22 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.11.0
+
+0.11.0 adds the parts a dense editing form is built from.
+
+**`FactList`** draws facts a form shows and does not edit as 32px rows in one bordered box: the label on the left, the value on the right. A row with a `reason` carries a lock and says why in a tooltip on hover and to a screen reader after its value, in place of a caption under every value.
+
+**`AvatarPicker`** is an agent's badge that opens its own picker. Pressing it opens the characters and the hues in a popover, and each choice applies as it is made; a `disabled` one is the badge alone. It replaces a `CharacterPicker` and a `HuePicker` drawn open in a form.
+
+**`Tabs` take a `marker`** per item: `{ tone: 'danger', count, label }` for problems, or `{ tone: 'warning' | 'changed', label }` for a 6px dot. One per tab, the most urgent, and it stands in for the item's `count` while set; `label` is what a screen reader hears. `TabsMarker` is its type.
+
+**`FormField` takes `helperOnFocus`**: the helper is still in `aria-describedby`, and is drawn only while the field has focus, so a form whose every field carries a sentence reads as labels and values at rest. `ListInput` passes the same prop to its field.
+
+`@crewlethq/icons` adds `LockGlyph` (Lucide's `lock`), which `FactList` draws.
+
+What to change: nothing. Every addition is new.
 
 ## Breaking changes in 0.10.0
 

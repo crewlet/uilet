@@ -502,6 +502,13 @@
   color: var(--color-text-tertiary);
 }
 
+/* SHOWN ONLY WHILE THE FIELD HAS FOCUS (`helperOnFocus`): a dense form reads as
+   labels and values at rest, and the sentence appears under the field the
+   reader is in. Still described, so a screen reader hears it on entry. */
+.crewlet-form-field--helper-on-focus:not(:focus-within) .crewlet-form-field__helper {
+  display: none;
+}
+
 /*
  * The error line, on the danger INK. It stays BESIDE the help rather than
  * replacing it: a reader told they are wrong needs the line that says what

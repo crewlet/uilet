@@ -217,3 +217,29 @@ export const RouterLinks: Story = {
     </div>
   ),
 };
+
+function MarkedTabs() {
+  const [value, setValue] = useState('profile');
+  return (
+    <Tabs
+      variant="underline"
+      ariaLabel="Seat sections"
+      value={value}
+      onValueChange={setValue}
+      items={[
+        { value: 'profile', label: 'Profile', marker: { tone: 'danger', count: 1, label: '1 problem' } },
+        { value: 'work', label: 'Work', marker: { tone: 'changed', label: 'Changed' } },
+        { value: 'model', label: 'Model', marker: { tone: 'warning', label: 'A warning' } },
+        { value: 'tools', label: 'Integrations' },
+        { value: 'advanced', label: 'Advanced', count: 6 },
+      ]}
+    />
+  );
+}
+
+/**
+ * MARKERS: what needs the reader behind a tab. Problems are a danger count, a
+ * warning or an unsaved change a 6px dot; one per tab, the most urgent, and a
+ * marker stands in for the tab's count while it is set.
+ */
+export const Markers: Story = { render: () => <MarkedTabs /> };

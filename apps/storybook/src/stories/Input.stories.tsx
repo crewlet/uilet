@@ -154,3 +154,20 @@ export const Sections: Story = {
     return <Demo />;
   },
 };
+
+/**
+ * HELPER ON FOCUS: a dense form reads as labels and values at rest, and each
+ * field's sentence appears under it while the reader is in it.
+ */
+export const HelperOnFocus: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 16, maxWidth: 360 }}>
+      <FormField label="Name" helper="Seat names are unique: a lead or a manages entry names exactly one seat." helperOnFocus>
+        {(field) => <Input id={field.id} aria-describedby={field.describedBy} defaultValue="Software Engineer" />}
+      </FormField>
+      <FormField label="Repositories" helper="Empty means every repository the installation covers." helperOnFocus optional>
+        {(field) => <Input id={field.id} aria-describedby={field.describedBy} placeholder="owner/repo" />}
+      </FormField>
+    </div>
+  ),
+};

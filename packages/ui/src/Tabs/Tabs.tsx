@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Count } from '../Count/index.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import { tabStop, useRoving } from './roving.js';
 
@@ -16,10 +17,24 @@ export interface TabsItem {
   icon?: ReactNode;
   /** How many things are behind this tab. Drawn as a Count beside the label. */
   count?: number | null;
+  /**
+   * What needs the reader behind this tab, drawn after the label: problems
+   * as a danger count, a warning or an unsaved change as a 6px dot. It
+   * replaces the count while it is set. `label` is what a screen reader hears.
+   */
+  marker?: TabsMarker | undefined;
   disabled?: boolean;
   /** Any extra props the consumer's renderItem needs to read. */
   [key: string]: unknown;
 }
+
+/**
+ * A tab's marker. ONE PER TAB, the most urgent: a problem, then a warning,
+ * then a change, so a row of tabs reads as "where is something wrong" first.
+ */
+export type TabsMarker =
+  | { tone: 'danger'; count: number; label: string }
+  | { tone: 'warning' | 'changed'; label: string };
 
 export interface TabsRenderItemProps {
   item: TabsItem;
@@ -222,7 +237,20 @@ export function Tabs({
       <>
         {item.icon ? <span className="crewlet-tabs__icon">{item.icon}</span> : null}
         <span className="crewlet-tabs__label">{item.label}</span>
-        {item.count != null ? <Count value={item.count} /> : null}
+        {item.marker ? (
+          item.marker.tone === 'danger' ? (
+            <span className="crewlet-tabs__marker crewlet-tabs__marker--danger">
+              <span aria-hidden="true">{item.marker.count}</span>
+              <VisuallyHidden>{item.marker.label}</VisuallyHidden>
+            </span>
+          ) : (
+            <span className={`crewlet-tabs__marker crewlet-tabs__marker--${item.marker.tone}`}>
+              <VisuallyHidden>{item.marker.label}</VisuallyHidden>
+            </span>
+          )
+        ) : item.count != null ? (
+          <Count value={item.count} />
+        ) : null}
       </>
     );
 

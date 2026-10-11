@@ -337,3 +337,36 @@
     transition: none;
   }
 }
+
+/* ── markers ──────────────────────────────────────────────────────────────
+   What needs the reader behind a tab: a danger count for problems, a 6px
+   dot for a warning or an unsaved change. One per tab, the most urgent. */
+.crewlet-tabs__marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.crewlet-tabs__marker--danger {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-circle);
+  background: var(--color-feedback-danger-soft);
+  color: var(--color-feedback-danger-ink);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+  line-height: 1;
+}
+.crewlet-tabs__marker--warning,
+.crewlet-tabs__marker--changed {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-circle);
+}
+.crewlet-tabs__marker--warning {
+  background: var(--color-feedback-warning);
+}
+.crewlet-tabs__marker--changed {
+  background: var(--color-brand-accent);
+}

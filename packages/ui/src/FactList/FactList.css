@@ -1,0 +1,57 @@
+/*
+ * Read-only facts in one bordered box, a 32px row each: label and lock on the
+ * left, the value on the right. The rows share the box's hairline between
+ * them, so a list of six reads as one object rather than six cards.
+ */
+.crewlet-fact-list {
+  display: grid;
+  margin: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.crewlet-fact-list__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 32px;
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-fact-list__row + .crewlet-fact-list__row {
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-fact-list__row.is-locked {
+  cursor: help;
+}
+
+.crewlet-fact-list__label {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-fact-list__lock {
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-fact-list__value {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-secondary);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
