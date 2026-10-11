@@ -4,7 +4,13 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import { tabStop, useRoving } from './roving.js';
 
-export type TabsVariant = 'pill' | 'underline';
+/**
+ * How the row is drawn. `pill` is a segmented well with a raised chip for the
+ * one that is on; `underline` is a strip with a sliding bar, for a screen's
+ * sections; `chip` is a row of quiet chips with no well, the one that is on
+ * outlined in the accent, for the lenses beside an object's name in a bar.
+ */
+export type TabsVariant = 'pill' | 'underline' | 'chip';
 
 export type TabsSize = 'sm' | 'md';
 

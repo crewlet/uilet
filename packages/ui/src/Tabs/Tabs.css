@@ -300,6 +300,55 @@
   outline-offset: 0;
 }
 
+/* ─── Chip (a lens row) ───────────────────────────────────────── */
+/*
+ * QUIET CHIPS WITH NO WELL: the lenses of an object or a scope, set beside its
+ * name in a page's bar. A well round them was a second box beside the name the
+ * lenses are about, and a raised chip inside it a second highlight. Here the
+ * chip that is on is drawn by its own border in the accent and nothing else,
+ * which is the kit's one way of saying "this one is chosen".
+ */
+.crewlet-tabs--chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-1) / 2);
+}
+
+.crewlet-tabs--chip .crewlet-tabs__tab {
+  min-height: var(--size-control-sm);
+  padding: 0 calc(var(--spacing-2) + var(--spacing-1) / 2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-tabs--chip .crewlet-tabs__tab:hover:not(.is-disabled):not(.is-active) {
+  background: var(--color-surface-hover);
+}
+
+/* A COUNT IS A QUIET FIGURE here, not a pill: a pill inside a chip is a box
+   inside a box, beside a name that already has its own. */
+.crewlet-tabs--chip .crewlet-count {
+  min-width: 0;
+  padding: 0;
+  background: none;
+}
+
+/* An outline rather than a border, so a chip turning on does not move its
+   neighbours by a pixel, and forced-colors mode keeps it. */
+.crewlet-tabs--chip .crewlet-tabs__tab.is-active {
+  color: var(--color-text-primary);
+  outline: 1px solid var(--color-brand-accent);
+  outline-offset: -1px;
+}
+
+/* THE RING TAKES THE BORDER'S PLACE: declared after it and of the same
+   weight, so a focused chip that is on draws one edge, the ring. */
+.crewlet-tabs--chip .crewlet-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
 .crewlet-tabs__tab.is-disabled,
 .crewlet-tabs__tab:disabled {
   opacity: 0.55;
