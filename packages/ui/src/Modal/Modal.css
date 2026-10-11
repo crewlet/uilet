@@ -289,7 +289,7 @@
  * padding is only the least it keeps when a title wraps. It was the 16px step
  * while the bar was 64px, which a full control step filled exactly; at 52px
  * the same padding stood the head 12px past the bar behind it. At the 4px step
- * the head is the bar's height with the control step at every density, 36.48px
+ * the head is the bar's height with the control step at every density, 37.12px
  * at comfortable included, and with a subtitle under the title.
  *
  * It used to be the tighter band, 49px with a close control alone, and the

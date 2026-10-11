@@ -39,7 +39,7 @@ const tokensCss = join(here, '../../../packages/tokens/dist/css/tokens.css');
 export const DENSITIES = [
   ['compact', 0.82],
   ['normal', 1],
-  ['comfortable', 1.14],
+  ['comfortable', 1.16],
 ] as const;
 
 /** Every custom property the tokens package emits, by name. */

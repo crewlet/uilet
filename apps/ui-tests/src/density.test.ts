@@ -55,7 +55,7 @@ test('the shell inset is a gap, so it follows the density like every other', () 
   // edge and the floating sheet. The rail and the bar beside it are fixed, and
   // breakpoint.shell is derived at density 1, so this is the one part of the
   // shell's geometry a density setting moves.
-  const expected = { compact: '6.56px', normal: '8px', comfortable: '9.12px' } as const;
+  const expected = { compact: '6.56px', normal: '8px', comfortable: '9.28px' } as const;
   for (const [name, factor] of DENSITIES) {
     const remove = installCss(
       atDensity(

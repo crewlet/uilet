@@ -210,7 +210,7 @@ places:
 
 **`--crewlet-select-menu-max-height` is the list's height.** The shared listbox cap of min(360px, 60vh) no longer overrides a taller panel; the panel keeps the 60vh cap on the window.
 
-`@crewlethq/tokens`: Origin's dark `--color-border-default` is #2e2e30.
+`@crewlethq/tokens`: Origin's dark `--color-border-default` is #2e2e30, and the comfortable density is 1.16 (it was 1.14), a shade larger at every gap, pad, row and control.
 
 What to change: a test that reads a failure toast's red edge or red words, or a picker's control boundary, reads the new ones. Everything else is unchanged.
 

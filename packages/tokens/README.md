@@ -273,7 +273,7 @@ The surface ramp was three rungs (`background`, `subtle` and `elevated`) plus fo
 ```css
 :root { --density: 1 }
 :root[data-density="compact"] { --density: 0.82 }
-:root[data-density="comfortable"] { --density: 1.14 }
+:root[data-density="comfortable"] { --density: 1.16 }
 ```
 
 Every spacing and size token is emitted as `calc(Npx * var(--density, 1))`, so a density setting is a real change to every gap, pad, row and control rather than to three font sizes, and every value is unchanged at density 1. The stylesheet is a separate import because a product with no density control should not ship the selectors that switch one; the tokens themselves work without it.
