@@ -367,7 +367,14 @@ test('the rail has no accessibility violations, expanded or collapsed', async ()
 describe('the rail colour', () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const tokensCss = resolve(here, '../../../tokens/dist/css');
-  const css = readFileSync(resolve(here, 'SidebarNav.css'), 'utf8');
+  /*
+   * The rail's own stylesheet, and the kit's KeyChip after it: a row's key is
+   * drawn by `KeyChip`, so the pair the rail spends on it is read from there.
+   */
+  const css = [
+    readFileSync(resolve(here, 'SidebarNav.css'), 'utf8'),
+    readFileSync(resolve(here, '../KeyChip/KeyChip.css'), 'utf8'),
+  ].join('\n');
   const states = paletteStates({
     tokens: readFileSync(resolve(tokensCss, 'tokens.css'), 'utf8'),
     themes: readFileSync(resolve(tokensCss, 'themes.css'), 'utf8'),
@@ -388,7 +395,7 @@ describe('the rail colour', () => {
   /** The fill and the ink one rule binds, by the tokens it names. */
   function pair(selector: string): { fill: string | null; ink: string } {
     const rule = new RegExp(`${selector.replace(/[.[\]()^$*+?|\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(css);
-    if (!rule) throw new Error(`SidebarNav.css declares no rule for ${selector}`);
+    if (!rule) throw new Error(`SidebarNav.css and KeyChip.css declare no rule for ${selector}`);
     const body = rule[1] ?? '';
     const fill = /background:\s*var\((--[\w-]+)\)/.exec(body);
     const ink = /(?:^|;|\s)color:\s*var\((--[\w-]+)\)/.exec(body);
@@ -400,7 +407,7 @@ describe('the rail colour', () => {
   const HOVERED = '.crewlet-nav-item__row:hover';
   const CURRENT = ".crewlet-nav-item__row[aria-current='page']";
   const ATTENTION = '.crewlet-nav-item__badge';
-  const LEAD = '.crewlet-nav-item__lead';
+  const LEAD = '.crewlet-key-chip';
 
   function colour(values: Map<string, string>, name: string, ground: Rgb): Rgb {
     const raw = values.get(name);

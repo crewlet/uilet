@@ -28,6 +28,7 @@
 
 import { useId, useState, type MouseEventHandler, type ReactNode } from 'react';
 import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
+import { KeyChip } from '../KeyChip/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -294,7 +295,7 @@ export function NavItem({
           {icon}
         </span>
       ) : null}
-      {lead ? <span className="crewlet-nav-item__lead">{lead}</span> : null}
+      {lead ? <KeyChip className="crewlet-nav-item__lead">{lead}</KeyChip> : null}
       {/* A space the layout ignores and a name reads: a flex container draws
           no whitespace between its items, and without it the chip and the
           label run together into "ENGCore platform". */}
