@@ -25,6 +25,7 @@ import {
   DIMMED_TEXT,
   fromOklab,
   hex,
+  MARK_ON_FILL,
   oklabToLinear,
   OPAQUE_SURFACES,
   OVERLAY_STEPS,
@@ -417,6 +418,30 @@ describe('the state and chart hues', () => {
   const ADJACENT_RULE = 'adjacent data hues stay separable';
   const DESTRUCTIVE_RULE = ACTION_STEPS[2][0];
   const summary = (check) => `${check.rule}: ${check.subject}: ${check.detail}`;
+
+  test('every status glyph is measured on its fill, in every state', () => {
+    // An avatar's status badge is a state fill carrying a glyph. A table that
+    // stopped measuring one of the three would pass the one badge nobody can
+    // read: white on the dark info step is 1.6:1.
+    const GLYPH_RULE = 'a glyph clears 3:1 on its own fill';
+    assert.deepEqual(
+      MARK_ON_FILL.map(([, fill]) => fill),
+      ['--color-feedback-info', '--color-feedback-warning', '--color-feedback-danger'],
+    );
+    for (const state of THEME_STATES) {
+      for (const [ink, fill] of MARK_ON_FILL) {
+        const measured = checks.filter((check) => check.state === state && check.rule === GLYPH_RULE && check.subject === `${ink} on ${fill}`);
+        assert.equal(measured.length, 1, `${state}: ${fill}`);
+        assert.ok(measured[0].ok, `${state}: ${describeFailure(measured[0])}`);
+      }
+    }
+    // And it can fail: white glyphs on the dark info step.
+    const white = checksAfter('dark', '--color-text-inverse', '#ffffff').filter((check) => check.rule === GLYPH_RULE);
+    assert.deepEqual(
+      white.map((check) => check.subject),
+      ['--color-text-inverse on --color-feedback-info', '--color-text-inverse on --color-feedback-warning'],
+    );
+  });
 
   test('the chart ramp is four series, in every theme state and in the typed export', () => {
     // A fifth series would have to sit between two of the four in a hue

@@ -236,6 +236,23 @@ export const LABEL_ON_FILL = [
 ];
 
 /**
+ * A fill with the GLYPH a component draws inside it: an avatar's status badge,
+ * which is a state's fill step carrying a small play, question or stop mark in
+ * the inverse ink. A glyph is a graphic rather than running text, so it is
+ * held to the 3:1 a mark is held to rather than to a label's 4.5:1.
+ *
+ * THE INVERSE INK, because it is the one ink that clears every state fill in
+ * both palettes: white sits under 2:1 on the dark palette's info and warning
+ * steps, and the dark ink under 3:1 on none of them. Each fill is measured
+ * over every ground it can sit on, as a label's is.
+ */
+export const MARK_ON_FILL = [
+  ['--color-text-inverse', '--color-feedback-info'],
+  ['--color-text-inverse', '--color-feedback-warning'],
+  ['--color-text-inverse', '--color-feedback-danger'],
+];
+
+/**
  * THE PRIMARY ACTION'S THREE FILLS, at rest, under the pointer and pressed,
  * each held against the one before it: [rule, the step, the fill it follows].
  *
@@ -757,6 +774,11 @@ function checkState(state, values, profile, push) {
     // monochrome primary this list used to carry had two.
     const low = worst(colour(label), opaque.map(([name, rgb]) => [`${fill} on ${name}`, flatten(values.get(fill), rgb)]));
     say('a label clears 4.5:1 on its own fill', low.ratio >= 4.5, `${label} on ${fill}`, low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
+  }
+
+  for (const [ink, fill] of MARK_ON_FILL) {
+    const low = worst(colour(ink), opaque.map(([name, rgb]) => [`${fill} on ${name}`, flatten(values.get(fill), rgb)]));
+    say('a glyph clears 3:1 on its own fill', low.ratio >= 3, `${ink} on ${fill}`, low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
   }
 
   // THE PRIMARY ACTION'S STEPS. See ACTION_STEPS.
