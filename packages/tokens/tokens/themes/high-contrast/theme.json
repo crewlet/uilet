@@ -1,0 +1,8 @@
+{
+  "name": "High contrast",
+  "group": "high-contrast",
+  "tag": "AAA text",
+  "description": "Every word at 7:1 or more, hairlines a reader can find, and a muted step that reads rather than decorates.",
+  "order": 1,
+  "contrast": "high"
+}

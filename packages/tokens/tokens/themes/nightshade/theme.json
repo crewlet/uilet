@@ -1,0 +1,11 @@
+{
+  "name": "Nightshade",
+  "group": "cool",
+  "tag": "Iris at night",
+  "description": "Nocturne's blue-black grounds with Iris's periwinkle accent, states and charts.",
+  "order": 2,
+  "tint": {
+    "hue": 272,
+    "chroma": 3
+  }
+}

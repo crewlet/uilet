@@ -1,0 +1,242 @@
+{
+  "color": {
+    "surface": {
+      "frame": {
+        "value": "#000000"
+      },
+      "background": {
+        "value": "#0b0b10"
+      },
+      "subtle": {
+        "value": "#0f0f16",
+        "comment": "The design's #13131a, moved dE 1.82. At the design value: raised separates from the card, measured dE 1.34 >= 3."
+      },
+      "elevated": {
+        "value": "#16161d",
+        "comment": "The design's #1f1f27, moved dE 3.94. At the design value: a pressed row is visible over a hovered one, measured dE 2.79 >= 3 from a hovered row on it."
+      },
+      "hover": {
+        "value": "rgba(255, 255, 255, 0.039)",
+        "comment": "The design's rgba(255, 255, 255, 0.061), drawn at rgba(255, 255, 255, 0.039). At the design value: a pressed row is visible over a hovered one, measured dE 0.86 >= 3 on raised. The pressed row cannot rise to meet it and keep the tertiary step at 7:1, so the hover comes down instead."
+      },
+      "pressed": {
+        "value": "rgba(255, 255, 255, 0.07)",
+        "comment": "A step the kit draws: the design draws no pressed row; a press is a stronger hover. Placed where every rule holds."
+      },
+      "inset": {
+        "value": "rgba(255, 255, 255, 0.028)"
+      },
+      "glass": {
+        "value": "rgba(15, 15, 21, 0.9)"
+      },
+      "scrim": {
+        "value": "rgba(0, 0, 0, 0.6)"
+      },
+      "veil": {
+        "value": "rgba(0, 0, 0, 0.65)"
+      },
+      "inverse": {
+        "value": "#fcfcfc"
+      }
+    },
+    "text": {
+      "primary": {
+        "value": "#f8f8fb",
+        "comment": "The design's #f4f4f8, moved dE 1.18. At the design value: a dimmed word is a step from the word being read, measured 1.94:1 >= 2."
+      },
+      "secondary": {
+        "value": "#e2e2ea"
+      },
+      "tertiary": {
+        "value": "#b1b1bc",
+        "comment": "The design's #adadb9, moved dE 1.25. At the design value: text step clears its floor, measured 6.74:1 >= 7, worst on a pressed row on raised."
+      },
+      "muted": {
+        "value": "#9696a6"
+      },
+      "onAccent": {
+        "value": "#ffffff"
+      },
+      "onDanger": {
+        "value": "#ffffff"
+      },
+      "onScrim": {
+        "value": "#ffffff"
+      },
+      "inverse": {
+        "value": "#000000"
+      }
+    },
+    "brand": {
+      "accent": {
+        "value": "#6c55e6"
+      },
+      "accentHover": {
+        "value": "#6249de"
+      },
+      "accentActive": {
+        "value": "#573dd0"
+      },
+      "accentInk": {
+        "value": "#c9bdff"
+      },
+      "accentSoft": {
+        "value": "rgba(108, 85, 230, 0.16)"
+      }
+    },
+    "border": {
+      "default": {
+        "value": "#7c7c90"
+      },
+      "hover": {
+        "value": "#9a9aae"
+      },
+      "strong": {
+        "value": "#9a9aae"
+      },
+      "strongHover": {
+        "value": "#b8b8c8"
+      },
+      "control": {
+        "value": "#a2a2b4",
+        "comment": "A step the kit draws: the design draws no control boundary; it starts from the neutral mark. Placed where every rule holds."
+      }
+    },
+    "focus": {
+      "value": "#ffe066",
+      "comment": "The design draws the ring in yellow rather than the accent, so it clears 3:1 on every ground, a pressed raised row included, and never reads as a selected row."
+    },
+    "feedback": {
+      "success": {
+        "value": "#34c98b"
+      },
+      "successInk": {
+        "value": "#8cefc4"
+      },
+      "warning": {
+        "value": "#f0b425"
+      },
+      "warningInk": {
+        "value": "#ffd98a"
+      },
+      "danger": {
+        "value": "#d73756"
+      },
+      "dangerHover": {
+        "value": "#cc2b4e",
+        "comment": "A step the kit draws: a step of the danger fill: the design draws no hover for the destructive action. Placed where every rule holds."
+      },
+      "dangerInk": {
+        "value": "#ffb4c1"
+      },
+      "info": {
+        "value": "#61d0ff"
+      },
+      "infoInk": {
+        "value": "#a6e5ff"
+      }
+    },
+    "data": {
+      "1": {
+        "value": "#4d8ff6"
+      },
+      "2": {
+        "value": "#e67737"
+      },
+      "3": {
+        "value": "#26b582"
+      },
+      "4": {
+        "value": "#eab106"
+      },
+      "other": {
+        "value": "#9a9aab"
+      }
+    },
+    "node": {
+      "purple": {
+        "value": "#8e6ed4"
+      },
+      "purpleInk": {
+        "value": "#cabae0"
+      },
+      "cyan": {
+        "value": "#5ca8be"
+      },
+      "cyanInk": {
+        "value": "#b3d7e0"
+      },
+      "green": {
+        "value": "#62a578"
+      },
+      "greenInk": {
+        "value": "#b8d8c0"
+      },
+      "amber": {
+        "value": "#c89866"
+      },
+      "amberInk": {
+        "value": "#e0c89e"
+      },
+      "rose": {
+        "value": "#c8757f"
+      },
+      "roseInk": {
+        "value": "#e0bfc4"
+      },
+      "blue": {
+        "value": "#5b7fc7"
+      },
+      "blueInk": {
+        "value": "#b9c5e0"
+      }
+    },
+    "scrollbar": {
+      "value": "rgba(255, 255, 255, 0.16)"
+    },
+    "scrollbarHover": {
+      "value": "rgba(255, 255, 255, 0.26)"
+    }
+  },
+  "shadow": {
+    "xs": {
+      "value": "0 1px 2px rgba(0, 0, 0, 0.2)"
+    },
+    "sm": {
+      "value": "0 2px 8px rgba(0, 0, 0, 0.15)"
+    },
+    "md": {
+      "value": "0 4px 12px rgba(0, 0, 0, 0.25)"
+    },
+    "lg": {
+      "value": "0 8px 24px rgba(0, 0, 0, 0.3)"
+    },
+    "xl": {
+      "value": "0 12px 32px rgba(0, 0, 0, 0.4)"
+    },
+    "sheet": {
+      "value": "-8px 0 32px rgba(0, 0, 0, 0.4)"
+    },
+    "2xl": {
+      "value": "0 16px 64px rgba(0, 0, 0, 0.6)"
+    },
+    "card": {
+      "value": "0 8px 24px rgba(0, 0, 0, 0.1)"
+    },
+    "rimLit": {
+      "value": "0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04)"
+    },
+    "hairline": {
+      "value": "inset 0 1px 0 rgba(255, 255, 255, 0.04)"
+    },
+    "focus": {
+      "value": "0 0 0 2px var(--color-surface-background), 0 0 0 4px var(--color-focus)"
+    },
+    "selection": {
+      "value": "inset 0 0 0 2px var(--color-brand-accent)"
+    },
+    "glow": {
+      "value": "0 4px 24px rgba(var(--color-brand-accent-rgb), 0.3)"
+    }
+  }
+}

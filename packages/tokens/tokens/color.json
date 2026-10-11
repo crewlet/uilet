@@ -30,7 +30,9 @@
       "secondary": { "value": "#c9ced8" },
       "tertiary": { "value": "#95a2b6", "comment": "A fact, so it clears 4.5:1 on every surface it can land on, including a pressed row inside a raised surface. #8c99ad measured 4.17:1 there." },
       "muted": { "value": "#686b70", "comment": "DECORATION ONLY: a hairline glyph, a disabled affordance, a border. Measured BETWEEN 2.8:1 and 4.5:1 on the panel, because a step that crept up to the fact floor would invite itself into a table cell, which is the whole reason it has a separate name." },
-      "onAccent": { "value": "#ffffff", "comment": "The label on an accent fill, and on the danger fill. White in every palette: a primary button whose label changed colour with the theme would read as two different buttons." },
+      "onAccent": { "value": "#ffffff", "comment": "The label on an accent fill. White here and in the default palettes; a theme whose accent is light carries a dark label instead, which is why the danger fill and the scrim have labels of their own." },
+      "onDanger": { "value": "#ffffff", "comment": "The label on the danger fill and its hover: a destructive action. White in every palette, whatever the accent carries." },
+      "onScrim": { "value": "#ffffff", "comment": "The label drawn over the scrim, and over the seeded tints it lands on: an upload overlay's word and spinner, and a seeded badge's initials. White in every palette, whatever the accent carries." },
       "inverse": { "value": "#09090b" }
     },
     "border": {

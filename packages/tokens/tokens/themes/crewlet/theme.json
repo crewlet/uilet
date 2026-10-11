@@ -1,0 +1,8 @@
+{
+  "$comment": "The default theme. It paints the bare root in themes.css, so a document that sets no data-palette attribute gets it.",
+  "name": "Crewlet",
+  "group": "crewlet",
+  "tag": "Default",
+  "description": "Blue-black neutrals with a violet accent and a cyan working state.",
+  "order": 1
+}

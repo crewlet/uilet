@@ -3,11 +3,13 @@
  * rule the palette suite holds, found the same way every time.
  *
  *   npm run build --workspace @crewlethq/tokens
- *   node packages/tokens/scripts/fit-palette.mjs            # both palettes
- *   node packages/tokens/scripts/fit-palette.mjs light      # one of them
+ *   node packages/tokens/scripts/fit-palette.mjs              # the default theme, both palettes
+ *   node packages/tokens/scripts/fit-palette.mjs light        # one of them
+ *   node packages/tokens/scripts/fit-palette.mjs abyss        # a named theme, both palettes
+ *   node packages/tokens/scripts/fit-palette.mjs abyss dark   # one of its palettes
  *
  * WHY IT EXISTS. Every colour the kit ships is one of two things: the value the
- * approved design declares (tokens/intent.json), or the least move from it that
+ * theme's design declares (tokens/themes/<id>/intent.json), or the least move from it that
  * one of the suite's floors forced, and a moved token's comment names the
  * design value, the dE of the move and the rule. Found by hand, one token at a
  * time with the others held still, a "least move" is only least against the
@@ -17,7 +19,7 @@
  *
  * WHAT IT READS. The built sheets in dist/css, which are what the suite
  * measures and the only place the derived steps exist (a state's soft and line
- * steps, the accent's triple); tokens/intent.json for the design; and the two
+ * steps, the accent's triple); the theme's intent.json for the design; and its two
  * theme files, only to tell a WRITTEN value, which can be fitted, from one the
  * build derives, which follows its fill. A token neither intent.json nor
  * ANCHORS names stays exactly as built, and every candidate is measured by
@@ -57,7 +59,7 @@
  * lightened to spare a chart series, is not a least move of the series.
  *
  * WHAT IT FITS AGAINST: every rule of the suite, over the states that paint
- * the palette being fitted (PALETTES) and the structural rules over the theme
+ * the palette being fitted (palettesOf) and the structural rules over the theme
  * file. No rule is left out: a rule the fit did not hold would be a floor the
  * shipped palette clears by the accident of where the search stopped.
  *
@@ -100,7 +102,7 @@
  * passes it was chosen.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   deltaE,
@@ -110,6 +112,7 @@ import {
   LABEL_ON_FILL,
   oklabToLinear,
   OPAQUE_SURFACES,
+  paletteSelectors,
   paletteStates,
   parseHex,
   parseRgba,
@@ -272,14 +275,20 @@ const TIES = {
 /** The hues that are a family rather than a value: the four states and the chart series. */
 const HUE_FAMILIES = [/^--color-feedback-(info|warning|danger|success)(-ink)?$/, /^--color-data-\d+$/];
 
-/** The palettes, the theme blocks that declare each, and the suite states that measure it. */
-const PALETTES = {
-  dark: { openings: [':root {'], states: ['dark'] },
-  light: {
-    openings: [':root:not([data-theme="dark"]) {', ':root[data-theme="light"] {'],
-    states: ['light (media query)', 'light (attribute)'],
-  },
-};
+/** The theme that paints the bare root; every other theme paints under data-palette. */
+const DEFAULT_THEME = 'crewlet';
+
+/** A theme's palettes, the blocks that declare each, and the suite states that measure it. */
+function palettesOf(theme) {
+  const selectors = paletteSelectors(theme === DEFAULT_THEME ? null : theme);
+  return {
+    dark: { openings: [`${selectors.dark} {`], states: ['dark'] },
+    light: {
+      openings: [`${selectors.lightMedia} {`, `${selectors.lightAttribute} {`],
+      states: ['light (media query)', 'light (attribute)'],
+    },
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Reading
@@ -358,12 +367,12 @@ function mulberry32(seed) {
 // ---------------------------------------------------------------------------
 
 /** The roles of one palette, and the design declarations that are measured but not fitted. */
-function rolesOf(name, intent, built, written) {
+function rolesOf(name, theme, intent, built, written) {
   const roles = new Map();
   const add = (token, anchor) => {
     const value = built.get(token);
     if (value === undefined) throw new Error(`${name}: ${token} is a role, and the built palette does not declare it`);
-    if (!written.has(token)) throw new Error(`${name}: ${token} is a role, and tokens/themes/${name}.json does not write it`);
+    if (!written.has(token)) throw new Error(`${name}: ${token} is a role, and tokens/themes/${theme}/${name}.json does not write it`);
     const kind = parseHex(value) ? 'hex' : 'alpha';
     const axes = kind === 'alpha' ? ['a'] : HUE_FAMILIES.some((family) => family.test(token)) ? ['L', 'C', 'h'] : ['L'];
     roles.set(token, { token, kind, axes, built: value, ...anchor });
@@ -392,14 +401,14 @@ function rolesOf(name, intent, built, written) {
   return { roles, followers };
 }
 
-function fitPalette(name, sources, intent) {
-  const palette = PALETTES[name];
+function fitPalette(name, { theme, sources, intent, palettes }) {
+  const palette = palettes[name];
   const built = paletteStates(sources)[palette.states[0]];
-  const written = writtenIn(JSON.parse(readText(`tokens/themes/${name}.json`)));
+  const written = writtenIn(JSON.parse(readText(`tokens/themes/${theme}/${name}.json`)));
   for (const token of written) {
-    if (built.get(token) === undefined) throw new Error(`${name}: tokens/themes/${name}.json writes ${token}, which the built palette does not declare`);
+    if (built.get(token) === undefined) throw new Error(`${name}: tokens/themes/${theme}/${name}.json writes ${token}, which the built palette does not declare`);
   }
-  const { roles, followers } = rolesOf(name, intent, built, written);
+  const { roles, followers } = rolesOf(name, theme, intent, built, written);
   const rng = mulberry32(SEED);
   const pick = (list) => list[Math.floor(rng() * list.length)];
 
@@ -482,7 +491,9 @@ function fitPalette(name, sources, intent) {
       }
       themes = themes.slice(0, bodyStart) + body + themes.slice(bodyEnd);
     }
-    return { tokens: sources.tokens, themes };
+    // The theme's own profile travels with the sheets: its palette, its tint
+    // and its contrast floors are what every candidate is measured under.
+    return { ...sources, themes };
   }
 
   // --- anchors, and what a candidate costs ----------------------------------
@@ -1254,7 +1265,7 @@ function fitPalette(name, sources, intent) {
     }
     return { role, anchor, value, distance, binding: [...binding.values()] };
   });
-  return { name, rows, followers, start, current, searched, finished };
+  return { name: `${theme} theme's ${name}`, rows, followers, start, current, searched, finished };
 }
 
 // ---------------------------------------------------------------------------
@@ -1302,10 +1313,25 @@ function print({ name, rows, followers, start, current, searched, finished }) {
   process.stdout.write(`${out.join('\n')}\n\n`);
 }
 
-const sources = { tokens: readText('dist/css/tokens.css'), themes: readText('dist/css/themes.css') };
-const intent = JSON.parse(readText('tokens/intent.json'));
 const asked = process.argv.slice(2);
-for (const name of asked.length > 0 ? asked : Object.keys(PALETTES)) {
-  if (PALETTES[name] === undefined) throw new Error(`"${name}" is not a palette; the palettes are ${Object.keys(PALETTES).join(' and ')}`);
-  print(fitPalette(name, sources, intent));
+const themeIds = readdirSync(here('tokens/themes'), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name);
+const theme = themeIds.includes(asked[0]) ? asked.shift() : DEFAULT_THEME;
+const meta = JSON.parse(readText(`tokens/themes/${theme}/theme.json`));
+const named = theme !== DEFAULT_THEME;
+const sources = {
+  tokens: readText('dist/css/tokens.css'),
+  // A named theme is measured as a browser paints it: the default's blocks,
+  // then the theme's own under its attribute.
+  themes: named ? `${readText('dist/css/themes.css')}\n${readText(`dist/css/themes/${theme}.css`)}` : readText('dist/css/themes.css'),
+  palette: named ? theme : null,
+  tint: meta.tint ?? null,
+  contrast: meta.contrast ?? 'standard',
+};
+const intent = JSON.parse(readText(`tokens/themes/${theme}/intent.json`));
+const palettes = palettesOf(theme);
+for (const name of asked.length > 0 ? asked : Object.keys(palettes)) {
+  if (palettes[name] === undefined) throw new Error(`"${name}" is not a palette; the palettes are ${Object.keys(palettes).join(' and ')}, after an optional theme id (${themeIds.join(', ')})`);
+  print(fitPalette(name, { theme, sources, intent, palettes }));
 }

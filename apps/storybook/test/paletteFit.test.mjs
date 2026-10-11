@@ -19,7 +19,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { MOVED_DE, PALETTES, channels, fitPalettes, restore } from '../src/paletteFit.ts';
 import { flatten, hex } from '@crewlethq/tokens/test/palette';
-import intent from '../../../packages/tokens/tokens/intent.json' with { type: 'json' };
+import intent from '../../../packages/tokens/tokens/themes/crewlet/intent.json' with { type: 'json' };
 
 const require = createRequire(import.meta.url);
 const css = dirname(require.resolve('@crewlethq/tokens/css'));

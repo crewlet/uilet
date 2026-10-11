@@ -1,0 +1,241 @@
+{
+  "color": {
+    "surface": {
+      "frame": {
+        "value": "#e9ecf3"
+      },
+      "background": {
+        "value": "#f6f7fb"
+      },
+      "subtle": {
+        "value": "#fcfcfc"
+      },
+      "elevated": {
+        "value": "#f1f2f6"
+      },
+      "hover": {
+        "value": "rgba(0, 0, 0, 0.044)"
+      },
+      "pressed": {
+        "value": "rgba(0, 0, 0, 0.086)",
+        "comment": "A step the kit draws from surface-hover: the design draws no pressed row; a press is a stronger hover. At that value: a pressed row is visible over a hovered one, measured dE 0.00 >= 3 from a hovered row on it."
+      },
+      "inset": {
+        "value": "rgba(0, 0, 0, 0.026)"
+      },
+      "glass": {
+        "value": "rgba(252, 252, 252, 0.90)"
+      },
+      "scrim": {
+        "value": "rgba(0, 0, 0, 0.6)"
+      },
+      "veil": {
+        "value": "rgba(233, 236, 243, 0.65)"
+      },
+      "inverse": {
+        "value": "#000000"
+      }
+    },
+    "text": {
+      "primary": {
+        "value": "#000000"
+      },
+      "secondary": {
+        "value": "#17171f"
+      },
+      "tertiary": {
+        "value": "#403f4c",
+        "comment": "The design's #42424f, moved dE 1.05. At the design value: text step clears its floor, measured 6.76:1 >= 7, worst on the selected tint on the frame."
+      },
+      "muted": {
+        "value": "#5b5b69"
+      },
+      "onAccent": {
+        "value": "#ffffff"
+      },
+      "onDanger": {
+        "value": "#ffffff"
+      },
+      "onScrim": {
+        "value": "#ffffff"
+      },
+      "inverse": {
+        "value": "#f6f7fb"
+      }
+    },
+    "brand": {
+      "accent": {
+        "value": "#4424c4"
+      },
+      "accentHover": {
+        "value": "#3a1db0"
+      },
+      "accentActive": {
+        "value": "#31169c"
+      },
+      "accentInk": {
+        "value": "#3a1db0"
+      },
+      "accentSoft": {
+        "value": "rgba(68, 36, 196, 0.125)"
+      }
+    },
+    "border": {
+      "default": {
+        "value": "#6f6f82"
+      },
+      "hover": {
+        "value": "#4f4f60"
+      },
+      "strong": {
+        "value": "#4f4f60"
+      },
+      "strongHover": {
+        "value": "#383846"
+      },
+      "control": {
+        "value": "#5b5b69"
+      }
+    },
+    "focus": {
+      "value": "#4424c4",
+      "comment": "A step the kit draws from brand-accent: the ring is drawn in the accent."
+    },
+    "feedback": {
+      "success": {
+        "value": "#0b9a74"
+      },
+      "successInk": {
+        "value": "#004b30",
+        "comment": "The design's #00553b, moved dE 3.40. At the design value: ink step clears 7:1 in high contrast, measured 6.08:1 >= 7, worst on the selected tint on the frame."
+      },
+      "warning": {
+        "value": "#c17300"
+      },
+      "warningInk": {
+        "value": "#673300",
+        "comment": "The design's #6b3b00, moved dE 2.35. At the design value: ink step clears 7:1 in high contrast, measured 6.38:1 >= 7, worst on the selected tint on the frame."
+      },
+      "danger": {
+        "value": "#b9112c"
+      },
+      "dangerHover": {
+        "value": "#ac0025",
+        "comment": "A step the kit draws from feedback-danger: a step of the danger fill: the design draws no hover for the destructive action. At that value: a hovered destructive action is a visible step away from its label, measured dE 0.00 >= 3, and text-on-danger 6.61:1 -> 6.61:1 rises."
+      },
+      "dangerInk": {
+        "value": "#87001f",
+        "comment": "The design's #8e0022, moved dE 1.60. At the design value: ink step clears 7:1 in high contrast, measured 6.60:1 >= 7, worst on the selected tint on the frame."
+      },
+      "info": {
+        "value": "#2f92b4"
+      },
+      "infoInk": {
+        "value": "#00446d",
+        "comment": "The design's #004a73, moved dE 2.00. At the design value: ink step clears 7:1 in high contrast, measured 6.44:1 >= 7, worst on the selected tint on the frame."
+      }
+    },
+    "data": {
+      "1": {
+        "value": "#5c76c3"
+      },
+      "2": {
+        "value": "#dd5920"
+      },
+      "3": {
+        "value": "#00956e"
+      },
+      "4": {
+        "value": "#c27600"
+      },
+      "other": {
+        "value": "#5b5b69"
+      }
+    },
+    "node": {
+      "purple": {
+        "value": "#7150b3"
+      },
+      "purpleInk": {
+        "value": "#573394"
+      },
+      "cyan": {
+        "value": "#166b80"
+      },
+      "cyanInk": {
+        "value": "#004f62"
+      },
+      "green": {
+        "value": "#2c7046"
+      },
+      "greenInk": {
+        "value": "#05532b"
+      },
+      "amber": {
+        "value": "#865a28"
+      },
+      "amberInk": {
+        "value": "#683e03"
+      },
+      "rose": {
+        "value": "#984a55"
+      },
+      "roseInk": {
+        "value": "#7a2f3c"
+      },
+      "blue": {
+        "value": "#4062a7"
+      },
+      "blueInk": {
+        "value": "#264588"
+      }
+    },
+    "scrollbar": {
+      "value": "rgba(7, 8, 13, 0.2)"
+    },
+    "scrollbarHover": {
+      "value": "rgba(7, 8, 13, 0.32)"
+    }
+  },
+  "shadow": {
+    "xs": {
+      "value": "0 1px 2px rgba(7, 8, 13, 0.06)"
+    },
+    "sm": {
+      "value": "0 2px 8px rgba(7, 8, 13, 0.07)"
+    },
+    "md": {
+      "value": "0 4px 12px rgba(7, 8, 13, 0.08), 0 1px 3px rgba(7, 8, 13, 0.06)"
+    },
+    "lg": {
+      "value": "0 8px 24px rgba(7, 8, 13, 0.12)"
+    },
+    "xl": {
+      "value": "0 16px 40px rgba(7, 8, 13, 0.16), 0 2px 8px rgba(7, 8, 13, 0.08)"
+    },
+    "sheet": {
+      "value": "-16px 0 40px rgba(7, 8, 13, 0.16), -2px 0 8px rgba(7, 8, 13, 0.08)"
+    },
+    "2xl": {
+      "value": "0 16px 64px rgba(7, 8, 13, 0.20)"
+    },
+    "card": {
+      "value": "0 8px 24px rgba(7, 8, 13, 0.07)"
+    },
+    "rimLit": {
+      "value": "0 4px 24px rgba(7, 8, 13, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.6)"
+    },
+    "hairline": {
+      "value": "none"
+    },
+    "focus": {
+      "value": "0 0 0 2px var(--color-surface-background), 0 0 0 4px var(--color-focus)"
+    },
+    "selection": {
+      "value": "inset 0 0 0 2px var(--color-brand-accent)"
+    },
+    "glow": {
+      "value": "0 4px 24px rgba(var(--color-brand-accent-rgb), 0.22)"
+    }
+  }
+}

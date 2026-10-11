@@ -28,6 +28,7 @@ import {
   MARK_ON_FILL,
   oklabToLinear,
   OPAQUE_SURFACES,
+  paletteSelectors,
   OVERLAY_STEPS,
   paletteStates,
   parseHex,
@@ -40,7 +41,7 @@ import {
   VEIL_ALPHA,
   withAlpha,
 } from './palette.mjs';
-import { color, themes as typed } from '../dist/index.js';
+import { color, DEFAULT_THEME_ID, themeRegistry, themes as typed } from '../dist/index.js';
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../dist/css/${name}`, import.meta.url)), 'utf8');
 // tokens.css first, themes.css second: they share the :root selector, neither
@@ -484,7 +485,7 @@ describe('the state and chart hues', () => {
     // (deuteranopia 4.9).
     const failing = checksAfter('dark', '--color-feedback-danger', '#f0506e').map(summary);
     assert.deepEqual(failing, [
-      `${LABEL_RULE}: --color-text-on-accent on --color-feedback-danger: 3.46:1 (worst on --color-feedback-danger on --color-surface-frame)`,
+      `${LABEL_RULE}: --color-text-on-danger on --color-feedback-danger: 3.46:1 (worst on --color-feedback-danger on --color-surface-frame)`,
       `${STATUS_RULE}: --color-feedback-success vs --color-feedback-danger: dE n34.5/p18.6/d5.9 >= 10`,
       `${DANGER_RULE}: --color-data-2: dE n11.4/p9.9/d6.8 >= 14 normal, 8 dichromat`,
       `${DANGER_RULE}: --color-data-3: dE n32.5/p12.7/d4.9 >= 14 normal, 8 dichromat`,
@@ -555,5 +556,109 @@ describe('the colour maths', () => {
         }
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The named themes
+// ---------------------------------------------------------------------------
+
+/**
+ * A named theme's sources, as a browser paints it: the default's blocks, then
+ * the theme's own sheet under its data-palette attribute, measured under the
+ * profile the registry declares for it. `edit` rewrites the theme's own sheet.
+ */
+function namedSources(theme, edit = (css) => css) {
+  return {
+    ...sources,
+    themes: `${sources.themes}\n${edit(read(`themes/${theme.id}.css`))}`,
+    palette: theme.id,
+    tint: theme.tint,
+    contrast: theme.contrast,
+  };
+}
+const named = themeRegistry.filter((theme) => theme.id !== DEFAULT_THEME_ID);
+const byId = (id) => themeRegistry.find((theme) => theme.id === id);
+
+/** The rules a named theme fails once ONE declaration of its dark block is edited, each once. */
+function namedFailuresAfter(id, name, value) {
+  const theme = byId(id);
+  const opening = `${paletteSelectors(id).dark} {`;
+  const failures = runPalette(
+    namedSources(theme, (css) => editBlock(css, opening, (body) => body.replace(new RegExp(`${name}: [^;]+;`), `${name}: ${value};`))),
+  ).failures.filter((check) => check.state === 'dark' || check.state === 'the token files');
+  return [...new Set(failures.map((check) => check.rule))];
+}
+
+describe('the named themes', () => {
+  test('the registry lists the default first and every named theme after it', () => {
+    assert.equal(themeRegistry[0].id, DEFAULT_THEME_ID);
+    assert.ok(named.length >= 8, `${named.length} named themes`);
+    for (const theme of themeRegistry) {
+      for (const mode of ['dark', 'light']) {
+        for (const [key, value] of Object.entries(theme.swatch[mode])) assert.ok(parseHex(value), `${theme.id} ${mode} swatch ${key} is "${value}"`);
+      }
+    }
+  });
+
+  for (const theme of named) {
+    test(`${theme.id} passes every rule in every theme state, under its own profile`, () => {
+      const { checks, failures } = runPalette(namedSources(theme));
+      assert.deepEqual(failures.map(describeFailure), []);
+      for (const state of THEME_STATES) assert.ok(checks.some((check) => check.state === state), `${theme.id}: nothing measured in ${state}`);
+      assert.ok(!checks.some((check) => check.state === 'base'), `${theme.id}: the token layer is measured with the default, not again here`);
+    });
+  }
+
+  test('all.css paints every theme exactly as its own sheet does', () => {
+    const all = read('themes/all.css');
+    for (const theme of named) {
+      const own = paletteStates(namedSources(theme));
+      const together = paletteStates({ ...namedSources(theme), themes: `${sources.themes}\n${all}` });
+      for (const state of THEME_STATES) assert.deepEqual([...together[state]], [...own[state]], `${theme.id} ${state}`);
+    }
+  });
+
+  test('a theme paints every slot itself, so nothing of the default shows through', () => {
+    const states = paletteStates(namedSources(byId('abyss')));
+    const defaults = paletteStates(sources);
+    assert.notEqual(states.dark.get('--color-surface-frame'), defaults.dark.get('--color-surface-frame'));
+    const opening = `${paletteSelectors('abyss').dark} {`;
+    const failures = runPalette(namedSources(byId('abyss'), (css) => editBlock(css, opening, (body) => body.replace(/\s*--color-text-muted: [^;]+;/, ''))))
+      .failures.filter((check) => check.state === 'the token files')
+      .map((check) => check.rule);
+    assert.ok(failures.includes('a theme declares exactly the slots the default declares'), failures.join(', '));
+  });
+
+  test('a tinted rung past its declared chroma, or turned off its hue, is caught', () => {
+    assert.ok(namedFailuresAfter('abyss', '--color-surface-subtle', '#0b2414').includes('a tinted ramp stays inside its declared tint'));
+    assert.ok(byId('violet').tint === null, 'violet declares no tint');
+    assert.ok(namedFailuresAfter('violet', '--color-surface-subtle', '#1a1030').includes('the neutral ramp stays neutral'));
+  });
+
+  test('an accent no more colourful than its tinted ground is caught', () => {
+    assert.ok(namedFailuresAfter('abyss', '--color-brand-accent', '#77708c').includes('the accent carries more colour than the ground'));
+  });
+
+  test('the high-contrast profile holds text at 7:1 and the muted step readable', () => {
+    const theme = byId('high-contrast');
+    assert.equal(theme.contrast, 'high');
+    const failures = namedFailuresAfter('high-contrast', '--color-text-tertiary', '#8c8c99');
+    assert.ok(failures.includes('text step clears its floor'), failures.join(', '));
+    assert.ok(namedFailuresAfter('high-contrast', '--color-text-muted', '#4d4d58').includes('text-muted reads in high contrast'));
+    const checks = runPalette(namedSources(theme)).checks;
+    for (const rule of ['ink step clears 7:1 in high contrast', 'a hairline clears 3:1 in high contrast', 'text-muted reads in high contrast']) {
+      assert.ok(checks.some((check) => check.rule === rule), `${rule} is measured`);
+    }
+    assert.ok(!checks.some((check) => check.rule === 'text-muted is decoration'), 'the decoration band is replaced, not added to');
+  });
+
+  test('a light accent carries a dark label, while the danger fill and the scrim keep white', () => {
+    const states = paletteStates(namedSources(byId('iris')));
+    assert.notEqual(states.dark.get('--color-text-on-accent'), '#ffffff');
+    assert.equal(states.dark.get('--color-text-on-danger'), '#ffffff');
+    assert.equal(states.dark.get('--color-text-on-scrim'), '#ffffff');
+    const dark = states.dark.get('--color-text-on-accent');
+    assert.ok(namedFailuresAfter('iris', '--color-text-on-scrim', dark).includes('a label on the scrim clears 4.5:1'));
   });
 });

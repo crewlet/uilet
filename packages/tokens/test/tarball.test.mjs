@@ -19,7 +19,9 @@
  * - imports the suite by its package name, through the exports map, reads the
  *   two sheets the way a consumer's suite does (Crewlet's palette.test.ts
  *   resolves `@crewlethq/tokens/css` and `/css/themes`), and holds the four
- *   entry points a consumer calls to the shapes palette.d.mts declares.
+ *   entry points a consumer calls to the shapes palette.d.mts declares;
+ * - resolves every named theme's sheet the same way, from the registry the
+ *   package exports, and measures each under the profile the registry gives.
  *
  * It needs the build (dist/ is what is packed), npm and tar, and it stays out
  * of the tarball itself: it reads the package from outside.
@@ -144,6 +146,7 @@ describe('the entry points, reached by package name', () => {
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { describeFailure, paletteStates, runPalette, tightest } from '@crewlethq/tokens/test/palette';
+import { DEFAULT_THEME_ID, themeRegistry } from '@crewlethq/tokens';
 
 const require = createRequire(import.meta.url);
 const at = (name) => readFileSync(require.resolve('@crewlethq/tokens/css' + name), 'utf8');
@@ -163,6 +166,12 @@ process.stdout.write(JSON.stringify({
   described: describeFailure(sample),
   sample,
   tightest: tightest(result.checks),
+  named: themeRegistry.filter((theme) => theme.id !== DEFAULT_THEME_ID).map((theme) => {
+    const sheet = require.resolve('@crewlethq/tokens/css/themes/' + theme.id);
+    const measured = runPalette({ ...sources, themes: sources.themes + '\\n' + readFileSync(sheet, 'utf8'), palette: theme.id, tint: theme.tint, contrast: theme.contrast });
+    return { id: theme.id, sheet, checks: measured.checks.length, failures: measured.failures.map(describeFailure) };
+  }),
+  all: require.resolve('@crewlethq/tokens/css/themes/all'),
 }));
 `,
     );
@@ -174,6 +183,18 @@ process.stdout.write(JSON.stringify({
     // `require.resolve`, as Crewlet's palette.test.ts reads them.
     assert.equal(report.resolved, join(installed, 'test', 'palette.mjs'));
     assert.deepEqual(report.sheets, [join(installed, 'dist', 'css', 'tokens.css'), join(installed, 'dist', 'css', 'themes.css')]);
+  });
+
+  test('every named theme resolves by its id from the registry, and clears every rule under its own profile', () => {
+    // Crewlet's palette.test.ts loops the registry the same way, so a theme
+    // the registry lists and the exports map cannot reach fails here first.
+    assert.ok(report.named.length >= 8, `the registry lists ${report.named.length} named themes`);
+    for (const { id, sheet, checks, failures } of report.named) {
+      assert.equal(sheet, join(installed, 'dist', 'css', 'themes', `${id}.css`));
+      assert.ok(checks > 400, `${id}: only ${checks} checks ran`);
+      assert.deepEqual(failures, [], id);
+    }
+    assert.equal(report.all, join(installed, 'dist', 'css', 'themes', 'all.css'));
   });
 
   test('runPalette answers states, checks and failures, and the palette clears every rule', () => {

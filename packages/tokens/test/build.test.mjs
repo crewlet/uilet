@@ -17,7 +17,7 @@ import { describe, test } from 'node:test';
 import { cascade, parseHex, parseRgba, withAlpha } from './color.mjs';
 import { SOFT_ALPHA, paletteStates } from './palette.mjs';
 import * as exported from '../dist/index.js';
-import { breakpoint, font, size, spacing, themes } from '../dist/index.js';
+import { DEFAULT_THEME_ID, breakpoint, font, isThemeId, size, spacing, themeGroups, themeRegistry, themes } from '../dist/index.js';
 
 const read = (name) => readFileSync(fileURLToPath(new URL(`../dist/css/${name}`, import.meta.url)), 'utf8');
 const tokensCss = read('tokens.css');
@@ -25,6 +25,16 @@ const themesCss = read('themes.css');
 const source = (css) => [{ name: 'css', css }];
 const root = (css) => cascade(source(css), (block) => block.atRule === null && block.selector === ':root');
 const tokens = root(tokensCss);
+
+/** The sheets that paint one theme: the default palettes, and a named theme's own over them. */
+const sourcesOf = (id) =>
+  id === DEFAULT_THEME_ID
+    ? { tokens: tokensCss, themes: themesCss }
+    : { tokens: tokensCss, themes: `${themesCss}\n${read(`themes/${id}.css`)}`, palette: id };
+
+/** Every state of every theme the registry lists, as [label, values]. */
+const everyState = () =>
+  themeRegistry.flatMap((theme) => Object.entries(paletteStates(sourcesOf(theme.id))).map(([state, values]) => [`${theme.id} ${state}`, values]));
 
 /**
  * Resolve the two value shapes the density transform emits, and nothing else.
@@ -177,8 +187,11 @@ describe('the display, body, sheet, shell, breakpoint and breath tokens', () => 
     // make the next token added look untyped.
     const leaves = (tree) =>
       Object.values(tree).reduce((count, value) => count + (value !== null && typeof value === 'object' ? leaves(value) : 1), 0);
+    // The palettes and the theme registry are re-exported from themes.js
+    // rather than declared in index.d.ts, so the reader does not see them.
+    const reExported = new Set(['themes', 'themeGroups', 'themeRegistry', 'DEFAULT_THEME_ID', 'isThemeId']);
     const expected = Object.entries(exported)
-      .filter(([name]) => name !== 'themes')
+      .filter(([name]) => !reExported.has(name))
       .reduce((count, [, tree]) => count + leaves(tree), 0);
     assert.equal(typed.size, expected);
   });
@@ -238,8 +251,9 @@ describe('the font faces', () => {
 describe('the derived tints', () => {
   test('every soft and line step is its own fill at the declared alpha', () => {
     // The tint is derived at build time so it follows the fill. This checks
-    // that it still does, in every state, which a hand-edited value would not.
-    for (const [state, values] of Object.entries(paletteStates({ tokens: tokensCss, themes: themesCss }))) {
+    // that it still does, in every state of every theme, which a hand-edited
+    // value would not.
+    for (const [state, values] of everyState()) {
       for (const family of ['success', 'warning', 'danger', 'info']) {
         const fill = values.get(`--color-feedback-${family}`);
         assert.equal(values.get(`--color-feedback-${family}-soft`), withAlpha(fill, SOFT_ALPHA), `${state} ${family} soft`);
@@ -255,7 +269,7 @@ describe('the derived tints', () => {
     // palette, because its alpha is fitted per palette, and it is held here
     // to the accent's own channels.
     const accents = new Set();
-    for (const [state, values] of Object.entries(paletteStates({ tokens: tokensCss, themes: themesCss }))) {
+    for (const [state, values] of everyState()) {
       const accent = values.get('--color-brand-accent');
       const { r, g, b } = parseHex(accent);
       accents.add(accent);
@@ -269,8 +283,8 @@ describe('the derived tints', () => {
       assert.match(values.get('--shadow-glow'), /rgba\(var\(--color-brand-accent-rgb\), 0\.\d+\)/, `${state} glow`);
     }
     // And the palettes really do differ, which is what makes the above a check
-    // rather than one value compared with itself four times.
-    assert.ok(accents.size >= 2, `every state resolved one accent, ${[...accents].join(', ')}`);
+    // rather than one value compared with itself in every state.
+    assert.ok(accents.size >= themeRegistry.length, `the states resolved only ${accents.size} accents, ${[...accents].join(', ')}`);
   });
 });
 
@@ -385,6 +399,85 @@ describe('the typed themes', () => {
       assert.deepEqual(missing, []);
     });
   }
+});
+
+describe('the named themes', () => {
+  /**
+   * The registry is what a picker reads, and each named sheet is what paints
+   * the theme it lists, so the two are held to each other here: a swatch that
+   * drifts from its sheet shows the reader a thumbnail of a palette that never
+   * paints. What the palettes themselves must clear is the palette suite's
+   * subject; this is about what the build emits and where.
+   */
+  const named = themeRegistry.filter((theme) => theme.id !== DEFAULT_THEME_ID);
+
+  /** The swatch keys, and the slot each one is drawn from. */
+  const SWATCH = {
+    frame: '--color-surface-frame',
+    sheet: '--color-surface-background',
+    card: '--color-surface-subtle',
+    raised: '--color-surface-elevated',
+    hairline: '--color-border-default',
+    text: '--color-text-primary',
+    muted: '--color-text-muted',
+    accent: '--color-brand-accent',
+    onAccent: '--color-text-on-accent',
+    info: '--color-feedback-info',
+    warning: '--color-feedback-warning',
+    danger: '--color-feedback-danger',
+    success: '--color-feedback-success',
+  };
+
+  test('the default paints the bare root and ships no sheet of its own; every named theme ships one', () => {
+    assert.equal(themeRegistry[0].id, DEFAULT_THEME_ID);
+    const shipped = readdirSync(fileURLToPath(new URL('../dist/css/themes/', import.meta.url))).sort();
+    assert.deepEqual(shipped, ['all.css', ...named.map((theme) => `${theme.id}.css`)].sort());
+  });
+
+  test('a named sheet paints only under its own data-palette attribute', () => {
+    // A block on the bare root, or under another theme's attribute, would
+    // repaint every document that imports the sheet, and so every document
+    // that imports all.css.
+    for (const theme of named) {
+      const selectors = [...read(`themes/${theme.id}.css`).matchAll(/^\s*(:root[^{]*)\{/gm)].map(([, selector]) => selector.trim());
+      assert.deepEqual(
+        selectors,
+        [`:root[data-palette="${theme.id}"]`, `:root[data-palette="${theme.id}"]:not([data-theme="dark"])`, `:root[data-palette="${theme.id}"][data-theme="light"]`],
+        theme.id,
+      );
+    }
+  });
+
+  test('every swatch colour is the one its theme paints, in both modes', () => {
+    for (const theme of themeRegistry) {
+      const states = paletteStates(sourcesOf(theme.id));
+      for (const [mode, state] of [['dark', 'dark'], ['light', 'light (attribute)']]) {
+        assert.deepEqual(Object.keys(theme.swatch[mode]), Object.keys(SWATCH), `${theme.id} ${mode}`);
+        const drift = Object.entries(SWATCH)
+          .filter(([key, slot]) => theme.swatch[mode][key] !== states[state].get(slot))
+          .map(([key, slot]) => `${key}: ${theme.swatch[mode][key]} in the registry, ${states[state].get(slot)} in the sheet`);
+        assert.deepEqual(drift, [], `${theme.id} ${mode}`);
+      }
+    }
+  });
+
+  test('every theme names a group the picker lists, in the order the groups are listed', () => {
+    const order = themeGroups.map((group) => group.id);
+    for (const theme of themeRegistry) assert.ok(order.includes(theme.group), `${theme.id} names the group ${theme.group}`);
+    const listed = themeRegistry.map((theme) => order.indexOf(theme.group));
+    assert.deepEqual(listed, [...listed].sort((a, b) => a - b), 'the registry is not in group order');
+    for (const group of order) assert.ok(themeRegistry.some((theme) => theme.group === group), `the ${group} group lists no theme`);
+  });
+
+  test('isThemeId names exactly the themes the registry lists', () => {
+    // It is what a stored preference is read back through, so anything else a
+    // store can hold answers false: the sheet that is not a theme, a name in
+    // the wrong case, and the keys every object inherits.
+    for (const theme of themeRegistry) assert.equal(isThemeId(theme.id), true, theme.id);
+    for (const value of ['', 'all', 'Crewlet', ' crewlet', 'constructor', '__proto__', 'toString', null, undefined, 1, {}, ['crewlet']]) {
+      assert.equal(isThemeId(value), false, JSON.stringify(value) ?? String(value));
+    }
+  });
 });
 
 describe('the parsers these tests rely on', () => {

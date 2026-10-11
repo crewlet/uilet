@@ -30,7 +30,7 @@
  * selector: themes.css is imported second and is what paints.
  */
 
-import { cascade, chroma, contrast, deltaE, flatten, parseBlocks, parseHex, separation, VISIONS, withAlpha } from './color.mjs';
+import { cascade, chroma, contrast, deltaE, flatten, hue, parseBlocks, parseHex, separation, VISIONS, withAlpha } from './color.mjs';
 
 export * from './color.mjs';
 
@@ -222,16 +222,18 @@ export const DATA_ADJACENT_NORMAL_DE = 15;
 
 /**
  * A fill with the label a component paints on it: the primary action at rest,
- * under the pointer and pressed, the danger fill, and the inverse ground. The
- * label on every fill but the last is on-accent, which is white in every
- * palette, and each fill is measured over every ground it can sit on.
+ * under the pointer and pressed, the danger fill at rest and under the
+ * pointer, and the inverse ground. The accent carries on-accent, which a theme
+ * with a light accent makes dark; the danger fill carries on-danger, which is
+ * white in every palette; and each fill is measured over every ground it can
+ * sit on.
  */
 export const LABEL_ON_FILL = [
   ['--color-text-on-accent', '--color-brand-accent'],
   ['--color-text-on-accent', '--color-brand-accent-hover'],
   ['--color-text-on-accent', '--color-brand-accent-active'],
-  ['--color-text-on-accent', '--color-feedback-danger'],
-  ['--color-text-on-accent', '--color-feedback-danger-hover'],
+  ['--color-text-on-danger', '--color-feedback-danger'],
+  ['--color-text-on-danger', '--color-feedback-danger-hover'],
   ['--color-text-inverse', '--color-surface-inverse'],
 ];
 
@@ -289,7 +291,12 @@ export const ACTION_STEPS = [
   ],
 ];
 export const ACTION_LABEL = '--color-text-on-accent';
+/** The destructive action's label, which a step of the danger fill moves away from. */
+export const DESTRUCTIVE_LABEL = '--color-text-on-danger';
 export const ACTION_DE = 3;
+
+/** The label a step is measured under: the danger fill's own, or the accent's. */
+const labelOf = (step) => (step.startsWith('--color-feedback-danger') ? DESTRUCTIVE_LABEL : ACTION_LABEL);
 
 /** The ten seeded avatar grounds, each carrying white initials. */
 export const AVATAR_TINTS = Array.from({ length: 10 }, (_, i) => `--color-avatar-tint-${i}`);
@@ -397,6 +404,13 @@ export const RAIL_PAINTS = [
  * is a ring round a neutral one), so it would be a composite nothing draws.
  */
 export const SCRIM_GROUNDS = [...AVATAR_TINTS];
+
+/**
+ * The label drawn on the scrim, and on a seeded tint: white in every palette,
+ * so a theme whose accent carries a dark label leaves an upload overlay and a
+ * seeded badge's initials as they are.
+ */
+export const SCRIM_LABEL = '--color-text-on-scrim';
 
 // The controls
 // ---------------------------------------------------------------------------
@@ -599,6 +613,45 @@ const DANGER_NORMAL = 14;
 const DANGER_DICHROMAT = 8;
 
 // ---------------------------------------------------------------------------
+// A theme's own profile
+// ---------------------------------------------------------------------------
+
+/**
+ * The chroma under which a ground reads as neutral: the cap an untinted
+ * theme's four rungs keep. It is what stops a ground drifting into a tint of
+ * the accent, which leaves the accent nothing to separate itself from.
+ */
+export const NEUTRAL_CHROMA = 2.2;
+
+/**
+ * A TINTED theme declares its tint (tokens/themes/<id>/theme.json, and the
+ * registry's `tint`): the OKLCh hue of its grounds and the most chroma a rung
+ * may carry. Its rungs are held to the declaration rather than to the neutral
+ * cap: none carries more than the declared chroma, and one tinted past the
+ * neutral cap sits within TINT_HUE_RANGE degrees of the declared hue, so a
+ * ground can be deliberately violet without wandering anywhere else.
+ */
+export const TINT_HUE_RANGE = 20;
+
+/**
+ * What the neutral cap protected, kept for a tinted theme as well: the accent
+ * carries at least this many times the chroma of the most tinted rung, so it
+ * reads as the colour on the page rather than as more of the ground. A
+ * neutral theme clears it by an order of magnitude.
+ */
+export const ACCENT_OVER_TINT = 2;
+
+/**
+ * The floors a HIGH-CONTRAST theme (`contrast: 'high'`) is held to on top of
+ * the table: every text step and every ink at 7:1, the WCAG AAA floor for body
+ * text; the muted step READABLE at 4.5:1 rather than decorative, because a
+ * reader who asked for more contrast cannot rely on a glyph they cannot see;
+ * and the plain hairline at 3:1 against the card and the sheet, so a card is
+ * found by a line that clears the mark floor rather than by a step of fill.
+ */
+export const HIGH_CONTRAST = { text: 7, ink: 7, muted: 4.5, hairline: 3 };
+
+// ---------------------------------------------------------------------------
 // Theme states
 // ---------------------------------------------------------------------------
 
@@ -613,6 +666,19 @@ const LIGHT_MEDIA_SELECTOR = ':root:not([data-theme="dark"])';
 const LIGHT_ATTRIBUTE_SELECTOR = ':root[data-theme="light"]';
 
 /**
+ * A NAMED theme's three blocks, the same contract under its own attribute:
+ * `data-palette="<id>"` on the root element, beside the data-theme that
+ * chooses light or dark. A null palette is the default, on the bare root.
+ */
+export function paletteSelectors(palette) {
+  if (palette === null || palette === undefined) {
+    return { dark: THEME_ROOT, lightMedia: LIGHT_MEDIA_SELECTOR, lightAttribute: LIGHT_ATTRIBUTE_SELECTOR };
+  }
+  const root = `:root[data-palette="${palette}"]`;
+  return { dark: root, lightMedia: `${root}:not([data-theme="dark"])`, lightAttribute: `${root}[data-theme="light"]` };
+}
+
+/**
  * The two sheets, each parsed ONCE, as sources cascade() reads. A measurement
  * reads four states and three theme blocks out of them, and parsing both
  * sheets over again for every read was most of what a runPalette call cost,
@@ -623,13 +689,14 @@ const sheetsOf = ({ tokens, themes }) => ({
   themes: { name: 'themes.css', blocks: parseBlocks(themes) },
 });
 
-/** The theme file's three blocks, each on its own, as the file declares it. */
-function themeBlocks(themesSource) {
+/** A theme's three blocks, each on its own, as the theme sheet declares it. */
+function themeBlocks(themesSource, palette = null) {
+  const selectors = paletteSelectors(palette);
   const block = (atRule, selector) => cascade([themesSource], (b) => b.atRule === atRule && b.selector === selector);
   return {
-    dark: block(null, THEME_ROOT),
-    lightMedia: block(LIGHT_MEDIA, LIGHT_MEDIA_SELECTOR),
-    lightAttribute: block(null, LIGHT_ATTRIBUTE_SELECTOR),
+    dark: block(null, selectors.dark),
+    lightMedia: block(LIGHT_MEDIA, selectors.lightMedia),
+    lightAttribute: block(null, selectors.lightAttribute),
   };
 }
 
@@ -645,22 +712,28 @@ function themeBlocks(themesSource) {
  * different routes and either can drift from the other.
  */
 export function paletteStates(sources) {
-  return statesOf(sheetsOf(sources));
+  return statesOf(sheetsOf(sources), sources.palette ?? null);
 }
 
-/** paletteStates over sheets already parsed, which runPalette shares with the structural rules. */
-function statesOf(sheets) {
+/**
+ * paletteStates over sheets already parsed, which runPalette shares with the
+ * structural rules. A named palette is painted over the default exactly as a
+ * browser paints it: the default's block, then the theme's own on top.
+ */
+function statesOf(sheets, palette = null) {
   const tokensOnly = [sheets.tokens];
   const both = [...tokensOnly, sheets.themes];
   const bare = (block) => block.atRule === null && block.selector === THEME_ROOT;
-  const dark = cascade(both, bare);
-  const withLight = (selector, atRule) =>
-    new Map([...dark, ...cascade(both, (block) => block.atRule === atRule && block.selector === selector)]);
+  const own = themeBlocks(sheets.themes, palette);
+  const named = palette === null ? { dark: new Map(), lightMedia: new Map(), lightAttribute: new Map() } : own;
+  const dark = new Map([...cascade(both, bare), ...named.dark]);
+  const withLight = (selector, atRule, theme) =>
+    new Map([...dark, ...cascade(both, (block) => block.atRule === atRule && block.selector === selector), ...theme]);
   return {
     base: cascade(tokensOnly, bare),
     dark,
-    'light (media query)': withLight(LIGHT_MEDIA_SELECTOR, LIGHT_MEDIA),
-    'light (attribute)': withLight(LIGHT_ATTRIBUTE_SELECTOR, null),
+    'light (media query)': withLight(LIGHT_MEDIA_SELECTOR, LIGHT_MEDIA, named.lightMedia),
+    'light (attribute)': withLight(LIGHT_ATTRIBUTE_SELECTOR, null, named.lightAttribute),
   };
 }
 
@@ -694,9 +767,11 @@ function resolve(values, name, ground) {
  * `profile` is 'full' for a theme, or 'base' for the marketing root, which is
  * exempt from the separation, rail, overlay and rung rules: its one pure black
  * ground and its single brand hue are a deliberate marketing look rather than
- * a product palette.
+ * a product palette. `theme` is what the theme declares about itself: its
+ * tint, and whether it is held to the high-contrast floors.
  */
-function checkState(state, values, profile, push) {
+function checkState(state, values, profile, push, theme = { tint: null, contrast: 'standard' }) {
+  const high = theme.contrast === 'high';
   const { ground, opaque, all } = surfacesOf(values);
   const colour = (name) => resolve(values, name, ground);
   const worst = (rgb, list) =>
@@ -706,7 +781,8 @@ function checkState(state, values, profile, push) {
     }, { ratio: Infinity, name: '' });
   const say = (rule, ok, subject, value, detail) => push({ state, rule, ok, subject, value, detail });
 
-  for (const [name, floor] of TEXT_STEPS) {
+  for (const [name, standard] of TEXT_STEPS) {
+    const floor = high ? Math.max(standard, HIGH_CONTRAST.text) : standard;
     const low = worst(colour(name), all);
     say('text step clears its floor', low.ratio >= floor, name, low.ratio, `${low.ratio.toFixed(2)}:1 >= ${floor} (worst on ${low.name})`);
   }
@@ -727,13 +803,21 @@ function checkState(state, values, profile, push) {
     // it is a chip's or a well's fill, and what a chip carries is its label.
     for (const [name, surface] of opaque.filter(([rung]) => rung !== '--color-surface-elevated')) {
       const ratio = contrast(colour('--color-text-muted'), surface);
-      say('text-muted is decoration', ratio > 2.8 && ratio < 4.5, '--color-text-muted', ratio, `2.8 < ${ratio.toFixed(2)}:1 < 4.5 on ${name}`);
+      if (high) {
+        // A reader who asked for more contrast reads the glyph as well. See HIGH_CONTRAST.
+        say('text-muted reads in high contrast', ratio >= HIGH_CONTRAST.muted, '--color-text-muted', ratio, `${ratio.toFixed(2)}:1 >= ${HIGH_CONTRAST.muted} on ${name}`);
+      } else {
+        say('text-muted is decoration', ratio > 2.8 && ratio < 4.5, '--color-text-muted', ratio, `2.8 < ${ratio.toFixed(2)}:1 < 4.5 on ${name}`);
+      }
     }
   }
 
   for (const name of INK_STEPS) {
     const low = worst(colour(name), all);
     say('ink step clears 4.5:1 as text', low.ratio >= 4.5, name, low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
+    if (high) {
+      say('ink step clears 7:1 in high contrast', low.ratio >= HIGH_CONTRAST.ink, name, low.ratio, `${low.ratio.toFixed(2)}:1 >= ${HIGH_CONTRAST.ink} (worst on ${low.name})`);
+    }
   }
 
   // An ink on its OWN soft tint: a badge, a callout, a diff line. The tint is
@@ -783,7 +867,8 @@ function checkState(state, values, profile, push) {
 
   // THE PRIMARY ACTION'S STEPS. See ACTION_STEPS.
   for (const [rule, step, from] of ACTION_STEPS) {
-    const label = colour(ACTION_LABEL);
+    const name = labelOf(step);
+    const label = colour(name);
     const [was, now] = [colour(from), colour(step)];
     const measured = deltaE(now, was);
     const gain = contrast(label, now) - contrast(label, was);
@@ -792,12 +877,14 @@ function checkState(state, values, profile, push) {
       measured >= ACTION_DE && gain > 0,
       `${step} after ${from}`,
       measured,
-      `dE ${measured.toFixed(2)} >= ${ACTION_DE}, and ${ACTION_LABEL} ${contrast(label, was).toFixed(2)}:1 -> ${contrast(label, now).toFixed(2)}:1 rises`,
+      `dE ${measured.toFixed(2)} >= ${ACTION_DE}, and ${name} ${contrast(label, was).toFixed(2)}:1 -> ${contrast(label, now).toFixed(2)}:1 rises`,
     );
   }
 
+  // The initials a seeded badge draws are the scrim's label: the tints are
+  // the grounds the scrim lands on, and both are white in every palette.
   for (const name of AVATAR_TINTS) {
-    const ratio = contrast(parseHex('#ffffff'), colour(name));
+    const ratio = contrast(colour(SCRIM_LABEL), colour(name));
     say('an avatar tint clears 4.5:1 under white initials', ratio >= 4.5, name, ratio, `${ratio.toFixed(2)}:1`);
   }
 
@@ -807,11 +894,11 @@ function checkState(state, values, profile, push) {
     // from a token: an upload overlay's label sits on the scrim over an
     // identity badge, and the badge is a seeded tint or an initials tile on
     // whichever surface the form is on.
-    const label = colour('--color-text-on-accent');
+    const label = colour(SCRIM_LABEL);
     const scrim = values.get('--color-surface-scrim');
     const over = [...opaque, ...SCRIM_GROUNDS.map((name) => [name, colour(name)])];
     const low = worst(label, over.map(([name, rgb]) => [`the scrim over ${name}`, flatten(scrim, rgb)]));
-    say('a label on the scrim clears 4.5:1', low.ratio >= 4.5, '--color-text-on-accent', low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
+    say('a label on the scrim clears 4.5:1', low.ratio >= 4.5, SCRIM_LABEL, low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
   }
 
   {
@@ -922,6 +1009,15 @@ function checkState(state, values, profile, push) {
   }
 
   if (profile !== 'full') return;
+
+  if (high) {
+    // The card's line, at the mark floor. See HIGH_CONTRAST.
+    const [line, card, sheet] = CARD_HAIRLINE;
+    for (const side of [card, sheet]) {
+      const ratio = contrast(colour(line), colour(side));
+      say('a hairline clears 3:1 in high contrast', ratio >= HIGH_CONTRAST.hairline, `${line} on ${side}`, ratio, `${ratio.toFixed(2)}:1 >= ${HIGH_CONTRAST.hairline}`);
+    }
+  }
 
   {
     // THE RAIL, on its own ground and on its own row tints. See RAIL_GROUND.
@@ -1052,10 +1148,37 @@ function checkState(state, values, profile, push) {
   }
 
   // The chroma cap is what stops the ground drifting into a tint of the
-  // accent, which leaves the accent nothing to separate itself from.
+  // accent, which leaves the accent nothing to separate itself from. A theme
+  // that tints its grounds on purpose declares the tint, and is held to it.
+  // See NEUTRAL_CHROMA and TINT_HUE_RANGE.
   for (const [name, rgb] of opaque) {
     const measured = chroma(rgb);
-    say('the neutral ramp stays neutral', measured <= 2.2, name, measured, `chroma ${measured.toFixed(2)} <= 2.2`);
+    if (theme.tint === null || theme.tint === undefined) {
+      say('the neutral ramp stays neutral', measured <= NEUTRAL_CHROMA, name, measured, `chroma ${measured.toFixed(2)} <= ${NEUTRAL_CHROMA}`);
+      continue;
+    }
+    const off = Math.abs(((((hue(rgb) - theme.tint.hue) % 360) + 540) % 360) - 180);
+    const inside = measured <= theme.tint.chroma && (measured <= NEUTRAL_CHROMA || off <= TINT_HUE_RANGE);
+    say(
+      'a tinted ramp stays inside its declared tint',
+      inside,
+      name,
+      measured,
+      `chroma ${measured.toFixed(2)} <= ${theme.tint.chroma}${measured > NEUTRAL_CHROMA ? `, hue ${off.toFixed(1)} degrees from ${theme.tint.hue} <= ${TINT_HUE_RANGE}` : ''}`,
+    );
+  }
+  {
+    // What the cap protected, measured for every theme. See ACCENT_OVER_TINT.
+    const ground = Math.max(...opaque.map(([, rgb]) => chroma(rgb)));
+    const accent = chroma(colour('--color-brand-accent'));
+    const ratio = accent / Math.max(ground, 1e-6);
+    say(
+      'the accent carries more colour than the ground',
+      ratio >= ACCENT_OVER_TINT,
+      '--color-brand-accent',
+      ratio,
+      `chroma ${accent.toFixed(2)} is ${ratio.toFixed(1)} times the most tinted rung's ${ground.toFixed(2)} >= ${ACCENT_OVER_TINT}`,
+    );
   }
 
   // THE OVERLAY STEPS. See OVERLAY_STEPS.
@@ -1126,7 +1249,24 @@ const describe = (measured) => measured.map((value, i) => `${VISIONS[i].slice(0,
 function checkStructure(sources, states, push) {
   const say = (rule, ok, subject, detail) => push({ state: 'the token files', rule, ok, subject, value: null, detail });
 
-  const { dark: darkBlock, lightMedia, lightAttribute: lightBlock } = themeBlocks(sources.themesSource);
+  const palette = sources.palette ?? null;
+  const { dark: darkBlock, lightMedia, lightAttribute: lightBlock } = themeBlocks(sources.themesSource, palette);
+
+  if (palette !== null) {
+    // A named theme paints over the default, so a slot it does not declare
+    // shows the default's value through it, and nothing measured would say
+    // which theme a colour came from. So it declares exactly what the default
+    // declares: no slot missing, and none the default does not have.
+    const defaults = themeBlocks(sources.themesSource, null).dark;
+    const missing = [...defaults.keys()].filter((name) => !darkBlock.has(name));
+    const extra = [...darkBlock.keys()].filter((name) => !defaults.has(name));
+    say(
+      'a theme declares exactly the slots the default declares',
+      darkBlock.size > 0 && missing.length === 0 && extra.length === 0,
+      `the ${palette} theme`,
+      darkBlock.size === 0 ? 'no block declares the theme' : missing.length === 0 && extra.length === 0 ? 'the two key sets match' : `missing: ${missing.join(', ') || 'none'}; extra: ${extra.join(', ') || 'none'}`,
+    );
+  }
 
   // A colour whose only definition is inside the theme layer is a colour that
   // is missing for an application that imports the token layer alone. Read
@@ -1200,13 +1340,18 @@ function checkStructure(sources, states, push) {
  */
 export function runPalette(sources) {
   const sheets = sheetsOf(sources);
-  const states = statesOf(sheets);
+  const palette = sources.palette ?? null;
+  const theme = { tint: sources.tint ?? null, contrast: sources.contrast ?? 'standard' };
+  const states = statesOf(sheets, palette);
   const checks = [];
   const push = (check) => checks.push(check);
   for (const [name, values] of Object.entries(states)) {
-    checkState(name, values, name === 'base' ? 'base' : 'full', push);
+    // The marketing root is the token layer's, not a theme's: it is measured
+    // once, with the default, rather than again under every named theme.
+    if (name === 'base' && palette !== null) continue;
+    checkState(name, values, name === 'base' ? 'base' : 'full', push, theme);
   }
-  checkStructure({ themesSource: sheets.themes }, states, push);
+  checkStructure({ themesSource: sheets.themes, palette }, states, push);
   return { states, checks, failures: checks.filter((check) => !check.ok) };
 }
 

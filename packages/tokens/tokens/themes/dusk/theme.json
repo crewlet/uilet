@@ -1,0 +1,11 @@
+{
+  "name": "Dusk",
+  "group": "purple",
+  "tag": "Soft lavender",
+  "description": "Muted violet-grey grounds with a soft lavender accent. The calmest option, built for long sessions.",
+  "order": 3,
+  "tint": {
+    "hue": 305,
+    "chroma": 4
+  }
+}

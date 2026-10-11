@@ -1,0 +1,11 @@
+{
+  "name": "Iris",
+  "group": "purple",
+  "tag": "Periwinkle",
+  "description": "Cool violet grounds with a periwinkle accent that carries a dark label at night.",
+  "order": 2,
+  "tint": {
+    "hue": 296,
+    "chroma": 7.5
+  }
+}
