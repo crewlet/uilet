@@ -201,7 +201,7 @@ places:
 
 **`Tabs` take a `marker`** per item: `{ tone: 'danger', count, label }` for problems, or `{ tone: 'warning' | 'changed', label }` for a 6px dot. One per tab, the most urgent, and it stands in for the item's `count` while set; `label` is what a screen reader hears. `TabsMarker` is its type.
 
-**`FormField` takes `helperOnFocus`**: the helper is still in `aria-describedby`, and is drawn only while the field has focus, so a form whose every field carries a sentence reads as labels and values at rest.
+**`FormField` takes `helperOnFocus`**: the helper is still in `aria-describedby`, and is drawn only while the field has focus, so a form whose every field carries a sentence reads as labels and values at rest. `ListInput` passes the same prop to its field.
 
 `@crewlethq/icons` adds `LockGlyph` (Lucide's `lock`), which `FactList` draws.
 
