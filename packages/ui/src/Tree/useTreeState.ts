@@ -57,23 +57,63 @@ export interface TreeState {
   typed(event: TreeKeyEvent, from: string, now: number): string | null | undefined;
 }
 
+/** Which nodes are open before anybody has opened or closed one. */
+export type TreeDefaultExpanded =
+  /** Every node with children. A chart and an org outline are read whole. */
+  | 'all'
+  /**
+   * None. A tree whose levels are read on demand, a knowledge base's spaces
+   * say, opens one level at a time: a node that arrived open would ask for
+   * its children the moment it was drawn, and so would theirs.
+   */
+  | 'none';
+
+export interface TreeStateOptions {
+  /** Which nodes start open while the tree holds its own expansion. `all` by default. */
+  defaultExpanded?: TreeDefaultExpanded | undefined;
+  /**
+   * The open nodes, when the CALLER holds them: to keep them across a visit,
+   * or to read a level the moment it opens. A node in the set that has no
+   * children is ignored rather than refused, since a level still loading has
+   * none yet.
+   */
+  expanded?: ReadonlySet<string> | undefined;
+  /**
+   * The open nodes a toggle, an open or an expand or collapse of everything
+   * has just produced. Called whether or not the caller holds the set, so a
+   * caller that only reads levels on demand need not hold it.
+   */
+  onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
+}
+
 /**
- * What is collapsed, which node holds the tab stop, and type ahead.
+ * What is open, which node holds the tab stop, and type ahead.
  *
- * COLLAPSED, NOT EXPANDED, IS WHAT IS KEPT: a node nobody has closed is open,
- * which is also what a node an operation just added should be. The tab stop is
- * the node last focused, else the selection, else the first node, and is moved
- * to the nearest visible ancestor when its own node is hidden or gone, so the
- * tree always has exactly one way in.
+ * WHAT IS KEPT IS WHAT WAS TOGGLED, read against the default: under `all` it
+ * is the nodes somebody closed, so a node an operation just added arrives
+ * open, as a chart wants; under `none` it is the nodes somebody opened, so a
+ * level that has just been read arrives closed. A caller that holds the set
+ * itself replaces both. The tab stop is the node last focused, else the
+ * selection, else the first node, and is moved to the nearest visible
+ * ancestor when its own node is hidden or gone, so the tree always has
+ * exactly one way in.
  */
-export function useTreeState(forest: readonly TreeInput[], selected: string | null): TreeState {
+export function useTreeState(
+  forest: readonly TreeInput[],
+  selected: string | null,
+  { defaultExpanded = 'all', expanded: held, onExpandedChange }: TreeStateOptions = {},
+): TreeState {
   const model = useMemo(() => createTreeModel(forest), [forest]);
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+  const [toggled, setToggled] = useState<ReadonlySet<string>>(() => new Set());
   const expanded = useMemo(() => {
-    const out = treeAllExpandable(model);
-    for (const id of collapsed) out.delete(id);
-    return out;
-  }, [model, collapsed]);
+    const expandable = treeAllExpandable(model);
+    if (held) return new Set([...held].filter((id) => expandable.has(id)));
+    if (defaultExpanded === 'all') {
+      for (const id of toggled) expandable.delete(id);
+      return expandable;
+    }
+    return new Set([...toggled].filter((id) => expandable.has(id)));
+  }, [model, toggled, held, defaultExpanded]);
   const rows = useMemo(() => treeVisible(model, expanded), [model, expanded]);
 
   const [wanted, setActive] = useState<string | null>(null);
@@ -89,37 +129,57 @@ export function useTreeState(forest: readonly TreeInput[], selected: string | nu
     return treeFirst(model);
   }, [wanted, selected, model, rows]);
 
-  const toggle = useCallback((id: string) => {
-    setCollapsed((was) => {
-      const next = new Set(was);
+  const current = useRef({ model, expanded, held, defaultExpanded, onExpandedChange });
+  current.current = { model, expanded, held, defaultExpanded, onExpandedChange };
+
+  /**
+   * Moves the tree to `next`: told to the caller, and kept here unless the
+   * caller holds the set. What is kept is the toggled set the default reads,
+   * so a node this change says nothing about keeps whatever it had.
+   */
+  const commit = useCallback((next: ReadonlySet<string>) => {
+    const now = current.current;
+    now.onExpandedChange?.(next);
+    if (now.held) return;
+    const all = treeAllExpandable(now.model);
+    setToggled((was) => {
+      const kept = new Set(was);
+      for (const id of all) {
+        const differs = now.defaultExpanded === 'all' ? !next.has(id) : next.has(id);
+        if (differs) kept.add(id);
+        else kept.delete(id);
+      }
+      return kept;
+    });
+  }, []);
+
+  const toggle = useCallback(
+    (id: string) => {
+      const next = new Set(current.current.expanded);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      return next;
-    });
-  }, []);
+      commit(next);
+    },
+    [commit],
+  );
 
-  const current = useRef({ model, collapsed });
-  current.current = { model, collapsed };
-
-  const expandAll = useCallback(() => setCollapsed(new Set()), []);
+  const expandAll = useCallback(() => commit(treeAllExpandable(current.current.model)), [commit]);
   const collapseAll = useCallback(() => {
     const { model: shown } = current.current;
-    const next = treeAllExpandable(shown);
-    shown.roots.forEach((root) => next.delete(root));
-    setCollapsed(next);
-  }, []);
+    const tops = new Set(shown.roots.filter((root) => treeAllExpandable(shown).has(root)));
+    commit(tops);
+  }, [commit]);
 
-  const open = useCallback((id: string) => {
-    const { model: shown, collapsed: closed } = current.current;
-    const hidden = treeAncestors(shown, id).filter((ancestor) => closed.has(ancestor));
-    if (hidden.length === 0) return false;
-    setCollapsed((was) => {
-      const next = new Set(was);
-      hidden.forEach((ancestor) => next.delete(ancestor));
-      return next;
-    });
-    return true;
-  }, []);
+  const open = useCallback(
+    (id: string) => {
+      const { model: shown, expanded: now } = current.current;
+      const hidden = treeAncestors(shown, id).filter((ancestor) => !now.has(ancestor));
+      if (hidden.length === 0) return false;
+      commit(new Set([...now, ...hidden]));
+      return true;
+    },
+    [commit],
+  );
 
   const buffer = useRef<TypeAheadState>({ text: '', at: 0 });
   const typed = (event: TreeKeyEvent, from: string, now: number) => {

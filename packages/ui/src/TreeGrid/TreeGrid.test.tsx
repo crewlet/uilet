@@ -637,3 +637,38 @@ describe('focus', () => {
     expect(document.activeElement).toBe(toolbar);
   });
 });
+
+// ---------------------------------------------------------------------------
+// A grid whose levels are read on demand
+// ---------------------------------------------------------------------------
+
+describe('a grid that opens one level at a time', () => {
+  function Lazy({ onExpandedChange }: { onExpandedChange: (open: ReadonlySet<string>) => void }) {
+    const rows = useMemo(() => forest(false), []);
+    return (
+      <TreeGrid
+        label="Organization outline"
+        columns={COLUMNS.slice(0, 1)}
+        rows={rows}
+        defaultExpanded="none"
+        onExpandedChange={onExpandedChange}
+        renderCell={(id) => nameOf(id)}
+      />
+    );
+  }
+
+  test('starts with only the tops showing, and says which rows a key opened', () => {
+    const told: string[][] = [];
+    render(<Lazy onExpandedChange={(open) => told.push([...open])} />);
+    const grid = screen.getByRole('treegrid', { name: 'Organization outline' });
+    const rows = () => within(grid).getAllByRole('row').slice(1);
+    expect(rows().map((row) => row.textContent)).toEqual(['Acme']);
+    expect(rows()[0]?.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.keyDown(rows()[0]!, { key: 'ArrowRight' });
+    expect(told).toEqual([[COMPANY]]);
+    expect(rows().map((row) => row.textContent)).toEqual(['Acme', 'CEO', 'Engineering', 'Sales']);
+    // The level that just arrived is closed: it asks for nothing on its own.
+    expect(rows()[2]?.getAttribute('aria-expanded')).toBe('false');
+  });
+});

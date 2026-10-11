@@ -55,6 +55,7 @@ import {
   treeSetSize,
   treeStep,
   useTreeState,
+  type TreeDefaultExpanded,
   type TreeInput,
   type TreeItemAction,
   type TreeViewHandle,
@@ -191,6 +192,19 @@ export interface TreeGridProps {
   onSelect?: ((id: string) => void) | undefined;
   /** Sets `aria-readonly`: the rows can be read and navigated but not edited. */
   readOnly?: boolean | undefined;
+  /**
+   * Which rows start open while the grid holds its own expansion: every one
+   * (the default), or none, for a hierarchy whose levels are read on demand.
+   */
+  defaultExpanded?: TreeDefaultExpanded | undefined;
+  /**
+   * The open rows, when the caller holds them: to keep them across a visit,
+   * or to read a level the moment it opens. A row in the set with no children
+   * yet is ignored, so a level still loading can be held open.
+   */
+  expanded?: ReadonlySet<string> | undefined;
+  /** The open rows a toggle has just produced, whether or not the caller holds them. */
+  onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
   labels?: Partial<TreeGridLabels> | undefined;
   ref?: Ref<TreeViewHandle> | undefined;
   className?: string | undefined;
@@ -209,12 +223,15 @@ export function TreeGrid({
   selectedId = null,
   onSelect,
   readOnly,
+  defaultExpanded,
+  expanded: held,
+  onExpandedChange,
   labels,
   ref,
   className,
 }: TreeGridProps) {
   const text = { ...LABELS, ...labels };
-  const tree = useTreeState(forest, selectedId);
+  const tree = useTreeState(forest, selectedId, { defaultExpanded, expanded: held, onExpandedChange });
   const { model, expanded, rows, active, setActive, toggle } = tree;
 
   /** The column of the active row that holds focus; `null` when the row itself does. */

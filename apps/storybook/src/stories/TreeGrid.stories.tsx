@@ -194,3 +194,64 @@ export const ScrollsSideways: Story = {
 
 /** Read only: no add rows, no lead to choose, and the grid says so. */
 export const ReadOnly: Story = { render: () => <Outline readOnly /> };
+
+/* ---- levels read on demand ----------------------------------------------------- */
+
+interface Page {
+  title: string;
+  children?: string[];
+}
+
+const PAGES: Record<string, Page> = {
+  designs: { title: 'Designs', children: ['fair-2', 'fair-3', 'fair-4'] },
+  'fair-2': { title: 'FAIR-2 Money and equal split' },
+  'fair-3': { title: 'FAIR-3 Ledger and settlement' },
+  'fair-4': { title: 'FAIR-4 Command line interface' },
+  runbook: { title: 'Runbook: running the tests' },
+  settle: { title: 'Settlement algorithm' },
+};
+const TOP = ['designs', 'runbook', 'settle'];
+const LOADING = ':loading';
+
+function OnDemand() {
+  const [loaded, setLoaded] = useState<ReadonlySet<string>>(new Set());
+  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
+  const rows = useMemo(() => {
+    const node = (id: string): TreeInput => {
+      const page = PAGES[id]!;
+      if (!page.children) return { id, label: page.title };
+      // A folder whose level has not been read stands on one placeholder row,
+      // which is what lets it draw an expander before its children are known.
+      const children = loaded.has(id) ? page.children.map(node) : [{ id: `${id}${LOADING}`, label: '' }];
+      return { id, label: page.title, children };
+    };
+    return TOP.map(node);
+  }, [loaded]);
+  return (
+    <TreeGrid
+      label="Engineering"
+      columns={[{ key: 'title', header: 'Page' }]}
+      rows={rows}
+      defaultExpanded="none"
+      expanded={open}
+      onExpandedChange={(next) => {
+        setOpen(next);
+        for (const id of next) {
+          if (loaded.has(id)) continue;
+          // A level is read the moment its row opens, here after a pause.
+          window.setTimeout(() => setLoaded((was) => new Set([...was, id])), 600);
+        }
+      }}
+      addRow={(id) => (id.endsWith(LOADING) ? { label: 'Loading the pages under this folder', cells: 1 } : null)}
+      renderCell={(id) => (id.endsWith(LOADING) ? 'Loading' : PAGES[id]?.title)}
+    />
+  );
+}
+
+/**
+ * A hierarchy whose levels are read on demand, as a knowledge base's space
+ * is. Nothing is open at first, a folder stands on a placeholder until its
+ * row opens, and the level that arrives is closed, so it asks for nothing on
+ * its own.
+ */
+export const LevelsOnDemand: Story = { render: () => <OnDemand /> };

@@ -145,3 +145,71 @@ test('the item keys are Enter, Delete or Backspace, the Menu key and Shift+F10, 
   expect(treeItemAction({ key: 'F10' })).toBeNull();
   expect(treeItemAction({ key: 'a' })).toBeNull();
 });
+
+/* ---- a tree whose levels are read on demand ---------------------------------- */
+
+test('with nothing open by default, only the tops show until a node is opened', () => {
+  const { result } = renderHook(() => useTreeState(FOREST, null, { defaultExpanded: 'none' }));
+  expect(result.current.rows).toEqual(['company']);
+  act(() => result.current.toggle('company'));
+  expect(result.current.rows).toEqual(['company', 'ceo', 'eng']);
+});
+
+test('a level that arrives under an open node arrives closed, so it asks for nothing on its own', () => {
+  // The first read knows Engineering has children but not which: a
+  // placeholder stands for them. Opening it reads the level, and the level's
+  // own folders must not open and read theirs in turn.
+  const shallow: TreeInput[] = [{ id: 'eng', label: 'Engineering', children: [{ id: 'eng:loading', label: 'Loading' }] }];
+  const deep: TreeInput[] = [
+    {
+      id: 'eng',
+      label: 'Engineering',
+      children: [{ id: 'platform', label: 'Platform', children: [{ id: 'sre', label: 'Reliability' }] }],
+    },
+  ];
+  const { result, rerender } = renderHook(({ tree }) => useTreeState(tree, null, { defaultExpanded: 'none' }), {
+    initialProps: { tree: shallow },
+  });
+  act(() => result.current.toggle('eng'));
+  expect(result.current.rows).toEqual(['eng', 'eng:loading']);
+  rerender({ tree: deep });
+  expect(result.current.rows).toEqual(['eng', 'platform']);
+});
+
+test('a caller that holds the open set is told every change and the tree follows only the set', () => {
+  const told: string[][] = [];
+  const { result, rerender } = renderHook(
+    ({ open }) =>
+      useTreeState(FOREST, null, {
+        expanded: open,
+        onExpandedChange: (next) => told.push([...next].sort()),
+      }),
+    { initialProps: { open: new Set(['company']) as ReadonlySet<string> } },
+  );
+  expect(result.current.rows).toEqual(['company', 'ceo', 'eng']);
+  act(() => result.current.toggle('eng'));
+  expect(told).toEqual([['company', 'eng']]);
+  // Nothing moves until the caller hands the set back.
+  expect(result.current.rows).toEqual(['company', 'ceo', 'eng']);
+  rerender({ open: new Set(['company', 'eng']) });
+  expect(result.current.rows).toEqual(['company', 'ceo', 'eng', 'platform', 'swe']);
+});
+
+test('a held node with no children yet is ignored rather than refused', () => {
+  const { result } = renderHook(() => useTreeState(FOREST, null, { expanded: new Set(['company', 'ceo']) }));
+  expect([...result.current.expanded]).toEqual(['company']);
+});
+
+test('opening a node from a closed tree opens exactly its ancestors, and reports it', () => {
+  const told: string[][] = [];
+  const { result } = renderHook(() =>
+    useTreeState(FOREST, null, { defaultExpanded: 'none', onExpandedChange: (next) => told.push([...next].sort()) }),
+  );
+  let opened = false;
+  act(() => {
+    opened = result.current.open('sre');
+  });
+  expect(opened).toBe(true);
+  expect(told).toEqual([['company', 'eng', 'platform']]);
+  expect(result.current.rows).toEqual(['company', 'ceo', 'eng', 'platform', 'sre', 'swe']);
+});
