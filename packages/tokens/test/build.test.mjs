@@ -14,7 +14,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { cascade, parseHex, parseRgba, withAlpha } from './color.mjs';
+import { cascade, fromOklab, hex, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
 import { SOFT_ALPHA, paletteStates } from './palette.mjs';
 import * as exported from '../dist/index.js';
 import { DEFAULT_THEME_ID, breakpoint, font, isThemeId, size, spacing, themeGroups, themeRegistry, themes } from '../dist/index.js';
@@ -285,6 +285,48 @@ describe('the derived tints', () => {
     // And the palettes really do differ, which is what makes the above a check
     // rather than one value compared with itself in every state.
     assert.ok(accents.size >= themeRegistry.length, `the states resolved only ${accents.size} accents, ${[...accents].join(', ')}`);
+  });
+});
+
+describe('the quiet link', () => {
+  /**
+   * A link inside running text or a row, which must not compete with the
+   * words around it: the accent ink mixed 65% with the secondary text, in
+   * OKLab, in every palette of every theme and in the base. Written per
+   * palette rather than derived, so a floor can move it; and when one does it
+   * moves along lightness alone, keeping the mix's hue and chroma, and its
+   * comment says why. The palette suite measures it as an ink.
+   */
+  const source = (path) => JSON.parse(readFileSync(fileURLToPath(new URL(`../tokens/${path}`, import.meta.url)), 'utf8'));
+  const mix = (ink, secondary) => {
+    const a = toOklab(parseHex(ink));
+    const b = toOklab(parseHex(secondary));
+    return toOklab(parseHex(hex(fromOklab({ L: 0.65 * a.L + 0.35 * b.L, a: 0.65 * a.a + 0.35 * b.a, b: 0.65 * a.b + 0.35 * b.b }))));
+  };
+  const palettes = [
+    ['the base', source('color.json')],
+    ...themeRegistry.flatMap((theme) => ['dark', 'light'].map((mode) => [`${theme.id} ${mode}`, source(`themes/${theme.id}/${mode}.json`)])),
+  ];
+
+  test('every palette writes it, as the mix or the mix moved along lightness with its reason', () => {
+    assert.equal(palettes.length, 1 + themeRegistry.length * 2);
+    for (const [where, json] of palettes) {
+      const { linkQuiet, secondary } = json.color.text;
+      assert.ok(linkQuiet, `${where} writes no quiet link`);
+      const want = mix(json.color.brand.accentInk.value, secondary.value);
+      const got = toOklab(parseHex(linkQuiet.value));
+      // Within what eight bits a channel can hold.
+      const sameHue = Math.abs(got.a - want.a) < 0.006 && Math.abs(got.b - want.b) < 0.006;
+      assert.ok(sameHue, `${where}: ${linkQuiet.value} is not the mix along lightness`);
+      if (Math.abs(got.L - want.L) > 0.004) {
+        assert.match(linkQuiet.comment ?? '', /along lightness/, `${where}: ${linkQuiet.value} moved off the mix and says nothing about why`);
+      }
+    }
+  });
+
+  test("the default theme's is the approved design's", () => {
+    assert.equal(themes.dark.color.text.linkQuiet, '#a9b0ea');
+    assert.equal(themes.light.color.text.linkQuiet, '#484e99');
   });
 });
 

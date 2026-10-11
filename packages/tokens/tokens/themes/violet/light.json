@@ -43,6 +43,9 @@
       "secondary": {
         "value": "#46464e"
       },
+      "linkQuiet": {
+        "value": "#5043ab"
+      },
       "tertiary": {
         "value": "#5f5e67"
       },

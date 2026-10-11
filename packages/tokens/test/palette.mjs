@@ -167,9 +167,14 @@ export const TEXT_STEPS = [
  */
 export const DIMMED_TEXT = ['--color-text-primary', '--color-text-tertiary', 2];
 
-/** A hue used as TEXT on a surface. */
+/**
+ * A hue used as TEXT on a surface. The quiet link is one: a link inside
+ * running text or a row, mixed from the accent ink toward the secondary text
+ * so it does not compete with the words around it, and read like any other.
+ */
 export const INK_STEPS = [
   '--color-brand-accent-ink',
+  '--color-text-link-quiet',
   '--color-feedback-success-ink',
   '--color-feedback-warning-ink',
   '--color-feedback-danger-ink',

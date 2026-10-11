@@ -45,6 +45,9 @@
       "secondary": {
         "value": "#4a463e"
       },
+      "linkQuiet": {
+        "value": "#32498e"
+      },
       "tertiary": {
         "value": "#605c53",
         "comment": "The design's #625d54, moved dE 0.47. At the design value: text step clears its floor, measured 4.42:1 >= 4.5, worst on a pressed row on the frame."

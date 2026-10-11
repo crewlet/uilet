@@ -16,6 +16,7 @@
     "text": {
       "primary": { "value": "#e7eaf3", "comment": "The approved #e6e9f2, lifted dE 0.30 along lightness: it sat 1.98:1 from the tertiary step, under the 2:1 that keeps a dimmed word a step from the word being read." },
       "secondary": { "value": "#a9b0c3" },
+      "linkQuiet": { "value": "#a9b0ea" },
       "tertiary": { "value": "#9fa7bc", "comment": "The approved #8a91a6, lightened dE 7.08 along lightness: it measured 3.45:1 on a pressed row inside a raised surface, and 4.49:1 on glass over the inverse ground." },
       "muted": { "value": "#5a6176", "comment": "The approved step, unmoved: 2.98:1 on the card and 3.25:1 on the rail, inside the decoration band." },
       "onAccent": { "value": "#ffffff", "comment": "White, as in light: 4.82:1 on this accent, where black measures 4.35:1, under the text floor. A primary button whose label changed colour with the theme would read as two different buttons." },

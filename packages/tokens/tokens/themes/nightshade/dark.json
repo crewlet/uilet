@@ -44,6 +44,9 @@
       "secondary": {
         "value": "#c5ccdf"
       },
+      "linkQuiet": {
+        "value": "#aeacf3"
+      },
       "tertiary": {
         "value": "#9fa7c4",
         "comment": "The design's #a7b0cd, moved dE 2.80. At the design value: a dimmed word is a step from the word being read, measured 1.81:1 >= 2."

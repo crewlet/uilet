@@ -28,6 +28,7 @@
     "text": {
       "primary": { "value": "#fafafa", "comment": "Slightly off-white to reduce eye strain on dark surfaces." },
       "secondary": { "value": "#c9ced8" },
+      "linkQuiet": { "value": "#bab2f2", "comment": "A link set inside running text or a row, which must not compete with the words around it: the accent ink mixed 65% with the secondary text, in OKLab, measured as an ink. Under the pointer and on focus it takes the accent ink itself." },
       "tertiary": { "value": "#95a2b6", "comment": "A fact, so it clears 4.5:1 on every surface it can land on, including a pressed row inside a raised surface. #8c99ad measured 4.17:1 there." },
       "muted": { "value": "#686b70", "comment": "DECORATION ONLY: a hairline glyph, a disabled affordance, a border. Measured BETWEEN 2.8:1 and 4.5:1 on the panel, because a step that crept up to the fact floor would invite itself into a table cell, which is the whole reason it has a separate name." },
       "onAccent": { "value": "#ffffff", "comment": "The label on an accent fill. White here and in the default palettes; a theme whose accent is light carries a dark label instead, which is why the danger fill and the scrim have labels of their own." },
