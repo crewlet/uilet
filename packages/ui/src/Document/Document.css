@@ -1,0 +1,288 @@
+/*
+ * Rendered markdown, set as a document (Document.tsx).
+ *
+ * Every size here is a step on the type ramp and every gap a spacing step,
+ * because a reading column set in sizes of its own (32, 20, 18, 15 and 14.5px
+ * were measured on one) is a column that drifts from every other surface.
+ */
+
+.crewlet-document {
+  /* The two rhythms a size sets: between blocks, and above a section. */
+  --crewlet-document-gap: var(--spacing-4);
+  --crewlet-document-section-gap: var(--spacing-6);
+  margin: 0;
+  min-width: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-relaxed);
+  color: var(--color-text-secondary);
+  /* The renderer decides what a break is, so the whitespace rule is normal. */
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.crewlet-document--sm {
+  --crewlet-document-gap: var(--spacing-3);
+  --crewlet-document-section-gap: var(--spacing-5);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+}
+
+.crewlet-document--measure {
+  max-width: var(--size-measure);
+}
+
+/*
+ * EVERY BLOCK'S OWN MARGIN IS ZEROED FIRST, and the rhythm is one rule over
+ * siblings. The other way round, a margin reset per element after the sibling
+ * rule, is how a rhythm dies: the shorthand resets the top margin too, at the
+ * same specificity and later in the file, and every block runs into the next.
+ */
+.crewlet-document :where(p, h1, h2, h3, h4, h5, h6, ul, ol, pre, blockquote, table, figure) {
+  margin: 0;
+}
+
+.crewlet-document > * + * {
+  margin-block-start: var(--crewlet-document-gap);
+}
+
+.crewlet-document :where(h1, h2, h3, h4, h5, h6) {
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+  letter-spacing: var(--font-letter-spacing-snug);
+  color: var(--color-text-primary);
+  /* An outline that scrolls a heading into view leaves it a little air. */
+  scroll-margin-block-start: var(--spacing-6);
+}
+
+/* A heading opens a section, so it gets more air above it than a paragraph. */
+.crewlet-document > * + :where(h1, h2, h3, h4, h5, h6) {
+  margin-block-start: var(--crewlet-document-section-gap);
+}
+
+.crewlet-document h1 {
+  font-size: var(--font-size-2xl);
+}
+
+.crewlet-document h2 {
+  font-size: var(--font-size-xl);
+}
+
+.crewlet-document h3 {
+  font-size: var(--font-size-lg);
+}
+
+.crewlet-document :where(h4, h5, h6) {
+  font-size: var(--font-size-md);
+}
+
+.crewlet-document--sm h1 {
+  font-size: var(--font-size-lg);
+}
+
+.crewlet-document--sm h2 {
+  font-size: var(--font-size-md);
+}
+
+.crewlet-document--sm h3 {
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-document--sm :where(h4, h5, h6) {
+  font-size: var(--font-size-compact);
+  color: var(--color-text-secondary);
+}
+
+/*
+ * A HEADING AN OUTLINE MOVED TO takes focus, so a keyboard carries on from it.
+ * A press draws no ring (`:focus-visible` does not match one); a keyboard's is
+ * drawn off the text, because the heading is not a control.
+ */
+.crewlet-document :where(h1, h2, h3, h4, h5, h6):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--spacing-1);
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-document :where(strong, b) {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.crewlet-document :where(ul, ol) {
+  padding-inline-start: var(--spacing-5);
+}
+
+.crewlet-document li + li,
+.crewlet-document li > :where(ul, ol) {
+  margin-block-start: var(--spacing-1);
+}
+
+.crewlet-document li::marker {
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * A TASK LIST keeps its box on the line rather than in the marker's place: the
+ * marker is what says "list", and the box is what says "done". The item's
+ * content is ONE column beside the box, never a second cell of the row, so a
+ * sublist hangs under the line it belongs to.
+ */
+.crewlet-document ul:has(> li > input[type='checkbox']) {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.crewlet-document li:has(> input[type='checkbox']) {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.crewlet-document li:has(> input[type='checkbox']) > :not(input) {
+  flex: 1;
+  min-width: 0;
+}
+
+.crewlet-document li > input[type='checkbox'] {
+  flex: none;
+  margin: 0;
+  /* On the first line's centre rather than on the top of its box. */
+  margin-block-start: 0.35em;
+  accent-color: var(--color-brand-accent);
+}
+
+/*
+ * A FENCED BLOCK WRAPS RATHER THAN SCROLLING. One long line of JSON in a body
+ * otherwise pushes the whole page sideways, and a block that scrolled instead
+ * would owe a tab stop, since a scroller no keyboard reaches is content no
+ * keyboard reads. `anywhere` because these lines have no spaces to break at.
+ */
+.crewlet-document pre {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-inset);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-document pre code {
+  padding: 0;
+  background: none;
+  font: inherit;
+}
+
+.crewlet-document :not(pre) > code {
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-inset);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-document blockquote {
+  padding-inline-start: var(--spacing-3);
+  border-inline-start: 2px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-document hr {
+  margin-block: var(--crewlet-document-section-gap);
+  border: 0;
+  border-block-start: 1px solid var(--color-border-default);
+}
+
+/*
+ * A link in running prose keeps a permanent underline, through hover too:
+ * colour alone is not what says "link" (WCAG 1.4.1). The pointer is answered
+ * by the ink moving to the primary step.
+ */
+.crewlet-document a,
+.crewlet-document a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.crewlet-document a {
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-document a:hover {
+  color: var(--color-text-primary);
+}
+
+.crewlet-document a:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-document img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+/*
+ * A TABLE WRITTEN FOR A DOCUMENT can be wider than the column it lands in, so
+ * the element a renderer wraps it in scrolls rather than the page. The table
+ * itself keeps its display, because a table set `display: block` loses its
+ * table semantics to more than one screen reader.
+ */
+.crewlet-document :where(div):has(> table) {
+  overflow-x: auto;
+}
+
+/* The scroller is a tab stop (see Document.tsx), so it draws the ring inside
+   its own box, where the table's edge would otherwise clip an outset one. */
+.crewlet-document :where(div):has(> table):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-document table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-document--sm table {
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-document :where(th, td) {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-block-end: 1px solid var(--color-border-default);
+  text-align: start;
+  vertical-align: top;
+}
+
+.crewlet-document th {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+/*
+ * The title above a body. The largest step a reading screen spends, at the
+ * tight tracking every title on the ramp takes, and it wraps anywhere because
+ * a title is an address somebody typed and may hold no space at all.
+ */
+.crewlet-document-title {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+  letter-spacing: var(--font-letter-spacing-tight);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}

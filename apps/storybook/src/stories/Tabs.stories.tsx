@@ -243,3 +243,27 @@ function MarkedTabs() {
  * marker stands in for the tab's count while it is set.
  */
 export const Markers: Story = { render: () => <MarkedTabs /> };
+
+function LensChips() {
+  const [value, setValue] = useState('tasks');
+  return (
+    <Tabs
+      variant="chip"
+      ariaLabel="Lens"
+      value={value}
+      onValueChange={setValue}
+      items={[
+        { value: 'tasks', label: 'Tasks', count: 2 },
+        { value: 'about', label: 'About' },
+        { value: 'history', label: 'History' },
+        { value: 'files', label: 'Files' },
+      ]}
+    />
+  );
+}
+
+/**
+ * CHIPS: the lenses beside an object's name in a page's bar. No well round
+ * them; the lens that is on is outlined in the accent and nothing else.
+ */
+export const Chip: Story = { render: () => <LensChips /> };

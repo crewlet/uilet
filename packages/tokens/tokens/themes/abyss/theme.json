@@ -1,0 +1,11 @@
+{
+  "name": "Abyss",
+  "group": "purple",
+  "tag": "Vivid violet",
+  "description": "Ink-violet grounds on #090019 with an electric violet accent.",
+  "order": 1,
+  "tint": {
+    "hue": 298,
+    "chroma": 7
+  }
+}

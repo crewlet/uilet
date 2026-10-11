@@ -1,10 +1,10 @@
-import { useId, useMemo, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
-import { SearchGlyph } from '@crewlethq/icons/glyphs';
+import { useEffect, useId, useMemo, useRef, useState, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import { ChevronLeftGlyph, SearchGlyph } from '@crewlethq/icons/glyphs';
 import { Count } from '../Count/index.js';
 import { Input } from '../Input/index.js';
 import { Kbd } from '../Kbd/index.js';
 import { isComposing } from '../Layer/stack.js';
-import { useListbox } from '../Listbox/index.js';
+import { useHighlightRest, useListbox } from '../Listbox/index.js';
 import { Modal } from '../Modal/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
@@ -27,7 +27,12 @@ export interface CommandPaletteItem {
    * the palette's `onKeyDown`, like the chord that opens it.
    */
   meta?: ReactNode;
-  onSelect: () => void;
+  /**
+   * Taking the row. The surface closes after it, which is what a launcher's
+   * row means; a row that leads somewhere INSIDE the surface (into a step) or
+   * waits on an answer the reader is owed returns `false` to keep it open.
+   */
+  onSelect: () => boolean | void;
 }
 
 export interface CommandPaletteGroup {
@@ -35,6 +40,29 @@ export interface CommandPaletteGroup {
   /** The heading over the group, and the name a screen reader gives it. */
   label: string;
   items: CommandPaletteItem[];
+}
+
+/**
+ * A STEP the palette has gone into: a second list in place of the results,
+ * for a choice the first one led to (which project to file into, which theme
+ * to use). The caller hands over the step's own rows as `groups` and its own
+ * query; this draws where the reader is and the way back.
+ */
+export interface CommandPaletteStep {
+  /** What the step chooses, on the chip at the field's start: "Change theme". */
+  label: string;
+  /**
+   * Back to where the step was opened from: the chip, Escape, and Backspace in
+   * an empty field. The palette stays open; closing is the veil's and the
+   * caller's chord.
+   */
+  onBack: () => void;
+  /**
+   * The id of the row the step's list opens on: the choice already in effect,
+   * so a step that previews its rows opens on what is on screen rather than
+   * previewing its first row. The first row without it.
+   */
+  startAt?: string | undefined;
 }
 
 /** One scope the search can be narrowed to: a tab over the results. */
@@ -125,6 +153,19 @@ export type CommandPaletteProps = Omit<
     pendingMessage?: string | undefined;
     /** Names the result list itself. */
     resultsLabel?: string | undefined;
+    /**
+     * The step the palette is in, or none. In a step the field starts with a
+     * chip naming it, which goes back on a press, and Escape and Backspace in
+     * an empty field go back rather than closing the surface.
+     */
+    step?: CommandPaletteStep | undefined;
+    /**
+     * Told where the highlight COMES TO REST, and `null` when the list empties,
+     * the pointer leaves it or the surface closes: at once for a key, and once
+     * the pointer has rested on a row for `HIGHLIGHT_REST_MS`. What a step that
+     * previews its rows listens to.
+     */
+    onHighlight?: ((item: CommandPaletteItem | null) => void) | undefined;
   };
 
 /**
@@ -179,6 +220,13 @@ export type CommandPaletteProps = Omit<
  * prevented, so it does not move focus off the field: a combobox that loses its
  * input names no highlight, and typing reaches nothing.
  *
+ * A STEP IS A SECOND LIST, NOT A SECOND SURFACE (`step`). The field stays
+ * where it is, so focus and the reader's place survive going in and coming
+ * back; its search glyph gives way to a chip naming the step, and the keys
+ * that would close the surface go back instead: Escape, and Backspace in an
+ * empty field, which is where a reader who has erased their query is asking to
+ * go. The veil still closes it, as does the caller's own chord.
+ *
  * THE CHORD THAT OPENS IT IS THE APPLICATION'S, not this component's. Pass an
  * `onKeyDown`: it reaches the frame, which is every key pressed inside the
  * surface, and closing from there is one line the caller already has the
@@ -211,6 +259,8 @@ function Palette({
   onScopeChange,
   groupsScope,
   scopesLabel = 'Search in',
+  step,
+  onHighlight,
   className,
   ...rest
 }: CommandPaletteProps) {
@@ -232,11 +282,48 @@ function Palette({
     onCommit: (at) => {
       const item = flat[at];
       if (!item) return;
-      item.onSelect();
-      onClose();
+      if (item.onSelect() !== false) onClose();
     },
     onClose,
   });
+
+  /*
+   * WHERE THE HIGHLIGHT RESTS, for a caller that previews it. Keyed by the
+   * row's id, so new row objects for the same rows tell nothing new. A move
+   * the POINTER made waits for the pointer to rest (see useHighlightRest);
+   * every other move (a key, a new query, a step's own list) is told at once.
+   */
+  const offeredNow = useRef(flat);
+  offeredNow.current = flat;
+  const highlight = useHighlightRest(
+    onHighlight ? (key) => onHighlight(key === null ? null : (offeredNow.current.find((item) => item.id === key) ?? null)) : undefined,
+  );
+  const byPointer = useRef(false);
+  const restingKey = flat[listbox.active]?.id ?? null;
+  useEffect(() => {
+    const pointer = byPointer.current;
+    byPointer.current = false;
+    if (restingKey === null) highlight.now(null);
+    else if (pointer) highlight.rest(restingKey);
+    else highlight.now(restingKey);
+  }, [restingKey, highlight]);
+
+  /*
+   * A STEP OPENS ON ITS OWN ROW, and coming back puts the highlight where it
+   * was. Decided while rendering, not in an effect, so the frame that shows the
+   * new list already shows the right row and the highlight is never told the
+   * row it happened to be left on: an effect would tell a previewing caller
+   * the stale row first, and the screen would flash it.
+   */
+  const stepKey = step?.label ?? null;
+  const [shownStep, setShownStep] = useState(stepKey);
+  const [before, setBefore] = useState(0);
+  if (stepKey !== shownStep) {
+    setShownStep(stepKey);
+    if (shownStep === null) setBefore(listbox.active);
+    const start = step?.startAt === undefined ? -1 : flat.findIndex((item) => item.id === step.startAt);
+    listbox.setActive(stepKey === null ? before : Math.max(start, 0));
+  }
 
   const tabId = (scopeId: string) => `${id}-scope-${scopeId}`;
   const panelId = `${id}-panel`;
@@ -250,18 +337,27 @@ function Palette({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (step && !isComposing(event) && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      // Prevented, which is also what keeps the layer stack from taking
+      // Escape as "close" (see Layer/stack.ts).
+      if (event.key === 'Escape' || (event.key === 'Backspace' && query === '')) {
+        event.preventDefault();
+        step.onBack();
+        return;
+      }
+    }
     if (listbox.onKeyDown(event)) return;
     if (!scopes || scopes.length === 0 || isComposing(event)) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
-    let step = 0;
-    if (event.key === 'Tab') step = event.shiftKey ? -1 : 1;
-    else if (query === '' && !event.shiftKey && event.key === 'ArrowRight') step = 1;
-    else if (query === '' && !event.shiftKey && event.key === 'ArrowLeft') step = -1;
-    if (step === 0) return;
+    let by = 0;
+    if (event.key === 'Tab') by = event.shiftKey ? -1 : 1;
+    else if (query === '' && !event.shiftKey && event.key === 'ArrowRight') by = 1;
+    else if (query === '' && !event.shiftKey && event.key === 'ArrowLeft') by = -1;
+    if (by === 0) return;
     // Prevented, which is also what tells the modal's trap the key is taken.
     event.preventDefault();
     const at = scopes.findIndex((candidate) => candidate.id === scope);
-    const next = scopes[(at + step + scopes.length) % scopes.length];
+    const next = scopes[(at + by + scopes.length) % scopes.length];
     if (next) choose(next.id);
   }
 
@@ -292,36 +388,60 @@ function Palette({
        * glyph is the word "search" the field is already named with, and the
        * keycap restates what a dialog's Escape does by definition, so read
        * aloud each is the name of something the reader already has.
+       *
+       * IN A STEP the glyph gives way to a chip naming the step. The chip is
+       * a control, so it sits in the bar beside the field rather than in a
+       * slot. The field keeps its place in the tree either way, so going into
+       * a step and back keeps focus and the caret where the reader left them.
        */}
-      <Input
-        appearance="command"
-        containerClassName="crewlet-palette__field"
-        leading={<SearchGlyph size="sm" />}
-        trailing={
-          escapeHint ? (
-            <Kbd subtle aria-hidden className="crewlet-palette__escape">
-              Esc
-            </Kbd>
-          ) : undefined
-        }
-        value={query}
-        onChange={(event) => {
-          onQueryChange(event.target.value);
-          // A new query is a new list: the best match leads it.
-          listbox.setActive(0);
-        }}
-        onKeyDown={onKeyDown}
-        placeholder={placeholder}
-        role="combobox"
-        aria-label={label}
-        aria-expanded
-        aria-controls={listbox.listId}
-        aria-autocomplete="list"
-        aria-activedescendant={active >= 0 ? listbox.optionId(active) : undefined}
-        aria-describedby={current ? tabId(current.id) : undefined}
-        autoComplete="off"
-        spellCheck={false}
-      />
+      <div className={cx('crewlet-palette__bar', step && 'is-step')}>
+        {step ? (
+          <button
+            type="button"
+            className="crewlet-palette__step"
+            // Never a stop, like a scope: the field drives the surface, and
+            // Escape and Backspace are its way back.
+            tabIndex={-1}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={step.onBack}
+          >
+            <ChevronLeftGlyph size="sm" />
+            {/* Named "Back from Change theme": what a press does, and the
+                words on the chip, which a name has to contain. */}
+            <VisuallyHidden>Back from</VisuallyHidden> {step.label}
+          </button>
+        ) : null}
+        <Input
+          appearance="command"
+          containerClassName="crewlet-palette__field"
+          leading={step ? undefined : <SearchGlyph size="sm" />}
+          trailing={
+            escapeHint ? (
+              <Kbd subtle aria-hidden className="crewlet-palette__escape">
+                Esc
+              </Kbd>
+            ) : undefined
+          }
+          value={query}
+          onChange={(event) => {
+            onQueryChange(event.target.value);
+            // A new query is a new list: the best match leads it.
+            listbox.setActive(0);
+          }}
+          onKeyDown={onKeyDown}
+          placeholder={placeholder}
+          role="combobox"
+          // In a step the field searches the step's list, and is named for it.
+          aria-label={step ? step.label : label}
+          aria-expanded
+          aria-controls={listbox.listId}
+          aria-autocomplete="list"
+          aria-activedescendant={active >= 0 ? listbox.optionId(active) : undefined}
+          aria-describedby={current ? tabId(current.id) : undefined}
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </div>
       {scopes ? (
         <div className="crewlet-palette__scopes" role="tablist" aria-label={scopesLabel}>
           {scopes.map((candidate) => {
@@ -357,6 +477,9 @@ function Palette({
       <div
         className="crewlet-palette__results"
         ref={listbox.listRef}
+        // THE POINTER LEAVING IS NOWHERE, for a caller previewing the
+        // highlight. The highlight itself stays, so the keys carry on.
+        onMouseLeave={() => highlight.now(null)}
         {...(scopes
           ? { id: panelId, role: 'tabpanel', 'aria-labelledby': current ? tabId(current.id) : undefined }
           : {})}
@@ -410,11 +533,16 @@ function Palette({
                     className="crewlet-listbox__option crewlet-palette__row"
                     role="option"
                     aria-selected={mine === active}
-                    onMouseEnter={listbox.optionHandlers(mine).onMouseEnter}
+                    onMouseEnter={() => {
+                      // Back onto the row the highlight never left: nothing
+                      // moves, so the rest starts here (see the effect above).
+                      if (mine === active) highlight.rest(item.id);
+                      else byPointer.current = true;
+                      listbox.optionHandlers(mine).onMouseEnter();
+                    }}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
-                      item.onSelect();
-                      onClose();
+                      if (item.onSelect() !== false) onClose();
                     }}
                   >
                     {item.icon !== undefined ? (

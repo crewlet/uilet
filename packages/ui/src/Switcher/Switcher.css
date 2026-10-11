@@ -1,0 +1,346 @@
+/*
+ * The switcher: a button that is the page's name, and a banded panel under it
+ * (a search band, a list that scrolls, and a footer that does not).
+ *
+ * The rows are the listbox register (`Listbox.css`), because a project in this
+ * list and a result in the command palette are read the same way, and the
+ * raised row that marks where the arrows are must mean the same in both. What
+ * this adds is the switcher's own: a lead column every row's key lines up in,
+ * the current subject outlined in the accent, and a held row that keeps its
+ * reason without a hover.
+ */
+
+.crewlet-switcher {
+  /* The panel's own measures: a width that holds a key, a long name and a
+     count, and a height that holds eight projects with Recent above them
+     without scrolling. */
+  --crewlet-switcher-width: 360px;
+  --crewlet-switcher-max-height: 520px;
+  --crewlet-switcher-lead: 52px;
+}
+
+/* ── The button ─────────────────────────────────────────────────────────── */
+
+/*
+ * THE PAGE'S NAME, WITH NO BOX AT REST. It is the heading of the page as much
+ * as it is a control, so it reads as text in the trail until the pointer
+ * reaches it; the fill appears under the pointer and stays while the panel is
+ * open, and the chevron turns. The name takes the cut, never the key or the
+ * chevron.
+ */
+.crewlet-switcher-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-1) * 1.5);
+  min-width: 0;
+  max-width: 100%;
+  height: var(--size-row-sm);
+  padding: 0 var(--spacing-1) 0 calc(var(--spacing-1) * 1.5);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-switcher-trigger:hover,
+.crewlet-switcher-trigger[aria-expanded='true'] {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-switcher-trigger:active {
+  background: var(--color-surface-pressed);
+}
+
+/* Inside the button's own edge, so the trail's scrollport never clips it. */
+.crewlet-switcher-trigger:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-switcher-trigger__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-switcher-trigger.is-mono .crewlet-switcher-trigger__label {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-switcher-trigger .crewlet-key-chip,
+.crewlet-switcher-trigger__tag {
+  display: inline-flex;
+  flex: none;
+}
+
+svg.crewlet-switcher-trigger__chevron {
+  flex: none;
+  color: var(--color-text-tertiary);
+  transition:
+    transform var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-switcher-trigger:hover svg.crewlet-switcher-trigger__chevron {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-switcher-trigger[aria-expanded='true'] svg.crewlet-switcher-trigger__chevron {
+  color: var(--color-text-secondary);
+  transform: rotate(180deg);
+}
+
+/* ── The three surfaces ─────────────────────────────────────────────────── */
+
+/*
+ * ANCHORED: the popover's own surface (the subtle rung, the default hairline,
+ * the large corner and the deepest shadow) at the switcher's size. The bands
+ * lay themselves out inside it, so the panel itself does not scroll.
+ */
+.crewlet-popover.crewlet-switcher {
+  display: flex;
+  flex-direction: column;
+  width: var(--crewlet-switcher-width);
+  min-width: 0;
+  max-width: calc(100vw - var(--spacing-4));
+  max-height: min(var(--crewlet-switcher-max-height), calc(100dvh - var(--spacing-10) - var(--spacing-4)));
+  overflow: hidden;
+}
+
+/*
+ * CENTRED: the same panel as a dialog, a step lower than a dialog stands so
+ * it clears the page's bar, arriving at the popover's pace rather than a
+ * dialog's, because it is the same panel opened from somewhere else.
+ */
+.crewlet-modal.crewlet-switcher--centered {
+  --crewlet-modal-width: var(--crewlet-switcher-width);
+
+  max-height: min(var(--crewlet-switcher-max-height), calc(100dvh - var(--spacing-10) - var(--spacing-6)));
+  margin-top: var(--spacing-2);
+  animation-duration: var(--motion-duration-base);
+}
+
+/* A SHEET carries a grab handle over its title, which says it came from the
+   edge it is pinned to. Decoration: the close control is what closes it. */
+.crewlet-modal.crewlet-switcher--sheet::before {
+  content: '';
+  flex: none;
+  width: calc(var(--spacing-7) + var(--spacing-1));
+  height: var(--spacing-1);
+  margin: var(--spacing-2) auto 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+}
+
+.crewlet-switcher--sheet .crewlet-modal__header {
+  min-height: var(--size-control-lg);
+  padding: 0 var(--spacing-2) 0 var(--spacing-4);
+}
+
+/* A dialog's body scrolls its whole content; here the list alone scrolls. */
+.crewlet-switcher .crewlet-modal__body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.crewlet-switcher__panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── The search band ────────────────────────────────────────────────────── */
+
+/*
+ * The field with no box of its own, as the command palette draws it: the band
+ * is the field. It is set at the trail's size rather than the palette's
+ * headline size, because the panel is a list read at a glance, and at the
+ * reading size on a phone, where a smaller field zooms the page when tapped.
+ */
+.crewlet-input.crewlet-switcher__search {
+  flex-shrink: 0;
+  min-height: var(--size-control-lg);
+  padding-inline: var(--spacing-3) var(--spacing-2);
+  border: none;
+  border-bottom: 1px solid var(--color-border-default);
+  border-radius: 0;
+  background: transparent;
+}
+
+.crewlet-input.crewlet-switcher__search .crewlet-input__control {
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-switcher--sheet .crewlet-input.crewlet-switcher__search .crewlet-input__control {
+  font-size: var(--font-size-md);
+}
+
+/* ── The list ───────────────────────────────────────────────────────────── */
+
+.crewlet-switcher__scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-1);
+  scrollbar-width: thin;
+}
+
+.crewlet-switcher__list {
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * A ROW: a lead column, the name, and a figure at the end. Both classes are
+ * named so this ties with nothing in `Listbox.css`, whose rows are a step
+ * shorter and padded on every side.
+ */
+.crewlet-listbox__option.crewlet-switcher__option {
+  gap: 0;
+  min-height: var(--size-row-md);
+  padding-block: 0;
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.crewlet-switcher--sheet .crewlet-listbox__option.crewlet-switcher__option {
+  min-height: var(--size-control-lg);
+  font-size: var(--font-size-sm);
+}
+
+/*
+ * THE CURRENT SUBJECT, outlined by its own accent hairline inside the row: an
+ * outline rather than a shadow, so forced-colours mode keeps it. The row the
+ * arrows are on takes the raised fill as every listbox row does; both can land
+ * on one row, and it never gains a second border.
+ */
+.crewlet-listbox__option.crewlet-switcher__option.is-current {
+  color: var(--color-text-primary);
+  outline: 1px solid var(--color-brand-accent);
+  outline-offset: -1px;
+}
+
+/* A HELD ROW answers no pointer: no fill under it, and the reason in the quiet
+   ink at its end says why. */
+.crewlet-listbox__option.crewlet-switcher__option[aria-disabled='true'] {
+  background: transparent;
+  color: var(--color-text-tertiary);
+}
+
+/* Every row's key starts on one line, whatever the key's length. */
+.crewlet-switcher__lead {
+  display: flex;
+  flex: none;
+  align-items: center;
+  width: var(--crewlet-switcher-lead);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-switcher__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The letters a search matched: the weight carries it, in the primary ink. */
+b.crewlet-switcher__match {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.crewlet-switcher__meta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: calc(var(--spacing-1) * 1.5);
+  margin-left: var(--spacing-3);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A group's heading carries its count at its end. */
+.crewlet-switcher__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.crewlet-switcher__count {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+}
+
+/* A line about the list itself, on the inset rung: not a row, so not a row's
+   shape. */
+.crewlet-switcher__note {
+  margin: calc(var(--spacing-1) * 1.5) var(--spacing-2) var(--spacing-1);
+  padding: var(--spacing-2) calc(var(--spacing-2) + var(--spacing-1) / 2);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+/* A state of the list, said in two lines, with its actions as rows under it. */
+.crewlet-switcher__message {
+  display: grid;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-3) var(--spacing-2);
+}
+
+.crewlet-switcher__message-title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-switcher__message-body {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+/* Placeholder rows the shape of the rows on their way. */
+.crewlet-switcher__skeleton-row {
+  display: flex;
+  align-items: center;
+  height: var(--size-row-md);
+  padding: 0 var(--spacing-3);
+}
+
+.crewlet-switcher__skeleton-row > .crewlet-switcher__meta {
+  margin-left: auto;
+}
+
+/* ── The footer ─────────────────────────────────────────────────────────── */
+
+.crewlet-switcher__footer {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  padding: var(--spacing-1);
+  border-top: 1px solid var(--color-border-default);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-switcher-trigger {
+    transition: none;
+  }
+
+  svg.crewlet-switcher-trigger__chevron {
+    transition: none;
+  }
+}

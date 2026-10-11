@@ -19,12 +19,14 @@ const root = resolve(__dirname, '..');
 // The token source
 // ---------------------------------------------------------------------------
 
-// tokens/*.json holds the base (every file but intent.json, the design record;
-// see INTENT_FILE): the marketing palette weblet reads, and every token that
-// does not change with a theme. tokens/themes/*.json holds the slots that do.
-// The base carries a value for every themed slot (the marketing palette's,
-// which is dark), so an application that imports tokens.css alone still has a
-// value for all of them; the palette suite asserts it.
+// tokens/*.json holds the base: the marketing palette weblet reads, and every
+// token that does not change with a theme. tokens/themes/<id>/ holds one THEME
+// each: dark.json and light.json carry the slots that change with the palette,
+// theme.json says what the theme is called and where a picker lists it, and
+// intent.json records the design the theme was fitted from. The base carries a
+// value for every themed slot (the marketing palette's, which is dark), so an
+// application that imports tokens.css alone still has a value for all of them;
+// the palette suite asserts it.
 const tokensDir = resolve(root, 'tokens');
 const themesDir = resolve(tokensDir, 'themes');
 const fontsDir = resolve(root, 'fonts');
@@ -63,22 +65,29 @@ const NODE_HUES = ['purple', 'cyan', 'green', 'amber', 'rose', 'blue'];
 // its r, g, b to the accent's.
 const ACCENT_LINE_ALPHA = 0.32;
 
-// tokens/intent.json sits beside the token source and is not part of it: it
-// is the approved design every colour here is measured from, keyed by the
-// design's own names, and scripts/fit-palette.mjs is what reads it. Merged as
-// a group it would emit a custom property for every declaration the design
-// makes, under names no stylesheet should ever read.
-const INTENT_FILE = 'intent.json';
+// The theme that paints the bare root. Every other theme paints under its own
+// data-palette attribute, so a document that names none gets this one, and an
+// application that never adopts the attribute is unchanged.
+const DEFAULT_THEME = 'crewlet';
+
+// A theme's id is its folder's name and the value of data-palette, so it is
+// spelled as an attribute value a stylesheet can quote without escaping.
+const THEME_ID = /^[a-z][a-z0-9-]*$/;
+
+// What a theme's theme.json may say, and nothing else: an unknown key is a
+// typo of one of these, and a typo here is a picker that silently lists a
+// theme wrong.
+const THEME_KEYS = new Set(['$comment', 'name', 'group', 'tag', 'description', 'order', 'tint', 'contrast']);
 
 async function readTokenFile(path) {
   return JSON.parse(await readFile(path, 'utf8'));
 }
 
-/** Every tokens/*.json merged, in name order, with tokens/themes/ and the design record left out. */
+/** Every tokens/*.json merged, in name order, with tokens/themes/ left out. */
 async function readBaseTokens() {
   const merged = {};
   for (const entry of (await readdir(tokensDir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (!entry.isFile() || !entry.name.endsWith('.json') || entry.name === INTENT_FILE) continue;
+    if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
     const group = await readTokenFile(resolve(tokensDir, entry.name));
     for (const [name, value] of Object.entries(group)) {
       if (name in merged) throw new Error(`tokens/${entry.name}: the group "${name}" is already declared by another file`);
@@ -112,6 +121,66 @@ function deriveTints(tokens, where) {
   tokens.color.brand.accentRgb = { value: `${accent.r}, ${accent.g}, ${accent.b}` };
   tokens.color.brand.accentSoftStrong = { value: withAlpha(fill('brand', 'accent'), ACCENT_LINE_ALPHA) };
   return tokens;
+}
+
+/**
+ * A theme's theme.json, held to what a picker reads from it.
+ *
+ * `tint` is the one thing it says about the palette itself: a theme whose
+ * grounds are tinted on purpose declares the hue and the chroma budget of that
+ * tint, and the palette suite holds every rung to the declaration rather than
+ * to the neutral cap. `contrast: "high"` puts the theme under the suite's
+ * high-contrast profile.
+ */
+function validateThemeMeta(meta, id, groups) {
+  const where = `tokens/themes/${id}/theme.json`;
+  const problems = [];
+  for (const key of Object.keys(meta)) if (!THEME_KEYS.has(key)) problems.push(`"${key}" is not a theme field`);
+  for (const key of ['name', 'tag', 'description']) {
+    if (typeof meta[key] !== 'string' || meta[key].trim() === '') problems.push(`${key} is a non-empty string`);
+  }
+  if (!groups.some((group) => group.id === meta.group)) problems.push(`group "${meta.group}" is not one of tokens/themes/groups.json`);
+  if (!Number.isInteger(meta.order) || meta.order < 1) problems.push('order is a whole number from 1');
+  if (meta.tint !== undefined) {
+    const { hue, chroma } = meta.tint ?? {};
+    if (!(typeof hue === 'number' && hue >= 0 && hue < 360)) problems.push('tint.hue is an OKLCh hue in degrees, from 0 to under 360');
+    if (!(typeof chroma === 'number' && chroma > 0)) problems.push('tint.chroma is the largest chroma a rung may carry, above 0');
+    if (Object.keys(meta.tint ?? {}).some((key) => key !== 'hue' && key !== 'chroma')) problems.push('tint carries hue and chroma only');
+  }
+  if (meta.contrast !== undefined && meta.contrast !== 'high') problems.push('contrast is "high", or absent for the standard floors');
+  if (id === DEFAULT_THEME && (meta.tint !== undefined || meta.contrast !== undefined)) {
+    problems.push('the default theme paints every document that names no theme, so it keeps the neutral ramp and the standard floors');
+  }
+  if (problems.length > 0) throw new Error(`${where}:\n  ${problems.join('\n  ')}`);
+  return meta;
+}
+
+/**
+ * Every theme in tokens/themes/, in the order a picker lists them: by group,
+ * then by each theme's own order.
+ */
+async function readThemes() {
+  const { groups } = await readTokenFile(resolve(themesDir, 'groups.json'));
+  const groupIds = groups.map((group) => group.id);
+  if (groupIds.length === 0 || new Set(groupIds).size !== groupIds.length || !groupIds.every((id) => THEME_ID.test(id))) {
+    throw new Error('tokens/themes/groups.json: every group has a unique id spelled like a theme id');
+  }
+  const palettes = [];
+  for (const entry of (await readdir(themesDir, { withFileTypes: true })).filter((item) => item.isDirectory())) {
+    const id = entry.name;
+    if (!THEME_ID.test(id)) throw new Error(`tokens/themes/${id}: a theme's folder is its id, spelled in lower case, digits and dashes`);
+    const dir = resolve(themesDir, id);
+    const meta = validateThemeMeta(await readTokenFile(resolve(dir, 'theme.json')), id, groups);
+    const read = async (mode) => {
+      const where = `tokens/themes/${id}/${mode}.json`;
+      return validate(deriveTints(await readTokenFile(resolve(dir, `${mode}.json`)), where), where);
+    };
+    palettes.push({ id, meta, light: await read('light'), dark: await read('dark') });
+  }
+  if (!palettes.some((palette) => palette.id === DEFAULT_THEME)) throw new Error(`tokens/themes/${DEFAULT_THEME} is missing, and it paints the bare root`);
+  const rank = new Map(groupIds.map((id, index) => [id, index]));
+  palettes.sort((a, b) => rank.get(a.meta.group) - rank.get(b.meta.group) || a.meta.order - b.meta.order || a.id.localeCompare(b.id));
+  return { groups, palettes };
 }
 
 // ---------------------------------------------------------------------------
@@ -446,6 +515,85 @@ ${light}
 }
 
 /**
+ * One named theme, in the same three blocks as the default, under its own
+ * attribute: `data-palette="<id>"` on the root element.
+ *
+ *   :root[data-palette="<id>"]                                                   dark
+ *   @media (prefers-color-scheme: light) :root[data-palette="<id>"]:not(...)    light
+ *   :root[data-palette="<id>"][data-theme="light"]                               light
+ *
+ * Mode keeps working exactly as it does for the default: data-theme pins light
+ * or dark, and its absence follows the system. Every block outranks the
+ * default's same block by the attribute, and the theme's light blocks outrank
+ * its own dark one, so source order never decides which palette paints. A
+ * theme declares every slot the default declares, key for key, so nothing of
+ * the default shows through it; the palette suite holds that.
+ */
+function paletteBlocks(id, light, dark) {
+  const root = `:root[data-palette="${id}"]`;
+  return `${root} {
+  color-scheme: dark;
+
+${dark}
+}
+
+@media (prefers-color-scheme: light) {
+  ${root}:not([data-theme="dark"]) {
+    color-scheme: light;
+
+${light
+  .split('\n')
+  .map((line) => (line === '' ? line : `  ${line}`))
+  .join('\n')}
+  }
+}
+
+${root}[data-theme="light"] {
+  color-scheme: light;
+
+${light}
+}
+`;
+}
+
+const paletteHeader = (palette) => `/* Generated by style-dictionary. The ${palette.meta.name} theme: ${palette.meta.description}
+   Import it after the default palettes, and set data-palette="${palette.id}" on <html>:
+       import '@crewlethq/tokens/css';
+       import '@crewlethq/tokens/css/themes';
+       import '@crewlethq/tokens/css/themes/${palette.id}';
+   data-theme keeps choosing light or dark exactly as it does for the default. */
+`;
+
+const allPalettesHeader = `/* Generated by style-dictionary. Every named theme, each under its own
+   data-palette attribute on <html>. Import it after the default palettes:
+       import '@crewlethq/tokens/css';
+       import '@crewlethq/tokens/css/themes';
+       import '@crewlethq/tokens/css/themes/all';
+   A document that sets no data-palette keeps the default theme, and
+   data-theme keeps choosing light or dark for every theme alike. */
+`;
+
+/** The colours a picker draws a theme's thumbnail with, one set per mode. */
+function swatchOf(values) {
+  const { surface, text, brand, border, feedback } = values.color;
+  return {
+    frame: surface.frame,
+    sheet: surface.background,
+    card: surface.subtle,
+    raised: surface.elevated,
+    hairline: border.default,
+    text: text.primary,
+    muted: text.muted,
+    accent: brand.accent,
+    onAccent: text.onAccent,
+    info: feedback.info,
+    warning: feedback.warning,
+    danger: feedback.danger,
+    success: feedback.success,
+  };
+}
+
+/**
  * The density contract. --density scales every spacing and size token, so a
  * setting is a real change to every surface rather than to three font sizes.
  * It is a separate import because a product that has no density control
@@ -640,8 +788,8 @@ const materialSymbols = `/* Generated by style-dictionary. Loads the Material Sy
 
 async function build() {
   const base = validate(deriveTints(await readBaseTokens(), 'tokens/color.json'), 'tokens/');
-  const light = validate(deriveTints(await readTokenFile(resolve(themesDir, 'light.json')), 'tokens/themes/light.json'), 'tokens/themes/light.json');
-  const dark = validate(deriveTints(await readTokenFile(resolve(themesDir, 'dark.json')), 'tokens/themes/dark.json'), 'tokens/themes/dark.json');
+  const { groups, palettes } = await readThemes();
+  const { light, dark } = palettes.find((palette) => palette.id === DEFAULT_THEME);
 
   // The constructor's implicit init runs detached, so a malformed token file
   // would surface as an unhandled rejection that no caller can catch (and
@@ -658,6 +806,17 @@ async function build() {
     resolve(cssDir, 'themes.css'),
     themeOverrides(await themeDeclarations(light, '  '), await themeDeclarations(dark, '  ')),
   );
+  // Every named theme: a sheet of its own, for an application that offers a
+  // few, and all of them in one, for one that offers the picker. One sheet
+  // switches with no request and no flash at boot.
+  await mkdir(resolve(cssDir, 'themes'), { recursive: true });
+  const named = [];
+  for (const palette of palettes.filter(({ id }) => id !== DEFAULT_THEME)) {
+    const blocks = paletteBlocks(palette.id, await themeDeclarations(palette.light, '  '), await themeDeclarations(palette.dark, '  '));
+    await writeFile(resolve(cssDir, 'themes', `${palette.id}.css`), `${paletteHeader(palette)}\n${blocks}`);
+    named.push(`/* ${palette.meta.name} */\n${blocks}`);
+  }
+  await writeFile(resolve(cssDir, 'themes', 'all.css'), `${allPalettesHeader}\n${named.join('\n')}`);
   await writeFile(
     resolve(cssDir, 'density.css'),
     densityOverrides(Object.fromEntries(Object.entries(base.density).map(([name, token]) => [name, token.value]))),
@@ -694,15 +853,54 @@ async function build() {
       '',
       'export type ThemeName = keyof typeof themes;',
       '',
+      '/** The groups a theme picker lists the themes under, in order. */',
+      `export const themeGroups = ${JSON.stringify(groups, null, 2)} as const;`,
+      '',
+      'export type ThemeGroupId = (typeof themeGroups)[number][\'id\'];',
+      '',
+      '/**',
+      ' * Every theme, in the order a picker lists them. `id` is the value of the',
+      ' * data-palette attribute that paints it (the default paints with none),',
+      ' * `swatch` the colours a picker draws its thumbnail with in each mode, and',
+      ' * `tint` and `contrast` the profile the palette suite measures it under.',
+      ' */',
+      `export const themeRegistry = ${JSON.stringify(
+        await Promise.all(
+          palettes.map(async (palette) => ({
+            id: palette.id,
+            name: palette.meta.name,
+            group: palette.meta.group,
+            tag: palette.meta.tag,
+            description: palette.meta.description,
+            tint: palette.meta.tint ?? null,
+            contrast: palette.meta.contrast ?? 'standard',
+            swatch: { dark: swatchOf(await themeValues(palette.dark)), light: swatchOf(await themeValues(palette.light)) },
+          })),
+        ),
+        null,
+        2,
+      )} as const;`,
+      '',
+      'export type ThemeEntry = (typeof themeRegistry)[number];',
+      'export type ThemeId = ThemeEntry[\'id\'];',
+      '',
+      '/** The theme a document that names none gets: it paints the bare root. */',
+      `export const DEFAULT_THEME_ID: ThemeId = '${DEFAULT_THEME}';`,
+      '',
+      '/** Whether a stored or typed value names a theme this build ships. */',
+      'export function isThemeId(value: unknown): value is ThemeId {',
+      '  return typeof value === \'string\' && themeRegistry.some((theme) => theme.id === value);',
+      '}',
+      '',
     ].join('\n'),
   );
   await writeFile(
     resolve(root, 'src/index.ts'),
-    `${await readFile(resolve(root, 'src/index.ts'), 'utf8')}\nexport { themes } from './themes.js';\nexport type { ThemeName } from './themes.js';\n`,
+    `${await readFile(resolve(root, 'src/index.ts'), 'utf8')}\nexport { themes, themeGroups, themeRegistry, DEFAULT_THEME_ID, isThemeId } from './themes.js';\nexport type { ThemeName, ThemeGroupId, ThemeEntry, ThemeId } from './themes.js';\n`,
   );
 
   console.warn(
-    '[tokens] built CSS, light and dark themes, density, breakpoints, the document baseline, legacy aliases, font faces, the Material Symbols loader, and the TS module',
+    `[tokens] built CSS, the default light and dark palettes and ${palettes.length - 1} named themes, density, breakpoints, the document baseline, legacy aliases, font faces, the Material Symbols loader, and the TS module`,
   );
 }
 

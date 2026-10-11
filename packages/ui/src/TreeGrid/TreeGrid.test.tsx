@@ -425,10 +425,59 @@ describe('keys', () => {
     expect(document.activeElement).toBe(rowOf('unit:eng').querySelector("[aria-colindex='1']"));
     press('ArrowRight');
     expect(document.activeElement?.tagName).toBe('A');
-    press('ArrowRight');
-    expect(document.activeElement?.tagName).toBe('INPUT');
     press('Home');
     expect(document.activeElement).toBe(rowOf('unit:eng').querySelector("[aria-colindex='1']"));
+    press('End');
+    expect(document.activeElement?.tagName).toBe('INPUT');
+  });
+
+  test('a text field in a cell keeps the keys that move its caret', () => {
+    // A name typed in place is corrected with the keys every text field has.
+    // Captured by the grid, Left and Right left the field instead of moving in
+    // it. A single line has no lines to move between, so Up and Down still
+    // walk the rows; a field of several lines keeps them as well.
+    const columns: TreeGridColumn[] = [
+      { key: 'name', header: 'Name' },
+      { key: 'rename', header: 'Rename' },
+      { key: 'notes', header: 'Notes' },
+    ];
+    const rows: TreeInput[] = [{ id: 'unit:eng', label: 'Engineering', children: [{ id: 'seat:vp', label: 'VP' }] }];
+    render(
+      <TreeGrid
+        label="Organization outline"
+        columns={columns}
+        rows={rows}
+        cellHasControl={(_id, column) => column > 1}
+        renderCell={(id, column, grid) =>
+          column === 2 ? (
+            <input aria-label={`Rename ${id}`} defaultValue={id} tabIndex={grid.tabStop(id, column) ? 0 : -1} />
+          ) : column === 3 ? (
+            <textarea aria-label={`Notes on ${id}`} defaultValue={id} tabIndex={grid.tabStop(id, column) ? 0 : -1} />
+          ) : (
+            id
+          )
+        }
+      />,
+    );
+    rowOf('unit:eng').focus();
+    press('ArrowRight');
+    press('ArrowRight');
+    const field = screen.getByRole('textbox', { name: 'Rename unit:eng' });
+    expect(document.activeElement).toBe(field);
+    for (const key of ['ArrowLeft', 'ArrowRight', 'Home', 'End']) {
+      // Not prevented: the browser moves the caret.
+      expect(press(key), key).toBe(true);
+      expect(document.activeElement, key).toBe(field);
+    }
+    press('ArrowDown');
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Rename seat:vp' }));
+
+    const notes = screen.getByRole('textbox', { name: 'Notes on unit:eng' });
+    notes.focus();
+    for (const key of ['ArrowUp', 'ArrowDown', 'Home', 'End']) {
+      expect(press(key), key).toBe(true);
+      expect(document.activeElement, key).toBe(notes);
+    }
   });
 
   test('the row keys reach the caller, and a row that refuses one leaves the key alone', () => {
@@ -635,5 +684,51 @@ describe('focus', () => {
     toolbar.focus();
     rerender(view('seat:ceo'));
     expect(document.activeElement).toBe(toolbar);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A grid whose levels are read on demand
+// ---------------------------------------------------------------------------
+
+describe('a grid that opens one level at a time', () => {
+  function Lazy({ onExpandedChange }: { onExpandedChange: (open: ReadonlySet<string>) => void }) {
+    const rows = useMemo(() => forest(false), []);
+    return (
+      <TreeGrid
+        label="Organization outline"
+        columns={COLUMNS.slice(0, 1)}
+        rows={rows}
+        defaultExpanded="none"
+        onExpandedChange={onExpandedChange}
+        renderCell={(id) => nameOf(id)}
+      />
+    );
+  }
+
+  test('starts with only the tops showing, and says which rows a key opened', () => {
+    const told: string[][] = [];
+    render(<Lazy onExpandedChange={(open) => told.push([...open])} />);
+    const grid = screen.getByRole('treegrid', { name: 'Organization outline' });
+    const rows = () => within(grid).getAllByRole('row').slice(1);
+    expect(rows().map((row) => row.textContent)).toEqual(['Acme']);
+    expect(rows()[0]?.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.keyDown(rows()[0]!, { key: 'ArrowRight' });
+    expect(told).toEqual([[COMPANY]]);
+    expect(rows().map((row) => row.textContent)).toEqual(['Acme', 'CEO', 'Engineering', 'Sales']);
+    // The level that just arrived is closed: it asks for nothing on its own.
+    expect(rows()[2]?.getAttribute('aria-expanded')).toBe('false');
+  });
+});
+
+describe('a headless grid', () => {
+  test('keeps every column name for a screen reader and draws no header band', () => {
+    const rows = forest(false);
+    const { container } = render(
+      <TreeGrid label="Organization outline" columns={COLUMNS.slice(0, 2)} rows={rows} headless renderCell={(id) => nameOf(id)} />,
+    );
+    expect(container.firstElementChild?.className).toContain('crewlet-tree-grid--headless');
+    expect(screen.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual(['Name', 'Kind or type']);
   });
 });

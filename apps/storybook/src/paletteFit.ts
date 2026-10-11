@@ -13,7 +13,7 @@ import {
 // The approved design's palette. A record in the tokens workspace rather than
 // a published file (the build skips it and the tarball does not carry it), so
 // the showroom reads it where it lives.
-import intent from '../../../packages/tokens/tokens/intent.json' with { type: 'json' };
+import intent from '../../../packages/tokens/tokens/themes/crewlet/intent.json' with { type: 'json' };
 
 /**
  * The fit, as a table: every colour the approved design declares, what ships
@@ -128,7 +128,7 @@ export function restore(themes: string, openings: readonly string[], token: stri
   });
 }
 
-/** The design record's shape: tokens/intent.json, or a case that stands in for it. */
+/** The design record's shape: tokens/themes/crewlet/intent.json, or a case that stands in for it. */
 export type DesignRecord = typeof intent;
 
 /** Every colour one palette of the design declares, with the token that ships it. */

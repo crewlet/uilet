@@ -16,6 +16,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **The 59 drawings on the approved design's artboards** (Home, Inbox, the command palette, the navigation map, the board, a task, a trace, the org chart, an agent, knowledge, spend and settings). Each is the artboard's own rendering of a Lucide icon on the same grid, at the same 1.75 stroke, and is vendored as that icon: `activity`, `arrow-down-to-line`, `arrow-right`, `arrow-up-right`, `bell`, `book-open`, `brain`, `calendar`, `chart-no-axes-gantt`, `check`, `chevron-down`, `chevron-right`, `chevron-up`, `circle-check`, `clock`, `code`, `coins`, `columns-3`, `command`, `corner-down-left`, `cpu`, `database`, `ellipsis`, `file-text`, `globe`, `hash`, `house`, `inbox`, `info`, `key`, `link`, `list`, `list-filter`, `maximize-2`, `message-square`, `minus`, `network`, `paperclip`, `pause`, `pin`, `plug`, `plus`, `search`, `send`, `server`, `settings-2`, `shield`, `sliders-vertical`, `square-kanban`, `star`, `sun`, `table`, `triangle-alert`, `user`, `users`, `wand-sparkles`, `wrench`, `x` and `zap`.
 - **`badge-percent`**, the discount note on the Storybook's `PricingCard`, which drew Material's `tag`, a hash sign, beside "Save $5 (10% off)".
 - **`circle`**, the Todo state a task row leads with in the command palette's Storybook story, beside `circle-check` for Done. The artboard draws both states as marks of its own on a 14 unit grid (a bare ring, and a filled disc with a check cut out of it) rather than as Lucide icons, so neither is among the 59 above; the ring is Lucide's `circle` stroke for stroke, and Done keeps `circle-check` in the success ink rather than a filled disc, because `FILLABLE` paints a drawing's inside in the same colour as its stroke, which would fill the check in.
+- **The formatting bar of `MarkdownEditor`** in `@crewlethq/ui`: `heading-2` and `heading-3` for the two heading levels a page's outline lists, `bold`, `italic`, `list-ordered` for a numbered list beside `list`, and `list-checks` for a checklist. Each is a control a writer recognises by its drawing, so the bar draws all of them as glyphs rather than spelling some as letters ("H2", "B") beside the glyphs of the rest.
 
 ## Provenance
 
@@ -56,6 +57,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `badge-percent` | `BadgePercentGlyph` | `package/icons/badge-percent.svg` |
 | `ban` | `BanGlyph` | `package/icons/ban.svg` |
 | `bell` | `BellGlyph` | `package/icons/bell.svg` |
+| `bold` | `BoldGlyph` | `package/icons/bold.svg` |
 | `book-open` | `BookOpenGlyph` | `package/icons/book-open.svg` |
 | `bot` | `BotGlyph` | `package/icons/bot.svg` |
 | `brain` | `BrainGlyph` | `package/icons/brain.svg` |
@@ -104,15 +106,20 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `globe` | `GlobeGlyph` | `package/icons/globe.svg` |
 | `grip-vertical` | `GripVerticalGlyph` | `package/icons/grip-vertical.svg` |
 | `hash` | `HashGlyph` | `package/icons/hash.svg` |
+| `heading-2` | `Heading2Glyph` | `package/icons/heading-2.svg` |
+| `heading-3` | `Heading3Glyph` | `package/icons/heading-3.svg` |
 | `house` | `HouseGlyph` | `package/icons/house.svg` |
 | `inbox` | `InboxGlyph` | `package/icons/inbox.svg` |
 | `info` | `InfoGlyph` | `package/icons/info.svg` |
+| `italic` | `ItalicGlyph` | `package/icons/italic.svg` |
 | `key` | `KeyGlyph` | `package/icons/key.svg` |
 | `layers` | `LayersGlyph` | `package/icons/layers.svg` |
 | `layout-dashboard` | `LayoutDashboardGlyph` | `package/icons/layout-dashboard.svg` |
 | `link` | `LinkGlyph` | `package/icons/link.svg` |
 | `list` | `ListGlyph` | `package/icons/list.svg` |
+| `list-checks` | `ListChecksGlyph` | `package/icons/list-checks.svg` |
 | `list-filter` | `ListFilterGlyph` | `package/icons/list-filter.svg` |
+| `list-ordered` | `ListOrderedGlyph` | `package/icons/list-ordered.svg` |
 | `lock` | `LockGlyph` | `package/icons/lock.svg` |
 | `maximize` | `MaximizeGlyph` | `package/icons/maximize.svg` |
 | `maximize-2` | `Maximize2Glyph` | `package/icons/maximize-2.svg` |
@@ -124,6 +131,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `moon` | `MoonGlyph` | `package/icons/moon.svg` |
 | `network` | `NetworkGlyph` | `package/icons/network.svg` |
 | `package` | `PackageGlyph` | `package/icons/package.svg` |
+| `palette` | `PaletteGlyph` | `package/icons/palette.svg` |
 | `paperclip` | `PaperclipGlyph` | `package/icons/paperclip.svg` |
 | `pause` | `PauseGlyph` | `package/icons/pause.svg` |
 | `pencil` | `PencilGlyph` | `package/icons/pencil.svg` |

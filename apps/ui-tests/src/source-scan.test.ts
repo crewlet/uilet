@@ -114,13 +114,13 @@ describe('component source', () => {
 });
 
 describe('a shadow list', () => {
-  /** The shadow tokens whose value is the keyword `none` in either palette. */
+  /** The shadow tokens whose value is the keyword `none` in either palette of any theme. */
   const noneSomewhere = (() => {
     const found = new Set<string>();
-    for (const palette of ['dark', 'light']) {
-      const theme = JSON.parse(
-        readFileSync(join(REPOSITORY, 'packages', 'tokens', 'tokens', 'themes', `${palette}.json`), 'utf8'),
-      ) as { shadow?: Record<string, { value: string }> };
+    const themesDir = join(REPOSITORY, 'packages', 'tokens', 'tokens', 'themes');
+    const themeIds = readdirSync(themesDir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+    for (const palette of themeIds.flatMap((id) => [join(id, 'dark.json'), join(id, 'light.json')])) {
+      const theme = JSON.parse(readFileSync(join(themesDir, palette), 'utf8')) as { shadow?: Record<string, { value: string }> };
       for (const [name, step] of Object.entries(theme.shadow ?? {})) {
         if (step.value.trim() === 'none') {
           found.add(`--shadow-${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`);

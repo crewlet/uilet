@@ -1,0 +1,146 @@
+/*
+ * Writing markdown (MarkdownEditor.tsx): the bar, the source or its preview,
+ * and the footer, in ONE box.
+ *
+ * THE BOX TAKES THE RING, and only for the field. It is the package's one ring
+ * for a field: the box's own hairline drawn in the focus colour, laid on the
+ * boundary (see Input.css). It is asked of the FIELD rather than of
+ * :focus-within, so a reader walking the bar's controls sees each control's
+ * own ring and not a second one round the whole editor.
+ */
+
+.crewlet-markdown-editor {
+  /* The height the field and the preview stand at, so switching between them
+     does not move what is under the editor. */
+  --crewlet-markdown-editor-height: calc(
+    var(--crewlet-markdown-editor-rows, 14) * var(--font-size-compact) * var(--font-line-height-relaxed) +
+      var(--spacing-3) * 2
+  );
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-markdown-editor:hover {
+  border-color: var(--color-border-hover);
+}
+
+.crewlet-markdown-editor:has(.crewlet-markdown-editor__field:focus-visible) {
+  outline: 1px solid var(--color-focus);
+  outline-offset: -1px;
+}
+
+/* A refused body keeps its colour while the writer is in it: the ring takes
+   the danger step, so "here" and "refused" stay one edge. */
+.crewlet-markdown-editor--invalid {
+  border-color: var(--color-feedback-danger);
+}
+
+.crewlet-markdown-editor--invalid:has(.crewlet-markdown-editor__field:focus-visible) {
+  outline-color: var(--color-feedback-danger);
+}
+
+.crewlet-markdown-editor--disabled {
+  opacity: 0.6;
+}
+
+/* The bar sits on the box's top edge, a hairline under it. Two classes, so it
+   outranks the toolbar's own padding whichever stylesheet loads first. */
+.crewlet-markdown-editor .crewlet-markdown-editor__bar {
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-block-end: 1px solid var(--color-border-default);
+}
+
+.crewlet-markdown-editor__group {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-1) / 2);
+}
+
+/* A hairline between groups, so nine controls read as three ideas. */
+.crewlet-markdown-editor__group + .crewlet-markdown-editor__group {
+  padding-inline-start: var(--spacing-1);
+  border-inline-start: 1px solid var(--color-border-default);
+}
+
+.crewlet-markdown-editor__spacer {
+  flex: 1;
+}
+
+.crewlet-markdown-editor__panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/*
+ * THE SOURCE IS SET IN THE MONOSPACE FACE: a writer counts the hashes of a
+ * heading and lines up the bars of a table, and a proportional face makes
+ * both a guess.
+ */
+.crewlet-markdown-editor__field {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--crewlet-markdown-editor-height);
+  margin: 0;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-relaxed);
+  color: var(--color-text-primary);
+  resize: vertical;
+}
+
+.crewlet-markdown-editor__field::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* The ring is the box's. A transparent outline stays, because forced colours
+   paints an outline where this would otherwise draw none. */
+.crewlet-markdown-editor__field:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+.crewlet-markdown-editor__field:disabled {
+  cursor: not-allowed;
+}
+
+.crewlet-markdown-editor__preview {
+  min-height: var(--crewlet-markdown-editor-height);
+  padding: var(--spacing-3) var(--spacing-4);
+  min-width: 0;
+}
+
+.crewlet-markdown-editor__empty {
+  margin: 0;
+  font-size: var(--font-size-compact);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-markdown-editor__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-3);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-block-start: 1px solid var(--color-border-default);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-markdown-editor {
+    transition: none;
+  }
+}

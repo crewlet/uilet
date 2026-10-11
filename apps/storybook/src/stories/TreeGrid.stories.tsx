@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, Menu, TreeGrid, type TreeGridColumn, type TreeGridContext, type TreeInput } from '@crewlethq/ui';
+import { Button, Input, Menu, TreeGrid, type TreeGridColumn, type TreeGridContext, type TreeInput } from '@crewlethq/ui';
 
 /**
  * UI / TreeGrid.
@@ -194,3 +194,130 @@ export const ScrollsSideways: Story = {
 
 /** Read only: no add rows, no lead to choose, and the grid says so. */
 export const ReadOnly: Story = { render: () => <Outline readOnly /> };
+
+/* ---- levels read on demand ----------------------------------------------------- */
+
+interface Page {
+  title: string;
+  children?: string[];
+}
+
+const PAGES: Record<string, Page> = {
+  designs: { title: 'Designs', children: ['fair-2', 'fair-3', 'fair-4'] },
+  'fair-2': { title: 'FAIR-2 Money and equal split' },
+  'fair-3': { title: 'FAIR-3 Ledger and settlement' },
+  'fair-4': { title: 'FAIR-4 Command line interface' },
+  runbook: { title: 'Runbook: running the tests' },
+  settle: { title: 'Settlement algorithm' },
+};
+const TOP = ['designs', 'runbook', 'settle'];
+const LOADING = ':loading';
+
+function OnDemand() {
+  const [loaded, setLoaded] = useState<ReadonlySet<string>>(new Set());
+  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
+  const rows = useMemo(() => {
+    const node = (id: string): TreeInput => {
+      const page = PAGES[id]!;
+      if (!page.children) return { id, label: page.title };
+      // A folder whose level has not been read stands on one placeholder row,
+      // which is what lets it draw an expander before its children are known.
+      const children = loaded.has(id) ? page.children.map(node) : [{ id: `${id}${LOADING}`, label: '' }];
+      return { id, label: page.title, children };
+    };
+    return TOP.map(node);
+  }, [loaded]);
+  return (
+    <TreeGrid
+      label="Engineering"
+      columns={[{ key: 'title', header: 'Page' }]}
+      rows={rows}
+      headless
+      defaultExpanded="none"
+      expanded={open}
+      onExpandedChange={(next) => {
+        setOpen(next);
+        for (const id of next) {
+          if (loaded.has(id)) continue;
+          // A level is read the moment its row opens, here after a pause.
+          window.setTimeout(() => setLoaded((was) => new Set([...was, id])), 600);
+        }
+      }}
+      addRow={(id) => (id.endsWith(LOADING) ? { label: 'Loading the pages under this folder', cells: 1 } : null)}
+      renderCell={(id) => (id.endsWith(LOADING) ? 'Loading' : PAGES[id]?.title)}
+    />
+  );
+}
+
+/**
+ * A hierarchy whose levels are read on demand, as a knowledge base's space
+ * is. Nothing is open at first, a folder stands on a placeholder until its
+ * row opens, and the level that arrives is closed, so it asks for nothing on
+ * its own. Headless: the column's name is read and not drawn.
+ */
+export const LevelsOnDemand: Story = { render: () => <OnDemand /> };
+
+/* ---- a name typed in place ----------------------------------------------------- */
+
+const CREATE = 'create';
+
+function InPlace() {
+  const [folders, setFolders] = useState(['Designs', 'Runbooks']);
+  const [naming, setNaming] = useState(false);
+  const [draft, setDraft] = useState('');
+  const field = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (naming) field.current?.focus();
+  }, [naming]);
+  const rows = useMemo<TreeInput[]>(
+    () => [...folders.map((name) => ({ id: `folder:${name}`, label: name })), { id: CREATE, label: '' }],
+    [folders],
+  );
+  const stop = () => {
+    setDraft('');
+    setNaming(false);
+  };
+  return (
+    <TreeGrid
+      label="Engineering"
+      columns={[{ key: 'title', header: 'Page' }]}
+      rows={rows}
+      headless
+      cellHasControl={(id) => id === CREATE}
+      addRow={(id) => (id === CREATE ? { label: 'Create in Engineering', cells: 1 } : null)}
+      renderCell={(id, column, grid) => {
+        if (id !== CREATE) return id.slice('folder:'.length);
+        const tabIndex = grid.tabStop(id, column) ? 0 : -1;
+        return naming ? (
+          <Input
+            ref={field}
+            inputSize="sm"
+            aria-label="New folder name"
+            placeholder="Folder name"
+            value={draft}
+            tabIndex={tabIndex}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') stop();
+              if (event.key === 'Enter' && draft.trim()) {
+                setFolders((was) => [...was, draft.trim()]);
+                stop();
+              }
+            }}
+          />
+        ) : (
+          <Button size="small" variant="ghost" tabIndex={tabIndex} onClick={() => setNaming(true)}>
+            New folder
+          </Button>
+        );
+      }}
+    />
+  );
+}
+
+/**
+ * A name typed in place: the add row turns into a field, and the field keeps
+ * the keys that move its caret, so Left, Right, Home and End correct the name
+ * rather than leaving the cell. Enter creates the folder and Escape cancels.
+ */
+export const NameInPlace: Story = { render: () => <InPlace /> };

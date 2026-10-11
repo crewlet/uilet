@@ -190,6 +190,12 @@ export function deltaE(x, y) {
   return Math.hypot(a.L - b.L, a.a - b.a, a.b - b.b) * 100;
 }
 
+/** The OKLCh hue of a colour, in degrees from 0 to under 360. */
+export function hue(c) {
+  const { a, b } = toOklab(c);
+  return ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360;
+}
+
 export function chroma(c) {
   const { a, b } = toOklab(c);
   return Math.hypot(a, b) * 100;

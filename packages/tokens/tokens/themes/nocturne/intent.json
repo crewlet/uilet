@@ -1,0 +1,267 @@
+{
+  "$comment": [
+    "The design the Nocturne theme is fitted from: The Palette Lab, 4 October 2026.",
+    "dark and light record each value under the design name the default theme's record uses, with the custom property that ships it. Nothing is emitted from this file; scripts/fit-palette.mjs reads it, and every shipped value is this value or the least move from it that the palette suite forced, named in its own comment."
+  ],
+  "dark": {
+    "--bg": {
+      "value": "#07080d",
+      "token": "--color-surface-frame"
+    },
+    "--panel": {
+      "value": "#0c0e15",
+      "token": "--color-surface-background"
+    },
+    "--card": {
+      "value": "#11141d",
+      "token": "--color-surface-subtle"
+    },
+    "--raised": {
+      "value": "#181c28",
+      "token": "--color-surface-elevated"
+    },
+    "--hover": {
+      "value": "rgba(255, 255, 255, 0.061)",
+      "token": "--color-surface-hover"
+    },
+    "--sunk": {
+      "value": "rgba(255, 255, 255, 0.028)",
+      "token": "--color-surface-inset"
+    },
+    "--line": {
+      "value": "#1f2433",
+      "token": "--color-border-default"
+    },
+    "--line-2": {
+      "value": "#2b3245",
+      "token": "--color-border-strong"
+    },
+    "--mark": {
+      "value": "#6a7186",
+      "token": "--color-data-other"
+    },
+    "--t1": {
+      "value": "#e6e9f2",
+      "token": "--color-text-primary"
+    },
+    "--t2": {
+      "value": "#a9b0c3",
+      "token": "--color-text-secondary"
+    },
+    "--t3": {
+      "value": "#8a91a6",
+      "token": "--color-text-tertiary"
+    },
+    "--t4": {
+      "value": "#5a6176",
+      "token": "--color-text-muted"
+    },
+    "--acc": {
+      "value": "#5a62f0",
+      "token": "--color-brand-accent"
+    },
+    "--acc-hover": {
+      "value": "#5058e4",
+      "token": "--color-brand-accent-hover"
+    },
+    "--acc-active": {
+      "value": "#464ed8",
+      "token": "--color-brand-accent-active"
+    },
+    "--acc-ink": {
+      "value": "#a9b0ff",
+      "token": "--color-brand-accent-ink"
+    },
+    "--acc-soft": {
+      "value": "rgba(90, 98, 240, 0.16)",
+      "token": "--color-brand-accent-soft"
+    },
+    "--on-acc": {
+      "value": "#ffffff",
+      "token": "--color-text-on-accent"
+    },
+    "--work": {
+      "value": "#38bdf8",
+      "token": "--color-feedback-info"
+    },
+    "--work-ink": {
+      "value": "#8ad6fb",
+      "token": "--color-feedback-info-ink"
+    },
+    "--need": {
+      "value": "#f0b429",
+      "token": "--color-feedback-warning"
+    },
+    "--need-ink": {
+      "value": "#f6cd72",
+      "token": "--color-feedback-warning-ink"
+    },
+    "--bad": {
+      "value": "#f0506e",
+      "token": "--color-feedback-danger"
+    },
+    "--bad-ink": {
+      "value": "#ff9fb0",
+      "token": "--color-feedback-danger-ink"
+    },
+    "--ok": {
+      "value": "#34c98b",
+      "token": "--color-feedback-success"
+    },
+    "--ok-ink": {
+      "value": "#74dcae",
+      "token": "--color-feedback-success-ink"
+    },
+    "--s1": {
+      "value": "#4f9cf0",
+      "token": "--color-data-1"
+    },
+    "--s2": {
+      "value": "#f07f3c",
+      "token": "--color-data-2"
+    },
+    "--s3": {
+      "value": "#2bb59a",
+      "token": "--color-data-3"
+    },
+    "--s4": {
+      "value": "#d4a017",
+      "token": "--color-data-4"
+    },
+    "--scrim": {
+      "value": "rgba(7, 8, 13, 0.65)",
+      "token": "--color-surface-veil"
+    }
+  },
+  "light": {
+    "--bg": {
+      "value": "#e9ecf3",
+      "token": "--color-surface-frame"
+    },
+    "--panel": {
+      "value": "#f6f7fb",
+      "token": "--color-surface-background"
+    },
+    "--card": {
+      "value": "#ffffff",
+      "token": "--color-surface-subtle"
+    },
+    "--raised": {
+      "value": "#eef0f6",
+      "token": "--color-surface-elevated"
+    },
+    "--hover": {
+      "value": "rgba(7, 8, 13, 0.044)",
+      "token": "--color-surface-hover"
+    },
+    "--sunk": {
+      "value": "rgba(7, 8, 13, 0.026)",
+      "token": "--color-surface-inset"
+    },
+    "--line": {
+      "value": "#dde1ea",
+      "token": "--color-border-default"
+    },
+    "--line-2": {
+      "value": "#c9cfdc",
+      "token": "--color-border-strong"
+    },
+    "--mark": {
+      "value": "#8a90a3",
+      "token": "--color-data-other"
+    },
+    "--t1": {
+      "value": "#121625",
+      "token": "--color-text-primary"
+    },
+    "--t2": {
+      "value": "#3e4459",
+      "token": "--color-text-secondary"
+    },
+    "--t3": {
+      "value": "#5a6075",
+      "token": "--color-text-tertiary"
+    },
+    "--t4": {
+      "value": "#8a90a3",
+      "token": "--color-text-muted"
+    },
+    "--acc": {
+      "value": "#4c55e6",
+      "token": "--color-brand-accent"
+    },
+    "--acc-hover": {
+      "value": "#424bd9",
+      "token": "--color-brand-accent-hover"
+    },
+    "--acc-active": {
+      "value": "#3841cc",
+      "token": "--color-brand-accent-active"
+    },
+    "--acc-ink": {
+      "value": "#3a42c9",
+      "token": "--color-brand-accent-ink"
+    },
+    "--acc-soft": {
+      "value": "rgba(76, 85, 230, 0.125)",
+      "token": "--color-brand-accent-soft"
+    },
+    "--on-acc": {
+      "value": "#ffffff",
+      "token": "--color-text-on-accent"
+    },
+    "--work": {
+      "value": "#0b84c6",
+      "token": "--color-feedback-info"
+    },
+    "--work-ink": {
+      "value": "#0a66a0",
+      "token": "--color-feedback-info-ink"
+    },
+    "--need": {
+      "value": "#b86e00",
+      "token": "--color-feedback-warning"
+    },
+    "--need-ink": {
+      "value": "#8a4f00",
+      "token": "--color-feedback-warning-ink"
+    },
+    "--bad": {
+      "value": "#cc2a4a",
+      "token": "--color-feedback-danger"
+    },
+    "--bad-ink": {
+      "value": "#b01e3d",
+      "token": "--color-feedback-danger-ink"
+    },
+    "--ok": {
+      "value": "#0a8f63",
+      "token": "--color-feedback-success"
+    },
+    "--ok-ink": {
+      "value": "#0b6a4b",
+      "token": "--color-feedback-success-ink"
+    },
+    "--s1": {
+      "value": "#2f6fd0",
+      "token": "--color-data-1"
+    },
+    "--s2": {
+      "value": "#dd5f1f",
+      "token": "--color-data-2"
+    },
+    "--s3": {
+      "value": "#0b9278",
+      "token": "--color-data-3"
+    },
+    "--s4": {
+      "value": "#b88700",
+      "token": "--color-data-4"
+    },
+    "--scrim": {
+      "value": "rgba(233, 236, 243, 0.65)",
+      "token": "--color-surface-veil"
+    }
+  },
+  "literals": []
+}

@@ -54,6 +54,14 @@ interface SegmentedShared<T extends string> {
    * caret moves inside it as it does in any field.
    */
   trailing?: ReactNode | undefined;
+  /**
+   * Every option takes an equal share of the row, and the row fills the
+   * width it is given. Two settings drawn one above the other (Mode over
+   * Density) then draw one box, whatever their options say: a row sized to
+   * its own options draws a glyph row and a letter row at two widths, which
+   * reads as two kinds of control. Pill rows only.
+   */
+  fill?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -145,6 +153,7 @@ export function SegmentedControl<T extends string = string>({
   size = 'md',
   layout = 'pill',
   trailing,
+  fill = false,
   className = '',
   semantics,
   panelId,
@@ -192,6 +201,7 @@ export function SegmentedControl<T extends string = string>({
         'crewlet-segmented',
         cards && 'crewlet-segmented--cards',
         !cards && layout === 'chips' && 'crewlet-segmented--chips',
+        fill && !cards && layout === 'pill' && 'crewlet-segmented--fill',
         className,
       )}
       role={radio ? 'radiogroup' : 'tablist'}

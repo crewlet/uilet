@@ -263,26 +263,11 @@
 
 /*
  * A PROJECT'S KEY, as a chip in the glyph's place: the prefix every item in
- * the project is filed under, in mono so ENG and PROD line up by letter. It
- * is the raised rung inside the plain hairline, in the secondary ink, which
- * the palette suite measures on every ground a row can have; on the reader's
- * own row, which is raised too, the hairline is what draws it.
+ * the project is filed under, in mono so ENG and PROD line up by letter. The
+ * chip is the kit's `KeyChip` (KeyChip.css); the suite below measures its ink
+ * on every ground a row can have, and on the reader's own row, which is raised
+ * too, its hairline is what draws it.
  */
-.crewlet-nav-item__lead {
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-  padding: 0 calc(var(--spacing-1) + 1px);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-xs);
-  background: var(--color-surface-elevated);
-  color: var(--color-text-secondary);
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--font-letter-spacing-normal);
-  line-height: var(--font-line-height-body);
-}
 
 /*
  * THE COUNT: how many of something the destination holds, as a quiet figure

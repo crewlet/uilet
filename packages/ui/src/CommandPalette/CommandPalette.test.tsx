@@ -17,6 +17,7 @@ import { channels, installForcedColors, installThemed, px, themeColours } from '
 import { CommandPalette, type CommandPaletteGroup, type CommandPaletteScope } from './index.js';
 import { Kbd } from '../Kbd/index.js';
 import { layerCount } from '../Layer/index.js';
+import { HIGHLIGHT_REST_MS } from '../Listbox/index.js';
 
 /** A token's custom-property name, spelt so the stylesheet checks read no declaration here. */
 const token = (name: string) => `--${name}`;
@@ -728,3 +729,217 @@ function normalised(value: string): string {
   probe.remove();
   return out;
 }
+
+/*
+ * A STEP IS A SECOND LIST IN THE SAME SURFACE. The theme step is the case:
+ * Actions leads to "Change theme…", which lists the themes; the way back is
+ * the chip, Escape and Backspace in an empty field, and the surface stays
+ * open through all three.
+ */
+describe('a step', () => {
+  const THEMES = ['Crewlet', 'Violet', 'Abyss'];
+
+  function StepHarness({ onClose = () => {}, onHighlight }: { onClose?: () => void; onHighlight?: (id: string | null) => void }) {
+    const [inStep, setInStep] = useState(false);
+    const [query, setQuery] = useState('');
+    const actions: CommandPaletteGroup[] = [
+      {
+        id: 'actions',
+        label: 'Commands',
+        items: [
+          {
+            id: 'theme',
+            label: 'Change theme…',
+            // Into the step, and the surface stays open.
+            onSelect: () => {
+              setInStep(true);
+              return false;
+            },
+          },
+        ],
+      },
+    ];
+    const themes: CommandPaletteGroup[] = [
+      {
+        id: 'themes',
+        label: 'Themes',
+        items: THEMES.filter((name) => name.toLowerCase().includes(query.toLowerCase())).map((name) => ({
+          id: `theme-${name}`,
+          label: name,
+          onSelect: () => {},
+        })),
+      },
+    ];
+    return (
+      <CommandPalette
+        open
+        onClose={onClose}
+        query={query}
+        onQueryChange={setQuery}
+        groups={inStep ? themes : actions}
+        step={inStep ? { label: 'Change theme', onBack: () => setInStep(false) } : undefined}
+        onHighlight={onHighlight ? (item) => onHighlight(item?.id ?? null) : undefined}
+      />
+    );
+  }
+
+  /** Into the step the way a reader goes: the action row, by its click. */
+  function enter() {
+    fireEvent.click(screen.getByRole('option', { name: 'Change theme…' }));
+  }
+
+  test('the chip names the step, the field is named for it, and the field is the same element throughout', () => {
+    render(<StepHarness />);
+    const field = screen.getByRole('combobox', { name: 'Search' });
+    field.focus();
+    enter();
+    // The same node, still focused: the step replaced the list, not the field.
+    expect(screen.getByRole('combobox', { name: 'Change theme' })).toBe(field);
+    expect(document.activeElement).toBe(field);
+    // The search glyph gives way to the chip, which is a control beside the field.
+    expect(field.closest('.crewlet-palette__field')!.querySelector('.crewlet-input__leading')).toBeNull();
+    const chip = screen.getByRole('button', { name: 'Back from Change theme' });
+    expect(chip.tabIndex).toBe(-1);
+    expect(chip.nextElementSibling).toBe(field.closest('.crewlet-palette__field'));
+    // A press on it keeps focus in the field, and goes back.
+    expect(fireEvent.mouseDown(chip)).toBe(false);
+    fireEvent.click(chip);
+    expect(screen.getByRole('combobox', { name: 'Search' })).toBe(field);
+    expect(screen.queryByRole('button', { name: /Back from/ })).toBeNull();
+  });
+
+  test('Escape goes back rather than closing, and closes once the step is left', () => {
+    const onClose = vi.fn();
+    render(<StepHarness onClose={onClose} />);
+    enter();
+    // The row that led into the step kept the surface open.
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Change theme' }), { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(layerCount()).toBe(1);
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Search' }), { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  test('Backspace goes back only from an empty field, and an input method keeps its keys', () => {
+    render(<StepHarness />);
+    enter();
+    const field = screen.getByRole('combobox', { name: 'Change theme' });
+    fireEvent.change(field, { target: { value: 'ab' } });
+    expect(fireEvent.keyDown(field, { key: 'Backspace' })).toBe(true);
+    expect(screen.getByRole('combobox', { name: 'Change theme' })).toBe(field);
+    fireEvent.keyDown(field, { key: 'Escape', isComposing: true });
+    expect(screen.getByRole('combobox', { name: 'Change theme' })).toBe(field);
+    fireEvent.change(field, { target: { value: '' } });
+    expect(fireEvent.keyDown(field, { key: 'Backspace' })).toBe(false);
+    expect(screen.getByRole('combobox', { name: 'Search' })).toBe(field);
+  });
+
+  test('the highlight is told where it rests: at once for a key, once the pointer rests, and nowhere when the surface goes', () => {
+    vi.useFakeTimers();
+    try {
+      const told: (string | null)[] = [];
+      const { unmount } = render(<StepHarness onHighlight={(id) => told.push(id)} />);
+      expect(told).toEqual(['theme']);
+      enter();
+      // The step's own list leads with its first row.
+      expect(told).toEqual(['theme', 'theme-Crewlet']);
+      const field = screen.getByRole('combobox', { name: 'Change theme' });
+      fireEvent.keyDown(field, { key: 'ArrowDown' });
+      expect(told.at(-1)).toBe('theme-Violet');
+
+      // Crossing two rows tells only the one the pointer rests on.
+      fireEvent.mouseEnter(screen.getByRole('option', { name: 'Crewlet' }));
+      act(() => vi.advanceTimersByTime(HIGHLIGHT_REST_MS / 2));
+      fireEvent.mouseEnter(screen.getByRole('option', { name: 'Abyss' }));
+      act(() => vi.advanceTimersByTime(HIGHLIGHT_REST_MS));
+      expect(told.slice(-2)).toEqual(['theme-Violet', 'theme-Abyss']);
+
+      // A query that empties the list is nowhere.
+      fireEvent.change(field, { target: { value: 'zzz' } });
+      expect(told.at(-1)).toBe(null);
+      fireEvent.change(field, { target: { value: 'vio' } });
+      expect(told.at(-1)).toBe('theme-Violet');
+      fireEvent.mouseLeave(screen.getByRole('listbox').closest('.crewlet-palette__results')!);
+      expect(told.at(-1)).toBe(null);
+      fireEvent.mouseEnter(screen.getByRole('option', { name: 'Violet' }));
+      act(() => vi.advanceTimersByTime(HIGHLIGHT_REST_MS));
+      expect(told.at(-1)).toBe('theme-Violet');
+
+      // The surface going away is nowhere.
+      unmount();
+      expect(told.at(-1)).toBe(null);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('a row that returns false keeps the surface open from the keyboard too', () => {
+    const onClose = vi.fn();
+    render(<StepHarness onClose={onClose} />);
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Search' }), { key: 'Enter' });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox', { name: 'Change theme' })).toBeTruthy();
+  });
+
+  test('a step opens on its own row, and going back puts the highlight where it was', () => {
+    const told: (string | null)[] = [];
+    function Opening() {
+      const [inStep, setInStep] = useState(false);
+      const actions: CommandPaletteGroup[] = [
+        {
+          id: 'actions',
+          label: 'Commands',
+          items: [
+            { id: 'copy', label: 'Copy link', onSelect: () => {} },
+            {
+              id: 'theme',
+              label: 'Change theme…',
+              onSelect: () => {
+                setInStep(true);
+                return false;
+              },
+            },
+          ],
+        },
+      ];
+      const themes: CommandPaletteGroup[] = [
+        { id: 'themes', label: 'Themes', items: THEMES.map((name) => ({ id: `theme-${name}`, label: name, onSelect: () => {} })) },
+      ];
+      return (
+        <CommandPalette
+          open
+          onClose={() => {}}
+          query=""
+          onQueryChange={() => {}}
+          groups={inStep ? themes : actions}
+          step={inStep ? { label: 'Change theme', onBack: () => setInStep(false), startAt: 'theme-Abyss' } : undefined}
+          onHighlight={(item) => told.push(item?.id ?? null)}
+        />
+      );
+    }
+    render(<Opening />);
+    const field = screen.getByRole('combobox', { name: 'Search' });
+    fireEvent.keyDown(field, { key: 'ArrowDown' });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    // Opened on the row in effect, and told only that: never the row the
+    // highlight was left on in the list before.
+    const named = () => document.getElementById(screen.getByRole('combobox').getAttribute('aria-activedescendant')!)?.textContent;
+    expect(named()).toBe('Abyss');
+    expect(told).toEqual(['copy', 'theme', 'theme-Abyss']);
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Change theme' }), { key: 'Escape' });
+    expect(named()).toBe('Change theme…');
+    expect(told.at(-1)).toBe('theme');
+  });
+
+  test('a step carries no accessibility violation', async () => {
+    render(<StepHarness />);
+    enter();
+    const result = await axe.run(document.body, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+});

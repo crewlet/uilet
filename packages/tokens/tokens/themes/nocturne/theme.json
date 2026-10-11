@@ -1,0 +1,11 @@
+{
+  "name": "Nocturne",
+  "group": "cool",
+  "tag": "Indigo",
+  "description": "Blue-black grounds with an indigo accent. Calm and technical.",
+  "order": 1,
+  "tint": {
+    "hue": 272,
+    "chroma": 3
+  }
+}

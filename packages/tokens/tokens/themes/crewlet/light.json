@@ -16,9 +16,12 @@
     "text": {
       "primary": { "value": "#121625" },
       "secondary": { "value": "#3e4459" },
+      "linkQuiet": { "value": "#484e99" },
       "tertiary": { "value": "#585e73", "comment": "The approved #5a6075, darkened dE 0.71 along lightness: it measured 4.37:1 on a pressed row on the frame." },
       "muted": { "value": "#878d9f", "comment": "Decoration only. The approved #8a90a3 measured 2.69:1 on the frame, under the decoration band, and is darkened dE 1.04 to bring it inside (2.80:1)." },
       "onAccent": { "value": "#ffffff" },
+      "onDanger": { "value": "#ffffff" },
+      "onScrim": { "value": "#ffffff" },
       "inverse": { "value": "#f6f7fb" }
     },
     "brand": {

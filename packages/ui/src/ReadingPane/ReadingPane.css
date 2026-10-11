@@ -1,0 +1,194 @@
+/*
+ * One item read in full, in one column.
+ *
+ * The pane is its own container, so the column narrows its margins when the
+ * PANE is narrow (beside a list on a small laptop, or alone on a phone)
+ * rather than when the window is.
+ */
+
+.crewlet-reading-pane {
+  container: crewlet-reading-pane / inline-size;
+  min-width: 0;
+}
+
+.crewlet-reading-pane__column {
+  /* A question and its answers read best at about seventy characters a line. */
+  --crewlet-reading-pane-measure: 640px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: calc(var(--spacing-4) + var(--spacing-1) / 2);
+  max-width: var(--crewlet-reading-pane-measure);
+  margin: 0 auto;
+  padding: calc(var(--spacing-6) + var(--spacing-1)) calc(var(--spacing-6) + var(--spacing-1)) var(--spacing-8);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-body);
+  color: var(--color-text-primary);
+}
+
+@container crewlet-reading-pane (width < 640px) {
+  .crewlet-reading-pane__column {
+    padding-inline: var(--spacing-4);
+  }
+}
+
+/* ---- The byline -------------------------------------------------------- */
+
+.crewlet-reading-pane__byline {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-reading-pane__start,
+.crewlet-reading-pane__leading {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.crewlet-reading-pane__by {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-reading-pane__by strong {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.crewlet-reading-pane__note {
+  color: var(--color-text-tertiary);
+}
+
+/* ---- The title and what it needs -------------------------------------- */
+
+.crewlet-reading-pane__title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+  letter-spacing: var(--font-letter-spacing-snug);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  color: var(--color-text-primary);
+}
+
+.crewlet-reading-pane__lead {
+  display: grid;
+  gap: var(--spacing-2);
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-normal);
+  overflow-wrap: anywhere;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-reading-pane__lead > * {
+  margin: 0;
+}
+
+.crewlet-reading-pane__quote {
+  display: grid;
+  gap: var(--spacing-2);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-md);
+  line-height: var(--font-line-height-normal);
+  overflow-wrap: anywhere;
+  color: var(--color-text-primary);
+}
+
+.crewlet-reading-pane__quote > * {
+  margin: 0;
+}
+
+.crewlet-reading-pane__quote--verbatim {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-left: 2px solid var(--color-border-strong);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+}
+
+/* ---- The reasoning ----------------------------------------------------- */
+
+.crewlet-reading-pane__reasoning {
+  display: grid;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: var(--spacing-3) calc(var(--spacing-3) + var(--spacing-1) / 2);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-inset);
+}
+
+.crewlet-reading-pane__reasoning-title {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-reading-pane__reasoning-title strong {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.crewlet-reading-pane__reasoning-body {
+  display: grid;
+  gap: var(--spacing-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-reading-pane__reasoning-body > * {
+  margin: 0;
+}
+
+.crewlet-reading-pane__reasoning-footer {
+  margin-top: calc(var(--spacing-1) / 2);
+}
+
+/* ---- What the reader did ----------------------------------------------- */
+
+.crewlet-reading-pane__outcome {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-reading-pane__outcome-mark {
+  flex: none;
+}
+
+.crewlet-reading-pane__outcome strong {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+/* ---- A section after the answer ---------------------------------------- */
+
+.crewlet-reading-pane__section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--spacing-3);
+  padding-top: calc(var(--spacing-4) + var(--spacing-1) / 2);
+  border-top: 1px solid var(--color-border-default);
+}
+
+/* The heading's own line box is the label's, so the label sits where it is drawn. */
+.crewlet-reading-pane__section-label {
+  margin: 0;
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-snug);
+}

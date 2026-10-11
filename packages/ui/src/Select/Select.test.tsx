@@ -15,7 +15,9 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
+import { act } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { HIGHLIGHT_REST_MS } from '../Listbox/index.js';
 import { Modal } from '../Modal/index.js';
 import { Select, type SelectOption, type SelectProps, type SelectValue } from './Select.js';
 
@@ -719,4 +721,127 @@ test('the search box draws a focus ring where the frame cannot reach', () => {
   const ring = /\.crewlet-select__search:focus-within\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(ring).toMatch(/outline:\s*1px solid var\(--color-focus\)/);
   expect(ring).toMatch(/outline-offset:\s*-1px/);
+});
+
+/*
+ * A LEADING MARK AND A HINT. A theme picker draws each theme's swatch before
+ * its name and its tag after it, and the chosen theme's swatch on the trigger,
+ * so the field says which theme is on before it is opened.
+ */
+const THEMES: SelectOption[] = [
+  { value: 'crewlet', label: 'Crewlet', hint: 'Default', leading: <span data-testid="swatch-crewlet" />, group: 'Crewlet' },
+  { value: 'violet', label: 'Violet', hint: 'Zinc and violet', leading: <span data-testid="swatch-violet" />, group: 'Crewlet' },
+  { value: 'abyss', label: 'Abyss', hint: 'Vivid violet', leading: <span data-testid="swatch-abyss" />, group: 'Purple' },
+];
+
+function ThemePicker({ onHighlight, multiple = false }: { onHighlight?: SelectProps['onHighlight']; multiple?: boolean }) {
+  const [value, setValue] = useState<SelectValue | SelectValue[]>(multiple ? ['crewlet'] : 'crewlet');
+  return (
+    <Select
+      ariaLabel="Theme"
+      options={THEMES}
+      value={value}
+      multiple={multiple}
+      onChange={(next) => setValue(next)}
+      onHighlight={onHighlight}
+    />
+  );
+}
+
+test("an option's leading mark is drawn before its label, hidden, and on the trigger while it is chosen", () => {
+  render(<ThemePicker />);
+  const field = screen.getByRole('combobox', { name: 'Theme' });
+  // The chosen theme's mark is on the trigger, and is no part of its name.
+  expect(within(field).getByTestId('swatch-crewlet').closest('[aria-hidden="true"]')).toBeTruthy();
+  fireEvent.click(field);
+  const row = screen.getByRole('option', { name: /Abyss/ });
+  const mark = within(row).getByTestId('swatch-abyss');
+  expect(mark.closest('.crewlet-select__option-leading')?.getAttribute('aria-hidden')).toBe('true');
+  // Drawn between the tick column and the label.
+  const parts = [...row.children].map((child) => child.className);
+  expect(parts.indexOf('crewlet-select__option-leading')).toBe(parts.indexOf('crewlet-select__option-tick') + 1);
+  expect(parts.indexOf('crewlet-select__option-body')).toBe(parts.indexOf('crewlet-select__option-leading') + 1);
+  fireEvent.mouseDown(row);
+  expect(within(field).getByTestId('swatch-abyss')).toBeTruthy();
+});
+
+test('a hint is read with its label, and a multiple trigger draws no single mark', () => {
+  render(<ThemePicker multiple />);
+  const field = screen.getByRole('combobox', { name: 'Theme' });
+  expect(within(field).queryByTestId('swatch-crewlet')).toBeNull();
+  fireEvent.click(field);
+  const row = screen.getByRole('option', { name: 'Abyss Vivid violet' });
+  expect(within(row).getByText('Vivid violet').className).toBe('crewlet-listbox__hint');
+});
+
+test('the highlight is told where it rests: at once for a key, once the pointer rests, and nowhere when the list goes', () => {
+  vi.useFakeTimers();
+  try {
+    const told: (string | null)[] = [];
+    render(<ThemePicker onHighlight={(option) => told.push(option === null ? null : String(option.value))} />);
+    // Nothing is told while the list is shut.
+    expect(told).toEqual([]);
+    const field = screen.getByRole('combobox', { name: 'Theme' });
+    fireEvent.click(field);
+    // It opens on the chosen row, and says so.
+    expect(told).toEqual(['crewlet']);
+    fireEvent.keyDown(field, { key: 'ArrowDown' });
+    expect(told).toEqual(['crewlet', 'violet']);
+
+    // The pointer crossing two rows tells only the one it rests on.
+    fireEvent.mouseEnter(screen.getByRole('option', { name: /Crewlet/ }));
+    act(() => vi.advanceTimersByTime(HIGHLIGHT_REST_MS / 2));
+    fireEvent.mouseEnter(screen.getByRole('option', { name: /Abyss/ }));
+    act(() => vi.advanceTimersByTime(HIGHLIGHT_REST_MS - 1));
+    expect(told).toEqual(['crewlet', 'violet']);
+    act(() => vi.advanceTimersByTime(1));
+    expect(told).toEqual(['crewlet', 'violet', 'abyss']);
+
+    // A key beats a pointer still on its way.
+    fireEvent.mouseEnter(screen.getByRole('option', { name: /Violet/ }));
+    fireEvent.keyDown(field, { key: 'Home' });
+    act(() => vi.advanceTimersByTime(HIGHLIGHT_REST_MS * 2));
+    expect(told).toEqual(['crewlet', 'violet', 'abyss', 'crewlet']);
+
+    // Leaving the list is nowhere; coming back onto the same row rests there again.
+    fireEvent.mouseLeave(screen.getByRole('listbox', { name: 'Theme' }).closest('.crewlet-select__menu')!);
+    expect(told.at(-1)).toBe(null);
+    fireEvent.mouseEnter(screen.getByRole('option', { name: /Crewlet/ }));
+    act(() => vi.advanceTimersByTime(HIGHLIGHT_REST_MS));
+    expect(told.at(-1)).toBe('crewlet');
+
+    // Escape closes the list, and the list closing is nowhere.
+    fireEvent.keyDown(field, { key: 'Escape' });
+    expect(told.at(-1)).toBe(null);
+    const count = told.length;
+    // A re-render with the list shut tells nothing more.
+    fireEvent.focus(field);
+    expect(told).toHaveLength(count);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test('a list handed new option objects for the same rows tells nothing new', () => {
+  const told: (string | null)[] = [];
+  function Fresh() {
+    const [, setTick] = useState(0);
+    return (
+      <>
+        <Select
+          ariaLabel="Theme"
+          options={THEMES.map((option) => ({ ...option }))}
+          value="crewlet"
+          onHighlight={(option) => told.push(option === null ? null : String(option.value))}
+        />
+        <button type="button" onClick={() => setTick((tick) => tick + 1)}>
+          Again
+        </button>
+      </>
+    );
+  }
+  render(<Fresh />);
+  fireEvent.click(screen.getByRole('combobox', { name: 'Theme' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Again' }));
+  expect(told).toEqual(['crewlet']);
 });

@@ -3,7 +3,8 @@
 Single source of truth for the Crewlet design tokens: color, spacing, size, typography (`font`), radius, shadow, blur, breakpoint, density, motion and z-index. Authored as JSON, compiled by Style Dictionary into:
 
 - `dist/css/tokens.css` (CSS custom properties on `:root`)
-- `dist/css/themes.css` (the dark and light palettes)
+- `dist/css/themes.css` (the dark and light palettes of the default theme)
+- `dist/css/themes/<id>.css` and `dist/css/themes/all.css` (the named themes, each under its own `data-palette` attribute)
 - `dist/css/density.css`, `dist/css/base.css`, `dist/css/breakpoint.css`
 - `dist/index.js` + `dist/index.d.ts` (typed JS object for runtime use)
 
@@ -17,15 +18,20 @@ import '@crewlethq/tokens/css';
 //    Import it after the line above; see "Theming" below.
 import '@crewlethq/tokens/css/themes';
 
-// 3) Optional: the density contract. Import it if the app has a density
+// 3) Optional: the named themes, each under its own data-palette attribute.
+//    Import it after the line above if the app offers a theme picker; see
+//    "Named themes" below.
+import '@crewlethq/tokens/css/themes/all';
+
+// 4) Optional: the density contract. Import it if the app has a density
 //    control; see "Density" below.
 import '@crewlethq/tokens/css/density';
 
-// 4) Optional: self-hosted Geist and Geist Mono (see "Fonts" below).
+// 5) Optional: self-hosted Geist and Geist Mono (see "Fonts" below).
 //    Skip this if the app already loads its own fonts at the shell.
 import '@crewlethq/tokens/css/fonts';
 
-// 5) Optional: the document baseline. The reset, the document's own type and
+// 6) Optional: the document baseline. The reset, the document's own type and
 //    colour, one focus ring, themed scrollbars and the reduced-motion
 //    collapse; see "The document baseline" below.
 import '@crewlethq/tokens/css/base';
@@ -39,6 +45,20 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Changed in 0.13.0: named themes
+
+Nine named themes ship beside the default, each with a dark and a light palette, for an application that offers a theme picker. A document that sets no `data-palette` attribute is painted exactly as before, and no default value moved.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| `@crewlethq/tokens/css/themes/<id>` paints one named theme and `@crewlethq/tokens/css/themes/all` paints every one, each under `:root[data-palette="<id>"]`. | Nothing. To offer the themes, import `css/themes/all` after `css/themes` and set `data-palette` on `<html>`. | [Named themes](#named-themes) |
+| `--color-text-on-danger` and `--color-text-on-scrim` (`color.text.onDanger`, `color.text.onScrim`) are new, white in every theme. The destructive fill's label and a label on the scrim read them, because `--color-text-on-accent` is dark on a theme whose accent is light. | A stylesheet that labels the danger fill or the scrim with `--color-text-on-accent` reads the new token. | [The accent](#the-accent) |
+| `--color-text-link-quiet` (`color.text.linkQuiet`) is new: a link inside running text or a row, the accent ink mixed 65% with the secondary text in OKLab, in every palette of every theme. The palette suite measures it as an ink (`INK_STEPS`), and it clears 5.2:1 on a pressed row in every theme. | Nothing. A quiet link reads it, and takes `--color-brand-accent-ink` under the pointer and on focus. | [The accent](#the-accent) |
+| The typed export adds `themeRegistry`, `themeGroups`, `DEFAULT_THEME_ID` and `isThemeId()`, and the types `ThemeEntry`, `ThemeId` and `ThemeGroupId`. | Nothing. | [The theme registry](#the-theme-registry) |
+| The theme source is one folder per theme: `tokens/themes/dark.json`, `tokens/themes/light.json` and `tokens/intent.json` are now `dark.json`, `light.json` and `intent.json` in `tokens/themes/crewlet/`. | Nothing, for a consumer: the token source is not published. A change in this repository edits the new paths. | [Add a theme](#add-a-theme) |
+| In `@crewlethq/tokens/test/palette`, `runPalette()` and `paletteStates()` take `palette`, `tint` and `contrast`, and measure a named theme in its three states. The rules `a tinted ramp stays inside its declared tint`, `the accent carries more colour than the ground`, `a theme declares exactly the slots the default declares`, `text-muted reads in high contrast`, `ink step clears 7:1 in high contrast` and `a hairline clears 3:1 in high contrast` are new, with the exports `paletteSelectors()`, `NEUTRAL_CHROMA`, `TINT_HUE_RANGE`, `ACCENT_OVER_TINT`, `HIGH_CONTRAST`, `DESTRUCTIVE_LABEL` and `SCRIM_LABEL`. The destructive action's label and a label on the scrim are measured as `--color-text-on-danger` and `--color-text-on-scrim`. | Rename a subject a suite filters on. To measure the named themes, loop the registry as [The palette suite](#the-palette-suite) shows. | [The palette suite](#the-palette-suite) |
+| `scripts/fit-palette.mjs` takes a theme id before the palette: `fit-palette.mjs abyss dark`. | Nothing. | [The approved palette, and the fit](#the-approved-palette-and-the-fit) |
+
 ## Changed in 0.6.1: the dark text ramp
 
 In 0.6.0 the dark primary and tertiary text steps sat 1.98:1 apart, so a word a screen dims from the first step to the third (a calendar's days from the neighbouring month) read as a rounding rather than a step. The dark primary is lifted dE 0.30, and the palette suite now holds the step in every state.
@@ -50,7 +70,7 @@ In 0.6.0 the dark primary and tertiary text steps sat 1.98:1 apart, so a word a 
 
 ## Changed in 0.6.0: the default palette
 
-The dark and light themes take the default palette approved on 4 October 2026: blue-black neutrals, a violet accent (`#725be6` in dark, `#735af2` in light) and a cyan working state. No token is renamed or removed; the themed values change. [`tokens/intent.json`](./tokens/intent.json) records the approved values, and every value the palette suite's floors moved names its approved value, the distance and the measurement in its own comment. The marketing root, `tokens.css` on its own, keeps its values.
+The dark and light themes take the default palette approved on 4 October 2026: blue-black neutrals, a violet accent (`#725be6` in dark, `#735af2` in light) and a cyan working state. No token is renamed or removed; the themed values change. [`tokens/themes/crewlet/intent.json`](./tokens/themes/crewlet/intent.json) records the approved values, and every value the palette suite's floors moved names its approved value, the distance and the measurement in its own comment. The marketing root, `tokens.css` on its own, keeps its values.
 
 | What changed | What to change | Details |
 | --- | --- | --- |
@@ -91,13 +111,61 @@ The dark and light themes take the default palette approved on 4 October 2026: b
 - A document that sets nothing is dark, or light if the reader's system asks for light. A browser that reports no preference at all gets dark: dark is the palette the product is drawn in, and light is its translation.
 - `document.documentElement.dataset.theme = 'light'` or `'dark'` pins one, and wins in both directions, which a media query alone cannot do. Light wins by a block of its own. Dark wins by keeping the light media block from matching: there is no dark attribute block, because the bare root already is one, and the `:not([data-theme="dark"])` on the media block is what lets an explicit dark beat a light system.
 - Removing the attribute follows the system again. A value the file does not name (`data-theme="system"`, say) passes the media block's guard and misses the light attribute block, so it follows the system as well; `ThemeSwitcher` removes the attribute rather than writing one.
-- Both light blocks are generated from one source, `tokens/themes/light.json`, and the palette suite compares them, key for key and value for value.
+- Both light blocks are generated from one source, `tokens/themes/crewlet/light.json`, and the palette suite compares them, key for key and value for value.
 
 Import it **after** `@crewlethq/tokens/css`. The two files share the `:root` selector and neither adds specificity, so the later import is the one that paints. `tokens.css` on its own is the base marketing palette, which is dark, and which carries a value for every themed slot so an application that imports only the token layer is never missing one.
 
 `color-scheme` is set by each of the three blocks, so form controls, scrollbars and the canvas behind the page follow the palette that won.
 
 An application that overrides a themed token for one palette mirrors the same three selectors: its dark value on `:root`, its light value under both the media block and the attribute block. An override written only under `:root[data-theme="light"]` misses a reader whose system is light and who has chosen nothing.
+
+### Named themes
+
+The default theme, Crewlet, is the one `themes.css` paints on the bare root. Nine more ship beside it, each in a sheet of its own under `dist/css/themes/`, and all of them together in `all.css`:
+
+| Group | Themes, by their `data-palette` value |
+| --- | --- |
+| Crewlet | `crewlet` (the default, painted with no attribute), `violet`, `origin` |
+| Purple | `abyss`, `iris`, `dusk` |
+| Cool | `nocturne`, `nightshade` |
+| Warm | `ledger` |
+| High contrast | `high-contrast` |
+
+A named theme paints the same three blocks the default does, under its own attribute:
+
+```css
+:root[data-palette="abyss"] { /* dark */ }
+@media (prefers-color-scheme: light) {
+  :root[data-palette="abyss"]:not([data-theme="dark"]) { /* light */ }
+}
+:root[data-palette="abyss"][data-theme="light"] { /* light */ }
+```
+
+- `data-palette` chooses the theme and `data-theme` keeps choosing the mode, so every theme follows the system, or a pinned mode, exactly as the default does. Removing `data-palette`, or setting a value no sheet names, returns to the default.
+- Every block outranks the default's by its attribute, and a theme's light blocks outrank its own dark one, so source order never decides which palette paints. Import the sheet after `css/themes` all the same, as the header of each sheet says.
+- A theme declares every slot the default declares, key for key, so nothing of the default shows through it. The palette suite holds that, and holds every theme to every rule in every state.
+- Set the attribute before the first paint, from the stored choice, so the page never flashes the default: in a blocking script in `<head>`, or in the application's boot module before it renders. Read a stored value back through `isThemeId()` and drop one it rejects.
+- `all.css` is 124,561 bytes, 9,072 gzipped; one theme's sheet is about 14 KB, 2.5 KB gzipped. One sheet switches every theme with no request at the moment of the switch, which is what a picker that previews a theme under the pointer needs.
+
+### The theme registry
+
+The typed export lists every theme, the default first, for the picker that offers them:
+
+```ts
+import { DEFAULT_THEME_ID, isThemeId, themeGroups, themeRegistry } from '@crewlethq/tokens';
+
+for (const group of themeGroups) {
+  const members = themeRegistry.filter((theme) => theme.group === group.id);
+  // ...one section of the picker
+}
+
+const stored = localStorage.getItem('palette');
+const palette = isThemeId(stored) ? stored : DEFAULT_THEME_ID;
+if (palette === DEFAULT_THEME_ID) delete document.documentElement.dataset.palette;
+else document.documentElement.dataset.palette = palette;
+```
+
+Each entry carries `id` (the `data-palette` value), `name`, `group`, `tag`, `description`, `tint` (the tint its grounds declare, or `null`), `contrast` (`'standard'` or `'high'`), and `swatch.dark` and `swatch.light`: the frame, sheet, card, raised, hairline, text, muted, accent, on-accent and the four state fills, which a picker draws a theme's thumbnail with. `@crewlethq/ui`'s `ThemeSwatch` and `ThemeGallery` draw them. The build suite holds every swatch colour to the sheet that paints it, and the registry to the group order `themeGroups` gives.
 
 ### Breaking change in 0.5.0
 
@@ -143,7 +211,7 @@ themes.light.color.text.secondary; // '#3e4459'
 themes.dark.color.data['4']; // '#eab106'
 ```
 
-Prefer the custom property wherever CSS can reach: a value read here is taken at build time, so it does not follow a theme the reader changes. The package's own suite compares every exported value against the declaration in `themes.css`, in both directions, because two spellings of one palette is the arrangement that drifts.
+They are the default theme's palettes; a named theme's colours are in its sheet, and the ones a picker draws are in its registry entry's `swatch`. Prefer the custom property wherever CSS can reach: a value read here is taken at build time, so it does not follow a theme the reader changes. The package's own suite compares every exported value against the declaration in `themes.css`, in both directions, because two spellings of one palette is the arrangement that drifts.
 
 ## Surfaces
 
@@ -358,11 +426,14 @@ The accent is a violet, and it is **per palette**:
 | `--color-brand-accent-hover` | `#674ee4` | `#674ee4` | The primary action under the pointer. |
 | `--color-brand-accent-active` | `#5b3dc7` | `#5b3dc7` | The primary action pressed. |
 | `--color-brand-accent-ink` | `#a9b0ff` | `#4f51bd` | The accent as text: a link, an outline button's label. |
+| `--color-text-link-quiet` | `#a9b0ea` | `#484e99` | A link inside running text or a row, which must not compete with the words around it: the accent ink mixed 65% with the secondary text, in OKLab. It takes the accent ink under the pointer and on focus. Measured as an ink. |
 | `--color-brand-accent-soft` | the accent at 0.16 | the accent at 0.125 | The tint behind a selected row or a toggle that is on. |
 | `--color-brand-accent-soft-strong` | the accent at 0.32 | the accent at 0.32 | The border paired with the soft tint. |
 | `--color-brand-accent-rgb` | `114, 91, 230` | `115, 90, 242` | The accent as an `r, g, b` triple, for a translucent tint of a stylesheet's own. `--shadow-glow` is composed from it. |
 | `--color-focus` | `#8572fe` | `#735af2` | The focus ring. |
-| `--color-text-on-accent` | `#ffffff` | `#ffffff` | The label on the accent's three fills, and on the danger fill. |
+| `--color-text-on-accent` | `#ffffff` | `#ffffff` | The label on the accent's three fills. |
+
+A label on a fill that is not the accent has a token of its own, so a theme whose accent is light enough to carry a dark label (Iris's periwinkle does, at night) never darkens the destructive action's label or a label on the scrim: `--color-text-on-danger` labels the danger fill and its hover, and `--color-text-on-scrim` labels the scrim and the seeded avatar tints. Both are white in every theme.
 
 `-rgb` and `-soft-strong` are derived from the accent by the build, per palette, and the build suite holds the written `-soft` to the accent's own channels. The marketing root keeps the brand's `#7c56ff` and its own steps (`tokens/color.json`).
 
@@ -465,6 +536,29 @@ const { failures } = runPalette({
 expect(failures.map(describeFailure)).toEqual([]);
 ```
 
+A named theme is measured the same way: the default sheets with the theme's own after them, under the profile its registry entry gives.
+
+```ts
+import { DEFAULT_THEME_ID, themeRegistry } from '@crewlethq/tokens';
+
+for (const theme of themeRegistry.filter((entry) => entry.id !== DEFAULT_THEME_ID)) {
+  const { failures } = runPalette({
+    tokens: readFileSync(`${dir}/tokens.css`, 'utf8'),
+    themes: `${readFileSync(`${dir}/themes.css`, 'utf8')}\n${readFileSync(`${dir}/themes/${theme.id}.css`, 'utf8')}`,
+    palette: theme.id,
+    tint: theme.tint,
+    contrast: theme.contrast,
+  });
+  expect(failures.map(describeFailure)).toEqual([]);
+}
+```
+
+It measures the theme's `dark`, `light (media query)` and `light (attribute)` states (the base marketing root is the default's, and is measured with it) with every rule the default clears, and three more:
+
+- **The tint.** A theme that declares no tint keeps every rung under `NEUTRAL_CHROMA` (`the neutral ramp stays neutral`). One that declares `tint: { hue, chroma }` may tint its grounds up to that chroma, within `TINT_HUE_RANGE` degrees of that hue (`a tinted ramp stays inside its declared tint`), and its accent still carries `ACCENT_OVER_TINT` times the chroma of its most tinted rung (`the accent carries more colour than the ground`), so the accent reads as the colour on the page rather than as more of the ground.
+- **High contrast.** `contrast: 'high'` raises every text step and every ink to 7:1, the WCAG AAA floor for body text; the muted step to a readable 4.5:1 in place of the decorative band, because a reader who asked for more contrast cannot rely on a glyph they cannot see; and the card's hairline to 3:1 against the card and the sheet (`HIGH_CONTRAST`).
+- **Completeness.** A theme declares exactly the slots the default declares (`a theme declares exactly the slots the default declares`), so nothing of the default shows through it.
+
 One implementation, two gates. The constraint is that the floors are kept, not only that the measurement moves, and a tokens bump that lowered a ratio would otherwise reach a consumer through an auto-merged dependency update with nothing measuring a ratio again.
 
 The tarball ships `test/color.mjs`, `test/palette.mjs`, `test/palette.d.mts` and `test/palette.test.mjs`, so the whole table runs over the installed version with no configuration at all, from the application's root:
@@ -473,21 +567,25 @@ The tarball ships `test/color.mjs`, `test/palette.mjs`, `test/palette.d.mts` and
 node node_modules/@crewlethq/tokens/test/palette.test.mjs
 ```
 
-or with the package's own `node --test "test/*.test.mjs"` from inside `node_modules/@crewlethq/tokens`. Not with `node --test` over a path into `node_modules` from outside it: the test runner skips `node_modules`, a glob included, runs no test at all and exits 0. `test/tarball.test.mjs` packs this package with npm, installs the tarball into an empty directory and runs both commands there, counting the tests that ran, and imports the suite by its package name to hold `runPalette`, `paletteStates`, `describeFailure` and `tightest` to the shapes `test/palette.d.mts` declares, which is how an application's own suite reaches them.
+or with the package's own `node --test "test/*.test.mjs"` from inside `node_modules/@crewlethq/tokens`. Not with `node --test` over a path into `node_modules` from outside it: the test runner skips `node_modules`, a glob included, runs no test at all and exits 0. `test/tarball.test.mjs` packs this package with npm, installs the tarball into an empty directory and runs both commands there, counting the tests that ran, and imports the suite by its package name to hold `runPalette`, `paletteStates`, `describeFailure` and `tightest` to the shapes `test/palette.d.mts` declares, which is how an application's own suite reaches them. It resolves every named theme's sheet the same way, by the ids the installed registry lists, and measures each under its own profile.
 
 `test/build.test.mjs` stays out of the tarball: it reads the token source the build compiles from, which a tarball does not carry. So do `test/intent.test.mjs`, which reads the design record below, `test/tarball.test.mjs`, which packs the package from outside it, and `test/fonts.test.mjs`, which decodes every file in `fonts/` and holds [`fonts/README.md`](./fonts/README.md), the built `@font-face` rules and [`fonts/OFL.txt`](./fonts/OFL.txt) to what the files say about themselves: a replaced file is caught in this repository, before it is published, not in an installed copy.
 
 ### The approved palette, and the fit
 
-[`tokens/intent.json`](./tokens/intent.json) is the approved palette: the default dark and light themes approved on 4 October 2026, recorded under the custom property names the design artboards declare, each with the custom property that ships it, and the values the design draws outside those two blocks (the primary action's label, hover and press among them). It is a record rather than a token file: the build skips it and nothing is emitted from it. `test/intent.test.mjs` holds it to naming only tokens the palettes declare, the same names for the same tokens in both palettes, and values that parse.
+[`tokens/themes/crewlet/intent.json`](./tokens/themes/crewlet/intent.json) is the approved palette: the default dark and light themes approved on 4 October 2026, recorded under the custom property names the design artboards declare, each with the custom property that ships it, and the values the design draws outside those two blocks (the primary action's label, hover and press among them). It is a record rather than a token file: the build skips it and nothing is emitted from it. Each named theme has a record of its own beside its theme files, `tokens/themes/<id>/intent.json`: the palette the theme was designed as, under the same design names. `test/intent.test.mjs` holds every record to naming only tokens its theme's palettes declare, the same names for the same tokens in both palettes, and values that parse.
 
 Every colour the record names ships the value recorded there, or the least move from it that one of the palette suite's floors forced: the surfaces, the neutral text and border steps, the accent, the four states and their inks, and the four chart series. [`scripts/fit-palette.mjs`](./scripts/fit-palette.mjs) is what finds those moves:
 
 ```sh
 npm run build --workspace @crewlethq/tokens
-node packages/tokens/scripts/fit-palette.mjs          # both palettes, about three minutes
-node packages/tokens/scripts/fit-palette.mjs light    # one of them
+node packages/tokens/scripts/fit-palette.mjs              # the default, both palettes, about three minutes
+node packages/tokens/scripts/fit-palette.mjs light        # one of them
+node packages/tokens/scripts/fit-palette.mjs abyss        # a named theme, both palettes
+node packages/tokens/scripts/fit-palette.mjs abyss dark   # one of its palettes
 ```
+
+A named theme is fitted from its own record, over the default sheets with its own after them, under the profile its `theme.json` declares.
 
 From the recorded values it searches for the palette that moves the design least in all, in OKLab dE, while clearing every rule, each candidate measured by `runPalette` itself over the candidate stylesheets:
 
@@ -499,13 +597,13 @@ From the recorded values it searches for the palette that moves the design least
 - a hue is looked for along lightness first, keeping its hue and chroma, the move every hand fit made, and then in drawn directions inside its family; and a seat found along a drawn direction is then turned toward the design, the direction rotated in halving angles until no turn brings the seat nearer, because a seat on a drawn direction is only as near as that direction lets it be;
 - a value that another is measured ON moves together with it: a state's ink is held to 4.5:1 on its own fill's soft tint and on a code chip over that tint, so a fill walked back toward the design takes its ink with it, the ink repaired at every step. Moved one at a time, neither could go nearer: on the palette before this one, the light danger red ended as a muted maroon dE 15.19 from its design, where the red and its ink moved together needed 10.40 and 3.05.
 
-It is seeded (mulberry32 at seed 1). The search spends a fixed budget of palette evaluations repairing and improving the palette, and the finish then runs until no move it knows pays, so the same built stylesheets give the same fit, to the byte. The fit is the best it finds, not a proof that nothing moves the design less; its first line says how many evaluations the search and the finish took, and says so plainly if the finish ever stopped at its ceiling with moves still paying. For each value it fits it prints the design value, the value the fit ships, the dE between them and the binding rule, which is what fails when that value alone goes back to the design; then every token whose built value is not the fit. A token the floors moved says the same three things in its own comment in `tokens/themes/*.json`: the design value, the dE of the move and the measurement that forced it.
+It is seeded (mulberry32 at seed 1). The search spends a fixed budget of palette evaluations repairing and improving the palette, and the finish then runs until no move it knows pays, so the same built stylesheets give the same fit, to the byte. The fit is the best it finds, not a proof that nothing moves the design less; its first line says how many evaluations the search and the finish took, and says so plainly if the finish ever stopped at its ceiling with moves still paying. For each value it fits it prints the design value, the value the fit ships, the dE between them and the binding rule, which is what fails when that value alone goes back to the design; then every token whose built value is not the fit. A token the floors moved says the same three things in its own comment in its theme's `dark.json` or `light.json`: the design value, the dE of the move and the measurement that forced it.
 
 The fit is a development tool. It is not published, and no test runs it or reads what it prints: the gate is the palette suite, and the fit is how a value that passes it is chosen.
 
-The fit is held to every rule in the table. Run over this release's stylesheets, it reports that every dark value it fits ships its fitted value. Light is the exception: within its budget the search leaves two light floors failing (the warning fill as a mark on the frame, and raised against the card), so the shipped light values were placed by a walk from a passing palette back toward the approved values, each step kept only while every rule holds. Each moved light token states its move in its comment like any other, and the palette suite, which is the gate, passes in every state.
+The fit is held to every rule in the table. Run over this release's stylesheets, it reports that every dark value it fits ships its fitted value. Light is the exception: within its budget the search leaves two light floors failing (the warning fill as a mark on the frame, and raised against the card), so the shipped light values were placed by a walk from a passing palette back toward the approved values, each step kept only while every rule holds. Each moved light token states its move in its comment like any other, and the palette suite, which is the gate, passes in every state. The named themes were placed the same way: by the fit, except Origin's two palettes and High contrast's dark one, which were walked back from a passing palette.
 
-The Storybook shows both halves under **Foundations / Palette**. `Tightest Per Rule` is `tightest()` over the whole table: under each rule, the pair that would break first. `The Fit` is every colour `tokens/intent.json` declares, per palette, with what ships for it, the dE between them, and what fails when that value alone goes back to the design: the suite run again over the built `themes.css` with that one declaration put back (an overlay the design drew opaque at the alpha nearest it, and the steps the build derives from a fill following it), reduced to the tightest failure under each rule it breaks. It is measured every time the story renders rather than copied from a comment, so a move that stopped being forced says so there first. Its logic is `apps/storybook/src/paletteFit.ts`, and `apps/storybook/test/paletteFit.test.mjs` holds it.
+The Storybook shows both halves under **Foundations / Palette**. `Tightest Per Rule` is `tightest()` over the whole table: under each rule, the pair that would break first. `The Fit` is every colour the default's record, `tokens/themes/crewlet/intent.json`, declares, per palette, with what ships for it, the dE between them, and what fails when that value alone goes back to the design: the suite run again over the built `themes.css` with that one declaration put back (an overlay the design drew opaque at the alpha nearest it, and the steps the build derives from a fill following it), reduced to the tightest failure under each rule it breaks. It is measured every time the story renders rather than copied from a comment, so a move that stopped being forced says so there first. Its logic is `apps/storybook/src/paletteFit.ts`, and `apps/storybook/test/paletteFit.test.mjs` holds it.
 
 ## Fonts
 
@@ -548,13 +646,22 @@ It is the one stylesheet in this package that contacts a third-party host, which
 
 ## Add or change a token
 
-1. Edit a JSON file in `tokens/`, or `tokens/themes/light.json` and `tokens/themes/dark.json` for a slot that changes with the palette. A themed slot needs an entry in **both** theme files and a value in `tokens/color.json`, which the palette suite checks. A colour the design draws starts from its value in `tokens/intent.json`, which changes first when the design does, and `scripts/fit-palette.mjs` gives the least move from it that clears the suite (see [The approved palette, and the fit](#the-approved-palette-and-the-fit)).
+1. Edit a JSON file in `tokens/`, or a theme's `dark.json` and `light.json` in `tokens/themes/<id>/` for a slot that changes with the palette. A themed slot needs an entry in **every** theme's two files and a value in `tokens/color.json`, which the palette suite checks. A colour the design draws starts from its value in the theme's `intent.json`, which changes first when the design does, and `scripts/fit-palette.mjs` gives the least move from it that clears the suite (see [The approved palette, and the fit](#the-approved-palette-and-the-fit)).
 2. Run `npm run build` (or `npm run dev` for watch).
 3. Run `npm test`. A colour change that lowers a measured floor fails here.
 4. The generated `dist/` and `src/index.ts` are regenerated.
 
 Never edit files in `dist/` or `src/index.ts` directly. They are
 regenerated on every build. `stylesheets/base.css` is the one stylesheet in this package written by hand rather than generated; the build copies it into `dist/css/`.
+
+## Add a theme
+
+1. Make a folder `tokens/themes/<id>/`. The id is the `data-palette` value, in lower case, digits and dashes. It holds:
+   - `theme.json`: `name`, `group` (an id from `tokens/themes/groups.json`), `tag`, `description` and `order` within the group; `tint: { "hue", "chroma" }` if its grounds are tinted, and `"contrast": "high"` if it is held to the high-contrast floors. The default declares neither.
+   - `intent.json`: the design, laid out as the default's record is.
+   - `dark.json` and `light.json`: every slot the default's declare, key for key.
+2. Run `npm run build`, then `node scripts/fit-palette.mjs <id>`, and write what the fit ships into the two theme files, each moved value with the comment the fit gives it.
+3. Run `npm test`. The palette suite measures the theme under its own profile, the design record suite holds its record, and the build suite holds its sheet, its swatch and its place in the registry.
 
 ## License
 

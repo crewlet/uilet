@@ -41,17 +41,17 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Area | Components |
 | ---- | ---------- |
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
-| Content and text | `Text` (the eight registers), `Prose`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
-| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer` |
+| Content and text | `Text` (the eight registers), `Prose`, `Document` and `DocumentTitle`, `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
+| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor` |
 | Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
-| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
-| Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure` |
+| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
+| Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar` and `useAppShell`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
-| Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences` |
+| Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences` |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -74,6 +74,13 @@ land at once.
   `storageKey` shows one value; an application that owns the preference holds
   it with one `useThemePreference` and passes `value` and `onChange` to each
   control, which then writes nothing of its own.
+- **Named themes.** Import `@crewlethq/tokens/css/themes/all` after
+  `css/themes` and set `data-palette` on `<html>` to a theme's id; removing it
+  paints the default. A theme is a pair of palettes, so `data-theme` keeps
+  choosing light or dark for every theme alike: the interface calls that
+  choice Mode and the palette Theme. `ThemeGallery` offers the themes and
+  `ThemeSwatch` draws one, both from the registry `@crewlethq/tokens`
+  exports, so a thumbnail shows a theme that is not the one on screen.
 - **Density.** Import `@crewlethq/tokens/css/density` and set
   `data-density="compact"` or `"comfortable"` on `<html>`. Every spacing and
   size token scales with it, and the small control and row steps floor at 24px
@@ -190,6 +197,60 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.13.0
+
+0.13.0 adds the parts the engine console's themes, project switcher, inbox and knowledge base are built with, and calls the light and dark choice Mode.
+
+**`ThemeSwatch`** draws a theme from its registry entry in `@crewlethq/tokens` (its `swatch`): `size="chip"` is a mark beside a name, `"card"` a picker's thumbnail and `"pane"` a preview large enough to read as a screen. Both palettes are drawn by default, dark beside light, and `mode` draws one. It is decoration unless given a `label`.
+
+**`ThemeGallery`** is the choice of a theme: every theme as a card under its group, in one radio group whose arrows choose as they move. The chosen card is its own border in the accent. `onPreview` is told the card the pointer comes to rest on, and `null` when it leaves, for a pane beside the gallery. It reads `themeRegistry` and `themeGroups` by default; `themes`, `groups` and `columns` adapt it.
+
+**`Select` options take `leading` and `hint`.** `leading` is drawn before the label, in the list and on the trigger while the option is chosen; `hint` is a quieter word at the end of the label's line. `onHighlight` is told where the highlight comes to rest: at once for a key, once the pointer has rested on a row for `HIGHLIGHT_REST_MS` (120 ms), and `null` when the list closes or the pointer leaves it.
+
+**`CommandPalette` takes a `step`.** `{ label, onBack, startAt? }` draws a chip naming the step at the field's start, and the chip, Escape and Backspace in an empty field go back rather than closing. The step opens on the row `startAt` names (the choice in effect), or on its first row, and going back puts the highlight on the row that led in. A row whose `onSelect` returns `false` keeps the surface open, which is how a row leads into a step. `onHighlight` reports the resting highlight with the same timing as `Select`'s.
+
+**`SegmentedControl` takes `fill`**: the row fills the width it is given and every option takes an equal share, so rows stacked in one panel draw one box. `ThemeSwitcher` and `DensitySwitcher` pass it through.
+
+**`useHighlightRest`** is the timing `Select` and `CommandPalette` share, for a list of your own that previews its highlight.
+
+**The light and dark choice is called Mode.** `ThemeSwitcher`'s row is named "Mode", and `ThemeToggle` says "Switch to light mode" and "Switch to dark mode": "Theme" now names the palette. Code keeps `data-theme`.
+
+**Labels on the danger fill and the scrim read their own tokens.** `ImageUpload`'s remove button and a danger toast's action read `--color-text-on-danger`, and the upload scrim, its spinner and a seeded `Avatar` read `--color-text-on-scrim`, so they stay white on a theme whose accent carries a dark label.
+
+**`Switcher`** is a page's subject drawn as a button, and the panel that switches it: a search band, a list that scrolls, and a footer that does not. It opens under its button, centred when it has none (a panel opened by a key), and as a sheet from the bottom edge below 640px. Focus stays in the field while the arrows walk `pinned`, a `message`'s actions, `groups` and `footer` as one listbox. A row with an `href` is a link, so a middle click, a Command click and Command+Enter open it in a new tab; a `held` row keeps its reason and is passed over, and a `keepsOpen` row (Try again) is taken without closing the panel. `loading`, `note` and `announcement` cover the rest, and the caller searches and ranks.
+
+**`Breadcrumb`** moves into the kit from the engine dashboard: ancestors that lead back out, the page's own `h1` last, a floor measured from what the trail holds, and a tab stop only while it overflows. `current` draws a control, such as a `Switcher`, as the heading's words. Below 640px an ancestor with a glyph is drawn as its glyph alone, its word kept for a screen reader.
+
+**`KeyChip`** draws a project's key as the small mono chip, with a search's letters in bold (`highlight`). `SidebarNav` now draws an item's `lead` with it.
+
+**`Tabs` take `variant="chip"`**: compact chips whose selected one is outlined by its own accent hairline, with no fill and no underline, for an object's lenses beside its name.
+
+**`Popover`** takes `alignOffset` (a shift along the anchor, or a function that measures one), `sideOffset` (its distance from the anchor) and `initialFocus`.
+
+**`Modal` takes `placement="bottom"`**: a dialog pinned to the bottom edge at the window's width, rounded on its top corners, rising from that edge.
+
+**`InboxList`** is an inbox's column: `InboxGroup` labels a run of rows, and each `InboxRow` is one control (a button, or a link with `href`) naming who it is from, a `qualifier` and a `meta` time, with its words in up to three lines and an `excerpt` in the quiet ink. `aside` sits under the control as a control of its own, for the task the row is about. `selected` takes the neutral pressed fill and `aria-current`; `unread`, `actionable` and `done` set the ink, and `unread` and `done` are read out. `InboxMore` and `InboxToggle` are the quiet toggles at the end of the list.
+
+**`ChoiceButtons`** sends one answer with one press: a group of buttons as tall as a touch target, the `recommended` option first, filled and marked. `pending` and `disabledReason` hold every option still without taking its focus.
+
+**`ReadingPane`** reads one item in a single column named by its title: `ReadingPaneByline`, `ReadingPaneTitle`, `ReadingPaneLead`, `ReadingPaneQuote` (`verbatim` for a machine's words), `ReadingPaneReasoning`, `ReadingPaneOutcome` (a status line) and `ReadingPaneSection`.
+
+**`Link`** adds `variant="quiet"`, a reference among other words in `--color-text-link-quiet` that never underlines and steps up to the accent ink on hover, and `size="inherit"`.
+
+**`Document`** sets rendered markdown as a document: headings, paragraphs, lists and task lists, quotes, code, tables, rules, links and images, every size a step on the type ramp. It styles the plain elements a renderer emits rather than parsing anything itself, so the application keeps its own parser and its own rules about what a body may contain. A task item is recognised by the checkbox it starts with and a wide table by the element it scrolls in; that element takes `tabIndex={0}`, a `region` role and a name. `size="sm"` sets it for a comment or a side pane, and `DocumentTitle` is the page's title above it.
+
+**`Outline`** is "On this page": the headings of the document beside it, as buttons rather than anchors, because a hash router keeps its own route in the fragment. The entry for the section in view takes the accent edge and `aria-current="location"`. `useActiveHeading(ids, { root, offset })` says which heading that is, measured on a frame, and the last one once the scroller can go no further; `scrollToHeading(id)` brings a heading into view and moves focus to it.
+
+**`MarkdownEditor`** writes markdown: a formatting bar that writes it at the caret (headings, bold, italic, code, the three lists and a table), the source in a monospace field, and Write and Preview as a tab list whose panel is the field or the preview. Every control is a toggle, Command or Control with B and I are bold and italic, and with Enter the caller's `onSubmit`. `renderPreview` draws the preview with the application's renderer, `actions` adds the caller's own controls to the bar (they are handed the editor, so a "Link a page" picker inserts at the caret) and `footer` holds a count. The rules are pure functions a caller can use alone: `formatMarkdown`, `insertMarkdown` and `markdownWords`.
+
+**`Highlight`** marks the words a search matched in a line of text, in `mark` elements on a ground behind the text's own ink. `highlightTerms(query)` turns a query into its terms and `highlightRanges(text, terms)` says where they start a word, never inside one.
+
+**`TreeGrid` reads a hierarchy one level at a time.** `defaultExpanded="none"` opens no row until somebody opens it, so a level that has just been read arrives closed and asks for nothing on its own; `expanded` and `onExpandedChange` let the caller hold the open rows, to keep them across a visit or to read a level the moment it opens. `useTreeState` takes the same options (`TreeStateOptions`, `TreeDefaultExpanded`). `headless` keeps the column names for a screen reader and draws no header band, for an outline whose cells say what they are. A text field in a cell keeps the keys that move its caret (Left, Right, Home and End, and Up and Down in a field of several lines), so a name typed in place can be corrected; from a single line, Up and Down still walk the rows.
+
+`@crewlethq/icons` adds `Heading2Glyph`, `Heading3Glyph`, `BoldGlyph`, `ItalicGlyph`, `ListOrderedGlyph` and `ListChecksGlyph`, which `MarkdownEditor` draws, and `PaletteGlyph` (Lucide's `palette`).
+
+What to change: a test or a query that finds the theme row by the name "Theme", or the toggle by "Switch to the light theme" or "Switch to the dark theme", uses the new names. A `CommandPalette` row whose `onSelect` returns `false` by accident now keeps the surface open; return nothing to close it. A `TreeGrid` given none of the new props opens every row as it did. Everything else is new.
 
 ## Changes in 0.12.0
 

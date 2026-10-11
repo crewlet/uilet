@@ -38,7 +38,15 @@ export type {
 } from './layout.js';
 
 export { treeItemAction, treeStep, useTreeState } from './useTreeState.js';
-export type { TreeItemAction, TreeKeyEvent, TreeState, TreeStep, TreeViewHandle } from './useTreeState.js';
+export type {
+  TreeDefaultExpanded,
+  TreeItemAction,
+  TreeKeyEvent,
+  TreeState,
+  TreeStateOptions,
+  TreeStep,
+  TreeViewHandle,
+} from './useTreeState.js';
 
 export { SIZE_EPSILON, useLayoutAnchor, useMeasuredSizes } from './useMeasuredSizes.js';
 export type { MeasuredSizes } from './useMeasuredSizes.js';

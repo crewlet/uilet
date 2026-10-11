@@ -55,6 +55,7 @@ import {
   treeSetSize,
   treeStep,
   useTreeState,
+  type TreeDefaultExpanded,
   type TreeInput,
   type TreeItemAction,
   type TreeViewHandle,
@@ -133,6 +134,22 @@ function controlIn(cell: HTMLElement): HTMLElement | null {
   return focusables(cell).find((el) => !el.closest('[aria-hidden="true"]')) ?? null;
 }
 
+/** The input types a person types a line of text into, whose caret the arrows move. */
+const TEXT_INPUTS = new Set(['text', 'search', 'url', 'email', 'tel', 'password', 'number']);
+
+/**
+ * Whether `key` moves the caret of the text field that holds focus, which then
+ * keeps it: Left, Right, Home and End in any text field, and Up and Down only
+ * in one of several lines.
+ */
+function caretKey(target: HTMLElement, key: string): boolean {
+  const lines = target instanceof HTMLTextAreaElement || target.isContentEditable;
+  const field = lines || (target instanceof HTMLInputElement && TEXT_INPUTS.has(target.type));
+  if (!field) return false;
+  if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'Home' || key === 'End') return true;
+  return lines && (key === 'ArrowUp' || key === 'ArrowDown');
+}
+
 export interface TreeGridProps {
   /** The accessible name of the grid, such as "Organization outline". */
   label: string;
@@ -191,6 +208,26 @@ export interface TreeGridProps {
   onSelect?: ((id: string) => void) | undefined;
   /** Sets `aria-readonly`: the rows can be read and navigated but not edited. */
   readOnly?: boolean | undefined;
+  /**
+   * Which rows start open while the grid holds its own expansion: every one
+   * (the default), or none, for a hierarchy whose levels are read on demand.
+   */
+  defaultExpanded?: TreeDefaultExpanded | undefined;
+  /**
+   * The open rows, when the caller holds them: to keep them across a visit,
+   * or to read a level the moment it opens. A row in the set with no children
+   * yet is ignored, so a level still loading can be held open.
+   */
+  expanded?: ReadonlySet<string> | undefined;
+  /** The open rows a toggle has just produced, whether or not the caller holds them. */
+  onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
+  /**
+   * The column names are READ BUT NOT SEEN: an outline whose cells say what
+   * they are in the sight of them (a title, a face, a time) and want no
+   * header band above them. A screen reader still hears every cell's column,
+   * because the header row is still there; only its band is not drawn.
+   */
+  headless?: boolean | undefined;
   labels?: Partial<TreeGridLabels> | undefined;
   ref?: Ref<TreeViewHandle> | undefined;
   className?: string | undefined;
@@ -209,12 +246,16 @@ export function TreeGrid({
   selectedId = null,
   onSelect,
   readOnly,
+  defaultExpanded,
+  expanded: held,
+  onExpandedChange,
+  headless = false,
   labels,
   ref,
   className,
 }: TreeGridProps) {
   const text = { ...LABELS, ...labels };
-  const tree = useTreeState(forest, selectedId);
+  const tree = useTreeState(forest, selectedId, { defaultExpanded, expanded: held, onExpandedChange });
   const { model, expanded, rows, active, setActive, toggle } = tree;
 
   /** The column of the active row that holds focus; `null` when the row itself does. */
@@ -329,6 +370,14 @@ export function TreeGrid({
       focusAt(next, col === null ? null : Math.min(col, width));
     };
 
+    // A TEXT FIELD IN A CELL IS EDITED WITH ITS OWN KEYS. A name typed in place
+    // moves its caret with Left, Right, Home and End, and a field of several
+    // lines moves between them with Up and Down; captured here, those keys
+    // left the field instead, so nothing typed in it could be corrected. A
+    // single line has no lines to move between, so Up and Down still walk the
+    // rows from it, and Tab leaves it as it leaves any control.
+    if (col !== null && caretKey(target, event.key)) return;
+
     if (col !== null) {
       switch (event.key) {
         case 'ArrowRight':
@@ -414,7 +463,7 @@ export function TreeGrid({
   const template = columns.map((one) => one.width ?? 'minmax(0, 1fr)').join(' ');
 
   return (
-    <div className={cx('crewlet-tree-grid', className)}>
+    <div className={cx('crewlet-tree-grid', headless && 'crewlet-tree-grid--headless', className)}>
       <LayerHost className="crewlet-tree-grid__layer">
         <div className="crewlet-tree-grid__scroller" onScroll={onScroll}>
           <div

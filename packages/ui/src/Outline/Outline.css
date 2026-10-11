@@ -1,0 +1,78 @@
+/*
+ * A document's outline, "On this page" (Outline.tsx).
+ *
+ * QUIET UNTIL IT IS CURRENT. The entries are the tertiary ink at the caption
+ * step, so the column beside a page reads as a map rather than as a second
+ * page, and the entry the reader is in takes the primary ink and the accent
+ * edge every current row in the system takes.
+ */
+
+.crewlet-outline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/* The outline's name in the register of a group label: sentence case at the
+   caption step, the 4.5:1 ink. */
+.crewlet-outline__title {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-tight);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-outline__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * One entry: the heading's text, wrapped rather than cut, because a heading
+ * cut to fit is a section the reader cannot tell from its neighbour. The edge
+ * the current entry draws is held on every entry in its resting colour, so
+ * nothing moves when the current entry changes.
+ */
+.crewlet-outline__item {
+  display: block;
+  width: 100%;
+  min-height: var(--size-target-min);
+  margin: 0;
+  padding: calc(var(--spacing-1) / 2) var(--spacing-2);
+  padding-inline-start: calc(var(--spacing-3) + var(--spacing-3) * var(--crewlet-outline-depth, 0));
+  border: 0;
+  border-inline-start: 2px solid var(--color-border-default);
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--font-line-height-snug);
+  text-align: start;
+  color: var(--color-text-tertiary);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.crewlet-outline__item:hover {
+  color: var(--color-text-primary);
+}
+
+/* The ring lies on the entry's own edge, never a second line beside it. */
+.crewlet-outline__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* The weight stays the resting one: a bolder entry is a wider one, and a
+   wider entry can wrap onto a second line as the reader scrolls past it. */
+.crewlet-outline__item--current {
+  border-inline-start-color: var(--color-brand-accent);
+  color: var(--color-text-primary);
+}

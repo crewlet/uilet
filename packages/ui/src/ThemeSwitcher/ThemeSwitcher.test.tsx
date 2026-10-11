@@ -24,9 +24,9 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-test('the theme row is a named radio group, and each choice is a word', () => {
+test('the mode row is a named radio group, and each choice is a word', () => {
   render(<ThemeSwitcher />);
-  const group = screen.getByRole('radiogroup', { name: 'Theme' });
+  const group = screen.getByRole('radiogroup', { name: 'Mode' });
   expect(group).toBeTruthy();
   expect(screen.queryByRole('tab')).toBeNull();
   for (const name of ['Light', 'Follow the system', 'Dark']) {
@@ -46,6 +46,21 @@ test('choosing a theme writes the root attribute and remembers it', () => {
   fireEvent.click(screen.getByRole('radio', { name: 'Follow the system' }));
   expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
   expect(localStorage.getItem('test_theme')).toBe('system');
+});
+
+test('fill reaches both rows, so stacked they draw one box', () => {
+  render(
+    <>
+      <ThemeSwitcher fill />
+      <DensitySwitcher fill />
+    </>,
+  );
+  const rows = screen.getAllByRole('radiogroup');
+  expect(rows).toHaveLength(2);
+  for (const row of rows) expect(row.classList.contains('crewlet-segmented--fill')).toBe(true);
+  cleanup();
+  render(<ThemeSwitcher />);
+  expect(screen.getByRole('radiogroup').classList.contains('crewlet-segmented--fill')).toBe(false);
 });
 
 test('the density row draws a letter and is called by a word', () => {

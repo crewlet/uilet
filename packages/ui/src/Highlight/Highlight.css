@@ -1,0 +1,29 @@
+/*
+ * Words a search matched (Highlight.tsx).
+ */
+
+/*
+ * A GROUND, NEVER AN INK. The marked word keeps the ink of the text around it,
+ * so it reads at the contrast that text was measured at, and the accent's soft
+ * step behind it says "this is what you searched for" without making the word
+ * louder than its sentence. The accent is the one colour that means "where the
+ * reader is", and a match is exactly that: the reader's own question, found.
+ */
+.crewlet-highlight__match {
+  border-radius: var(--radius-xs);
+  background: var(--color-brand-accent-soft-strong);
+  color: inherit;
+}
+
+/*
+ * Forced colours replaces every author ground with the canvas, which would
+ * leave a match drawn exactly like the words beside it. The system's own pair
+ * for a mark is what that mode reserves for this job.
+ */
+@media (forced-colors: active) {
+  .crewlet-highlight__match {
+    forced-color-adjust: none;
+    background: Mark;
+    color: MarkText;
+  }
+}

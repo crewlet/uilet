@@ -33,8 +33,17 @@ export interface PaletteCheck {
 export interface PaletteSources {
   /** The text of the built tokens.css. */
   tokens: string;
-  /** The text of the built themes.css. */
+  /**
+   * The text of the built themes.css, followed by the sheet of a named theme
+   * (css/themes/<id>.css, or css/themes/all.css) when `palette` names one.
+   */
   themes: string;
+  /** A named theme's id, measured under its data-palette blocks; absent for the default. */
+  palette?: string | null;
+  /** The tint a theme declares for its grounds, measured in place of the neutral cap. */
+  tint?: { hue: number; chroma: number } | null;
+  /** 'high' holds the theme to the high-contrast floors as well. */
+  contrast?: 'standard' | 'high';
 }
 
 export interface PaletteResult {
@@ -54,6 +63,18 @@ export function runPalette(sources: PaletteSources): PaletteResult;
  * (attribute)', in that order.
  */
 export function paletteStates(sources: PaletteSources): Record<string, Map<string, string>>;
+
+/** The three selectors that paint a theme: the default on the bare root, a named one under data-palette. */
+export function paletteSelectors(palette: string | null | undefined): { dark: string; lightMedia: string; lightAttribute: string };
+
+/** The chroma under which a ground reads as neutral, and the cap an untinted theme's rungs keep. */
+export const NEUTRAL_CHROMA: number;
+/** How far, in OKLCh degrees, a tinted rung's hue may sit from its theme's declared tint. */
+export const TINT_HUE_RANGE: number;
+/** How many times the most tinted rung's chroma the accent carries. */
+export const ACCENT_OVER_TINT: number;
+/** The floors a high-contrast theme is held to on top of the table. */
+export const HIGH_CONTRAST: { readonly text: number; readonly ink: number; readonly muted: number; readonly hairline: number };
 
 /** One line per failing check, for an assertion message. */
 export function describeFailure(check: PaletteCheck): string;
@@ -164,6 +185,10 @@ export const ACTION_STEPS: readonly (readonly [string, string, string])[];
  */
 export const MARK_ON_FILL: readonly (readonly [string, string])[];
 export const ACTION_LABEL: string;
+/** The destructive action's label, which each step of the danger fill moves away from. */
+export const DESTRUCTIVE_LABEL: string;
+/** The label drawn on the scrim and on a seeded tint, white in every palette. */
+export const SCRIM_LABEL: string;
 export const ACTION_DE: number;
 
 /** The token name of the modal veil. */

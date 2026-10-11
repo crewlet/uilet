@@ -1,0 +1,256 @@
+/*
+ * A theme's thumbnail.
+ *
+ * EVERY COLOUR IS THE THEME'S OWN, from the custom properties ThemeSwatch sets
+ * on each half (--crewlet-swatch-*), and none is the page's except the
+ * outline, which is the page's hairline because the page is where the
+ * thumbnail sits. Two halves share the box equally: dark, then light.
+ *
+ * IT IS A PICTURE, so forced-colors mode leaves it alone: repainted to the
+ * system's two colours, every theme would draw the same blank box.
+ */
+
+.crewlet-theme-swatch {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  forced-color-adjust: none;
+}
+
+.crewlet-theme-swatch--chip {
+  width: 26px;
+  height: 16px;
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-theme-swatch--card {
+  width: 100%;
+  height: 38px;
+  border-radius: var(--radius-sm);
+}
+
+.crewlet-theme-swatch--pane {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+}
+
+.crewlet-theme-swatch__half {
+  display: grid;
+  grid-template-columns: 26% minmax(0, 1fr);
+  min-width: 0;
+  background: var(--crewlet-swatch-frame);
+}
+
+/* ── The chip: each palette's frame, with its accent on it ────────────── */
+
+.crewlet-theme-swatch--chip .crewlet-theme-swatch__half {
+  grid-template-columns: none;
+  place-items: center;
+}
+
+.crewlet-theme-swatch__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-circle);
+  background: var(--crewlet-swatch-accent);
+}
+
+/* ── The card: a rail, a sheet, a card on it ──────────────────────────── */
+
+.crewlet-theme-swatch__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 4px;
+  min-width: 0;
+}
+
+.crewlet-theme-swatch__rail-row {
+  display: block;
+  width: 80%;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--crewlet-swatch-muted);
+}
+
+/* The row the reader is on stands on the raised rung, as the rail draws it. */
+.crewlet-theme-swatch__rail-row.is-current {
+  width: 100%;
+  height: 6px;
+  background: var(--crewlet-swatch-raised);
+}
+
+.crewlet-theme-swatch__sheet {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 3px 3px 3px 0;
+  padding: 3px;
+  border-radius: var(--radius-xs);
+  background: var(--crewlet-swatch-sheet);
+}
+
+.crewlet-theme-swatch__card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid var(--crewlet-swatch-hairline);
+  border-radius: var(--radius-xs);
+  background: var(--crewlet-swatch-card);
+}
+
+.crewlet-theme-swatch__line {
+  display: block;
+  width: 60%;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--crewlet-swatch-text);
+}
+
+/*
+ * THE ACTION GIVES WAY BEFORE IT DISAPPEARS. A narrow thumbnail has less room
+ * than the action and the four states take, so the action narrows to a floor
+ * and the row clips its last states, rather than the action, which is what a
+ * theme is chosen for, shrinking to nothing.
+ */
+.crewlet-theme-swatch__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+}
+
+/* The primary action: the accent's fill. */
+.crewlet-theme-swatch__action {
+  display: block;
+  flex: 0 1 14px;
+  min-width: 6px;
+  height: 6px;
+  margin-right: auto;
+  border-radius: var(--radius-pill);
+  background: var(--crewlet-swatch-accent);
+}
+
+/* The four states, in the order the kit names them. */
+.crewlet-theme-swatch__state {
+  display: block;
+  flex: none;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-circle);
+}
+
+.crewlet-theme-swatch__state--info { background: var(--crewlet-swatch-info); }
+.crewlet-theme-swatch__state--warning { background: var(--crewlet-swatch-warning); }
+.crewlet-theme-swatch__state--danger { background: var(--crewlet-swatch-danger); }
+.crewlet-theme-swatch__state--success { background: var(--crewlet-swatch-success); }
+
+/* ── The pane: the same sketch, large enough to read as a screen ───────── */
+
+.crewlet-theme-swatch--pane .crewlet-theme-swatch__half {
+  grid-template-columns: 26% minmax(0, 1fr);
+}
+
+.crewlet-theme-swatch--pane .crewlet-theme-swatch__rail {
+  gap: 7px;
+  padding: 12px 8px;
+}
+
+.crewlet-theme-swatch--pane .crewlet-theme-swatch__rail-row {
+  height: 5px;
+}
+
+.crewlet-theme-swatch--pane .crewlet-theme-swatch__rail-row.is-current {
+  height: 12px;
+  border: 1px solid var(--crewlet-swatch-hairline);
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-theme-swatch--pane .crewlet-theme-swatch__sheet {
+  gap: 8px;
+  margin: 6px 6px 6px 0;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+}
+
+.crewlet-theme-swatch__title {
+  display: block;
+  flex: none;
+  width: 40%;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--crewlet-swatch-text);
+}
+
+.crewlet-theme-swatch--pane .crewlet-theme-swatch__card {
+  flex: none;
+  gap: 7px;
+  justify-content: flex-start;
+  padding: 8px;
+}
+
+.crewlet-theme-swatch__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crewlet-theme-swatch--pane .crewlet-theme-swatch__state {
+  width: 6px;
+  height: 6px;
+}
+
+.crewlet-theme-swatch--pane .crewlet-theme-swatch__line {
+  width: 45%;
+  height: 4px;
+}
+
+.crewlet-theme-swatch__muted {
+  display: block;
+  width: 18%;
+  height: 4px;
+  margin-left: auto;
+  border-radius: var(--radius-pill);
+  background: var(--crewlet-swatch-muted);
+}
+
+.crewlet-theme-swatch__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.crewlet-theme-swatch--pane .crewlet-theme-swatch__action {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40%;
+  height: 16px;
+  margin-right: 0;
+  border-radius: var(--radius-xs);
+}
+
+/* The primary action's label, in the colour the theme labels its accent with. */
+.crewlet-theme-swatch__label {
+  display: block;
+  width: 50%;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--crewlet-swatch-on-accent);
+}
+
+.crewlet-theme-swatch__secondary {
+  display: block;
+  width: 26%;
+  height: 16px;
+  border: 1px solid var(--crewlet-swatch-hairline);
+  border-radius: var(--radius-xs);
+  background: var(--crewlet-swatch-card);
+}

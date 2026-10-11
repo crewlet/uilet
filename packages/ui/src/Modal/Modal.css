@@ -85,6 +85,28 @@
 }
 
 /*
+ * THE BOTTOM SHEET: pinned to the bottom edge with no inset, so it rises from
+ * where a thumb already is. Its frame takes the window's width and keeps a
+ * corner on its top edge only, and its foot stays clear of a phone's home
+ * indicator.
+ */
+.crewlet-modal-overlay--dialog.crewlet-modal-overlay--bottom {
+  align-items: flex-end;
+  padding: 0;
+}
+
+.crewlet-modal-overlay--bottom > .crewlet-modal--dialog {
+  width: 100%;
+  max-height: calc(100dvh - var(--spacing-10));
+  border-bottom: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* It rises further and sooner than a dialog drops in: a sheet arrives from
+     the edge it is pinned to, and a thumb is waiting on it. */
+  animation: crewlet-modal-lift var(--motion-duration-moderate) var(--motion-easing-emphasized);
+}
+
+/*
  * The sheet's veil fades over the same span the sheet itself travels, so the
  * two are one movement rather than a ground that lands and a panel that
  * follows it. A dialog's veil keeps the shorter base step: a dialog rises
@@ -479,6 +501,13 @@
   }
 }
 
+@keyframes crewlet-modal-lift {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-6));
+  }
+}
+
 /*
  * A SHEET TRAVELS ITS OWN WIDTH, which is what makes the motion read as a
  * sheet rather than as a box appearing beside the page: the frame starts
@@ -500,6 +529,10 @@
   .crewlet-modal-overlay,
   .crewlet-modal--dialog,
   .crewlet-modal--sheet {
+    animation: none;
+  }
+
+  .crewlet-modal-overlay--bottom > .crewlet-modal--dialog {
     animation: none;
   }
 }

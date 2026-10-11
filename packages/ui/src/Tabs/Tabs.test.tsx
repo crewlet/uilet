@@ -574,3 +574,35 @@ test('a marker says what needs the reader behind a tab, and replaces the count w
   // The count a marker stands in for is not drawn beside it.
   expect(tabs[2]!.textContent).not.toContain('3');
 });
+
+test('the chip variant outlines the lens that is on in the accent, and a focused chip draws the ring in its place', () => {
+  render(
+    <Tabs
+      variant="chip"
+      ariaLabel="Lens"
+      value="about"
+      items={[
+        { value: 'tasks', label: 'Tasks', count: 2 },
+        { value: 'about', label: 'About' },
+      ]}
+    />,
+  );
+  const row = screen.getByRole('tablist', { name: 'Lens' });
+  expect(row.className).toContain('crewlet-tabs--chip');
+  expect(screen.getByRole('tab', { name: /About/ }).className).toContain('is-active');
+  expect(screen.getByRole('tab', { name: /Tasks/ }).className).not.toContain('is-active');
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Tabs.css'), 'utf8');
+  const on = css.indexOf('.crewlet-tabs--chip .crewlet-tabs__tab.is-active {');
+  const ring = css.indexOf('.crewlet-tabs--chip .crewlet-tabs__tab:focus-visible {');
+  expect(on).toBeGreaterThan(0);
+  // Same weight, so the one declared later wins on a chip that is both.
+  expect(ring).toBeGreaterThan(on);
+  const rule = css.slice(on, css.indexOf('}', on));
+  expect(rule).toContain('outline: 1px solid var(--color-brand-accent)');
+  expect(rule).not.toMatch(/background|box-shadow/);
+  // A lens's count is a figure in the quiet ink, not a pill inside the chip.
+  expect(screen.getByRole('tab', { name: /Tasks/ }).querySelector('.crewlet-count')?.textContent).toBe('2');
+  const count = /\.crewlet-tabs--chip \.crewlet-count\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(count).toMatch(/background:\s*none/);
+  expect(count).toMatch(/padding:\s*0/);
+});

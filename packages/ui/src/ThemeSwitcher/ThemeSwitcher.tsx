@@ -42,13 +42,15 @@ export type PreferenceControl<T extends string> =
     };
 
 interface ThemeRowProps {
-  /** Names the group. */
+  /** Names the group. Mode by default: the theme is the palette, and this row chooses its light or dark half. */
   label?: string | undefined;
   /** What each choice is called out loud. The glyphs say nothing on their own. */
   lightLabel?: string | undefined;
   systemLabel?: string | undefined;
   darkLabel?: string | undefined;
   size?: 'sm' | 'md' | undefined;
+  /** Equal options filling the width given, so the row draws the same box as a Density row beside it. */
+  fill?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -95,11 +97,12 @@ function StoredThemeSwitcher({
 function ThemeRow({
   value,
   onChange,
-  label = 'Theme',
+  label = 'Mode',
   lightLabel = 'Light',
   systemLabel = 'Follow the system',
   darkLabel = 'Dark',
   size = 'sm',
+  fill,
   className,
 }: ThemeRowProps & { value: ThemePreference; onChange: (next: ThemePreference) => void }) {
   return (
@@ -107,6 +110,7 @@ function ThemeRow({
       label={label}
       semantics="radio"
       size={size}
+      fill={fill}
       className={className}
       value={value}
       onValueChange={onChange}
@@ -130,6 +134,8 @@ interface DensityRowProps {
   normalMark?: string | undefined;
   comfortableMark?: string | undefined;
   size?: 'sm' | 'md' | undefined;
+  /** Equal options filling the width given, so the row draws the same box as a Mode row beside it. */
+  fill?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -181,6 +187,7 @@ function DensityRow({
   normalMark = 'M',
   comfortableMark = 'L',
   size = 'sm',
+  fill,
   className,
 }: DensityRowProps & { value: DensityPreference; onChange: (next: DensityPreference) => void }) {
   return (
@@ -188,6 +195,7 @@ function DensityRow({
       label={label}
       semantics="radio"
       size={size}
+      fill={fill}
       className={className}
       value={value}
       onValueChange={onChange}

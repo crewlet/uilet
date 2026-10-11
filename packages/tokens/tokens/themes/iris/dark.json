@@ -1,0 +1,241 @@
+{
+  "color": {
+    "surface": {
+      "frame": {
+        "value": "#09011a"
+      },
+      "background": {
+        "value": "#110b1e"
+      },
+      "subtle": {
+        "value": "#141021"
+      },
+      "elevated": {
+        "value": "#1c0f34"
+      },
+      "hover": {
+        "value": "rgba(255, 255, 255, 0.061)"
+      },
+      "pressed": {
+        "value": "rgba(255, 255, 255, 0.094)",
+        "comment": "A step the kit draws from surface-hover: the design draws no pressed row; a press is a stronger hover. At that value: a pressed row is visible over a hovered one, measured dE 0.00 >= 3 from a hovered row on it."
+      },
+      "inset": {
+        "value": "rgba(255, 255, 255, 0.028)"
+      },
+      "glass": {
+        "value": "rgba(20, 16, 33, 0.90)"
+      },
+      "scrim": {
+        "value": "rgba(0, 0, 0, 0.6)"
+      },
+      "veil": {
+        "value": "rgba(9, 1, 26, 0.65)"
+      },
+      "inverse": {
+        "value": "#ffffff"
+      }
+    },
+    "text": {
+      "primary": {
+        "value": "#eae7f7"
+      },
+      "secondary": {
+        "value": "#bab5ca"
+      },
+      "linkQuiet": {
+        "value": "#aaa4eb"
+      },
+      "tertiary": {
+        "value": "#a398b3"
+      },
+      "muted": {
+        "value": "#645d76"
+      },
+      "onAccent": {
+        "value": "#09011a"
+      },
+      "onDanger": {
+        "value": "#ffffff"
+      },
+      "onScrim": {
+        "value": "#ffffff"
+      },
+      "inverse": {
+        "value": "#09011a"
+      }
+    },
+    "brand": {
+      "accent": {
+        "value": "#9584ff"
+      },
+      "accentHover": {
+        "value": "#9f92ff"
+      },
+      "accentActive": {
+        "value": "#a9a0ff"
+      },
+      "accentInk": {
+        "value": "#a39afc"
+      },
+      "accentSoft": {
+        "value": "rgba(149, 132, 255, 0.16)"
+      }
+    },
+    "border": {
+      "default": {
+        "value": "#292339"
+      },
+      "hover": {
+        "value": "#39334b"
+      },
+      "strong": {
+        "value": "#39334b"
+      },
+      "strongHover": {
+        "value": "#48415d"
+      },
+      "control": {
+        "value": "#767285",
+        "comment": "The design's #686477, moved dE 4.85. At the design value: a control boundary clears 3:1, measured 2.46:1, worst on a pressed row on raised."
+      }
+    },
+    "focus": {
+      "value": "#9584ff",
+      "comment": "A step the kit draws from brand-accent: the ring is drawn in the accent."
+    },
+    "feedback": {
+      "success": {
+        "value": "#27cf9b"
+      },
+      "successInk": {
+        "value": "#65e8c7"
+      },
+      "warning": {
+        "value": "#f9ad26"
+      },
+      "warningInk": {
+        "value": "#fbd26c"
+      },
+      "danger": {
+        "value": "#db3845",
+        "comment": "The design's #de3a46, moved dE 0.72. At the design value: a label clears 4.5:1 on its own fill, measured 4.38:1, worst on feedback-danger on the frame."
+      },
+      "dangerHover": {
+        "value": "#d02c3d",
+        "comment": "A step the kit draws from feedback-danger: a step of the danger fill: the design draws no hover for the destructive action. At that value: a hovered destructive action is a visible step away from its label, measured dE 0.00 >= 3, and text-on-danger 4.50:1 -> 4.50:1 rises."
+      },
+      "dangerInk": {
+        "value": "#fda1a0"
+      },
+      "info": {
+        "value": "#0279a9"
+      },
+      "infoInk": {
+        "value": "#71c9ff"
+      }
+    },
+    "data": {
+      "1": {
+        "value": "#4a7bc8"
+      },
+      "2": {
+        "value": "#ee8a54"
+      },
+      "3": {
+        "value": "#1cc8cc"
+      },
+      "4": {
+        "value": "#b876a2"
+      },
+      "other": {
+        "value": "#686477"
+      }
+    },
+    "node": {
+      "purple": {
+        "value": "#8e6ed4"
+      },
+      "purpleInk": {
+        "value": "#cabae0"
+      },
+      "cyan": {
+        "value": "#5ca8be"
+      },
+      "cyanInk": {
+        "value": "#b3d7e0"
+      },
+      "green": {
+        "value": "#62a578"
+      },
+      "greenInk": {
+        "value": "#b8d8c0"
+      },
+      "amber": {
+        "value": "#c89866"
+      },
+      "amberInk": {
+        "value": "#e0c89e"
+      },
+      "rose": {
+        "value": "#c8757f"
+      },
+      "roseInk": {
+        "value": "#e0bfc4"
+      },
+      "blue": {
+        "value": "#5b7fc7"
+      },
+      "blueInk": {
+        "value": "#b9c5e0"
+      }
+    },
+    "scrollbar": {
+      "value": "rgba(255, 255, 255, 0.16)"
+    },
+    "scrollbarHover": {
+      "value": "rgba(255, 255, 255, 0.26)"
+    }
+  },
+  "shadow": {
+    "xs": {
+      "value": "0 1px 2px rgba(0, 0, 0, 0.2)"
+    },
+    "sm": {
+      "value": "0 2px 8px rgba(0, 0, 0, 0.15)"
+    },
+    "md": {
+      "value": "0 4px 12px rgba(0, 0, 0, 0.25)"
+    },
+    "lg": {
+      "value": "0 8px 24px rgba(0, 0, 0, 0.3)"
+    },
+    "xl": {
+      "value": "0 12px 32px rgba(0, 0, 0, 0.4)"
+    },
+    "sheet": {
+      "value": "-8px 0 32px rgba(0, 0, 0, 0.4)"
+    },
+    "2xl": {
+      "value": "0 16px 64px rgba(0, 0, 0, 0.6)"
+    },
+    "card": {
+      "value": "0 8px 24px rgba(0, 0, 0, 0.1)"
+    },
+    "rimLit": {
+      "value": "0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04)"
+    },
+    "hairline": {
+      "value": "inset 0 1px 0 rgba(255, 255, 255, 0.04)"
+    },
+    "focus": {
+      "value": "0 0 0 2px var(--color-surface-background), 0 0 0 4px var(--color-focus)"
+    },
+    "selection": {
+      "value": "inset 0 0 0 2px var(--color-brand-accent)"
+    },
+    "glow": {
+      "value": "0 4px 24px rgba(var(--color-brand-accent-rgb), 0.3)"
+    }
+  }
+}

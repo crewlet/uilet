@@ -15,9 +15,19 @@ export type LinkVariant =
   /** A navigation: the accent ink, underlined on hover. */
   | 'default'
   /** An identity a reader clicks through to: neutral ink, underlined on hover. */
-  | 'subtle';
+  | 'subtle'
+  /**
+   * A reference set among other words, the task a question is about, say: a
+   * softer ink than a navigation, never underlined, stepping up to the full
+   * accent ink on hover.
+   */
+  | 'quiet';
 
-export type LinkSize = 'body' | 'caption';
+export type LinkSize =
+  | 'body'
+  | 'caption'
+  /** The size of the words around it, for a link set inside a sentence. */
+  | 'inherit';
 
 export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   variant?: LinkVariant | undefined;
@@ -56,6 +66,13 @@ export interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
  * instruction, a seat's name in a row, say. It is still underlined on hover
  * and still takes the focus ring, because a link a reader cannot find is not
  * quieter, it is hidden.
+ *
+ * `quiet` is for a reference that sits in a column of rows or inside a
+ * sentence, where every row drawing a full accent link would turn the column
+ * into a column of links. It keeps an ink of its own, measured to 4.5:1 on
+ * every surface and pressed row, so it is still found by colour and by its
+ * place, and it keeps the focus ring. It draws no underline even on hover:
+ * the ink stepping up to the accent is the signal that it is live.
  */
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   {

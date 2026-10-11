@@ -1,0 +1,127 @@
+/*
+ * One answer, sent with one press: a column of buttons as tall as a touch
+ * target, the recommended one first and filled with the accent.
+ *
+ * The plain option is the secondary button's recipe (the card's own ground
+ * inside the strong hairline), and the recommended one the primary's, so the
+ * pair reads as the screen's one primary action and its alternatives.
+ */
+
+.crewlet-choice-buttons {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--spacing-2);
+}
+
+.crewlet-choice-buttons__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  min-width: 0;
+  min-height: var(--size-control-lg);
+  padding: calc(var(--spacing-2) + var(--spacing-1) / 2) calc(var(--spacing-3) + var(--spacing-1) / 2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-snug);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-choice-buttons__option:hover:not([aria-disabled='true']) {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-strong-hover);
+}
+
+.crewlet-choice-buttons__option:active:not([aria-disabled='true']) {
+  background: var(--color-surface-pressed);
+}
+
+/*
+ * The plain option draws the strong hairline, so its ring is drawn over that
+ * edge rather than a gap away from it, which would read as a second outline.
+ */
+.crewlet-choice-buttons__option:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-choice-buttons__option[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+/* The option on its way: still this option, mid-action. */
+.crewlet-choice-buttons__option[aria-busy='true'] {
+  cursor: progress;
+}
+
+.crewlet-choice-buttons__option--recommended {
+  background: var(--color-brand-accent);
+  border-color: transparent;
+  color: var(--color-text-on-accent);
+}
+
+.crewlet-choice-buttons__option--recommended:hover:not([aria-disabled='true']) {
+  background: var(--color-brand-accent-hover);
+  border-color: transparent;
+}
+
+.crewlet-choice-buttons__option--recommended:active:not([aria-disabled='true']) {
+  background: var(--color-brand-accent-active);
+}
+
+/*
+ * The accent fill draws no edge, and an inset ring on it would be drawn in
+ * nearly the fill's own colour, so its ring stands off it as a primary
+ * button's does.
+ */
+.crewlet-choice-buttons__option--recommended:focus-visible {
+  outline-offset: 2px;
+}
+
+.crewlet-choice-buttons__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-choice-buttons__detail {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * On the accent fill the detail takes the label's own ink. The tertiary step
+ * is measured on the surfaces, not on the accent, where it does not clear.
+ */
+.crewlet-choice-buttons__option--recommended .crewlet-choice-buttons__detail {
+  color: var(--color-text-on-accent);
+}
+
+/*
+ * The mark, in the micro-label register. Full ink rather than a faded one:
+ * eleven pixels of white on the accent clears 4.5:1 only at full strength.
+ */
+.crewlet-choice-buttons__note {
+  flex: none;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-choice-buttons__option {
+    transition: none;
+  }
+}

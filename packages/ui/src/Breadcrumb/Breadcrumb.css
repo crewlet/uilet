@@ -1,0 +1,193 @@
+/*
+ * The trail in a top bar.
+ *
+ * IT IS WHAT GIVES WAY, AND WHAT TAKES THE SLACK. `flex-grow: 1` is the spacer
+ * a bar would otherwise need: the trail absorbs the free space, so the
+ * controls after it stay in the bar's far corner. Its BASIS is 0, which is
+ * what lets a wrapping bar break by what it holds rather than at a width, and
+ * `flex-shrink: 100` puts it ahead of anything else on the bar that can give.
+ *
+ * ITS FLOOR IS THE WAY BACK OUT, measured by the component
+ * (`--crewlet-breadcrumb-floor`): the ancestors at their width and the last
+ * crumb's stub, at least 20ch, and never more than the whole bar. A fixed 20ch
+ * alone let a seat's trail share a phone's line with its one button and cut
+ * "Engineering · Co" mid-letter under it; measured, a trail that cannot show
+ * its ancestry beside the controls makes the bar break a line instead.
+ *
+ * Past the whole bar the trail SCROLLS rather than clipping as a box: the
+ * ancestors never shrink, so once they alone are wider than the bar there is
+ * nothing left to ellipsise, and a clip lands wherever the pixels ran out.
+ */
+.crewlet-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1 100 0;
+  min-width: min(100%, max(20ch, var(--crewlet-breadcrumb-floor, 0px)));
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-breadcrumb::-webkit-scrollbar {
+  display: none;
+}
+
+/* A trail that overflows is a tab stop (see Breadcrumb.tsx), and shows it. */
+.crewlet-breadcrumb:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-breadcrumb__part {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+/*
+ * THE OBJECT'S OWN NAME TAKES THE CUT, never the way back out. The reader
+ * knows which object they are on, because the page below says so; what they
+ * cannot reconstruct is the links out of it. So the ancestors keep their width
+ * and the last part is the one that ellipsises.
+ */
+.crewlet-breadcrumb__part:not(:last-child) {
+  flex: 0 0 auto;
+}
+
+svg.crewlet-breadcrumb__separator {
+  flex: none;
+  margin: 0 var(--spacing-1);
+  color: var(--color-text-muted);
+}
+
+.crewlet-breadcrumb__crumb,
+.crewlet-breadcrumb__here {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-1) * 1.5);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * The ancestors in the quiet ink: a link lifts to the primary ink under the
+ * pointer, and one with nothing to press stays where it is. NO UNDERLINE: a
+ * crumb is a piece of chrome, not a word in a sentence, and the step between
+ * two measured text rungs is its hover in both themes.
+ */
+.crewlet-breadcrumb__crumb {
+  border-radius: var(--radius-xs);
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+a.crewlet-breadcrumb__crumb:hover {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+a.crewlet-breadcrumb__crumb:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* FORCED COLOURS paints a link LinkText hovered or not, so the ink step cannot
+   be seen there: the rule under the words is the hover in that mode. */
+@media (forced-colors: active) {
+  a.crewlet-breadcrumb__crumb:hover {
+    text-decoration: underline;
+  }
+}
+
+/* A glyph sits a step further from its word than a chip does from its name. */
+.crewlet-breadcrumb__icon {
+  display: inline-flex;
+  flex: none;
+  margin-right: calc(var(--spacing-1) / 2);
+}
+
+.crewlet-breadcrumb__badge,
+.crewlet-breadcrumb__key {
+  flex: none;
+}
+
+/*
+ * THE LABEL IS THE BOX THAT ELLIPSISES. The crumb around it is a flex
+ * container, and `text-overflow` never reaches the anonymous item text inside
+ * one makes; a span is a real flex item, and its `min-width: 0` is what lets
+ * it shrink below its text at all.
+ */
+.crewlet-breadcrumb__text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* THE LAST CRUMB IS THE PAGE'S `h1`, so the heading's own margins and size are
+   the bar's, not the document's. */
+.crewlet-breadcrumb__here {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: inherit;
+  font-weight: var(--font-weight-medium);
+  line-height: inherit;
+}
+
+/*
+ * AND IT NEVER COLLAPSES TO NOTHING: a floor of a few characters keeps an
+ * ellipsised stub, which is what tells a reader the trail has a last part at
+ * all. The floor is the last part's alone; an ancestor never shrinks.
+ */
+.crewlet-breadcrumb__part:last-child > .crewlet-breadcrumb__here {
+  min-width: 5ch;
+}
+
+/*
+ * A CONTROL AS THE HEADING'S WORDS draws its own edges: its hover fill and its
+ * focus ring run to its own box, so the heading around it clips nothing.
+ */
+.crewlet-breadcrumb__here--control {
+  overflow: visible;
+}
+
+/* An identifier still waiting for its name, in the mono face a step down. */
+.crewlet-breadcrumb__crumb.is-mono,
+.crewlet-breadcrumb__here.is-mono {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-compact);
+}
+
+/*
+ * ON A PHONE AN ANCESTOR WITH A GLYPH IS ITS GLYPH. The workspace's mark is
+ * the one sign of where the reader is that survives a sidebar folded into a
+ * drawer, and the line it shares with the drawer toggle and the page's primary
+ * action has no room for its word as well. The word stays, out of sight, so
+ * the crumb is still named.
+ */
+@media (width < 640px) {
+  .crewlet-breadcrumb__part:not(:last-child) > .crewlet-breadcrumb__crumb:has(> .crewlet-breadcrumb__icon) > .crewlet-breadcrumb__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-breadcrumb__crumb {
+    transition: none;
+  }
+}

@@ -530,3 +530,38 @@ test('the well stands exactly at the control step, so it lines up with the butto
     uninstall();
   }
 });
+
+/*
+ * EQUAL SHARES. Mode over Density in one panel draws one box: with `fill`
+ * the row fills its container and every option takes an equal column of it.
+ * Without it the row keeps sizing to its options, as a lens row should.
+ */
+test('a filled row gives every option an equal share of the width it fills', () => {
+  const uninstall = installSheets('Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
+  const { unmount } = render(
+    <>
+      <SegmentedControl label="Mode" semantics="radio" size="sm" fill value="system" options={themes} onValueChange={() => {}} />
+      <SegmentedControl label="Time range" semantics="radio" value="week" options={ranges} onValueChange={() => {}} />
+    </>,
+  );
+  const filled = screen.getByRole('radiogroup', { name: 'Mode' });
+  expect(filled.classList.contains('crewlet-segmented--fill')).toBe(true);
+  const row = getComputedStyle(filled);
+  expect(row.display).toBe('grid');
+  expect(row.width).toBe('100%');
+  expect(row.getPropertyValue('grid-auto-columns')).toBe('minmax(0, 1fr)');
+  expect(getComputedStyle(screen.getByRole('radio', { name: 'Dark' })).justifyContent).toBe('center');
+
+  const sized = screen.getByRole('radiogroup', { name: 'Time range' });
+  expect(sized.classList.contains('crewlet-segmented--fill')).toBe(false);
+  expect(getComputedStyle(sized).display).not.toBe('grid');
+  unmount();
+  uninstall();
+});
+
+test('a card row or a chips row ignores fill, which is a pill row\'s', () => {
+  render(
+    <SegmentedControl label="Unit type" semantics="radio" layout="chips" fill value="team" options={types} onValueChange={() => {}} />,
+  );
+  expect(screen.getByRole('radiogroup', { name: 'Unit type' }).classList.contains('crewlet-segmented--fill')).toBe(false);
+});

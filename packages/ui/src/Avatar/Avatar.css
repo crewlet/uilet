@@ -142,7 +142,7 @@
 }
 
 .crewlet-avatar--seeded {
-  color: var(--color-text-on-accent);
+  color: var(--color-text-on-scrim);
 }
 
 .crewlet-avatar--tint-0 { background: var(--color-avatar-tint-0); }

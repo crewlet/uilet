@@ -298,6 +298,30 @@ svg.crewlet-select__chevron {
 }
 
 /*
+ * WHAT AN OPTION DRAWS BEFORE ITS LABEL (a swatch, an avatar, a glyph),
+ * centred on the label's first line rather than on the row, so a row with a
+ * second line keeps its mark beside the words it belongs to. The same slot on
+ * the trigger, while that option is the one chosen, sits on the value's line.
+ */
+.crewlet-select__option-leading,
+.crewlet-select__leading {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.crewlet-select__option-leading {
+  min-height: calc(var(--font-line-height-normal) * 1em);
+}
+
+/* A hint ends the row's FIRST line, on the label's baseline, rather than
+   sitting on the row's top edge at its own smaller size. */
+.crewlet-select__option:has(> .crewlet-listbox__hint) .crewlet-select__option-body,
+.crewlet-select__option > .crewlet-listbox__hint {
+  align-self: baseline;
+}
+
+/*
  * ONE LINE, WHICH IS WHAT THE ELLIPSIS BELOW WAS ALWAYS FOR. `overflow:
  * hidden` clips what leaves the box and `text-overflow` replaces what a LINE
  * cannot hold — and neither does anything to text that is simply allowed to

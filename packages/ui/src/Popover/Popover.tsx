@@ -46,6 +46,26 @@ interface PopoverBaseProps {
   side?: PopoverSide | undefined;
   /** `match` sizes the panel to the anchor, which is what a Select wants. */
   width?: PopoverWidth | undefined;
+  /**
+   * Moves the panel along the anchor's edge after it is aligned, in pixels; a
+   * negative shift moves it toward the start. A function is asked on every
+   * placement, with the panel and the anchor, for a shift measured from what
+   * the two draw: lining a list's first column up under the anchor's own text
+   * is a distance in the panel's padding and the anchor's, both of which move
+   * with the density.
+   */
+  alignOffset?: number | ((panel: HTMLElement, anchor: HTMLElement) => number) | undefined;
+  /**
+   * How far the panel stands off the anchor's edge, in pixels: the layer's own
+   * gap unless a design measures the space under its anchor differently.
+   */
+  sideOffset?: number | undefined;
+  /**
+   * Where a dialog panel's focus starts, if not its first control. A search
+   * field focused on a touch screen raises a keyboard over the list it
+   * searches, so a panel opened by a tap can start on itself instead.
+   */
+  initialFocus?: (() => HTMLElement | null) | undefined;
   className?: string | undefined;
   /** Controlled. Leave it out for a panel that owns its own open state. */
   open?: boolean | undefined;
@@ -127,6 +147,9 @@ export function Popover({
   align = 'start',
   side = 'bottom',
   width = 'auto',
+  alignOffset,
+  sideOffset = LAYER_GAP,
+  initialFocus,
   role = 'dialog',
   label,
   className,
@@ -152,8 +175,12 @@ export function Popover({
   // rather than once per render of whatever holds this.
   const isControlled = useRef(controlled !== undefined);
   const report = useRef(onOpenChange);
+  const shift = useRef(alignOffset);
+  const start = useRef(initialFocus);
   isControlled.current = controlled !== undefined;
   report.current = onOpenChange;
+  shift.current = alignOffset;
+  start.current = initialFocus;
 
   const setOpen = useCallback((next: boolean, reason: PopoverReason) => {
     if (!isControlled.current) setUncontrolled(next);
@@ -198,8 +225,10 @@ export function Popover({
      */
     box.style.width = width === 'match' ? `${rect.width}px` : '';
     const own = box.getBoundingClientRect();
+    const asked = shift.current;
+    const offset = typeof asked === 'function' ? asked(box, at) : (asked ?? 0);
     const local: PlacementRect = {
-      x: (align === 'end' ? rect.right - own.width : rect.left) - (inHost ? host.x : 0),
+      x: (align === 'end' ? rect.right - own.width : rect.left) + offset - (inHost ? host.x : 0),
       y: rect.top - (inHost ? host.y : 0),
       width: rect.width,
       height: rect.height,
@@ -222,20 +251,20 @@ export function Popover({
       return;
     }
     // What the style asks for; `own.width` above is what the cascade allowed.
-    const asked = width === 'match' ? rect.width : undefined;
+    const matched = width === 'match' ? rect.width : undefined;
     const spot = placePopup(
       local,
       { width: own.width, height: own.height },
       bounds,
-      LAYER_GAP,
+      sideOffset,
       side === 'top' ? 'above' : 'below',
     );
     setPlace((was) =>
-      was && was.left === spot.left && was.top === spot.top && was.side === spot.side && was.width === asked
+      was && was.left === spot.left && was.top === spot.top && was.side === spot.side && was.width === matched
         ? was
-        : { left: spot.left, top: spot.top, side: spot.side, width: asked },
+        : { left: spot.left, top: spot.top, side: spot.side, width: matched },
     );
-  }, [align, close, container, side, width]);
+  }, [align, close, container, side, sideOffset, width]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -279,7 +308,7 @@ export function Popover({
   useEffect(() => {
     if (!placed || role !== 'dialog') return;
     const box = panel.current;
-    if (box && !box.contains(document.activeElement)) (focusables(box)[0] ?? box).focus();
+    if (box && !box.contains(document.activeElement)) (start.current?.() ?? focusables(box)[0] ?? box).focus();
   }, [placed, role]);
 
   const toggle = useCallback(() => {

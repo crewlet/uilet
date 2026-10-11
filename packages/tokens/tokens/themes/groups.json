@@ -1,0 +1,10 @@
+{
+  "$comment": "The groups a theme picker lists the themes under, in the order it lists them. A theme names its group by id in its own theme.json.",
+  "groups": [
+    { "id": "crewlet", "name": "Crewlet", "description": "The brand's own palettes." },
+    { "id": "purple", "name": "Purple", "description": "Grounds anchored on #090019." },
+    { "id": "cool", "name": "Cool", "description": "Blue-black grounds." },
+    { "id": "warm", "name": "Warm", "description": "Warm stone grounds." },
+    { "id": "high-contrast", "name": "High contrast", "description": "For readers who need more contrast than the defaults give." }
+  ]
+}

@@ -56,15 +56,68 @@
  * glyph stood 24px in and the keycap 28px from the edge; at 12px they stand
  * 20px and 16px in, where the approved palette draws them, and the query still
  * starts on the line the design's does.
+ *
+ * The band is the BAR around the field, so a step's chip shares it: the field
+ * itself draws no box and fills what the chip leaves.
  */
-.crewlet-input.crewlet-palette__field {
+.crewlet-palette__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
   flex-shrink: 0;
   min-height: var(--size-row-lg);
   padding-inline: var(--spacing-3);
-  border: none;
   border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-input.crewlet-palette__field {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  padding-inline: 0;
+  border: none;
   border-radius: 0;
   background: transparent;
+}
+
+/*
+ * THE STEP'S CHIP: where the reader is, and the way back. It wears the
+ * accent's soft tint and ink, the kit's mark for "this is on", because a step
+ * is a narrowing the reader chose, as a filter that is on is; it is a control,
+ * so it takes the pointer and draws its own ring.
+ */
+.crewlet-palette__step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex: none;
+  min-height: var(--size-target-min);
+  padding: 0 var(--spacing-2) 0 var(--spacing-1);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Under the pointer it draws the line the soft tint is paired with, rather
+   than a stronger fill its ink was never measured on. */
+.crewlet-palette__step:hover {
+  box-shadow: inset 0 0 0 1px var(--color-brand-accent-soft-strong);
+}
+
+.crewlet-palette__step:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+/* In a step the query starts a gap after the chip, not a text inset after it. */
+.crewlet-palette__bar.is-step .crewlet-input__control {
+  padding-left: 0;
 }
 
 .crewlet-input.crewlet-palette__field .crewlet-input__control {

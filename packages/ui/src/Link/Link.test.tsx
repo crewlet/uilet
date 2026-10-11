@@ -3,9 +3,18 @@
  * referrer and the opener while it does.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { Link } from './index.js';
+
+const linkCss = (): string =>
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Link.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
 
 afterEach(cleanup);
 
@@ -41,6 +50,32 @@ test('a caption-sized link is still a link', () => {
   const link = screen.getByRole('link', { name: 'e-1' });
   expect(link.className).toContain('crewlet-link--caption');
   expect(link.className).toContain('crewlet-link--default');
+});
+
+test('a quiet link takes its own register and the size of the words around it', () => {
+  render(
+    <p>
+      Asks on{' '}
+      <Link href="#/work/FAIR-3" variant="quiet" size="inherit">
+        FAIR-3
+      </Link>
+    </p>,
+  );
+  const link = screen.getByRole('link', { name: 'FAIR-3' });
+  expect(link.className).toContain('crewlet-link--quiet');
+  expect(link.className).toContain('crewlet-link--inherit');
+  expect(link.className).not.toContain('crewlet-link--body');
+});
+
+// A QUIET LINK NEVER UNDERLINES, EXCEPT WHERE COLOUR CANNOT BE SEEN. Forced
+// colors paints every link in one system colour, so the hover's step up to the
+// accent ink is invisible there, and the underline is the hover that is left.
+test('a quiet link answers a hover with an underline in forced colors, and only there', () => {
+  const css = linkCss();
+  const forced = /@media\s*\(forced-colors:\s*active\)\s*\{([\s\S]*?\})\s*\}/.exec(css)?.[1] ?? '';
+  expect(forced).toMatch(/\.crewlet-link--quiet:hover\s*\{[^}]*text-decoration:\s*underline/);
+  const rest = css.replace(/@media[^{]*\{[\s\S]*?\}\s*\}/g, '');
+  expect(rest).toMatch(/\.crewlet-link--quiet:hover\s*\{[^}]*text-decoration:\s*none/);
 });
 
 test('asChild puts the look on a router own link and keeps its navigation', () => {

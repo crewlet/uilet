@@ -22,7 +22,7 @@ import { fitPalettes, MOVED_DE, type FitPalette } from '../paletteFit';
  * take the hue budget on trust.
  *
  * `TheFit` is the other half: every colour the approved design declares
- * (`packages/tokens/tokens/intent.json`), what ships for it, how far it moved,
+ * (`packages/tokens/tokens/themes/crewlet/intent.json`), what ships for it, how far it moved,
  * and what fails when that value alone goes back to the design.
  */
 const { checks, failures } = runPalette({ tokens: tokensCss, themes: themesCss });

@@ -1,0 +1,250 @@
+{
+  "color": {
+    "surface": {
+      "frame": {
+        "value": "#e9ecf3"
+      },
+      "background": {
+        "value": "#f6f7fb"
+      },
+      "subtle": {
+        "value": "#ffffff"
+      },
+      "elevated": {
+        "value": "#eff1f7",
+        "comment": "The design's #eef0f6, moved dE 0.30. At the design value: the rail's current row lifts off the rail, measured dE 1.26 >= 1.5."
+      },
+      "hover": {
+        "value": "rgba(7, 8, 13, 0.044)"
+      },
+      "pressed": {
+        "value": "rgba(7, 8, 13, 0.088)",
+        "comment": "A step the kit draws from surface-hover: the design draws no pressed row; a press is a stronger hover. At that value: a pressed row is visible over a hovered one, measured dE 0.00 >= 3 from a hovered row on it."
+      },
+      "inset": {
+        "value": "rgba(7, 8, 13, 0.026)"
+      },
+      "glass": {
+        "value": "rgba(255, 255, 255, 0.90)"
+      },
+      "scrim": {
+        "value": "rgba(0, 0, 0, 0.6)"
+      },
+      "veil": {
+        "value": "rgba(233, 236, 243, 0.65)"
+      },
+      "inverse": {
+        "value": "#07080d"
+      }
+    },
+    "text": {
+      "primary": {
+        "value": "#121625"
+      },
+      "secondary": {
+        "value": "#3e4459"
+      },
+      "linkQuiet": {
+        "value": "#3947a1"
+      },
+      "tertiary": {
+        "value": "#585e73",
+        "comment": "The design's #5a6075, moved dE 0.71. At the design value: text step clears its floor, measured 4.37:1 >= 4.5, worst on a pressed row on the frame."
+      },
+      "muted": {
+        "value": "#878d9f",
+        "comment": "The design's #8a90a3, moved dE 1.04. At the design value: text-muted is decoration, measured 2.8 < 2.69:1 < 4.5 on the frame."
+      },
+      "onAccent": {
+        "value": "#ffffff"
+      },
+      "onDanger": {
+        "value": "#ffffff"
+      },
+      "onScrim": {
+        "value": "#ffffff"
+      },
+      "inverse": {
+        "value": "#f6f7fb"
+      }
+    },
+    "brand": {
+      "accent": {
+        "value": "#4c55e6"
+      },
+      "accentHover": {
+        "value": "#424bd9"
+      },
+      "accentActive": {
+        "value": "#3841cc"
+      },
+      "accentInk": {
+        "value": "#3a42c9"
+      },
+      "accentSoft": {
+        "value": "rgba(76, 85, 230, 0.125)"
+      }
+    },
+    "border": {
+      "default": {
+        "value": "#dde1ea"
+      },
+      "hover": {
+        "value": "#c9cfdc"
+      },
+      "strong": {
+        "value": "#c9cfdc"
+      },
+      "strongHover": {
+        "value": "#b5bdce"
+      },
+      "control": {
+        "value": "#74798c",
+        "comment": "The design's #8a90a3, moved dE 7.63. At the design value: a mark on a data surface clears its floor on every ground it lands on, measured 2.69:1 >= 3 (a chart's connector between two cards, worst on the frame); a control boundary clears 3:1, measured 2.23:1, worst on a pressed row on the frame."
+      }
+    },
+    "focus": {
+      "value": "#4c55e6",
+      "comment": "A step the kit draws from brand-accent: the ring is drawn in the accent."
+    },
+    "feedback": {
+      "success": {
+        "value": "#00916f",
+        "comment": "The design's #0a8f63, moved dE 1.64. At the design value: status hues stay separable, measured dE n19.7/p8.4/d12.3 >= 10."
+      },
+      "successInk": {
+        "value": "#0b6a4b"
+      },
+      "warning": {
+        "value": "#b86e00"
+      },
+      "warningInk": {
+        "value": "#8a4f00"
+      },
+      "danger": {
+        "value": "#b8002e",
+        "comment": "The design's #cc2a4a, moved dE 6.23. At the design value: a hovered destructive action is a visible step away from its label, measured dE 2.79 >= 3, and text-on-danger 5.25:1 -> 5.92:1 rises; status hues stay separable, measured dE n30.6/p12.2/d7.6 >= 10; no data hue collides with danger, measured dE n12.0/p12.3/d9.4 >= 14 normal, 8 dichromat."
+      },
+      "dangerHover": {
+        "value": "#aa002a",
+        "comment": "A step the kit draws from feedback-danger: a step of the danger fill: the design draws no hover for the destructive action. At that value: a hovered destructive action is a visible step away from its label, measured dE 0.00 >= 3, and text-on-danger 6.82:1 -> 6.82:1 rises."
+      },
+      "dangerInk": {
+        "value": "#ad1c3d",
+        "comment": "The design's #b01e3d, moved dE 0.73. At the design value: ink clears 4.5:1 on a code chip inside its own callout, measured 4.37:1, worst on the inset chip on feedback-danger soft on the frame."
+      },
+      "info": {
+        "value": "#0b84c6"
+      },
+      "infoInk": {
+        "value": "#09629f",
+        "comment": "The design's #0a66a0, moved dE 1.17. At the design value: ink step clears 4.5:1 as text, measured 4.30:1, worst on a pressed row on the frame; ink clears 4.5:1 on a code chip inside its own callout, measured 4.29:1, worst on the inset chip on feedback-info soft on the frame."
+      }
+    },
+    "data": {
+      "1": {
+        "value": "#3876c4",
+        "comment": "The design's #2f6fd0, moved dE 3.00. At the design value: no hue is read as the accent, measured dE n7.4/p6.8/d5.1 >= 10 normal, 8 dichromat."
+      },
+      "2": {
+        "value": "#dd5f1f"
+      },
+      "3": {
+        "value": "#0b9278"
+      },
+      "4": {
+        "value": "#b17f00",
+        "comment": "The design's #b88700, moved dE 2.48. At the design value: fill step clears 3:1 as a mark, measured 2.73:1, worst on the frame."
+      },
+      "other": {
+        "value": "#82879a",
+        "comment": "The design's #8a90a3, moved dE 2.91. At the design value: fill step clears 3:1 as a mark, measured 2.69:1, worst on the frame."
+      }
+    },
+    "node": {
+      "purple": {
+        "value": "#7150b3"
+      },
+      "purpleInk": {
+        "value": "#573394"
+      },
+      "cyan": {
+        "value": "#166b80"
+      },
+      "cyanInk": {
+        "value": "#004f62"
+      },
+      "green": {
+        "value": "#2c7046"
+      },
+      "greenInk": {
+        "value": "#05532b"
+      },
+      "amber": {
+        "value": "#865a28"
+      },
+      "amberInk": {
+        "value": "#683e03"
+      },
+      "rose": {
+        "value": "#984a55"
+      },
+      "roseInk": {
+        "value": "#7a2f3c"
+      },
+      "blue": {
+        "value": "#4062a7"
+      },
+      "blueInk": {
+        "value": "#264588"
+      }
+    },
+    "scrollbar": {
+      "value": "rgba(7, 8, 13, 0.2)"
+    },
+    "scrollbarHover": {
+      "value": "rgba(7, 8, 13, 0.32)"
+    }
+  },
+  "shadow": {
+    "xs": {
+      "value": "0 1px 2px rgba(7, 8, 13, 0.06)"
+    },
+    "sm": {
+      "value": "0 2px 8px rgba(7, 8, 13, 0.07)"
+    },
+    "md": {
+      "value": "0 4px 12px rgba(7, 8, 13, 0.08), 0 1px 3px rgba(7, 8, 13, 0.06)"
+    },
+    "lg": {
+      "value": "0 8px 24px rgba(7, 8, 13, 0.12)"
+    },
+    "xl": {
+      "value": "0 16px 40px rgba(7, 8, 13, 0.16), 0 2px 8px rgba(7, 8, 13, 0.08)"
+    },
+    "sheet": {
+      "value": "-16px 0 40px rgba(7, 8, 13, 0.16), -2px 0 8px rgba(7, 8, 13, 0.08)"
+    },
+    "2xl": {
+      "value": "0 16px 64px rgba(7, 8, 13, 0.20)"
+    },
+    "card": {
+      "value": "0 8px 24px rgba(7, 8, 13, 0.07)"
+    },
+    "rimLit": {
+      "value": "0 4px 24px rgba(7, 8, 13, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.6)"
+    },
+    "hairline": {
+      "value": "none"
+    },
+    "focus": {
+      "value": "0 0 0 2px var(--color-surface-background), 0 0 0 4px var(--color-focus)"
+    },
+    "selection": {
+      "value": "inset 0 0 0 2px var(--color-brand-accent)"
+    },
+    "glow": {
+      "value": "0 4px 24px rgba(var(--color-brand-accent-rgb), 0.22)"
+    }
+  }
+}

@@ -57,6 +57,11 @@ import {
   DensitySwitcher,
   TimeWindowPicker,
   VisuallyHidden,
+  Document,
+  DocumentTitle,
+  Highlight,
+  MarkdownEditor,
+  Outline,
 } from '@crewlethq/ui';
 import { PlusGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
@@ -219,7 +224,7 @@ test('the preference controls carry no violation, stored and controlled, before 
   try {
     expect(await violations(container)).toEqual([]);
     // The toggle is renamed by a press, so the name it takes is checked too.
-    for (const toggle of screen.getAllByRole('button', { name: /switch to the/i })) fireEvent.click(toggle);
+    for (const toggle of screen.getAllByRole('button', { name: /switch to (light|dark) mode/i })) fireEvent.click(toggle);
     expect(await violations(container)).toEqual([]);
   } finally {
     // The stored controls write the root and storage, which every later case
@@ -345,4 +350,61 @@ test('the pickers name the dialog they open', async () => {
     'Time window',
   ]);
   expect(await violations(document.body)).toEqual([]);
+});
+
+test('a knowledge page carries no violation: its title, outline, body, a marked result and the editor', async () => {
+  const { container } = render(
+    <main>
+      <Outline
+        label="On this page"
+        items={[
+          { id: 'net-balances', label: 'Net balances', level: 2 },
+          { id: 'ties', label: 'Ties and determinism', level: 3 },
+        ]}
+        activeId="net-balances"
+        onSelect={() => {}}
+      />
+      <article>
+        <DocumentTitle>Settlement algorithm</DocumentTitle>
+        <Document>
+          <h2 id="net-balances">Net balances</h2>
+          <p>
+            For each member, the balance is what they paid minus what they owe, in <code>int</code> cents.
+          </p>
+          <ul>
+            <li>
+              <input type="checkbox" checked disabled aria-label="Done" readOnly />
+              <div>Every balance sums to zero.</div>
+            </li>
+          </ul>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scroller a keyboard must be able to reach (WCAG 2.1.1) */}
+          <div tabIndex={0} role="region" aria-label="Table: member balances">
+            <table>
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Ana</td>
+                  <td>+54.99</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3 id="ties">Ties and determinism</h3>
+          <pre>
+            <code>PYTHONPATH=src python3 -m unittest</code>
+          </pre>
+        </Document>
+      </article>
+      <p>
+        <Highlight text="Ana pays the leftover cent" terms={['leftover', 'cent']} />
+      </p>
+      <MarkdownEditor value="## Net balances" onChange={() => {}} label="The page, in markdown" renderPreview={(value) => <p>{value}</p>} />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
 });

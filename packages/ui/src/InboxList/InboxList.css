@@ -1,0 +1,252 @@
+/*
+ * The inbox's column: groups of rows, each row a control with the task it is
+ * about under it, and the quiet toggles at the end.
+ *
+ * EVERY TRACK IS minmax(0, 1fr). An `auto` track grows to its widest content,
+ * and a row holding a long unbroken word pushed the whole column past its
+ * edge, cutting every row off at the right.
+ */
+
+.crewlet-inbox-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-body);
+}
+
+.crewlet-inbox-list__group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  min-width: 0;
+}
+
+/* The heading's own line box is the label's, so the label sits where it is drawn. */
+.crewlet-inbox-list__label {
+  margin: 0;
+  padding: var(--spacing-3) var(--spacing-2) var(--spacing-1);
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-inbox-list__rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---- The row ------------------------------------------------------------ */
+
+/*
+ * The ITEM takes the hover and the selected fill, so the control and the task
+ * under it read as one row. The selected fill is the neutral pressed step, and
+ * a selected row takes no hover on top of it: both are a background on the
+ * same element, and a composite of the two is a colour nothing has measured.
+ */
+.crewlet-inbox-row {
+  min-width: 0;
+  border-radius: var(--radius-md);
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-inbox-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-inbox-row--selected,
+.crewlet-inbox-row--selected:hover {
+  background: var(--color-surface-pressed);
+}
+
+/*
+ * FORCED COLORS repaints every author background to Canvas, which takes the
+ * open row's fill with it, so the row the pane is showing would look like
+ * every other. An outline is the one mark the mode keeps, drawn inside the row
+ * so the scroller does not clip it, in the system's colour for exactly this.
+ */
+@media (forced-colors: active) {
+  .crewlet-inbox-row--selected {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
+.crewlet-inbox-row__control {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  width: 100%;
+  min-width: 0;
+  padding: calc(var(--spacing-2) + var(--spacing-1) / 2) var(--spacing-2) var(--spacing-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* With no task under it, the control closes the row at the same padding it opened with. */
+.crewlet-inbox-row__control:only-child {
+  padding-bottom: calc(var(--spacing-2) + var(--spacing-1) / 2);
+}
+
+/*
+ * The ring is drawn INSIDE: the list sits in a clipping scroller, where an
+ * outset ring is cut off on the first and last rows and painted over by the
+ * row below.
+ */
+.crewlet-inbox-row__control:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-inbox-row__leading {
+  display: inline-flex;
+  flex: none;
+  justify-content: center;
+  width: var(--size-target-min);
+  margin-top: 1px;
+}
+
+.crewlet-inbox-row__main {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-inbox-row__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-inbox-row__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.crewlet-inbox-row__qualifier {
+  flex: none;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-inbox-row__qualifier--danger {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-inbox-row__meta {
+  flex: none;
+  margin-inline-start: auto;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-inbox-row__text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-inbox-row__excerpt {
+  color: var(--color-text-tertiary);
+}
+
+/* Unread: a heavier name, and the words in the primary ink. */
+.crewlet-inbox-row__control--unread .crewlet-inbox-row__title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-inbox-row__control--unread .crewlet-inbox-row__text,
+.crewlet-inbox-row__control--actionable .crewlet-inbox-row__text {
+  color: var(--color-text-primary);
+}
+
+/*
+ * Settled. The strike is drawn in the strong hairline rather than the text's
+ * own ink, so the words under it stay legible; the state is also read out,
+ * because a line through a word says nothing to somebody listening.
+ */
+.crewlet-inbox-row__control--done .crewlet-inbox-row__text {
+  text-decoration: line-through;
+  text-decoration-color: var(--color-border-strong);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The task, under the words and lined up with them: the control's start pad,
+ * the leading slot and the gap after it.
+ */
+.crewlet-inbox-row__aside {
+  min-width: 0;
+  padding:
+    0 var(--spacing-2) calc(var(--spacing-2) + var(--spacing-1) / 2)
+    calc(var(--spacing-2) + var(--size-target-min) + var(--spacing-2) + var(--spacing-1) / 2);
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+}
+
+/* ---- The end of the list ---------------------------------------------- */
+
+.crewlet-inbox-list__more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing-4) + var(--spacing-1) / 2);
+  padding: calc(var(--spacing-3) + var(--spacing-1) / 2) var(--spacing-2) 0;
+}
+
+.crewlet-inbox-list__toggle {
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-inbox-list__toggle:hover,
+.crewlet-inbox-list__toggle[aria-expanded='true'] {
+  color: var(--color-text-primary);
+}
+
+.crewlet-inbox-list__toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-inbox-row {
+    transition: none;
+  }
+
+  .crewlet-inbox-list__toggle {
+    transition: none;
+  }
+}

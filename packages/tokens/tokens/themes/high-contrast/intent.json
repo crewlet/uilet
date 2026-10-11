@@ -1,0 +1,267 @@
+{
+  "$comment": [
+    "The design the High contrast theme is fitted from: The approved theme picker proposal, 11 October 2026.",
+    "dark and light record each value under the design name the default theme's record uses, with the custom property that ships it. Nothing is emitted from this file; scripts/fit-palette.mjs reads it, and every shipped value is this value or the least move from it that the palette suite forced, named in its own comment."
+  ],
+  "dark": {
+    "--bg": {
+      "value": "#000000",
+      "token": "--color-surface-frame"
+    },
+    "--panel": {
+      "value": "#0b0b10",
+      "token": "--color-surface-background"
+    },
+    "--card": {
+      "value": "#13131a",
+      "token": "--color-surface-subtle"
+    },
+    "--raised": {
+      "value": "#1f1f27",
+      "token": "--color-surface-elevated"
+    },
+    "--hover": {
+      "value": "rgba(255, 255, 255, 0.061)",
+      "token": "--color-surface-hover"
+    },
+    "--sunk": {
+      "value": "rgba(255, 255, 255, 0.028)",
+      "token": "--color-surface-inset"
+    },
+    "--line": {
+      "value": "#7c7c90",
+      "token": "--color-border-default"
+    },
+    "--line-2": {
+      "value": "#9a9aae",
+      "token": "--color-border-strong"
+    },
+    "--mark": {
+      "value": "#9a9aab",
+      "token": "--color-data-other"
+    },
+    "--t1": {
+      "value": "#f4f4f8",
+      "token": "--color-text-primary"
+    },
+    "--t2": {
+      "value": "#e2e2ea",
+      "token": "--color-text-secondary"
+    },
+    "--t3": {
+      "value": "#adadb9",
+      "token": "--color-text-tertiary"
+    },
+    "--t4": {
+      "value": "#9696a6",
+      "token": "--color-text-muted"
+    },
+    "--acc": {
+      "value": "#6c55e6",
+      "token": "--color-brand-accent"
+    },
+    "--acc-hover": {
+      "value": "#6249de",
+      "token": "--color-brand-accent-hover"
+    },
+    "--acc-active": {
+      "value": "#573dd0",
+      "token": "--color-brand-accent-active"
+    },
+    "--acc-ink": {
+      "value": "#c9bdff",
+      "token": "--color-brand-accent-ink"
+    },
+    "--acc-soft": {
+      "value": "rgba(108, 85, 230, 0.16)",
+      "token": "--color-brand-accent-soft"
+    },
+    "--on-acc": {
+      "value": "#ffffff",
+      "token": "--color-text-on-accent"
+    },
+    "--work": {
+      "value": "#61d0ff",
+      "token": "--color-feedback-info"
+    },
+    "--work-ink": {
+      "value": "#a6e5ff",
+      "token": "--color-feedback-info-ink"
+    },
+    "--need": {
+      "value": "#f0b425",
+      "token": "--color-feedback-warning"
+    },
+    "--need-ink": {
+      "value": "#ffd98a",
+      "token": "--color-feedback-warning-ink"
+    },
+    "--bad": {
+      "value": "#d73756",
+      "token": "--color-feedback-danger"
+    },
+    "--bad-ink": {
+      "value": "#ffb4c1",
+      "token": "--color-feedback-danger-ink"
+    },
+    "--ok": {
+      "value": "#34c98b",
+      "token": "--color-feedback-success"
+    },
+    "--ok-ink": {
+      "value": "#8cefc4",
+      "token": "--color-feedback-success-ink"
+    },
+    "--s1": {
+      "value": "#4d8ff6",
+      "token": "--color-data-1"
+    },
+    "--s2": {
+      "value": "#e67737",
+      "token": "--color-data-2"
+    },
+    "--s3": {
+      "value": "#26b582",
+      "token": "--color-data-3"
+    },
+    "--s4": {
+      "value": "#eab106",
+      "token": "--color-data-4"
+    },
+    "--scrim": {
+      "value": "rgba(0, 0, 0, 0.65)",
+      "token": "--color-surface-veil"
+    }
+  },
+  "light": {
+    "--bg": {
+      "value": "#e9ecf3",
+      "token": "--color-surface-frame"
+    },
+    "--panel": {
+      "value": "#f6f7fb",
+      "token": "--color-surface-background"
+    },
+    "--card": {
+      "value": "#fcfcfc",
+      "token": "--color-surface-subtle"
+    },
+    "--raised": {
+      "value": "#f1f2f6",
+      "token": "--color-surface-elevated"
+    },
+    "--hover": {
+      "value": "rgba(0, 0, 0, 0.044)",
+      "token": "--color-surface-hover"
+    },
+    "--sunk": {
+      "value": "rgba(0, 0, 0, 0.026)",
+      "token": "--color-surface-inset"
+    },
+    "--line": {
+      "value": "#6f6f82",
+      "token": "--color-border-default"
+    },
+    "--line-2": {
+      "value": "#4f4f60",
+      "token": "--color-border-strong"
+    },
+    "--mark": {
+      "value": "#5b5b69",
+      "token": "--color-data-other"
+    },
+    "--t1": {
+      "value": "#000000",
+      "token": "--color-text-primary"
+    },
+    "--t2": {
+      "value": "#17171f",
+      "token": "--color-text-secondary"
+    },
+    "--t3": {
+      "value": "#42424f",
+      "token": "--color-text-tertiary"
+    },
+    "--t4": {
+      "value": "#5b5b69",
+      "token": "--color-text-muted"
+    },
+    "--acc": {
+      "value": "#4424c4",
+      "token": "--color-brand-accent"
+    },
+    "--acc-hover": {
+      "value": "#3a1db0",
+      "token": "--color-brand-accent-hover"
+    },
+    "--acc-active": {
+      "value": "#31169c",
+      "token": "--color-brand-accent-active"
+    },
+    "--acc-ink": {
+      "value": "#3a1db0",
+      "token": "--color-brand-accent-ink"
+    },
+    "--acc-soft": {
+      "value": "rgba(68, 36, 196, 0.125)",
+      "token": "--color-brand-accent-soft"
+    },
+    "--on-acc": {
+      "value": "#ffffff",
+      "token": "--color-text-on-accent"
+    },
+    "--work": {
+      "value": "#2f92b4",
+      "token": "--color-feedback-info"
+    },
+    "--work-ink": {
+      "value": "#004a73",
+      "token": "--color-feedback-info-ink"
+    },
+    "--need": {
+      "value": "#c17300",
+      "token": "--color-feedback-warning"
+    },
+    "--need-ink": {
+      "value": "#6b3b00",
+      "token": "--color-feedback-warning-ink"
+    },
+    "--bad": {
+      "value": "#b9112c",
+      "token": "--color-feedback-danger"
+    },
+    "--bad-ink": {
+      "value": "#8e0022",
+      "token": "--color-feedback-danger-ink"
+    },
+    "--ok": {
+      "value": "#0b9a74",
+      "token": "--color-feedback-success"
+    },
+    "--ok-ink": {
+      "value": "#00553b",
+      "token": "--color-feedback-success-ink"
+    },
+    "--s1": {
+      "value": "#5c76c3",
+      "token": "--color-data-1"
+    },
+    "--s2": {
+      "value": "#dd5920",
+      "token": "--color-data-2"
+    },
+    "--s3": {
+      "value": "#00956e",
+      "token": "--color-data-3"
+    },
+    "--s4": {
+      "value": "#c27600",
+      "token": "--color-data-4"
+    },
+    "--scrim": {
+      "value": "rgba(233, 236, 243, 0.65)",
+      "token": "--color-surface-veil"
+    }
+  },
+  "literals": []
+}
