@@ -124,6 +124,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `moon` | `MoonGlyph` | `package/icons/moon.svg` |
 | `network` | `NetworkGlyph` | `package/icons/network.svg` |
 | `package` | `PackageGlyph` | `package/icons/package.svg` |
+| `palette` | `PaletteGlyph` | `package/icons/palette.svg` |
 | `paperclip` | `PaperclipGlyph` | `package/icons/paperclip.svg` |
 | `pause` | `PauseGlyph` | `package/icons/pause.svg` |
 | `pencil` | `PencilGlyph` | `package/icons/pencil.svg` |
