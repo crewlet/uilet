@@ -102,15 +102,18 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
         Cost <EmptyValue />
       </p>
       <p>
-        <Avatar name="Software Engineer" ring="info" /> <Avatar name="Jane Founder" kind="human" ring="brand" />
-        <Avatar name="Backend Engineer" character="hexlet" hue="cyan" />{' '}
-        <Avatar name="Frontend Engineer" character="crewlet" hue="purple" size={96} ring="success" />
+        <Avatar name="Software Engineer" status="working" /> <Avatar name="Jane Founder" kind="human" ring="brand" />
+        <Avatar name="Backend Engineer" character="hexlet" hue="cyan" status="needs" />{' '}
+        <Avatar name="Frontend Engineer" character="crewlet" hue="purple" size={96} status="stopped" />
+        <span>
+          <Avatar name="Product Manager" character="gemlet" hue="rose" status="stopped" decorative /> Product Manager
+        </span>
       </p>
       <p>
         <AvatarStack
           members={[
             { name: 'Jane Founder', kind: 'human' },
-            { name: 'CTO', ring: 'warning' },
+            { name: 'CTO', character: 'hexlet', hue: 'amber' },
             { name: 'SWE' },
             { name: 'PM' },
             { name: 'AI Systems' },

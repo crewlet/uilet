@@ -10,8 +10,10 @@
  * OUTLINE (a squircle for an agent, a circle for a person), the monogram and
  * the name, and for an agent an operator gave one, its character and its hue.
  *
- * THE ONE HUE A BADGE CARRIES AS A LINE IS A STATE, as a ring round it, and the
- * ring is the component's only coloured line outside its own plate.
+ * A STATE IS A CORNER BADGE, NEVER A LINE ROUND THE PLATE. A ring in a state's
+ * hue round a plate in the agent's own hue put two colours on a 32px mark and
+ * framed what the agent was doing louder than who it is. The one ring left is
+ * SELECTED, in the accent.
  *
  * The seeded tints stay for the one case that earns them, a roster somebody
  * scans, and their grounds are TOKENS: measured under white initials and held
@@ -211,11 +213,12 @@
   color: var(--color-node-blue);
 }
 
-/* ── the state ring ────────────────────────────────────────────────────── */
+/* ── the selected ring ────────────────────────────────────────────────── */
 
 /*
  * A 1.5px LINE 2px OUTSIDE THE BADGE, which is the design's ring: it draws a
  * 3.5px shadow over a 2px one in the card's colour, and 3.5 less 2 is 1.5.
+ * Longhands, so nothing else that sets an outline resets the ring's geometry.
  *
  * AN OUTLINE RATHER THAN THAT SHADOW PAIR, for three reasons. The gap is
  * TRANSPARENT, so the ring reads on whatever the badge stands on, where the
@@ -223,42 +226,97 @@
  * other ground. An outline follows the corner, the squircle's included, in
  * every engine this package supports. And forced-colors mode keeps an outline
  * and drops every shadow, so the ring is still drawn for the readers who most
- * need a boundary; it is drawn in the system colour there, which is why the
- * state is always said in words beside the badge as well.
+ * need a boundary.
  *
- * LONGHANDS, so the tone rules below set the colour alone and cannot reset the
- * geometry, whichever order they are read in. Each fill is measured at 3:1 as
- * a mark on every opaque surface by @crewlethq/tokens, which is the floor a
- * boundary a reader has to see is held to.
+ * SELECTED, in the accent, which is what the accent means: where the reader
+ * is. It is the only place a badge spends the accent, and the accent is
+ * measured at 3:1 as a mark on every opaque surface by @crewlethq/tokens.
  */
-.crewlet-avatar--ring-info,
-.crewlet-avatar--ring-warning,
-.crewlet-avatar--ring-danger,
-.crewlet-avatar--ring-success,
 .crewlet-avatar--ring-brand {
   outline-style: solid;
   outline-width: 1.5px;
   outline-offset: 2px;
-}
-
-.crewlet-avatar--ring-info {
-  outline-color: var(--color-feedback-info);
-}
-
-.crewlet-avatar--ring-warning {
-  outline-color: var(--color-feedback-warning);
-}
-
-.crewlet-avatar--ring-danger {
-  outline-color: var(--color-feedback-danger);
-}
-
-.crewlet-avatar--ring-success {
-  outline-color: var(--color-feedback-success);
-}
-
-/* SELECTED, in the accent, which is what the accent means: where the reader
-   is. It is the only place a badge spends the accent. */
-.crewlet-avatar--ring-brand {
   outline-color: var(--color-brand-accent);
+}
+
+/* ── the status badge ─────────────────────────────────────────────────── */
+
+/*
+ * THE FRAME is the face's own box, so a badge with a status takes exactly the
+ * room one without takes: the corner badge hangs past it rather than growing
+ * it, and a row lays out the same either way. The badge is 0.42 of the box,
+ * never under 10px, which is the size its glyph stays a shape at.
+ */
+.crewlet-avatar-frame {
+  --crewlet-avatar-status-size: max(10px, calc(var(--crewlet-avatar-size) * 0.42));
+  --crewlet-avatar-status-overhang: 2px;
+  --crewlet-avatar-status-gap: 1.5px;
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: var(--crewlet-avatar-size);
+  height: var(--crewlet-avatar-size);
+  vertical-align: middle;
+}
+
+/*
+ * THE NOTCH: the face is masked by a circle a gap wider than the badge, centred
+ * where the badge sits, so the gap shows whatever the badge stands on. A ring
+ * of the ground's colour would need to know that ground, and a badge on a card,
+ * a hovered row and the page would each need a different one. A mask reads only
+ * alpha, so its black is opacity rather than a colour.
+ */
+.crewlet-avatar--notched {
+  --crewlet-avatar-status-centre: calc(
+    100% + var(--crewlet-avatar-status-overhang) - var(--crewlet-avatar-status-size) / 2
+  );
+  --crewlet-avatar-status-cut: calc(var(--crewlet-avatar-status-size) / 2 + var(--crewlet-avatar-status-gap));
+  -webkit-mask-image: radial-gradient(
+    circle at var(--crewlet-avatar-status-centre) var(--crewlet-avatar-status-centre),
+    transparent var(--crewlet-avatar-status-cut),
+    #000 calc(var(--crewlet-avatar-status-cut) + 0.5px)
+  );
+  mask-image: radial-gradient(
+    circle at var(--crewlet-avatar-status-centre) var(--crewlet-avatar-status-centre),
+    transparent var(--crewlet-avatar-status-cut),
+    #000 calc(var(--crewlet-avatar-status-cut) + 0.5px)
+  );
+}
+
+/*
+ * THE BADGE: a state's fill step carrying its glyph in the inverse ink, which
+ * the tokens' palette suite holds at 3:1 on each fill (`MARK_ON_FILL`). The
+ * transparent outline is drawn only in forced-colors mode, where the fill
+ * becomes the page's own colour and the outline is what keeps a boundary.
+ */
+.crewlet-avatar__status {
+  position: absolute;
+  right: calc(var(--crewlet-avatar-status-overhang) * -1);
+  bottom: calc(var(--crewlet-avatar-status-overhang) * -1);
+  display: grid;
+  place-items: center;
+  width: var(--crewlet-avatar-status-size);
+  height: var(--crewlet-avatar-status-size);
+  border-radius: var(--radius-circle);
+  outline: 1px solid transparent;
+  color: var(--color-text-inverse);
+  pointer-events: none;
+}
+
+.crewlet-avatar__status > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.crewlet-avatar__status--working {
+  background: var(--color-feedback-info);
+}
+
+.crewlet-avatar__status--needs {
+  background: var(--color-feedback-warning);
+}
+
+.crewlet-avatar__status--stopped {
+  background: var(--color-feedback-danger);
 }

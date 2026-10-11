@@ -12,7 +12,7 @@ import {
   StatusDot,
   Tag,
   TreeCanvas,
-  type AvatarRing,
+  type AvatarStatus,
   type TreeCanvasGroup,
   type TreeCardContext,
   type TreeCardInput,
@@ -615,11 +615,11 @@ const SEATS: Record<string, Seat> = {
   devrel: { name: 'DevRel', unit: 'Product · Developer Relations', state: 'stopped', line: 'Stopped · budget', reportsTo: 'pm' },
 };
 
-/** What a seat is DOING is its ring and its dot, never who it is: the dashboard's own mapping. */
-const RING: Record<SeatState, AvatarRing | undefined> = {
-  working: 'info',
-  needs: 'warning',
-  stopped: 'danger',
+/** What a seat is DOING is its status badge and its dot, never who it is: the dashboard's own mapping. */
+const STATUS: Record<SeatState, AvatarStatus | undefined> = {
+  working: 'working',
+  needs: 'needs',
+  stopped: 'stopped',
   idle: undefined,
 };
 const DOT = { working: 'info', needs: 'warning', stopped: 'danger', idle: 'neutral' } as const;
@@ -664,7 +664,7 @@ function SeatCard({ id, card }: { id: string; card: TreeCardContext }) {
   return (
     <div {...card.item(id)} style={body}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-        <Avatar name={seat.name} size="sm" kind={seat.human ? 'human' : 'agent'} ring={RING[seat.state]} decorative />
+        <Avatar name={seat.name} size="sm" kind={seat.human ? 'human' : 'agent'} status={STATUS[seat.state]} decorative />
         <strong style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {seat.name}
         </strong>

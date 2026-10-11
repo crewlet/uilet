@@ -7,10 +7,10 @@
  * letters.
  *
  * The OUTLINE is the other: an agent is a squircle and a person a circle, and
- * that is the only thing telling them apart, so the kind, the corner ladder
- * and the ring are measured through the cascade where jsdom can answer for
- * them and read off the stylesheet where it cannot (it applies no `@supports`
- * block and resolves no `calc()`).
+ * that is the only thing telling them apart, so the kind, the corner ladder,
+ * the ring and the status badge are measured through the cascade where jsdom
+ * can answer for them and read off the stylesheet where it cannot (it applies
+ * no `@supports` block, no mask and resolves no `calc()`).
  */
 
 import { readFileSync } from 'node:fs';
@@ -20,7 +20,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
 import { font } from '@crewlethq/tokens';
-import { parseHex } from '@crewlethq/tokens/test/palette';
+import { MARK_ON_FILL, parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installSheets, installThemed, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
 import { NODE_HUES } from '../utils/nodeHue.js';
@@ -28,12 +28,15 @@ import {
   AVATAR_CHARACTER_FULL_DETAIL,
   AVATAR_CORNER_RATIO,
   AVATAR_SIZES,
+  AVATAR_STATUS_LABELS,
+  AVATAR_STATUSES,
   Avatar,
   avatarCorner,
   avatarTint,
   getInitials,
   type AvatarKind,
   type AvatarRing,
+  type AvatarStatus,
   type AvatarTone,
 } from './index.js';
 
@@ -55,15 +58,18 @@ const property = (name: string) => `--${name}`;
 
 const KINDS: AvatarKind[] = ['agent', 'human'];
 const TONES: AvatarTone[] = ['neutral', 'seeded'];
-const RINGS: AvatarRing[] = ['info', 'warning', 'danger', 'success', 'brand'];
+const RINGS: AvatarRing[] = ['brand'];
 
-/** The token each ring is drawn in: the four state fills, and the accent for selected. */
+/** The token each ring is drawn in: the accent, for selected. */
 const RING_FILL: Record<AvatarRing, string> = {
-  info: 'color-feedback-info',
-  warning: 'color-feedback-warning',
-  danger: 'color-feedback-danger',
-  success: 'color-feedback-success',
   brand: 'color-brand-accent',
+};
+
+/** The state fill each status badge stands on. */
+const STATUS_FILL: Record<AvatarStatus, string> = {
+  working: 'color-feedback-info',
+  needs: 'color-feedback-warning',
+  stopped: 'color-feedback-danger',
 };
 
 describe('getInitials', () => {
@@ -150,18 +156,30 @@ describe('the kind', () => {
     expect(agent?.borderRadius).toBe(`calc(var(${property('crewlet-avatar-size')}) * ${AVATAR_CORNER_RATIO})`);
   });
 
-  test('an image keeps its kind and its ring, and so do the initials it degrades to', () => {
+  test('an image keeps its kind, its ring and its status, and so do the initials it degrades to', () => {
     // Whether somebody has uploaded a photo says nothing about what they are
     // or what they are doing.
-    render(<Avatar name="Jane Founder" kind="human" ring="warning" src="https://example.com/jane.png" />);
+    render(
+      <>
+        <Avatar name="Jane Founder" kind="human" ring="brand" src="https://example.com/jane.png" />
+        <Avatar name="Ada Byron" status="needs" src="https://example.com/ada.png" />
+      </>,
+    );
     const image = screen.getByRole('img', { name: 'Jane Founder' });
     expect(image.className).toContain('crewlet-avatar--human');
-    expect(image.className).toContain('crewlet-avatar--ring-warning');
+    expect(image.className).toContain('crewlet-avatar--ring-brand');
     fireEvent.error(image);
     const initials = screen.getByRole('img', { name: 'Jane Founder avatar' });
     expect(initials.textContent).toBe('JF');
     expect(initials.className).toContain('crewlet-avatar--human');
-    expect(initials.className).toContain('crewlet-avatar--ring-warning');
+    expect(initials.className).toContain('crewlet-avatar--ring-brand');
+
+    const asking = screen.getByRole('img', { name: 'Ada Byron, needs you' });
+    expect(asking.className).toContain('crewlet-avatar--notched');
+    fireEvent.error(asking);
+    const degraded = screen.getByRole('img', { name: 'Ada Byron avatar, needs you' });
+    expect(degraded.textContent).toBe('AB');
+    expect(degraded.parentElement!.querySelector('.crewlet-avatar__status--needs')).not.toBeNull();
   });
 
   test('there is no dashed badge, in any combination, in the markup or in the stylesheet', () => {
@@ -207,10 +225,13 @@ describe("an agent's corner", () => {
     // `size={80}` drew a squarer badge than `size="lg"` at half its width.
     // So no step rule may set a corner: the size is all a step sets.
     const rules = cornerRules();
+    // The status badge is the one other corner, and it is a circle whatever
+    // the face's size, so it reads no ladder.
     expect(rules.map((rule) => rule.selector)).toEqual([
       '.crewlet-avatar--agent',
       '.crewlet-avatar--agent',
       '.crewlet-avatar--human',
+      '.crewlet-avatar__status',
     ]);
     const ratio = /border-radius:\s*calc\(var\(--crewlet-avatar-size\)\s*\*\s*([\d.]+)\)/.exec(rules[0]!.body)?.[1];
     expect(Number(ratio)).toBe(AVATAR_CORNER_RATIO);
@@ -288,7 +309,17 @@ describe("an agent's corner", () => {
 });
 
 describe('the ring', () => {
-  test('is a class per state, and there is none unless one is asked for', () => {
+  test('is selected and nothing else: a state is never a ring', () => {
+    // A ring in a state's hue round a plate in the agent's own hue put two
+    // colours on one small mark. The stylesheet draws no state ring, and the
+    // type takes none.
+    expect(RULES).not.toMatch(/ring-(info|warning|danger|success)/);
+    // @ts-expect-error a state is a status, never a ring
+    const state: AvatarRing = 'danger';
+    expect(state).toBe('danger');
+  });
+
+  test('is a class, and there is none unless one is asked for', () => {
     const { container } = render(
       <>
         <Avatar name="Resting" />
@@ -346,6 +377,125 @@ describe('the ring', () => {
     uninstall = installThemed('dark', 'Avatar/Avatar.css');
     const { container } = render(<Avatar name="Resting" />);
     expect(getComputedStyle(container.querySelector('.crewlet-avatar')!).outlineStyle).not.toBe('solid');
+  });
+});
+
+describe('the status', () => {
+  test('is a corner badge per status, and an idle badge has none', () => {
+    const { container } = render(
+      <>
+        <Avatar name="Idle" />
+        {AVATAR_STATUSES.map((status) => (
+          <Avatar key={status} name={status} status={status} />
+        ))}
+      </>,
+    );
+    expect(AVATAR_STATUSES).toEqual(['working', 'needs', 'stopped']);
+    const [idle, ...framed] = [...container.children];
+    expect(idle!.className).toContain('crewlet-avatar');
+    expect(idle!.querySelector('.crewlet-avatar__status')).toBeNull();
+    expect(framed.map((frame) => frame.className)).toEqual(AVATAR_STATUSES.map(() => 'crewlet-avatar-frame'));
+    expect(framed.map((frame) => /crewlet-avatar__status--(\w+)/.exec(frame.innerHTML)?.[1])).toEqual([...AVATAR_STATUSES]);
+    for (const frame of framed) {
+      expect(frame.querySelector('.crewlet-avatar')!.className).toContain('crewlet-avatar--notched');
+      expect(frame.querySelector('.crewlet-avatar__status')!.getAttribute('aria-hidden')).toBe('true');
+    }
+  });
+
+  test('draws a different shape for each status, in the glyph ink', () => {
+    // Shape first: a status read only by its hue is lost to somebody who
+    // cannot separate the hues, and in forced-colors mode every fill is one
+    // system colour.
+    const { container } = render(
+      <>
+        {AVATAR_STATUSES.map((status) => (
+          <Avatar key={status} name={status} status={status} />
+        ))}
+      </>,
+    );
+    const glyphs = [...container.querySelectorAll('.crewlet-avatar__status > svg')];
+    expect(glyphs).toHaveLength(AVATAR_STATUSES.length);
+    expect(new Set(glyphs.map((glyph) => glyph.innerHTML)).size).toBe(AVATAR_STATUSES.length);
+    for (const glyph of glyphs) {
+      expect(glyph.getAttribute('viewBox')).toBe('0 0 14 14');
+      expect(glyph.innerHTML).toContain('currentColor');
+    }
+  });
+
+  test('is said in the name of a badge that names itself, and not at all by a decorative one', () => {
+    render(
+      <>
+        <Avatar name="Software Engineer" status="stopped" character="gemlet" hue="cyan" />
+        <span>
+          <Avatar name="Product Manager" status="working" decorative /> Product Manager
+        </span>
+      </>,
+    );
+    expect(screen.getAllByRole('img').map((badge) => badge.getAttribute('aria-label'))).toEqual([
+      `Software Engineer avatar, ${AVATAR_STATUS_LABELS.stopped}`,
+    ]);
+    expect(AVATAR_STATUS_LABELS).toEqual({ working: 'working', needs: 'needs you', stopped: 'stopped' });
+  });
+
+  test("the frame is the face's box and takes the caller's class and style", () => {
+    const { container } = render(
+      <Avatar name="Software Engineer" size="lg" status="working" className="row-badge" style={{ marginLeft: 4 }} />,
+    );
+    const frame = container.firstElementChild as HTMLElement;
+    expect(frame.className).toBe('crewlet-avatar-frame row-badge');
+    expect(frame.style.getPropertyValue(property('crewlet-avatar-size'))).toBe(`${AVATAR_SIZES.lg}px`);
+    expect(frame.style.marginLeft).toBe('4px');
+    const face = frame.querySelector('.crewlet-avatar') as HTMLElement;
+    expect(face.className).not.toContain('row-badge');
+    expect(face.style.marginLeft).toBe('');
+  });
+
+  test('a badge with a status draws no ring, since the notch is cut from the outline the ring follows', () => {
+    const { container } = render(<Avatar name="Software Engineer" ring="brand" status="needs" />);
+    expect(container.innerHTML).not.toContain('ring-');
+  });
+
+  test("stands on the state's fill in the inverse ink, the pairs the palette suite measures", () => {
+    // THE STYLESHEET'S PAIRS ARE THE GATE'S. @crewlethq/tokens holds each
+    // [ink, fill] in MARK_ON_FILL at 3:1 over every ground; a badge drawn on
+    // a fill or in an ink the table does not list is one nothing measures.
+    const pairs = AVATAR_STATUSES.map((status) => [property('color-text-inverse'), property(STATUS_FILL[status])]);
+    expect(pairs).toEqual(MARK_ON_FILL.map(([ink, fill]) => [ink, fill]));
+    for (const theme of ['dark', 'light'] as const) {
+      uninstall?.();
+      uninstall = installThemed(theme, 'Avatar/Avatar.css');
+      cleanup();
+      const palette = themeColours(theme);
+      const token = (name: string) => parseHex(palette.get(property(name)) ?? '');
+      const { container } = render(
+        <>
+          {AVATAR_STATUSES.map((status) => (
+            <Avatar key={status} name={status} status={status} />
+          ))}
+        </>,
+      );
+      const badges = [...container.querySelectorAll('.crewlet-avatar__status')];
+      badges.forEach((badge, index) => {
+        const drawn = getComputedStyle(badge);
+        const status = AVATAR_STATUSES[index]!;
+        expect(channels(drawn.backgroundColor), `${theme} ${status}`).toEqual(token(STATUS_FILL[status]));
+        expect(channels(drawn.color), `${theme} ${status}`).toEqual(token('color-text-inverse'));
+        expect(drawn.position, `${theme} ${status}`).toBe('absolute');
+      });
+    }
+  });
+
+  test('cuts the notch with a mask centred where the badge sits', () => {
+    // jsdom applies no mask, so the rule is read off the stylesheet: the cut
+    // and the badge share one centre and one size.
+    const notch = /\.crewlet-avatar--notched\s*\{([^}]*)\}/.exec(RULES)?.[1] ?? '';
+    expect(notch).toContain('-webkit-mask-image: radial-gradient(');
+    expect(notch).toContain('mask-image: radial-gradient(');
+    expect(notch).toMatch(/circle at var\(--crewlet-avatar-status-centre\) var\(--crewlet-avatar-status-centre\)/);
+    expect(notch).toMatch(/--crewlet-avatar-status-centre:\s*calc\(\s*100% \+ var\(--crewlet-avatar-status-overhang\) - var\(--crewlet-avatar-status-size\) \/ 2\s*\)/);
+    const badge = /\.crewlet-avatar__status\s*\{([^}]*)\}/.exec(RULES)?.[1] ?? '';
+    expect(badge).toContain('right: calc(var(--crewlet-avatar-status-overhang) * -1)');
+    expect(badge).toContain('width: var(--crewlet-avatar-status-size)');
   });
 });
 
@@ -456,9 +606,10 @@ describe('Avatar', () => {
     const { container } = render(
       <main>
         <h1>People</h1>
-        <Avatar name="Software Engineer" ring="info" />
+        <Avatar name="Software Engineer" status="working" />
         <Avatar name="Jane Founder" kind="human" ring="brand" />
-        <Avatar name="Ada Byron" kind="human" src="https://example.com/ada.png" ring="warning" />
+        <Avatar name="Ada Byron" kind="human" src="https://example.com/ada.png" status="needs" />
+        <Avatar name="Product Manager" character="crewlet" hue="rose" status="stopped" />
         <p>
           <Avatar name="Carlos Diaz" decorative /> Carlos Diaz
         </p>

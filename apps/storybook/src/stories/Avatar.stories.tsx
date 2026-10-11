@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
-import { Avatar, AvatarStack, Card, NODE_HUES } from '@crewlethq/ui';
+import { AVATAR_STATUSES, Avatar, AvatarStack, Card, NODE_HUES } from '@crewlethq/ui';
 import samplePortrait from '../fixtures/sample-portrait.svg';
 
 const meta: Meta<typeof Avatar> = {
@@ -19,7 +19,8 @@ const meta: Meta<typeof Avatar> = {
     size: { control: 'inline-radio', options: ['xs', 'sm', 'md', 'lg'] },
     kind: { control: 'inline-radio', options: ['agent', 'human'] },
     tone: { control: 'inline-radio', options: ['neutral', 'seeded'] },
-    ring: { control: 'inline-radio', options: [undefined, 'info', 'warning', 'danger', 'success', 'brand'] },
+    ring: { control: 'inline-radio', options: [undefined, 'brand'] },
+    status: { control: 'inline-radio', options: [undefined, 'working', 'needs', 'stopped'] },
     decorative: { control: 'boolean' },
     colorSeed: { control: 'text' },
   },
@@ -30,7 +31,6 @@ type Story = StoryObj<typeof Avatar>;
 
 const row: CSSProperties = { display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' };
 const caption: CSSProperties = { textAlign: 'center', fontSize: 12, color: 'var(--color-text-tertiary)' };
-const RINGS = [undefined, 'info', 'warning', 'danger', 'success', 'brand'] as const;
 const CREW = [
   'Software Engineer',
   'Chief Technology',
@@ -114,27 +114,60 @@ export const Sizes: Story = {
 };
 
 /**
- * THE STATE RING: a 1.5px line 2px outside the badge, in the state's own fill
- * or, for `brand`, the accent, which means SELECTED. The gap is transparent,
- * so the ring reads on the sheet and on a card alike. A ring is never the only
- * carrier of a state: say it in words beside the badge.
+ * THE STATUS: what an agent is doing, as a small badge on the lower-right
+ * corner whose shape says it (play, a question, a square) on the state's fill.
+ * The notch is cut out of the face, so the badge reads on the sheet and on a
+ * card alike. An idle badge has none. Say the state in words beside the badge
+ * as well; the glyph is what a badge drawn alone carries.
  */
-export const Rings: Story = {
+export const Status: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 16 }}>
       {['var(--color-surface-background)', 'var(--color-surface-subtle)'].map((ground) => (
         <div key={ground} style={{ ...row, gap: 24, padding: 16, background: ground, borderRadius: 12 }}>
-          {RINGS.map((ring) => (
-            <div key={ring ?? 'none'} style={{ display: 'grid', justifyItems: 'center', gap: 8 }}>
+          {[undefined, ...AVATAR_STATUSES].map((status) => (
+            <div key={status ?? 'idle'} style={{ display: 'grid', justifyItems: 'center', gap: 8 }}>
               <div style={{ ...row, gap: 12 }}>
-                <Avatar name="Software Engineer" ring={ring} />
-                <Avatar name="Jane Founder" kind="human" ring={ring} />
+                <Avatar name="Software Engineer" character="gemlet" hue="cyan" status={status} />
+                <Avatar name="Software Engineer" status={status} />
+                <Avatar name="Jane Founder" kind="human" status={status} />
               </div>
-              <span style={caption}>{ring ?? 'no ring'}</span>
+              <span style={caption}>{status ?? 'idle'}</span>
             </div>
           ))}
         </div>
       ))}
+    </div>
+  ),
+};
+
+/** Every status at every size: the badge never drops under 10px, where its glyph stops being a shape. */
+export const StatusSizes: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 16, padding: 16, background: 'var(--color-surface-subtle)', borderRadius: 12 }}>
+      {AVATAR_STATUSES.map((status) => (
+        <div key={status} style={{ ...row, gap: 20 }}>
+          {(['xs', 'sm', 'md', 'lg'] as const).map((size) => (
+            <Avatar key={size} name="Product Manager" character="crewlet" hue="rose" size={size} status={status} />
+          ))}
+          <Avatar name="Product Manager" character="crewlet" hue="rose" size={64} status={status} />
+          <span style={caption}>{status}</span>
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * THE SELECTED RING: a 1.5px line 2px outside the badge, in the accent. It is
+ * the one ring there is; a state is a status, never a ring.
+ */
+export const Selected: Story = {
+  render: () => (
+    <div style={{ ...row, gap: 24, padding: 16 }}>
+      <Avatar name="Software Engineer" ring="brand" />
+      <Avatar name="Jane Founder" kind="human" ring="brand" />
+      <Avatar name="Software Engineer" character="gemlet" hue="cyan" ring="brand" />
     </div>
   ),
 };
@@ -214,11 +247,11 @@ export const Stack: Story = {
         <AvatarStack
           members={[
             { name: 'Jane Founder', kind: 'human' },
-            { name: 'Chief Technology', ring: 'info' },
-            { name: 'Software Engineer', ring: 'warning' },
+            { name: 'Chief Technology', character: 'hexlet', hue: 'amber' },
+            { name: 'Software Engineer', character: 'gemlet', hue: 'cyan' },
           ]}
         />
-        <span style={caption}>a person and two agents, with their state rings</span>
+        <span style={caption}>a person and two agents</span>
       </div>
       <div style={row}>
         <AvatarStack members={CREW.map((name) => ({ name }))} />

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { CSSProperties, HTMLAttributes } from 'react';
+import type { CSSProperties, HTMLAttributes, ReactElement } from 'react';
 import { CrewletCharacter, type CrewletCharacterId } from '@crewlethq/icons/characters';
 import { cx } from '../utils/cx.js';
 import type { NodeHue } from '../utils/nodeHue.js';
-import type { Tone } from '../utils/tone.js';
 
 /**
  * WHAT THE BADGE STANDS FOR, drawn as its outline.
@@ -42,16 +41,44 @@ export type AvatarKind = 'agent' | 'human';
 export type AvatarTone = 'neutral' | 'seeded';
 
 /**
- * The STATE ring: a 1.5px line 2px outside the badge, in one of the state
- * fills or the accent.
+ * The SELECTED ring: a 1.5px line 2px outside the badge, in the accent.
  *
- * `info`, `warning`, `danger` and `success` are what the thing is DOING, and
- * `brand` is SELECTED. Which state each one means is the consumer's to decide,
- * and to SAY in words beside the badge: the ring is never the only carrier of
- * a state, because in forced-colors mode every ring is the same system colour.
- * No ring at all is the resting state.
+ * It is the one ring there is. A ring used to carry a state too (`info`,
+ * `warning`, `danger`, `success`), and on a character plate that already
+ * wears its own hue it put a second colour round a 32px mark, framing what
+ * the agent was doing louder than who it is. A state is a [AvatarStatus]
+ * now, a small badge on the corner whose SHAPE says it.
  */
-export type AvatarRing = Exclude<Tone, 'neutral'>;
+export type AvatarRing = 'brand';
+
+/**
+ * WHAT AN AGENT IS DOING, drawn as a small round badge on the lower-right
+ * corner: `working`, `needs` (it is waiting on a person) or `stopped`. An idle
+ * badge carries none, because a mark that means "nothing is happening" is one
+ * a reader learns to skip.
+ *
+ * SHAPE FIRST, colour second. Each badge is a state's fill step carrying a
+ * glyph, play for working, a question for needs and a square for stopped, so
+ * it reads to somebody who cannot separate the hues and in forced-colors mode,
+ * where every fill is one system colour. The glyph is in the inverse ink,
+ * which the tokens' palette suite holds at 3:1 on each fill (`MARK_ON_FILL`).
+ *
+ * THE BADGE IS NOT THE ONLY CARRIER. A row that draws a badge with a status
+ * says the state in words as well; a badge drawn alone (a breadcrumb, a stack)
+ * is the case the glyph exists for. A badge that names itself appends the
+ * state to its accessible name.
+ */
+export type AvatarStatus = 'working' | 'needs' | 'stopped';
+
+/** Every status, in the order a legend lists them. */
+export const AVATAR_STATUSES = ['working', 'needs', 'stopped'] as const satisfies readonly AvatarStatus[];
+
+/** What each status is called in a sentence: the accessible name's last words. */
+export const AVATAR_STATUS_LABELS: Readonly<Record<AvatarStatus, string>> = {
+  working: 'working',
+  needs: 'needs you',
+  stopped: 'stopped',
+};
 
 /** The four steps, in px. A number is accepted for anything outside them. */
 export const AVATAR_SIZES = { xs: 20, sm: 26, md: 32, lg: 40 } as const;
@@ -85,8 +112,13 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   /** An agent (the default) is a squircle; a human is a circle. */
   kind?: AvatarKind | undefined;
   tone?: AvatarTone | undefined;
-  /** A state ring, or none. `brand` is selected. */
+  /**
+   * The selected ring, or none. Not drawn on a badge with a `status`: the
+   * corner badge is cut out of the outline the ring would follow.
+   */
   ring?: AvatarRing | undefined;
+  /** What the agent is doing, as a corner badge; none is idle. */
+  status?: AvatarStatus | undefined;
   /**
    * The name is already printed beside this badge, so the badge itself says
    * nothing. Without it a row reads "Carlos Diaz avatar, Carlos Diaz".
@@ -204,8 +236,14 @@ export function avatarCorner(pixels: number): number {
  *
  * If the image fails to load (a stale CDN URL, an expired signature) it
  * degrades to the initials rather than to a broken-image glyph. Either way it
- * keeps its kind's outline and its ring: whether somebody has uploaded a photo
- * says nothing about what they are or what they are doing.
+ * keeps its kind's outline, its ring and its status: whether somebody has
+ * uploaded a photo says nothing about what they are or what they are doing.
+ *
+ * A BADGE WITH A STATUS IS FRAMED: the face (character, image or initials)
+ * stands in a box of its own size beside the corner badge, and the face has a
+ * notch cut where the badge sits, so the badge reads on any ground without
+ * knowing what colour that ground is. The frame takes the caller's class and
+ * style, which is where a layout reaches for the badge.
  */
 export const Avatar = ({
   src,
@@ -214,6 +252,7 @@ export const Avatar = ({
   kind = 'agent',
   tone = 'neutral',
   ring,
+  status,
   decorative = false,
   colorSeed,
   character,
@@ -250,73 +289,125 @@ export const Avatar = ({
       : {};
 
   const seeded = tone === 'seeded' ? avatarTint(colorSeed ?? name ?? '') : null;
+  const framed = status !== undefined;
+  const label = name ? `${name} avatar` : 'Avatar';
+  const spoken = framed ? `${label}, ${AVATAR_STATUS_LABELS[status]}` : label;
 
   const classes = cx(
     'crewlet-avatar',
     `crewlet-avatar--${kind}`,
     step === null ? null : `crewlet-avatar--${step}`,
-    ring === undefined ? null : `crewlet-avatar--ring-${ring}`,
-    className,
+    framed ? 'crewlet-avatar--notched' : null,
+    ring === undefined || framed ? null : `crewlet-avatar--ring-${ring}`,
+    framed ? null : className,
   );
+  const faceStyle = framed ? measured : { ...measured, ...style };
 
+  function drawFace() {
   /*
    * AN AGENT'S CHARACTER IS ITS FACE, and it wins over an image: it is the
    * identity an operator chose for the seat, where an image is whatever a
    * profile happened to carry. It is centred by the character itself, which
    * frames every silhouette square on its own extent.
    */
-  if (character !== undefined && kind === 'agent') {
+    if (character !== undefined && kind === 'agent') {
+      return (
+        <span
+          {...rest}
+          className={cx(
+            classes,
+            'crewlet-avatar--character',
+            hue === undefined ? 'crewlet-avatar--neutral' : `crewlet-avatar--hue-${hue}`,
+          )}
+          style={faceStyle}
+          role={decorative ? undefined : 'img'}
+          aria-hidden={decorative ? true : undefined}
+          aria-label={decorative ? undefined : spoken}
+        >
+          <CrewletCharacter
+            className="crewlet-avatar__character"
+            character={character}
+            detail={pixels >= AVATAR_CHARACTER_FULL_DETAIL ? 'full' : 'compact'}
+          />
+        </span>
+      );
+    }
+
+    if (src && !imageFailed) {
+      return (
+        <img
+          {...rest}
+          className={cx(classes, 'crewlet-avatar--image')}
+          style={faceStyle}
+          src={src}
+          alt={decorative ? '' : framed ? `${name ?? ''}, ${AVATAR_STATUS_LABELS[status]}` : (name ?? '')}
+          aria-hidden={decorative ? true : undefined}
+          onError={() => setImageFailed(true)}
+        />
+      );
+    }
+
     return (
       <span
         {...rest}
         className={cx(
           classes,
-          'crewlet-avatar--character',
-          hue === undefined ? 'crewlet-avatar--neutral' : `crewlet-avatar--hue-${hue}`,
+          'crewlet-avatar--fallback',
+          `crewlet-avatar--${tone}`,
+          seeded === null ? null : `crewlet-avatar--tint-${seeded}`,
         )}
-        style={{ ...measured, ...style }}
+        style={faceStyle}
         role={decorative ? undefined : 'img'}
         aria-hidden={decorative ? true : undefined}
-        aria-label={decorative ? undefined : name ? `${name} avatar` : 'Avatar'}
+        aria-label={decorative ? undefined : spoken}
       >
-        <CrewletCharacter
-          className="crewlet-avatar__character"
-          character={character}
-          detail={pixels >= AVATAR_CHARACTER_FULL_DETAIL ? 'full' : 'compact'}
-        />
+        {getInitials(name)}
       </span>
     );
   }
 
-  if (src && !imageFailed) {
-    return (
-      <img
-        {...rest}
-        className={cx(classes, 'crewlet-avatar--image')}
-        style={{ ...measured, ...style }}
-        src={src}
-        alt={decorative ? '' : (name ?? '')}
-        aria-hidden={decorative ? true : undefined}
-        onError={() => setImageFailed(true)}
-      />
-    );
-  }
-
+  const face = drawFace();
+  if (!framed) return face;
   return (
     <span
-      {...rest}
-      className={cx(
-        classes,
-        'crewlet-avatar--fallback',
-        `crewlet-avatar--${tone}`,
-        seeded === null ? null : `crewlet-avatar--tint-${seeded}`,
-      )}
-      style={{ ...measured, ...style }}
-      role={decorative ? undefined : 'img'}
-      aria-hidden={decorative ? true : undefined}
-      aria-label={decorative ? undefined : name ? `${name} avatar` : 'Avatar'}
+      className={cx('crewlet-avatar-frame', className)}
+      style={{ '--crewlet-avatar-size': `${pixels}px`, ...style } as CSSProperties}
     >
-      {getInitials(name)}
+      {face}
+      <span className={`crewlet-avatar__status crewlet-avatar__status--${status}`} aria-hidden="true">
+        {STATUS_GLYPHS[status]}
+      </span>
     </span>
   );
+};
+
+/**
+ * Each status's glyph, on a 14-unit grid the badge scales: a play wedge, a
+ * question mark and a square. FILLED where it can be, because a stroke a
+ * badge's 10px draws at under a pixel is a blur; the question mark is the one
+ * stroke, at a width that stays a line.
+ */
+const STATUS_GLYPHS: Readonly<Record<AvatarStatus, ReactElement>> = {
+  working: (
+    <svg viewBox="0 0 14 14" focusable="false">
+      <path d="M5.4 3.9 10.2 7l-4.8 3.1z" fill="currentColor" />
+    </svg>
+  ),
+  needs: (
+    <svg viewBox="0 0 14 14" focusable="false">
+      <path
+        d="M5.1 5.3a1.9 1.9 0 1 1 2.7 1.7c-.55.27-.8.62-.8 1.15v.3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle cx="7" cy="10.45" r=".85" fill="currentColor" />
+    </svg>
+  ),
+  stopped: (
+    <svg viewBox="0 0 14 14" focusable="false">
+      <rect x="4.6" y="4.6" width="4.8" height="4.8" rx=".7" fill="currentColor" />
+    </svg>
+  ),
 };

@@ -191,6 +191,21 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Breaking changes in 0.10.0
+
+0.10.0 moves an agent's state off the ring round its badge and onto a small badge on its corner.
+
+**A state is a status, never a ring.** `Avatar` takes `status`: `working`, `needs` (waiting on a person) or `stopped`, and none for idle. It draws a round badge on the lower-right corner, the state's fill carrying a glyph whose shape says it (play, a question mark, a square) in `--color-text-inverse`, which the tokens' palette suite now holds at 3:1 on each fill (`MARK_ON_FILL`). The badge sits in a notch cut out of the face with a mask, so it reads on any ground without knowing its colour. A badge with a status is drawn inside a `.crewlet-avatar-frame` of the face's own size, which takes your `className` and `style`; a badge that names itself appends the state to its accessible name (`Software Engineer avatar, stopped`), and a decorative one says nothing, so say the state in words beside it. `AVATAR_STATUSES` and `AVATAR_STATUS_LABELS` list the statuses and their words. A ring of a state's hue round a plate in the agent's own hue put two colours on one small mark, and framed what the agent was doing louder than who it is.
+
+| Was | Is |
+|---|---|
+| `<Avatar ring="info">`, `ring="warning"`, `ring="danger"` for what a seat is doing | `status="working"`, `status="needs"`, `status="stopped"` |
+| `<Avatar ring="success">` | no status; say a finished state in words beside the badge |
+| `AvatarRing` naming `info`, `warning`, `danger` or `success` | `AvatarRing` is `'brand'` alone, the selected ring; a state is an `AvatarStatus` |
+| an `AvatarStack` member's `ring` | nothing: each member overlaps the one before it, so a corner badge would be hidden; say what the members are doing beside the stack |
+| a stylesheet of your own reading `.crewlet-avatar--ring-info`, `-warning`, `-danger` or `-success` | `.crewlet-avatar__status--working`, `--needs` or `--stopped` |
+| a `ring="brand"` and a `status` on one badge | the status alone; the notch is cut from the outline the ring would follow, so a badge with a status draws no ring |
+
 ## Changes in 0.9.0
 
 0.9.0 gives an agent a face of its own: one of the thirty Crewlet characters in `@crewlethq/icons/characters`, drawn in one of the six node hues an operator chooses for it.
