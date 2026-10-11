@@ -121,7 +121,10 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
         );
         const face = crumb.mono ? 'is-mono' : undefined;
         return (
-          <span key={`${crumb.label}-${i}`} className="crewlet-breadcrumb__part">
+          // KEYED BY DEPTH, not by words: the crumb at a depth is the same place
+          // in the trail whatever it is called, so a heading whose subject is
+          // switched keeps its element, and the control in it keeps focus.
+          <span key={i} className="crewlet-breadcrumb__part">
             {i > 0 ? <ChevronRightGlyph size="xs" className="crewlet-breadcrumb__separator" aria-hidden="true" /> : null}
             {last ? (
               <h1

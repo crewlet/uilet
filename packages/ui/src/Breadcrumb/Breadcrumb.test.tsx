@@ -194,3 +194,22 @@ test('passes axe, with a control as the heading', async () => {
   const results = await axe.run(container);
   expect(results.violations).toEqual([]);
 });
+
+test('a heading whose subject changes keeps its element, so the control in it keeps focus', () => {
+  const trail = (label: string) => (
+    <Breadcrumb
+      crumbs={[{ label: 'Work', href: '#/work' }, { label }]}
+      current={
+        <button type="button" aria-haspopup="dialog" aria-expanded={false}>
+          {label}
+        </button>
+      }
+    />
+  );
+  const { rerender } = render(trail('All projects'));
+  const button = screen.getByRole('button', { name: 'All projects' });
+  button.focus();
+  rerender(trail('Product and Engineering'));
+  expect(screen.getByRole('button', { name: 'Product and Engineering' })).toBe(button);
+  expect(document.activeElement).toBe(button);
+});
