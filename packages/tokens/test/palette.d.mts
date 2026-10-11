@@ -158,6 +158,11 @@ export const DATA_ADJACENT_NORMAL_DE: number;
  * ACTION_LABEL on it.
  */
 export const ACTION_STEPS: readonly (readonly [string, string, string])[];
+/**
+ * Each state fill with the ink an avatar's status glyph is drawn in on it:
+ * [ink, fill], held to 3:1 over every ground the fill can sit on.
+ */
+export const MARK_ON_FILL: readonly (readonly [string, string])[];
 export const ACTION_LABEL: string;
 export const ACTION_DE: number;
 

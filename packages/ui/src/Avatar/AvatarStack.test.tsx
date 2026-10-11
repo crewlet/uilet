@@ -239,11 +239,14 @@ describe('what a stack draws', () => {
     expect(more.fontVariantNumeric).toBe('tabular-nums');
   });
 
-  test('a ring on a member is drawn in the stack as it is alone', () => {
-    const { container } = render(<AvatarStack members={[{ name: 'SWE', ring: 'info' }, { name: 'CTO' }]} />);
-    const [ringed, plain] = [...container.querySelectorAll('.crewlet-avatar')];
-    expect(ringed?.className).toContain('crewlet-avatar--ring-info');
-    expect(plain?.className).not.toContain('ring');
+  test('a member carries no state of its own', () => {
+    // Each badge overlaps the one before it, so a corner badge on any but the
+    // last would be drawn under its neighbour. What a stack's members are
+    // doing is the sentence beside it ("3 agents working"), and a member
+    // never takes a ring or a status.
+    const { container } = render(<AvatarStack members={[{ name: 'SWE' }, { name: 'CTO' }]} />);
+    for (const badge of container.querySelectorAll('.crewlet-avatar')) expect(badge.className).not.toMatch(/ring|notched/);
+    expect(container.querySelector('.crewlet-avatar__status')).toBeNull();
   });
 
   test('carries no axe violation', async () => {
@@ -254,7 +257,7 @@ describe('what a stack draws', () => {
         <AvatarStack
           members={[
             { name: 'Jane Founder', kind: 'human', src: 'https://example.com/jane.png' },
-            { name: 'CTO', ring: 'info' },
+            { name: 'CTO', character: 'hexlet', hue: 'cyan' },
           ]}
         />
         <p>

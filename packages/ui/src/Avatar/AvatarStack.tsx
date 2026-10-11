@@ -2,7 +2,7 @@ import type { CSSProperties, HTMLAttributes } from 'react';
 import { cx } from '../utils/cx.js';
 import type { CrewletCharacterId } from '@crewlethq/icons/characters';
 import type { NodeHue } from '../utils/nodeHue.js';
-import { AVATAR_SIZES, Avatar, type AvatarKind, type AvatarRing, type AvatarSizeStep } from './Avatar.js';
+import { AVATAR_SIZES, Avatar, type AvatarKind, type AvatarSizeStep } from './Avatar.js';
 
 /** One badge in a stack. */
 export interface AvatarStackMember {
@@ -11,8 +11,6 @@ export interface AvatarStackMember {
   /** An agent (the default) is a squircle; a human is a circle. */
   kind?: AvatarKind | undefined;
   src?: string | undefined;
-  /** A state ring on this badge, as `Avatar` draws it. */
-  ring?: AvatarRing | undefined;
   /** The Crewlet character an agent member is drawn as, as `Avatar` draws it. */
   character?: CrewletCharacterId | undefined;
   /** The hue an agent member's character is drawn in, as `Avatar` draws it. */
@@ -135,7 +133,6 @@ export function AvatarStack({
           name={member.name}
           kind={member.kind}
           src={member.src}
-          ring={member.ring}
           character={member.character}
           hue={member.hue}
           size={size}
