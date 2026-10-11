@@ -200,7 +200,7 @@ places:
 
 ## Changes in 0.13.0
 
-0.13.0 adds the parts a theme picker is built from, and calls the light and dark choice Mode.
+0.13.0 adds the parts the engine console's themes and project switcher are built with, and calls the light and dark choice Mode.
 
 **`ThemeSwatch`** draws a theme from its registry entry in `@crewlethq/tokens` (its `swatch`): `size="chip"` is a mark beside a name, `"card"` a picker's thumbnail and `"pane"` a preview large enough to read as a screen. Both palettes are drawn by default, dark beside light, and `mode` draws one. It is decoration unless given a `label`.
 
@@ -217,6 +217,18 @@ places:
 **The light and dark choice is called Mode.** `ThemeSwitcher`'s row is named "Mode", and `ThemeToggle` says "Switch to light mode" and "Switch to dark mode": "Theme" now names the palette. Code keeps `data-theme`.
 
 **Labels on the danger fill and the scrim read their own tokens.** `ImageUpload`'s remove button and a danger toast's action read `--color-text-on-danger`, and the upload scrim, its spinner and a seeded `Avatar` read `--color-text-on-scrim`, so they stay white on a theme whose accent carries a dark label.
+
+**`Switcher`** is a page's subject drawn as a button, and the panel that switches it: a search band, a list that scrolls, and a footer that does not. It opens under its button, centred when it has none (a panel opened by a key), and as a sheet from the bottom edge below 640px. Focus stays in the field while the arrows walk `pinned`, a `message`'s actions, `groups` and `footer` as one listbox. A row with an `href` is a link, so a middle click, a Command click and Command+Enter open it in a new tab; a `held` row keeps its reason and is passed over. `loading`, `note` and `announcement` cover the rest, and the caller searches and ranks.
+
+**`Breadcrumb`** moves into the kit from the engine dashboard: ancestors that lead back out, the page's own `h1` last, a floor measured from what the trail holds, and a tab stop only while it overflows. `current` draws a control, such as a `Switcher`, as the heading's words. Below 640px an ancestor with a glyph is drawn as its glyph alone, its word kept for a screen reader.
+
+**`KeyChip`** draws a project's key as the small mono chip, with a search's letters in bold (`highlight`). `SidebarNav` now draws an item's `lead` with it.
+
+**`Tabs` take `variant="chip"`**: compact chips whose selected one is outlined by its own accent hairline, with no fill and no underline, for an object's lenses beside its name.
+
+**`Popover`** takes `alignOffset` (a shift along the anchor, or a function that measures one), `sideOffset` (its distance from the anchor) and `initialFocus`.
+
+**`Modal` takes `placement="bottom"`**: a dialog pinned to the bottom edge at the window's width, rounded on its top corners, rising from that edge.
 
 `@crewlethq/icons` adds `PaletteGlyph` (Lucide's `palette`).
 
