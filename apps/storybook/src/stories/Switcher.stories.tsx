@@ -129,7 +129,7 @@ function Demo({ projects = FAIRSPLIT, state = 'ready', held = false, truncated =
     message = {
       title: 'The project list did not load',
       body: 'The page behind it is unchanged.',
-      actions: [{ id: 'retry', label: 'Try again', icon: <RefreshCwGlyph size="md" /> }],
+      actions: [{ id: 'retry', label: 'Try again', icon: <RefreshCwGlyph size="md" />, keepsOpen: true }],
     };
   } else if (state === 'ready' && projects.length === 0) {
     message = { title: 'No projects yet', body: 'A project appears when a team or a seat in the org gets a tracker project key.' };

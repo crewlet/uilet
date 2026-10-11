@@ -309,6 +309,28 @@ describe('the states a list is in', () => {
     expect(activeRow()?.textContent).toContain('Try again');
     fireEvent.keyDown(field(), { key: 'Enter' });
     expect(retry).toHaveBeenCalled();
+    // An ordinary row closes the panel as it is taken.
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  test('a row that keeps the panel open is taken without closing it', async () => {
+    const retry = vi.fn();
+    render(
+      <Harness
+        pinned={undefined}
+        groups={[]}
+        message={{
+          title: 'The project list did not load',
+          actions: [{ id: 'retry', label: 'Try again', onSelect: retry, keepsOpen: true }],
+        }}
+      />,
+    );
+    openPanel();
+    await waitFor(() => expect(document.activeElement).toBe(field()));
+    fireEvent.keyDown(field(), { key: 'Enter' });
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('dialog', { name: 'Switch project' })).toBeTruthy();
+    expect(document.activeElement).toBe(field());
   });
 
   test('a note about the list sits under the pinned row and describes the field', () => {

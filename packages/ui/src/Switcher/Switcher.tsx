@@ -108,6 +108,12 @@ export interface SwitcherOption {
   held?: string | undefined;
   /** Taking the row. Without one, a row with an `href` follows it. */
   onSelect?: (() => void) | undefined;
+  /**
+   * Taking the row leaves the panel open: an action on the list itself, such
+   * as asking for it again after it did not load, where closing would take
+   * the answer away from the reader who asked for it.
+   */
+  keepsOpen?: boolean | undefined;
 }
 
 export interface SwitcherGroup {
@@ -445,7 +451,7 @@ function SwitcherPanel({
     // A NEW TAB OR WINDOW IS THE BROWSER'S, and the panel stays as it was.
     if (option.href && (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
     if (option.onSelect) event.preventDefault();
-    onDone();
+    if (!option.keepsOpen) onDone();
     option.onSelect?.();
   }
 
