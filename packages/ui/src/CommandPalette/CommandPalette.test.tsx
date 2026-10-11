@@ -882,6 +882,56 @@ describe('a step', () => {
     expect(screen.getByRole('combobox', { name: 'Change theme' })).toBeTruthy();
   });
 
+  test('a step opens on its own row, and going back puts the highlight where it was', () => {
+    const told: (string | null)[] = [];
+    function Opening() {
+      const [inStep, setInStep] = useState(false);
+      const actions: CommandPaletteGroup[] = [
+        {
+          id: 'actions',
+          label: 'Commands',
+          items: [
+            { id: 'copy', label: 'Copy link', onSelect: () => {} },
+            {
+              id: 'theme',
+              label: 'Change theme…',
+              onSelect: () => {
+                setInStep(true);
+                return false;
+              },
+            },
+          ],
+        },
+      ];
+      const themes: CommandPaletteGroup[] = [
+        { id: 'themes', label: 'Themes', items: THEMES.map((name) => ({ id: `theme-${name}`, label: name, onSelect: () => {} })) },
+      ];
+      return (
+        <CommandPalette
+          open
+          onClose={() => {}}
+          query=""
+          onQueryChange={() => {}}
+          groups={inStep ? themes : actions}
+          step={inStep ? { label: 'Change theme', onBack: () => setInStep(false), startAt: 'theme-Abyss' } : undefined}
+          onHighlight={(item) => told.push(item?.id ?? null)}
+        />
+      );
+    }
+    render(<Opening />);
+    const field = screen.getByRole('combobox', { name: 'Search' });
+    fireEvent.keyDown(field, { key: 'ArrowDown' });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    // Opened on the row in effect, and told only that: never the row the
+    // highlight was left on in the list before.
+    const named = () => document.getElementById(screen.getByRole('combobox').getAttribute('aria-activedescendant')!)?.textContent;
+    expect(named()).toBe('Abyss');
+    expect(told).toEqual(['copy', 'theme', 'theme-Abyss']);
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Change theme' }), { key: 'Escape' });
+    expect(named()).toBe('Change theme…');
+    expect(told.at(-1)).toBe('theme');
+  });
+
   test('a step carries no accessibility violation', async () => {
     render(<StepHarness />);
     enter();

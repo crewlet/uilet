@@ -360,7 +360,9 @@ export const Scoped: Story = {
  * A STEP: a second list in the same surface. "Change theme…" leads into the
  * themes, grouped as a picker lists them; the chip at the field's start names
  * the step and goes back, as do Escape and Backspace in an empty field. The
- * row that leads in returns `false`, so the surface stays open.
+ * row that leads in returns `false`, so the surface stays open, and the step
+ * opens on the theme in use (`startAt`); going back puts the highlight on the
+ * row that led in.
  *
  * `onHighlight` is told where the highlight comes to rest (at once for a key,
  * once the pointer has rested for 120 ms, and nowhere when the list empties,
@@ -438,7 +440,19 @@ export const Step: Story = {
           onQueryChange={setQuery}
           groups={groups}
           placeholder={inStep ? `Search ${themeRegistry.length} themes` : 'Search, or run an action'}
-          step={inStep ? { label: 'Change theme', onBack: () => { setInStep(false); setQuery(''); } } : undefined}
+          step={
+            inStep
+              ? {
+                  label: 'Change theme',
+                  onBack: () => {
+                    setInStep(false);
+                    setQuery('');
+                  },
+                  // Open on the theme in use, so nothing is previewed until the reader moves.
+                  startAt: applied,
+                }
+              : undefined
+          }
           onHighlight={(item) => setResting(item?.id ?? null)}
           escapeHint
           footer={

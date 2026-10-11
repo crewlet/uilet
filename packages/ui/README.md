@@ -208,7 +208,7 @@ places:
 
 **`Select` options take `leading` and `hint`.** `leading` is drawn before the label, in the list and on the trigger while the option is chosen; `hint` is a quieter word at the end of the label's line. `onHighlight` is told where the highlight comes to rest: at once for a key, once the pointer has rested on a row for `HIGHLIGHT_REST_MS` (120 ms), and `null` when the list closes or the pointer leaves it.
 
-**`CommandPalette` takes a `step`.** `{ label, onBack }` draws a chip naming the step at the field's start, and the chip, Escape and Backspace in an empty field go back rather than closing. A row whose `onSelect` returns `false` keeps the surface open, which is how a row leads into a step. `onHighlight` reports the resting highlight with the same timing as `Select`'s.
+**`CommandPalette` takes a `step`.** `{ label, onBack, startAt? }` draws a chip naming the step at the field's start, and the chip, Escape and Backspace in an empty field go back rather than closing. The step opens on the row `startAt` names (the choice in effect), or on its first row, and going back puts the highlight on the row that led in. A row whose `onSelect` returns `false` keeps the surface open, which is how a row leads into a step. `onHighlight` reports the resting highlight with the same timing as `Select`'s.
 
 **`SegmentedControl` takes `fill`**: the row fills the width it is given and every option takes an equal share, so rows stacked in one panel draw one box. `ThemeSwitcher` and `DensitySwitcher` pass it through.
 

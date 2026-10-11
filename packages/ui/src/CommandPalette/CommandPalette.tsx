@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
 import { ChevronLeftGlyph, SearchGlyph } from '@crewlethq/icons/glyphs';
 import { Count } from '../Count/index.js';
 import { Input } from '../Input/index.js';
@@ -57,6 +57,12 @@ export interface CommandPaletteStep {
    * caller's chord.
    */
   onBack: () => void;
+  /**
+   * The id of the row the step's list opens on: the choice already in effect,
+   * so a step that previews its rows opens on what is on screen rather than
+   * previewing its first row. The first row without it.
+   */
+  startAt?: string | undefined;
 }
 
 /** One scope the search can be narrowed to: a tab over the results. */
@@ -301,6 +307,23 @@ function Palette({
     else if (pointer) highlight.rest(restingKey);
     else highlight.now(restingKey);
   }, [restingKey, highlight]);
+
+  /*
+   * A STEP OPENS ON ITS OWN ROW, and coming back puts the highlight where it
+   * was. Decided while rendering, not in an effect, so the frame that shows the
+   * new list already shows the right row and the highlight is never told the
+   * row it happened to be left on: an effect would tell a previewing caller
+   * the stale row first, and the screen would flash it.
+   */
+  const stepKey = step?.label ?? null;
+  const [shownStep, setShownStep] = useState(stepKey);
+  const [before, setBefore] = useState(0);
+  if (stepKey !== shownStep) {
+    setShownStep(stepKey);
+    if (shownStep === null) setBefore(listbox.active);
+    const start = step?.startAt === undefined ? -1 : flat.findIndex((item) => item.id === step.startAt);
+    listbox.setActive(stepKey === null ? before : Math.max(start, 0));
+  }
 
   const tabId = (scopeId: string) => `${id}-scope-${scopeId}`;
   const panelId = `${id}-panel`;
