@@ -134,6 +134,22 @@ function controlIn(cell: HTMLElement): HTMLElement | null {
   return focusables(cell).find((el) => !el.closest('[aria-hidden="true"]')) ?? null;
 }
 
+/** The input types a person types a line of text into, whose caret the arrows move. */
+const TEXT_INPUTS = new Set(['text', 'search', 'url', 'email', 'tel', 'password', 'number']);
+
+/**
+ * Whether `key` moves the caret of the text field that holds focus, which then
+ * keeps it: Left, Right, Home and End in any text field, and Up and Down only
+ * in one of several lines.
+ */
+function caretKey(target: HTMLElement, key: string): boolean {
+  const lines = target instanceof HTMLTextAreaElement || target.isContentEditable;
+  const field = lines || (target instanceof HTMLInputElement && TEXT_INPUTS.has(target.type));
+  if (!field) return false;
+  if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'Home' || key === 'End') return true;
+  return lines && (key === 'ArrowUp' || key === 'ArrowDown');
+}
+
 export interface TreeGridProps {
   /** The accessible name of the grid, such as "Organization outline". */
   label: string;
@@ -353,6 +369,14 @@ export function TreeGrid({
       const width = other ? other.cells : columns.length;
       focusAt(next, col === null ? null : Math.min(col, width));
     };
+
+    // A TEXT FIELD IN A CELL IS EDITED WITH ITS OWN KEYS. A name typed in place
+    // moves its caret with Left, Right, Home and End, and a field of several
+    // lines moves between them with Up and Down; captured here, those keys
+    // left the field instead, so nothing typed in it could be corrected. A
+    // single line has no lines to move between, so Up and Down still walk the
+    // rows from it, and Tab leaves it as it leaves any control.
+    if (col !== null && caretKey(target, event.key)) return;
 
     if (col !== null) {
       switch (event.key) {

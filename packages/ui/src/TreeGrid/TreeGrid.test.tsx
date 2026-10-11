@@ -425,10 +425,59 @@ describe('keys', () => {
     expect(document.activeElement).toBe(rowOf('unit:eng').querySelector("[aria-colindex='1']"));
     press('ArrowRight');
     expect(document.activeElement?.tagName).toBe('A');
-    press('ArrowRight');
-    expect(document.activeElement?.tagName).toBe('INPUT');
     press('Home');
     expect(document.activeElement).toBe(rowOf('unit:eng').querySelector("[aria-colindex='1']"));
+    press('End');
+    expect(document.activeElement?.tagName).toBe('INPUT');
+  });
+
+  test('a text field in a cell keeps the keys that move its caret', () => {
+    // A name typed in place is corrected with the keys every text field has.
+    // Captured by the grid, Left and Right left the field instead of moving in
+    // it. A single line has no lines to move between, so Up and Down still
+    // walk the rows; a field of several lines keeps them as well.
+    const columns: TreeGridColumn[] = [
+      { key: 'name', header: 'Name' },
+      { key: 'rename', header: 'Rename' },
+      { key: 'notes', header: 'Notes' },
+    ];
+    const rows: TreeInput[] = [{ id: 'unit:eng', label: 'Engineering', children: [{ id: 'seat:vp', label: 'VP' }] }];
+    render(
+      <TreeGrid
+        label="Organization outline"
+        columns={columns}
+        rows={rows}
+        cellHasControl={(_id, column) => column > 1}
+        renderCell={(id, column, grid) =>
+          column === 2 ? (
+            <input aria-label={`Rename ${id}`} defaultValue={id} tabIndex={grid.tabStop(id, column) ? 0 : -1} />
+          ) : column === 3 ? (
+            <textarea aria-label={`Notes on ${id}`} defaultValue={id} tabIndex={grid.tabStop(id, column) ? 0 : -1} />
+          ) : (
+            id
+          )
+        }
+      />,
+    );
+    rowOf('unit:eng').focus();
+    press('ArrowRight');
+    press('ArrowRight');
+    const field = screen.getByRole('textbox', { name: 'Rename unit:eng' });
+    expect(document.activeElement).toBe(field);
+    for (const key of ['ArrowLeft', 'ArrowRight', 'Home', 'End']) {
+      // Not prevented: the browser moves the caret.
+      expect(press(key), key).toBe(true);
+      expect(document.activeElement, key).toBe(field);
+    }
+    press('ArrowDown');
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Rename seat:vp' }));
+
+    const notes = screen.getByRole('textbox', { name: 'Notes on unit:eng' });
+    notes.focus();
+    for (const key of ['ArrowUp', 'ArrowDown', 'Home', 'End']) {
+      expect(press(key), key).toBe(true);
+      expect(document.activeElement, key).toBe(notes);
+    }
   });
 
   test('the row keys reach the caller, and a row that refuses one leaves the key alone', () => {

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, Menu, TreeGrid, type TreeGridColumn, type TreeGridContext, type TreeInput } from '@crewlethq/ui';
+import { Button, Input, Menu, TreeGrid, type TreeGridColumn, type TreeGridContext, type TreeInput } from '@crewlethq/ui';
 
 /**
  * UI / TreeGrid.
@@ -256,3 +256,68 @@ function OnDemand() {
  * its own. Headless: the column's name is read and not drawn.
  */
 export const LevelsOnDemand: Story = { render: () => <OnDemand /> };
+
+/* ---- a name typed in place ----------------------------------------------------- */
+
+const CREATE = 'create';
+
+function InPlace() {
+  const [folders, setFolders] = useState(['Designs', 'Runbooks']);
+  const [naming, setNaming] = useState(false);
+  const [draft, setDraft] = useState('');
+  const field = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (naming) field.current?.focus();
+  }, [naming]);
+  const rows = useMemo<TreeInput[]>(
+    () => [...folders.map((name) => ({ id: `folder:${name}`, label: name })), { id: CREATE, label: '' }],
+    [folders],
+  );
+  const stop = () => {
+    setDraft('');
+    setNaming(false);
+  };
+  return (
+    <TreeGrid
+      label="Engineering"
+      columns={[{ key: 'title', header: 'Page' }]}
+      rows={rows}
+      headless
+      cellHasControl={(id) => id === CREATE}
+      addRow={(id) => (id === CREATE ? { label: 'Create in Engineering', cells: 1 } : null)}
+      renderCell={(id, column, grid) => {
+        if (id !== CREATE) return id.slice('folder:'.length);
+        const tabIndex = grid.tabStop(id, column) ? 0 : -1;
+        return naming ? (
+          <Input
+            ref={field}
+            inputSize="sm"
+            aria-label="New folder name"
+            placeholder="Folder name"
+            value={draft}
+            tabIndex={tabIndex}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') stop();
+              if (event.key === 'Enter' && draft.trim()) {
+                setFolders((was) => [...was, draft.trim()]);
+                stop();
+              }
+            }}
+          />
+        ) : (
+          <Button size="small" variant="ghost" tabIndex={tabIndex} onClick={() => setNaming(true)}>
+            New folder
+          </Button>
+        );
+      }}
+    />
+  );
+}
+
+/**
+ * A name typed in place: the add row turns into a field, and the field keeps
+ * the keys that move its caret, so Left, Right, Home and End correct the name
+ * rather than leaving the cell. Enter creates the folder and Escape cancels.
+ */
+export const NameInPlace: Story = { render: () => <InPlace /> };
