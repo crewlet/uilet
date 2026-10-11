@@ -65,6 +65,19 @@
   background: var(--color-surface-pressed);
 }
 
+/*
+ * FORCED COLORS repaints every author background to Canvas, which takes the
+ * open row's fill with it, so the row the pane is showing would look like
+ * every other. An outline is the one mark the mode keeps, drawn inside the row
+ * so the scroller does not clip it, in the system's colour for exactly this.
+ */
+@media (forced-colors: active) {
+  .crewlet-inbox-row--selected {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
 .crewlet-inbox-row__control {
   display: flex;
   align-items: flex-start;

@@ -4,6 +4,9 @@
  * toggles at the end.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -68,6 +71,17 @@ test('the open row is announced as current and takes the neutral selected fill',
   expect(row.getAttribute('aria-current')).toBe('true');
   expect(row.closest('li')!.className).toContain('crewlet-inbox-row--selected');
   expect(screen.getByRole('button', { name: /Today/ }).getAttribute('aria-current')).toBeNull();
+});
+
+// THE OPEN ROW SURVIVES FORCED COLORS, which repaints the pressed fill to
+// Canvas: an outline in the system's highlight is the mark that mode keeps.
+test('the open row keeps a mark in forced colors, where its fill is painted away', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const forced = /@media\s*\(forced-colors:\s*active\)\s*\{([\s\S]*?\})\s*\}/.exec(css)?.[1] ?? '';
+  expect(forced).toMatch(/\.crewlet-inbox-row--selected\s*\{[^}]*outline:\s*2px solid Highlight/);
 });
 
 test('unread and settled are read out, not only drawn', () => {

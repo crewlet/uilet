@@ -50,6 +50,18 @@
   text-decoration: none;
 }
 
+/*
+ * FORCED COLORS paints every link in LinkText whatever its state, so the step
+ * up to the accent ink cannot be seen there, and a hover with no underline is
+ * no hover at all. The rule under the words is the one mark the mode leaves to
+ * the author, so it is where the quiet variant's hover goes in that mode.
+ */
+@media (forced-colors: active) {
+  .crewlet-link--quiet:hover {
+    text-decoration: underline;
+  }
+}
+
 .crewlet-link--body {
   font-size: var(--font-size-sm);
 }
