@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -401,4 +401,56 @@ test('a panel that changes size while open is placed again', () => {
     Element.prototype.getBoundingClientRect = realRect;
     globalThis.ResizeObserver = real;
   }
+});
+
+/*
+ * AN ALIGNMENT OFFSET MOVES THE PANEL ALONG THE ANCHOR, and a function form is
+ * asked on every placement with the two elements it measures from.
+ */
+test('alignOffset shifts the aligned panel, and a function is handed the panel and the anchor', () => {
+  const restore = stubBoxes({ anchor: rect(400, 100, 120, 32), panel: rect(0, 0, 260, 200) });
+  try {
+    const { unmount } = render(<Chip alignOffset={-12} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+    expect(Number.parseFloat(screen.getByRole('dialog', { name: 'Owner' }).style.left)).toBe(388);
+    unmount();
+
+    const measure = vi.fn(() => -20);
+    render(<Chip alignOffset={measure} />);
+    const trigger = screen.getByRole('button', { name: 'Owner' });
+    fireEvent.click(trigger);
+    const panel = screen.getByRole('dialog', { name: 'Owner' });
+    expect(Number.parseFloat(panel.style.left)).toBe(380);
+    expect(measure).toHaveBeenCalledWith(panel, trigger);
+  } finally {
+    restore();
+  }
+});
+
+test('sideOffset sets how far the panel stands off its anchor', () => {
+  const restore = stubBoxes({ anchor: rect(400, 100, 120, 32), panel: rect(0, 0, 260, 200) });
+  try {
+    const { unmount } = render(<Chip />);
+    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+    // The layer's own gap under the anchor's bottom edge (132) by default.
+    expect(Number.parseFloat(screen.getByRole('dialog', { name: 'Owner' }).style.top)).toBe(136);
+    unmount();
+
+    render(<Chip sideOffset={6} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+    expect(Number.parseFloat(screen.getByRole('dialog', { name: 'Owner' }).style.top)).toBe(138);
+  } finally {
+    restore();
+  }
+});
+
+test('initialFocus picks where a dialog panel starts, and the first control is the default', async () => {
+  const { unmount } = render(<Chip />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Owner value' })));
+  unmount();
+
+  render(<Chip initialFocus={() => document.querySelector<HTMLElement>('.crewlet-popover')} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Owner' })));
 });
