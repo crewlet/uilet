@@ -128,6 +128,8 @@ test('a ring stands off its element only where the element draws no edge', () =>
       // Text and marks with no boundary: a link, the brand mark, a chip that is
       // only a link, a plain text button, and an image that is the target.
       'Link/Link.css | .crewlet-link:focus-visible',
+      // A link in rendered prose, which is text with an underline and no box.
+      'Document/Document.css | .crewlet-document a:focus-visible',
       'BrandLockup/BrandLockup.css | .crewlet-brand__home:focus-visible',
       'EntityChip/EntityChip.css | .crewlet-entity-chip--link:focus-visible',
       'DataTable/DataTable.css | .crewlet-data-table__clear-filters:focus-visible',
