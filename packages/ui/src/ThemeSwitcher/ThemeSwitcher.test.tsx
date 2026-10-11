@@ -48,6 +48,21 @@ test('choosing a theme writes the root attribute and remembers it', () => {
   expect(localStorage.getItem('test_theme')).toBe('system');
 });
 
+test('fill reaches both rows, so stacked they draw one box', () => {
+  render(
+    <>
+      <ThemeSwitcher fill />
+      <DensitySwitcher fill />
+    </>,
+  );
+  const rows = screen.getAllByRole('radiogroup');
+  expect(rows).toHaveLength(2);
+  for (const row of rows) expect(row.classList.contains('crewlet-segmented--fill')).toBe(true);
+  cleanup();
+  render(<ThemeSwitcher />);
+  expect(screen.getByRole('radiogroup').classList.contains('crewlet-segmented--fill')).toBe(false);
+});
+
 test('the density row draws a letter and is called by a word', () => {
   render(<DensitySwitcher storageKey="test_density" />);
   expect(screen.getByRole('radiogroup', { name: 'Density' })).toBeTruthy();

@@ -58,3 +58,32 @@ export const RailFoot: Story = {
     </div>
   ),
 };
+
+/**
+ * AS A PREFERENCES PANEL DRAWS THEM. Stacked under their labels, each row
+ * takes `fill`: it fills the column it is given, and every option an equal
+ * share of it, so the glyph row and the letter row draw one box with the same
+ * cells rather than two rows each sized to what its options say.
+ */
+export const Panel: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '62px minmax(0, 1fr)',
+        alignItems: 'center',
+        gap: 'var(--spacing-2)',
+        width: 256,
+        padding: 'var(--spacing-3)',
+        background: 'var(--color-surface-subtle)',
+        border: '1px solid var(--color-border-strong)',
+        borderRadius: 'var(--radius-lg)',
+      }}
+    >
+      <span aria-hidden="true" style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>Mode</span>
+      <ThemeSwitcher storageKey="storybook_theme" fill />
+      <span aria-hidden="true" style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>Density</span>
+      <DensitySwitcher storageKey="storybook_density" fill />
+    </div>
+  ),
+};

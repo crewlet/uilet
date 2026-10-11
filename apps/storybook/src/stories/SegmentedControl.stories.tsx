@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Input, SegmentedControl, TabPanel } from '@crewlethq/ui';
-import { ListGlyph, NetworkGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
+import { ListGlyph, MonitorGlyph, MoonGlyph, NetworkGlyph, SunGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof SegmentedControl> = {
   title: 'UI/SegmentedControl',
@@ -190,6 +190,52 @@ export const Chips: Story = {
                 />
               ) : null
             }
+          />
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/**
+ * EQUAL SHARES. With `fill`, the row fills the width it is given and every
+ * option takes an equal column of it, so two settings stacked in one panel
+ * draw one box: a glyph row over a letter row, the same width and the same
+ * cells, rather than two rows each sized to what its options say.
+ */
+export const Filled: Story = {
+  render: () => {
+    function Demo() {
+      const [mode, setMode] = useState('system');
+      const [density, setDensity] = useState('normal');
+      return (
+        <div style={{ width: 160, display: 'grid', gap: 8 }}>
+          <SegmentedControl
+            label="Mode"
+            semantics="radio"
+            size="sm"
+            fill
+            value={mode}
+            onValueChange={setMode}
+            options={[
+              { value: 'light', icon: <SunGlyph />, srLabel: 'Light', title: 'Light' },
+              { value: 'system', icon: <MonitorGlyph />, srLabel: 'Follow the system', title: 'Follow the system' },
+              { value: 'dark', icon: <MoonGlyph />, srLabel: 'Dark', title: 'Dark' },
+            ]}
+          />
+          <SegmentedControl
+            label="Density"
+            semantics="radio"
+            size="sm"
+            fill
+            value={density}
+            onValueChange={setDensity}
+            options={[
+              { value: 'compact', label: 'S', srLabel: 'Compact', title: 'Compact' },
+              { value: 'normal', label: 'M', srLabel: 'Normal', title: 'Normal' },
+              { value: 'comfortable', label: 'L', srLabel: 'Comfortable', title: 'Comfortable' },
+            ]}
           />
         </div>
       );

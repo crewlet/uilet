@@ -158,3 +158,21 @@
 .crewlet-segmented--cards .crewlet-segmented__option.is-active .crewlet-segmented__description {
   color: var(--color-brand-accent-ink);
 }
+
+/*
+ * EQUAL SHARES. The row fills the width it is given and every option takes
+ * an equal column of it, so two settings stacked in one panel draw one box.
+ * Two classes, for the reason the card row gives: the pill's own rules size
+ * the row to its content.
+ */
+.crewlet-tabs.crewlet-segmented--fill {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  width: 100%;
+}
+
+.crewlet-segmented--fill .crewlet-segmented__option {
+  justify-content: center;
+  min-width: 0;
+}
