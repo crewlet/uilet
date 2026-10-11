@@ -7,9 +7,12 @@
  * into the nearest layer host and drawn with the shared listbox register, so
  * a list of options looks the same wherever it is offered from.
  *
- * The boundary is --color-border-control, like every other control: the
- * hairline measured 1.27:1 in light, which is a box a reader has to know is
- * there already.
+ * THE BOUNDARY IS A BUTTON'S, --color-border-strong, the secondary button's
+ * and the date and time-window pickers'. A picker shows its value and its
+ * chevron, and those are what a reader knows it by. --color-border-control,
+ * at 3:1, is for the controls whose outline IS the control (a text box, a
+ * checkbox, a switch; see Input.css): on a picker it drew the one bright box
+ * in a row of buttons and switchers, brighter at rest than under the pointer.
  */
 
 .crewlet-select {
@@ -27,7 +30,7 @@
   width: 100%;
   min-height: var(--size-control-md);
   background-color: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-control);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   /* The boundary is the only thing that moves. The ring is an outline, which
@@ -48,7 +51,7 @@
 }
 
 .crewlet-select:hover {
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-strong-hover);
 }
 
 /*

@@ -1,8 +1,9 @@
 /*
  * TimeWindowPicker: one trigger over one panel.
  *
- * The trigger takes the same geometry as a Select and a DateTimePicker, so the
- * three line up in a filter bar. The panel is a RAIL of named windows beside
+ * The trigger takes the same geometry and button boundary as a Select and a
+ * DateTimePicker (--color-border-strong; see Select.css), so the three line
+ * up in a filter bar. The panel is a RAIL of named windows beside
  * the calendars, rather than two tabs with one of them hidden: the windows a
  * reader picks by name are the road, and the absolute range is the turning off
  * it, so both are on screen at once and each shows what the other chose.
@@ -17,7 +18,7 @@
   /* The side inset only: see DateTimePicker's own trigger. */
   padding: 0 var(--spacing-2) 0 var(--spacing-3);
   background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-control);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font-family: inherit;
@@ -34,7 +35,7 @@
 }
 
 .crewlet-time-window:hover:not(:disabled) {
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-strong-hover);
 }
 
 /*

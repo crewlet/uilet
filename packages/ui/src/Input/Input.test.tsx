@@ -333,6 +333,28 @@ test('a focused field draws its ring as one outline, never a shadow or a recolou
   expect(recoloured).toEqual([]);
 });
 
+/*
+ * A PICKER'S BOUNDARY IS A BUTTON'S, A TEXT BOX'S IS THE CONTROL'S. A select
+ * and the date and time-window pickers show their value and a chevron, which
+ * is what a reader knows them by, so they draw the secondary button's
+ * --color-border-strong and sit quietly among the buttons and switchers beside
+ * them; on the control boundary they were the one bright box in that row.
+ * The outline is the control only where nothing else says so: a text box
+ * keeps --color-border-control, at 3:1.
+ */
+test("a picker draws a button's boundary, and a text box keeps the control's", () => {
+  const border = (where: string, selector: string): string =>
+    sheetRules().find((rule) => rule.where === where && rule.selector === selector)?.declared.get('border') ?? '';
+  for (const [where, selector] of [
+    ['Select/Select.css', '.crewlet-select'],
+    ['DateTimePicker/DateTimePicker.css', '.crewlet-datetime'],
+    ['TimeWindowPicker/TimeWindowPicker.css', '.crewlet-time-window'],
+  ] as const) {
+    expect(border(where, selector), selector).toContain('var(--color-border-strong)');
+  }
+  expect(border('Input/Input.css', '.crewlet-input')).toContain('var(--color-border-control)');
+});
+
 test('one element draws the ring, and it is the one a reader reads as the field', () => {
   /*
    * THE EXACT LIST, not a count: the way the second ring arrives is a NEW
