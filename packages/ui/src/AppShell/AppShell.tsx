@@ -47,7 +47,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  useSyncExternalStore,
   type HTMLAttributes,
   type MouseEventHandler,
   type ReactNode,
@@ -58,6 +57,7 @@ import { MenuGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { focusables, useModalLayer } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
+import { useMediaMatch } from '../utils/useMediaMatch.js';
 
 /**
  * Where the rail stops being a column beside the page and becomes a drawer:
@@ -98,26 +98,6 @@ export function useAppShell(): AppShellContextValue {
   const shell = useContext(AppShellContext);
   if (!shell) throw new Error('useAppShell must be called inside an <AppShell>.');
   return shell;
-}
-
-/** Whether a media query matches now, and again whenever that changes. */
-function useMediaMatch(query: string): boolean {
-  const subscribe = useCallback(
-    (notify: () => void) => {
-      if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {};
-      const list = window.matchMedia(query);
-      list.addEventListener('change', notify);
-      return () => list.removeEventListener('change', notify);
-    },
-    [query],
-  );
-  const read = useCallback(
-    () => (typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(query).matches : false),
-    [query],
-  );
-  // On the server the layout is the wide one: it is the shape that needs no
-  // JavaScript to be usable.
-  return useSyncExternalStore(subscribe, read, () => false);
 }
 
 export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
