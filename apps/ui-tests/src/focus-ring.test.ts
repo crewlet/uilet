@@ -119,6 +119,8 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'IconButton/IconButton.css | .crewlet-icon-btn:focus-visible',
       // Filled with the accent, its border the fill itself.
       'DataTable/DataTable.css | .crewlet-data-table__items-per-page-btn.is-active:focus-visible',
+      // The recommended answer, filled with the accent as a primary button is.
+      'ChoiceButtons/ChoiceButtons.css | .crewlet-choice-buttons__option--recommended:focus-visible',
       // Filled toast actions, whose borders are their fills, and a borderless dismiss.
       'Toaster/Toaster.css | .crewlet-toast__action-btn:focus-visible',
       'Toaster/Toaster.css | .crewlet-toast__action-link:focus-visible',
@@ -130,6 +132,8 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'EntityChip/EntityChip.css | .crewlet-entity-chip--link:focus-visible',
       'DataTable/DataTable.css | .crewlet-data-table__clear-filters:focus-visible',
       'ImageUpload/ImageUpload.css | .crewlet-image-upload__trigger:focus-visible',
+      // The words at the end of an inbox that open its snoozed and earlier rows.
+      'InboxList/InboxList.css | .crewlet-inbox-list__toggle:focus-visible',
       // A row and a frame that draw no border of their own.
       'Charts/Charts.css | .crewlet-bar-list__row--pressable:focus-visible',
       'Charts/Charts.css | .crewlet-chart-frame:focus-visible',
@@ -185,6 +189,7 @@ test('a control that draws an edge rings over it, never off it', () => {
     ['DataTable/DataTable.css | .crewlet-data-table__items-per-page-btn:focus-visible', inset],
     ['ImageUpload/ImageUpload.css | .crewlet-image-upload__remove:focus-visible', inset],
     ['SegmentedControl/SegmentedControl.css | .crewlet-segmented--cards .crewlet-segmented__option:focus-visible', inset],
+    ['ChoiceButtons/ChoiceButtons.css | .crewlet-choice-buttons__option:focus-visible', inset],
     ['Tag/Tag.css | .crewlet-tag--actionable:focus-visible', '-1px'],
     ['Tag/Tag.css | .crewlet-tag__remove:focus-visible', '-1px'],
     ['Tag/Tag.css | .crewlet-tag__press:focus-visible', '0'],

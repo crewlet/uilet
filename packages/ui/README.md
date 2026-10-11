@@ -200,7 +200,7 @@ places:
 
 ## Changes in 0.13.0
 
-0.13.0 adds the parts the engine console's themes and project switcher are built with, and calls the light and dark choice Mode.
+0.13.0 adds the parts the engine console's themes, project switcher and inbox are built with, and calls the light and dark choice Mode.
 
 **`ThemeSwatch`** draws a theme from its registry entry in `@crewlethq/tokens` (its `swatch`): `size="chip"` is a mark beside a name, `"card"` a picker's thumbnail and `"pane"` a preview large enough to read as a screen. Both palettes are drawn by default, dark beside light, and `mode` draws one. It is decoration unless given a `label`.
 
@@ -229,6 +229,14 @@ places:
 **`Popover`** takes `alignOffset` (a shift along the anchor, or a function that measures one), `sideOffset` (its distance from the anchor) and `initialFocus`.
 
 **`Modal` takes `placement="bottom"`**: a dialog pinned to the bottom edge at the window's width, rounded on its top corners, rising from that edge.
+
+**`InboxList`** is an inbox's column: `InboxGroup` labels a run of rows, and each `InboxRow` is one control (a button, or a link with `href`) naming who it is from, a `qualifier` and a `meta` time, with its words in up to three lines and an `excerpt` in the quiet ink. `aside` sits under the control as a control of its own, for the task the row is about. `selected` takes the neutral pressed fill and `aria-current`; `unread`, `actionable` and `done` set the ink, and `unread` and `done` are read out. `InboxMore` and `InboxToggle` are the quiet toggles at the end of the list.
+
+**`ChoiceButtons`** sends one answer with one press: a group of buttons as tall as a touch target, the `recommended` option first, filled and marked. `pending` and `disabledReason` hold every option still without taking its focus.
+
+**`ReadingPane`** reads one item in a single column named by its title: `ReadingPaneByline`, `ReadingPaneTitle`, `ReadingPaneLead`, `ReadingPaneQuote` (`verbatim` for a machine's words), `ReadingPaneReasoning`, `ReadingPaneOutcome` (a status line) and `ReadingPaneSection`.
+
+What to change: a test or a query that finds the theme row by the name "Theme", or the toggle by "Switch to the light theme" or "Switch to the dark theme", uses the new names. A `CommandPalette` row whose `onSelect` returns `false` by accident now keeps the surface open; return nothing to close it. Everything else is new.
 
 **`Link`** adds `variant="quiet"`, a reference among other words in `--color-text-link-quiet` that never underlines and steps up to the accent ink on hover, and `size="inherit"`.
 
