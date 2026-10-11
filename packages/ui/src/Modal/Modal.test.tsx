@@ -127,6 +127,20 @@ test('center is still reachable, for a surface with nothing above it to stay wit
   expect(veil().classList.contains('crewlet-modal-overlay--top')).toBe(false);
 });
 
+test('bottom pins a dialog to the bottom edge, full width, as a phone sheet', () => {
+  render(
+    <Modal open onClose={() => {}} placement="bottom" title="Switch project">
+      <p>Anything.</p>
+    </Modal>,
+  );
+  expect(veil().classList.contains('crewlet-modal-overlay--bottom')).toBe(true);
+  expect(veil().classList.contains('crewlet-modal-overlay--top')).toBe(false);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Modal.css'), 'utf8');
+  const rule = /\.crewlet-modal-overlay--bottom > \.crewlet-modal--dialog\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(rule).toContain('width: 100%');
+  expect(rule).toContain('border-radius: var(--radius-xl) var(--radius-xl) 0 0');
+});
+
 test("only a sheet's head takes the sheet's own band, and only a sheet's title", () => {
   render(
     <>

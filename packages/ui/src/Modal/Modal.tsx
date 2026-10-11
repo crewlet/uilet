@@ -37,8 +37,12 @@ export type ModalVariant = 'dialog' | 'sheet';
  *
  * `center` is kept for a surface that is the whole of what the reader is doing
  * and has nothing above it to stay in touch with, such as a full-bleed viewer.
+ *
+ * `bottom` is a sheet that rises from the bottom edge, the full width of the
+ * window, rounded on its top corners only: a list a phone's thumb reaches,
+ * such as a switcher opened on a narrow screen.
  */
-export type ModalPlacement = 'center' | 'top';
+export type ModalPlacement = 'center' | 'top' | 'bottom';
 
 /**
  * How much chrome the surface carries.
