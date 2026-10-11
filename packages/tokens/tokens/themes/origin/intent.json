@@ -29,7 +29,7 @@
       "token": "--color-surface-inset"
     },
     "--line": {
-      "value": "#3f4145",
+      "value": "#2e2e30",
       "token": "--color-border-default"
     },
     "--line-2": {
