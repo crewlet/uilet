@@ -290,6 +290,15 @@ svg.crewlet-select__chevron {
   color: var(--color-brand-accent-ink);
 }
 
+/*
+ * AT THE ROW'S END in a list whose rows lead with a mark (see `tickAtEnd`),
+ * so the mark starts at the panel's edge. After a hint it follows the hint,
+ * which already takes the free space; without one it takes it itself.
+ */
+.crewlet-select__option-body + .crewlet-select__option-tick--end {
+  margin-left: auto;
+}
+
 .crewlet-select__option-body {
   display: flex;
   flex-direction: column;
