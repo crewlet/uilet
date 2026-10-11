@@ -5,3 +5,6 @@ export type { Listbox, ListboxOptions } from './useListbox.js';
 
 export { TYPE_AHEAD_WINDOW, useOptionKeys } from './useOptionKeys.js';
 export type { OptionKeys, OptionKeysOptions } from './useOptionKeys.js';
+
+export { HIGHLIGHT_REST_MS, useHighlightRest } from './useHighlightRest.js';
+export type { HighlightRest } from './useHighlightRest.js';

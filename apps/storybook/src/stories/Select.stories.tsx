@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { FormField, Select, type SelectOption, type SelectValue } from '@crewlethq/ui';
+import { BotGlyph, NetworkGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 
 const fruits: SelectOption[] = [
   { value: 'apple', label: 'Apple', description: 'Red, crunchy' },
@@ -224,5 +225,39 @@ export const Native: Story = {
       );
     }
     return <Native />;
+  },
+};
+
+const owners: SelectOption[] = [
+  { value: 'miles', label: 'Miles Okafor', hint: 'Person', leading: <UserGlyph size="sm" /> },
+  { value: 'engineer', label: 'Software Engineer', hint: 'Agent', leading: <BotGlyph size="sm" /> },
+  { value: 'sre', label: 'Site Reliability', hint: 'Agent', leading: <BotGlyph size="sm" /> },
+  { value: 'engineering', label: 'Engineering', hint: 'Unit', leading: <NetworkGlyph size="sm" /> },
+];
+
+/**
+ * A LEADING MARK AND A HINT. `leading` draws a mark before an option's label,
+ * in the list and on the trigger while that option is chosen; `hint` ends the
+ * label's line with the quieter fact that tells two rows apart. `onHighlight`
+ * is told where the highlight comes to rest (at once for a key, once the
+ * pointer has rested for 120 ms, and nowhere when the list goes), which is
+ * what a list that previews its options listens to.
+ */
+export const LeadingAndHint: Story = {
+  render: function Render() {
+    const [value, setValue] = useState<SelectValue | SelectValue[] | undefined>('miles');
+    const [resting, setResting] = useState<string>('nowhere');
+    return (
+      <div style={{ width: 320, display: 'grid', gap: 12 }}>
+        <Select
+          ariaLabel="Owner"
+          options={owners}
+          value={value}
+          onChange={(next) => setValue(next)}
+          onHighlight={(option) => setResting(option ? String(option.label) : 'nowhere')}
+        />
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-tertiary)' }}>Highlight resting on: {resting}</p>
+      </div>
+    );
   },
 };

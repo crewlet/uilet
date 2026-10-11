@@ -23,7 +23,7 @@ import {
   viewportBounds,
   type PlacementRect,
 } from '../Layer/index.js';
-import { useListbox, useOptionKeys } from '../Listbox/index.js';
+import { useHighlightRest, useListbox, useOptionKeys } from '../Listbox/index.js';
 import { cx } from '../utils/cx.js';
 
 export type SelectValue = string | number;
@@ -72,6 +72,19 @@ export interface SelectOption {
   label: ReactNode;
   /** A second line under the label: a handle, a path, what the choice means. */
   description?: ReactNode;
+  /**
+   * Drawn before the label, in the list and on the trigger while the option is
+   * the one chosen: a swatch, an avatar, a glyph. Decorative, so it is hidden
+   * from assistive technology: the label carries the words. Listbox mode only;
+   * a native option draws text alone.
+   */
+  leading?: ReactNode;
+  /**
+   * A quieter word on the label's own line, at the row's end: a tag, a count,
+   * the one fact that tells two options apart at a glance. Read with the
+   * label. Listbox mode only.
+   */
+  hint?: ReactNode;
   disabled?: boolean;
   /** Options sharing a group are listed under its name, in first-seen order. */
   group?: string;
@@ -156,6 +169,15 @@ export interface SelectProps extends NativePassthrough {
   renderMultiLabel?: (selected: SelectOption[]) => ReactNode;
   /** The line shown when a search matches nothing. */
   emptyMessage?: string;
+  /**
+   * Told where the highlight COMES TO REST while the list is open, and `null`
+   * when it closes or the pointer leaves it: at once for a key, and once the
+   * pointer has rested on a row for `HIGHLIGHT_REST_MS`. What a list that
+   * previews its options listens to, so a pointer crossing the list does not
+   * preview every row it passed. Told the chosen row as the list opens.
+   * Listbox mode only.
+   */
+  onHighlight?: ((option: SelectOption | null) => void) | undefined;
 }
 
 const same = (a: SelectValue, b: SelectValue): boolean => String(a) === String(b);
@@ -209,6 +231,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     renderOption,
     renderMultiLabel,
     emptyMessage = 'No matches',
+    onHighlight,
     ...native
   },
   ref,
@@ -284,6 +307,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
       renderOption={renderOption}
       renderMultiLabel={renderMultiLabel}
       emptyMessage={emptyMessage}
+      onHighlight={onHighlight}
       describedBy={native['aria-describedby']}
       required={native.required}
       ariaRequired={native['aria-required']}
@@ -412,6 +436,7 @@ interface ListboxSelectProps {
   renderOption: SelectProps['renderOption'];
   renderMultiLabel: SelectProps['renderMultiLabel'];
   emptyMessage: string;
+  onHighlight: SelectProps['onHighlight'];
   describedBy: string | undefined;
   required: boolean | undefined;
   ariaRequired: NativePassthrough['aria-required'];
@@ -444,6 +469,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     renderOption,
     renderMultiLabel,
     emptyMessage,
+    onHighlight,
     describedBy,
     required,
     ariaRequired,
@@ -621,6 +647,31 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     if (spot.top < bounds.top) box.scrollTop -= bounds.top - spot.top;
     else if (spot.bottom > bounds.bottom) box.scrollTop += spot.bottom - bounds.bottom;
   }, [listbox.active, flat.length, open]);
+
+  /*
+   * WHERE THE HIGHLIGHT RESTS, for a caller that previews it. Keyed by the
+   * option's value, so a list handed new option objects for the same rows
+   * tells nothing new. A move the POINTER made waits for the pointer to rest
+   * (see useHighlightRest); every other move (a key, the opening seed, a
+   * search that narrowed the list) is told at once.
+   */
+  const offeredNow = useRef(flat);
+  offeredNow.current = flat;
+  const highlight = useHighlightRest(
+    onHighlight
+      ? (key) => onHighlight(key === null ? null : (offeredNow.current.find((option) => String(option.value) === key) ?? null))
+      : undefined,
+  );
+  const byPointer = useRef(false);
+  const resting = open ? flat[listbox.active] : undefined;
+  const restingKey = resting ? String(resting.value) : null;
+  useEffect(() => {
+    const pointer = byPointer.current;
+    byPointer.current = false;
+    if (restingKey === null) highlight.now(null);
+    else if (pointer) highlight.rest(restingKey);
+    else highlight.now(restingKey);
+  }, [restingKey, highlight]);
 
   /*
    * WHERE THE PANEL GOES, MEASURED FROM THE PANEL.
@@ -820,6 +871,26 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
    */
   const requiredForAria = ariaRequired ?? required;
 
+  /*
+   * THE POINTER'S OWN MOVES ARE MARKED, so the highlight they make is told
+   * only once the pointer rests (see the effect above). The shared handlers
+   * are otherwise used as they are.
+   */
+  const optionHandlers = (at: number) => {
+    const handlers = listbox.optionHandlers(at);
+    return {
+      ...handlers,
+      onMouseEnter: () => {
+        // Back onto the row the highlight never left: nothing moves, so the
+        // rest is started here rather than by the effect above.
+        const option = flat[at];
+        if (at === listbox.active && option) highlight.rest(String(option.value));
+        else byPointer.current = true;
+        handlers.onMouseEnter();
+      },
+    };
+  };
+
   let index = -1;
   const rows = groups.map((group, position) => {
     const items = group.items.map((option) => {
@@ -849,7 +920,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
             highlighted && 'is-highlight',
             option.disabled && 'is-disabled',
           )}
-          {...(option.disabled ? {} : listbox.optionHandlers(at))}
+          {...(option.disabled ? {} : optionHandlers(at))}
         >
           {renderOption ? (
             renderOption(option, { active: highlighted, selected })
@@ -858,12 +929,24 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
               <span className="crewlet-select__option-tick" aria-hidden="true">
                 {selected ? <CheckGlyph size="sm" /> : null}
               </span>
+              {option.leading !== undefined ? (
+                <span className="crewlet-select__option-leading" aria-hidden="true">
+                  {option.leading}
+                </span>
+              ) : null}
               <span className="crewlet-select__option-body">
                 <span className="crewlet-select__option-label">{option.label}</span>
                 {option.description ? (
                   <span className="crewlet-select__option-desc">{option.description}</span>
                 ) : null}
               </span>
+              {option.hint !== undefined ? (
+                <>
+                  {/* A space the layout ignores and a name does not: without it
+                      the row is read as one run-on word, "AbyssVivid violet". */}{' '}
+                  <span className="crewlet-listbox__hint">{option.hint}</span>
+                </>
+              ) : null}
             </>
           )}
         </div>
@@ -917,6 +1000,10 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       }
       role="presentation"
       onPointerDown={(event) => event.stopPropagation()}
+      // THE POINTER LEAVING IS NOWHERE, for a caller previewing the highlight:
+      // what the screen shows goes back to what is chosen. The highlight
+      // itself stays where it was, so the keys carry on from it.
+      onMouseLeave={() => highlight.now(null)}
     >
       {searchable ? (
         <div className="crewlet-select__search">
@@ -1007,7 +1094,14 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         {renderTrigger ? (
           renderTrigger(single, { open })
         ) : (
-          <span className={cx('crewlet-select__label', !hasValue && 'is-placeholder')}>{label}</span>
+          <>
+            {!multiple && single?.leading !== undefined ? (
+              <span className="crewlet-select__leading" aria-hidden="true">
+                {single.leading}
+              </span>
+            ) : null}
+            <span className={cx('crewlet-select__label', !hasValue && 'is-placeholder')}>{label}</span>
+          </>
         )}
         <ChevronDownGlyph className="crewlet-select__chevron" size="sm" />
       </button>
