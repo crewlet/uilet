@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useMemo, useState } from 'react';
 import { Button, CommandPalette, Kbd, Tag, type CommandPaletteGroup, type CommandPaletteScope } from '@crewlethq/ui';
+import { themeGroups, themeRegistry } from '@crewlethq/tokens';
 import {
   BookOpenGlyph,
   BotGlyph,
@@ -10,6 +11,7 @@ import {
   FileTextGlyph,
   LayoutDashboardGlyph,
   MessageSquareGlyph,
+  PaletteGlyph,
   PlusGlyph,
   UserGlyph,
   UsersGlyph,
@@ -352,4 +354,110 @@ function ScopedDemo() {
  */
 export const Scoped: Story = {
   render: () => <ScopedDemo />,
+};
+
+/**
+ * A STEP: a second list in the same surface. "Change theme…" leads into the
+ * themes, grouped as a picker lists them; the chip at the field's start names
+ * the step and goes back, as do Escape and Backspace in an empty field. The
+ * row that leads in returns `false`, so the surface stays open.
+ *
+ * `onHighlight` is told where the highlight comes to rest (at once for a key,
+ * once the pointer has rested for 120 ms, and nowhere when the list empties,
+ * the pointer leaves or the surface closes), which is what an application
+ * previews the theme from. Enter applies it.
+ */
+export const Step: Story = {
+  render: function Render() {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const [inStep, setInStep] = useState(false);
+    const [applied, setApplied] = useState('crewlet');
+    const [resting, setResting] = useState<string | null>(null);
+    const name = (id: string) => themeRegistry.find((theme) => theme.id === id)?.name ?? id;
+
+    const groups = useMemo<CommandPaletteGroup[]>(() => {
+      const term = query.trim().toLowerCase();
+      if (!inStep) {
+        return [
+          {
+            id: 'actions',
+            label: 'Commands',
+            items: [
+              {
+                id: 'theme',
+                icon: <PaletteGlyph size="sm" />,
+                label: 'Change theme…',
+                hint: `${name(applied)} is on`,
+                onSelect: () => {
+                  setInStep(true);
+                  setQuery('');
+                  return false;
+                },
+              },
+            ].filter((item) => term === '' || item.label.toLowerCase().includes(term)),
+          },
+        ];
+      }
+      return themeGroups
+        .map((group) => ({
+          id: group.id,
+          label: group.name,
+          items: themeRegistry
+            .filter((theme) => theme.group === group.id)
+            .filter((theme) => term === '' || [theme.name, theme.tag, group.name].some((text) => text.toLowerCase().includes(term)))
+            .map((theme) => ({
+              id: theme.id,
+              label: theme.name,
+              hint: theme.tag,
+              meta: theme.id === applied ? 'Current' : undefined,
+              onSelect: () => setApplied(theme.id),
+            })),
+        }))
+        .filter((group) => group.items.length > 0);
+    }, [query, inStep, applied]);
+
+    return (
+      <div style={{ display: 'grid', gap: 'var(--spacing-3)', justifyItems: 'start', padding: 'var(--spacing-6)' }}>
+        <Button
+          onClick={() => {
+            setInStep(false);
+            setQuery('');
+            setOpen(true);
+          }}
+        >
+          Open search
+        </Button>
+        <p style={{ margin: 0 }}>
+          Applied: {name(applied)}. Highlight resting on: {resting && inStep ? name(resting) : 'nothing to preview'}.
+        </p>
+        <CommandPalette
+          open={open}
+          onClose={() => setOpen(false)}
+          query={query}
+          onQueryChange={setQuery}
+          groups={groups}
+          placeholder={inStep ? `Search ${themeRegistry.length} themes` : 'Search, or run an action'}
+          step={inStep ? { label: 'Change theme', onBack: () => { setInStep(false); setQuery(''); } } : undefined}
+          onHighlight={(item) => setResting(item?.id ?? null)}
+          escapeHint
+          footer={
+            <>
+              <span>
+                <Kbd keys={['ArrowUp']} /> <Kbd keys={['ArrowDown']} /> {inStep ? 'preview' : 'move'}
+              </span>
+              <span>
+                <Kbd keys={['Enter']} /> {inStep ? 'apply' : 'open'}
+              </span>
+              {inStep ? (
+                <span>
+                  <Kbd keys={['Escape']} /> back to Actions
+                </span>
+              ) : null}
+            </>
+          }
+        />
+      </div>
+    );
+  },
 };
