@@ -764,7 +764,7 @@ test('helperOnFocus keeps the helper described but shows it only while the field
 
 test('ListInput passes helperOnFocus to its field', () => {
   const { container } = render(
-    <ListInput label="Repositories" value={[]} onChange={() => {}} helper="Empty means every repository." helperOnFocus />,
+    <ListInput label="Repositories" itemName="repository" value={[]} onChange={() => {}} helper="Empty means every repository." helperOnFocus />,
   );
   expect(container.querySelector('.crewlet-list-input')!.className).toContain('crewlet-form-field--helper-on-focus');
 });
