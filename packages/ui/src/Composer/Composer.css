@@ -1,0 +1,88 @@
+/*
+ * A message written in place: the field and its footer strip in one box. The
+ * BOX takes the focus ring, an accent border and a 2px soft halo, so the
+ * field inside draws no border or outline of its own and the footer reads as
+ * part of what is being written.
+ */
+.crewlet-composer {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-background);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-composer:hover {
+  border-color: var(--color-border-strong-hover);
+}
+
+.crewlet-composer:focus-within {
+  border-color: var(--color-brand-accent);
+  box-shadow: 0 0 0 2px var(--color-brand-accent-soft);
+}
+
+.crewlet-composer .crewlet-composer__field {
+  min-height: 68px;
+  max-height: 220px;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  resize: none;
+}
+
+/* The ring is the box's, above. A transparent outline stays, because forced
+   colors drops the box's shadow and paints an outline in its place. */
+.crewlet-composer .crewlet-composer__field:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+/* Past its cap the field scrolls rather than pushing the page. */
+.crewlet-composer .crewlet-composer__field.is-auto-resize {
+  overflow-y: auto;
+}
+
+.crewlet-composer__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-1) var(--spacing-1) var(--spacing-3);
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-composer__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-composer__counter {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-composer__spacer {
+  flex: 1;
+}
+
+@media (width < 640px) {
+  .crewlet-composer__hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-composer {
+    transition: none;
+  }
+}

@@ -1,0 +1,109 @@
+/*
+ * A short list of answers in one bordered box: a radio, the label with a line
+ * of detail under it, and a tag at the row's end. The selected row takes the
+ * accent's soft fill, so the answer reads at a glance without the radio.
+ */
+.crewlet-choice-list {
+  display: grid;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-choice-list.is-disabled {
+  opacity: 0.6;
+}
+
+.crewlet-choice-list__group {
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.crewlet-choice-list__item {
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+/* The "Something else" a list ends with, set apart by a dashed rule. */
+.crewlet-choice-list__item.is-separated {
+  padding-top: var(--spacing-1);
+  border-top: 1px dashed var(--color-border-strong);
+}
+
+.crewlet-choice-list__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-choice-list__row:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-choice-list__row.is-checked {
+  background: var(--color-brand-accent-soft);
+}
+
+.crewlet-choice-list.is-disabled .crewlet-choice-list__row {
+  cursor: not-allowed;
+}
+
+.crewlet-choice-list__radio {
+  margin: 3px 0 0;
+  accent-color: var(--color-brand-accent);
+  cursor: inherit;
+}
+
+/* A radio draws its own edge, so the ring sits on it, as a checkbox's does. */
+.crewlet-choice-list__radio:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+}
+
+.crewlet-choice-list__text {
+  display: grid;
+  min-width: 0;
+}
+
+.crewlet-choice-list__label {
+  font-size: var(--font-size-compact);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-choice-list__detail {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-choice-list__tag {
+  padding-top: 2px;
+  font-size: var(--font-size-2xs);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-brand-accent-ink);
+  white-space: nowrap;
+}
+
+.crewlet-choice-list__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-choice-list__row {
+    transition: none;
+  }
+}

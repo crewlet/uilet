@@ -42,7 +42,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | ---- | ---------- |
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
 | Content and text | `Text` (the eight registers), `Prose`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
-| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList` |
+| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer` |
 | Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
@@ -190,6 +190,16 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.12.0
+
+0.12.0 adds the parts a question is answered in place with.
+
+**`ChoiceList`** draws one answer from a short list in one bordered box: each choice a native radio with its label, a line of `detail` under it and an optional `tag` at its end ("Recommended"). The whole row selects, the arrow keys move between choices, and the selected row takes the accent's soft fill. A choice marked `separated` is set apart by a dashed rule, and its `panel` is drawn under it only while it is selected, which is how a list ends in "Something else" with a field of its own. `footer` holds the list's Cancel and Submit.
+
+**`Composer`** is a message written in place: a borderless field that grows with its text and a footer strip with the send shortcut, a counter and `actions`, in one box that takes the focus ring as a whole. `onSubmit` runs on Command+Enter (Control+Enter elsewhere) and adds the shortcut's hint; the counter appears from four fifths of `maxLength` (`COMPOSER_COUNTER_AT`).
+
+What to change: nothing. Every addition is new.
 
 ## Changes in 0.11.0
 
