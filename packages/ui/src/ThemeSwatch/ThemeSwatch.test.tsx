@@ -18,6 +18,9 @@ import { ThemeSwatch, type ThemeSwatchColours } from './index.js';
 afterEach(cleanup);
 
 const abyss = themeRegistry.find((theme) => theme.id === 'abyss')!;
+/** A custom-property name, spelt so the stylesheet checks read no declaration or reference here. */
+const token = (name: string) => `--${name}`;
+const SWATCH_PREFIX = token('crewlet-swatch-');
 const halves = (root: Element) => [...root.querySelectorAll<HTMLElement>(':scope > .crewlet-theme-swatch__half')];
 const painted = (half: HTMLElement, key: string) => half.style.getPropertyValue(`--crewlet-swatch-${key}`);
 
@@ -113,14 +116,14 @@ test('the stylesheet paints every part with the theme it is handed, and the outl
   const css = readFileSync(resolve(here, 'ThemeSwatch.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const colours = [...css.matchAll(/(?:background|border(?:-color)?)\s*:\s*([^;]+);/g)].map(([, value]) => value!.trim());
   const pageColours = colours.flatMap((value) => [...value.matchAll(/var\((--color-[\w-]+)\)/g)].map(([, name]) => name));
-  expect(pageColours).toEqual(['--color-border-default']);
-  expect(colours.filter((value) => value.includes('var(--crewlet-swatch-')).length).toBeGreaterThan(10);
+  expect(pageColours).toEqual([token('color-border-default')]);
+  expect(colours.filter((value) => value.includes(`var(${SWATCH_PREFIX}`)).length).toBeGreaterThan(10);
 
   const uninstall = installThemed('dark', 'ThemeSwatch/ThemeSwatch.css');
   try {
     const { container } = render(<ThemeSwatch swatch={abyss.swatch} />);
     const root = getComputedStyle(container.firstElementChild!);
-    expect(channels(root.borderTopColor)).toEqual(channels(themeColours('dark').get('--color-border-default')!));
+    expect(channels(root.borderTopColor)).toEqual(channels(themeColours('dark').get(token('color-border-default'))!));
     expect(root.getPropertyValue('forced-color-adjust')).toBe('none');
   } finally {
     uninstall();

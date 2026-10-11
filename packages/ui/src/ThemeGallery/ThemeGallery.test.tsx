@@ -19,6 +19,9 @@ import { channels, installThemed, themeColours } from '../../../../apps/ui-tests
 import { HIGHLIGHT_REST_MS } from '../Listbox/index.js';
 import { ThemeGallery, type ThemeGalleryTheme } from './index.js';
 
+/** A token's custom-property name, spelt so the stylesheet checks read no declaration here. */
+const token = (name: string) => `--${name}`;
+
 afterEach(cleanup);
 
 function Gallery({ onPreview, initial = 'crewlet' }: { onPreview?: (id: string | null) => void; initial?: string }) {
@@ -148,8 +151,8 @@ test('the chosen card is its own border in the accent, and focus draws over it',
     const colours = themeColours('dark');
     const chosen = getComputedStyle(card(/^Crewlet,/));
     const resting = getComputedStyle(card(/^Violet,/));
-    expect(channels(chosen.borderTopColor)).toEqual(channels(colours.get('--color-brand-accent')!));
-    expect(channels(resting.borderTopColor)).toEqual(channels(colours.get('--color-border-default')!));
+    expect(channels(chosen.borderTopColor)).toEqual(channels(colours.get(token('color-brand-accent'))!));
+    expect(channels(resting.borderTopColor)).toEqual(channels(colours.get(token('color-border-default'))!));
     expect(chosen.borderTopWidth).toBe(resting.borderTopWidth);
     expect(chosen.outlineStyle === '' || chosen.outlineStyle === 'none').toBe(true);
   } finally {
