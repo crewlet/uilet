@@ -197,7 +197,7 @@ svg.crewlet-select__chevron {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  max-height: var(--crewlet-select-menu-max-height);
+  max-height: min(var(--crewlet-select-menu-max-height), 60vh);
   /*
    * THE PANEL IS THE PRODUCT'S SURFACE, on the panel hairline, at the panel
    * corner. A list offered from a field is another panel over the one the
@@ -224,9 +224,23 @@ svg.crewlet-select__chevron {
   position: absolute;
 }
 
+/*
+ * THE PANEL'S HEIGHT IS THE LIST'S. The shared listbox register caps a list
+ * at min(360px, 60vh) on its own, which inside this panel made
+ * `--crewlet-select-menu-max-height` a promise it could not keep past 360px:
+ * a taller panel drew the same short list and scrolled it. Here the list
+ * fills what the panel allows, and the panel keeps the register's cap on the
+ * window (see `.crewlet-select__menu`).
+ */
 .crewlet-select__list {
   flex: 1;
   min-height: 0;
+}
+
+/* Scoped to the panel for the weight, as the option rules below are: the
+   register's cap is one class, and the bundle orders equal weights by hash. */
+.crewlet-select__menu .crewlet-select__list {
+  max-height: none;
 }
 
 .crewlet-select__group {

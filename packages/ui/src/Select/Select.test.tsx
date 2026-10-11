@@ -869,3 +869,18 @@ test('a list of marked rows ends each row with its tick, and a list of words kee
   expect(row.firstElementChild?.className).toBe('crewlet-select__option-tick');
   expect(row.querySelector('.crewlet-select__option-tick--end')).toBeNull();
 });
+
+/*
+ * THE PANEL'S HEIGHT IS THE LIST'S. The shared listbox register caps a list
+ * at min(360px, 60vh), and inside a Select's panel that cap overrode a taller
+ * `--crewlet-select-menu-max-height`, so a caller asking for room got the same
+ * short list. The panel now holds the cap on the window, and the list inside
+ * it, scoped for the weight, has none of its own.
+ */
+test("a taller panel is a taller list, and the panel keeps the window's cap", () => {
+  const css = selectCss();
+  const menu = /\.crewlet-select__menu\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(menu).toMatch(/max-height:\s*min\(var\(--crewlet-select-menu-max-height\),\s*60vh\)/);
+  const list = /\.crewlet-select__menu\s+\.crewlet-select__list\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(list).toMatch(/max-height:\s*none/);
+});
