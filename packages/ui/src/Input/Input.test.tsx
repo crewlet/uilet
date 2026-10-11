@@ -741,3 +741,23 @@ test('and it adds back the border scrollHeight leaves out', () => {
     delete (HTMLTextAreaElement.prototype as unknown as Record<string, unknown>).scrollHeight;
   }
 });
+
+test('helperOnFocus keeps the helper described but shows it only while the field has focus', () => {
+  const { container } = render(
+    <FormField label="Name" helper="Seat names are unique." helperOnFocus>
+      {(field) => <input id={field.id} aria-describedby={field.describedBy} />}
+    </FormField>,
+  );
+  const fieldEl = container.querySelector('.crewlet-form-field')!;
+  expect(fieldEl.className).toContain('crewlet-form-field--helper-on-focus');
+  const input = screen.getByRole('textbox', { name: 'Name' });
+  expect(document.getElementById(input.getAttribute('aria-describedby')!)?.textContent).toBe('Seat names are unique.');
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Input.css'), 'utf8');
+  expect(sheet).toMatch(
+    /\.crewlet-form-field--helper-on-focus:not\(:focus-within\) \.crewlet-form-field__helper\s*\{\s*display:\s*none;/,
+  );
+  // Without a helper there is nothing to hide, so the field takes no class.
+  cleanup();
+  const { container: plain } = render(<FormField label="Email" helperOnFocus><input /></FormField>);
+  expect(plain.querySelector('.crewlet-form-field')!.className).not.toContain('helper-on-focus');
+});

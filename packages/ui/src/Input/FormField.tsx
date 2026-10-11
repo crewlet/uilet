@@ -23,6 +23,13 @@ export interface FormFieldProps extends Omit<HTMLAttributes<HTMLElement>, 'child
   requiredNews?: boolean | undefined;
   /** Where the value comes from, or what shape it takes. */
   helper?: ReactNode;
+  /**
+   * Show the helper only while the field has focus. For a dense form whose
+   * every field carries a sentence: at rest the form is labels and values,
+   * and the sentence appears under the field the reader is in. It stays in
+   * `aria-describedby` either way, so a screen reader hears it on entry.
+   */
+  helperOnFocus?: boolean | undefined;
   /** Why the last value was refused. */
   error?: ReactNode;
   /** A control rendered beside the label, such as an Add button. */
@@ -69,6 +76,7 @@ export const FormField = ({
   optional,
   requiredNews,
   helper,
+  helperOnFocus = false,
   error,
   labelAction,
   as = 'div',
@@ -107,7 +115,12 @@ export const FormField = ({
     </>
   );
 
-  const classes = cx('crewlet-form-field', Boolean(error) && 'is-error', className);
+  const classes = cx(
+    'crewlet-form-field',
+    Boolean(error) && 'is-error',
+    helperOnFocus && helper ? 'crewlet-form-field--helper-on-focus' : null,
+    className,
+  );
 
   if (as === 'fieldset') {
     return (

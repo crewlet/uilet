@@ -552,3 +552,25 @@ test('every tab is watched for its own size, not only the row', () => {
     globalThis.ResizeObserver = realRO;
   }
 });
+
+test('a marker says what needs the reader behind a tab, and replaces the count while it is set', () => {
+  const { container } = render(
+    <Tabs
+      variant="underline"
+      ariaLabel="Sections"
+      value="profile"
+      items={[
+        { value: 'profile', label: 'Profile', marker: { tone: 'danger', count: 2, label: '2 problems' } },
+        { value: 'model', label: 'Model', marker: { tone: 'warning', label: 'A warning' } },
+        { value: 'work', label: 'Work', count: 3, marker: { tone: 'changed', label: 'Changed' } },
+        { value: 'advanced', label: 'Advanced', count: 6 },
+      ]}
+    />,
+  );
+  const tabs = screen.getAllByRole('tab');
+  expect(tabs.map((tab) => tab.textContent)).toEqual(['Profile22 problems', 'ModelA warning', 'WorkChanged', 'Advanced6']);
+  expect(container.querySelector('.crewlet-tabs__marker--danger')?.textContent).toContain('2');
+  expect(container.querySelectorAll('.crewlet-tabs__marker--warning, .crewlet-tabs__marker--changed')).toHaveLength(2);
+  // The count a marker stands in for is not drawn beside it.
+  expect(tabs[2]!.textContent).not.toContain('3');
+});
