@@ -48,10 +48,10 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
-| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
+| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure` |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar` and `useAppShell`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
-| Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences` |
+| Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences` |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -74,6 +74,13 @@ land at once.
   `storageKey` shows one value; an application that owns the preference holds
   it with one `useThemePreference` and passes `value` and `onChange` to each
   control, which then writes nothing of its own.
+- **Named themes.** Import `@crewlethq/tokens/css/themes/all` after
+  `css/themes` and set `data-palette` on `<html>` to a theme's id; removing it
+  paints the default. A theme is a pair of palettes, so `data-theme` keeps
+  choosing light or dark for every theme alike: the interface calls that
+  choice Mode and the palette Theme. `ThemeGallery` offers the themes and
+  `ThemeSwatch` draws one, both from the registry `@crewlethq/tokens`
+  exports, so a thumbnail shows a theme that is not the one on screen.
 - **Density.** Import `@crewlethq/tokens/css/density` and set
   `data-density="compact"` or `"comfortable"` on `<html>`. Every spacing and
   size token scales with it, and the small control and row steps floor at 24px
@@ -190,6 +197,30 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.13.0
+
+0.13.0 adds the parts a theme picker is built from, and calls the light and dark choice Mode.
+
+**`ThemeSwatch`** draws a theme from its registry entry in `@crewlethq/tokens` (its `swatch`): `size="chip"` is a mark beside a name, `"card"` a picker's thumbnail and `"pane"` a preview large enough to read as a screen. Both palettes are drawn by default, dark beside light, and `mode` draws one. It is decoration unless given a `label`.
+
+**`ThemeGallery`** is the choice of a theme: every theme as a card under its group, in one radio group whose arrows choose as they move. The chosen card is its own border in the accent. `onPreview` is told the card the pointer comes to rest on, and `null` when it leaves, for a pane beside the gallery. It reads `themeRegistry` and `themeGroups` by default; `themes`, `groups` and `columns` adapt it.
+
+**`Select` options take `leading` and `hint`.** `leading` is drawn before the label, in the list and on the trigger while the option is chosen; `hint` is a quieter word at the end of the label's line. `onHighlight` is told where the highlight comes to rest: at once for a key, once the pointer has rested on a row for `HIGHLIGHT_REST_MS` (120 ms), and `null` when the list closes or the pointer leaves it.
+
+**`CommandPalette` takes a `step`.** `{ label, onBack }` draws a chip naming the step at the field's start, and the chip, Escape and Backspace in an empty field go back rather than closing. A row whose `onSelect` returns `false` keeps the surface open, which is how a row leads into a step. `onHighlight` reports the resting highlight with the same timing as `Select`'s.
+
+**`SegmentedControl` takes `fill`**: the row fills the width it is given and every option takes an equal share, so rows stacked in one panel draw one box. `ThemeSwitcher` and `DensitySwitcher` pass it through.
+
+**`useHighlightRest`** is the timing `Select` and `CommandPalette` share, for a list of your own that previews its highlight.
+
+**The light and dark choice is called Mode.** `ThemeSwitcher`'s row is named "Mode", and `ThemeToggle` says "Switch to light mode" and "Switch to dark mode": "Theme" now names the palette. Code keeps `data-theme`.
+
+**Labels on the danger fill and the scrim read their own tokens.** `ImageUpload`'s remove button and a danger toast's action read `--color-text-on-danger`, and the upload scrim, its spinner and a seeded `Avatar` read `--color-text-on-scrim`, so they stay white on a theme whose accent carries a dark label.
+
+`@crewlethq/icons` adds `PaletteGlyph` (Lucide's `palette`).
+
+What to change: a test or a query that finds the theme row by the name "Theme", or the toggle by "Switch to the light theme" or "Switch to the dark theme", uses the new names. A `CommandPalette` row whose `onSelect` returns `false` by accident now keeps the surface open; return nothing to close it. Everything else is new.
 
 ## Changes in 0.12.0
 
