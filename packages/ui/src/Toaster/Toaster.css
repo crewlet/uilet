@@ -62,7 +62,10 @@
   background: var(--color-surface-background);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl), var(--shadow-hairline);
+  /* The large shadow and the rim light, both from tokens that are a shadow in
+     every palette: --shadow-hairline is `none` in light, and a `none` inside a
+     list drops the whole declaration. */
+  box-shadow: var(--shadow-xl), var(--shadow-rim-lit);
   color: var(--color-text-primary);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-compact);
