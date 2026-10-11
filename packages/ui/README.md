@@ -246,7 +246,7 @@ places:
 
 **`Highlight`** marks the words a search matched in a line of text, in `mark` elements on a ground behind the text's own ink. `highlightTerms(query)` turns a query into its terms and `highlightRanges(text, terms)` says where they start a word, never inside one.
 
-**`TreeGrid` reads a hierarchy one level at a time.** `defaultExpanded="none"` opens no row until somebody opens it, so a level that has just been read arrives closed and asks for nothing on its own; `expanded` and `onExpandedChange` let the caller hold the open rows, to keep them across a visit or to read a level the moment it opens. `useTreeState` takes the same options (`TreeStateOptions`, `TreeDefaultExpanded`).
+**`TreeGrid` reads a hierarchy one level at a time.** `defaultExpanded="none"` opens no row until somebody opens it, so a level that has just been read arrives closed and asks for nothing on its own; `expanded` and `onExpandedChange` let the caller hold the open rows, to keep them across a visit or to read a level the moment it opens. `useTreeState` takes the same options (`TreeStateOptions`, `TreeDefaultExpanded`). `headless` keeps the column names for a screen reader and draws no header band, for an outline whose cells say what they are.
 
 `@crewlethq/icons` adds `Heading2Glyph`, `Heading3Glyph`, `BoldGlyph`, `ItalicGlyph`, `ListOrderedGlyph` and `ListChecksGlyph`, which `MarkdownEditor` draws, and `PaletteGlyph` (Lucide's `palette`).
 

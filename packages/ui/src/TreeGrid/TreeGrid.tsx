@@ -205,6 +205,13 @@ export interface TreeGridProps {
   expanded?: ReadonlySet<string> | undefined;
   /** The open rows a toggle has just produced, whether or not the caller holds them. */
   onExpandedChange?: ((expanded: ReadonlySet<string>) => void) | undefined;
+  /**
+   * The column names are READ BUT NOT SEEN: an outline whose cells say what
+   * they are in the sight of them (a title, a face, a time) and want no
+   * header band above them. A screen reader still hears every cell's column,
+   * because the header row is still there; only its band is not drawn.
+   */
+  headless?: boolean | undefined;
   labels?: Partial<TreeGridLabels> | undefined;
   ref?: Ref<TreeViewHandle> | undefined;
   className?: string | undefined;
@@ -226,6 +233,7 @@ export function TreeGrid({
   defaultExpanded,
   expanded: held,
   onExpandedChange,
+  headless = false,
   labels,
   ref,
   className,
@@ -431,7 +439,7 @@ export function TreeGrid({
   const template = columns.map((one) => one.width ?? 'minmax(0, 1fr)').join(' ');
 
   return (
-    <div className={cx('crewlet-tree-grid', className)}>
+    <div className={cx('crewlet-tree-grid', headless && 'crewlet-tree-grid--headless', className)}>
       <LayerHost className="crewlet-tree-grid__layer">
         <div className="crewlet-tree-grid__scroller" onScroll={onScroll}>
           <div

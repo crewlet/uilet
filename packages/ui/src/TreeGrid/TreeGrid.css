@@ -126,6 +126,25 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/*
+ * A HEADLESS GRID keeps its header row for a screen reader and draws no band:
+ * the row is taken out of the layout the way VisuallyHidden takes text out,
+ * and the first row of the body loses the hairline that would otherwise sit
+ * under the frame's own edge as a second line.
+ */
+.crewlet-tree-grid--headless .crewlet-tree-grid__head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.crewlet-tree-grid--headless .crewlet-tree-grid__head + [role='rowgroup'] > .crewlet-tree-grid__row:first-child {
+  border-top: 0;
+}
+
 /* The selection is where the reader is, so it takes the accent. */
 .crewlet-tree-grid__row[aria-selected='true'] {
   box-shadow: inset 2px 0 0 var(--color-brand-accent);

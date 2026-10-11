@@ -672,3 +672,14 @@ describe('a grid that opens one level at a time', () => {
     expect(rows()[2]?.getAttribute('aria-expanded')).toBe('false');
   });
 });
+
+describe('a headless grid', () => {
+  test('keeps every column name for a screen reader and draws no header band', () => {
+    const rows = forest(false);
+    const { container } = render(
+      <TreeGrid label="Organization outline" columns={COLUMNS.slice(0, 2)} rows={rows} headless renderCell={(id) => nameOf(id)} />,
+    );
+    expect(container.firstElementChild?.className).toContain('crewlet-tree-grid--headless');
+    expect(screen.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual(['Name', 'Kind or type']);
+  });
+});

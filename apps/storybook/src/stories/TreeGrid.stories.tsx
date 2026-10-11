@@ -232,6 +232,7 @@ function OnDemand() {
       label="Engineering"
       columns={[{ key: 'title', header: 'Page' }]}
       rows={rows}
+      headless
       defaultExpanded="none"
       expanded={open}
       onExpandedChange={(next) => {
@@ -252,6 +253,6 @@ function OnDemand() {
  * A hierarchy whose levels are read on demand, as a knowledge base's space
  * is. Nothing is open at first, a folder stands on a placeholder until its
  * row opens, and the level that arrives is closed, so it asks for nothing on
- * its own.
+ * its own. Headless: the column's name is read and not drawn.
  */
 export const LevelsOnDemand: Story = { render: () => <OnDemand /> };
