@@ -43,6 +43,21 @@ test('a caption-sized link is still a link', () => {
   expect(link.className).toContain('crewlet-link--default');
 });
 
+test('a quiet link takes its own register and the size of the words around it', () => {
+  render(
+    <p>
+      Asks on{' '}
+      <Link href="#/work/FAIR-3" variant="quiet" size="inherit">
+        FAIR-3
+      </Link>
+    </p>,
+  );
+  const link = screen.getByRole('link', { name: 'FAIR-3' });
+  expect(link.className).toContain('crewlet-link--quiet');
+  expect(link.className).toContain('crewlet-link--inherit');
+  expect(link.className).not.toContain('crewlet-link--body');
+});
+
 test('asChild puts the look on a router own link and keeps its navigation', () => {
   render(
     <Link asChild external>

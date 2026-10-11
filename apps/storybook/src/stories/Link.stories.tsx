@@ -6,8 +6,8 @@ const meta: Meta<typeof Link> = {
   component: Link,
   args: { href: '#/org', children: 'the org chart' },
   argTypes: {
-    variant: { control: 'inline-radio', options: ['default', 'subtle'] },
-    size: { control: 'inline-radio', options: ['body', 'caption'] },
+    variant: { control: 'inline-radio', options: ['default', 'subtle', 'quiet'] },
+    size: { control: 'inline-radio', options: ['body', 'caption', 'inherit'] },
     external: { control: 'boolean' },
   },
 };
@@ -26,6 +26,23 @@ export const InASentence: Story = {
 /** An identity a reader clicks through to, rather than an instruction. */
 export const Subtle: Story = {
   args: { variant: 'subtle', children: 'Chief Executive' },
+};
+
+/**
+ * A reference among other words: the task a question is about, named in the
+ * sentence over it. A softer ink than a navigation, no underline even on
+ * hover, and the full accent ink once a pointer reaches it. `size="inherit"`
+ * takes the sentence's own size.
+ */
+export const Quiet: Story = {
+  render: () => (
+    <Text as="p" variant="caption">
+      <strong>Crewlet-PM</strong> asks for your approval on{' '}
+      <Link href="#/work/FAIR-3" variant="quiet" size="inherit">
+        FAIR-3 Ledger and settlement
+      </Link>
+    </Text>
+  ),
 };
 
 /**

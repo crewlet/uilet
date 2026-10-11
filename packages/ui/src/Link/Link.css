@@ -1,5 +1,6 @@
 /*
- * A link, in the two registers a console needs: a navigation and an identity.
+ * A link, in the three registers a console needs: a navigation, an identity
+ * and a quiet reference.
  *
  * The ink is the accent's INK step, not the accent fill. The fill is a mark
  * and clears 3:1; text has to clear 4.5:1, and at caption size it is exactly
@@ -32,8 +33,30 @@
   color: var(--color-brand-accent-ink);
 }
 
+/*
+ * A reference among other words. Its own ink sits between the accent ink and
+ * the secondary text, so a column of rows that each name a task does not read
+ * as a column of links, and the hover steps it up to the full accent ink with
+ * no underline. The ink is a token rather than a mix of two, because a mix is
+ * a colour nobody measured; this one clears 4.5:1 on every surface and on a
+ * pressed row.
+ */
+.crewlet-link--quiet {
+  color: var(--color-text-link-quiet);
+}
+
+.crewlet-link--quiet:hover {
+  color: var(--color-brand-accent-ink);
+  text-decoration: none;
+}
+
 .crewlet-link--body {
   font-size: var(--font-size-sm);
+}
+
+/* Set inside a sentence: the sentence's own size, whatever it is. */
+.crewlet-link--inherit {
+  font-size: inherit;
 }
 
 /*

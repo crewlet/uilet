@@ -230,6 +230,8 @@ places:
 
 **`Modal` takes `placement="bottom"`**: a dialog pinned to the bottom edge at the window's width, rounded on its top corners, rising from that edge.
 
+**`Link`** adds `variant="quiet"`, a reference among other words in `--color-text-link-quiet` that never underlines and steps up to the accent ink on hover, and `size="inherit"`.
+
 `@crewlethq/icons` adds `PaletteGlyph` (Lucide's `palette`).
 
 What to change: a test or a query that finds the theme row by the name "Theme", or the toggle by "Switch to the light theme" or "Switch to the dark theme", uses the new names. A `CommandPalette` row whose `onSelect` returns `false` by accident now keeps the surface open; return nothing to close it. Everything else is new.
