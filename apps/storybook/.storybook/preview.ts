@@ -1,12 +1,13 @@
 import type { Preview } from '@storybook/react-vite';
 import '@crewlethq/tokens/css';
 import '@crewlethq/tokens/css/themes';
+import '@crewlethq/tokens/css/themes/all';
 import '@crewlethq/tokens/css/density';
 import '@crewlethq/tokens/css/fonts';
 import '@crewlethq/tokens/css/base';
 import '@crewlethq/ui/styles.css';
 import './preview.css';
-import { color, themes } from '@crewlethq/tokens';
+import { DEFAULT_THEME_ID, color, isThemeId, themeRegistry, themes } from '@crewlethq/tokens';
 import { defaultCrewletDark } from './themes';
 
 /*
@@ -34,6 +35,16 @@ function applyTheme(theme: ThemeName) {
   else document.documentElement.setAttribute('data-theme', theme);
 }
 
+/**
+ * The named theme, on the same element: the default is the absence of
+ * data-palette, and every other theme is its id. A value no build ships (a
+ * global left in a bookmark after a theme was removed) paints the default.
+ */
+function applyPalette(palette: unknown) {
+  if (!isThemeId(palette) || palette === DEFAULT_THEME_ID) document.documentElement.removeAttribute('data-palette');
+  else document.documentElement.setAttribute('data-palette', palette);
+}
+
 /** The same shape for density: normal is the absence of an attribute. */
 function applyDensity(density: DensityName) {
   if (density === 'normal') document.documentElement.removeAttribute('data-density');
@@ -43,15 +54,24 @@ function applyDensity(density: DensityName) {
 const preview: Preview = {
   globalTypes: {
     theme: {
-      name: 'Theme',
-      description: 'Follow the system, or pin a palette, to audit token visibility.',
+      name: 'Mode',
+      description: 'Follow the system, or pin light or dark, to audit token visibility.',
       toolbar: {
-        icon: 'paintbrush',
+        icon: 'contrast',
         items: [
           { value: 'system', title: 'System', icon: 'browser' },
           { value: 'light', title: 'Light', icon: 'sun' },
           { value: 'dark', title: 'Dark', icon: 'moon' },
         ],
+        dynamicTitle: true,
+      },
+    },
+    palette: {
+      name: 'Theme',
+      description: 'Paint every story in one of the named themes @crewlethq/tokens ships.',
+      toolbar: {
+        icon: 'paintbrush',
+        items: themeRegistry.map((theme) => ({ value: theme.id, title: theme.name, right: theme.tag })),
         dynamicTitle: true,
       },
     },
@@ -71,11 +91,13 @@ const preview: Preview = {
   },
   initialGlobals: {
     theme: 'dark',
+    palette: DEFAULT_THEME_ID,
     density: 'normal',
   },
   decorators: [
     (Story, context) => {
       applyTheme((context.globals.theme as ThemeName) ?? 'dark');
+      applyPalette(context.globals.palette);
       applyDensity((context.globals.density as DensityName) ?? 'normal');
       return Story(context);
     },
