@@ -7,6 +7,9 @@
  * that a pointer crossing the grid previews only where it stops.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
@@ -152,4 +155,17 @@ test('the chosen card is its own border in the accent, and focus draws over it',
   } finally {
     uninstall();
   }
+});
+
+/*
+ * THE CHOSEN CARD KEEPS ITS ACCENT UNDER THE POINTER. jsdom matches no
+ * :hover, so the stylesheet's own rule is read: the hover border is never
+ * drawn on the chosen card, which would otherwise outrank its accent.
+ */
+test('the hover border is never drawn on the chosen card', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const css = readFileSync(resolve(here, 'ThemeGallery.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const hover = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([, selector]) => selector!.includes(':hover'));
+  expect(hover.length).toBeGreaterThan(0);
+  for (const [, selector] of hover) expect(selector, selector).toContain(':not(.is-chosen)');
 });

@@ -51,7 +51,9 @@
   cursor: pointer;
 }
 
-.crewlet-theme-gallery__card:hover:not(:disabled) {
+/* Not on the chosen card: under the pointer it keeps the accent, or the one
+   card that says "this one" would stop saying it while it is being pointed at. */
+.crewlet-theme-gallery__card:hover:not(:disabled):not(.is-chosen) {
   border-color: var(--color-border-strong);
 }
 
