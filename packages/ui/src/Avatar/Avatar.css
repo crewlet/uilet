@@ -160,9 +160,9 @@
 
 /*
  * THE CHARACTER FILLS MOST OF THE PLATE, centred by its own frame (it frames
- * every silhouette square on what it draws), with the plate's corner clear of
- * it: a wide character such as the original Crewlet reaches the plate's
- * sides, a tall one its top and its foot, and none touches the curve.
+ * every silhouette square on its optical centre), with the plate's corner
+ * clear of it: a wide character such as the original Crewlet reaches the
+ * plate's sides, a tall one its top and its foot, and none touches the curve.
  */
 .crewlet-avatar--character {
   border: 1px solid transparent;

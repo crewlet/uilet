@@ -198,6 +198,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.15.1
+
+`@crewlethq/icons`: every Crewlet character is centred on its optical centre rather than its bounding box, and its face and holes are cut into its own paths rather than masked, so a slit shows the badge's plate in every hue and theme, and inside `OrgLabel` or `AddPill` no longer fills with ink. The page's fold is drawn at full detail only, as the keyline is. What to change: nothing.
+
 ## Changes in 0.15.0
 
 0.15.0 gives the rail's foot a row that opens a panel, which is what the engine console's engine panel is built from. It also keeps an unread failure on screen, lets the column chart fill a stretched card, and wraps its legend on a narrow one.
