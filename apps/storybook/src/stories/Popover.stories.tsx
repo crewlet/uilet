@@ -9,6 +9,11 @@ const meta: Meta<typeof Popover> = {
 export default meta;
 type Story = StoryObj<typeof Popover>;
 
+/**
+ * A panel its own content closes hands focus back to the trigger, as Escape
+ * does: the Close button goes with the panel, and focus left on it would fall
+ * to the page's body.
+ */
 export const Basic: Story = {
   render: () => (
     <Popover

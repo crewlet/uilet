@@ -190,9 +190,14 @@ export function Popover({
   const close = useCallback(
     (reason: PopoverReason) => {
       // Focus goes back where the panel was opened from when a KEY closed it,
-      // and stays where the pointer put it otherwise: pulling focus back after
-      // a press somewhere else would take it off whatever was just pressed.
-      if (reason === 'escape' || reason === 'tab') anchor.current?.focus();
+      // and when the panel's OWN content closed it with focus inside: the
+      // control that closed it goes with the panel, and focus left on a
+      // removed element falls to the page's body, where a keyboard reader
+      // starts again from the top. It stays where the pointer put it
+      // otherwise: pulling focus back after a press somewhere else would take
+      // it off whatever was just pressed.
+      const held = panel.current?.contains(document.activeElement) ?? false;
+      if (reason === 'escape' || reason === 'tab' || (reason === 'content' && held)) anchor.current?.focus();
       setOpen(false, reason);
     },
     [setOpen],

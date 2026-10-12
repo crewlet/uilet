@@ -212,6 +212,8 @@ places:
 
 **A `Stack` or an `Inline` drawn as a list** (`as="ul"` or `as="ol"`) takes back the browser's list margins, indent and markers, and stays a list to a screen reader.
 
+**A `Popover` its own content closes hands focus back to its trigger**, as Escape does, when focus was inside the panel: the control that closed it goes with the panel, and focus used to fall to the page's body. A close while focus is elsewhere leaves it there.
+
 **A sticky toast is never evicted.** `ToastProvider` kept its newest `max` toasts whatever they were, so the next one took away a failure nobody had read. Over `max`, the oldest toast that would have gone by itself goes now. A failure, a warning, a variant of your own that names no duration and any toast given `duration: 0` stay until they are dismissed, and when every toast held is sticky none goes: the stack holds more than `max` until the reader dismisses some, and the new toast is drawn too. A failure that can be raised again and again takes an `id`, so each repeat replaces its own strip.
 
 **`StackedColumns` takes `height="fill"`.** In a card that a taller neighbour stretches, the chart grows into the spare height and spends all of it on the plot, so nothing opens between the dates and what stands under them. The figure flexes, its rows are `auto` / `minmax(minHeight, 1fr)` / `auto`, and the axis and the plot stand at the whole of the plot's row. `minHeight` is the plot's least height, 11.5rem by default, and its height wherever nothing stretches it. `StackedColumnsHeight` and `StackedColumnsLegend` are exported.

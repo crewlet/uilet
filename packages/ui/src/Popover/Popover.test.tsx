@@ -103,6 +103,70 @@ test('focus moves into a dialog panel and back to the trigger on Escape', () => 
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Owner' }));
 });
 
+test('a panel its own content closes hands focus back to its trigger', () => {
+  /*
+   * The control that closes the panel goes with it: "Reconnect now", a link
+   * out, a switch that needs no second stage. Focus left on a removed element
+   * falls to the page's body, and a keyboard reader starts again from the top
+   * of the document, so a close from inside the panel puts focus back on the
+   * trigger, as Escape does.
+   */
+  render(
+    <Popover
+      label="Engine"
+      trigger={(_open, toggle) => (
+        <button type="button" onClick={toggle}>
+          Engine
+        </button>
+      )}
+    >
+      {(close) => (
+        <button type="button" onClick={close}>
+          Reconnect now
+        </button>
+      )}
+    </Popover>,
+  );
+  const trigger = screen.getByRole('button', { name: 'Engine' });
+  trigger.focus();
+  fireEvent.click(trigger);
+  const inside = screen.getByRole('button', { name: 'Reconnect now' });
+  expect(document.activeElement).toBe(inside);
+  fireEvent.click(inside);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.activeElement).toBe(trigger);
+});
+
+test('a close from the content leaves focus alone where it is not in the panel', () => {
+  // A panel the caller closes for its own reasons while the reader is typing
+  // somewhere else must not pull them out of what they are doing.
+  let closeIt = () => {};
+  render(
+    <>
+      <input aria-label="Elsewhere" />
+      <Popover
+        label="Engine"
+        trigger={(_open, toggle) => (
+          <button type="button" onClick={toggle}>
+            Engine
+          </button>
+        )}
+      >
+        {(close) => {
+          closeIt = close;
+          return <p>The engine</p>;
+        }}
+      </Popover>
+    </>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Engine' }));
+  const elsewhere = screen.getByLabelText('Elsewhere');
+  elsewhere.focus();
+  act(() => closeIt());
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.activeElement).toBe(elsewhere);
+});
+
 test('a menu or listbox panel leaves focus on the control that drives it', () => {
   // A combobox points at its list with aria-activedescendant. Pulling focus
   // into the list would take the arrows away from the field.
