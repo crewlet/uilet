@@ -23,6 +23,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 import { themes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installCss, installSheets, installThemed, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { CREWLET_CHARACTERS, CrewletCharacter } from '@crewlethq/icons/characters';
 import { UserGlyph } from '@crewlethq/icons/glyphs';
 import { AVATAR_SIZES, type AvatarSizeStep } from '../Avatar/index.js';
 import { OrgLabel } from './OrgLabel.js';
@@ -335,6 +336,48 @@ describe('what each surface used to be missing', () => {
       tone();
       cleanup();
     }
+  });
+
+  /*
+   * A HOLE IS CUT, NEVER MASKED. The zone repaints every path and group in it,
+   * a mask's black included, and the Crewlet characters once cut their faces
+   * with masks: every agent's eyes on the chart filled with a share of the ink,
+   * more of it in amber than in blue. A character cuts its face into its own
+   * paths now, so all the zone can reach is the character's own ink.
+   */
+  test('a character in the zone is ink and cut holes, nothing the zone can repaint into a hole', () => {
+    painted('dark');
+    const tone = installCss('.crewlet-org-label__icon { color: #1d9e75; }');
+    const ink = parseHex('#1d9e75');
+    // What the zone does to a mask: its black becomes the ink, and its hole fills.
+    const masked = render(
+      <OrgLabel
+        icon={
+          <svg>
+            <mask id="hole">
+              <g fill="#000">
+                <rect width="1" height="1" />
+              </g>
+            </mask>
+            <path d="M0 0h2v2H0z" mask="url(#hole)" />
+          </svg>
+        }
+        name="Ada"
+      />,
+    );
+    expect(channels(getComputedStyle(masked.container.querySelector('mask g')!).fill)).toEqual(ink);
+    cleanup();
+    for (const character of CREWLET_CHARACTERS) {
+      const { container } = render(
+        <OrgLabel icon={<CrewletCharacter character={character} detail="compact" />} name="Ada" />,
+      );
+      for (const element of container.querySelectorAll('svg[data-character] *')) {
+        expect(['g', 'path'], character).toContain(element.tagName);
+        expect(channels(getComputedStyle(element).fill), character).toEqual(ink);
+      }
+      cleanup();
+    }
+    tone();
   });
 
   /*

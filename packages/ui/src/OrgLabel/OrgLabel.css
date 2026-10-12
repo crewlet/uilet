@@ -79,7 +79,12 @@
    inside of a Lucide glyph turns every closed shape in it solid and every
    open one into a smear (a person's head and shoulders, a unit's building, a
    warning's triangle, each a blob), so a `.crewlet-glyph` keeps the fill its
-   own frame decides and takes the ink through its stroke. */
+   own frame decides and takes the ink through its stroke.
+
+   A DRAWING HERE CUTS ITS HOLES AS GEOMETRY. This rule repaints every path and
+   group in the zone, a mask's included, so a hole cut by a mask fills with a
+   share of the ink that changes with the hue: every agent's eyes on the chart
+   did, until the Crewlet characters cut their faces into their own paths. */
 .crewlet-org-label__icon svg:not(.crewlet-glyph),
 .crewlet-org-label__icon svg:not(.crewlet-glyph) g,
 .crewlet-org-label__icon svg:not(.crewlet-glyph) path {

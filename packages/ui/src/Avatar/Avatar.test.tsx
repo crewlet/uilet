@@ -689,6 +689,24 @@ describe('an agent drawn as its character', () => {
     }
   });
 
+  /*
+   * ITS SLITS SHOW THE PLATE, whatever surrounds the badge. A face cut with a
+   * mask is paint a host stylesheet can repaint, and a mask is found by id
+   * across the page, so two badges rendered apart could draw one face. The
+   * character cuts its face into its own paths instead, at both details.
+   */
+  test('draws its character as paths alone, with no mask or id for the page to reach', () => {
+    for (const character of CREWLET_CHARACTERS) {
+      for (const size of ['lg', AVATAR_CHARACTER_FULL_DETAIL] as const) {
+        const { container } = render(<Avatar name="Seat" character={character} hue="blue" size={size} />);
+        const svg = characterOf(container)!;
+        for (const element of svg.querySelectorAll('*')) expect(['g', 'path'], character).toContain(element.tagName);
+        expect(svg.querySelector('[id], [mask], [clip-path]'), character).toBeNull();
+        cleanup();
+      }
+    }
+  });
+
   test('has a plate for every hue, drawn from that hue\'s own steps', () => {
     // Matched rather than compared, so the package's variable check does not
     // take a token name written out here for one this suite declares.
