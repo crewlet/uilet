@@ -3,20 +3,33 @@
  * and at each detail its body with the face and holes cut through it and its
  * keyline ring. Each is worked out the first time it is drawn and kept.
  *
- * A HOLE IS CUT, NEVER PAINTED, the rule `test/characters.test.mjs` holds.
- * The face (the slits, the crown notch, the visor gap) and every hole are
- * taken out of the body's geometry (see region.ts), so the path that remains
- * is the one thing painted and a hole shows whatever the character stands on:
- * an avatar's plate, a chart's card, a hovered row, in every hue and theme. A
- * mask did this before and failed two ways. A host stylesheet that repaints
- * the paths in its zone (OrgLabel's and AddPill's set `fill: currentColor`)
- * repainted the mask's black too, filling each hole with a share of the ink
- * that changed with the hue and the theme. And a mask is found by id across
- * the whole page, so two copies of a character rendered apart (each server
- * render counts its ids from the start) drew one another's faces. Cut
- * geometry has no paint to repaint and no id to share. A cut as fine as a
- * HAIRLINE is drawn at full detail only, as the keyline and the visor gap
- * always were.
+ * TWO RULES, held by `test/characters.test.mjs`:
+ *
+ * - OPTICAL CENTRING. A character is framed on the point halfway between the
+ *   middle of its bounding box and the centre of area of its silhouette, in
+ *   the smallest square round that point that holds everything it draws. On a
+ *   symmetric silhouette the two points are one, and the rule is the plain
+ *   geometric centring it replaced. Where the mass sits off the box (a heart
+ *   whose lobes stand on thin legs, a speech bubble over its tail, a triangle
+ *   over its apex) the box's middle put the mass up to 11% of the frame off
+ *   centre, three pixels at 40px. Half the way, rather than all of it,
+ *   because a centroid overcorrects a shape that tapers to a point (the
+ *   triangle rose too far) and because the square has to grow by twice the
+ *   pull to hold the drawing: all the way drew the heart 18% smaller than
+ *   its neighbours, half the way 10%.
+ * - A HOLE IS CUT, NEVER PAINTED. The face (the slits, the crown notch, the
+ *   visor gap) and every hole are taken out of the body's geometry (see
+ *   region.ts), so the path that remains is the one thing painted and a hole
+ *   shows whatever the character stands on: an avatar's plate, a chart's
+ *   card, a hovered row, in every hue and theme. A mask did this before and
+ *   failed two ways. A host stylesheet that repaints the paths in its zone
+ *   (OrgLabel's and AddPill's set `fill: currentColor`) repainted the mask's
+ *   black too, filling each hole with a share of the ink that changed with
+ *   the hue and the theme. And a mask is found by id across the whole page,
+ *   so two copies of a character rendered apart (each server render counts
+ *   its ids from the start) drew one another's faces. Cut geometry has no
+ *   paint to repaint and no id to share. A cut as fine as a HAIRLINE is drawn
+ *   at full detail only, as the keyline and the visor gap always were.
  */
 
 import type { CrewletCharacterDetail } from './CrewletCharacter.js';
@@ -25,6 +38,7 @@ import {
   EYE,
   HAIRLINE,
   KEYLINE_GAP,
+  MARK_CENTROID,
   NOTCH,
   VISOR_GAP,
   keylineReachOf,
@@ -34,7 +48,10 @@ import {
   type CrewletCharacterId,
   type DrawnCharacter,
 } from './crewletCharacters.js';
-import { pathOfRings, region, strokeBand, type Ring } from './region.js';
+import { centroidOf, pathOfRings, region, strokeBand, type Point, type Ring } from './region.js';
+
+/** How far a frame moves from the box's middle toward the silhouette's centre of area. */
+export const OPTICAL_PULL = 0.5;
 
 /** A rectangle as a ring, clockwise on screen. */
 const rect = (x: number, y: number, width: number, height: number): Ring => [
@@ -91,10 +108,14 @@ function cutsOf(geometry: DrawnCharacter, detail: CrewletCharacterDetail): Ring[
   return cuts;
 }
 
-/** The square a character is framed in: centred on everything it draws, its longer side filling it. */
-export function frameOf({ x, y, width, height }: CharacterBox): CharacterBox {
-  const side = Math.max(width, height);
-  return { x: x + width / 2 - side / 2, y: y + height / 2 - side / 2, width: side, height: side };
+/** The square a character is framed in: centred optically, holding everything it draws. */
+export function frameOf(bounds: CharacterBox, centroid: Point): CharacterBox {
+  const boxX = bounds.x + bounds.width / 2;
+  const boxY = bounds.y + bounds.height / 2;
+  const x = boxX + OPTICAL_PULL * (centroid[0] - boxX);
+  const y = boxY + OPTICAL_PULL * (centroid[1] - boxY);
+  const side = Math.max(bounds.width + 2 * Math.abs(x - boxX), bounds.height + 2 * Math.abs(y - boxY));
+  return { x: x - side / 2, y: y - side / 2, width: side, height: side };
 }
 
 interface Drawing {
@@ -115,7 +136,7 @@ function drawnDrawing(geometry: DrawnCharacter): Drawing {
       region([...silhouette, ...keylineReachOf(geometry)], [...silhouette, ...strokeBand(silhouette, KEYLINE_GAP)]),
     );
   return {
-    frame: frameOf(geometry.bounds),
+    frame: frameOf(geometry.bounds, centroidOf(silhouette)),
     paths: (detail) => (made[detail] ??= detail === 'full' ? [keyline(), body('full')] : [body('compact')]),
   };
 }
@@ -134,7 +155,7 @@ export function drawingOf(character: CrewletCharacterId): Drawing {
   if (geometry.kind === 'mark') {
     const full = [geometry.keyline, ...geometry.body];
     drawing = {
-      frame: frameOf(geometry.bounds),
+      frame: frameOf(geometry.bounds, MARK_CENTROID),
       paths: (detail) => (detail === 'full' ? full : geometry.body),
     };
   } else {

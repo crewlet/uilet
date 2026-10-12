@@ -168,7 +168,9 @@ import { CrewletCharacter, CREWLET_CHARACTERS, isCrewletCharacter } from '@crewl
 | `character` | `CrewletCharacterId`, one of `CREWLET_CHARACTERS` | required | Which character to draw. `crewlet`, the first, is the mark itself. |
 | `detail` | `'full' \| 'compact'` | `'full'` | `full` draws the keyline floating off the body and the gap round the visor; `compact` leaves both out, with every other cut as fine as them (the page's fold), and opens the eyes, for a character too small for a hairline gap to read. |
 
-Every character is cut from the mark's own rules: every corner chamfered at 45 degrees, a keyline at the mark's own proportions, a visor with two upright slits measured from the visor itself, a V notch on a flat crown and block legs under a flat base. A character is framed square and centred on what it draws, the keyline's mitred corners included, so it sits in the middle of any box it is given.
+Every character is cut from the mark's own rules: every corner chamfered at 45 degrees, a keyline at the mark's own proportions, a visor with two upright slits measured from the visor itself, a V notch on a flat crown and block legs under a flat base.
+
+A character is framed square on its optical centre: the point halfway between the middle of its bounding box and the centre of area of its silhouette, in the smallest square round that point that holds everything it draws, the keyline's mitred corners included. A symmetric silhouette is centred geometrically; a heart over thin legs, a speech bubble over its tail or a triangle over its apex moves half the way toward its mass, so it sits in the middle of any box it is given.
 
 Its face and holes are cut into its own paths, wound against the outline round them, and never painted or masked. A cut shows whatever the character stands on (a badge's plate, a chart's card, a hovered row) in every colour and theme, and nothing a host stylesheet does to the paths in its zone can fill one. It carries no mask and no id, so any number of copies, rendered together or apart, can share a page.
 

@@ -14,7 +14,7 @@ import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { CREWLET_CHARACTERS, CREWLET_CHARACTER_GEOMETRY, CrewletCharacter, isCrewletCharacter } from '../dist/index.js';
-import { markPaths } from '../scripts/mark.mjs';
+import { bodyCentroid, markPaths } from '../scripts/mark.mjs';
 import { PACKAGE, attribute, render } from './support.mjs';
 
 const ALL = [...CREWLET_CHARACTERS];
@@ -25,9 +25,11 @@ const count = (markup, pattern) => (markup.match(pattern) ?? []).length;
 
 /*
  * The rules, restated rather than imported, so a change to one is a change a
- * reviewer sees here too: the keyline floats 0.9 off the outline and is 1.35
+ * reviewer sees here too: a frame moves half the way from the box's middle to
+ * the centre of area, the keyline floats 0.9 off the outline and is 1.35
  * wide, mitred as a stroke is, and a cut 2 wide or finer is a hairline.
  */
+const PULL = 0.5;
 const GAP = 0.9;
 const LINE = 1.35;
 const HAIRLINE = 2;
@@ -60,6 +62,57 @@ function winding(rings, [x, y]) {
 
 /** The paths a character paints, in order. */
 const pathsOf = (markup) => [...markup.matchAll(/<path d="([^"]+)"/g)].map((match) => match[1]);
+
+/** The viewBox a character renders with. */
+const frameOf = (id) => attribute(render(CrewletCharacter, { character: id }), 'viewBox').split(' ').map(Number);
+
+/** The middle of a box. */
+const middleOf = ({ x, y, width, height }) => [x + width / 2, y + height / 2];
+
+/*
+ * The centre of area of what some rings enclose by the nonzero rule, summed
+ * over rows a fiftieth of a unit apart: an answer worked out apart from the
+ * package's own geometry, so the two can check each other.
+ */
+function centreOfArea(rings) {
+  const ys = rings.flat().map(([, y]) => y);
+  const step = 0.02;
+  let area = 0;
+  let sx = 0;
+  let sy = 0;
+  for (let y = Math.min(...ys) + step / 2; y < Math.max(...ys); y += step) {
+    const crossings = [];
+    for (const ring of rings) {
+      ring.forEach(([x1, y1], i) => {
+        const [x2, y2] = ring[(i + 1) % ring.length];
+        if ((y1 <= y && y2 > y) || (y2 <= y && y1 > y)) {
+          crossings.push([x1 + ((y - y1) * (x2 - x1)) / (y2 - y1), y2 > y1 ? 1 : -1]);
+        }
+      });
+    }
+    crossings.sort((a, b) => a[0] - b[0]);
+    let turns = 0;
+    for (let k = 0; k + 1 < crossings.length; k += 1) {
+      turns += crossings[k][1];
+      if (turns === 0) continue;
+      const length = crossings[k + 1][0] - crossings[k][0];
+      area += length;
+      sx += ((crossings[k][0] + crossings[k + 1][0]) / 2) * length;
+      sy += y * length;
+    }
+  }
+  return [sx / area, sy / area];
+}
+
+/** Where a character's silhouette has its centre of area, on the stage. */
+async function massOf(id) {
+  const geometry = CREWLET_CHARACTER_GEOMETRY[id];
+  if (geometry.kind === 'drawn') return centreOfArea(geometry.shapes.flatMap(ringsOf));
+  // The mark's outline is curved, so its own reader measures it, and its transform places it.
+  const [tx, ty, scale, ox, oy] = geometry.transform.match(/-?\d*\.?\d+/g).map(Number);
+  const { x, y } = bodyCentroid(markPaths(await readFile(resolve(PACKAGE, 'svg/crewlet-icon.svg'), 'utf8')));
+  return [tx + (x + ox) * scale, ty + (y + oy) * scale];
+}
 
 /*
  * Points half a unit apart across a box, set off the stage's own lattice: the
@@ -186,20 +239,41 @@ describe('a drawn character', () => {
     assert.equal(attribute(markup, 'focusable'), 'false');
   });
 
-  it('frames itself square and centred on what it draws, holding all of it', () => {
+  it('frames itself square on its optical centre, in the least square holding everything it draws', async () => {
     for (const id of ALL) {
-      const markup = render(CrewletCharacter, { character: id });
-      const [left, top, width, height] = attribute(markup, 'viewBox').split(' ').map(Number);
-      assert.equal(width, height, `${id} is not framed square`);
+      const [left, top, side, height] = frameOf(id);
+      assert.equal(side, height, `${id} is not framed square`);
       const box = CREWLET_CHARACTER_GEOMETRY[id].bounds;
-      assert.ok(Math.abs(left + width / 2 - (box.x + box.width / 2)) < 0.01, `${id} is not centred across`);
-      assert.ok(Math.abs(top + height / 2 - (box.y + box.height / 2)) < 0.01, `${id} is not centred down`);
-      assert.ok(Math.abs(Math.max(box.width, box.height) - width) < 0.01, `${id} does not fill its frame`);
+      const middle = middleOf(box);
+      const mass = await massOf(id);
+      const optical = middle.map((m, k) => m + PULL * (mass[k] - m));
+      // The viewBox is written to two decimals.
+      assert.ok(Math.abs(left + side / 2 - optical[0]) < 0.02, `${id} is not centred across on its optical centre`);
+      assert.ok(Math.abs(top + side / 2 - optical[1]) < 0.02, `${id} is not centred down on its optical centre`);
+      const within = (v, from) => v >= from - 0.01 && v <= from + side + 0.01;
+      const holds = (x, y) => within(x, left) && within(y, top);
+      const corners = holds(box.x, box.y) && holds(box.x + box.width, box.y + box.height);
+      assert.ok(corners, `${id}'s frame crops what it draws`);
+      const least = Math.max(
+        box.width + 2 * Math.abs(optical[0] - middle[0]),
+        box.height + 2 * Math.abs(optical[1] - middle[1]),
+      );
+      assert.ok(Math.abs(side - least) < 0.02, `${id} is framed larger than it needs to be`);
       if (CREWLET_CHARACTER_GEOMETRY[id].kind !== 'drawn') continue;
       // Every point it paints, the keyline's mitred corners with the rest.
-      for (const [x, y] of pathsOf(markup).flatMap(ringsOf).flat()) {
-        assert.ok(x >= left - 0.01 && x <= left + width + 0.01 && y >= top - 0.01 && y <= top + height + 0.01, `${id} paints ${x},${y} outside its frame`);
-      }
+      const points = pathsOf(render(CrewletCharacter, { character: id })).flatMap(ringsOf).flat();
+      for (const [x, y] of points) assert.ok(holds(x, y), `${id} paints ${x},${y} outside its frame`);
+    }
+  });
+
+  it('brings every silhouette\'s centre of area within 6% of its frame of the middle', async () => {
+    // Centred on the box alone, a heart over thin legs put its mass 11.3% of
+    // its frame high, three pixels at 40px; half the way leaves at most half.
+    for (const id of ALL) {
+      const [left, top, side] = frameOf(id);
+      const [x, y] = await massOf(id);
+      const off = Math.hypot(x - (left + side / 2), y - (top + side / 2)) / side;
+      assert.ok(off <= 0.06, `${id}'s mass sits ${(100 * off).toFixed(1)}% of its frame off centre`);
     }
   });
 
@@ -292,5 +366,18 @@ describe('a drawn character', () => {
         assert.equal(cut, detail === 'full', `the fold is ${cut ? '' : 'not '}cut at ${detail} detail`);
       }
     }
+  });
+});
+
+describe('the mark reader', () => {
+  it('measures the centre of area of the body\'s outline, its window counted in', () => {
+    // A 10 by 20 body with a window cut in its corner: the outline alone decides.
+    assert.deepEqual(bodyCentroid(['M0 0Z', 'M0 0L10 0L10 20L0 20ZM2 2L2 8L8 8L8 2Z', 'M0 0Z']), { x: 5, y: 10 });
+    // A right triangle's is a third of the way in from its right angle, written relative.
+    const { x, y } = bodyCentroid(['M0 0Z', 'm0 0l30 0l-30 30z', 'M0 0Z']);
+    assert.ok(Math.abs(x - 10) < 1e-9 && Math.abs(y - 10) < 1e-9, `the triangle's centre of area is ${x},${y}`);
+    // A curve is walked, not read by its control points: a cubic bulge sits off its chord.
+    const { y: bulge } = bodyCentroid(['M0 0Z', 'M0 0C0 -40 40 -40 40 0Z', 'M0 0Z']);
+    assert.ok(bulge < -10 && bulge > -20, `the bulge's centre of area is at ${bulge}`);
   });
 });

@@ -26,7 +26,7 @@ const round = (n: number) => Math.round(n * 100) / 100;
 /**
  * One Crewlet character, in the current text colour, centred in a square.
  *
- * It is framed square on what it draws and its face and holes are cut through
+ * It is framed on its optical centre and its face and holes are cut through
  * it (see `characterDrawing.ts`), so it sits in the middle of whatever box a
  * consumer puts it in and shows that box's ground through every cut. It
  * carries no mask and no id, so nothing a host stylesheet paints reaches a

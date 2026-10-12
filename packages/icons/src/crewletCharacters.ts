@@ -89,7 +89,7 @@ interface Described {
   readonly name: string;
   /** What its outline is, in a few words, for a description: `Hexagon with pointed flanks`. */
   readonly shape: string;
-  /** Everything it draws, keyline included, which is what a frame centres on. */
+  /** Everything it draws, keyline included, which is what its frame has to hold. */
   readonly bounds: CharacterBox;
 }
 
@@ -308,14 +308,19 @@ const MARK_SCALE = 0.095;
 const MARK_CENTRE = 760;
 const MARK_FEET = 869;
 
+/** A point in the mark's own units, placed on the stage. */
+const markOnStage = (x: number, y: number): Point => [
+  50 + (x - MARK_CENTRE) * MARK_SCALE,
+  GROUND + (y - MARK_FEET) * MARK_SCALE,
+];
+
+/** Where the mark's body has its centre of area on the stage, which the original Crewlet's frame is pulled toward. */
+export const MARK_CENTROID = markOnStage(CREWLET_MARK.centroid.x, CREWLET_MARK.centroid.y);
+
 function mark(): MarkCharacter {
   const { paths, box: own } = CREWLET_MARK;
-  const onStage = (x: number, y: number): Point => [
-    50 + (x - MARK_CENTRE) * MARK_SCALE,
-    GROUND + (y - MARK_FEET) * MARK_SCALE,
-  ];
-  const [left, top] = onStage(own.left, own.top);
-  const [right, bottom] = onStage(own.right, own.bottom);
+  const [left, top] = markOnStage(own.left, own.top);
+  const [right, bottom] = markOnStage(own.right, own.bottom);
   return {
     kind: 'mark',
     name: 'Crewlet',
