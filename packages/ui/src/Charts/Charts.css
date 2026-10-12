@@ -406,6 +406,16 @@
 }
 
 /*
+ * A FILL CHART GROWS INTO THE HEIGHT IT IS GIVEN (`height="fill"`). The figure
+ * flexes, so in a card a taller neighbour stretches it takes the spare height,
+ * and its rows (a style property) spend all of it on the plot's row. Nowhere to
+ * grow, it is as tall as its content, the plot at its least.
+ */
+.crewlet-stacked-columns--fill {
+  flex: 1 1 auto;
+}
+
+/*
  * EACH WORD IS A BOX OF NO HEIGHT, spread from the top of the plot to its
  * baseline, with the word centred on it: so every word stands exactly on the
  * line it names, whatever the plot's height, with nothing measured.

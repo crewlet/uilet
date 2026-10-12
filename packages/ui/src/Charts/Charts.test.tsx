@@ -1052,6 +1052,59 @@ test('a column is its total on a round scale, and a zero part is not drawn', () 
   expect(container.querySelectorAll('.crewlet-stacked-columns__slot')[1]!.querySelectorAll('.crewlet-stacked-columns__segment')).toHaveLength(3);
 });
 
+describe('a chart that fills the height it is given', () => {
+  const plots = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>('.crewlet-stacked-columns__axis, .crewlet-stacked-columns__plot')].map(
+      (one) => one.style.height,
+    );
+
+  test('flexes, and spends that height on the plot alone', () => {
+    /*
+     * In a card a taller neighbour stretched, a plot of fixed height stopped
+     * where its length said and the rest of the card was a band of nothing
+     * under the dates. Filling, the figure flexes into the card, the head and
+     * the dates keep their own heights, and the plot's row takes the rest,
+     * never less than its least; the axis and the plot stand at the whole of
+     * that row. jsdom lays nothing out, so the rows and the flex are what is
+     * held.
+     */
+    const { container, rerender } = render(
+      columns({ height: 'fill', legend: 'head', head: <h2>Daily tokens by phase</h2> }),
+    );
+    uninstall = installSheets('Charts/Charts.css');
+    const figure = container.querySelector<HTMLElement>('figure')!;
+    expect(figure.classList.contains('crewlet-stacked-columns--fill')).toBe(true);
+    expect(getComputedStyle(figure).flexGrow).toBe('1');
+    expect(figure.style.gridTemplateRows).toBe('auto minmax(11.5rem, 1fr) auto');
+    expect(plots(container)).toEqual(['100%', '100%']);
+
+    // With no head drawn, the plot's row is the first, and a legend under the
+    // dates takes a row of its own height after them.
+    rerender(columns({ height: 'fill' }));
+    expect(figure.style.gridTemplateRows).toBe('minmax(11.5rem, 1fr) auto');
+    expect(figure.lastElementChild!.classList.contains('crewlet-stacked-columns__legend--below')).toBe(true);
+
+    // The least is the caller's to set.
+    rerender(columns({ height: 'fill', minHeight: '12rem', legend: 'head' }));
+    expect(figure.style.gridTemplateRows).toBe('auto minmax(12rem, 1fr) auto');
+  });
+
+  test('a chart given a length draws its plot at that length, and neither flexes nor sets rows', () => {
+    const { container, rerender } = render(columns());
+    uninstall = installSheets('Charts/Charts.css');
+    const figure = container.querySelector<HTMLElement>('figure')!;
+    expect(plots(container)).toEqual(['11.5rem', '11.5rem']);
+    expect(figure.className).toBe('crewlet-stacked-columns');
+    expect(figure.getAttribute('style')).toBeNull();
+    expect(getComputedStyle(figure).flexGrow).not.toBe('1');
+
+    // A least belongs to a chart that fills; beside a length it changes nothing.
+    rerender(columns({ height: '9rem', minHeight: '12rem' }));
+    expect(plots(container)).toEqual(['9rem', '9rem']);
+    expect(figure.getAttribute('style')).toBeNull();
+  });
+});
+
 test('a round scale is round, and a figure of nothing still has one', () => {
   expect(niceScale(1_350_000)).toEqual({ top: 1_500_000, step: 500_000 });
   expect(niceScale(8)).toEqual({ top: 8, step: 2 });
