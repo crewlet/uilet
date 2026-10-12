@@ -61,10 +61,12 @@ export const Success: Story = {
  * itself is news somebody misses while reading the form they were about to
  * fix.
  *
- * It is also the one toned strip, and it gets the hue twice: the fill step on
- * the edge, where 3:1 is the floor a boundary has to clear, and the ink step
- * on every word, which is the measured text pair on this surface. Never the
- * fill behind a word.
+ * It is drawn as every strip is, with its hue on its mark alone: the glyph in
+ * the danger ink step, which is measured as text on every theme, while the
+ * title and the message keep the strip's own inks and the edge stays the
+ * hairline. Its one filled thing is the way out of it, the action on the
+ * danger fill. It carries no wash, because the wash is the countdown and a
+ * failure has none.
  */
 export const Failure: Story = {
   render: () => {
@@ -95,7 +97,8 @@ export const Warning: Story = {
 
 /**
  * A variant of the application's own. It brings its own glyph and title; the
- * component supplies neither, and announces it assertively.
+ * component supplies neither, and announces it assertively. The glyph is
+ * passed at `lg`, the 20px every built-in variant draws its mark at.
  */
 export const Quota: Story = {
   render: () => {
@@ -103,7 +106,7 @@ export const Quota: Story = {
       () => ({
         id: nextId(),
         variant: 'quota',
-        icon: <ShieldUserGlyph size="md" />,
+        icon: <ShieldUserGlyph size="lg" />,
         title: 'Usage limit reached',
         message: 'This company has used its token allowance for the month.',
         action: { label: 'See plans', href: '#/billing' },
