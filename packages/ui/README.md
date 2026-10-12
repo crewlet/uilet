@@ -198,6 +198,18 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.15.0
+
+0.15.0 keeps an unread failure on screen, lets the column chart fill a stretched card, and wraps its legend on a narrow one.
+
+**A sticky toast is never evicted.** `ToastProvider` kept its newest `max` toasts whatever they were, so the next one took away a failure nobody had read. Over `max`, the oldest toast that would have gone by itself goes now. A failure, a warning, a variant of your own that names no duration and any toast given `duration: 0` stay until they are dismissed, and when every toast held is sticky none goes: the stack holds more than `max` until the reader dismisses some, and the new toast is drawn too. A failure that can be raised again and again takes an `id`, so each repeat replaces its own strip.
+
+**`StackedColumns` takes `height="fill"`.** In a card that a taller neighbour stretches, the chart grows into the spare height and spends all of it on the plot, so nothing opens between the dates and what stands under them. The figure flexes, its rows are `auto` / `minmax(minHeight, 1fr)` / `auto`, and the axis and the plot stand at the whole of the plot's row. `minHeight` is the plot's least height, 11.5rem by default, and its height wherever nothing stretches it. `StackedColumnsHeight` and `StackedColumnsLegend` are exported.
+
+**A `StackedColumns` legend in the head wraps.** On a card too narrow for the heading and the legend side by side, the legend takes a row of its own under the heading, still flushed to the end, rather than standing beside the title as a column of one series a line. Where both fit, nothing moves.
+
+What to change: a screen that leaned on `max` to clear old failures now keeps them until they are dismissed; give a repeated failure an `id`, and take one back with `useToast().dismiss(id)` once its condition clears. Everything else is new.
+
 ## Changes in 0.14.0
 
 0.14.0 draws toasts as the first release did and quiets the pickers.
