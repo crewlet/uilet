@@ -92,9 +92,9 @@ describe('Toaster', () => {
   });
 
   test('a variant spends its hue on its mark and its wash, never on its words or its edge', () => {
-    // The first release's rule: a failure is a soft rose mark on a faint rose
-    // wash, never a red flood. The mark is the ink step, measured as text on
-    // every theme, and the wash is the soft step behind the words.
+    // The first release's rule: a failure is a soft rose mark, never a red
+    // flood. The mark is the ink step, measured as text on every theme, and
+    // the wash is the soft step behind the words of a toast that counts down.
     const css = toasterCss().replace(/\/\*[\s\S]*?\*\//g, ' ');
     const rule = /\.crewlet-toast--danger\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
     expect(rule).toContain('--crewlet-toast-mark: var(--color-feedback-danger-ink)');

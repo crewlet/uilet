@@ -102,10 +102,12 @@
 
 /*
  * A VARIANT IS ITS MARK AND ITS WASH. The words stay in the strip's own inks
- * and the edge stays the hairline, so a failure is a rose mark on a faint rose
- * wash rather than a red strip: the outcome is said by the glyph and the title,
- * and the sentence beside them is read in the ink every sentence is read in.
- * Information is the neutral mark on the neutral wash.
+ * and the edge stays the hairline, so a failure is a rose mark rather than a
+ * red strip: the outcome is said by the glyph and the title, and the sentence
+ * beside them is read in the ink every sentence is read in. The wash is the
+ * countdown, so only a toast that counts down draws one: a success is a moss
+ * mark on a faint moss wash, and a failure, sticky unless it is given a
+ * duration, draws none. Information is the neutral mark on the neutral wash.
  */
 .crewlet-toast--success {
   --crewlet-toast-mark: var(--color-feedback-success-ink);
