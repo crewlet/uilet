@@ -9,7 +9,7 @@
  *   in it. `cut` is that rule as a function.
  * - THE KEYLINE. An outline floats off the body with a transparent gap, as the
  *   mark is drawn: a line of KEYLINE_LINE at KEYLINE_GAP, the mark's own
- *   proportions. It is drawn at full detail only (see CrewletCharacter).
+ *   proportions. It is drawn at full detail only (see characterDrawing.ts).
  * - THE VISOR. One band with two upright slits, each slit's size and place
  *   measured from the band itself (EYE), so every face matches the mark's at
  *   whatever body it sits on.
@@ -19,16 +19,21 @@
  * THIS FILE IS THE GEOMETRY'S ONE SOURCE. Nothing regenerates it, so an edit
  * here is the edit. Every outline is a polygon on a stage 100 units wide whose
  * ground is at GROUND, written clockwise with the chamfer each corner takes;
- * the paths are computed once, when the module loads. The original Crewlet
- * is the exception: it IS the mark, so it is drawn from the mark's own paths
- * (generated from svg/crewlet-icon.svg at build) placed on the same stage.
+ * the polygons and the box they occupy are computed when the module loads,
+ * and the union and everything cut from it the first time one is drawn.
+ * The original Crewlet is the exception: it IS the mark, so it is drawn from
+ * the mark's own paths (generated from svg/crewlet-icon.svg at build) placed
+ * on the same stage.
  *
- * Every outline of one character is drawn as ONE union: the parts overlap and
- * share a winding, so a leg under a body fills as part of it, and the keyline
- * goes round the whole figure rather than round each part.
+ * Every outline of one character is drawn as ONE union (see region.ts): the
+ * parts overlap, so a leg under a body fills as part of it, and the keyline
+ * goes round the whole figure rather than round each part. The face and the
+ * holes are cut out of that union as geometry, never painted over it (see
+ * characterDrawing.ts).
  */
 
 import { CREWLET_MARK } from './generated/crewletMark.js';
+import { region, twiceArea, type Point, type Ring } from './region.js';
 
 /** The characters, in the order a picker offers them. The first is the mark. */
 export const CREWLET_CHARACTERS = [
@@ -139,8 +144,6 @@ export const EYE = {
 /** The crown notch: half its width, and how far it cuts below the crown. */
 export const NOTCH = { half: 3.2, depth: 2.6 } as const;
 
-type Point = readonly [number, number];
-
 const round = (n: number) => Math.round(n * 100) / 100;
 
 /*
@@ -167,22 +170,15 @@ function cut(points: readonly Point[], chamfer: number | readonly number[]): Poi
   return out;
 }
 
-const pathOf = (points: readonly Point[]) => `M${points.map(([x, y]) => `${round(x)} ${round(y)}`).join('L')}Z`;
-
-/** Twice the signed area: positive for an outline written clockwise on screen. */
-const area = (points: readonly Point[]) =>
-  points.reduce((sum, p, i) => {
-    const q = points[(i + 1) % points.length]!;
-    return sum + p[0] * q[1] - q[0] * p[1];
-  }, 0);
+const pathOf = (points: Ring) => `M${points.map(([x, y]) => `${round(x)} ${round(y)}`).join('L')}Z`;
 
 /*
  * A chamfered polygon, turned clockwise first if it was written the other way,
  * because every part of a character must share one winding to fill as a union.
  */
-function poly(points: readonly Point[], chamfer: number | readonly number[] = 0): string {
+function poly(points: readonly Point[], chamfer: number | readonly number[] = 0): Ring {
   const chamfers = typeof chamfer === 'number' ? points.map(() => chamfer) : chamfer;
-  return area(points) < 0 ? pathOf(cut([...points].reverse(), [...chamfers].reverse())) : pathOf(cut(points, chamfers));
+  return twiceArea(points) < 0 ? cut([...points].reverse(), [...chamfers].reverse()) : cut(points, chamfers);
 }
 
 const rect = (x: number, y: number, width: number, height: number, chamfer: number | readonly number[] = 0) =>
@@ -203,7 +199,7 @@ const legs = (left: number, right: number, top: number, width = 10) => [
 ];
 
 /** A gear: `teeth` trapezoid teeth between two radii, the first pointing up. */
-function gear(cx: number, cy: number, outer: number, inner: number, teeth: number): string {
+function gear(cx: number, cy: number, outer: number, inner: number, teeth: number): Ring {
   const points: Point[] = [];
   for (let k = 0; k < teeth; k += 1) {
     const angle = ((k * 360) / teeth - 90) * (Math.PI / 180);
@@ -220,27 +216,21 @@ function gear(cx: number, cy: number, outer: number, inner: number, teeth: numbe
   return poly(points);
 }
 
-/** The box every point of some paths falls in. They are polygons, so the points are the drawing. */
-function boxOf(paths: readonly string[], grow: number): CharacterBox {
-  const numbers = paths.join(' ').match(/-?\d*\.?\d+/g)!.map(Number);
-  let left = Infinity;
-  let top = Infinity;
-  let right = -Infinity;
-  let bottom = -Infinity;
-  for (let i = 0; i < numbers.length; i += 2) {
-    left = Math.min(left, numbers[i]!);
-    right = Math.max(right, numbers[i]!);
-    top = Math.min(top, numbers[i + 1]!);
-    bottom = Math.max(bottom, numbers[i + 1]!);
-  }
-  return { x: left - grow, y: top - grow, width: right - left + 2 * grow, height: bottom - top + 2 * grow };
+/** The box every point of some rings falls in. They are polygons, so the points are the drawing. */
+function boxOf(rings: readonly Ring[]): CharacterBox {
+  const points = rings.flat();
+  const xs = points.map(([x]) => x);
+  const ys = points.map(([, y]) => y);
+  const left = Math.min(...xs);
+  const top = Math.min(...ys);
+  return { x: left, y: top, width: Math.max(...xs) - left, height: Math.max(...ys) - top };
 }
 
 interface Spec {
   readonly name: string;
   readonly shape: string;
-  readonly shapes: readonly string[];
-  readonly holes?: readonly string[];
+  readonly shapes: readonly Ring[];
+  readonly holes?: readonly Ring[];
   readonly visor: readonly [number, number, number, number];
   /** The crown's height, where it has a flat top to notch; its centre is the stage's unless `notchX` says. */
   readonly notch?: number;
@@ -249,18 +239,41 @@ interface Spec {
 
 const box = ([x, y, width, height]: readonly [number, number, number, number]): CharacterBox => ({ x, y, width, height });
 
+/** A drawn character's parts and holes as rings, which its paths are written from, and their union once taken. */
+export interface Rings {
+  readonly parts: readonly Ring[];
+  readonly holes: readonly Ring[];
+  silhouette?: readonly Ring[];
+}
+
+const RINGS = new WeakMap<DrawnCharacter, Rings>();
+
 function drawn(spec: Spec): DrawnCharacter {
-  return {
+  const holes = spec.holes ?? [];
+  const extent = boxOf(spec.shapes);
+  // The keyline reaches its gap plus its line past the outline.
+  const grow = KEYLINE_GAP + KEYLINE_LINE;
+  const geometry: DrawnCharacter = {
     kind: 'drawn',
     name: spec.name,
     shape: spec.shape,
-    shapes: spec.shapes,
-    holes: spec.holes ?? [],
+    shapes: spec.shapes.map(pathOf),
+    holes: holes.map(pathOf),
     visor: box(spec.visor),
     notch: spec.notch === undefined ? null : [spec.notchX ?? 50, spec.notch],
-    // The keyline reaches its gap plus its line past the outline.
-    bounds: boxOf(spec.shapes, KEYLINE_GAP + KEYLINE_LINE),
+    bounds: { x: extent.x - grow, y: extent.y - grow, width: extent.width + 2 * grow, height: extent.height + 2 * grow },
   };
+  RINGS.set(geometry, { parts: spec.shapes, holes });
+  return geometry;
+}
+
+/** A drawn character's parts and holes, as the rings its paths were written from. */
+export const ringsOf = (geometry: DrawnCharacter): Rings => RINGS.get(geometry)!;
+
+/** The union of a drawn character's parts: its body before any cut, and the outline its keyline is measured off. */
+export function silhouetteOf(geometry: DrawnCharacter): readonly Ring[] {
+  const rings = ringsOf(geometry);
+  return (rings.silhouette ??= region(rings.parts));
 }
 
 /*
