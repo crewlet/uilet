@@ -26,10 +26,11 @@ const count = (markup, pattern) => (markup.match(pattern) ?? []).length;
 /*
  * The rules, restated rather than imported, so a change to one is a change a
  * reviewer sees here too: the keyline floats 0.9 off the outline and is 1.35
- * wide, mitred as a stroke is.
+ * wide, mitred as a stroke is, and a cut 2 wide or finer is a hairline.
  */
 const GAP = 0.9;
 const LINE = 1.35;
+const HAIRLINE = 2;
 
 /** The rings of a path drawn as `M x yL x y…Z` polygons, which is all a drawn character paints. */
 const ringsOf = (d) =>
@@ -263,15 +264,32 @@ describe('a drawn character', () => {
         const reach = runs.map(({ start, end }) => Math.abs((start + end) / 2 - middle));
         assert.ok(Math.abs(reach[0] - reach[1]) < 0.15, `${id} ${detail} has its slits off the visor's centre`);
         if (notch) assert.ok(!painted([notch[0], notch[1] + 0.6]), `${id} ${detail} has no crown notch`);
-        // The visor gap: cut at full detail, left out compact.
+        // The visor gap is a hairline: cut at full detail, left out compact.
         const edge = [visor.x, row];
         if (solid(edge)) assert.equal(painted(edge), detail === 'compact', `${id} ${detail} draws its visor gap wrong`);
         for (const hole of holes.map(ringsOf).map(([ring]) => ring)) {
           const xs = hole.map(([x]) => x);
           const ys = hole.map(([, y]) => y);
           const centre = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
-          assert.ok(!painted(centre), `${id} ${detail} paints over a hole`);
+          const fine = Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) <= HAIRLINE;
+          assert.equal(painted(centre), detail === 'compact' && fine, `${id} ${detail} draws a hole wrongly`);
         }
+      }
+    }
+  });
+
+  it('leaves a hairline cut out of compact detail, as it leaves the keyline and the visor gap', () => {
+    // The page's fold, two cuts 1.4 wide: under 56px a fraction of a pixel a
+    // screen draws as a faint line of neither the ink nor the ground.
+    const { holes } = CREWLET_CHARACTER_GEOMETRY.pagelet;
+    assert.equal(holes.length, 2);
+    for (const detail of ['full', 'compact']) {
+      const paths = pathsOf(render(CrewletCharacter, { character: 'pagelet', detail }));
+      const body = ringsOf(paths[paths.length - 1]);
+      for (const [ring] of holes.map(ringsOf)) {
+        const centre = [0, 1].map((k) => ring.reduce((sum, point) => sum + point[k], 0) / ring.length);
+        const cut = winding(body, centre) === 0;
+        assert.equal(cut, detail === 'full', `the fold is ${cut ? '' : 'not '}cut at ${detail} detail`);
       }
     }
   });

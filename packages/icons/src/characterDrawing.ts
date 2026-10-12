@@ -14,13 +14,16 @@
  * that changed with the hue and the theme. And a mask is found by id across
  * the whole page, so two copies of a character rendered apart (each server
  * render counts its ids from the start) drew one another's faces. Cut
- * geometry has no paint to repaint and no id to share.
+ * geometry has no paint to repaint and no id to share. A cut as fine as a
+ * HAIRLINE is drawn at full detail only, as the keyline and the visor gap
+ * always were.
  */
 
 import type { CrewletCharacterDetail } from './CrewletCharacter.js';
 import {
   CREWLET_CHARACTER_GEOMETRY,
   EYE,
+  HAIRLINE,
   KEYLINE_GAP,
   NOTCH,
   VISOR_GAP,
@@ -40,6 +43,21 @@ const rect = (x: number, y: number, width: number, height: number): Ring => [
   [x + width, y + height],
   [x, y + height],
 ];
+
+/** The narrowest a convex ring is across: the least, over its edges, of its depth away from that edge. */
+function widthOf(ring: Ring): number {
+  let least = Infinity;
+  ring.forEach((p, i) => {
+    const q = ring[(i + 1) % ring.length]!;
+    const length = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    if (length === 0) return;
+    const depth = Math.max(
+      ...ring.map((r) => Math.abs((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])) / length),
+    );
+    least = Math.min(least, depth);
+  });
+  return least;
+}
 
 /** What is cut out of a drawn character's body: its slits, notch and holes, and the visor gap at full detail. */
 function cutsOf(geometry: DrawnCharacter, detail: CrewletCharacterDetail): Ring[] {
@@ -62,7 +80,7 @@ function cutsOf(geometry: DrawnCharacter, detail: CrewletCharacterDetail): Ring[
       [notch[0], notch[1] + NOTCH.depth],
     ]);
   }
-  cuts.push(...ringsOf(geometry).holes);
+  for (const hole of ringsOf(geometry).holes) if (full || widthOf(hole) > HAIRLINE) cuts.push(hole);
   if (full) {
     // The gap is a band straddling the visor's edge, so its outer side winds
     // with the cuts and its inner side against them.

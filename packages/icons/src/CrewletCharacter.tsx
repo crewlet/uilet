@@ -7,10 +7,10 @@ import { CREWLET_CHARACTER_GEOMETRY, type CrewletCharacterId } from './crewletCh
  * How much of a character is drawn.
  *
  * `full` is the mark's own drawing: the keyline floating off the body, and the
- * gap round the visor. `compact` leaves both out and opens the eyes a little,
- * for a character drawn too small for a hairline gap to read (an avatar under
- * 56px): at that size the keyline turns into a blur round the body rather
- * than a line.
+ * gap round the visor. `compact` leaves both out, with every other cut as fine
+ * as them, and opens the eyes a little, for a character drawn too small for a
+ * hairline gap to read (an avatar under 56px): at that size the keyline turns
+ * into a blur round the body rather than a line.
  */
 export type CrewletCharacterDetail = 'full' | 'compact';
 

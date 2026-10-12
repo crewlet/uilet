@@ -166,7 +166,7 @@ import { CrewletCharacter, CREWLET_CHARACTERS, isCrewletCharacter } from '@crewl
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
 | `character` | `CrewletCharacterId`, one of `CREWLET_CHARACTERS` | required | Which character to draw. `crewlet`, the first, is the mark itself. |
-| `detail` | `'full' \| 'compact'` | `'full'` | `full` draws the keyline floating off the body and the gap round the visor; `compact` leaves both out and opens the eyes, for a character too small for a hairline gap to read. |
+| `detail` | `'full' \| 'compact'` | `'full'` | `full` draws the keyline floating off the body and the gap round the visor; `compact` leaves both out, with every other cut as fine as them (the page's fold), and opens the eyes, for a character too small for a hairline gap to read. |
 
 Every character is cut from the mark's own rules: every corner chamfered at 45 degrees, a keyline at the mark's own proportions, a visor with two upright slits measured from the visor itself, a V notch on a flat crown and block legs under a flat base. A character is framed square and centred on what it draws, the keyline's mitred corners included, so it sits in the middle of any box it is given.
 

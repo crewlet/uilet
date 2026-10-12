@@ -129,6 +129,16 @@ export const KEYLINE_GAP = 0.9;
 /** The gap round the visor band, in stage units, as the mark cuts it. */
 export const VISOR_GAP = 1.3;
 
+/*
+ * The widest a cut can be and still be a HAIRLINE, in stage units. The visor
+ * gap (1.3) and the keyline's gap and line (0.9 and 1.35) are drawn at full
+ * detail only, because under 56px each is a fraction of a pixel a screen
+ * blends into a colour of its own, and any cut as fine as them follows the
+ * same rule: the page's fold, two cuts 1.4 wide. 2 sits between them and the
+ * finest cut compact keeps, the crown notch at 3.6 deep.
+ */
+export const HAIRLINE = 2;
+
 /**
  * A slit's width and height as shares of its visor, and how far either slit's
  * centre sits from the visor's, measured on the mark. A compact face, drawn
