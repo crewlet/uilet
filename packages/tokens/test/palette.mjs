@@ -374,6 +374,10 @@ export const RAIL_PAINTS = [
   ['a hovered row, label and glyph', '--color-text-primary', null, ['a hovered row'], 4.5],
   ['the current row, label, glyph and count', '--color-text-primary', null, ['the row the reader is on'], 4.5],
   ['a group label and its action, a count, a foot row', '--color-text-tertiary', null, ['a row', 'a hovered row'], 4.5],
+  // A foot row's count of what is wrong (the alarms standing on a node), its
+  // figure and mark in the warning ink. The row lifts under the pointer and
+  // while the panel it opens is open, the hover's ground both times.
+  ["a foot row's warning count", '--color-feedback-warning-ink', null, ['a row', 'a hovered row'], 4.5],
   [
     "a project's key chip",
     '--color-text-secondary',

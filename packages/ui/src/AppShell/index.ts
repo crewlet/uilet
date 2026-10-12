@@ -9,5 +9,6 @@ export type {
   AppShellRailRowProps,
   AppShellToggleProps,
   AppShellTopbarProps,
+  RailRowCount,
   StaticRailRowProps,
 } from './AppShell.js';

@@ -215,7 +215,44 @@
     color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-.crewlet-app-shell__rail-row--action:hover {
+/*
+ * A CONTROL IN THE FOOT IS A ROW OF THE RAIL'S OWN GRAMMAR: the nav row's 30px
+ * step, its glyph-to-word gap, its word size and weight, and its secondary ink
+ * lifting to the primary under the pointer, as Settings above it is drawn. So
+ * the engine's row under Settings reads as one more row of the rail rather
+ * than as a caption, its words start on the line the nav's words start on, and
+ * it keeps one height in every state it says: one line of the compact step.
+ * A status line the rail only states keeps the quieter caption above, and the
+ * status block keeps its card.
+ *
+ * Its mark takes a nav glyph's width, `sm` (14px), whatever the mark is, so a
+ * 7px status dot is centred where the glyph above it is centred and the words
+ * beside it start where "Settings" starts.
+ */
+.crewlet-app-shell__rail-row--action:not(.crewlet-app-shell__rail-row--block),
+.crewlet-app-shell__rail-foot > .crewlet-btn {
+  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  min-height: var(--size-nav-row);
+  padding-block: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-snug);
+  line-height: var(--font-line-height-tight);
+}
+
+.crewlet-app-shell__rail-row--action:not(.crewlet-app-shell__rail-row--block) > .crewlet-app-shell__rail-row-icon {
+  min-width: 14px;
+}
+
+/*
+ * OPEN IS POINTED AT. The row a panel is open from keeps the hover's lift for
+ * as long as the panel is open, drawn from `aria-expanded` so the picture and
+ * what a screen reader is told cannot come apart, as the switcher's trigger
+ * draws it.
+ */
+.crewlet-app-shell__rail-row--action:hover,
+.crewlet-app-shell__rail-row--action[aria-expanded='true'] {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
@@ -291,6 +328,42 @@
   display: inline-flex;
   align-items: center;
   flex: none;
+}
+
+/*
+ * THE COUNT: how many of something the row reports, after its words, drawn as
+ * a count in the nav is: the caption step, tabular figures so a count that
+ * ticks up does not move the words beside it, and a mark half a step off the
+ * figure. It is the tertiary step, as the nav's is, unless what it counts is
+ * wrong: a warning count is the warning ink, figure and mark together, which
+ * @crewlethq/tokens holds to 4.5:1 on the rail and under the hover overlay
+ * (RAIL_PAINTS), so on the row a panel is open from too.
+ */
+.crewlet-app-shell__rail-row-count {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: calc(var(--spacing-1) + 1px);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-app-shell__rail-row-count-mark {
+  display: inline-flex;
+}
+
+.crewlet-app-shell__rail-row-count--warning {
+  color: var(--color-feedback-warning-ink);
+}
+
+/* The chevron that says the row opens a panel, in the quiet step: a mark, not
+   a word, and it stays quiet while the row lifts, as the panel's own name is
+   what a reader is told. */
+.crewlet-app-shell__rail-row-opens {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
 }
 
 /*

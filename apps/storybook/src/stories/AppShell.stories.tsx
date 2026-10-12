@@ -16,20 +16,28 @@ import {
   ServerGlyph,
   SettingsGlyph,
   SquareKanbanGlyph,
+  TriangleAlertGlyph,
 } from '@crewlethq/icons/glyphs';
 import {
   AppShell,
   BrandLockup,
   Button,
+  ButtonLink,
   Callout,
+  DescriptionList,
+  Inline,
   Kbd,
   NavGroup,
   NavItem,
   PageHeader,
+  Popover,
   SearchTrigger,
   SidebarNav,
+  Spacer,
+  Stack,
   StatusDot,
   Tag,
+  Text,
   useAppShell,
 } from '@crewlethq/ui';
 
@@ -55,21 +63,110 @@ const meta: Meta<typeof AppShell> = {
 export default meta;
 type Story = StoryObj<typeof AppShell>;
 
+/** The alarms the engine panel lists, by their names in words. */
+const ALARMS = [
+  'Backup age',
+  'Trim blocked: tracker',
+  'Trim blocked: pages',
+  'Trim blocked: vectors',
+  'Trim blocked: usage',
+];
+
+/**
+ * THE ENGINE PANEL, as the engine dashboard composes it: one row in the foot
+ * that says the state in words and how many alarms stand, and a press that
+ * opens what the row stands for. The row is the panel's trigger as it is, so
+ * the panel is anchored to it, the row says it opens something, and it is
+ * drawn open while the panel is.
+ *
+ * The panel is the application's, built from the kit: the state with its dot,
+ * the node, the facts as a fitted description list, and a link to each place
+ * that acts on them. The layout and the inset here are the story's own; an
+ * application spends its own on them.
+ */
+function EngineRow({ alarms = ALARMS, defaultOpen = false }: { alarms?: string[]; defaultOpen?: boolean }) {
+  const serving = alarms.length > 0;
+  const words = serving ? 'Engine serving' : 'Engine healthy';
+  return (
+    <Popover
+      label="Engine"
+      side="top"
+      defaultOpen={defaultOpen}
+      trigger={(_open, toggle) => (
+        <AppShell.RailRow
+          icon={<StatusDot tone="success" />}
+          count={
+            serving
+              ? {
+                  value: alarms.length,
+                  label: alarms.length === 1 ? 'alarm' : 'alarms',
+                  mark: <TriangleAlertGlyph size="xs" />,
+                  tone: 'warning',
+                }
+              : undefined
+          }
+          onClick={toggle}
+        >
+          {words}
+        </AppShell.RailRow>
+      )}
+    >
+      <Stack gap={3} style={{ padding: 'var(--spacing-3)' }}>
+        <Inline gap={2}>
+          <StatusDot tone="success">
+            <Text variant="cell">{words}</Text>
+          </StatusDot>
+          <Spacer />
+          <Text variant="caption" mono>
+            node-a
+          </Text>
+        </Inline>
+        <DescriptionList fit dense>
+          <DescriptionList.Item term="Nodes">1 live</DescriptionList.Item>
+          <DescriptionList.Item term="Config">Epoch 8</DescriptionList.Item>
+          <DescriptionList.Item term="Up">2 days</DescriptionList.Item>
+          <DescriptionList.Item term="Alarms">
+            {serving ? (
+              <Stack as="ul" gap={1}>
+                {alarms.map((alarm) => (
+                  <li key={alarm}>{alarm}</li>
+                ))}
+              </Stack>
+            ) : (
+              'None'
+            )}
+          </DescriptionList.Item>
+        </DescriptionList>
+        <Inline gap={2} wrap>
+          <ButtonLink href="#/settings/nodes/node-a" variant="secondary" size="small">
+            Open node
+          </ButtonLink>
+          {serving ? (
+            <ButtonLink href="#/settings/backups" variant="secondary" size="small">
+              Open alarms
+            </ButtonLink>
+          ) : null}
+        </Inline>
+      </Stack>
+    </Popover>
+  );
+}
+
 /*
  * THE RAIL THE APPROVED DESIGN DRAWS, as far as this package can draw it: the
  * brand over the company, the three destinations every reader starts from
  * (the inbox carrying the one badge in the chrome, the reader's own work a
  * quiet count), the workspace, the projects under a heading that can add one
- * and each led by its key, the pinned views, and a foot whose status line
- * takes the rail's own insets so its mark lands on the line every nav glyph
- * above it sits on. Beside it the screen floats on the sheet, inset from the
- * frame.
+ * and each led by its key, the pinned views, and a foot whose rows take the
+ * rail's own insets and grammar, so their marks land on the line every nav
+ * glyph above them sits on and their words where the nav's words start.
+ * Beside it the screen floats on the sheet, inset from the frame.
  *
  * It is the whole surface the Theme and Density toolbars are for. Switch
  * either and nothing here moves off that line: the two insets and every row
  * height scale together.
  */
-function Rail({ context = 'Acme Holdings' }: { context?: string }) {
+function Rail({ context = 'Acme Holdings', foot }: { context?: string; foot?: ReactNode }) {
   return (
     <AppShell.Rail
       header={<BrandLockup name="Crewlet" mark={<CrewletIcon />} context={context} href="#/" />}
@@ -82,22 +179,7 @@ function Rail({ context = 'Acme Holdings' }: { context?: string }) {
           <AppShell.RailRow icon={<SettingsGlyph size="sm" />} label="Settings" onClick={() => {}}>
             Settings
           </AppShell.RailRow>
-          {/* The design's status block: the state over what it is made of,
-              and the value beside the words when both fit on the rail and
-              under them when, as here, they do not. The words are never cut. */}
-          <AppShell.RailRow
-            icon={<StatusDot tone="success" />}
-            detail="3 nodes · config epoch 42"
-            label="Engine healthy, 2 turns in flight: open the engine panel"
-            trailing={
-              <Tag variant="info" size="xs">
-                2 turns in flight
-              </Tag>
-            }
-            onClick={() => {}}
-          >
-            Engine healthy
-          </AppShell.RailRow>
+          {foot ?? <EngineRow />}
         </>
       }
     >
@@ -179,6 +261,62 @@ function Screen({ children }: { children?: ReactNode }) {
 export const Wide: Story = {
   render: () => (
     <AppShell sidebar={<Rail />} topbar={<Topbar />}>
+      <Screen />
+    </AppShell>
+  ),
+};
+
+/**
+ * The engine panel, open: the row in the foot is drawn open while the panel
+ * stands over the rail above it, anchored to the row's start. Escape closes
+ * it and hands focus back to the row; so does a press anywhere else.
+ */
+export const EnginePanel: Story = {
+  render: () => (
+    <AppShell sidebar={<Rail foot={<EngineRow defaultOpen />} />} topbar={<Topbar />}>
+      <Screen />
+    </AppShell>
+  ),
+};
+
+/** With nothing standing the row says so in words and carries no count. */
+export const EnginePanelHealthy: Story = {
+  render: () => (
+    <AppShell sidebar={<Rail foot={<EngineRow alarms={[]} defaultOpen />} />} topbar={<Topbar />}>
+      <Screen />
+    </AppShell>
+  ),
+};
+
+/**
+ * The design's status block: the state over what it is made of, on the card
+ * rung inside a hairline, and the value beside the words when both fit on the
+ * rail and under them when, as here, they do not. The words are never cut.
+ */
+export const StatusBlock: Story = {
+  render: () => (
+    <AppShell
+      sidebar={
+        <Rail
+          foot={
+            <AppShell.RailRow
+              icon={<StatusDot tone="success" />}
+              detail="3 nodes · config epoch 42"
+              label="Engine healthy, 2 turns in flight: open the engine panel"
+              trailing={
+                <Tag variant="info" size="xs">
+                  2 turns in flight
+                </Tag>
+              }
+              onClick={() => {}}
+            >
+              Engine healthy
+            </AppShell.RailRow>
+          }
+        />
+      }
+      topbar={<Topbar />}
+    >
       <Screen />
     </AppShell>
   ),
@@ -270,9 +408,9 @@ export const Fill: Story = {
 /**
  * THE FOOT CLAIMS WHAT LANDS IN IT. `AppShell.RailRow` is the row this package
  * draws, but an application with a status control of its own reaches for that
- * one, and the engine dashboard does: a ghost Button. Dropped in, it takes
- * the rail's two insets, its quiet ink and its left alignment, so the two rows
- * below are the same row drawn by two components rather than a rail row and a
+ * one: a ghost Button. Dropped in, it takes the rail's two insets, its left
+ * alignment and the grammar of a control in the rail, so the two rows below
+ * are the same row drawn by two components rather than a rail row and a
  * centred control on a toolbar's inset.
  */
 export const FootTakesADroppedControl: Story = {

@@ -15,12 +15,14 @@ import axe from 'axe-core';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { useState, type ReactNode } from 'react';
+import { createRef, useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { channels, installAtWidth, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { useModalLayer } from '../Layer/index.js';
+import { Popover } from '../Popover/index.js';
 import { NavGroup, NavItem, SidebarNav } from '../SidebarNav/index.js';
-import { AppShell, useAppShell } from './index.js';
+import { StatusDot } from '../StatusDot/index.js';
+import { AppShell, useAppShell, type AppShellRailRowProps } from './index.js';
 
 afterEach(() => {
   cleanup();
@@ -775,6 +777,9 @@ describe("the rail's foot", () => {
     expect(inset(nav, '.crewlet-nav-item__row')).toBe('var(--size-nav-row-pad)');
   });
 
+  /** The rule that draws a control in the foot: this package's own row, and a control dropped in. */
+  const CONTROL = '.crewlet-app-shell__rail-row--action:not(.crewlet-app-shell__rail-row--block)';
+
   test("a foot row's target clears 24px at every density", () => {
     // --size-row-sm is the step that carries the floor, which is the whole
     // reason a status line takes it rather than a height of its own: the
@@ -787,6 +792,13 @@ describe("the rail's foot", () => {
     // And the same rule is what a control dropped into the foot takes, so the
     // floor cannot hold for one row in the foot and not the other.
     expect(body(css, '.crewlet-app-shell__rail-foot > .crewlet-btn')).toBe(row);
+    // A CONTROL stands on the nav's own step, which needs no floor: 30px at the
+    // tightest density the kit ships is still over the 24px a finger can hit.
+    expect(body(css, CONTROL)).toContain('min-height: var(--size-nav-row)');
+    expect(tokens).toMatch(/--size-nav-row:\s*calc\(30px \* var\(--density, 1\)\)/);
+    const densities = readFileSync(resolve(here, '../../../tokens/dist/css/density.css'), 'utf8');
+    const tightest = Math.min(...[...densities.matchAll(/--density:\s*([\d.]+)/g)].map((match) => Number(match[1])));
+    expect(30 * tightest).toBeGreaterThanOrEqual(24);
   });
 
   test('a control dropped into the foot is a row in the rail', () => {
@@ -801,12 +813,188 @@ describe("the rail's foot", () => {
     expect(row).toContain('padding: calc(var(--spacing-2) - 1px) var(--size-nav-row-pad)');
     expect(row).toContain('justify-content: flex-start');
     expect(row).toContain('text-align: left');
-    expect(row).toContain('color: var(--color-text-tertiary)');
-    expect(row).toContain('font-weight: var(--font-weight-regular)');
-    expect(row).toContain('line-height: var(--font-line-height-normal)');
+    // And it is drawn as this package's own control is, by ONE rule naming
+    // both, so there is no second idea of what a control in the foot is.
+    expect(css).toMatch(
+      /\.crewlet-app-shell__rail-row--action:not\(\.crewlet-app-shell__rail-row--block\),\s*\.crewlet-app-shell__rail-foot > \.crewlet-btn\s*\{/,
+    );
     // It is claimed as a DIRECT child, so the theme and density controls a foot
     // also holds, which sit in a row of their own, keep their own register.
     expect(css).not.toMatch(/\.crewlet-app-shell__rail-foot \.crewlet-btn\b/);
+  });
+
+  test("a control in the foot is a row of the rail's own grammar, as the nav's rows are", () => {
+    /*
+     * The engine's row sits under Settings, which is a nav row, and has to
+     * read as one more row of the rail. Drawn as the status line's caption it
+     * stood 34px beside a 30px row, in a smaller, quieter type, with its words
+     * starting seven pixels left of "Settings": a 7px dot and an 8px gap where
+     * the nav spends a 14px glyph and a 10px one.
+     */
+    const control = body(css, CONTROL);
+    const navRow = body(nav, '.crewlet-nav-item__row');
+    for (const declaration of [
+      'gap: calc(var(--spacing-2) + var(--spacing-1) / 2)',
+      'min-height: var(--size-nav-row)',
+      'color: var(--color-text-secondary)',
+      'font-size: var(--font-size-compact)',
+      'font-weight: var(--font-weight-medium)',
+      'letter-spacing: var(--font-letter-spacing-snug)',
+      'line-height: var(--font-line-height-tight)',
+    ]) {
+      expect(control, declaration).toContain(declaration);
+      expect(navRow, declaration).toContain(declaration);
+    }
+    // The block inset is the nav's too, none: the step is the row's height.
+    expect(control).toContain('padding-block: 0');
+    // The mark takes a nav glyph's width, `sm`, so the words start where the nav's do.
+    expect(body(css, `${CONTROL} > .crewlet-app-shell__rail-row-icon`)).toContain('min-width: 14px');
+    // The status line the rail only states keeps its caption, and the block its card.
+    expect(body(css, '.crewlet-app-shell__rail-row')).toContain('color: var(--color-text-tertiary)');
+    expect(body(css, '.crewlet-app-shell__rail-row--block')).toContain('background: var(--color-surface-subtle)');
+  });
+
+  test('a row that opens a panel is its trigger: it says so, and it is drawn open while it is', () => {
+    function EngineRow() {
+      return (
+        <Popover
+          label="Engine"
+          side="top"
+          trigger={(_open, toggle) => (
+            <AppShell.RailRow
+              icon={<StatusDot tone="success" />}
+              count={{ value: 5, label: 'alarms', mark: <span data-mark="alarm" />, tone: 'warning' }}
+              onClick={toggle}
+            >
+              Engine serving
+            </AppShell.RailRow>
+          )}
+        >
+          <button type="button">Open node</button>
+        </Popover>
+      );
+    }
+    render(<Console footer={<EngineRow />} />);
+    // NAMED BY ITS WORDS AND ITS COUNT, the count read once, in words.
+    const row = screen.getByRole('button', { name: 'Engine serving, 5 alarms' });
+    // The panel's attributes reach the row's own button, the panel is anchored
+    // to it, and nothing is controlled while nothing is open.
+    expect(row.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(row.getAttribute('aria-expanded')).toBe('false');
+    expect(row.hasAttribute('aria-controls')).toBe(false);
+    // The chevron says the row opens something, and it is the row's last mark,
+    // outside the line its words share, so it never drops under them.
+    const opens = row.querySelector('.crewlet-app-shell__rail-row-opens');
+    expect(opens?.getAttribute('aria-hidden')).toBe('true');
+    expect(opens?.querySelector('svg')).not.toBeNull();
+    expect(row.lastElementChild).toBe(opens);
+
+    row.focus();
+    fireEvent.click(row);
+    const panel = screen.getByRole('dialog', { name: 'Engine' });
+    expect(row.getAttribute('aria-expanded')).toBe('true');
+    expect(row.getAttribute('aria-controls')).toBe(panel.id);
+    expect(document.activeElement).toBe(within(panel).getByRole('button', { name: 'Open node' }));
+    // Escape closes the panel, and only the panel, and hands focus back to the row.
+    press('Escape');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(row.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(row);
+    // OPEN IS DRAWN FROM THE ATTRIBUTE, as the hover's lift, so the picture and
+    // what a screen reader is told cannot come apart.
+    const open = /\.crewlet-app-shell__rail-row--action:hover,\s*\.crewlet-app-shell__rail-row--action\[aria-expanded='true'\]\s*\{([^}]*)\}/.exec(
+      css,
+    )?.[1];
+    expect(open).toContain('background: var(--color-surface-hover)');
+    expect(open).toContain('color: var(--color-text-primary)');
+  });
+
+  test('a row with no panel draws no chevron, and a row is handed to a ref', () => {
+    const control = createRef<HTMLElement>();
+    const line = createRef<HTMLElement>();
+    render(
+      <Console
+        footer={
+          <>
+            <AppShell.RailRow ref={control} label="Settings" onClick={() => {}}>
+              Settings
+            </AppShell.RailRow>
+            <AppShell.RailRow ref={line}>engine connected</AppShell.RailRow>
+          </>
+        }
+      />,
+    );
+    expect(control.current).toBe(screen.getByRole('button', { name: 'Settings' }));
+    expect(control.current?.querySelector('.crewlet-app-shell__rail-row-opens')).toBeNull();
+    expect(line.current?.tagName).toBe('DIV');
+    expect(line.current?.textContent).toBe('engine connected');
+  });
+
+  test("a row's count is read once, as the end of its name, and drawn in its tone", () => {
+    render(
+      <Console
+        footer={
+          <>
+            <AppShell.RailRow
+              onClick={() => {}}
+              count={{ value: 5, label: 'alarms', mark: <span data-mark="alarm" />, tone: 'warning' }}
+            >
+              Engine serving
+            </AppShell.RailRow>
+            <AppShell.RailRow count={{ value: 3, label: 'nodes' }}>Fleet</AppShell.RailRow>
+          </>
+        }
+      />,
+    );
+    const [warning, quiet] = [...document.querySelectorAll('.crewlet-app-shell__rail-row-count')];
+    // DRAWN FOR THE EYE AND HIDDEN FROM ASSISTIVE TECHNOLOGY, because what it
+    // says is read in words at the end of the row's label: a bare "5" after a
+    // name says nothing about what it counts, and read twice it is noise.
+    expect(warning?.getAttribute('aria-hidden')).toBe('true');
+    expect(warning?.textContent).toBe('5');
+    expect(warning?.querySelector('[data-mark="alarm"]')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Engine serving, 5 alarms' })).toBeDefined();
+    // At the end of the words' line, before any trailing value, where a nav row draws its count.
+    expect(warning?.previousElementSibling?.className).toBe('crewlet-app-shell__rail-row-text');
+    // The tone is the figure's and its mark's together, and only a warning count has one.
+    expect(warning?.classList.contains('crewlet-app-shell__rail-row-count--warning')).toBe(true);
+    expect(quiet?.classList.contains('crewlet-app-shell__rail-row-count--warning')).toBe(false);
+    // A row nothing presses has no name to end, and still carries the words for a reader walking the text.
+    const statement = quiet?.closest('.crewlet-app-shell__rail-row');
+    expect(statement?.tagName).toBe('DIV');
+    expect(statement?.querySelector('.crewlet-app-shell__rail-row-label')?.textContent).toBe('Fleet, 3 nodes');
+    // The quiet count is a nav count's ink, and the warning one the warning ink.
+    const count = body(css, '.crewlet-app-shell__rail-row-count');
+    expect(count).toContain('color: var(--color-text-tertiary)');
+    expect(count).toContain('font-size: var(--font-size-2xs)');
+    expect(count).toContain('font-variant-numeric: tabular-nums');
+    expect(body(css, '.crewlet-app-shell__rail-row-count--warning')).toContain(
+      'color: var(--color-feedback-warning-ink)',
+    );
+  });
+
+  test('the type refuses a control state on a row nothing presses', () => {
+    /*
+     * Each `@ts-expect-error` below is an ASSERTION, and `npm run typecheck`
+     * is where it runs: the build fails if the error it names ever stops
+     * happening. `aria-expanded` on an element with no role is the state of a
+     * control that does not exist, and a name on one is dropped by assistive
+     * technology, so either on a row nothing presses is a promise nobody is
+     * told. The shapes are the point; nothing here is rendered.
+     */
+    // @ts-expect-error a row nothing presses opens nothing
+    const opensNothing: AppShellRailRowProps = { children: 'Engine', 'aria-expanded': false };
+    // @ts-expect-error nor does it name a panel
+    const controlsNothing: AppShellRailRowProps = { children: 'Engine', 'aria-haspopup': 'dialog' };
+    // @ts-expect-error nor is it named
+    const namedNothing: AppShellRailRowProps = { children: 'Engine', label: 'Engine panel' };
+    const trigger: AppShellRailRowProps = {
+      children: 'Engine',
+      onClick: () => {},
+      'aria-expanded': false,
+      'aria-haspopup': 'dialog',
+    };
+    expect([opensNothing, controlsNothing, namedNothing, trigger]).toHaveLength(4);
   });
 
   test('the transparent boundary spends a pixel of the row rather than adding one', () => {
@@ -955,6 +1143,41 @@ describe("the rail's foot", () => {
     expect(/(?<!,)\n\.crewlet-app-shell__rail-row-detail\s*\{([^}]*)\}/.exec(css)?.[1]).toContain(
       'color: var(--color-text-tertiary)',
     );
+  });
+
+  test('a row that opens a panel has no accessibility violations, closed or open', async () => {
+    const view = render(
+      <Console
+        footer={
+          <Popover
+            label="Engine"
+            side="top"
+            trigger={(_open, toggle) => (
+              <AppShell.RailRow
+                icon={<StatusDot tone="success" />}
+                count={{ value: 1, label: 'alarm', tone: 'warning' }}
+                onClick={toggle}
+              >
+                Engine serving
+              </AppShell.RailRow>
+            )}
+          >
+            <p>1 alarm</p>
+          </Popover>
+        }
+      />,
+    );
+    const run = () =>
+      axe.run(document.body, {
+        runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+        rules: { 'color-contrast': { enabled: false } },
+        resultTypes: ['violations'],
+      });
+    expect((await run()).violations.map((violation) => violation.id)).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Engine serving, 1 alarm' }));
+    expect(screen.getByRole('dialog', { name: 'Engine' })).toBeDefined();
+    expect((await run()).violations.map((violation) => violation.id)).toEqual([]);
+    view.unmount();
   });
 
   test('a foot row that presses has no accessibility violations', async () => {
