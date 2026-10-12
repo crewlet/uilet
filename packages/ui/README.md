@@ -200,7 +200,17 @@ places:
 
 ## Changes in 0.15.0
 
-0.15.0 keeps an unread failure on screen, lets the column chart fill a stretched card, and wraps its legend on a narrow one.
+0.15.0 gives the rail's foot a row that opens a panel, which is what the engine console's engine panel is built from. It also keeps an unread failure on screen, lets the column chart fill a stretched card, and wraps its legend on a narrow one.
+
+**`AppShell.RailRow` opens a panel.** It hands its element to `ref`, and a row with `onClick` passes `aria-expanded`, `aria-haspopup` and `aria-controls` through to its button, so it is the trigger of a `Popover` or a `Menu` as it is. A row that opens something ends in an upward chevron, and keeps the hover's lift while its panel is open, drawn from `aria-expanded`. A row nothing presses refuses all three in its type, as it refuses `label`.
+
+**`AppShell.RailRow` takes a `count`**: `{ value, label, mark?, tone? }` (`RailRowCount`), drawn after the words as a count in the nav is, and read as the end of the row's name ("Engine serving, 5 alarms"). `tone: 'warning'` draws the figure and its mark in the warning ink, which `@crewlethq/tokens` now holds to 4.5:1 on the rail and under the hover overlay in every theme.
+
+**A control in the rail's foot is a row of the rail's own grammar.** A `RailRow` with `onClick` and no `detail`, and a control dropped into the foot, stand on the nav row's 30px step with its glyph gap, its compact medium words and its secondary ink, and the row's mark takes a nav glyph's 14px width, so its words start where the nav's words start. A row the rail only states keeps the status line's caption, and a row with a `detail` keeps the status block.
+
+**`DescriptionList` takes `fit`**: the term column is as wide as its longest term, and the pairs stay side by side at every width, for a panel of its own width such as a popover.
+
+**A `Stack` or an `Inline` drawn as a list** (`as="ul"` or `as="ol"`) takes back the browser's list margins, indent and markers, and stays a list to a screen reader.
 
 **A sticky toast is never evicted.** `ToastProvider` kept its newest `max` toasts whatever they were, so the next one took away a failure nobody had read. Over `max`, the oldest toast that would have gone by itself goes now. A failure, a warning, a variant of your own that names no duration and any toast given `duration: 0` stay until they are dismissed, and when every toast held is sticky none goes: the stack holds more than `max` until the reader dismisses some, and the new toast is drawn too. A failure that can be raised again and again takes an `id`, so each repeat replaces its own strip.
 
@@ -208,7 +218,7 @@ places:
 
 **A `StackedColumns` legend in the head wraps.** On a card too narrow for the heading and the legend side by side, the legend takes a row of its own under the heading, still flushed to the end, rather than standing beside the title as a column of one series a line. Where both fit, nothing moves.
 
-What to change: a screen that leaned on `max` to clear old failures now keeps them until they are dismissed; give a repeated failure an `id`, and take one back with `useToast().dismiss(id)` once its condition clears. Everything else is new.
+What to change: a screen that leaned on `max` to clear old failures now keeps them until they are dismissed; give a repeated failure an `id`, and take one back with `useToast().dismiss(id)` once its condition clears. A test that reads a foot control's caption ink, its regular weight or its 34px height reads the nav row's. Everything else is new.
 
 ## Changes in 0.14.0
 
