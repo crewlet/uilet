@@ -19,8 +19,8 @@
  * THIS FILE IS THE GEOMETRY'S ONE SOURCE. Nothing regenerates it, so an edit
  * here is the edit. Every outline is a polygon on a stage 100 units wide whose
  * ground is at GROUND, written clockwise with the chamfer each corner takes;
- * the polygons and the box they occupy are computed when the module loads,
- * and the union and everything cut from it the first time one is drawn.
+ * the polygons are computed when the module loads, and everything measured
+ * off them (the union, the keyline, the box) the first time it is asked for.
  * The original Crewlet is the exception: it IS the mark, so it is drawn from
  * the mark's own paths (generated from svg/crewlet-icon.svg at build) placed
  * on the same stage.
@@ -33,7 +33,7 @@
  */
 
 import { CREWLET_MARK } from './generated/crewletMark.js';
-import { region, twiceArea, type Point, type Ring } from './region.js';
+import { region, strokeBand, twiceArea, type Point, type Ring } from './region.js';
 
 /** The characters, in the order a picker offers them. The first is the mark. */
 export const CREWLET_CHARACTERS = [
@@ -244,15 +244,14 @@ export interface Rings {
   readonly parts: readonly Ring[];
   readonly holes: readonly Ring[];
   silhouette?: readonly Ring[];
+  reach?: readonly Ring[];
 }
 
 const RINGS = new WeakMap<DrawnCharacter, Rings>();
 
 function drawn(spec: Spec): DrawnCharacter {
   const holes = spec.holes ?? [];
-  const extent = boxOf(spec.shapes);
-  // The keyline reaches its gap plus its line past the outline.
-  const grow = KEYLINE_GAP + KEYLINE_LINE;
+  let bounds: CharacterBox | undefined;
   const geometry: DrawnCharacter = {
     kind: 'drawn',
     name: spec.name,
@@ -261,7 +260,10 @@ function drawn(spec: Spec): DrawnCharacter {
     holes: holes.map(pathOf),
     visor: box(spec.visor),
     notch: spec.notch === undefined ? null : [spec.notchX ?? 50, spec.notch],
-    bounds: { x: extent.x - grow, y: extent.y - grow, width: extent.width + 2 * grow, height: extent.height + 2 * grow },
+    // It takes the union, so it is measured the first time it is asked for.
+    get bounds() {
+      return (bounds ??= boxOf([...silhouetteOf(geometry), ...keylineReachOf(geometry)]));
+    },
   };
   RINGS.set(geometry, { parts: spec.shapes, holes });
   return geometry;
@@ -274,6 +276,17 @@ export const ringsOf = (geometry: DrawnCharacter): Rings => RINGS.get(geometry)!
 export function silhouetteOf(geometry: DrawnCharacter): readonly Ring[] {
   const rings = ringsOf(geometry);
   return (rings.silhouette ??= region(rings.parts));
+}
+
+/*
+ * How far the keyline reaches past the outline: the band its gap and its line
+ * cover, mitred as the keyline is, as convex pieces. A corner sharper than a
+ * right angle (a tail's tip, a hem's points) reaches past the line's own
+ * width, by up to half a unit, which a box grown by the width alone cropped.
+ */
+export function keylineReachOf(geometry: DrawnCharacter): readonly Ring[] {
+  const rings = ringsOf(geometry);
+  return (rings.reach ??= strokeBand(silhouetteOf(geometry), KEYLINE_GAP + KEYLINE_LINE));
 }
 
 /*

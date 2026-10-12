@@ -185,7 +185,7 @@ describe('a drawn character', () => {
     assert.equal(attribute(markup, 'focusable'), 'false');
   });
 
-  it('frames itself square and centred on what it draws', () => {
+  it('frames itself square and centred on what it draws, holding all of it', () => {
     for (const id of ALL) {
       const markup = render(CrewletCharacter, { character: id });
       const [left, top, width, height] = attribute(markup, 'viewBox').split(' ').map(Number);
@@ -194,6 +194,11 @@ describe('a drawn character', () => {
       assert.ok(Math.abs(left + width / 2 - (box.x + box.width / 2)) < 0.01, `${id} is not centred across`);
       assert.ok(Math.abs(top + height / 2 - (box.y + box.height / 2)) < 0.01, `${id} is not centred down`);
       assert.ok(Math.abs(Math.max(box.width, box.height) - width) < 0.01, `${id} does not fill its frame`);
+      if (CREWLET_CHARACTER_GEOMETRY[id].kind !== 'drawn') continue;
+      // Every point it paints, the keyline's mitred corners with the rest.
+      for (const [x, y] of pathsOf(markup).flatMap(ringsOf).flat()) {
+        assert.ok(x >= left - 0.01 && x <= left + width + 0.01 && y >= top - 0.01 && y <= top + height + 0.01, `${id} paints ${x},${y} outside its frame`);
+      }
     }
   });
 

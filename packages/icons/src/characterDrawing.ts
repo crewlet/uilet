@@ -22,9 +22,9 @@ import {
   CREWLET_CHARACTER_GEOMETRY,
   EYE,
   KEYLINE_GAP,
-  KEYLINE_LINE,
   NOTCH,
   VISOR_GAP,
+  keylineReachOf,
   ringsOf,
   silhouetteOf,
   type CharacterBox,
@@ -91,13 +91,10 @@ function drawnDrawing(geometry: DrawnCharacter): Drawing {
   const silhouette = silhouetteOf(geometry);
   const made: Partial<Record<CrewletCharacterDetail, readonly string[]>> = {};
   const body = (detail: CrewletCharacterDetail) => pathOfRings(region(parts, cutsOf(geometry, detail)));
-  // The band between the outline grown by the keyline's gap, and grown by its gap and its line.
+  // What the keyline reaches, less the outline grown by the keyline's gap.
   const keyline = () =>
     pathOfRings(
-      region(
-        [...silhouette, ...strokeBand(silhouette, KEYLINE_GAP + KEYLINE_LINE)],
-        [...silhouette, ...strokeBand(silhouette, KEYLINE_GAP)],
-      ),
+      region([...silhouette, ...keylineReachOf(geometry)], [...silhouette, ...strokeBand(silhouette, KEYLINE_GAP)]),
     );
   return {
     frame: frameOf(geometry.bounds),
