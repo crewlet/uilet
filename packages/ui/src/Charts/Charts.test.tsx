@@ -697,6 +697,26 @@ describe('the stacked columns legend', () => {
     expect(container.querySelector('.crewlet-legend')).toBeNull();
     expect(container.querySelector('.crewlet-stacked-columns__head')).toBeNull();
   });
+
+  test('on a card too narrow for both, it wraps onto a row of its own, still at the end', () => {
+    /*
+     * Held on one line, the title and the legend shrank together, and on a
+     * phone the legend stood beside the title as a column of one series a
+     * line. jsdom lays nothing out, so what is held is the cascade that
+     * decides it: the head wraps, its rows stand a step apart, closer than
+     * the head stands to the plot, and the legend keeps its flush to the end
+     * on whichever row it lands.
+     */
+    const { container } = render(columns({ legend: 'head', head: <h2>Daily tokens by phase</h2> }));
+    uninstall = installSheets('Charts/Charts.css');
+    const head = container.querySelector<HTMLElement>('.crewlet-stacked-columns__head')!;
+    expect(getComputedStyle(head).flexWrap).toBe('wrap');
+    expect(getComputedStyle(head).getPropertyValue('gap')).toBe('8px 16px');
+    expect(px(head, 'margin-bottom')).toBe(12);
+    const legend = head.querySelector('.crewlet-legend')!;
+    expect(getComputedStyle(legend).marginInlineStart).toBe('auto');
+    expect(getComputedStyle(legend).justifyContent).toBe('flex-end');
+  });
 });
 
 test('pointing at a column reads every part of it and the total', () => {

@@ -25,10 +25,12 @@ export interface StackedColumnsBucket {
  *
  * `below`, the default, under the dates. `head` at the END of the chart's head
  * row, top right, where the design's Spend card draws it beside the card's
- * title: pass that title as `head` and the two share one line. `none` draws no
- * legend, for a screen that names the series somewhere the chart cannot reach;
- * the chart is then that screen's to caption, and a stacked figure without its
- * legend is a picture of some numbers.
+ * title: pass that title as `head` and the two share one line wherever both
+ * fit, while on a card too narrow for both the legend drops to a row of its
+ * own under the title, still at the end. `none` draws no legend, for a screen
+ * that names the series somewhere the chart cannot reach; the chart is then
+ * that screen's to caption, and a stacked figure without its legend is a
+ * picture of some numbers.
  */
 export type StackedColumnsLegend = 'below' | 'head' | 'none';
 

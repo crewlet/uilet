@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   ActivityStrip,
   BarList,
+  Card,
   Legend,
   SegmentedControl,
   Sparkline,
@@ -411,6 +412,18 @@ export const Columns: Story = {
   ),
 };
 
+/** The chart's title and the sentence under it, at the start of its head row. */
+const phaseHead = (
+  <>
+    <h3 style={{ margin: 0, font: 'var(--font-weight-semibold) var(--font-size-sm)/1.3 var(--font-family-sans)' }}>
+      Daily tokens by phase
+    </h3>
+    <p style={{ margin: 'var(--spacing-1) 0 0', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
+      Execute does the work; review, workers and auxiliary calls are the overhead
+    </p>
+  </>
+);
+
 /**
  * THE LEGEND IN THE CARD'S HEAD, as the design's Spend screen draws this
  * chart: `legend="head"` puts it at the end of the chart's head row, top
@@ -432,21 +445,36 @@ export const ColumnsLegendInHead: Story = {
         <StackedColumns
           label="Daily tokens by phase"
           legend="head"
-          head={
-            <>
-              <h3 style={{ margin: 0, font: 'var(--font-weight-semibold) var(--font-size-sm)/1.3 var(--font-family-sans)' }}>
-                Daily tokens by phase
-              </h3>
-              <p style={{ margin: 'var(--spacing-1) 0 0', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
-                Execute does the work; review, workers and auxiliary calls are the overhead
-              </p>
-            </>
-          }
+          head={phaseHead}
           series={phases}
           buckets={daily}
           formatTime={shortDate}
         />
       </section>
+    </div>
+  ),
+};
+
+/**
+ * ON A NARROW CARD THE LEGEND TAKES A ROW OF ITS OWN, under the title and
+ * still at the end. Kept on one line with the title, it stood beside it as a
+ * column of one series a line. A card wide enough for both keeps them on one
+ * row, as the story above shows.
+ */
+export const ColumnsLegendOnANarrowCard: Story = {
+  name: 'StackedColumns / Legend on a narrow card',
+  render: () => (
+    <div style={{ padding: 20 }}>
+      <Card style={{ width: 340 }}>
+        <StackedColumns
+          label="Daily tokens by phase"
+          legend="head"
+          head={phaseHead}
+          series={phases}
+          buckets={daily}
+          formatTime={shortDate}
+        />
+      </Card>
     </div>
   ),
 };
