@@ -12,17 +12,133 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
-import { Fragment, createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 
 import { CREWLET_CHARACTERS, CREWLET_CHARACTER_GEOMETRY, CrewletCharacter, isCrewletCharacter } from '../dist/index.js';
-import { markPaths } from '../scripts/mark.mjs';
+import { bodyCentroid, markPaths } from '../scripts/mark.mjs';
 import { PACKAGE, attribute, render } from './support.mjs';
 
 const ALL = [...CREWLET_CHARACTERS];
+const DRAWN = ALL.filter((id) => CREWLET_CHARACTER_GEOMETRY[id].kind === 'drawn');
 
 /** The number of elements of a kind in some markup. */
 const count = (markup, pattern) => (markup.match(pattern) ?? []).length;
+
+/*
+ * The rules, restated rather than imported, so a change to one is a change a
+ * reviewer sees here too: a frame moves half the way from the box's middle to
+ * the centre of area, the keyline floats 0.9 off the outline and is 1.35
+ * wide, mitred as a stroke is, and a cut 2 wide or finer is a hairline.
+ */
+const PULL = 0.5;
+const GAP = 0.9;
+const LINE = 1.35;
+const HAIRLINE = 2;
+
+/** The rings of a path drawn as `M x yL x y…Z` polygons, which is all a drawn character paints. */
+const ringsOf = (d) =>
+  d
+    .split('M')
+    .filter(Boolean)
+    .map((ring) => {
+      const n = ring.match(/-?\d*\.?\d+/g).map(Number);
+      const points = [];
+      for (let i = 0; i < n.length; i += 2) points.push([n[i], n[i + 1]]);
+      return points;
+    });
+
+/** How many times some rings wind round a point. */
+function winding(rings, [x, y]) {
+  let turns = 0;
+  for (const ring of rings) {
+    ring.forEach(([x1, y1], i) => {
+      const [x2, y2] = ring[(i + 1) % ring.length];
+      const side = (x2 - x1) * (y - y1) - (x - x1) * (y2 - y1);
+      if (y1 <= y && y2 > y && side > 0) turns += 1;
+      else if (y1 > y && y2 <= y && side < 0) turns -= 1;
+    });
+  }
+  return turns;
+}
+
+/** The paths a character paints, in order. */
+const pathsOf = (markup) => [...markup.matchAll(/<path d="([^"]+)"/g)].map((match) => match[1]);
+
+/** The viewBox a character renders with. */
+const frameOf = (id) => attribute(render(CrewletCharacter, { character: id }), 'viewBox').split(' ').map(Number);
+
+/** The middle of a box. */
+const middleOf = ({ x, y, width, height }) => [x + width / 2, y + height / 2];
+
+/*
+ * The centre of area of what some rings enclose by the nonzero rule, summed
+ * over rows a fiftieth of a unit apart: an answer worked out apart from the
+ * package's own geometry, so the two can check each other.
+ */
+function centreOfArea(rings) {
+  const ys = rings.flat().map(([, y]) => y);
+  const step = 0.02;
+  let area = 0;
+  let sx = 0;
+  let sy = 0;
+  for (let y = Math.min(...ys) + step / 2; y < Math.max(...ys); y += step) {
+    const crossings = [];
+    for (const ring of rings) {
+      ring.forEach(([x1, y1], i) => {
+        const [x2, y2] = ring[(i + 1) % ring.length];
+        if ((y1 <= y && y2 > y) || (y2 <= y && y1 > y)) {
+          crossings.push([x1 + ((y - y1) * (x2 - x1)) / (y2 - y1), y2 > y1 ? 1 : -1]);
+        }
+      });
+    }
+    crossings.sort((a, b) => a[0] - b[0]);
+    let turns = 0;
+    for (let k = 0; k + 1 < crossings.length; k += 1) {
+      turns += crossings[k][1];
+      if (turns === 0) continue;
+      const length = crossings[k + 1][0] - crossings[k][0];
+      area += length;
+      sx += ((crossings[k][0] + crossings[k + 1][0]) / 2) * length;
+      sy += y * length;
+    }
+  }
+  return [sx / area, sy / area];
+}
+
+/** Where a character's silhouette has its centre of area, on the stage. */
+async function massOf(id) {
+  const geometry = CREWLET_CHARACTER_GEOMETRY[id];
+  if (geometry.kind === 'drawn') return centreOfArea(geometry.shapes.flatMap(ringsOf));
+  // The mark's outline is curved, so its own reader measures it, and its transform places it.
+  const [tx, ty, scale, ox, oy] = geometry.transform.match(/-?\d*\.?\d+/g).map(Number);
+  const { x, y } = bodyCentroid(markPaths(await readFile(resolve(PACKAGE, 'svg/crewlet-icon.svg'), 'utf8')));
+  return [tx + (x + ox) * scale, ty + (y + oy) * scale];
+}
+
+/*
+ * Points half a unit apart across a box, set off the stage's own lattice: the
+ * geometry sits on round numbers, and a point exactly on an edge is inside or
+ * out at the whim of the arithmetic.
+ */
+function* samples({ x, y, width, height }) {
+  for (let px = x + 0.137; px <= x + width; px += 0.5) {
+    for (let py = y + 0.071; py <= y + height; py += 0.5) yield [px, py];
+  }
+}
+
+/** How far a point outside some rings is from the nearest of their edges, and how near an end of that edge it falls. */
+function nearest(rings, [x, y]) {
+  let best = { distance: Infinity, fromEnd: 0 };
+  for (const ring of rings) {
+    ring.forEach(([x1, y1], i) => {
+      const [x2, y2] = ring[(i + 1) % ring.length];
+      const length = Math.hypot(x2 - x1, y2 - y1);
+      const t = Math.max(0, Math.min(1, ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / length ** 2));
+      const distance = Math.hypot(x - (x1 + t * (x2 - x1)), y - (y1 + t * (y2 - y1)));
+      if (distance < best.distance) best = { distance, fromEnd: Math.min(t, 1 - t) * length };
+    });
+  }
+  return best;
+}
 
 describe('the character set', () => {
   it('is thirty ids, each a lowercase word ending in -let, the mark first', () => {
@@ -96,13 +212,24 @@ describe('the drawings', () => {
 });
 
 describe('a drawn character', () => {
-  it('draws in the current colour, injects no style and carries no style attribute', () => {
+  it('paints its paths in the current colour and nothing else: no style, mask, clip, pattern or id', () => {
+    // A mask's colour is paint a host stylesheet can repaint, and a mask is
+    // found by id across the page, so two characters rendered apart (each
+    // server render counts its ids from the start) once drew one face.
     for (const id of ALL) {
-      const markup = render(CrewletCharacter, { character: id });
-      assert.doesNotMatch(markup, /<style/);
-      assert.equal(attribute(markup, 'style'), null, `${id} writes a style attribute`);
-      assert.match(markup, /currentColor/);
-      assert.doesNotMatch(markup, /fill="#(?!fff"|000")/, `${id} paints in a colour of its own`);
+      for (const detail of ['full', 'compact']) {
+        const markup = render(CrewletCharacter, { character: id, detail });
+        assert.doesNotMatch(markup, /<style/);
+        assert.equal(attribute(markup, 'style'), null, `${id} writes a style attribute`);
+        assert.doesNotMatch(markup, /<(mask|clipPath|pattern|defs)\b|\sid="|url\(/, `${id} draws through a reference`);
+        assert.match(markup, /fill="currentColor"/);
+        assert.doesNotMatch(markup, /fill="(?!currentColor")/, `${id} paints in a colour of its own`);
+        assert.deepEqual(
+          [...new Set(markup.match(/<\w+/g))].sort(),
+          ['<g', '<path', '<svg'],
+          `${id} draws with an element that is not a path`,
+        );
+      }
     }
   });
 
@@ -112,55 +239,145 @@ describe('a drawn character', () => {
     assert.equal(attribute(markup, 'focusable'), 'false');
   });
 
-  it('frames itself square and centred on what it draws', () => {
+  it('frames itself square on its optical centre, in the least square holding everything it draws', async () => {
     for (const id of ALL) {
-      const [left, top, width, height] = attribute(render(CrewletCharacter, { character: id }), 'viewBox')
-        .split(' ')
-        .map(Number);
-      assert.equal(width, height, `${id} is not framed square`);
+      const [left, top, side, height] = frameOf(id);
+      assert.equal(side, height, `${id} is not framed square`);
       const box = CREWLET_CHARACTER_GEOMETRY[id].bounds;
-      assert.ok(Math.abs(left + width / 2 - (box.x + box.width / 2)) < 0.01, `${id} is not centred across`);
-      assert.ok(Math.abs(top + height / 2 - (box.y + box.height / 2)) < 0.01, `${id} is not centred down`);
-      assert.ok(Math.abs(Math.max(box.width, box.height) - width) < 0.01, `${id} does not fill its frame`);
+      const middle = middleOf(box);
+      const mass = await massOf(id);
+      const optical = middle.map((m, k) => m + PULL * (mass[k] - m));
+      // The viewBox is written to two decimals.
+      assert.ok(Math.abs(left + side / 2 - optical[0]) < 0.02, `${id} is not centred across on its optical centre`);
+      assert.ok(Math.abs(top + side / 2 - optical[1]) < 0.02, `${id} is not centred down on its optical centre`);
+      const within = (v, from) => v >= from - 0.01 && v <= from + side + 0.01;
+      const holds = (x, y) => within(x, left) && within(y, top);
+      const corners = holds(box.x, box.y) && holds(box.x + box.width, box.y + box.height);
+      assert.ok(corners, `${id}'s frame crops what it draws`);
+      const least = Math.max(
+        box.width + 2 * Math.abs(optical[0] - middle[0]),
+        box.height + 2 * Math.abs(optical[1] - middle[1]),
+      );
+      assert.ok(Math.abs(side - least) < 0.02, `${id} is framed larger than it needs to be`);
+      if (CREWLET_CHARACTER_GEOMETRY[id].kind !== 'drawn') continue;
+      // Every point it paints, the keyline's mitred corners with the rest.
+      const points = pathsOf(render(CrewletCharacter, { character: id })).flatMap(ringsOf).flat();
+      for (const [x, y] of points) assert.ok(holds(x, y), `${id} paints ${x},${y} outside its frame`);
     }
   });
 
-  it('draws the keyline and the visor gap at full detail, and neither when compact', () => {
+  it('brings every silhouette\'s centre of area within 6% of its frame of the middle', async () => {
+    // Centred on the box alone, a heart over thin legs put its mass 11.3% of
+    // its frame high, three pixels at 40px; half the way leaves at most half.
+    for (const id of ALL) {
+      const [left, top, side] = frameOf(id);
+      const [x, y] = await massOf(id);
+      const off = Math.hypot(x - (left + side / 2), y - (top + side / 2)) / side;
+      assert.ok(off <= 0.06, `${id}'s mass sits ${(100 * off).toFixed(1)}% of its frame off centre`);
+    }
+  });
+
+  it('draws the keyline at full detail and leaves it out compact', () => {
     for (const id of ALL) {
       const full = render(CrewletCharacter, { character: id });
       const compact = render(CrewletCharacter, { character: id, detail: 'compact' });
-      if (CREWLET_CHARACTER_GEOMETRY[id].kind === 'mark') {
-        assert.equal(count(full, /<path/g), 3, 'the full mark is its keyline, body and visor');
-        assert.equal(count(compact, /<path/g), 2, 'the compact mark drops its keyline');
-        continue;
-      }
-      assert.equal(count(full, /<mask/g), 2, `${id} at full detail has no keyline mask`);
-      assert.equal(count(compact, /<mask/g), 1, `${id} compact still draws a keyline`);
-      assert.match(full, /stroke="#000"[^>]*stroke-width="1.3"/, `${id} at full detail has no visor gap`);
-      assert.doesNotMatch(compact, /stroke-width="1.3"/, `${id} compact still cuts a visor gap`);
+      const mark = CREWLET_CHARACTER_GEOMETRY[id].kind === 'mark';
+      // The mark is its keyline, body and visor; a drawn character its keyline and body.
+      assert.equal(count(full, /<path/g), mark ? 3 : 2, `${id} at full detail has no keyline`);
+      assert.equal(count(compact, /<path/g), mark ? 2 : 1, `${id} compact still draws a keyline`);
     }
   });
 
-  it('gives every instance masks of its own, since a mask is found by id across the page', () => {
-    const markup = renderToStaticMarkup(
-      createElement(
-        Fragment,
-        null,
-        createElement(CrewletCharacter, { character: 'hexlet' }),
-        createElement(CrewletCharacter, { character: 'hexlet' }),
-      ),
-    );
-    const ids = [...markup.matchAll(/<mask id="([^"]+)"/g)].map((match) => match[1]);
-    assert.equal(ids.length, 4);
-    assert.equal(new Set(ids).size, 4, 'two characters on one page share a mask');
-    for (const id of ids) assert.match(id, /^[A-Za-z0-9_-]+$/, `${id} is not safe inside url()`);
+  it('floats the keyline a gap off the outline, its width wide', () => {
+    for (const id of DRAWN) {
+      const { shapes, bounds } = CREWLET_CHARACTER_GEOMETRY[id];
+      const parts = shapes.flatMap(ringsOf);
+      const keyline = ringsOf(pathsOf(render(CrewletCharacter, { character: id }))[0]);
+      for (const point of samples(bounds)) {
+        if (winding(parts, point) !== 0) continue;
+        const { distance, fromEnd } = nearest(parts, point);
+        const drawn = winding(keyline, point) !== 0;
+        // Never inside the gap, and never further out than a mitred corner reaches.
+        if (drawn) {
+          const off = distance >= GAP - 0.05 && distance <= (GAP + LINE) * 4;
+          assert.ok(off, `${id} draws its keyline ${distance.toFixed(2)} off at ${point}`);
+        }
+        // Along an edge, clear of any corner, the band is the keyline's own.
+        if (fromEnd >= 2.5 && distance > GAP + 0.1 && distance < GAP + LINE - 0.1) {
+          assert.ok(drawn, `${id} has a hole in its keyline at ${point}`);
+        }
+      }
+    }
   });
 
-  it('cuts the face out of the body rather than painting it over', () => {
-    // A face painted in a ground colour shows that colour on any other ground;
-    // a face cut out shows whatever is behind the character.
-    const markup = render(CrewletCharacter, { character: 'octlet' });
-    const face = /<mask id="([^"]+)"/.exec(markup)[1];
-    assert.match(markup, new RegExp(`<path [^>]*mask="url\\(#${face}\\)" fill="currentColor"`));
+  it('cuts every hole through the body, so neither a fill rule nor a host\'s paint can fill one', () => {
+    for (const id of DRAWN) {
+      const { shapes, holes, visor, notch, bounds } = CREWLET_CHARACTER_GEOMETRY[id];
+      const parts = shapes.flatMap(ringsOf);
+      const solid = (p) => winding(parts, p) !== 0;
+      for (const detail of ['full', 'compact']) {
+        const paths = pathsOf(render(CrewletCharacter, { character: id, detail }));
+        const body = ringsOf(paths[paths.length - 1]);
+        const painted = (p) => winding(body, p) !== 0;
+        // A cut winds against the outline round it, so the even-odd rule agrees; nothing is painted off the silhouette.
+        for (const point of samples(bounds)) {
+          const evenOdd = winding(body, point) % 2 !== 0;
+          assert.equal(painted(point), evenOdd, `${id} ${detail} is not cut alike by both fill rules at ${point}`);
+          if (painted(point)) assert.ok(solid(point), `${id} ${detail} paints off its silhouette at ${point}`);
+        }
+        // Two slits across the middle of the visor, either side of its centre.
+        const row = visor.y + visor.height / 2;
+        const runs = [];
+        for (let x = visor.x + 1; x <= visor.x + visor.width - 1; x += 0.05) {
+          const open = solid([x, row]) && !painted([x, row]);
+          if (open && (!runs.length || runs[runs.length - 1].end < x - 0.06)) runs.push({ start: x, end: x });
+          else if (open) runs[runs.length - 1].end = x;
+        }
+        assert.equal(runs.length, 2, `${id} ${detail} has ${runs.length} slits`);
+        const middle = visor.x + visor.width / 2;
+        const reach = runs.map(({ start, end }) => Math.abs((start + end) / 2 - middle));
+        assert.ok(Math.abs(reach[0] - reach[1]) < 0.15, `${id} ${detail} has its slits off the visor's centre`);
+        if (notch) assert.ok(!painted([notch[0], notch[1] + 0.6]), `${id} ${detail} has no crown notch`);
+        // The visor gap is a hairline: cut at full detail, left out compact.
+        const edge = [visor.x, row];
+        if (solid(edge)) assert.equal(painted(edge), detail === 'compact', `${id} ${detail} draws its visor gap wrong`);
+        for (const hole of holes.map(ringsOf).map(([ring]) => ring)) {
+          const xs = hole.map(([x]) => x);
+          const ys = hole.map(([, y]) => y);
+          const centre = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+          const fine = Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) <= HAIRLINE;
+          assert.equal(painted(centre), detail === 'compact' && fine, `${id} ${detail} draws a hole wrongly`);
+        }
+      }
+    }
+  });
+
+  it('leaves a hairline cut out of compact detail, as it leaves the keyline and the visor gap', () => {
+    // The page's fold, two cuts 1.4 wide: under 56px a fraction of a pixel a
+    // screen draws as a faint line of neither the ink nor the ground.
+    const { holes } = CREWLET_CHARACTER_GEOMETRY.pagelet;
+    assert.equal(holes.length, 2);
+    for (const detail of ['full', 'compact']) {
+      const paths = pathsOf(render(CrewletCharacter, { character: 'pagelet', detail }));
+      const body = ringsOf(paths[paths.length - 1]);
+      for (const [ring] of holes.map(ringsOf)) {
+        const centre = [0, 1].map((k) => ring.reduce((sum, point) => sum + point[k], 0) / ring.length);
+        const cut = winding(body, centre) === 0;
+        assert.equal(cut, detail === 'full', `the fold is ${cut ? '' : 'not '}cut at ${detail} detail`);
+      }
+    }
+  });
+});
+
+describe('the mark reader', () => {
+  it('measures the centre of area of the body\'s outline, its window counted in', () => {
+    // A 10 by 20 body with a window cut in its corner: the outline alone decides.
+    assert.deepEqual(bodyCentroid(['M0 0Z', 'M0 0L10 0L10 20L0 20ZM2 2L2 8L8 8L8 2Z', 'M0 0Z']), { x: 5, y: 10 });
+    // A right triangle's is a third of the way in from its right angle, written relative.
+    const { x, y } = bodyCentroid(['M0 0Z', 'm0 0l30 0l-30 30z', 'M0 0Z']);
+    assert.ok(Math.abs(x - 10) < 1e-9 && Math.abs(y - 10) < 1e-9, `the triangle's centre of area is ${x},${y}`);
+    // A curve is walked, not read by its control points: a cubic bulge sits off its chord.
+    const { y: bulge } = bodyCentroid(['M0 0Z', 'M0 0C0 -40 40 -40 40 0Z', 'M0 0Z']);
+    assert.ok(bulge < -10 && bulge > -20, `the bulge's centre of area is at ${bulge}`);
   });
 });

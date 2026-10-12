@@ -12,10 +12,11 @@ import {
  * the mark's own rules: the 45 degree corner, the keyline, the visor with two
  * slits, the notched crown and the block legs.
  *
- * A character is drawn in the current text colour and framed square on what it
- * draws, so it is centred in whatever box it is given. `@crewlethq/ui`'s
- * `Avatar` draws one on a plate in an agent's hue; this catalog draws them
- * bare, at full detail and compact.
+ * A character is drawn in the current text colour and framed square on its
+ * optical centre, so it is centred in whatever box it is given, and its face
+ * and holes are cut through it, so the tile's own ground shows in every slit.
+ * `@crewlethq/ui`'s `Avatar` draws one on a plate in an agent's hue; this
+ * catalog draws them bare, at full detail and compact.
  */
 const meta: Meta<typeof CrewletCharacter> = {
   title: "Icons/CrewletCharacter",

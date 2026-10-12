@@ -308,7 +308,8 @@ export const Avatar = ({
    * AN AGENT'S CHARACTER IS ITS FACE, and it wins over an image: it is the
    * identity an operator chose for the seat, where an image is whatever a
    * profile happened to carry. It is centred by the character itself, which
-   * frames every silhouette square on its own extent.
+   * frames every silhouette square on its optical centre, and its face is cut
+   * through it, so every slit shows the plate.
    */
     if (character !== undefined && kind === 'agent') {
       return (
