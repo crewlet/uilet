@@ -55,6 +55,13 @@ test('a layout draws the element it is asked for, so a list stays a list', () =>
   );
   expect(screen.getAllByRole('listitem')).toHaveLength(2);
   expect(screen.getByRole('list').className).toContain('crewlet-stack');
+  // And it spends none of the browser's pixels on being one: no indent, no
+  // margin and no marker, at the weight of one class.
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Layout.css'), 'utf8');
+  const rule = /:where\(ul, ol\)\.crewlet-stack,\s*:where\(ul, ol\)\.crewlet-inline\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(rule).toContain('margin: 0');
+  expect(rule).toContain('padding: 0');
+  expect(rule).toContain('list-style: none');
 });
 
 test('alignment and wrapping are classes rather than inline styles', () => {
