@@ -406,6 +406,16 @@
 }
 
 /*
+ * A FILL CHART GROWS INTO THE HEIGHT IT IS GIVEN (`height="fill"`). The figure
+ * flexes, so in a card a taller neighbour stretches it takes the spare height,
+ * and its rows (a style property) spend all of it on the plot's row. Nowhere to
+ * grow, it is as tall as its content, the plot at its least.
+ */
+.crewlet-stacked-columns--fill {
+  flex: 1 1 auto;
+}
+
+/*
  * EACH WORD IS A BOX OF NO HEIGHT, spread from the top of the plot to its
  * baseline, with the word centred on it: so every word stands exactly on the
  * line it names, whatever the plot's height, with nothing measured.
@@ -519,12 +529,19 @@
  * legend at its END, top right, where the design's Spend card draws it; the
  * legend is flushed to the end of that row and wraps from there. Below, the
  * legend starts under the axis, a step clear of the dates.
+ *
+ * ON A CARD TOO NARROW FOR BOTH, THE LEGEND TAKES A ROW OF ITS OWN, under the
+ * heading and still flushed to the end. Held on one line, the two shrank
+ * together and the legend stood beside the title as a column of one series a
+ * line. The rows stand a step apart, closer than the head stands to the plot,
+ * so the legend still reads as the head's.
  */
 .crewlet-stacked-columns__head {
   grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--spacing-4);
+  gap: var(--spacing-2) var(--spacing-4);
   margin-bottom: var(--spacing-3);
   min-width: 0;
 }

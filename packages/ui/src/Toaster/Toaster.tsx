@@ -122,6 +122,20 @@ const DURATIONS: Record<ToastVariant, number> = {
 const KNOWN = new Set<string>(['info', 'success', 'warning', 'danger']);
 const isKnown = (variant: string): variant is ToastVariant => KNOWN.has(variant);
 
+/**
+ * How long a toast stays: its own `duration`, or its variant's. A variant of
+ * the caller's own that names none is sticky. The timer that takes a toast
+ * away and the provider's bound both read it here, so what counts down and
+ * what the stack may drop are one rule.
+ */
+const durationOf = (toast: Pick<Toast, 'variant' | 'duration'>): number => {
+  const variant = toast.variant ?? 'info';
+  return toast.duration ?? (isKnown(variant) ? DURATIONS[variant] : 0);
+};
+
+/** No timer takes it away: only the reader, or the application, dismisses it. */
+const isSticky = (toast: Pick<Toast, 'variant' | 'duration'>) => durationOf(toast) <= 0;
+
 /** Which region says it: a failure interrupts, everything else waits its turn. */
 const politeness = (variant: string): 'polite' | 'assertive' =>
   variant === 'danger' || variant === 'quota' ? 'assertive' : 'polite';
@@ -168,7 +182,7 @@ function ToastItem<TVariant extends string>({
   const variant = (toast.variant ?? 'info') as string;
   const known = isKnown(variant);
   const { id, version } = toast;
-  const duration = toast.duration ?? (known ? DURATIONS[variant] : 0);
+  const duration = durationOf(toast);
 
   const dismiss = useCallback(() => onDismiss(id), [onDismiss, id]);
 
@@ -442,8 +456,44 @@ export interface ToastProviderProps {
   children?: ReactNode;
   position?: ToasterProps['position'];
   renderAction?: ToasterProps['renderAction'];
-  /** How many to keep on screen. The oldest goes when the next arrives. */
+  /**
+   * How many to keep on screen. When one more arrives, the oldest toast that
+   * would have gone by itself goes. A sticky one never does, so while every
+   * toast held is sticky the stack holds more than this, until the reader
+   * dismisses some.
+   */
   max?: number | undefined;
+}
+
+/**
+ * The stack once `toast` has arrived on it, held to `max`.
+ *
+ * A STICKY TOAST IS NEVER EVICTED. It is sticky because it is news (a failure,
+ * a warning), and evicting it is the auto-dismissal its duration refuses: the
+ * stack used to keep its newest `max` whatever they were, so a fifth toast
+ * took away a failure the reader had not seen. What goes is the OLDEST TIMED
+ * toast, which was about to go by itself.
+ *
+ * WHEN EVERY TOAST HELD IS STICKY, NONE GOES, and the stack holds more than
+ * `max` until the reader dismisses some. The arrival is always drawn too:
+ * dropping it, or holding it back until a place frees, hides news exactly as
+ * evicting does. A timed arrival leaves by itself, so the stack is back within
+ * `max` once its countdown ends; and a failure that can be raised again and
+ * again takes an id, so each repeat replaces its own strip rather than adding
+ * one.
+ */
+function admit(held: readonly Toast[], toast: Toast, max: number): Toast[] {
+  const stack = [...held.filter((one) => one.id !== toast.id), toast];
+  const over = stack.length - max;
+  if (over <= 0) return stack;
+  // Oldest first, and never the arrival, which is last.
+  const evicted = new Set(
+    stack
+      .slice(0, -1)
+      .filter((one) => !isSticky(one))
+      .slice(0, over),
+  );
+  return stack.filter((one) => !evicted.has(one));
 }
 
 /**
@@ -467,11 +517,10 @@ export function ToastProvider({ children, position = 'bottom-right', renderActio
     (toast: ToastRequest) => {
       const id = toast.id ?? `crewlet-toast-${next.current++}`;
       setToasts((current) => {
-        const rest = current.filter((one) => one.id !== id);
         // A repeat of an id already up is a REPLACE with its countdown
         // restarted, not a second strip saying the same thing.
         const version = (current.find((one) => one.id === id)?.version ?? 0) + 1;
-        return [...rest, { ...toast, id, version }].slice(-max);
+        return admit(current, { ...toast, id, version }, max);
       });
       return id;
     },

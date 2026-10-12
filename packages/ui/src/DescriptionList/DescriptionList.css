@@ -57,3 +57,27 @@
     margin-bottom: var(--spacing-2);
   }
 }
+
+/*
+ * FIT: the term column is as wide as its longest term, and the pairs stay side
+ * by side at every width. It is for a panel of its own width, such as a
+ * popover, where the window's width says nothing about the room the list has:
+ * the narrow rule above is a question about the window, and a 260px panel is
+ * 260px on a phone and on a desktop alike. Its terms are a word each, so the
+ * column they take is a word wide and the details keep the rest.
+ *
+ * Written AFTER the narrow rule, which it overrides at the same weight, so
+ * nothing here has to outrank a media query.
+ */
+.crewlet-description-list--fit {
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--spacing-2) var(--spacing-4);
+}
+
+.crewlet-description-list--fit.crewlet-description-list--dense {
+  gap: var(--spacing-1) var(--spacing-3);
+}
+
+.crewlet-description-list--fit .crewlet-description-list__detail {
+  margin-bottom: 0;
+}

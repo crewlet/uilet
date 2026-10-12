@@ -4,7 +4,7 @@ import { Copyable, DescriptionList, RelativeTime, Tag } from '@crewlethq/ui';
 const meta: Meta<typeof DescriptionList> = {
   title: 'UI/DescriptionList',
   component: DescriptionList,
-  argTypes: { dense: { control: 'boolean' } },
+  argTypes: { dense: { control: 'boolean' }, fit: { control: 'boolean' } },
 };
 
 export default meta;
@@ -41,6 +41,29 @@ export const FromTuples: Story = {
   },
   render: (args) => (
     <div style={{ maxWidth: 480 }}>
+      <DescriptionList {...args} />
+    </div>
+  ),
+};
+
+/**
+ * FIT, for a panel of its own width: the terms take the longest term rather
+ * than 120px, and the pairs stay side by side however narrow the window is,
+ * because a 260px panel is 260px on a phone too. Its terms are a word each.
+ */
+export const Fit: Story = {
+  args: {
+    fit: true,
+    dense: true,
+    items: [
+      ['Nodes', '1 live'],
+      ['Config', 'Epoch 8'],
+      ['Up', '2 days'],
+      ['Alarms', 'Backup age'],
+    ],
+  },
+  render: (args) => (
+    <div style={{ width: 236, padding: 'var(--spacing-3)', border: '1px solid var(--color-border-default)' }}>
       <DescriptionList {...args} />
     </div>
   ),

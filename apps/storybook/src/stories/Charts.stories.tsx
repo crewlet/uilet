@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   ActivityStrip,
   BarList,
+  Card,
   Legend,
   SegmentedControl,
   Sparkline,
@@ -411,6 +412,18 @@ export const Columns: Story = {
   ),
 };
 
+/** The chart's title and the sentence under it, at the start of its head row. */
+const phaseHead = (
+  <>
+    <h3 style={{ margin: 0, font: 'var(--font-weight-semibold) var(--font-size-sm)/1.3 var(--font-family-sans)' }}>
+      Daily tokens by phase
+    </h3>
+    <p style={{ margin: 'var(--spacing-1) 0 0', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
+      Execute does the work; review, workers and auxiliary calls are the overhead
+    </p>
+  </>
+);
+
 /**
  * THE LEGEND IN THE CARD'S HEAD, as the design's Spend screen draws this
  * chart: `legend="head"` puts it at the end of the chart's head row, top
@@ -432,16 +445,7 @@ export const ColumnsLegendInHead: Story = {
         <StackedColumns
           label="Daily tokens by phase"
           legend="head"
-          head={
-            <>
-              <h3 style={{ margin: 0, font: 'var(--font-weight-semibold) var(--font-size-sm)/1.3 var(--font-family-sans)' }}>
-                Daily tokens by phase
-              </h3>
-              <p style={{ margin: 'var(--spacing-1) 0 0', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
-                Execute does the work; review, workers and auxiliary calls are the overhead
-              </p>
-            </>
-          }
+          head={phaseHead}
           series={phases}
           buckets={daily}
           formatTime={shortDate}
@@ -449,4 +453,106 @@ export const ColumnsLegendInHead: Story = {
       </section>
     </div>
   ),
+};
+
+/**
+ * ON A NARROW CARD THE LEGEND TAKES A ROW OF ITS OWN, under the title and
+ * still at the end. Kept on one line with the title, it stood beside it as a
+ * column of one series a line. A card wide enough for both keeps them on one
+ * row, as the story above shows.
+ */
+export const ColumnsLegendOnANarrowCard: Story = {
+  name: 'StackedColumns / Legend on a narrow card',
+  render: () => (
+    <div style={{ padding: 20 }}>
+      <Card style={{ width: 340 }}>
+        <StackedColumns
+          label="Daily tokens by phase"
+          legend="head"
+          head={phaseHead}
+          series={phases}
+          buckets={daily}
+          formatTime={shortDate}
+        />
+      </Card>
+    </div>
+  ),
+};
+
+/** What the card beside the chart says: all of it when it is tall, two lines when it is short. */
+const facts = [
+  ['Tokens, last 30 days', '48.6M'],
+  ['Against the 30 days before', '+18%'],
+  ['This month', '48.6M of 80M'],
+  ['Served from the prompt cache', '62% of input'],
+  ['Median task', '96k tokens'],
+  ['Busiest agent', 'Software Engineer'],
+  ['Busiest team', 'Engineering'],
+  ['History', 'From Apr 1, 181 days'],
+];
+
+function FillingCard() {
+  const [beside, setBeside] = useState('tall');
+  const [only, setOnly] = useState('all');
+  const hidden = only === 'all' ? [] : phases.filter((phase) => phase.id !== only).map((phase) => phase.id);
+  return (
+    <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)', maxWidth: 1080 }}>
+      <SegmentedControl
+        semantics="radio"
+        label="The card beside the chart"
+        value={beside}
+        onValueChange={setBeside}
+        options={[
+          { value: 'short', label: 'Short' },
+          { value: 'tall', label: 'Tall' },
+        ]}
+      />
+      {/* A row of one height: every card in it stretches to the tallest. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '280px minmax(0, 1fr)', gap: 'var(--spacing-4)', alignItems: 'stretch' }}>
+        <Card>
+          <dl style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+            {(beside === 'tall' ? facts : facts.slice(0, 2)).map(([term, value]) => (
+              <div key={term}>
+                <dt style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>{term}</dt>
+                <dd style={{ margin: 0, fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)' }}>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
+        <Card style={{ gap: 'var(--spacing-3)' }}>
+          <StackedColumns
+            label="Daily tokens by phase"
+            height="fill"
+            legend="head"
+            head={phaseHead}
+            series={phases}
+            buckets={daily}
+            hidden={hidden}
+            formatTime={shortDate}
+          />
+          <SegmentedControl
+            semantics="radio"
+            label="Phases shown"
+            value={only}
+            onValueChange={setOnly}
+            options={[{ value: 'all', label: 'All' }, ...phases.map((phase) => ({ value: phase.id, label: phase.name }))]}
+          />
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A CHART THAT FILLS ITS CARD: `height="fill"`. In a row of cards stretched to
+ * one height, a chart drawn at a fixed height stopped where its length said,
+ * and the rest of its card was a band of nothing between its dates and the
+ * control under them. Filling, the figure flexes into the card and the plot
+ * takes that height, so the control stands on the card's floor right under
+ * the dates. Make the card beside it short and the chart's card is the
+ * tallest: the plot is then its `minHeight`, as tall as a plot given none.
+ */
+export const ColumnsFill: Story = {
+  name: 'StackedColumns / Filling a stretched card',
+  render: () => <FillingCard />,
 };

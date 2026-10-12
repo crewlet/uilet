@@ -12,7 +12,13 @@ export type { ActivityBucket, ActivityStripProps } from './ActivityStrip.js';
 export { TimeSeries, Sparkline } from './TimeSeries.js';
 export type { Series, SeriesPoint, SparklineProps, TimeSeriesProps } from './TimeSeries.js';
 export { StackedColumns, niceScale } from './StackedColumns.js';
-export type { StackedColumnsBucket, StackedColumnsProps, StackedColumnsSeries } from './StackedColumns.js';
+export type {
+  StackedColumnsBucket,
+  StackedColumnsHeight,
+  StackedColumnsLegend,
+  StackedColumnsProps,
+  StackedColumnsSeries,
+} from './StackedColumns.js';
 export { ChartTooltip } from './ChartTooltip.js';
 export type { ChartTooltipProps, ChartTooltipRow } from './ChartTooltip.js';
 export { useChartHover } from './useChartHover.js';

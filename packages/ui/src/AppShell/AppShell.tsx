@@ -40,6 +40,7 @@
 
 import {
   createContext,
+  forwardRef,
   useCallback,
   useContext,
   useEffect,
@@ -47,17 +48,20 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type AriaAttributes,
   type HTMLAttributes,
   type MouseEventHandler,
   type ReactNode,
   type Ref,
 } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
-import { MenuGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronUpGlyph, MenuGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { focusables, useModalLayer } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
+import type { Tone } from '../utils/tone.js';
 import { useMediaMatch } from '../utils/useMediaMatch.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /**
  * Where the rail stops being a column beside the page and becomes a drawer:
@@ -353,6 +357,38 @@ export function AppShellRail({ header, footer, className, children }: AppShellRa
   );
 }
 
+/**
+ * A figure at the end of a row in the foot, and what it counts.
+ *
+ * VALUES RATHER THAN AN ELEMENT, for the reason `NavItem`'s figures are
+ * values: the rail paints the figure, so its ink is held to its floor on
+ * every ground the row can have, the row a panel is open from included, and
+ * that is a fact about the rail rather than something a call site can be
+ * asked to know.
+ */
+export interface RailRowCount {
+  /** The figure, drawn as given, so the caller decides its formatting. */
+  value: number | string;
+  /**
+   * What is counted, read after the figure as part of the row's name:
+   * `alarms` makes the engine's row "Engine serving, 5 alarms". Required,
+   * because a figure read with no word after it is a number nobody can place.
+   */
+  label: string;
+  /**
+   * A mark before the figure: the triangle beside a count of alarms.
+   * Decoration, because the label says the same thing in words.
+   */
+  mark?: ReactNode;
+  /**
+   * `warning` draws the figure and its mark in the warning ink, for a count
+   * of things that are wrong: the alarms standing on a node. The figure is
+   * never the only carrier, since its mark and its label say the same. Left
+   * out, it is the quiet figure a count in the nav is, in the tertiary ink.
+   */
+  tone?: Extract<Tone, 'neutral' | 'warning'> | undefined;
+}
+
 /** What a row in the rail's foot holds, whether or not it is a control. */
 interface RailRowContent {
   /**
@@ -362,11 +398,19 @@ interface RailRowContent {
    */
   icon?: ReactNode;
   /**
-   * A value at the end of the row: a count, a tag, a time. It stands beside
-   * the words while both fit on the rail, and drops under them when they do
-   * not, so it never takes the room the words need.
+   * A value at the end of the row: a tag, a time. It stands beside the words
+   * while both fit on the rail, and drops under them when they do not, so it
+   * never takes the room the words need. A figure with words that name it is
+   * `count`.
    */
   trailing?: ReactNode;
+  /**
+   * How many of something the row reports, as a figure after the words: the
+   * alarms standing on the engine. It is read as the end of the row's name
+   * (", 5 alarms") and hidden from assistive technology where it is drawn, so
+   * each reader is told it once.
+   */
+  count?: RailRowCount | undefined;
   /**
    * A second line under the row's words: "3 nodes · config epoch 42" under
    * "Engine healthy". Given one, the row is the design's STATUS BLOCK, drawn
@@ -383,6 +427,9 @@ interface RailRowContent {
 export interface StaticRailRowProps extends RailRowContent {
   onClick?: undefined;
   label?: undefined;
+  'aria-expanded'?: undefined;
+  'aria-haspopup'?: undefined;
+  'aria-controls'?: undefined;
 }
 
 /** A row that opens something: the engine panel, an account menu. */
@@ -390,20 +437,42 @@ export interface ActionRailRowProps extends RailRowContent {
   onClick: MouseEventHandler<HTMLButtonElement>;
   /**
    * Names the control where its own words are not a name: "engine connected"
-   * names a state rather than what pressing it does.
+   * names a state rather than what pressing it does. It replaces the name the
+   * row's words and its count would give it, so it says the count too.
    */
   label?: string | undefined;
+  /**
+   * Whether the panel this row opens is open. A `Popover` or a `Menu` the row
+   * is the trigger of passes this and the two below, and the row draws its
+   * open state from it, so the picture and what a screen reader is told
+   * cannot come apart.
+   */
+  'aria-expanded'?: boolean | undefined;
+  /**
+   * What the row opens. Given one, the row ends in a chevron pointing up,
+   * which is where a panel opened from the rail's foot stands.
+   */
+  'aria-haspopup'?: AriaAttributes['aria-haspopup'];
+  /** The panel the row opens, while it is open. */
+  'aria-controls'?: string | undefined;
 }
 
 /**
  * A row in the rail's foot.
  *
- * `label` is refused without `onClick` by the type rather than ignored at
- * runtime: `aria-label` on an element with no role is dropped by assistive
- * technology, so a name passed to a row nothing presses is a name nobody is
- * ever told, and a silent no-op is the shape a caller cannot debug.
+ * `label` and the three popup attributes are refused without `onClick` by the
+ * type rather than ignored at runtime: `aria-label` on an element with no role
+ * is dropped by assistive technology, and `aria-expanded` on one is a state of
+ * a control that does not exist, so either passed to a row nothing presses is
+ * something nobody is ever told, and a silent no-op is the shape a caller
+ * cannot debug.
  */
 export type AppShellRailRowProps = StaticRailRowProps | ActionRailRowProps;
+
+/** Whether a row's `aria-haspopup` says it opens something. */
+function opensSomething(haspopup: AriaAttributes['aria-haspopup']): boolean {
+  return haspopup !== undefined && haspopup !== false && haspopup !== 'false';
+}
 
 /**
  * A row in the rail's foot, on the rail's own two insets.
@@ -421,9 +490,30 @@ export type AppShellRailRowProps = StaticRailRowProps | ActionRailRowProps;
  * a dropped-in control is a row in the rail rather than a control sitting on a
  * toolbar's inset. This is still the one to reach for, because it is also the
  * thing that decides whether the row is a control at all.
+ *
+ * A ROW THAT OPENS A PANEL IS THE PANEL'S TRIGGER, as it is: the element is
+ * handed to `ref`, and the popup attributes a `Popover` or a `Menu` gives its
+ * trigger reach the button, so the panel is anchored to the row and the row
+ * says whether it is open.
  */
-export function AppShellRailRow({ icon, trailing, detail, onClick, label, className, children }: AppShellRailRowProps) {
+export const AppShellRailRow = forwardRef<HTMLElement, AppShellRailRowProps>(function AppShellRailRow(
+  {
+    icon,
+    trailing,
+    count,
+    detail,
+    onClick,
+    label,
+    className,
+    children,
+    'aria-expanded': expanded,
+    'aria-haspopup': haspopup,
+    'aria-controls': controls,
+  },
+  ref,
+) {
   const block = detail !== undefined && detail !== null && detail !== false && detail !== '';
+  const opens = onClick !== undefined && opensSomething(haspopup);
   /*
    * THE WORDS ARE NEVER CUT. A status line says what a node is doing, and the
    * row used to give its words whatever the mark and the trailing value left
@@ -448,7 +538,14 @@ export function AppShellRailRow({ icon, trailing, detail, onClick, label, classN
        */}
       <span className="crewlet-app-shell__rail-row-body">
         <span className="crewlet-app-shell__rail-row-text">
-          <span className="crewlet-app-shell__rail-row-label">{children}</span>
+          <span className="crewlet-app-shell__rail-row-label">
+            {children}
+            {/* THE COUNT IS READ AS THE END OF THE WORDS, in the words' own
+                box: written after the last word, the comma lands where it
+                belongs and the pause it buys falls between the state and its
+                figure ("Engine serving, 5 alarms"), as a nav row's does. */}
+            {count ? <VisuallyHidden>{`, ${String(count.value)} ${count.label}`}</VisuallyHidden> : null}
+          </span>
           {block ? (
             <>
               {' '}
@@ -456,6 +553,21 @@ export function AppShellRailRow({ icon, trailing, detail, onClick, label, classN
             </>
           ) : null}
         </span>
+        {count ? (
+          <>
+            {' '}
+            <span
+              className={cx(
+                'crewlet-app-shell__rail-row-count',
+                count.tone === 'warning' && 'crewlet-app-shell__rail-row-count--warning',
+              )}
+              aria-hidden
+            >
+              {count.mark ? <span className="crewlet-app-shell__rail-row-count-mark">{count.mark}</span> : null}
+              {count.value}
+            </span>
+          </>
+        ) : null}
         {trailing ? (
           <>
             {' '}
@@ -463,21 +575,39 @@ export function AppShellRailRow({ icon, trailing, detail, onClick, label, classN
           </>
         ) : null}
       </span>
+      {/* OUTSIDE THE LINE THE WORDS SHARE, so it never drops under them: it
+          says what pressing the row does, and it is the row's last mark at
+          every width. */}
+      {opens ? (
+        <span className="crewlet-app-shell__rail-row-opens" aria-hidden>
+          <ChevronUpGlyph size="xs" />
+        </span>
+      ) : null}
     </>
   );
   const shape = cx('crewlet-app-shell__rail-row', block && 'crewlet-app-shell__rail-row--block', className);
-  if (onClick === undefined) return <div className={shape}>{inside}</div>;
+  if (onClick === undefined) {
+    return (
+      <div ref={ref as Ref<HTMLDivElement>} className={shape}>
+        {inside}
+      </div>
+    );
+  }
   return (
     <button
+      ref={ref as Ref<HTMLButtonElement>}
       type="button"
       className={cx(shape, 'crewlet-app-shell__rail-row--action')}
       aria-label={label}
+      aria-expanded={expanded}
+      aria-haspopup={haspopup}
+      aria-controls={controls}
       onClick={onClick}
     >
       {inside}
     </button>
   );
-}
+});
 
 export interface AppShellToggleProps {
   className?: string | undefined;

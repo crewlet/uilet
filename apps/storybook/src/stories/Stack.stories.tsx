@@ -103,3 +103,18 @@ export const AShortRow: Story = {
     </Stack>
   ),
 };
+
+/**
+ * A STACK DRAWN AS A LIST is still a run of items: no indent, no margin and no
+ * marker of the browser's, and it is still a list to a screen reader. The
+ * names of the alarms standing on a node, as the engine panel lists them.
+ */
+export const AsAList: Story = {
+  render: () => (
+    <Stack as="ul" gap={1} style={{ border: '1px dashed var(--color-border-default)' }}>
+      {['Backup age', 'Trim blocked: tracker', 'Trim blocked: pages'].map((name) => (
+        <li key={name}>{name}</li>
+      ))}
+    </Stack>
+  ),
+};

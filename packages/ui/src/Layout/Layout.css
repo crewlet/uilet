@@ -26,6 +26,24 @@
 }
 
 /*
+ * DRAWN AS A LIST, IT IS STILL A RUN OF ITEMS. A Stack or an Inline spends no
+ * pixel of its own, and a `ul` or an `ol` arrives with the browser's: a margin
+ * above and below, a 40px indent and a marker on every item, so a list of five
+ * names laid out as a Stack was pushed in and bulleted. They are taken back,
+ * and the element stays a list to a screen reader. A list that wants its
+ * markers is `List variant="bulleted"`.
+ *
+ * Inside :where(), so the rule weighs one class like every other here and a
+ * caller's own class still decides what it sets.
+ */
+:where(ul, ol).crewlet-stack,
+:where(ul, ol).crewlet-inline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
  * A GRID OF CARDS KEEPS ITS TRACKS. `auto-fill` lays down every track the row
  * has room for and leaves the empty ones empty; `auto-fit`, which this was,
  * COLLAPSES them, so the last row of a list, and every list that is short of a

@@ -1,5 +1,5 @@
 /**
- * The three defects this rewrite fixes, each held by a case that fails without
+ * The four defects this rewrite fixes, each held by a case that fails without
  * it, plus the provider the engine's own Toast module becomes.
  *
  * 1. The region arrived WITH the first toast. A live region inserted already
@@ -11,6 +11,9 @@
  *    animations, got a toast that never went away.
  * 3. A failure auto-dismissed alongside a success, so news removed itself
  *    while somebody was reading the form they were about to fix.
+ * 4. The provider kept its newest `max` toasts whatever they were, so the
+ *    toast after them evicted a failure nobody had read: the same
+ *    auto-dismissal, by another road.
  */
 
 import { readFileSync } from 'node:fs';
@@ -18,10 +21,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { LayerHost } from '../Layer/index.js';
-import { ToastProvider, Toaster, useToast } from './index.js';
+import { ToastProvider, Toaster, useToast, type ToastApi } from './index.js';
 
 afterEach(() => {
   cleanup();
@@ -89,9 +92,9 @@ describe('Toaster', () => {
   });
 
   test('a variant spends its hue on its mark and its wash, never on its words or its edge', () => {
-    // The first release's rule: a failure is a soft rose mark on a faint rose
-    // wash, never a red flood. The mark is the ink step, measured as text on
-    // every theme, and the wash is the soft step behind the words.
+    // The first release's rule: a failure is a soft rose mark, never a red
+    // flood. The mark is the ink step, measured as text on every theme, and
+    // the wash is the soft step behind the words of a toast that counts down.
     const css = toasterCss().replace(/\/\*[\s\S]*?\*\//g, ' ');
     const rule = /\.crewlet-toast--danger\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
     expect(rule).toContain('--crewlet-toast-mark: var(--color-feedback-danger-ink)');
@@ -349,24 +352,82 @@ describe('ToastProvider', () => {
     expect(container.querySelector('.crewlet-layer-host')?.querySelector('.crewlet-toast')).not.toBeNull();
   });
 
-  test('the stack is bounded, oldest first', () => {
-    function Many() {
+  /**
+   * A provider whose API the case holds, so it raises toasts in exactly the
+   * order it means; and what is on screen, oldest first.
+   */
+  function provider(max: number) {
+    const held: { api?: ToastApi } = {};
+    function Hold() {
       const toast = useToast();
-      return (
-        <button type="button" onClick={() => toast.failed(`Refusal ${Math.random()}`)}>
-          Fail
-        </button>
-      );
+      useEffect(() => {
+        held.api = toast;
+      }, [toast]);
+      return null;
     }
     render(
-      <ToastProvider max={2}>
-        <Many />
+      <ToastProvider max={max}>
+        <Hold />
       </ToastProvider>,
     );
-    const fail = screen.getByRole('button', { name: 'Fail' });
-    fireEvent.click(fail);
-    fireEvent.click(fail);
-    fireEvent.click(fail);
-    expect(document.querySelectorAll('.crewlet-toast')).toHaveLength(2);
+    const strip = (message: string) =>
+      [...document.querySelectorAll('.crewlet-toast')].find(
+        (one) => one.querySelector('.crewlet-toast__message')?.textContent === message,
+      );
+    return {
+      raise: (raising: (toast: ToastApi) => unknown) =>
+        act(() => {
+          raising(held.api!);
+        }),
+      onScreen: () => [...document.querySelectorAll('.crewlet-toast__message')].map((node) => node.textContent),
+      dismiss: (message: string) => fireEvent.click(strip(message)!.querySelector('.crewlet-toast__dismiss')!),
+    };
+  }
+
+  test('the stack is bounded, and what goes is the oldest toast that would have gone by itself', () => {
+    const { raise, onScreen } = provider(3);
+    raise((toast) => toast.failed('The write was refused.'));
+    raise((toast) => toast.ok('Saved the seat.'));
+    raise((toast) => toast.ok('Saved the schedule.'));
+    // The fourth used to take the refusal, the oldest of the three. It takes
+    // the oldest success instead, which was leaving within seconds anyway.
+    raise((toast) => toast.ok('Saved the budget.'));
+    expect(onScreen()).toEqual(['The write was refused.', 'Saved the schedule.', 'Saved the budget.']);
+    raise((toast) => toast.failed('The apply was refused.'));
+    expect(onScreen()).toEqual(['The write was refused.', 'Saved the budget.', 'The apply was refused.']);
+  });
+
+  test("a toast's own duration decides whether the stack may drop it, as it decides its timer", () => {
+    const { raise, onScreen } = provider(2);
+    // A success asked to stay, and a variant of the caller's own that names no
+    // duration, are both sticky. A failure given a duration counts down, so it
+    // is the one the stack may drop.
+    raise((toast) => toast.ok('Kept until it is dismissed.', { duration: 0 }));
+    raise((toast) => toast.failed('Going by itself.', { duration: 3000 }));
+    raise((toast) => toast.show({ variant: 'quota', title: 'Usage limit reached', message: 'The allowance is spent.' }));
+    expect(onScreen()).toEqual(['Kept until it is dismissed.', 'The allowance is spent.']);
+  });
+
+  test('when every toast held is sticky, none goes, and the stack holds more than its bound', () => {
+    vi.useFakeTimers();
+    const { raise, onScreen, dismiss } = provider(2);
+    const refusals = ['The seat was refused.', 'The schedule was refused.', 'The budget was refused.'];
+    for (const refusal of refusals) raise((toast) => toast.failed(refusal));
+    expect(onScreen()).toEqual(refusals);
+
+    // A timed arrival is drawn too, over the bound, and takes itself away.
+    raise((toast) => toast.ok('Saved the draft.'));
+    expect(onScreen()).toEqual([...refusals, 'Saved the draft.']);
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+    expect(onScreen()).toEqual(refusals);
+
+    // Once the reader has dismissed below it, the bound holds again.
+    dismiss('The seat was refused.');
+    dismiss('The schedule was refused.');
+    raise((toast) => toast.ok('Saved the seat.'));
+    raise((toast) => toast.ok('Saved the schedule.'));
+    expect(onScreen()).toEqual(['The budget was refused.', 'Saved the schedule.']);
   });
 });

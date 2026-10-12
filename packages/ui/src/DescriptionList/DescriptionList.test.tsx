@@ -2,8 +2,11 @@
  * Metadata pairs, announced as pairs.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 import { DescriptionList } from './index.js';
 
 afterEach(cleanup);
@@ -44,4 +47,47 @@ test('a pair lays out on the list own tracks', () => {
   const pair = container.querySelector('.crewlet-description-list__pair') as HTMLElement;
   expect(pair.parentElement?.tagName).toBe('DL');
   expect(pair.children).toHaveLength(2);
+});
+
+describe('fit, for a panel of its own width', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'DescriptionList.css'), 'utf8');
+
+  /** The body of the first rule whose selector is exactly this one. */
+  function rule(selector: string): string {
+    const escaped = selector.replace(/[.[\]()^$*+?|\\]/g, '\\$&');
+    return new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+  }
+
+  test('only a list that asks for it is fitted', () => {
+    const { container } = render(
+      <>
+        <DescriptionList fit items={[['Up', '2 days']]} />
+        <DescriptionList items={[['Up', '2 days']]} />
+      </>,
+    );
+    const [fitted, plain] = [...container.querySelectorAll('dl')];
+    expect(fitted?.classList.contains('crewlet-description-list--fit')).toBe(true);
+    expect(plain?.classList.contains('crewlet-description-list--fit')).toBe(false);
+  });
+
+  test('its terms take the longest term, and its pairs stay side by side on a narrow screen', () => {
+    /*
+     * The default term track is 120px at the least, so "Up" beside "2 days"
+     * in a 260px popover spent most of the panel on the space after "Up", and
+     * under 480px the list stacked, though a popover is as wide on a phone as
+     * on a desktop. The fitted track is the term's own width.
+     */
+    expect(rule('.crewlet-description-list--fit')).toContain('grid-template-columns: max-content minmax(0, 1fr)');
+    // AFTER the narrow rule, which it overrides at the same weight: before it,
+    // the narrow rule would stack a fitted list too.
+    const narrow = css.indexOf('@media (max-width: 480px)');
+    expect(narrow).toBeGreaterThan(-1);
+    expect(css.indexOf('\n.crewlet-description-list--fit {')).toBeGreaterThan(narrow);
+    // And the narrow rule's space under each detail, there for a stacked list, is taken back.
+    expect(rule('.crewlet-description-list--fit .crewlet-description-list__detail')).toContain('margin-bottom: 0');
+    // A dense fitted list keeps the dense rhythm at every width.
+    expect(rule('.crewlet-description-list--fit.crewlet-description-list--dense')).toContain(
+      'gap: var(--spacing-1) var(--spacing-3)',
+    );
+  });
 });

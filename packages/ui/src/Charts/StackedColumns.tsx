@@ -25,12 +25,25 @@ export interface StackedColumnsBucket {
  *
  * `below`, the default, under the dates. `head` at the END of the chart's head
  * row, top right, where the design's Spend card draws it beside the card's
- * title: pass that title as `head` and the two share one line. `none` draws no
- * legend, for a screen that names the series somewhere the chart cannot reach;
- * the chart is then that screen's to caption, and a stacked figure without its
- * legend is a picture of some numbers.
+ * title: pass that title as `head` and the two share one line wherever both
+ * fit, while on a card too narrow for both the legend drops to a row of its
+ * own under the title, still at the end. `none` draws no legend, for a screen
+ * that names the series somewhere the chart cannot reach; the chart is then
+ * that screen's to caption, and a stacked figure without its legend is a
+ * picture of some numbers.
  */
 export type StackedColumnsLegend = 'below' | 'head' | 'none';
+
+/**
+ * How tall the plot is: a CSS length, or `fill`.
+ *
+ * `fill` is for a chart its container stretches, such as a card beside a
+ * taller one in a row of one height. The figure flexes into the height it is
+ * given and spends all of it on the plot, so the spare height opens inside
+ * the plot rather than as a band of nothing under the dates. Wherever nothing
+ * stretches it, the plot is `minHeight` tall.
+ */
+export type StackedColumnsHeight = 'fill' | (string & {});
 
 export interface StackedColumnsProps {
   /**
@@ -55,8 +68,14 @@ export interface StackedColumnsProps {
    * row over the plot, with the legend at its end when `legend` is `head`.
    */
   head?: ReactNode;
-  /** How tall the plot is, as a CSS length. */
-  height?: string;
+  /** How tall the plot is, as a CSS length, or `fill`: see the type. Defaults to 11.5rem. */
+  height?: StackedColumnsHeight;
+  /**
+   * The least height of a `fill` plot, as a CSS length, which is its height
+   * wherever nothing stretches the figure. Defaults to 11.5rem, the height of
+   * a plot given none.
+   */
+  minHeight?: string;
   /** How a value reads out, on the scale and in the tooltip. Defaults to a compact number. */
   format?: (value: number) => string;
   /** How a bucket reads out, under the plot and in the tooltip. Defaults to the reader's date. */
@@ -94,6 +113,9 @@ export function niceScale(peak: number, steps = 4): { top: number; step: number 
 
 const COMPACT = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
 
+/** The plot's height when the caller names none, and a `fill` plot's least. */
+const PLOT_HEIGHT = '11.5rem';
+
 /**
  * A quantity per bucket over time, split into its parts: the column chart.
  *
@@ -125,6 +147,11 @@ const COMPACT = new Intl.NumberFormat(undefined, { notation: 'compact', maximumF
  * under the dates or at the end of the chart's head, top right, as the
  * design's Spend card has it.
  *
+ * IT CAN TAKE THE HEIGHT IT IS GIVEN. Drawn at a fixed height in a card that a
+ * taller neighbour stretched, the plot stopped where its length said and the
+ * rest of the card was a band of nothing under the dates; `height="fill"`
+ * spends that height on the plot instead (see the type).
+ *
  * All of it is HTML positioned by style properties, so it holds a crisp 2px
  * gap and a true 4px corner at any width, which a stretched SVG cannot, and no
  * style element is ever drawn.
@@ -136,7 +163,8 @@ export function StackedColumns({
   label,
   legend = 'below',
   head,
-  height = '11.5rem',
+  height = PLOT_HEIGHT,
+  minHeight = PLOT_HEIGHT,
   format = (value) => COMPACT.format(value),
   formatTime = (at) => new Date(at).toLocaleDateString(),
   summary,
@@ -187,16 +215,30 @@ export function StackedColumns({
       />
     );
   const hasHead = head !== undefined && head !== null && head !== false;
+  const headed = hasHead || legend === 'head';
+  const fill = height === 'fill';
+  /*
+   * A FILL CHART'S ROWS, as a style property because the head is not always
+   * drawn: the head and the dates at their own heights, and the plot's row
+   * everything else, never less than its least. The axis and the plot stand
+   * at the whole height of that row; a legend under the dates takes a row of
+   * its own height after them.
+   */
+  const rows = fill ? `${headed ? 'auto ' : ''}minmax(${minHeight}, 1fr) auto` : undefined;
+  const plotHeight = fill ? '100%' : height;
 
   return (
-    <figure className={cx('crewlet-stacked-columns', className)}>
-      {hasHead || legend === 'head' ? (
+    <figure
+      className={cx('crewlet-stacked-columns', fill && 'crewlet-stacked-columns--fill', className)}
+      style={rows === undefined ? undefined : { gridTemplateRows: rows }}
+    >
+      {headed ? (
         <div className="crewlet-stacked-columns__head">
           {hasHead ? <div className="crewlet-stacked-columns__heading">{head}</div> : null}
           {legend === 'head' ? key : null}
         </div>
       ) : null}
-      <div className="crewlet-stacked-columns__axis" aria-hidden style={{ height }}>
+      <div className="crewlet-stacked-columns__axis" aria-hidden style={{ height: plotHeight }}>
         {ticks.map((tick) => (
           <span key={tick} className="crewlet-stacked-columns__tick">
             {format(tick)}
@@ -208,7 +250,7 @@ export function StackedColumns({
           className="crewlet-stacked-columns__plot"
           role="img"
           aria-label={sentence}
-          style={{ height }}
+          style={{ height: plotHeight }}
         >
           <div className="crewlet-stacked-columns__grid" aria-hidden>
             {ticks.map((tick) => (
