@@ -9,13 +9,23 @@
  * Its container establishes the positioning context. A host whose parent is
  * static covers the nearest positioned ancestor instead, which is the
  * viewport in the common case and is still a usable bound.
+ *
+ * IT TAKES NO PLACE IN THE STACKING ORDER OF ITS OWN. Every surface drawn in
+ * it carries its own step in the layer band, its depth in the stack, and that
+ * is what decides what paints on top. A z-index here made the host a stacking
+ * context at the bottom of the band, which held everything inside it under
+ * whatever the page stacked above that step: the shell's open drawer takes
+ * the band's own steps beside the host rather than inside it, so a panel
+ * opened from the drawer was drawn under the drawer it came from. A surface
+ * at the same step as the drawer's rail, which is the next one opened above
+ * it, paints over the rail because the host follows the shell in the
+ * document.
  */
 
 .crewlet-layer-host {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: var(--z-index-layer-base);
 }
 
 .crewlet-layer-host > * {

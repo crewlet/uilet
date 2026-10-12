@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { createRef, useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { channels, installAtWidth, px } from '../../../../apps/ui-tests/src/cascade.js';
-import { useModalLayer } from '../Layer/index.js';
+import { LayerHost, useModalLayer } from '../Layer/index.js';
 import { Popover } from '../Popover/index.js';
 import { NavGroup, NavItem, SidebarNav } from '../SidebarNav/index.js';
 import { StatusDot } from '../StatusDot/index.js';
@@ -1143,6 +1143,52 @@ describe("the rail's foot", () => {
     expect(/(?<!,)\n\.crewlet-app-shell__rail-row-detail\s*\{([^}]*)\}/.exec(css)?.[1]).toContain(
       'color: var(--color-text-tertiary)',
     );
+  });
+
+  test('a panel opened from the open drawer is drawn above the drawer', () => {
+    /*
+     * The engine's row lives in the drawer below the shell breakpoint, so its
+     * panel is opened from inside the drawer. The layer host used to be a
+     * stacking context at the bottom of the layer band, and the drawer's rail,
+     * a step above its own veil beside the host rather than inside it, was
+     * drawn over every surface the host held: the panel opened under the
+     * drawer it came from.
+     */
+    const media = installMedia(true);
+    try {
+      const { container } = render(
+        <LayerHost>
+          <Console
+            footer={
+              <Popover
+                label="Engine"
+                side="top"
+                trigger={(_open, toggle) => <AppShell.RailRow onClick={toggle}>Engine serving</AppShell.RailRow>}
+              >
+                <p>The engine</p>
+              </Popover>
+            }
+          />
+        </LayerHost>,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Sections' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Engine serving' }));
+      const panel = screen.getByRole('dialog', { name: 'Engine' });
+      const shell = container.querySelector<HTMLElement>('.crewlet-app-shell')!;
+      const host = container.querySelector<HTMLElement>('.crewlet-layer-host')!;
+      expect(host.contains(panel)).toBe(true);
+      // Its own step is the rail's at the least ...
+      const rail = Number(shell.style.getPropertyValue('--crewlet-app-shell-drawer-z')) + 1;
+      expect(Number(panel.style.zIndex)).toBeGreaterThanOrEqual(rail);
+      // ... nothing it is drawn inside holds it under that step ...
+      const layer = readFileSync(resolve(here, '../Layer/Layer.css'), 'utf8');
+      expect(/\.crewlet-layer-host\s*\{([^}]*)\}/.exec(layer)?.[1]).not.toMatch(/z-index|isolation/);
+      // ... and the host follows the shell, which is what puts a surface at
+      // the rail's own step above the rail.
+      expect(shell.compareDocumentPosition(host) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    } finally {
+      media.restore();
+    }
   });
 
   test('a row that opens a panel has no accessibility violations, closed or open', async () => {

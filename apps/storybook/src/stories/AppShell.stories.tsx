@@ -358,7 +358,9 @@ export const Narrow: Story = {
 /**
  * The drawer, opened from a control rather than from the toggle, so it can be
  * seen without narrowing the frame. Escape closes it, Tab stays inside it, and
- * focus goes back to whatever opened it.
+ * focus goes back to whatever opened it. The engine row in its foot opens its
+ * panel above the drawer, which is where a surface opened from the drawer is
+ * drawn: Escape closes the panel first, then the drawer.
  */
 export const DrawerOpen: Story = {
   render: function DrawerOpenStory() {
