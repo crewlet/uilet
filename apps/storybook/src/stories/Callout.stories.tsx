@@ -93,3 +93,16 @@ export const Banner: Story = {
 export const Announced: Story = {
   args: { variant: 'success', live: 'polite', children: 'Saved. The engine is applying it.' },
 };
+
+/**
+ * THE TITLE IS A LINE OF ITS OWN. Run on the same line as the body, a title
+ * and the first sentence read as one run-on sentence, so the heading stands
+ * above the message and the message starts on the line under it.
+ */
+export const WithATitle: Story = {
+  args: {
+    variant: 'warning',
+    title: 'You were signed out',
+    children: 'Your session ended on another device. Sign in again to carry on.',
+  },
+};

@@ -52,8 +52,10 @@
 }
 
 .crewlet-callout__title {
+  /* A LINE OF ITS OWN above the message, so the heading and the first
+     sentence are never read as one run-on sentence. */
+  display: block;
   font-weight: var(--font-weight-semibold);
-  margin-right: var(--spacing-2);
 }
 
 .crewlet-callout__action {
