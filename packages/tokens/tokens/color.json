@@ -91,6 +91,10 @@
       "blueInk": { "value": "#b9c5e0" }
     },
     "scrollbar": { "value": "rgba(255, 255, 255, 0.16)", "comment": "Scrollbars belong to the palette. A bright system gutter down the side of a dark page is the most visible way an application admits it is a web page." },
-    "scrollbarHover": { "value": "rgba(255, 255, 255, 0.26)" }
+    "scrollbarHover": { "value": "rgba(255, 255, 255, 0.26)" },
+    "qr": {
+      "dark": { "value": "#000000", "comment": "A QR code's dark modules. Part of the symbol a camera reads rather than a colour of the palette, so it is the same in every palette and theme and is never spent on anything else. A code is specified dark on light, and some authenticator apps do not read one inverted for a dark theme, which is why it is not themed." },
+      "light": { "value": "#ffffff", "comment": "A QR code's light plate, its quiet zone included. Fixed for the same reason as the dark modules: the plate is what gives a scanner light to find the finder patterns against, on any page." }
+    }
   }
 }

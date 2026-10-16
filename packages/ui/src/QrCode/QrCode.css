@@ -1,0 +1,19 @@
+/*
+ * A QR code on its own plate.
+ *
+ * A FIXED BOX, because a camera needs modules of a readable size: at 208px a
+ * second factor's code (a version 7 symbol and its quiet zone) draws each
+ * module at about 4.3px. A consumer that needs another size sets the variable.
+ *
+ * ITS INKS ARE KEPT UNDER FORCED COLOURS. A high-contrast mode repaints fills
+ * to system colours, and a plate repainted dark is a code no scanner reads.
+ */
+.crewlet-qr-code {
+  --crewlet-qr-code-size: 208px;
+  display: block;
+  flex: none;
+  width: var(--crewlet-qr-code-size);
+  height: var(--crewlet-qr-code-size);
+  border-radius: var(--radius-sm);
+  forced-color-adjust: none;
+}
