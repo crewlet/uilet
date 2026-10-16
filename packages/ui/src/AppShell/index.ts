@@ -1,6 +1,8 @@
 import './AppShell.css';
 
 export { AppShell, AppShellRail, AppShellRailRow, AppShellToggle, AppShellTopbar, useAppShell } from './AppShell.js';
+export { AccountRow } from './AccountRow.js';
+export type { AccountRowProps } from './AccountRow.js';
 export type {
   ActionRailRowProps,
   AppShellContextValue,
