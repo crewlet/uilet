@@ -73,7 +73,7 @@ export const Copyable = ({
   className,
 }: CopyableProps) => {
   const text = value === undefined || value === null ? '' : String(value);
-  const { state, copy } = useClipboard({ resetMs, failedResetMs });
+  const { state, attempt, copy } = useClipboard({ resetMs, failedResetMs });
   const onCopy = useCallback(() => {
     void copy(text);
   }, [copy, text]);
@@ -108,7 +108,7 @@ export const Copyable = ({
         icon={copyGlyph(state)}
         onClick={onCopy}
       />
-      <CopyStatus state={state} copiedMessage={copiedMessage} failedMessage={failedMessage} />
+      <CopyStatus state={state} attempt={attempt} copiedMessage={copiedMessage} failedMessage={failedMessage} />
     </span>
   );
 };

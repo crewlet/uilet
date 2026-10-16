@@ -236,22 +236,41 @@ describe('CopyButton', () => {
     expect(screen.getByRole('button').textContent).toContain('Copied');
   });
 
-  test('a refusal still settles on the success clock by default', async () => {
-    // The DEFAULT is unchanged, which is what lets `failedResetMs` be additive:
-    // a call site that has not asked for a separate clock does not get one.
+  test('a refusal holds by default, and settles on a clock only when it is given one', async () => {
+    // A refusal is news: a control that has gone back to offering its action
+    // is indistinguishable from one nobody pressed. So the button holds it
+    // until the next press unless the caller asks for a clock.
     vi.useFakeTimers({ shouldAdvanceTime: true });
     withFallback(false);
     render(<CopyButton text="x" />);
 
     await press(/copy/i);
-    expect(screen.getByRole('button').textContent).toContain('Copy failed');
-
     await act(async () => {
-      vi.advanceTimersByTime(2500);
+      vi.advanceTimersByTime(60_000);
     });
-    const label = screen.getByRole('button').textContent ?? '';
-    expect(label).toContain('Copy');
-    expect(label).not.toContain('failed');
+    expect(screen.getByRole('button').textContent).toContain('Copy failed');
+    cleanup();
+
+    render(<CopyButton text="x" failedResetMs={undefined} resetMs={2000} />);
+    await press(/copy/i);
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+    // `undefined` is the default too, which is `null` on the button.
+    expect(screen.getByRole('button').textContent).toContain('Copy failed');
+  });
+
+  test('a second identical refusal still reaches the live region', async () => {
+    // The message is keyed on the attempt, so the region's content is
+    // REPLACED rather than re-rendered, which a screen reader announces.
+    withFallback(false);
+    render(<CopyButton text="x" />);
+    await press(/copy/i);
+    const first = screen.getByRole('status').firstElementChild;
+    await press(/copy/i);
+    const second = screen.getByRole('status').firstElementChild;
+    expect(second?.textContent).toBe('the browser refused the clipboard');
+    expect(second).not.toBe(first);
   });
 
   test('a refusal can be held until the next press, so it is not missed', async () => {

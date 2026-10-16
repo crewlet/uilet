@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
+import { useOutcome } from './useOutcome.js';
 
 export type ClipboardState = 'idle' | 'copied' | 'failed';
 
@@ -37,6 +38,8 @@ export interface ClipboardOptions {
 
 export interface Clipboard {
   state: ClipboardState;
+  /** How many copies have settled. See [Outcome.attempt]. */
+  attempt: number;
   copy: (text: string | (() => string)) => Promise<boolean>;
 }
 
@@ -61,60 +64,24 @@ export interface Clipboard {
  *    timer exists AT THAT MOMENT, and for a write still in flight that is
  *    none: the settle then ran after the cleanup and armed a fresh timer with
  *    nothing left alive to clear it, so the hook leaked a timer per abandoned
- *    copy and wrote state to a component that was gone. `live` is what the
- *    settle is checked against, and it is checked AFTER the await rather than
- *    before, because the await is the whole of the gap.
+ *    copy and wrote state to a component that was gone. [useOutcome], the
+ *    machine this and `useDownload` share, checks whether the component is
+ *    still mounted AFTER the await rather than before, because the await is
+ *    the whole of the gap.
  *
  * The text may be a THUNK, resolved on the press. On a live screen the thing
  * worth copying is assembled from everything on it, so a string prop means
  * building it again on every push for a control nobody has touched.
  */
 export function useClipboard({ resetMs = 2000, failedResetMs }: ClipboardOptions = {}): Clipboard {
-  const [state, setState] = useState<ClipboardState>('idle');
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  /*
-   * Whether the component this hook belongs to is still on the screen.
-   *
-   * SET IN THE EFFECT BODY, not only in its cleanup: StrictMode mounts,
-   * unmounts and remounts, so a ref that is only ever turned off would stay
-   * off for the whole life of a development render and every copy after the
-   * first would be treated as abandoned.
-   */
-  const live = useRef(true);
-
-  useEffect(() => {
-    live.current = true;
-    return () => {
-      live.current = false;
-      // The timeout outlives the component otherwise, and a screen left during
-      // the two seconds after a copy sets state on something unmounted.
-      clearTimeout(timer.current);
-      timer.current = undefined;
-    };
-  }, []);
-
+  const outcome = useOutcome({ resetMs, failedResetMs });
+  const { run } = outcome;
   const copy = useCallback(
-    async (text: string | (() => string)) => {
-      const ok = await writeClipboard(typeof text === 'function' ? text() : text);
-      /*
-       * The screen may be gone by here, and the answer still matters to the
-       * CALLER — the text either reached the clipboard or it did not, and
-       * unmounting did not change which — so `ok` is returned either way.
-       * What is skipped is everything that touches this component: the state
-       * write, and the part that actually leaked, the timer.
-       */
-      if (!live.current) return ok;
-      setState(ok ? 'copied' : 'failed');
-      clearTimeout(timer.current);
-      timer.current = undefined;
-      const after = ok ? resetMs : (failedResetMs === undefined ? resetMs : failedResetMs);
-      if (after !== null) timer.current = setTimeout(() => setState('idle'), after);
-      return ok;
-    },
-    [resetMs, failedResetMs],
+    (text: string | (() => string)) => run(() => writeClipboard(typeof text === 'function' ? text() : text)),
+    [run],
   );
-
-  return { state, copy };
+  const state: ClipboardState = outcome.state === 'done' ? 'copied' : outcome.state;
+  return { state, attempt: outcome.attempt, copy };
 }
 
 /**
