@@ -30,14 +30,26 @@ test('inherit gives up the chip, so a callout keeps one ink', () => {
   expect(container.firstElementChild?.className).toContain('crewlet-inline-code--inherit');
 });
 
+test('a whole chip is never broken across lines', () => {
+  // A cron expression or an event type split over two lines names nothing.
+  const { container } = render(<InlineCode whole>*/20 * * * *</InlineCode>);
+  expect(container.firstElementChild?.className).toContain('crewlet-inline-code--whole');
+  const here = dirname(fileURLToPath(import.meta.url));
+  const css = readFileSync(join(here, 'InlineCode.css'), 'utf8');
+  const at = css.indexOf('.crewlet-inline-code--whole {');
+  const rule = css.slice(at, css.indexOf('}', at));
+  expect(rule).toContain('white-space: nowrap');
+  expect(rule).toContain('overflow-wrap: normal');
+});
+
 test('no presentation prop reaches the DOM', () => {
   const { container } = render(
-    <InlineCode variant="reference" tone="inherit" truncate>
+    <InlineCode variant="reference" tone="inherit" truncate whole>
       x
     </InlineCode>,
   );
   const code = container.firstElementChild as HTMLElement;
-  for (const name of ['variant', 'tone', 'truncate']) {
+  for (const name of ['variant', 'tone', 'truncate', 'whole']) {
     expect(code.getAttribute(name)).toBeNull();
   }
 });

@@ -26,6 +26,13 @@ export interface InlineCodeProps extends HTMLAttributes<HTMLElement> {
   tone?: InlineCodeTone | undefined;
   /** One line, cut with an ellipsis, for a chip inside a dense row. */
   truncate?: boolean | undefined;
+  /**
+   * Never broken across lines: a short token a reader reads as one (a cron
+   * expression, an event type, a version). The chip moves to the next line
+   * whole rather than splitting. Leave it off for a URL or a path, which has
+   * to wrap or it tears the sentence around it apart.
+   */
+  whole?: boolean | undefined;
 }
 
 /**
@@ -43,6 +50,7 @@ export function InlineCode({
   variant = 'default',
   tone = 'default',
   truncate = false,
+  whole = false,
   className,
   children,
   ...rest
@@ -55,6 +63,7 @@ export function InlineCode({
         `crewlet-inline-code--${variant}`,
         tone === 'inherit' && 'crewlet-inline-code--inherit',
         truncate && 'crewlet-inline-code--truncate',
+        whole && 'crewlet-inline-code--whole',
         className,
       )}
     >

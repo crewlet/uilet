@@ -55,6 +55,15 @@
   color: inherit;
 }
 
+/*
+ * A short token read as one: it moves to the next line whole rather than
+ * splitting, which `overflow-wrap: anywhere` would otherwise allow.
+ */
+.crewlet-inline-code--whole {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
 .crewlet-inline-code--truncate {
   display: inline-block;
   max-width: 100%;
