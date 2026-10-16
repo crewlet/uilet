@@ -9,6 +9,7 @@ export {
   AVATAR_STATUSES,
   Avatar,
   avatarCorner,
+  avatarInitialsName,
   avatarPixels,
   avatarTint,
   getInitials,

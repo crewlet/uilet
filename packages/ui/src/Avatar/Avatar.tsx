@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { CSSProperties, HTMLAttributes, ReactElement } from 'react';
+import type { CSSProperties, HTMLAttributes, ReactElement, ReactNode } from 'react';
 import { CrewletCharacter, type CrewletCharacterId } from '@crewlethq/icons/characters';
 import { cx } from '../utils/cx.js';
 import type { NodeHue } from '../utils/nodeHue.js';
@@ -141,6 +141,40 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
    * neutral badge's ink, on its plate.
    */
   hue?: NodeHue | undefined;
+  /**
+   * A glyph drawn in place of the initials, for a principal that is not a
+   * person or an agent and whose name's initials would mean nothing: an API
+   * token, a service account. "TO" from `token:reader` reads as somebody's
+   * initials. A component, not a name; it is drawn at the badge's own scale.
+   * An image or an agent's character still wins over it.
+   */
+  icon?: ReactNode;
+}
+
+/**
+ * The words an agent's name leads with that its squircle already says.
+ *
+ * Only a LEADING "agent" word, because that is the only case where the word
+ * restates the shape: a person called "Agent Smith" is a circle, and the word
+ * is their name.
+ */
+const AGENT_WORD = /^agent(?:[\s._-]+)(?=\S)/i;
+
+/**
+ * The name an agent's initials are drawn from: its leading "agent" word
+ * dropped (`Agent CEO` gives CEO, `agent-cto` gives cto), and every other
+ * name as it is.
+ *
+ * THE SHAPE ALREADY SAYS "AGENT". A company that names its seats for what
+ * they are ("Agent CEO", "Agent CTO", "Agent PM") otherwise got AC, AC and
+ * AP: the two seats a chart draws most were the same badge side by side. The
+ * badge's accessible name keeps the whole name. A name that is nothing but
+ * the word keeps it, since an empty one draws the anonymous badge.
+ */
+export function avatarInitialsName(name: string | undefined, kind: AvatarKind): string | undefined {
+  if (name === undefined || kind !== 'agent') return name;
+  const rest = name.replace(AGENT_WORD, '');
+  return rest.trim() ? rest : name;
 }
 
 /**
@@ -257,6 +291,7 @@ export const Avatar = ({
   colorSeed,
   character,
   hue,
+  icon,
   className,
   style,
   ...rest
@@ -356,13 +391,20 @@ export const Avatar = ({
           'crewlet-avatar--fallback',
           `crewlet-avatar--${tone}`,
           seeded === null ? null : `crewlet-avatar--tint-${seeded}`,
+          icon === undefined || icon === null ? null : 'crewlet-avatar--icon',
         )}
         style={faceStyle}
         role={decorative ? undefined : 'img'}
         aria-hidden={decorative ? true : undefined}
         aria-label={decorative ? undefined : spoken}
       >
-        {getInitials(name)}
+        {icon === undefined || icon === null ? (
+          getInitials(avatarInitialsName(name, kind))
+        ) : (
+          <span className="crewlet-avatar__icon" aria-hidden="true">
+            {icon}
+          </span>
+        )}
       </span>
     );
   }

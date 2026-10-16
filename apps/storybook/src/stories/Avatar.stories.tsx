@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
+import { BotGlyph, KeyGlyph } from '@crewlethq/icons/glyphs';
 import { AVATAR_STATUSES, Avatar, AvatarStack, Card, NODE_HUES } from '@crewlethq/ui';
 import samplePortrait from '../fixtures/sample-portrait.svg';
 
@@ -84,6 +85,44 @@ export const Handles: Story = {
           <div style={{ marginTop: 4 }}>{name}</div>
         </div>
       ))}
+    </div>
+  ),
+};
+
+/**
+ * An agent's initials skip its leading "agent" word, which the squircle
+ * already says: Agent CEO, Agent CTO and Agent PM are CE, CT and PM rather
+ * than AC, AC and AP. The accessible name keeps the whole name, and a person
+ * called Agent Smith keeps the word, because for a circle it is their name.
+ */
+export const AgentNames: Story = {
+  render: () => (
+    <div style={row}>
+      {[
+        { name: 'Agent CEO', kind: 'agent' as const },
+        { name: 'Agent CTO', kind: 'agent' as const },
+        { name: 'Agent PM', kind: 'agent' as const },
+        { name: 'Agent Smith', kind: 'human' as const },
+      ].map(({ name, kind }) => (
+        <div key={name} style={{ textAlign: 'center', fontSize: 12 }}>
+          <Avatar name={name} kind={kind} size="lg" />
+          <div style={{ marginTop: 4 }}>{name}</div>
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * A glyph for a face, for a principal whose initials would mean nothing: an
+ * API token named `token:reader` drew TO, as if it were somebody.
+ */
+export const GlyphFace: Story = {
+  render: () => (
+    <div style={row}>
+      <Avatar name="token:reader" kind="human" size="lg" icon={<KeyGlyph size="sm" />} />
+      <Avatar name="ci-deployer" kind="human" size="md" icon={<BotGlyph size="sm" />} />
+      <Avatar name="token:reader" kind="human" size="sm" icon={<KeyGlyph size="sm" />} />
     </div>
   ),
 };

@@ -126,6 +126,25 @@
   object-fit: cover;
 }
 
+/*
+ * A GLYPH IN PLACE OF THE INITIALS, for a principal whose name's initials
+ * mean nothing (an API token, a service account). It takes a little over half
+ * the box, the share the initials' cap height and width take, so a key badge
+ * beside a person's badge reads as the same size of mark.
+ */
+.crewlet-avatar__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 55%;
+  height: 55%;
+}
+
+.crewlet-avatar__icon > * {
+  width: 100%;
+  height: 100%;
+}
+
 /* ── tones ─────────────────────────────────────────────────────────────── */
 
 .crewlet-avatar--fallback {
