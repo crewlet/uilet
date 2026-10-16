@@ -9,6 +9,7 @@ const meta: Meta<typeof InlineCode> = {
     variant: { control: 'inline-radio', options: ['default', 'reference'] },
     tone: { control: 'inline-radio', options: ['default', 'inherit'] },
     truncate: { control: 'boolean' },
+    whole: { control: 'boolean' },
   },
 };
 
@@ -45,6 +46,20 @@ export const ALongURL: Story = {
       <Text as="p">
         Deliveries are signed against{' '}
         <InlineCode>https://example.com/api/webhooks/github/deliveries</InlineCode> and nothing else.
+      </Text>
+    </div>
+  ),
+};
+
+/**
+ * A short token a reader reads as one, a cron expression or an event type,
+ * takes `whole`: it moves to the next line intact rather than splitting.
+ */
+export const Whole: Story = {
+  render: () => (
+    <div style={{ maxWidth: 260 }}>
+      <Text as="p">
+        The standup runs on <InlineCode whole>*/20 9-17 * * 1-5</InlineCode> in the company timezone.
       </Text>
     </div>
   ),

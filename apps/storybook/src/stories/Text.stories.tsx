@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Text, type TextVariant } from '@crewlethq/ui';
+import { Tag, Text, type TextVariant } from '@crewlethq/ui';
 
 const meta: Meta<typeof Text> = {
   title: 'UI/Text',
@@ -8,7 +8,7 @@ const meta: Meta<typeof Text> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['display', 'stat', 'heading', 'lead', 'body', 'cell', 'caption', 'label'],
+      options: ['display', 'stat', 'heading', 'lead', 'body', 'cell', 'caption', 'label', 'inherit'],
     },
     tone: { control: 'inline-radio', options: [undefined, 'primary', 'secondary', 'tertiary'] },
     mono: { control: 'boolean' },
@@ -92,6 +92,31 @@ export const Cutting: Story = {
         A bounded measure, so a paragraph in a side panel does not run the full width of a desk
         monitor and lose the reader between one line and the next.
       </Text>
+    </div>
+  ),
+};
+
+/**
+ * `inherit` sets nothing of its own, so a run keeps the register of the words
+ * around it and changes one thing: the mono face for a literal inside a
+ * sentence or a chip, where a body-sized run would be a shout.
+ */
+export const InheritInASentence: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+      <Text as="p" variant="caption">
+        Present it as{' '}
+        <Text variant="inherit" mono>
+          Authorization: Bearer …
+        </Text>
+        .
+      </Text>
+      <Tag size="sm" appearance="outline">
+        Slack{' '}
+        <Text variant="inherit" mono>
+          #ops
+        </Text>
+      </Tag>
     </div>
   ),
 };

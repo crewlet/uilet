@@ -435,6 +435,17 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * A LITERAL INSIDE A LABEL KEEPS ITS CASE. The label is set in capitals, and
+ * a value a reader has to type back exactly ("Type jane.founder to confirm")
+ * read as JANE.FOUNDER, which is not what the field accepts.
+ */
+.crewlet-label code,
+.crewlet-label__text code {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .crewlet-label--with-action {
   display: flex;
   justify-content: space-between;

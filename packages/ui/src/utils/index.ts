@@ -1,6 +1,10 @@
 export { cx } from './cx.js';
 export { useClipboard, writeClipboard } from './useClipboard.js';
 export type { Clipboard, ClipboardOptions, ClipboardState } from './useClipboard.js';
+export { useOutcome } from './useOutcome.js';
+export type { Outcome, OutcomeOptions, OutcomeState } from './useOutcome.js';
+export { downloadText, safeFilename, useDownload } from './useDownload.js';
+export type { Download, DownloadState } from './useDownload.js';
 export type { Tone } from './tone.js';
 export { NODE_HUES, NODE_HUE_NAMES, isNodeHue } from './nodeHue.js';
 export type { NodeHue } from './nodeHue.js';

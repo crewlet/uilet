@@ -106,6 +106,19 @@ describe('Callout', () => {
     expect(banner).toMatch(/border-bottom-color:\s*var\(--color-border-default\)/);
   });
 
+  test('draws its title on a line of its own above the message', () => {
+    // Run on the same line, a title and the body's first sentence read as one
+    // run-on sentence: "You were signed out Your session ended".
+    const css = calloutCss().replace(/\/\*[\s\S]*?\*\//g, ' ');
+    const title = /\.crewlet-callout__title\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(title).toMatch(/display:\s*block/);
+    expect(title).not.toMatch(/margin-right/);
+    render(<Callout title="You were signed out">Your session ended.</Callout>);
+    const heading = screen.getByText('You were signed out');
+    expect(heading.className).toBe('crewlet-callout__title');
+    expect(heading.parentElement?.className).toBe('crewlet-callout__content');
+  });
+
   test('the action sits outside the sentence, so it is reachable and not read as part of it', () => {
     render(
       <Callout variant="danger" title="Disconnected" action={<Button size="small">Reconnect</Button>}>

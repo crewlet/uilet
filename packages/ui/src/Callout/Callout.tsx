@@ -23,7 +23,13 @@ export type CalloutLayout = 'card' | 'banner';
 
 export interface CalloutProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   variant?: CalloutVariant | undefined;
-  /** A bold lead-in before the message. */
+  /**
+   * The callout's heading, drawn in bold on its own line above the message.
+   *
+   * A LINE OF ITS OWN, not a lead-in. Run on the same line as the body, the
+   * title and the first sentence read as one run-on sentence ("You were signed
+   * out Your session ended"), and the reader had to find where one stopped.
+   */
   title?: ReactNode;
   /** A glyph replacing the variant's own. A component, not a name. */
   icon?: ReactNode;

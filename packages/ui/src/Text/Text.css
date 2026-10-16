@@ -49,6 +49,17 @@
   color: var(--color-text-primary);
 }
 
+/*
+ * The register around it: nothing is set, so the run keeps its sentence's
+ * size, weight, tracking and ink, and only a modifier (mono, numeric) or a
+ * tone changes it.
+ */
+.crewlet-text--inherit {
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
 .crewlet-text--body {
   font-size: var(--font-size-sm);
   line-height: var(--font-line-height-normal);

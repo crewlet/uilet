@@ -40,17 +40,17 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 
 | Area | Components |
 | ---- | ---------- |
-| Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `Kbd` |
-| Content and text | `Text` (the eight registers), `Prose`, `Document` and `DocumentTitle`, `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
-| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor` |
-| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `Skeleton`, `Eyebrow` |
+| Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `DownloadButton`, `Kbd` |
+| Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document` and `DocumentTitle`, `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
+| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor` |
+| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
-| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
+| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `safeFilename`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
-| Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar` and `useAppShell`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
+| Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences` |
 
 Storybook stories live under `apps/storybook/src/stories`.
@@ -197,6 +197,32 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.16.0
+
+0.16.0 adds the pieces the engine console's sign-in, Account and People & access screens were drawing on their own, so every one of them is the package's now.
+
+**`QrCode`** draws a value as inline SVG from the `uqr` encoder: one path of run rectangles on one plate, four modules of quiet zone, error-correction level M, named by `label`, and nothing for a value too long to encode. Nothing is fetched and no markup is injected, so it works under a strict Content-Security-Policy. Its inks are the new **`color.qr.dark` and `color.qr.light` tokens** in `@crewlethq/tokens`, black and white in every palette, because a code inverted for a dark theme is one some authenticator apps cannot read. `@crewlethq/ui` now depends on `uqr` 0.1.3.
+
+**`DownloadButton`** hands text to the reader as a file and says whether the browser took it, under the name it offered: "Downloading", and "download started: {name}" to a screen reader. **`useDownload`** is its hook, and **`downloadText`** is the same save for a control that cannot speak for itself, such as a menu item. **`safeFilename`** decides the name once: separators and invisibles become a hyphen in any script, the extension survives, and the stem is cut to 120 bytes on whole code points. `CopyButton` and `DownloadButton` share **`useOutcome`**, one state machine whose status message is keyed on the attempt, so a second identical outcome is still announced.
+
+**`AuthLayout`** is the page a sign-in screen is drawn on, outside the application shell: a main landmark, the product's `BrandLockup` with the Crewlet mark inline, and one card named by the page's only `h1`, with its description and a body that stacks a form one field step apart.
+
+**`ObjectHeader`, `FactLine` and `SetByLine`** are the header of an object on its page, in a peek and in a hover card: the eyebrow with its kind, glyph and key, a two-line level-two title beside the object's state and actions, and the facts as label-over-value cells on a 7.5rem track. A value gets two lines before it is cut, a `token` keeps one line across two tracks, a `set` of chips is never clamped, and a fact's note and by-line follow its own value. `SetByLine` says provenance in one wording, "set by ada · 2h ago · turn", with the turn as a link.
+
+**`CheckboxGroup`** is several checkboxes under one legend, in the field label's register, with the group's help and error on the fieldset and an `emptyMessage` for a group with nothing to offer.
+
+**`ConfirmField`** is the field a gesture that cannot be undone asks the reader to type a value back into: a `FormField` labelled "Type {phrase} to confirm", with spelling checks off, and **`confirmMatches`** to decide when the gesture may go ahead. Inline code inside a field label now keeps its case, so the phrase reads as the value the field accepts.
+
+**`AppShell.AccountRow`** is the signed-in reader at the foot of the rail: their badge, name and detail as the link to their account, ending in a chevron at rest, marked current on the account page, with the row's controls beside it.
+
+**`Avatar` takes `icon`**, a glyph drawn in place of the initials for a principal whose initials mean nothing, such as an API token or a service account. **An agent's initials skip a leading "agent" word**, which its squircle already says: Agent CEO and Agent CTO draw CE and CT rather than AC twice. The accessible name keeps the whole name. `avatarInitialsName` is exported.
+
+**`InlineCode` takes `whole`**, for a short token that must not break across lines. **`Text` takes `variant="inherit"`**, which keeps the register of the words around it, for a mono literal inside a caption or a chip.
+
+**A `Callout`'s title is a line of its own** above the message, rather than a bold lead-in that read as one run-on sentence with it.
+
+What to change: a `CopyButton` refusal now holds until the next press by default, as `ClipboardOptions.failedResetMs` recommends; pass `failedResetMs` a number to give it a clock again. A callout written with a `title` that read as the start of its sentence may want its body reworded. An `AvatarStack` member or an `Avatar` handed a pre-shortened agent name can be handed the whole name. Everything else is new.
 
 ## Changes in 0.15.1
 

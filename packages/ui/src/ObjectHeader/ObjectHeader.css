@@ -1,0 +1,174 @@
+/*
+ * The header of an object: its eyebrow, its head row and its fact line.
+ */
+.crewlet-object-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: var(--spacing-4) 0 var(--spacing-3);
+}
+
+.crewlet-object-header--peek {
+  padding: var(--spacing-3) 0 var(--spacing-2);
+}
+
+.crewlet-object-header__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  font-size: var(--font-size-2xs);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-object-header__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+/* A key or a name keeps its own case: in capitals a name is a shout. */
+.crewlet-object-header__id {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.crewlet-object-header__id--mono {
+  font-family: var(--font-family-mono);
+}
+
+/* The head row wraps: the marks and the actions take a line under the title
+   rather than every pill on the row giving up a few characters. */
+.crewlet-object-header__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/* TWO LINES, AND THAT IS THE CEILING, which catches a title written as a
+   paragraph and holds every real one. */
+.crewlet-object-header__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-primary);
+}
+
+.crewlet-object-header--peek .crewlet-object-header__title {
+  font-size: var(--font-size-lg);
+}
+
+/* The state keeps its width: a pill squeezed to "13 pro…" says something
+   else. The marks travel together when the row wraps. */
+.crewlet-object-header__status,
+.crewlet-object-header__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-object-header__actions {
+  margin-left: auto;
+}
+
+/* ── the fact line ─────────────────────────────────────────────────────── */
+
+/* THE TRACK FLOOR IS 7.5rem, which fits seven facts on one line at 1280px and
+   still holds every label and a two-line value. */
+.crewlet-fact-line {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(7.5rem, 100%), 1fr));
+  column-gap: var(--spacing-4);
+  row-gap: var(--spacing-3);
+  padding-top: var(--spacing-1);
+}
+
+/* Two bands: the label, then the value with its footnotes in one cell. */
+.crewlet-fact-line__fact {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  row-gap: 0;
+  min-width: 0;
+}
+
+/* A token and a set of chips take two tracks. */
+.crewlet-fact-line__fact--token,
+.crewlet-fact-line__fact--set {
+  grid-column: span 2;
+}
+
+.crewlet-fact-line__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-fact-line__label {
+  font-size: var(--font-size-2xs);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-fact-line__value {
+  min-width: 0;
+  font-size: var(--font-size-compact);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-fact-line__value--clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* One token, one line, cut with an ellipsis where two tracks are too narrow;
+   its title carries the whole of it. */
+.crewlet-fact-line__value--token {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+/* A footnote may not set its column's width: the track does, and the note
+   wraps inside it, balanced so the wrap reads as deliberate. */
+.crewlet-fact-line__note,
+.crewlet-fact-line__set-by {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+  text-wrap: balance;
+}
+
+/* ── the by-line ───────────────────────────────────────────────────────── */
+
+/* The word and its arrow are one atomic box, so the arrow never takes a line
+   of its own. */
+.crewlet-set-by__turn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}

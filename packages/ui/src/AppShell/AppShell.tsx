@@ -61,6 +61,7 @@ import { focusables, useModalLayer } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
 import { useMediaMatch } from '../utils/useMediaMatch.js';
+import { AccountRow } from './AccountRow.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /**
@@ -673,3 +674,4 @@ AppShell.Rail = AppShellRail;
 AppShell.RailRow = AppShellRailRow;
 AppShell.Topbar = AppShellTopbar;
 AppShell.Toggle = AppShellToggle;
+AppShell.AccountRow = AccountRow;

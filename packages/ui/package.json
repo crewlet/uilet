@@ -43,7 +43,8 @@
   },
   "dependencies": {
     "@crewlethq/icons": "0.2.0",
-    "@crewlethq/tokens": "0.2.0"
+    "@crewlethq/tokens": "0.2.0",
+    "uqr": "0.1.3"
   },
   "peerDependencies": {
     "react": ">=18",

@@ -2,6 +2,9 @@
  * The registers reach the stylesheet, and nothing else reaches the DOM.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { Text } from './index.js';
@@ -61,4 +64,22 @@ test('everything else a caller passes still reaches the element', () => {
   const span = screen.getByTitle('Tokens this hour');
   expect(span.id).toBe('total');
   expect(span.getAttribute('data-value')).toBe('42');
+});
+
+test('the inherit register sets nothing of its own, so a mono run keeps its sentence', () => {
+  render(
+    <p>
+      Signed in as{' '}
+      <Text variant="inherit" mono>
+        jane.founder
+      </Text>
+    </p>,
+  );
+  const run = screen.getByText('jane.founder');
+  expect(run.className).toContain('crewlet-text--inherit');
+  expect(run.className).toContain('crewlet-text--mono');
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Text.css'), 'utf8');
+  const rule = /\.crewlet-text--inherit\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(rule).toMatch(/font-size:\s*inherit/);
+  expect(rule).toMatch(/color:\s*inherit/);
 });

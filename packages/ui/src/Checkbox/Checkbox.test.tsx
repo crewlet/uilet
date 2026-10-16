@@ -11,6 +11,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Checkbox } from './Checkbox.js';
+import { CheckboxGroup } from './CheckboxGroup.js';
 
 afterEach(cleanup);
 
@@ -94,4 +95,33 @@ test('some of what it stands for is a third state, not a guess at one of two', (
   // And it comes back off when the prop does, without the element remounting.
   rerender(<Checkbox label="Every seat" checked onChange={() => {}} />);
   expect((screen.getByRole('checkbox') as HTMLInputElement).indeterminate).toBe(false);
+});
+
+test('a group is a fieldset named by its legend, and each box keeps its own name', () => {
+  render(
+    <CheckboxGroup legend="Access" helper="What this person can open.">
+      <Checkbox label="Admin" checked={false} onChange={() => {}} />
+      <Checkbox label="Tracker" checked onChange={() => {}} />
+    </CheckboxGroup>,
+  );
+  const group = screen.getByRole('group', { name: 'Access' });
+  expect(group.tagName).toBe('FIELDSET');
+  // The help is the group's, read once on entry rather than on every box.
+  const described = group.getAttribute('aria-describedby') ?? '';
+  expect(document.getElementById(described)?.textContent).toBe('What this person can open.');
+  expect(screen.getByRole('checkbox', { name: 'Admin' }).getAttribute('aria-describedby')).toBeNull();
+  expect(screen.getByRole('checkbox', { name: 'Tracker' })).toHaveProperty('checked', true);
+});
+
+test('a group with nothing to offer says so rather than drawing an empty fieldset', () => {
+  render(<CheckboxGroup legend="Access" emptyMessage="Nothing to offer." />);
+  expect(screen.getByRole('group', { name: 'Access' }).textContent).toContain('Nothing to offer.');
+  cleanup();
+  render(
+    <CheckboxGroup legend="Access" emptyMessage="Nothing to offer.">
+      {[]}
+      {false}
+    </CheckboxGroup>,
+  );
+  expect(screen.getByText('Nothing to offer.')).toBeTruthy();
 });

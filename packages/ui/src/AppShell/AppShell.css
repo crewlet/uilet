@@ -621,3 +621,96 @@
     transition: none;
   }
 }
+
+/* ── the account row ───────────────────────────────────────────────────── */
+
+/*
+ * The signed-in reader at the foot of the rail, with the row's controls at
+ * its end. The link takes the room, so a long name is cut rather than pushing
+ * the controls off the rail.
+ */
+.crewlet-account-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: var(--spacing-1) 0;
+}
+
+.crewlet-account-row__who {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  padding: var(--spacing-1);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  /* The fill eases under the pointer, as the rail's rows do. */
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+a.crewlet-account-row__who:hover {
+  background: var(--color-surface-hover);
+}
+
+/* After :hover, so the current row shows the lift rather than the overlay. */
+a.crewlet-account-row__who[aria-current='page'] {
+  background: var(--color-surface-elevated);
+  outline: 1px solid var(--color-border-default);
+  outline-offset: -1px;
+}
+
+a.crewlet-account-row__who:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-account-row__avatar {
+  display: inline-flex;
+  flex: none;
+}
+
+.crewlet-account-row__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-account-row__name,
+.crewlet-account-row__detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-account-row__name {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-account-row__detail {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-account-row__go {
+  flex: none;
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-account-row__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-account-row__who {
+    transition: none;
+  }
+}

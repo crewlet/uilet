@@ -22,7 +22,13 @@ export type TextVariant =
   /** A page title. */
   | 'display'
   /** A single measured number, the size a stat card sets it at. */
-  | 'stat';
+  | 'stat'
+  /**
+   * The register of the words around it: their size, weight and ink. For a
+   * run inside a sentence or a chip that changes one thing about it, with
+   * `mono` for a literal (a login, a header name) or `numeric` for a figure.
+   */
+  | 'inherit';
 
 /**
  * Which ink. There is deliberately no decoration step here: the decoration

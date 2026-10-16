@@ -23,6 +23,7 @@ import { font } from '@crewlethq/tokens';
 import { MARK_ON_FILL, parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installSheets, installThemed, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
+import { KeyGlyph } from '@crewlethq/icons/glyphs';
 import { NODE_HUES } from '../utils/nodeHue.js';
 import {
   AVATAR_CHARACTER_FULL_DETAIL,
@@ -33,6 +34,7 @@ import {
   Avatar,
   avatarCorner,
   avatarTint,
+  avatarInitialsName,
   getInitials,
   type AvatarKind,
   type AvatarRing,
@@ -717,5 +719,41 @@ describe('an agent drawn as its character', () => {
       expect(body, hue).toMatch(new RegExp(`border-color:\\s*var\\(--color-node-${hue}-line\\)`));
       expect(body, hue).toMatch(new RegExp(`color:\\s*var\\(--color-node-${hue}\\)`));
     }
+  });
+});
+
+describe('an agent badge drops the word its shape already says', () => {
+  test('a leading "agent" word is not where the initials come from', () => {
+    expect(avatarInitialsName('Agent CEO', 'agent')).toBe('CEO');
+    expect(avatarInitialsName('agent-cto', 'agent')).toBe('cto');
+    expect(avatarInitialsName('Agent', 'agent')).toBe('Agent');
+    // Only a LEADING word, and only the whole word.
+    expect(avatarInitialsName('Support Agent', 'agent')).toBe('Support Agent');
+    expect(avatarInitialsName('Agentic Ops', 'agent')).toBe('Agentic Ops');
+    // A person called Agent Smith is a circle, and the word is their name.
+    expect(avatarInitialsName('Agent Smith', 'human')).toBe('Agent Smith');
+    render(
+      <>
+        <Avatar name="Agent CEO" />
+        <Avatar name="Agent CTO" />
+      </>,
+    );
+    expect(screen.getByRole('img', { name: 'Agent CEO avatar' }).textContent).toBe('CE');
+    expect(screen.getByRole('img', { name: 'Agent CTO avatar' }).textContent).toBe('CT');
+  });
+});
+
+describe('a badge with a glyph for a face', () => {
+  test('draws the glyph in place of the initials and keeps its name', () => {
+    render(<Avatar name="token:reader" kind="human" icon={<KeyGlyph size="sm" />} />);
+    const badge = screen.getByRole('img', { name: 'token:reader avatar' });
+    expect(badge.textContent).toBe('');
+    expect(badge.classList.contains('crewlet-avatar--icon')).toBe(true);
+    expect(badge.querySelector('.crewlet-avatar__icon svg')).not.toBeNull();
+  });
+
+  test('an agent character still wins over it', () => {
+    render(<Avatar name="Agent PM" character="crewlet" icon={<KeyGlyph size="sm" />} />);
+    expect(screen.getByRole('img', { name: 'Agent PM avatar' }).querySelector('.crewlet-avatar__icon')).toBeNull();
   });
 });

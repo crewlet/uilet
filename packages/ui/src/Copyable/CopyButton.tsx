@@ -15,6 +15,12 @@ export interface CopyStatusProps {
   state: ClipboardState;
   copiedMessage: string;
   failedMessage: string;
+  /**
+   * How many attempts have settled ([Clipboard.attempt]). The message is
+   * keyed on it, so it is REPLACED on every attempt and an identical outcome
+   * twice running is still a change the region announces.
+   */
+  attempt?: number | undefined;
 }
 
 /**
@@ -25,11 +31,11 @@ export interface CopyStatusProps {
  * "Copied copied to the clipboard", the status text becoming part of what the
  * button claimed to be.
  */
-export function CopyStatus({ state, copiedMessage, failedMessage }: CopyStatusProps) {
+export function CopyStatus({ state, copiedMessage, failedMessage, attempt = 0 }: CopyStatusProps) {
   return (
     <VisuallyHidden>
       <span role="status">
-        {state === 'copied' ? copiedMessage : state === 'failed' ? failedMessage : ''}
+        <span key={attempt}>{state === 'copied' ? copiedMessage : state === 'failed' ? failedMessage : ''}</span>
       </span>
     </VisuallyHidden>
   );
@@ -62,11 +68,12 @@ export interface CopyButtonProps {
   /** How long `copiedLabel` stands before the control offers its action again. */
   resetMs?: number | undefined;
   /**
-   * How long `failedLabel` stands. Unset it is `resetMs`; `null` holds it
-   * until the next press. See [ClipboardOptions.failedResetMs] for why a
-   * refusal wants a clock of its own — and note the cost of `null`, which is
-   * that the control's accessible name stays "Copy failed" and so names a
-   * status rather than the action it still performs.
+   * How long `failedLabel` stands. `null`, the default, holds it until the
+   * next press; a number gives it a clock of its own. See
+   * [ClipboardOptions.failedResetMs] for why a refusal wants one: a control
+   * that has gone back to offering its action is indistinguishable from one
+   * nobody pressed. The cost of holding is that the control's accessible name
+   * stays "Copy failed", so the reason is also its `title`.
    */
   failedResetMs?: number | null | undefined;
   className?: string | undefined;
@@ -91,10 +98,10 @@ export function CopyButton({
   variant = 'ghost',
   title,
   resetMs,
-  failedResetMs,
+  failedResetMs = null,
   className,
 }: CopyButtonProps) {
-  const { state, copy } = useClipboard({ resetMs, failedResetMs });
+  const { state, attempt, copy } = useClipboard({ resetMs, failedResetMs });
   const onClick = useCallback(() => {
     void copy(text);
   }, [copy, text]);
@@ -110,7 +117,7 @@ export function CopyButton({
       >
         {state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : label}
       </Button>
-      <CopyStatus state={state} copiedMessage={copiedMessage} failedMessage={failedMessage} />
+      <CopyStatus state={state} attempt={attempt} copiedMessage={copiedMessage} failedMessage={failedMessage} />
     </span>
   );
 }
