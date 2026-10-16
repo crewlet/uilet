@@ -1,0 +1,54 @@
+/*
+ * The sign-in page: one narrow column near the top of the window.
+ *
+ * THE PAGE SCROLLS ITSELF, at the viewport's dynamic height, because it is
+ * drawn outside any shell that would: on a phone with the keyboard up, a form
+ * taller than what is left of the window has to scroll, not be cut off.
+ */
+.crewlet-auth-layout {
+  display: flex;
+  justify-content: center;
+  height: 100dvh;
+  overflow-y: auto;
+  padding: var(--spacing-8) var(--spacing-4);
+  background: var(--color-surface-background);
+}
+
+/* A sentence's measure wide, and held at the top: the form does not jump when
+   an error line appears under a field. */
+.crewlet-auth-layout__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  width: 100%;
+  max-width: 52ch;
+  margin-block-end: auto;
+}
+
+/* The lockup is centred over the card, and takes none of the rail's inset,
+   which is what its own padding is for. */
+.crewlet-auth-layout__brand {
+  align-self: center;
+  padding: 0;
+}
+
+/* The form's parts stand one field step apart, under the title and lede. */
+.crewlet-auth-layout__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+/* A submit does not stretch: every button here states one gesture, and a
+   full-width bar reads as the page's edge rather than a control. */
+.crewlet-auth-layout__body > form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.crewlet-auth-layout__body > form > button,
+.crewlet-auth-layout__body > button {
+  align-self: flex-start;
+}
