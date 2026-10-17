@@ -128,6 +128,31 @@ export const GlyphFace: Story = {
 };
 
 /**
+ * A mark on the corner says HOW a principal is present, where a status says
+ * what an agent is doing. A seat's badge acting through an API token keeps
+ * its own face, its initials, and wears a key there, so "Miles" reads as
+ * Miles and the credential is still shown. It is drawn quiet, in the neutral
+ * badge's raised fill, and a status wins over it on the one corner.
+ */
+export const Mark: Story = {
+  render: () => (
+    <div style={row}>
+      {(['lg', 'md', 'sm'] as const).map((size) => (
+        <Avatar
+          key={size}
+          name="Miles"
+          kind="human"
+          size={size}
+          mark={<KeyGlyph size="xs" />}
+          markLabel="signed in with an API token"
+        />
+      ))}
+      <Avatar name="Agent PM" size="md" status="working" mark={<KeyGlyph size="xs" />} />
+    </div>
+  ),
+};
+
+/**
  * The corner moves with the box, at 0.29 of it: the approved design's 7px at
  * 24 and 9px at 30, as one proportion a numeric size follows too. Where the
  * browser draws `corner-shape: squircle` an agent is a whole squircle instead,

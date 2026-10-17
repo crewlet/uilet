@@ -339,3 +339,18 @@
 .crewlet-avatar__status--stopped {
   background: var(--color-feedback-danger);
 }
+
+/*
+ * A MARK (`mark`): how a principal is present, not a state, so it is drawn
+ * quiet rather than in a state's fill: the neutral badge's raised rung, its
+ * strong hairline and its secondary ink. The hairline is the corner's own
+ * outline, inset by its width, so it keeps the corner's size and survives
+ * forced colours.
+ */
+.crewlet-avatar__status--mark {
+  padding: 1px;
+  background: var(--color-surface-elevated);
+  outline-color: var(--color-border-strong);
+  outline-offset: -1px;
+  color: var(--color-text-secondary);
+}
