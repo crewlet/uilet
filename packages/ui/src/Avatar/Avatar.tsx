@@ -120,6 +120,21 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   /** What the agent is doing, as a corner badge; none is idle. */
   status?: AvatarStatus | undefined;
   /**
+   * A glyph on the corner saying HOW a principal is present rather than what
+   * it is doing: a person's or a seat's badge acting through an API token
+   * wears a key there, so the face stays theirs and the credential is still
+   * shown. It sits where a status sits, cut into the same notch, in the
+   * neutral badge's raised fill, and a `status` wins over it. A component,
+   * drawn at the corner's own scale.
+   */
+  mark?: ReactNode;
+  /**
+   * What the mark means, said after the name by a badge that names itself
+   * ("Miles avatar, signed in with an API token"). A decorative badge says
+   * nothing, as it says nothing of a status.
+   */
+  markLabel?: string | undefined;
+  /**
    * The name is already printed beside this badge, so the badge itself says
    * nothing. Without it a row reads "Carlos Diaz avatar, Carlos Diaz".
    */
@@ -287,6 +302,8 @@ export const Avatar = ({
   tone = 'neutral',
   ring,
   status,
+  mark,
+  markLabel,
   decorative = false,
   colorSeed,
   character,
@@ -324,9 +341,13 @@ export const Avatar = ({
       : {};
 
   const seeded = tone === 'seeded' ? avatarTint(colorSeed ?? name ?? '') : null;
-  const framed = status !== undefined;
+  // A STATUS WINS OVER A MARK: there is one corner, and what an agent is
+  // doing is the more urgent of the two.
+  const marked = status === undefined && mark !== undefined && mark !== null;
+  const framed = status !== undefined || marked;
+  const corner = status !== undefined ? AVATAR_STATUS_LABELS[status] : marked ? markLabel : undefined;
   const label = name ? `${name} avatar` : 'Avatar';
-  const spoken = framed ? `${label}, ${AVATAR_STATUS_LABELS[status]}` : label;
+  const spoken = corner ? `${label}, ${corner}` : label;
 
   const classes = cx(
     'crewlet-avatar',
@@ -376,7 +397,7 @@ export const Avatar = ({
           className={cx(classes, 'crewlet-avatar--image')}
           style={faceStyle}
           src={src}
-          alt={decorative ? '' : framed ? `${name ?? ''}, ${AVATAR_STATUS_LABELS[status]}` : (name ?? '')}
+          alt={decorative ? '' : corner ? `${name ?? ''}, ${corner}` : (name ?? '')}
           aria-hidden={decorative ? true : undefined}
           onError={() => setImageFailed(true)}
         />
@@ -417,9 +438,15 @@ export const Avatar = ({
       style={{ '--crewlet-avatar-size': `${pixels}px`, ...style } as CSSProperties}
     >
       {face}
-      <span className={`crewlet-avatar__status crewlet-avatar__status--${status}`} aria-hidden="true">
-        {STATUS_GLYPHS[status]}
-      </span>
+      {status !== undefined ? (
+        <span className={`crewlet-avatar__status crewlet-avatar__status--${status}`} aria-hidden="true">
+          {STATUS_GLYPHS[status]}
+        </span>
+      ) : (
+        <span className="crewlet-avatar__status crewlet-avatar__status--mark" aria-hidden="true">
+          {mark}
+        </span>
+      )}
     </span>
   );
 };

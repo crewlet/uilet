@@ -757,3 +757,85 @@ describe('a badge with a glyph for a face', () => {
     expect(screen.getByRole('img', { name: 'Agent PM avatar' }).querySelector('.crewlet-avatar__icon')).toBeNull();
   });
 });
+
+describe('the mark', () => {
+  test('draws a glyph on the corner, in the notch a status uses, and keeps the face', () => {
+    const { container } = render(<Avatar name="Miles" kind="human" mark={<KeyGlyph size="xs" />} />);
+    const frame = container.firstElementChild as HTMLElement;
+    expect(frame.className).toBe('crewlet-avatar-frame');
+    const face = frame.querySelector('.crewlet-avatar')!;
+    expect(face.className).toContain('crewlet-avatar--notched');
+    expect(face.textContent).toBe('MI');
+    const corner = frame.querySelector('.crewlet-avatar__status')!;
+    expect(corner.className).toBe('crewlet-avatar__status crewlet-avatar__status--mark');
+    expect(corner.getAttribute('aria-hidden')).toBe('true');
+    expect(corner.querySelector('svg')).not.toBeNull();
+  });
+
+  test('gives way to a status: one corner, and what an agent is doing comes first', () => {
+    const { container } = render(<Avatar name="Agent PM" status="working" mark={<KeyGlyph size="xs" />} />);
+    expect(container.querySelectorAll('.crewlet-avatar__status')).toHaveLength(1);
+    expect(container.querySelector('.crewlet-avatar__status--mark')).toBeNull();
+    expect(container.querySelector('.crewlet-avatar__status--working')).not.toBeNull();
+  });
+
+  test('is said after the name by a badge that names itself, and not at all by a decorative one', () => {
+    const key = <KeyGlyph size="xs" />;
+    render(
+      <>
+        <Avatar name="Miles" kind="human" mark={key} markLabel="signed in with an API token" />
+        <Avatar name="Lee Park" kind="human" mark={key} />
+        <span>
+          <Avatar name="Miles" kind="human" mark={key} markLabel="signed in with an API token" decorative /> Miles
+        </span>
+      </>,
+    );
+    expect(screen.getAllByRole('img').map((badge) => badge.getAttribute('aria-label'))).toEqual([
+      'Miles avatar, signed in with an API token',
+      'Lee Park avatar',
+    ]);
+  });
+
+  test('an image says the mark in its alternative text', () => {
+    const key = <KeyGlyph size="xs" />;
+    render(<Avatar name="Miles" kind="human" src="data:image/png;base64," mark={key} markLabel="via a token" />);
+    expect(screen.getByRole('img').getAttribute('alt')).toBe('Miles, via a token');
+  });
+
+  test('a marked badge draws no ring, since the notch is cut from the outline the ring follows', () => {
+    const { container } = render(<Avatar name="Miles" kind="human" ring="brand" mark={<KeyGlyph size="xs" />} />);
+    expect(container.innerHTML).not.toContain('ring-');
+  });
+
+  test("is drawn quiet, in the neutral badge's raised rung, strong hairline and secondary ink", () => {
+    // A MARK IS NOT A STATE, so it spends none of a state's fills: the corner
+    // reads as part of the face it sits on, not as an alarm.
+    for (const theme of ['dark', 'light'] as const) {
+      uninstall?.();
+      uninstall = installThemed(theme, 'Avatar/Avatar.css');
+      cleanup();
+      const palette = themeColours(theme);
+      const token = (name: string) => parseHex(palette.get(property(name)) ?? '');
+      const { container } = render(<Avatar name="Miles" kind="human" mark={<KeyGlyph size="xs" />} />);
+      const drawn = getComputedStyle(container.querySelector('.crewlet-avatar__status--mark')!);
+      expect(channels(drawn.backgroundColor), theme).toEqual(token('color-surface-elevated'));
+      expect(channels(drawn.outlineColor), theme).toEqual(token('color-border-strong'));
+      expect(channels(drawn.color), theme).toEqual(token('color-text-secondary'));
+      expect(drawn.position, theme).toBe('absolute');
+    }
+  });
+
+  test('passes axe with a named and a decorative marked badge', async () => {
+    const key = <KeyGlyph size="xs" />;
+    const { container } = render(
+      <>
+        <Avatar name="Miles" kind="human" mark={key} markLabel="signed in with an API token" />
+        <span>
+          <Avatar name="Miles" kind="human" mark={key} decorative /> Miles
+        </span>
+      </>,
+    );
+    const result = await axe.run(container);
+    expect(result.violations).toEqual([]);
+  });
+});

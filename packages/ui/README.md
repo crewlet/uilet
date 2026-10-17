@@ -198,6 +198,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.17.0
+
+**`Avatar` takes `mark`**, a glyph on the lower-right corner that says how a principal is present rather than what it is doing: a seat's badge acting through an API token keeps its own initials and wears a key there. It sits in the notch a status uses, drawn quiet in the neutral badge's raised fill, strong hairline and secondary ink, and a `status` wins over it. **`markLabel`** is said after the name by a badge that names itself (`Miles avatar, signed in with an API token`); a decorative one says nothing. A marked badge, like one with a status, is drawn inside a `.crewlet-avatar-frame` and draws no ring. What to change: nothing.
+
 ## Changes in 0.16.0
 
 0.16.0 adds the pieces the engine console's sign-in, Account and People & access screens were drawing on their own, so every one of them is the package's now.
