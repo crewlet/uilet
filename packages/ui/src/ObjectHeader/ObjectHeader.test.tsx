@@ -162,3 +162,21 @@ describe('ObjectHeader', () => {
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 });
+
+describe('ObjectHeader description', () => {
+  test('draws the author sentence under the title, quieter than it and clamped to two lines', () => {
+    render(<ObjectHeader kind="Sheet" title="Pipeline health" description="Where every deal stands this week." />);
+    const sentence = screen.getByText('Where every deal stands this week.');
+    expect(sentence.className).toBe('crewlet-object-header__description');
+    expect(sentence.previousElementSibling?.className).toBe('crewlet-object-header__head');
+    const rule = /\.crewlet-object-header__description\s*\{([^}]*)\}/.exec(css())?.[1] ?? '';
+    expect(rule).toMatch(/font-size:\s*var\(--font-size-compact\)/);
+    expect(rule).toMatch(/color:\s*var\(--color-text-secondary\)/);
+    expect(rule).toMatch(/line-clamp:\s*2/);
+  });
+
+  test('draws nothing for no description', () => {
+    const { container } = render(<ObjectHeader kind="Sheet" title="Pipeline health" />);
+    expect(container.querySelector('.crewlet-object-header__description')).toBeNull();
+  });
+});
