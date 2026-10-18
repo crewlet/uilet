@@ -230,6 +230,14 @@ describe('<crewlet-sheet>', () => {
     expect(fake.views.size).toBe(0);
   });
 
+  test('the sheet is as tall as its rows, so no empty slab sits under Add row', async () => {
+    const fake = fakeRuntime({});
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(sheetGrid().closest('.crewlet-sheet-grid')?.className).toContain('crewlet-sheet-grid--fit-content'));
+  });
+
   test('a viewer gets a read-only sheet', async () => {
     const fake = fakeRuntime({ role: 'viewer' });
     window.crewlet = fake.runtime;
