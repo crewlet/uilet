@@ -1,0 +1,25 @@
+/*
+ * The artifact kit's stylesheet: the design system an artifact page reads,
+ * served from the artifact's own origin beside the page.
+ *
+ * The same five stylesheets an application imports, in the same order, so a
+ * page that writes `var(--color-surface-frame)` or `var(--spacing-3)` paints
+ * exactly what the dashboard around it paints:
+ *
+ *   1. the canonical variables;
+ *   2. the dark and light palettes of the default theme, as the three-state
+ *      contract on `data-theme`;
+ *   3. every named theme, each under its own `data-palette`;
+ *   4. the density steps under `data-density`;
+ *   5. the self-hosted Geist faces, then the document baseline.
+ *
+ * Nothing here contacts a third-party host: the fonts are copied beside this
+ * file at build time and referenced relative to it.
+ */
+
+@import '@crewlethq/tokens/css';
+@import '@crewlethq/tokens/css/themes';
+@import '@crewlethq/tokens/css/themes/all';
+@import '@crewlethq/tokens/css/density';
+@import '@crewlethq/tokens/css/fonts';
+@import '@crewlethq/tokens/css/base';

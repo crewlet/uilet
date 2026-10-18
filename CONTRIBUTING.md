@@ -33,7 +33,7 @@ node scripts/check-signoff.mjs
 npm run release:version          # the version a merge of this branch would be released as
 ```
 
-`release.mjs pack` packs the three tarballs from the build exactly as a release would and fails on a manifest, license file, notice or entry point that would break publishing. `check-signoff.mjs` compares your branch with `origin/main` (or `upstream/main` in a fork), and `release:version` reads the release tags, so fetch both first (`git fetch origin --tags`).
+`release.mjs pack` packs the four tarballs from the build exactly as a release would and fails on a manifest, license file, notice or entry point that would break publishing. `check-signoff.mjs` compares your branch with `origin/main` (or `upstream/main` in a fork), and `release:version` reads the release tags, so fetch both first (`git fetch origin --tags`).
 
 CI runs two more checks that are not worth repeating locally. It refreshes the lockfile and fails if that changes it, so commit `package-lock.json` whenever a manifest changes. Its `pack` job runs `node scripts/release.mjs build` and `node scripts/release.mjs version --write` in a fresh checkout, which reinstall only the published packages (and would remove the Storybook's dependencies from a local checkout) and write the computed version into the manifests, which is never committed.
 

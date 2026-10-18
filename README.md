@@ -1,6 +1,6 @@
 # Uilet
 
-Crewlet design system. One repository, three published packages, and a Storybook showroom.
+Crewlet design system. One repository, four published packages, and a Storybook showroom.
 
 ## Packages
 
@@ -9,6 +9,7 @@ Crewlet design system. One repository, three published packages, and a Storybook
 | `@crewlethq/tokens` | Design tokens (color, spacing, typography, radius, shadow, blur, breakpoint, motion, z-index) and fonts |
 | `@crewlethq/icons`  | The Lucide glyph set, vendor marks and the signature illustrations as React components                   |
 | `@crewlethq/ui`     | Cross-app React components built on tokens and icons                                                      |
+| `@crewlethq/artifact-kit` | The tokens, every theme, the fonts and the theme bootstrap as a framework-free browser bundle for artifact pages |
 
 ## Install
 
@@ -18,7 +19,7 @@ The packages are public on registry.npmjs.org, so no registry configuration or t
 npm install --save-exact @crewlethq/tokens @crewlethq/icons @crewlethq/ui
 ```
 
-All three are released together under one version, and `@crewlethq/ui` depends on the tokens and icons of exactly its own version. Upgrade the three together and keep them at the same version, or the app installs a second copy of the tokens and icons for `@crewlethq/ui` to use.
+All four are released together under one version, and `@crewlethq/ui` depends on the tokens and icons of exactly its own version. Upgrade the three an application installs together and keep them at the same version, or the app installs a second copy of the tokens and icons for `@crewlethq/ui` to use. `@crewlethq/artifact-kit` is not installed into an application: the engine serves its built files to artifact pages.
 
 ## Stack
 
@@ -54,7 +55,8 @@ npm run lint && npm run typecheck
 ├── packages/
 │   ├── tokens/                # @crewlethq/tokens
 │   ├── icons/                 # @crewlethq/icons
-│   └── ui/                    # @crewlethq/ui
+│   ├── ui/                    # @crewlethq/ui
+│   └── artifact-kit/          # @crewlethq/artifact-kit: the browser bundle for artifact pages
 ├── scripts/
 │   ├── release.mjs            # release version, consistency check, build, pack and registry comparison
 │   ├── check-signoff.mjs      # Signed-off-by gate for pull requests

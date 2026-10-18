@@ -51,7 +51,8 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `safeFilename`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
-| Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences` |
+| Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
+| Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `AccessDeniedCard`, and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -197,6 +198,28 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.18.0
+
+0.18.0 adds the pieces the engine dashboard's Artifacts workspace is built from: the frame an artifact runs in, its versions, who it is shared with, and the card and refusal that stand for it elsewhere.
+
+**`SandboxedFrame`** embeds an artifact's document with the engine's `sandbox` and `allow` attributes set verbatim, after a second check that refuses any token the host never sets: there is no `allow-popups` at all, and `allow-same-origin` only when the artifact has an origin of its own. A hello is accepted only from the iframe's own window, carrying the nonce minted with its ticket, and per artifact from the artifact's origin; only then is one `MessagePort` transferred, in the same task, to the window that was checked. The reader's appearance travels in the URL fragment for the first paint and on the port afterwards. A document that does not announce itself is torn down (`failed`, or `navigated` when it replaced one that did), a runtime with no common bridge version is `outdated`, and each refusal reaches `onRefusal`. The frame never opens a window: an external link reaches `onOpenLink`. A port message asking for focus back moves focus to the frame's region, or to `onFocusExit`.
+
+**`FrameProtocol`** is that wire, written once for both ends and free of React, so the engine's runtime and `@crewlethq/artifact-kit`'s `theme.js` import it: `FRAME_MESSAGE`, `frameFragment` and `parseFrameFragment`, `readFrameHello`, `negotiateBridge`, `checkFrameSandbox`, `readFrameTheme` and `applyFrameTheme`, and `externalUrl`, which admits absolute https, http and mailto links only and never one carrying a user name or password.
+
+**`LinkInterstitial`** is the stop between an artifact's link and the open web: the host in large type (the parser's ASCII form, so a look-alike name shows as the `xn--` name it is), the whole address, a warning on plain http, and **`openExternal`**, which opens with `noopener` and `noreferrer`.
+
+**`VersionTimeline`** lists versions newest first on the `Timeline` ledger with the one on show current, Compare as a toggle, Restore (never on the newest) and Name, glyphs and words for schema, capability and restore versions, and a line for versions past retention. **`Timeline.Item` takes `label={false}`** for an item whose content already says what it is.
+
+**`ShareDialog`** is who can open an artifact on the engine's five-role ladder (viewer, commenter, contributor, editor, owner): a grantee search slot handed the role chosen beside it, direct shares with a role control and a remove, effective access with what it is through and no control, company access in words, and Copy link. Changes are confirmed rather than optimistic, a refusal is said on its row, no control offers owner, and a reader who cannot share sees the same audience in words with the reason. **`PrincipalPicker`** is the search the slot usually holds, grouped people, agents and teams. **`Principal`** and **`PrincipalAvatar`** draw a person, an agent or a team one way everywhere.
+
+**`ArtifactCard`** is one real link named by the artifact's title and described by its facts, with a natively drawn preview or the kind's glyph (**`ArtifactKindGlyph`**), and a compact row. **`AccessDeniedCard`** is the refusal an artifact's place shows; "not found" says both things the engine means by it and never names an owner.
+
+**The appearance attributes have a module of their own.** `applyTheme` and `applyDensity` take an optional root element, **`applyPalette`** is new (the default theme removes the attribute, as `system` and `normal` do), and `THEME_PREFERENCES`, `DENSITY_PREFERENCES`, `PALETTE_ID` and their guards are exported.
+
+`@crewlethq/icons` adds `share-2`, `rotate-ccw-clock` (Lucide's canonical name for the drawing it once called `history`), `upload`, `file-code` and `image`.
+
+What to change: nothing. Every addition is new, and `applyTheme` and `applyDensity` keep their one-argument form.
 
 ## Changes in 0.17.0
 

@@ -83,8 +83,13 @@ export interface TimelineItemProps extends LiHTMLAttributes<HTMLLIElement> {
    * numbered ledger wants; a glyph where the step has an identity of its own.
    */
   marker?: ReactNode;
-  /** Overrides the hidden label, for a step whose name is not its number. */
-  label?: string | undefined;
+  /**
+   * Overrides the hidden label, for a step whose name is not its number.
+   * `false` draws no hidden label at all, for an item whose own content
+   * already says what it is: a hidden "Version 12" in front of a visible
+   * "Version 12" is read twice.
+   */
+  label?: string | false | undefined;
 }
 
 /**
@@ -113,7 +118,7 @@ export function TimelineItem({
    * drawn on each append, which is exactly the thing a reader is told not to
    * expect from a list that only grows at the end.
    */
-  const spoken = label ?? `${itemLabel} ${position}`;
+  const spoken = label === false ? null : (label ?? `${itemLabel} ${position}`);
 
   return (
     <li
@@ -127,7 +132,7 @@ export function TimelineItem({
         </span>
       </span>
       <div className="crewlet-timeline__body">
-        <VisuallyHidden>{spoken}</VisuallyHidden>
+        {spoken === null ? null : <VisuallyHidden>{spoken}</VisuallyHidden>}
         {children}
       </div>
     </li>

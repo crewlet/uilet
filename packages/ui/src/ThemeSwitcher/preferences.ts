@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import {
+  applyDensity,
+  applyTheme,
+  DENSITY_PREFERENCES,
+  THEME_PREFERENCES,
+  type DensityPreference,
+  type ThemePreference,
+} from './apply.js';
 
-/** What a reader can ask the palette to be. `system` follows the platform. */
-export type ThemePreference = 'system' | 'light' | 'dark';
+export type { DensityPreference, ThemePreference } from './apply.js';
 
-/** How much room the interface gives itself. `normal` is the unscaled step. */
-export type DensityPreference = 'normal' | 'compact' | 'comfortable';
-
-const THEMES: readonly ThemePreference[] = ['system', 'light', 'dark'];
-const DENSITIES: readonly DensityPreference[] = ['normal', 'compact', 'comfortable'];
+const THEMES: readonly ThemePreference[] = THEME_PREFERENCES;
+const DENSITIES: readonly DensityPreference[] = DENSITY_PREFERENCES;
 
 /**
  * Reading a stored preference, which can throw.
@@ -130,37 +134,6 @@ function useStoredChoice<T extends string>(
   );
 
   return [value, choose];
-}
-
-function root(): HTMLElement | null {
-  return typeof document === 'undefined' ? null : document.documentElement;
-}
-
-/**
- * Puts the theme on the root element.
- *
- * `system` REMOVES the attribute rather than writing a third value, because
- * following the system IS the absence of a choice, and the stylesheet's own
- * default is the system's: a document with no attribute is dark, or light
- * where the platform asks for light. What beats the system is an explicit
- * value, in both directions: `light` by a block of its own, `dark` by keeping
- * the light media block from matching. A `data-theme="system"` names no
- * palette, so it would be a choice only to the code that asks whether the
- * attribute is there at all, which is the wrong answer to give it.
- */
-export function applyTheme(theme: ThemePreference): void {
-  const el = root();
-  if (!el) return;
-  if (theme === 'system') el.removeAttribute('data-theme');
-  else el.setAttribute('data-theme', theme);
-}
-
-/** Puts the density on the root element. `normal` removes the attribute. */
-export function applyDensity(density: DensityPreference): void {
-  const el = root();
-  if (!el) return;
-  if (density === 'normal') el.removeAttribute('data-density');
-  else el.setAttribute('data-density', density);
 }
 
 export interface PreferenceOptions {
