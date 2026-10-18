@@ -4,8 +4,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { NODE_HUES } from '../utils/nodeHue.js';
-import { assignPresenceHues, collapseSessions, joinNames, PRESENCE_LABELS, presenceOrder, type PresenceMember } from './index.js';
+import { assignPresenceHues, collapseSessions, PRESENCE_HUES, joinNames, PRESENCE_LABELS, presenceOrder, type PresenceMember } from './index.js';
 
 const member = (id: string, kind: PresenceMember['kind'], activity: PresenceMember['activity'], extra: Partial<PresenceMember> = {}): PresenceMember => ({
   id,
@@ -51,6 +50,15 @@ describe('collapseSessions', () => {
 });
 
 describe('assignPresenceHues', () => {
+  test('never hands out the hue nearest the accent, however many people join', () => {
+    // A collaborator ringed in violet read as the reader's own active cell.
+    const people = Array.from({ length: 12 }, (_, i) => member(`p${i}`, 'human', 'viewing'));
+    const hues = assignPresenceHues(people);
+    expect([...hues.values()]).not.toContain('purple');
+    expect(PRESENCE_HUES).not.toContain('purple');
+    expect(new Set(hues.values()).size).toBe(PRESENCE_HUES.length);
+  });
+
   test('an agent keeps its chosen hue, and people take the hues nobody wears, in join order', () => {
     const hues = assignPresenceHues([member('maya', 'human', 'viewing'), member('pm', 'agent', 'viewing', { hue: 'purple' }), member('jane', 'human', 'editing')]);
     expect(hues.get('pm')).toBe('purple');
@@ -65,10 +73,10 @@ describe('assignPresenceHues', () => {
     expect(second.get('sam')).toBe(first.get('maya'));
   });
 
-  test('past six, hues repeat as evenly as they can', () => {
-    const many = Array.from({ length: 13 }, (_, index) => member(`p${index}`, 'human', 'viewing'));
+  test('past five, hues repeat as evenly as they can', () => {
+    const many = Array.from({ length: 11 }, (_, index) => member(`p${index}`, 'human', 'viewing'));
     const hues = [...assignPresenceHues(many).values()];
-    for (const hue of NODE_HUES) expect(hues.filter((each) => each === hue).length).toBeGreaterThanOrEqual(2);
+    for (const hue of PRESENCE_HUES) expect(hues.filter((each) => each === hue).length).toBeGreaterThanOrEqual(2);
   });
 });
 

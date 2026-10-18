@@ -93,12 +93,21 @@ export function collapseSessions<M extends Pick<PresenceMember, 'id' | 'seat' | 
 }
 
 /**
+ * The hues presence ASSIGNS, in rotation: the six node hues without purple,
+ * the one nearest the accent. The accent is the reader's own active cell and
+ * the focus ring, so a collaborator ringed in violet read as the reader's own
+ * selection. An agent whose chosen hue is purple keeps it: that hue is its
+ * identity, picked by a person, not handed out here.
+ */
+export const PRESENCE_HUES: readonly NodeHue[] = NODE_HUES.filter((hue) => hue !== 'purple');
+
+/**
  * The hue each member's marks are drawn in.
  *
  * An agent with a chosen hue keeps it. Every other member keeps the hue it was
  * given before (`held`, the previous answer) while it stays present, and a
- * newcomer, in the order given, takes the first of the six hues nobody present
- * wears; past six, the hue the fewest members wear, so hues repeat as evenly
+ * newcomer, in the order given, takes the first of the PRESENCE_HUES nobody
+ * present wears; past five, the hue the fewest members wear, so hues repeat as evenly
  * as they can and the name on the flag tells the two apart.
  */
 export function assignPresenceHues(
@@ -106,7 +115,7 @@ export function assignPresenceHues(
   held: ReadonlyMap<string, NodeHue> = new Map(),
 ): Map<string, NodeHue> {
   const out = new Map<string, NodeHue>();
-  const uses = new Map<NodeHue, number>(NODE_HUES.map((hue) => [hue, 0]));
+  const uses = new Map<NodeHue, number>(PRESENCE_HUES.map((hue) => [hue, 0]));
   const take = (id: string, hue: NodeHue) => {
     out.set(id, hue);
     uses.set(hue, (uses.get(hue) ?? 0) + 1);
@@ -121,8 +130,8 @@ export function assignPresenceHues(
   }
   for (const member of members) {
     if (out.has(member.id)) continue;
-    let pick: NodeHue = NODE_HUES[0];
-    for (const hue of NODE_HUES) if ((uses.get(hue) ?? 0) < (uses.get(pick) ?? 0)) pick = hue;
+    let pick: NodeHue = PRESENCE_HUES[0]!;
+    for (const hue of PRESENCE_HUES) if ((uses.get(hue) ?? 0) < (uses.get(pick) ?? 0)) pick = hue;
     take(member.id, pick);
   }
   return out;
