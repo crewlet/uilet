@@ -44,6 +44,18 @@
   border-radius: var(--radius-lg);
 }
 
+/*
+ * INSIDE A FLUSH CARD THE CARD IS THE FRAME. A flush card exists so that a
+ * table's rows reach its edges (Card.css), and a grid that drew its own border
+ * and corner there was a second rounded box one pixel inside the first, with
+ * the card's footer hanging outside it. The rows keep their own hairlines.
+ */
+.crewlet-card--flush .crewlet-tree-grid__grid {
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
 .crewlet-tree-grid__row {
   display: grid;
   grid-template-columns: var(--crewlet-tree-grid-columns, minmax(0, 1fr));
