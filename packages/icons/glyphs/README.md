@@ -17,6 +17,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **`badge-percent`**, the discount note on the Storybook's `PricingCard`, which drew Material's `tag`, a hash sign, beside "Save $5 (10% off)".
 - **`circle`**, the Todo state a task row leads with in the command palette's Storybook story, beside `circle-check` for Done. The artboard draws both states as marks of its own on a 14 unit grid (a bare ring, and a filled disc with a check cut out of it) rather than as Lucide icons, so neither is among the 59 above; the ring is Lucide's `circle` stroke for stroke, and Done keeps `circle-check` in the success ink rather than a filled disc, because `FILLABLE` paints a drawing's inside in the same colour as its stroke, which would fill the check in.
 - **The formatting bar of `MarkdownEditor`** in `@crewlethq/ui`: `heading-2` and `heading-3` for the two heading levels a page's outline lists, `bold`, `italic`, `list-ordered` for a numbered list beside `list`, and `list-checks` for a checklist. Each is a control a writer recognises by its drawing, so the bar draws all of them as glyphs rather than spelling some as letters ("H2", "B") beside the glyphs of the rest.
+- **`mouse-pointer-2`**, the pointer a collaborator's `LiveCursor` in `@crewlethq/ui` is drawn with, beside its name flag, on a board or a page that shares cursors.
 
 ## Provenance
 
@@ -131,6 +132,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `minus` | `MinusGlyph` | `package/icons/minus.svg` |
 | `monitor` | `MonitorGlyph` | `package/icons/monitor.svg` |
 | `moon` | `MoonGlyph` | `package/icons/moon.svg` |
+| `mouse-pointer-2` | `MousePointer2Glyph` | `package/icons/mouse-pointer-2.svg` |
 | `network` | `NetworkGlyph` | `package/icons/network.svg` |
 | `package` | `PackageGlyph` | `package/icons/package.svg` |
 | `palette` | `PaletteGlyph` | `package/icons/palette.svg` |
