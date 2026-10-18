@@ -1,0 +1,42 @@
+{
+  "name": "@crewlethq/artifact-kit",
+  "version": "0.2.0",
+  "description": "The Crewlet design system as a framework-free browser bundle for artifact pages: the tokens, every theme, the fonts and the base stylesheet, plus the theme bootstrap.",
+  "license": "MIT AND OFL-1.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crewlet/uilet.git",
+    "directory": "packages/artifact-kit"
+  },
+  "homepage": "https://github.com/crewlet/uilet/tree/main/packages/artifact-kit#readme",
+  "bugs": {
+    "url": "https://github.com/crewlet/uilet/issues"
+  },
+  "type": "module",
+  "sideEffects": true,
+  "exports": {
+    "./kit.css": "./dist/kit.css",
+    "./theme.js": "./dist/theme.js",
+    "./fonts/*": "./dist/fonts/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "lint": "eslint scripts src test",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test \"test/*.test.mjs\"",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@crewlethq/tokens": "0.2.0",
+    "@crewlethq/ui": "0.2.0",
+    "esbuild": "^0.28.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}
