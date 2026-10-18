@@ -203,6 +203,16 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.21.0
+
+**`AppShell.AccountRow` takes `menu`** (`AccountRowMenu`: `label`, `header`, `items`): pressing who you are opens the reader's own menu instead of linking anywhere, which is where a reader looks for their account and for signing out. The row becomes the menu button, ending in the up-and-down chevron a menu's trigger draws, keeps the account page's current-row lift (`data-current`), and the menu's header holds the facts the row does not already say, such as the reader's access. Given, `menu` takes the place of `href`.
+
+**`Menu` takes `header` and `renderTrigger`.** `header` is a line of facts above the items: never an item, so the arrows never stop on it, and the menu's description, so a screen reader hears it when the menu opens. `renderTrigger` makes the caller's own element the trigger, given the props it spreads (`MenuTriggerProps`), keeping every rule of the menu's button, focus coming back to it included.
+
+**`@crewlethq/icons` vendors `log-out` and `log-in`**, for signing out and in from that menu.
+
+What to change: nothing. Everything is new.
+
 ## Changes in 0.20.0
 
 0.20.0 adds the review surfaces the engine dashboard drew for itself: a line diff, two versions compared, a document's comment thread, the note a lost edit race leaves, the People rail beside a shared document, and the read-only cells its tables share. Each takes its data and its callbacks as props, so nothing in it fetches or knows a route.
