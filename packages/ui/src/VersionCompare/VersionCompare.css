@@ -1,0 +1,68 @@
+/* VersionCompare: a head naming the two versions with the lens switch at its
+   end, then the changes or the two versions. */
+.crewlet-version-compare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+.crewlet-version-compare__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+}
+
+.crewlet-version-compare__titles {
+  display: flex;
+  flex: 1 1 16rem;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-version-compare__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-version-compare__description,
+.crewlet-version-compare__note {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-version-compare__changes,
+.crewlet-version-compare__versions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+/* SIDE BY SIDE where there is room for two readable columns, and one above
+   the other where there is not, decided by the width the panes are given
+   rather than by the viewport, so a comparison in a side pane stacks too. */
+.crewlet-version-compare__panes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--spacing-4);
+}
+
+.crewlet-version-compare__pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-version-compare__pane-title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}

@@ -1,0 +1,75 @@
+/* PeopleRail: a raised column of everybody present, one row a person, the
+   name over what they are doing and the controls at the row's end. */
+.crewlet-people-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+}
+
+.crewlet-people-rail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+.crewlet-people-rail__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-people-rail__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-people-rail__person {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-people-rail__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-people-rail__name {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-people-rail__where {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-people-rail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--spacing-1);
+}
+
+.crewlet-people-rail__note {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
+}

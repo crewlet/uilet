@@ -1,0 +1,91 @@
+/* DiffView: a line diff, monospace and line-numbered on both sides.
+
+   A changed line is marked three ways, a tint, a drawn mark and a word read
+   in its place, because colour alone is not a signal and a printed or
+   forced-colours render loses the tint entirely. The tint is the soft step of
+   the state and the mark the matching ink step, the pairing the palette suite
+   measures. */
+.crewlet-diff-view {
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+}
+
+.crewlet-diff-view__section + .crewlet-diff-view__section,
+.crewlet-diff-view__skip + .crewlet-diff-view__line {
+  border-top: 1px solid var(--color-border-default);
+}
+
+/* A GAP SAYS WHAT IT STANDS FOR. Silently closed, a document edited at both
+   ends looks like one rewritten in the middle. */
+.crewlet-diff-view__skip {
+  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-diff-view__line {
+  display: grid;
+  grid-template-columns: 3.5ch 3.5ch 2ch minmax(0, 1fr);
+  gap: var(--spacing-2);
+  padding: calc(var(--spacing-1) / 4) var(--spacing-3) calc(var(--spacing-1) / 4) var(--spacing-2);
+}
+
+.crewlet-diff-view__number {
+  color: var(--color-text-tertiary);
+  text-align: right;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-diff-view__mark {
+  text-align: center;
+  user-select: none;
+}
+
+.crewlet-diff-view__text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-diff-view__line--add {
+  background: var(--color-feedback-success-soft);
+}
+
+.crewlet-diff-view__line--add .crewlet-diff-view__mark {
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-diff-view__line--remove {
+  background: var(--color-feedback-danger-soft);
+}
+
+.crewlet-diff-view__line--remove .crewlet-diff-view__mark {
+  color: var(--color-feedback-danger-ink);
+}
+
+/* DiffSummary: the size of the change, in the same inks as its lines. */
+.crewlet-diff-summary {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-diff-summary__added,
+.crewlet-diff-summary__removed {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-diff-summary__added {
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-diff-summary__removed {
+  color: var(--color-feedback-danger-ink);
+}

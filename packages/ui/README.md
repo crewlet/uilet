@@ -43,9 +43,10 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `DownloadButton`, `Kbd` |
 | Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document` and `DocumentTitle`, `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider` |
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor` |
-| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile` |
+| Data display | `DataTable`, `CopyableCell`, `Table`, the read-only table cells (`TableKeyCell`, `TableNumberCell`, `TableDateCell`, `TableEntityCell`, `TableStatusCell`, `TableTagsCell`, `TableTextCell`), `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
-| Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
+| Feedback and overlays | `Callout`, `ConflictNote`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
+| Documents and review | `DiffView` and `DiffSummary` with the line diff they draw (`diffLines`, `diffStat`, `collapseDiff`, `firstChangedLines`, `splitLines`, `MAX_DIFF_LINES`, with no React in it), `DiffList`, `VersionCompare`, `CommentThread` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `safeFilename`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
@@ -55,7 +56,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
 | Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `AccessDeniedCard`, and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
 | Sheets | `SheetGrid`, the cells on their own (`CheckboxCell`, `TextCell`, `LongTextCell`, `NumberCell`, `SelectCell`, `MultiSelectCell`, `PersonCell`, `StatusCell`, `DateCell`, `UrlCell`, `RatingCell`, and `SheetCell` for any type), `ChangeMark`, and `SheetModel` (every rule a sheet is drawn from, with no React in it: values, parsing, the keyboard model, TSV, the pending edits of D23) |
-| Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, and `PresenceModel` (the roster order, one entry per person, the session hues, with no React in it) |
+| Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, `PeopleRail` (with `peopleRailKey`), and `PresenceModel` (the roster order, one entry per person, the session hues, with no React in it) |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -201,6 +202,24 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.20.0
+
+0.20.0 adds the review surfaces the engine dashboard drew for itself: a line diff, two versions compared, a document's comment thread, the note a lost edit race leaves, the People rail beside a shared document, and the read-only cells its tables share. Each takes its data and its callbacks as props, so nothing in it fetches or knows a route.
+
+**`DiffView`** draws a line diff as the document it is: monospace, numbered on both sides, a row that says how many unchanged lines a gap stands for, and on every changed line a tint, a mark and the word "Added" or "Removed" read in the mark's place. **`DiffSummary`** is the line above it, `+3 −1 against version 4`, read as a sentence. The diff itself is pure and exported with them: `diffLines` (the longest common subsequence over lines, a removal above its addition, a whole replacement past `MAX_DIFF_LINES`), `diffStat`, `collapseDiff` (context either side of each change, the gap counted), `firstChangedLines` (a preview with the count of what it left out) and `splitLines`.
+
+**`VersionCompare`** is two versions of a document compared: the changes lens draws a `DiffView` of two texts with its summary, or a comparison the host draws in `changes` (a `DiffList` of files, say), and the versions lens draws the two side by side, older first, stacking where the panes are narrow. Two identical texts are said in words, a lens with nothing to draw is not offered, and `labels` renames the lenses ("Full text").
+
+**`CommentThread`** is a document's remarks in order, each with its author (`Principal`), when it was written and edited, and whom it answers, then a `Composer` to add one. Reply moves focus to the field, which names whom it answers. The post is one at a time and the draft is cleared only once `onSubmit` says it landed; a standing `disabledReason` is said in the open. Without `onSubmit` the thread is read-only.
+
+**`ConflictNote`** is the refusal of a lost race, an alert that names whoever changed the record (`changedBy`) once the host knows, the server's sentence until then, with Dismiss and any controls of the host's.
+
+**`PeopleRail`** lists everybody present in words, one entry a seat, in the order `PresenceStack` draws them, each with what they are doing and where, Follow as a toggle that names whom it follows, and a slot for the host's own controls ("Open turn"). **`peopleRailKey`** is the key `following` is compared with.
+
+**The read-only table cells** draw one kind of value the same in every table: `TableKeyCell` (an identifier on one line, its whole value on the title, optionally a link), `TableNumberCell` (tabular, the host's formatter, absent never drawn as zero), `TableDateCell` (relative, exact on hover), `TableEntityCell` (a badge and a name, optionally a link), `TableStatusCell` (the caller's mark with its word and tone), `TableTagsCell` (capped, the rest counted in words) and `TableTextCell` (a column's decorative icon or a row's own mark). They are prefixed `Table` because `SheetGrid`'s editable cells own the bare names.
+
+What to change: nothing. Every addition is new.
 
 ## Changes in 0.19.0
 

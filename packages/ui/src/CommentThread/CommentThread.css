@@ -1,0 +1,90 @@
+/* CommentThread: a document's remarks, one per row with a hairline between,
+   then the field to add one. */
+.crewlet-comment-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+.crewlet-comment-thread__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-comment-thread__empty,
+.crewlet-comment-thread__hint {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-comment-thread__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-comment-thread__comment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+  padding: var(--spacing-3) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-comment-thread__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-comment-thread__author {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-comment-thread__name {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-comment-thread__meta {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+/* Reply sits at the row's far end, wherever the head wraps. */
+.crewlet-comment-thread__reply {
+  margin-inline-start: auto;
+}
+
+.crewlet-comment-thread__compose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.crewlet-comment-thread__replying {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}

@@ -199,15 +199,17 @@ Do this after the repository is public and every setting above is in place. Befo
 
    If an interactive login is not possible, create a granular access token on npmjs.com instead: read and write permission limited to the `@crewlethq` scope, "Bypass two-factor authentication" left unchecked, and the shortest expiration offered. Use it for these three commands only, then delete it on npmjs.com.
 
-4. **Configure the trusted publisher** for each package. This needs npm 11.10.0 or later and an account with two-factor authentication:
+4. **Configure the trusted publisher** for each package. This needs npm 11.10.0 or later and an account with two-factor authentication. From npm 11.19, `npm trust github` refuses to create the configuration unless `--allow-publish` grants it the publish permission explicitly:
 
    ```bash
    for package in tokens icons ui; do
-     npm trust github "@crewlethq/${package}" --repository crewlet/uilet --file release.yml --environment npm-publish --yes
+     npm trust github "@crewlethq/${package}" --repository crewlet/uilet --file release.yml --environment npm-publish --allow-publish --yes
      sleep 2
    done
    npm trust list @crewlethq/ui
    ```
+
+   The command reports `permissions: publish, stage publish` even though only `--allow-publish` was passed. That is how npm 11.19 reports a configuration created with `--allow-publish` alone, so no further flag is needed for the release workflow.
 
 5. **Disallow token publishing.** For each package, open **Settings, Publishing access** on npmjs.com and choose "Require two-factor authentication and disallow tokens" (or run `npm access set mfa=publish @crewlethq/<package>`). Trusted publishing keeps working under this setting; a stolen or forgotten token no longer can. Delete the granular token now if step 3 used one.
 
@@ -227,7 +229,12 @@ A new public workspace under `packages/` is picked up by `scripts/release.mjs` a
 
 1. Its expected SPDX license expression in `LICENSES` in `scripts/release.mjs`, and a copy of the root `LICENSE` in its directory.
 2. Its name added to both package lists in `release.yml` (the publish allowlist, in dependency order, and the release notes). Until then the publish job refuses the extra tarball.
-3. Its own bootstrap. The first release run after it is merged fails in `publish` because the package is not on npm, and publishes none of the packages. Publish that package's tarball from the run's artifact as in step 3 above, configure its trusted publisher and publishing access as in steps 4 and 5, then re-run the failed jobs as in step 6: the new package is skipped as already published, and the others are published with it.
+3. Its own bootstrap. The first release run after it is merged fails in `publish` because the package is not on npm, and publishes none of the packages. Publish that package's tarball from the run's artifact as in step 3 above, configure its trusted publisher and publishing access as in steps 4 and 5, then re-run the failed jobs as in step 6: the new package is skipped as already published, and the others are published with it. The trusted publisher command for one package, with `--allow-publish` as npm 11.19 and later require:
+
+   ```bash
+   npm trust github "@crewlethq/<package>" --repository crewlet/uilet --file release.yml --environment npm-publish --allow-publish --yes
+   npm trust list "@crewlethq/<package>"
+   ```
 
 ---
 
