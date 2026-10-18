@@ -736,3 +736,27 @@ test('one word names one inset, on the card and on either section', () => {
   expect([px(at('sm'), 'padding-top'), px(at('sm'), 'padding-left')]).toEqual([8, 16]);
   expect([px(at('md'), 'padding-top'), px(at('md'), 'padding-left')]).toEqual([16, 16]);
 });
+
+test('asChild makes the child the card, holding the child’s own content once', () => {
+  const { container } = render(
+    <Card asChild padding="md">
+      <a href="#/settings/backups">
+        <span>Backups</span>
+      </a>
+    </Card>,
+  );
+  const links = container.querySelectorAll('a');
+  expect(links).toHaveLength(1);
+  expect(links[0]!.classList.contains('crewlet-card')).toBe(true);
+  expect(links[0]!.querySelector(':scope > span')?.textContent).toBe('Backups');
+});
+
+test('asChild on a button draws one button, never a button inside a button', () => {
+  const { container } = render(
+    <Card asChild interactive padding="sm">
+      <button type="button">Add</button>
+    </Card>,
+  );
+  expect(container.querySelectorAll('button')).toHaveLength(1);
+  expect(screen.getByRole('button', { name: 'Add' }).classList.contains('is-interactive')).toBe(true);
+});

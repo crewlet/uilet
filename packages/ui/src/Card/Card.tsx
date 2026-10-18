@@ -327,7 +327,10 @@ const CardRoot = ({
     },
     flush,
   );
-  const content = flush ? withBodies(slots.nodes, contentPadding) : children;
+  // `inner`, not `children`: with `asChild` the child element IS the card, so
+  // what goes inside it is the child's own children. Passing the child again
+  // drew it inside its own clone, a link in a link or a button in a button.
+  const content = flush ? withBodies(slots.nodes, contentPadding) : inner;
 
   /*
    * The header's chrome node, and who holds it. The node is STATE because a
