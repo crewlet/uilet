@@ -102,3 +102,12 @@ test('a section with no spacing named is the console band', () => {
   render(<Section spacing="md" title="Why Crewlet" data-testid="marketing">copy</Section>);
   expect(screen.getByTestId('marketing').className).toContain('crewlet-section--md');
 });
+
+test('the title never wraps for its hint: the hint gives way instead', () => {
+  // "What it can do" broke onto two lines beside a hint that still truncated,
+  // so both halves of the header lost.
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Section.css'), 'utf8');
+  const title = /\.crewlet-section__title\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(title).toMatch(/flex:\s*none/);
+  expect(title).toMatch(/white-space:\s*nowrap/);
+});
