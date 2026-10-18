@@ -1,0 +1,32 @@
+/*
+ * SlideStage: a slide laid out at its authored size and scaled to its box.
+ *
+ * The box clips: a pinned element authored past the stage's edge is cut there,
+ * as it is on a projector, rather than spilling over the next thumbnail.
+ */
+
+.crewlet-slide-stage {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  background: var(--color-surface-inset);
+}
+
+.crewlet-slide-stage--contain {
+  height: 100%;
+}
+
+.crewlet-slide-stage__frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+
+@media print {
+  .crewlet-slide-stage {
+    break-inside: avoid;
+    background: transparent;
+  }
+}
