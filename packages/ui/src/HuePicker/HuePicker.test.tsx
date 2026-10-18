@@ -50,3 +50,26 @@ test('draws each swatch in its own hue', () => {
     );
   }
 });
+
+test('offers no hue first, named by `none`, for a surface that need not carry one', () => {
+  const onValueChange = vi.fn();
+  render(<HuePicker label="Color" none="Plain" value="none" onValueChange={onValueChange} />);
+  const radios = screen.getAllByRole('radio');
+  expect(radios.map((radio) => radio.textContent)).toEqual(['Plain', ...NODE_HUES.map((hue) => NODE_HUE_NAMES[hue])]);
+  expect(screen.getByRole('radio', { checked: true }).textContent).toBe('Plain');
+  fireEvent.click(screen.getByRole('radio', { name: 'Blue' }));
+  expect(onValueChange).toHaveBeenLastCalledWith('blue');
+});
+
+test('reports `none` when no hue is chosen', () => {
+  const onValueChange = vi.fn();
+  render(<HuePicker label="Color" none="Plain" value="rose" onValueChange={onValueChange} />);
+  fireEvent.click(screen.getByRole('radio', { name: 'Plain' }));
+  expect(onValueChange).toHaveBeenLastCalledWith('none');
+});
+
+test('without `none` there is no such choice', () => {
+  render(<HuePicker label="Color" value="rose" onValueChange={() => {}} />);
+  expect(screen.queryByRole('radio', { name: 'Plain' })).toBeNull();
+  expect(screen.getAllByRole('radio')).toHaveLength(NODE_HUES.length);
+});

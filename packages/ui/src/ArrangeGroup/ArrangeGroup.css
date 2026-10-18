@@ -1,0 +1,170 @@
+/*
+ * ArrangeGroup: a titled band of blocks. The hue is the header's; the body
+ * stays the page's ground, so the cards inside keep their own contrast.
+ */
+
+.crewlet-arrange-group {
+  --crewlet-arrange-group-band: var(--color-surface-subtle);
+  --crewlet-arrange-group-line: var(--color-border-default);
+  --crewlet-arrange-group-ink: var(--color-text-primary);
+  --crewlet-arrange-group-mark: var(--color-border-strong);
+
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--crewlet-arrange-group-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-background);
+  overflow: clip;
+}
+
+.crewlet-arrange-group--purple { --crewlet-arrange-group-band: var(--color-node-purple-fill); --crewlet-arrange-group-line: var(--color-node-purple-line); --crewlet-arrange-group-ink: var(--color-node-purple-ink); --crewlet-arrange-group-mark: var(--color-node-purple); }
+.crewlet-arrange-group--cyan { --crewlet-arrange-group-band: var(--color-node-cyan-fill); --crewlet-arrange-group-line: var(--color-node-cyan-line); --crewlet-arrange-group-ink: var(--color-node-cyan-ink); --crewlet-arrange-group-mark: var(--color-node-cyan); }
+.crewlet-arrange-group--green { --crewlet-arrange-group-band: var(--color-node-green-fill); --crewlet-arrange-group-line: var(--color-node-green-line); --crewlet-arrange-group-ink: var(--color-node-green-ink); --crewlet-arrange-group-mark: var(--color-node-green); }
+.crewlet-arrange-group--amber { --crewlet-arrange-group-band: var(--color-node-amber-fill); --crewlet-arrange-group-line: var(--color-node-amber-line); --crewlet-arrange-group-ink: var(--color-node-amber-ink); --crewlet-arrange-group-mark: var(--color-node-amber); }
+.crewlet-arrange-group--rose { --crewlet-arrange-group-band: var(--color-node-rose-fill); --crewlet-arrange-group-line: var(--color-node-rose-line); --crewlet-arrange-group-ink: var(--color-node-rose-ink); --crewlet-arrange-group-mark: var(--color-node-rose); }
+.crewlet-arrange-group--blue { --crewlet-arrange-group-band: var(--color-node-blue-fill); --crewlet-arrange-group-line: var(--color-node-blue-line); --crewlet-arrange-group-ink: var(--color-node-blue-ink); --crewlet-arrange-group-mark: var(--color-node-blue); }
+
+.crewlet-arrange-group__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-row-lg);
+  padding: var(--spacing-1) var(--spacing-3) var(--spacing-1) var(--spacing-2);
+  border-bottom: 1px solid var(--crewlet-arrange-group-line);
+  background: var(--crewlet-arrange-group-band);
+}
+.crewlet-arrange-group.is-collapsed .crewlet-arrange-group__head {
+  border-bottom-color: transparent;
+}
+
+.crewlet-arrange-group__toggle {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  min-height: var(--size-row-sm);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--crewlet-arrange-group-ink);
+  font: inherit;
+  cursor: pointer;
+}
+/* Editing, the toggle is the chevron alone, a square of its own, so its
+   hover never runs into the name field beside it. */
+.crewlet-arrange-group__toggle.is-icon {
+  flex: 0 0 auto;
+  justify-content: center;
+  width: var(--size-row-sm);
+  padding: 0;
+}
+.crewlet-arrange-group__toggle:hover {
+  background: var(--color-surface-hover);
+}
+.crewlet-arrange-group__toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+}
+
+.crewlet-arrange-group__chevron {
+  flex-shrink: 0;
+  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+}
+.crewlet-arrange-group.is-collapsed .crewlet-arrange-group__chevron {
+  transform: rotate(-90deg);
+}
+
+.crewlet-arrange-group__title,
+.crewlet-arrange-group__title-field {
+  overflow: hidden;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  color: var(--crewlet-arrange-group-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Editing, the name is typed where it is read: the title itself, which
+   shows it is a field on hover and takes a ring when focused. */
+.crewlet-arrange-group__title-field {
+  /* As wide as the name, so the count sits just after it. */
+  field-sizing: content;
+  min-width: 3ch;
+  max-width: 100%;
+  height: var(--size-row-sm);
+  padding: 0 var(--spacing-2);
+  border: 1px dashed transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-family: inherit;
+  cursor: text;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default),
+    background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+.crewlet-arrange-group__title-field:hover {
+  border-color: var(--crewlet-arrange-group-mark);
+}
+/* The ring is drawn over the field's own edge, never beside it. */
+.crewlet-arrange-group__title-field:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -1px;
+  border-style: solid;
+  border-color: var(--color-focus);
+  background: var(--color-surface-background);
+}
+.crewlet-arrange-group__title-field::placeholder {
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-arrange-group__count {
+  flex-shrink: 0;
+}
+
+.crewlet-arrange-group__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-inline-start: auto;
+}
+
+.crewlet-arrange-group__body {
+  display: grid;
+  grid-template-columns: repeat(var(--crewlet-arrange-columns, 12), minmax(0, 1fr));
+  gap: var(--spacing-4);
+  align-items: stretch;
+  padding: var(--spacing-4);
+  min-height: 5rem;
+}
+.crewlet-arrange-group__body[data-reorder-over='true'] {
+  background: var(--color-brand-accent-soft);
+}
+
+.crewlet-arrange-group__empty {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: center;
+  min-height: 4rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-arrange-group__chevron,
+  .crewlet-arrange-group__title-field {
+    transition: none;
+  }
+}
+
+/* Arranging, the header is what a pointer moves the group by. */
+.crewlet-arrange-frame[draggable='true'] > .crewlet-arrange-frame__content > .crewlet-arrange-group > .crewlet-arrange-group__head {
+  cursor: grab;
+}

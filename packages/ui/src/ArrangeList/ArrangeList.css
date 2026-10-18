@@ -1,0 +1,94 @@
+/*
+ * ArrangeList: rows a reader puts in order and switches on and off.
+ *
+ * The row is a quiet inset band rather than a card: a panel holding eight of
+ * them is a list, and eight bordered boxes read as eight separate objects.
+ */
+
+.crewlet-arrange-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-arrange-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-row-lg);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) var(--spacing-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-arrange-list__item:hover {
+  border-color: var(--color-border-default);
+}
+
+/* The row being carried is a gap in the list, outlined where it will land. */
+.crewlet-arrange-list__item[data-reorder='dragging'] {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  background: transparent;
+}
+.crewlet-arrange-list__item[data-reorder='dragging'] > * {
+  opacity: 0.4;
+}
+
+.crewlet-arrange-list__handle {
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--color-text-tertiary);
+}
+.crewlet-arrange-list__handle:active {
+  cursor: grabbing;
+}
+
+.crewlet-arrange-list__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-arrange-list__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+/* The toggle takes the row's width, so its label is the row's target. */
+.crewlet-arrange-list__toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Off, the words step back; the switch itself already says off. */
+.crewlet-arrange-list__item.is-off .crewlet-arrange-list__icon,
+.crewlet-arrange-list__item.is-off .crewlet-switch__label,
+.crewlet-arrange-list__item.is-off .crewlet-checkbox__label {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-arrange-list__trailing {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.crewlet-arrange-list__moves {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-arrange-list__item {
+    transition: none;
+  }
+}

@@ -16,3 +16,9 @@
 .crewlet-hue-picker__swatch--amber { background: var(--color-node-amber); }
 .crewlet-hue-picker__swatch--rose { background: var(--color-node-rose); }
 .crewlet-hue-picker__swatch--blue { background: var(--color-node-blue); }
+
+/* No hue: a ring in the hairline, so the row still reads as swatches. */
+.crewlet-hue-picker__swatch--none {
+  box-sizing: border-box;
+  border: 1px solid var(--color-border-strong);
+}

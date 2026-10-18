@@ -1,0 +1,30 @@
+/*
+ * IconTile: a glyph on a tinted square. Each hue pairs its fill and its ink
+ * from one measured family (`--color-node-*`); left out, the brand accent's
+ * soft fill and ink. No edge: the tile sits inside a card that has one.
+ */
+.crewlet-icon-tile {
+  --crewlet-icon-tile-fill: var(--color-brand-accent-soft);
+  --crewlet-icon-tile-ink: var(--color-brand-accent-ink);
+  --crewlet-icon-tile-size: var(--size-row-md);
+
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--crewlet-icon-tile-size);
+  height: var(--crewlet-icon-tile-size);
+  border-radius: var(--radius-md);
+  background: var(--crewlet-icon-tile-fill);
+  color: var(--crewlet-icon-tile-ink);
+}
+
+.crewlet-icon-tile--sm { --crewlet-icon-tile-size: var(--size-row-sm); }
+.crewlet-icon-tile--lg { --crewlet-icon-tile-size: var(--size-row-lg); border-radius: var(--radius-lg); }
+
+.crewlet-icon-tile--purple { --crewlet-icon-tile-fill: var(--color-node-purple-fill); --crewlet-icon-tile-ink: var(--color-node-purple-ink); }
+.crewlet-icon-tile--cyan { --crewlet-icon-tile-fill: var(--color-node-cyan-fill); --crewlet-icon-tile-ink: var(--color-node-cyan-ink); }
+.crewlet-icon-tile--green { --crewlet-icon-tile-fill: var(--color-node-green-fill); --crewlet-icon-tile-ink: var(--color-node-green-ink); }
+.crewlet-icon-tile--amber { --crewlet-icon-tile-fill: var(--color-node-amber-fill); --crewlet-icon-tile-ink: var(--color-node-amber-ink); }
+.crewlet-icon-tile--rose { --crewlet-icon-tile-fill: var(--color-node-rose-fill); --crewlet-icon-tile-ink: var(--color-node-rose-ink); }
+.crewlet-icon-tile--blue { --crewlet-icon-tile-fill: var(--color-node-blue-fill); --crewlet-icon-tile-ink: var(--color-node-blue-ink); }

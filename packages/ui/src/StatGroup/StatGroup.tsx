@@ -9,6 +9,12 @@ export interface StatGroupProps extends HTMLAttributes<HTMLDivElement> {
    * nothing to do with the numbers.
    */
   columns?: 2 | 3 | 4;
+  /**
+   * Inside another card: the row gives up its own surface, hairline and
+   * corner and keeps only the hairlines between its tiles, so a card holding
+   * it does not draw a box inside a box.
+   */
+  flush?: boolean | undefined;
   children?: ReactNode;
 }
 
@@ -20,11 +26,11 @@ export interface StatGroupProps extends HTMLAttributes<HTMLDivElement> {
  * md breakpoint it drops to two columns, which is the last count at which a
  * six-character number still fits on one line of a phone.
  */
-export function StatGroup({ columns = 4, className, children, ...rest }: StatGroupProps) {
+export function StatGroup({ columns = 4, flush = false, className, children, ...rest }: StatGroupProps) {
   return (
     <div
       {...rest}
-      className={cx('crewlet-stat-group', className)}
+      className={cx('crewlet-stat-group', flush && 'crewlet-stat-group--flush', className)}
       style={{ '--crewlet-stat-group-cols': columns, ...rest.style } as CSSProperties}
     >
       {children}

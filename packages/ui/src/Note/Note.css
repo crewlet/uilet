@@ -1,0 +1,58 @@
+/*
+ * Note: words on a coloured paper. Each hue pairs its fill with its own ink.
+ */
+
+.crewlet-note {
+  --crewlet-note-paper: var(--color-surface-subtle);
+  --crewlet-note-edge: var(--color-border-default);
+  --crewlet-note-ink: var(--color-text-primary);
+
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--spacing-4);
+  overflow: auto;
+  border: 1px solid var(--crewlet-note-edge);
+  border-radius: var(--radius-lg);
+  background: var(--crewlet-note-paper);
+  color: var(--crewlet-note-ink);
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-note--purple { --crewlet-note-paper: var(--color-node-purple-fill); --crewlet-note-edge: var(--color-node-purple-line); --crewlet-note-ink: var(--color-node-purple-ink); }
+.crewlet-note--cyan { --crewlet-note-paper: var(--color-node-cyan-fill); --crewlet-note-edge: var(--color-node-cyan-line); --crewlet-note-ink: var(--color-node-cyan-ink); }
+.crewlet-note--green { --crewlet-note-paper: var(--color-node-green-fill); --crewlet-note-edge: var(--color-node-green-line); --crewlet-note-ink: var(--color-node-green-ink); }
+.crewlet-note--amber { --crewlet-note-paper: var(--color-node-amber-fill); --crewlet-note-edge: var(--color-node-amber-line); --crewlet-note-ink: var(--color-node-amber-ink); }
+.crewlet-note--rose { --crewlet-note-paper: var(--color-node-rose-fill); --crewlet-note-edge: var(--color-node-rose-line); --crewlet-note-ink: var(--color-node-rose-ink); }
+.crewlet-note--blue { --crewlet-note-paper: var(--color-node-blue-fill); --crewlet-note-edge: var(--color-node-blue-line); --crewlet-note-ink: var(--color-node-blue-ink); }
+
+.crewlet-note--center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.crewlet-note--lg {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-tight);
+}
+
+/* Prose inside takes the note's ink, links included. */
+.crewlet-note :is(p, li, h2, h3, h4, strong, em) {
+  color: inherit;
+}
+.crewlet-note a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.crewlet-note > :first-child {
+  margin-top: 0;
+}
+.crewlet-note > :last-child {
+  margin-bottom: 0;
+}

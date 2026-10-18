@@ -36,6 +36,7 @@
       "hover": { "value": "#c9cfdc" },
       "strong": { "value": "#c9cfdc" },
       "strongHover": { "value": "#acb6cc", "comment": "The default-to-strong step, dE 7.88, taken once more." },
+      "hatch": { "value": "#dbdfe8", "comment": "The arranging hatch's line: strong at 60% over the sheet. A board under construction draws its diagonals in it, and so does a note standing on that board, which is why it is a colour of its own and not the strong border faded on a layer." },
       "control": { "value": "#777a83", "comment": "The neutral mark, #a5a8b1, darkened dE 15.20: it measured 1.66:1 on a pressed row on the frame. The plain border is never a control's edge: it measures 1.19:1 on the card, which is a boundary a reader cannot find." }
     },
     "focus": { "value": "#735af2", "comment": "The accent, unmoved: 3.29:1 at its tightest, on a pressed row on the frame." },

@@ -16,6 +16,8 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **The 59 drawings on the approved design's artboards** (Home, Inbox, the command palette, the navigation map, the board, a task, a trace, the org chart, an agent, knowledge, spend and settings). Each is the artboard's own rendering of a Lucide icon on the same grid, at the same 1.75 stroke, and is vendored as that icon: `activity`, `arrow-down-to-line`, `arrow-right`, `arrow-up-right`, `bell`, `book-open`, `brain`, `calendar`, `chart-no-axes-gantt`, `check`, `chevron-down`, `chevron-right`, `chevron-up`, `circle-check`, `clock`, `code`, `coins`, `columns-3`, `command`, `corner-down-left`, `cpu`, `database`, `ellipsis`, `file-text`, `globe`, `hash`, `house`, `inbox`, `info`, `key`, `link`, `list`, `list-filter`, `maximize-2`, `message-square`, `minus`, `network`, `paperclip`, `pause`, `pin`, `plug`, `plus`, `search`, `send`, `server`, `settings-2`, `shield`, `sliders-vertical`, `square-kanban`, `star`, `sun`, `table`, `triangle-alert`, `user`, `users`, `wand-sparkles`, `wrench`, `x` and `zap`.
 - **`badge-percent`**, the discount note on the Storybook's `PricingCard`, which drew Material's `tag`, a hash sign, beside "Save $5 (10% off)".
 - **`circle`**, the Todo state a task row leads with in the command palette's Storybook story, beside `circle-check` for Done. The artboard draws both states as marks of its own on a 14 unit grid (a bare ring, and a filled disc with a check cut out of it) rather than as Lucide icons, so neither is among the 59 above; the ring is Lucide's `circle` stroke for stroke, and Done keeps `circle-check` in the success ink rather than a filled disc, because `FILLABLE` paints a drawing's inside in the same colour as its stroke, which would fill the check in.
+- **The arrangeable page in `@crewlethq/ui`**: `move-diagonal-2` for `ArrangeFrame`'s resize corner, `layout-grid` for a widget tray, `group`, `heading`, `separator-horizontal` and `sticky-note` for the layout widgets a reader adds to a page (a group, a heading, a divider and a note), and `ungroup` and `fold-vertical` for a block's toolbar (take a group apart, fit a block's height to its content).
+- **The widget tray of an arranged page**, each drawn on an `IconTile` in `@crewlethq/ui`: `gauge` for a row of figures, `radio` for what is live now, `chart-column` for a daily chart, `chart-pie` for a split by team, `folder-kanban` for a project, `rotate-ccw-clock` for recent activity and `message-circle-question-mark` for a question waiting on the reader.
 - **The formatting bar of `MarkdownEditor`** in `@crewlethq/ui`: `heading-2` and `heading-3` for the two heading levels a page's outline lists, `bold`, `italic`, `list-ordered` for a numbered list beside `list`, and `list-checks` for a checklist. Each is a control a writer recognises by its drawing, so the bar draws all of them as glyphs rather than spelling some as letters ("H2", "B") beside the glyphs of the rest.
 - **`mouse-pointer-2`**, the pointer a collaborator's `LiveCursor` in `@crewlethq/ui` is drawn with, beside its name flag, on a board or a page that shares cursors.
 
@@ -67,7 +69,9 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `calendar` | `CalendarGlyph` | `package/icons/calendar.svg` |
 | `calendar-clock` | `CalendarClockGlyph` | `package/icons/calendar-clock.svg` |
 | `camera` | `CameraGlyph` | `package/icons/camera.svg` |
+| `chart-column` | `ChartColumnGlyph` | `package/icons/chart-column.svg` |
 | `chart-no-axes-gantt` | `ChartNoAxesGanttGlyph` | `package/icons/chart-no-axes-gantt.svg` |
+| `chart-pie` | `ChartPieGlyph` | `package/icons/chart-pie.svg` |
 | `check` | `CheckGlyph` | `package/icons/check.svg` |
 | `chevron-down` | `ChevronDownGlyph` | `package/icons/chevron-down.svg` |
 | `chevron-left` | `ChevronLeftGlyph` | `package/icons/chevron-left.svg` |
@@ -101,13 +105,18 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `file-code` | `FileCodeGlyph` | `package/icons/file-code.svg` |
 | `file-text` | `FileTextGlyph` | `package/icons/file-text.svg` |
 | `flag` | `FlagGlyph` | `package/icons/flag.svg` |
+| `fold-vertical` | `FoldVerticalGlyph` | `package/icons/fold-vertical.svg` |
 | `folder` | `FolderGlyph` | `package/icons/folder.svg` |
 | `folder-input` | `FolderInputGlyph` | `package/icons/folder-input.svg` |
+| `folder-kanban` | `FolderKanbanGlyph` | `package/icons/folder-kanban.svg` |
 | `folder-plus` | `FolderPlusGlyph` | `package/icons/folder-plus.svg` |
 | `fullscreen` | `FullscreenGlyph` | `package/icons/fullscreen.svg` |
+| `gauge` | `GaugeGlyph` | `package/icons/gauge.svg` |
 | `globe` | `GlobeGlyph` | `package/icons/globe.svg` |
 | `grip-vertical` | `GripVerticalGlyph` | `package/icons/grip-vertical.svg` |
+| `group` | `GroupGlyph` | `package/icons/group.svg` |
 | `hash` | `HashGlyph` | `package/icons/hash.svg` |
+| `heading` | `HeadingGlyph` | `package/icons/heading.svg` |
 | `heading-2` | `Heading2Glyph` | `package/icons/heading-2.svg` |
 | `heading-3` | `Heading3Glyph` | `package/icons/heading-3.svg` |
 | `house` | `HouseGlyph` | `package/icons/house.svg` |
@@ -118,6 +127,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `key` | `KeyGlyph` | `package/icons/key.svg` |
 | `layers` | `LayersGlyph` | `package/icons/layers.svg` |
 | `layout-dashboard` | `LayoutDashboardGlyph` | `package/icons/layout-dashboard.svg` |
+| `layout-grid` | `LayoutGridGlyph` | `package/icons/layout-grid.svg` |
 | `link` | `LinkGlyph` | `package/icons/link.svg` |
 | `list` | `ListGlyph` | `package/icons/list.svg` |
 | `list-checks` | `ListChecksGlyph` | `package/icons/list-checks.svg` |
@@ -127,12 +137,14 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `maximize` | `MaximizeGlyph` | `package/icons/maximize.svg` |
 | `maximize-2` | `Maximize2Glyph` | `package/icons/maximize-2.svg` |
 | `menu` | `MenuGlyph` | `package/icons/menu.svg` |
+| `message-circle-question-mark` | `MessageCircleQuestionMarkGlyph` | `package/icons/message-circle-question-mark.svg` |
 | `message-square` | `MessageSquareGlyph` | `package/icons/message-square.svg` |
 | `minimize` | `MinimizeGlyph` | `package/icons/minimize.svg` |
 | `minus` | `MinusGlyph` | `package/icons/minus.svg` |
 | `monitor` | `MonitorGlyph` | `package/icons/monitor.svg` |
 | `moon` | `MoonGlyph` | `package/icons/moon.svg` |
 | `mouse-pointer-2` | `MousePointer2Glyph` | `package/icons/mouse-pointer-2.svg` |
+| `move-diagonal-2` | `MoveDiagonal2Glyph` | `package/icons/move-diagonal-2.svg` |
 | `network` | `NetworkGlyph` | `package/icons/network.svg` |
 | `package` | `PackageGlyph` | `package/icons/package.svg` |
 | `palette` | `PaletteGlyph` | `package/icons/palette.svg` |
@@ -143,6 +155,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `plug` | `PlugGlyph` | `package/icons/plug.svg` |
 | `plus` | `PlusGlyph` | `package/icons/plus.svg` |
 | `power` | `PowerGlyph` | `package/icons/power.svg` |
+| `radio` | `RadioGlyph` | `package/icons/radio.svg` |
 | `redo` | `RedoGlyph` | `package/icons/redo.svg` |
 | `refresh-ccw` | `RefreshCcwGlyph` | `package/icons/refresh-ccw.svg` |
 | `refresh-cw` | `RefreshCwGlyph` | `package/icons/refresh-cw.svg` |
@@ -153,6 +166,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `save` | `SaveGlyph` | `package/icons/save.svg` |
 | `search` | `SearchGlyph` | `package/icons/search.svg` |
 | `send` | `SendGlyph` | `package/icons/send.svg` |
+| `separator-horizontal` | `SeparatorHorizontalGlyph` | `package/icons/separator-horizontal.svg` |
 | `server` | `ServerGlyph` | `package/icons/server.svg` |
 | `settings` | `SettingsGlyph` | `package/icons/settings.svg` |
 | `settings-2` | `Settings2Glyph` | `package/icons/settings-2.svg` |
@@ -164,12 +178,14 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `square-kanban` | `SquareKanbanGlyph` | `package/icons/square-kanban.svg` |
 | `square-terminal` | `SquareTerminalGlyph` | `package/icons/square-terminal.svg` |
 | `star` | `StarGlyph` | `package/icons/star.svg` |
+| `sticky-note` | `StickyNoteGlyph` | `package/icons/sticky-note.svg` |
 | `sun` | `SunGlyph` | `package/icons/sun.svg` |
 | `table` | `TableGlyph` | `package/icons/table.svg` |
 | `target` | `TargetGlyph` | `package/icons/target.svg` |
 | `trash` | `TrashGlyph` | `package/icons/trash.svg` |
 | `triangle-alert` | `TriangleAlertGlyph` | `package/icons/triangle-alert.svg` |
 | `undo` | `UndoGlyph` | `package/icons/undo.svg` |
+| `ungroup` | `UngroupGlyph` | `package/icons/ungroup.svg` |
 | `upload` | `UploadGlyph` | `package/icons/upload.svg` |
 | `user` | `UserGlyph` | `package/icons/user.svg` |
 | `user-plus` | `UserPlusGlyph` | `package/icons/user-plus.svg` |

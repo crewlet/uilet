@@ -1,0 +1,37 @@
+/* Divider: a rule across its space, with its name at its start or in its middle. */
+
+.crewlet-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-height: var(--size-row-sm);
+  min-width: 0;
+}
+.crewlet-divider::before,
+.crewlet-divider::after {
+  content: '';
+  flex: 1 1 auto;
+  border-top: 1px solid var(--color-border-strong);
+}
+/* One rule unless the words sit in the middle of it. */
+.crewlet-divider:not(.crewlet-divider--center)::before {
+  display: none;
+}
+.crewlet-divider:not(.crewlet-divider--labelled)::before {
+  display: block;
+}
+.crewlet-divider:not(.crewlet-divider--labelled)::after {
+  display: none;
+}
+
+.crewlet-divider__label {
+  flex: 0 1 auto;
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -20,6 +20,13 @@
   overflow: hidden;
 }
 
+/* Inside another card: the card's surface and edge are the row's. */
+.crewlet-stat-group--flush {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-none);
+}
+
 /*
  * A tile inside the row brings no surface of its own, whether or not its
  * caller remembered `flush`. The group draws one card and the hairlines

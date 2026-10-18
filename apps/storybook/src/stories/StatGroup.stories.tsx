@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { StatCard, StatGroup } from '@crewlethq/ui';
+import { Card, StatCard, StatGroup } from '@crewlethq/ui';
 
 const meta: Meta<typeof StatGroup> = {
   title: 'UI/StatGroup',
@@ -63,5 +63,24 @@ export const StillLoading: Story = {
       <StatCard label="Input" value="0" loading />
       <StatCard label="Output" value="0" loading />
     </StatGroup>
+  ),
+};
+
+/**
+ * Inside another card, `flush`: the card is the row's surface and edge, and
+ * only the hairlines between the tiles are the row's own.
+ */
+export const InsideACard: Story = {
+  render: () => (
+    <Card padding="none">
+      <Card.Header>
+        <Card.Title as="h3">Nodes</Card.Title>
+      </Card.Header>
+      <StatGroup flush columns={3}>
+        <StatCard label="Live" value="3" tone="success" />
+        <StatCard label="Drifted" value="0" />
+        <StatCard label="Stranded seats" value="0" />
+      </StatGroup>
+    </Card>
   ),
 };

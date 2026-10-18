@@ -100,6 +100,10 @@
       "strongHover": {
         "value": "#b8b8c8"
       },
+      "hatch": {
+        "value": "#61616f",
+        "comment": "The arranging hatch's line: strong at 60% over the sheet. A board under construction draws its diagonals in it, and so does a note standing on that board, which is why it is a colour of its own and not the strong border faded on a layer."
+      },
       "control": {
         "value": "#a2a2b4",
         "comment": "A step the kit draws: the design draws no control boundary; it starts from the neutral mark. Placed where every rule holds."

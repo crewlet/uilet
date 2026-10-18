@@ -825,3 +825,35 @@ test('the frame with the corners is the frame that clips them, and a sheet has n
   expect(px(sheet!, 'border-radius')).toBe(0);
   expect(getComputedStyle(sheet!).overflow).not.toBe('hidden');
 });
+
+test('a step back leads the head, named for where it goes, and only goes back', () => {
+  let back = 0;
+  let closed = 0;
+  render(
+    <Modal
+      open
+      variant="sheet"
+      title="Add Page shortcut"
+      onBack={() => (back += 1)}
+      backLabel="Back to widgets"
+      onClose={() => (closed += 1)}
+    >
+      <p>Options</p>
+    </Modal>,
+  );
+  const control = screen.getByRole('button', { name: 'Back to widgets' });
+  const head = control.closest('.crewlet-modal__header')!;
+  expect(head.firstElementChild).toBe(control);
+  fireEvent.click(control);
+  expect(back).toBe(1);
+  expect(closed).toBe(0);
+});
+
+test('no step back is drawn unless one is asked for', () => {
+  render(
+    <Modal open variant="sheet" title="Add to Home" onClose={() => {}}>
+      <p>Widgets</p>
+    </Modal>,
+  );
+  expect(document.querySelector('.crewlet-modal__back')).toBeNull();
+});

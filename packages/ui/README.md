@@ -41,15 +41,16 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Area | Components |
 | ---- | ---------- |
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `DownloadButton`, `Kbd` |
-| Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document` and `DocumentTitle`, `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime` |
+| Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document` and `DocumentTitle`, `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider` |
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor` |
-| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow` |
+| Data display | `DataTable`, `CopyableCell`, `Table`, `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `safeFilename`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
+| Arranging a page | `ArrangeBoard`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
 | Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `AccessDeniedCard`, and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
@@ -200,6 +201,22 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.19.0
+
+0.19.0 adds what a page needs to be arranged by its reader: blocks they move, resize and group on a board, the layout pieces they add between them, and the tray those come from. The engine console's Home is built from it.
+
+**`useReorder` and `useReorderLists`** put items in order within one list or across several (a page and the groups on it), by drag, by keyboard and by command. The handle is a named control the arrow keys move from. Another list shows where a dragged item will land (`data-reorder-target`, with `data-reorder-line` saying whether the mark runs beside the item or across it) and the move is made on the drop. Every move is announced and glides unless the reader asked for reduced motion. `accepts` refuses a drop (a group inside a group), `moveTo` moves an item to another list by command, and `moveKey` is exported.
+
+**`ArrangeBoard`** is the ground an arranged page stands on: a fine hatch at rest, and the page's columns as lanes while a block is carried or resized. Its hatch is the new **`--color-border-hatch` token** in `@crewlethq/tokens`, measured in every theme, and a `Note` on the board shows it through its paper. **`ArrangeFrame`** is one block on it: layout only at rest; while editing, the block is its own move handle, one accent ring is drawn over its edge on hover or focus, and its toolbar (an `actions` slot and Remove) and resize grips sit on that ring. **`useGridResize`** snaps a resize to twelve columns and 16px rows, from the corner or, for width alone, the edge, by pointer and by keyboard. **`ArrangeGroup`** is a titled band that holds blocks and folds away, its title edited in place, and **`ArrangeList`** is a list a reader orders and switches on and off.
+
+**`Note`** is words on coloured paper, in any node hue or plain. **`Divider`** is a rule between parts of a page, with an optional label. **`PinTile`** is something a reader pinned, with the one or two facts that make opening it unnecessary. **`IconTile`** is a glyph on a hue-tinted square, what a choice in a catalog is told apart by before its name is read.
+
+**`Modal` takes `onBack` and `backLabel`**, a step back that leads the head for a surface reached from another, and **`backdrop="clear"`**, for a sheet that edits the page beside it. **`StatGroup` takes `flush`**, for a row of figures inside another card. **`HuePicker` takes `none`**, which offers no hue first under the name you give it ("Plain") and then reports `"none"`.
+
+**A `Card` with `asChild` holds its child's own content.** With no header slots it used to draw the child again inside its own clone: a link inside a link, a button inside a button.
+
+What to change: nothing, unless code extends `HuePickerProps` as an interface; it is a type now, so intersect it instead. Everything else is new.
 
 ## Changes in 0.18.0
 

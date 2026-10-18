@@ -288,6 +288,49 @@ export const SheetCommittedFromItsHead: Story = {
   },
 };
 
+/**
+ * A sheet reached from another: the step back leads the head, beside the
+ * title it returns from, and the commit stays at the head's end.
+ */
+export const SheetWithAWayBack: Story = {
+  render: function SheetBackStory() {
+    const [at, setAt] = useState<'closed' | 'library' | 'options'>('closed');
+    return (
+      <>
+        <Button onClick={() => setAt('library')}>Add a widget</Button>
+        <Modal
+          open={at === 'library'}
+          variant="sheet"
+          title="Add to Home"
+          onClose={() => setAt('closed')}
+          stackBody
+        >
+          <Button variant="secondary" onClick={() => setAt('options')}>
+            Page shortcut
+          </Button>
+        </Modal>
+        <Modal
+          open={at === 'options'}
+          variant="sheet"
+          title="Add Page shortcut"
+          subtitle="Choose what it shows, then add it."
+          onBack={() => setAt('library')}
+          backLabel="Back to widgets"
+          onClose={() => setAt('closed')}
+          stackBody
+          headerActions={
+            <Button variant="primary" size="small" onClick={() => setAt('closed')}>
+              Add to Home
+            </Button>
+          }
+        >
+          <FormField label="Page">{({ id }) => <Input id={id} placeholder="Backups" />}</FormField>
+        </Modal>
+      </>
+    );
+  },
+};
+
 /** A destructive prompt, with an acknowledgement in its body. */
 export const ConfirmDestructive: Story = {
   render: function ConfirmDestructiveStory() {

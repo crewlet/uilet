@@ -36,6 +36,7 @@
       "hover": { "value": "#2d3448" },
       "strong": { "value": "#2d3448", "comment": "The approved #2b3245, lifted dE 0.85 along lightness: as the edge of a raised chip on an inset well inside a raised surface it measured dE 2.43, under the hairline dE 3 a chip's edge keeps on every ground." },
       "strongHover": { "value": "#424f74", "comment": "The default-to-strong step, dE 10.86, taken once more." },
+      "hatch": { "value": "#202534", "comment": "The arranging hatch's line: strong at 60% over the sheet. A board under construction draws its diagonals in it, and so does a note standing on that board, which is why it is a colour of its own and not the strong border faded on a layer." },
       "control": { "value": "#7f879c", "comment": "The neutral mark, #6a7186, lightened dE 7.38: it measured 2.23:1 on a pressed row inside a raised surface." }
     },
     "focus": { "value": "#8572fe", "comment": "The accent, lifted dE 7.01 along lightness, the least lift that clears the floor (3.01:1): the accent itself measured 2.25:1 on a pressed row inside a raised surface, under the 3:1 a ring clears. The accent cannot take the ring's place: at the ring's lightness the primary action's white label measures 3.60:1." },
