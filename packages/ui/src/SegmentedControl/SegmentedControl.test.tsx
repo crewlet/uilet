@@ -244,6 +244,28 @@ test('under manual activation the tab stop follows focus rather than the choice'
   expect(radios.map((radio) => radio.tabIndex)).toEqual([-1, -1, 0, -1]);
 });
 
+test('a manual row puts the stop back on the choice when the value changes from outside', () => {
+  const row = (value: string) => (
+    <SegmentedControl
+      label="Event kind"
+      semantics="radio"
+      activate="manual"
+      value={value}
+      options={kinds}
+      onValueChange={() => {}}
+    />
+  );
+  const { rerender } = render(row('all'));
+  const radios = screen.getAllByRole('radio') as HTMLButtonElement[];
+  radios[0]!.focus();
+  fireEvent.keyDown(radios[0]!, { key: 'ArrowRight' });
+  expect(radios.map((radio) => radio.tabIndex)).toEqual([-1, 0, -1, -1]);
+  radios[1]!.blur();
+  // Back, or a link, chose the last option without the row.
+  rerender(row('fault'));
+  expect(radios.map((radio) => radio.tabIndex)).toEqual([-1, -1, -1, 0]);
+});
+
 test('a pointer press moves the manual tab stop too', () => {
   render(
     <SegmentedControl

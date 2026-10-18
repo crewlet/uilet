@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Count } from '../Count/index.js';
 import { tabId } from '../Tabs/index.js';
 import { tabStop, useRoving } from '../Tabs/roving.js';
@@ -180,7 +180,7 @@ export function SegmentedControl<T extends string = string>({
   const radio = semantics === 'radio';
   const manual = radio && activate === 'manual';
   const cards = options.some((option) => option.description !== undefined);
-  const { buttons, onKeyDown, onFocusAt, focused } = useRoving(
+  const { buttons, onKeyDown, onFocusAt, reset, focused } = useRoving(
     options.length,
     radio && !manual
       ? (index) => {
@@ -190,6 +190,16 @@ export function SegmentedControl<T extends string = string>({
       : null,
     { followFocus: manual },
   );
+  /*
+   * A VALUE CHANGED FROM OUTSIDE THE ROW (Back, a link, another control) puts
+   * the stop back on the chosen option. Left where focus last landed, a reader
+   * tabbing in after Back arrived on an option that was no longer the choice.
+   */
+  const [seen, setSeen] = useState(value);
+  if (seen !== value) {
+    setSeen(value);
+    reset();
+  }
   const chosenIndex = Math.max(
     0,
     options.findIndex((option) => option.value === value),
