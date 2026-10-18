@@ -412,6 +412,15 @@ const ranges = [
   { value: 'month', label: '30 days' },
 ];
 
+test('a pill row wraps inside its container rather than running past it', () => {
+  const uninstall = installSheets('Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
+  render(<SegmentedControl label="Time range" semantics="radio" value="week" options={ranges} onValueChange={() => {}} />);
+  const row = getComputedStyle(screen.getByRole('radiogroup', { name: 'Time range' }));
+  expect(row.flexWrap).toBe('wrap');
+  expect(row.maxWidth).toBe('100%');
+  uninstall();
+});
+
 test('the row is a raised well with a card chip in it, in both palettes', () => {
   const transparent = (value: string) => value === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(value);
   for (const theme of ['dark', 'light'] as const) {
