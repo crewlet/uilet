@@ -95,6 +95,10 @@
       "strongHover": {
         "value": "#c2c2bc"
       },
+      "hatch": {
+        "value": "#e2e2df",
+        "comment": "The arranging hatch's line: strong at 60% over the sheet. A board under construction draws its diagonals in it, and so does a note standing on that board, which is why it is a colour of its own and not the strong border faded on a layer."
+      },
       "control": {
         "value": "#7b7a81",
         "comment": "The design's #88888f, moved dE 4.63. At the design value: a control boundary clears 3:1, measured 2.49:1, worst on a pressed row on the frame."

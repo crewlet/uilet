@@ -96,6 +96,10 @@
       "strongHover": {
         "value": "#b6b2c8"
       },
+      "hatch": {
+        "value": "#dbd8e7",
+        "comment": "The arranging hatch's line: strong at 60% over the sheet. A board under construction draws its diagonals in it, and so does a note standing on that board, which is why it is a colour of its own and not the strong border faded on a layer."
+      },
       "control": {
         "value": "#4c495b"
       }
