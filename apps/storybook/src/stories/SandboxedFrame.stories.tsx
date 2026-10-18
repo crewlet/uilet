@@ -58,7 +58,7 @@ interface DocumentArgs {
  * take the port, and follow the theme on it. Opened on its own it has no
  * parent to greet and says so.
  */
-function ArtifactDocument({ silent = false, bridgeMin = FRAME_BRIDGE.min, bridgeMax = FRAME_BRIDGE.max }: DocumentArgs) {
+function ArtifactDocumentPage({ silent = false, bridgeMin = FRAME_BRIDGE.min, bridgeMax = FRAME_BRIDGE.max }: DocumentArgs) {
   const [port, setPort] = useState<MessagePort | null>(null);
   const [theme, setTheme] = useState<FrameTheme | null>(null);
 
@@ -109,11 +109,14 @@ function ArtifactDocument({ silent = false, bridgeMin = FRAME_BRIDGE.min, bridge
   );
 }
 
-/** The document embedded by the stories below. It is a story so the frame can load it by URL. */
-export const ArtifactDocumentStory: StoryObj<DocumentArgs> = {
-  name: 'Artifact document',
+/**
+ * The document embedded by the stories below. It is a story so the frame can
+ * load it by URL, and its id (`ui-sandboxedframe--artifact-document`) is the
+ * one `documentUrl` names, so its export keeps this name.
+ */
+export const ArtifactDocument: StoryObj<DocumentArgs> = {
   args: { silent: false, bridgeMin: FRAME_BRIDGE.min, bridgeMax: FRAME_BRIDGE.max },
-  render: (args) => <ArtifactDocument {...args} />,
+  render: (args) => <ArtifactDocumentPage {...args} />,
 };
 
 const THEMES: FrameTheme[] = [
