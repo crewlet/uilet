@@ -202,3 +202,9 @@ export const VEIL_BAND: readonly number[];
 
 /** The alpha the veil draws its own root's frame at. */
 export const VEIL_ALPHA: number;
+
+/** The six node hues a collaborator's presence marks are drawn in, held to 3:1 as marks on every rung. */
+export const PRESENCE_HUES: readonly string[];
+
+/** The ink of the name on a presence flag, held to 4.5:1 on every presence hue. */
+export const PRESENCE_FLAG_TEXT: string;

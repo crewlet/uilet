@@ -307,6 +307,27 @@ const labelOf = (step) => (step.startsWith('--color-feedback-danger') ? DESTRUCT
 export const AVATAR_TINTS = Array.from({ length: 10 }, (_, i) => `--color-avatar-tint-${i}`);
 
 // ---------------------------------------------------------------------------
+// Presence
+// ---------------------------------------------------------------------------
+
+/**
+ * The six node hues a collaborator's presence is drawn in, and the ink of the
+ * name flag filled with each.
+ *
+ * PRESENCE IS THE NARROW EXCEPTION to colour carrying state: a collaborator's
+ * hue ties their cursor, their selection ring, their cell outline and their
+ * name flag to their name, and is spent on nothing else. Two promises follow.
+ * The flag's name is TEXT on the hue, so it clears 4.5:1 there in every
+ * palette; and the ring and the cursor are MARKS on content, so the hue clears
+ * 3:1 on every rung a sheet or a page can stand on. The high-contrast theme is
+ * held to the same 4.5: the hue is the collaborator's identity rather than a
+ * palette's step, so it is not re-tuned per theme, and the name is also said
+ * in words wherever presence is listed.
+ */
+export const PRESENCE_HUES = ['purple', 'cyan', 'green', 'amber', 'rose', 'blue'].map((hue) => `--color-node-${hue}`);
+export const PRESENCE_FLAG_TEXT = '--color-presence-flag-text';
+
+// ---------------------------------------------------------------------------
 // The rail
 // ---------------------------------------------------------------------------
 
@@ -872,6 +893,17 @@ function checkState(state, values, profile, push, theme = { tint: null, contrast
   for (const [ink, fill] of MARK_ON_FILL) {
     const low = worst(colour(ink), opaque.map(([name, rgb]) => [`${fill} on ${name}`, flatten(values.get(fill), rgb)]));
     say('a glyph clears 3:1 on its own fill', low.ratio >= 3, `${ink} on ${fill}`, low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
+  }
+
+  // PRESENCE. See PRESENCE_HUES.
+  {
+    const ink = colour(PRESENCE_FLAG_TEXT);
+    const low = worst(ink, PRESENCE_HUES.map((name) => [name, colour(name)]));
+    say('a presence flag name clears 4.5:1 on every node hue', low.ratio >= 4.5, PRESENCE_FLAG_TEXT, low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
+    for (const name of PRESENCE_HUES) {
+      const mark = worst(colour(name), opaque);
+      say('a presence hue clears 3:1 as a mark', mark.ratio >= 3, name, mark.ratio, `${mark.ratio.toFixed(2)}:1 (worst on ${mark.name})`);
+    }
   }
 
   // THE PRIMARY ACTION'S STEPS. See ACTION_STEPS.

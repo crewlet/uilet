@@ -199,6 +199,11 @@
         "value": "#264588"
       }
     },
+    "presence": {
+      "flagText": {
+        "value": "#ffffff"
+      }
+    },
     "scrollbar": {
       "value": "rgba(7, 8, 13, 0.2)"
     },
