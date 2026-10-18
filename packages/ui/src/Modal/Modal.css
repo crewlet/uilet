@@ -57,6 +57,12 @@
 }
 
 /* Inside a LayerHost the overlay covers the host, not the window. */
+/* The page behind stays as it is: see `backdrop` in Modal.tsx. */
+.crewlet-modal-overlay--clear {
+  background: transparent;
+  backdrop-filter: none;
+}
+
 .crewlet-modal-overlay--in-host {
   position: absolute;
 }
@@ -374,6 +380,14 @@
 .crewlet-modal__close {
   flex-shrink: 0;
   margin: calc(var(--spacing-1) * -1);
+}
+
+/* The step back leads the head, its glyph on the title's inline start, as
+   the close control's sits on the head's end. */
+.crewlet-modal__back {
+  flex-shrink: 0;
+  margin-inline-start: calc(var(--spacing-2) * -1);
+  margin-block: calc(var(--spacing-1) * -1);
 }
 
 .crewlet-modal__body {

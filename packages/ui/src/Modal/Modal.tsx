@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { XGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronLeftGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { focusables, useBodyScrollLock, useLayerContainer, useModalLayer } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
@@ -108,6 +108,18 @@ export interface ModalProps extends FrameAttributes {
    * one glance keeps its actions in the foot, where the eye ends up.
    */
   headerActions?: ReactNode;
+  /**
+   * A step back, drawn first in the head, before the title.
+   *
+   * For a surface reached FROM another one that stays the reader's place: a
+   * widget's options opened from a library of widgets, a record opened from a
+   * list in the same sheet. The way back belongs where the reader looks to
+   * learn where they are, beside the title, and not in a foot they have to
+   * scroll to. Closing is still the close control; this only goes back.
+   */
+  onBack?: (() => void) | undefined;
+  /** The back control's name, saying where it goes: "Back to widgets". */
+  backLabel?: string | undefined;
   children?: ReactNode;
   size?: ModalSize | undefined;
   variant?: ModalVariant | undefined;
@@ -122,6 +134,14 @@ export interface ModalProps extends FrameAttributes {
   dismissable?: boolean | undefined;
   /** A veil-only switch: the surface still closes on Escape and on its close control. */
   closeOnBackdrop?: boolean | undefined;
+  /**
+   * What the page behind looks like. `veil` dims and softens it, which is what
+   * a surface asking for the reader's whole attention wants. `clear` leaves it
+   * as it is, for a sheet whose changes ARE the page behind it (a page's
+   * customize sheet): a preview under a veil is a preview nobody can read. The
+   * surface is still modal; only the paint changes.
+   */
+  backdrop?: 'veil' | 'clear' | undefined;
   showCloseButton?: boolean | undefined;
   /** Stacks the body's children in a column with a gap, which most forms want. */
   stackBody?: boolean | undefined;
@@ -225,6 +245,8 @@ function ModalFrame({
   footer,
   footerStart,
   headerActions,
+  onBack,
+  backLabel = 'Back',
   children,
   size = 'sm',
   variant = 'dialog',
@@ -233,6 +255,7 @@ function ModalFrame({
   role = 'dialog',
   dismissable = true,
   closeOnBackdrop = true,
+  backdrop = 'veil',
   showCloseButton = true,
   stackBody = false,
   flush = false,
@@ -311,8 +334,16 @@ function ModalFrame({
   const closes = banded && showCloseButton;
   const content = (
     <>
-      {banded && (given(title) || given(subtitle) || given(headerActions) || closes) ? (
+      {banded && (given(title) || given(subtitle) || given(headerActions) || closes || onBack) ? (
         <div className={cx('crewlet-modal__header', sheet ? 'crewlet-modal__header--sheet' : undefined)}>
+          {onBack ? (
+            <IconButton
+              className="crewlet-modal__back"
+              label={backLabel}
+              icon={<ChevronLeftGlyph size="md" />}
+              onClick={onBack}
+            />
+          ) : null}
           {given(icon) ? (
             <span className="crewlet-modal__icon" aria-hidden="true">
               {icon}
@@ -394,6 +425,7 @@ function ModalFrame({
         'crewlet-modal-overlay',
         `crewlet-modal-overlay--${variant}`,
         `crewlet-modal-overlay--${place}`,
+        backdrop === 'clear' && 'crewlet-modal-overlay--clear',
         // Fixed against the window, absolute inside a LayerHost: a fullscreen
         // container paints only its own subtree, so a surface drawn there
         // covers the container rather than a viewport it cannot reach.
