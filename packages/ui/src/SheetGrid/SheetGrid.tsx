@@ -460,11 +460,13 @@ export function SheetGrid({
       if (value !== undefined && column && row && !sameValue(value, normalizeValue(column, row.values[column.field]))) {
         emit([{ rowId: row.id, field: column.field, value }]);
       }
-      // Focus returns to the grid only when the editor still had it: a press
-      // on another cell already moved it there, and a press outside the grid
-      // took it away on purpose.
+      // The active cell moves, and takes focus, only when the edit ended from
+      // the keyboard, with focus still in the editor. An edit that ended
+      // because focus left (a press on another cell, which already made that
+      // cell active, or a press outside the grid, which took focus away on
+      // purpose) leaves both where the reader put them.
       const holder = document.activeElement;
-      const editorHadFocus = holder === null || holder === document.body || grid.current?.contains(holder);
+      const editorHadFocus = holder !== null && holder !== document.body && Boolean(grid.current?.contains(holder));
       if (position && editorHadFocus) moveTo(stepFrom(position, move));
     },
     [columnOf, editing, emit, moveTo, positionOf, rowOf, stepFrom],

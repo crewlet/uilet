@@ -187,6 +187,21 @@ describe('the keyboard', () => {
     expect(focused()).toBe(cell(0, 1));
   });
 
+  test('a press on another cell saves the edit and leaves the reader on the cell they pressed', () => {
+    const onEdits = vi.fn();
+    render(<Host onEdits={onEdits} />);
+    act(() => cell(0, 0).focus());
+    key(focused(), 'Enter');
+    const input = screen.getByRole('textbox', { name: 'Vendor, Acme Corp' });
+    fireEvent.change(input, { target: { value: 'Acme Inc' } });
+    fireEvent.mouseDown(cell(2, 1));
+    act(() => cell(2, 1).focus());
+    expect(onEdits).toHaveBeenCalledWith([{ rowId: 'acme', field: 'vendor', value: 'Acme Inc' }]);
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(focused()).toBe(cell(2, 1));
+    expect(cell(2, 1).getAttribute('tabindex')).toBe('0');
+  });
+
   test('Escape cancels an edit and writes nothing', () => {
     const onEdits = vi.fn();
     render(<Host onEdits={onEdits} />);

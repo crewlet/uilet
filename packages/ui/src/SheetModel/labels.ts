@@ -130,7 +130,7 @@ export const SHEET_LABELS: SheetLabels = {
   noOptions: 'No matching options',
   clear: 'Clear',
   keyboardHelp:
-    'Arrow keys move between cells. Enter or F2 edits a cell, Escape cancels, and typing replaces its value. Space toggles a checkbox. Control C and Control V copy and paste. Control Alt H opens the history of a cell.',
+    'Arrow keys move between cells. Enter or F2 edits a cell, Escape cancels, and typing replaces its value. Space toggles a checkbox. Control or Command with C and V copies and pastes. Control or Command with Alt and H opens the history of a cell.',
   sortBy: (column) => `Sort by ${column}`,
 };
 
