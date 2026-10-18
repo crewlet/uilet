@@ -158,6 +158,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `plug` | `PlugGlyph` | `package/icons/plug.svg` |
 | `plus` | `PlusGlyph` | `package/icons/plus.svg` |
 | `power` | `PowerGlyph` | `package/icons/power.svg` |
+| `presentation` | `PresentationGlyph` | `package/icons/presentation.svg` |
 | `radio` | `RadioGlyph` | `package/icons/radio.svg` |
 | `redo` | `RedoGlyph` | `package/icons/redo.svg` |
 | `refresh-ccw` | `RefreshCcwGlyph` | `package/icons/refresh-ccw.svg` |
