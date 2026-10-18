@@ -1,0 +1,25 @@
+/*
+ * The kit's own layout round the sheet. Everything inside the sheet is the
+ * design system's stylesheet, bundled into kit.css with the tokens.
+ */
+
+crewlet-sheet {
+  display: block;
+  min-width: 0;
+}
+
+crewlet-column {
+  display: none;
+}
+
+.crewlet-kit-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-kit-sheet__presence {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -1,8 +1,8 @@
 {
   "name": "@crewlethq/artifact-kit",
   "version": "0.2.0",
-  "description": "The Crewlet design system as a framework-free browser bundle for artifact pages: the tokens, every theme, the fonts and the base stylesheet, plus the theme bootstrap.",
-  "license": "MIT AND OFL-1.1",
+  "description": "The Crewlet design system as a framework-free browser bundle for artifact pages: the tokens, every theme, the fonts and the base stylesheet, the theme bootstrap, and the sheet as custom elements bound to the artifact runtime.",
+  "license": "MIT AND OFL-1.1 AND ISC",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/crewlet/uilet.git",
@@ -16,12 +16,15 @@
   "sideEffects": true,
   "exports": {
     "./kit.css": "./dist/kit.css",
+    "./kit.js": "./dist/kit.js",
     "./theme.js": "./dist/theme.js",
     "./fonts/*": "./dist/fonts/*",
+    "./THIRD_PARTY_NOTICES.txt": "./dist/THIRD_PARTY_NOTICES.txt",
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "TRADEMARKS.md"
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -31,9 +34,14 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
+    "@crewlethq/icons": "0.2.0",
     "@crewlethq/tokens": "0.2.0",
     "@crewlethq/ui": "0.2.0",
-    "esbuild": "^0.28.2"
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.3.0"
   },
   "publishConfig": {
     "access": "public",

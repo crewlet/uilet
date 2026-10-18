@@ -9,7 +9,7 @@ Crewlet design system. One repository, four published packages, and a Storybook 
 | `@crewlethq/tokens` | Design tokens (color, spacing, typography, radius, shadow, blur, breakpoint, motion, z-index) and fonts |
 | `@crewlethq/icons`  | The Lucide glyph set, vendor marks and the signature illustrations as React components                   |
 | `@crewlethq/ui`     | Cross-app React components built on tokens and icons                                                      |
-| `@crewlethq/artifact-kit` | The tokens, every theme, the fonts and the theme bootstrap as a framework-free browser bundle for artifact pages |
+| `@crewlethq/artifact-kit` | The tokens, every theme, the fonts, the theme bootstrap and the sheet as custom elements, as a framework-free browser bundle for artifact pages |
 
 ## Install
 

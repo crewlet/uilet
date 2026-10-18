@@ -1,7 +1,10 @@
 // The built kit, held to what the engine serves it for: a stylesheet that
-// paints every theme from files beside it and nowhere else, a bootstrap that
-// writes only allowed values, and both under the budgets a page loads before
-// it paints. The suite reads dist/, which turbo builds before it runs.
+// paints every theme and the sheet from files beside it and nowhere else, a
+// bootstrap that writes only allowed values, a sheet script that evaluates no
+// string as code and carries the notices of what it bundles, and all of it
+// under the budgets a page loads. The suite reads dist/, which turbo builds
+// before it runs. How the sheet behaves on a page is the jsdom suite's, in
+// apps/ui-tests (src/artifact-kit.test.tsx).
 
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -16,6 +19,7 @@ import { BUDGETS } from '../scripts/budgets.mjs';
 const dist = join(resolve(dirname(fileURLToPath(import.meta.url)), '..'), 'dist');
 const css = readFileSync(join(dist, 'kit.css'), 'utf8');
 const theme = readFileSync(join(dist, 'theme.js'), 'utf8');
+const kit = readFileSync(join(dist, 'kit.js'), 'utf8');
 
 describe('the budgets', () => {
   test('theme.js is under two kilobytes gzipped, because it blocks the first paint', () => {
@@ -24,6 +28,38 @@ describe('the budgets', () => {
 
   test('kit.css is under its gzipped budget', () => {
     assert.ok(gzipSync(css).length <= BUDGETS.cssGzip, `${gzipSync(css).length} bytes`);
+  });
+
+  test('kit.js is under its gzipped budget', () => {
+    assert.ok(gzipSync(kit).length <= BUDGETS.kitGzip, `${gzipSync(kit).length} bytes`);
+  });
+});
+
+describe('kit.js', () => {
+  test('is an ES module exporting mountSheet and the elements', () => {
+    const exported = /export\s*\{([^}]*)\}\s*;?\s*$/.exec(kit)?.[1] ?? '';
+    for (const name of ['mountSheet', 'defineElements', 'CrewletSheetElement', 'CrewletColumnElement', 'RUNTIME_READY_EVENT', 'whenRuntime']) {
+      assert.match(exported, new RegExp(`\\b${name}\\b`), name);
+    }
+  });
+
+  test('defines crewlet-sheet and crewlet-column, and evaluates no string as code', () => {
+    assert.match(kit, /["']crewlet-sheet["']/);
+    assert.match(kit, /["']crewlet-column["']/);
+    assert.doesNotMatch(kit, /\beval\s*\(|new Function\s*\(/);
+  });
+
+  test('is a production build, with no development checks left in it', () => {
+    assert.doesNotMatch(kit, /process\.env\.NODE_ENV/);
+  });
+
+  test('carries the notices of the third-party code it bundles', () => {
+    const notices = readFileSync(join(dist, 'THIRD_PARTY_NOTICES.txt'), 'utf8');
+    for (const heading of [/^react \d+\.\d+\.\d+$/m, /^react-dom \d+\.\d+\.\d+$/m, /^scheduler \d+\.\d+\.\d+$/m, /^Lucide icons/m]) {
+      assert.match(notices, heading);
+    }
+    assert.match(notices, /MIT License/);
+    assert.match(notices, /ISC License/);
   });
 });
 
@@ -52,6 +88,13 @@ describe('kit.css', () => {
 
   test('ships the font license beside the fonts', () => {
     assert.ok(existsSync(join(dist, 'fonts', 'OFL.txt')));
+  });
+
+  test('carries the stylesheet of the sheet, its cells and the presence marks, and keeps column markup out of sight', () => {
+    for (const selector of ['.crewlet-sheet-grid', '.crewlet-sheet-editor', '.crewlet-tag--hue-amber', '.crewlet-presence-hue--cyan', '.crewlet-cursor-flag', '.crewlet-avatar-stack', '.crewlet-kit-sheet']) {
+      assert.ok(css.includes(selector), selector);
+    }
+    assert.match(css, /crewlet-column\s*\{\s*display\s*:\s*none/);
   });
 });
 

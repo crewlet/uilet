@@ -34,6 +34,9 @@ export default defineConfig({
       { find: '@crewlethq/icons/glyphs', replacement: packages('icons/src/glyphs.ts') },
       { find: '@crewlethq/icons/characters', replacement: packages('icons/src/characters.ts') },
       { find: '@crewlethq/icons', replacement: packages('icons/src/index.ts') },
+      // A folder entry (`@crewlethq/ui/SheetGrid`), which the artifact kit's
+      // sources import, resolves to that folder's source.
+      { find: /^@crewlethq\/ui\/(\w+)$/, replacement: packages('ui/src/$1/index.ts') },
       { find: '@crewlethq/ui', replacement: packages('ui/src/index.ts') },
     ],
   },
