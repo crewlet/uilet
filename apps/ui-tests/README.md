@@ -13,7 +13,11 @@ The suites live BESIDE the components they cover, at
 runner, its setup file, the cascade harness (`src/cascade.ts`) and the rules
 about component source live here, with the suite for the package's literal
 check (`src/css-literals.test.ts`), which runs the published script as a
-command over stylesheets of its own, the way a consumer's build runs it.
+command over stylesheets of its own, the way a consumer's build runs it, and
+the jsdom suite for `@crewlethq/artifact-kit`'s sheet elements
+(`src/artifact-kit.test.tsx`), which drives `<crewlet-sheet>` against a
+runtime shaped like `window.crewlet`. The kit is published, so its own
+workspace keeps only the node suite over its built files.
 
 ```sh
 npm test --workspace @crewlethq/ui-tests     # one run
