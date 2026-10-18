@@ -2,16 +2,24 @@ import { SegmentedControl, type SegmentedSize } from '../SegmentedControl/Segmen
 import { cx } from '../utils/cx.js';
 import { NODE_HUES, NODE_HUE_NAMES, type NodeHue } from '../utils/nodeHue.js';
 
-export interface HuePickerProps {
+interface HuePickerBase {
   /** The group's name, said on entering it: "Color". */
   label: string;
-  value: NodeHue;
-  onValueChange: (hue: NodeHue) => void;
   size?: SegmentedSize | undefined;
   /** Nothing can be chosen, and the row says so. */
   disabled?: boolean | undefined;
   className?: string | undefined;
 }
+
+/**
+ * The six hues, or the six and NO HUE first, named by `none` ("Plain"): a
+ * surface that may carry a colour (a group's band, a note) but need not.
+ */
+export type HuePickerProps = HuePickerBase &
+  (
+    | { none?: undefined; value: NodeHue; onValueChange: (hue: NodeHue) => void }
+    | { none: string; value: NodeHue | 'none'; onValueChange: (hue: NodeHue | 'none') => void }
+  );
 
 const optionsFor = (disabled: boolean) =>
   NODE_HUES.map((hue) => ({
@@ -37,15 +45,33 @@ const DISABLED = optionsFor(true);
  * row is still read and the chosen hue still shown, and nothing in it takes
  * focus or a press.
  */
-export function HuePicker({ label, value, onValueChange, size, disabled = false, className }: HuePickerProps) {
+export function HuePicker(props: HuePickerProps) {
+  const { label, size, disabled = false, className } = props;
+  const hues = disabled ? DISABLED : ENABLED;
+  const options =
+    props.none === undefined
+      ? hues
+      : [
+          {
+            value: 'none' as const,
+            label: props.none,
+            icon: <span className="crewlet-hue-picker__swatch crewlet-hue-picker__swatch--none" />,
+            disabled,
+          },
+          ...hues,
+        ];
   return (
-    <SegmentedControl
+    <SegmentedControl<NodeHue | 'none'>
       semantics="radio"
       layout="chips"
       label={label}
-      options={disabled ? DISABLED : ENABLED}
-      value={value}
-      onValueChange={onValueChange}
+      options={options}
+      value={props.value}
+      onValueChange={(next) => {
+        if (props.none === undefined) {
+          if (next !== 'none') props.onValueChange(next);
+        } else props.onValueChange(next);
+      }}
       size={size}
       className={cx('crewlet-hue-picker', className)}
     />
