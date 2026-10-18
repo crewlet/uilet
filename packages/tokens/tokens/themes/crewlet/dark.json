@@ -71,6 +71,9 @@
       "blue": { "value": "#5b7fc7" },
       "blueInk": { "value": "#b9c5e0" }
     },
+    "presence": {
+      "flagText": { "value": "#07080d", "comment": "The name on a presence flag, drawn on the collaborator's node hue. Near-black, because every dark node hue is a mid tone that black clears and white does not: the palette suite holds it at 4.5:1 on each of the six hues." }
+    },
     "scrollbar": { "value": "rgba(255, 255, 255, 0.16)" },
     "scrollbarHover": { "value": "rgba(255, 255, 255, 0.26)" }
   },

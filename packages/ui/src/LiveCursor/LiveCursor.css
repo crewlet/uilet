@@ -1,0 +1,47 @@
+/*
+ * A collaborator's live pointer and its flag (LiveCursor.tsx). It stands at a
+ * point by transform, so a moving cursor repaints without a layout, and the
+ * flag hangs below and after the pointer's tip.
+ */
+
+.crewlet-live-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: var(--z-index-presence);
+  display: block;
+  pointer-events: none;
+}
+
+.crewlet-live-cursor__pointer {
+  display: block;
+  color: var(--crewlet-presence-hue);
+}
+
+.crewlet-live-cursor__flag {
+  position: absolute;
+  top: calc(var(--spacing-4) + var(--spacing-1));
+  left: var(--spacing-3);
+}
+
+.crewlet-live-cursor--resting {
+  opacity: 0.4;
+}
+
+.crewlet-live-cursor--gone {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .crewlet-live-cursor--glide {
+    transition:
+      transform var(--motion-duration-fast) linear,
+      opacity var(--motion-duration-base) var(--motion-easing-default);
+  }
+}
+
+@media (forced-colors: active) {
+  .crewlet-live-cursor__pointer {
+    color: Highlight;
+  }
+}

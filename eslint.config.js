@@ -44,7 +44,7 @@ export default tseslint.config(
   },
   /*
    * The two rule sets that only make sense over a component tree, at their
-   * recommended settings and over the three places components are written.
+   * recommended settings and over the places components are written.
    *
    * react-hooks is the one that finds a bug a type checker cannot: an effect
    * whose dependency list does not name what it reads runs with a stale value
@@ -55,10 +55,16 @@ export default tseslint.config(
    *
    * They are scoped rather than global because the rest of the repository is
    * build scripts and release tooling, where a rule about JSX would only ever
-   * be noise.
+   * be noise. The artifact kit's sources are among the places components are
+   * written: its custom elements render the sheet with React.
    */
   {
-    files: ['packages/ui/src/**/*.{ts,tsx}', 'apps/storybook/src/**/*.{ts,tsx}', 'apps/ui-tests/src/**/*.{ts,tsx}'],
+    files: [
+      'packages/ui/src/**/*.{ts,tsx}',
+      'packages/artifact-kit/src/**/*.{ts,tsx}',
+      'apps/storybook/src/**/*.{ts,tsx}',
+      'apps/ui-tests/src/**/*.{ts,tsx}',
+    ],
     extends: [jsxA11y.flatConfigs.recommended],
     plugins: { 'react-hooks': reactHooks },
     rules: {

@@ -2,6 +2,7 @@ import type { HTMLAttributes, MouseEvent, ReactNode } from 'react';
 import { XGlyph } from '@crewlethq/icons/glyphs';
 import { StatusDot } from '../StatusDot/index.js';
 import { cx } from '../utils/cx.js';
+import type { NodeHue } from '../utils/nodeHue.js';
 import type { Tone } from '../utils/tone.js';
 
 /**
@@ -39,6 +40,18 @@ export type TagAppearance = 'soft' | 'outline';
 interface TagLook {
   /** The state this tag names. Neutral by default, which is what a category such as a phase takes. */
   variant?: TagVariant | undefined;
+  /**
+   * A hue an author CHOSE for this value, in place of a tone: a select
+   * option's colour on a sheet ("Gold" in amber). Drawn as the hue's fill
+   * under its ink, the steps a node is tinted with.
+   *
+   * CHOSEN, NEVER DERIVED, for the reason `NodeHue` gives: a hue somebody
+   * picked for a value names it the way its label does, where a hue hashed
+   * from the label would name nothing. It is never a state (a state is a
+   * `variant`), and the label is always drawn, so the hue is never the only
+   * carrier. With a hue the variant colours nothing, and `dot` draws neutral.
+   */
+  hue?: NodeHue | undefined;
   /** A tinted fill, or a boundary over the surface beneath. */
   appearance?: TagAppearance | undefined;
   /** Drawn before the label. A glyph component, not a name. */
@@ -138,6 +151,7 @@ type TagAll = TagLook &
 export function Tag(props: TagProps) {
   const {
     variant = 'neutral',
+    hue,
     appearance = 'soft',
     size = 'sm',
     leadingIcon,
@@ -175,7 +189,7 @@ export function Tag(props: TagProps) {
 
   const classes = cx(
     'crewlet-tag',
-    `crewlet-tag--${variant}`,
+    hue === undefined ? `crewlet-tag--${variant}` : `crewlet-tag--hue-${hue}`,
     `crewlet-tag--${appearance}`,
     `crewlet-tag--${drawnSize}`,
     monospace && 'crewlet-tag--monospace',
@@ -194,7 +208,7 @@ export function Tag(props: TagProps) {
 
   const inner = (
     <>
-      {dot ? <StatusDot tone={variant} className="crewlet-tag__dot" /> : null}
+      {dot ? <StatusDot tone={hue === undefined ? variant : 'neutral'} className="crewlet-tag__dot" /> : null}
       {leadingIcon ? (
         <span className="crewlet-tag__icon" aria-hidden>
           {leadingIcon}

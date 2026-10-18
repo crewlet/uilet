@@ -58,6 +58,18 @@ describe('Tag', () => {
     for (const variant of TONES) expect(screen.getByText(variant)).toBeTruthy();
   });
 
+  test('a hue an author chose replaces the tone, keeps its label, and its dot draws neutral', () => {
+    render(
+      <Tag hue="amber" variant="danger" dot>
+        Gold
+      </Tag>,
+    );
+    const tag = screen.getByText('Gold').closest('.crewlet-tag');
+    expect(tag?.classList.contains('crewlet-tag--hue-amber')).toBe(true);
+    expect(tag?.classList.contains('crewlet-tag--danger')).toBe(false);
+    expect(document.querySelector('.crewlet-status-dot')?.className).toContain('crewlet-status-dot--neutral');
+  });
+
   test('a dot is the shape half and is not read twice', () => {
     render(
       <Tag variant="danger" dot>
@@ -256,10 +268,18 @@ describe('Tag colour', () => {
   test('the suite reads the variants the stylesheet actually declares', () => {
     const variants = declaredPairs().map((pair) => pair.variant);
     // Every tone but the neutral default, which takes its fill from the base
-    // rule rather than from a variant block.
+    // rule rather than from a variant block, and every node hue an author may
+    // choose for a value, so the measurement below holds each hue's ink on
+    // its own fill too.
     expect(variants.sort()).toEqual([
       'brand',
       'danger',
+      'hue-amber',
+      'hue-blue',
+      'hue-cyan',
+      'hue-green',
+      'hue-purple',
+      'hue-rose',
       'info',
       'success',
       'warning',

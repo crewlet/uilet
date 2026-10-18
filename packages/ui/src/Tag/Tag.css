@@ -199,6 +199,48 @@
   --crewlet-tag-line: var(--color-brand-accent-soft-strong);
 }
 
+/*
+ * A HUE AN AUTHOR CHOSE for a value (a select option's colour), drawn in the
+ * node steps: the hue's fill under its ink, the line as the outline. Like a
+ * tinted tone, the pill needs no edge of its own at rest: the hue separates
+ * it from any neutral ground.
+ */
+.crewlet-tag--hue-purple {
+  --crewlet-tag-fill: var(--color-node-purple-fill);
+  --crewlet-tag-ink: var(--color-node-purple-ink);
+  --crewlet-tag-line: var(--color-node-purple-line);
+}
+
+.crewlet-tag--hue-cyan {
+  --crewlet-tag-fill: var(--color-node-cyan-fill);
+  --crewlet-tag-ink: var(--color-node-cyan-ink);
+  --crewlet-tag-line: var(--color-node-cyan-line);
+}
+
+.crewlet-tag--hue-green {
+  --crewlet-tag-fill: var(--color-node-green-fill);
+  --crewlet-tag-ink: var(--color-node-green-ink);
+  --crewlet-tag-line: var(--color-node-green-line);
+}
+
+.crewlet-tag--hue-amber {
+  --crewlet-tag-fill: var(--color-node-amber-fill);
+  --crewlet-tag-ink: var(--color-node-amber-ink);
+  --crewlet-tag-line: var(--color-node-amber-line);
+}
+
+.crewlet-tag--hue-rose {
+  --crewlet-tag-fill: var(--color-node-rose-fill);
+  --crewlet-tag-ink: var(--color-node-rose-ink);
+  --crewlet-tag-line: var(--color-node-rose-line);
+}
+
+.crewlet-tag--hue-blue {
+  --crewlet-tag-fill: var(--color-node-blue-fill);
+  --crewlet-tag-ink: var(--color-node-blue-ink);
+  --crewlet-tag-line: var(--color-node-blue-line);
+}
+
 /* ── appearance ────────────────────────────────────────────────────────── */
 
 /*

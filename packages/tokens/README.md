@@ -45,6 +45,19 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Changed in 0.18.0: presence, change marks and the sheet row
+
+Five tokens for the collaborative sheet and the presence marks. Nothing that existed moved.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| `--color-presence-flag-text` (`color.presence.flagText`) is new, in every palette of every theme: the ink of the name on a presence flag, which is filled with the collaborator's node hue. | Nothing. | [Presence](#presence) |
+| `--color-change-mark` (`color.changeMark`) is new: an alias of `--color-brand-accent-soft-strong`, for the corner mark on a changed cell. | Nothing. | [Presence](#presence) |
+| `--shadow-cursor` (`shadow.cursor`) is new: an alias of `--shadow-sm`, under a live cursor and its flag. | Nothing. | [Presence](#presence) |
+| `--z-index-presence` (`zIndex.presence`, 20) is new: collaborators' marks over content, above sticky headers and below every menu and layer. | Nothing. | [Presence](#presence) |
+| `--size-sheet-row` (`size.sheet.row`, 32px) is new and density-scaled, so its three density steps are 26.24px, 32px and 37.12px. | Nothing. | [Density](#density) |
+| In `@crewlethq/tokens/test/palette`, the rules `a presence flag name clears 4.5:1 on every node hue` and `a presence hue clears 3:1 as a mark` are new, with the exports `PRESENCE_HUES` and `PRESENCE_FLAG_TEXT`. | Nothing. | [Presence](#presence) |
+
 ## Changed in 0.13.0: named themes
 
 Nine named themes ship beside the default, each with a dark and a light palette, for an application that offers a theme picker. A document that sets no `data-palette` attribute is painted exactly as before, and no default value moved.
@@ -284,6 +297,8 @@ The control steps are the approved design's control rhythm: `--size-control-md` 
 
 `--size-target-min` (24px) is that same floor, named, for a component that DERIVES a height from a control step rather than taking one. Subtracting from a step subtracts from its floor too, so `calc(var(--size-control-md) - 6px)` is 18.6px at compact density; `max(var(--size-target-min), calc(var(--size-control-md) - 6px))` is the 24px a chip in a segmented well stands at density 1, and still a reachable target at every other.
 
+`--size-sheet-row` (32px) is the height of a row in an editable data sheet, density-scaled like every row: 26.24px compact, 32px normal and 37.12px comfortable. A sheet measures the resolved height rather than restating the number, so its virtualised rows stay in step with the density.
+
 `--radius-chip` is `calc(var(--radius-md) - 1px)`, the corner of a chip lifted inside a well drawn at `--radius-md`. It is derived rather than written as a step of its own, so it follows the well.
 
 ### Changed in 0.5.0: the control steps
@@ -415,6 +430,19 @@ Two rules travel with them:
 A phase is a category. The agent's phases (onboarding, execute, review, and whatever an engine adds) are drawn in the neutral colour with their word: a neutral tag, or the word itself, beside the state badge that says what the work is doing. There is no phase hue: a hue per phase spends the budget the four states and the four series are held apart in, and asks a reader to learn a second colour vocabulary that says nothing the word does not. Inside a figure a phase is a series like any other: the application declares which phase takes which series (`--color-data-1` to `-4`), keeps that mapping in every figure it draws, and the legend names each one.
 
 A `-soft` step is its own fill at alpha 0.12 and a `-line` step is the same fill at alpha 0.30. They are derived by the build from the fill, per palette, so a tint cannot come to belong to a hue the fill no longer is.
+
+### Presence
+
+A collaborator's presence colour is the one narrow exception to "colour carries state, never identity". It is one of the six node hues (`--color-node-{purple,cyan,green,amber,rose,blue}`): an agent's chosen hue, or a hue a person is given for the session in join order. It is drawn on four marks only, a live cursor, a selection ring, a cell outline and a name flag, and always beside the name, never on chrome and never as a state.
+
+| Token | Dark | Light | What it is |
+| --- | --- | --- | --- |
+| `--color-presence-flag-text` | `#07080d` | `#ffffff` | The name on a flag filled with a node hue. Every dark node hue is a mid tone that black clears and white does not, and every light one is a deep tone, so the ink flips with the mode. |
+| `--color-change-mark` | the accent at 0.32 | the accent at 0.32 | The corner mark on a cell that changed since the reader last looked, an alias of `--color-brand-accent-soft-strong`. It is always paired with a tooltip that names who changed it and what it was. |
+| `--shadow-cursor` | `--shadow-sm` | `--shadow-sm` | The lift under a live cursor and its flag. |
+| `--z-index-presence` | 20 | 20 | Above sticky headers and frozen columns, below every menu, popover and dialog. |
+
+The palette suite holds the flag's name at 4.5:1 on each of the six hues, and each hue at 3:1 as a mark on every rung, in every palette of every theme. The high-contrast theme keeps the same 4.5: the hue is the collaborator's identity rather than a palette's step, and the name is also said in words wherever presence is listed.
 
 ### The accent
 

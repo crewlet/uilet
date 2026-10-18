@@ -49,7 +49,7 @@ The glyph carries the weight twice: as a style that reads the variable, and as a
 
 ### The filled state
 
-**Only a `FILLABLE` glyph takes `filled`.** A stroke drawing with its inside painted reads as the mark only where the drawing is one closed silhouette: `bell` has an open clapper and would fill into a blob with a line through it, and `compass` and `target` are closed but would fill into a disc with nothing left to say which disc it is. So `FILLABLE` is a decision about meaning rather than a property of the geometry, the build refuses a name there whose drawing has an open stroke, and the component of every other glyph has no `filled` prop at all, so passing one is a compile error. It is `['star']` today: the kept state of the Crewlet console's favourite toggle.
+**Only a `FILLABLE` glyph takes `filled`.** A stroke drawing with its inside painted reads as the mark only where the drawing is one closed silhouette: `bell` has an open clapper and would fill into a blob with a line through it, and `compass` and `target` are closed but would fill into a disc with nothing left to say which disc it is. So `FILLABLE` is a decision about meaning rather than a property of the geometry, the build refuses a name there whose drawing has an open stroke, and the component of every other glyph has no `filled` prop at all, so passing one is a compile error. It is `['star', 'mouse-pointer-2']` today: the kept state of the Crewlet console's favourite toggle, and a collaborator's live cursor, a solid pointer in their presence hue.
 
 A glyph a surface draws in two states that `FILLABLE` does not cover changes colour or changes glyph, rather than filling.
 

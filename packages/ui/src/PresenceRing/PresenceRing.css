@@ -1,0 +1,68 @@
+/*
+ * The presence hues and the ring drawn in them (PresenceRing.tsx).
+ *
+ * ONE TABLE OF HUES for every presence mark: a ring, a flag, a cursor and a
+ * badge's ring each read `--crewlet-presence-hue` from the class
+ * `presenceHueClass` writes, so the six node hues are spelt once. The hue is
+ * the presence colour exception: it ties a mark to a name and is spent on
+ * nothing else.
+ */
+
+.crewlet-presence-hue--purple {
+  --crewlet-presence-hue: var(--color-node-purple);
+}
+
+.crewlet-presence-hue--cyan {
+  --crewlet-presence-hue: var(--color-node-cyan);
+}
+
+.crewlet-presence-hue--green {
+  --crewlet-presence-hue: var(--color-node-green);
+}
+
+.crewlet-presence-hue--amber {
+  --crewlet-presence-hue: var(--color-node-amber);
+}
+
+.crewlet-presence-hue--rose {
+  --crewlet-presence-hue: var(--color-node-rose);
+}
+
+.crewlet-presence-hue--blue {
+  --crewlet-presence-hue: var(--color-node-blue);
+}
+
+.crewlet-presence-hue--neutral {
+  --crewlet-presence-hue: var(--color-border-strong);
+}
+
+/*
+ * THE RING IS INSET and drawn on a pseudo element, so it never moves the
+ * content, never doubles the element's own border and is never read. 2px,
+ * the weight a selection ring is drawn at.
+ */
+.crewlet-presence-ring {
+  --crewlet-presence-ring-inset: 1px;
+  position: relative;
+  display: inline-block;
+}
+
+.crewlet-presence-ring::after {
+  position: absolute;
+  inset: var(--crewlet-presence-ring-inset);
+  z-index: var(--z-index-presence);
+  border: 2px solid var(--crewlet-presence-hue);
+  border-radius: inherit;
+  content: '';
+  pointer-events: none;
+}
+
+.crewlet-presence-ring--idle::after {
+  border-style: dashed;
+}
+
+@media (forced-colors: active) {
+  .crewlet-presence-ring::after {
+    border-color: Highlight;
+  }
+}

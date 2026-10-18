@@ -1,0 +1,59 @@
+/*
+ * Who is here (PresenceStack.tsx), on the avatar stack's own geometry: the
+ * overlap and the counted chip are the stack's. What this adds is the ring in
+ * each present collaborator's hue, outside the cut-out, and the idle fade.
+ */
+
+/* The wrapper (a span, or a button when badges select) carries no edge of its
+   own: the cut-out and the hue ring are drawn on the badge inside it, which
+   has the badge's own outline to follow. */
+.crewlet-presence-stack > .crewlet-presence-stack__member {
+  display: inline-flex;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+}
+
+.crewlet-presence-stack > .crewlet-presence-stack__member--human {
+  border-radius: var(--radius-circle);
+}
+
+.crewlet-presence-stack > .crewlet-presence-stack__member--agent {
+  border-radius: var(--radius-sm);
+}
+
+button.crewlet-presence-stack__member {
+  cursor: pointer;
+}
+
+button.crewlet-presence-stack__member:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-presence-stack .crewlet-presence-stack__badge {
+  box-shadow: 0 0 0 2px var(--crewlet-avatar-stack-ground);
+}
+
+/* The hue ring sits outside the cut-out, so it reads as a ring round the
+   badge rather than a stroke on it. */
+.crewlet-presence-stack .crewlet-presence-stack__badge--present {
+  box-shadow:
+    0 0 0 2px var(--crewlet-avatar-stack-ground),
+    0 0 0 4px var(--crewlet-presence-hue);
+}
+
+.crewlet-presence-stack .crewlet-presence-stack__badge--idle {
+  opacity: 0.5;
+}
+
+@media (forced-colors: active) {
+  .crewlet-presence-stack .crewlet-presence-stack__badge--present {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}

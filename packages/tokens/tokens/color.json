@@ -90,6 +90,10 @@
       "blue": { "value": "#5b7fc7" },
       "blueInk": { "value": "#b9c5e0" }
     },
+    "presence": {
+      "flagText": { "value": "#07080d", "comment": "The name on a presence flag: the plate a collaborator's cursor, cell or selection is labelled with, filled with that collaborator's node hue. It is the one place a node hue is a ground for text rather than a tint, so its ink is a step of its own, per palette, and the palette suite holds it at 4.5:1 on each of the six hues in every theme. Presence colour is the narrow exception to colour carrying state: it ties a mark to a name, and the name is always on the flag." }
+    },
+    "changeMark": { "value": "{color.brand.accentSoftStrong}", "comment": "The corner mark on a cell or an element that changed since the reader last looked. An alias of the accent's strong soft step, so the meaning has a name of its own and follows the accent in every palette; the mark is always paired with a tooltip that says who changed it and what it was." },
     "scrollbar": { "value": "rgba(255, 255, 255, 0.16)", "comment": "Scrollbars belong to the palette. A bright system gutter down the side of a dark page is the most visible way an application admits it is a web page." },
     "scrollbarHover": { "value": "rgba(255, 255, 255, 0.26)" },
     "qr": {

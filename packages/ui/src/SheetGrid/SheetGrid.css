@@ -1,0 +1,595 @@
+/*
+ * The editable sheet (SheetGrid.tsx) and its cells (cells.tsx).
+ *
+ * ONE EDGE PER CELL. Each cell draws its trailing and bottom hairline only, so
+ * two neighbours never draw two lines between them, and every mark laid over a
+ * cell (the active cell's ring, a collaborator's ring, a selection) is inset
+ * inside that edge rather than doubling it.
+ *
+ * The rows are positioned in a body as tall as every row together, and only
+ * the rows in view are in the document. Every row is a grid on the one column
+ * template the component writes, so a cell is exactly as wide as its header.
+ */
+
+.crewlet-sheet-grid {
+  --crewlet-sheet-row-height: var(--size-sheet-row);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+}
+
+/* Measured by the component: the resolved row height at the current density. */
+.crewlet-sheet-grid__probe {
+  position: absolute;
+  width: 0;
+  height: var(--size-sheet-row);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.crewlet-sheet-grid__scroller {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-background);
+}
+
+.crewlet-sheet-grid__grid {
+  position: relative;
+  min-width: 100%;
+}
+
+.crewlet-sheet-grid__row {
+  display: grid;
+  grid-template-columns: var(--crewlet-sheet-columns);
+  height: var(--crewlet-sheet-row-height);
+}
+
+.crewlet-sheet-grid__head {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+}
+
+.crewlet-sheet-grid__body {
+  position: relative;
+}
+
+.crewlet-sheet-grid__body > .crewlet-sheet-grid__row {
+  position: absolute;
+  right: 0;
+  left: 0;
+}
+
+.crewlet-sheet-grid__corner,
+.crewlet-sheet-grid__header,
+.crewlet-sheet-grid__rownum,
+.crewlet-sheet-grid__cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-width: 0;
+  border-right: 1px solid var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-surface-background);
+}
+
+.crewlet-sheet-grid__corner,
+.crewlet-sheet-grid__header {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-sheet-grid__corner,
+.crewlet-sheet-grid__rownum {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: var(--z-index-raised);
+  justify-content: center;
+}
+
+.crewlet-sheet-grid__corner {
+  z-index: var(--z-index-sticky);
+}
+
+.crewlet-sheet-grid__header {
+  gap: var(--spacing-1);
+  padding: 0 var(--spacing-2);
+  cursor: default;
+  user-select: none;
+}
+
+.crewlet-sheet-grid__header-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-sheet-grid__sort {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-sheet-grid__header-presence {
+  display: inline-flex;
+  flex: none;
+  gap: var(--spacing-1);
+  margin-inline-start: auto;
+}
+
+.crewlet-sheet-grid .crewlet-sheet-grid__header-badge {
+  box-shadow: 0 0 0 2px var(--crewlet-presence-hue);
+}
+
+.crewlet-sheet-grid__rownum {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The bar at a row's leading edge while somebody has it selected. */
+.crewlet-sheet-grid__rownum--present::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: var(--crewlet-presence-hue);
+  content: '';
+}
+
+.crewlet-sheet-grid__cell {
+  padding: 0 var(--spacing-2);
+  outline: none;
+}
+
+.crewlet-sheet-grid__cell--frozen,
+.crewlet-sheet-grid__header.crewlet-sheet-grid__cell--frozen {
+  position: sticky;
+  z-index: var(--z-index-raised);
+}
+
+.crewlet-sheet-grid__header.crewlet-sheet-grid__cell--frozen {
+  z-index: var(--z-index-sticky);
+}
+
+.crewlet-sheet-grid__cell--number,
+.crewlet-sheet-grid__cell--rating {
+  justify-content: flex-end;
+}
+
+.crewlet-sheet-grid__cell--checkbox {
+  justify-content: center;
+}
+
+.crewlet-sheet-grid__cell--selected {
+  background: var(--color-brand-accent-soft);
+}
+
+.crewlet-sheet-grid__cell:focus-visible,
+.crewlet-sheet-grid__header:focus-visible {
+  outline: 2px solid var(--color-focus);
+  /* Inside a box that scrolls, an outset ring is clipped by the scroller and
+     painted over by the next row. */
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-sheet-grid__cell--editing {
+  z-index: var(--z-index-presence);
+  overflow: visible;
+}
+
+.crewlet-sheet-grid__value {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.crewlet-sheet-grid__cell--editing > .crewlet-sheet-grid__value {
+  visibility: hidden;
+}
+
+/* PENDING (D23): the reader's value, drawn at once, underlined dashed until
+   the engine confirms it. The word is in the cell's description and the strip. */
+.crewlet-sheet-grid__cell--pending > .crewlet-sheet-grid__value {
+  text-decoration: underline dashed var(--color-text-tertiary);
+  text-underline-offset: 3px;
+}
+
+.crewlet-sheet-grid__cell--pending > .crewlet-sheet-grid__value::after {
+  position: absolute;
+  right: var(--spacing-1);
+  bottom: 2px;
+  left: var(--spacing-1);
+  border-bottom: 1px dashed var(--color-text-tertiary);
+  content: '';
+}
+
+.crewlet-sheet-grid__refused {
+  display: inline-flex;
+  flex: none;
+  margin-inline-start: auto;
+  padding-inline-start: var(--spacing-1);
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-sheet-grid__message {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  z-index: var(--z-index-presence);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 20rem;
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 1px solid var(--color-feedback-danger-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-md);
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--font-size-xs);
+  white-space: normal;
+}
+
+.crewlet-sheet-grid__history {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: var(--spacing-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.crewlet-sheet-grid__history:hover {
+  color: var(--color-text-primary);
+}
+
+.crewlet-sheet-grid__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-sheet-grid__sync {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-inline-start: auto;
+}
+
+.crewlet-sheet-grid__sync--failed {
+  color: var(--color-feedback-danger-ink);
+}
+
+/* ── the cells, alone or in the grid ─────────────────────────────────────── */
+
+.crewlet-sheet-cell__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-sheet-cell__number {
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-sheet-cell__muted {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-sheet-cell__chips {
+  display: inline-flex;
+  gap: var(--spacing-1);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.crewlet-sheet-cell__person {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-sheet-cell__link {
+  overflow: hidden;
+  color: var(--color-text-link-quiet);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-sheet-cell__link:hover {
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-sheet-cell__checkbox {
+  display: inline-flex;
+  align-items: center;
+}
+
+.crewlet-sheet-cell__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-background);
+  color: var(--color-text-on-accent);
+}
+
+.crewlet-sheet-cell__check--on {
+  border-color: var(--color-brand-accent);
+  background: var(--color-brand-accent);
+}
+
+.crewlet-sheet-cell__rating,
+.crewlet-sheet-cell__stars {
+  display: inline-flex;
+  align-items: center;
+}
+
+.crewlet-sheet-cell__star {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-sheet-cell__star--on {
+  color: var(--color-feedback-warning);
+}
+
+.crewlet-sheet-cell {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-sheet-cell__face {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--size-control-md);
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-background);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.crewlet-sheet-cell__face[aria-disabled='true'] {
+  cursor: default;
+}
+
+.crewlet-sheet-cell__face:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-sheet-cell--pending .crewlet-sheet-cell__face {
+  border-style: dashed;
+}
+
+.crewlet-sheet-cell__refusal {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--font-size-xs);
+}
+
+/* ── the editors ─────────────────────────────────────────────────────────── */
+
+.crewlet-sheet-editor {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-index-presence);
+}
+
+.crewlet-sheet-cell .crewlet-sheet-editor {
+  position: relative;
+  inset: auto;
+}
+
+.crewlet-sheet-editor__input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: var(--size-control-md);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: 0;
+  background: var(--color-surface-elevated);
+  box-shadow: inset 0 0 0 2px var(--color-focus);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.crewlet-sheet-editor__input:focus-visible,
+.crewlet-sheet-editor__filter:focus-visible,
+.crewlet-sheet-editor__textarea:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-sheet-editor__panel {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  z-index: var(--z-index-presence);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  box-sizing: border-box;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(24rem, 90vw);
+  padding: var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-lg);
+}
+
+.crewlet-sheet-editor--above .crewlet-sheet-editor__panel {
+  top: auto;
+  bottom: 100%;
+}
+
+.crewlet-sheet-editor--list .crewlet-sheet-editor__panel,
+.crewlet-sheet-editor--long .crewlet-sheet-editor__panel {
+  top: 0;
+  min-width: max(100%, 14rem);
+}
+
+.crewlet-sheet-editor--list.crewlet-sheet-editor--above .crewlet-sheet-editor__panel,
+.crewlet-sheet-editor--long.crewlet-sheet-editor--above .crewlet-sheet-editor__panel {
+  top: auto;
+  bottom: 0;
+}
+
+.crewlet-sheet-editor__filter,
+.crewlet-sheet-editor__textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-background);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.crewlet-sheet-editor__textarea {
+  min-width: 20rem;
+  max-width: 100%;
+  resize: vertical;
+}
+
+.crewlet-sheet-editor__list {
+  display: flex;
+  flex-direction: column;
+  max-height: 16rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.crewlet-sheet-editor__option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-row-sm);
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.crewlet-sheet-editor__option--highlight {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-sheet-editor__mark {
+  display: inline-flex;
+  flex: none;
+  width: var(--spacing-3);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-sheet-editor__empty {
+  padding: var(--spacing-2);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-sheet-editor__error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin: 0;
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-sheet-editor__conflict {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-sheet-editor__conflict-text {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-sheet-editor__conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+/* A PHONE: the list and long text editors open as a sheet from the bottom of
+   the screen rather than from a cell a thumb has to keep in view. */
+@media (width < 640px) {
+  .crewlet-sheet-grid .crewlet-sheet-editor--list .crewlet-sheet-editor__panel,
+  .crewlet-sheet-grid .crewlet-sheet-editor--long .crewlet-sheet-editor__panel {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-width: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .crewlet-sheet-editor__textarea {
+    min-width: 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .crewlet-sheet-grid__cell--selected {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .crewlet-sheet-grid__rownum--present::before {
+    background: Highlight;
+  }
+}

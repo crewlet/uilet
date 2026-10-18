@@ -1,0 +1,61 @@
+/*
+ * A collaborator's name flag (CursorFlag.tsx): the name on a plate of their
+ * presence hue, in the ink the palette suite holds at 4.5:1 on every hue.
+ */
+
+.crewlet-cursor-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  box-sizing: border-box;
+  max-width: 16em;
+  padding: 0 calc(var(--spacing-1) * 1.5);
+  border-radius: var(--radius-pill);
+  background: var(--crewlet-presence-hue);
+  box-shadow: var(--shadow-cursor);
+  color: var(--color-presence-flag-text);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-normal);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+.crewlet-cursor-flag--agent {
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-cursor-flag__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewlet-cursor-flag__glyph {
+  flex: none;
+}
+
+/* Pinned to the element it labels, which is the nearest positioned ancestor. */
+.crewlet-cursor-flag--top-end,
+.crewlet-cursor-flag--bottom-end {
+  position: absolute;
+  inset-inline-end: 0;
+  z-index: var(--z-index-presence);
+}
+
+.crewlet-cursor-flag--top-end {
+  bottom: 100%;
+}
+
+.crewlet-cursor-flag--bottom-end {
+  top: 100%;
+}
+
+@media (forced-colors: active) {
+  .crewlet-cursor-flag {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}
