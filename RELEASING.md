@@ -1,8 +1,8 @@
 # Releasing
 
-Maintainer runbook for publishing `@crewlethq/tokens`, `@crewlethq/icons` and `@crewlethq/ui` to [registry.npmjs.org](https://www.npmjs.com/org/crewlethq). Nothing here is needed to use the packages; it is process for people with write access to this repository.
+Maintainer runbook for publishing `@crewlethq/tokens`, `@crewlethq/icons`, `@crewlethq/ui` and `@crewlethq/artifact-kit` to [registry.npmjs.org](https://www.npmjs.com/org/crewlethq). Nothing here is needed to use the packages; it is process for people with write access to this repository.
 
-**Every merge to `main` is released automatically.** [`.github/workflows/release.yml`](.github/workflows/release.yml) runs on the push the merge makes, computes the next version from the commit types since the previous release, and publishes the three packages through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers) with provenance, unless nothing they would publish has changed or every commit since the previous release is a Dependabot update. It then tags the merged commit `v<version>` and creates the GitHub release. There is no approval step after the merge: the pull request review that the `main` branch ruleset requires is the gate. No npm token is stored anywhere; the publish job exchanges its GitHub Actions OIDC identity for a short-lived npm credential that is valid for that one publish.
+**Every merge to `main` is released automatically.** [`.github/workflows/release.yml`](.github/workflows/release.yml) runs on the push the merge makes, computes the next version from the commit types since the previous release, and publishes the four packages through [npm trusted publishing](https://docs.npmjs.com/trusted-publishers) with provenance, unless nothing they would publish has changed or every commit since the previous release is a Dependabot update. It then tags the merged commit `v<version>` and creates the GitHub release. There is no approval step after the merge: the pull request review that the `main` branch ruleset requires is the gate. No npm token is stored anywhere; the publish job exchanges its GitHub Actions OIDC identity for a short-lived npm credential that is valid for that one publish.
 
 ---
 
@@ -24,7 +24,7 @@ flowchart TD
 The jobs are separate on purpose:
 
 - **No job that runs third-party code holds a credential worth stealing.** Only `verify` and `pack` install dependencies and build, and both hold a read-only token. No install script runs anywhere (`npm ci --ignore-scripts`).
-- **The published bytes come from as little code as possible.** `pack` installs only the root tooling and the three published workspaces (`node scripts/release.mjs build`), so the Storybook, its bundler and every dependency only they use are never present when the tarballs are produced. `verify` runs everything else, and `publish` waits for both.
+- **The published bytes come from as little code as possible.** `pack` installs only the root tooling and the four published workspaces (`node scripts/release.mjs build`), so the Storybook, its bundler and every dependency only they use are never present when the tarballs are produced. `verify` runs everything else, and `publish` waits for both.
 - **The job that can publish runs nothing from the repository** apart from the two composite actions in `.github/actions`, and the job that can write to the repository has no checkout at all.
 - **Every job checks that the run is for a push to `main` and asks the GitHub API whether the commit is still on `main`** ([`verify-release-ref`](.github/actions/verify-release-ref/action.yml)), and fails otherwise.
 - **The job that can publish bounds the version it is handed.** The version comes from `pack`, which runs the build's third-party tooling, so `publish` refuses any version that is not exactly one step above each package's latest version on npm. Whatever `pack` writes, it cannot move `latest` backwards, skip a version or jump to an arbitrary one.
@@ -37,7 +37,7 @@ Because nothing waits for approval after the merge, **approving a pull request i
 
 ## How the version is chosen
 
-All three packages are released together under one version. `@crewlethq/ui` depends on the tokens and icons of exactly that version, because those are the only ones it was built and tested against.
+All four packages are released together under one version. `@crewlethq/ui` depends on the tokens and icons of exactly that version, because those are the only ones it was built and tested against.
 
 The `pack` job computes the version (`node scripts/release.mjs version --write`) from two things only:
 
@@ -58,7 +58,7 @@ While the major number is `0`, a breaking change moves the minor number, as [sem
 - **Squash**: the one squashed commit. Its subject is the pull request title (or the only commit's subject, for a single-commit pull request) and its body carries the branch's commit messages, so a `BREAKING CHANGE:` footer in any of them counts, while a `feat` or `!` in the subject of a squashed commit does not. Check the subject in the merge dialog before confirming.
 - **Rebase**: every commit on the branch, as it lands on `main`.
 
-**The manifest version is only the seed.** The version recorded in the package manifests (`0.2.0`) is used exactly once: while no release tag exists, a merge is released as that version, whatever its commits say. From the first tag on, releases ignore it. The manifests are never rewritten on `main` (the ruleset forbids direct pushes, and a bot commit would need a bypass of it); the computed version is written into the three manifests and their workspace dependency pins only inside the `pack` job's own checkout. The tree therefore keeps `0.2.0` as the version local builds and the Storybook carry, and it is not changed by hand. `node scripts/release.mjs check` still requires every published manifest to share one exact `MAJOR.MINOR.PATCH` version and every dependency between workspaces to pin it exactly, because that pin is what makes npm link the local workspace instead of installing a copy from the registry.
+**The manifest version is only the seed.** The version recorded in the package manifests (`0.2.0`) is used exactly once: while no release tag exists, a merge is released as that version, whatever its commits say. From the first tag on, releases ignore it. The manifests are never rewritten on `main` (the ruleset forbids direct pushes, and a bot commit would need a bypass of it); the computed version is written into the four manifests and their workspace dependency pins only inside the `pack` job's own checkout. The tree therefore keeps `0.2.0` as the version local builds and the Storybook carry, and it is not changed by hand. `node scripts/release.mjs check` still requires every published manifest to share one exact `MAJOR.MINOR.PATCH` version and every dependency between workspaces to pin it exactly, because that pin is what makes npm link the local workspace instead of installing a copy from the registry.
 
 **There are no pre-releases and one release line.** Every version is `MAJOR.MINOR.PATCH`, published under the `latest` dist-tag, and a fix for an older minor is released as the next version on the current line.
 
@@ -89,7 +89,7 @@ The version moves on every merge, but a merge whose published bytes are unchange
 
 - **When no package differs, nothing is published, tagged or released.** The `pack` job's summary says "Nothing to release" and lists each package's latest version. Documentation, CI, workflow, script, test and Storybook changes land this way.
 - **When every commit since the previous release is a Dependabot update, nothing is published, tagged or released either**, whatever the packages contain, and the `pack` summary says so. A commit is Dependabot's when Dependabot is its author and its only co-author (a squash adds a `Co-authored-by` trailer for each author on the branch), so a fix a person pushed onto a Dependabot branch is released like any other change. The next merge that brings any other commit, even a documentation change, releases the updates with it, because they change the published bytes like anything else; to ship one sooner, a security update for example, merge such a change. Dependabot opens its pull requests in weekly batches, and releasing each would put a run of versions on the registry that each move one dependency.
-- **When any package differs, all three are released at the new version**, including the ones whose contents did not change, so the three always share one version.
+- **When any package differs, all four are released at the new version**, including the ones whose contents did not change, so the four always share one version.
 - **What a tarball contains** is its manifest's `files`, plus `package.json`, `README.md` and `LICENSE`, which npm always includes. A change to a package's own README, to a published manifest's dependency ranges, or a dependency update that changes the built output, is therefore released as a patch.
 - **A merge that was not released is still part of the next release.** The next version is computed over every commit since the previous tag, and the GitHub release notes list every pull request merged since it.
 
@@ -109,7 +109,7 @@ Once the run for a merge is green:
    npm audit signatures                                          # registry signatures and attestations verify
    ```
 
-3. Open the GitHub release and check that it carries no attached files and that its first lines link to the three npm versions.
+3. Open the GitHub release and check that it carries no attached files and that its first lines link to the four npm versions.
 
 ---
 

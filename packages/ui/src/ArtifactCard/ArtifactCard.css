@@ -1,0 +1,109 @@
+/*
+ * A card in a gallery: the preview on top at a fixed ratio, so a grid of them
+ * lines up whatever each preview is, then the title and up to three lines of
+ * facts. `compact` is a row with the kind's glyph in place of the preview.
+ */
+
+.crewlet-artifact-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+}
+
+.crewlet-artifact-card--compact {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+}
+
+.crewlet-artifact-card__preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-surface-inset);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-artifact-card__glyph {
+  display: inline-flex;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-artifact-card__glyph--compact {
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-inset);
+}
+
+.crewlet-artifact-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: var(--spacing-3);
+}
+
+.crewlet-artifact-card--compact .crewlet-artifact-card__body {
+  padding: 0;
+}
+
+.crewlet-artifact-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-artifact-card__title {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-artifact-card__pin {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-artifact-card__facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-artifact-card__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-artifact-card__owner,
+.crewlet-artifact-card__presence {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-artifact-card__changes {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}

@@ -17,6 +17,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **`badge-percent`**, the discount note on the Storybook's `PricingCard`, which drew Material's `tag`, a hash sign, beside "Save $5 (10% off)".
 - **`circle`**, the Todo state a task row leads with in the command palette's Storybook story, beside `circle-check` for Done. The artboard draws both states as marks of its own on a 14 unit grid (a bare ring, and a filled disc with a check cut out of it) rather than as Lucide icons, so neither is among the 59 above; the ring is Lucide's `circle` stroke for stroke, and Done keeps `circle-check` in the success ink rather than a filled disc, because `FILLABLE` paints a drawing's inside in the same colour as its stroke, which would fill the check in.
 - **The formatting bar of `MarkdownEditor`** in `@crewlethq/ui`: `heading-2` and `heading-3` for the two heading levels a page's outline lists, `bold`, `italic`, `list-ordered` for a numbered list beside `list`, and `list-checks` for a checklist. Each is a control a writer recognises by its drawing, so the bar draws all of them as glyphs rather than spelling some as letters ("H2", "B") beside the glyphs of the rest.
+- **`mouse-pointer-2`**, the pointer a collaborator's `LiveCursor` in `@crewlethq/ui` is drawn with, beside its name flag, on a board or a page that shares cursors.
 
 ## Provenance
 
@@ -97,6 +98,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `external-link` | `ExternalLinkGlyph` | `package/icons/external-link.svg` |
 | `eye` | `EyeGlyph` | `package/icons/eye.svg` |
 | `eye-off` | `EyeOffGlyph` | `package/icons/eye-off.svg` |
+| `file-code` | `FileCodeGlyph` | `package/icons/file-code.svg` |
 | `file-text` | `FileTextGlyph` | `package/icons/file-text.svg` |
 | `flag` | `FlagGlyph` | `package/icons/flag.svg` |
 | `folder` | `FolderGlyph` | `package/icons/folder.svg` |
@@ -109,6 +111,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `heading-2` | `Heading2Glyph` | `package/icons/heading-2.svg` |
 | `heading-3` | `Heading3Glyph` | `package/icons/heading-3.svg` |
 | `house` | `HouseGlyph` | `package/icons/house.svg` |
+| `image` | `ImageGlyph` | `package/icons/image.svg` |
 | `inbox` | `InboxGlyph` | `package/icons/inbox.svg` |
 | `info` | `InfoGlyph` | `package/icons/info.svg` |
 | `italic` | `ItalicGlyph` | `package/icons/italic.svg` |
@@ -129,6 +132,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `minus` | `MinusGlyph` | `package/icons/minus.svg` |
 | `monitor` | `MonitorGlyph` | `package/icons/monitor.svg` |
 | `moon` | `MoonGlyph` | `package/icons/moon.svg` |
+| `mouse-pointer-2` | `MousePointer2Glyph` | `package/icons/mouse-pointer-2.svg` |
 | `network` | `NetworkGlyph` | `package/icons/network.svg` |
 | `package` | `PackageGlyph` | `package/icons/package.svg` |
 | `palette` | `PaletteGlyph` | `package/icons/palette.svg` |
@@ -144,6 +148,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `refresh-cw` | `RefreshCwGlyph` | `package/icons/refresh-cw.svg` |
 | `repeat-2` | `Repeat2Glyph` | `package/icons/repeat-2.svg` |
 | `rotate-ccw` | `RotateCcwGlyph` | `package/icons/rotate-ccw.svg` |
+| `rotate-ccw-clock` | `RotateCcwClockGlyph` | `package/icons/rotate-ccw-clock.svg` |
 | `rotate-cw` | `RotateCwGlyph` | `package/icons/rotate-cw.svg` |
 | `save` | `SaveGlyph` | `package/icons/save.svg` |
 | `search` | `SearchGlyph` | `package/icons/search.svg` |
@@ -151,6 +156,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `server` | `ServerGlyph` | `package/icons/server.svg` |
 | `settings` | `SettingsGlyph` | `package/icons/settings.svg` |
 | `settings-2` | `Settings2Glyph` | `package/icons/settings-2.svg` |
+| `share-2` | `Share2Glyph` | `package/icons/share-2.svg` |
 | `shield` | `ShieldGlyph` | `package/icons/shield.svg` |
 | `shield-user` | `ShieldUserGlyph` | `package/icons/shield-user.svg` |
 | `sliders-vertical` | `SlidersVerticalGlyph` | `package/icons/sliders-vertical.svg` |
@@ -164,6 +170,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `trash` | `TrashGlyph` | `package/icons/trash.svg` |
 | `triangle-alert` | `TriangleAlertGlyph` | `package/icons/triangle-alert.svg` |
 | `undo` | `UndoGlyph` | `package/icons/undo.svg` |
+| `upload` | `UploadGlyph` | `package/icons/upload.svg` |
 | `user` | `UserGlyph` | `package/icons/user.svg` |
 | `user-plus` | `UserPlusGlyph` | `package/icons/user-plus.svg` |
 | `users` | `UsersGlyph` | `package/icons/users.svg` |

@@ -1,8 +1,8 @@
 name: release
 
-# Releases every merge to main: publishes @crewlethq/tokens, @crewlethq/icons
-# and @crewlethq/ui to registry.npmjs.org, tags the merged commit and creates
-# the GitHub release. See RELEASING.md for the runbook.
+# Releases every merge to main: publishes @crewlethq/tokens, @crewlethq/icons,
+# @crewlethq/ui and @crewlethq/artifact-kit to registry.npmjs.org, tags the
+# merged commit and creates the GitHub release. See RELEASING.md for the runbook.
 #
 # There is no approval step after the merge. The main branch ruleset requires
 # an approving code owner review from someone other than the last pusher, and
@@ -217,7 +217,9 @@ jobs:
           path: ${{ runner.temp }}/packages
 
       # The package list below is an allowlist, in dependency order: tokens
-      # and icons are on the registry before the ui version that pins them.
+      # and icons are on the registry before the ui version that pins them,
+      # and the artifact kit, which is built from the tokens and the ui, comes
+      # last.
       # Each tarball must be exactly that package at the version release.json
       # names, with exactly the publishConfig scripts/release.mjs check
       # enforces and no top-level tag field: npm publish applies every
@@ -254,7 +256,7 @@ jobs:
           PACKAGES_DIR: ${{ runner.temp }}/packages
         run: |
           set -euo pipefail
-          packages=(tokens icons ui)
+          packages=(tokens icons ui artifact-kit)
           expected_publish_config='{"access":"public","registry":"https://registry.npmjs.org"}'
 
           version="$(jq -r .version "${PACKAGES_DIR}/release.json")"
@@ -468,7 +470,7 @@ jobs:
           fi
 
           notes="Published to npm:"$'\n'
-          for package in tokens icons ui; do
+          for package in tokens icons ui artifact-kit; do
             notes+=$'\n'"- [@crewlethq/${package}@${VERSION}](https://www.npmjs.com/package/@crewlethq/${package}/v/${VERSION})"
           done
 

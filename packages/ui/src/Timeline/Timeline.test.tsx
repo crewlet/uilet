@@ -77,3 +77,13 @@ test('a marker replaces the number where the step has an identity of its own', (
 test('an item outside a Timeline says so rather than drawing a wrong number', () => {
   expect(() => render(<Timeline.Item>orphan</Timeline.Item>)).toThrow(/inside a Timeline/);
 });
+
+test('an item whose content names it draws no hidden label to be read twice', () => {
+  const { container } = render(
+    <Timeline itemLabel="Version">
+      <Timeline.Item label={false}>Version 12</Timeline.Item>
+    </Timeline>,
+  );
+  expect(container.querySelector('.crewlet-visually-hidden')).toBeNull();
+  expect(screen.getByText('Version 12')).toBeDefined();
+});

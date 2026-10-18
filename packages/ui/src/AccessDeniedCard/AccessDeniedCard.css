@@ -1,0 +1,8 @@
+/* The card holds one empty state and nothing else, at a reading width, so a
+   refusal in a wide viewer body reads as one sentence rather than a banner. */
+
+.crewlet-access-denied-card {
+  width: 100%;
+  max-width: var(--size-measure);
+  margin-inline: auto;
+}

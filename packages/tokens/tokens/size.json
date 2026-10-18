@@ -10,6 +10,9 @@
       "md": { "value": "36px", "density": true },
       "lg": { "value": "48px", "density": true }
     },
+    "sheet": {
+      "row": { "value": "32px", "density": true, "comment": "The height of a row in an editable data sheet: a chip, a person badge and a status word each fit on one line in it. Density-scaled like every row, so the three density steps are 26.24px compact, 32px normal and 37.12px comfortable, all over the 24px target floor, and a sheet measures it rather than restating it, which is how its virtualised rows stay in step with the cells drawn in them." }
+    },
     "nav": {
       "gutter": { "value": "8px", "density": true, "comment": "The rail's geometry in TWO parts, because a row's EDGE and a row's TEXT want different insets. The gutter insets the rail, which is where a row's background begins; the row pad insets the content inside the row. Splitting it is what lets the rows widen without moving a glyph: shrink the gutter, grow the pad by the same step, and the line every mark, group label and item text starts on does not move." },
       "rowPad": { "value": "12px", "density": true },

@@ -1,0 +1,50 @@
+/*
+ * The frame fills the box it is given. The page around it does not scroll
+ * round the artifact: the artifact scrolls inside its own document, which is
+ * what a viewer body that holds one wants.
+ *
+ * The region takes focus when the frame hands it back, and keeps the
+ * document's own focus treatment then: a reader who just left a page by
+ * keyboard needs to see where they landed.
+ */
+
+.crewlet-sandboxed-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-background);
+}
+
+.crewlet-sandboxed-frame__frame {
+  flex: 1 1 auto;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+/* Kept out of sight while it starts, so a document that has not painted in
+   the reader's palette yet is never what they see. It still loads. */
+.crewlet-sandboxed-frame[data-state='loading'] .crewlet-sandboxed-frame__frame {
+  visibility: hidden;
+}
+
+.crewlet-sandboxed-frame__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  padding: var(--spacing-3);
+}
+
+.crewlet-sandboxed-frame__end {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: var(--spacing-4);
+}

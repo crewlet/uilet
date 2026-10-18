@@ -10,6 +10,16 @@ import { render, screen } from '@testing-library/react';
 import { Button } from '@crewlethq/ui';
 import config from '../vitest.config';
 
+/*
+ * Loading the built entry hands every chunk of the published library to Vite
+ * to transform, so the case's cost grows with each component the library
+ * gains: with the sheet and presence pieces it takes about 4 s on its own and
+ * longer while the other suites share the machine. The runner's 5 s default
+ * is a budget for one component's suite, not for the whole library, so this
+ * case carries a budget of its own. A loader failure still fails it at once.
+ */
+const BUILT_ENTRY_TIMEOUT_MS = 30_000;
+
 describe('the runner', () => {
   test('a uilet component mounts, its stylesheet imports and all', () => {
     render(<Button>Save</Button>);
@@ -32,7 +42,7 @@ describe('the runner', () => {
      */
     render(<built.Button>Built</built.Button>);
     expect(screen.getByRole('button', { name: 'Built' })).toBeDefined();
-  });
+  }, BUILT_ENTRY_TIMEOUT_MS);
 
   test('the runner keeps the @crewlethq scope inlined', () => {
     /*

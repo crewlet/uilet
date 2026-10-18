@@ -1,0 +1,146 @@
+/*
+ * Three blocks under the title: who to add and at what role, who has access,
+ * and what the whole company may do. Each row of the audience is the badge,
+ * the name over its second line, and the controls at the inline end; the note
+ * and a refusal run the full width under it, so a long sentence never pushes
+ * the controls out of line with the rows above and below.
+ */
+
+.crewlet-share-dialog__add {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.crewlet-share-dialog__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.crewlet-share-dialog__heading {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-share-dialog__audience {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-share-dialog__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--spacing-3);
+  padding: var(--spacing-2) 0;
+}
+
+.crewlet-share-dialog__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-share-dialog__name {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-share-dialog__you,
+.crewlet-share-dialog__detail {
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-share-dialog__detail {
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-share-dialog__controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-1);
+}
+
+.crewlet-share-dialog__role,
+.crewlet-share-dialog__saving {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-share-dialog__saving {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-share-dialog__note,
+.crewlet-share-dialog__refusal {
+  grid-column: 2 / -1;
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-share-dialog__note {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-share-dialog__refusal {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-share-dialog__refusal:empty {
+  display: none;
+}
+
+.crewlet-share-dialog__company {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-share-dialog__company-text {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.crewlet-share-dialog__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-share-dialog__link-note {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+/* Under the phone breakpoint the row's controls go under the name, so a
+   role select and a remove control never squeeze the name to an ellipsis. */
+@media (width < 640px) {
+  .crewlet-share-dialog__row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .crewlet-share-dialog__controls {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+  }
+
+  .crewlet-share-dialog__add {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

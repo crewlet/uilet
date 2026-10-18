@@ -1,0 +1,22 @@
+/*
+ * A change mark (ChangeMark.tsx): a notch in the top end corner of whatever
+ * it sits on, which is the nearest positioned ancestor. A triangle drawn by
+ * two borders, so it is a shape at any zoom and needs no glyph.
+ */
+
+.crewlet-change-mark {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  width: 0;
+  height: 0;
+  border-top: var(--spacing-2) solid var(--color-change-mark);
+  border-inline-start: var(--spacing-2) solid transparent;
+  pointer-events: auto;
+}
+
+@media (forced-colors: active) {
+  .crewlet-change-mark {
+    border-top-color: CanvasText;
+  }
+}

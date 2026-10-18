@@ -42,8 +42,11 @@ export const GLYPHS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..',
  *
  * `star` is the kept state: the Crewlet console's favourite toggle, and the
  * `star-fill` drawing Material Symbols carried as a second glyph.
+ * `mouse-pointer-2` is a collaborator's live cursor, which is a solid pointer
+ * in their presence hue: an outlined arrow over a page's content reads as one
+ * more line of the content rather than as somebody's hand on it.
  */
-export const FILLABLE = ['star'];
+export const FILLABLE = ['star', 'mouse-pointer-2'];
 
 /*
  * The one root every vendored file has, attribute for attribute. The `class`

@@ -86,11 +86,14 @@ const REGISTRY = 'https://registry.npmjs.org';
 // Font License, and @crewlethq/icons ships the Lucide drawings, which stay
 // under the ISC License (and, for those Lucide derives from Feather, the MIT
 // License the package already names), so MIT alone would misstate the terms
-// of part of either tarball.
+// of part of either tarball. @crewlethq/artifact-kit copies the same font
+// files into its bundle and bundles the Lucide drawings the sheet's glyphs
+// are (with React, under MIT), so it carries both expressions.
 const LICENSES = {
   '@crewlethq/tokens': 'MIT AND OFL-1.1',
   '@crewlethq/icons': 'MIT AND ISC',
   '@crewlethq/ui': 'MIT',
+  '@crewlethq/artifact-kit': 'MIT AND OFL-1.1 AND ISC',
 };
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
 // Every lockfile an install in this repository reads.
