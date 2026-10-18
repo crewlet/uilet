@@ -219,6 +219,21 @@
   font-size: var(--font-size-xs);
 }
 
+/*
+ * Facts above the items, across the panel's full width with a hairline under
+ * them: what the actions below are about, read rather than pressed.
+ */
+.crewlet-menu__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: calc(var(--spacing-1) * -1) calc(var(--spacing-1) * -1) var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-bottom: 1px solid var(--color-border-default);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
 .crewlet-menu__separator {
   height: 1px;
   margin: var(--spacing-1) 0;

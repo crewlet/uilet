@@ -101,3 +101,16 @@ export const MixedRows: Story = {
     ],
   },
 };
+
+/** Facts above the actions, read rather than pressed: what the actions are about. */
+export const WithHeader: Story = {
+  args: {
+    label: 'Your account',
+    header: 'Access: Admin',
+    items: [
+      { key: 'account', label: 'Account settings', icon: <UserGlyph />, onSelect: () => {} },
+      { kind: 'separator', key: 'sep' },
+      { key: 'out', label: 'Sign out', onSelect: () => {} },
+    ],
+  },
+};

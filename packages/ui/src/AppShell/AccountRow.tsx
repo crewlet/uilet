@@ -1,7 +1,18 @@
 import type { ReactNode } from 'react';
-import { ChevronRightGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronRightGlyph, ChevronsUpDownGlyph } from '@crewlethq/icons/glyphs';
+import { Menu, type MenuEntry } from '../Menu/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
+
+/** The menu the row opens (`AccountRowProps.menu`). */
+export interface AccountRowMenu {
+  /** The menu's name. Defaults to "Your account". */
+  label?: string | undefined;
+  /** Facts above the items that the row does not already say: the reader's access. */
+  header?: ReactNode;
+  /** The reader's own actions: their account, signing out. */
+  items: readonly MenuEntry[];
+}
 
 export interface AccountRowProps {
   /** The reader's badge, drawn decorative: the name beside it says who it is. */
@@ -10,8 +21,14 @@ export interface AccountRowProps {
   name: ReactNode;
   /** The line under the name: a login, a seat. Left out where it would repeat the name. */
   detail?: ReactNode;
-  /** The reader's account page. Without it the row states who is signed in and goes nowhere. */
+  /** The reader's account page. Without it (or `menu`) the row states who is signed in and goes nowhere. */
   href?: string | undefined;
+  /**
+   * The reader's own menu, which the row OPENS rather than linking anywhere:
+   * their account among its items, and signing out. Given, it takes the place
+   * of `href`.
+   */
+  menu?: AccountRowMenu | undefined;
   /** Whether the reader is on that page, which marks the row as the rail marks its current row. */
   current?: boolean | undefined;
   /** What the link opens, as its tooltip. */
@@ -41,12 +58,19 @@ export interface AccountRowProps {
  *
  * The controls are siblings of the link, never inside it, so each keeps its
  * own name and the link's name stays the reader's.
+ *
+ * OR THE ROW OPENS THE READER'S MENU (`menu`): pressing who you are is where a
+ * reader looks for their account and for signing out, so the row is the menu
+ * button, ending in the up-and-down chevron a menu's trigger draws, and the
+ * account is one item of it. The menu says only what the row does not, in its
+ * header (their access), above the actions.
  */
 export function AccountRow({
   avatar,
   name,
   detail,
   href,
+  menu,
   current = false,
   title,
   linkSuffix = ', your account',
@@ -73,7 +97,28 @@ export function AccountRow({
   );
   return (
     <div className={cx('crewlet-account-row', className)}>
-      {href === undefined ? (
+      {menu ? (
+        <Menu
+          label={menu.label ?? 'Your account'}
+          items={menu.items}
+          header={menu.header}
+          renderTrigger={(trigger) => (
+            <button
+              type="button"
+              className="crewlet-account-row__who"
+              title={title}
+              // WHERE THE READER IS: a button carries no `aria-current`, so the
+              // account page's lift is drawn from this.
+              data-current={current ? '' : undefined}
+              {...trigger}
+            >
+              {who}
+              <VisuallyHidden>{linkSuffix}</VisuallyHidden>
+              <ChevronsUpDownGlyph size="xs" className="crewlet-account-row__go" aria-hidden="true" />
+            </button>
+          )}
+        />
+      ) : href === undefined ? (
         <span className="crewlet-account-row__who">{who}</span>
       ) : (
         <a

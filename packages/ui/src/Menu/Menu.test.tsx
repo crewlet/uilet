@@ -546,3 +546,73 @@ test('a menu whose panel changes size while open is placed again', () => {
     globalThis.ResizeObserver = realRO;
   }
 });
+
+test('a header says what the actions are about: never an item, and the menu is described by it', () => {
+  render(<Menu label="Actions for Software Engineer" items={entries()} header={<span>Access: Admin</span>} />);
+  fireEvent.click(trigger());
+  const menu = screen.getByRole('menu');
+  const header = menu.querySelector('.crewlet-menu__header')!;
+  expect(header.textContent).toBe('Access: Admin');
+  expect(header.getAttribute('role')).toBe('presentation');
+  expect(menu.getAttribute('aria-describedby')).toBe(header.id);
+  // The arrows walk the items alone: the header is read, never stopped on.
+  expect(document.activeElement).toBe(item('Edit'));
+  press('ArrowUp');
+  expect(document.activeElement).toBe(item('Delete'));
+});
+
+test('without a header the menu is described by nothing', () => {
+  render(<Menu label="Actions for Software Engineer" items={entries()} />);
+  fireEvent.click(trigger());
+  expect(screen.getByRole('menu').hasAttribute('aria-describedby')).toBe(false);
+  expect(screen.getByRole('menu').querySelector('.crewlet-menu__header')).toBeNull();
+});
+
+test('the caller’s own trigger opens the menu and keeps every rule of the button', () => {
+  const edited = vi.fn();
+  render(
+    <Menu
+      label="Your account"
+      items={entries({ onEdit: edited })}
+      renderTrigger={(props) => (
+        <button type="button" className="own" {...props}>
+          Lee Park
+        </button>
+      )}
+    />,
+  );
+  const own = screen.getByRole('button', { name: 'Lee Park' });
+  expect(own.classList.contains('own')).toBe(true);
+  expect(own.getAttribute('aria-haspopup')).toBe('menu');
+  expect(own.getAttribute('aria-expanded')).toBe('false');
+  expect(screen.queryByRole('button', { name: 'Your account' })).toBeNull();
+
+  fireEvent.click(own);
+  expect(own.getAttribute('aria-expanded')).toBe('true');
+  expect(screen.getByRole('menu', { name: 'Your account' }).id).toBe(own.getAttribute('aria-controls'));
+  expect(document.activeElement).toBe(item('Edit'));
+
+  // Escape gives focus back to the caller's element, and an action runs with
+  // focus already there.
+  press('Escape');
+  expect(document.activeElement).toBe(own);
+  own.focus();
+  fireEvent.keyDown(own, { key: 'ArrowDown' });
+  fireEvent.click(item('Edit'));
+  expect(edited).toHaveBeenCalledTimes(1);
+  expect(document.activeElement).toBe(own);
+});
+
+test('a menu with a header carries no axe violation', async () => {
+  const { container } = render(
+    <Menu label="Actions for Software Engineer" items={entries()} header={<span>Access: Admin</span>} />,
+  );
+  fireEvent.click(trigger());
+  const result = await axe.run(document.body, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(container).toBeDefined();
+  expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
