@@ -1,0 +1,80 @@
+/*
+ * ArrangeBoard: the ground under a page being arranged. Two layers, both
+ * under every block (the board is its own stacking context, so they sit above
+ * its background and below its content): the hatch on `::after`, and the
+ * column lanes on `::before`, shown only while a block is carried or resized.
+ */
+
+.crewlet-arrange-board {
+  --crewlet-arrange-board-gap: var(--spacing-4);
+  /* The hatch, as one value: the ground below and the notes standing on it
+     draw the same lines. */
+  --crewlet-arrange-board-hatch: repeating-linear-gradient(
+    -45deg,
+    var(--color-border-hatch) 0 1px,
+    transparent 1px var(--spacing-2)
+  );
+
+  min-width: 0;
+}
+
+.crewlet-arrange-board.is-editing {
+  position: relative;
+  isolation: isolate;
+  margin-inline: calc(var(--spacing-3) * -1);
+  padding: var(--spacing-5) var(--spacing-3);
+  border-radius: var(--radius-xl);
+}
+
+/* Room to land below the last block while one is carried out of a group:
+   a page made only of groups otherwise has no bare stretch of its own. */
+.crewlet-arrange-board.is-editing:has(.crewlet-arrange-group__body [data-reorder='dragging']) {
+  padding-bottom: var(--spacing-11);
+}
+
+/* The hatch: its own ink, the strong hairline's held back to 60%, one
+   diagonal every half step, so the cards standing on it stay the loudest
+   thing on the page. */
+.crewlet-arrange-board.is-editing::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--crewlet-arrange-board-hatch);
+  pointer-events: none;
+}
+
+/* A note is an annotation on the ground, not a card on it: while the page is
+   arranged its paper shows the hatch through, inside a group as well, where
+   the group's own surface hides the ground. */
+.crewlet-arrange-board.is-editing .crewlet-note {
+  background: var(--crewlet-arrange-board-hatch), var(--crewlet-note-paper);
+}
+
+/* The lanes: one tile per column and its gap, as wide as the grid, so the
+   twelfth tile's gap falls outside the board and is not drawn. */
+.crewlet-arrange-board.is-editing::before {
+  content: '';
+  position: absolute;
+  inset: 0 var(--spacing-3);
+  background: linear-gradient(
+      to right,
+      var(--color-brand-accent-soft) 0 calc(100% - var(--crewlet-arrange-board-gap)),
+      transparent 0
+    )
+    0 0 / calc((100% + var(--crewlet-arrange-board-gap)) / var(--crewlet-arrange-board-columns)) 100%
+    repeat-x;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-base) var(--motion-easing-default);
+}
+.crewlet-arrange-board.is-editing:has([data-reorder='dragging'], .crewlet-arrange-frame.is-resizing)::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-arrange-board.is-editing::before {
+    transition: none;
+  }
+}

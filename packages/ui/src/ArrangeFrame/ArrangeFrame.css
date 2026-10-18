@@ -1,0 +1,329 @@
+/*
+ * ArrangeFrame: a block of a page being arranged.
+ *
+ * Off, the frame is layout only. Editing, the block keeps its own look at
+ * rest; hovered or focused, one accent ring is drawn over its own edge and
+ * its toolbar and resize handle appear. Every piece of chrome floats, so a
+ * block is the same size while arranging as afterwards.
+ */
+
+.crewlet-arrange-frame {
+  /* The corner every ring and bracket follows: a card's own. */
+  --crewlet-arrange-frame-radius: var(--radius-lg);
+  /* How far outside the block its ring is drawn; the chrome sits on the ring. */
+  --crewlet-arrange-frame-outset: 0px;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: var(--crewlet-arrange-frame-radius);
+}
+
+.crewlet-arrange-frame__content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.crewlet-arrange-frame__content > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* A height of the reader's: the content scrolls inside it. */
+.crewlet-arrange-frame.is-fixed-height .crewlet-arrange-frame__content > * {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---- Editing ---------------------------------------------------------- */
+
+/* The block itself is what moves: focused, its ring is its focus mark. The
+   transparent outline is the one forced-colors mode paints in its place. */
+.crewlet-arrange-frame.is-editing:focus-visible {
+  outline: 2px solid transparent;
+}
+
+/* The surface is what a pointer moves a block by. */
+.crewlet-arrange-frame.is-editing:not(.is-container) {
+  cursor: grab;
+}
+.crewlet-arrange-frame.is-editing:not(.is-container):active {
+  cursor: grabbing;
+}
+.crewlet-arrange-frame.is-editing:not(.is-container) > .crewlet-arrange-frame__content {
+  user-select: none;
+}
+
+/*
+ * THE ONE RING, over the block's own edge, on the innermost block the
+ * pointer or the focus is in. A hairline drawn exactly over the block's own
+ * 1px border, so the border turns to the accent rather than a second, heavier
+ * line appearing around it.
+ *
+ * IT IS A LAYER OF ITS OWN, above the content. An outline is painted with the
+ * block, under any content that is positioned or scrolls (a card with a fixed
+ * height scrolls its list), and that content covered it. Positioned after the
+ * content with no depth of its own, it paints over the content and under the
+ * toolbar and the handle, which are raised.
+ */
+.crewlet-arrange-frame.is-editing::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--crewlet-arrange-frame-outset) * -1);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.crewlet-arrange-frame.is-editing:is(:hover, :focus-visible, :has(:focus-visible)):not(
+    :has(.crewlet-arrange-frame:is(:hover, :focus-visible, :has(:focus-visible)))
+  )::after,
+.crewlet-arrange-frame.is-selected::after,
+.crewlet-arrange-frame.is-resizing::after {
+  border-color: var(--color-brand-accent);
+}
+
+/* A block with no surface of its own takes its ring a step outside it. */
+.crewlet-arrange-frame.is-bare {
+  --crewlet-arrange-frame-radius: var(--radius-md);
+  --crewlet-arrange-frame-outset: var(--spacing-1);
+}
+
+/* Carried, the block is the hole it leaves. */
+.crewlet-arrange-frame.is-editing[data-reorder='dragging']::after {
+  border-style: dashed;
+  border-color: var(--color-brand-accent);
+}
+.crewlet-arrange-frame[data-reorder='dragging'] > .crewlet-arrange-frame__content {
+  opacity: 0.3;
+}
+
+/* Where a block from another list will land: a bar of the accent in the gap
+   before the block it will precede. */
+.crewlet-arrange-frame[data-reorder-target='before']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--spacing-2) * -1 - 2px);
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-brand-accent);
+}
+
+/* ...or after the last block, when it will land at the end. */
+.crewlet-arrange-frame[data-reorder-target='after']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: calc(var(--spacing-2) * -1 - 2px);
+  bottom: 0;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-brand-accent);
+}
+
+/* Beside a block that spans its row, the bar runs along the gap above it,
+   or below it when it is the last. */
+.crewlet-arrange-frame[data-reorder-line='horizontal'][data-reorder-target]::before {
+  top: auto;
+  right: 0;
+  bottom: auto;
+  left: 0;
+  width: auto;
+  height: 3px;
+}
+.crewlet-arrange-frame[data-reorder-line='horizontal'][data-reorder-target='before']::before {
+  top: calc(var(--spacing-2) * -1 - 2px);
+}
+.crewlet-arrange-frame[data-reorder-line='horizontal'][data-reorder-target='after']::before {
+  bottom: calc(var(--spacing-2) * -1 - 2px);
+}
+
+/* Just added: one pulse of the accent around it. */
+.crewlet-arrange-frame.is-fresh {
+  animation: crewlet-arrange-frame-fresh calc(var(--motion-duration-slow) * 4) var(--motion-easing-out) 1;
+}
+@keyframes crewlet-arrange-frame-fresh {
+  0%,
+  40% {
+    box-shadow: 0 0 0 4px var(--color-brand-accent-soft);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* ---- The toolbar -------------------------------------------------------- */
+
+/* On the block's top edge, half outside it: clear of a card's own header
+   links, and of the block above, which is a row gap away. */
+.crewlet-arrange-frame__bar {
+  position: absolute;
+  top: calc(var(--crewlet-arrange-frame-outset) * -1);
+  right: var(--spacing-3);
+  z-index: var(--z-index-raised);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-50%);
+}
+
+.crewlet-arrange-frame__sep:first-child {
+  display: none;
+}
+.crewlet-arrange-frame__sep {
+  align-self: stretch;
+  width: 1px;
+  margin: 3px 2px;
+  background: var(--color-border-default);
+}
+
+/* ---- Resize handles ------------------------------------------------------- */
+
+.crewlet-arrange-frame__resize {
+  position: absolute;
+  z-index: var(--z-index-raised);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-tertiary);
+  touch-action: none;
+}
+.crewlet-arrange-frame__grip {
+  position: absolute;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+.crewlet-arrange-frame__resize:hover,
+.crewlet-arrange-frame__resize:focus-visible,
+.crewlet-arrange-frame.is-resizing .crewlet-arrange-frame__resize {
+  color: var(--color-brand-accent);
+}
+.crewlet-arrange-frame__resize:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+  border-radius: var(--radius-sm);
+}
+
+/* BOTH WAYS: a bracket in the corner, following the card's own radius. */
+.crewlet-arrange-frame__resize.is-corner {
+  right: calc(var(--crewlet-arrange-frame-outset) * -1);
+  bottom: calc(var(--crewlet-arrange-frame-outset) * -1);
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+}
+.crewlet-arrange-frame__resize.is-corner > .crewlet-arrange-frame__grip {
+  right: 4px;
+  bottom: 4px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-bottom-right-radius: calc(var(--crewlet-arrange-frame-radius) - 4px);
+}
+
+/* WIDTH ONLY: a grip on the right edge, the handle of a column splitter,
+   in the corner bracket's colour and ringed in the page's ground so it reads
+   over the card's border. */
+.crewlet-arrange-frame__resize.is-edge {
+  top: 50%;
+  right: calc(-7px - var(--crewlet-arrange-frame-outset));
+  width: 14px;
+  height: 36px;
+  cursor: ew-resize;
+  transform: translateY(-50%);
+}
+.crewlet-arrange-frame__resize.is-edge > .crewlet-arrange-frame__grip {
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: 6px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+  box-shadow: 0 0 0 2px var(--color-surface-background);
+}
+
+/* ---- What shows when ---------------------------------------------------- */
+
+/* The toolbar and the handle belong to the innermost block hovered or
+   focused, and stay while its menu is open or it is being resized. */
+.crewlet-arrange-frame__bar,
+.crewlet-arrange-frame__resize {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+.crewlet-arrange-frame.is-editing:is(:hover, :focus-visible, :has(:focus-visible)):not(
+    :has(.crewlet-arrange-frame:is(:hover, :focus-visible, :has(:focus-visible)))
+  )
+  > :is(.crewlet-arrange-frame__bar, .crewlet-arrange-frame__resize),
+.crewlet-arrange-frame.is-editing > .crewlet-arrange-frame__bar:has([aria-expanded='true']),
+.crewlet-arrange-frame.is-editing:has(> .crewlet-arrange-frame__bar [aria-expanded='true'])
+  > .crewlet-arrange-frame__resize,
+.crewlet-arrange-frame.is-resizing > :is(.crewlet-arrange-frame__bar, .crewlet-arrange-frame__resize) {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* A touch screen has no hover to reveal them with. */
+@media (hover: none) {
+  .crewlet-arrange-frame.is-editing > :is(.crewlet-arrange-frame__bar, .crewlet-arrange-frame__resize) {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* ---- While resizing ------------------------------------------------------- */
+
+/* The columns of the grid the block sits on, across its row. */
+.crewlet-arrange-frame__guides {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: var(--z-index-raised);
+  display: grid;
+  pointer-events: none;
+}
+.crewlet-arrange-frame__guides > span {
+  border-inline: 1px dashed var(--color-brand-accent);
+  background: var(--color-brand-accent-soft);
+  opacity: 0.3;
+}
+
+/* The size it will land at, over the middle of the block. */
+.crewlet-arrange-frame__size {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: calc(var(--z-index-raised) + 1);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-arrange-frame__bar,
+  .crewlet-arrange-frame__resize,
+  .crewlet-arrange-frame__grip {
+    transition: none;
+  }
+  .crewlet-arrange-frame.is-fresh {
+    animation: none;
+  }
+}
