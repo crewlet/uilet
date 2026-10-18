@@ -57,6 +57,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `AccessDeniedCard`, and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
 | Sheets | `SheetGrid`, the cells on their own (`CheckboxCell`, `TextCell`, `LongTextCell`, `NumberCell`, `SelectCell`, `MultiSelectCell`, `PersonCell`, `StatusCell`, `DateCell`, `UrlCell`, `RatingCell`, and `SheetCell` for any type), `ChangeMark`, and `SheetModel` (every rule a sheet is drawn from, with no React in it: values, parsing, the keyboard model, TSV, the pending edits of D23) |
 | Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, `PeopleRail` (with `peopleRailKey`), and `PresenceModel` (the roster order, one entry per person, the session hues, with no React in it) |
+| Presentations | `SlideStage` (a slide laid out at 1920 by 1080 and scaled to its box, with `SLIDE_WIDTH` and `SLIDE_HEIGHT`), `useSlideKeys` (the keys a show and a clicker send), `SlideFilmstrip`, `SlideGrid`, `PresenterView` (with `formatStopwatch`) |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -202,6 +203,22 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.25.0
+
+0.25.0 adds the pieces a slide deck is shown with. Each draws slides the host renders itself and takes its data and callbacks as props, so nothing in it parses a slide or knows a route.
+
+**`SlideStage`** lays a slide out at its authored size, 1920 by 1080 (`SLIDE_WIDTH`, `SLIDE_HEIGHT`), and scales it as a whole to its box, measured whenever the box resizes, so a thumbnail, the editor and a projector show the same line breaks. `fit="width"` is as wide as its column at 16:9; `fit="contain"` is as large as fits both ways, letterboxed, for Present; a fixed `scale` is for print. It is a group announced as a slide, named by `label`.
+
+**`useSlideKeys`** answers the keys every presentation and every clicker sends: forward on Right, Down, Page Down, Space and Enter, back on Left, Up, Page Up and Backspace, Home and End to the ends, Escape out. It listens at the document while `enabled`, and leaves alone a field the reader is typing in, a composition, a key a nearer surface handled, and modified keys.
+
+**`SlideFilmstrip`** is the column of thumbnails beside a deck's stage: the slide on the stage marked `aria-current`, one tab stop whose arrow keys move to the next slide, and, with `onReorder`, a handle per slide that moves it by drag or by its arrow keys and announces where it landed. A hidden slide is dimmed and says so.
+
+**`SlideGrid`** lays every slide out by the outline's sections, numbered across the deck, each a button that opens its slide.
+
+**`PresenterView`** is the presenter's own screen: the slide the room sees, the next one, the speaker notes large and on their own scroll, a timer that pauses, resumes and resets (`formatStopwatch` reads it as m:ss), and controls that stop at the ends of the deck.
+
+What to change: nothing. Every addition is new.
 
 ## Changes in 0.24.0
 
