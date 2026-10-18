@@ -517,6 +517,31 @@ describe('Meter', () => {
     }
   });
 
+  test('a reading above zero always draws some fill, and nothing draws none', () => {
+    // A few kilobytes of a gigabyte rounds to a zero-width fill, which reads
+    // as an empty track: nothing used.
+    const { container } = render(
+      <>
+        <Meter label="Data" value={42} max={10_000_000_000} />
+        <Meter label="Files" value={0} max={100} />
+      </>,
+    );
+    const fills = container.querySelectorAll('.crewlet-meter__fill');
+    expect(fills[0]?.classList.contains('crewlet-meter__fill--some')).toBe(true);
+    expect(fills[1]?.classList.contains('crewlet-meter__fill--some')).toBe(false);
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Meter.css'), 'utf8');
+    expect(/\.crewlet-meter__fill--some\s*\{([^}]*)\}/.exec(css)?.[1]).toMatch(/min-width:\s*var\(--spacing-1\)/);
+  });
+
+  test('a narrow row moves the figure to its own line rather than cutting the label', () => {
+    // At 1024 px the "Data" label was cut to "D" beside its figure.
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Meter.css'), 'utf8');
+    const rule = (name: string) => new RegExp(`\\.crewlet-meter__${name}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    expect(rule('legend')).toMatch(/flex-wrap:\s*wrap/);
+    expect(rule('label')).toMatch(/flex:\s*1 0 auto/);
+    expect(rule('track')).toMatch(/box-shadow:\s*inset 0 0 0 1px var\(--color-border-default\)/);
+  });
+
   test('carries no axe violation', async () => {
     const { container } = render(
       <main>

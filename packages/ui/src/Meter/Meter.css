@@ -22,6 +22,7 @@
  */
 .crewlet-meter__legend {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--spacing-2);
@@ -30,7 +31,11 @@
   min-width: 0;
 }
 
+/* THE LABEL KEEPS ITS WORDS: where the row is too narrow for both, the figure
+   moves to its own line rather than cutting the name to one letter. */
 .crewlet-meter__label {
+  flex: 1 0 auto;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -63,6 +68,10 @@
   height: 6px;
   border-radius: var(--radius-pill);
   background: var(--color-surface-elevated);
+  /* An inset hairline gives the track an edge on ANY ground, so on the page
+     sheet in the light theme, where the raised rung is nearly the ground's
+     own tone, the extent of the bar is still there. */
+  box-shadow: inset 0 0 0 1px var(--color-border-default);
   overflow: hidden;
 }
 
@@ -78,6 +87,12 @@
   border-radius: var(--radius-pill);
   background: var(--color-data-1);
   transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);
+}
+
+/* A READING ABOVE ZERO IS NEVER AN EMPTY TRACK: a few bytes of a gigabyte
+   rounds to no width at all, which reads as nothing used. */
+.crewlet-meter__fill--some {
+  min-width: var(--spacing-1);
 }
 
 .crewlet-meter__fill[data-tone='success'] { background: var(--color-feedback-success); }
