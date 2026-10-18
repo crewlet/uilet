@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
 import { Avatar } from '../Avatar/index.js';
@@ -32,7 +32,11 @@ describe('AccountRow', () => {
     // since forced colours drop a shadow and a background. The chevron is in
     // quiet ink at rest.
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
-    const current = /a\.crewlet-account-row__who\[aria-current='page'\]\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    // ONE RULE for the link's page mark and the menu button's, so the two draw the same lift.
+    const current =
+      /a\.crewlet-account-row__who\[aria-current='page'\],\s*button\.crewlet-account-row__who\[data-current\]\s*\{([^}]*)\}/.exec(
+        css,
+      )?.[1] ?? '';
     expect(current).toMatch(/background:\s*var\(--color-surface-elevated\)/);
     expect(current).toMatch(/outline:\s*1px solid var\(--color-border-default\)/);
     const go = /\.crewlet-account-row__go\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
@@ -76,6 +80,87 @@ describe('AccountRow', () => {
       rules: { 'color-contrast': { enabled: false } },
       resultTypes: ['violations'],
     });
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
+  test('with a menu, the row is the menu button, ending in a menu’s chevron, and goes nowhere', () => {
+    render(
+      <AccountRow
+        avatar={badge}
+        name="Lee Park"
+        detail="lee · Operations"
+        href="#/account"
+        menu={{ items: [{ key: 'account', label: 'Account settings', onSelect: () => {} }] }}
+      />,
+    );
+    expect(screen.queryByRole('link')).toBeNull();
+    const row = screen.getByRole('button', { name: 'Lee Park, lee · Operations, your account' });
+    expect(row.getAttribute('aria-haspopup')).toBe('menu');
+    expect(row.getAttribute('aria-expanded')).toBe('false');
+    expect(row.classList.contains('crewlet-account-row__who')).toBe(true);
+    expect(row.querySelector('.crewlet-account-row__go')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  test('pressing the row opens the reader’s menu, its header above the actions', () => {
+    const chosen: string[] = [];
+    render(
+      <AccountRow
+        avatar={badge}
+        name="Lee Park"
+        menu={{
+          header: <span>Access: Admin</span>,
+          items: [
+            { key: 'account', label: 'Account settings', onSelect: () => chosen.push('account') },
+            { kind: 'separator', key: 'sep' },
+            { key: 'out', label: 'Sign out', onSelect: () => chosen.push('out') },
+          ],
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Lee Park/ }));
+    const menu = screen.getByRole('menu', { name: 'Your account' });
+    expect(menu.querySelector('.crewlet-menu__header')?.textContent).toBe('Access: Admin');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    expect(chosen).toEqual(['out']);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  test('a row that opens a menu is still marked on the account page, and drawn as the link is', () => {
+    render(
+      <AccountRow
+        avatar={badge}
+        name="Lee Park"
+        current
+        menu={{ items: [{ key: 'account', label: 'Account settings', onSelect: () => {} }] }}
+      />,
+    );
+    const row = screen.getByRole('button', { name: /Lee Park/ });
+    expect(row.hasAttribute('data-current')).toBe(true);
+    expect(row.getAttribute('aria-current')).toBeNull();
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
+    expect(css).toMatch(/button\.crewlet-account-row__who\[data-current\]/);
+    expect(css).toMatch(/button\.crewlet-account-row__who\[aria-expanded='true'\]/);
+  });
+
+  test('a row that opens a menu carries no axe violation', async () => {
+    const { container } = render(
+      <nav aria-label="Account">
+        <AccountRow
+          avatar={badge}
+          name="Lee Park"
+          detail="lee"
+          menu={{ header: <span>Access: Admin</span>, items: [{ key: 'a', label: 'Account settings', onSelect: () => {} }] }}
+          actions={<button type="button">Preferences</button>}
+        />
+      </nav>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Lee Park/ }));
+    const result = await axe.run(document.body, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(container).toBeDefined();
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 });

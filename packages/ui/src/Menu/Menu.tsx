@@ -53,6 +53,15 @@
  * - IT CAN BE OPENED FROM OUTSIDE (`open`, `onOpenChange`), because a tree item
  *   that holds focus opens its card's menu from the keyboard while the trigger
  *   itself is out of the tab order (`triggerTabIndex={-1}`).
+ * - ITS TRIGGER CAN BE THE CALLER'S OWN (`renderTrigger`): a row that IS the
+ *   way in, such as the signed-in reader at the foot of the rail, opens the
+ *   menu itself rather than sitting beside a second button that does. The
+ *   caller spreads the props it is handed on its element, which keeps every
+ *   rule above, the focus coming back included.
+ * - A HEADER SAYS WHAT THE ACTIONS ARE ABOUT (`header`): a line of facts
+ *   above the items, such as the access a signed-in reader carries. It is
+ *   not an item, so the arrows never stop on it, and the menu is described by
+ *   it, so a screen reader hears it when the menu opens.
  *
  * Ported from the engine dashboard's `ui/Menu.tsx`, with its suite.
  */
@@ -136,6 +145,17 @@ export function runs(entries: readonly MenuEntry[]): Run[] {
   return out;
 }
 
+/** What a caller's own trigger spreads on its element (`renderTrigger`). */
+export interface MenuTriggerProps {
+  ref: (el: HTMLElement | null) => void;
+  'aria-haspopup': 'menu';
+  'aria-expanded': boolean;
+  'aria-controls': string | undefined;
+  tabIndex: number | undefined;
+  onClick: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+}
+
 export interface MenuProps {
   /** The trigger's accessible name, such as "Actions for Software Engineer". */
   label: string;
@@ -151,6 +171,13 @@ export interface MenuProps {
   onOpenChange?: ((open: boolean) => void) | undefined;
   /** Which edge of the trigger the menu lines up with. */
   align?: 'start' | 'end' | undefined;
+  /**
+   * The caller's own trigger, in place of the menu's button: an element given
+   * these props. `label` still names the menu; the trigger names itself.
+   */
+  renderTrigger?: ((props: MenuTriggerProps) => ReactNode) | undefined;
+  /** Facts above the items: what the actions are about. Never an item. */
+  header?: ReactNode;
   className?: string | undefined;
 }
 
@@ -164,13 +191,16 @@ export function Menu({
   open: controlled,
   onOpenChange,
   align = 'start',
+  renderTrigger,
+  header,
   className,
 }: MenuProps) {
   const id = useId();
   const menuId = `${id}-menu`;
+  const headerId = `${id}-header`;
   const [uncontrolled, setUncontrolled] = useState(false);
   const open = controlled ?? uncontrolled;
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const menu = useRef<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const startAt = useRef<'first' | 'last'>('first');
@@ -302,7 +332,7 @@ export function Menu({
     startAt.current = 'first';
   }, [placed]);
 
-  function onTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+  function onTriggerKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       startAt.current = event.key === 'ArrowUp' ? 'last' : 'first';
@@ -413,6 +443,7 @@ export function Menu({
       id={menuId}
       role="menu"
       aria-label={label}
+      aria-describedby={header ? headerId : undefined}
       // Focusable programmatically, never by Tab: focus rests on an item, and
       // this is where it lands if a menu is ever opened with no items in it.
       tabIndex={-1}
@@ -425,6 +456,13 @@ export function Menu({
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
     >
+      {header ? (
+        // PRESENTATIONAL, so a menu holds only items to a screen reader, and
+        // the menu's description, so what it says is heard when it opens.
+        <div role="presentation" id={headerId} className="crewlet-menu__header">
+          {header}
+        </div>
+      ) : null}
       {runs(items).map((run) =>
         run.kind === 'separator' ? (
           <div key={run.key} role="separator" className="crewlet-menu__separator" />
@@ -439,8 +477,8 @@ export function Menu({
     </div>
   ) : null;
 
-  const shared = {
-    ref: (el: HTMLButtonElement | null) => {
+  const shared: MenuTriggerProps = {
+    ref: (el: HTMLElement | null) => {
       triggerRef.current = el;
       popup.insideRef(el);
     },
@@ -461,7 +499,9 @@ export function Menu({
 
   return (
     <span className="crewlet-menu-anchor">
-      {trigger === undefined ? (
+      {renderTrigger ? (
+        renderTrigger(shared)
+      ) : trigger === undefined ? (
         <IconButton {...shared} label={label} icon={icon ?? <EllipsisVerticalGlyph />} size="sm" />
       ) : (
         <Button {...shared} variant={triggerVariant} size="small" leadingIcon={icon}>

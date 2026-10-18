@@ -651,18 +651,40 @@
   transition: background var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-a.crewlet-account-row__who:hover {
+/* The row as the reader's menu button: a button drawn as the link is. */
+button.crewlet-account-row__who {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* A row that opens a menu fills the row as the link does. */
+.crewlet-account-row > .crewlet-menu-anchor {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+a.crewlet-account-row__who:hover,
+button.crewlet-account-row__who:hover,
+button.crewlet-account-row__who[aria-expanded='true'] {
   background: var(--color-surface-hover);
 }
 
 /* After :hover, so the current row shows the lift rather than the overlay. */
-a.crewlet-account-row__who[aria-current='page'] {
+a.crewlet-account-row__who[aria-current='page'],
+button.crewlet-account-row__who[data-current] {
   background: var(--color-surface-elevated);
   outline: 1px solid var(--color-border-default);
   outline-offset: -1px;
 }
 
-a.crewlet-account-row__who:focus-visible {
+a.crewlet-account-row__who:focus-visible,
+button.crewlet-account-row__who:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);
 }
