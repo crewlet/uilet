@@ -1,0 +1,108 @@
+/*
+ * A version list beside the version on show. The row's main line is the
+ * button that shows it; the controls sit under the facts, so a reader scanning
+ * the list reads numbers and names rather than a column of buttons.
+ */
+
+.crewlet-version-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-version-timeline__select {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  width: 100%;
+  margin: 0;
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.crewlet-version-timeline__select:hover {
+  background: var(--color-surface-hover);
+}
+
+/* The version on show. The accent means "where the reader is", which is
+   exactly what this row is. */
+.crewlet-version-timeline__select[aria-current='true'] {
+  background: var(--color-brand-accent-soft);
+  box-shadow: inset 2px 0 0 var(--color-brand-accent);
+}
+
+.crewlet-version-timeline__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-2);
+}
+
+.crewlet-version-timeline__number {
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-version-timeline__latest,
+.crewlet-version-timeline__label {
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-version-timeline__latest {
+  background: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-version-timeline__label {
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+.crewlet-version-timeline__summary {
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-version-timeline__meta,
+.crewlet-version-timeline__source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding-inline: var(--spacing-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-version-timeline__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  padding-inline: var(--spacing-1);
+}
+
+/* The version compared against carries the same edge in the strong neutral:
+   it is the other side of the comparison, not where the reader is, so it does
+   not take the accent. */
+.is-compared > .crewlet-timeline__body > .crewlet-version-timeline__select {
+  box-shadow: inset 2px 0 0 var(--color-border-strong);
+}
+
+.crewlet-version-timeline__gap {
+  margin: 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
