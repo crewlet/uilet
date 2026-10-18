@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Kbd, Menu, type MenuEntry } from '@crewlethq/ui';
+import { Button, Kbd, Menu, type MenuEntry } from '@crewlethq/ui';
 import { FolderInputGlyph, PencilGlyph, TrashGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Menu> = {
@@ -113,4 +113,39 @@ export const WithHeader: Story = {
       { key: 'out', label: 'Sign out', onSelect: () => {} },
     ],
   },
+};
+
+/**
+ * No narrower than its trigger: a trigger that spans a column, such as the
+ * reader's row at the foot of the rail, opens a panel that covers it edge to
+ * edge and grows past it when a row needs the room.
+ */
+export const TriggerWidth: Story = {
+  args: {
+    label: 'Your account',
+    width: 'trigger',
+    renderTrigger: (props) => (
+      <Button {...props} variant="secondary" size="small" block>
+        Lee Park
+      </Button>
+    ),
+    items: [
+      {
+        key: 'account',
+        label: 'Account',
+        description: 'Password, two-step verification and sessions',
+        icon: <UserGlyph />,
+        onSelect: () => {},
+      },
+      { kind: 'separator', key: 'sep' },
+      { key: 'out', label: 'Sign out', onSelect: () => {} },
+    ],
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ display: 'grid', width: 248 }}>
+        <Story />
+      </div>
+    ),
+  ],
 };

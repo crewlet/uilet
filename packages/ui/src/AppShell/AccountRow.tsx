@@ -102,6 +102,9 @@ export function AccountRow({
           label={menu.label ?? 'Your account'}
           items={menu.items}
           header={menu.header}
+          // The row spans the rail, so its menu covers it edge to edge, and
+          // grows past it when a description needs the room.
+          width="trigger"
           renderTrigger={(trigger) => (
             <button
               type="button"

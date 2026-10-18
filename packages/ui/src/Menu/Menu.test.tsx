@@ -70,14 +70,16 @@ function ink(row: string[], inside?: string[]): string | undefined {
 test('the panel is as wide as its longest row, under a ceiling that still holds', () => {
   const panel = /\.crewlet-menu\s*\{([^}]*)\}/.exec(menuCss())?.[1] ?? '';
   expect(panel).toMatch(/(?<![-\w])width:\s*max-content/);
-  expect(panel).toMatch(/max-width:\s*320px/);
   /*
-   * A min-width above a max-width REPLACES it. Spelt as the pair, the panel
-   * grew to its longest label however long that label was, the ceiling was a
-   * number nothing read, and a label nobody expected left the window instead
-   * of truncating inside it.
+   * A min-width above a max-width REPLACES it. Spelt as a content minimum,
+   * the panel grew to its longest label however long that label was, the
+   * ceiling was a number nothing read, and a label nobody expected left the
+   * window instead of truncating inside it. The one minimum is a trigger's
+   * floor (`width="trigger"`), and the ceiling is lifted to meet exactly that
+   * floor, so the two can never cross.
    */
-  expect(panel).not.toMatch(/min-width:/);
+  expect(panel).toMatch(/max-width:\s*max\(320px,\s*var\(--crewlet-menu-floor,\s*0px\)\)/);
+  expect(panel).toMatch(/min-width:\s*var\(--crewlet-menu-floor,\s*0px\);/);
 });
 
 test('a destructive row that cannot be pressed is drawn unavailable, its glyph with it', () => {
@@ -545,6 +547,45 @@ test('a menu whose panel changes size while open is placed again', () => {
     Element.prototype.getBoundingClientRect = realRect;
     globalThis.ResizeObserver = realRO;
   }
+});
+
+/*
+ * NO NARROWER THAN ITS TRIGGER, when asked. A trigger that spans a column
+ * opens a panel that covers it edge to edge and still grows past it for a
+ * long row: the floor is a custom property, and the stylesheet lifts the
+ * ceiling to meet it so the two never cross. Left alone, the panel is sized
+ * by its rows and carries no floor.
+ */
+test('a menu given width="trigger" is never narrower than its trigger', () => {
+  // The stylesheet's half, the floor and the ceiling that meets it, is held
+  // by the panel's own test at the head of this file.
+  const anchor = { left: 40, top: 500, width: 248, height: 40, right: 288, bottom: 540, x: 40, y: 500 } as DOMRect;
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.tagName === 'BUTTON' && !this.classList.contains('crewlet-menu__item')) return anchor;
+    return realRect.call(this);
+  };
+  try {
+    render(<Menu label="Actions for Software Engineer" width="trigger" items={entries()} />);
+    fireEvent.click(trigger());
+    const panel = screen.getByRole('menu');
+    expect(panel.style.getPropertyValue('--crewlet-menu-floor')).toBe('248px');
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+  }
+});
+
+test('a menu left at its content width carries no floor', () => {
+  render(<Menu label="Actions for Software Engineer" items={entries()} />);
+  fireEvent.click(trigger());
+  expect(screen.getByRole('menu').style.getPropertyValue('--crewlet-menu-floor')).toBe('');
+});
+
+test('a header puts a name and its value on one line', () => {
+  const header = /\.crewlet-menu__header\s*\{([^}]*)\}/.exec(menuCss())?.[1] ?? '';
+  expect(header).not.toMatch(/flex-direction:\s*column/);
+  expect(header).toMatch(/justify-content:\s*space-between/);
+  expect(header).toMatch(/flex-wrap:\s*wrap/);
 });
 
 test('a header says what the actions are about: never an item, and the menu is described by it', () => {
