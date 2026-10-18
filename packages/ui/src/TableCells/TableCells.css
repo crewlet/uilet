@@ -1,0 +1,104 @@
+/* The read-only table cells. Each one holds a single line and shrinks inside
+   its column (`min-width: 0`), so a long value is cut with an ellipsis and
+   its whole text on the title rather than standing the row two lines tall. */
+
+.crewlet-table-cell__truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* AN IDENTIFIER IS ONE LINE, cut with its value on the title rather than
+   broken at whichever character the column ran out on. Named with the link's
+   class as well, so a linked identifier keeps the block box whatever order
+   the two stylesheets load in. */
+.crewlet-table-cell__key,
+.crewlet-link.crewlet-table-cell__key {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-family-mono);
+}
+
+.crewlet-table-cell__number {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.crewlet-table-cell__date {
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.crewlet-table-cell__entity,
+.crewlet-link.crewlet-table-cell__entity,
+.crewlet-table-cell__status,
+.crewlet-table-cell__text {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.crewlet-table-cell__status,
+.crewlet-table-cell__text {
+  gap: calc(var(--spacing-1) * 1.5);
+}
+
+.crewlet-table-cell__badge,
+.crewlet-table-cell__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.crewlet-table-cell__icon {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-table-cell__glyph {
+  display: inline-flex;
+  flex: none;
+  font-size: var(--font-size-xs);
+  line-height: 1;
+  /* The quiet state is still a mark, so it takes the tertiary step: the
+     decoration step does not clear 3:1 on every ground. */
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-table-cell__status--info .crewlet-table-cell__glyph {
+  color: var(--color-feedback-info);
+}
+
+.crewlet-table-cell__status--success .crewlet-table-cell__glyph {
+  color: var(--color-feedback-success);
+}
+
+.crewlet-table-cell__status--warning .crewlet-table-cell__glyph {
+  color: var(--color-feedback-warning);
+}
+
+.crewlet-table-cell__status--danger .crewlet-table-cell__glyph {
+  color: var(--color-feedback-danger);
+}
+
+.crewlet-table-cell__status--brand .crewlet-table-cell__glyph {
+  color: var(--color-brand-accent);
+}
+
+.crewlet-table-cell__tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-table-cell__more {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
