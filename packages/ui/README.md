@@ -203,6 +203,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.22.0
+
+**The `markdown` artifact kind is now `doc`**, as the engine names it (`artifacts.KindDoc`). `ArtifactKind`, `ARTIFACT_KINDS`, `ArtifactKindGlyph` and `ArtifactCard` take `doc`, and the card's default label for it is "Doc".
+
+What to change: pass `kind="doc"` wherever you passed `kind="markdown"`, and rename the `markdown` key of a custom `labels.kinds` to `doc`.
+
 ## Changes in 0.21.0
 
 **`AppShell.AccountRow` takes `menu`** (`AccountRowMenu`: `label`, `header`, `items`): pressing who you are opens the reader's own menu instead of linking anywhere, which is where a reader looks for their account and for signing out. The row becomes the menu button, ending in the up-and-down chevron a menu's trigger draws, keeps the account page's current-row lift (`data-current`), and the menu's header holds the facts the row does not already say, such as the reader's access. Given, `menu` takes the place of `href`.

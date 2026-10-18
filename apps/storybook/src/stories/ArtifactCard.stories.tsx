@@ -37,7 +37,7 @@ export const Gallery: Story = {
         now={NOW}
       />
       <ArtifactCard title="Pricing explorer" kind="html" href="#/artifacts/2" owner={CTO} updatedAt={NOW - 12 * 60_000} project="GTM" version={3} pinned now={NOW} />
-      <ArtifactCard title="Incident runbook" kind="markdown" href="#/artifacts/3" owner={MAYA} updatedAt={NOW - 86_400_000} now={NOW} />
+      <ArtifactCard title="Incident runbook" kind="doc" href="#/artifacts/3" owner={MAYA} updatedAt={NOW - 86_400_000} now={NOW} />
     </AutoGrid>
   ),
 };

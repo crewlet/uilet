@@ -8,13 +8,13 @@ import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /** What an artifact is, as the engine names it (`artifacts.Kind`), which decides how it is drawn. */
-export type ArtifactKind = 'html' | 'markdown' | 'sheet';
+export type ArtifactKind = 'html' | 'doc' | 'sheet';
 
-export const ARTIFACT_KINDS = ['html', 'markdown', 'sheet'] as const satisfies readonly ArtifactKind[];
+export const ARTIFACT_KINDS = ['html', 'doc', 'sheet'] as const satisfies readonly ArtifactKind[];
 
 const KIND_GLYPHS: Readonly<Record<ArtifactKind, typeof FileCodeGlyph>> = {
   html: FileCodeGlyph,
-  markdown: FileTextGlyph,
+  doc: FileTextGlyph,
   sheet: TableGlyph,
 };
 
@@ -36,7 +36,7 @@ export interface ArtifactCardLabels {
 }
 
 const LABELS: ArtifactCardLabels = {
-  kinds: { html: 'Page', markdown: 'Document', sheet: 'Sheet' },
+  kinds: { html: 'Page', doc: 'Doc', sheet: 'Sheet' },
   pinned: 'Pinned',
   version: (version) => `v${version}`,
   changes: (count) => (count === 1 ? '1 change since you looked' : `${count} changes since you looked`),

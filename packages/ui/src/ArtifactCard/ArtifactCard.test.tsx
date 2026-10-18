@@ -47,14 +47,14 @@ test('draws no changes line for none, and none for never opened', () => {
 });
 
 test('stands the kind glyph in for a missing preview, and draws a given preview instead', () => {
-  const { container, rerender } = render(<ArtifactCard title="Runbook" kind="markdown" href="#/a" updatedAt={NOW} now={NOW} />);
+  const { container, rerender } = render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} />);
   expect(container.querySelector('.crewlet-artifact-card__preview svg')).not.toBeNull();
-  rerender(<ArtifactCard title="Runbook" kind="markdown" href="#/a" updatedAt={NOW} now={NOW} preview={<span data-testid="cover">cover</span>} />);
+  rerender(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} preview={<span data-testid="cover">cover</span>} />);
   expect(screen.getByTestId('cover')).toBeDefined();
 });
 
 test('compact draws no preview', () => {
-  const { container } = render(<ArtifactCard title="Runbook" kind="markdown" href="#/a" updatedAt={NOW} size="compact" now={NOW} />);
+  const { container } = render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} size="compact" now={NOW} />);
   expect(container.querySelector('.crewlet-artifact-card__preview')).toBeNull();
   expect(container.querySelector('.crewlet-artifact-card--compact')).not.toBeNull();
 });
@@ -64,7 +64,7 @@ test('carries no axe violation, as a card and compact', async () => {
     <main>
       <h1>Artifacts</h1>
       <ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW} pinned changes={3} now={NOW} />
-      <ArtifactCard title="Runbook" kind="markdown" href="#/b" updatedAt={NOW} size="compact" now={NOW} />
+      <ArtifactCard title="Runbook" kind="doc" href="#/b" updatedAt={NOW} size="compact" now={NOW} />
     </main>,
   );
   const result = await axe.run(container, {
