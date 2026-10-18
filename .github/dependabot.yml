@@ -66,3 +66,22 @@ updates:
       interval: weekly
     commit-message:
       prefix: "build(deps)"
+    # react and react-dom are released together, under one version, and run
+    # only as a pair from the same release: react-dom throws "Incompatible
+    # React versions" as it loads beside any other react, failing every suite
+    # that renders. npm does not catch the skew, because react-dom's peer
+    # range accepts the next react (19.3.0 asks for ^19.3.0, which 19.3.1
+    # meets), so a bump to react alone installs, builds and typechecks, then
+    # fails the icons tests and ui-tests. Every other package is proposed on
+    # its own; this group proposes the two in one pull request. Dependabot
+    # titles that pull request after the group, and the title becomes the
+    # release note, so the group's name says what it moves.
+    #
+    # The group covers version updates only. A security update still proposes
+    # the vulnerable package alone, and one to react fails CI the same way
+    # until react-dom is moved to its version on the same branch.
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
