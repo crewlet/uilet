@@ -122,6 +122,36 @@ test('a disabled option is stepped over rather than focused', () => {
   expect(document.activeElement).toBe(radios[2]);
 });
 
+test('a disabled option that says why stays focusable and in the arrows path, and is never chosen', () => {
+  const onValueChange = vi.fn();
+  render(
+    <>
+      <SegmentedControl
+        label="Scope"
+        semantics="radio"
+        value="mine"
+        onValueChange={onValueChange}
+        options={[
+          { value: 'mine', label: 'Mine' },
+          { value: 'archived', label: 'Archived', count: 50, capped: true, disabled: true, describedBy: 'why' },
+          { value: 'all', label: 'All' },
+        ]}
+      />
+      <p id="why">Archived needs the Tracker role.</p>
+    </>,
+  );
+  const archived = screen.getByRole('radio', { name: /Archived/ });
+  expect(archived.hasAttribute('disabled')).toBe(false);
+  expect(archived.getAttribute('aria-disabled')).toBe('true');
+  expect(archived.getAttribute('aria-describedby')).toBe('why');
+  expect(archived.textContent).toContain('50+');
+  act(() => screen.getByRole('radio', { name: 'Mine' }).focus());
+  fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
+  expect(document.activeElement).toBe(archived);
+  fireEvent.click(archived);
+  expect(onValueChange).not.toHaveBeenCalledWith('archived');
+});
+
 test('a row whose chosen option is disabled still has a tab stop somebody can reach', () => {
   render(
     <SegmentedControl

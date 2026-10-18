@@ -23,7 +23,24 @@ export interface SegmentedOption<T extends string = string> {
   icon?: ReactNode;
   title?: string;
   count?: number | null;
+  /**
+   * The count is a FLOOR: the page it was counted on stopped with more behind
+   * it, so it is drawn "50+" and never as an exact figure.
+   */
+  capped?: boolean | undefined;
+  /**
+   * The option cannot be chosen. A press, and an arrow under automatic
+   * activation, never choose it.
+   */
   disabled?: boolean;
+  /**
+   * The id of the element that says WHY a disabled option cannot be chosen.
+   * With one, the option stays FOCUSABLE and in the arrows' path
+   * (`aria-disabled` rather than `disabled`), so a reader can land on it and
+   * hear the reason; a natively disabled button is skipped silently. Without
+   * one, a disabled option is stepped over as before.
+   */
+  describedBy?: string | undefined;
   /**
    * A second line under the label. With one, the options are drawn as card
    * rows rather than chips, for a choice a reader has to read before making.
@@ -165,7 +182,12 @@ export function SegmentedControl<T extends string = string>({
   const cards = options.some((option) => option.description !== undefined);
   const { buttons, onKeyDown, onFocusAt, focused } = useRoving(
     options.length,
-    radio && !manual ? (index) => onValueChange(options[index]!.value) : null,
+    radio && !manual
+      ? (index) => {
+          const option = options[index]!;
+          if (!option.disabled) onValueChange(option.value);
+        }
+      : null,
     { followFocus: manual },
   );
   const chosenIndex = Math.max(
@@ -179,7 +201,11 @@ export function SegmentedControl<T extends string = string>({
    * option they left, and a stop left on the selection puts them back at the
    * start with no word that their moves were dropped.
    */
-  const stop = tabStop(options, focused ?? chosenIndex);
+  // An option that says why it is disabled can hold the stop: it takes focus.
+  const stop = tabStop(
+    options.map((option) => ({ disabled: option.disabled === true && option.describedBy === undefined })),
+    focused ?? chosenIndex,
+  );
   const hintId = useId();
   const hint = manual ? (activateHint === undefined ? ACTIVATE_HINT : activateHint) : null;
 
@@ -220,6 +246,8 @@ export function SegmentedControl<T extends string = string>({
          * replace them with a second phrasing of the same thing.
          */
         const named = option.srLabel ?? (option.label ? undefined : option.title);
+        // A disabled option that says why stays reachable, and is held by aria-disabled alone.
+        const explained = option.disabled === true && option.describedBy !== undefined;
         return (
           <button
             key={option.value}
@@ -235,14 +263,18 @@ export function SegmentedControl<T extends string = string>({
             aria-label={named}
             tabIndex={index === stop ? 0 : -1}
             title={option.title}
-            disabled={option.disabled}
+            disabled={option.disabled && !explained}
+            aria-disabled={explained || undefined}
+            aria-describedby={option.describedBy}
             className={cx(
               'crewlet-tabs__tab',
               'crewlet-segmented__option',
               chosen && 'is-active',
               option.disabled && 'is-disabled',
             )}
-            onClick={() => onValueChange(option.value)}
+            onClick={() => {
+              if (!option.disabled) onValueChange(option.value);
+            }}
             /*
              * The stop follows a POINTER press too, and a Tab into the row,
              * not the arrow keys alone: a row where clicking an option and
@@ -266,7 +298,7 @@ export function SegmentedControl<T extends string = string>({
                 ) : null}
               </span>
             ) : null}
-            {option.count != null ? <Count value={option.count} /> : null}
+            {option.count != null ? <Count value={option.capped ? `${option.count.toLocaleString()}+` : option.count} /> : null}
           </button>
         );
       })}
