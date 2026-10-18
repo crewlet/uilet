@@ -1165,6 +1165,18 @@ function checkState(state, values, profile, push, theme = { tint: null, contrast
     say('a control boundary clears 3:1', low.ratio >= 3, '--color-border-control', low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
   }
 
+  {
+    // A TEXT FIELD'S EDGE, held to the rungs alone. A field stands on the
+    // sheet, a card or a raised surface and is never drawn inside a hovered
+    // or pressed row, so the composites above are not grounds it meets. Held
+    // to all of them as the control boundary is, it measured 4.9:1 on the
+    // card it nearly always sits on: a box drawn brighter than any other edge
+    // on the page. A checkbox, a switch and an editor inside a row keep the
+    // control boundary.
+    const low = worst(colour('--color-border-field'), opaque);
+    say('a field boundary clears 3:1', low.ratio >= 3, '--color-border-field', low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
+  }
+
   // Glass is the ground of what floats OVER CONTENT rather than over
   // interface: a canvas's bars and notes, and a chart's reading, which stands
   // beside the mark it reads and so over its neighbours. Each carries words,
