@@ -1,0 +1,41 @@
+/*
+ * The suggestions under the field, grouped by kind. A row is the badge and the
+ * name with its second line, the shape every list of principals in the
+ * product draws.
+ */
+
+.crewlet-principal-picker {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crewlet-principal-picker__group + .crewlet-principal-picker__group {
+  margin-top: var(--spacing-1);
+  padding-top: var(--spacing-1);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-principal-picker__heading {
+  padding: var(--spacing-1) var(--spacing-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-principal-picker__option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-principal-picker__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-principal-picker__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
