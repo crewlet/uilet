@@ -75,14 +75,15 @@ test('a select cell picks from a filtered list, and a multi-select keeps several
     </>,
   );
   fireEvent.click(screen.getByRole('button', { name: 'Tier: Silver' }));
-  const box = screen.getByRole('combobox', { name: 'Tier' });
-  fireEvent.change(box, { target: { value: 'go' } });
+  // A short list holds focus itself: a letter moves to the choice it starts.
+  const box = screen.getByRole('listbox', { name: 'Tier' });
+  fireEvent.keyDown(box, { key: 'g' });
   fireEvent.keyDown(box, { key: 'Enter' });
   expect(onSelect).toHaveBeenCalledWith('gold');
 
   fireEvent.click(screen.getByRole('button', { name: 'Labels: Empty' }));
-  const many = screen.getByRole('combobox', { name: 'Labels' });
   const list = screen.getByRole('listbox', { name: 'Labels' });
+  const many = list;
   expect(list.getAttribute('aria-multiselectable')).toBe('true');
   fireEvent.keyDown(many, { key: 'Enter' });
   fireEvent.keyDown(many, { key: 'ArrowDown' });

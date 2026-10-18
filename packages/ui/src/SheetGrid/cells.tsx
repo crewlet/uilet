@@ -18,6 +18,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type FocusEvent as ReactFocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
@@ -55,6 +56,7 @@ import {
 } from '../SheetModel/index.js';
 import { StatusDot } from '../StatusDot/index.js';
 import { Tag } from '../Tag/index.js';
+import { TagGroup } from '../TagGroup/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -129,12 +131,14 @@ export function CellDisplay({ column, value, context, onOpenLink }: CellDisplayP
     case 'select':
       return <OptionChip column={column} id={String(value)} labels={labels} />;
     case 'multiselect':
+      // ONE LINE: the chips that do not fit are counted ("+1") rather than
+      // cut mid-glyph by the cell's edge.
       return (
-        <span className="crewlet-sheet-cell__chips">
+        <TagGroup label={column.label} overflow="fit" className="crewlet-sheet-cell__chips">
           {(value as readonly string[]).map((id) => (
             <OptionChip key={id} column={column} id={id} labels={labels} />
           ))}
-        </span>
+        </TagGroup>
       );
     case 'status': {
       const option = findOption(column, String(value));
@@ -220,6 +224,12 @@ export interface CellEditorProps {
 
 /** The types typed into a single line. */
 const LINE_TYPES = new Set<SheetColumnType>(['text', 'number', 'url', 'date', 'rating']);
+/** The types edited in the overlay text editor, which shows the whole value as it wraps. */
+const TEXT_TYPES = new Set<SheetColumnType>(['text', 'longtext']);
+/** Most lines the overlay text editor grows to before it scrolls. */
+const TEXT_EDITOR_LINES = 6;
+/** Above this many choices, a list editor offers a filter box. */
+const LIST_FILTER_FROM = 8;
 /** The types chosen from a list. */
 const LIST_TYPES = new Set<SheetColumnType>(['select', 'multiselect', 'status', 'person']);
 
@@ -233,10 +243,24 @@ export const takesTyping = (type: SheetColumnType): boolean => LINE_TYPES.has(ty
 function endingMove(event: ReactKeyboardEvent, multiline: boolean): CellMove | undefined {
   if (event.key === 'Tab') return event.shiftKey ? 'left' : 'right';
   if (event.key === 'Enter') {
-    if (multiline && !isMod(event)) return undefined;
+    // Long text takes Shift+Enter as a new line; Enter, or Mod+Enter, saves.
+    if (multiline) return event.shiftKey && !isMod(event) ? undefined : 'down';
     return event.shiftKey ? 'up' : 'down';
   }
   return undefined;
+}
+
+/**
+ * Focus an editor's field WITHOUT scrolling the page: the grid brings the cell
+ * into view inside its own scroller, and a focus that scrolled every ancestor
+ * moved the whole page column a few pixels on every edit.
+ */
+function focusInPlace(el: HTMLInputElement | HTMLTextAreaElement | HTMLElement | null, caretAtEnd: boolean) {
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  if (caretAtEnd && (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
+    el.setSelectionRange(el.value.length, el.value.length);
+  }
 }
 
 /**
@@ -303,7 +327,7 @@ function ErrorNote({ id, message }: { id: string; message: string }) {
 export function CellEditor(props: CellEditorProps) {
   const { column } = props;
   if (LIST_TYPES.has(column.type)) return <ListEditor {...props} />;
-  if (column.type === 'longtext') return <LongTextEditor {...props} />;
+  if (TEXT_TYPES.has(column.type)) return <TextEditor {...props} />;
   return <LineEditor {...props} />;
 }
 
@@ -325,10 +349,7 @@ function LineEditor({ column, value, context, seed, label, onCommit, onCancel, c
   const [error, setError] = useState<string | null>(null);
 
   useLayoutEffect(() => {
-    const el = input.current;
-    if (!el) return;
-    el.focus();
-    if (!isDate) el.setSelectionRange(el.value.length, el.value.length);
+    focusInPlace(input.current, !isDate);
   }, [isDate]);
 
   const commit = (move: CellMove): boolean => {
@@ -390,19 +411,31 @@ function LineEditor({ column, value, context, seed, label, onCommit, onCancel, c
   );
 }
 
-function LongTextEditor({ column, value, context, seed, label, onCommit, onCancel, side = 'below', conflict }: CellEditorProps) {
+/**
+ * The text and long text editor: a field laid OVER the cell, at least the
+ * column's width, that wraps and grows to six lines, so the whole value is in
+ * view while it is edited rather than scrolled to its end in a one-line box.
+ * Text saves on Enter; long text takes Shift+Enter as a new line.
+ */
+function TextEditor({ column, value, context, seed, label, onCommit, onCancel, side = 'below', conflict }: CellEditorProps) {
   const { labels } = context;
+  const long = column.type === 'longtext';
   const errorId = useId();
   const area = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState(() => seed ?? editText(column, value, context));
   const [error, setError] = useState<string | null>(null);
 
   useLayoutEffect(() => {
-    const el = area.current;
-    if (!el) return;
-    el.focus();
-    el.setSelectionRange(el.value.length, el.value.length);
+    focusInPlace(area.current, true);
   }, []);
+
+  // GROWS WITH WHAT IT HOLDS, up to six lines, after which it scrolls.
+  useLayoutEffect(() => {
+    const el = area.current;
+    if (!el || el.scrollHeight === 0) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft]);
 
   const commit = (move: CellMove): boolean => {
     const parsed = parseText(column, draft, context);
@@ -419,19 +452,25 @@ function LongTextEditor({ column, value, context, seed, label, onCommit, onCance
   });
 
   return (
-    <div className={cx('crewlet-sheet-editor', 'crewlet-sheet-editor--long', `crewlet-sheet-editor--${side}`)} onBlur={leave.onBlur}>
-      <div className="crewlet-sheet-editor__panel crewlet-sheet-editor__panel--long">
+    <div
+      className={cx('crewlet-sheet-editor', 'crewlet-sheet-editor--text', long && 'crewlet-sheet-editor--long', `crewlet-sheet-editor--${side}`)}
+      onBlur={leave.onBlur}
+    >
+      <div className="crewlet-sheet-editor__overlay">
         <textarea
           ref={area}
           className="crewlet-sheet-editor__textarea"
           aria-label={label}
+          aria-multiline={long}
           aria-invalid={error !== null}
           aria-describedby={error !== null ? errorId : undefined}
           maxLength={textMax(column)}
-          rows={5}
+          rows={1}
+          style={{ '--crewlet-sheet-editor-lines': TEXT_EDITOR_LINES } as CSSProperties}
           value={draft}
           onChange={(event) => {
-            setDraft(event.target.value);
+            // A text value is one line: a pasted line break is a space.
+            setDraft(long ? event.target.value : event.target.value.replace(/\r?\n/g, ' '));
             setError(null);
           }}
           onKeyDown={(event) => {
@@ -444,7 +483,7 @@ function LongTextEditor({ column, value, context, seed, label, onCommit, onCance
               return;
             }
             if (event.key === 'Tab' && conflict) return;
-            const move = endingMove(event, true);
+            const move = endingMove(event, long);
             if (move === undefined) return;
             event.preventDefault();
             event.stopPropagation();
@@ -476,26 +515,39 @@ function ChoiceFace({ column, choice, context }: { column: SheetColumn; choice: 
   return <OptionChip column={column} id={choice.id} labels={context.labels} />;
 }
 
+/** The Clear entry's id in a list: no option or person has an empty id. */
+const CLEAR = '';
+
 function ListEditor({ column, value, context, seed, label, onCommit, onCancel, side = 'below', conflict }: CellEditorProps) {
   const { labels } = context;
   const multiple = column.type === 'multiselect';
   const listId = useId();
   const errorId = useId();
   const filterRef = useRef<HTMLInputElement>(null);
-  const [filter, setFilter] = useState(seed ?? '');
+  const listRef = useRef<HTMLUListElement>(null);
+  const all = useMemo(() => choicesOf(column, context), [column, context]);
+  // A FILTER ONLY WHERE THERE IS SOMETHING TO FILTER: four statuses are read
+  // at a glance, and a box above them put typing between the reader and a pick.
+  const filterable = all.length > LIST_FILTER_FROM;
+  const [filter, setFilter] = useState(filterable ? (seed ?? '') : '');
   const [chosen, setChosen] = useState<string[]>(() =>
     multiple ? [...((value as readonly string[] | null) ?? [])] : typeof value === 'string' ? [value] : [],
   );
   const [error, setError] = useState<string | null>(null);
-  const all = useMemo(() => choicesOf(column, context), [column, context]);
   const clearable = !multiple && !column.required;
-  const shown = useMemo(() => {
+  // Clear is LAST, after the choices, so the first thing under the reader's
+  // hand is an option rather than the one entry that empties the cell.
+  const shown = useMemo<ListChoice[]>(() => {
     const wanted = filter.trim().toLowerCase();
     const matching = wanted === '' ? all : all.filter((choice) => choice.label.toLowerCase().includes(wanted));
-    return clearable && wanted === '' ? [{ id: '', label: labels.clear }, ...matching] : matching;
+    return clearable && wanted === '' ? [...matching, { id: CLEAR, label: labels.clear }] : matching;
   }, [all, filter, clearable, labels.clear]);
   const [highlight, setHighlight] = useState(() => {
-    const at = shown.findIndex((choice) => choice.id !== '' && chosen.includes(choice.id));
+    // Typed onto a short list: the first choice the character starts, which
+    // is what the reader asked for, ahead of what the cell already holds.
+    const typed = !filterable && seed ? shown.findIndex((choice) => choice.id !== CLEAR && choice.label.toLowerCase().startsWith(seed.toLowerCase())) : -1;
+    if (typed >= 0) return typed;
+    const at = shown.findIndex((choice) => choice.id !== CLEAR && chosen.includes(choice.id));
     return at >= 0 ? at : 0;
   });
 
@@ -504,8 +556,8 @@ function ListEditor({ column, value, context, seed, label, onCommit, onCancel, s
   }, [shown.length]);
 
   useLayoutEffect(() => {
-    filterRef.current?.focus();
-  }, []);
+    focusInPlace(filterable ? filterRef.current : listRef.current, false);
+  }, [filterable]);
 
   const finish = (next: SheetValue, move: CellMove): boolean => {
     const problem = checkValue(column, next, context);
@@ -526,7 +578,7 @@ function ListEditor({ column, value, context, seed, label, onCommit, onCancel, s
   const pick = (choice: ListChoice | undefined, move: CellMove) => {
     if (!choice) return;
     if (!multiple) {
-      finish(choice.id === '' ? null : choice.id, move);
+      finish(choice.id === CLEAR ? null : choice.id, move);
       return;
     }
     setError(null);
@@ -534,88 +586,127 @@ function ListEditor({ column, value, context, seed, label, onCommit, onCancel, s
   };
 
   const optionId = (index: number) => `${listId}-${index}`;
+  const active = shown.length > 0 ? optionId(highlight) : undefined;
+
+  // THE LIST'S KEYS, on whichever holds focus: the filter box on a long list,
+  // the list itself on a short one.
+  const onListKeys = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (isComposing(event)) return;
+    switch (event.key) {
+      case 'Escape':
+        event.preventDefault();
+        event.stopPropagation();
+        leave.finish();
+        onCancel();
+        return;
+      case 'ArrowDown':
+        event.preventDefault();
+        event.stopPropagation();
+        setHighlight((at) => Math.min(at + 1, shown.length - 1));
+        return;
+      case 'ArrowUp':
+        event.preventDefault();
+        event.stopPropagation();
+        setHighlight((at) => Math.max(at - 1, 0));
+        return;
+      case 'Home':
+      case 'End':
+        if (filter !== '') return;
+        event.preventDefault();
+        event.stopPropagation();
+        setHighlight(event.key === 'Home' ? 0 : shown.length - 1);
+        return;
+      case 'Enter':
+        event.preventDefault();
+        event.stopPropagation();
+        if (multiple && isMod(event)) finish(chosen, 'down');
+        else pick(shown[highlight], event.shiftKey ? 'up' : 'down');
+        return;
+      case ' ':
+        if (filterable) return;
+        event.preventDefault();
+        event.stopPropagation();
+        pick(shown[highlight], multiple ? null : 'down');
+        return;
+      case 'Tab':
+        if (conflict) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (multiple) finish(chosen, event.shiftKey ? 'left' : 'right');
+        else finish(value, event.shiftKey ? 'left' : 'right');
+        return;
+      default:
+        // Typeahead on a short list: a letter moves to the next choice it starts.
+        if (!filterable && event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          const key = event.key.toLowerCase();
+          const from = highlight + 1;
+          const order = [...shown.slice(from), ...shown.slice(0, from)];
+          const hit = order.find((choice) => choice.id !== CLEAR && choice.label.toLowerCase().startsWith(key));
+          if (hit) {
+            event.preventDefault();
+            event.stopPropagation();
+            setHighlight(shown.indexOf(hit));
+          }
+        }
+        return;
+    }
+  };
 
   return (
     <div className={cx('crewlet-sheet-editor', 'crewlet-sheet-editor--list', `crewlet-sheet-editor--${side}`)} onBlur={leave.onBlur}>
       <div className="crewlet-sheet-editor__panel crewlet-sheet-editor__panel--list">
-        <input
-          ref={filterRef}
-          className="crewlet-sheet-editor__filter"
-          role="combobox"
+        {filterable ? (
+          <input
+            ref={filterRef}
+            className="crewlet-sheet-editor__filter"
+            role="combobox"
+            aria-label={label}
+            aria-expanded="true"
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={active}
+            aria-invalid={error !== null}
+            aria-describedby={error !== null ? errorId : undefined}
+            placeholder={labels.filter}
+            value={filter}
+            onChange={(event) => {
+              setFilter(event.target.value);
+              setHighlight(0);
+            }}
+            onKeyDown={onListKeys}
+          />
+        ) : null}
+        <ul
+          ref={listRef}
+          className="crewlet-sheet-editor__list"
+          id={listId}
+          role="listbox"
           aria-label={label}
-          aria-expanded="true"
-          aria-controls={listId}
-          aria-autocomplete="list"
-          aria-activedescendant={shown.length > 0 ? optionId(highlight) : undefined}
-          aria-invalid={error !== null}
-          aria-describedby={error !== null ? errorId : undefined}
-          placeholder={labels.filter}
-          value={filter}
-          onChange={(event) => {
-            setFilter(event.target.value);
-            setHighlight(0);
-          }}
-          onKeyDown={(event) => {
-            if (isComposing(event)) return;
-            switch (event.key) {
-              case 'Escape':
-                event.preventDefault();
-                event.stopPropagation();
-                leave.finish();
-                onCancel();
-                return;
-              case 'ArrowDown':
-                event.preventDefault();
-                event.stopPropagation();
-                setHighlight((at) => Math.min(at + 1, shown.length - 1));
-                return;
-              case 'ArrowUp':
-                event.preventDefault();
-                event.stopPropagation();
-                setHighlight((at) => Math.max(at - 1, 0));
-                return;
-              case 'Home':
-              case 'End':
-                if (filter !== '') return;
-                event.preventDefault();
-                event.stopPropagation();
-                setHighlight(event.key === 'Home' ? 0 : shown.length - 1);
-                return;
-              case 'Enter':
-                event.preventDefault();
-                event.stopPropagation();
-                if (multiple && isMod(event)) finish(chosen, 'down');
-                else pick(shown[highlight], event.shiftKey ? 'up' : 'down');
-                return;
-              case 'Tab':
-                if (conflict) return;
-                event.preventDefault();
-                event.stopPropagation();
-                if (multiple) finish(chosen, event.shiftKey ? 'left' : 'right');
-                else finish(value, event.shiftKey ? 'left' : 'right');
-                return;
-              default:
-                return;
-            }
-          }}
-        />
-        <ul className="crewlet-sheet-editor__list" id={listId} role="listbox" aria-label={label} aria-multiselectable={multiple || undefined}>
+          aria-multiselectable={multiple || undefined}
+          // A short list holds focus itself, and says which option the keys are on.
+          tabIndex={-1}
+          aria-activedescendant={filterable ? undefined : active}
+          aria-invalid={filterable ? undefined : error !== null}
+          aria-describedby={!filterable && error !== null ? errorId : undefined}
+          onKeyDown={filterable ? undefined : onListKeys}
+        >
           {shown.length === 0 ? (
             <li className="crewlet-sheet-editor__empty" role="presentation">
               {labels.noOptions}
             </li>
           ) : (
             shown.map((choice, index) => {
-              const selected = choice.id === '' ? chosen.length === 0 : chosen.includes(choice.id);
+              const selected = choice.id === CLEAR ? chosen.length === 0 : chosen.includes(choice.id);
               return (
-                // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- focus stays on the combobox, whose keys move and pick through aria-activedescendant
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- focus stays on the combobox or the list, whose keys move and pick through aria-activedescendant
                 <li
-                  key={choice.id === '' ? '\u0000clear' : choice.id}
+                  key={choice.id === CLEAR ? '\u0000clear' : choice.id}
                   id={optionId(index)}
                   role="option"
                   aria-selected={selected}
                   className={cx(
                     'crewlet-sheet-editor__option',
+                    choice.id === CLEAR && 'crewlet-sheet-editor__option--clear',
                     index === highlight && 'crewlet-sheet-editor__option--highlight',
                     selected && 'crewlet-sheet-editor__option--selected',
                   )}
@@ -624,9 +715,9 @@ function ListEditor({ column, value, context, seed, label, onCommit, onCancel, s
                   onClick={() => pick(choice, multiple ? null : 'down')}
                 >
                   <span className="crewlet-sheet-editor__mark" aria-hidden="true">
-                    {selected ? <CheckGlyph size="xs" /> : null}
+                    {selected && choice.id !== CLEAR ? <CheckGlyph size="xs" /> : null}
                   </span>
-                  {choice.id === '' ? (
+                  {choice.id === CLEAR ? (
                     <span className="crewlet-sheet-cell__muted">{choice.label}</span>
                   ) : (
                     <ChoiceFace column={column} choice={choice} context={context} />

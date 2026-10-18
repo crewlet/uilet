@@ -3,6 +3,9 @@
  * first, then the pointer, the clipboard and the room around them.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
@@ -225,17 +228,37 @@ describe('the keyboard', () => {
     expect(description()).toContain('Saving.');
   });
 
-  test('a select opens its list, filters as the reader types, and Enter picks', () => {
+  test('a short select opens its list with no filter box, the typed letter picks out a choice, and Clear is last', () => {
     const onEdits = vi.fn();
     render(<Host onEdits={onEdits} />);
     act(() => cell(1, 3).focus());
     key(focused(), 'g');
-    const box = screen.getByRole('combobox', { name: 'Tier, Globex' }) as HTMLInputElement;
-    expect(box.value).toBe('g');
-    const options = within(screen.getByRole('listbox')).getAllByRole('option');
-    expect(options.map((option) => option.textContent)).toEqual(['Gold']);
-    key(box, 'Enter');
+    expect(screen.queryByRole('combobox')).toBeNull();
+    const list = screen.getByRole('listbox', { name: 'Tier, Globex' });
+    expect(focused()).toBe(list);
+    const options = within(list).getAllByRole('option');
+    expect(options.map(spoken)).toEqual(['Gold', 'Silver', 'Clear']);
+    expect(list.getAttribute('aria-activedescendant')).toBe(options[0]!.id);
+    key(list, 'Enter');
     expect(onEdits).toHaveBeenCalledWith([{ rowId: 'globex', field: 'tier', value: 'gold' }]);
+  });
+
+  test('a list of more than eight choices offers a filter box that narrows it as the reader types', () => {
+    const onEdits = vi.fn();
+    const many: SheetColumn = {
+      field: 'region',
+      label: 'Region',
+      type: 'select',
+      options: ['North', 'South', 'East', 'West', 'Central', 'Coastal', 'Highland', 'Island', 'Gulf'].map((label) => ({ id: label.toLowerCase(), label })),
+    };
+    render(<Host columns={[columns[0]!, many]} start={[{ id: 'acme', values: { vendor: 'Acme Corp', region: null } }]} onEdits={onEdits} />);
+    act(() => cell(0, 1).focus());
+    key(focused(), 'g');
+    const box = screen.getByRole('combobox', { name: 'Region, Acme Corp' }) as HTMLInputElement;
+    expect(box.value).toBe('g');
+    expect(within(screen.getByRole('listbox')).getAllByRole('option').map(spoken)).toEqual(['Highland', 'Gulf']);
+    key(box, 'Enter');
+    expect(onEdits).toHaveBeenCalledWith([{ rowId: 'acme', field: 'region', value: 'highland' }]);
   });
 
   test('a person cell offers the people the host resolved', () => {
@@ -243,10 +266,9 @@ describe('the keyboard', () => {
     render(<Host onEdits={onEdits} />);
     act(() => cell(2, 4).focus());
     key(focused(), 'Enter');
-    const box = screen.getByRole('combobox', { name: 'Owner, Initech' });
-    const options = within(screen.getByRole('listbox')).getAllByRole('option').map(spoken);
-    expect(options).toEqual(['Clear', 'Maya Ortiz', 'PM']);
-    key(box, 'ArrowDown');
+    const box = screen.getByRole('listbox', { name: 'Owner, Initech' });
+    const options = within(box).getAllByRole('option').map(spoken);
+    expect(options).toEqual(['Maya Ortiz', 'PM', 'Clear']);
     key(box, 'ArrowDown');
     key(box, 'Enter');
     expect(onEdits).toHaveBeenCalledWith([{ rowId: 'initech', field: 'owner', value: 'seat:pm' }]);
@@ -431,6 +453,120 @@ describe('the clipboard', () => {
     expect(onEdits).toHaveBeenCalledWith([{ rowId: 'acme', field: 'score', value: 5 }]);
     expect(cell(1, 1).className).toContain('crewlet-sheet-grid__cell--refused');
     expect(screen.getByRole('status').textContent).toBe('Score must be a number.');
+  });
+});
+
+describe('audit fixes', () => {
+  test('a row offers its actions on its number, and Delete row only asks the host (A05)', () => {
+    const onDeleteRow = vi.fn();
+    render(<Host onDeleteRow={onDeleteRow} />);
+    act(() => cell(1, 1).focus());
+    const trigger = screen.getByRole('button', { name: 'Row actions for row 2' });
+    // Pointer only: the grid stays one tab stop, and the keys reach it through Shift+F10.
+    expect(trigger.getAttribute('tabindex')).toBe('-1');
+    expect(screen.queryByRole('button', { name: 'Row actions for row 1' })).toBeNull();
+    key(focused(), 'F10', { shiftKey: true });
+    const item = screen.getByRole('menuitem', { name: 'Delete row' });
+    expect(onDeleteRow).not.toHaveBeenCalled();
+    fireEvent.click(item);
+    expect(onDeleteRow).toHaveBeenCalledWith('globex');
+  });
+
+  test('no row actions are drawn without a host that deletes, or on a read-only sheet', () => {
+    const { rerender } = render(<Host />);
+    act(() => cell(0, 1).focus());
+    expect(screen.queryByRole('button', { name: /Row actions/ })).toBeNull();
+    rerender(<Host mode="read" onDeleteRow={() => {}} />);
+    expect(screen.queryByRole('button', { name: /Row actions/ })).toBeNull();
+  });
+
+  test('a refusal arriving from the host is announced, and the strip holds it with Dismiss (A07)', () => {
+    const onDismiss = vi.fn();
+    const props = { label: 'Vendor scorecard', columns, people, onEdit: () => {}, onDismissRefused: onDismiss };
+    const { rerender } = render(<SheetGrid {...props} rows={initial} sync={{ saving: 1 }} />);
+    const refused = initial.map((row) => (row.id === 'acme' ? { ...row, refused: { score: 'It changed since it was read.' } } : row));
+    rerender(<SheetGrid {...props} rows={refused} sync={{ saving: 0, refused: 1 }} />);
+    expect(screen.getByRole('status').textContent).toBe('Not saved: It changed since it was read.');
+    expect(screen.getByText('1 change not saved')).toBeDefined();
+    expect(screen.queryByText('Saved')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(onDismiss).toHaveBeenCalled();
+  });
+
+  test('a text cell edits in an overlay that shows the whole value, and a pasted line break is a space (A08)', () => {
+    const onEdits = vi.fn();
+    render(<Host onEdits={onEdits} />);
+    act(() => cell(0, 0).focus());
+    key(focused(), 'Enter');
+    const field = screen.getByRole('textbox', { name: 'Vendor, Acme Corp' }) as HTMLTextAreaElement;
+    expect(field.tagName).toBe('TEXTAREA');
+    expect(field.closest('.crewlet-sheet-editor__overlay')).not.toBeNull();
+    expect(field.value).toBe('Acme Corp');
+    fireEvent.change(field, { target: { value: 'Acme\nHoldings' } });
+    expect(field.value).toBe('Acme Holdings');
+    key(field, 'Enter');
+    expect(onEdits).toHaveBeenCalledWith([{ rowId: 'acme', field: 'vendor', value: 'Acme Holdings' }]);
+  });
+
+  test('a long text cell takes Shift+Enter as a new line and saves on Enter', () => {
+    const onEdits = vi.fn();
+    const notes: SheetColumn = { field: 'notes', label: 'Notes', type: 'longtext' };
+    render(<Host columns={[columns[0]!, notes]} start={[{ id: 'acme', values: { vendor: 'Acme Corp', notes: 'First' } }]} onEdits={onEdits} />);
+    act(() => cell(0, 1).focus());
+    key(focused(), 'Enter');
+    const field = screen.getByRole('textbox', { name: 'Notes, Acme Corp' });
+    expect(key(field, 'Enter', { shiftKey: true })).toBe(true);
+    expect(onEdits).not.toHaveBeenCalled();
+    fireEvent.change(field, { target: { value: 'First\nSecond' } });
+    key(field, 'Enter');
+    expect(onEdits).toHaveBeenCalledWith([{ rowId: 'acme', field: 'notes', value: 'First\nSecond' }]);
+  });
+
+  test('an editor takes focus without scrolling the page (A60)', () => {
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    render(<Host />);
+    act(() => cell(0, 0).focus());
+    focus.mockClear();
+    key(focused(), 'Enter');
+    key(screen.getByRole('textbox'), 'Escape');
+    act(() => cell(0, 3).focus());
+    focus.mockClear();
+    key(focused(), 'Enter');
+    expect(focus.mock.calls.length).toBeGreaterThan(0);
+    for (const call of focus.mock.calls) expect(call[0]).toEqual({ preventScroll: true });
+    focus.mockRestore();
+  });
+
+  test('fit="content" is as tall as the rows, and never taller than the height given (A15)', () => {
+    const { container, rerender } = render(<Host fit="content" />);
+    const scroller = () => container.querySelector<HTMLElement>('.crewlet-sheet-grid__scroller')!;
+    // The header, three rows and the scroller's two hairlines, at the 32px row.
+    expect(scroller().style.height).toBe(`${32 + 3 * 32 + 2}px`);
+    expect(container.firstElementChild?.className).toContain('crewlet-sheet-grid--fit-content');
+    rerender(<Host fit="content" height={100} />);
+    expect(scroller().style.height).toBe('100px');
+  });
+
+  test('the last column takes the slack, so no empty strip sits beside it (A16)', () => {
+    render(<Host />);
+    const template = grid().style.getPropertyValue('--crewlet-sheet-columns');
+    expect(template).toMatch(/minmax\(\d+px, 1fr\)$/);
+    expect(template.match(/minmax/g)).toHaveLength(1);
+  });
+
+  test('rating marks take the ink and the control edge, never the warning hue (A61)', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+    const rule = (name: string) => new RegExp(`\\.crewlet-sheet-cell__${name}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    expect(rule('star')).toMatch(/color:\s*var\(--color-border-strong\)/);
+    expect(rule('star--on')).toMatch(/color:\s*var\(--color-text-primary\)/);
+    expect(css).not.toMatch(/__star--on\s*\{[^}]*warning/);
+  });
+
+  test('a multi-select cell draws its chips as one line that counts what does not fit (A64)', () => {
+    const tags: SheetColumn = { field: 'tags', label: 'Tags', type: 'multiselect', options: [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }] };
+    render(<Host columns={[columns[0]!, tags]} start={[{ id: 'acme', values: { vendor: 'Acme Corp', tags: ['a', 'b'] } }]} />);
+    const list = within(cell(0, 1)).getByRole('list', { name: 'Tags, 2' });
+    expect(list.className).toContain('crewlet-tag-group--fit');
   });
 });
 

@@ -48,6 +48,13 @@
   min-width: 100%;
 }
 
+/* AS TALL AS ITS ROWS (fit="content"): the component writes the height, the
+   page may cap it, and the grid never grows past the height it was given. */
+.crewlet-sheet-grid--fit-content > .crewlet-sheet-grid__scroller {
+  flex: none;
+  max-height: var(--crewlet-sheet-max-height, 70vh);
+}
+
 .crewlet-sheet-grid__row {
   display: grid;
   grid-template-columns: var(--crewlet-sheet-columns);
@@ -138,6 +145,16 @@
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
+}
+
+/* The row actions sit at the number's trailing edge, over the cell's own
+   background, so the number stays readable beside them. */
+.crewlet-sheet-grid__row-actions {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 0;
+  display: inline-flex;
+  transform: translateY(-50%);
 }
 
 /* The bar at a row's leading edge while somebody has it selected. */
@@ -305,10 +322,9 @@
 }
 
 .crewlet-sheet-cell__chips {
-  display: inline-flex;
-  gap: var(--spacing-1);
+  flex: 1 1 auto;
+  flex-wrap: wrap;
   min-width: 0;
-  overflow: hidden;
 }
 
 .crewlet-sheet-cell__person {
@@ -358,12 +374,14 @@
   align-items: center;
 }
 
+/* A RATING IS A QUANTITY, not a state, so its marks take the ink and the
+   control edge rather than the warning hue: amber here read as an alert. */
 .crewlet-sheet-cell__star {
-  color: var(--color-text-tertiary);
+  color: var(--color-border-strong);
 }
 
 .crewlet-sheet-cell__star--on {
-  color: var(--color-feedback-warning);
+  color: var(--color-text-primary);
 }
 
 .crewlet-sheet-cell {
@@ -468,16 +486,51 @@
   bottom: 100%;
 }
 
-.crewlet-sheet-editor--list .crewlet-sheet-editor__panel,
-.crewlet-sheet-editor--long .crewlet-sheet-editor__panel {
+.crewlet-sheet-editor--list .crewlet-sheet-editor__panel {
   top: 0;
   min-width: max(100%, 14rem);
 }
 
-.crewlet-sheet-editor--list.crewlet-sheet-editor--above .crewlet-sheet-editor__panel,
-.crewlet-sheet-editor--long.crewlet-sheet-editor--above .crewlet-sheet-editor__panel {
+.crewlet-sheet-editor--list.crewlet-sheet-editor--above .crewlet-sheet-editor__panel {
   top: auto;
   bottom: 0;
+}
+
+/* THE TEXT EDITOR LIES OVER THE CELL: at least the column's width, the
+   popover's ground and shadow, and a field that wraps and grows to six lines,
+   so the start of a value is never scrolled out of view while it is edited. */
+.crewlet-sheet-editor__overlay {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  z-index: var(--z-index-presence);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  box-sizing: border-box;
+  min-width: 100%;
+  width: max(100%, 20rem);
+  max-width: min(32rem, 90vw);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-xl);
+}
+
+.crewlet-sheet-editor--above .crewlet-sheet-editor__overlay {
+  top: auto;
+  bottom: 0;
+}
+
+.crewlet-sheet-editor__overlay > .crewlet-sheet-editor__error,
+.crewlet-sheet-editor__overlay > .crewlet-sheet-editor__conflict {
+  margin: 0 var(--spacing-2) var(--spacing-2);
+}
+
+.crewlet-sheet-cell .crewlet-sheet-editor__overlay {
+  position: relative;
+  width: 100%;
+  max-width: none;
 }
 
 .crewlet-sheet-editor__filter,
@@ -492,10 +545,19 @@
   font: inherit;
 }
 
-.crewlet-sheet-editor__textarea {
-  min-width: 20rem;
-  max-width: 100%;
-  resize: vertical;
+.crewlet-sheet-editor__overlay .crewlet-sheet-editor__textarea {
+  display: block;
+  min-height: var(--crewlet-sheet-row-height, var(--size-sheet-row));
+  max-height: calc(var(--crewlet-sheet-editor-lines, 6) * var(--font-line-height-normal) * 1em + 2 * var(--spacing-2));
+  padding: var(--spacing-2);
+  overflow-y: auto;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  line-height: var(--font-line-height-normal);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  resize: none;
 }
 
 .crewlet-sheet-editor__list {
@@ -516,6 +578,17 @@
   padding: 0 var(--spacing-2);
   border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+.crewlet-sheet-editor__option--clear {
+  margin-top: var(--spacing-1);
+  border-top: 1px solid var(--color-border-default);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+.crewlet-sheet-editor__list:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-sheet-editor__option--highlight {
@@ -567,7 +640,7 @@
    the screen rather than from a cell a thumb has to keep in view. */
 @media (width < 640px) {
   .crewlet-sheet-grid .crewlet-sheet-editor--list .crewlet-sheet-editor__panel,
-  .crewlet-sheet-grid .crewlet-sheet-editor--long .crewlet-sheet-editor__panel {
+  .crewlet-sheet-grid .crewlet-sheet-editor--long .crewlet-sheet-editor__overlay {
     position: fixed;
     top: auto;
     right: 0;
@@ -578,9 +651,6 @@
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 
-  .crewlet-sheet-editor__textarea {
-    min-width: 0;
-  }
 }
 
 @media (forced-colors: active) {

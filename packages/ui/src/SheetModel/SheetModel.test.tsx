@@ -321,6 +321,25 @@ describe('pending edits (D23)', () => {
     expect(edits.decorate([{ id: 'a', values: {} }])[0]?.pending).toEqual(['score']);
   });
 
+  test('a refusal holds the strip at "not saved" until it is dismissed, never "Saved"', () => {
+    const edits = new SheetPendingEdits();
+    const settle = edits.begin('a', 'notes');
+    settle({ ok: false, message: 'It changed since it was read.' });
+    const state = edits.sync();
+    expect(state.refused).toBe(1);
+    expect(SHEET_LABELS.sync(state)).toBe('1 change not saved');
+    edits.begin('b', 'notes')({ ok: false, message: 'No.' });
+    expect(SHEET_LABELS.sync(edits.sync())).toBe('2 changes not saved');
+    let changes = 0;
+    edits.subscribe(() => {
+      changes += 1;
+    });
+    edits.dismissAll();
+    expect(changes).toBe(1);
+    expect(edits.refusal('a', 'notes')).toBeUndefined();
+    expect(SHEET_LABELS.sync(edits.sync())).toBe('Saved');
+  });
+
   test('a permission refusal says the sheet words; anything else says the engine detail or a generic line', () => {
     expect(refusalText('forbidden', 'seat lacks editor', SHEET_LABELS)).toBe('You can view this sheet but not edit it.');
     expect(refusalText('invalid_value', 'Score must be a number.', SHEET_LABELS)).toBe('Score must be a number.');
