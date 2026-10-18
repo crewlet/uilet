@@ -1,0 +1,27 @@
+/* ConflictNote: a refused write's sentence in the danger ink, with its glyph
+   so the colour is never the only carrier, and its controls beside it. */
+.crewlet-conflict-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+  max-width: 40rem;
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--font-size-compact);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-conflict-note__glyph {
+  flex: none;
+}
+
+.crewlet-conflict-note__text {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.crewlet-conflict-note__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
