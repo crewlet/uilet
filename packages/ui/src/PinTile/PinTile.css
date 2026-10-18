@@ -1,0 +1,141 @@
+/*
+ * PinTile: one pinned thing, a link with its facts.
+ *
+ * A raised row rather than a card with a header: a shelf holds six of them,
+ * and six headed cards are six sections where the reader wanted six links.
+ */
+
+.crewlet-pin-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-width: 0;
+  min-height: 56px;
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default),
+    background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+.crewlet-pin-tile:hover {
+  border-color: var(--color-border-hover);
+  background: var(--color-surface-hover);
+}
+.crewlet-pin-tile:has(.crewlet-pin-tile__handle) {
+  padding-inline-start: var(--spacing-1);
+}
+
+.crewlet-pin-tile[data-reorder='dragging'] {
+  border-style: dashed;
+  border-color: var(--color-brand-accent);
+  background: var(--color-brand-accent-soft);
+}
+.crewlet-pin-tile[data-reorder='dragging'] > * {
+  opacity: 0.35;
+}
+
+.crewlet-pin-tile__handle {
+  position: relative;
+  z-index: var(--z-index-raised);
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-pin-tile__leading {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-pin-tile__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-pin-tile__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-pin-tile__link {
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The tile's whole area, as the link's. */
+.crewlet-pin-tile__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.crewlet-pin-tile__link:focus-visible {
+  outline: 2px solid transparent;
+}
+/* The tile's ring, over its own edge, for the link that is its target. */
+.crewlet-pin-tile:has(.crewlet-pin-tile__link:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -1px;
+}
+
+.crewlet-pin-tile__status {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.crewlet-pin-tile__meta {
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.crewlet-pin-tile__kind {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-pin-tile__figure {
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+
+/* Above the stretched link, so it takes its own press. */
+.crewlet-pin-tile__unpin {
+  position: relative;
+  z-index: var(--z-index-raised);
+  flex-shrink: 0;
+  color: var(--color-brand-accent-ink);
+  opacity: 0.55;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+.crewlet-pin-tile:hover .crewlet-pin-tile__unpin,
+.crewlet-pin-tile:focus-within .crewlet-pin-tile__unpin {
+  opacity: 1;
+}
+@media (hover: none) {
+  .crewlet-pin-tile__unpin {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-pin-tile,
+  .crewlet-pin-tile__unpin {
+    transition: none;
+  }
+}
