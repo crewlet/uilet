@@ -20,24 +20,32 @@ import {
   type SheetSort,
 } from '@crewlethq/ui/SheetModel';
 import type { NodeHue } from '@crewlethq/ui/utils';
-import { cellPresence, columnsFromSchema, freezeLeading, peerHues, personFromViewer, rosterFromPeers } from './bind.js';
-import type { Json, KitPeer, KitRuntime, KitViewer, KitWriteOutcome } from './runtime.js';
+import { cellPresence, columnsFromSchema, freezeLeading, memberHues, personFromPerson, rosterFromMembers } from './bind.js';
+import { newDocId, type Json, type KitError, type KitFocus, type KitMember, type KitRuntime, type KitViewer, type KitWriteOutcome } from './runtime.js';
 
 export interface KitSheetLabels {
-  /** The page declared no `data` capability, so there is nothing to draw. */
+  /** The page declared no `db` capability, so there is nothing to draw. */
   noData: string;
   /** The collection has no schema and the page declared no columns. */
   noColumns: (collection: string) => string;
+  /** The collection's rows could not be read, by the refusal's code. */
+  loadFailed: (collection: string, code: string) => string;
   /** An undo or a redo the engine refused because somebody changed the field since. */
-  undoSkipped: (detail: string | undefined) => string;
+  stepOvertaken: (step: 'undo' | 'redo') => string;
   /** A new row the engine refused. */
   addRowFailed: (reason: string) => string;
 }
 
 export const KIT_SHEET_LABELS: KitSheetLabels = {
-  noData: 'This page did not declare the data capability, so the sheet cannot load.',
+  noData: 'This page did not declare the db capability, so the sheet cannot load.',
   noColumns: (collection) => `The ${collection} collection has no columns yet.`,
-  undoSkipped: (detail) => (detail ? `${detail} Undo skipped.` : 'Somebody changed this after you. Undo skipped.'),
+  loadFailed: (collection, code) =>
+    code === 'forbidden'
+      ? `You do not have access to the ${collection} collection.`
+      : code === 'not_found'
+        ? `There is no ${collection} collection in this artifact.`
+        : `The ${collection} collection could not be loaded. Reload the page to try again.`,
+  stepOvertaken: (step) => `Somebody changed this after you, so the ${step} was skipped.`,
   addRowFailed: (reason) => `Could not add a row. ${reason}`,
 };
 
@@ -60,17 +68,21 @@ export interface KitSheetProps {
   height?: number | undefined;
 }
 
-const writable = (outcome: KitWriteOutcome) => outcome.outcome === 'applied' || outcome.outcome === 'pending';
-
 /** What one settled write says on its cells, or null for a write the engine took. */
 function outcomeMessage(outcome: KitWriteOutcome): string | null {
-  if (writable(outcome)) return null;
-  if (outcome.outcome === 'refused') return refusalText(outcome.code, outcome.detail, SHEET_LABELS);
-  return SHEET_LABELS.couldNotSave;
+  if (outcome.verdict === 'applied' || outcome.verdict === 'pending') return null;
+  return refusalText(outcome.verdict, outcome.reason, SHEET_LABELS);
+}
+
+/** What a rejected call says: nothing about it was decided, or the version did not declare it. */
+function rejectionMessage(error: unknown): string {
+  const code = typeof (error as Partial<KitError> | null)?.code === 'string' ? (error as KitError).code : '';
+  const message = error instanceof Error ? error.message : undefined;
+  return refusalText(code, message, SHEET_LABELS);
 }
 
 export function KitSheet({ runtime, collection, columns: declared, sort: initialSort, frozen, readOnly = false, label, height }: KitSheetProps) {
-  const hasData = runtime.capabilities.has('data');
+  const hasData = runtime.capabilities.has('db');
   const hasPresence = runtime.capabilities.has('presence');
   const hasIdentity = runtime.capabilities.has('identity');
   const store = useMemo(() => runtime.data.collection(collection), [runtime, collection]);
@@ -78,10 +90,11 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
   const [schemaColumns, setSchemaColumns] = useState<SheetColumn[] | null>(null);
   const [title, setTitle] = useState<string | undefined>(undefined);
   const [docs, setDocs] = useState<SheetRow[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [sort, setSort] = useState<SheetSort | null>(initialSort);
   const [me, setMe] = useState<KitViewer | null>(null);
   const [people, setPeople] = useState<SheetPerson[]>([]);
-  const [peers, setPeers] = useState<KitPeer[]>([]);
+  const [members, setMembers] = useState<KitMember[]>([]);
   const [offline, setOffline] = useState(false);
   const [failedCreate, setFailedCreate] = useState(0);
   const [notice, setNotice] = useState({ text: '', n: 0 });
@@ -93,14 +106,15 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
   useEffect(() => setSort(initialSort), [initialSort]);
   useEffect(() => edits.subscribe(() => redraw((n) => n + 1)), [edits]);
 
-  // The schema, when the page declared no columns of its own.
+  // The collection's title, and its columns when the page declared none.
   useEffect(() => {
     if (!hasData) return undefined;
     let live = true;
-    store
+    runtime.data
       .schema()
-      .then((schema) => {
+      .then((collections) => {
         if (!live) return;
+        const schema = collections.find((entry) => entry.name === collection) ?? null;
         setTitle(schema?.title);
         if (!declared) setSchemaColumns(columnsFromSchema(schema));
       })
@@ -111,17 +125,22 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
     return () => {
       live = false;
     };
-  }, [store, declared, hasData, collection]);
+  }, [runtime, declared, hasData, collection]);
 
-  // The rows, live: the initial result, then every change.
+  // The rows, live: the documents, then every change. A refused subscription
+  // is said in place of the grid, never drawn as an empty collection.
   useEffect(() => {
     if (!hasData) return undefined;
-    return store.subscribe(null, (view) => {
-      setDocs(view.docs.map((doc) => ({ id: doc.id, values: doc.data })));
-    });
-  }, [store, hasData]);
+    setLoadError(null);
+    return store.subscribe(
+      (next) => setDocs(next.map((doc) => ({ id: doc.id, values: doc.data }))),
+      (error) => setLoadError(KIT_SHEET_LABELS.loadFailed(collection, error.code)),
+    );
+  }, [store, hasData, collection]);
 
-  // Who the reader is, and the people a person cell may name.
+  // Who the reader is, and the people a person cell may name. Every seat of
+  // the company is offered, so a cell naming a seat the list lacks names one
+  // that has left, which the grid draws as the native sheet does.
   useEffect(() => {
     if (!hasIdentity) return undefined;
     let live = true;
@@ -134,7 +153,7 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
     runtime.identity
       .people()
       .then((list) => {
-        if (live) setPeople(list.map(personFromViewer));
+        if (live) setPeople(list.map(personFromPerson));
       })
       .catch((error: unknown) => warn('the people a person cell offers could not be listed', error));
     return () => {
@@ -144,43 +163,11 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
 
   const columns = useMemo(() => freezeLeading(declared ?? schemaColumns ?? [], frozen), [declared, schemaColumns, frozen]);
 
-  // A person a cell names who is not among the people offered (a seat that
-  // left the picker's first fifty) is looked up, so the cell still says who.
-  const missing = useMemo(() => {
-    const known = new Set(people.map((person) => person.id));
-    const ids = new Set<string>();
-    for (const column of columns) {
-      if (column.type !== 'person') continue;
-      for (const row of docs) {
-        const value = row.values[column.field];
-        if (typeof value === 'string' && !known.has(value)) ids.add(value);
-      }
-    }
-    return [...ids].sort();
-  }, [columns, docs, people]);
-  const missingKey = missing.join('\u0000');
-  useEffect(() => {
-    if (!hasIdentity || missing.length === 0) return undefined;
-    let live = true;
-    runtime.identity
-      .lookup(missing)
-      .then((found) => {
-        if (!live) return;
-        const added = Object.values(found).filter((viewer): viewer is KitViewer => viewer !== null).map(personFromViewer);
-        if (added.length > 0) setPeople((before) => [...before, ...added.filter((person) => !before.some((other) => other.id === person.id))]);
-      })
-      .catch((error: unknown) => warn('the people named in person cells could not be looked up', error));
-    return () => {
-      live = false;
-    };
-    // The lookup runs when the set of unknown ids changes, which the key says.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runtime, hasIdentity, missingKey]);
-
-  // Presence: who else is here and where.
+  // Presence: who else is here and where, as the room stands now and as it moves.
   useEffect(() => {
     if (!hasPresence) return undefined;
-    return runtime.presence.subscribe((next) => setPeers(next));
+    setMembers(runtime.presence.roster().members);
+    return runtime.presence.subscribe((roster) => setMembers(roster.members));
   }, [runtime, hasPresence]);
 
   useEffect(() => {
@@ -190,13 +177,13 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
   }, [runtime]);
 
   const hues = useMemo(() => {
-    const next = peerHues(peers, held.current);
+    const next = memberHues(members, held.current);
     held.current = next;
     return next;
-  }, [peers]);
-  const selfId = me?.id ?? null;
-  const onCells = useMemo(() => cellPresence(peers, collection, selfId, hues), [peers, collection, selfId, hues]);
-  const roster = useMemo(() => rosterFromPeers(peers, selfId, hues), [peers, selfId, hues]);
+  }, [members]);
+  const selfSeat = me?.seat ?? null;
+  const onCells = useMemo(() => cellPresence(members, collection, selfSeat, hues), [members, collection, selfSeat, hues]);
+  const roster = useMemo(() => rosterFromMembers(members, selfSeat, hues), [members, selfSeat, hues]);
 
   const write = useCallback(
     (batch: readonly SheetEdit[]) => {
@@ -204,27 +191,27 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
       const settleAll = (message: string | null) => {
         for (const settle of settles) settle(message === null ? { ok: true } : { ok: false, message });
       };
-      const patch = (edit: SheetEdit): Record<string, Json> => ({ [edit.field]: edit.value as Json });
+      const fields = (edit: SheetEdit): Record<string, Json> => ({ [edit.field]: edit.value as Json });
       let sent: Promise<KitWriteOutcome>;
       if (batch.length === 1) {
         const [edit] = batch as [SheetEdit];
-        sent = store.update(edit.rowId, patch(edit));
+        sent = store.merge(edit.rowId, fields(edit));
       } else {
-        // One record, all or nothing: a paste lands whole or not at all.
+        // One write, all or nothing: a paste lands whole or not at all.
         const many = runtime.data.batch();
-        for (const edit of batch) many.update(collection, edit.rowId, patch(edit));
+        for (const edit of batch) many.merge(collection, edit.rowId, fields(edit));
         sent = many.commit();
       }
       sent.then(
         (outcome) => settleAll(outcomeMessage(outcome)),
-        (error: unknown) => settleAll(error instanceof Error && error.message ? error.message : SHEET_LABELS.couldNotSave),
+        (error: unknown) => settleAll(rejectionMessage(error)),
       );
     },
     [collection, edits, runtime, store],
   );
 
   const addRow = useCallback(() => {
-    store.create({}).then(
+    store.set(newDocId(), {}).then(
       (outcome) => {
         const message = outcomeMessage(outcome);
         setFailedCreate((count) => (message === null ? 0 : count + 1));
@@ -232,39 +219,52 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
       },
       (error: unknown) => {
         setFailedCreate((count) => count + 1);
-        say(KIT_SHEET_LABELS.addRowFailed(error instanceof Error && error.message ? error.message : SHEET_LABELS.couldNotSave));
+        say(KIT_SHEET_LABELS.addRowFailed(rejectionMessage(error)));
       },
     );
   }, [store, say]);
 
-  /** Undo and redo are the runtime's, per tab; a step somebody overtook is skipped and said. */
+  /** Undo and redo are the runtime's: the page's own writes, on this tab. A step somebody overtook is skipped and said. */
   const step = useCallback(
-    (run: () => Promise<unknown>) => {
-      run().then(
+    (which: 'undo' | 'redo') => {
+      runtime.data[which]().then(
         (outcome) => {
-          const refused = outcome as KitWriteOutcome | null;
-          if (refused && refused.outcome === 'refused') say(KIT_SHEET_LABELS.undoSkipped(refused.detail));
+          if (outcome === null || outcome.verdict === 'applied' || outcome.verdict === 'pending') return;
+          say(outcome.verdict === 'conflict' ? KIT_SHEET_LABELS.stepOvertaken(which) : refusalText(outcome.verdict, outcome.reason, SHEET_LABELS));
         },
-        (error: unknown) => say(error instanceof Error && error.message ? error.message : SHEET_LABELS.couldNotSave),
+        (error: unknown) => say(rejectionMessage(error)),
       );
     },
-    [say],
+    [runtime, say],
   );
 
+  // WHERE THE READER IS, said as one focus and one activity, which is how the
+  // room holds a member: the cell they are editing, else the cell they are on.
+  const place = useRef<{ active: SheetCellRef | null; editing: SheetCellRef | null }>({ active: null, editing: null });
+  const publish = useCallback(() => {
+    if (!hasPresence) return;
+    const { active, editing } = place.current;
+    const cell = editing ?? active;
+    const focus: KitFocus = cell ? { collection, doc: cell.rowId, field: cell.field } : {};
+    runtime.presence.set({ activity: editing ? 'editing' : 'viewing', focus });
+  }, [runtime, hasPresence, collection]);
   const focus = useCallback(
     (cell: SheetCellRef | null) => {
-      if (hasPresence) runtime.presence.set({ focus: cell ? { collection, doc: cell.rowId, field: cell.field } : null });
+      place.current.active = cell;
+      publish();
     },
-    [runtime, hasPresence, collection],
+    [publish],
   );
   const editing = useCallback(
     (cell: SheetCellRef | null) => {
-      if (hasPresence) runtime.presence.set({ editing: cell ? { collection, doc: cell.rowId, field: cell.field } : null });
+      place.current.editing = cell;
+      publish();
     },
-    [runtime, hasPresence, collection],
+    [publish],
   );
 
   if (!hasData) return <Callout variant="warning">{KIT_SHEET_LABELS.noData}</Callout>;
+  if (loadError !== null) return <Callout variant="warning">{loadError}</Callout>;
   if (columns.length === 0 && (declared !== null || schemaColumns !== null)) {
     return <Callout variant="neutral">{KIT_SHEET_LABELS.noColumns(collection)}</Callout>;
   }
@@ -289,8 +289,8 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
         onAddRow={viewOnly ? undefined : addRow}
         onActiveCellChange={focus}
         onEditingChange={editing}
-        onUndo={() => step(() => runtime.data.undo())}
-        onRedo={() => step(() => runtime.data.redo())}
+        onUndo={() => step('undo')}
+        onRedo={() => step('redo')}
         presence={onCells}
         sort={sort}
         onSortChange={setSort}

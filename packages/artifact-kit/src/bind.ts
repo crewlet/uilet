@@ -1,7 +1,7 @@
 /**
  * The mappings between what the runtime and a page's markup say and what the
  * sheet draws: schema columns and `<crewlet-column>` attributes to sheet
- * columns, viewers to the people a person cell names, peers to presence.
+ * columns, people to who a person cell names, the room's members to presence.
  *
  * Plain functions with no React and no document, so each rule is tested on
  * its own and the element and the component stay thin.
@@ -19,7 +19,7 @@ import {
   type SheetStatusCategory,
 } from '@crewlethq/ui/SheetModel';
 import { isNodeHue, type NodeHue } from '@crewlethq/ui/utils';
-import type { KitPeer, KitSchema, KitSchemaColumn, KitViewer } from './runtime.js';
+import type { KitCollectionSchema, KitMember, KitPerson, KitSchemaColumn } from './runtime.js';
 
 const CATEGORIES: readonly string[] = ['todo', 'in_progress', 'done', 'blocked'];
 
@@ -39,7 +39,7 @@ function options(column: KitSchemaColumn): SheetOption[] | undefined {
  * primary column is frozen; a type this build does not know (a newer engine's)
  * is preserved as read-only text rather than dropped, as ADR-0006 asks.
  */
-export function columnsFromSchema(schema: KitSchema | null): SheetColumn[] {
+export function columnsFromSchema(schema: KitCollectionSchema | null): SheetColumn[] {
   const out: SheetColumn[] = [];
   for (const column of schema?.columns ?? []) {
     if (column.hidden) continue;
@@ -148,62 +148,61 @@ export function freezeLeading(columns: readonly SheetColumn[], count: number | u
 
 const hueOf = (value: string | undefined): NodeHue | undefined => (value !== undefined && isNodeHue(value) ? value : undefined);
 
-/** A viewer as a person cell draws them. */
-export function personFromViewer(viewer: KitViewer): SheetPerson {
-  const person: SheetPerson = { id: viewer.id, name: viewer.displayName, kind: viewer.kind };
-  const hue = hueOf(viewer.avatar?.hue);
-  if (hue) person.hue = hue;
-  if (viewer.avatar?.character) person.character = viewer.avatar.character;
-  return person;
+/** Somebody as a person cell draws them: an agent with its face, a person by name. */
+export function personFromPerson(person: KitPerson): SheetPerson {
+  const out: SheetPerson = { id: person.seat, name: person.displayName, kind: person.kind };
+  const hue = hueOf(person.avatar?.hue);
+  if (hue) out.hue = hue;
+  if (person.avatar?.character) out.character = person.avatar.character;
+  return out;
 }
 
-/** Peers the reader can see, without the reader's own sessions and without anybody away. */
-function present(peers: readonly KitPeer[], self: string | null): KitPeer[] {
-  return peers.filter((peer) => peer.status !== 'away' && peer.viewer.id !== self);
+/** The room's members other than the reader's own sessions. */
+function others(members: readonly KitMember[], self: string | null): KitMember[] {
+  return members.filter((member) => member.seat !== self);
 }
 
-/** Each present peer's hue: the runtime's when it names a node hue, else one assigned in join order. */
-export function peerHues(peers: readonly KitPeer[], held: ReadonlyMap<string, NodeHue>): Map<string, NodeHue> {
+/** Each member's hue: an agent's own where it names a node hue, else one assigned in join order. */
+export function memberHues(members: readonly KitMember[], held: ReadonlyMap<string, NodeHue>): Map<string, NodeHue> {
   return assignPresenceHues(
-    peers.map((peer) => ({ id: peer.session, kind: peer.viewer.kind, hue: hueOf(peer.color) ?? hueOf(peer.viewer.avatar?.hue) })),
+    members.map((member) => ({ id: member.session, kind: member.kind, hue: hueOf(member.avatar?.hue) })),
     held,
   );
 }
 
-/** The peers on cells of this sheet's collection, as the grid draws them. */
-export function cellPresence(peers: readonly KitPeer[], collection: string, self: string | null, hues: ReadonlyMap<string, NodeHue>): SheetCellPresence[] {
+/** The members on cells of this sheet's collection, as the grid draws them. */
+export function cellPresence(members: readonly KitMember[], collection: string, self: string | null, hues: ReadonlyMap<string, NodeHue>): SheetCellPresence[] {
   const out: SheetCellPresence[] = [];
-  for (const peer of present(peers, self)) {
-    const editing = peer.state.editing;
-    const focus = editing ?? peer.state.focus;
-    if (!focus || focus.collection !== collection || !focus.doc || !focus.field) continue;
+  for (const member of others(members, self)) {
+    const focus = member.focus;
+    if (focus.collection !== collection || !focus.doc || !focus.field) continue;
     out.push({
       rowId: focus.doc,
       field: focus.field,
-      id: peer.session,
-      name: peer.viewer.displayName,
-      kind: peer.viewer.kind,
-      hue: hues.get(peer.session) ?? 'purple',
-      editing: Boolean(editing),
-      idle: peer.status === 'idle',
+      id: member.session,
+      name: member.displayName,
+      kind: member.kind,
+      hue: hues.get(member.session) ?? 'purple',
+      editing: member.activity === 'editing',
+      idle: member.activity === 'idle',
     });
   }
   return out;
 }
 
-/** Everybody present on the page, for the sheet's presence stack. */
-export function rosterFromPeers(peers: readonly KitPeer[], self: string | null, hues: ReadonlyMap<string, NodeHue>): PresenceMember[] {
-  return present(peers, self).map((peer) => {
-    const member: PresenceMember = {
-      id: peer.session,
-      seat: peer.viewer.id,
-      name: peer.viewer.displayName,
-      kind: peer.viewer.kind,
-      activity: peer.state.editing ? 'editing' : peer.status === 'idle' ? 'idle' : 'viewing',
+/** Everybody else on the page, for the sheet's presence stack. */
+export function rosterFromMembers(members: readonly KitMember[], self: string | null, hues: ReadonlyMap<string, NodeHue>): PresenceMember[] {
+  return others(members, self).map((member) => {
+    const out: PresenceMember = {
+      id: member.session,
+      seat: member.seat,
+      name: member.displayName,
+      kind: member.kind,
+      activity: member.activity,
     };
-    const hue = hues.get(peer.session);
-    if (hue) member.hue = hue;
-    if (peer.viewer.avatar?.character) member.character = peer.viewer.avatar.character;
-    return member;
+    const hue = hues.get(member.session);
+    if (hue) out.hue = hue;
+    if (member.avatar?.character) out.character = member.avatar.character;
+    return out;
   });
 }

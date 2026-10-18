@@ -6,7 +6,7 @@
  *     <crewlet-column field="score" type="number" label="Score" format="0.0"></crewlet-column>
  *   </crewlet-sheet>
  *
- *   import { mountSheet } from '/_crewlet/kit/0.18.0/kit.js';
+ *   import { mountSheet } from '/_crewlet/kit/<version>/kit.js';
  *   mountSheet(document.querySelector('#grid'), { collection: 'vendors' });
  *
  * LIGHT DOM, not shadow DOM: the tokens cascade into the sheet, and the page's

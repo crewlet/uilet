@@ -14,18 +14,21 @@ import {
   cellPresence,
   columnFromAttributes,
   columnsFromSchema,
+  memberHues,
   parseSort,
-  peerHues,
-  rosterFromPeers,
+  rosterFromMembers,
 } from '../../../packages/artifact-kit/src/bind.js';
 import { defineElements, mountSheet } from '../../../packages/artifact-kit/src/elements.js';
 import {
   RUNTIME_READY_EVENT,
   whenRuntime,
   type Json,
-  type KitPeer,
+  type KitCollectionSchema,
+  type KitDoc,
+  type KitError,
+  type KitMember,
+  type KitRoster,
   type KitRuntime,
-  type KitSchema,
   type KitWriteOutcome,
 } from '../../../packages/artifact-kit/src/runtime.js';
 import type { SheetColumn } from '@crewlethq/ui/SheetModel';
@@ -53,91 +56,119 @@ afterEach(() => {
 
 interface FakeOptions {
   capabilities?: string[];
-  schema?: KitSchema | null;
+  schema?: KitCollectionSchema | null;
   docs?: { id: string; data: Record<string, Json> }[];
-  outcome?: (patch: Record<string, Json>) => KitWriteOutcome;
+  outcome?: (fields: Record<string, Json>) => KitWriteOutcome;
   role?: 'viewer' | 'editor';
+  /** A code the subscription is refused with. */
+  refuse?: string;
 }
 
-/** A runtime with the shape of `window.crewlet`, holding its documents in memory. */
+/** A runtime with the shape of `window.crewlet` (contract 1.0), holding its documents in memory. */
 function fakeRuntime(options: FakeOptions = {}) {
-  const capabilities = new Set(options.capabilities ?? ['data', 'presence', 'identity']);
+  const capabilities = new Set(options.capabilities ?? ['db', 'presence', 'identity']);
   let docs = options.docs ?? [
-    { id: 'acme', data: { vendor: 'Acme Corp', score: 7.2, owner: 'seat:maya' } },
-    { id: 'globex', data: { vendor: 'Globex', score: 6.8, owner: 'seat:gone' } },
+    { id: 'acme', data: { vendor: 'Acme Corp', score: 7.2, owner: 'maya' } },
+    { id: 'globex', data: { vendor: 'Globex', score: 6.8, owner: 'gone' } },
   ];
-  const views = new Set<(view: { docs: typeof docs }) => void>();
-  const peerListeners = new Set<(peers: KitPeer[]) => void>();
-  const publish = () => views.forEach((listener) => listener({ docs }));
-  const updates: { id: string; patch: Record<string, Json> }[] = [];
-  const batches: { id: string; patch: Record<string, Json> }[][] = [];
+  const views = new Set<(docs: KitDoc[], change: { changed: string[]; removed: string[] }) => void>();
+  const rosterListeners = new Set<(roster: KitRoster) => void>();
+  const asDocs = (): KitDoc[] => docs.map((doc) => ({ ...doc, version: 1, pending: false }));
+  const publish = (changed: string[]) => views.forEach((listener) => listener(asDocs(), { changed, removed: [] }));
+  const merges: { id: string; fields: Record<string, Json> }[] = [];
+  const sets: { id: string; fields: Record<string, Json> }[] = [];
+  const batches: { id: string; fields: Record<string, Json> }[][] = [];
   const presenceSets: unknown[] = [];
-  const outcome = options.outcome ?? (() => ({ outcome: 'applied' as const }));
-  const apply = (id: string, patch: Record<string, Json>) => {
-    docs = docs.map((doc) => (doc.id === id ? { ...doc, data: { ...doc.data, ...patch } } : doc));
+  const outcome = options.outcome ?? (() => ({ verdict: 'applied' as const }));
+  const apply = (id: string, fields: Record<string, Json>) => {
+    docs = docs.map((doc) => (doc.id === id ? { ...doc, data: { ...doc.data, ...fields } } : doc));
   };
   const runtime: KitRuntime = {
     capabilities: { has: (name) => capabilities.has(name) },
     identity: {
-      me: async () => ({ id: 'seat:reader', kind: 'human', displayName: 'Reader', role: options.role ?? 'editor' }),
-      people: async () => [{ id: 'seat:maya', kind: 'human', displayName: 'Maya Ortiz' }],
-      lookup: async (ids) => Object.fromEntries(ids.map((id) => [id, id === 'seat:gone' ? { id, kind: 'agent', displayName: 'Former PM' } : null])),
+      me: async () => ({ seat: 'reader', kind: 'human', displayName: 'Reader', role: options.role ?? 'editor' }),
+      people: async () => [
+        { seat: 'maya', kind: 'human', displayName: 'Maya Ortiz' },
+        { seat: 'pm', kind: 'agent', displayName: 'Product Manager', avatar: { character: 'otter', hue: 'rose' } },
+      ],
     },
     data: {
       collection: () => ({
-        schema: async () => options.schema ?? null,
-        subscribe: (_query, callback) => {
+        subscribe: (callback, onError) => {
+          if (options.refuse) {
+            const error = Object.assign(new Error('refused'), { code: options.refuse }) as KitError;
+            queueMicrotask(() => onError?.(error));
+            return () => {};
+          }
           views.add(callback);
-          callback({ docs });
+          callback(asDocs(), { changed: docs.map((doc) => doc.id), removed: [] });
           return () => views.delete(callback);
         },
-        create: async () => ({ outcome: 'refused', code: 'invalid_value', detail: 'Vendor is required.' }),
-        update: async (id, patch) => {
-          updates.push({ id, patch });
-          const answer = outcome(patch);
-          if (answer.outcome === 'applied') {
-            apply(id, patch);
-            publish();
+        set: async (id, fields) => {
+          sets.push({ id, fields });
+          return { verdict: 'invalid', reason: 'Vendor is required.' };
+        },
+        merge: async (id, fields) => {
+          merges.push({ id, fields });
+          const answer = outcome(fields);
+          if (answer.verdict === 'applied') {
+            apply(id, fields);
+            publish([id]);
           }
           return answer;
         },
       }),
       batch: () => {
-        const ops: { id: string; patch: Record<string, Json> }[] = [];
+        const ops: { id: string; fields: Record<string, Json> }[] = [];
         const batch = {
-          update: (_collection: string, id: string, patch: Record<string, Json>) => {
-            ops.push({ id, patch });
+          merge: (_collection: string, id: string, fields: Record<string, Json>) => {
+            ops.push({ id, fields });
             return batch;
           },
           commit: async () => {
             batches.push(ops);
-            for (const op of ops) apply(op.id, op.patch);
-            publish();
-            return { outcome: 'applied' as const };
+            for (const op of ops) apply(op.id, op.fields);
+            publish(ops.map((op) => op.id));
+            return { verdict: 'applied' as const };
           },
         };
         return batch;
       },
-      undo: async () => ({ outcome: 'refused', code: 'superseded', detail: 'Sam Lee changed Score after you.' }),
+      schema: async () => (options.schema ? [{ ...options.schema, name: 'vendors' }] : []),
+      undo: async () => ({ verdict: 'conflict', reason: 'stale' }),
       redo: async () => null,
     },
     presence: {
+      roster: () => ({ members: [], truncated: false }),
       subscribe: (callback) => {
-        peerListeners.add(callback);
-        return () => peerListeners.delete(callback);
+        rosterListeners.add(callback);
+        return () => rosterListeners.delete(callback);
       },
       set: (state) => presenceSets.push(state),
     },
   };
   return {
     runtime,
-    updates,
+    merges,
+    sets,
     batches,
     presenceSets,
     views,
-    peers: (peers: KitPeer[]) => act(() => peerListeners.forEach((listener) => listener(peers))),
+    members: (members: KitMember[]) => act(() => rosterListeners.forEach((listener) => listener({ members, truncated: false }))),
   };
 }
+
+/** A member of the room as the runtime names them. */
+const member = (session: string, seat: string, displayName: string, activity: KitMember['activity'], focus: KitMember['focus'], extra: Partial<KitMember> = {}): KitMember => ({
+  session,
+  seat,
+  kind: 'human',
+  displayName,
+  activity,
+  focus,
+  at: '2026-10-18T10:00:00Z',
+  ...extra,
+});
 
 const sheetGrid = () => screen.getByRole('grid');
 const cell = (row: number, col: number) => {
@@ -154,7 +185,7 @@ const spoken = (element: Element) => {
 };
 
 describe('<crewlet-sheet>', () => {
-  test('draws the columns a page declares, bound to the collection, with the person cells looked up', async () => {
+  test('draws the columns a page declares, bound to the collection, with the person cells named from the people offered', async () => {
     const fake = fakeRuntime();
     window.crewlet = fake.runtime;
     defineElements();
@@ -168,8 +199,9 @@ describe('<crewlet-sheet>', () => {
     expect(screen.getByRole('grid', { name: 'Vendor scorecard' })).toBeDefined();
     expect(spoken(cell(0, 1))).toBe('7.2');
     expect(within(sheetGrid()).getAllByRole('columnheader')[2]!.getAttribute('aria-sort')).toBe('descending');
-    await waitFor(() => expect(spoken(cell(1, 2))).toBe('Former PM'));
-    expect(spoken(cell(0, 2))).toBe('Maya Ortiz');
+    await waitFor(() => expect(spoken(cell(0, 2))).toBe('Maya Ortiz'));
+    // A seat the chart no longer holds is drawn as the native sheet draws it.
+    expect(spoken(cell(1, 2))).toBe('Unknown person');
   });
 
   test('an edit is written through the runtime and drawn as Saving until it settles; a refusal is said on the cell', async () => {
@@ -178,8 +210,8 @@ describe('<crewlet-sheet>', () => {
     const store = fake.runtime.data.collection('vendors');
     fake.runtime.data.collection = () => ({
       ...store,
-      update: (id, patch) => {
-        fake.updates.push({ id, patch });
+      merge: (id, fields) => {
+        fake.merges.push({ id, fields });
         return new Promise((resolve) => {
           answer = resolve;
         });
@@ -193,9 +225,9 @@ describe('<crewlet-sheet>', () => {
     fireEvent.keyDown(document.activeElement!, { key: '9' });
     const input = screen.getByRole('textbox', { name: 'Score, 1' });
     fireEvent.keyDown(input, { key: 'Enter' });
-    expect(fake.updates).toEqual([{ id: 'acme', patch: { score: 9 } }]);
+    expect(fake.merges).toEqual([{ id: 'acme', fields: { score: 9 } }]);
     await waitFor(() => expect(cell(0, 0).className).toContain('crewlet-sheet-grid__cell--pending'));
-    await act(async () => answer({ outcome: 'refused', code: 'forbidden', detail: 'seat lacks editor' }));
+    await act(async () => answer({ verdict: 'forbidden', reason: 'seat lacks editor' }));
     expect(cell(0, 0).className).not.toContain('crewlet-sheet-grid__cell--pending');
     expect(cell(0, 0).className).toContain('crewlet-sheet-grid__cell--refused');
     // Enter moved the reader down a row; the reason is said where they go back to.
@@ -206,6 +238,7 @@ describe('<crewlet-sheet>', () => {
   test('with no columns of its own it draws the collection schema, primary column frozen, hidden ones left out', async () => {
     const fake = fakeRuntime({
       schema: {
+        name: 'vendors',
         title: 'Launch review',
         columns: [
           { key: 'vendor', type: 'text', label: 'Vendor', primary: true },
@@ -221,13 +254,35 @@ describe('<crewlet-sheet>', () => {
     expect(within(sheetGrid()).getAllByRole('columnheader').map((header) => header.textContent)).toEqual(['Row', 'Vendor, Text', 'Score, Number']);
   });
 
-  test('a page that declared no data capability is told so, and nothing is read', async () => {
+  test('a page that declared no db capability is told so, and nothing is read', async () => {
     const fake = fakeRuntime({ capabilities: [] });
     window.crewlet = fake.runtime;
     defineElements();
     document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
-    await waitFor(() => expect(screen.getByText('This page did not declare the data capability, so the sheet cannot load.')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('This page did not declare the db capability, so the sheet cannot load.')).toBeDefined());
     expect(fake.views.size).toBe(0);
+  });
+
+  test('a subscription the runtime refuses is said in place of the grid, never drawn as an empty sheet', async () => {
+    const fake = fakeRuntime({ refuse: 'forbidden' });
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(screen.getByText('You do not have access to the vendors collection.')).toBeDefined());
+    expect(screen.queryByRole('grid')).toBeNull();
+  });
+
+  test('Add row writes a new document under an id it mints, and a refusal says why', async () => {
+    const fake = fakeRuntime();
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(cell(0, 0)).toBeDefined());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /add row/i }));
+    });
+    expect(fake.sets).toEqual([{ id: expect.stringMatching(/^[0-9a-f]{24}$/), fields: {} }]);
+    await waitFor(() => expect(screen.getByText('Could not add a row. Vendor is required.')).toBeDefined());
   });
 
   test('a viewer gets a read-only sheet', async () => {
@@ -244,15 +299,15 @@ describe('<crewlet-sheet>', () => {
     defineElements();
     document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column><crewlet-column field="score" type="number" label="Score"></crewlet-column></crewlet-sheet>`;
     await waitFor(() => expect(cell(0, 0)).toBeDefined());
-    fake.peers([
-      { session: 'jane-1', viewer: { id: 'seat:jane', kind: 'human', displayName: 'Jane Founder' }, status: 'active', state: { focus: { collection: 'vendors', doc: 'globex', field: 'score' } } },
-      { session: 'other', viewer: { id: 'seat:sam', kind: 'human', displayName: 'Sam Lee' }, status: 'active', state: { focus: { collection: 'notes', doc: 'x', field: 'y' } } },
+    fake.members([
+      member('jane-1', 'jane', 'Jane Founder', 'viewing', { collection: 'vendors', doc: 'globex', field: 'score' }),
+      member('other', 'sam', 'Sam Lee', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
     ]);
     expect(cell(1, 1).className).toContain('crewlet-presence-ring');
     expect(cell(1, 1).querySelector('.crewlet-cursor-flag')?.textContent).toBe('Jane Founder');
     expect(screen.getByRole('img', { name: /You and 2 others are here/ })).toBeDefined();
     act(() => cell(0, 1).focus());
-    expect(fake.presenceSets.at(-1)).toEqual({ focus: { collection: 'vendors', doc: 'acme', field: 'score' } });
+    expect(fake.presenceSets.at(-1)).toEqual({ activity: 'viewing', focus: { collection: 'vendors', doc: 'acme', field: 'score' } });
   });
 
   test('a paste of several cells is one batch, all or nothing', async () => {
@@ -269,8 +324,8 @@ describe('<crewlet-sheet>', () => {
     });
     expect(fake.batches).toEqual([
       [
-        { id: 'acme', patch: { vendor: 'Initech' } },
-        { id: 'globex', patch: { vendor: 'Umbrella' } },
+        { id: 'acme', fields: { vendor: 'Initech' } },
+        { id: 'globex', fields: { vendor: 'Umbrella' } },
       ],
     ]);
     await waitFor(() => expect(spoken(cell(1, 0))).toBe('Umbrella'));
@@ -286,7 +341,7 @@ describe('<crewlet-sheet>', () => {
     await act(async () => {
       fireEvent.keyDown(document.activeElement!, { key: 'z', ctrlKey: true });
     });
-    await waitFor(() => expect(screen.getByText('Sam Lee changed Score after you. Undo skipped.')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Somebody changed this after you, so the undo was skipped.')).toBeDefined());
   });
 
   test('a column added to the markup is drawn, and removing the element releases its subscriptions', async () => {
@@ -337,7 +392,7 @@ describe('mountSheet', () => {
 
 describe('bindings', () => {
   test('a schema column of a type this build does not know is kept, as read-only text', () => {
-    expect(columnsFromSchema({ columns: [{ key: 'ticket', type: 'workitem', label: 'Ticket' }, { key: 'tags', type: 'multiselect', max_items: 3, options: [{ id: 'a', label: 'A', category: 'nonsense' }] }] })).toEqual([
+    expect(columnsFromSchema({ name: 'vendors', columns: [{ key: 'ticket', type: 'workitem', label: 'Ticket' }, { key: 'tags', type: 'multiselect', max_items: 3, options: [{ id: 'a', label: 'A', category: 'nonsense' }] }] })).toEqual([
       { field: 'ticket', label: 'Ticket', type: 'text', readOnly: true },
       { field: 'tags', label: 'tags', type: 'multiselect', maxItems: 3, options: [{ id: 'a', label: 'A' }] },
     ]);
@@ -371,22 +426,23 @@ describe('bindings', () => {
     expect(parseSort('')).toBeNull();
   });
 
-  test('peers: the runtime hue when it names one, the reader and anybody away left out, editing first-class', () => {
-    const peers: KitPeer[] = [
-      { session: 'a', viewer: { id: 'seat:reader', kind: 'human', displayName: 'Reader' }, status: 'active', state: {} },
-      { session: 'b', viewer: { id: 'seat:pm', kind: 'agent', displayName: 'PM' }, status: 'working', color: 'rose', state: { editing: { collection: 'vendors', doc: 'acme', field: 'score' } } },
-      { session: 'c', viewer: { id: 'seat:sam', kind: 'human', displayName: 'Sam' }, status: 'away', state: { focus: { collection: 'vendors', doc: 'acme', field: 'vendor' } } },
-      { session: 'd', viewer: { id: 'seat:jane', kind: 'human', displayName: 'Jane' }, status: 'idle', state: { focus: { collection: 'vendors', doc: 'globex', field: 'vendor' } } },
+  test('members: an agent wears its own hue, the reader is left out, editing and idle come from the activity', () => {
+    const members: KitMember[] = [
+      member('a', 'reader', 'Reader', 'viewing', {}),
+      member('b', 'pm', 'PM', 'editing', { collection: 'vendors', doc: 'acme', field: 'score' }, { kind: 'agent', avatar: { character: 'otter', hue: 'rose' } }),
+      member('d', 'jane', 'Jane', 'idle', { collection: 'vendors', doc: 'globex', field: 'vendor' }),
+      member('e', 'sam', 'Sam', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
     ];
-    const hues = peerHues(peers, new Map());
+    const hues = memberHues(members, new Map());
     expect(hues.get('b')).toBe('rose');
-    expect(cellPresence(peers, 'vendors', 'seat:reader', hues)).toEqual([
+    expect(cellPresence(members, 'vendors', 'reader', hues)).toEqual([
       { rowId: 'acme', field: 'score', id: 'b', name: 'PM', kind: 'agent', hue: 'rose', editing: true, idle: false },
       { rowId: 'globex', field: 'vendor', id: 'd', name: 'Jane', kind: 'human', hue: hues.get('d'), editing: false, idle: true },
     ]);
-    expect(rosterFromPeers(peers, 'seat:reader', hues).map((member) => [member.name, member.activity])).toEqual([
-      ['PM', 'editing'],
-      ['Jane', 'idle'],
+    expect(rosterFromMembers(members, 'reader', hues).map((entry) => [entry.name, entry.activity, entry.character])).toEqual([
+      ['PM', 'editing', 'otter'],
+      ['Jane', 'idle', undefined],
+      ['Sam', 'viewing', undefined],
     ]);
   });
 });

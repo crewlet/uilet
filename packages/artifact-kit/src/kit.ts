@@ -3,9 +3,9 @@
  * writes in its markup, and `mountSheet` for a page that draws one from a
  * script. Loaded as a module, after kit.css and theme.js:
  *
- *   <link rel="stylesheet" href="/_crewlet/kit/0.18.0/kit.css">
- *   <script src="/_crewlet/kit/0.18.0/theme.js"></script>
- *   <script type="module" src="/_crewlet/kit/0.18.0/kit.js"></script>
+ *   <link rel="stylesheet" href="/_crewlet/kit/<version>/kit.css">
+ *   <script src="/_crewlet/kit/<version>/theme.js"></script>
+ *   <script type="module" src="/_crewlet/kit/<version>/kit.js"></script>
  *
  * The page needs no framework of its own: the elements carry the design
  * system's own SheetGrid, the same component the dashboard draws a native
