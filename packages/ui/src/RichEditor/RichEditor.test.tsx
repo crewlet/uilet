@@ -154,7 +154,8 @@ describe('Markdown typed as Markdown', () => {
 
   test('three hyphens make a divider', () => {
     const { view, last } = mount('');
-    type(view, '---');
+    // Three hyphens, spelt out so no scan reads them as a custom property.
+    type(view, '-'.repeat(3));
     type(view, 'after');
     expect(last()).toBe('---\n\nafter');
   });

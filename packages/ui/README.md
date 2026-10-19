@@ -45,7 +45,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor`, `RichEditor` (with `preloadRichEditor`, and the round trip `roundTripMarkdown` and `canonicalMarkdown` from `@crewlethq/ui/RichEditorMarkdown`) |
 | Data display | `DataTable`, `CopyableCell`, `Table`, the read-only table cells (`TableKeyCell`, `TableNumberCell`, `TableDateCell`, `TableEntityCell`, `TableStatusCell`, `TableTagsCell`, `TableTextCell`), `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
-| Feedback and overlays | `Callout`, `ConflictNote`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
+| Feedback and overlays | `Callout`, `ConflictNote`, `EditingStatus`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Documents and review | `DiffView` and `DiffSummary` with the line diff they draw (`diffLines`, `diffStat`, `collapseDiff`, `firstChangedLines`, `splitLines`, `MAX_DIFF_LINES`, with no React in it), `DiffList`, `VersionCompare`, `CommentThread` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
@@ -218,6 +218,8 @@ places:
 **The Markdown grammar is part of the package** (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref`, `markdownHeadingOf`, `markdownFenceOf`, `markdownClosesFence`), so an application's renderer and `RichEditor` read a body by one grammar and cannot disagree about it. It reads what the Crewlet engine's renderer read, plus three things that renderer did not: backslash escapes (`\*` is an asterisk), an escaped pipe inside a table cell, and a link label holding an escaped bracket. It also reads **callouts** in GitHub's alert syntax, `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]` and `> [!CAUTION]`.
 
 **`Document` sets a callout and a cell aligned by `data-align`.** A renderer emits an element with `data-callout="<tone>"`, the tone's name in an element with `data-callout-label` and the blocks in one with `data-callout-body`; each tone is drawn from the same three steps `Callout` paints with.
+
+**`EditingStatus` says a page is being edited**: "Editing", and an accent dot with "Unsaved changes" once anything differs from what was opened (or "Saving" while a save is in flight), announced politely. It sits in a page bar beside the caller's own Cancel and Save, and on a phone the words fold away behind the dot.
 
 **`@crewlethq/icons` carries the editor's glyphs**: `heading-1`, `type`, `strikethrough`, `text-quote`, `square-code`, `unlink`, and `text-align-start`, `text-align-center` and `text-align-end`.
 
