@@ -7,7 +7,7 @@
  * among its devDependencies would be installed by the release pack job. The
  * kit's own node suite holds the BUILT files to their budgets and contents.
  */
-import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, configure, fireEvent, getConfig, screen, waitFor, within } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import {
   applyNumberFormat,
@@ -40,12 +40,22 @@ import type { SheetColumn } from '@crewlethq/ui/SheetModel';
  */
 const actEnvironment = globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean | undefined };
 let previousActEnvironment: boolean | undefined;
+/*
+ * The first sheet a file draws pays for React's and the grid's first render,
+ * which takes a few hundred milliseconds alone and past the library's one
+ * second wait when the full suite runs every workspace at once. A wait only
+ * runs long when something is not drawn, so a passing run is not slower.
+ */
+let previousWait = 0;
 beforeAll(() => {
   previousActEnvironment = actEnvironment.IS_REACT_ACT_ENVIRONMENT;
   actEnvironment.IS_REACT_ACT_ENVIRONMENT = false;
+  previousWait = getConfig().asyncUtilTimeout;
+  configure({ asyncUtilTimeout: 5000 });
 });
 afterAll(() => {
   actEnvironment.IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
+  configure({ asyncUtilTimeout: previousWait });
 });
 
 afterEach(() => {
@@ -62,7 +72,12 @@ interface FakeOptions {
   role?: 'viewer' | 'editor';
   /** A code the subscription is refused with. */
   refuse?: string;
+  /** A code every write rejects with: nothing about it was decided. */
+  reject?: string;
 }
+
+/** A rejection as the runtime raises it: an `Error` carrying the contract's code. */
+const refusal = (code: string, message: string): KitError => Object.assign(new Error(message), { code });
 
 /** A runtime with the shape of `window.crewlet` (contract 1.0), holding its documents in memory. */
 function fakeRuntime(options: FakeOptions = {}) {
@@ -96,7 +111,7 @@ function fakeRuntime(options: FakeOptions = {}) {
       collection: () => ({
         subscribe: (callback, onError) => {
           if (options.refuse) {
-            const error = Object.assign(new Error('refused'), { code: options.refuse }) as KitError;
+            const error = refusal(options.refuse, 'refused');
             queueMicrotask(() => onError?.(error));
             return () => {};
           }
@@ -110,6 +125,7 @@ function fakeRuntime(options: FakeOptions = {}) {
         },
         merge: async (id, fields) => {
           merges.push({ id, fields });
+          if (options.reject) throw refusal(options.reject, 'The engine could not be reached. Try again.');
           const answer = outcome(fields);
           if (answer.verdict === 'applied') {
             apply(id, fields);
@@ -127,9 +143,13 @@ function fakeRuntime(options: FakeOptions = {}) {
           },
           commit: async () => {
             batches.push(ops);
+            if (options.reject) throw refusal(options.reject, 'The engine could not be reached. Try again.');
+            // All or nothing: one verdict for the whole write, applied only when every op took.
+            const answer = outcome(Object.assign({}, ...ops.map((op) => op.fields)));
+            if (answer.verdict !== 'applied') return answer;
             for (const op of ops) apply(op.id, op.fields);
             publish(ops.map((op) => op.id));
-            return { verdict: 'applied' as const };
+            return answer;
           },
         };
         return batch;
@@ -267,13 +287,59 @@ describe('<crewlet-sheet>', () => {
     expect(fake.views.size).toBe(0);
   });
 
-  test('a subscription the runtime refuses is said in place of the grid, never drawn as an empty sheet', async () => {
-    const fake = fakeRuntime({ refuse: 'forbidden' });
+  test.each([
+    ['forbidden', 'You do not have access to the vendors collection.'],
+    ['not_found', 'There is no vendors collection in this artifact.'],
+    ['unavailable', 'The vendors collection could not be loaded. Reload the page to try again.'],
+    ['capability_not_declared', 'The vendors collection could not be loaded. Reload the page to try again.'],
+  ])('a subscription the runtime refuses with %s is said in place of the grid, never drawn as an empty sheet', async (code, said) => {
+    const fake = fakeRuntime({ refuse: code });
     window.crewlet = fake.runtime;
     defineElements();
     document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
-    await waitFor(() => expect(screen.getByText('You do not have access to the vendors collection.')).toBeDefined());
+    await waitFor(() => expect(screen.getByText(said)).toBeDefined());
     expect(screen.queryByRole('grid')).toBeNull();
+    expect(fake.views.size).toBe(0);
+  });
+
+  test('a write the runtime rejects, with nothing decided, is said on the cell and held until dismissed', async () => {
+    const fake = fakeRuntime({ reject: 'unavailable' });
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="score" type="number" label="Score"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(spoken(cell(0, 0))).toBe('7.2'));
+    act(() => cell(0, 0).focus());
+    fireEvent.keyDown(document.activeElement!, { key: '9' });
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Score, 1' }), { key: 'Enter' });
+    expect(fake.merges).toEqual([{ id: 'acme', fields: { score: 9 } }]);
+    await waitFor(() => expect(cell(0, 0).className).toContain('crewlet-sheet-grid__cell--refused'));
+    // Nothing was written, so the cell still reads the stored value.
+    expect(spoken(cell(0, 0))).toContain('7.2');
+    act(() => cell(0, 0).focus());
+    await waitFor(() => expect(cell(0, 0).textContent).toContain('The engine could not be reached. Try again.'));
+    expect(screen.getByText('1 change not saved')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await waitFor(() => expect(screen.getByText('Saved')).toBeDefined());
+  });
+
+  test('a paste the engine refuses is refused whole: no cell of it is written, and each says why', async () => {
+    const fake = fakeRuntime({ outcome: () => ({ verdict: 'invalid', reason: 'Vendor is too long.' }) });
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(cell(0, 0)).toBeDefined());
+    act(() => cell(0, 0).focus());
+    const event = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', { value: { getData: () => 'Initech\nUmbrella' } });
+    await act(async () => {
+      document.activeElement!.dispatchEvent(event);
+    });
+    expect(fake.batches).toHaveLength(1);
+    await waitFor(() => expect(cell(1, 0).className).toContain('crewlet-sheet-grid__cell--refused'));
+    expect(cell(0, 0).className).toContain('crewlet-sheet-grid__cell--refused');
+    expect(spoken(cell(0, 0))).toContain('Acme Corp');
+    expect(spoken(cell(1, 0))).toContain('Globex');
+    expect(screen.getByText('2 changes not saved')).toBeDefined();
   });
 
   test('Add row writes a new document under an id it mints, and a refusal says why', async () => {
@@ -287,6 +353,31 @@ describe('<crewlet-sheet>', () => {
     });
     expect(fake.sets).toEqual([{ id: expect.stringMatching(/^[0-9a-f]{24}$/), fields: {} }]);
     await waitFor(() => expect(screen.getByText('Could not add a row. Vendor is required.')).toBeDefined());
+  });
+
+  test('an Add row the runtime rejects says why and offers Retry, which writes a new row again', async () => {
+    const fake = fakeRuntime();
+    const store = fake.runtime.data.collection('vendors');
+    fake.runtime.data.collection = () => ({
+      ...store,
+      set: async (id, fields) => {
+        fake.sets.push({ id, fields });
+        throw refusal('rate_limited', 'Too many writes. Wait 2 seconds.');
+      },
+    });
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(cell(0, 0)).toBeDefined());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /add row/i }));
+    });
+    await waitFor(() => expect(screen.getByText('Could not add a row. Too many writes. Wait 2 seconds.')).toBeDefined());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    });
+    expect(fake.sets).toHaveLength(2);
+    expect(fake.sets[1]!.id).not.toBe(fake.sets[0]!.id);
   });
 
   test('the sheet is as tall as its rows, so no empty slab sits under Add row', async () => {
