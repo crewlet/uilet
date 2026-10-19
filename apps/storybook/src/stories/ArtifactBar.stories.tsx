@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import {
   ArrowDownToLineGlyph,
+  CheckGlyph,
   CopyGlyph,
   DatabaseGlyph,
   InfoGlyph,
@@ -12,12 +13,14 @@ import {
   Share2Glyph,
   TrashGlyph,
   UsersGlyph,
+  XGlyph,
 } from '@crewlethq/icons/glyphs';
 import {
   ArtifactBar,
   ArtifactPanel,
   ArtifactVersionChip,
   ArtifactWorkspace,
+  EditingStatus,
   PresenceStack,
   type ArtifactBarTool,
   type MenuEntry,
@@ -143,6 +146,25 @@ export const ReadOnly: Story = {
       { key: 'share', label: 'Share', icon: <Share2Glyph size="sm" />, labelled: true, disabledReason: 'Only its owner and editors share it.', onSelect: () => {} },
     ],
     menu: [{ key: 'copy', label: 'Copy link', icon: <CopyGlyph size="sm" />, onSelect: () => {} }],
+  },
+};
+
+/** A doc while it is edited: the editor's state said before its Cancel and its primary Save. */
+export const EditingADoc: Story = {
+  args: {
+    title: 'Q4 launch plan',
+    kind: 'doc',
+    kindLabel: 'Doc',
+    back: { href: '#', label: 'Back to artifacts' },
+    status: <EditingStatus dirty />,
+    kindTools: [
+      { key: 'cancel', label: 'Cancel', icon: <XGlyph size="sm" />, labelled: true, onSelect: () => {} },
+      { key: 'save', label: 'Save', icon: <CheckGlyph size="sm" />, labelled: true, emphasis: 'primary', onSelect: () => {} },
+    ],
+    tools: [
+      { key: 'details', label: 'Details', icon: <InfoGlyph size="sm" />, keys: ['i'], onSelect: () => {} },
+      { key: 'share', label: 'Share', icon: <Share2Glyph size="sm" />, labelled: true, onSelect: () => {} },
+    ],
   },
 };
 

@@ -55,6 +55,33 @@ test('a labelled tool keeps its word while the bar is wide and its glyph when it
   expect(within(tight as HTMLElement).getByRole('button', { name: 'Share' }).textContent).toBe('');
 });
 
+test('a status is said before the tools, and a primary tool keeps its word at every width', () => {
+  const save = vi.fn();
+  const { container } = render(
+    <ArtifactBar
+      title="Notes"
+      kind="doc"
+      kindLabel="Doc"
+      status={<span role="status">Editing</span>}
+      kindTools={[
+        { key: 'cancel', label: 'Cancel', icon: <InfoGlyph size="sm" />, labelled: true, onSelect: vi.fn() },
+        { key: 'save', label: 'Save', icon: <Share2Glyph size="sm" />, labelled: true, emphasis: 'primary', onSelect: save },
+      ]}
+      tools={tools()}
+    />,
+  );
+  const end = container.querySelector('.crewlet-artifact-bar__end')!;
+  expect(end.firstElementChild?.textContent).toBe('Editing');
+  // One Save, with its word, rather than a word and a glyph the stylesheet chooses between.
+  const saves = within(end as HTMLElement).getAllByRole('button', { name: 'Save' });
+  expect(saves).toHaveLength(1);
+  expect(saves[0]!.textContent).toContain('Save');
+  fireEvent.click(saves[0]!);
+  expect(save).toHaveBeenCalledTimes(1);
+  // Cancel is an ordinary labelled tool: its word while wide, its glyph when not.
+  expect(within(end as HTMLElement).getAllByRole('button', { name: 'Cancel' })).toHaveLength(2);
+});
+
 test('on a narrow bar the views and the unlabelled tools are rows of More, with their keys', () => {
   const onMode = vi.fn();
   const set = tools();
@@ -211,6 +238,15 @@ test('carries no axe violation, read only and renamable', async () => {
       />
       <main>
         <ArtifactBar as="div" headingLevel={2} title="Notes" kind="doc" kindLabel="Doc" tools={tools()} />
+        <ArtifactBar
+          as="div"
+          headingLevel={2}
+          title="Plan"
+          kind="doc"
+          kindLabel="Doc"
+          status={<span role="status">Editing</span>}
+          kindTools={[{ key: 'save', label: 'Save', icon: <Share2Glyph size="sm" />, labelled: true, emphasis: 'primary', onSelect: vi.fn() }]}
+        />
       </main>
     </LayerHost>,
   );
