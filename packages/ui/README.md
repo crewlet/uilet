@@ -223,6 +223,11 @@ What to change:
 **`Canvas` takes a pointer, a fit floor and actual size.** `cursor` (`hand`, `pointer`, `crosshair` or `text`) picks the pointer the field shows, from drawn cursors (`CURSORS` in `@crewlethq/icons/glyphs`) with keyword fallbacks, and a pan always shows the closed hand. `minZoom` lowers the floor the fit stops at (`fitView` and `zoomLimits` take it as `floor`). Shift 0 shows actual size and Shift 1 fits, on every canvas; `controlsActualSize` adds a 1:1 control to the zoom bar. Each zoom control's tip names its key (`ShortcutTip`, for any control that has one). The handle adds `zoomTo(scale)` and `worldAt(clientPoint)`. With `refitOnResize` (on in `CanvasBoard`), a resize refits a view nobody has moved since its last fit, so a window made narrower no longer cuts the content off; a view the reader has panned or zoomed is kept, as before.
 
 **`@crewlethq/icons` draws pointer cursors.** `CURSORS` holds the pointer, hand, grabbing, crosshair and text cursors as complete CSS `cursor` values, generated from the vendored Lucide glyphs (`hand`, `hand-grab` and `text-cursor` are new, with `type`) in black over a white halo, as every platform draws its own pointer.
+
+## Changes in 0.31.1
+
+**`EditingStatus` folds "Editing" on an artifact bar's narrow arrangement**, below 640px, and keeps its dot, so a phone's bar keeps the room for the title while Cancel and Save are there. The words stay in the status for a screen reader.
+
 ## Changes in 0.31.0
 
 **`ArtifactBar` carries an editing state**: a `status` slot said before the kind's tools (an `EditingStatus` while a doc is edited), never folded away, and a tool's `emphasis: 'primary'`, drawn as the primary button with its word kept at every width, for the one action the state turns on, such as Save.
