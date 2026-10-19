@@ -457,14 +457,13 @@ test('a chip standing on the floor centres what it draws', () => {
 });
 
 test('a chip takes the corner that nests in its well, from the token', () => {
-  // 6px is the sm step and the approved design's chip: the well's 8px less its
-  // 1px boundary and 2px inset is a 5px concentric curve, and a chip a pixel
-  // rounder than that reads as sitting IN the well rather than as a second
-  // well inside it.
+  // 7px is --radius-chip: the well's 8px less its 1px boundary and 1px inset
+  // is a 6px concentric curve, and a chip a pixel rounder than that reads as
+  // sitting IN the well rather than as a second well inside it.
   const remove = drawAt(1);
   try {
     render(railFoot('sm'));
-    expect(length(screen.getAllByRole('radio')[0]!, 'border-radius')).toBe(6);
+    expect(length(screen.getAllByRole('radio')[0]!, 'border-radius')).toBe(7);
   } finally {
     remove();
   }

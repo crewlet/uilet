@@ -6,6 +6,8 @@
 
 import { describe, expect, test } from 'vitest';
 import {
+  SHEET_COLUMN_BOUNDS,
+  SHEET_COLUMN_WIDTHS,
   SHEET_LABELS,
   SheetPendingEdits,
   cellDescription,
@@ -14,6 +16,8 @@ import {
   displayText,
   editText,
   editorSide,
+  fitSamples,
+  fittedWidth,
   moveFrom,
   nextSort,
   normalizeValue,
@@ -235,6 +239,34 @@ describe('navigation', () => {
   test('a list opens above a cell near the bottom of the view', () => {
     expect(editorSide(100, 132, 0, 600, 256)).toBe('below');
     expect(editorSide(500, 532, 0, 600, 256)).toBe('above');
+  });
+});
+
+describe('column fit', () => {
+  test('a measured column takes its width within its type bounds, and nothing measured keeps the default', () => {
+    const [min, max] = SHEET_COLUMN_BOUNDS.status;
+    expect(fittedWidth('status', 0)).toBe(SHEET_COLUMN_WIDTHS.status);
+    expect(fittedWidth('status', 40)).toBe(min);
+    expect(fittedWidth('status', 171.2)).toBe(172);
+    expect(fittedWidth('status', 4000)).toBe(max);
+  });
+
+  test('a choice column is measured by every live choice, whatever the rows hold', () => {
+    expect(fitSamples(tier, [], context)).toEqual(['gold', 'silver']);
+    expect(fitSamples(status, [], context)).toEqual(['todo', 'blocked', 'ok']);
+  });
+
+  test('a checkbox and a multi-select by their header alone, a rating by its full mark', () => {
+    const rows: SheetRow[] = [{ id: 'a', values: { done: true, tags: ['gold'], stars: 2 } }];
+    expect(fitSamples(done, rows, context)).toEqual([]);
+    expect(fitSamples(tags, rows, context)).toEqual([]);
+    expect(fitSamples(stars, rows, context)).toEqual([5]);
+  });
+
+  test('any other column by its longest values as displayed, at most the limit', () => {
+    const rows: SheetRow[] = ['Acme', 'Globex Corporation', '', 'Initech', 'Umbrella'].map((vendor, i) => ({ id: String(i), values: { vendor } }));
+    expect(fitSamples(text, rows, context, 2)).toEqual(['Globex Corporation', 'Umbrella']);
+    expect(fitSamples(text, [], context)).toEqual([]);
   });
 });
 

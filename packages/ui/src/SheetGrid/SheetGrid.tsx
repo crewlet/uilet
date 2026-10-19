@@ -52,6 +52,7 @@ import { Menu } from '../Menu/index.js';
 import { presenceHueClass } from '../PresenceRing/index.js';
 import { presenceLabels, type PresenceLabels } from '../PresenceModel/index.js';
 import {
+  SHEET_COLUMN_BOUNDS,
   SHEET_ROW_HEIGHT,
   SHEET_ROW_NUMBER_WIDTH,
   cellDescription,
@@ -61,6 +62,8 @@ import {
   displayText,
   drawnColumns,
   editorSide,
+  fitSamples,
+  fittedWidth,
   flagText,
   hasPrevious,
   inRange,
@@ -186,6 +189,9 @@ interface Editing {
 
 const HEADER = -1;
 
+/** The most of the grid's visible width the row numbers and the frozen columns hold together. */
+const FROZEN_SHARE = 0.6;
+
 /** Pastes, clears and type refusals the grid itself refuses, keyed by cell, until the cell is edited again. */
 type LocalRefusals = ReadonlyMap<string, string>;
 
@@ -221,7 +227,73 @@ export function SheetGrid({
   const labels = useMemo(() => sheetLabels(labelOverrides), [labelOverrides]);
   const said = useMemo(() => presenceLabels(presenceOverrides), [presenceOverrides]);
   const context = useMemo<SheetValueContext>(() => ({ people, locale, labels }), [people, locale, labels]);
-  const columns = useMemo(() => drawnColumns(declared), [declared]);
+  const ordered = useMemo(() => drawnColumns(declared), [declared]);
+
+  /* ----- column widths --------------------------------------------------- */
+
+  // A COLUMN THAT DECLARES NO WIDTH IS SIZED TO WHAT IT HOLDS: the widest of
+  // its header and a few of its values (SheetModel `fitSamples`), drawn by the
+  // real header and cells in a hidden row and measured, within its type's
+  // bounds. The samples are taken when the columns change and when the first
+  // rows arrive, never on an edit, so no column moves under a reader typing.
+  // The scroller's visible width, which the frozen columns are held to a share of.
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const latestRows = useRef(given);
+  useLayoutEffect(() => {
+    latestRows.current = given;
+  });
+  const hasRows = given.length > 0;
+  const [samples, setSamples] = useState<ReadonlyMap<string, readonly SheetValue[]> | null>(null);
+  useLayoutEffect(() => {
+    const from = hasRows ? latestRows.current : [];
+    setSamples(new Map(ordered.filter((column) => !(column.width && column.width > 0)).map((column) => [column.field, fitSamples(column, from, context)])));
+  }, [ordered, hasRows, context]);
+  // Measured again once the face has loaded: a fallback face's widths are not the drawn face's.
+  const [fontsLoaded, setFontsLoaded] = useState(0);
+  useEffect(() => {
+    const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+    if (!fonts) return undefined;
+    let live = true;
+    const loaded = () => {
+      if (live) setFontsLoaded((n) => n + 1);
+    };
+    void fonts.ready.then(loaded);
+    fonts.addEventListener('loadingdone', loaded);
+    return () => {
+      live = false;
+      fonts.removeEventListener('loadingdone', loaded);
+    };
+  }, []);
+  const measurer = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState<ReadonlyMap<string, number>>(new Map());
+  useLayoutEffect(() => {
+    const box = measurer.current;
+    if (!box) return;
+    const next = new Map<string, number>();
+    for (const group of box.querySelectorAll<HTMLElement>('[data-measure]')) {
+      let widest = 0;
+      for (const part of group.children) widest = Math.max(widest, part.getBoundingClientRect().width);
+      next.set(group.dataset['measure'] ?? '', widest);
+    }
+    setMeasured(next);
+  }, [samples, fontsLoaded]);
+  // THE FROZEN COLUMNS NEVER TAKE THE VIEW: together with the row numbers they
+  // hold at most a share of the grid's visible width (on a phone, a title
+  // column at its ceiling left no room for anything that scrolls), each
+  // fitted one giving way, never below its type's floor.
+  const columns = useMemo(() => {
+    const declares = (column: SheetColumn) => column.width !== undefined && column.width > 0;
+    const fitted = ordered.map((column) => (declares(column) ? column : { ...column, width: fittedWidth(column.type, measured.get(column.field) ?? 0) }));
+    if (viewportWidth <= 0) return fitted;
+    const room = Math.floor(viewportWidth * FROZEN_SHARE) - SHEET_ROW_NUMBER_WIDTH;
+    const over = fitted.filter((column) => column.frozen).reduce((sum, column) => sum + columnWidth(column), 0) - room;
+    const yielding = ordered.filter((column) => column.frozen && !declares(column)).length;
+    if (over <= 0 || yielding === 0) return fitted;
+    const each = Math.ceil(over / yielding);
+    return fitted.map((column, index) =>
+      column.frozen && !declares(ordered[index]!) ? { ...column, width: Math.max(SHEET_COLUMN_BOUNDS[column.type][0], columnWidth(column) - each) } : column,
+    );
+  }, [ordered, measured, viewportWidth]);
   const rows = useMemo(() => sortRows(columns, given, sort, context), [columns, given, sort, context]);
   const editable = mode === 'edit' && onEdit !== undefined;
   const rowActions = mode === 'edit' && onDeleteRow !== undefined;
@@ -275,6 +347,7 @@ export function SheetGrid({
       const head = grid.current?.querySelector<HTMLElement>('.crewlet-sheet-grid__row--head')?.offsetHeight ?? 0;
       if (head > 0) setHeaderHeight(head);
       setViewport(scroller.current?.clientHeight ?? 0);
+      setViewportWidth(scroller.current?.clientWidth ?? 0);
     };
     measure();
     if (typeof ResizeObserver !== 'function') return undefined;
@@ -1053,6 +1126,32 @@ export function SheetGrid({
           </div>
         </div>
       </div>
+      {samples ? (
+        <div ref={measurer} className="crewlet-sheet-grid__measure" aria-hidden="true" inert>
+          {ordered
+            .filter((column) => samples.has(column.field))
+            .map((column) => (
+              <div key={column.field} data-measure={column.field}>
+                <div className={cx('crewlet-sheet-grid__header', `crewlet-sheet-grid__header--${column.type}`)}>
+                  <span className="crewlet-sheet-grid__header-label">{column.label}</span>
+                  {/* Room for the sort mark, which a sorted header draws beside its name. */}
+                  {onSortChange ? (
+                    <span className="crewlet-sheet-grid__sort">
+                      <ArrowDownGlyph size="xs" />
+                    </span>
+                  ) : null}
+                </div>
+                {(samples.get(column.field) ?? []).map((value, index) => (
+                  <div key={index} className={cx('crewlet-sheet-grid__cell', `crewlet-sheet-grid__cell--${column.type}`)}>
+                    <span className="crewlet-sheet-grid__value">
+                      <CellDisplay column={column} value={value} context={context} />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
+        </div>
+      ) : null}
       <VisuallyHidden id={describedId}>{description}</VisuallyHidden>
       <VisuallyHidden id={helpId}>{rowActions ? `${labels.keyboardHelp} ${labels.rowActionsHelp}` : labels.keyboardHelp}</VisuallyHidden>
       <VisuallyHidden>

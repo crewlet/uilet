@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, test, vi } from 'vitest';
-import { size, themes as palettes } from '@crewlethq/tokens';
+import { themes as palettes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installSheets, installThemed, pseudoElement, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { SegmentedControl } from './SegmentedControl.js';
@@ -567,11 +567,12 @@ test('a trailing field sits in the row after the options, and the arrows never l
   expect(onValueChange).not.toHaveBeenCalled();
 });
 
-test('the well stands exactly at the control step, so it lines up with the button beside it', () => {
+test('the well stands at the tab step, 28px, between the panel and the page control steps', () => {
   /*
    * A chip, the well's inset above and below it and its boundary above and
-   * below that: 24 + 2 + 2 + 1 + 1 is the 30px medium control step, the height
-   * of every button, icon button and field on the same line. The chip and the
+   * below that: 24 + 1 + 1 + 1 + 1 is the 28px tab step, which sits between
+   * the 26px panel controls and the 32px page actions a row of tabs stands
+   * beside, so it reads as navigation rather than as one more button. The chip and the
    * inset are read from the cascade. The boundary is read from the rule, since
    * jsdom answers no border width it was given.
    */
@@ -585,8 +586,7 @@ test('the well stands exactly at the control step, so it lines up with the butto
     expect(boundary).toBe('1');
     const row = px(chip, 'min-height') + px(well, 'padding-top') + px(well, 'padding-bottom') + 2 * Number(boundary);
     expect(px(chip, 'min-height')).toBe(24);
-    expect(row).toBe(Number.parseFloat(size.control.md));
-    expect(row).toBe(30);
+    expect(row).toBe(28);
   } finally {
     uninstall();
   }
