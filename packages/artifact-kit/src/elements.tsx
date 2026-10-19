@@ -34,7 +34,7 @@ export interface SheetOptions {
   readOnly?: boolean | undefined;
   /** The grid's accessible name. */
   label?: string | undefined;
-  /** The scroller's height in px. */
+  /** The most the sheet grows to in px; it is as tall as its rows below that, and its rows scroll past it. */
   height?: number | undefined;
   /** The runtime to bind to; `window.crewlet` when absent. */
   runtime?: KitRuntime | undefined;

@@ -49,7 +49,7 @@ const sheet = mountSheet(document.querySelector('#grid'), { collection: 'vendors
 
 A sheet with no columns of its own draws the collection's schema: its hidden columns are left out, its primary column is frozen, and a column type this kit does not know is drawn as read-only text.
 
-It is the design system's own `SheetGrid`, the component the dashboard draws a native sheet with, so a page's sheet looks and behaves exactly like it: the keyboard of a spreadsheet (arrows, Enter or F2 to edit, Escape, Tab, Space on a checkbox, typing to replace, Mod+C and Mod+V for ranges, Delete, Mod+Z and Mod+Shift+Z), an edit drawn at once as Saving until the engine confirms it, a refusal said on the cell, a conflict note naming whoever changed a cell under the editor, collaborators' rings and name flags, and the light and dark themes and every palette.
+It is the design system's own `SheetGrid`, the component the dashboard draws a native sheet with, so a page's sheet looks and behaves exactly like it: the keyboard of a spreadsheet (arrows, Enter or F2 to edit, Escape, Tab, Space on a checkbox, typing to replace, Mod+C and Mod+V for ranges, Delete, Mod+Z and Mod+Shift+Z), an edit drawn at once as Saving until the engine confirms it, a refusal said on the cell and held in the sync strip as not saved until the reader dismisses it, a conflict note naming whoever changed a cell under the editor, collaborators' rings and name flags, and the light and dark themes and every palette.
 
 ### `<crewlet-sheet>` attributes
 
@@ -60,7 +60,7 @@ It is the design system's own `SheetGrid`, the component the dashboard draws a n
 | `sort` | The initial order: `score` ascending, `-score` descending. |
 | `frozen` | How many leading columns stay in view while the sheet scrolls sideways. |
 | `readonly` | Draws the sheet read only, whatever the reader may do. |
-| `height` | The scroller's height in px. The height its container gives it when absent. |
+| `height` | The most the sheet grows to, in px; its rows scroll past it. The sheet is as tall as its rows below that, so no empty space sits under Add row. Without it the sheet stops at `--crewlet-sheet-max-height` (70% of the viewport by default). |
 
 ### `<crewlet-column>` attributes
 
@@ -91,7 +91,7 @@ The sheet talks only to the page's runtime, `window.crewlet` (runtime contract 1
 | `identity.me()`, `identity.people()` | A viewer's read-only sheet, and the people a person cell offers and names | `identity` |
 | `connection.subscribe(…)` | Offline in the sync strip | none |
 
-A write resolves with the engine's verdict (`applied`, `pending`, `conflict`, `invalid`, `forbidden`, `quota` or `gone`) and rejects only where nothing was decided (`rate_limited`, `unavailable`, `capability_not_declared`); the sheet says either on the cell it wrote. A page that did not declare `db` gets a sheet that says so rather than an empty grid; without `presence` or `identity` the sheet draws without collaborators or without names. When the kit loads before the runtime, it waits for the runtime's `crewlet:ready` event on `window` (exported as `RUNTIME_READY_EVENT`).
+A write resolves with the engine's verdict (`applied`, `pending`, `conflict`, `invalid`, `forbidden`, `quota` or `gone`) and rejects only where nothing was decided (`rate_limited`, `unavailable`, `capability_not_declared`); the sheet says either on the cell it wrote, and a paste is refused whole, never in part. An Add row that fails is said under the sheet with Retry. A subscription the runtime refuses (`forbidden`, `not_found`, `unavailable`, `capability_not_declared`) is said in place of the grid, never drawn as an empty collection. A page that did not declare `db` gets a sheet that says so rather than an empty grid; without `presence` or `identity` the sheet draws without collaborators or without names. When the kit loads before the runtime, it waits for the runtime's `crewlet:ready` event on `window` (exported as `RUNTIME_READY_EVENT`).
 
 ## What is in it
 
