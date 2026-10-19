@@ -1,4 +1,4 @@
-import { Children, useRef, useState, type ReactNode } from 'react';
+import { Children, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useAnnouncer } from '../Announcer/index.js';
 import { cx } from '../utils/cx.js';
 
@@ -16,8 +16,23 @@ export interface TagGroupProps {
    * thirty-six service accounts.
    */
   max?: number | undefined;
+  /**
+   * What happens to the tags that do not fit.
+   *
+   * `expand` (the default) folds everything past `max` behind a "+N more"
+   * button that shows them in place.
+   *
+   * `fit` keeps the group on ONE LINE in whatever width it is given: the tags
+   * that would wrap are left out and counted in a static "+N" chip, so a tag is
+   * never cut mid-glyph by the box it sits in. It is for a dense row (a sheet
+   * cell, a table) where a button per row would be a tab stop per row; the
+   * group's name still says how many there are.
+   */
+  overflow?: 'expand' | 'fit' | undefined;
   /** The overflow control's label. */
   moreLabel?: ((hidden: number) => string) | undefined;
+  /** The `fit` count chip's text. */
+  countLabel?: ((hidden: number) => string) | undefined;
   /** What is said once the rest are shown. */
   expandedMessage?: ((total: number) => string) | undefined;
   className?: string | undefined;
@@ -45,7 +60,9 @@ export interface TagGroupProps {
 export function TagGroup({
   label,
   max = 6,
+  overflow = 'expand',
   moreLabel = (hidden) => `+${hidden} more`,
+  countLabel = (hidden) => `+${hidden}`,
   expandedMessage = (total) => `Showing all ${total}.`,
   className,
   children,
@@ -55,7 +72,9 @@ export function TagGroup({
   const list = useRef<HTMLUListElement | null>(null);
 
   const all = Children.toArray(children);
-  const shown = open ? all : all.slice(0, max);
+  const fit = overflow === 'fit';
+  const fitted = useFitted(list, fit, all.length);
+  const shown = fit ? all.slice(0, fitted) : open ? all : all.slice(0, max);
   const hidden = all.length - shown.length;
 
   return (
@@ -68,7 +87,7 @@ export function TagGroup({
        * to walk back through; focus lands on the list that now holds them.
        */
       tabIndex={-1}
-      className={cx('crewlet-tag-group', className)}
+      className={cx('crewlet-tag-group', fit && 'crewlet-tag-group--fit', className)}
       aria-label={`${label}, ${all.length}`}
     >
       {shown.map((tag, index) => (
@@ -78,7 +97,11 @@ export function TagGroup({
           {tag}
         </li>
       ))}
-      {hidden > 0 ? (
+      {hidden > 0 && fit ? (
+        <li className="crewlet-tag-group__item" data-count="">
+          <span className="crewlet-tag-group__count">{countLabel(hidden)}</span>
+        </li>
+      ) : hidden > 0 ? (
         <li className="crewlet-tag-group__item">
           <button
             type="button"
@@ -97,4 +120,50 @@ export function TagGroup({
       ) : null}
     </ul>
   );
+}
+
+/**
+ * How many tags fit on the group's first line, with room for the count chip
+ * when any are left out. Measured after layout and again when the group's
+ * width changes: every item laid out below the first line's top is one that
+ * wrapped. Starts at all of them, so a group that fits never re-renders.
+ */
+function useFitted(list: RefObject<HTMLUListElement | null>, active: boolean, total: number): number {
+  const [fitted, setFitted] = useState(total);
+  const width = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (!active) return;
+    setFitted(total);
+  }, [active, total]);
+
+  useLayoutEffect(() => {
+    const box = list.current;
+    if (!active || !box) return;
+    const items = [...box.children] as HTMLElement[];
+    const first = items[0];
+    if (!first) return;
+    const top = first.offsetTop;
+    const tags = items.filter((item) => !item.hasAttribute('data-count'));
+    const count = items.find((item) => item.hasAttribute('data-count'));
+    const onLine = tags.filter((item) => item.offsetTop === top).length;
+    // The count chip itself must sit on the line too, or one more tag gives way to it.
+    const room = count && count.offsetTop !== top ? onLine - 1 : onLine;
+    const next = Math.max(1, Math.min(room, tags.length));
+    if (next < tags.length) setFitted(next);
+  }, [list, active, fitted, total]);
+
+  useLayoutEffect(() => {
+    const box = list.current;
+    if (!active || !box || typeof ResizeObserver !== 'function') return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      const now = entry?.contentRect.width ?? 0;
+      if (width.current !== null && width.current !== now) setFitted(total);
+      width.current = now;
+    });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [list, active, total]);
+
+  return active ? fitted : total;
 }

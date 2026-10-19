@@ -62,6 +62,13 @@ export interface VersionCompareProps {
   from?: ReactNode;
   /** The newer version, drawn for the versions lens. With `from` left out it is drawn alone. */
   to?: ReactNode;
+  /**
+   * The versions lens, drawn by the host in place of the two panes: content
+   * compared item by item, where two independent panes could not line the
+   * items up (a deck's slides, paired by id, with added and removed ones in
+   * place).
+   */
+  versions?: ReactNode;
   /** A sentence over the versions lens: "Both versions show today's data." */
   note?: ReactNode;
   /** Controls at the end of the head, after the lens switch: "Back to the page". */
@@ -100,6 +107,7 @@ export function VersionCompare({
   context = 3,
   from,
   to,
+  versions,
   note,
   actions,
   labels: overrides,
@@ -114,7 +122,9 @@ export function VersionCompare({
 
   const hostChanges = changes !== undefined && changes !== null;
   const canChanges = hostChanges || (before !== undefined && after !== undefined);
-  const canVersions = (from !== undefined && from !== null) || (to !== undefined && to !== null);
+  const hostVersions = versions !== undefined && versions !== null;
+  const canVersions =
+    hostVersions || (from !== undefined && from !== null) || (to !== undefined && to !== null);
   const shown: VersionCompareLens =
     lens === 'versions' ? (canVersions ? 'versions' : 'changes') : canChanges ? 'changes' : 'versions';
 
@@ -180,6 +190,9 @@ export function VersionCompare({
         ) : (
           <div className="crewlet-version-compare__versions">
             {note !== undefined && note !== null && <p className="crewlet-version-compare__note">{note}</p>}
+            {hostVersions ? (
+              versions
+            ) : (
             <div className="crewlet-version-compare__panes">
               {panes.map((pane) => (
                 <div key={pane.key} className="crewlet-version-compare__pane">
@@ -188,6 +201,7 @@ export function VersionCompare({
                 </div>
               ))}
             </div>
+            )}
           </div>
         )}
       </HeadingLevelProvider>

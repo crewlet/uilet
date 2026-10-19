@@ -322,6 +322,17 @@ export interface CanvasProps {
   labels?: Partial<CanvasLabels> | undefined;
   /** Called once, when the first measured layout has been fitted. */
   onReady?: (() => void) | undefined;
+  /**
+   * Called with the view and the viewport's size whenever either changes,
+   * from the first fit on.
+   *
+   * THE VIEW IT IS GIVEN IS WHERE THE CONTENT IS GOING, not where an easing
+   * has got to: a fit or a zoom step reports its destination at once, so a
+   * surface that mounts what is on screen (a design's live artboards) mounts
+   * what the reader will see when the move lands, rather than chasing every
+   * frame of it.
+   */
+  onViewChange?: ((view: CanvasView, viewport: CanvasSize) => void) | undefined;
   ref?: Ref<CanvasHandle> | undefined;
   className?: string | undefined;
 }
@@ -342,6 +353,7 @@ export function Canvas({
   touch = true,
   labels,
   onReady,
+  onViewChange,
   ref,
   className,
 }: CanvasProps) {
@@ -441,6 +453,13 @@ export function Canvas({
   useLayoutEffect(() => {
     if (ready) apply(viewNow.current);
   }, [ready, size, content, apply]);
+
+  // ---- tell the caller where the view is -----------------------------------
+  const reportView = useRef(onViewChange);
+  reportView.current = onViewChange;
+  useLayoutEffect(() => {
+    if (ready) reportView.current?.(view, size);
+  }, [ready, view, size]);
 
   // ---- tell the overlay that the content moved ------------------------------
   useLayoutEffect(() => {

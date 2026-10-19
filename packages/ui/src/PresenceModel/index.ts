@@ -2,6 +2,7 @@
 // React in it, so nothing reachable from here may import React or a stylesheet.
 export {
   PRESENCE_ACTIVITIES,
+  PRESENCE_HUES,
   PRESENCE_LABELS,
   assignPresenceHues,
   collapseSessions,

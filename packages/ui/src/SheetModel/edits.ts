@@ -99,9 +99,20 @@ export class SheetPendingEdits {
     return count;
   }
 
-  /** The sync strip's state. Refusals are said on their cells, so they do not count as failures to retry. */
+  /** Clears every refusal at once: the strip's Dismiss. */
+  dismissAll(): void {
+    if (this.refusals.size === 0) return;
+    this.refusals.clear();
+    this.emit();
+  }
+
+  /**
+   * The sync strip's state. A refusal is not a failure to retry (the engine
+   * decided it), but it is counted, so the strip holds "not saved" until the
+   * reader dismisses it rather than going back to "Saved".
+   */
   sync(offline = false): SheetSyncState {
-    return { saving: this.saving, offline };
+    return { saving: this.saving, offline, refused: this.refusals.size };
   }
 
   /** Every refusal since the last `resetFailures`, for a host that reports them. */

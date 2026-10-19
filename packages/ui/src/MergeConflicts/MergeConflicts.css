@@ -1,0 +1,77 @@
+/* MergeConflicts: each clash as the other side's lines beside the draft's,
+   with the choice under them, in one framed block that replaces the editor
+   until it is settled. */
+.crewlet-merge-conflicts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.crewlet-merge-conflicts__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.crewlet-merge-conflicts__note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-merge-conflicts__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-merge-conflicts__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.crewlet-merge-conflicts__sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  gap: var(--spacing-3);
+}
+
+.crewlet-merge-conflicts__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+  margin: 0;
+}
+
+.crewlet-merge-conflicts__side figcaption {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-merge-conflicts__side pre {
+  margin: 0;
+  padding: var(--spacing-2);
+  overflow-x: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-inset);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+}
+
+.crewlet-merge-conflicts__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}

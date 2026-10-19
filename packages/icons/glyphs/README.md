@@ -18,6 +18,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **`circle`**, the Todo state a task row leads with in the command palette's Storybook story, beside `circle-check` for Done. The artboard draws both states as marks of its own on a 14 unit grid (a bare ring, and a filled disc with a check cut out of it) rather than as Lucide icons, so neither is among the 59 above; the ring is Lucide's `circle` stroke for stroke, and Done keeps `circle-check` in the success ink rather than a filled disc, because `FILLABLE` paints a drawing's inside in the same colour as its stroke, which would fill the check in.
 - **The arrangeable page in `@crewlethq/ui`**: `move-diagonal-2` for `ArrangeFrame`'s resize corner, `layout-grid` for a widget tray, `group`, `heading`, `separator-horizontal` and `sticky-note` for the layout widgets a reader adds to a page (a group, a heading, a divider and a note), and `ungroup` and `fold-vertical` for a block's toolbar (take a group apart, fit a block's height to its content).
 - **The widget tray of an arranged page**, each drawn on an `IconTile` in `@crewlethq/ui`: `gauge` for a row of figures, `radio` for what is live now, `chart-column` for a daily chart, `chart-pie` for a split by team, `folder-kanban` for a project, `rotate-ccw-clock` for recent activity and `message-circle-question-mark` for a question waiting on the reader.
+- **`log-out` and `log-in`**, signing out and signing in from the reader's own menu, which `AppShell.AccountRow` opens from the foot of the rail.
 - **The formatting bar of `MarkdownEditor`** in `@crewlethq/ui`: `heading-2` and `heading-3` for the two heading levels a page's outline lists, `bold`, `italic`, `list-ordered` for a numbered list beside `list`, and `list-checks` for a checklist. Each is a control a writer recognises by its drawing, so the bar draws all of them as glyphs rather than spelling some as letters ("H2", "B") beside the glyphs of the rest.
 - **`mouse-pointer-2`**, the pointer a collaborator's `LiveCursor` in `@crewlethq/ui` is drawn with, beside its name flag, on a board or a page that shares cursors.
 
@@ -134,6 +135,8 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `list-filter` | `ListFilterGlyph` | `package/icons/list-filter.svg` |
 | `list-ordered` | `ListOrderedGlyph` | `package/icons/list-ordered.svg` |
 | `lock` | `LockGlyph` | `package/icons/lock.svg` |
+| `log-in` | `LogInGlyph` | `package/icons/log-in.svg` |
+| `log-out` | `LogOutGlyph` | `package/icons/log-out.svg` |
 | `maximize` | `MaximizeGlyph` | `package/icons/maximize.svg` |
 | `maximize-2` | `Maximize2Glyph` | `package/icons/maximize-2.svg` |
 | `menu` | `MenuGlyph` | `package/icons/menu.svg` |
@@ -155,6 +158,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `plug` | `PlugGlyph` | `package/icons/plug.svg` |
 | `plus` | `PlusGlyph` | `package/icons/plus.svg` |
 | `power` | `PowerGlyph` | `package/icons/power.svg` |
+| `presentation` | `PresentationGlyph` | `package/icons/presentation.svg` |
 | `radio` | `RadioGlyph` | `package/icons/radio.svg` |
 | `redo` | `RedoGlyph` | `package/icons/redo.svg` |
 | `refresh-ccw` | `RefreshCcwGlyph` | `package/icons/refresh-ccw.svg` |

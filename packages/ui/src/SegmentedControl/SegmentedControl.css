@@ -176,3 +176,16 @@
   justify-content: center;
   min-width: 0;
 }
+
+/*
+ * A PILL ROW WRAPS RATHER THAN OVERFLOWING ITS CONTAINER. Its options never
+ * shrink (a label cut mid-word is not a choice anybody can read), so on one
+ * unbroken row a group wider than its container ran past its edge: on a phone
+ * a chart's "Split by" row ended at "Worke", clipped by its card. Wrapped,
+ * every option stays visible and inside the focus ring's room.
+ */
+.crewlet-tabs--pill.crewlet-segmented {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}

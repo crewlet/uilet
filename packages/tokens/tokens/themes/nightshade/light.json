@@ -101,6 +101,10 @@
       },
       "control": {
         "value": "#464b5c"
+      },
+      "field": {
+        "value": "#818692",
+        "comment": "The strong border, #c9cfdc, darkened dE 23.39: the least move that clears 3:1 on every rung a text field sits on (3.03:1 on the frame, the worst). A field stands on a rung and never inside a hovered or pressed row, so it is held to the rungs alone rather than to the composites the control boundary clears, and it reads as quietly as a secondary button's edge allows."
       }
     },
     "focus": {

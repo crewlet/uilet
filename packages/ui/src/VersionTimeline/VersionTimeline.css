@@ -32,11 +32,11 @@
   background: var(--color-surface-hover);
 }
 
-/* The version on show. The accent means "where the reader is", which is
-   exactly what this row is. */
+/* The version on show, as a FILL only: the timeline's rail is the row's one
+   vertical line, and an accent bar beside it drew two. The accent means
+   "where the reader is", which is exactly what this row is. */
 .crewlet-version-timeline__select[aria-current='true'] {
   background: var(--color-brand-accent-soft);
-  box-shadow: inset 2px 0 0 var(--color-brand-accent);
 }
 
 .crewlet-version-timeline__head {
@@ -91,11 +91,11 @@
   padding-inline: var(--spacing-1);
 }
 
-/* The version compared against carries the same edge in the strong neutral:
-   it is the other side of the comparison, not where the reader is, so it does
-   not take the accent. */
+/* The version compared against is ringed in the strong neutral: it is the
+   other side of the comparison, not where the reader is, so it takes neither
+   the accent nor a second vertical bar beside the rail. */
 .is-compared > .crewlet-timeline__body > .crewlet-version-timeline__select {
-  box-shadow: inset 2px 0 0 var(--color-border-strong);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
 }
 
 .crewlet-version-timeline__gap {

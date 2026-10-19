@@ -122,6 +122,36 @@ test('a disabled option is stepped over rather than focused', () => {
   expect(document.activeElement).toBe(radios[2]);
 });
 
+test('a disabled option that says why stays focusable and in the arrows path, and is never chosen', () => {
+  const onValueChange = vi.fn();
+  render(
+    <>
+      <SegmentedControl
+        label="Scope"
+        semantics="radio"
+        value="mine"
+        onValueChange={onValueChange}
+        options={[
+          { value: 'mine', label: 'Mine' },
+          { value: 'archived', label: 'Archived', count: 50, capped: true, disabled: true, describedBy: 'why' },
+          { value: 'all', label: 'All' },
+        ]}
+      />
+      <p id="why">Archived needs the Tracker role.</p>
+    </>,
+  );
+  const archived = screen.getByRole('radio', { name: /Archived/ });
+  expect(archived.hasAttribute('disabled')).toBe(false);
+  expect(archived.getAttribute('aria-disabled')).toBe('true');
+  expect(archived.getAttribute('aria-describedby')).toBe('why');
+  expect(archived.textContent).toContain('50+');
+  act(() => screen.getByRole('radio', { name: 'Mine' }).focus());
+  fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
+  expect(document.activeElement).toBe(archived);
+  fireEvent.click(archived);
+  expect(onValueChange).not.toHaveBeenCalledWith('archived');
+});
+
 test('a row whose chosen option is disabled still has a tab stop somebody can reach', () => {
   render(
     <SegmentedControl
@@ -212,6 +242,28 @@ test('under manual activation the tab stop follows focus rather than the choice'
    */
   radios[2]!.blur();
   expect(radios.map((radio) => radio.tabIndex)).toEqual([-1, -1, 0, -1]);
+});
+
+test('a manual row puts the stop back on the choice when the value changes from outside', () => {
+  const row = (value: string) => (
+    <SegmentedControl
+      label="Event kind"
+      semantics="radio"
+      activate="manual"
+      value={value}
+      options={kinds}
+      onValueChange={() => {}}
+    />
+  );
+  const { rerender } = render(row('all'));
+  const radios = screen.getAllByRole('radio') as HTMLButtonElement[];
+  radios[0]!.focus();
+  fireEvent.keyDown(radios[0]!, { key: 'ArrowRight' });
+  expect(radios.map((radio) => radio.tabIndex)).toEqual([-1, 0, -1, -1]);
+  radios[1]!.blur();
+  // Back, or a link, chose the last option without the row.
+  rerender(row('fault'));
+  expect(radios.map((radio) => radio.tabIndex)).toEqual([-1, -1, -1, 0]);
 });
 
 test('a pointer press moves the manual tab stop too', () => {
@@ -359,6 +411,15 @@ const ranges = [
   { value: 'week', label: '7 days' },
   { value: 'month', label: '30 days' },
 ];
+
+test('a pill row wraps inside its container rather than running past it', () => {
+  const uninstall = installSheets('Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
+  render(<SegmentedControl label="Time range" semantics="radio" value="week" options={ranges} onValueChange={() => {}} />);
+  const row = getComputedStyle(screen.getByRole('radiogroup', { name: 'Time range' }));
+  expect(row.flexWrap).toBe('wrap');
+  expect(row.maxWidth).toBe('100%');
+  uninstall();
+});
 
 test('the row is a raised well with a card chip in it, in both palettes', () => {
   const transparent = (value: string) => value === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(value);

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ArtifactCard, AutoGrid } from '@crewlethq/ui';
+import { ARTIFACT_KINDS, ArtifactCard, AutoGrid, DashboardCover } from '@crewlethq/ui';
 
 const meta: Meta<typeof ArtifactCard> = {
   title: 'UI/ArtifactCard',
@@ -37,7 +37,25 @@ export const Gallery: Story = {
         now={NOW}
       />
       <ArtifactCard title="Pricing explorer" kind="html" href="#/artifacts/2" owner={CTO} updatedAt={NOW - 12 * 60_000} project="GTM" version={3} pinned now={NOW} />
-      <ArtifactCard title="Incident runbook" kind="markdown" href="#/artifacts/3" owner={MAYA} updatedAt={NOW - 86_400_000} now={NOW} />
+      <ArtifactCard title="Incident runbook" kind="doc" href="#/artifacts/3" owner={MAYA} updatedAt={NOW - 86_400_000} now={NOW} />
+      <ArtifactCard
+        title="Delivery board"
+        kind="dashboard"
+        href="#/artifacts/4"
+        owner={CTO}
+        updatedAt={NOW - 30 * 60_000}
+        version={2}
+        now={NOW}
+        preview={
+          <DashboardCover
+            stats={[
+              { label: 'Open tasks', value: '12' },
+              { label: 'Spend today', value: '$4.20' },
+              { label: 'Agents working', source: 'Agent status' },
+            ]}
+          />
+        }
+      />
     </AutoGrid>
   ),
 };
@@ -49,5 +67,16 @@ export const Compact: Story = {
       <ArtifactCard title="Vendor scorecard" kind="sheet" href="#/artifacts/1" owner={MAYA} updatedAt={NOW - 4 * 60_000} changes={2} size="compact" now={NOW} />
       <ArtifactCard title="Pricing explorer" kind="html" href="#/artifacts/2" owner={CTO} updatedAt={NOW - 3_600_000} version={3} size="compact" now={NOW} />
     </div>
+  ),
+};
+
+/** Every kind with no preview: the glyph and the label each kind is drawn with until it has a cover. */
+export const Kinds: Story = {
+  render: () => (
+    <AutoGrid min="sm" gap={3}>
+      {ARTIFACT_KINDS.map((kind) => (
+        <ArtifactCard key={kind} title={`Untitled ${kind}`} kind={kind} href={`#/artifacts/${kind}`} updatedAt={NOW - 3_600_000} now={NOW} />
+      ))}
+    </AutoGrid>
   ),
 };

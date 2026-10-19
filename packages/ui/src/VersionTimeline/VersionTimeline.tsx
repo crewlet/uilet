@@ -62,8 +62,8 @@ const LABELS: VersionTimelineLabels = {
   compareWith: (version) => `Compare with version ${version}`,
   restoreAction: 'Restore',
   restoreVersion: (version) => `Restore version ${version}`,
-  labelAction: 'Name',
-  labelVersion: (version) => `Name version ${version}`,
+  labelAction: 'Label',
+  labelVersion: (version) => `Label version ${version}`,
   retention: (oldestKept) =>
     oldestKept > 2
       ? `Versions 1 to ${oldestKept - 1} are past the retention window and are no longer kept.`
@@ -156,19 +156,18 @@ export function VersionTimeline({
                   {item.version === newest ? <span className="crewlet-version-timeline__latest">{text.latest}</span> : null}
                   {item.label ? <span className="crewlet-version-timeline__label">{item.label}</span> : null}
                 </span>
-                <span className="crewlet-version-timeline__summary">{item.summary ?? what}</span>
+                {item.summary ? <span className="crewlet-version-timeline__summary">{item.summary}</span> : null}
               </button>
               <span className="crewlet-version-timeline__meta">
                 <PrincipalAvatar principal={item.author} size="xs" />
                 <span>{item.author.name}</span>
                 <span aria-hidden>·</span>
                 <RelativeTime value={item.at} now={now} />
-                {item.summary ? (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span>{what}</span>
-                  </>
-                ) : null}
+                {/* WHAT MADE IT is a fact about the version, read at the meta
+                    step beside who and when, so "Published" never competes
+                    with the version number it qualifies. */}
+                <span aria-hidden>·</span>
+                <span className="crewlet-version-timeline__kind">{what}</span>
               </span>
               {item.source ? <span className="crewlet-version-timeline__source">{item.source}</span> : null}
               {onCompare || onRestore || onLabel ? (

@@ -346,7 +346,7 @@ export function Meter({
         aria-valuetext={spoken}
         aria-hidden={bounded ? undefined : true}
       >
-        <div className="crewlet-meter__fill" data-tone={drawn} style={{ width: `${percent}%` }} />
+        <div className={cx('crewlet-meter__fill', bounded && value > 0 && 'crewlet-meter__fill--some')} data-tone={drawn} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );

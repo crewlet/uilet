@@ -159,7 +159,7 @@ svg.crewlet-datetime__chevron {
   font-variant-numeric: tabular-nums;
   color: var(--color-text-primary);
   background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-control);
+  border: 1px solid var(--color-border-field);
   /* A box is a box: the corner every field in the package wears. */
   border-radius: var(--radius-md);
   outline: none;

@@ -6,7 +6,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
-import { ArtifactCard } from './index.js';
+import { ARTIFACT_KINDS, ArtifactCard } from './index.js';
 
 afterEach(cleanup);
 
@@ -47,14 +47,29 @@ test('draws no changes line for none, and none for never opened', () => {
 });
 
 test('stands the kind glyph in for a missing preview, and draws a given preview instead', () => {
-  const { container, rerender } = render(<ArtifactCard title="Runbook" kind="markdown" href="#/a" updatedAt={NOW} now={NOW} />);
+  const { container, rerender } = render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} />);
   expect(container.querySelector('.crewlet-artifact-card__preview svg')).not.toBeNull();
-  rerender(<ArtifactCard title="Runbook" kind="markdown" href="#/a" updatedAt={NOW} now={NOW} preview={<span data-testid="cover">cover</span>} />);
+  rerender(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} preview={<span data-testid="cover">cover</span>} />);
   expect(screen.getByTestId('cover')).toBeDefined();
 });
 
+test('gives every kind its own glyph and label when no preview is given', () => {
+  const words: string[] = [];
+  const drawings = new Set<string>();
+  for (const kind of ARTIFACT_KINDS) {
+    const { container, unmount } = render(<ArtifactCard title="Untitled" kind={kind} href="#/a" updatedAt={NOW} now={NOW} />);
+    const glyph = container.querySelector('.crewlet-artifact-card__preview svg');
+    expect(glyph, kind).not.toBeNull();
+    drawings.add(glyph?.innerHTML ?? '');
+    words.push(container.querySelector('.crewlet-artifact-card__line span')?.textContent ?? '');
+    unmount();
+  }
+  expect(drawings.size).toBe(ARTIFACT_KINDS.length);
+  expect(words).toEqual(['Page', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
+});
+
 test('compact draws no preview', () => {
-  const { container } = render(<ArtifactCard title="Runbook" kind="markdown" href="#/a" updatedAt={NOW} size="compact" now={NOW} />);
+  const { container } = render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} size="compact" now={NOW} />);
   expect(container.querySelector('.crewlet-artifact-card__preview')).toBeNull();
   expect(container.querySelector('.crewlet-artifact-card--compact')).not.toBeNull();
 });
@@ -64,7 +79,7 @@ test('carries no axe violation, as a card and compact', async () => {
     <main>
       <h1>Artifacts</h1>
       <ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW} pinned changes={3} now={NOW} />
-      <ArtifactCard title="Runbook" kind="markdown" href="#/b" updatedAt={NOW} size="compact" now={NOW} />
+      <ArtifactCard title="Runbook" kind="doc" href="#/b" updatedAt={NOW} size="compact" now={NOW} />
     </main>,
   );
   const result = await axe.run(container, {

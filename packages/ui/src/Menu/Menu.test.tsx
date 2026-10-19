@@ -12,7 +12,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import axe from 'axe-core';
 import { useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { FolderInputGlyph, PencilGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronDownGlyph, FolderInputGlyph, PencilGlyph } from '@crewlethq/icons/glyphs';
 import { LAYER_REPOSITION_EVENT, LayerHost, useModalLayer } from '../Layer/index.js';
 import { Menu, type MenuEntry } from './index.js';
 
@@ -70,14 +70,16 @@ function ink(row: string[], inside?: string[]): string | undefined {
 test('the panel is as wide as its longest row, under a ceiling that still holds', () => {
   const panel = /\.crewlet-menu\s*\{([^}]*)\}/.exec(menuCss())?.[1] ?? '';
   expect(panel).toMatch(/(?<![-\w])width:\s*max-content/);
-  expect(panel).toMatch(/max-width:\s*320px/);
   /*
-   * A min-width above a max-width REPLACES it. Spelt as the pair, the panel
-   * grew to its longest label however long that label was, the ceiling was a
-   * number nothing read, and a label nobody expected left the window instead
-   * of truncating inside it.
+   * A min-width above a max-width REPLACES it. Spelt as a content minimum,
+   * the panel grew to its longest label however long that label was, the
+   * ceiling was a number nothing read, and a label nobody expected left the
+   * window instead of truncating inside it. The one minimum is a trigger's
+   * floor (`width="trigger"`), and the ceiling is lifted to meet exactly that
+   * floor, so the two can never cross.
    */
-  expect(panel).not.toMatch(/min-width:/);
+  expect(panel).toMatch(/max-width:\s*max\(320px,\s*var\(--crewlet-menu-floor,\s*0px\)\)/);
+  expect(panel).toMatch(/min-width:\s*var\(--crewlet-menu-floor,\s*0px\);/);
 });
 
 test('a destructive row that cannot be pressed is drawn unavailable, its glyph with it', () => {
@@ -148,6 +150,26 @@ test('only a row with a second line is drawn at the taller register', () => {
     screen.getByText(label).closest('.crewlet-menu__item')!.classList.contains('crewlet-menu__item--described');
   expect(described('Edit')).toBe(false);
   expect(described('Move to')).toBe(true);
+});
+
+/*
+ * A TRIGGER'S GLYPHS ARE THE BUTTON'S ICONS, each in its own slot a gap away
+ * from the words: a glyph written into the trigger text sat flush against it.
+ */
+test('a text trigger draws its leading and trailing glyphs as the button icons', () => {
+  render(
+    <Menu
+      label="Rank by: Keyword"
+      trigger="Keyword"
+      icon={<PencilGlyph />}
+      trailingIcon={<ChevronDownGlyph />}
+      items={entries()}
+    />,
+  );
+  const button = screen.getByRole('button', { name: 'Keyword' });
+  const slots = [...button.children].map((child) => child.className);
+  expect(slots).toEqual(['crewlet-btn__icon', 'crewlet-btn__label', 'crewlet-btn__icon']);
+  expect(button.querySelector('.crewlet-btn__label')?.textContent).toBe('Keyword');
 });
 
 test('the trigger announces a menu, and opening it puts focus on the first item', () => {
@@ -545,4 +567,113 @@ test('a menu whose panel changes size while open is placed again', () => {
     Element.prototype.getBoundingClientRect = realRect;
     globalThis.ResizeObserver = realRO;
   }
+});
+
+/*
+ * NO NARROWER THAN ITS TRIGGER, when asked. A trigger that spans a column
+ * opens a panel that covers it edge to edge and still grows past it for a
+ * long row: the floor is a custom property, and the stylesheet lifts the
+ * ceiling to meet it so the two never cross. Left alone, the panel is sized
+ * by its rows and carries no floor.
+ */
+test('a menu given width="trigger" is never narrower than its trigger', () => {
+  // The stylesheet's half, the floor and the ceiling that meets it, is held
+  // by the panel's own test at the head of this file.
+  const anchor = { left: 40, top: 500, width: 248, height: 40, right: 288, bottom: 540, x: 40, y: 500 } as DOMRect;
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.tagName === 'BUTTON' && !this.classList.contains('crewlet-menu__item')) return anchor;
+    return realRect.call(this);
+  };
+  try {
+    render(<Menu label="Actions for Software Engineer" width="trigger" items={entries()} />);
+    fireEvent.click(trigger());
+    const panel = screen.getByRole('menu');
+    expect(panel.style.getPropertyValue('--crewlet-menu-floor')).toBe('248px');
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+  }
+});
+
+test('a menu left at its content width carries no floor', () => {
+  render(<Menu label="Actions for Software Engineer" items={entries()} />);
+  fireEvent.click(trigger());
+  expect(screen.getByRole('menu').style.getPropertyValue('--crewlet-menu-floor')).toBe('');
+});
+
+test('a header puts a name and its value on one line', () => {
+  const header = /\.crewlet-menu__header\s*\{([^}]*)\}/.exec(menuCss())?.[1] ?? '';
+  expect(header).not.toMatch(/flex-direction:\s*column/);
+  expect(header).toMatch(/justify-content:\s*space-between/);
+  expect(header).toMatch(/flex-wrap:\s*wrap/);
+});
+
+test('a header says what the actions are about: never an item, and the menu is described by it', () => {
+  render(<Menu label="Actions for Software Engineer" items={entries()} header={<span>Access: Admin</span>} />);
+  fireEvent.click(trigger());
+  const menu = screen.getByRole('menu');
+  const header = menu.querySelector('.crewlet-menu__header')!;
+  expect(header.textContent).toBe('Access: Admin');
+  expect(header.getAttribute('role')).toBe('presentation');
+  expect(menu.getAttribute('aria-describedby')).toBe(header.id);
+  // The arrows walk the items alone: the header is read, never stopped on.
+  expect(document.activeElement).toBe(item('Edit'));
+  press('ArrowUp');
+  expect(document.activeElement).toBe(item('Delete'));
+});
+
+test('without a header the menu is described by nothing', () => {
+  render(<Menu label="Actions for Software Engineer" items={entries()} />);
+  fireEvent.click(trigger());
+  expect(screen.getByRole('menu').hasAttribute('aria-describedby')).toBe(false);
+  expect(screen.getByRole('menu').querySelector('.crewlet-menu__header')).toBeNull();
+});
+
+test('the caller’s own trigger opens the menu and keeps every rule of the button', () => {
+  const edited = vi.fn();
+  render(
+    <Menu
+      label="Your account"
+      items={entries({ onEdit: edited })}
+      renderTrigger={(props) => (
+        <button type="button" className="own" {...props}>
+          Lee Park
+        </button>
+      )}
+    />,
+  );
+  const own = screen.getByRole('button', { name: 'Lee Park' });
+  expect(own.classList.contains('own')).toBe(true);
+  expect(own.getAttribute('aria-haspopup')).toBe('menu');
+  expect(own.getAttribute('aria-expanded')).toBe('false');
+  expect(screen.queryByRole('button', { name: 'Your account' })).toBeNull();
+
+  fireEvent.click(own);
+  expect(own.getAttribute('aria-expanded')).toBe('true');
+  expect(screen.getByRole('menu', { name: 'Your account' }).id).toBe(own.getAttribute('aria-controls'));
+  expect(document.activeElement).toBe(item('Edit'));
+
+  // Escape gives focus back to the caller's element, and an action runs with
+  // focus already there.
+  press('Escape');
+  expect(document.activeElement).toBe(own);
+  own.focus();
+  fireEvent.keyDown(own, { key: 'ArrowDown' });
+  fireEvent.click(item('Edit'));
+  expect(edited).toHaveBeenCalledTimes(1);
+  expect(document.activeElement).toBe(own);
+});
+
+test('a menu with a header carries no axe violation', async () => {
+  const { container } = render(
+    <Menu label="Actions for Software Engineer" items={entries()} header={<span>Access: Admin</span>} />,
+  );
+  fireEvent.click(trigger());
+  const result = await axe.run(document.body, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(container).toBeDefined();
+  expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });

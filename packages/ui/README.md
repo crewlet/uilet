@@ -49,14 +49,15 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Documents and review | `DiffView` and `DiffSummary` with the line diff they draw (`diffLines`, `diffStat`, `collapseDiff`, `firstChangedLines`, `splitLines`, `MAX_DIFF_LINES`, with no React in it), `DiffList`, `VersionCompare`, `CommentThread` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
-| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `safeFilename`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
+| Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Arranging a page | `ArrangeBoard`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
-| Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `AccessDeniedCard`, and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
+| Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `CanvasBoard` (a design's artboards and notes on a `Canvas`, with the visibility budget `liveBoards`), `CanvasSchematic` (a design's cover, drawn from its boards' frames), `AccessDeniedCard`, `ArtifactIcon` (with `artifactIconGlyph` and `ARTIFACT_ICON_WORDS`), the native gallery covers (`DocCover`, `SheetCover`, `DashboardCover`), `MergeConflicts`, the dashboard pieces (`WidgetFrame`, `DatasetSource` and `DatasetSourceList`), and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
 | Sheets | `SheetGrid`, the cells on their own (`CheckboxCell`, `TextCell`, `LongTextCell`, `NumberCell`, `SelectCell`, `MultiSelectCell`, `PersonCell`, `StatusCell`, `DateCell`, `UrlCell`, `RatingCell`, and `SheetCell` for any type), `ChangeMark`, and `SheetModel` (every rule a sheet is drawn from, with no React in it: values, parsing, the keyboard model, TSV, the pending edits of D23) |
-| Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, `PeopleRail` (with `peopleRailKey`), and `PresenceModel` (the roster order, one entry per person, the session hues, with no React in it) |
+| Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, `PeopleRail` (with `peopleRailKey`), and `PresenceModel` (the roster order, one entry per person, the session hues from `PRESENCE_HUES`, with no React in it) |
+| Presentations | `SlideStage` (a slide laid out at 1920 by 1080 and scaled to its box, with `SLIDE_WIDTH` and `SLIDE_HEIGHT`), `useSlideKeys` (the keys a show and a clicker send), `SlideFilmstrip`, `SlideGrid`, `SlideCompare` (with `SLIDE_COMPARE_LABELS`), `PresenterView` (with `formatStopwatch`) |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -203,6 +204,109 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.25.0
+
+0.25.0 adds the pieces the slides, dashboard, doc and sheet artifact kinds are drawn with, and the fixes from the artifact audit. Every new piece draws content the host renders itself and takes its data and callbacks as props, so nothing in it parses an artifact or knows a route.
+
+Slides:
+
+**`SlideStage`** lays a slide out at its authored size, 1920 by 1080 (`SLIDE_WIDTH`, `SLIDE_HEIGHT`), and scales it as a whole to its box, measured whenever the box resizes, so a thumbnail, the editor and a projector show the same line breaks. `fit="width"` is as wide as its column at 16:9; `fit="contain"` is as large as fits both ways, letterboxed, for Present; a fixed `scale` is for print. It is a group announced as a slide, named by `label`.
+
+**`useSlideKeys`** answers the keys every presentation and every clicker sends: forward on Right, Down, Page Down, Space and Enter, back on Left, Up, Page Up and Backspace, Home and End to the ends, Escape out. It listens at the document while `enabled`, and leaves alone a field the reader is typing in, a composition, a key a nearer surface handled, and modified keys.
+
+**`SlideFilmstrip`** is the column of thumbnails beside a deck's stage: the slide on the stage marked `aria-current`, one tab stop whose arrow keys move to the next slide, and, with `onReorder`, a handle per slide that moves it by drag or by its arrow keys and announces where it landed. A hidden slide is dimmed and says so.
+
+**`SlideGrid`** lays every slide out by the outline's sections, numbered across the deck, each a button that opens its slide.
+
+**`SlideCompare`** compares two versions of a deck slide by slide: each slide's older and newer drawings side by side, paired by its id, a slide one version lacks drawn as an empty side naming that version, and every change said in words beside a glyph (Changed, Added, Removed, Moved from 6 to 7), the list opening with the count of each. Unchanged slides fold away behind one control.
+
+**`VersionCompare`** takes `versions`, a comparison the host draws in the versions lens in place of the two panes, for content compared item by item (a deck's slides, which two independent panes could not line up).
+
+**`PresenterView`** is the presenter's own screen: the slide the room sees, the next one, the speaker notes large and on their own scroll, a timer that pauses, resumes and resets (`formatStopwatch` reads it as m:ss), and controls that stop at the ends of the deck.
+
+Dashboards:
+
+**`WidgetFrame`** is one figure on a dashboard, drawn inside the host's `ArrangeFrame`: its title, the figure, and the citation line every figure carries, the dataset's title (`WidgetSource.label`) then "live" or "as of" a relative time, the exact instant on hover. With `onCite` the citation is a button that opens the host's Sources rail at that dataset; `actions` holds the host's menu. `source.status` (`DatasetStatus`: `loading`, `live`, `ready`, `stale`, `refused`, `failed`) decides the body: a placeholder while loading, a marked citation when stale, and for `refused` and `failed` a calm sentence (`detail`, else the default words) IN PLACE of the figure, which is never drawn, so a host that passed rows by mistake still shows none.
+
+**`DatasetSource`** is one entry of a Sources rail: the dataset's title, its source kind as a chip (`DatasetSourceKind`: `store`, `engine`, `file`, `calc`, drawn Datastore, Engine, File, Calculated, renamed through `labels.kinds`), its `definition`, then where its rows stand, how many there are and its `refresh` promise. With `onSelect` the summary is a toggle (`aria-pressed`) and the host's rows preview (`children`) is drawn under it when `selected`, outside the button. **`DatasetSourceList`** is the rail itself, a named list of entries. `DATASET_SOURCE_KINDS` lists the kinds.
+
+**`downloadBlob`** saves any bytes the page holds (a chart's PNG, an archive) and answers whether the browser took them, under the name it offered; `downloadText` now saves through it, so text and binary files share one path. **`toCsv`** writes a table as RFC 4180 CSV (CRLF line ends, quoted where needed, doubled quotes) and defuses a TEXT cell that a spreadsheet would run as a formula (one starting with `=`, `+`, `-`, `@`, a tab or a carriage return) with a leading apostrophe; a number is never prefixed, so `-3` stays a value. **`elementToPng`** rasterises a drawn chart in the browser: one `<svg>` is serialised with its computed styles inlined (CSS variables resolved), anything else is cloned into an SVG `foreignObject`, and a failure rejects with **`ElementToPngError`**, whose `reason` (`unsupported`, `tainted`, `empty`) a host maps to its own words. **`serializeElement`** is the serialisation half on its own.
+
+Docs, sheets and every kind:
+
+**`DocCover`, `SheetCover` and `DashboardCover`** are the native gallery covers for `ArtifactCard.preview`, one module (`@crewlethq/ui/ArtifactCover`) sharing one frame: a doc's opening, rendered by the host's own Markdown renderer, set as a small page that fades at the card's edge; and a sheet's first columns and rows (at most `SHEET_COVER_COLUMNS` and `SHEET_COVER_ROWS`) as a hairline grid; and a dashboard's headline figures: up to three `stats`, each the reader's own value when the gallery holds it and otherwise its label and the title of the dataset it cites (never a placeholder number), else a schematic of the board's first widgets on its twelve columns (`layout`), else the kind's glyph. All three are decorative, as the card's preview is.
+
+**`MergeConflicts`** settles a three-way merge of one text: each passage both edits changed shows the other side's lines (`theirs`, "version 4") beside the draft's, and the person keeps theirs, yours or both. Nothing is pre-chosen, `onApply` reports one `MergeChoice` per clash in order once each has one, and focus moves to its heading when it opens. The merge itself stays the host's.
+
+**`ArtifactIcon`** draws the one short word an artifact's author gave it ("chart", "calendar") as a glyph, from a closed, case-insensitive vocabulary (`ARTIFACT_ICON_WORDS`, looked up by `artifactIconGlyph`), and the kind's glyph for any other word. **`ObjectHeader`** takes a `description`, the author's sentence under the title, clamped to two lines.
+
+**`CanvasBoard` draws a design.** Artboards sit on a dotted `Canvas` at their own size with their titles above them, and titles and stickies (on `Note`'s papers) sit beside them. A board renders what the caller draws inside it only while it is on screen and at least `minLiveWidth` pixels wide, and at most `maxLive` (twelve) at once, so a canvas of sixty boards runs a dozen pages; the rest draw a titled placeholder of their size. `liveBoards` is that budget on its own, with no React in it. A live board is covered by a shield that pans like the field around it until a click hands the board the pointer, and Escape gives it back. With `editable`, a board's title moves it and its corner resizes it, by pointer or arrow keys, and notes are moved, resized, retyped and deleted; each finished gesture is reported once, in whole canvas pixels.
+
+**`CanvasSchematic` draws a design's cover** from its boards' frames alone: every board where the canvas places it, the cover board marked and titled, notes as faint blocks.
+
+**`Canvas` reports its view.** `onViewChange` is called with the view and the viewport's size from the first fit on, with an easing's destination rather than each step of it.
+
+**`DocTabsEditor`** is a document's tabs as an editor arranges them: each tab's title edited at its field and held to the host's `titleProblem` there, the open tab marked (`selected`, `onSelect`), tabs moved by their handle, the arrow keys or Move up and Move down, removed (never the last), and a new tab added by its title after the open one. The host owns the tabs; every change is reported.
+
+Fixes from the artifact audit:
+
+- **`SheetGrid`**: a row's number carries its actions (on the active row, on hover, and Shift+F10) with Delete row through `onDeleteRow`, which the host confirms. A refusal is announced as it arrives, and the sync strip holds it as "N changes not saved" (`SheetSyncState.refused`) until the reader dismisses it through `onDismissRefused`, which calls `SheetPendingEdits.dismissAll`, so a refused write is never followed by "Saved". Text and long text edit in an overlay at least the column's width that wraps and grows to six lines. `fit="content"` sizes the grid to its rows, capped by `height` or `--crewlet-sheet-max-height`. List editors show a filter only above eight choices, and multi-select cells keep their chips on one line with a "+N" count.
+- **`TagGroup`** takes `overflow="fit"`: one line, with the tags that do not fit counted in a static "+N" chip.
+- **`SegmentedControl`**: `capped` draws a count as a floor ("50+"); a disabled option with `describedBy` stays focusable and says why it cannot be chosen; a pill row wraps inside its container; and a value changed from outside the row puts the tab stop back on the choice.
+- **`Checkbox`** takes `size="sm"`, the label at the compact step for a dense form row.
+- **`Section`** keeps its title on one line and lets the hint give way beside it. **`Meter`** draws its track with an edge on any ground, a minimum fill above zero, and moves its figure to its own line rather than cutting the label.
+- **`VersionTimeline`** reads a version's kind ("Published") on the meta line, marks the version on show by fill alone, and its label action reads "Label". **`ShareDialog`**'s default title names its object in curly quotes.
+- Presence hands out **`PRESENCE_HUES`**, the node hues without purple, so a collaborator is never ringed in the accent's hue. An agent whose chosen hue is purple keeps it.
+- **`@crewlethq/artifact-kit`**: a page's sheet is as tall as its rows, and its sync strip offers Dismiss for refused changes.
+
+What to change:
+
+- A complete `SheetLabels` object of your own (rather than overrides through `labels` or `sheetLabels()`) needs the new keys `dismiss`, `notSaved`, `rowActions`, `deleteRow` and `rowActionsHelp`.
+- A host that draws `SheetGrid` with `SheetPendingEdits` passes `onDismissRefused={() => edits.dismissAll()}`; without it, a refusal holds the strip at "not saved" until its cell is edited again.
+- A test that finds a version's label action by the name "Name" finds it by "Label".
+
+## Changes in 0.24.0
+
+**The `markdown` artifact kind is now `doc`**, as the engine names it (`artifacts.KindDoc`). `ArtifactKind`, `ARTIFACT_KINDS`, `ArtifactKindGlyph` and `ArtifactCard` take `doc`, and the card's default label for it is "Doc".
+
+What to change: pass `kind="doc"` wherever you passed `kind="markdown"`, and rename the `markdown` key of a custom `labels.kinds` to `doc`.
+
+**`ArtifactKind` names every kind the engine ships**: `html`, `doc`, `slides`, `design`, `dashboard` and `sheet`, in the engine's order (`artifacts.Kinds`), which `ARTIFACT_KINDS` lists. Each draws its own glyph where a card has no preview (`slides` a presentation, `design` a palette, `dashboard` a dashboard layout), and its own default label ("Slides", "Design", "Dashboard"). A custom `labels.kinds` passes only the kinds it renames. `@crewlethq/icons` adds `PresentationGlyph`.
+
+What to change: a `Record<ArtifactKind, ...>` of your own needs the three new keys.
+
+## Changes in 0.23.0
+
+**A text field's edge is quieter.** `Input`, the textarea, `TagsInput`, `MarkdownEditor` and the typed boxes inside `DateTimePicker` and `TimeWindowPicker` draw `--color-border-field` (new in `@crewlethq/tokens` 0.23.0): the secondary button's edge lifted only as far as 3:1 on the surfaces a field stands on, rather than the control boundary that was the brightest edge on the page. Under the pointer the edge steps up to `--color-border-control`; it used to step down to the hover hairline and fade. Checkboxes, switches and editors inside a row keep `--color-border-control`.
+
+**A chosen chip draws the accent's soft pair.** The chip that is on in a `Tabs` chip row, and the current row of a `Switcher`, take `--color-brand-accent-soft` with a `--color-brand-accent-soft-strong` hairline, as a chosen `FilterChip` does, instead of a full-strength accent ring. A switcher row the arrows or the pointer are on keeps the listbox's own fill.
+
+**Inside a flush card the `TreeGrid` draws no frame of its own.** The card is the frame, so the grid's border, corner and ground step aside and its rows run to the card's edges, its footer included.
+
+What to change: nothing.
+
+## Changes in 0.22.0
+
+**`Menu` takes `width`** (`'content'`, the default, or `'trigger'`). `'trigger'` keeps the panel no narrower than its trigger, so a trigger that spans a column opens a menu that covers it edge to edge, and still lets it grow past the trigger when a row needs the room.
+
+**`Menu` takes `trailingIcon`**, a glyph after a text trigger's words, such as a picker's chevron. It is drawn as the button's trailing icon, a gap away from the words, where a glyph written into `trigger` sat flush against them.
+
+**`Menu` reads more easily.** A header's name and value share one line (`Access … Admin`), and a row's description is one type step under its label rather than two.
+
+**`AppShell.AccountRow`'s menu covers the row.** Pressing who you are opens a menu at least as wide as the row itself.
+
+What to change: nothing.
+
+## Changes in 0.21.0
+
+**`AppShell.AccountRow` takes `menu`** (`AccountRowMenu`: `label`, `header`, `items`): pressing who you are opens the reader's own menu instead of linking anywhere, which is where a reader looks for their account and for signing out. The row becomes the menu button, ending in the up-and-down chevron a menu's trigger draws, keeps the account page's current-row lift (`data-current`), and the menu's header holds the facts the row does not already say, such as the reader's access. Given, `menu` takes the place of `href`.
+
+**`Menu` takes `header` and `renderTrigger`.** `header` is a line of facts above the items: never an item, so the arrows never stop on it, and the menu's description, so a screen reader hears it when the menu opens. `renderTrigger` makes the caller's own element the trigger, given the props it spreads (`MenuTriggerProps`), keeping every rule of the menu's button, focus coming back to it included.
+
+**`@crewlethq/icons` vendors `log-out` and `log-in`**, for signing out and in from that menu.
+
+What to change: nothing. Everything is new.
+
 ## Changes in 0.20.0
 
 0.20.0 adds the review surfaces the engine dashboard drew for itself: a line diff, two versions compared, a document's comment thread, the note a lost edit race leaves, the People rail beside a shared document, and the read-only cells its tables share. Each takes its data and its callbacks as props, so nothing in it fetches or knows a route.
@@ -335,7 +439,7 @@ What to change: a screen that leaned on `max` to clear old failures now keeps th
 
 **Toasts are the first release's strip again**: a dark strip on `--color-surface-background` with the large shadow and the rim light, a 12px corner, a 20px mark, a slide in from the right, and the countdown as a wash behind the words that drains from the right. A variant spends its hue on its mark (the feedback ink step) and its wash (the feedback soft step) only, so a failure is a rose mark on a faint rose wash with a rose action, never red words on a red edge. Reduced motion keeps the strip still and draws no wash.
 
-**A picker's boundary is a button's.** `Select`, `DateTimePicker` and `TimeWindowPicker` draw their trigger on `--color-border-strong`, as the secondary button does, and step to `--color-border-strong-hover` under the pointer. Text boxes, checkboxes and switches keep `--color-border-control` at 3:1, as do the typed boxes inside the pickers' panels.
+**A picker's boundary is a button's.** `Select`, `DateTimePicker` and `TimeWindowPicker` draw their trigger on `--color-border-strong`, as the secondary button does, and step to `--color-border-strong-hover` under the pointer. Text boxes and the typed boxes inside the pickers' panels draw `--color-border-field` (see 0.23.0); checkboxes and switches keep `--color-border-control` at 3:1.
 
 **A `Select` list that leads with marks ends its rows with the tick**, so a swatch, an avatar or a glyph starts at the panel's edge. A list of words keeps the tick's column first.
 

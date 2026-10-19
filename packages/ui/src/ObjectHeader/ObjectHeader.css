@@ -70,6 +70,21 @@
   color: var(--color-text-primary);
 }
 
+/* The author's own sentence about the object: under the title, quieter than
+   it, and never more than two lines however long the sentence is. */
+.crewlet-object-header__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  max-width: var(--size-measure);
+  margin: 0;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+}
+
 .crewlet-object-header--peek .crewlet-object-header__title {
   font-size: var(--font-size-lg);
 }

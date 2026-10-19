@@ -25,6 +25,28 @@
   outline-offset: 2px;
 }
 
+/* ONE LINE (overflow="fit"): what wraps is measured and left out, so the
+   line is clipped only for the instant before the count replaces it. */
+.crewlet-tag-group--fit {
+  flex-wrap: wrap;
+  overflow: hidden;
+  max-height: max(24px, calc(24px * var(--density, 1)));
+}
+
+.crewlet-tag-group__count {
+  display: inline-flex;
+  align-items: center;
+  height: max(20px, calc(20px * var(--density, 1)));
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
 .crewlet-tag-group__item {
   display: inline-flex;
   min-width: 0;

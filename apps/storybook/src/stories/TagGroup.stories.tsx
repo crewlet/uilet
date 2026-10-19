@@ -58,3 +58,19 @@ export const One: Story = {
     </TagGroup>
   ),
 };
+
+/**
+ * One line in a dense row (a sheet cell): the tags that do not fit are counted
+ * in a static chip rather than cut by the box, and nothing adds a tab stop.
+ */
+export const FitOneLine: Story = {
+  render: (args) => (
+    <div style={{ width: '12rem' }}>
+      <TagGroup {...args} overflow="fit">
+        {handles.map((handle) => (
+          <Tag key={handle}>{handle}</Tag>
+        ))}
+      </TagGroup>
+    </div>
+  ),
+};

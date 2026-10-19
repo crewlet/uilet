@@ -53,6 +53,20 @@
  * - IT CAN BE OPENED FROM OUTSIDE (`open`, `onOpenChange`), because a tree item
  *   that holds focus opens its card's menu from the keyboard while the trigger
  *   itself is out of the tab order (`triggerTabIndex={-1}`).
+ * - ITS TRIGGER CAN BE THE CALLER'S OWN (`renderTrigger`): a row that IS the
+ *   way in, such as the signed-in reader at the foot of the rail, opens the
+ *   menu itself rather than sitting beside a second button that does. The
+ *   caller spreads the props it is handed on its element, which keeps every
+ *   rule above, the focus coming back included.
+ * - IT CAN BE NO NARROWER THAN ITS TRIGGER (`width="trigger"`): a trigger
+ *   that spans a column, such as the signed-in reader at the foot of the
+ *   rail, opens a panel that covers it edge to edge, and that still grows
+ *   past it when a row needs the room, so a description reads on one line
+ *   rather than wrapping into a column of short lines.
+ * - A HEADER SAYS WHAT THE ACTIONS ARE ABOUT (`header`): a line of facts
+ *   above the items, such as the access a signed-in reader carries. It is
+ *   not an item, so the arrows never stop on it, and the menu is described by
+ *   it, so a screen reader hears it when the menu opens.
  *
  * Ported from the engine dashboard's `ui/Menu.tsx`, with its suite.
  */
@@ -64,6 +78,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
@@ -136,6 +151,17 @@ export function runs(entries: readonly MenuEntry[]): Run[] {
   return out;
 }
 
+/** What a caller's own trigger spreads on its element (`renderTrigger`). */
+export interface MenuTriggerProps {
+  ref: (el: HTMLElement | null) => void;
+  'aria-haspopup': 'menu';
+  'aria-expanded': boolean;
+  'aria-controls': string | undefined;
+  tabIndex: number | undefined;
+  onClick: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+}
+
 export interface MenuProps {
   /** The trigger's accessible name, such as "Actions for Software Engineer". */
   label: string;
@@ -144,6 +170,12 @@ export interface MenuProps {
   icon?: ReactNode;
   /** Visible trigger text; without it the trigger is an icon button named by `label`. */
   trigger?: ReactNode;
+  /**
+   * A glyph after the trigger's text, such as the chevron of a picker. Drawn
+   * as the button's trailing icon, a gap away from the words; a glyph written
+   * into `trigger` instead sits flush against them. Read only with `trigger`.
+   */
+  trailingIcon?: ReactNode;
   triggerVariant?: ButtonVariant | undefined;
   /** -1 for a pointer-only trigger whose actions the keyboard reaches another way. */
   triggerTabIndex?: number | undefined;
@@ -151,6 +183,19 @@ export interface MenuProps {
   onOpenChange?: ((open: boolean) => void) | undefined;
   /** Which edge of the trigger the menu lines up with. */
   align?: 'start' | 'end' | undefined;
+  /**
+   * How wide the panel is: its longest row (`content`, the default), or its
+   * longest row but never narrower than its trigger (`trigger`), for a
+   * trigger that spans a column.
+   */
+  width?: 'content' | 'trigger' | undefined;
+  /**
+   * The caller's own trigger, in place of the menu's button: an element given
+   * these props. `label` still names the menu; the trigger names itself.
+   */
+  renderTrigger?: ((props: MenuTriggerProps) => ReactNode) | undefined;
+  /** Facts above the items: what the actions are about. Never an item. */
+  header?: ReactNode;
   className?: string | undefined;
 }
 
@@ -159,22 +204,27 @@ export function Menu({
   items,
   icon,
   trigger,
+  trailingIcon,
   triggerVariant = 'ghost',
   triggerTabIndex,
   open: controlled,
   onOpenChange,
   align = 'start',
+  width = 'content',
+  renderTrigger,
+  header,
   className,
 }: MenuProps) {
   const id = useId();
   const menuId = `${id}-menu`;
+  const headerId = `${id}-header`;
   const [uncontrolled, setUncontrolled] = useState(false);
   const open = controlled ?? uncontrolled;
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const menu = useRef<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const startAt = useRef<'first' | 'last'>('first');
-  const [place, setPlace] = useState<{ left: number; top: number } | null>(null);
+  const [place, setPlace] = useState<{ left: number; top: number; floor: number | undefined } | null>(null);
   const container = useLayerContainer();
 
   // Read through refs so every callback below is stable: the layer's listeners
@@ -228,7 +278,11 @@ export function Menu({
     const inHost = container !== document.body;
     const host = inHost ? container.getBoundingClientRect() : viewportBounds();
     const rect = at.getBoundingClientRect();
-    const own = box.getBoundingClientRect();
+    const measured = box.getBoundingClientRect();
+    // NO NARROWER THAN THE TRIGGER: placed by the width it is about to be
+    // drawn at, not the one it was measured at before that floor was set.
+    const floor = width === 'trigger' ? rect.width : undefined;
+    const own = { width: Math.max(measured.width, floor ?? 0), height: measured.height };
     const local: PlacementRect = {
       x: (align === 'end' ? rect.right - own.width : rect.left) - (inHost ? host.x : 0),
       y: rect.top - (inHost ? host.y : 0),
@@ -255,8 +309,12 @@ export function Menu({
       return;
     }
     const spot = placePopup(local, { width: own.width, height: own.height }, bounds, LAYER_GAP);
-    setPlace((was) => (was && was.left === spot.left && was.top === spot.top ? was : { left: spot.left, top: spot.top }));
-  }, [align, close, container]);
+    setPlace((was) =>
+      was && was.left === spot.left && was.top === spot.top && was.floor === floor
+        ? was
+        : { left: spot.left, top: spot.top, floor },
+    );
+  }, [align, close, container, width]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -302,7 +360,7 @@ export function Menu({
     startAt.current = 'first';
   }, [placed]);
 
-  function onTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+  function onTriggerKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       startAt.current = event.key === 'ArrowUp' ? 'last' : 'first';
@@ -413,6 +471,7 @@ export function Menu({
       id={menuId}
       role="menu"
       aria-label={label}
+      aria-describedby={header ? headerId : undefined}
       // Focusable programmatically, never by Tab: focus rests on an item, and
       // this is where it lands if a menu is ever opened with no items in it.
       tabIndex={-1}
@@ -420,11 +479,29 @@ export function Menu({
         menu.current = el;
         popup.panelRef(el);
       }}
-      style={place ? { left: place.left, top: place.top, zIndex: popup.zIndex } : { visibility: 'hidden' }}
+      // The floor is a custom property the stylesheet reads, so the content
+      // width, its ceiling and the floor are stated together (Menu.css).
+      style={
+        place
+          ? ({
+              left: place.left,
+              top: place.top,
+              zIndex: popup.zIndex,
+              ...(place.floor === undefined ? null : { '--crewlet-menu-floor': `${place.floor}px` }),
+            } as CSSProperties)
+          : { visibility: 'hidden' }
+      }
       onKeyDown={onMenuKeyDown}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
     >
+      {header ? (
+        // PRESENTATIONAL, so a menu holds only items to a screen reader, and
+        // the menu's description, so what it says is heard when it opens.
+        <div role="presentation" id={headerId} className="crewlet-menu__header">
+          {header}
+        </div>
+      ) : null}
       {runs(items).map((run) =>
         run.kind === 'separator' ? (
           <div key={run.key} role="separator" className="crewlet-menu__separator" />
@@ -439,8 +516,8 @@ export function Menu({
     </div>
   ) : null;
 
-  const shared = {
-    ref: (el: HTMLButtonElement | null) => {
+  const shared: MenuTriggerProps = {
+    ref: (el: HTMLElement | null) => {
       triggerRef.current = el;
       popup.insideRef(el);
     },
@@ -461,10 +538,12 @@ export function Menu({
 
   return (
     <span className="crewlet-menu-anchor">
-      {trigger === undefined ? (
+      {renderTrigger ? (
+        renderTrigger(shared)
+      ) : trigger === undefined ? (
         <IconButton {...shared} label={label} icon={icon ?? <EllipsisVerticalGlyph />} size="sm" />
       ) : (
-        <Button {...shared} variant={triggerVariant} size="small" leadingIcon={icon}>
+        <Button {...shared} variant={triggerVariant} size="small" leadingIcon={icon} trailingIcon={trailingIcon}>
           {trigger}
         </Button>
       )}

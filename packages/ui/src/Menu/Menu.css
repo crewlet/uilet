@@ -34,9 +34,15 @@
    * however long that label was and the 320px was a number nothing read. A
    * width is clamped by the ceiling, and the label that no longer fits is the
    * one that truncates.
+   *
+   * A FLOOR, when the trigger sets one (`width="trigger"`, which writes
+   * --crewlet-menu-floor): the panel is never narrower than a trigger that
+   * spans a column. The ceiling is lifted to meet it, so the two never cross
+   * and the rule above still holds.
    */
   width: max-content;
-  max-width: 320px;
+  min-width: var(--crewlet-menu-floor, 0px);
+  max-width: max(320px, var(--crewlet-menu-floor, 0px));
   max-height: min(360px, 60vh);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -193,6 +199,7 @@
 .crewlet-menu__text {
   display: flex;
   flex-direction: column;
+  gap: calc(var(--spacing-1) / 2);
   min-width: 0;
 }
 
@@ -202,9 +209,14 @@
   white-space: nowrap;
 }
 
+/*
+ * ONE STEP UNDER THE LABEL, not two. At 11px under a 13px label the second
+ * line read as fine print; at 12px in the tertiary ink it is still plainly the
+ * lesser line, and it is legible at a glance.
+ */
 .crewlet-menu__description {
   color: var(--color-text-tertiary);
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   white-space: normal;
 }
 
@@ -217,6 +229,27 @@
   padding-left: var(--spacing-4);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
+}
+
+/*
+ * Facts above the items, across the panel's full width with a hairline under
+ * them: what the actions below are about, read rather than pressed.
+ *
+ * A NAME AND ITS VALUE SHARE ONE LINE, the name at the start and the value at
+ * the end, as a property reads ("Access … Admin"). Stacked, the pair spent two
+ * lines on one fact. A value too long for the line wraps beneath its name.
+ */
+.crewlet-menu__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-1) var(--spacing-2);
+  margin: calc(var(--spacing-1) * -1) calc(var(--spacing-1) * -1) var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-bottom: 1px solid var(--color-border-default);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 .crewlet-menu__separator {

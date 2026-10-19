@@ -722,6 +722,13 @@ describe('a grid that opens one level at a time', () => {
   });
 });
 
+test('inside a flush card the grid draws no frame of its own', () => {
+  const inCard = declarations().find(([selector]) => selector === '.crewlet-card--flush .crewlet-tree-grid__grid')?.[1] ?? '';
+  expect(inCard).toMatch(/border:\s*none/);
+  expect(inCard).toMatch(/border-radius:\s*0/);
+  expect(inCard).toMatch(/background:\s*none/);
+});
+
 describe('a headless grid', () => {
   test('keeps every column name for a screen reader and draws no header band', () => {
     const rows = forest(false);

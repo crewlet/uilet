@@ -243,3 +243,35 @@ export const Filled: Story = {
     return <Demo />;
   },
 };
+
+/**
+ * Counts that are floors ("50+"), and a disabled option that says why: it
+ * stays in the arrows' path so a reader can land on it and hear the reason.
+ */
+export const CappedAndExplained: Story = {
+  render: () => {
+    function Demo() {
+      const [scope, setScope] = useState('open');
+      return (
+        <div style={{ display: 'grid', gap: 'var(--spacing-2)' }}>
+          <SegmentedControl
+            label="Which items"
+            semantics="radio"
+            activate="manual"
+            value={scope}
+            onValueChange={setScope}
+            options={[
+              { value: 'open', label: 'Open', count: 12 },
+              { value: 'done', label: 'Done', count: 50, capped: true },
+              { value: 'archived', label: 'Archived', disabled: true, describedBy: 'archived-why' },
+            ]}
+          />
+          <p id="archived-why" style={{ margin: 0 }}>
+            Archived items need the Tracker role.
+          </p>
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};

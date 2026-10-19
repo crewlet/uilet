@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { UserGlyph } from '@crewlethq/icons/glyphs';
-import { Button, ObjectHeader, Tag } from '@crewlethq/ui';
+import { ArtifactIcon, Button, ObjectHeader, Tag } from '@crewlethq/ui';
 
 const meta: Meta<typeof ObjectHeader> = {
   title: 'UI/ObjectHeader',
@@ -73,5 +73,20 @@ export const FactKinds: Story = {
         ),
       },
     ],
+  },
+};
+
+/**
+ * An artifact's header: its own icon word drawn as a glyph (the kind's glyph
+ * when the word names nothing), and the sentence its author wrote under the
+ * title.
+ */
+export const WithDescription: Story = {
+  args: {
+    kind: 'Sheet',
+    icon: <ArtifactIcon icon="chart" kind="sheet" size="xs" />,
+    identifier: undefined,
+    title: 'Pipeline health',
+    description: 'Where every open deal stands this week, and who holds the next step.',
   },
 };
