@@ -161,7 +161,7 @@ land at once.
   `runPalette({ tokens, themes: themes + override })` from
   `@crewlethq/tokens/test/palette`.
 
-- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-rail` on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), `--crewlet-bar-list-label-width` (128px) and `--crewlet-bar-list-value-room` (`6ch` and a gap) for the words' column and the value's room in a `BarList layout="beside"`, and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
+- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg`, `--crewlet-data-table-archived-rail` and `--crewlet-data-table-row-height` (the list row token, `--size-row-md`, by default; rebind `--crewlet-data-table-cell-pad-y` with it) on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), `--crewlet-bar-list-label-width` (128px) and `--crewlet-bar-list-value-room` (`6ch` and a gap) for the words' column and the value's room in a `BarList layout="beside"`, and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
 
 The component stylesheets read only variables that `@crewlethq/tokens` emits or
 that the components declare themselves, and the same check refuses a glyph
@@ -221,6 +221,7 @@ What to change:
 - `SlideCompareLabels.missing` is a string now, not a function of the version.
 - A host that drew a show's Previous, count and Next itself uses `SlideNav`.
 
+
 **Every chart says when it has nothing to draw.** `TimeSeries`, `StackedColumns`, `StackedBar` and `ActivityStrip` take `emptyLabel`, as `BarList` did, and draw that one sentence in the chart's place (`.crewlet-chart-empty`) rather than an empty grid, a scale of 0 to 4, a bare track or a window starting at the epoch.
 
 **`BarList` draws every bar in the first data hue.** A ranked list is one series; a hue per rank gave five rows five identities and painted the tail as the residual. A row's `color` still overrides it.
@@ -247,6 +248,8 @@ What to change for charts:
 
 **A board says only what it has room for.** A board drawn narrower than `BOARD_TITLE_MIN_WIDTH` (40px) goes unnamed until it is zoomed into, and a placeholder drops its lines in turn (why it is not running, then its size) rather than clipping them at both ends over the boards beside it; `boardRoom(width, height)` is that rule. A placeholder no longer repeats the board's name, which the title above it already says. A board's title row is one line of type tall, so a row of boards zoomed out loses less to the names above it.
 
+**A compact `DataTable` takes `--crewlet-data-table-row-height`**, its row's height (`--size-row-md` by default), so a host whose list keeps another rhythm sets it rather than reaching past the table into its cells.
+
 **More boards run as thumbnails.** `CANVAS_BOARD_MIN_LIVE_WIDTH` is 96px (was 160), so a design fitted on a phone or zoomed out over a dozen boards draws its pages rather than a grey box each; `CANVAS_BOARD_MAX_LIVE` still caps how many run.
 
 **The chrome is drawn over the content.** A board's name and open control, a note's tools and the resize corners sit above every board and note. Far out, a note laid out after a board covered the board's name and took its presses.
@@ -260,6 +263,10 @@ What to change for charts:
 **A canvas's hint no longer moves its zoom bar.** In a bottom corner the status note ("Double-click to use this board") is drawn above the bar, so the bar stays under a pointer on its way to it.
 
 **A caller can hold a board canvas's selection.** `selected` and `onSelectedChange` (with `CanvasBoardSelection`) let a list of boards beside the canvas mark the board picked on it, and pick one there.
+
+- `SlideCompareLabels.missing` is a string now, not a function of the version.
+- A host that drew a show's Previous, count and Next itself uses `SlideNav`.
+- A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
 
 ## Changes in 0.32.0
 
