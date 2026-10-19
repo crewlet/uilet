@@ -72,8 +72,23 @@
   font-size: var(--font-size-lg);
 }
 
-.crewlet-document :where(h4, h5, h6) {
+/*
+ * EVERY LEVEL A STEP OF ITS OWN. A renderer draws a body from `h2` down, so a
+ * page's fourth and fifth levels land on `h5` and `h6`; set at one size with
+ * `h4`, three levels of a document read as one. The two deepest take the
+ * body's own step, and the last is told apart by its ink, as a run-in
+ * heading is in print.
+ */
+.crewlet-document h4 {
   font-size: var(--font-size-md);
+}
+
+.crewlet-document :where(h5, h6) {
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-document h6 {
+  color: var(--color-text-secondary);
 }
 
 .crewlet-document--sm h1 {
@@ -115,6 +130,26 @@
 
 .crewlet-document li + li,
 .crewlet-document li > :where(ul, ol) {
+  margin-block-start: var(--spacing-1);
+}
+
+/*
+ * THE RHYTHM HOLDS INSIDE A BLOCK THAT HOLDS BLOCKS. The sibling rule above
+ * reaches only the body's own children, so a quote's second paragraph and a
+ * list item's second paragraph ran into the first with no gap at all. A quote
+ * is prose and takes the body's gap; a list item is one point and takes the
+ * smaller step, so its paragraphs still read as one item. A task item's
+ * blocks sit in the column beside its box, which is the same item.
+ */
+.crewlet-document :where(blockquote, [data-callout-body]) > * + * {
+  margin-block-start: var(--crewlet-document-gap);
+}
+
+.crewlet-document :where(li, li > input[type='checkbox'] + *) > :not(input, ul, ol) + :not(ul, ol) {
+  margin-block-start: var(--spacing-2);
+}
+
+.crewlet-document li > input[type='checkbox'] + * > :where(ul, ol) {
   margin-block-start: var(--spacing-1);
 }
 
@@ -352,8 +387,4 @@
 
 .crewlet-document [data-callout-body] {
   color: var(--color-text-primary);
-}
-
-.crewlet-document [data-callout-body] > * + * {
-  margin-block-start: var(--crewlet-document-gap);
 }
