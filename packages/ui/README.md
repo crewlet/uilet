@@ -54,9 +54,9 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Arranging a page | `ArrangeBoard`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
-| Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `AccessDeniedCard`, the dashboard pieces (`WidgetFrame`, `DatasetSource` and `DatasetSourceList`, `DashboardCover`), and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
+| Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `AccessDeniedCard`, `ArtifactIcon` (with `artifactIconGlyph` and `ARTIFACT_ICON_WORDS`), the native gallery covers (`DocCover`, `SheetCover`, `DashboardCover`), `MergeConflicts`, the dashboard pieces (`WidgetFrame`, `DatasetSource` and `DatasetSourceList`), and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
 | Sheets | `SheetGrid`, the cells on their own (`CheckboxCell`, `TextCell`, `LongTextCell`, `NumberCell`, `SelectCell`, `MultiSelectCell`, `PersonCell`, `StatusCell`, `DateCell`, `UrlCell`, `RatingCell`, and `SheetCell` for any type), `ChangeMark`, and `SheetModel` (every rule a sheet is drawn from, with no React in it: values, parsing, the keyboard model, TSV, the pending edits of D23) |
-| Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, `PeopleRail` (with `peopleRailKey`), and `PresenceModel` (the roster order, one entry per person, the session hues, with no React in it) |
+| Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, `PeopleRail` (with `peopleRailKey`), and `PresenceModel` (the roster order, one entry per person, the session hues from `PRESENCE_HUES`, with no React in it) |
 | Presentations | `SlideStage` (a slide laid out at 1920 by 1080 and scaled to its box, with `SLIDE_WIDTH` and `SLIDE_HEIGHT`), `useSlideKeys` (the keys a show and a clicker send), `SlideFilmstrip`, `SlideGrid`, `SlideCompare` (with `SLIDE_COMPARE_LABELS`), `PresenterView` (with `formatStopwatch`) |
 
 Storybook stories live under `apps/storybook/src/stories`.
@@ -206,11 +206,9 @@ places:
 
 ## Changes in 0.25.0
 
-0.25.0 adds the pieces a slide deck is shown with. Each draws slides the host renders itself and takes its data and callbacks as props, so nothing in it parses a slide or knows a route.
+0.25.0 adds the pieces the slides, dashboard, doc and sheet artifact kinds are drawn with, and the fixes from the artifact audit. Every new piece draws content the host renders itself and takes its data and callbacks as props, so nothing in it parses an artifact or knows a route.
 
-**`MergeConflicts`** settles a three-way merge of one text: each passage both edits changed shows the other side's lines (`theirs`, "version 4") beside the draft's, and the person keeps theirs, yours or both. Nothing is pre-chosen, `onApply` reports one `MergeChoice` per clash in order once each has one, and focus moves to its heading when it opens. The merge itself stays the host's.
-
-**`DocCover` and `SheetCover`** are native gallery covers for `ArtifactCard.preview`: a doc's opening, rendered by the host's own Markdown renderer, set as a small page that fades at the card's edge; and a sheet's first columns and rows (at most `SHEET_COVER_COLUMNS` and `SHEET_COVER_ROWS`) as a hairline grid. Both are decorative, as the card's preview is.
+Slides:
 
 **`SlideStage`** lays a slide out at its authored size, 1920 by 1080 (`SLIDE_WIDTH`, `SLIDE_HEIGHT`), and scales it as a whole to its box, measured whenever the box resizes, so a thumbnail, the editor and a projector show the same line breaks. `fit="width"` is as wide as its column at 16:9; `fit="contain"` is as large as fits both ways, letterboxed, for Present; a fixed `scale` is for print. It is a group announced as a slide, named by `label`.
 
@@ -226,15 +224,38 @@ places:
 
 **`PresenterView`** is the presenter's own screen: the slide the room sees, the next one, the speaker notes large and on their own scroll, a timer that pauses, resumes and resets (`formatStopwatch` reads it as m:ss), and controls that stop at the ends of the deck.
 
+Dashboards:
+
 **`WidgetFrame`** is one figure on a dashboard, drawn inside the host's `ArrangeFrame`: its title, the figure, and the citation line every figure carries, the dataset's title (`WidgetSource.label`) then "live" or "as of" a relative time, the exact instant on hover. With `onCite` the citation is a button that opens the host's Sources rail at that dataset; `actions` holds the host's menu. `source.status` (`DatasetStatus`: `loading`, `live`, `ready`, `stale`, `refused`, `failed`) decides the body: a placeholder while loading, a marked citation when stale, and for `refused` and `failed` a calm sentence (`detail`, else the default words) IN PLACE of the figure, which is never drawn, so a host that passed rows by mistake still shows none.
 
 **`DatasetSource`** is one entry of a Sources rail: the dataset's title, its source kind as a chip (`DatasetSourceKind`: `store`, `engine`, `file`, `calc`, drawn Datastore, Engine, File, Calculated, renamed through `labels.kinds`), its `definition`, then where its rows stand, how many there are and its `refresh` promise. With `onSelect` the summary is a toggle (`aria-pressed`) and the host's rows preview (`children`) is drawn under it when `selected`, outside the button. **`DatasetSourceList`** is the rail itself, a named list of entries. `DATASET_SOURCE_KINDS` lists the kinds.
 
-**`DashboardCover`** is a dashboard artifact's gallery cover for `ArtifactCard`'s `preview`: up to three headline `stats`, each the reader's own value when the gallery holds it and otherwise its label and the title of the dataset it cites (never a placeholder number), else a schematic of the board's first widgets on its twelve columns (`layout`), else the kind's glyph.
-
 **`downloadBlob`** saves any bytes the page holds (a chart's PNG, an archive) and answers whether the browser took them, under the name it offered; `downloadText` now saves through it, so text and binary files share one path. **`toCsv`** writes a table as RFC 4180 CSV (CRLF line ends, quoted where needed, doubled quotes) and defuses a TEXT cell that a spreadsheet would run as a formula (one starting with `=`, `+`, `-`, `@`, a tab or a carriage return) with a leading apostrophe; a number is never prefixed, so `-3` stays a value. **`elementToPng`** rasterises a drawn chart in the browser: one `<svg>` is serialised with its computed styles inlined (CSS variables resolved), anything else is cloned into an SVG `foreignObject`, and a failure rejects with **`ElementToPngError`**, whose `reason` (`unsupported`, `tainted`, `empty`) a host maps to its own words. **`serializeElement`** is the serialisation half on its own.
 
-What to change: nothing. Every addition is new.
+Docs, sheets and every kind:
+
+**`DocCover`, `SheetCover` and `DashboardCover`** are the native gallery covers for `ArtifactCard.preview`, one module (`@crewlethq/ui/ArtifactCover`) sharing one frame: a doc's opening, rendered by the host's own Markdown renderer, set as a small page that fades at the card's edge; and a sheet's first columns and rows (at most `SHEET_COVER_COLUMNS` and `SHEET_COVER_ROWS`) as a hairline grid; and a dashboard's headline figures: up to three `stats`, each the reader's own value when the gallery holds it and otherwise its label and the title of the dataset it cites (never a placeholder number), else a schematic of the board's first widgets on its twelve columns (`layout`), else the kind's glyph. All three are decorative, as the card's preview is.
+
+**`MergeConflicts`** settles a three-way merge of one text: each passage both edits changed shows the other side's lines (`theirs`, "version 4") beside the draft's, and the person keeps theirs, yours or both. Nothing is pre-chosen, `onApply` reports one `MergeChoice` per clash in order once each has one, and focus moves to its heading when it opens. The merge itself stays the host's.
+
+**`ArtifactIcon`** draws the one short word an artifact's author gave it ("chart", "calendar") as a glyph, from a closed, case-insensitive vocabulary (`ARTIFACT_ICON_WORDS`, looked up by `artifactIconGlyph`), and the kind's glyph for any other word. **`ObjectHeader`** takes a `description`, the author's sentence under the title, clamped to two lines.
+
+Fixes from the artifact audit:
+
+- **`SheetGrid`**: a row's number carries its actions (on the active row, on hover, and Shift+F10) with Delete row through `onDeleteRow`, which the host confirms. A refusal is announced as it arrives, and the sync strip holds it as "N changes not saved" (`SheetSyncState.refused`) until the reader dismisses it through `onDismissRefused`, which calls `SheetPendingEdits.dismissAll`, so a refused write is never followed by "Saved". Text and long text edit in an overlay at least the column's width that wraps and grows to six lines. `fit="content"` sizes the grid to its rows, capped by `height` or `--crewlet-sheet-max-height`. List editors show a filter only above eight choices, and multi-select cells keep their chips on one line with a "+N" count.
+- **`TagGroup`** takes `overflow="fit"`: one line, with the tags that do not fit counted in a static "+N" chip.
+- **`SegmentedControl`**: `capped` draws a count as a floor ("50+"); a disabled option with `describedBy` stays focusable and says why it cannot be chosen; a pill row wraps inside its container; and a value changed from outside the row puts the tab stop back on the choice.
+- **`Checkbox`** takes `size="sm"`, the label at the compact step for a dense form row.
+- **`Section`** keeps its title on one line and lets the hint give way beside it. **`Meter`** draws its track with an edge on any ground, a minimum fill above zero, and moves its figure to its own line rather than cutting the label.
+- **`VersionTimeline`** reads a version's kind ("Published") on the meta line, marks the version on show by fill alone, and its label action reads "Label". **`ShareDialog`**'s default title names its object in curly quotes.
+- Presence hands out **`PRESENCE_HUES`**, the node hues without purple, so a collaborator is never ringed in the accent's hue. An agent whose chosen hue is purple keeps it.
+- **`@crewlethq/artifact-kit`**: a page's sheet is as tall as its rows, and its sync strip offers Dismiss for refused changes.
+
+What to change:
+
+- A complete `SheetLabels` object of your own (rather than overrides through `labels` or `sheetLabels()`) needs the new keys `dismiss`, `notSaved`, `rowActions`, `deleteRow` and `rowActionsHelp`.
+- A host that draws `SheetGrid` with `SheetPendingEdits` passes `onDismissRefused={() => edits.dismissAll()}`; without it, a refusal holds the strip at "not saved" until its cell is edited again.
+- A test that finds a version's label action by the name "Name" finds it by "Label".
 
 ## Changes in 0.24.0
 
