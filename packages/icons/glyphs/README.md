@@ -116,6 +116,8 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `globe` | `GlobeGlyph` | `package/icons/globe.svg` |
 | `grip-vertical` | `GripVerticalGlyph` | `package/icons/grip-vertical.svg` |
 | `group` | `GroupGlyph` | `package/icons/group.svg` |
+| `hand` | `HandGlyph` | `package/icons/hand.svg` |
+| `hand-grab` | `HandGrabGlyph` | `package/icons/hand-grab.svg` |
 | `hash` | `HashGlyph` | `package/icons/hash.svg` |
 | `heading` | `HeadingGlyph` | `package/icons/heading.svg` |
 | `heading-2` | `Heading2Glyph` | `package/icons/heading-2.svg` |
@@ -186,8 +188,10 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `sun` | `SunGlyph` | `package/icons/sun.svg` |
 | `table` | `TableGlyph` | `package/icons/table.svg` |
 | `target` | `TargetGlyph` | `package/icons/target.svg` |
+| `text-cursor` | `TextCursorGlyph` | `package/icons/text-cursor.svg` |
 | `trash` | `TrashGlyph` | `package/icons/trash.svg` |
 | `triangle-alert` | `TriangleAlertGlyph` | `package/icons/triangle-alert.svg` |
+| `type` | `TypeGlyph` | `package/icons/type.svg` |
 | `undo` | `UndoGlyph` | `package/icons/undo.svg` |
 | `ungroup` | `UngroupGlyph` | `package/icons/ungroup.svg` |
 | `upload` | `UploadGlyph` | `package/icons/upload.svg` |
