@@ -210,7 +210,19 @@ places:
 
 **`StackedColumns` keeps its top value inside the figure.** The axis's top tick is centred on the plot's top edge, so half of it stood above the plot; with no head row it fell outside the figure, and a container that clips its content cut the highest value in half. A chart with no head now keeps that half line above its plot, and the tick's line height is the tight step it is measured at.
 
-What to change: wrap a board's page of frames in `ArrangeGrid` (inside `ArrangeBoard`) in place of a grid of your own.
+**`WidgetFrame` stands on the card recipe.** It drew the elevated ground at a 12px inset, so a dashboard's figures were a different object from every card beside them. It now takes the card's ground (`--color-surface-subtle`), its hairline and corner, and the card's 16px inset on every part. The title takes a second line before it gives up a word (cut at one line, a frame three columns wide named "Tokens, last 14 days" as "Tokens, last 14 da"), and the controls stand on its first line. The citation is one line, the dataset's title ending before the time leaves it; in a frame narrower than 18rem it stacks, the title over the time. A stat tile drawn `flush` as the figure takes the frame's inset rather than doubling it. New `flush` lets a table reach the frame's sides: its row rules meet the border, and its cells take the frame's inset, so the first column starts under the title.
+
+**`Note` takes a `heading`**, set at a card title's step in the note's ink, which names the note as a region. A note on a board then reads as one of its cards rather than as a label over loose prose.
+
+**`DataTableColumn.minWidth`** is the narrowest the fit pass shrinks a `defaultWidth` column to. For the one column that gives up room to its box but has to stay readable while it does, a title beside short held columns: the fit took every pixel the box was short down to the table's floor, and a title read "READ…". Past it the table scrolls sideways.
+
+**`DatasetSource` says how its rows are kept current on a line of its own**, under the facts, and sets its title at the medium weight. On the line of facts the refresh wrapped under them and began with the separator, and a rail of semibold titles outweighed the figures it cites.
+
+What to change:
+
+- Wrap a board's page of frames in `ArrangeGrid` (inside `ArrangeBoard`) in place of a grid of your own.
+- Pass `flush` to a `WidgetFrame` whose figure is a table.
+- A host that relied on the frame's elevated ground or its one-line title restyles nothing: both changed for every figure.
 
 ## Changes in 0.27.0
 
