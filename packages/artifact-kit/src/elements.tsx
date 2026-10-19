@@ -19,7 +19,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import type { SheetColumn, SheetSort } from '@crewlethq/ui/SheetModel';
 import { COLUMN_ATTRIBUTES, columnFromAttributes, parseSort } from './bind.js';
 import { KitSheet } from './KitSheet.js';
-import { whenRuntime, type KitRuntime } from './runtime.js';
+import { readyRuntime, whenRuntime, type KitRuntime } from './runtime.js';
 
 export interface SheetOptions {
   /** The datastore collection the sheet edits. */
@@ -58,7 +58,9 @@ export function mountSheet(element: Element, options: SheetOptions): MountedShee
   element.append(container);
   const root: Root = createRoot(container);
   let current = options;
-  let runtime: KitRuntime | null = options.runtime ?? null;
+  // Set only once the runtime's handshake has completed: until then it
+  // declares no capability, and a sheet drawn then would say so for good.
+  let runtime: KitRuntime | null = null;
   let gone = false;
 
   const draw = () => {
@@ -77,18 +79,18 @@ export function mountSheet(element: Element, options: SheetOptions): MountedShee
     );
   };
 
-  if (runtime) draw();
-  else {
-    void whenRuntime(element.ownerDocument.defaultView ?? window).then((found) => {
-      runtime = found;
+  const bind = (found: Promise<KitRuntime>) => {
+    void found.then((ready) => {
+      runtime = ready;
       draw();
     });
-  }
+  };
+  bind(options.runtime ? readyRuntime(options.runtime) : whenRuntime(element.ownerDocument.defaultView ?? window));
 
   return {
     update(next) {
       current = next;
-      if (next.runtime) runtime = next.runtime;
+      if (next.runtime && next.runtime !== runtime) bind(readyRuntime(next.runtime));
       draw();
     },
     unmount() {

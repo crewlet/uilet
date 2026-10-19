@@ -25,7 +25,7 @@ import { cellPresence, columnsFromSchema, freezeLeading, memberHues, personFromP
 import { newDocId, type Json, type KitError, type KitFocus, type KitMember, type KitRuntime, type KitViewer, type KitWriteOutcome } from './runtime.js';
 
 export interface KitSheetLabels {
-  /** The page declared no `db` capability, so there is nothing to draw. */
+  /** The page's version declared no `db` capability, so there is nothing to draw. */
   noData: string;
   /** The collection has no schema and the page declared no columns. */
   noColumns: (collection: string) => string;
@@ -43,14 +43,14 @@ export interface KitSheetLabels {
 }
 
 export const KIT_SHEET_LABELS: KitSheetLabels = {
-  noData: 'This page did not declare the db capability, so the sheet cannot load.',
-  noColumns: (collection) => `The ${collection} collection has no columns yet.`,
+  noData: 'This sheet cannot load, because this version of the page was published without access to its data.',
+  noColumns: (collection) => `The \u201c${collection}\u201d collection has no columns yet.`,
   loadFailed: (collection, code) =>
     code === 'forbidden'
-      ? `You do not have access to the ${collection} collection.`
+      ? `You do not have access to the \u201c${collection}\u201d collection.`
       : code === 'not_found'
-        ? `There is no ${collection} collection in this artifact.`
-        : `The ${collection} collection could not be loaded. Reload the page to try again.`,
+        ? `This page has no collection named \u201c${collection}\u201d.`
+        : `The \u201c${collection}\u201d collection could not be loaded. Reload the page to try again.`,
   stepOvertaken: (step) => `Somebody changed this after you, so the ${step} was skipped.`,
   addRowFailed: (reason) => `Could not add a row. ${reason}`,
   deleteRowTitle: 'Delete this row?',
@@ -303,6 +303,7 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
   }
 
   const viewOnly = readOnly || me?.role === 'viewer';
+  // A sheet the reader cannot edit has nothing of theirs to save, so it says nothing about saving.
   const sync = { ...edits.sync(offline), failed: failedCreate };
   // A row somebody else deleted while the reader was being asked closes the question.
   const doomed = deleting === null ? undefined : docs.find((doc) => doc.id === deleting);
@@ -325,12 +326,16 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
         onDeleteRow={viewOnly ? undefined : setDeleting}
         onActiveCellChange={focus}
         onEditingChange={editing}
+        onOpenLink={(url) => {
+          // A frame cannot open a window: the host shows where the link goes first.
+          runtime.openLink(url).catch((error: unknown) => warn('a link could not be opened', error));
+        }}
         onUndo={() => step('undo')}
         onRedo={() => step('redo')}
         presence={onCells}
         sort={sort}
         onSortChange={setSort}
-        sync={sync}
+        sync={viewOnly ? undefined : sync}
         onRetry={failedCreate > 0 ? addRow : undefined}
         onDismissRefused={() => edits.dismissAll()}
         height={height}

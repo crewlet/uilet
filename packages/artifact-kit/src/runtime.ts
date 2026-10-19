@@ -129,7 +129,19 @@ export interface KitRoster {
 }
 
 export interface KitRuntime {
+  /**
+   * Resolves once the host's handshake completes. The runtime is installed
+   * before it, so until then it declares no capability and knows no viewer:
+   * the kit reads neither before this resolves.
+   */
+  ready: Promise<void>;
   capabilities: { has(name: string): boolean };
+  /**
+   * Asks the host to open an external link: the frame cannot open a window,
+   * so the host names the destination and opens it once the viewer agrees.
+   * Resolves whether they opened it.
+   */
+  openLink(url: string): Promise<boolean>;
   connection?: { state: string; subscribe(callback: (state: string) => void): Unsubscribe } | undefined;
   identity: {
     me(): Promise<KitViewer>;
@@ -158,25 +170,35 @@ declare global {
   }
 }
 
-/** The event the runtime dispatches on `window` once `window.crewlet` is installed. */
+/** The event the runtime dispatches on `window` once its handshake with the host completes. */
 export const RUNTIME_READY_EVENT = 'crewlet:ready';
 
 /**
- * The runtime, now or once it is installed. The runtime script is placed by
- * the artifact origin before any page script, so this nearly always answers
- * at once; a page that loads the kit first waits for the runtime's ready
- * event.
+ * The runtime, once its handshake with the host has completed. The runtime
+ * script is placed by the artifact origin before any page script, so it is
+ * nearly always installed already, but it learns the version's capabilities
+ * and the viewer only from the host's first message: a sheet drawn before
+ * that would read a page that declared `db` as one that did not, and say so
+ * for good. A page that loads the kit before the runtime waits for the
+ * runtime's ready event instead.
  */
 export function whenRuntime(target: Window = window): Promise<KitRuntime> {
-  if (target.crewlet) return Promise.resolve(target.crewlet);
+  const installed = target.crewlet;
+  if (installed) return readyRuntime(installed);
   return new Promise((resolve) => {
     const ready = () => {
-      if (!target.crewlet) return;
+      const found = target.crewlet;
+      if (!found) return;
       target.removeEventListener(RUNTIME_READY_EVENT, ready);
-      resolve(target.crewlet);
+      resolve(readyRuntime(found));
     };
     target.addEventListener(RUNTIME_READY_EVENT, ready);
   });
+}
+
+/** `runtime`, once its handshake has completed. */
+export function readyRuntime(runtime: KitRuntime): Promise<KitRuntime> {
+  return runtime.ready.then(() => runtime);
 }
 
 /**
