@@ -916,3 +916,109 @@ test('a canvas with nothing to say draws no note, and keeps the region it has', 
   expect(getComputedStyle(note).display).toBe('none');
   uninstall();
 });
+
+/*
+ * ───────────────────────────────────────────────────────────────────────────
+ * Actual size, the fit by Shift 1, the pointer, and the handle's new reach
+ * ───────────────────────────────────────────────────────────────────────────
+ */
+
+const WIDE: CanvasRect = { x: 0, y: 0, width: 4000, height: 3000 };
+
+test('Shift 0 shows actual size and Shift 1 fits, by the physical key whatever the layout prints', () => {
+  const { container } = mount(WIDE);
+  const fitted = viewOf(container).k;
+  expect(fitted).toBeLessThan(1);
+  // Shift turns 0 into `)` on a US layout; the key is still Digit0.
+  fireEvent.keyDown(viewport(), { key: ')', code: 'Digit0', shiftKey: true });
+  expect(viewOf(container).k).toBe(1);
+  fireEvent.keyDown(viewport(), { key: '!', code: 'Digit1', shiftKey: true });
+  expect(viewOf(container).k).toBe(fitted);
+  // With Command or Control it is the browser's chord, not the canvas's.
+  fireEvent.keyDown(viewport(), { key: ')', code: 'Digit0', shiftKey: true, metaKey: true });
+  expect(viewOf(container).k).toBe(fitted);
+});
+
+test('the actual size control is drawn only where it is asked for, and every zoom control names its key', () => {
+  mount(WIDE);
+  expect(screen.queryByRole('button', { name: 'Zoom to 100%' })).toBeNull();
+  cleanup();
+  const { container } = render(
+    <Canvas label="Organization chart" content={WIDE} controlsActualSize>
+      <div />
+    </Canvas>,
+  );
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  expect(viewOf(container).k).toBeLessThan(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Zoom to 100%' }));
+  expect(viewOf(container).k).toBe(1);
+  // The tip says the shortcut, and is what the control is described by.
+  const fit = screen.getByRole('button', { name: 'Fit to view' });
+  fireEvent.focus(fit);
+  const tip = document.getElementById(fit.getAttribute('aria-describedby')!.split(' ').pop()!);
+  expect(tip?.textContent).toMatch(/Fit to view.*Shift.*1/);
+  // The native title would be a second, plainer tip over it.
+  expect(fit.getAttribute('title')).toBe('');
+});
+
+function CursorHarness({ cursor }: { cursor?: 'hand' | 'crosshair' }) {
+  return (
+    <Canvas label="Organization chart" content={SMALL} cursor={cursor}>
+      <div />
+    </Canvas>
+  );
+}
+
+test('the pointer is the one the canvas names, from one family of drawn cursors', () => {
+  const { container, rerender } = render(<CursorHarness />);
+  const root = container.querySelector('.crewlet-canvas') as HTMLElement;
+  expect(root.getAttribute('data-cursor')).toBe('hand');
+  for (const property of [
+    '--crewlet-canvas-cursor-pointer',
+    '--crewlet-canvas-cursor-hand',
+    '--crewlet-canvas-cursor-grabbing',
+    '--crewlet-canvas-cursor-crosshair',
+    '--crewlet-canvas-cursor-text',
+  ]) {
+    expect(root.style.getPropertyValue(property)).toMatch(/^url\("data:image\/svg\+xml,/);
+  }
+  rerender(<CursorHarness cursor="crosshair" />);
+  expect(container.querySelector('.crewlet-canvas')!.getAttribute('data-cursor')).toBe('crosshair');
+  // Every cursor the stylesheet reads falls back to the browser's own.
+  for (const read of [
+    'var(--crewlet-canvas-cursor-pointer, default)',
+    'var(--crewlet-canvas-cursor-hand, grab)',
+    'var(--crewlet-canvas-cursor-grabbing, grabbing)',
+    'var(--crewlet-canvas-cursor-crosshair, crosshair)',
+    'var(--crewlet-canvas-cursor-text, text)',
+  ]) {
+    expect(SHEET).toContain(read);
+  }
+});
+
+test('a canvas of pages fits below the chart floor when it names one', () => {
+  const huge: CanvasRect = { x: 0, y: 0, width: 40000, height: 2000 };
+  const { container } = render(
+    <Canvas label="Design" content={huge} minZoom={0.01}>
+      <div />
+    </Canvas>,
+  );
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  expect(viewOf(container).k).toBeCloseTo(fitView(huge, SIZE, 24, 0.01).k);
+  expect(viewOf(container).k).toBeLessThan(0.25);
+});
+
+test('the handle zooms to a scale within the limits, and reads a page point as a world point', () => {
+  const { container, handle } = mount(WIDE);
+  act(() => handle.current!.zoomTo(1));
+  expect(viewOf(container).k).toBe(1);
+  // Past the ceiling is the ceiling.
+  act(() => handle.current!.zoomTo(1000));
+  expect(viewOf(container).k).toBe(zoomLimits(WIDE, SIZE).max);
+  const view = viewOf(container);
+  // jsdom puts the viewport at the page's origin, so a page point is a viewport point.
+  expect(handle.current!.worldAt({ x: 120, y: 80 })).toEqual({
+    x: (120 - view.x) / view.k,
+    y: (80 - view.y) / view.k,
+  });
+});

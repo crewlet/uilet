@@ -14,11 +14,17 @@ import {
  * titles and stickies beside them. The engine dashboard renders a sandboxed
  * page inside each live board; here each board draws a plain stand-in.
  *
- * Try it: zoom out until boards turn into placeholders (a board runs only
- * while it is on screen and wide enough to read, at most twelve at once).
- * Click a board to hand it the pointer and press Escape to give it back. In
- * the Editable story, drag a board's title to move it, its corner to resize
- * it, or focus either and use the arrow keys (Shift for a larger step).
+ * Try it: the palette at the foot of the field holds Move (V) and Hand (H, or
+ * hold Space), and the pointer follows the tool. Hover a board or its name to
+ * outline it, click to select it, double-click to hand its page the pointer,
+ * and press Escape to give it back. Zoom out until boards turn into
+ * placeholders (a board runs only while it is on screen and wide enough to
+ * read, at most twelve at once); Shift 1 fits, Shift 0 is actual size.
+ *
+ * In the Editable story the palette adds Text (T) and Sticky (S): click the
+ * field to place one. Drag a board's name to move it, a selected item's
+ * corners to resize it, a note's paper to move it, double-click a note to
+ * retype it, and press Delete to remove a selected note.
  */
 const meta: Meta<typeof CanvasBoard> = {
   title: 'UI/CanvasBoard',
@@ -77,6 +83,12 @@ export const TightBudget: Story = {
 function EditableBoard() {
   const [boards, setBoards] = useState(BOARDS);
   const [notes, setNotes] = useState(NOTES);
+  const create = (kind: CanvasBoardNote['kind'], at: { x: number; y: number }) => {
+    const id = `${kind}-${notes.length + 1}`;
+    const size = kind === 'title' ? { w: 720, h: 80 } : { w: 280, h: 200 };
+    setNotes((all) => [...all, { id, kind, ...at, ...size, text: kind === 'title' ? 'Title' : 'Note' }]);
+    return id;
+  };
   const move = (id: string, rect: CanvasBoardRect) =>
     setBoards((all) => all.map((b) => (b.id === id ? { ...b, ...rect } : b)));
   return (
@@ -90,10 +102,40 @@ function EditableBoard() {
         onBoardChange={move}
         onNoteChange={(note) => setNotes((all) => all.map((n) => (n.id === note.id ? note : n)))}
         onNoteRemove={(id) => setNotes((all) => all.filter((n) => n.id !== id))}
+        onNoteCreate={create}
       />
     </Frame>
   );
 }
 
-/** Move and resize boards, and edit, move or delete notes. */
+/** Move and resize boards, place notes with Text and Sticky, and edit, move or delete them. */
 export const Editable: Story = { render: () => <EditableBoard /> };
+
+/** Without the floating palette: the tool keys still work. */
+export const KeysOnly: Story = {
+  render: () => (
+    <Frame>
+      <CanvasBoard label="Launch landing page" boards={BOARDS} notes={NOTES} renderBoard={stand} toolbar={false} />
+    </Frame>
+  ),
+};
+
+/** Twenty boards laid out wide: the fit shows every one, far below a chart's floor. */
+export const WideDesign: Story = {
+  render: () => (
+    <Frame>
+      <CanvasBoard
+        label="Every screen"
+        boards={Array.from({ length: 20 }, (_, i) => ({
+          id: `screen-${i + 1}`,
+          x: (i % 10) * 1540,
+          y: Math.floor(i / 10) * 1000,
+          w: 1440,
+          h: 900,
+          title: `Screen ${i + 1}`,
+        }))}
+        renderBoard={stand}
+      />
+    </Frame>
+  ),
+};

@@ -16,6 +16,25 @@
   position: relative;
 }
 
+/*
+ * UNDER HAND, TEXT AND STICKY NOTHING ON THE CANVAS TAKES A PRESS: every press
+ * reaches the field, which pans it (Hand) or places a note on it (Text and
+ * Sticky), and nothing is outlined under a pointer that cannot select it.
+ */
+.crewlet-canvas-board:not([data-tool='move']) .crewlet-canvas-board__layer {
+  pointer-events: none;
+}
+
+/* ---- the tool palette, floating at the foot of the field ----------------- */
+
+.crewlet-canvas-board__tools {
+  position: absolute;
+  bottom: var(--spacing-3);
+  left: 50%;
+  z-index: var(--z-index-raised);
+  transform: translateX(-50%);
+}
+
 /* ---- a board ------------------------------------------------------------ */
 
 .crewlet-canvas-board__board {
@@ -23,13 +42,37 @@
   box-sizing: border-box;
 }
 
+/*
+ * A BOARD'S EDGE IS A HAIRLINE, one screen pixel at every zoom, drawn as a
+ * ring outside the box rather than a border inside it: a border would take
+ * its width out of the page the board runs, and counter-scaled to stay one
+ * pixel it would take more the further out the canvas is zoomed. The strong
+ * hairline's ink, so a white page still has an edge on a light field and a
+ * dark one on a dark field.
+ */
 .crewlet-canvas-board__body {
   position: absolute;
   inset: 0;
   overflow: hidden;
   background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border-default);
-  box-shadow: var(--shadow-xs);
+  box-shadow: 0 0 0 calc(1px * var(--crewlet-canvas-board-unzoom)) var(--color-border-strong);
+}
+
+/*
+ * HOVER, then SELECTION, in the accent: one screen pixel and then two, over
+ * the hairline. Hovering a board's name is hovering its board, which is how a
+ * reader finds the board a name belongs to on a crowded canvas.
+ */
+.crewlet-canvas-board__board:hover .crewlet-canvas-board__body,
+.crewlet-canvas-board__note:hover {
+  outline: calc(1px * var(--crewlet-canvas-board-unzoom)) solid var(--color-brand-accent);
+  outline-offset: 0;
+}
+
+.crewlet-canvas-board__board[data-selected] .crewlet-canvas-board__body,
+.crewlet-canvas-board__note[data-selected] {
+  outline: calc(2px * var(--crewlet-canvas-board-unzoom)) solid var(--color-brand-accent);
+  outline-offset: 0;
 }
 
 /* The page a live board runs fills its frame exactly. */
@@ -51,11 +94,7 @@
 .crewlet-canvas-board__shield {
   position: absolute;
   inset: 0;
-  cursor: pointer;
-}
-
-.crewlet-canvas-board[data-editable] .crewlet-canvas-board__shield {
-  cursor: inherit;
+  cursor: var(--crewlet-canvas-cursor-pointer, default);
 }
 
 /* A board that is not running draws its title and size at screen size. */
@@ -105,14 +144,21 @@
   transform-origin: bottom left;
 }
 
+/* The board's name: small, quiet, and the accent once its board is picked out. */
 .crewlet-canvas-board__title {
   min-width: 0;
   overflow: hidden;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: var(--crewlet-canvas-cursor-pointer, default);
+}
+
+.crewlet-canvas-board__board:hover .crewlet-canvas-board__title,
+.crewlet-canvas-board__board[data-selected] .crewlet-canvas-board__title {
+  color: var(--color-brand-accent-ink);
 }
 
 .crewlet-canvas-board__handle {
@@ -123,7 +169,7 @@
   border-radius: var(--radius-sm);
   background: transparent;
   font: inherit;
-  cursor: move;
+  cursor: var(--crewlet-canvas-cursor-pointer, default);
   touch-action: none;
 }
 
@@ -139,19 +185,69 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/*
+ * A RESIZE CORNER: a full pointer target, drawn as the small square a design
+ * tool draws, centred on its corner and counter-scaled so it is one size on
+ * screen. Drawn on a selected item, and on the keyboard's corner while it has
+ * focus; otherwise it is neither seen nor pressed.
+ */
 .crewlet-canvas-board__resize {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: var(--spacing-4);
-  height: var(--spacing-4);
+  display: grid;
+  place-items: center;
+  width: var(--spacing-6);
+  height: var(--spacing-6);
   margin: 0;
   padding: 0;
-  border: 2px solid var(--color-brand-accent);
+  border: none;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.crewlet-canvas-board__resize::before {
+  content: '';
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+  box-sizing: border-box;
+  border: 1px solid var(--color-brand-accent);
   border-radius: var(--radius-xs);
   background: var(--color-surface-elevated);
+}
+
+.crewlet-canvas-board__board[data-selected] > .crewlet-canvas-board__resize,
+.crewlet-canvas-board__note[data-selected] .crewlet-canvas-board__resize,
+.crewlet-canvas-board__resize:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.crewlet-canvas-board__resize[data-corner='resize-nw'] {
+  top: 0;
+  left: 0;
   cursor: nwse-resize;
-  touch-action: none;
+  transform: translate(-50%, -50%) scale(var(--crewlet-canvas-board-unzoom));
+}
+
+.crewlet-canvas-board__resize[data-corner='resize-ne'] {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+  transform: translate(50%, -50%) scale(var(--crewlet-canvas-board-unzoom));
+}
+
+.crewlet-canvas-board__resize[data-corner='resize-sw'] {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+  transform: translate(-50%, 50%) scale(var(--crewlet-canvas-board-unzoom));
+}
+
+.crewlet-canvas-board__resize[data-corner='resize-se'] {
+  right: 0;
+  bottom: 0;
+  cursor: nwse-resize;
   transform: translate(50%, 50%) scale(var(--crewlet-canvas-board-unzoom));
 }
 
@@ -173,6 +269,20 @@
 .crewlet-canvas-board__note {
   position: absolute;
   box-sizing: border-box;
+  cursor: var(--crewlet-canvas-cursor-pointer, default);
+}
+
+/*
+ * A sticky's tools and corners sit outside its paper, so the paper does not
+ * clip; its words are held to the paper instead.
+ */
+.crewlet-canvas-board__note[data-kind='sticky'] {
+  overflow: visible;
+}
+
+.crewlet-canvas-board__note[data-kind='sticky'] .crewlet-canvas-board__note-text {
+  max-height: 100%;
+  overflow: hidden;
 }
 
 /*
@@ -183,12 +293,17 @@
 .crewlet-canvas-board__note[data-kind='title'] {
   display: flex;
   align-items: center;
-  overflow: hidden;
   color: var(--color-text-primary);
 }
 
-/* The size is the component's (`titleSize`), fitted to the box both ways. */
+/*
+ * The size is the component's (`titleSize`), fitted to the box both ways. The
+ * TEXT clips at the box, not the box itself: the box's tools and corners sit
+ * outside it, and a box that clipped would cut them away.
+ */
 .crewlet-canvas-board__note[data-kind='title'] .crewlet-canvas-board__note-text {
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-tight);

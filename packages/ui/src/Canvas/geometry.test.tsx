@@ -35,6 +35,7 @@ import {
   wheelPixels,
   wheelZoomFactor,
   zoomAt,
+  zoomLimits,
   type CanvasPoint,
   type CanvasView,
 } from './geometry.js';
@@ -132,6 +133,21 @@ describe('fitView', () => {
     const view = fitView(content, { width: 800, height: 600 }, 24);
     expect(view.k).toBe(CANVAS_MIN_ZOOM);
     expect(screenRect(view, content).y).toBe(24);
+  });
+
+  test('a canvas that names a lower floor fits content the default floor would clip', () => {
+    const wide = { x: 0, y: 0, width: 20000, height: 2000 };
+    const viewport = { width: 1048, height: 800 };
+    expect(fitView(wide, viewport, 24).k).toBe(CANVAS_MIN_ZOOM);
+    const fitted = fitView(wide, viewport, 24, 0.02);
+    expect(fitted.k).toBeCloseTo(1000 / 20000);
+    // Every side of the content is on screen.
+    const drawn = screenRect(fitted, wide);
+    expect(drawn.x).toBeGreaterThanOrEqual(24);
+    expect(drawn.x + drawn.width).toBeLessThanOrEqual(1048 - 24 + 1e-9);
+    // And the zoom limits keep that fit as their floor, so it can be reached by zooming out.
+    expect(zoomLimits(wide, viewport, undefined, 24, 0.02).min).toBeCloseTo(fitted.k);
+    expect(zoomLimits(null, viewport, undefined, 24, 0.02).min).toBe(0.02);
   });
 
   test('an unmeasured viewport yields the identity rather than an infinite zoom', () => {

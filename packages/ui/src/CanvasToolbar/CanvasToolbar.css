@@ -1,0 +1,32 @@
+/*
+ * A canvas's tool palette (CanvasToolbar.tsx): the zoom bar's glass surface,
+ * with the tool in hand drawn SOLID in the accent rather than the soft tint a
+ * toggle takes elsewhere, because it is the one fact about the palette a
+ * reader checks from across the field before every press.
+ */
+
+.crewlet-canvas-toolbar.crewlet-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.crewlet-canvas-toolbar .crewlet-icon-btn {
+  border-radius: var(--radius-chip);
+}
+
+.crewlet-canvas-toolbar .crewlet-icon-btn[aria-pressed='true'] {
+  color: var(--color-text-on-accent);
+  background: var(--color-brand-accent);
+}
+
+.crewlet-canvas-toolbar .crewlet-icon-btn[aria-pressed='true']:hover:not(:disabled) {
+  color: var(--color-text-on-accent);
+  background: var(--color-brand-accent-hover);
+}
