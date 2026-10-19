@@ -1,7 +1,8 @@
 /**
- * A document's tabs arranged by an editor: renamed at their fields, opened,
- * moved, removed and added, every change reported to the host that owns
- * them, and the last tab never removed.
+ * A document's tabs arranged by an editor: opened by their titles, renamed in
+ * place, moved, removed and added from each row's menu and the list's Add,
+ * every change reported to the host that owns them, a new tab named before it
+ * is added, and the last tab never removed.
  */
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -37,43 +38,96 @@ function Host({ onAdd = vi.fn() }: { onAdd?: (title: string) => void }) {
   );
 }
 
-const titles = () => screen.getAllByRole('textbox', { name: /Title of tab/ }).map((i) => (i as HTMLInputElement).value);
+const titles = () => screen.getAllByRole('listitem').map((li) => li.querySelector('button.crewlet-doc-tabs-editor__open')?.textContent);
+const act = (tab: string, action: string) => {
+  fireEvent.click(screen.getByRole('button', { name: `Actions for ${tab}` }));
+  fireEvent.click(screen.getByRole('menuitem', { name: action }));
+};
 
-test('renames at the field, and says a title the host refuses beside it', () => {
+test('renames in place from the menu, keeps the title on Enter, and says a title the host refuses', () => {
   render(<Host />);
-  const first = screen.getByRole('textbox', { name: 'Title of tab 1' });
-  fireEvent.change(first, { target: { value: 'The plan' } });
+  act('Plan', 'Rename');
+  const field = screen.getByRole('textbox', { name: 'Title of tab 1' });
+  expect(document.activeElement).toBe(field);
+  fireEvent.change(field, { target: { value: 'The plan' } });
+  fireEvent.keyDown(field, { key: 'Enter' });
+  expect(screen.queryByRole('textbox', { name: 'Title of tab 1' })).toBeNull();
   expect(titles()).toEqual(['The plan', 'Risks']);
-  fireEvent.change(first, { target: { value: ' ' } });
-  expect(first.getAttribute('aria-invalid')).toBe('true');
+  act('The plan', 'Rename');
+  const again = screen.getByRole('textbox', { name: 'Title of tab 1' });
+  fireEvent.change(again, { target: { value: ' ' } });
+  expect(again.getAttribute('aria-invalid')).toBe('true');
   expect(screen.getByText('Give the tab a title.')).toBeDefined();
+});
+
+test('puts back the title a rename started from on Escape', () => {
+  render(<Host />);
+  fireEvent.doubleClick(screen.getByRole('button', { name: 'Risks' }));
+  const field = screen.getByRole('textbox', { name: 'Title of tab 2' });
+  fireEvent.change(field, { target: { value: 'Threats' } });
+  fireEvent.keyDown(field, { key: 'Escape' });
+  expect(titles()).toEqual(['Plan', 'Risks']);
 });
 
 test('opens a tab, moves it and removes it, and never removes the last', () => {
   render(<Host />);
-  const open = screen.getByRole('button', { name: 'Edit the text of Risks' });
+  const open = screen.getByRole('button', { name: 'Risks' });
   fireEvent.click(open);
-  expect(open.getAttribute('aria-pressed')).toBe('true');
-  fireEvent.click(screen.getByRole('button', { name: 'Move Risks up' }));
+  expect(open.getAttribute('aria-current')).toBe('true');
+  expect(screen.getByRole('button', { name: 'Plan' }).getAttribute('aria-current')).toBeNull();
+  act('Risks', 'Move up');
   expect(titles()).toEqual(['Risks', 'Plan']);
-  fireEvent.click(screen.getByRole('button', { name: 'Remove Plan' }));
+  act('Plan', 'Remove');
   expect(titles()).toEqual(['Risks']);
-  const last = screen.getByRole('button', { name: 'Remove Risks' });
+  fireEvent.click(screen.getByRole('button', { name: 'Actions for Risks' }));
+  const last = screen.getByRole('menuitem', { name: 'Remove' });
+  expect(last.getAttribute('aria-disabled')).toBe('true');
   fireEvent.click(last);
   expect(titles()).toEqual(['Risks']);
-  expect(last.getAttribute('aria-disabled')).toBe('true');
 });
 
-test('adds a tab by its title, from the button or Enter, and waits for a title', () => {
+test('names a new tab before adding it, and adds nothing for an empty title or Escape', () => {
   const onAdd = vi.fn();
   render(<Host onAdd={onAdd} />);
+  expect(screen.queryByRole('textbox', { name: 'New tab title' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Add tab' }));
   const field = screen.getByRole('textbox', { name: 'New tab title' });
-  fireEvent.click(screen.getByRole('button', { name: /Add tab/ }));
-  expect(onAdd).not.toHaveBeenCalled();
-  fireEvent.change(field, { target: { value: ' Budget ' } });
+  expect(document.activeElement).toBe(field);
+  // Under the open tab, where the new tab will land.
+  expect(field.closest('li')?.previousElementSibling?.textContent).toContain('Plan');
   fireEvent.keyDown(field, { key: 'Enter' });
+  expect(onAdd).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Add tab' }));
+  const typed = screen.getByRole('textbox', { name: 'New tab title' });
+  fireEvent.change(typed, { target: { value: 'Draft' } });
+  fireEvent.keyDown(typed, { key: 'Escape' });
+  expect(onAdd).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Add tab' }));
+  const named = screen.getByRole('textbox', { name: 'New tab title' });
+  fireEvent.change(named, { target: { value: ' Budget ' } });
+  fireEvent.keyDown(named, { key: 'Enter' });
   expect(onAdd).toHaveBeenCalledWith('Budget');
-  expect((field as HTMLInputElement).value).toBe('');
+  expect(screen.queryByRole('textbox', { name: 'New tab title' })).toBeNull();
+});
+
+test('says why no tab can be added on Add itself', () => {
+  render(
+    <DocTabsEditor
+      label="Tabs of the plan"
+      items={TABS}
+      selected="tabs/plan.md"
+      onSelect={vi.fn()}
+      onRename={vi.fn()}
+      onReorder={vi.fn()}
+      onRemove={vi.fn()}
+      onAdd={vi.fn()}
+      addBlocked="A doc holds at most 32 tabs."
+    />,
+  );
+  const add = screen.getByRole('button', { name: 'Add tab' });
+  expect(add.getAttribute('aria-disabled')).toBe('true');
+  fireEvent.click(add);
+  expect(screen.queryByRole('textbox', { name: 'New tab title' })).toBeNull();
 });
 
 test('carries no axe violation', async () => {
