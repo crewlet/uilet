@@ -23,6 +23,12 @@ export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement
   /** The bordered row a dialog uses for a decision that stands on its own. */
   framed?: boolean;
   /**
+   * The step the label is set at. `sm` sets it at the compact step, beside the
+   * small inputs and selects of a dense form row, where a body-step label
+   * reads as a heading over the controls around it.
+   */
+  size?: 'sm' | 'md' | undefined;
+  /**
    * Neither on nor off: some of what this box stands for is ticked. It is a
    * DOM property rather than an attribute, so it can only be set from script,
    * which is why it is a prop here rather than something a caller can spell.
@@ -59,6 +65,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
     description,
     tone = 'default',
     framed = false,
+    size = 'md',
     indeterminate = false,
     onCheckedChange,
     onChange,
@@ -102,6 +109,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
         'crewlet-checkbox',
         tone === 'danger' && 'crewlet-checkbox--danger',
         framed && 'crewlet-checkbox--framed',
+        size === 'sm' && 'crewlet-checkbox--sm',
         disabled && 'is-disabled',
         className,
       )}

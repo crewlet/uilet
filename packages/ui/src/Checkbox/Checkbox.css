@@ -99,6 +99,22 @@
   border-radius: var(--radius-lg);
 }
 
+/*
+ * THE COMPACT STEP, for a box in a dense form row beside small inputs and
+ * selects. The label takes their step, so a row of controls reads as one line,
+ * and the box shrinks with it; the nudge above is in `em` against the row's own
+ * size, so it still sits the box on the label's first line.
+ */
+.crewlet-checkbox--sm {
+  --crewlet-checkbox-size: 14px;
+
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-checkbox--sm .crewlet-checkbox__label {
+  font-size: var(--font-size-compact);
+}
+
 .crewlet-checkbox.is-disabled,
 .crewlet-checkbox.is-disabled .crewlet-checkbox__control {
   cursor: not-allowed;
