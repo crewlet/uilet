@@ -45,6 +45,8 @@ test('the view names the slide, the next one and the notes', () => {
   expect(screen.getByRole('group', { name: 'Next, Numbers' })).toBeTruthy();
   expect(screen.getByRole('region', { name: 'Speaker notes' }).textContent).toContain('Receive the questions');
   expect(screen.getByText('4 of 12')).toBeTruthy();
+  expect(screen.getByRole('region', { name: 'Next' }).textContent).toContain('Numbers');
+  expect(screen.getByRole('region', { name: 'Current' }).textContent).toContain('Plan');
 });
 
 test('the timer runs, pauses, resumes from where it stopped and resets', () => {
@@ -76,6 +78,7 @@ test('the controls move the show and stop at its ends', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Previous slide' }));
   expect(props.onPrevious).toHaveBeenCalledOnce();
   expect(screen.getByText('End of the deck', { selector: 'p' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Next slide' }).getAttribute('aria-disabled')).toBe('true');
   fireEvent.click(screen.getByRole('button', { name: 'Next slide' }));
   expect(props.onNext).not.toHaveBeenCalled();
 });

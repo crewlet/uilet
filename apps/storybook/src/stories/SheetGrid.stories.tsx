@@ -193,11 +193,23 @@ export const TenThousandRows: Story = {
   render: () => <LiveSheet start={manyRows(10_000)} height={480} />,
 };
 
-/** The leading column stays in view while the sheet scrolls sideways, at a phone's width. */
+/**
+ * The leading column stays in view while the sheet scrolls sideways, at a
+ * phone's width, and once scrolled its trailing hairline turns strong: the
+ * frozen edge the other columns pass under.
+ */
 export const MobileWidth: Story = {
   render: () => (
     <div style={{ maxWidth: 360 }}>
       <LiveSheet height={420} />
     </div>
   ),
+};
+
+/**
+ * A sheet with its columns and no rows yet: the header keeps the shape the
+ * rows will land in, and Add row sits right under it.
+ */
+export const NoRows: Story = {
+  render: () => <LiveSheet start={[]} fit="content" />,
 };

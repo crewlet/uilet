@@ -64,7 +64,9 @@ export function SlideGrid({ sections, renderSlide, onOpen, current, className, l
                     data-hidden={slide.hidden ? 'true' : undefined}
                     onClick={() => onOpen(slide.id)}
                   >
-                    <SlideStage label={name}>{renderSlide(slide.id)}</SlideStage>
+                    <SlideStage label={name} framed>
+                      {renderSlide(slide.id)}
+                    </SlideStage>
                     <span className="crewlet-slide-grid__caption">
                       <span className="crewlet-slide-grid__number">{n}</span>
                       <span className="crewlet-slide-grid__title">{slide.title || text.untitled}</span>

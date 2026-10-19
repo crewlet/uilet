@@ -60,7 +60,7 @@ export interface ArtifactCardProps {
   preview?: ReactNode;
   owner?: Principal | undefined;
   updatedAt: TimeValue;
-  /** Who made the latest change, when it is worth saying ("Maya"). */
+  /** Who made the latest change ("Maya"). Left unsaid where it is the owner, whose name the line already carries. */
   updatedBy?: string | undefined;
   /** Who has it open now. */
   presence?: readonly AvatarStackMember[] | undefined;
@@ -109,6 +109,9 @@ export function ArtifactCard({
   const titleId = useId();
   const factsId = useId();
   const present = presence && presence.length > 0 ? presence : null;
+  // THE OWNER IS ALREADY ON THE LINE, so a change they made reads "Updated 4m
+  // ago" beside their name rather than the name twice.
+  const changedBy = updatedBy && updatedBy !== owner?.name ? updatedBy : undefined;
 
   return (
     <Card
@@ -158,7 +161,7 @@ export function ArtifactCard({
               </span>
             ) : null}
             <span>
-              {updatedBy ? `${updatedBy} ` : `${text.updated} `}
+              {changedBy ? `${changedBy} ` : `${text.updated} `}
               <RelativeTime value={updatedAt} now={now} />
             </span>
           </span>
