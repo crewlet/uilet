@@ -50,9 +50,11 @@
   outline: 2px solid var(--color-brand-accent);
 }
 
+/* ONE RING, OVER THE THUMBNAIL'S OWN EDGE: the focus outline takes the place
+   of the edge rather than standing off it as a second one. */
 .crewlet-slide-filmstrip__thumb:focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: var(--shadow-focus);
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-slide-filmstrip__item[data-hidden='true'] .crewlet-slide-stage {
@@ -89,8 +91,8 @@
 }
 
 .crewlet-slide-filmstrip__handle:focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: var(--shadow-focus);
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-slide-filmstrip__item[data-reorder='dragging'] {

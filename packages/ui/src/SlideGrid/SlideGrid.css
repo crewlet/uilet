@@ -51,12 +51,11 @@
   outline: 2px solid var(--color-brand-accent);
 }
 
+/* ONE RING, round the whole card (its slide and its caption), on the inset
+   offset so it does not stand off the slide's own edge as a second line. */
 .crewlet-slide-grid__card:focus-visible {
-  outline: 2px solid transparent;
-}
-
-.crewlet-slide-grid__card:focus-visible .crewlet-slide-stage {
-  box-shadow: var(--shadow-focus);
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-slide-grid__card[data-hidden='true'] .crewlet-slide-stage {
