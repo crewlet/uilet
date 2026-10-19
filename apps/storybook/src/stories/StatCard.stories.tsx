@@ -200,11 +200,11 @@ export const AGroupStillLoading: Story = {
 };
 
 /**
- * Tiles too narrow for a number and its figure side by side, as a row of
- * quotas draws on a phone: the figure moves under the number, and the number
- * is never cut.
+ * A row of quotas: each bar is the reading, so it stands under its number at
+ * the tile's width (`trendPlacement="below"`), and the row keeps one shape at
+ * every width, two to a line on a phone.
  */
-export const NarrowWithAFigure: Story = {
+export const Quotas: Story = {
   render: () => (
     <div style={{ maxWidth: 358 }}>
       <StatGroup columns={3}>
@@ -214,6 +214,7 @@ export const NarrowWithAFigure: Story = {
           value="279 KB"
           unit="of 10 GB"
           sub="Every version of 82 artifacts"
+          trendPlacement="below"
           trend={<Meter value={279} max={10_000_000} label="Files" hideLabel />}
         />
         <StatCard
@@ -222,6 +223,7 @@ export const NarrowWithAFigure: Story = {
           value="82"
           unit="of 50k"
           sub="Counts private ones and the trash"
+          trendPlacement="below"
           trend={<Meter value={82} max={50_000} label="Artifacts" hideLabel />}
         />
         <StatCard
@@ -230,9 +232,22 @@ export const NarrowWithAFigure: Story = {
           value="3.4 MB"
           unit="of 1.0 GB"
           sub="In 3 sheets and pages"
+          trendPlacement="below"
           trend={<Meter value={3.4} max={1024} label="Data" hideLabel />}
         />
       </StatGroup>
+    </div>
+  ),
+};
+
+/**
+ * A tile too narrow for its number and an end figure side by side: the
+ * figure moves under the number, and the number is never cut.
+ */
+export const NarrowWithAnEndFigure: Story = {
+  render: () => (
+    <div style={{ maxWidth: 180 }}>
+      <StatCard label="Weekly budget" value="12.6M" unit="tokens" trend={<Meter value={63} max={100} label="Weekly budget" hideLabel />} />
     </div>
   ),
 };

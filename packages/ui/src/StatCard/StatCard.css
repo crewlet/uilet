@@ -146,6 +146,16 @@
   min-width: 0;
 }
 
+/* BELOW: the figure under the number, as wide as the tile. */
+.crewlet-statcard__reading--below {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.crewlet-statcard__reading--below > .crewlet-statcard__trend {
+  width: auto;
+}
+
 .crewlet-statcard__trend > :where(button, a) {
   align-self: flex-end;
 }
