@@ -63,17 +63,23 @@
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-1);
+  overflow: hidden;
   background: var(--color-surface-subtle);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
   text-align: center;
 }
 
-.crewlet-canvas-board__placeholder > * {
+/* ONE BLOCK, SCALED ONCE: its lines keep their spacing at screen size rather
+   than each line shrinking back into the space the zoom left it. */
+.crewlet-canvas-board__placeholder-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex: none;
   transform: scale(var(--crewlet-canvas-board-unzoom));
 }
 

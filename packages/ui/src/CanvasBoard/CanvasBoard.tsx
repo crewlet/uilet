@@ -461,9 +461,11 @@ export function CanvasBoard({
                     renderBoard(b)
                   ) : (
                     <div className="crewlet-canvas-board__placeholder">
-                      <span className="crewlet-canvas-board__placeholder-title">{b.title}</span>
-                      <span>{text.size(b.w, b.h)}</span>
-                      <span>{text.paused}</span>
+                      <span className="crewlet-canvas-board__placeholder-text">
+                        <span className="crewlet-canvas-board__placeholder-title">{b.title}</span>
+                        <span>{text.size(b.w, b.h)}</span>
+                        <span>{text.paused}</span>
+                      </span>
                     </div>
                   )}
                   {isLive && !isActive && (
