@@ -433,9 +433,21 @@
   height: 0;
   font-family: var(--font-family-mono);
   font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-tight);
   color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/*
+ * THE TOP TICK STANDS ON THE PLOT'S TOP EDGE, centred on it, so half its line
+ * sits above the plot. Under a head row that half falls in the row; with no
+ * head it fell outside the figure, and a container that clips its content
+ * (a dashboard widget's body) cut the axis's top value in half. The figure
+ * keeps that half line above the plot itself.
+ */
+.crewlet-stacked-columns--headless {
+  padding-block-start: calc(var(--font-size-2xs) * var(--font-line-height-tight) / 2);
 }
 
 .crewlet-stacked-columns__plot {

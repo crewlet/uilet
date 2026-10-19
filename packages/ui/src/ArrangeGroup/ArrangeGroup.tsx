@@ -98,7 +98,7 @@ export function ArrangeGroup({
       </header>
       <div
         id={bodyId}
-        className={cx('crewlet-arrange-group__body', bodyClass)}
+        className={cx('crewlet-arrange-grid', 'crewlet-arrange-group__body', bodyClass)}
         style={{ ...bodyStyle, ['--crewlet-arrange-columns' as string]: columns }}
         hidden={collapsed}
         {...body}

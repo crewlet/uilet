@@ -46,3 +46,12 @@ export const Large: Story = {
     </Note>
   ),
 };
+
+/** A heading names the note at a card title's step, so a note on a board reads as one of its cards. */
+export const WithHeading: Story = {
+  render: () => (
+    <Note tone="none" heading="How to read this board" style={{ maxWidth: 360 }}>
+      <p>Work and spend are read live from the engine as you, so each person sees what they may read.</p>
+    </Note>
+  ),
+};

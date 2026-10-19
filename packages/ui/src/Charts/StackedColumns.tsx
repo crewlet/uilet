@@ -229,7 +229,12 @@ export function StackedColumns({
 
   return (
     <figure
-      className={cx('crewlet-stacked-columns', fill && 'crewlet-stacked-columns--fill', className)}
+      className={cx(
+        'crewlet-stacked-columns',
+        fill && 'crewlet-stacked-columns--fill',
+        !headed && 'crewlet-stacked-columns--headless',
+        className,
+      )}
       style={rows === undefined ? undefined : { gridTemplateRows: rows }}
     >
       {headed ? (

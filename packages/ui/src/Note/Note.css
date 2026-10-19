@@ -41,6 +41,16 @@
   letter-spacing: var(--font-letter-spacing-tight);
 }
 
+/* The note's name, at a card title's step, in the note's own ink. */
+.crewlet-note__heading {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  line-height: var(--font-line-height-snug);
+  text-wrap: balance;
+}
+
 /* Prose inside takes the note's ink, links included. */
 .crewlet-note :is(p, li, h2, h3, h4, strong, em) {
   color: inherit;

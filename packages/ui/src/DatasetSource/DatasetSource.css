@@ -61,7 +61,9 @@ button.crewlet-dataset-source__summary:focus-visible {
   overflow: hidden;
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  /* Medium, not semibold: the rail is the board's footnotes, and a column of
+     semibold titles beside it outweighed the figures' own. */
+  font-weight: var(--font-weight-medium);
   line-height: var(--font-line-height-snug);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -93,9 +95,15 @@ button.crewlet-dataset-source__summary:focus-visible {
   color: var(--color-text-secondary);
 }
 
-/* The separators are drawn, not typed, so a screen reader hears the facts alone. */
-.crewlet-dataset-source__rows::before,
-.crewlet-dataset-source__refresh::before {
+/* How the rows are kept current, on the quiet step under the facts. */
+.crewlet-dataset-source__refresh {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+}
+
+/* The separator is drawn, not typed, so a screen reader hears the facts alone. */
+.crewlet-dataset-source__rows::before {
   content: '\00b7' / '';
   margin-inline-end: var(--spacing-2);
 }

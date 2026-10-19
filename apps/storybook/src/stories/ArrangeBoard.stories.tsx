@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ArrangeBoard, Button, Card } from '@crewlethq/ui';
+import { ArrangeBoard, ArrangeGrid, Button, Card } from '@crewlethq/ui';
 
 const meta: Meta<typeof ArrangeBoard> = {
   title: 'UI/ArrangeBoard',
@@ -18,10 +18,10 @@ function Page() {
         {editing ? 'Done' : 'Edit'}
       </Button>
       <ArrangeBoard editing={editing} columns={12}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 16 }}>
+        <ArrangeGrid columns={12}>
           <Card style={{ gridColumn: 'span 8' }}>Needs your decision</Card>
           <Card style={{ gridColumn: 'span 4' }}>Live now</Card>
-        </div>
+        </ArrangeGrid>
       </ArrangeBoard>
     </div>
   );
