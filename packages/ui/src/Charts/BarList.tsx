@@ -122,7 +122,12 @@ export function BarList({
   const top = max ?? Math.max(1, ...data.map((datum) => datum.value));
   const remaining = capped ? Math.max(0, data.length - limit) : 0;
 
-  if (!shown.length) return <ChartEmpty className={className}>{emptyLabel}</ChartEmpty>;
+  if (!shown.length)
+    return (
+      <ChartEmpty align="start" className={className}>
+        {emptyLabel}
+      </ChartEmpty>
+    );
 
   return (
     // A list, and said to be one: the markers are off, and WebKit drops the

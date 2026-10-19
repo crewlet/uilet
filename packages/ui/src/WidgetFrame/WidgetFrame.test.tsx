@@ -213,3 +213,20 @@ test('a stat tile as the figure reserves no empty second line, and steps its num
     /@container crewlet-widget-frame \(width < 11rem\) \{\s*\.crewlet-widget-frame__body \.crewlet-statcard__value \{\s*font-size: var\(--font-size-xl\);/,
   );
 });
+
+test('a held title keeps two lines, and the citation names its whole source on hover', () => {
+  const { container } = render(
+    <WidgetFrame title="Open" holdTitle source={{ label: 'Deploys for the chosen service', status: 'live' }}>
+      <p>2</p>
+    </WidgetFrame>,
+  );
+  expect(container.querySelector('section')!.classList.contains('crewlet-widget-frame--hold-title')).toBe(true);
+  expect(rule('.crewlet-widget-frame--hold-title .crewlet-widget-frame__title')).toMatch(
+    /min-height:\s*calc\(2 \* 1em \* var\(--font-line-height-snug\)\)/,
+  );
+  expect(container.querySelector('.crewlet-widget-frame__source')!.getAttribute('title')).toBe(
+    'Deploys for the chosen service',
+  );
+  // Stacked in a narrow frame, the source takes a second line before it ends.
+  expect(css).toMatch(/-webkit-line-clamp:\s*2;\s*line-clamp:\s*2;\s*\}\s*\.crewlet-widget-frame__when::before/);
+});

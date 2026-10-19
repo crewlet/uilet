@@ -222,6 +222,7 @@ places:
 
 **An end-aligned `Popover`, `Menu` or `Select` opens near the left edge.** Each asked whether its anchor had left the layer using the aligned panel's start instead of the anchor, so a panel wider than its trigger's right edge (a toolbar's last control wrapped to the left of a phone) closed on the frame it opened. They now ask of the anchor itself (`anchorGone`, from the layer's placement helpers, which `Tooltip` uses too), and the placement clamps the panel inside the window.
 
+
 What to change:
 
 - `SlideCompareLabels.missing` is a string now, not a function of the version.
@@ -229,6 +230,8 @@ What to change:
 - An application with its own media query hook can use `useMediaMatch` instead.
 - A host that drew a show's Previous, count and Next itself uses `SlideNav`.
 
+
+- A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
 
 **Every chart says when it has nothing to draw.** `TimeSeries`, `StackedColumns`, `StackedBar` and `ActivityStrip` take `emptyLabel`, as `BarList` did, and draw that one sentence in the chart's place (`.crewlet-chart-empty`) rather than an empty grid, a scale of 0 to 4, a bare track or a window starting at the epoch.
 
@@ -250,13 +253,20 @@ What to change:
 
 What to change for charts:
 
-- Nothing for an existing host. A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
+**A chart's empty sentence stands in the middle of its plot, at the plot's height.** `ChartEmpty` is exported for a host drawing a figure's empty state itself; it takes `height` and `align` (`start` for a list, which `BarList` uses).
+
+**`ArrangeGroup` takes `variant="section"`**: a quiet header on the page's ground (the name at a card title's step, its count, the chevron) over a hairline in the hue, and the blocks on the page's grid with no inset, for a page being read rather than arranged. `band`, the default, is unchanged.
+
+**`WidgetFrame` takes `holdTitle`**, which keeps the title's two lines so the numbers of a row of frames start on one line. A narrow frame's stacked citation takes a second line before it ends, and the source's whole title is its tooltip.
+
+**A compact `DataTable` takes `--crewlet-data-table-row-height`**, its row's height (`--size-row-md` by default), so a host whose list keeps another rhythm sets it rather than reaching past the table into its cells.
 
 **A design's canvas lays its grid on the boards' plane.** `Canvas` takes `ground="grid"`: the dotted ground's dots, panned with the content and pitched by the zoom (doubling or halving to stay between one and two spacing steps on screen), as a design tool's grid is. `gridOf(view)` is that rule on its own. `CanvasBoard` draws on it; `dotted` is unchanged and still stays put under a chart.
 
 **A board says only what it has room for.** A board drawn narrower than `BOARD_TITLE_MIN_WIDTH` (40px) goes unnamed until it is zoomed into, and a placeholder drops its lines in turn (why it is not running, then its size) rather than clipping them at both ends over the boards beside it; `boardRoom(width, height)` is that rule. A placeholder no longer repeats the board's name, which the title above it already says. A board's title row is one line of type tall, so a row of boards zoomed out loses less to the names above it.
 
 **A compact `DataTable` takes `--crewlet-data-table-row-height`**, its row's height (`--size-row-md` by default), so a host whose list keeps another rhythm sets it rather than reaching past the table into its cells.
+
 
 **More boards run as thumbnails.** `CANVAS_BOARD_MIN_LIVE_WIDTH` is 96px (was 160), so a design fitted on a phone or zoomed out over a dozen boards draws its pages rather than a grey box each; `CANVAS_BOARD_MAX_LIVE` still caps how many run.
 
@@ -275,6 +285,7 @@ What to change for charts:
 - `SlideCompareLabels.missing` is a string now, not a function of the version.
 - A host that drew a show's Previous, count and Next itself uses `SlideNav`.
 - A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
+
 
 ## Changes in 0.32.0
 

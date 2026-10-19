@@ -226,7 +226,11 @@ export function StackedColumns({
    * as four days of nothing.
    */
   if (buckets.length === 0) {
-    return <ChartEmpty className={cx('crewlet-stacked-columns', className)}>{emptyLabel}</ChartEmpty>;
+    return (
+      <ChartEmpty height={height === 'fill' ? minHeight : height} className={className}>
+        {emptyLabel}
+      </ChartEmpty>
+    );
   }
 
   const first = buckets[0]?.t ?? null;

@@ -156,6 +156,49 @@
   pointer-events: none;
 }
 
+/*
+ * THE SECTION VARIANT: a quiet header on the page's ground, over a hairline
+ * in the group's hue (the default border with none), and the blocks
+ * on the page's grid with no inset of their own. The name is a card title's
+ * step and ink, the chevron the quiet ink, and the count its chip.
+ */
+.crewlet-arrange-group--section {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+
+.crewlet-arrange-group--section .crewlet-arrange-group__head {
+  min-height: 0;
+  padding: 0 0 var(--spacing-2);
+  border-bottom: 1px solid var(--crewlet-arrange-group-line);
+  background: none;
+}
+
+.crewlet-arrange-group--section.is-collapsed .crewlet-arrange-group__head {
+  border-bottom-color: var(--crewlet-arrange-group-line);
+}
+
+/* The chevron stands on the page's edge, its hover reaching past it. */
+.crewlet-arrange-group--section .crewlet-arrange-group__toggle {
+  min-height: var(--size-control-sm);
+  margin-inline-start: calc(var(--spacing-1) * -1);
+  padding: 0 var(--spacing-1);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-arrange-group--section .crewlet-arrange-group__title {
+  font-size: var(--font-size-sm);
+  letter-spacing: var(--font-letter-spacing-normal);
+  color: var(--color-text-primary);
+}
+
+.crewlet-arrange-group--section .crewlet-arrange-group__body {
+  min-height: 0;
+  padding: var(--spacing-3) 0 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crewlet-arrange-group__chevron,
   .crewlet-arrange-group__title-field {
