@@ -204,6 +204,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in the next release
+
+**A canvas title fits its box.** `CanvasBoard` sets a title note in a size fitted to its box both ways (three fifths of its height, smaller when its text would run past its width; `titleSize` is that rule on its own), and the box clips anything an unusually wide face still overruns. A long heading used to run past its box over the boards beside it, at every zoom.
+
+**`SlideStage` names what it holds.** `roleDescription` replaces the screen reader's "slide" for a stage that holds something else, such as a design's board shown at its own layout ("artboard").
+
 ## Changes in 0.26.0
 
 **`@crewlethq/artifact-kit` binds a page's sheet to the runtime the engine serves**, `window.crewlet` contract 1.0 (the engine's `docs/reference/artifact-runtime.md`). The kit was written against a runtime the engine never served: it asked for a `data` capability the runtime calls `db`, so every page's sheet said it could not load, and it called methods the runtime does not have. The sheet now:

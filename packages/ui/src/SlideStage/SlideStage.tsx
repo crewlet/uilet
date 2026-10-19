@@ -29,6 +29,11 @@ export interface SlideStageProps {
   /** The stage's own size, for a format other than 16:9 at 1920. */
   width?: number | undefined;
   height?: number | undefined;
+  /**
+   * What a screen reader calls what the stage holds: "slide" by default,
+   * "artboard" for a design's board shown at its own layout.
+   */
+  roleDescription?: string | undefined;
   className?: string | undefined;
 }
 
@@ -56,6 +61,7 @@ export function SlideStage({
   scale,
   width = SLIDE_WIDTH,
   height = SLIDE_HEIGHT,
+  roleDescription = 'slide',
   className,
 }: SlideStageProps) {
   const box = useRef<HTMLDivElement | null>(null);
@@ -104,7 +110,7 @@ export function SlideStage({
       className={cx('crewlet-slide-stage', `crewlet-slide-stage--${fit}`, className)}
       style={boxStyle}
       role="group"
-      aria-roledescription="slide"
+      aria-roledescription={roleDescription}
       aria-label={label}
     >
       <div className="crewlet-slide-stage__frame" style={frameStyle}>

@@ -7,7 +7,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { IDENTITY_VIEW } from '../Canvas/index.js';
-import { CanvasBoard, type CanvasBoardItem, type CanvasBoardNote } from './CanvasBoard.js';
+import { CanvasBoard, TITLE_GLYPH_EM, titleSize, type CanvasBoardItem, type CanvasBoardNote } from './CanvasBoard.js';
 import { liveBoards } from './budget.js';
 
 type Callback = (entries: { contentRect: { width: number; height: number } }[]) => void;
@@ -228,4 +228,26 @@ test('a sticky is drawn on its colour\'s paper, the first colour by default', ()
   const stickies = container.querySelectorAll('.crewlet-canvas-board__note[data-kind="sticky"]');
   expect(stickies[0]!.classList.contains('crewlet-note--amber')).toBe(true);
   expect(stickies[1]!.classList.contains('crewlet-note--rose')).toBe(true);
+});
+
+// A TITLE FITS ITS BOX: as large as three fifths of its height allows, and set
+// smaller when its text would otherwise run past the box's width, so a long
+// heading never spills over the boards beside it at any zoom.
+test('a title is set to fit its box both ways, and its box clips the rest', () => {
+  const short = { w: 1200, h: 100, text: 'Launch' };
+  expect(titleSize(short)).toBe(60);
+  const long = {
+    w: 1200,
+    h: 100,
+    text: 'FairSplit 1.0 launch landing page: hero, features, pricing and sign up, for review before copy freeze',
+  };
+  const size = titleSize(long);
+  expect(size).toBeLessThan(60);
+  expect(Array.from(long.text).length * size * TITLE_GLYPH_EM).toBeLessThanOrEqual(long.w + 0.001);
+
+  const { container } = mount({ notes: [{ id: 't1', kind: 'title', x: 0, y: -160, ...long }] });
+  const text = container.querySelector(
+    '.crewlet-canvas-board__note[data-kind="title"] .crewlet-canvas-board__note-text',
+  ) as HTMLElement;
+  expect(text.style.fontSize).toBe(`${size}px`);
 });

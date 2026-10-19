@@ -85,6 +85,22 @@ const NOTE_TONES: Record<CanvasNoteColor, SurfaceTone> = {
   purple: 'purple',
 };
 
+/**
+ * The type size a title is set in, in canvas pixels: as large as its box's
+ * height allows (three fifths of it), and no larger than lets its text run
+ * the box's width on one line, measured at an average glyph of
+ * [TITLE_GLYPH_EM] of the size. A long title is set smaller rather than run
+ * past its box over the boards beside it; the box clips whatever an unusually
+ * wide face still overruns.
+ */
+export function titleSize(note: Pick<CanvasBoardNote, 'w' | 'h' | 'text'>): number {
+  const chars = Math.max(1, Array.from(note.text.trim()).length);
+  return Math.max(1, Math.min(note.h * 0.6, note.w / (chars * TITLE_GLYPH_EM)));
+}
+
+/** The average advance of a title's glyph, as a share of its size. */
+export const TITLE_GLYPH_EM = 0.58;
+
 /** A note's name for its handles: its first words. */
 function noteName(note: CanvasBoardNote): string {
   const words = note.text.trim().replace(/\s+/g, ' ');
@@ -568,7 +584,12 @@ function NoteView({
           }}
         />
       ) : (
-        <p className="crewlet-canvas-board__note-text">{note.text}</p>
+        <p
+          className="crewlet-canvas-board__note-text"
+          style={note.kind === 'title' ? { fontSize: titleSize(note) } : undefined}
+        >
+          {note.text}
+        </p>
       )}
       {editable && !editing && (
         <div className="crewlet-canvas-board__note-tools">
