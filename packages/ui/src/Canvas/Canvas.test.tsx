@@ -145,6 +145,24 @@ test('a data push that reshapes the content never refits the view the operator s
   expect(viewOf(container)).toEqual(fitView(grown, SIZE));
 });
 
+test('a resize refits a view nobody has moved since its fit, and keeps one somebody has', () => {
+  const { container, handle } = mount(WIDE);
+  expect(viewOf(container)).toEqual(fitView(WIDE, SIZE));
+  // The window narrows: the untouched fit follows it, so nothing is cut off.
+  const narrow = { width: 500, height: 600 };
+  FakeResizeObserver.last!.resize(narrow.width, narrow.height);
+  expect(viewOf(container)).toEqual(fitView(WIDE, narrow));
+  // Once the reader zooms, a resize keeps their zoom.
+  fireEvent.keyDown(viewport(), { key: '+' });
+  const zoomed = viewOf(container).k;
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  expect(viewOf(container).k).toBe(zoomed);
+  // A fit they ask for is untouched again, and follows the next resize.
+  act(() => handle.current!.fit());
+  FakeResizeObserver.last!.resize(narrow.width, narrow.height);
+  expect(viewOf(container)).toEqual(fitView(WIDE, narrow));
+});
+
 /*
  * WHOSE KEYS ARE WHOSE. The tab stop a chart hands out is an ITEM inside the
  * viewport, never the viewport, so zoom keys that answered only to the

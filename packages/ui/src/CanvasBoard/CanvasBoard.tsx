@@ -653,6 +653,22 @@ export function CanvasBoard({
 
   const zoomVar = { '--crewlet-canvas-board-zoom': String(view.k) } as CSSProperties;
 
+  /*
+   * WHAT A PRESS WILL DO NEXT, in the canvas's status note beside its zoom bar
+   * rather than under the board: drawn on the canvas it sat over whatever lay
+   * below the board, the palette included, and a status region says it to a
+   * reader who cannot see it too. Empty rather than absent, so the region is
+   * in place before its message arrives.
+   */
+  const activeBoard = boards.find((b) => b.id === active && live.has(b.id));
+  const chosenBoard = shownSelection?.kind === 'board' ? shownSelection.id : null;
+  const hint =
+    !editable && activeBoard
+      ? text.active
+      : !editable && chosenBoard !== null && live.has(chosenBoard)
+        ? text.interact
+        : '';
+
   return (
     // The wrapper hears keys and clicks bubbling from inside the canvas; the
     // canvas's own viewport is the focusable, labelled control.
@@ -673,6 +689,7 @@ export function CanvasBoard({
         minZoom={CANVAS_BOARD_MIN_ZOOM}
         controlsActualSize
         controlsExtra={controlsExtra}
+        hint={hint}
         labels={canvasLabels}
         overlay={
           toolbar ? (
@@ -762,11 +779,6 @@ export function CanvasBoard({
                     />
                   )}
                 </div>
-                {isActive ? (
-                  <p className="crewlet-canvas-board__hint">{text.active}</p>
-                ) : chosen && isLive && !editable ? (
-                  <p className="crewlet-canvas-board__hint">{text.interact}</p>
-                ) : null}
                 {editable && (
                   <Corners
                     title={b.title}

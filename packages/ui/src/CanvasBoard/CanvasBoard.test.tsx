@@ -103,18 +103,22 @@ test('a click selects a board and a double-click hands it the pointer; Escape gi
   fireEvent.click(hero.querySelector('.crewlet-canvas-board__shield')!);
   expect(hero.hasAttribute('data-selected')).toBe(true);
   expect(onActivate).not.toHaveBeenCalled();
-  expect(hero.textContent).toContain('Double-click to use this board');
+  const status = container.querySelector('.crewlet-canvas__hint')!;
+  expect(status.getAttribute('role')).toBe('status');
+  expect(status.textContent).toBe('Double-click to use this board');
   fireEvent.doubleClick(hero.querySelector('.crewlet-canvas-board__shield')!);
   expect(onActivate).toHaveBeenLastCalledWith('hero');
   expect(hero.hasAttribute('data-active')).toBe(true);
   expect(hero.querySelector('.crewlet-canvas-board__shield')).toBeNull();
-  expect(hero.textContent).toContain('Press Escape to return to the canvas');
+  expect(status.textContent).toBe('Press Escape to return to the canvas');
   fireEvent.keyDown(viewport, { key: 'Escape' });
   expect(onActivate).toHaveBeenLastCalledWith(null);
   expect(hero.querySelector('.crewlet-canvas-board__shield')).not.toBeNull();
   expect(hero.hasAttribute('data-selected')).toBe(true);
   fireEvent.keyDown(viewport, { key: 'Escape' });
   expect(hero.hasAttribute('data-selected')).toBe(false);
+  // The region stays, empty, for the next message.
+  expect(status.isConnected && status.textContent).toBe('');
 });
 
 test('a click on the field clears the selection, and a board\'s name selects its board', () => {

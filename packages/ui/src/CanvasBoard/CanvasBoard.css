@@ -251,18 +251,6 @@
   transform: translate(50%, 50%) scale(var(--crewlet-canvas-board-unzoom));
 }
 
-.crewlet-canvas-board__hint {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin: 0;
-  padding-top: var(--spacing-1);
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  white-space: nowrap;
-  transform: scale(var(--crewlet-canvas-board-unzoom));
-  transform-origin: top left;
-}
 
 /* ---- a note ------------------------------------------------------------- */
 

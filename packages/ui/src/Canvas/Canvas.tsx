@@ -56,7 +56,11 @@
  * - FIT HAPPENS ONCE, on the first layout that has both a measured viewport
  *   and content bounds, and again only on request. A data push that changes
  *   the content never moves the operator's view, and nothing is shown before
- *   that first fit.
+ *   that first fit. A RESIZE refits only a view nobody has moved since its
+ *   last fit: that view was the whole content, and a window made narrower
+ *   that kept the old zoom would cut the content off for a reader who never
+ *   asked to look at less of it. Once the reader has panned or zoomed, a
+ *   resize keeps their view and only keeps the content reachable.
  * - MOTION ONLY ON REQUEST. A fit, a zoom button or a reveal eases; a drag, a
  *   pinch, a wheel and a relayout anchor never do, and under reduced motion
  *   nothing does. An easing lasts as long as its transition: a clamp that
@@ -458,6 +462,14 @@ export function Canvas({
   /* The view a `focusRegion` left, to be given back on `restoreView`. */
   const left = useRef<CanvasView | null>(null);
 
+  /*
+   * The view the last fit landed on, for as long as it is still the view: a
+   * resize refits it, where a view the reader has moved since is kept. Read
+   * against the view after the fit's own clamp, so a fit that the clamp
+   * nudged still counts as untouched.
+   */
+  const fitted = useRef<CanvasView | null>(null);
+
   // `eased` says whether this move eases; left out, the move keeps whatever
   // motion is under way, so a clamp run by a data push never cuts short the
   // easing of a fit the operator just asked for.
@@ -474,6 +486,15 @@ export function Canvas({
     viewNow.current = clamped;
     setView(clamped);
   }, []);
+
+  /* A fit somebody asked for: eased, and remembered as the untouched view. */
+  const fitNow = useCallback(
+    (bounds: CanvasRect) => {
+      apply(fitOf(bounds), 'near');
+      fitted.current = viewNow.current;
+    },
+    [apply, fitOf],
+  );
 
   // ---- the viewport's own size ---------------------------------------------
   useLayoutEffect(() => {
@@ -494,16 +515,32 @@ export function Canvas({
     if (ready || !content || size.width <= 0 || size.height <= 0) return;
     const first = fitOf(content, size);
     viewNow.current = first;
+    fitted.current = first;
     setView(first);
     setReady(true);
     announceReady.current?.();
   }, [ready, content, size, fitOf]);
 
   // A resize, or content that changed shape, keeps the view and only makes
-  // sure the content is still reachable: a data push never refits.
+  // sure the content is still reachable: a data push never refits. A resize
+  // of a view still at its last fit refits it (see the module doc).
+  const sizeSeen = useRef(size);
   useLayoutEffect(() => {
-    if (ready) apply(viewNow.current);
-  }, [ready, size, content, apply]);
+    if (!ready) return;
+    const resized = sizeSeen.current.width !== size.width || sizeSeen.current.height !== size.height;
+    sizeSeen.current = size;
+    const was = fitted.current;
+    const now = viewNow.current;
+    const untouched = was !== null && was.x === now.x && was.y === now.y && was.k === now.k;
+    if (resized && untouched && content) {
+      apply(fitOf(content), false);
+      fitted.current = viewNow.current;
+    } else {
+      apply(now);
+      // A clamp of an untouched view is still the fit the reader was shown.
+      if (untouched) fitted.current = viewNow.current;
+    }
+  }, [ready, size, content, apply, fitOf]);
 
   // ---- tell the caller where the view is -----------------------------------
   const reportView = useRef(onViewChange);
@@ -541,7 +578,7 @@ export function Canvas({
     () => ({
       fit: () => {
         const bounds = contentNow.current;
-        if (bounds) apply(fitOf(bounds), 'near');
+        if (bounds) fitNow(bounds);
       },
       zoomBy: (factor) => {
         const { width, height } = sizeNow.current;
@@ -576,7 +613,7 @@ export function Canvas({
       screenRect: (target) => screenRect(viewNow.current, target),
       worldAt: (client) => toWorld(viewNow.current, local({ clientX: client.x, clientY: client.y })),
     }),
-    [apply, fitOf, local],
+    [apply, fitNow, local],
   );
 
   // ---- the wheel -------------------------------------------------------------
@@ -772,13 +809,13 @@ export function Canvas({
     if (shiftDigit === 'Digit0') {
       centreZoom(1 / viewNow.current.k);
     } else if (shiftDigit === 'Digit1') {
-      if (content) apply(fitOf(content), 'near');
+      if (content) fitNow(content);
     } else if (event.key === '+' || (mod && event.key === '=')) {
       apply(zoomAt(viewNow.current, CANVAS_ZOOM_STEP, centre, limitsNow.current), 'near');
     } else if (event.key === '-') {
       apply(zoomAt(viewNow.current, 1 / CANVAS_ZOOM_STEP, centre, limitsNow.current), 'near');
     } else if (event.key === '0') {
-      if (content) apply(fitOf(content), 'near');
+      if (content) fitNow(content);
     } else if (!onViewport) {
       handled = false;
     } else if (!mod && !event.altKey && event.key.startsWith('Arrow')) {
@@ -939,7 +976,7 @@ export function Canvas({
                       label={text.fit}
                       title=""
                       icon={<FullscreenGlyph />}
-                      onClick={() => content && apply(fitOf(content), 'near')}
+                      onClick={() => content && fitNow(content)}
                       disabled={!ready}
                     />
                   </ShortcutTip>
