@@ -16,6 +16,29 @@
   height: 100%;
 }
 
+/* THE SLIDE'S OWN EDGE: the box is the slide (or, for a show in the page,
+   the room it was measured into), so its outline is the slide's edge, drawn over the slide's corners rather than outside them. A host that
+   marks a stage (selected, current) recolours this outline rather than adding
+   a second line. */
+.crewlet-slide-stage--framed {
+  border-radius: var(--radius-sm);
+  outline: 1px solid var(--color-border-default);
+}
+
+:fullscreen .crewlet-slide-stage--framed,
+.crewlet-slide-stage--framed:fullscreen {
+  border-radius: 0;
+  outline: 0;
+}
+
+/* FULL SCREEN IS A PROJECTOR: the bars round a slide whose shape is not the
+   screen's are black, whatever the theme, so the room sees the slide alone. */
+:fullscreen .crewlet-slide-stage--contain,
+:fullscreen .crewlet-slide-stage--view,
+.crewlet-slide-stage:fullscreen {
+  background: var(--color-projection-letterbox);
+}
+
 /* Until it is measured, and wherever it is not (no layout), a view stage is
    its slide's shape at its width. In full screen it fills the box, sharing a
    flex column with the show's controls. */
