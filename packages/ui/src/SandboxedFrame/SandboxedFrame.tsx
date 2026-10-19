@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type HTMLAttributes } from 'react';
+import { useEffect, useMemo, useRef, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { Button } from '../Button/index.js';
 import { Callout } from '../Callout/index.js';
 import {
@@ -75,19 +75,29 @@ export interface SandboxedFrameLabels {
 
 const LABELS: SandboxedFrameLabels = {
   loading: (title) => `Loading ${title}`,
-  failed: 'This page failed to load.',
+  failed: 'This page failed to load',
   failedDetail: 'It did not finish starting. Reload it, and if it fails again, ask its owner to republish it.',
-  navigated: 'This page left its frame, so it was closed.',
+  navigated: 'This page left its frame, so it was closed',
   navigatedDetail: 'An artifact may only show its own pages. Reload it to open it again.',
-  refused: 'This page cannot be shown safely.',
+  refused: 'This page cannot be shown safely',
   refusedDetail: 'It arrived with a frame policy this dashboard does not accept.',
-  outdated: 'This page needs a newer dashboard.',
+  outdated: 'This page needs a newer dashboard',
   outdatedDetail: 'Reload the dashboard to update it, then open the page again.',
   reload: 'Reload',
 };
 
-/** How long a document has to say hello after the frame mounts, or after a load, before it is torn down. */
+/** How long a document has to say hello after the frame mounts before it is torn down. */
 export const FRAME_HELLO_TIMEOUT_MS = 10_000;
+
+/**
+ * How long a document that has LOADED has to say hello. The runtime says it
+ * as the page's first script runs, long before the load event, so a load with
+ * no hello is an answer the engine served without one (an expired ticket, a
+ * page that is not there, a node that is starting) and is said within a beat
+ * rather than after the reader has watched a placeholder for ten seconds. The
+ * beat covers a hello still crossing the process boundary behind its load.
+ */
+export const FRAME_LOAD_GRACE_MS = 1_500;
 
 type FrameDivAttributes = Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'onMessage' | 'children' | 'role' | 'aria-label'>;
 
@@ -135,6 +145,8 @@ export interface SandboxedFrameProps extends FrameDivAttributes {
   /** Offered on every end state as the Reload action. Mint a fresh frame, then re-render with it. */
   onReload?: (() => void) | undefined;
   helloTimeoutMs?: number | undefined;
+  /** How long a loaded document has to say hello; the hello timeout where that is shorter. */
+  loadGraceMs?: number | undefined;
   labels?: Partial<SandboxedFrameLabels> | undefined;
 }
 
@@ -202,6 +214,7 @@ function FrameInstance(props: SandboxedFrameProps) {
     onRefusal: _onRefusal,
     onReload,
     helloTimeoutMs = FRAME_HELLO_TIMEOUT_MS,
+    loadGraceMs = FRAME_LOAD_GRACE_MS,
     labels,
     className,
     ...rest
@@ -336,7 +349,7 @@ function FrameInstance(props: SandboxedFrameProps) {
       }
       owed = true;
       clearTimeout(loadTimer);
-      loadTimer = setTimeout(() => end(greeted > 0 ? 'navigated' : 'failed'), helloTimeoutMs);
+      loadTimer = setTimeout(() => end(greeted > 0 ? 'navigated' : 'failed'), Math.min(helloTimeoutMs, loadGraceMs));
     };
 
     window.addEventListener('message', onWindowMessage);
@@ -354,7 +367,7 @@ function FrameInstance(props: SandboxedFrameProps) {
       clearTimeout(loadTimer);
       closePort();
     };
-  }, [policy, mode, nonce, helloTimeoutMs]);
+  }, [policy, mode, nonce, helloTimeoutMs, loadGraceMs]);
 
   // The appearance follows the reader live, on the port.
   const { mode: themeMode, palette, density } = theme;
@@ -391,28 +404,20 @@ function FrameInstance(props: SandboxedFrameProps) {
           {...credentialless}
         />
       ) : null}
-      {state === 'loading' ? (
-        <div className="crewlet-sandboxed-frame__loading">
-          <Skeleton variant="box" width="100%" height="100%" label={text.loading(title)} />
-        </div>
-      ) : null}
+      {state === 'loading' ? <FrameLoading label={text.loading(title)} /> : null}
       {ending ? (
-        <div className="crewlet-sandboxed-frame__end">
-          <Callout
-            variant="danger"
-            title={text[ending.title]}
-            live="polite"
-            action={
-              onReload ? (
-                <Button variant="outline" size="small" onClick={onReload}>
-                  {text.reload}
-                </Button>
-              ) : undefined
-            }
-          >
-            {text[ending.detail]}
-          </Callout>
-        </div>
+        <FrameEnd
+          heading={text[ending.title]}
+          action={
+            onReload ? (
+              <Button variant="outline" size="small" onClick={onReload}>
+                {text.reload}
+              </Button>
+            ) : undefined
+          }
+        >
+          {text[ending.detail]}
+        </FrameEnd>
       ) : null}
     </div>
   );
@@ -429,3 +434,91 @@ const END_TEXT: Readonly<Record<SandboxedFrameState, { title: FrameEnd; detail: 
   refused: { title: 'refused', detail: 'refusedDetail' },
   outdated: { title: 'outdated', detail: 'outdatedDetail' },
 };
+
+/** The placeholder a frame shows until its document says hello: the box it will fill, inset by the frame's own margin. */
+function FrameLoading({ label }: { label: string }) {
+  return (
+    <div className="crewlet-sandboxed-frame__loading">
+      <Skeleton
+        variant="box"
+        width="100%"
+        height="100%"
+        marginTop={0}
+        borderRadius="var(--radius-md)"
+        label={label}
+      />
+    </div>
+  );
+}
+
+/**
+ * Why a frame shows no document, at the top of the box the document would
+ * have filled. Its one action sits under the message, in line with its text:
+ * beside it, a phone's width left the sentence a column of one word a line.
+ */
+function FrameEnd({ heading, action, children }: { heading: string; action?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="crewlet-sandboxed-frame__end">
+      <Callout variant="danger" title={heading} live="polite">
+        <span className="crewlet-sandboxed-frame__detail">{children}</span>
+        {action ? <span className="crewlet-sandboxed-frame__action">{action}</span> : null}
+      </Callout>
+    </div>
+  );
+}
+
+export interface SandboxedFramePlaceholderProps extends FrameDivAttributes {
+  /** The artifact's title. It names the region, as the frame that replaces it will. */
+  title: string;
+  /** The loading line said to a screen reader. `Loading <title>` when absent. */
+  label?: string | undefined;
+}
+
+/**
+ * The frame's loading state, for a host that has no frame to mount yet: the
+ * frame's ticket is still being minted, say. It is the very placeholder the
+ * frame shows until its document says hello, in the same box, so the reader
+ * sees one loading state from the first paint to the document, never a
+ * placeholder that jumps when the frame takes over from it.
+ */
+export function SandboxedFramePlaceholder({ title, label, className, ...rest }: SandboxedFramePlaceholderProps) {
+  return (
+    <div
+      {...rest}
+      role="region"
+      aria-label={title}
+      aria-busy
+      data-state="loading"
+      className={cx('crewlet-sandboxed-frame', className)}
+    >
+      <FrameLoading label={label ?? LABELS.loading(title)} />
+    </div>
+  );
+}
+
+export interface SandboxedFrameNoticeProps extends FrameDivAttributes {
+  /** The artifact's title. It names the region, as the frame would have. */
+  title: string;
+  /** What went wrong, as a short heading with no closing full stop. */
+  heading: string;
+  /** What the reader can do about it. */
+  children: ReactNode;
+  /** One control at the callout's trailing edge, such as Try again. */
+  action?: ReactNode;
+}
+
+/**
+ * A frame that could not be opened at all, for a host that has no frame to
+ * mount: the engine refused its ticket, say. It is drawn exactly as the
+ * frame's own end states are, in the same box, so a reader meets one way of
+ * saying "this page is not here" whichever side found the problem.
+ */
+export function SandboxedFrameNotice({ title, heading, action, children, className, ...rest }: SandboxedFrameNoticeProps) {
+  return (
+    <div {...rest} role="region" aria-label={title} data-state="failed" className={cx('crewlet-sandboxed-frame', className)}>
+      <FrameEnd heading={heading} action={action}>
+        {children}
+      </FrameEnd>
+    </div>
+  );
+}

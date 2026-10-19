@@ -8,7 +8,16 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import axe from 'axe-core';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { FRAME_MESSAGE, type FrameTheme } from '../FrameProtocol/index.js';
-import { SandboxedFrame, type FrameRefusal, type SandboxedFrameProps, type SandboxedFrameState } from './index.js';
+import {
+  FRAME_HELLO_TIMEOUT_MS,
+  FRAME_LOAD_GRACE_MS,
+  SandboxedFrame,
+  SandboxedFrameNotice,
+  SandboxedFramePlaceholder,
+  type FrameRefusal,
+  type SandboxedFrameProps,
+  type SandboxedFrameState,
+} from './index.js';
 
 const ORIGIN = 'https://a1b2c3.artifacts.example.net';
 const SRC = `${ORIGIN}/t/ticket-123/index.html`;
@@ -122,7 +131,7 @@ describe('the frame it embeds', () => {
     const { iframe, refusals } = frame(props as Partial<SandboxedFrameProps>);
     expect(iframe).toBeNull();
     expect(refusals).toEqual([refusal]);
-    expect(screen.getByText('This page cannot be shown safely.')).toBeDefined();
+    expect(screen.getByText('This page cannot be shown safely')).toBeDefined();
   });
 });
 
@@ -212,7 +221,7 @@ describe('the handshake', () => {
     say({ ...HELLO, bridge: { min: 7, max: 9 } }, iframe?.contentWindow ?? null);
     expect(refusals).toEqual([{ kind: 'bridge', offered: { min: 7, max: 9 } }]);
     expect(states.at(-1)).toBe('outdated');
-    expect(screen.getByText('This page needs a newer dashboard.')).toBeDefined();
+    expect(screen.getByText('This page needs a newer dashboard')).toBeDefined();
   });
 });
 
@@ -222,7 +231,17 @@ describe('a document that does not announce itself', () => {
     act(() => void vi.advanceTimersByTime(1000));
     expect(states.at(-1)).toBe('failed');
     expect(document.querySelector('iframe')).toBeNull();
-    expect(screen.getByText('This page failed to load.')).toBeDefined();
+    expect(screen.getByText('This page failed to load')).toBeDefined();
+  });
+
+  test('a document that loads without a hello is said to have failed within a beat, not after the whole timeout', () => {
+    const { iframe, states } = frame();
+    act(() => void iframe?.dispatchEvent(new Event('load')));
+    act(() => void vi.advanceTimersByTime(FRAME_LOAD_GRACE_MS - 1));
+    expect(states.at(-1)).toBe('loading');
+    act(() => void vi.advanceTimersByTime(1));
+    expect(states.at(-1)).toBe('failed');
+    expect(FRAME_LOAD_GRACE_MS).toBeLessThan(FRAME_HELLO_TIMEOUT_MS);
   });
 
   test('a load with no hello after a document that said one tears the frame down as navigated', () => {
@@ -309,6 +328,46 @@ describe('the port', () => {
   });
 });
 
+describe('the parts a host draws before it has a frame', () => {
+  test('the placeholder is the frame\'s own loading state, in the same box', () => {
+    frame();
+    const loading = document.querySelector('.crewlet-sandboxed-frame__loading')!.outerHTML;
+    cleanup();
+    const { container } = render(<SandboxedFramePlaceholder title="Vendor scorecard" />);
+    const region = screen.getByRole('region', { name: 'Vendor scorecard' });
+    expect(region.getAttribute('aria-busy')).toBe('true');
+    expect(region.getAttribute('data-state')).toBe('loading');
+    expect(screen.getByRole('status').textContent).toBe('Loading Vendor scorecard');
+    expect(container.querySelector('.crewlet-sandboxed-frame__loading')!.outerHTML).toBe(loading);
+  });
+
+  test('the placeholder starts at the frame\'s inset, with no margin of its own above it', () => {
+    render(<SandboxedFramePlaceholder title="Vendor scorecard" />);
+    const box = document.querySelector<HTMLElement>('.crewlet-skeleton--box')!;
+    expect(box.style.marginTop).toBe('0px');
+    expect(document.querySelector<HTMLElement>('.crewlet-skeleton__glow-box')!.style.borderRadius).toBe('var(--radius-md)');
+  });
+
+  test('the notice says what went wrong as the frame\'s end states do, with its one action', () => {
+    const retry = vi.fn();
+    render(
+      <SandboxedFrameNotice
+        title="Vendor scorecard"
+        heading="This page could not be opened"
+        action={<button onClick={retry}>Try again</button>}
+      >
+        This version has no page to open.
+      </SandboxedFrameNotice>,
+    );
+    const region = screen.getByRole('region', { name: 'Vendor scorecard' });
+    expect(region.querySelector('.crewlet-sandboxed-frame__end .crewlet-callout')).not.toBeNull();
+    expect(screen.getByText('This page could not be opened')).toBeDefined();
+    expect(screen.getByText('This version has no page to open.')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalledOnce();
+  });
+});
+
 test('carries no axe violation, loading and failed', async () => {
   vi.useRealTimers();
   const { container } = render(
@@ -319,6 +378,14 @@ test('carries no axe violation, loading and failed', async () => {
       </div>
       <div style={{ height: 300 }}>
         <SandboxedFrame src={SRC} origin={ORIGIN} mode="per_artifact" sandbox="allow-popups" title="Pricing explorer" theme={THEME} nonce={NONCE} onReload={() => {}} />
+      </div>
+      <div style={{ height: 300 }}>
+        <SandboxedFramePlaceholder title="Release notes" />
+      </div>
+      <div style={{ height: 300 }}>
+        <SandboxedFrameNotice title="Launch plan" heading="This page could not be opened" action={<button>Try again</button>}>
+          This version has no page to open.
+        </SandboxedFrameNotice>
       </div>
     </main>,
   );
