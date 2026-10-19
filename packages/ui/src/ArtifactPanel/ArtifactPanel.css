@@ -95,6 +95,11 @@
 }
 
 .crewlet-artifact-panel__body {
+  /* THE PANEL'S OWN MEASURE, so what it holds folds to the panel's width
+     rather than the window's; and its sections head at the panel title's
+     step, a level under it and never louder than it. */
+  container: crewlet-artifact-panel / inline-size;
+  --crewlet-section-title-size: var(--font-size-sm);
   flex: 1 1 auto;
   min-height: 0;
   padding: var(--spacing-4);
@@ -111,7 +116,10 @@
     inset-inline-end: 0;
     z-index: var(--z-index-overlay);
     width: min(var(--crewlet-artifact-panel-width), 100%);
-    box-shadow: var(--shadow-lg);
+    /* THE DRAWER'S LIFT, the shell's own rail drawer's: the large step falls
+       below a box and left the panel's start edge reading as a cut through
+       the artifact rather than a sheet over it. */
+    box-shadow: var(--shadow-xl);
   }
 
   .crewlet-artifact-panel[data-expanded] {
