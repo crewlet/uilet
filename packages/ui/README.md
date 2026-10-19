@@ -238,7 +238,7 @@ What to change:
 
 - `SlideCompareLabels.missing` is a string now, not a function of the version.
 - A host that drew a show's Previous, count and Next itself uses `SlideNav`.
-- Nothing for an existing host. A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
+- A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
 
 ## Changes in 0.32.0
 
