@@ -1,0 +1,132 @@
+/*
+ * The workspace is a row: the artifact's body, then at most one panel. The
+ * body scrolls itself, so a panel beside it stays in view however far the
+ * artifact is read; the panel's own body scrolls under its head.
+ *
+ * ONE HAIRLINE between the two, the panel's start edge, and none at the
+ * workspace's own edges: whatever frames the workspace already draws those.
+ */
+
+.crewlet-artifact-workspace {
+  container: crewlet-artifact-workspace / inline-size;
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.crewlet-artifact-workspace__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* EXPANDED, the panel is the workspace; the body stays mounted behind it. */
+.crewlet-artifact-workspace[data-panel='expanded'] > .crewlet-artifact-workspace__body {
+  display: none;
+}
+
+.crewlet-artifact-panel {
+  --crewlet-artifact-panel-width: 25rem;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--crewlet-artifact-panel-width);
+  min-height: 0;
+  border-left: 1px solid var(--color-border-default);
+  background: var(--color-surface-background);
+}
+
+.crewlet-artifact-panel--sm {
+  --crewlet-artifact-panel-width: 20rem;
+}
+
+.crewlet-artifact-panel--lg {
+  --crewlet-artifact-panel-width: 36rem;
+}
+
+.crewlet-artifact-panel[data-expanded] {
+  flex: 1 1 auto;
+  width: auto;
+  border-left: 0;
+}
+
+.crewlet-artifact-panel__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-2);
+  height: var(--size-row-lg);
+  padding: 0 var(--spacing-2) 0 var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-artifact-panel__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-artifact-panel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-snug);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-artifact-panel__title:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+  border-radius: var(--radius-sm);
+}
+
+.crewlet-artifact-panel__actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-artifact-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--spacing-4);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* NOT ROOM FOR TWO COLUMNS: the panel slides over the artifact's end edge,
+   raised off it, rather than squeezing the artifact under a useful width. */
+@container crewlet-artifact-workspace (width < 960px) {
+  .crewlet-artifact-panel {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    z-index: var(--z-index-overlay);
+    width: min(var(--crewlet-artifact-panel-width), 100%);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .crewlet-artifact-panel[data-expanded] {
+    inset-inline-start: 0;
+    width: auto;
+    box-shadow: none;
+  }
+}
+
+/* A PHONE: the panel is the screen until it is closed. */
+@container crewlet-artifact-workspace (width < 640px) {
+  .crewlet-artifact-panel {
+    inset-inline-start: 0;
+    width: auto;
+    border-left: 0;
+    box-shadow: none;
+  }
+}

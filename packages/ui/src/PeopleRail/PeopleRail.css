@@ -11,6 +11,14 @@
   background: var(--color-surface-elevated);
 }
 
+/* PLAIN: the list alone, in a host that frames and names it. */
+.crewlet-people-rail--plain {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 .crewlet-people-rail__head {
   display: flex;
   align-items: center;
