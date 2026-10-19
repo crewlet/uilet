@@ -1350,7 +1350,7 @@ describe('a chart of the cases a board draws: none, one, below zero, more than t
     expect(container.textContent).toMatch(/low -10/);
   });
 
-  test('a time series of two series or more keys them with lines, and one series draws no legend', () => {
+  test('a time series keys its series with lines, and a card naming its one series asks for none', () => {
     const two = render(
       <TimeSeries
         label="Turns"
@@ -1367,7 +1367,13 @@ describe('a chart of the cases a board draws: none, one, below zero, more than t
     expect(two.container.querySelector('polygon')).toBeNull();
     cleanup();
     const one = render(
-      <TimeSeries label="Turns" from={0} to={HOUR} series={[{ id: 'a', name: 'turns', points: [{ t: 0, v: 1 }, { t: HOUR, v: 2 }] }]} />,
+      <TimeSeries
+        label="Turns"
+        from={0}
+        to={HOUR}
+        legend="none"
+        series={[{ id: 'a', name: 'turns', points: [{ t: 0, v: 1 }, { t: HOUR, v: 2 }] }]}
+      />,
     );
     expect(one.container.querySelector('.crewlet-legend')).toBeNull();
     expect(one.container.querySelector('polygon')).toBeTruthy();
@@ -1394,8 +1400,9 @@ describe('a chart of the cases a board draws: none, one, below zero, more than t
     const above = container.querySelector<HTMLElement>('.crewlet-stacked-columns__column:not(.crewlet-stacked-columns__column--below)')!;
     // The column above stands where the one below hangs from.
     expect(Number.parseFloat(above.style.bottom) + Number.parseFloat(below!.style.top)).toBeCloseTo(100, 3);
-    // One series is named by the chart's label: no legend box restates it.
-    expect(container.querySelector('.crewlet-legend')).toBeNull();
+    // One series still has its key: a split that answered one band is named
+    // nowhere else. A card that names it passes legend="none".
+    expect(container.querySelector('.crewlet-legend')).toBeTruthy();
   });
 
   test('an activity strip given a reading is one tab stop whose cells read their time and value', () => {
