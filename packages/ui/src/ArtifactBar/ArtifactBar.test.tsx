@@ -257,3 +257,14 @@ test('carries no axe violation, read only and renamable', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+// THE RENAME HINT DESCRIBES THE TITLE and is nowhere else: visually hidden, it
+// was also a stray "Rename" a screen reader met on its own beside the title.
+test('the rename hint is the title button\'s description and no text of its own', () => {
+  render(<ArtifactBar title="Q4 roadmap" kind="slides" kindLabel="Slides" onRename={() => undefined} />);
+  const title = screen.getByRole('button', { name: 'Q4 roadmap' });
+  expect(title.getAttribute('aria-describedby')).toBeTruthy();
+  const hint = document.getElementById(title.getAttribute('aria-describedby')!)!;
+  expect(hint.textContent).toBe('Rename');
+  expect(hint.hidden).toBe(true);
+});

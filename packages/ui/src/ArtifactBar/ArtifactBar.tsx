@@ -8,7 +8,6 @@ import { Kbd, isApplePlatform } from '../Kbd/index.js';
 import { Menu, type MenuEntry, type MenuItem } from '../Menu/index.js';
 import { SegmentedControl } from '../SegmentedControl/index.js';
 import { Tooltip } from '../Tooltip/index.js';
-import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 
 /**
@@ -556,7 +555,12 @@ function BarTitle({
           {title}
         </button>
       </Heading>
-      <VisuallyHidden id={hintId}>{words.renameHint}</VisuallyHidden>
+      {/* HIDDEN, NOT VISUALLY HIDDEN: a description is read from a hidden
+          element, and a visually hidden one was also a stray "Rename" a
+          screen reader met on its own beside the title. */}
+      <span id={hintId} hidden>
+        {words.renameHint}
+      </span>
     </>
   );
 }
