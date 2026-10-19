@@ -132,11 +132,10 @@
   margin-inline-start: auto;
 }
 
+/* The body is the page's grid (ArrangeGrid's `.crewlet-arrange-grid`), inside
+   the group: the same columns and gap, so a block is one width on the page
+   and in a group. */
 .crewlet-arrange-group__body {
-  display: grid;
-  grid-template-columns: repeat(var(--crewlet-arrange-columns, 12), minmax(0, 1fr));
-  gap: var(--spacing-4);
-  align-items: stretch;
   padding: var(--spacing-4);
   min-height: 5rem;
 }

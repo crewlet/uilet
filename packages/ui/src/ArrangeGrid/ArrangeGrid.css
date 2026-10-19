@@ -1,0 +1,17 @@
+/*
+ * ArrangeGrid: the page grid a board's blocks stand on. Equal columns, the
+ * board's gap between them, and each block stretched to its row's height, so
+ * the cards in one row share their bottom edge.
+ */
+.crewlet-arrange-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--crewlet-arrange-columns, 12), minmax(0, 1fr));
+  gap: var(--crewlet-arrange-board-gap, var(--spacing-4));
+  align-items: stretch;
+}
+
+/* More room between rows while the page is arranged: each block's toolbar
+   sits on its top edge, half in the gap above it. */
+.crewlet-arrange-board.is-editing .crewlet-arrange-grid {
+  row-gap: var(--spacing-5);
+}
