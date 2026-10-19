@@ -11,9 +11,12 @@ export default meta;
 type Story = StoryObj<typeof DocTabsEditor>;
 
 /**
- * A handbook's tabs as its editor arranges them: titles edited in place, the
- * open tab marked, moved by handle, arrow keys or buttons, removed, and a new
- * tab added after the open one. The last tab cannot be removed.
+ * A handbook's tabs as its editor arranges them, at the width of the column it
+ * stands in: the open tab filled, each row's handle and menu shown under the
+ * pointer, a title renamed in place from the menu (or a double press), moved by
+ * handle, arrow keys or the menu, removed, and a new tab named under the open
+ * one before it is added. The last tab cannot be removed, and a title wraps
+ * rather than being cut.
  */
 export const Handbook: Story = {
   render: function Render() {
@@ -21,10 +24,11 @@ export const Handbook: Story = {
       { key: 'tabs/start.md', title: 'Start here' },
       { key: 'tabs/paging.md', title: 'Paging' },
       { key: 'tabs/handover.md', title: 'Handover' },
+      { key: 'tabs/escalation.md', title: 'Escalation paths for incidents that cross two teams' },
     ]);
     const [selected, setSelected] = useState('tabs/start.md');
     return (
-      <div style={{ maxWidth: 420 }}>
+      <div style={{ maxWidth: 260 }}>
         <DocTabsEditor
           label="Tabs of On-call handbook"
           items={items}

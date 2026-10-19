@@ -72,8 +72,23 @@
   font-size: var(--font-size-lg);
 }
 
-.crewlet-document :where(h4, h5, h6) {
+/*
+ * EVERY LEVEL A STEP OF ITS OWN. A renderer draws a body from `h2` down, so a
+ * page's fourth and fifth levels land on `h5` and `h6`; set at one size with
+ * `h4`, three levels of a document read as one. The two deepest take the
+ * body's own step, and the last is told apart by its ink, as a run-in
+ * heading is in print.
+ */
+.crewlet-document h4 {
   font-size: var(--font-size-md);
+}
+
+.crewlet-document :where(h5, h6) {
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-document h6 {
+  color: var(--color-text-secondary);
 }
 
 .crewlet-document--sm h1 {
@@ -115,6 +130,26 @@
 
 .crewlet-document li + li,
 .crewlet-document li > :where(ul, ol) {
+  margin-block-start: var(--spacing-1);
+}
+
+/*
+ * THE RHYTHM HOLDS INSIDE A BLOCK THAT HOLDS BLOCKS. The sibling rule above
+ * reaches only the body's own children, so a quote's second paragraph and a
+ * list item's second paragraph ran into the first with no gap at all. A quote
+ * is prose and takes the body's gap; a list item is one point and takes the
+ * smaller step, so its paragraphs still read as one item. A task item's
+ * blocks sit in the column beside its box, which is the same item.
+ */
+.crewlet-document :where(blockquote, [data-callout-body]) > * + * {
+  margin-block-start: var(--crewlet-document-gap);
+}
+
+.crewlet-document :where(li, li > input[type='checkbox'] + *) > :not(input, ul, ol) + :not(ul, ol) {
+  margin-block-start: var(--spacing-2);
+}
+
+.crewlet-document li > input[type='checkbox'] + * > :where(ul, ol) {
   margin-block-start: var(--spacing-1);
 }
 
@@ -288,6 +323,48 @@
 }
 
 /*
+ * The title while it is written (`DocumentTitleField`): the title's own type
+ * on no surface of its own, with a line along its foot that answers the
+ * pointer, the focus and a refusal. The line is a border rather than a
+ * shadow, because forced colours keep a border and drop a shadow.
+ */
+.crewlet-document-title-field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 0 0 var(--spacing-1);
+  border: 0;
+  border-block-end: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  outline: none;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-document-title-field::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+.crewlet-document-title-field:hover {
+  border-block-end-color: var(--color-border-default);
+}
+
+.crewlet-document-title-field:focus-visible {
+  border-block-end-color: var(--color-focus);
+}
+
+.crewlet-document-title-field[aria-invalid='true'] {
+  border-block-end-color: var(--color-feedback-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-document-title-field {
+    transition: none;
+  }
+}
+
+/*
  * A TABLE CELL'S ALIGNMENT, read off `data-align` as well as off a style: an
  * editor that may not write a style attribute under a strict policy marks a
  * column this way, and the cell is set as the reader's is.
@@ -352,8 +429,4 @@
 
 .crewlet-document [data-callout-body] {
   color: var(--color-text-primary);
-}
-
-.crewlet-document [data-callout-body] > * + * {
-  margin-block-start: var(--crewlet-document-gap);
 }

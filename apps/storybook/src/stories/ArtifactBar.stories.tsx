@@ -20,8 +20,10 @@ import {
   ArtifactPanel,
   ArtifactVersionChip,
   ArtifactWorkspace,
+  Button,
   EditingStatus,
   PresenceStack,
+  Section,
   type ArtifactBarTool,
   type MenuEntry,
   type PresenceMember,
@@ -116,7 +118,7 @@ export const OverADeck: Story = {
             bodyLabel={title}
             panel={
               panel ? (
-                <ArtifactPanel key={panel} title={PANEL_TITLES[panel]} onClose={() => setPanel(null)} size={panel === 'details' || panel === 'people' ? 'sm' : 'md'}>
+                <ArtifactPanel key={panel} title={PANEL_TITLES[panel]} onClose={() => setPanel(null)} size="md">
                   <p style={{ margin: 0 }}>The {PANEL_TITLES[panel].toLowerCase()} of this deck.</p>
                 </ArtifactPanel>
               ) : null
@@ -125,6 +127,51 @@ export const OverADeck: Story = {
             <div style={{ display: 'grid', placeItems: 'center', minHeight: '100%', padding: 24 }}>
               <div style={{ aspectRatio: '16 / 9', width: 'min(100%, 880px)', borderRadius: 8, background: 'var(--color-surface-inset)' }} />
             </div>
+          </ArtifactWorkspace>
+        </div>
+      </div>
+    );
+  },
+};
+
+/**
+ * A panel's sections head at the panel title's step, never louder than it,
+ * and in the panel's width each section's sentence goes under its heading
+ * while its action stays on the heading's line.
+ */
+export const PanelWithSections: Story = {
+  render: function Render() {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <ArtifactBar title="Q4 roadmap" kind="slides" kindLabel="Slides" back={{ href: '#', label: 'Back to artifacts' }} />
+        <div style={{ flex: 1, minHeight: 0, display: 'grid' }}>
+          <ArtifactWorkspace
+            bodyLabel="Q4 roadmap"
+            panel={
+              <ArtifactPanel title="Settings" onClose={() => {}} focusOnOpen={false}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <Section title="Details" description="Its name in the gallery, a tab and a link">
+                    <p style={{ margin: 0 }}>Title, description and icon fields.</p>
+                  </Section>
+                  <Section
+                    title="Version 4"
+                    description="Maya Ortiz, 2h ago"
+                    actions={
+                      <Button size="small" variant="secondary">
+                        View it
+                      </Button>
+                    }
+                  >
+                    <p style={{ margin: 0 }}>11 files, 18 KB.</p>
+                  </Section>
+                  <Section title="Changes" description="What was published, shared and changed, and by whom">
+                    <p style={{ margin: 0 }}>The change record.</p>
+                  </Section>
+                </div>
+              </ArtifactPanel>
+            }
+          >
+            <div style={{ padding: 24 }} />
           </ArtifactWorkspace>
         </div>
       </div>
@@ -168,6 +215,22 @@ export const EditingADoc: Story = {
   },
 };
 
+/**
+ * The same bar where room is short (a small laptop's bar beside the rail): the
+ * unsaved state folds to its accent dot, still read by a screen reader, so the
+ * title keeps its words rather than being cut to two.
+ */
+export const EditingADocNarrow: Story = {
+  args: { ...EditingADoc.args, title: 'Architecture notes for the 1.0 release' },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 760 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
 /** An older version on show: the chip takes the accent and says which of how many. */
 export const OlderVersion: Story = {
   args: {
@@ -183,4 +246,51 @@ export const OlderVersion: Story = {
 /** The title is still being read. */
 export const Pending: Story = {
   args: { title: '', kind: 'html', kindLabel: 'Page', pending: true, back: { href: '#', label: 'Back to artifacts' } },
+};
+
+/**
+ * A panel whose foot sticks to its bottom edge while a long form scrolls
+ * under it: the foot offsets itself by the body's published inset
+ * (`--crewlet-artifact-panel-inset`), so no band of the form shows below it.
+ */
+export const PanelWithStickyFoot: Story = {
+  render: () => (
+    <div style={{ height: 560, display: 'grid' }}>
+      <ArtifactWorkspace
+        bodyLabel="Launch review"
+        panel={
+          <ArtifactPanel title="Data" onClose={() => {}} size="md">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {Array.from({ length: 24 }, (_, i) => (
+                <p key={i} style={{ margin: 0 }}>
+                  Column {i + 1}
+                </p>
+              ))}
+              <div
+                style={{
+                  position: 'sticky',
+                  bottom: 'calc(-1 * var(--crewlet-artifact-panel-inset))',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 8,
+                  padding: 'var(--spacing-3) 0 var(--crewlet-artifact-panel-inset)',
+                  borderTop: '1px solid var(--color-border-default)',
+                  background: 'var(--color-surface-background)',
+                }}
+              >
+                <Button size="small" variant="ghost">
+                  Discard changes
+                </Button>
+                <Button size="small" variant="primary">
+                  Save schema
+                </Button>
+              </div>
+            </div>
+          </ArtifactPanel>
+        }
+      >
+        <div style={{ padding: 24 }} />
+      </ArtifactWorkspace>
+    </div>
+  ),
 };

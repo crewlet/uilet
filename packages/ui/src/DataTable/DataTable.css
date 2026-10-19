@@ -547,6 +547,9 @@ body.crewlet-data-table-resizing {
    */
   --crewlet-data-table-cell-pad-y: calc((var(--spacing-2) + var(--spacing-3)) / 2);
   --crewlet-data-table-cell-pad-x: var(--spacing-3);
+  /* The row's height, the list row token unless a host's list keeps another
+     rhythm (and rebinds the cell's vertical inset to fit inside it). */
+  --crewlet-data-table-row-height: var(--size-row-md);
   /* The header's own vertical inset. It equals the cell's at this density and
      parts from it at comfortable, which is where 0.2.0 drew the two apart. */
   --crewlet-data-table-head-pad-y: var(--crewlet-data-table-cell-pad-y);
@@ -964,7 +967,7 @@ body.crewlet-data-table-resizing {
 .crewlet-data-table--compact .crewlet-data-table__table td {
   /* The row token, so a compact table lines up with every other list in a
      product and a cell holding one word is as tall as a cell holding a chip. */
-  height: var(--size-row-md);
+  height: var(--crewlet-data-table-row-height);
 }
 
 /*

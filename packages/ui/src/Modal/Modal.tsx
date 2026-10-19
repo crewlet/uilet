@@ -335,7 +335,12 @@ function ModalFrame({
   const content = (
     <>
       {banded && (given(title) || given(subtitle) || given(headerActions) || closes || onBack) ? (
-        <div className={cx('crewlet-modal__header', sheet ? 'crewlet-modal__header--sheet' : undefined)}>
+        <div
+          className={cx(
+            'crewlet-modal__header',
+            sheet ? 'crewlet-modal__header--sheet' : given(subtitle) ? 'crewlet-modal__header--subtitled' : undefined,
+          )}
+        >
           {onBack ? (
             <IconButton
               className="crewlet-modal__back"

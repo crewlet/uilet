@@ -95,13 +95,14 @@
  * chips floated; the raised rung is held a visible step above the card by the
  * palette suite, and the hairline finds it on any other ground.
  *
- * The inset is 2px, which is smaller than the scale's first step on purpose:
- * it is the gap a chip needs to read as sitting IN the well. With the 1px
- * boundary it is three pixels a side, and a 24px chip makes a 30px row: the
- * medium control step, the height of the button beside it.
+ * The inset is 1px, a hairline of the well's own ground round each chip:
+ * with the 1px boundary it is two pixels a side, and a 24px chip makes a 28px
+ * row, the tab step. Tabs sit between the 26px controls of a toolbar or a
+ * panel and the 32px actions of a page, so a row of them reads as the place's
+ * navigation rather than as one more button beside them.
  */
 .crewlet-tabs--pill {
-  --crewlet-tabs-pill-inset: 2px;
+  --crewlet-tabs-pill-inset: 1px;
 
   gap: var(--crewlet-tabs-pill-inset);
   padding: var(--crewlet-tabs-pill-inset);
@@ -205,8 +206,8 @@
  * can hit. max() against --size-target-min holds every density at 24px or
  * more, and at density 1 the two agree.
  *
- * The corner is the small radius, the design's: the well's 8px less its 1px
- * boundary and 2px inset is 5px, and a chip a pixel rounder than that
+ * The corner is the chip radius (--radius-chip): the well's 8px less its 1px
+ * boundary and 1px inset is 6px, and a chip a pixel rounder than that
  * concentric curve is what reads as a chip sitting IN the well rather than a
  * second well inside it. The side pad is the design's 10px, two steps and a
  * half.
@@ -224,7 +225,7 @@
 .crewlet-tabs--pill .crewlet-tabs__tab {
   min-height: max(var(--size-target-min), calc(var(--size-control-md) - 6px));
   padding: 0 calc(var(--spacing-2) + var(--spacing-1) / 2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-chip);
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }

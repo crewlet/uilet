@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useRef, useState } from 'react';
-import { Button, SlideStage, useFullscreen, useSlideKeys } from '@crewlethq/ui';
+import { MaximizeGlyph, MinimizeGlyph } from '@crewlethq/icons/glyphs';
+import { Button, IconButton, SlideNav, SlideStage, useFullscreen, useIdle, useSlideKeys } from '@crewlethq/ui';
 import { STORY_SLIDES, storySlide } from '../fixtures/slides.js';
 
 const meta: Meta<typeof SlideStage> = {
@@ -16,6 +17,17 @@ export const FitsTheWidth: Story = {
   render: () => (
     <div style={{ maxWidth: '48rem' }}>
       <SlideStage label="Slide 3 of 5, The plan">{storySlide('plan')}</SlideStage>
+    </div>
+  ),
+};
+
+/** Framed: the slide's own edge, so a slide on the page's own ground still reads as a slide. */
+export const Framed: Story = {
+  render: () => (
+    <div style={{ maxWidth: '48rem' }}>
+      <SlideStage label="Slide 3 of 5, The plan" framed>
+        {storySlide('plan')}
+      </SlideStage>
     </div>
   ),
 };
@@ -59,6 +71,7 @@ export const PresentInThePage: Story = {
     const [at, setAt] = useState(0);
     const show = useRef<HTMLElement | null>(null);
     const fullscreen = useFullscreen(show);
+    const idle = useIdle(show, fullscreen.active);
     const last = STORY_SLIDES.length - 1;
     const step = (i: number) => setAt(Math.max(0, Math.min(last, i)));
     useSlideKeys({
@@ -85,26 +98,37 @@ export const PresentInThePage: Story = {
             flexDirection: 'column',
             scrollMarginBottom: 'var(--spacing-4)',
             background: 'var(--color-surface-inset)',
+            cursor: idle ? 'none' : undefined,
           }}
         >
           <SlideStage fit="view" label={`Slide ${at + 1} of ${last + 1}, ${slide.title}`}>
             {storySlide(slide.id)}
           </SlideStage>
-          <div style={{ display: 'flex', gap: 'var(--spacing-2)', justifyContent: 'center', padding: 'var(--spacing-2)' }}>
-            <Button size="small" variant="ghost" onClick={() => step(at - 1)}>
-              Previous
-            </Button>
-            <span>
-              {at + 1} of {last + 1}
-            </span>
-            <Button size="small" variant="ghost" onClick={() => step(at + 1)}>
-              Next
-            </Button>
-            {fullscreen.supported ? (
-              <Button size="small" variant="secondary" onClick={fullscreen.toggle}>
-                {fullscreen.active ? 'Exit full screen' : 'Full screen'}
-              </Button>
-            ) : null}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: 'var(--spacing-2)',
+              opacity: idle ? 0 : 1,
+              transition: 'opacity var(--motion-duration-moderate) var(--motion-easing-out)',
+            }}
+          >
+            <SlideNav
+              position={at + 1}
+              total={last + 1}
+              onPrevious={() => step(at - 1)}
+              onNext={() => step(at + 1)}
+              tone={fullscreen.active ? 'projection' : 'page'}
+            >
+              {fullscreen.supported ? (
+                <IconButton
+                  label={fullscreen.active ? 'Exit full screen' : 'Full screen'}
+                  icon={fullscreen.active ? <MinimizeGlyph /> : <MaximizeGlyph />}
+                  variant="ghost"
+                  onClick={fullscreen.toggle}
+                />
+              ) : null}
+            </SlideNav>
           </div>
         </section>
       </div>

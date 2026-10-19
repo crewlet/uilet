@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronLeftGlyph, ChevronRightGlyph } from '@crewlethq/icons/glyphs';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Button } from '../Button/index.js';
-import { IconButton } from '../IconButton/index.js';
-import { SlideStage } from '../SlideStage/index.js';
+import { Eyebrow } from '../Eyebrow/index.js';
+import { SlideNav } from '../SlideNav/index.js';
+import { SLIDE_HEIGHT, SLIDE_WIDTH, SlideStage } from '../SlideStage/index.js';
 import { cx } from '../utils/cx.js';
 
 export interface PresenterViewLabels {
   current: (position: number, total: number, title: string) => string;
   next: (title: string) => string;
+  /** The captions over the room's slide and the next one. */
+  onScreen: string;
+  upNext: string;
   end: string;
   notes: string;
   noNotes: string;
@@ -23,6 +26,8 @@ export interface PresenterViewLabels {
 const LABELS: PresenterViewLabels = {
   current: (position, total, title) => `Slide ${position} of ${total}, ${title}`,
   next: (title) => `Next, ${title}`,
+  onScreen: 'Current',
+  upNext: 'Next',
   end: 'End of the deck',
   notes: 'Speaker notes',
   noNotes: 'No notes for this slide.',
@@ -126,29 +131,41 @@ export function PresenterView({
   };
 
   return (
-    <div className={cx('crewlet-presenter', className)}>
-      <div className="crewlet-presenter__main">
-        <SlideStage label={text.current(position, total, currentTitle)} fit="contain">
-          {current}
-        </SlideStage>
-        <div className="crewlet-presenter__controls">
-          <IconButton label={text.previous} icon={<ChevronLeftGlyph />} onClick={onPrevious}
-            disabledReason={position <= 1 ? text.previous : undefined} />
-          <span className="crewlet-presenter__position" aria-live="polite">
-            {text.position(position, total)}
-          </span>
-          <IconButton label={text.forward} icon={<ChevronRightGlyph />} onClick={onNext}
-            disabledReason={position >= total ? text.end : undefined} />
+    <div
+      className={cx('crewlet-presenter', className)}
+      style={{ '--crewlet-presenter-ratio': SLIDE_WIDTH / SLIDE_HEIGHT } as CSSProperties}
+    >
+      <section className="crewlet-presenter__main" aria-label={text.onScreen}>
+        <Eyebrow as="p" className="crewlet-presenter__caption">
+          {text.onScreen}
+        </Eyebrow>
+        <div className="crewlet-presenter__screen">
+          <SlideStage label={text.current(position, total, currentTitle)} framed>
+            {current}
+          </SlideStage>
+          <SlideNav
+            className="crewlet-presenter__controls"
+            position={position}
+            total={total}
+            onPrevious={onPrevious}
+            onNext={onNext}
+            labels={{ previous: text.previous, next: text.forward, end: text.end, position: text.position }}
+          />
         </div>
-      </div>
+      </section>
       <aside className="crewlet-presenter__side">
-        <div className="crewlet-presenter__next">
+        <section className="crewlet-presenter__next" aria-label={text.upNext}>
+          <Eyebrow as="p" className="crewlet-presenter__caption">
+            {text.upNext}
+          </Eyebrow>
           {next ? (
-            <SlideStage label={text.next(nextTitle)}>{next}</SlideStage>
+            <SlideStage label={text.next(nextTitle)} framed>
+              {next}
+            </SlideStage>
           ) : (
             <p className="crewlet-presenter__end">{text.end}</p>
           )}
-        </div>
+        </section>
         <div className="crewlet-presenter__timer">
           <span role="timer" aria-label={text.timer} className="crewlet-presenter__elapsed">
             {formatStopwatch(elapsed)}
@@ -161,7 +178,12 @@ export function PresenterView({
           </Button>
         </div>
         <section className="crewlet-presenter__notes" aria-label={text.notes}>
-          {notes ? <p>{notes}</p> : <p className="crewlet-presenter__empty">{text.noNotes}</p>}
+          <Eyebrow as="p" className="crewlet-presenter__caption">
+            {text.notes}
+          </Eyebrow>
+          <div className="crewlet-presenter__notes-body">
+            {notes ? <p>{notes}</p> : <p className="crewlet-presenter__empty">{text.noNotes}</p>}
+          </div>
         </section>
       </aside>
     </div>

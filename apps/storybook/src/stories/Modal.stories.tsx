@@ -47,6 +47,39 @@ export const Basic: Story = {
 };
 
 /**
+ * A subtitle under the title, with actions in the head: the mark, the actions
+ * and the close control sit on the title's line, not on the head's top edge
+ * and not centred across the description. The subtitle runs to two lines to
+ * show it.
+ */
+export const SubtitleWithActions: Story = {
+  render: function SubtitleWithActionsStory() {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <Button onClick={() => setOpen(true)}>Open board</Button>
+        <Modal
+          open={open}
+          onClose={() => setOpen(false)}
+          size="lg"
+          title="Landing page"
+          subtitle="Board 1 of 3, at its full size. Zoom and pan here; the canvas behind keeps where you were."
+          icon={<PencilGlyph size="md" />}
+          headerActions={
+            <>
+              <Button size="small" variant="ghost">Previous</Button>
+              <Button size="small">Next</Button>
+            </>
+          }
+        >
+          <p>The board at its full size.</p>
+        </Modal>
+      </>
+    );
+  },
+};
+
+/**
  * Where a dialog sits, and why `top` is the default.
  *
  * A reader who just pressed a button is looking at the top half of the window.

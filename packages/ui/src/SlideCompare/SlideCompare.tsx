@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ArrowUpDownGlyph, MinusGlyph, PencilGlyph, PlusGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { SlideStage } from '../SlideStage/index.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 
 /** What happened to one slide between two versions. */
@@ -31,7 +32,8 @@ export interface SlideCompareLabels {
   removed: string;
   unchanged: string;
   moved: (from: number, to: number) => string;
-  missing: (version: string) => string;
+  /** The empty side of a slide one version lacks, under that version's heading. */
+  missing: string;
   summary: (counts: Record<Exclude<SlideChange, 'unchanged'> | 'moved', number>) => string;
   showUnchanged: (count: number) => string;
   hideUnchanged: string;
@@ -46,7 +48,7 @@ export const SLIDE_COMPARE_LABELS: SlideCompareLabels = {
   removed: 'Removed',
   unchanged: 'Unchanged',
   moved: (from, to) => `Moved from ${from} to ${to}`,
-  missing: (version) => `Not in ${version}`,
+  missing: 'Not in this version',
   summary: (c) =>
     [
       c.changed && plural(c.changed, 'slide changed', 'slides changed'),
@@ -81,6 +83,10 @@ const MARKS = {
  * drawings side by side, paired by its id, with a slide one version lacks in
  * its place and an empty side saying so.
  *
+ * EACH SIDE IS NAMED: the two columns carry their versions' names over the
+ * first row, and again over each side once the sides stack on a phone, so a
+ * reader never has to guess which drawing is the older one.
+ *
  * SAID IN WORDS, NEVER COLOUR ALONE. Every row names what happened to it
  * (Changed, Added, Removed, Moved from 6 to 7) beside a glyph, and the list
  * opens with the count of each, so a reader hears the comparison before they
@@ -101,48 +107,69 @@ export function SlideCompare({ rows, fromLabel, toLabel, className, labels }: Sl
   return (
     <div className={cx('crewlet-slide-compare', className)}>
       <p className="crewlet-slide-compare__summary">{differs ? text.summary(counts) : text.identical}</p>
-      <ol className="crewlet-slide-compare__list">
-        {shown.map((row) => {
-          const Mark = MARKS[row.change];
-          return (
-            <li key={row.key} className="crewlet-slide-compare__row" data-change={row.change}>
-              <div className="crewlet-slide-compare__head">
-                <span className="crewlet-slide-compare__title">
-                  {row.toPosition ?? row.fromPosition}. {row.title}
-                </span>
-                {row.change === 'unchanged' && row.moved ? null : (
-                  <span className="crewlet-slide-compare__change">
-                    {Mark ? <Mark size="sm" /> : null}
-                    {text[row.change]}
-                  </span>
-                )}
-                {row.moved && row.fromPosition !== undefined && row.toPosition !== undefined ? (
-                  <span className="crewlet-slide-compare__change">
-                    <ArrowUpDownGlyph size="sm" />
-                    {text.moved(row.fromPosition, row.toPosition)}
-                  </span>
-                ) : null}
-              </div>
-              <div className="crewlet-slide-compare__sides">
-                {[
-                  { side: 'from', label: fromLabel, node: row.from, at: row.fromPosition },
-                  { side: 'to', label: toLabel, node: row.to, at: row.toPosition },
-                ].map((s) => (
-                  <div key={s.side} className="crewlet-slide-compare__side" data-side={s.side}>
-                    {s.node !== undefined && s.node !== null ? (
-                      <SlideStage label={`${s.label}, slide ${s.at ?? ''}, ${row.title}`}>{s.node}</SlideStage>
-                    ) : (
-                      <p className="crewlet-slide-compare__missing">{text.missing(s.label)}</p>
+      {shown.length > 0 ? (
+        <>
+          <div className="crewlet-slide-compare__columns" aria-hidden="true">
+            <span>{fromLabel}</span>
+            <span>{toLabel}</span>
+          </div>
+          <ol className="crewlet-slide-compare__list">
+            {shown.map((row) => {
+              const Mark = MARKS[row.change];
+              return (
+                <li key={row.key} className="crewlet-slide-compare__row" data-change={row.change}>
+                  <div className="crewlet-slide-compare__head">
+                    <span className="crewlet-slide-compare__title">
+                      {row.toPosition ?? row.fromPosition}. {row.title}
+                    </span>
+                    {row.change === 'unchanged' && row.moved ? null : (
+                      <span className="crewlet-slide-compare__change">
+                        {Mark ? <Mark size="sm" /> : null}
+                        {text[row.change]}
+                      </span>
                     )}
+                    {row.moved && row.fromPosition !== undefined && row.toPosition !== undefined ? (
+                      <span className="crewlet-slide-compare__change">
+                        <ArrowUpDownGlyph size="sm" />
+                        {text.moved(row.fromPosition, row.toPosition)}
+                      </span>
+                    ) : null}
                   </div>
-                ))}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+                  <div className="crewlet-slide-compare__sides">
+                    {[
+                      { side: 'from', label: fromLabel, node: row.from, at: row.fromPosition },
+                      { side: 'to', label: toLabel, node: row.to, at: row.toPosition },
+                    ].map((s) => (
+                      <div key={s.side} className="crewlet-slide-compare__side" data-side={s.side}>
+                        <span className="crewlet-slide-compare__side-label" aria-hidden="true">
+                          {s.label}
+                        </span>
+                        {s.node !== undefined && s.node !== null ? (
+                          <SlideStage label={`${s.label}, slide ${s.at ?? ''}, ${row.title}`} framed>
+                            {s.node}
+                          </SlideStage>
+                        ) : (
+                          <p className="crewlet-slide-compare__missing">
+                            <VisuallyHidden>{`${s.label}: `}</VisuallyHidden>
+                            {text.missing}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </>
+      ) : null}
       {still.length > 0 ? (
-        <Button size="small" variant="ghost" onClick={() => setShowAll((v) => !v)}>
+        <Button
+          className="crewlet-slide-compare__toggle"
+          size="small"
+          variant="ghost"
+          onClick={() => setShowAll((v) => !v)}
+        >
           {showAll ? text.hideUnchanged : text.showUnchanged(still.length)}
         </Button>
       ) : null}

@@ -163,9 +163,18 @@ test('a flush frame lets its figure reach the sides, and a table take the inset'
   );
   expect(container.querySelector('section')!.classList.contains('crewlet-widget-frame--flush')).toBe(true);
   expect(rule('.crewlet-widget-frame--flush .crewlet-widget-frame__body')).toMatch(/padding-inline:\s*0/);
-  expect(rule('.crewlet-widget-frame--flush .crewlet-data-table--compact')).toMatch(
-    /--crewlet-data-table-cell-pad-x:\s*var\(--spacing-4\)/,
+  // Only the OUTER cells stand on the frame's inset: between two columns a
+  // cell keeps the compact table's own, or a table of eight ran past a widget
+  // the board's width.
+  expect(rule('.crewlet-widget-frame--flush .crewlet-data-table--compact')).toBe('');
+  expect(rule('.crewlet-widget-frame--flush .crewlet-data-table--compact :is(th, td):first-child')).toMatch(
+    /padding-inline-start:\s*var\(--spacing-4\)/,
   );
+  expect(
+    rule(
+      '.crewlet-widget-frame--flush .crewlet-data-table--compact :is(th, td):nth-last-child(1 of :not(.crewlet-data-table__th--spacer, .crewlet-data-table__td--spacer))',
+    ),
+  ).toMatch(/padding-inline-end:\s*var\(--spacing-4\)/);
   cleanup();
   const { container: plain } = render(
     <WidgetFrame title="Open" source={{ label: 'Open', status: 'live' }}>
@@ -196,4 +205,11 @@ test('a narrow frame stacks its citation, with no separator to begin a line', ()
   const narrow = /@container crewlet-widget-frame \(width < 18rem\)\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
   expect(narrow).toMatch(/flex-direction:\s*column/);
   expect(narrow).toMatch(/\.crewlet-widget-frame__when::before\s*\{\s*content:\s*none/);
+});
+
+test('a stat tile as the figure reserves no empty second line, and steps its number down in a narrow frame', () => {
+  expect(rule('.crewlet-widget-frame__body .crewlet-statcard__sub:empty')).toMatch(/display:\s*none/);
+  expect(css).toMatch(
+    /@container crewlet-widget-frame \(width < 11rem\) \{\s*\.crewlet-widget-frame__body \.crewlet-statcard__value \{\s*font-size: var\(--font-size-xl\);/,
+  );
 });

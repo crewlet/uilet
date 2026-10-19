@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { EyeOffGlyph, GripVerticalGlyph } from '@crewlethq/icons/glyphs';
 import { useReorder } from '../Reorder/index.js';
 import { SlideStage } from '../SlideStage/index.js';
@@ -30,6 +30,12 @@ const LABELS: SlideFilmstripLabels = {
   untitled: 'Untitled',
 };
 
+/**
+ * Which way the strip runs: a column beside the stage, or a row under it
+ * where the stage takes the whole width (a phone).
+ */
+export type SlideFilmstripOrientation = 'vertical' | 'horizontal';
+
 export interface SlideFilmstripProps {
   slides: readonly FilmstripSlide[];
   /** The slide on the stage. */
@@ -42,9 +48,16 @@ export interface SlideFilmstripProps {
    * out, the filmstrip is read only and draws no handles.
    */
   onReorder?: ((ids: string[]) => void) | undefined;
+  orientation?: SlideFilmstripOrientation | undefined;
   className?: string | undefined;
   labels?: Partial<SlideFilmstripLabels> | undefined;
 }
+
+/** The keys that step the selection, by the way the strip runs. */
+const STEP_KEYS: Readonly<Record<SlideFilmstripOrientation, { back: string; forward: string }>> = {
+  vertical: { back: 'ArrowUp', forward: 'ArrowDown' },
+  horizontal: { back: 'ArrowLeft', forward: 'ArrowRight' },
+};
 
 /**
  * The column of slide thumbnails beside a deck's stage: the slide on the stage
@@ -53,12 +66,17 @@ export interface SlideFilmstripProps {
  *
  * ONE STOP IN THE TAB ORDER for the thumbnails: each is a button marked
  * `aria-current` when its slide is on the stage, and only that one is in the
- * tab order; Up and Down move to the next or previous slide, Home and End to
- * the ends, and the stage follows. A handle is its own control beside its
+ * tab order; Up and Down (Left and Right in a row) move to the next or
+ * previous slide, Home and End to the ends, and the stage follows. A handle is its own control beside its
  * thumbnail, since moving a slide is a different act from looking at it; its
  * arrow keys move the slide, and the move is announced with where it landed.
  * (A listbox would hold the handles inside its options, which a listbox may
  * not.)
+ *
+ * THE SLIDE ON THE STAGE IS KEPT IN VIEW. The strip is its own scroller, and
+ * whenever the selection moves, whether by a press here, by Present, by a link
+ * that opened on slide 25 or by following somebody, the strip scrolls just
+ * enough to show it, and nothing else on the page moves.
  *
  * THUMBNAILS ARE THE SLIDES THEMSELVES, drawn by the caller at the slide's own
  * size and scaled by `SlideStage`, so what the strip shows is what presents.
@@ -69,6 +87,7 @@ export function SlideFilmstrip({
   onSelect,
   renderSlide,
   onReorder,
+  orientation = 'vertical',
   className,
   labels,
 }: SlideFilmstripProps) {
@@ -80,10 +99,20 @@ export function SlideFilmstrip({
     keys: ids,
     onReorder: (next) => onReorder?.(next),
     nameOf: (id) => text.slide(ids.indexOf(id) + 1, titleOf(id)),
-    axis: 'vertical',
+    // A ROW IS A ONE-LINE GRID to the reorder: its items are side by side, so
+    // a drop lands by the pointer's half across, and Left and Right move too.
+    axis: orientation === 'vertical' ? 'vertical' : 'grid',
   });
   const order = onReorder ? reorder.order : ids;
   const options = useRef(new Map<string, HTMLElement>());
+  const root = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const port = root.current;
+    const item = options.current.get(selected)?.closest('li');
+    if (!port || !item) return;
+    scrollIntoPort(port, item, orientation);
+  }, [selected, orientation]);
 
   const go = (id: string | undefined) => {
     if (!id) return;
@@ -92,9 +121,10 @@ export function SlideFilmstrip({
   };
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     const at = order.indexOf(selected);
+    const step = STEP_KEYS[orientation];
     const to = {
-      ArrowDown: order[at + 1],
-      ArrowUp: order[at - 1],
+      [step.forward]: order[at + 1],
+      [step.back]: order[at - 1],
       Home: order[0],
       End: order[order.length - 1],
     }[event.key];
@@ -104,7 +134,10 @@ export function SlideFilmstrip({
   };
 
   return (
-    <div className={cx('crewlet-slide-filmstrip', className)}>
+    <div
+      ref={root}
+      className={cx('crewlet-slide-filmstrip', `crewlet-slide-filmstrip--${orientation}`, className)}
+    >
       {onReorder ? <VisuallyHidden id={reorder.hintId}>{reorder.hint}</VisuallyHidden> : null}
       <ol
         className="crewlet-slide-filmstrip__list"
@@ -156,4 +189,26 @@ export function SlideFilmstrip({
       </ol>
     </div>
   );
+}
+
+/**
+ * Scroll `port` by the least that shows `item` whole on the strip's axis,
+ * with a little of the next one showing so the strip reads as continuing.
+ * Only the strip scrolls: `scrollIntoView` would move every scroller above it,
+ * the page included.
+ */
+function scrollIntoPort(port: HTMLElement, item: HTMLElement, orientation: SlideFilmstripOrientation): void {
+  const p = port.getBoundingClientRect();
+  const r = item.getBoundingClientRect();
+  if (orientation === 'vertical') {
+    if (port.scrollHeight <= port.clientHeight) return;
+    const pad = r.height / 4;
+    if (r.top < p.top) port.scrollTop += r.top - p.top - pad;
+    else if (r.bottom > p.bottom) port.scrollTop += r.bottom - p.bottom + pad;
+  } else {
+    if (port.scrollWidth <= port.clientWidth) return;
+    const pad = r.width / 4;
+    if (r.left < p.left) port.scrollLeft += r.left - p.left - pad;
+    else if (r.right > p.right) port.scrollLeft += r.right - p.right + pad;
+  }
 }

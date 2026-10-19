@@ -41,7 +41,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Area | Components |
 | ---- | ---------- |
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `DownloadButton`, `Kbd` |
-| Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document` and `DocumentTitle`, the Markdown grammar (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref` and the line readers, with no React in it), `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider` |
+| Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document`, `DocumentTitle` and `DocumentTitleField`, the Markdown grammar (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref` and the line readers, with no React in it), `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider` |
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor`, `RichEditor` (with `preloadRichEditor`, and the round trip `roundTripMarkdown` and `canonicalMarkdown` from `@crewlethq/ui/RichEditorMarkdown`) |
 | Data display | `DataTable`, `CopyableCell`, `Table`, the read-only table cells (`TableKeyCell`, `TableNumberCell`, `TableDateCell`, `TableEntityCell`, `TableStatusCell`, `TableTagsCell`, `TableTextCell`), `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
@@ -52,12 +52,12 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Arranging a page | `ArrangeBoard`, `ArrangeGrid`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
-| Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
+| Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen`, `useIdle` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
 | Artifacts | `SandboxedFrame` (with `SandboxedFramePlaceholder` and `SandboxedFrameNotice`), `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `ArtifactBar` and `ArtifactVersionChip` (an open artifact's one slim bar), `ArtifactPanel` and `ArtifactWorkspace` (the panels it opens beside or over the artifact), `CanvasBoard` (a design's artboards and notes on a `Canvas`, with the visibility budget `liveBoards`), `CanvasToolbar` (a canvas's tool palette, with `toolForKey`), `CanvasSchematic` (a design's cover, drawn from its boards' frames), `AccessDeniedCard`, `ArtifactIcon` (with `artifactIconGlyph` and `ARTIFACT_ICON_WORDS`), the native gallery covers (`DocCover`, `SheetCover`, `DashboardCover`), `MergeConflicts`, the dashboard pieces (`WidgetFrame`, `DatasetSource` and `DatasetSourceList`), and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
 | Sheets | `SheetGrid`, the cells on their own (`CheckboxCell`, `TextCell`, `LongTextCell`, `NumberCell`, `SelectCell`, `MultiSelectCell`, `PersonCell`, `StatusCell`, `DateCell`, `UrlCell`, `RatingCell`, and `SheetCell` for any type), `ChangeMark`, and `SheetModel` (every rule a sheet is drawn from, with no React in it: values, parsing, the keyboard model, TSV, the pending edits of D23) |
 | Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, `PeopleRail` (with `peopleRailKey`), and `PresenceModel` (the roster order, one entry per person, the session hues from `PRESENCE_HUES`, with no React in it) |
-| Presentations | `SlideStage` (a slide laid out at 1920 by 1080 and scaled to its box, with `SLIDE_WIDTH` and `SLIDE_HEIGHT`), `useSlideKeys` (the keys a show and a clicker send), `SlideFilmstrip`, `SlideGrid`, `SlideCompare` (with `SLIDE_COMPARE_LABELS`), `PresenterView` (with `formatStopwatch`) |
+| Presentations | `SlideStage` (a slide laid out at 1920 by 1080 and scaled to its box, with `SLIDE_WIDTH` and `SLIDE_HEIGHT`), `useSlideKeys` (the keys a show and a clicker send), `SlideNav` (Previous, the position and Next, with `SLIDE_NAV_LABELS`), `SlideFilmstrip`, `SlideGrid`, `SlideCompare` (with `SLIDE_COMPARE_LABELS`), `PresenterView` (with `formatStopwatch`) |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -161,7 +161,7 @@ land at once.
   `runPalette({ tokens, themes: themes + override })` from
   `@crewlethq/tokens/test/palette`.
 
-- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-rail` on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), `--crewlet-bar-list-label-width` (128px) and `--crewlet-bar-list-value-room` (`6ch` and a gap) for the words' column and the value's room in a `BarList layout="beside"`, and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
+- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg`, `--crewlet-data-table-archived-rail` and `--crewlet-data-table-row-height` (the list row token, `--size-row-md`, by default; rebind `--crewlet-data-table-cell-pad-y` with it) on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), `--crewlet-bar-list-label-width` (128px) and `--crewlet-bar-list-value-room` (`6ch` and a gap) for the words' column and the value's room in a `BarList layout="beside"`, and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
 
 The component stylesheets read only variables that `@crewlethq/tokens` emits or
 that the components declare themselves, and the same check refuses a glyph
@@ -203,6 +203,70 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in the next release
+
+**A presentation's pieces are finished for the page, full screen and a phone.**
+
+- **`SlideStage` takes `framed`**, the slide's own hairline edge on a small radius, so a slide whose ground is the page's colour still reads as a slide. Grid cards, the comparison's sides and the presenter's slides use it. In full screen a `contain` or `view` stage letterboxes on `--color-projection-letterbox`, black in every theme.
+- **`SlideNav` is new**: Previous, the position and Next, off at the ends with the reason on the control, and a slot for the show's own controls after a rule. `tone="projection"` floats it over a slide shown full screen, in the projection's fixed colours (`--color-projection-ground`, `-ink`, `-hover`, `-rule`, new in `@crewlethq/tokens`).
+- **`useIdle(ref, enabled)` is new**: whether the pointer has rested over an element, for a full screen show to put its controls and cursor away. A move, a press or focus wakes it; a key (a clicker) does not.
+- **`PresenterView` shows the room's slide whole on a phone**, where it used to collapse to nothing, and as large as fits beside the side column elsewhere, drawn as the slide rather than letterboxed in a well. Its controls are `SlideNav`; the room's slide, the next one and the notes carry visible captions; the end of the deck holds the next slide's shape so nothing moves on the last slide.
+- **`SlideFilmstrip` keeps the slide on the stage in view**, scrolling only itself, and takes `orientation="horizontal"` for a row under the stage on a phone (Left and Right step it). The strip is its own scroller now: a host bounds its height and no longer sets `overflow`.
+- **`SlideGrid` lays a phone out two to a row.**
+- **`SlideCompare` names its columns** by version over the first row (over each side once they stack), and the side a version lacks reads "Not in this version". Two identical versions draw no empty list.
+
+What to change:
+
+- `SlideCompareLabels.missing` is a string now, not a function of the version.
+- A host that drew a show's Previous, count and Next itself uses `SlideNav`.
+
+
+**Every chart says when it has nothing to draw.** `TimeSeries`, `StackedColumns`, `StackedBar` and `ActivityStrip` take `emptyLabel`, as `BarList` did, and draw that one sentence in the chart's place (`.crewlet-chart-empty`) rather than an empty grid, a scale of 0 to 4, a bare track or a window starting at the epoch.
+
+**`BarList` draws every bar in the first data hue.** A ranked list is one series; a hue per rank gave five rows five identities and painted the tail as the residual. A row's `color` still overrides it.
+
+**`TimeSeries` draws below zero, a single point, and its own legend.** The scale runs from zero to the peak, and below zero when a value is, with the baseline on zero, an area filled to it, and "low" beside "peak" under the plot. A series of one point draws its point, a window of one instant draws it at the middle, and the reading draws every series' point on the crosshair. Two series or more are lines with no wash, keyed by a legend of line keys the chart draws itself (`legend`, `below` by default, or `none`). The grid is a solid hairline. Under 18rem the range leaves the line to the window's ends.
+
+**`StackedColumns` stands on zero.** A negative part hangs from the zero line, zero is always one of the scale's lines, and the tooltip reads values with their sign. `formatScale` writes the scale's words apart from the tooltip's. A chart of one series draws no legend, since its label names it. The scale's words are the sans at the caption step, as the dates are; a column is at most 24px wide; the middle date leaves a chart narrower than 22rem.
+
+**`ActivityStrip` takes `reading`,** which makes the strip one tab stop whose cells read their time and value by pointer or by ←/→. A cell is at most 24px wide, so a strip of one day is one mark.
+
+**`Legend` items take `shape: 'line'`** for a series drawn as a line.
+
+**`StatCard` takes `hideLabel`**, as `Meter` does, for a tile its container names. In a `WidgetFrame` a tile reserves no empty second line, and in a frame narrower than 11rem its number steps down to `--font-size-xl` rather than being cut.
+
+**A flush `WidgetFrame` insets only its table's outer cells.** The first and last columns stand on the frame's 16px; between columns a cell keeps the compact table's own inset.
+
+**`Note` spaces its paragraphs** a step apart, whatever the host's base sheet resets.
+
+What to change for charts:
+
+- Nothing for an existing host. A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
+
+**A design's canvas lays its grid on the boards' plane.** `Canvas` takes `ground="grid"`: the dotted ground's dots, panned with the content and pitched by the zoom (doubling or halving to stay between one and two spacing steps on screen), as a design tool's grid is. `gridOf(view)` is that rule on its own. `CanvasBoard` draws on it; `dotted` is unchanged and still stays put under a chart.
+
+**A board says only what it has room for.** A board drawn narrower than `BOARD_TITLE_MIN_WIDTH` (40px) goes unnamed until it is zoomed into, and a placeholder drops its lines in turn (why it is not running, then its size) rather than clipping them at both ends over the boards beside it; `boardRoom(width, height)` is that rule. A placeholder no longer repeats the board's name, which the title above it already says. A board's title row is one line of type tall, so a row of boards zoomed out loses less to the names above it.
+
+**A compact `DataTable` takes `--crewlet-data-table-row-height`**, its row's height (`--size-row-md` by default), so a host whose list keeps another rhythm sets it rather than reaching past the table into its cells.
+
+**More boards run as thumbnails.** `CANVAS_BOARD_MIN_LIVE_WIDTH` is 96px (was 160), so a design fitted on a phone or zoomed out over a dozen boards draws its pages rather than a grey box each; `CANVAS_BOARD_MAX_LIVE` still caps how many run.
+
+**The chrome is drawn over the content.** A board's name and open control, a note's tools and the resize corners sit above every board and note. Far out, a note laid out after a board covered the board's name and took its presses.
+
+**The open control and a note's tools are the item's.** Where a pointer can hover they show on the board or note under it, the selected one and the one holding focus; a touch screen always shows them.
+
+**A board name that is a move handle keeps the name's type and place.** In edit mode the title was set at the page's size (the handle's `font: inherit` won) and moved off the board's edge by the handle's padding.
+
+**The palette is the zoom bar's height, and moves on a narrow canvas.** `CanvasToolbar`'s tools are the small control step (26px), the toolbar and panel step every canvas control takes, where they were 30px and stood taller than the zoom bar beside them. On a canvas narrower than 36rem the palette sits in the top left corner instead of over the zoom bar.
+
+**A canvas's hint no longer moves its zoom bar.** In a bottom corner the status note ("Double-click to use this board") is drawn above the bar, so the bar stays under a pointer on its way to it.
+
+**A caller can hold a board canvas's selection.** `selected` and `onSelectedChange` (with `CanvasBoardSelection`) let a list of boards beside the canvas mark the board picked on it, and pick one there.
+
+- `SlideCompareLabels.missing` is a string now, not a function of the version.
+- A host that drew a show's Previous, count and Next itself uses `SlideNav`.
+- A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
 
 ## Changes in 0.32.0
 
@@ -261,7 +325,7 @@ What to change: nothing. An application that renders Markdown itself may read it
 
 **`ArtifactVersionChip`** is the version on show as a quiet chip beside the title that opens a menu of versions (`items`, so the host decides which and what else the menu offers). An older version than `latest` reads `v2 of 3` in the accent, so history never passes for the present.
 
-**`ArtifactPanel`** is a panel at the artifact's side: a complementary region named by its heading, a head with its title, optional `actions`, an expand toggle where `onExpandedChange` is given, and Close, then a body that scrolls under the head. Opening moves focus to the heading unless `focusOnOpen` is false (a panel a link opened); closing with focus inside hands focus back to whatever held it before; Escape from anywhere inside closes it, unless something inside answered the press first. Its body starts headings at level 3, so a `Section` inside it nests under the panel's title. Sizes `sm`, `md` and `lg` rest at 20, 25 and 36rem.
+**`ArtifactPanel`** is a panel at the artifact's side: a complementary region named by its heading, a head with its title, optional `actions`, an expand toggle where `onExpandedChange` is given, and Close, then a body that scrolls under the head. Opening moves focus to the heading unless `focusOnOpen` is false (a panel a link opened); closing with focus inside hands focus back to whatever held it before; Escape from anywhere inside closes it, unless something inside answered the press first. Its body starts headings at level 3, so a `Section` inside it nests under the panel's title. Two sizes: `md`, at 22.5rem, for every panel of text (facts, a list, a form), so moving between them never moves the artifact's edge, and `lg`, at 36rem, for a table.
 
 **`ArtifactWorkspace`** lays the artifact's body and its one panel side by side: the panel is a column where the workspace holds two useful columns (960px), slides over the body's end edge under that, and is the whole screen under 640px. `expanded` gives the panel the whole workspace, with the body kept mounted behind it. The body scrolls itself; `bodyRef`, `bodyClassName` and `bodyLabel` are for the host's own listeners, styles and region name.
 
@@ -339,13 +403,15 @@ Slides:
 
 **`useSlideKeys`** answers the keys every presentation and every clicker sends: forward on Right, Down, Page Down, Space and Enter, back on Left, Up, Page Up and Backspace, Home and End to the ends, Escape out. It listens at the document while `enabled`, and leaves alone a field the reader is typing in, a composition, a key a nearer surface handled, and modified keys.
 
-**`SlideFilmstrip`** is the column of thumbnails beside a deck's stage: the slide on the stage marked `aria-current`, one tab stop whose arrow keys move to the next slide, and, with `onReorder`, a handle per slide that moves it by drag or by its arrow keys and announces where it landed. A hidden slide is dimmed and says so.
+**`SlideFilmstrip`** is the column of thumbnails beside a deck's stage (a row under it with `orientation="horizontal"`), scrolled by itself to keep the slide on the stage in view: the slide on the stage marked `aria-current`, one tab stop whose arrow keys move to the next slide, and, with `onReorder`, a handle per slide that moves it by drag or by its arrow keys and announces where it landed. A hidden slide is dimmed and says so.
 
 **`SlideGrid`** lays every slide out by the outline's sections, numbered across the deck, each a button that opens its slide.
 
 **`SlideCompare`** compares two versions of a deck slide by slide: each slide's older and newer drawings side by side, paired by its id, a slide one version lacks drawn as an empty side naming that version, and every change said in words beside a glyph (Changed, Added, Removed, Moved from 6 to 7), the list opening with the count of each. Unchanged slides fold away behind one control.
 
 **`VersionCompare`** takes `versions`, a comparison the host draws in the versions lens in place of the two panes, for content compared item by item (a deck's slides, which two independent panes could not line up).
+
+**`SlideNav`** is Previous, the position and Next, off at the ends with the reason on the control, on the page or (`tone="projection"`) floating over a slide shown full screen.
 
 **`PresenterView`** is the presenter's own screen: the slide the room sees, the next one, the speaker notes large and on their own scroll, a timer that pauses, resumes and resets (`formatStopwatch` reads it as m:ss), and controls that stop at the ends of the deck.
 

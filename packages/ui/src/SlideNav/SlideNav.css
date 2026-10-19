@@ -1,0 +1,53 @@
+/*
+ * SlideNav: Previous, the position and Next, and whatever follows them.
+ */
+
+.crewlet-slide-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-slide-nav__position {
+  min-width: 5em;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.crewlet-slide-nav__more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-left: var(--spacing-2);
+  padding-left: var(--spacing-3);
+  border-left: 1px solid var(--color-border-default);
+}
+
+/* OVER A PROJECTED SLIDE: a pill in the projection's own fixed colours, so it
+   reads over black bars and over a slide of any colour, in every theme. */
+.crewlet-slide-nav--projection {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-projection-ground);
+  color: var(--color-projection-ink);
+}
+
+.crewlet-slide-nav--projection .crewlet-slide-nav__position {
+  color: inherit;
+}
+
+.crewlet-slide-nav--projection .crewlet-slide-nav__more {
+  border-left-color: var(--color-projection-rule);
+}
+
+.crewlet-slide-nav--projection .crewlet-icon-btn--ghost {
+  color: inherit;
+}
+
+.crewlet-slide-nav--projection .crewlet-icon-btn--ghost:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-projection-hover);
+  color: inherit;
+}
