@@ -227,7 +227,7 @@ export function StackedColumns({
    */
   if (buckets.length === 0) {
     return (
-      <ChartEmpty height={height === 'fill' ? minHeight : height} className={cx('crewlet-stacked-columns', className)}>
+      <ChartEmpty height={height === 'fill' ? minHeight : height} className={className}>
         {emptyLabel}
       </ChartEmpty>
     );

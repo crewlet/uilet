@@ -157,7 +157,7 @@ export function TimeSeries({
    */
   if (instants.length === 0) {
     return (
-      <ChartEmpty height={height} className={cx('crewlet-time-series', className)}>
+      <ChartEmpty height={height} className={className}>
         {emptyLabel}
       </ChartEmpty>
     );
