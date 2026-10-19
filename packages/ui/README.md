@@ -203,6 +203,18 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.22.0
+
+**`Menu` takes `width`** (`'content'`, the default, or `'trigger'`). `'trigger'` keeps the panel no narrower than its trigger, so a trigger that spans a column opens a menu that covers it edge to edge, and still lets it grow past the trigger when a row needs the room.
+
+**`Menu` takes `trailingIcon`**, a glyph after a text trigger's words, such as a picker's chevron. It is drawn as the button's trailing icon, a gap away from the words, where a glyph written into `trigger` sat flush against them.
+
+**`Menu` reads more easily.** A header's name and value share one line (`Access … Admin`), and a row's description is one type step under its label rather than two.
+
+**`AppShell.AccountRow`'s menu covers the row.** Pressing who you are opens a menu at least as wide as the row itself.
+
+What to change: nothing.
+
 ## Changes in 0.21.0
 
 **`AppShell.AccountRow` takes `menu`** (`AccountRowMenu`: `label`, `header`, `items`): pressing who you are opens the reader's own menu instead of linking anywhere, which is where a reader looks for their account and for signing out. The row becomes the menu button, ending in the up-and-down chevron a menu's trigger draws, keeps the account page's current-row lift (`data-current`), and the menu's header holds the facts the row does not already say, such as the reader's access. Given, `menu` takes the place of `href`.
