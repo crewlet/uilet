@@ -1094,7 +1094,7 @@ describe('a chart that fills the height it is given', () => {
     uninstall = installSheets('Charts/Charts.css');
     const figure = container.querySelector<HTMLElement>('figure')!;
     expect(plots(container)).toEqual(['11.5rem', '11.5rem']);
-    expect(figure.className).toBe('crewlet-stacked-columns');
+    expect(figure.className).toBe('crewlet-stacked-columns crewlet-stacked-columns--headless');
     expect(figure.getAttribute('style')).toBeNull();
     expect(getComputedStyle(figure).flexGrow).not.toBe('1');
 
@@ -1235,4 +1235,28 @@ test('the charts carry no violation with the plot focused and a reading open', a
     expect(container.querySelector('.crewlet-chart-tooltip')).not.toBeNull();
     expect(result.violations.map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.html).join(', ')}`)).toEqual([]);
   }
+});
+
+describe('StackedColumns keeps its top value inside the figure', () => {
+  /*
+   * The top tick is centred on the plot's top edge, so half its line stands
+   * above the plot. With no head row to fall in, that half was outside the
+   * figure, and a container that clips (a dashboard widget's body) cut the
+   * axis's highest value in half.
+   */
+  test('a chart with no head reserves the half line above its plot', () => {
+    const { container } = render(columns({ legend: 'below' }));
+    const figure = container.querySelector('.crewlet-stacked-columns');
+    expect(figure?.classList.contains('crewlet-stacked-columns--headless')).toBe(true);
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Charts.css'), 'utf8');
+    const rule = /\.crewlet-stacked-columns--headless\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/padding-block-start:\s*calc\(var\(--font-size-2xs\)\s*\*\s*var\(--font-line-height-tight\)\s*\/\s*2\)/);
+    const tick = /\.crewlet-stacked-columns__tick\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(tick).toMatch(/line-height:\s*var\(--font-line-height-tight\)/);
+  });
+
+  test('a chart with a head row needs no room of its own', () => {
+    const { container } = render(columns({ legend: 'head' }));
+    expect(container.querySelector('.crewlet-stacked-columns--headless')).toBeNull();
+  });
 });
