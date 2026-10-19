@@ -55,7 +55,6 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen`, `useIdle`, `useMediaMatch` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
 | Artifacts | `SandboxedFrame` (with `SandboxedFramePlaceholder` and `SandboxedFrameNotice`), `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard`, `ArtifactKindGlyph` and `ArtifactPreviewGlyph` (the preview a card draws with no cover, for a cover with nothing to draw), `ArtifactBar` and `ArtifactVersionChip` (an open artifact's one slim bar), `ArtifactPanel` and `ArtifactWorkspace` (the panels it opens beside or over the artifact), `CanvasBoard` (a design's artboards and notes on a `Canvas`, with the visibility budget `liveBoards`), `CanvasToolbar` (a canvas's tool palette, with `toolForKey`), `LayersList` (the list of a canvas's items beside it, marked by the canvas's selection), `CanvasSchematic` (a design's cover, drawn from its boards' frames), `AccessDeniedCard`, `ArtifactIcon` (with `artifactIconGlyph` and `ARTIFACT_ICON_WORDS`), the native gallery covers (`DocCover`, `SheetCover`, `DashboardCover`), `MergeConflicts`, the dashboard pieces (`WidgetFrame`, `DatasetSource` and `DatasetSourceList`), and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
-
 | Sheets | `SheetGrid`, the cells on their own (`CheckboxCell`, `TextCell`, `LongTextCell`, `NumberCell`, `SelectCell`, `MultiSelectCell`, `PersonCell`, `StatusCell`, `DateCell`, `UrlCell`, `RatingCell`, and `SheetCell` for any type), `ChangeMark`, and `SheetModel` (every rule a sheet is drawn from, with no React in it: values, parsing, the keyboard model, TSV, the pending edits of D23) |
 | Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, `PeopleRail` (with `peopleRailKey`), and `PresenceModel` (the roster order, one entry per person, the session hues from `PRESENCE_HUES`, with no React in it) |
 | Presentations | `SlideStage` (a slide laid out at 1920 by 1080 and scaled to its box, with `SLIDE_WIDTH` and `SLIDE_HEIGHT`), `useSlideKeys` (the keys a show and a clicker send), `SlideNav` (Previous, the position and Next, with `SLIDE_NAV_LABELS`), `SlideFilmstrip`, `SlideGrid`, `SlideCompare` (with `SLIDE_COMPARE_LABELS`), `PresenterView` (with `formatStopwatch`) |
@@ -205,9 +204,35 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in the next release
+## Changes in 0.33.0
 
-**`LayersList` is new: a canvas's list of items beside it, as a design tool's layers are.** The caller holds the selection and hands it to the list and the canvas both; the picked entry takes the accent edge every current row takes, held on every entry so nothing moves when the pick does. It is one tab stop, walked with the arrows, Home and End without picking; Space or a click picks (`onSelect`) and Enter or a double-click opens (`onOpen`), which an entry's name then says. Names are cut to one line with the whole name as the tip, the entries hang into the gutter so their letters stand on the list's edge, and the list scrolls on its own under an optional `heading` (its count) that stays. The engine dashboard's design view drew this list itself; it now uses this one.
+**`ArtifactPanel` rests every panel of text at one width, and its `sm` size is removed.** Details at `sm` and History at `md` moved the artifact's edge by 80px between two panels of text. There are two sizes now: `md`, at 22.5rem, for every panel of text (facts, a list, a form), so moving between them never moves the artifact's edge, and `lg`, at 36rem, for a table. Where there is no room for two columns, a panel that slides over the artifact takes the drawer's lift, the one the shell's rail drawer wears, so its start edge reads as a sheet over the artifact rather than a cut through it. The body publishes its padding as `--crewlet-artifact-panel-inset`, which a sticky foot offsets itself by to sit on the panel's edge, and it is a flex column, so a child that sets `min-height: 0` can fit the panel rather than scroll it. A `Section` inside it heads at the panel's register: its title reads `--crewlet-section-title-size`, which the panel's body sets to the small step, and its sentence stacks under the title (the actions kept on the title's line) when the column it sits in is narrow.
+
+**`ArtifactBar` stands at the shell top bar's height and inset.** It is `--size-shell-topbar` tall, hairline included, where it was 49px against the top bar's 52, so the line under it no longer jumps when a reader opens an artifact from the gallery, and on a phone its first control keeps the shell's inset. Below 900px of bar, "Editing · Unsaved changes" folds to its dot, which turns the accent once anything is unsaved and stays in the status for a screen reader, before the title is cut; "Editing" still folds below 640px. The rename hint is a hidden element the title's description is read from, no longer a stray "Rename" in the reading order, and `ArtifactVersionChip` takes a control's corner (`--radius-md`), as the bar's other controls of its height do.
+
+**`Callout` centres a one-line message on its action, and moves a narrow callout's action under its text.** The content is padded by half of what the small control is taller than a line, so one line centres on the button and a longer message keeps its icon on its first line. A callout with an action measures its own width: under 28rem the action takes a row of its own at the start of the text's column, and wider it stays beside the text.
+
+**`ShareDialog` lists a share that reaches nobody, and gives its sections room.** A stored share whose row carries `invalid` (the reason in words) is listed rather than hidden: it reads `labels.noAccess` in place of a role, says why in the warning ink, and offers Remove as its one action. Each section carries one step more above its heading, so "Who has access" no longer reads as the add field's label.
+
+**A `Modal` head with a subtitle keeps its controls on the title's line.** The head carries `crewlet-modal__header--subtitled`, aligns to the top, and centres the mark, the actions and the back and close controls on the title's first line. A sheet's head is a bar and keeps its centring. A `CommandPalette`'s foot has no actions, so its legend spans the foot and a consumer can end it with what the search is doing at the far edge.
+
+**A toast's countdown fades at its leading edge.** Cut square, the draining wash read as a strip painted in two tones whenever it stood still, in a still frame or paused under the pointer; it now reads as a tint running out, in both themes.
+
+**`AccessDeniedCard` draws as an artifact's other blocked state**: on the page, in no box, at a reading width, with the default empty state's 24px glyph, as a trashed artifact does. It was a bordered card with a 32px glyph.
+
+**`ArtifactCard` reads its facts as one run, and its change time first.** A line's facts are one run, each after the first opened by a quiet dot ("Sheet · OPS · v12"), and the change reads time first and changer after (`labels.by`, "Updated 4m ago by Maya"); leave `owner` out where the reader owns it, and `updatedBy` where it is the owner already named, whose change then reads "Updated 4m ago" beside their name. The title, cut to one line, is offered whole on hover, and a compact card is a row in every bundle, where `Card`'s column layout used to win. The `html` kind's default label is "HTML", not "Page", which is Knowledge's word; the kind id is unchanged.
+
+**`DashboardCover` draws its figures as rows**, so each label has the card's width; three side by side cut every label to its first word. **`ArtifactPreviewGlyph`** is the preview a card draws with no cover, for a host whose cover has nothing to draw yet or at all: a cover element that rendered nothing left an empty box, since the card cannot tell it from a picture.
+
+**`AppShell` and `Container` keep the top bar's 16px gutter on a phone.** Under the shell step the content's side padding dropped to 12px, and `Container`'s did under 480px, so a page's first line stood 4px left of the title and the controls over it. Both are 16px now, the shell's phone gutter and the top bar's own inset.
+
+**`DocumentTitleField` is new: the field a new page's title is written in**, set as `DocumentTitle` sets the title once the page exists: no box, the title's own type, and a line at its foot that answers the pointer, focus (in the ring's colour) and a refusal (`aria-invalid`). Its name is the caller's.
+
+**A `Document`'s heading levels each take their own step, and quotes keep the body's rhythm.** A body is drawn from h2 down, so a page's fourth and fifth levels land on h5 and h6, which were both set at h4's 16px; h5 now takes the body's step and h6 the same step in the secondary ink. A quote and a callout body keep the body's gap between paragraphs, and a list item (task items included) the smaller step, so its paragraphs still read as one item.
+
+**`DocTabsEditor` is a list with row menus and rename in place.** A tab is a row in the outline's register: its title opens it, the open row is filled, and the handle and an actions menu (Rename, Move up, Move down, Remove) show under the pointer, on focus and on the open row. Rename (or a double press) turns the title into its field in place, where Enter or leaving keeps it and Escape puts the old title back. Add, at the list's heading, opens a field under the open tab and reports the title on Enter, so a new tab is never named after a placeholder. Titles wrap rather than being cut. Six tabs used to read as thirty controls around truncated title fields.
+
+**A link's label can hold a picture.** The Markdown grammar reads a whole picture before the label's own brackets, so a badge that links somewhere (`[![build](badge.svg)](ci)`) draws the picture inside the link, where it was a link labelled `![build` followed by the raw text `](ci)`, and `RichEditor` writes it back as written.
 
 **A presentation's pieces are finished for the page, full screen and a phone.**
 
@@ -215,26 +240,11 @@ places:
 - **`SlideNav` is new**: Previous, the position and Next at the small control step, off at the ends with the reason on the control, and a slot for the show's own controls after a rule. `tone="projection"` floats it over a slide shown full screen, in the projection's fixed colours (`--color-projection-ground`, `-ink`, `-hover`, `-rule`, new in `@crewlethq/tokens`).
 - **`useIdle(ref, enabled)` is new**: whether the pointer has rested over an element, for a full screen show to put its controls and cursor away. A move, a press or focus wakes it; a key (a clicker) does not.
 - **`PresenterView` shows the room's slide whole on a phone**, where it used to collapse to nothing, and as large as fits beside the side column elsewhere, drawn as the slide rather than letterboxed in a well. Its controls are `SlideNav`; the room's slide, the next one and the notes carry visible captions; the end of the deck holds the next slide's shape so nothing moves on the last slide.
-- **`SlideFilmstrip` keeps the slide on the stage in view**, its reorder handle takes a control's corner (`--radius-md`), scrolling only itself, and takes `orientation="horizontal"` for a row under the stage on a phone (Left and Right step it). The strip is its own scroller now: a host bounds its height and no longer sets `overflow`.
+- **`SlideFilmstrip` keeps the slide on the stage in view**, scrolling only itself, and takes `orientation="horizontal"` for a row under the stage on a phone (Left and Right step it). Its reorder handle takes a control's corner (`--radius-md`). The strip is its own scroller now: a host bounds its height and no longer sets `overflow`.
 - **`SlideGrid` lays a phone out two to a row.**
 - **`SlideCompare` names its columns** by version over the first row (over each side once they stack), and the side a version lacks reads "Not in this version". Two identical versions draw no empty list.
 
-**`useMediaMatch(query)` is exported**: whether a media query matches, read during render (`useSyncExternalStore`) so the first render already has the answer, and again on every change; `false` where there is no `matchMedia`. It is the package's own copy, the one the shell and the switcher read, so an application's "is this a phone" can no longer disagree with the kit's. Keep it for the decision a stylesheet cannot make (which element to draw); a width a media query in CSS can decide belongs there.
-
-**An end-aligned `Popover`, `Menu` or `Select` opens near the left edge.** Each asked whether its anchor had left the layer using the aligned panel's start instead of the anchor, so a panel wider than its trigger's right edge (a toolbar's last control wrapped to the left of a phone) closed on the frame it opened. They now ask of the anchor itself (`anchorGone`, from the layer's placement helpers, which `Tooltip` uses too), and the placement clamps the panel inside the window.
-
-
-What to change:
-
-- `SlideCompareLabels.missing` is a string now, not a function of the version.
-- An application that start-aligned its panels on a phone to dodge the close above can align them as it wants again.
-- An application with its own media query hook can use `useMediaMatch` instead.
-- A host that drew a show's Previous, count and Next itself uses `SlideNav`.
-
-
-- A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
-
-**Every chart says when it has nothing to draw.** `TimeSeries`, `StackedColumns`, `StackedBar` and `ActivityStrip` take `emptyLabel`, as `BarList` did, and draw that one sentence in the chart's place (`.crewlet-chart-empty`) rather than an empty grid, a scale of 0 to 4, a bare track or a window starting at the epoch.
+**Every chart says when it has nothing to draw.** `TimeSeries`, `StackedColumns`, `StackedBar` and `ActivityStrip` take `emptyLabel`, as `BarList` did, and draw that one sentence in the chart's place (`.crewlet-chart-empty`) rather than an empty grid, a scale of 0 to 4, a bare track or a window starting at the epoch. The sentence stands in the middle of the plot, at the plot's height. `ChartEmpty` is exported for a host drawing a figure's empty state itself; it takes `height` and `align` (`start` for a list, which `BarList` uses).
 
 **`BarList` draws every bar in the first data hue.** A ranked list is one series; a hue per rank gave five rows five identities and painted the tail as the residual. A row's `color` still overrides it.
 
@@ -244,30 +254,35 @@ What to change:
 
 **`ActivityStrip` takes `reading`,** which makes the strip one tab stop whose cells read their time and value by pointer or by ←/→. A cell is at most 24px wide, so a strip of one day is one mark.
 
-**`Legend` items take `shape: 'line'`** for a series drawn as a line.
+**`Legend` items take `shape: 'line'`** for a series drawn as a line. A chart's tooltip ends a long series name in an ellipsis before its value, which is never cut; the name used to run under the number.
 
-**`StatCard` takes `hideLabel`**, as `Meter` does, for a tile its container names. In a `WidgetFrame` a tile reserves no empty second line, and in a frame narrower than 11rem its number steps down to `--font-size-xl` rather than being cut.
+**`StatCard` takes `hideLabel` and `trendPlacement`, and moves a figure before it cuts the number.** `hideLabel`, as `Meter` does, is for a tile its container names. In a tile too narrow for both, the trend figure moves under the number rather than the number being cut, and a `unit` too long to share the number's line moves under it whole; only a number too long for the tile alone ends in an ellipsis. `trendPlacement="below"` stands the figure under the number at the tile's width instead, for a quota whose bar is the reading, so a row of them keeps one shape at every width. In a `WidgetFrame` a tile reserves no empty second line, and in a frame narrower than 11rem its number steps down to `--font-size-xl` rather than being cut.
 
-**A flush `WidgetFrame` insets only its table's outer cells.** The first and last columns stand on the frame's 16px; between columns a cell keeps the compact table's own inset.
-
-**`Note` spaces its paragraphs** a step apart, whatever the host's base sheet resets.
-
-What to change for charts:
-
-**A chart's empty sentence stands in the middle of its plot, at the plot's height.** `ChartEmpty` is exported for a host drawing a figure's empty state itself; it takes `height` and `align` (`start` for a list, which `BarList` uses).
+**`WidgetFrame` takes `holdTitle`, and a flush frame insets only its table's outer cells.** `holdTitle` keeps the title's two lines so the numbers of a row of frames start on one line. A narrow frame's stacked citation takes a second line before it ends, and the source's whole title is its tooltip. In a flush frame the first and last columns of a table stand on the frame's 16px; between columns a cell keeps the compact table's own inset.
 
 **`ArrangeGroup` takes `variant="section"`**: a quiet header on the page's ground (the name at a card title's step, its count, the chevron) over a hairline in the hue, and the blocks on the page's grid with no inset, for a page being read rather than arranged. `band`, the default, is unchanged.
 
-**`WidgetFrame` takes `holdTitle`**, which keeps the title's two lines so the numbers of a row of frames start on one line. A narrow frame's stacked citation takes a second line before it ends, and the source's whole title is its tooltip.
+**`Note` spaces its paragraphs** a step apart, whatever the host's base sheet resets.
 
-**A compact `DataTable` takes `--crewlet-data-table-row-height`**, its row's height (`--size-row-md` by default), so a host whose list keeps another rhythm sets it rather than reaching past the table into its cells.
+**`SheetGrid` sizes a column to its header and values.** A column that declares no width is as wide as the widest of its header and a few of its values (every live choice for a choice column, the longest values otherwise), drawn by the real header and cells in a hidden, inert row and measured, within bounds its type sets; `fitSamples`, `fittedWidth`, `SHEET_FIT_SAMPLES` and `SHEET_COLUMN_BOUNDS` in `SheetModel` are that rule. Samples are taken when the columns change and when the first rows arrive, never on an edit, and measured again once the face loads. The frozen columns hold at most 60% of the visible width, so a long title column never fills a phone. On the compact step, values are 13px under 12px sentence-case headers.
+
+**A `fit="content"` `SheetGrid` gives way in a bounded column.** Its scroller shrinks to the room its column leaves, down to the page's `--crewlet-sheet-min-height` and never below its own rows' height, which it publishes as `--crewlet-sheet-content-height`, so a page no longer subtracts a guess of everything above and below it to compute a `max-height`.
+
+**`SheetGrid`'s headers sit on their column's edge, and a sheet that has just opened is quiet.** Number and rating names end where their values end (the sort mark on the inner side), checkbox names centre, and each header carries its whole name as its title. The active cell's history control is a 24px target at the control radius with room of its own, so a value ends in an ellipsis before it, and it sits on the leading edge of a number or rating, so neither moves when its cell turns active. That control, the active row's actions and a single selected cell's tint show while the reader is in the grid (or hovering), not on every sheet as it opens; a range of cells stays tinted. Once scrolled sideways, the frozen edge ends on the strong hairline.
+
+**A compact `DataTable` takes `--crewlet-data-table-row-height`**, its row's height (`--size-row-md` by default; rebind `--crewlet-data-table-cell-pad-y` with it), so a host whose list keeps another rhythm sets it rather than reaching past the table into its cells.
+
+**Pill `Tabs` stand at the 28px tab step.** Tabs sit between the 26px controls of a toolbar or panel and the 32px actions of a page, so a row of them reads as navigation rather than as one more button: the well's inset is 1px round a 24px chip (the row was 30px), and the chip takes `--radius-chip`.
+
+**The compact `Checkbox` centres its line in a form row.** One line is exactly the row's height, on the line the small inputs and selects beside it hold, and a longer label grows downwards with the box still on its first line.
+
+**`LayersList` is new: a canvas's list of items beside it, as a design tool's layers are.** The caller holds the selection and hands it to the list and the canvas both; the picked entry takes the accent edge every current row takes, held on every entry so nothing moves when the pick does. It is one tab stop, walked with the arrows, Home and End without picking; Space or a click picks (`onSelect`) and Enter or a double-click opens (`onOpen`), which an entry's name then says. Names are cut to one line with the whole name as the tip, the entries hang into the gutter so their letters stand on the list's edge, and the list scrolls on its own under an optional `heading` (its count) that stays. The engine dashboard's design view drew this list itself; it now uses this one.
+
+**A caller can hold a board canvas's selection.** `selected` and `onSelectedChange` (with `CanvasBoardSelection`) let a list of boards beside the canvas mark the board picked on it, and pick one there.
 
 **A design's canvas lays its grid on the boards' plane.** `Canvas` takes `ground="grid"`: the dotted ground's dots, panned with the content and pitched by the zoom (doubling or halving to stay between one and two spacing steps on screen), as a design tool's grid is. `gridOf(view)` is that rule on its own. `CanvasBoard` draws on it; `dotted` is unchanged and still stays put under a chart.
 
-**A board says only what it has room for.** A board drawn narrower than `BOARD_TITLE_MIN_WIDTH` (40px) goes unnamed until it is zoomed into, and a placeholder drops its lines in turn (why it is not running, then its size) rather than clipping them at both ends over the boards beside it; `boardRoom(width, height)` is that rule. A placeholder no longer repeats the board's name, which the title above it already says. A board's title row is one line of type tall, so a row of boards zoomed out loses less to the names above it.
-
-**A compact `DataTable` takes `--crewlet-data-table-row-height`**, its row's height (`--size-row-md` by default), so a host whose list keeps another rhythm sets it rather than reaching past the table into its cells.
-
+**A board says only what it has room for.** A board drawn narrower than `BOARD_TITLE_MIN_WIDTH` (40px) goes unnamed until it is zoomed into, and a placeholder drops its lines in turn (why it is not running, then its size) rather than clipping them at both ends over the boards beside it; `boardRoom(width, height)` is that rule. A placeholder no longer repeats the board's name, which the title above it already says. A board's title row is one line of type tall, so a row of boards zoomed out loses less to the names above it, and a hidden open control leaves the row, so a narrow board's name has the width it held.
 
 **More boards run as thumbnails.** `CANVAS_BOARD_MIN_LIVE_WIDTH` is 96px (was 160), so a design fitted on a phone or zoomed out over a dozen boards draws its pages rather than a grey box each; `CANVAS_BOARD_MAX_LIVE` still caps how many run.
 
@@ -275,18 +290,39 @@ What to change for charts:
 
 **The open control and a note's tools are the item's.** Where a pointer can hover they show on the board or note under it, the selected one and the one holding focus; a touch screen always shows them.
 
-**A board name that is a move handle keeps the name's type and place.** In edit mode the title was set at the page's size (the handle's `font: inherit` won) and moved off the board's edge by the handle's padding.
+**A board name that is a move handle keeps the name's type and place.** In edit mode the title was set at the page's size (the handle's `font: inherit` won) and moved off the board's edge by the handle's padding. The handle takes the control radius.
 
-**The palette is the zoom bar's height, and moves on a narrow canvas.** `CanvasToolbar`'s tools are the small control step (26px), the toolbar and panel step every canvas control takes, where they were 30px and stood taller than the zoom bar beside them. On a canvas narrower than 36rem the palette sits in the top left corner instead of over the zoom bar.
+**The palette is the zoom bar's height, and moves on a narrow canvas.** `CanvasToolbar`'s tools are the small control step (26px), the toolbar and panel step every canvas control takes, with the zoom bar's shadow, where they were 30px and stood taller than the zoom bar beside them. On a canvas narrower than 36rem the palette sits in the top left corner instead of over the zoom bar.
 
 **A canvas's hint no longer moves its zoom bar.** In a bottom corner the status note ("Double-click to use this board") is drawn above the bar, so the bar stays under a pointer on its way to it.
 
-**A caller can hold a board canvas's selection.** `selected` and `onSelectedChange` (with `CanvasBoardSelection`) let a list of boards beside the canvas mark the board picked on it, and pick one there.
+**`SandboxedFramePlaceholder` and `SandboxedFrameNotice` are new: the frame's own states for a host with no frame to mount yet.** The placeholder draws while the frame's ticket is minted and the notice when the engine refused one, in the same box the frame takes, so the reader meets one loading state and one way of saying a page is not here; a host that drew its own placeholder showed a second, differently shaped one that jumped when the frame took over. The frame's loading and end states share one inset (the skeleton no longer opens with an empty band or runs past the frame's bottom edge), an end state's action sits under its message, and its title drops its closing full stop, as every other callout title does. `Skeleton`'s `borderRadius` takes any CSS length, such as a radius token.
 
+**`SandboxedFrame` says a page that loaded without a hello failed within a beat.** The runtime says hello as the page's first script runs, long before the load event, so a load with no hello ends the frame `FRAME_LOAD_GRACE_MS` (1.5s) after it; a document that never loads keeps `FRAME_HELLO_TIMEOUT_MS`. An expired ticket, a missing page and a starting node, which the artifact origin answers with an empty refusal, used to hold the placeholder for the full ten seconds. When a page hands focus back, the frame's region draws its ring inside its edge, on a layer above the frame, so a frame filling a clipping card keeps it, and forced colours mode keeps it too.
+
+**`@crewlethq/artifact-kit` draws a sheet once the runtime's handshake is done.** `whenRuntime` and `mountSheet` wait for `crewlet.ready`, so a sheet no longer reads a page that declared `db` as one that did not; on a phone every sheet of a page lost that race. A url cell's link opens through the runtime's new `openLink`, since a frame cannot open a window, a sheet the reader cannot edit draws no sync strip, and the refusals name the collection in quotes rather than telling a reader about a capability. The presence row keeps its hue ring clear of the sheet's edge by the reach `PresenceStack` now publishes (`--crewlet-presence-stack-reach`), so a page's clipping card no longer cuts it.
+
+**`useMediaMatch(query)` is exported**: whether a media query matches, read during render (`useSyncExternalStore`) so the first render already has the answer, and again on every change; `false` where there is no `matchMedia`. It is the package's own copy, the one the shell and the switcher read, so an application's "is this a phone" can no longer disagree with the kit's. Keep it for the decision a stylesheet cannot make (which element to draw); a width a media query in CSS can decide belongs there.
+
+**An end-aligned `Popover`, `Menu` or `Select` opens near the left edge.** Each asked whether its anchor had left the layer using the aligned panel's start instead of the anchor, so a panel wider than its trigger's right edge (a toolbar's last control wrapped to the left of a phone) closed on the frame it opened. They now ask of the anchor itself (`anchorGone`, from the layer's placement helpers, which `Tooltip` uses too), and the placement clamps the panel inside the window.
+
+**`getInitials` reads past punctuation and colons.** A colon splits a handle as the other separators do (`ci:release` gives CR, where it gave one initial for two words), and the punctuation around a word is not taken for its first letter ("review (API token)" gives RA, where it gave R().
+
+What to change:
+
+- `ArtifactPanel` no longer takes `size="sm"`: pass `md`, the one width for a panel of text. This is the release's breaking change.
+- A page that bounded a `fit="content"` `SheetGrid` with a computed `max-height` drops it, and sets `--crewlet-sheet-min-height` for the least the grid may give way to.
+- `DocTabsEditorLabels` takes `heading`, `actions(title)` and `rename`, and `moveUp`, `moveDown` and `remove` are strings now, not functions of the title; `editText`, `lastTab`, `atTop`, `atBottom` and `addNeedsTitle` are gone.
 - `SlideCompareLabels.missing` is a string now, not a function of the version.
 - A host that drew a show's Previous, count and Next itself uses `SlideNav`.
+- A host that set `overflow` on the box round a `SlideFilmstrip` bounds its height instead and drops the `overflow`.
 - A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
-
+- A host that reached into a compact `DataTable`'s cells for its row height sets `--crewlet-data-table-row-height` instead.
+- A host that drew its own placeholder before a frame was minted, or its own refusal in the frame's place, uses `SandboxedFramePlaceholder` and `SandboxedFrameNotice`.
+- A host that top-aligned a subtitled `Modal` head's controls, or spanned a `CommandPalette` legend across its foot, drops its override.
+- A host that drew a list of a canvas's items beside it uses `LayersList`, holding the selection with `CanvasBoard`'s `selected` and `onSelectedChange`.
+- An application that start-aligned its panels on a phone to dodge the close above can align them as it wants again.
+- An application with its own media query hook can use `useMediaMatch` instead.
 
 ## Changes in 0.32.0
 
@@ -345,7 +381,7 @@ What to change: nothing. An application that renders Markdown itself may read it
 
 **`ArtifactVersionChip`** is the version on show as a quiet chip beside the title that opens a menu of versions (`items`, so the host decides which and what else the menu offers). An older version than `latest` reads `v2 of 3` in the accent, so history never passes for the present.
 
-**`ArtifactPanel`** is a panel at the artifact's side: a complementary region named by its heading, a head with its title, optional `actions`, an expand toggle where `onExpandedChange` is given, and Close, then a body that scrolls under the head. Opening moves focus to the heading unless `focusOnOpen` is false (a panel a link opened); closing with focus inside hands focus back to whatever held it before; Escape from anywhere inside closes it, unless something inside answered the press first. Its body starts headings at level 3, so a `Section` inside it nests under the panel's title. Two sizes: `md`, at 22.5rem, for every panel of text (facts, a list, a form), so moving between them never moves the artifact's edge, and `lg`, at 36rem, for a table.
+**`ArtifactPanel`** is a panel at the artifact's side: a complementary region named by its heading, a head with its title, optional `actions`, an expand toggle where `onExpandedChange` is given, and Close, then a body that scrolls under the head. Opening moves focus to the heading unless `focusOnOpen` is false (a panel a link opened); closing with focus inside hands focus back to whatever held it before; Escape from anywhere inside closes it, unless something inside answered the press first. Its body starts headings at level 3, so a `Section` inside it nests under the panel's title. Sizes `sm`, `md` and `lg` rest at 20, 25 and 36rem.
 
 **`ArtifactWorkspace`** lays the artifact's body and its one panel side by side: the panel is a column where the workspace holds two useful columns (960px), slides over the body's end edge under that, and is the whole screen under 640px. `expanded` gives the panel the whole workspace, with the body kept mounted behind it. The body scrolls itself; `bodyRef`, `bodyClassName` and `bodyLabel` are for the host's own listeners, styles and region name.
 
@@ -423,15 +459,13 @@ Slides:
 
 **`useSlideKeys`** answers the keys every presentation and every clicker sends: forward on Right, Down, Page Down, Space and Enter, back on Left, Up, Page Up and Backspace, Home and End to the ends, Escape out. It listens at the document while `enabled`, and leaves alone a field the reader is typing in, a composition, a key a nearer surface handled, and modified keys.
 
-**`SlideFilmstrip`** is the column of thumbnails beside a deck's stage (a row under it with `orientation="horizontal"`), scrolled by itself to keep the slide on the stage in view: the slide on the stage marked `aria-current`, one tab stop whose arrow keys move to the next slide, and, with `onReorder`, a handle per slide that moves it by drag or by its arrow keys and announces where it landed. A hidden slide is dimmed and says so.
+**`SlideFilmstrip`** is the column of thumbnails beside a deck's stage: the slide on the stage marked `aria-current`, one tab stop whose arrow keys move to the next slide, and, with `onReorder`, a handle per slide that moves it by drag or by its arrow keys and announces where it landed. A hidden slide is dimmed and says so.
 
 **`SlideGrid`** lays every slide out by the outline's sections, numbered across the deck, each a button that opens its slide.
 
 **`SlideCompare`** compares two versions of a deck slide by slide: each slide's older and newer drawings side by side, paired by its id, a slide one version lacks drawn as an empty side naming that version, and every change said in words beside a glyph (Changed, Added, Removed, Moved from 6 to 7), the list opening with the count of each. Unchanged slides fold away behind one control.
 
 **`VersionCompare`** takes `versions`, a comparison the host draws in the versions lens in place of the two panes, for content compared item by item (a deck's slides, which two independent panes could not line up).
-
-**`SlideNav`** is Previous, the position and Next, off at the ends with the reason on the control, on the page or (`tone="projection"`) floating over a slide shown full screen.
 
 **`PresenterView`** is the presenter's own screen: the slide the room sees, the next one, the speaker notes large and on their own scroll, a timer that pauses, resumes and resets (`formatStopwatch` reads it as m:ss), and controls that stop at the ends of the deck.
 
@@ -445,7 +479,7 @@ Dashboards:
 
 Docs, sheets and every kind:
 
-**`DocCover`, `SheetCover` and `DashboardCover`** are the native gallery covers for `ArtifactCard.preview`, one module (`@crewlethq/ui/ArtifactCover`) sharing one frame: a doc's opening, rendered by the host's own Markdown renderer, set as a small page that fades at the card's edge; and a sheet's first columns and rows (at most `SHEET_COVER_COLUMNS` and `SHEET_COVER_ROWS`) as a hairline grid; and a dashboard's headline figures: up to three `stats`, drawn as rows so each label has the card's width, each the reader's own value when the gallery holds it and otherwise its label and the title of the dataset it cites (never a placeholder number), else a schematic of the board's first widgets on its twelve columns (`layout`), else the kind's glyph. All three are decorative, as the card's preview is.
+**`DocCover`, `SheetCover` and `DashboardCover`** are the native gallery covers for `ArtifactCard.preview`, one module (`@crewlethq/ui/ArtifactCover`) sharing one frame: a doc's opening, rendered by the host's own Markdown renderer, set as a small page that fades at the card's edge; and a sheet's first columns and rows (at most `SHEET_COVER_COLUMNS` and `SHEET_COVER_ROWS`) as a hairline grid; and a dashboard's headline figures: up to three `stats`, each the reader's own value when the gallery holds it and otherwise its label and the title of the dataset it cites (never a placeholder number), else a schematic of the board's first widgets on its twelve columns (`layout`), else the kind's glyph. All three are decorative, as the card's preview is.
 
 **`MergeConflicts`** settles a three-way merge of one text: each passage both edits changed shows the other side's lines (`theirs`, "version 4") beside the draft's, and the person keeps theirs, yours or both. Nothing is pre-chosen, `onApply` reports one `MergeChoice` per clash in order once each has one, and focus moves to its heading when it opens. The merge itself stays the host's.
 
@@ -478,7 +512,7 @@ What to change:
 
 ## Changes in 0.24.0
 
-**The `markdown` artifact kind is now `doc`**, as the engine names it (`artifacts.KindDoc`). `ArtifactKind`, `ARTIFACT_KINDS`, `ArtifactKindGlyph` and `ArtifactCard` take `doc`, and the card's default label for it is "Doc". The `html` kind's default label is "HTML", not "Page", which is Knowledge's word.
+**The `markdown` artifact kind is now `doc`**, as the engine names it (`artifacts.KindDoc`). `ArtifactKind`, `ARTIFACT_KINDS`, `ArtifactKindGlyph` and `ArtifactCard` take `doc`, and the card's default label for it is "Doc".
 
 What to change: pass `kind="doc"` wherever you passed `kind="markdown"`, and rename the `markdown` key of a custom `labels.kinds` to `doc`.
 
@@ -556,7 +590,7 @@ What to change: nothing, unless code extends `HuePickerProps` as an interface; i
 
 0.18.0 adds the pieces the engine dashboard's Artifacts workspace is built from: the frame an artifact runs in, its versions, who it is shared with, and the card and refusal that stand for it elsewhere; the editable sheet; and the marks that show who else is in an artifact.
 
-**`SandboxedFrame`** embeds an artifact's document with the engine's `sandbox` and `allow` attributes set verbatim, after a second check that refuses any token the host never sets: there is no `allow-popups` at all, and `allow-same-origin` only when the artifact has an origin of its own. A hello is accepted only from the iframe's own window, carrying the nonce minted with its ticket, and per artifact from the artifact's origin; only then is one `MessagePort` transferred, in the same task, to the window that was checked. The reader's appearance travels in the URL fragment for the first paint and on the port afterwards. A document that does not announce itself is torn down (`failed`, or `navigated` when it replaced one that did): within `FRAME_LOAD_GRACE_MS` of its load event, since the runtime says hello before the page loads, and within `FRAME_HELLO_TIMEOUT_MS` of mounting for one that never loads, a runtime with no common bridge version is `outdated`, and each refusal reaches `onRefusal`. The frame never opens a window: an external link reaches `onOpenLink`. A port message asking for focus back moves focus to the frame's region, or to `onFocusExit`. A host with no frame to mount yet draws the frame's own states in the same box: `SandboxedFramePlaceholder` while its ticket is minted, and `SandboxedFrameNotice` when the engine refused one, so the reader meets one loading state and one way of saying a page is not here.
+**`SandboxedFrame`** embeds an artifact's document with the engine's `sandbox` and `allow` attributes set verbatim, after a second check that refuses any token the host never sets: there is no `allow-popups` at all, and `allow-same-origin` only when the artifact has an origin of its own. A hello is accepted only from the iframe's own window, carrying the nonce minted with its ticket, and per artifact from the artifact's origin; only then is one `MessagePort` transferred, in the same task, to the window that was checked. The reader's appearance travels in the URL fragment for the first paint and on the port afterwards. A document that does not announce itself is torn down (`failed`, or `navigated` when it replaced one that did), a runtime with no common bridge version is `outdated`, and each refusal reaches `onRefusal`. The frame never opens a window: an external link reaches `onOpenLink`. A port message asking for focus back moves focus to the frame's region, or to `onFocusExit`.
 
 **`FrameProtocol`** is that wire, written once for both ends and free of React, so the engine's runtime and `@crewlethq/artifact-kit`'s `theme.js` import it: `FRAME_MESSAGE`, `frameFragment` and `parseFrameFragment`, `readFrameHello`, `negotiateBridge`, `checkFrameSandbox`, `readFrameTheme` and `applyFrameTheme`, and `externalUrl`, which admits absolute https, http and mailto links only and never one carrying a user name or password.
 
@@ -564,9 +598,9 @@ What to change: nothing, unless code extends `HuePickerProps` as an interface; i
 
 **`VersionTimeline`** lists versions newest first on the `Timeline` ledger with the one on show current, Compare as a toggle, Restore (never on the newest) and Name, glyphs and words for schema, capability and restore versions, and a line for versions past retention. **`Timeline.Item` takes `label={false}`** for an item whose content already says what it is.
 
-**`ShareDialog`** is who can open an artifact on the engine's five-role ladder (viewer, commenter, contributor, editor, owner): a grantee search slot handed the role chosen beside it, direct shares with a role control and a remove, effective access with what it is through and no control, company access in words, and Copy link. Changes are confirmed rather than optimistic, a refusal is said on its row, no control offers owner, and a reader who cannot share sees the same audience in words with the reason. A stored share that reaches nobody (a row's `invalid`, the reason in words) is listed rather than hidden: it reads `labels.noAccess` in place of a role, says why in the warning ink, and offers Remove as its one action. **`PrincipalPicker`** is the search the slot usually holds, grouped people, agents and teams. **`Principal`** and **`PrincipalAvatar`** draw a person, an agent or a team one way everywhere.
+**`ShareDialog`** is who can open an artifact on the engine's five-role ladder (viewer, commenter, contributor, editor, owner): a grantee search slot handed the role chosen beside it, direct shares with a role control and a remove, effective access with what it is through and no control, company access in words, and Copy link. Changes are confirmed rather than optimistic, a refusal is said on its row, no control offers owner, and a reader who cannot share sees the same audience in words with the reason. **`PrincipalPicker`** is the search the slot usually holds, grouped people, agents and teams. **`Principal`** and **`PrincipalAvatar`** draw a person, an agent or a team one way everywhere.
 
-**`ArtifactCard`** is one real link named by the artifact's title and described by its facts, with a natively drawn preview or the kind's glyph (**`ArtifactKindGlyph`**), and a compact row. A line's facts are one run ("Sheet · OPS · v12"), and the change reads time first and changer after ("Updated 4m ago by Maya"); leave `owner` out where the reader owns it, and `updatedBy` where it is the owner already named. **`AccessDeniedCard`** is the refusal an artifact's place shows; "not found" says both things the engine means by it and never names an owner.
+**`ArtifactCard`** is one real link named by the artifact's title and described by its facts, with a natively drawn preview or the kind's glyph (**`ArtifactKindGlyph`**), and a compact row. **`AccessDeniedCard`** is the refusal an artifact's place shows; "not found" says both things the engine means by it and never names an owner.
 
 **The appearance attributes have a module of their own.** `applyTheme` and `applyDensity` take an optional root element, **`applyPalette`** is new (the default theme removes the attribute, as `system` and `normal` do), and `THEME_PREFERENCES`, `DENSITY_PREFERENCES`, `PALETTE_ID` and their guards are exported.
 
@@ -1392,11 +1426,7 @@ screen's one display number, in tabular figures. Two slots are new. `trend`
 stands a small figure at the END of the value's line, such as a `Sparkline`,
 a `Meter` or a `SegmentedMeter`, or a small control that acts on the number,
 in a slot `--crewlet-statcard-trend-width` wide (96px); a figure fills it and a control
-keeps its own width at its end. In a tile too narrow for both, the figure moves
-under the number rather than the number being cut, and a `unit` too long to
-share the number's line moves under it whole. `trendPlacement="below"`
-stands the figure under the number at the tile's width instead, for a quota
-whose bar is the reading, so a row of them keeps one shape at every width. `delta` heads the second line with a change
+keeps its own width at its end. `delta` heads the second line with a change
 against an earlier reading, `{ value, polarity }`, drawn in the ink of whether
 it was WANTED (`good` the success ink, `bad` the danger ink, `neutral` the
 secondary ink) rather than of its direction, which its sign already says:
@@ -3265,8 +3295,7 @@ own face. It was monospace, one size up, semibold and on the wider track, and
 and not the 4.5:1 a word owes; it paints `--color-brand-accent-ink` now.
 `Text variant="heading"` and a `Section` title track tighter, a `Section`
 description is 13px with a measure rather than 12px truncated, and `Container`'s
-gutter is 20px, 16px under 480px (the shell's phone gutter, the top bar's own
-inset).
+gutter is 20px, 12px under 480px.
 
 **Rows, expanders and records (C1).** `List` renders `variant="divided"` unless
 told otherwise: it is the list every screen draws, and `plain` is one word away.

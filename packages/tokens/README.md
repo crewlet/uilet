@@ -45,7 +45,7 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
-## Changed in the next release: the projection
+## Changed in 0.33.0: the projection
 
 Five fixed colours for a slide shown full screen, the same in every palette and theme, as `--color-qr-*` is: what is under them is the slide in its own colours, or a projector's black, never the theme's ground.
 
