@@ -208,6 +208,8 @@ places:
 
 ## Changes in the next release
 
+**`@crewlethq/artifact-kit` ships `content.css`, an opt-in stylesheet for the plain HTML an artifact page writes itself.** Linked after `kit.css` (`/_crewlet/kit/<version>/content.css`), it gives headings, running text, lists, quotes, code, tables, rules, figures, disclosures and every form control Document's prose and the medium Button, Input, Textarea and Select, from the tokens, so it follows the reader's theme. Every rule weighs only its element, so a page's own class wins; nothing the kit draws (a `<crewlet-sheet>`, any `crewlet-` class) and nothing under `data-crewlet-content="off"` is touched; and a page that does not link it, every published page included, is unchanged. Storybook: Artifact kit, Content stylesheet.
+
 **`LayersList` is new: a canvas's list of items beside it, as a design tool's layers are.** The caller holds the selection and hands it to the list and the canvas both; the picked entry takes the accent edge every current row takes, held on every entry so nothing moves when the pick does. It is one tab stop, walked with the arrows, Home and End without picking; Space or a click picks (`onSelect`) and Enter or a double-click opens (`onOpen`), which an entry's name then says. Names are cut to one line with the whole name as the tip, the entries hang into the gutter so their letters stand on the list's edge, and the list scrolls on its own under an optional `heading` (its count) that stays. The engine dashboard's design view drew this list itself; it now uses this one.
 
 **A presentation's pieces are finished for the page, full screen and a phone.**
