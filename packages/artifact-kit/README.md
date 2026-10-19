@@ -12,7 +12,7 @@ The engine serves this package's `dist/` directory, unchanged, from the artifact
 <script type="module" src="/_crewlet/kit/<version>/kit.js"></script>
 ```
 
-`<version>` is the exact kit version the page was written against (the engine's authoring guide names the newest it serves); the engine serves every kit version it has shipped, so a published page keeps its own. Link the first two in the `<head>`, `theme.js` as a classic blocking script, before anything paints. `kit.js` is only needed by a page that draws a sheet. Then write colours, spacing and type with the tokens rather than literal values:
+`<version>` is the exact kit version the page was written against (the engine's authoring guide names the newest it serves); the engine serves every kit version it has shipped, so a published page keeps its own. Link the first two in the `<head>`, `theme.js` as a classic blocking script, before anything paints. `kit.js` is only needed by a page that draws a sheet. `content.css`, linked right after `kit.css`, styles the plain HTML a page writes itself ([below](#plain-html-content)). Then write colours, spacing and type with the tokens rather than literal values:
 
 ```css
 .summary {
@@ -22,6 +22,26 @@ The engine serves this package's `dist/` directory, unchanged, from the artifact
   color: var(--color-text-primary);
 }
 ```
+
+## Plain HTML content
+
+`kit.css` paints the tokens and a quiet document baseline, which zeroes the margins of headings and paragraphs and strips buttons to bare text: a page that writes its own components wants exactly that. A page that writes plain HTML (a report, a brief, a form) links `content.css` as well, AFTER `kit.css`, and its headings, paragraphs, lists, quotes, code, tables, rules, figures, disclosures and form controls take the design system's look in every theme:
+
+```html
+<link rel="stylesheet" href="/_crewlet/kit/<version>/kit.css">
+<link rel="stylesheet" href="/_crewlet/kit/<version>/content.css">
+<script src="/_crewlet/kit/<version>/theme.js"></script>
+```
+
+The reading column is Document's prose (a page's `h1` at the title's step, running text at the reading step and leading, one gap between blocks and more above a heading); a button is the secondary Button and a submit button the primary one; a text field, a textarea and a select are Input, Textarea and Select at their medium size; a box, a dot, a slider and a bar take the accent; a table has a firmer rule under its head, figures in a column, and `data-align="right"` (or `"center"`) for an alignment a strict policy keeps out of a style attribute. A wide table scrolls inside the `<div>` or `<figure>` it is written in rather than moving the page, and a long line of code wraps.
+
+It is opt in and it is scoped, so it never fights anything else on the page:
+
+- **A page that does not link it is unchanged**, including every page published before it existed: it is a file of its own and `kit.css` carries none of it.
+- **It styles only what the author wrote.** A `<crewlet-sheet>`, any element carrying a `crewlet-` class (such as a sheet's menu, which is drawn on the body) and everything inside either are left to the kit's own stylesheet. A region of the page that keeps a design of its own opts out with `data-crewlet-content="off"`, and everything inside it keeps the baseline.
+- **A class of the page's own always wins.** Every rule weighs exactly its element (`button` is 0,0,1, whatever its type or state), so `.chip { ... }` overrides it in every state. The keyboard ring is the one rule weighed as a pseudo-class, so a control keeps its own corners as it takes focus; a page restyling it writes `.chip:focus-visible`.
+
+Link it after `kit.css`: each of its rules wins over the baseline's rule for the same element by coming later at the same weight.
 
 ## The sheet
 
@@ -100,6 +120,7 @@ A write resolves with the engine's verdict (`applied`, `pending`, `conflict`, `i
 | File | Content |
 | ---- | ------- |
 | `kit.css` | The canonical variables, the dark and light palettes of the default theme, every named theme under `data-palette`, the density steps under `data-density`, the self-hosted Geist and Geist Mono faces and the document baseline, then the stylesheet of the sheet, its cells and the presence marks, in one file. |
+| `content.css` | The opt-in content stylesheet: the design system's look for the plain HTML a page writes itself, linked after `kit.css`. See [Plain HTML content](#plain-html-content). |
 | `fonts/` | The four Geist faces `kit.css` references, with `OFL.txt`. |
 | `theme.js` | The theme bootstrap, under 2 KB gzipped. |
 | `kit.js` | The `crewlet-sheet` and `crewlet-column` elements and `mountSheet`, an ES module. It carries the design system's React components and React itself, so a page needs no framework of its own. |
@@ -117,6 +138,7 @@ The build refuses a kit over any budget, and the suite holds the built files to 
 | ---- | -------------- |
 | `theme.js` | 2 KB |
 | `kit.css` | 40 KB |
+| `content.css` | 6 KB |
 | `kit.js` | 160 KB |
 
 ## Building
