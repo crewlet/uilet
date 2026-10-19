@@ -323,6 +323,48 @@
 }
 
 /*
+ * The title while it is written (`DocumentTitleField`): the title's own type
+ * on no surface of its own, with a line along its foot that answers the
+ * pointer, the focus and a refusal. The line is a border rather than a
+ * shadow, because forced colours keep a border and drop a shadow.
+ */
+.crewlet-document-title-field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 0 0 var(--spacing-1);
+  border: 0;
+  border-block-end: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  outline: none;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-document-title-field::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+.crewlet-document-title-field:hover {
+  border-block-end-color: var(--color-border-default);
+}
+
+.crewlet-document-title-field:focus-visible {
+  border-block-end-color: var(--color-focus);
+}
+
+.crewlet-document-title-field[aria-invalid='true'] {
+  border-block-end-color: var(--color-feedback-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-document-title-field {
+    transition: none;
+  }
+}
+
+/*
  * A TABLE CELL'S ALIGNMENT, read off `data-align` as well as off a style: an
  * editor that may not write a style attribute under a strict policy marks a
  * column this way, and the cell is set as the reader's is.

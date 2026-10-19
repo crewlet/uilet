@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Document, DocumentTitle } from '@crewlethq/ui';
+import { useState } from 'react';
+import { Document, DocumentTitle, DocumentTitleField } from '@crewlethq/ui';
 
 /**
  * UI / Document.
@@ -147,3 +148,29 @@ export const Structure: Story = {
   ),
 };
 
+/**
+ * A new page's title as it is written: the title's own type with no box, a
+ * line at its foot under the pointer and in focus, and the danger line once
+ * the title is refused.
+ */
+export const TitleField: Story = {
+  render: function Render(args) {
+    const [title, setTitle] = useState('');
+    const taken = title.trim().toLowerCase() === 'settlement algorithm';
+    return (
+      <article>
+        <DocumentTitleField
+          aria-label="Title"
+          placeholder="Untitled"
+          value={title}
+          error={taken}
+          onChange={(event) => setTitle(event.target.value)}
+        />
+        <div style={{ height: 'var(--spacing-5)' }} />
+        <Document {...args}>
+          <p>Type “Settlement algorithm” to see a refused title.</p>
+        </Document>
+      </article>
+    );
+  },
+};
