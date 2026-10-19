@@ -108,6 +108,17 @@
 .crewlet-checkbox--sm {
   --crewlet-checkbox-size: 14px;
 
+  /*
+   * ITS LINE IS CENTRED IN THE ROW. The row's floor was a minimum height with
+   * the label at its top, so in a form row of small inputs (whose text sits
+   * on their middle) the box and its label stood 5px above the line every
+   * other control's text was on. The floor is made of equal padding round
+   * the first line instead: one line comes out exactly the row's height with
+   * the text on its middle, and a longer label grows the row downwards with
+   * the box still on its first line.
+   */
+  min-height: 0;
+  padding-block: calc((var(--size-row-sm) - var(--font-line-height-snug) * 1em) / 2);
   font-size: var(--font-size-compact);
 }
 

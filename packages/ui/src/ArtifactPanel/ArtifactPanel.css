@@ -94,15 +94,21 @@
   gap: var(--spacing-1);
 }
 
+/* THE BODY'S INSET IS PUBLISHED (--crewlet-artifact-panel-inset) for content
+   that sticks to its scrollport: a sticky edge stops at the padding, so a
+   foot with `bottom: 0` left a band under it that the content scrolled
+   through; such a foot offsets itself by the inset to sit on the edge. */
 .crewlet-artifact-panel__body {
   /* THE PANEL'S OWN MEASURE, so what it holds folds to the panel's width
      rather than the window's; and its sections head at the panel title's
      step, a level under it and never louder than it. */
   container: crewlet-artifact-panel / inline-size;
   --crewlet-section-title-size: var(--font-size-sm);
+  --crewlet-artifact-panel-inset: var(--spacing-4);
+
   flex: 1 1 auto;
   min-height: 0;
-  padding: var(--spacing-4);
+  padding: var(--crewlet-artifact-panel-inset);
   overflow: auto;
   overscroll-behavior: contain;
 }

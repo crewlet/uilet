@@ -231,3 +231,50 @@ export const OlderVersion: Story = {
 export const Pending: Story = {
   args: { title: '', kind: 'html', kindLabel: 'Page', pending: true, back: { href: '#', label: 'Back to artifacts' } },
 };
+
+/**
+ * A panel whose foot sticks to its bottom edge while a long form scrolls
+ * under it: the foot offsets itself by the body's published inset
+ * (`--crewlet-artifact-panel-inset`), so no band of the form shows below it.
+ */
+export const PanelWithStickyFoot: Story = {
+  render: () => (
+    <div style={{ height: 560, display: 'grid' }}>
+      <ArtifactWorkspace
+        bodyLabel="Launch review"
+        panel={
+          <ArtifactPanel title="Data" onClose={() => {}} size="md">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {Array.from({ length: 24 }, (_, i) => (
+                <p key={i} style={{ margin: 0 }}>
+                  Column {i + 1}
+                </p>
+              ))}
+              <div
+                style={{
+                  position: 'sticky',
+                  bottom: 'calc(-1 * var(--crewlet-artifact-panel-inset))',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 8,
+                  padding: 'var(--spacing-3) 0 var(--crewlet-artifact-panel-inset)',
+                  borderTop: '1px solid var(--color-border-default)',
+                  background: 'var(--color-surface-background)',
+                }}
+              >
+                <Button size="small" variant="ghost">
+                  Discard changes
+                </Button>
+                <Button size="small" variant="primary">
+                  Save schema
+                </Button>
+              </div>
+            </div>
+          </ArtifactPanel>
+        }
+      >
+        <div style={{ padding: 24 }} />
+      </ArtifactWorkspace>
+    </div>
+  ),
+};

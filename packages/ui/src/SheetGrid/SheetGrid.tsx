@@ -236,6 +236,7 @@ export function SheetGrid({
   const [headerHeight, setHeaderHeight] = useState(SHEET_ROW_HEIGHT);
   const [viewport, setViewport] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
+  const [scrolledAcross, setScrolledAcross] = useState(false);
   const [active, setActive] = useState<ActiveCell | null>(null);
   const [anchor, setAnchor] = useState<ActiveCell | null>(null);
   const [editing, setEditing] = useState<Editing | null>(null);
@@ -296,6 +297,9 @@ export function SheetGrid({
     [columns],
   );
   const totalWidth = useMemo(() => columns.reduce((sum, column) => sum + columnWidth(column), SHEET_ROW_NUMBER_WIDTH), [columns]);
+  // THE LAST COLUMN THAT STAYS when the grid scrolls sideways (-1: only the
+  // row numbers stay): its trailing hairline is the frozen edge.
+  const lastFrozen = useMemo(() => columns.reduce((edge, column, index) => (column.frozen ? index : edge), -1), [columns]);
   const frozenEdge = useMemo(() => {
     let edge = SHEET_ROW_NUMBER_WIDTH;
     columns.forEach((column, index) => {
@@ -793,9 +797,12 @@ export function SheetGrid({
       <div ref={probe} className="crewlet-sheet-grid__probe" aria-hidden="true" />
       <div
         ref={scroller}
-        className="crewlet-sheet-grid__scroller"
+        className={cx('crewlet-sheet-grid__scroller', scrolledAcross && 'crewlet-sheet-grid__scroller--across')}
         style={scrollerStyle}
-        onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+        onScroll={(event) => {
+          setScrollTop(event.currentTarget.scrollTop);
+          setScrolledAcross(event.currentTarget.scrollLeft > 0);
+        }}
       >
         <div
           ref={grid}
@@ -807,7 +814,7 @@ export function SheetGrid({
           aria-multiselectable="true"
           aria-describedby={helpId}
           tabIndex={-1}
-          className="crewlet-sheet-grid__grid"
+          className={cx('crewlet-sheet-grid__grid', range && (range.top !== range.bottom || range.left !== range.right) && 'crewlet-sheet-grid__grid--range')}
           style={style}
           onKeyDown={onKeyDown}
           // Which row the pointer is over, for its row actions: read from the
@@ -827,7 +834,7 @@ export function SheetGrid({
         >
           <div role="rowgroup" className="crewlet-sheet-grid__head">
             <div role="row" aria-rowindex={1} className="crewlet-sheet-grid__row crewlet-sheet-grid__row--head">
-              <div role="columnheader" aria-colindex={1} className="crewlet-sheet-grid__corner">
+              <div role="columnheader" aria-colindex={1} className={cx('crewlet-sheet-grid__corner', lastFrozen < 0 && 'crewlet-sheet-grid__frozen-edge')}>
                 <VisuallyHidden>{labels.rowHeader}</VisuallyHidden>
               </div>
               {columns.map((column, col) => {
@@ -844,7 +851,13 @@ export function SheetGrid({
                     aria-colindex={col + 2}
                     aria-sort={sorted ?? (onSortChange ? 'none' : undefined)}
                     tabIndex={isActive ? 0 : -1}
-                    className={cx('crewlet-sheet-grid__header', column.frozen && 'crewlet-sheet-grid__cell--frozen', isActive && 'crewlet-sheet-grid__header--active')}
+                    className={cx(
+                      'crewlet-sheet-grid__header',
+                      `crewlet-sheet-grid__header--${column.type}`,
+                      column.frozen && 'crewlet-sheet-grid__cell--frozen',
+                      col === lastFrozen && 'crewlet-sheet-grid__frozen-edge',
+                      isActive && 'crewlet-sheet-grid__header--active',
+                    )}
                     style={column.frozen ? { insetInlineStart: `${offsets[col]}px` } : undefined}
                     onMouseDown={(event) => onCellMouseDown(event, { rowId: null, field: column.field })}
                     onFocus={(event) => {
@@ -853,7 +866,8 @@ export function SheetGrid({
                     onClick={() => {
                       if (onSortChange) onSortChange(nextSort(sort, column.field));
                     }}
-                    title={onSortChange ? labels.sortBy(column.label) : undefined}
+                    // The whole name, which a narrow column cuts short.
+                    title={onSortChange ? labels.sortBy(column.label) : column.label}
                   >
                     <span className="crewlet-sheet-grid__header-label">{column.label}</span>
                     <VisuallyHidden>{`, ${labels.types[column.type]}`}</VisuallyHidden>
@@ -890,12 +904,22 @@ export function SheetGrid({
                   <div
                     role="rowheader"
                     aria-colindex={1}
-                    className={cx('crewlet-sheet-grid__rownum', rowPresence && 'crewlet-sheet-grid__rownum--present', rowPresence && presenceHueClass(rowPresence.hue))}
+                    className={cx(
+                      'crewlet-sheet-grid__rownum',
+                      lastFrozen < 0 && 'crewlet-sheet-grid__frozen-edge',
+                      rowPresence && 'crewlet-sheet-grid__rownum--present',
+                      rowPresence && presenceHueClass(rowPresence.hue),
+                    )}
                   >
                     <span aria-hidden="true">{index + 1}</span>
                     <VisuallyHidden>{rowName(columns, row, index, context)}</VisuallyHidden>
                     {rowActions && (rowMenu === row.id || hoveredRow === row.id || current?.row === index) ? (
-                      <span className="crewlet-sheet-grid__row-actions">
+                      <span
+                        className={cx(
+                          'crewlet-sheet-grid__row-actions',
+                          rowMenu !== row.id && hoveredRow !== row.id && 'crewlet-sheet-grid__row-actions--active-row',
+                        )}
+                      >
                         <Menu
                           label={labels.rowActions(index + 1)}
                           icon={<EllipsisGlyph size="xs" />}
@@ -927,6 +951,7 @@ export function SheetGrid({
                     const people = onCells.get(key);
                     const lead = people?.[0];
                     const isEditing = editing?.rowId === row.id && editing.field === column.field;
+                    const history = isActive && onShowHistory !== undefined && !isEditing;
                     return (
                       // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- keys reach the grid's own handler, which toggles on Space and Enter
                       <div
@@ -942,11 +967,13 @@ export function SheetGrid({
                           'crewlet-sheet-grid__cell',
                           `crewlet-sheet-grid__cell--${column.type}`,
                           column.frozen && 'crewlet-sheet-grid__cell--frozen',
+                          col === lastFrozen && 'crewlet-sheet-grid__frozen-edge',
                           selected && 'crewlet-sheet-grid__cell--selected',
                           isActive && 'crewlet-sheet-grid__cell--active',
                           pending && 'crewlet-sheet-grid__cell--pending',
                           refused !== undefined && 'crewlet-sheet-grid__cell--refused',
                           isEditing && 'crewlet-sheet-grid__cell--editing',
+                          history && 'crewlet-sheet-grid__cell--history',
                           lead && 'crewlet-presence-ring',
                           lead && presenceHueClass(lead.hue),
                           lead && (lead.idle ? 'crewlet-presence-ring--idle' : null),
@@ -991,7 +1018,7 @@ export function SheetGrid({
                             {refused}
                           </span>
                         ) : null}
-                        {isActive && onShowHistory && !isEditing ? (
+                        {history ? (
                           <button
                             type="button"
                             tabIndex={-1}
@@ -999,7 +1026,7 @@ export function SheetGrid({
                             className="crewlet-sheet-grid__history"
                             title={labels.history}
                             onMouseDown={(event) => event.stopPropagation()}
-                            onClick={() => onShowHistory({ rowId: row.id, field: column.field })}
+                            onClick={() => onShowHistory?.({ rowId: row.id, field: column.field })}
                           >
                             <RotateCcwClockGlyph size="xs" />
                           </button>
