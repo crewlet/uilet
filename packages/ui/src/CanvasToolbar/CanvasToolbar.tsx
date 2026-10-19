@@ -73,7 +73,7 @@ export function CanvasToolbar<Id extends string>({
       {tools.map((tool) => (
         <ShortcutTip key={tool.id} label={tool.label} keys={[tool.shortcut]}>
           <IconButton
-            size="md"
+            size="sm"
             label={tool.label}
             title=""
             icon={tool.icon}

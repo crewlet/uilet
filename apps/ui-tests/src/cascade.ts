@@ -629,6 +629,31 @@ export function answerForcedColors(
 }
 
 /**
+ * A COMPONENT'S SHEETS AS A BROWSER APPLIES THEM ON A POINTER THAT HOVERS
+ * (`hover`, a mouse or a trackpad) or on one that does not (`none`, a touch
+ * screen). jsdom evaluates no media query, so a control a sheet hides until
+ * its item is hovered would otherwise be judged as always drawn. Returns the
+ * remover, as above.
+ */
+export function installHover(
+  pointer: "hover" | "none",
+  ...paths: string[]
+): () => void {
+  const source = paths
+    .map((path) => readFileSync(join(uiSource, path), "utf8"))
+    .join("\n");
+  return installCss(answerHover(resolveOwn(resolveLengths(source)), pointer));
+}
+
+/**
+ * The stylesheet with every `hover` query answered for the pointer named, and
+ * every other at-rule left exactly where it was.
+ */
+export function answerHover(css: string, pointer: "hover" | "none"): string {
+  return answerFeature(css, "hover", ["hover", "none"], pointer, "answerHover");
+}
+
+/**
  * ONE ANSWERER for a media feature that takes a keyword, so the motion and
  * the colour-mode helpers cannot come to disagree about where a block ends or
  * what counts as a combined query. Every `@media` whose prelude names the

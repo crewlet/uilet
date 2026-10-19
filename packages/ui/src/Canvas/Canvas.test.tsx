@@ -20,7 +20,7 @@ import { createPortal } from 'react-dom';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { LAYER_REPOSITION_EVENT, useLayerContainer } from '../Layer/index.js';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
-import { Canvas, type CanvasHandle } from './Canvas.js';
+import { Canvas, gridOf, type CanvasHandle } from './Canvas.js';
 
 /** The stylesheet's own source, for the rules jsdom cannot resolve a value in. */
 const SHEET = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Canvas.css'), 'utf8');
@@ -920,6 +920,47 @@ test('a hint is announced, drawn under the controls, and takes no press', () => 
   expect(note.closest('.crewlet-canvas__controls')).not.toBeNull();
   expect(getComputedStyle(note).pointerEvents).toBe('none');
   uninstall();
+});
+
+test('a hint in a bottom corner is drawn above the zoom bar, so the bar never moves', () => {
+  const uninstall = installSheets('Canvas/Canvas.css');
+  const { rerender } = render(
+    <Canvas label="Design" content={SMALL} hint="Press Escape to return to the canvas">
+      <div />
+    </Canvas>,
+  );
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  expect(getComputedStyle(screen.getByRole('status')).order).toBe('-1');
+  // In the top corner it grows downward, away from the corner, as it is drawn.
+  rerender(
+    <Canvas label="Design" content={SMALL} hint="Press Escape" controlsPlacement="top-right">
+      <div />
+    </Canvas>,
+  );
+  expect(getComputedStyle(screen.getByRole('status')).order).not.toBe('-1');
+  uninstall();
+});
+
+test('a grid ground pans with the view and keeps its pitch between one and two steps', () => {
+  expect(gridOf({ x: 0, y: 0, k: 1 })).toEqual({ scale: 1, x: 0, y: 0 });
+  // Zoomed out to a quarter and a bit, the world pitch is four steps.
+  expect(gridOf({ x: 12, y: -30, k: 0.26 })).toEqual({ scale: 1.04, x: 12, y: -30 });
+  // Zoomed in to three times, it is half a step on the world.
+  expect(gridOf({ x: 0, y: 0, k: 3 }).scale).toBe(1.5);
+  for (const k of [0.02, 0.1, 0.5, 0.99, 1.5, 2, 7]) {
+    const { scale } = gridOf({ x: 0, y: 0, k });
+    expect(scale).toBeGreaterThanOrEqual(1);
+    expect(scale).toBeLessThan(2);
+  }
+  const { container } = render(
+    <Canvas label="Design" content={SMALL} ground="grid">
+      <div />
+    </Canvas>,
+  );
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  const root = container.querySelector<HTMLElement>('.crewlet-canvas')!;
+  expect(root.dataset.ground).toBe('grid');
+  expect(root.style.getPropertyValue('--crewlet-canvas-grid-scale')).not.toBe('');
 });
 
 test('a canvas with nothing to say draws no note, and keeps the region it has', () => {

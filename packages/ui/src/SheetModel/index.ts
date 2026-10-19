@@ -57,6 +57,7 @@ export {
   visibleRows,
 } from './navigation.js';
 export type { SheetBounds, SheetKey, SheetPosition, SheetRange } from './navigation.js';
+export { SHEET_COLUMN_BOUNDS, SHEET_FIT_SAMPLES, fitSamples, fittedWidth } from './fit.js';
 export { parseTSV, planClear, planPaste, toTSV } from './clipboard.js';
 export type { SheetPastePlan } from './clipboard.js';
 export { SheetPendingEdits, changeText, changeTime, hasPrevious, refusalText } from './edits.js';

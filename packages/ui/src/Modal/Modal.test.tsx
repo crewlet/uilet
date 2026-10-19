@@ -166,6 +166,40 @@ test("only a sheet's head takes the sheet's own band, and only a sheet's title",
 });
 
 /*
+ * A SUBTITLE PUTS THE HEAD'S CONTROLS ON THE TITLE'S LINE. Centred on the
+ * whole head they floated beside the description; top-aligned they hung from
+ * the head's edge, above the title. A sheet's head is a bar and keeps its
+ * centring.
+ */
+test("a dialog's head with a subtitle centres its controls on the title's line", () => {
+  render(
+    <>
+      <Modal open onClose={() => {}} title="Landing page" subtitle="Board 1 of 3" headerActions={<button>Open</button>}>
+        <p>Body</p>
+      </Modal>
+      <Modal open onClose={() => {}} title="Discard your edits?">
+        <button>Keep editing</button>
+      </Modal>
+      <Modal open variant="sheet" onClose={() => {}} title="Edit unit" subtitle="Engineering">
+        <input aria-label="Goal" />
+      </Modal>
+    </>,
+  );
+  const heads = [...document.querySelectorAll<HTMLElement>('.crewlet-modal__header')];
+  expect(heads.map((head) => head.classList.contains('crewlet-modal__header--subtitled'))).toEqual([
+    true,
+    false,
+    false,
+  ]);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Modal.css'), 'utf8');
+  const head = /\.crewlet-modal__header--subtitled\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(head).toContain('align-items: flex-start');
+  expect(head).toContain('--crewlet-modal-title-line: calc(var(--font-size-sm) * var(--font-line-height-tight))');
+  const lone = /\.crewlet-modal__header--subtitled > \.crewlet-modal__back\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(lone).toContain('margin-block: calc((var(--crewlet-modal-title-line) - var(--size-control-md)) / 2)');
+});
+
+/*
  * AND THE CLASS ACTUALLY WINS. Both rules are one class, so a tie is broken
  * by source order: written above the base rule this set a size the base rule
  * then set back, and the sheet's head kept the dialog's register with the

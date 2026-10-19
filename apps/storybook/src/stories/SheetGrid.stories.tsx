@@ -213,3 +213,35 @@ export const MobileWidth: Story = {
 export const NoRows: Story = {
   render: () => <LiveSheet start={[]} fit="content" />,
 };
+
+/**
+ * Columns sized to what they hold: a status wide enough for its longest
+ * choice, a checkbox for its long name, and a title column that stops at its
+ * ceiling and ellipsises rather than pushing every other column away.
+ */
+export const FittedColumns: Story = {
+  render: () => (
+    <SheetGrid
+      label="Launch gates"
+      fit="content"
+      columns={[
+        { field: 'gate', label: 'Gate', type: 'text', frozen: true },
+        {
+          field: 'status',
+          label: 'Status',
+          type: 'status',
+          options: [
+            { id: 'ready', label: 'Ready', category: 'done' },
+            { id: 'changes', label: 'Changes requested', category: 'blocked' },
+          ],
+        },
+        { field: 'approved', label: 'Finance approved', type: 'checkbox' },
+        { field: 'effort', label: 'Effort (days)', type: 'number' },
+      ]}
+      rows={[
+        { id: 'g1', values: { gate: 'Settlement algorithm returns the fewest payments for every group', status: 'ready', approved: true, effort: 4 } },
+        { id: 'g2', values: { gate: 'CSV import of a group\'s expenses', status: 'changes', approved: false, effort: 0.5 } },
+      ]}
+    />
+  ),
+};

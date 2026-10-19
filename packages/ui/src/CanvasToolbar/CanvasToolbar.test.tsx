@@ -51,3 +51,10 @@ test('a bare letter picks its tool, in either case; a chord or a shifted letter 
   expect(press('h', { altKey: true })).toBeUndefined();
   expect(press('H', { shiftKey: true })).toBeUndefined();
 });
+
+test('the tools are the small control step, the zoom bar\'s, so the two bars stand one height', () => {
+  render(<Palette />);
+  for (const name of ['Move', 'Hand']) {
+    expect(screen.getByRole('button', { name }).classList.contains('crewlet-icon-btn--sm')).toBe(true);
+  }
+});

@@ -621,6 +621,54 @@ describe('polish', () => {
   });
 });
 
+describe('column widths', () => {
+  test('a column is sized to its widest header or value as drawn, within its type bounds', () => {
+    // jsdom lays nothing out: each measured part is as wide as 8px a character.
+    const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const width = this.closest('.crewlet-sheet-grid__measure') ? (this.textContent ?? '').length * 8 : 0;
+      return { width, height: 0, top: 0, left: 0, right: width, bottom: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    try {
+      const wide: SheetColumn = { field: 'approved', label: 'Finance approved', type: 'checkbox' };
+      const huge: SheetColumn = { field: 'tier', label: 'Approved by the finance lead and the board', type: 'checkbox' };
+      render(<Host columns={[columns[0]!, columns[1]!, wide, huge, columns[4]!]} />);
+      const tracks = grid().style.getPropertyValue('--crewlet-sheet-columns').match(/minmax\([^)]*\)|\S+/g)!;
+      // Vendor: "Initech" and "Acme Corp" and the header, all under the text floor.
+      expect(tracks[1]).toBe('120px');
+      // The checkbox's long name widens it past its floor, to its measure.
+      expect(tracks[3]).toBe(`${'Finance approved'.length * 8}px`);
+      // And no further than its ceiling, however long the name.
+      expect(tracks[4]).toBe('180px');
+      const measurer = document.querySelector('.crewlet-sheet-grid__measure')!;
+      expect(measurer.getAttribute('aria-hidden')).toBe('true');
+      expect(measurer.hasAttribute('inert')).toBe(true);
+    } finally {
+      measure.mockRestore();
+    }
+  });
+
+  test('the frozen columns hold at most a share of a narrow view, never below their floor', () => {
+    const width = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains('crewlet-sheet-grid__scroller') ? 360 : 0;
+    });
+    try {
+      render(<Host />);
+      const tracks = grid().style.getPropertyValue('--crewlet-sheet-columns').match(/minmax\([^)]*\)|\S+/g)!;
+      // 60% of 360 less the 52px row numbers leaves the frozen Vendor 164px of its 200.
+      expect(tracks[1]).toBe('164px');
+    } finally {
+      width.mockRestore();
+    }
+  });
+
+  test('a declared width wins, and nothing measured keeps the type default', () => {
+    render(<Host columns={[{ ...columns[0]!, width: 240 }, columns[1]!]} />);
+    const tracks = grid().style.getPropertyValue('--crewlet-sheet-columns').match(/minmax\([^)]*\)|\S+/g)!;
+    expect(tracks[1]).toBe('240px');
+    expect(tracks[2]).toBe('minmax(112px, 1fr)');
+  });
+});
+
 describe('accessibility', () => {
   test('carries no axe violation, at rest and while editing', async () => {
     const { container } = render(
