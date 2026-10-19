@@ -86,8 +86,18 @@ const LABELS: SandboxedFrameLabels = {
   reload: 'Reload',
 };
 
-/** How long a document has to say hello after the frame mounts, or after a load, before it is torn down. */
+/** How long a document has to say hello after the frame mounts before it is torn down. */
 export const FRAME_HELLO_TIMEOUT_MS = 10_000;
+
+/**
+ * How long a document that has LOADED has to say hello. The runtime says it
+ * as the page's first script runs, long before the load event, so a load with
+ * no hello is an answer the engine served without one (an expired ticket, a
+ * page that is not there, a node that is starting) and is said within a beat
+ * rather than after the reader has watched a placeholder for ten seconds. The
+ * beat covers a hello still crossing the process boundary behind its load.
+ */
+export const FRAME_LOAD_GRACE_MS = 1_500;
 
 type FrameDivAttributes = Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'onMessage' | 'children' | 'role' | 'aria-label'>;
 
@@ -135,6 +145,8 @@ export interface SandboxedFrameProps extends FrameDivAttributes {
   /** Offered on every end state as the Reload action. Mint a fresh frame, then re-render with it. */
   onReload?: (() => void) | undefined;
   helloTimeoutMs?: number | undefined;
+  /** How long a loaded document has to say hello; the hello timeout where that is shorter. */
+  loadGraceMs?: number | undefined;
   labels?: Partial<SandboxedFrameLabels> | undefined;
 }
 
@@ -202,6 +214,7 @@ function FrameInstance(props: SandboxedFrameProps) {
     onRefusal: _onRefusal,
     onReload,
     helloTimeoutMs = FRAME_HELLO_TIMEOUT_MS,
+    loadGraceMs = FRAME_LOAD_GRACE_MS,
     labels,
     className,
     ...rest
@@ -336,7 +349,7 @@ function FrameInstance(props: SandboxedFrameProps) {
       }
       owed = true;
       clearTimeout(loadTimer);
-      loadTimer = setTimeout(() => end(greeted > 0 ? 'navigated' : 'failed'), helloTimeoutMs);
+      loadTimer = setTimeout(() => end(greeted > 0 ? 'navigated' : 'failed'), Math.min(helloTimeoutMs, loadGraceMs));
     };
 
     window.addEventListener('message', onWindowMessage);
@@ -354,7 +367,7 @@ function FrameInstance(props: SandboxedFrameProps) {
       clearTimeout(loadTimer);
       closePort();
     };
-  }, [policy, mode, nonce, helloTimeoutMs]);
+  }, [policy, mode, nonce, helloTimeoutMs, loadGraceMs]);
 
   // The appearance follows the reader live, on the port.
   const { mode: themeMode, palette, density } = theme;

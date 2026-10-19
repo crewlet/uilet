@@ -9,6 +9,8 @@ import axe from 'axe-core';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { FRAME_MESSAGE, type FrameTheme } from '../FrameProtocol/index.js';
 import {
+  FRAME_HELLO_TIMEOUT_MS,
+  FRAME_LOAD_GRACE_MS,
   SandboxedFrame,
   SandboxedFrameNotice,
   SandboxedFramePlaceholder,
@@ -230,6 +232,16 @@ describe('a document that does not announce itself', () => {
     expect(states.at(-1)).toBe('failed');
     expect(document.querySelector('iframe')).toBeNull();
     expect(screen.getByText('This page failed to load')).toBeDefined();
+  });
+
+  test('a document that loads without a hello is said to have failed within a beat, not after the whole timeout', () => {
+    const { iframe, states } = frame();
+    act(() => void iframe?.dispatchEvent(new Event('load')));
+    act(() => void vi.advanceTimersByTime(FRAME_LOAD_GRACE_MS - 1));
+    expect(states.at(-1)).toBe('loading');
+    act(() => void vi.advanceTimersByTime(1));
+    expect(states.at(-1)).toBe('failed');
+    expect(FRAME_LOAD_GRACE_MS).toBeLessThan(FRAME_HELLO_TIMEOUT_MS);
   });
 
   test('a load with no hello after a document that said one tears the frame down as navigated', () => {
