@@ -451,17 +451,12 @@ function FrameLoading({ label }: { label: string }) {
   );
 }
 
-/**
- * Why a frame shows no document, at the top of the box the document would
- * have filled. Its one action sits under the message, in line with its text:
- * beside it, a phone's width left the sentence a column of one word a line.
- */
+/** Why a frame shows no document, at the top of the box the document would have filled. */
 function FrameEnd({ heading, action, children }: { heading: string; action?: ReactNode; children: ReactNode }) {
   return (
     <div className="crewlet-sandboxed-frame__end">
-      <Callout variant="danger" title={heading} live="polite">
-        <span className="crewlet-sandboxed-frame__detail">{children}</span>
-        {action ? <span className="crewlet-sandboxed-frame__action">{action}</span> : null}
+      <Callout variant="danger" title={heading} live="polite" action={action}>
+        {children}
       </Callout>
     </div>
   );

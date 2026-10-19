@@ -22,8 +22,15 @@
    */
   --crewlet-callout-line: transparent;
 
-  display: flex;
-  align-items: flex-start;
+  /* THE GLYPH, THE TEXT, AND AN ACTION'S COLUMN only where there is one: the
+     third track is implicit, so a callout without an action keeps no gap
+     for it at its end. A grid rather than a row, so a narrow callout can put
+     its action under the text, in the text's own column, whatever the glyph
+     is. */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-auto-columns: auto;
+  align-items: start;
   gap: var(--spacing-2);
   /* The engine's own: a tight strip rather than a padded card. This sits
      above a screen or between two sections and takes a line or two of text,
@@ -47,11 +54,12 @@
  */
 .crewlet-callout:has(> .crewlet-callout__action) {
   --crewlet-callout-lead: max(0px, calc((var(--size-control-sm) - 1lh) / 2));
+  /* Measured by its own width, so the action can move under the text. */
+  container: crewlet-callout / inline-size;
 }
 
 .crewlet-callout__icon {
   display: inline-flex;
-  flex: none;
   /* On the first line's optical centre rather than its box top, which a 16px
      glyph beside a 13px line sits two pixels above. */
   margin-top: calc(2px + var(--crewlet-callout-lead, 0px));
@@ -59,7 +67,6 @@
 
 .crewlet-callout__content {
   min-width: 0;
-  flex: 1;
   padding-block: var(--crewlet-callout-lead, 0px);
 }
 
@@ -71,8 +78,29 @@
 }
 
 .crewlet-callout__action {
-  flex: none;
+  grid-column: 3;
+  grid-row: 1;
   align-self: center;
+}
+
+/*
+ * A NARROW CALLOUT PUTS ITS ACTION UNDER THE TEXT, at the start of the text's
+ * column, so the sentence keeps the callout's whole measure. Beside it, a
+ * phone's width left the message a column of a word or two a line. The text
+ * no longer centres on a button beside it, so it sits at its own top.
+ */
+@container crewlet-callout (width < 28rem) {
+  .crewlet-callout__icon,
+  .crewlet-callout__content {
+    --crewlet-callout-lead: 0px;
+  }
+
+  .crewlet-callout__action {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    align-self: start;
+  }
 }
 
 /*

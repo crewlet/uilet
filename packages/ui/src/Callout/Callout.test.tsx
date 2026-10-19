@@ -129,6 +129,30 @@ describe('Callout', () => {
     expect(action.closest('.crewlet-callout__content')).toBeNull();
   });
 
+  test('a narrow callout puts its action under the text, in the text\'s column, and a wide one beside it', () => {
+    // Beside the text, a phone's width left the message a column of a word or
+    // two a line. Measured by its own width, a callout with an action moves it
+    // to a row of its own under the text once it is narrower than 28rem.
+    const css = calloutCss().replace(/\/\*[\s\S]*?\*\//g, ' ');
+    const callout = /\.crewlet-callout\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(callout).toMatch(/display:\s*grid/);
+    expect(callout).toMatch(/grid-template-columns:\s*auto minmax\(0, 1fr\)/);
+    const withAction = /\.crewlet-callout:has\(> \.crewlet-callout__action\)\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(withAction).toMatch(/container:\s*crewlet-callout\s*\/\s*inline-size/);
+    const wide = /\n\.crewlet-callout__action\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(wide).toMatch(/grid-column:\s*3/);
+    const narrow = /@container crewlet-callout \(width < 28rem\)\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+    const action = /\.crewlet-callout__action\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? '';
+    expect(action).toMatch(/grid-column:\s*2/);
+    expect(action).toMatch(/grid-row:\s*2/);
+    expect(action).toMatch(/justify-self:\s*start/);
+    // Under the text there is no button for one line to centre on.
+    expect(narrow).toMatch(/--crewlet-callout-lead:\s*0px/);
+    // A callout with no action is no container: its width is never its own to measure.
+    const { container } = render(<Callout>Saved.</Callout>);
+    expect(container.querySelector('.crewlet-callout__action')).toBeNull();
+  });
+
   test('every ink comes from a declared step rather than from a mix nobody measured', () => {
     // `color-mix(in srgb, <fill> 55%, var(--color-text-primary))` is what this
     // replaced, at every one of the four tones. It makes a colour nothing
