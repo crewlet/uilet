@@ -204,6 +204,16 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.27.0
+
+**`SlideStage` presents in the page with `fit="view"`.** A slide presented inside a page sits below a title, a description and tabs, so a stage as tall as its column ran past the foot of the window and hid the bottom of the slide and the controls under it. A `view` stage letterboxes its slide as `contain` does, in a box whose height is measured: the room from the top of the stage's parent (the show: the stage and its controls) to the foot of its scrollport, less what else the parent holds and its `scroll-margin-bottom`, or the slide's height at the stage's width if that is less. The room is measured with the scrollport at its top, so it does not change as the reader scrolls, and again whenever the view, the show or the stage is resized. A show too low on the page to get half of what it asks takes the scrollport's whole height and is scrolled into view, clear of its `scroll-margin-top`. In full screen the stage fills its box, sharing a flex column with the show's controls.
+
+What to change:
+
+- A show presented in the page uses `fit="view"` in place of a box sized from the window's height, and lets the show's own height follow its content.
+- The show sets `scroll-margin-top` to the height of anything sticky over the view, and `scroll-margin-bottom` to the gap it keeps from the foot of the view.
+- `fit="contain"` is unchanged, for a box whose height the host already decides.
+
 ## Changes in 0.26.0
 
 **`@crewlethq/artifact-kit` binds a page's sheet to the runtime the engine serves**, `window.crewlet` contract 1.0 (the engine's `docs/reference/artifact-runtime.md`). The kit was written against a runtime the engine never served: it asked for a `data` capability the runtime calls `db`, so every page's sheet said it could not load, and it called methods the runtime does not have. The sheet now:

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
+import { useFitInView } from './fitInView.js';
 
 /** A presentation's stage: 1920 by 1080 CSS pixels, 16:9. */
 export const SLIDE_WIDTH = 1920;
@@ -12,8 +13,11 @@ export const SLIDE_HEIGHT = 1080;
  *   thumbnail, a grid card, the editor's slide.
  * - `contain`: as large as fits inside its container both ways, centred, the
  *   rest letterboxed. Present, full screen.
+ * - `view`: Present in the page. As `contain`, in a box as tall as lets the
+ *   stage's parent (the show: the stage and its controls) be seen whole, from
+ *   its top to the foot of the view; in full screen, the whole box.
  */
-export type SlideStageFit = 'width' | 'contain';
+export type SlideStageFit = 'width' | 'contain' | 'view';
 
 export interface SlideStageProps {
   /** The slide, laid out at the stage's own size (1920 by 1080 by default). */
@@ -41,6 +45,14 @@ export interface SlideStageProps {
  * show the same line breaks. Reflowing it to the box would move every pinned
  * element relative to the text beside it.
  *
+ * SEEN WHOLE IN THE PAGE (`fit="view"`): the stage's height is measured too,
+ * as the room from its parent's top to the foot of the scrollport less what
+ * else the parent holds, or the slide's height at the stage's width if that
+ * is less, so the slide's foot and the controls under it are never below the
+ * fold. A parent too low on the page to get half of that takes the whole view
+ * and is scrolled to, clear of its `scroll-margin-top` and
+ * `scroll-margin-bottom`. The parent's height follows its content.
+ *
  * MEASURED, NOT GUESSED: the scale is the box's own size over the stage's,
  * read whenever the box resizes, so a filmstrip that narrows or a window that
  * goes full screen redraws at the new size. A `scale` given outright is used
@@ -59,6 +71,7 @@ export function SlideStage({
   className,
 }: SlideStageProps) {
   const box = useRef<HTMLDivElement | null>(null);
+  const viewHeight = useFitInView(box, fit === 'view' && scale === undefined, height / width);
   const [measured, setMeasured] = useState<{ scale: number; left: number; top: number }>({
     scale: 0,
     left: 0,
@@ -71,7 +84,7 @@ export function SlideStage({
     const read = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
-      if (fit === 'contain') {
+      if (fit !== 'width') {
         const s = Math.min(w / width, h / height);
         setMeasured({ scale: s, left: (w - width * s) / 2, top: (h - height * s) / 2 });
       } else {
@@ -83,13 +96,18 @@ export function SlideStage({
     const observer = new ResizeObserver(read);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [fit, scale, width, height]);
+  }, [fit, scale, width, height, viewHeight]);
 
   const s = scale ?? measured.scale;
   const boxStyle: CSSProperties =
     fit === 'width' || scale !== undefined
       ? { aspectRatio: `${width} / ${height}`, ...(scale !== undefined ? { width: width * scale } : {}) }
-      : {};
+      : fit === 'view'
+        ? ({
+            '--crewlet-slide-stage-ratio': `${width} / ${height}`,
+            ...(viewHeight !== null ? { height: viewHeight } : {}),
+          } as CSSProperties)
+        : {};
   const frameStyle: CSSProperties = {
     width,
     height,

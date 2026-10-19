@@ -16,6 +16,22 @@
   height: 100%;
 }
 
+/* Until it is measured, and wherever it is not (no layout), a view stage is
+   its slide's shape at its width. In full screen it fills the box, sharing a
+   flex column with the show's controls. */
+.crewlet-slide-stage--view {
+  flex: none;
+  aspect-ratio: var(--crewlet-slide-stage-ratio, 16 / 9);
+}
+
+:fullscreen .crewlet-slide-stage--view,
+.crewlet-slide-stage--view:fullscreen {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
 .crewlet-slide-stage__frame {
   position: absolute;
   top: 0;
