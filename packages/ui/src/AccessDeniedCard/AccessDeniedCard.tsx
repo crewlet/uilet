@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { EyeOffGlyph, LockGlyph, ShieldGlyph } from '@crewlethq/icons/glyphs';
-import { Card } from '../Card/index.js';
 import { EmptyState } from '../EmptyState/index.js';
 import type { HeadingLevel } from '../utils/headingLevel.js';
 import { cx } from '../utils/cx.js';
@@ -46,10 +45,10 @@ const LABELS: AccessDeniedCardLabels = {
 };
 
 const GLYPHS: Record<AccessDeniedReason, ReactNode> = {
-  'not-found': <EyeOffGlyph size={32} />,
-  'no-access': <LockGlyph size={32} />,
-  revoked: <LockGlyph size={32} />,
-  'app-locked': <ShieldGlyph size={32} />,
+  'not-found': <EyeOffGlyph size="xl" />,
+  'no-access': <LockGlyph size="xl" />,
+  revoked: <LockGlyph size="xl" />,
+  'app-locked': <ShieldGlyph size="xl" />,
 };
 
 export interface AccessDeniedCardProps {
@@ -69,6 +68,11 @@ export interface AccessDeniedCardProps {
  * IT SAYS WHAT THE READER CAN DO, never what the artifact is. A title, a
  * kind or an owner the engine has not shown this reader stays unsaid, so the
  * card is safe to draw from nothing but the engine's refusal.
+ *
+ * DRAWN AS AN ARTIFACT'S OTHER BLOCKED STATE IS: the default empty state with
+ * the 24px glyph, on the page and in no box. A bordered card with a larger
+ * glyph made a refused link look like a different product from a trashed
+ * artifact, which says the same kind of thing.
  */
 export function AccessDeniedCard({ reason, owner, action, headingLevel, className, labels }: AccessDeniedCardProps) {
   const text = {
@@ -76,7 +80,7 @@ export function AccessDeniedCard({ reason, owner, action, headingLevel, classNam
     descriptions: { ...LABELS.descriptions, ...labels?.descriptions },
   };
   return (
-    <Card padding="lg" className={cx('crewlet-access-denied-card', className)} data-reason={reason}>
+    <div className={cx('crewlet-access-denied-card', className)} data-reason={reason}>
       <EmptyState
         icon={GLYPHS[reason]}
         title={text.titles[reason]}
@@ -84,6 +88,6 @@ export function AccessDeniedCard({ reason, owner, action, headingLevel, classNam
         action={action}
         headingLevel={headingLevel}
       />
-    </Card>
+    </div>
   );
 }
