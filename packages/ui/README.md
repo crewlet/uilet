@@ -52,7 +52,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Arranging a page | `ArrangeBoard`, `ArrangeGrid`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
-| Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen`, `useIdle` |
+| Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen`, `useIdle`, `useMediaMatch` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
 | Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `ArtifactBar` and `ArtifactVersionChip` (an open artifact's one slim bar), `ArtifactPanel` and `ArtifactWorkspace` (the panels it opens beside or over the artifact), `CanvasBoard` (a design's artboards and notes on a `Canvas`, with the visibility budget `liveBoards`), `CanvasToolbar` (a canvas's tool palette, with `toolForKey`), `CanvasSchematic` (a design's cover, drawn from its boards' frames), `AccessDeniedCard`, `ArtifactIcon` (with `artifactIconGlyph` and `ARTIFACT_ICON_WORDS`), the native gallery covers (`DocCover`, `SheetCover`, `DashboardCover`), `MergeConflicts`, the dashboard pieces (`WidgetFrame`, `DatasetSource` and `DatasetSourceList`), and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
 | Sheets | `SheetGrid`, the cells on their own (`CheckboxCell`, `TextCell`, `LongTextCell`, `NumberCell`, `SelectCell`, `MultiSelectCell`, `PersonCell`, `StatusCell`, `DateCell`, `UrlCell`, `RatingCell`, and `SheetCell` for any type), `ChangeMark`, and `SheetModel` (every rule a sheet is drawn from, with no React in it: values, parsing, the keyboard model, TSV, the pending edits of D23) |
@@ -216,9 +216,15 @@ places:
 - **`SlideGrid` lays a phone out two to a row.**
 - **`SlideCompare` names its columns** by version over the first row (over each side once they stack), and the side a version lacks reads "Not in this version". Two identical versions draw no empty list.
 
+**`useMediaMatch(query)` is exported**: whether a media query matches, read during render (`useSyncExternalStore`) so the first render already has the answer, and again on every change; `false` where there is no `matchMedia`. It is the package's own copy, the one the shell and the switcher read, so an application's "is this a phone" can no longer disagree with the kit's. Keep it for the decision a stylesheet cannot make (which element to draw); a width a media query in CSS can decide belongs there.
+
+**An end-aligned `Popover`, `Menu` or `Select` opens near the left edge.** Each asked whether its anchor had left the layer using the aligned panel's start instead of the anchor, so a panel wider than its trigger's right edge (a toolbar's last control wrapped to the left of a phone) closed on the frame it opened. They now ask of the anchor itself (`anchorGone`, from the layer's placement helpers, which `Tooltip` uses too), and the placement clamps the panel inside the window.
+
 What to change:
 
 - `SlideCompareLabels.missing` is a string now, not a function of the version.
+- An application that start-aligned its panels on a phone to dodge the close above can align them as it wants again.
+- An application with its own media query hook can use `useMediaMatch` instead.
 - A host that drew a show's Previous, count and Next itself uses `SlideNav`.
 
 ## Changes in 0.32.0

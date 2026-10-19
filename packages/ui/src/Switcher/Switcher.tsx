@@ -75,7 +75,7 @@ import { Skeleton } from '../Skeleton/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import { highlightMatch } from '../utils/highlight.js';
-import { useMediaMatch } from '../utils/useMediaMatch.js';
+import { useMediaMatch } from '../MediaMatch/index.js';
 
 /** Where the panel opens. Derived, never asked for: see the component doc. */
 export type SwitcherPlacement = 'anchored' | 'centered' | 'sheet';

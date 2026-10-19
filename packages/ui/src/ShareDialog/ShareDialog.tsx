@@ -10,7 +10,7 @@ import { PrincipalAvatar, type Principal } from '../Principal/index.js';
 import { Select, type SelectOption } from '../Select/index.js';
 import { cx } from '../utils/cx.js';
 import { headingTag, useHeadingLevel } from '../utils/headingLevel.js';
-import { useMediaMatch } from '../utils/useMediaMatch.js';
+import { useMediaMatch } from '../MediaMatch/index.js';
 import { SHAREABLE_ROLES, type ArtifactRole, type CompanyAccess, type ShareableRole } from './roles.js';
 
 /** One line of "Who has access". */
