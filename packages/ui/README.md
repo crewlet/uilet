@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.31.1
+
+**`EditingStatus` folds "Editing" on an artifact bar's narrow arrangement**, below 640px, and keeps its dot, so a phone's bar keeps the room for the title while Cancel and Save are there. The words stay in the status for a screen reader.
+
 ## Changes in 0.31.0
 
 **`ArtifactBar` carries an editing state**: a `status` slot said before the kind's tools (an `EditingStatus` while a doc is edited), never folded away, and a tool's `emphasis: 'primary'`, drawn as the primary button with its word kept at every width, for the one action the state turns on, such as Save.
