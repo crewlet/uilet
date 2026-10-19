@@ -7,12 +7,12 @@ The engine serves this package's `dist/` directory, unchanged, from the artifact
 ## What a page links
 
 ```html
-<link rel="stylesheet" href="/_crewlet/kit/0.18.0/kit.css">
-<script src="/_crewlet/kit/0.18.0/theme.js"></script>
-<script type="module" src="/_crewlet/kit/0.18.0/kit.js"></script>
+<link rel="stylesheet" href="/_crewlet/kit/<version>/kit.css">
+<script src="/_crewlet/kit/<version>/theme.js"></script>
+<script type="module" src="/_crewlet/kit/<version>/kit.js"></script>
 ```
 
-Link the first two in the `<head>`, `theme.js` as a classic blocking script, before anything paints. `kit.js` is only needed by a page that draws a sheet. Then write colours, spacing and type with the tokens rather than literal values:
+`<version>` is the exact kit version the page was written against (the engine's authoring guide names the newest it serves); the engine serves every kit version it has shipped, so a published page keeps its own. Link the first two in the `<head>`, `theme.js` as a classic blocking script, before anything paints. `kit.js` is only needed by a page that draws a sheet. Then write colours, spacing and type with the tokens rather than literal values:
 
 ```css
 .summary {
@@ -41,7 +41,7 @@ A page draws an editable sheet over one of its datastore collections with `<crew
 or from a script:
 
 ```js
-import { mountSheet } from '/_crewlet/kit/0.18.0/kit.js';
+import { mountSheet } from '/_crewlet/kit/<version>/kit.js';
 
 const sheet = mountSheet(document.querySelector('#grid'), { collection: 'vendors' });
 // sheet.update({ ... }) draws it again with changed options; sheet.unmount() takes it down.
@@ -49,7 +49,7 @@ const sheet = mountSheet(document.querySelector('#grid'), { collection: 'vendors
 
 A sheet with no columns of its own draws the collection's schema: its hidden columns are left out, its primary column is frozen, and a column type this kit does not know is drawn as read-only text.
 
-It is the design system's own `SheetGrid`, the component the dashboard draws a native sheet with, so a page's sheet looks and behaves exactly like it: the keyboard of a spreadsheet (arrows, Enter or F2 to edit, Escape, Tab, Space on a checkbox, typing to replace, Mod+C and Mod+V for ranges, Delete, Mod+Z and Mod+Shift+Z), an edit drawn at once as Saving until the engine confirms it, a refusal said on the cell, a conflict note naming whoever changed a cell under the editor, collaborators' rings and name flags, and the light and dark themes and every palette.
+It is the design system's own `SheetGrid`, the component the dashboard draws a native sheet with, so a page's sheet looks and behaves exactly like it: the keyboard of a spreadsheet (arrows, Enter or F2 to edit, Escape, Tab, Space on a checkbox, typing to replace, Mod+C and Mod+V for ranges, Delete, Mod+Z and Mod+Shift+Z), an edit drawn at once as Saving until the engine confirms it, a refusal said on the cell and held in the sync strip as not saved until the reader dismisses it, a conflict note naming whoever changed a cell under the editor, collaborators' rings and name flags, and the light and dark themes and every palette.
 
 ### `<crewlet-sheet>` attributes
 
@@ -60,7 +60,7 @@ It is the design system's own `SheetGrid`, the component the dashboard draws a n
 | `sort` | The initial order: `score` ascending, `-score` descending. |
 | `frozen` | How many leading columns stay in view while the sheet scrolls sideways. |
 | `readonly` | Draws the sheet read only, whatever the reader may do. |
-| `height` | The scroller's height in px. The height its container gives it when absent. |
+| `height` | The most the sheet grows to, in px; its rows scroll past it. The sheet is as tall as its rows below that, so no empty space sits under Add row. Without it the sheet stops at `--crewlet-sheet-max-height` (70% of the viewport by default). |
 
 ### `<crewlet-column>` attributes
 
@@ -78,19 +78,21 @@ It is the design system's own `SheetGrid`, the component the dashboard draws a n
 
 ### What the sheet binds to
 
-The sheet talks only to the page's runtime, `window.crewlet` (runtime contract 1.0), so it has exactly the page's capabilities and no more:
+The sheet talks only to the page's runtime, `window.crewlet` (runtime contract 1.0, documented in the engine's `docs/reference/artifact-runtime.md`), so it has exactly the page's capabilities and no more:
 
 | Runtime call | What the sheet uses it for | Capability |
 | ------------ | -------------------------- | ---------- |
-| `data.collection(name).schema()`, `.subscribe(null, …)` | The columns, when the page declared none, and the rows, live | `data` |
-| `data.collection(name).update(id, patch)`, `data.batch()` | One edit, and a paste or a cleared range as one all-or-nothing record | `data` |
-| `data.collection(name).create({})` | Add row | `data` |
-| `data.undo()`, `data.redo()` | Mod+Z and Mod+Shift+Z; an undo somebody overtook is skipped and said | `data` |
-| `presence.subscribe(…)`, `presence.set({ focus, editing })` | Collaborators' rings and flags, the presence stack, and the reader's own cell | `presence` |
-| `identity.me()`, `identity.people()`, `identity.lookup(ids)` | A viewer's read-only sheet, the people a person cell offers, and the names of people a cell holds | `identity` |
+| `data.schema()` | The collection's title, and its columns when the page declared none | `db` |
+| `data.collection(name).subscribe(callback, onError)` | The rows, live; a refused subscription is said in place of the grid | `db` |
+| `data.collection(name).merge(id, fields)`, `data.batch().merge(…).commit()` | One edit, and a paste or a cleared range as one all-or-nothing write | `db` |
+| `data.collection(name).set(id, {})` | Add row, under an id the kit mints | `db` |
+| `data.collection(name).delete(id)` | Delete row, from a row's actions, once the reader confirms it | `db` |
+| `data.undo()`, `data.redo()` | Mod+Z and Mod+Shift+Z over the page's own writes; a step somebody overtook is skipped and said | `db` |
+| `presence.roster()`, `presence.subscribe(…)`, `presence.set({ activity, focus })` | Collaborators' rings and flags, the presence stack, and the reader's own cell | `presence` |
+| `identity.me()`, `identity.people()` | A viewer's read-only sheet, and the people a person cell offers and names | `identity` |
 | `connection.subscribe(…)` | Offline in the sync strip | none |
 
-A page that did not declare `data` gets a sheet that says so rather than an empty grid; without `presence` or `identity` the sheet draws without collaborators or without names. When the kit loads before the runtime, it waits for the runtime's `crewlet:ready` event on `window` (exported as `RUNTIME_READY_EVENT`).
+A write resolves with the engine's verdict (`applied`, `pending`, `conflict`, `invalid`, `forbidden`, `quota` or `gone`) and rejects only where nothing was decided (`rate_limited`, `unavailable`, `capability_not_declared`); the sheet says either on the cell it wrote, and a paste is refused whole, never in part. An Add row that fails is said under the sheet with Retry. Delete row (on a row's number, or Shift+F10) asks in the kit's own confirmation, never a browser dialog, which an artifact frame refuses; a delete the engine refuses or the runtime rejects keeps the row and is said on its first cell, held as a write's refusal is. A viewer and a `readonly` sheet are offered neither. A subscription the runtime refuses (`forbidden`, `not_found`, `unavailable`, `capability_not_declared`) is said in place of the grid, never drawn as an empty collection. A page that did not declare `db` gets a sheet that says so rather than an empty grid; without `presence` or `identity` the sheet draws without collaborators or without names. When the kit loads before the runtime, it waits for the runtime's `crewlet:ready` event on `window` (exported as `RUNTIME_READY_EVENT`).
 
 ## What is in it
 

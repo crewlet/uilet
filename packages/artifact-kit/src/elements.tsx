@@ -6,7 +6,7 @@
  *     <crewlet-column field="score" type="number" label="Score" format="0.0"></crewlet-column>
  *   </crewlet-sheet>
  *
- *   import { mountSheet } from '/_crewlet/kit/0.18.0/kit.js';
+ *   import { mountSheet } from '/_crewlet/kit/<version>/kit.js';
  *   mountSheet(document.querySelector('#grid'), { collection: 'vendors' });
  *
  * LIGHT DOM, not shadow DOM: the tokens cascade into the sheet, and the page's
@@ -34,7 +34,7 @@ export interface SheetOptions {
   readOnly?: boolean | undefined;
   /** The grid's accessible name. */
   label?: string | undefined;
-  /** The scroller's height in px. */
+  /** The most the sheet grows to in px; it is as tall as its rows below that, and its rows scroll past it. */
   height?: number | undefined;
   /** The runtime to bind to; `window.crewlet` when absent. */
   runtime?: KitRuntime | undefined;
