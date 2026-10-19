@@ -168,6 +168,22 @@ export const EditingADoc: Story = {
   },
 };
 
+/**
+ * The same bar where room is short (a small laptop's bar beside the rail): the
+ * unsaved state folds to its accent dot, still read by a screen reader, so the
+ * title keeps its words rather than being cut to two.
+ */
+export const EditingADocNarrow: Story = {
+  args: { ...EditingADoc.args, title: 'Architecture notes for the 1.0 release' },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 760 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
 /** An older version on show: the chip takes the accent and says which of how many. */
 export const OlderVersion: Story = {
   args: {
