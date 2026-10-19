@@ -36,12 +36,18 @@
  *
  * HOVER AND SELECTION ARE OUTLINES IN THE ACCENT, at one screen pixel and two,
  * over a board's own hairline edge; hovering a board's name outlines its board,
- * because the name is how a reader picks a board out of a crowded canvas.
+ * because the name is how a reader picks a board out of a crowded canvas. The
+ * selection is the component's own unless the caller holds it (`selected`
+ * with `onSelectedChange`), which is how a list of boards beside the canvas
+ * marks the board picked on it and picks one there.
  *
  * THE CHROME STAYS ONE SIZE ON SCREEN. Titles, edges, outlines and handles
  * are counter-scaled by the zoom, so a board's label is readable, its edge is
  * a hairline and its handle is a full pointer target whatever the zoom, while
- * the board itself scales with the canvas.
+ * the board itself scales with the canvas. What a board says is held to the
+ * room it is drawn in (`boardRoom`): a name too narrow to read is not drawn,
+ * and a placeholder drops the lines it has no room for rather than spill them
+ * over the boards beside it.
  */
 
 import {
@@ -148,6 +154,12 @@ export interface CanvasBoardNote {
   h: number;
   text: string;
   color?: CanvasNoteColor | undefined;
+}
+
+/** What is selected on a board canvas: one board or one note. */
+export interface CanvasBoardSelection {
+  kind: 'board' | 'note';
+  id: string;
 }
 
 /** A frame as an edit reports it. */
@@ -274,6 +286,14 @@ export interface CanvasBoardProps {
   onOpen?: ((id: string) => void) | undefined;
   /** The board that holds the pointer changed; null is the canvas itself. */
   onActivate?: ((id: string | null) => void) | undefined;
+  /**
+   * The selected board or note, for a caller that holds it (a list of boards
+   * that marks the one picked on the canvas). Left out, the canvas keeps its
+   * own; null is nothing selected.
+   */
+  selected?: CanvasBoardSelection | null | undefined;
+  /** The selection changed, by a press on the canvas or by Escape. */
+  onSelectedChange?: ((selection: CanvasBoardSelection | null) => void) | undefined;
   /** Anything else in the canvas's control bar. */
   controlsExtra?: ReactNode | undefined;
   /** The floating tool palette. On by default; the keys work either way. */
@@ -471,11 +491,38 @@ function useFrameGestures(
   return { preview, handle, pointer };
 }
 
-/** What is selected: one board or one note. */
-interface Selection {
-  kind: 'board' | 'note';
-  id: string;
+type Selection = CanvasBoardSelection;
+
+const sameSelection = (a: Selection | null, b: Selection | null) =>
+  a === b || (a !== null && b !== null && a.kind === b.kind && a.id === b.id);
+
+/**
+ * WHAT A BOARD HAS ROOM TO SAY, from its size on screen.
+ *
+ * `title` is whether its name is drawn above it: a name narrower than a few
+ * letters reads as a stray mark, so a board drawn narrower than
+ * [BOARD_TITLE_MIN_WIDTH] goes unnamed until it is zoomed into. `lines` is how
+ * many of a placeholder's two lines (its size, then why it is not running) fit
+ * inside it at the chrome's own type, so the lines it has no room for are left
+ * out rather than clipped at both ends.
+ */
+export function boardRoom(width: number, height: number): { title: boolean; lines: 0 | 1 | 2 } {
+  const title = width >= BOARD_TITLE_MIN_WIDTH;
+  if (width >= PLACEHOLDER_FULL.width && height >= PLACEHOLDER_FULL.height) return { title, lines: 2 };
+  if (width >= PLACEHOLDER_SIZE.width && height >= PLACEHOLDER_SIZE.height) return { title, lines: 1 };
+  return { title, lines: 0 };
 }
+
+/** The narrowest a board is drawn, in screen pixels, with its name above it. */
+export const BOARD_TITLE_MIN_WIDTH = 40;
+
+/**
+ * The least a placeholder needs, in screen pixels, for its size line alone,
+ * and for both of its lines: each line's width at the extra small type with
+ * its padding, and the lines' height with their gap.
+ */
+const PLACEHOLDER_SIZE = { width: 96, height: 32 };
+const PLACEHOLDER_FULL = { width: 200, height: 64 };
 
 /** Where a key is a character being typed rather than an instruction to the canvas. */
 const TYPING = "input, textarea, select, [contenteditable='true']";
@@ -497,6 +544,8 @@ export function CanvasBoard({
   onNoteCreate,
   onOpen,
   onActivate,
+  selected: heldSelection,
+  onSelectedChange,
   controlsExtra,
   toolbar = true,
   labels,
@@ -509,7 +558,13 @@ export function CanvasBoard({
   const [viewport, setViewport] = useState<CanvasSize>({ width: 0, height: 0 });
   const [active, setActive] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Selection | null>(null);
+  const [ownSelection, setOwnSelection] = useState<Selection | null>(null);
+  const selected = heldSelection !== undefined ? heldSelection : ownSelection;
+  const setSelected = (next: Selection | null) => {
+    if (sameSelection(next, selected)) return;
+    if (heldSelection === undefined) setOwnSelection(next);
+    onSelectedChange?.(next);
+  };
   const [chosenTool, setTool] = useState<CanvasBoardTool>('move');
   const [spaceHeld, setSpaceHeld] = useState(false);
 
@@ -684,7 +739,7 @@ export function CanvasBoard({
         label={label}
         content={content}
         largestItemWidth={largest || undefined}
-        ground="dotted"
+        ground="grid"
         cursor={TOOL_CURSOR[acting]}
         minZoom={CANVAS_BOARD_MIN_ZOOM}
         refitOnResize
@@ -710,10 +765,12 @@ export function CanvasBoard({
             const isLive = live.has(b.id);
             const isActive = !editable && active === b.id && isLive;
             const chosen = isSelected('board', b.id);
+            const room = boardRoom(b.w * view.k, b.h * view.k);
             return (
               <section
                 key={b.id}
                 className="crewlet-canvas-board__board"
+                data-untitled={!room.title || undefined}
                 data-live={isLive || undefined}
                 data-active={isActive || undefined}
                 data-selected={chosen || undefined}
@@ -748,6 +805,7 @@ export function CanvasBoard({
                     <IconButton
                       size="sm"
                       variant="ghost"
+                      className="crewlet-canvas-board__open"
                       label={text.open(b.title)}
                       icon={<MaximizeGlyph />}
                       onClick={() => onOpen(b.id)}
@@ -758,12 +816,18 @@ export function CanvasBoard({
                   {isLive ? (
                     renderBoard(b)
                   ) : (
+                    // NAMED BY ITS TITLE ABOVE IT, as a live board is, so it
+                    // says only what a running board does not: its size and
+                    // why it is not running, as much of that as fits.
                     <div className="crewlet-canvas-board__placeholder">
-                      <span className="crewlet-canvas-board__placeholder-text">
-                        <span className="crewlet-canvas-board__placeholder-title">{b.title}</span>
-                        <span>{text.size(b.w, b.h)}</span>
-                        <span>{text.paused}</span>
-                      </span>
+                      {room.lines > 0 && (
+                        <span className="crewlet-canvas-board__placeholder-text">
+                          <span className="crewlet-canvas-board__placeholder-size">
+                            {text.size(b.w, b.h)}
+                          </span>
+                          {room.lines > 1 && <span>{text.paused}</span>}
+                        </span>
+                      )}
                     </div>
                   )}
                   {!isActive && (

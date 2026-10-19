@@ -5,7 +5,12 @@
  * writes on the layer, so it stays one size on screen.
  */
 
+/*
+ * A SIZE CONTAINER BY ITS WIDTH, so the palette can tell a canvas too narrow
+ * to hold it beside the zoom bar on one line (see below).
+ */
 .crewlet-canvas-board {
+  container: crewlet-canvas-board / inline-size;
   height: 100%;
   min-height: 0;
 }
@@ -27,12 +32,32 @@
 
 /* ---- the tool palette, floating at the foot of the field ----------------- */
 
+/*
+ * CENTRED AT THE FOOT, ON THE ZOOM BAR'S LINE. The palette's buttons are a
+ * step larger than the zoom bar's, since a tool is picked far more often than
+ * a zoom; so the palette sits half that step lower, and the two bars share a
+ * centre line rather than a foot with one top edge out of line.
+ */
 .crewlet-canvas-board__tools {
   position: absolute;
-  bottom: var(--spacing-3);
+  bottom: calc(var(--spacing-3) - (var(--size-control-md) - var(--size-control-sm)) / 2);
   left: 50%;
   z-index: var(--z-index-raised);
   transform: translateX(-50%);
+}
+
+/*
+ * A NARROW CANVAS (a phone, a split pane) has no room at its foot for the
+ * palette between the zoom bar and the edge, so the palette moves to the top
+ * left corner, which the zoom bar never takes.
+ */
+@container crewlet-canvas-board (width < 36rem) {
+  .crewlet-canvas-board__tools {
+    top: var(--spacing-3);
+    bottom: auto;
+    left: var(--spacing-3);
+    transform: none;
+  }
 }
 
 /* ---- a board ------------------------------------------------------------ */
@@ -97,7 +122,7 @@
   cursor: var(--crewlet-canvas-cursor-pointer, default);
 }
 
-/* A board that is not running draws its title and size at screen size. */
+/* A board that is not running draws its size, and why, at screen size. */
 .crewlet-canvas-board__placeholder {
   position: absolute;
   inset: 0;
@@ -111,25 +136,59 @@
   text-align: center;
 }
 
-/* ONE BLOCK, SCALED ONCE: its lines keep their spacing at screen size rather
-   than each line shrinking back into the space the zoom left it. */
+/*
+ * ONE BLOCK, SCALED ONCE: its lines keep their spacing at screen size rather
+ * than each line shrinking back into the space the zoom left it. It is held to
+ * the board's width ON SCREEN (the board's own width times the zoom, less a
+ * margin each side), so a line the component judged to fit never runs past
+ * the board's edges into the boards beside it.
+ */
 .crewlet-canvas-board__placeholder-text {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-1);
   flex: none;
+  box-sizing: border-box;
+  max-width: calc(100% * var(--crewlet-canvas-board-zoom));
+  padding-inline: var(--spacing-2);
   transform: scale(var(--crewlet-canvas-board-unzoom));
 }
 
-.crewlet-canvas-board__placeholder-title {
+.crewlet-canvas-board__placeholder-text > * {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-canvas-board__placeholder-size {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- chrome, at screen size --------------------------------------------- */
 
+/*
+ * THE CHROME IS DRAWN OVER THE CONTENT, every board's and note's over every
+ * board and note, as a design tool draws its frame names. It is counter-scaled
+ * to one size on screen while the content shrinks with the zoom, so far out a
+ * name reaches over the note or board above it; drawn in document order it
+ * went under a note laid out after its board, and that note took every press
+ * meant for the name and the open control.
+ */
+.crewlet-canvas-board__chrome,
+.crewlet-canvas-board__note-tools,
+.crewlet-canvas-board__resize {
+  z-index: 1;
+}
+
+/*
+ * ONE LINE OF TYPE TALL, whatever sits in it: the open control is centred on
+ * the line and allowed past it, so a row of boards zoomed far out loses only
+ * a title's height to the names above it rather than a button's.
+ */
 .crewlet-canvas-board__chrome {
   position: absolute;
   bottom: 100%;
@@ -139,9 +198,38 @@
   gap: var(--spacing-1);
   box-sizing: border-box;
   width: calc(100% * var(--crewlet-canvas-board-zoom));
+  height: calc(var(--font-size-xs) * var(--font-line-height-normal) + var(--spacing-1));
   padding-bottom: var(--spacing-1);
   transform: scale(var(--crewlet-canvas-board-unzoom));
   transform-origin: bottom left;
+}
+
+/* A board drawn too narrow to name goes unnamed (`boardRoom`). */
+.crewlet-canvas-board__board[data-untitled] > .crewlet-canvas-board__chrome {
+  display: none;
+}
+
+.crewlet-canvas-board__open {
+  flex: none;
+}
+
+/*
+ * THE OPEN CONTROL IS THE BOARD'S, NOT THE CANVAS'S: where a pointer can
+ * hover, it is drawn on the board under it, the selected board and the
+ * control that has focus, so a canvas at rest shows its names and nothing
+ * else. A touch screen has no hover to find it by, so it is always drawn
+ * there.
+ */
+@media (hover: hover) {
+  .crewlet-canvas-board__open {
+    opacity: 0;
+  }
+
+  .crewlet-canvas-board__board:hover .crewlet-canvas-board__open,
+  .crewlet-canvas-board__board[data-selected] .crewlet-canvas-board__open,
+  .crewlet-canvas-board__open:focus-visible {
+    opacity: 1;
+  }
 }
 
 /* The board's name: small, quiet, and the accent once its board is picked out. */
@@ -151,6 +239,7 @@
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-normal);
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: var(--crewlet-canvas-cursor-pointer, default);
@@ -176,6 +265,21 @@
 .crewlet-canvas-board__handle:hover {
   background: var(--color-surface-hover);
   border-color: var(--color-border-default);
+}
+
+/*
+ * A NAME THAT IS ALSO A MOVE HANDLE keeps the name's type and its place: the
+ * handle's padding and edge are taken back by a margin the same size, so the
+ * letters stay on the board's left edge and the title's line, and only the
+ * hover's box reaches past them.
+ */
+.crewlet-canvas-board__title.crewlet-canvas-board__handle {
+  flex: 0 1 auto;
+  margin-block: calc(-1 * (var(--spacing-1) + 1px));
+  margin-inline-start: calc(-1 * (var(--spacing-2) + 1px));
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-normal);
 }
 
 /* Both handles draw an edge of their own, so the ring sits over it. */
@@ -331,6 +435,23 @@
   padding-bottom: var(--spacing-1);
   transform: scale(var(--crewlet-canvas-board-unzoom));
   transform-origin: bottom left;
+}
+
+/*
+ * A NOTE'S TOOLS ARE THE NOTE'S, as a board's open control is the board's:
+ * where a pointer can hover they are drawn on the note under it, the selected
+ * note and the note holding focus, rather than over every note at once.
+ */
+@media (hover: hover) {
+  .crewlet-canvas-board__note-tools {
+    opacity: 0;
+  }
+
+  .crewlet-canvas-board__note:hover .crewlet-canvas-board__note-tools,
+  .crewlet-canvas-board__note[data-selected] .crewlet-canvas-board__note-tools,
+  .crewlet-canvas-board__note:focus-within .crewlet-canvas-board__note-tools {
+    opacity: 1;
+  }
 }
 
 .crewlet-canvas-board__note-move {

@@ -8,7 +8,17 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { createRef } from 'react';
 import { IDENTITY_VIEW, type CanvasHandle } from '../Canvas/index.js';
-import { CanvasBoard, TITLE_GLYPH_EM, titleSize, type CanvasBoardItem, type CanvasBoardNote } from './CanvasBoard.js';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import {
+  BOARD_TITLE_MIN_WIDTH,
+  CanvasBoard,
+  TITLE_GLYPH_EM,
+  boardRoom,
+  titleSize,
+  type CanvasBoardItem,
+  type CanvasBoardNote,
+  type CanvasBoardSelection,
+} from './CanvasBoard.js';
 import { liveBoards } from './budget.js';
 
 type Callback = (entries: { contentRect: { width: number; height: number } }[]) => void;
@@ -79,13 +89,102 @@ test('a board is live only on screen, wide enough, and within the budget, the mo
   expect(liveBoards(frames, IDENTITY_VIEW, { width: 0, height: 0 })).toEqual([]);
 });
 
-test('only live boards render their page; the rest draw a titled placeholder of their size', () => {
+test('only live boards render their page; the rest draw a placeholder of their size', () => {
   const { container } = mount({ maxLive: 2 });
   const running = pages(container);
   expect(running).toHaveLength(2);
   expect(running).not.toContain('mobile');
+  // The placeholder is named by the title above it, and says only its size
+  // and, with the room for it, why it is not running.
   const placeholder = screen.getByRole('region', { name: 'Mobile, 390 by 844' });
-  expect(placeholder.textContent).toContain('Zoom in to run this board');
+  const text = placeholder.querySelector('.crewlet-canvas-board__placeholder')!.textContent;
+  expect(text).toContain('390 by 844');
+  expect(text).not.toContain('Mobile');
+});
+
+test('what a board says is held to the room it is drawn in', () => {
+  // Named only when wide enough to read a name.
+  expect(boardRoom(BOARD_TITLE_MIN_WIDTH - 1, 200).title).toBe(false);
+  expect(boardRoom(BOARD_TITLE_MIN_WIDTH, 200).title).toBe(true);
+  // A placeholder drops its lines in turn rather than clipping them.
+  expect(boardRoom(400, 300).lines).toBe(2);
+  expect(boardRoom(120, 300).lines).toBe(1);
+  expect(boardRoom(400, 40).lines).toBe(1);
+  expect(boardRoom(60, 300).lines).toBe(0);
+});
+
+test('a board drawn too narrow to name is drawn unnamed, and a placeholder says only what fits', () => {
+  // Fitted into 1200 pixels, the design is drawn at about a third; held to
+  // twelve, the 390 pixel board is about 130 pixels wide.
+  mount({ maxLive: 0 });
+  const mobile = screen.getByRole('region', { name: 'Mobile, 390 by 844' });
+  expect(mobile.hasAttribute('data-untitled')).toBe(false);
+  const lines = mobile.querySelectorAll('.crewlet-canvas-board__placeholder-text > *');
+  expect(lines).toHaveLength(1);
+  expect(lines[0]!.textContent).toBe('390 by 844');
+  // The same canvas in a viewport a tenth as wide draws every board too
+  // narrow to name.
+  cleanup();
+  render(<CanvasBoard label="Landing page" boards={BOARDS} renderBoard={page} maxLive={0} />);
+  FakeResizeObserver.last!.resize(120, 80);
+  for (const board of BOARDS) {
+    expect(
+      screen.getByRole('region', { name: new RegExp(`^${board.title},`) }).hasAttribute('data-untitled'),
+    ).toBe(true);
+  }
+});
+
+test('a caller can hold the selection, and hears every change to it', () => {
+  const onSelectedChange = vi.fn();
+  const { rerender } = render(
+    <CanvasBoard
+      label="Landing page"
+      boards={BOARDS}
+      renderBoard={page}
+      minLiveWidth={0}
+      selected={{ kind: 'board', id: 'pricing' }}
+      onSelectedChange={onSelectedChange}
+    />,
+  );
+  FakeResizeObserver.last!.resize(1200, 800);
+  const pricing = screen.getByRole('region', { name: 'Pricing, 1440 by 900' });
+  const hero = screen.getByRole('region', { name: 'Hero, 1440 by 900' });
+  expect(pricing.hasAttribute('data-selected')).toBe(true);
+  // A press asks for the change; the canvas draws what the caller holds.
+  fireEvent.click(hero.querySelector('.crewlet-canvas-board__shield')!);
+  expect(onSelectedChange).toHaveBeenLastCalledWith({ kind: 'board', id: 'hero' });
+  expect(hero.hasAttribute('data-selected')).toBe(false);
+  const next: CanvasBoardSelection = { kind: 'board', id: 'hero' };
+  rerender(
+    <CanvasBoard
+      label="Landing page"
+      boards={BOARDS}
+      renderBoard={page}
+      minLiveWidth={0}
+      selected={next}
+      onSelectedChange={onSelectedChange}
+    />,
+  );
+  expect(hero.hasAttribute('data-selected')).toBe(true);
+  // Pressing the board already selected is no change.
+  const calls = onSelectedChange.mock.calls.length;
+  fireEvent.click(hero.querySelector('.crewlet-canvas-board__shield')!);
+  expect(onSelectedChange).toHaveBeenCalledTimes(calls);
+  // Escape clears it.
+  fireEvent.keyDown(document.querySelector('.crewlet-canvas__viewport')!, { key: 'Escape' });
+  expect(onSelectedChange).toHaveBeenLastCalledWith(null);
+});
+
+test('a board name that is a move handle keeps the name\'s type', () => {
+  const uninstall = installSheets('CanvasBoard/CanvasBoard.css');
+  const { container } = mount();
+  const read = container.querySelector('.crewlet-canvas-board__title')!;
+  const size = px(read, 'font-size');
+  cleanup();
+  mount({ editable: true });
+  // Under the handle's `font: inherit` the name was set at the page's size.
+  expect(px(screen.getByRole('button', { name: 'Move Hero' }), 'font-size')).toBe(size);
+  uninstall();
 });
 
 test('nothing is framed before the canvas has been fitted', () => {
@@ -477,4 +576,19 @@ test('a title is set to fit its box both ways, and its box clips the rest', () =
     '.crewlet-canvas-board__note[data-kind="title"] .crewlet-canvas-board__note-text',
   ) as HTMLElement;
   expect(text.style.fontSize).toBe(`${size}px`);
+});
+
+test('a board\'s name and controls are drawn over every board and note, so a note never takes their press', () => {
+  const uninstall = installSheets('CanvasBoard/CanvasBoard.css');
+  const { container } = mount({ editable: true });
+  const chrome = container.querySelector('.crewlet-canvas-board__chrome')!;
+  const note = container.querySelector('.crewlet-canvas-board__note')!;
+  const tools = container.querySelector('.crewlet-canvas-board__note-tools')!;
+  // The notes come after the boards in the layer, so in document order they
+  // would be drawn over the names; the chrome's own layer is what lifts it.
+  expect(chrome.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(getComputedStyle(chrome).zIndex).toBe('1');
+  expect(getComputedStyle(tools).zIndex).toBe('1');
+  expect(getComputedStyle(note).zIndex).not.toBe('1');
+  uninstall();
 });
