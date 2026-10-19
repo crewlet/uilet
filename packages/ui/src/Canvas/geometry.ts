@@ -177,15 +177,18 @@ export const CANVAS_ZOOM_LIMITS: CanvasZoomLimits = { min: CANVAS_MIN_ZOOM, max:
  * width in world units of the widest one, which the chart above this knows
  * because it measured every card; with none given the fixed ceiling stands. It
  * never goes below that fixed ceiling and never above [CANVAS_ZOOM_CEILING].
+ *
+ * `floor` is the fit's own floor, passed through to [fitView].
  */
 export function zoomLimits(
   content: CanvasRect | null,
   viewport: CanvasSize,
   largestItem?: number,
   padding: number = CANVAS_FIT_PADDING,
+  floor: number = CANVAS_MIN_ZOOM,
 ): CanvasZoomLimits {
   const measured = content !== null && viewport.width > 0 && viewport.height > 0;
-  const min = measured ? fitView(content, viewport, padding).k : CANVAS_MIN_ZOOM;
+  const min = measured ? fitView(content, viewport, padding, floor).k : floor;
   const room = viewport.width - 2 * padding;
   const wanted =
     largestItem !== undefined && largestItem > 0 && room > 0 ? room / largestItem : CANVAS_MAX_ZOOM;
@@ -261,18 +264,27 @@ export function clampPan(
   };
 }
 
-/** The view that shows all of `content`, centred, at no more than actual size. */
+/**
+ * The view that shows all of `content`, centred, at no more than actual size.
+ *
+ * `floor` is the smallest zoom the fit may take, [CANVAS_MIN_ZOOM] unless it
+ * is named. A chart of cards keeps that floor, because below it a card is a
+ * grey smudge and panning the overflow is the better view. A canvas of pages
+ * names a lower one: a design laid out across many 1440px boards is several
+ * screens wide, and a fit that stops at a quarter clips it on every side.
+ */
 export function fitView(
   content: CanvasRect,
   viewport: CanvasSize,
   padding: number = CANVAS_FIT_PADDING,
+  floor: number = CANVAS_MIN_ZOOM,
 ): CanvasView {
   if (viewport.width <= 0 || viewport.height <= 0) return IDENTITY_VIEW;
   const roomX = Math.max(0, viewport.width - 2 * padding);
   const roomY = Math.max(0, viewport.height - 2 * padding);
   const scaleX = content.width > 0 ? roomX / content.width : Infinity;
   const scaleY = content.height > 0 ? roomY / content.height : Infinity;
-  const k = Math.max(CANVAS_MIN_ZOOM, Math.min(CANVAS_FIT_MAX_ZOOM, scaleX, scaleY));
+  const k = Math.max(floor, Math.min(CANVAS_FIT_MAX_ZOOM, scaleX, scaleY));
   const drawnHeight = content.height * k;
   const x = (viewport.width - content.width * k) / 2 - content.x * k;
   // TOP ALIGNED when it cannot fit: see the module doc.

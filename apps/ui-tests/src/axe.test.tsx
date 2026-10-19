@@ -31,6 +31,7 @@ import { afterEach, expect, test } from 'vitest';
 import {
   Avatar,
   AvatarStack,
+  CanvasBoard,
   Button,
   ButtonLink,
   CharacterPicker,
@@ -407,6 +408,36 @@ test('a knowledge page carries no violation: its title, outline, body, a marked 
       <MarkdownEditor value="## Net balances" onChange={() => {}} label="The page, in markdown" renderPreview={(value) => <p>{value}</p>} />
     </main>,
   );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('a board canvas carries no violation: its tools, a selected board with its corners, a selected note and an open tip', async () => {
+  const { container } = render(
+    <main>
+      <h1>Launch landing page</h1>
+      <div style={{ height: 600 }}>
+        <CanvasBoard
+          label="Launch landing page"
+          boards={[
+            { id: 'hero', x: 0, y: 0, w: 1440, h: 900, title: 'Hero' },
+            { id: 'mobile', x: 1540, y: 0, w: 390, h: 844, title: 'Mobile' },
+          ]}
+          notes={[
+            { id: 's1', kind: 'sticky', x: 2000, y: 0, w: 240, h: 200, text: 'Copy from marketing' },
+            { id: 't1', kind: 'title', x: 0, y: -120, w: 900, h: 80, text: 'Launch' },
+          ]}
+          renderBoard={(b) => <p>{b.title}</p>}
+          editable
+          onNoteCreate={() => undefined}
+          onOpen={() => {}}
+        />
+      </div>
+    </main>,
+  );
+  fireEvent.focus(screen.getByRole('button', { name: 'Move Hero' }));
+  fireEvent.focus(screen.getByRole('button', { name: 'Sticky note' }));
+  expect(await violations(container)).toEqual([]);
+  fireEvent.click(container.querySelector('[data-kind="sticky"]')!);
   expect(await violations(container)).toEqual([]);
 });
 

@@ -4,10 +4,11 @@
  * controllable ResizeObserver, as the Canvas suite does.
  */
 
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { IDENTITY_VIEW } from '../Canvas/index.js';
-import { CanvasBoard, type CanvasBoardItem, type CanvasBoardNote } from './CanvasBoard.js';
+import { createRef } from 'react';
+import { IDENTITY_VIEW, type CanvasHandle } from '../Canvas/index.js';
+import { CanvasBoard, TITLE_GLYPH_EM, titleSize, type CanvasBoardItem, type CanvasBoardNote } from './CanvasBoard.js';
 import { liveBoards } from './budget.js';
 
 type Callback = (entries: { contentRect: { width: number; height: number } }[]) => void;
@@ -94,19 +95,245 @@ test('nothing is framed before the canvas has been fitted', () => {
 
 // ---- who holds the pointer -------------------------------------------------
 
-test('a click on a live board hands it the pointer, and Escape gives it back', () => {
+test('a click selects a board and a double-click hands it the pointer; Escape gives it back, then clears the selection', () => {
   const onActivate = vi.fn();
   const { container } = mount({ onActivate });
+  const viewport = container.querySelector('.crewlet-canvas__viewport')!;
   const hero = screen.getByRole('region', { name: 'Hero, 1440 by 900' });
-  const shield = hero.querySelector('.crewlet-canvas-board__shield')!;
-  fireEvent.click(shield);
+  fireEvent.click(hero.querySelector('.crewlet-canvas-board__shield')!);
+  expect(hero.hasAttribute('data-selected')).toBe(true);
+  expect(onActivate).not.toHaveBeenCalled();
+  const status = container.querySelector('.crewlet-canvas__hint')!;
+  expect(status.getAttribute('role')).toBe('status');
+  expect(status.textContent).toBe('Double-click to use this board');
+  fireEvent.doubleClick(hero.querySelector('.crewlet-canvas-board__shield')!);
   expect(onActivate).toHaveBeenLastCalledWith('hero');
   expect(hero.hasAttribute('data-active')).toBe(true);
   expect(hero.querySelector('.crewlet-canvas-board__shield')).toBeNull();
-  expect(hero.textContent).toContain('Press Escape to return to the canvas');
-  fireEvent.keyDown(container.querySelector('.crewlet-canvas__viewport')!, { key: 'Escape' });
+  expect(status.textContent).toBe('Press Escape to return to the canvas');
+  fireEvent.keyDown(viewport, { key: 'Escape' });
   expect(onActivate).toHaveBeenLastCalledWith(null);
   expect(hero.querySelector('.crewlet-canvas-board__shield')).not.toBeNull();
+  expect(hero.hasAttribute('data-selected')).toBe(true);
+  fireEvent.keyDown(viewport, { key: 'Escape' });
+  expect(hero.hasAttribute('data-selected')).toBe(false);
+  // The region stays, empty, for the next message.
+  expect(status.isConnected && status.textContent).toBe('');
+});
+
+test('a click on the field clears the selection, and a board\'s name selects its board', () => {
+  const { container } = mount();
+  const pricing = screen.getByRole('region', { name: 'Pricing, 1440 by 900' });
+  fireEvent.click(pricing.querySelector('.crewlet-canvas-board__title')!);
+  expect(pricing.hasAttribute('data-selected')).toBe(true);
+  fireEvent.click(container.querySelector('.crewlet-canvas__viewport')!);
+  expect(pricing.hasAttribute('data-selected')).toBe(false);
+});
+
+test('a board that is not running is still selected by a click, but never handed the pointer', () => {
+  const onActivate = vi.fn();
+  mount({ onActivate, maxLive: 1 });
+  const mobile = screen.getByRole('region', { name: 'Mobile, 390 by 844' });
+  fireEvent.click(mobile.querySelector('.crewlet-canvas-board__shield')!);
+  expect(mobile.hasAttribute('data-selected')).toBe(true);
+  fireEvent.doubleClick(mobile.querySelector('.crewlet-canvas-board__shield')!);
+  expect(onActivate).not.toHaveBeenCalled();
+});
+
+test('a narrower window refits a canvas nobody has moved, so no board is cut off', () => {
+  const { container } = mount();
+  const zoom = () =>
+    Number(
+      (container.querySelector('.crewlet-canvas-board__layer') as HTMLElement).style.getPropertyValue(
+        '--crewlet-canvas-board-zoom',
+      ),
+    );
+  const wide = zoom();
+  FakeResizeObserver.last!.resize(600, 800);
+  expect(zoom()).toBeLessThan(wide);
+});
+
+// ---- tools -----------------------------------------------------------------
+
+const toolNames = () => within(screen.getByRole('toolbar', { name: 'Tools' })).getAllByRole('button').map((b) => b.getAttribute('aria-label'));
+
+test('the palette offers Move and Hand, and Text and Sticky only where a person can place notes', () => {
+  const { rerender } = mount();
+  expect(toolNames()).toEqual(['Move', 'Hand']);
+  expect(screen.getByRole('button', { name: 'Move' }).getAttribute('aria-pressed')).toBe('true');
+  const props = { label: 'Landing page', boards: BOARDS, notes: NOTES, renderBoard: page, minLiveWidth: 0 };
+  // Editable but placing nothing: still no note tools.
+  rerender(<CanvasBoard {...props} editable />);
+  expect(toolNames()).toEqual(['Move', 'Hand']);
+  rerender(<CanvasBoard {...props} editable onNoteCreate={() => undefined} />);
+  expect(toolNames()).toEqual(['Move', 'Hand', 'Text', 'Sticky note']);
+  // Picking Sticky, then ending the edit, puts the tool down.
+  fireEvent.click(screen.getByRole('button', { name: 'Sticky note' }));
+  expect(screen.getByRole('button', { name: 'Sticky note' }).getAttribute('aria-pressed')).toBe('true');
+  rerender(<CanvasBoard {...props} />);
+  expect(screen.getByRole('button', { name: 'Move' }).getAttribute('aria-pressed')).toBe('true');
+});
+
+test('the palette can be left out, and its keys still work', () => {
+  const { container } = mount({ toolbar: false });
+  expect(screen.queryByRole('toolbar', { name: 'Tools' })).toBeNull();
+  fireEvent.keyDown(container.querySelector('.crewlet-canvas__viewport')!, { key: 'h' });
+  expect(container.querySelector('.crewlet-canvas-board')!.getAttribute('data-tool')).toBe('hand');
+});
+
+test('each tool shows its own pointer, picked by its letter; a field keeps its letters', () => {
+  const { container } = mount({ editable: true, onNoteCreate: () => undefined });
+  const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+  const board = container.querySelector('.crewlet-canvas-board')!;
+  const canvas = container.querySelector('.crewlet-canvas')!;
+  const state = () => [board.getAttribute('data-tool'), canvas.getAttribute('data-cursor')];
+  expect(state()).toEqual(['move', 'pointer']);
+  fireEvent.keyDown(viewport, { key: 'h' });
+  expect(state()).toEqual(['hand', 'hand']);
+  fireEvent.keyDown(viewport, { key: 'T' });
+  expect(state()).toEqual(['text', 'text']);
+  fireEvent.keyDown(viewport, { key: 's' });
+  expect(state()).toEqual(['sticky', 'crosshair']);
+  // A chord is somebody else's.
+  fireEvent.keyDown(viewport, { key: 'v', metaKey: true });
+  expect(state()).toEqual(['sticky', 'crosshair']);
+  fireEvent.keyDown(viewport, { key: 'v' });
+  expect(state()).toEqual(['move', 'pointer']);
+  // Typing a note is typing.
+  fireEvent.doubleClick(container.querySelector('[data-kind="sticky"]')!);
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Note text' }), { key: 'h' });
+  expect(state()).toEqual(['move', 'pointer']);
+});
+
+test('Space holds the Hand until it is let go, and a focused control keeps its own Space', () => {
+  const { container } = mount();
+  const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+  const board = container.querySelector('.crewlet-canvas-board')!;
+  fireEvent.keyDown(viewport, { key: ' ' });
+  expect(board.getAttribute('data-tool')).toBe('hand');
+  expect(container.querySelector('.crewlet-canvas')!.getAttribute('data-cursor')).toBe('hand');
+  // The palette still shows the tool in hand underneath.
+  expect(screen.getByRole('button', { name: 'Move' }).getAttribute('aria-pressed')).toBe('true');
+  act(() => {
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: ' ' }));
+  });
+  expect(board.getAttribute('data-tool')).toBe('move');
+  fireEvent.keyDown(screen.getByRole('button', { name: 'Hand' }), { key: ' ' });
+  expect(board.getAttribute('data-tool')).toBe('move');
+});
+
+test('Text and Sticky place a note where the field is clicked, open it for typing, and hand back Move', () => {
+  const canvasRef = createRef<CanvasHandle>();
+  const onNoteCreate = vi.fn((kind: CanvasBoardNote['kind']) => (kind === 'sticky' ? 'n9' : undefined));
+  const { container, rerender } = mount({ editable: true, onNoteCreate, canvasRef });
+  const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+  fireEvent.keyDown(viewport, { key: 's' });
+  fireEvent.click(viewport, { clientX: 300, clientY: 200 });
+  const at = canvasRef.current!.worldAt({ x: 300, y: 200 });
+  expect(onNoteCreate).toHaveBeenCalledWith('sticky', { x: Math.round(at.x), y: Math.round(at.y) });
+  expect(container.querySelector('.crewlet-canvas-board')!.getAttribute('data-tool')).toBe('move');
+  // The caller adds the note it was asked for, and it opens for typing.
+  const added: CanvasBoardNote = { id: 'n9', kind: 'sticky', x: at.x, y: at.y, w: 280, h: 200, text: 'Note' };
+  rerender(
+    <CanvasBoard
+      label="Landing page"
+      boards={BOARDS}
+      notes={[...NOTES, added]}
+      renderBoard={page}
+      minLiveWidth={0}
+      editable
+      onNoteCreate={onNoteCreate}
+      canvasRef={canvasRef}
+    />,
+  );
+  expect(screen.getByRole('textbox', { name: 'Note text' })).toBe(document.activeElement);
+  // Text places a title; under Move a click on the field places nothing.
+  fireEvent.keyDown(viewport, { key: 't' });
+  fireEvent.click(viewport, { clientX: 10, clientY: 10 });
+  expect(onNoteCreate).toHaveBeenLastCalledWith('title', expect.any(Object));
+  fireEvent.click(viewport, { clientX: 10, clientY: 10 });
+  expect(onNoteCreate).toHaveBeenCalledTimes(2);
+});
+
+test('a selected item draws four corners, and a corner resizes with the opposite corner held still', () => {
+  const onBoardChange = vi.fn();
+  const { container } = mount({ editable: true, onBoardChange });
+  const hero = screen.getByRole('region', { name: 'Hero, 1440 by 900' });
+  expect(hero.querySelectorAll('.crewlet-canvas-board__resize')).toHaveLength(1);
+  fireEvent.focus(screen.getByRole('button', { name: 'Move Hero' }));
+  expect(hero.hasAttribute('data-selected')).toBe(true);
+  const corners = hero.querySelectorAll('.crewlet-canvas-board__resize');
+  expect([...corners].map((c) => c.getAttribute('data-corner'))).toEqual(['resize-nw', 'resize-ne', 'resize-sw', 'resize-se']);
+  // Only the keyboard's corner is exposed.
+  expect([...corners].filter((c) => c.getAttribute('aria-hidden') !== 'true')).toHaveLength(1);
+  const k = Number(
+    (container.querySelector('.crewlet-canvas-board__layer') as HTMLElement).style.getPropertyValue(
+      '--crewlet-canvas-board-zoom',
+    ),
+  );
+  const nw = hero.querySelector('[data-corner="resize-nw"]')!;
+  fireEvent.pointerDown(nw, { pointerId: 3, button: 0, clientX: 100, clientY: 100 });
+  fireEvent.pointerMove(nw, { pointerId: 3, clientX: 100 - 40 * k, clientY: 100 - 20 * k });
+  fireEvent.pointerUp(nw, { pointerId: 3, clientX: 100 - 40 * k, clientY: 100 - 20 * k });
+  expect(onBoardChange).toHaveBeenCalledTimes(1);
+  expect(onBoardChange).toHaveBeenCalledWith('hero', { x: -40, y: -20, w: 1480, h: 920 });
+});
+
+test('a corner held to the minimum side keeps its opposite edge where it was', () => {
+  const onBoardChange = vi.fn();
+  const { container } = mount({ editable: true, onBoardChange, minSide: 100 });
+  const mobile = screen.getByRole('region', { name: 'Mobile, 390 by 844' });
+  fireEvent.focus(screen.getByRole('button', { name: 'Move Mobile' }));
+  const k = Number(
+    (container.querySelector('.crewlet-canvas-board__layer') as HTMLElement).style.getPropertyValue(
+      '--crewlet-canvas-board-zoom',
+    ),
+  );
+  const ne = mobile.querySelector('[data-corner="resize-ne"]')!;
+  fireEvent.pointerDown(ne, { pointerId: 4, button: 0, clientX: 0, clientY: 0 });
+  fireEvent.pointerMove(ne, { pointerId: 4, clientX: -1000 * k, clientY: 1000 * k });
+  fireEvent.pointerUp(ne, { pointerId: 4, clientX: -1000 * k, clientY: 1000 * k });
+  // Width and height are held at 100; the left edge and the bottom edge stay.
+  expect(onBoardChange).toHaveBeenCalledWith('mobile', { x: 1540, y: 1000 + 844 - 100, w: 100, h: 100 });
+});
+
+test('a note is selected by its paper, dragged by it, retyped on a double-click and deleted with Delete', () => {
+  const onNoteChange = vi.fn();
+  const onNoteRemove = vi.fn();
+  const { container } = mount({ editable: true, onNoteChange, onNoteRemove });
+  const sticky = container.querySelector('[data-kind="sticky"]')!;
+  fireEvent.click(sticky);
+  expect(sticky.hasAttribute('data-selected')).toBe(true);
+  const k = Number(
+    (container.querySelector('.crewlet-canvas-board__layer') as HTMLElement).style.getPropertyValue(
+      '--crewlet-canvas-board-zoom',
+    ),
+  );
+  fireEvent.pointerDown(sticky, { pointerId: 5, button: 0, clientX: 0, clientY: 0 });
+  fireEvent.pointerMove(sticky, { pointerId: 5, clientX: 50 * k, clientY: 0 });
+  fireEvent.pointerUp(sticky, { pointerId: 5, clientX: 50 * k, clientY: 0 });
+  expect(onNoteChange).toHaveBeenLastCalledWith(expect.objectContaining({ id: 's1', x: 3150, y: 0 }));
+  // A press on the paper's own controls is the control's, not a drag.
+  fireEvent.pointerDown(within(sticky as HTMLElement).getByRole('button', { name: 'Edit note' }), {
+    pointerId: 6,
+    button: 0,
+  });
+  fireEvent.pointerMove(sticky, { pointerId: 6, clientX: 500, clientY: 0 });
+  fireEvent.pointerUp(sticky, { pointerId: 6, clientX: 500, clientY: 0 });
+  expect(onNoteChange).toHaveBeenCalledTimes(1);
+  fireEvent.doubleClick(sticky);
+  expect(screen.getByRole('textbox', { name: 'Note text' })).toBeTruthy();
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Note text' }), { key: 'Escape' });
+  fireEvent.keyDown(container.querySelector('.crewlet-canvas__viewport')!, { key: 'Delete' });
+  expect(onNoteRemove).toHaveBeenCalledWith('s1');
+});
+
+test('a view-only canvas deletes nothing with Delete', () => {
+  const onNoteRemove = vi.fn();
+  const { container } = mount({ onNoteRemove });
+  fireEvent.click(container.querySelector('[data-kind="sticky"]')!);
+  fireEvent.keyDown(container.querySelector('.crewlet-canvas__viewport')!, { key: 'Delete' });
+  expect(onNoteRemove).not.toHaveBeenCalled();
 });
 
 test('a board opens full size from its own control', () => {
@@ -228,4 +455,26 @@ test('a sticky is drawn on its colour\'s paper, the first colour by default', ()
   const stickies = container.querySelectorAll('.crewlet-canvas-board__note[data-kind="sticky"]');
   expect(stickies[0]!.classList.contains('crewlet-note--amber')).toBe(true);
   expect(stickies[1]!.classList.contains('crewlet-note--rose')).toBe(true);
+});
+
+// A TITLE FITS ITS BOX: as large as three fifths of its height allows, and set
+// smaller when its text would otherwise run past the box's width, so a long
+// heading never spills over the boards beside it at any zoom.
+test('a title is set to fit its box both ways, and its box clips the rest', () => {
+  const short = { w: 1200, h: 100, text: 'Launch' };
+  expect(titleSize(short)).toBe(60);
+  const long = {
+    w: 1200,
+    h: 100,
+    text: 'FairSplit 1.0 launch landing page: hero, features, pricing and sign up, for review before copy freeze',
+  };
+  const size = titleSize(long);
+  expect(size).toBeLessThan(60);
+  expect(Array.from(long.text).length * size * TITLE_GLYPH_EM).toBeLessThanOrEqual(long.w + 0.001);
+
+  const { container } = mount({ notes: [{ id: 't1', kind: 'title', x: 0, y: -160, ...long }] });
+  const text = container.querySelector(
+    '.crewlet-canvas-board__note[data-kind="title"] .crewlet-canvas-board__note-text',
+  ) as HTMLElement;
+  expect(text.style.fontSize).toBe(`${size}px`);
 });

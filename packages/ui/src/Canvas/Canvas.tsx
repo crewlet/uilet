@@ -56,7 +56,13 @@
  * - FIT HAPPENS ONCE, on the first layout that has both a measured viewport
  *   and content bounds, and again only on request. A data push that changes
  *   the content never moves the operator's view, and nothing is shown before
- *   that first fit.
+ *   that first fit. With `refitOnResize`, a RESIZE refits a view nobody has
+ *   moved since its last fit: that view was the whole content, and a window
+ *   made narrower that kept the old zoom would cut the content off for a
+ *   reader who never asked to look at less of it. Once the reader has panned
+ *   or zoomed, a resize keeps their view and only keeps the content
+ *   reachable. It is opt in because a screen that chooses its own views
+ *   after a fit (a chart held at a legible zoom) decides its own refits.
  * - MOTION ONLY ON REQUEST. A fit, a zoom button or a reveal eases; a drag, a
  *   pinch, a wheel and a relayout anchor never do, and under reduced motion
  *   nothing does. An easing lasts as long as its transition: a clamp that
@@ -81,20 +87,24 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type Ref,
   type TransitionEvent as ReactTransitionEvent,
 } from 'react';
-import { FullscreenGlyph, ZoomInGlyph, ZoomOutGlyph } from '@crewlethq/icons/glyphs';
+import { CURSORS, FullscreenGlyph, ZoomInGlyph, ZoomOutGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
+import { ShortcutTip } from './ShortcutTip.js';
 import { LAYER_REPOSITION_EVENT, LayerHost } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { LayerNodeBridge } from './layerNode.js';
 import {
+  CANVAS_FIT_PADDING,
+  CANVAS_MIN_ZOOM,
   CANVAS_PAN_STEP,
   CANVAS_ZOOM_STEP,
   IDENTITY_VIEW,
@@ -108,6 +118,7 @@ import {
   revealView,
   screenRect,
   wheelPixels,
+  toWorld,
   wheelZoomFactor,
   zoomAt,
   zoomLimits,
@@ -130,6 +141,8 @@ export interface CanvasHandle {
   fit(): void;
   /** Zoom about the viewport centre. */
   zoomBy(factor: number): void;
+  /** Zoom about the viewport centre to one scale, 1 being actual size, within the limits. */
+  zoomTo(scale: number): void;
   /** Pan the least distance that brings a world rectangle into view. */
   reveal(target: CanvasRect): void;
   /** Keep a node still on screen across a relayout: see `anchorView`. */
@@ -170,13 +183,30 @@ export interface CanvasHandle {
   restoreView(): void;
   /** A world rectangle in viewport coordinates, for positioning an overlay. */
   screenRect(target: CanvasRect): CanvasRect;
+  /**
+   * The world point under a point on the page, such as a click's
+   * `clientX` and `clientY`: where a tool that places something puts it.
+   */
+  worldAt(client: CanvasPoint): CanvasPoint;
 }
+
+/**
+ * The pointer the field shows while nothing is being dragged.
+ *
+ * `hand` says the field pans, which is what a chart moved by dragging it
+ * wants. A surface with tools names the one its tool means: `pointer` for
+ * selecting, `crosshair` for placing a thing, `text` for placing text. A pan
+ * in progress always shows the closed hand, whatever the tool.
+ */
+export type CanvasCursor = 'hand' | 'pointer' | 'crosshair' | 'text';
 
 /** Every string the canvas renders on its own. */
 export interface CanvasLabels {
   zoomIn: string;
   zoomOut: string;
   fit: string;
+  /** The control that shows the content at actual size. */
+  actualSize: string;
   /**
    * The zoom readout, given the zoom as a whole percentage. It is also what
    * opens the box a reader types one into, so it says both.
@@ -194,10 +224,11 @@ const LABELS: CanvasLabels = {
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
   fit: 'Fit to view',
+  actualSize: 'Zoom to 100%',
   zoom: (percent) => `Zoom is ${percent} percent. Set a zoom level`,
   zoomLevel: 'Zoom level, percent',
   done: 'Done',
-  keys: 'Plus and minus zoom this canvas and zero fits everything in view. With the canvas itself focused, the arrow keys pan it.',
+  keys: 'Plus and minus zoom this canvas, zero or Shift 1 fits everything in view, and Shift 0 shows it at actual size. With the canvas itself focused, the arrow keys pan it.',
 };
 
 /** Controls that take a press themselves, so a press on one never starts a pan. */
@@ -264,6 +295,12 @@ export interface CanvasProps {
    */
   controlsExtra?: ReactNode | undefined;
   /**
+   * A control in the zoom bar that shows the content at actual size, which
+   * Shift 0 does whether or not it is drawn. For a canvas of pages, where a
+   * page at its own size is a view a reader asks for by name.
+   */
+  controlsActualSize?: boolean | undefined;
+  /**
    * Bars of the caller's own, stacked under the control bar in the same
    * corner: a switch between two drawings of the content, a note about a key.
    * Each is a surface of its own, as the bar is.
@@ -311,6 +348,22 @@ export interface CanvasProps {
    */
   ground?: CanvasGround | undefined;
   /**
+   * The smallest zoom a fit may take: see [fitView]. [CANVAS_MIN_ZOOM] unless
+   * it is named, which suits a chart of cards; a canvas of pages names a
+   * lower one, so that a fit shows all of a design however wide it is laid.
+   */
+  minZoom?: number | undefined;
+  /** The pointer the field shows: see [CanvasCursor]. */
+  cursor?: CanvasCursor | undefined;
+  /**
+   * Refit on a resize while the view is still the last fit, rather than keep
+   * the zoom the old size was fitted at. For a surface whose fit is the view
+   * a reader expects back whatever the window does, such as a design's
+   * boards. Off by default: a screen that adjusts the view after each fit
+   * (holding a zoom, revealing a card) runs its own refit.
+   */
+  refitOnResize?: boolean | undefined;
+  /**
    * Whether one finger can pan the canvas at all.
    *
    * On by default, behind the tap that activates it. Turned off, one finger
@@ -345,11 +398,15 @@ export function Canvas({
   controls = true,
   controlsPlacement = 'bottom-right',
   controlsExtra,
+  controlsActualSize = false,
   controlsBelow,
   hint,
   largestItemWidth,
   dimmed = false,
   ground = 'plain',
+  minZoom = CANVAS_MIN_ZOOM,
+  cursor = 'hand',
+  refitOnResize = false,
   touch = true,
   labels,
   onReady,
@@ -400,12 +457,29 @@ export function Canvas({
    * other piece of state here is, and recomputed on every render because all
    * three of its inputs are already render state.
    */
-  const limits = zoomLimits(content, size, largestItemWidth);
+  const limits = zoomLimits(content, size, largestItemWidth, CANVAS_FIT_PADDING, minZoom);
   const limitsNow = useRef(limits);
   limitsNow.current = limits;
+  const floorNow = useRef(minZoom);
+  floorNow.current = minZoom;
+
+  /* The view that shows all of the content, at this canvas's own floor. */
+  const fitOf = useCallback(
+    (bounds: CanvasRect, viewportSize: CanvasSize = sizeNow.current) =>
+      fitView(bounds, viewportSize, CANVAS_FIT_PADDING, floorNow.current),
+    [],
+  );
 
   /* The view a `focusRegion` left, to be given back on `restoreView`. */
   const left = useRef<CanvasView | null>(null);
+
+  /*
+   * The view the last fit landed on, for as long as it is still the view: a
+   * resize refits it, where a view the reader has moved since is kept. Read
+   * against the view after the fit's own clamp, so a fit that the clamp
+   * nudged still counts as untouched.
+   */
+  const fitted = useRef<CanvasView | null>(null);
 
   // `eased` says whether this move eases; left out, the move keeps whatever
   // motion is under way, so a clamp run by a data push never cuts short the
@@ -424,6 +498,15 @@ export function Canvas({
     setView(clamped);
   }, []);
 
+  /* A fit somebody asked for: eased, and remembered as the untouched view. */
+  const fitNow = useCallback(
+    (bounds: CanvasRect) => {
+      apply(fitOf(bounds), 'near');
+      fitted.current = viewNow.current;
+    },
+    [apply, fitOf],
+  );
+
   // ---- the viewport's own size ---------------------------------------------
   useLayoutEffect(() => {
     const el = viewport.current;
@@ -441,18 +524,34 @@ export function Canvas({
   announceReady.current = onReady;
   useLayoutEffect(() => {
     if (ready || !content || size.width <= 0 || size.height <= 0) return;
-    const first = fitView(content, size);
+    const first = fitOf(content, size);
     viewNow.current = first;
+    fitted.current = first;
     setView(first);
     setReady(true);
     announceReady.current?.();
-  }, [ready, content, size]);
+  }, [ready, content, size, fitOf]);
 
   // A resize, or content that changed shape, keeps the view and only makes
-  // sure the content is still reachable: a data push never refits.
+  // sure the content is still reachable: a data push never refits. A resize
+  // of a view still at its last fit refits it (see the module doc).
+  const sizeSeen = useRef(size);
   useLayoutEffect(() => {
-    if (ready) apply(viewNow.current);
-  }, [ready, size, content, apply]);
+    if (!ready) return;
+    const resized = sizeSeen.current.width !== size.width || sizeSeen.current.height !== size.height;
+    sizeSeen.current = size;
+    const was = fitted.current;
+    const now = viewNow.current;
+    const untouched = was !== null && was.x === now.x && was.y === now.y && was.k === now.k;
+    if (refitOnResize && resized && untouched && content) {
+      apply(fitOf(content), false);
+      fitted.current = viewNow.current;
+    } else {
+      apply(now);
+      // A clamp of an untouched view is still the fit the reader was shown.
+      if (untouched) fitted.current = viewNow.current;
+    }
+  }, [ready, size, content, apply, fitOf, refitOnResize]);
 
   // ---- tell the caller where the view is -----------------------------------
   const reportView = useRef(onViewChange);
@@ -479,15 +578,26 @@ export function Canvas({
     layer?.dispatchEvent(new CustomEvent(LAYER_REPOSITION_EVENT, { detail: viewNow.current }));
   };
 
+  // A point on the page, in the viewport's own coordinates.
+  const local = useCallback((event: { clientX: number; clientY: number }): CanvasPoint => {
+    const rect = viewport.current?.getBoundingClientRect();
+    return { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) };
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
       fit: () => {
         const bounds = contentNow.current;
-        if (bounds) apply(fitView(bounds, sizeNow.current), 'near');
+        if (bounds) fitNow(bounds);
       },
       zoomBy: (factor) => {
         const { width, height } = sizeNow.current;
+        apply(zoomAt(viewNow.current, factor, { x: width / 2, y: height / 2 }, limitsNow.current), 'near');
+      },
+      zoomTo: (scale) => {
+        const { width, height } = sizeNow.current;
+        const factor = scale / viewNow.current.k;
         apply(zoomAt(viewNow.current, factor, { x: width / 2, y: height / 2 }, limitsNow.current), 'near');
       },
       reveal: (target) => {
@@ -512,8 +622,9 @@ export function Canvas({
         apply(was, 'travel');
       },
       screenRect: (target) => screenRect(viewNow.current, target),
+      worldAt: (client) => toWorld(viewNow.current, local({ clientX: client.x, clientY: client.y })),
     }),
-    [apply],
+    [apply, fitNow, local],
   );
 
   // ---- the wheel -------------------------------------------------------------
@@ -543,11 +654,6 @@ export function Canvas({
   // ---- pointers --------------------------------------------------------------
   const pointers = useRef(new Map<number, CanvasPoint>());
   const gesture = useRef<Press | Pinching | null>(null);
-
-  const local = useCallback((event: { clientX: number; clientY: number }): CanvasPoint => {
-    const rect = viewport.current?.getBoundingClientRect();
-    return { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) };
-  }, []);
 
   const endGesture = useCallback(() => {
     gesture.current = null;
@@ -708,12 +814,19 @@ export function Canvas({
     const { width, height } = sizeNow.current;
     const centre = { x: width / 2, y: height / 2 };
     let handled = true;
-    if (event.key === '+' || (mod && event.key === '=')) {
+    // By the physical key, because Shift turns the digit into whatever the
+    // layout prints above it: `)` and `!` on a US keyboard, other glyphs elsewhere.
+    const shiftDigit = event.shiftKey && !mod && !event.altKey ? event.code : '';
+    if (shiftDigit === 'Digit0') {
+      centreZoom(1 / viewNow.current.k);
+    } else if (shiftDigit === 'Digit1') {
+      if (content) fitNow(content);
+    } else if (event.key === '+' || (mod && event.key === '=')) {
       apply(zoomAt(viewNow.current, CANVAS_ZOOM_STEP, centre, limitsNow.current), 'near');
     } else if (event.key === '-') {
       apply(zoomAt(viewNow.current, 1 / CANVAS_ZOOM_STEP, centre, limitsNow.current), 'near');
     } else if (event.key === '0') {
-      if (content) apply(fitView(content, sizeNow.current), 'near');
+      if (content) fitNow(content);
     } else if (!onViewport) {
       handled = false;
     } else if (!mod && !event.altKey && event.key.startsWith('Arrow')) {
@@ -763,6 +876,8 @@ export function Canvas({
     <div
       className={cx('crewlet-canvas', className)}
       ref={root}
+      style={CURSOR_PROPERTIES}
+      data-cursor={cursor}
       data-dimmed={dimmed}
       data-ground={ground}
       data-ready={ready}
@@ -823,13 +938,16 @@ export function Canvas({
               )}
               {controls && (
                 <>
-                  <IconButton
-                    size="sm"
-                    label={text.zoomOut}
-                    icon={<ZoomOutGlyph />}
-                    onClick={() => centreZoom(1 / CANVAS_ZOOM_STEP)}
-                    disabled={!ready}
-                  />
+                  <ShortcutTip label={text.zoomOut} keys={['-']}>
+                    <IconButton
+                      size="sm"
+                      label={text.zoomOut}
+                      title=""
+                      icon={<ZoomOutGlyph />}
+                      onClick={() => centreZoom(1 / CANVAS_ZOOM_STEP)}
+                      disabled={!ready}
+                    />
+                  </ShortcutTip>
                   <ZoomReadout
                     zoom={view.k}
                     onZoom={zoomToPercent}
@@ -837,20 +955,42 @@ export function Canvas({
                     fieldLabel={text.zoomLevel}
                     disabled={!ready}
                   />
-                  <IconButton
-                    size="sm"
-                    label={text.zoomIn}
-                    icon={<ZoomInGlyph />}
-                    onClick={() => centreZoom(CANVAS_ZOOM_STEP)}
-                    disabled={!ready}
-                  />
-                  <IconButton
-                    size="sm"
-                    label={text.fit}
-                    icon={<FullscreenGlyph />}
-                    onClick={() => content && apply(fitView(content, sizeNow.current), 'near')}
-                    disabled={!ready}
-                  />
+                  <ShortcutTip label={text.zoomIn} keys={['+']}>
+                    <IconButton
+                      size="sm"
+                      label={text.zoomIn}
+                      title=""
+                      icon={<ZoomInGlyph />}
+                      onClick={() => centreZoom(CANVAS_ZOOM_STEP)}
+                      disabled={!ready}
+                    />
+                  </ShortcutTip>
+                  {controlsActualSize && (
+                    <ShortcutTip label={text.actualSize} keys={['Shift', '0']}>
+                      {/* Written as a ratio, as design tools write actual size: a
+                          glyph for it would be one more pair of corners beside
+                          the fit's. */}
+                      <button
+                        type="button"
+                        className="crewlet-canvas__zoom crewlet-canvas__actual"
+                        aria-label={text.actualSize}
+                        onClick={() => centreZoom(1 / viewNow.current.k)}
+                        disabled={!ready}
+                      >
+                        1:1
+                      </button>
+                    </ShortcutTip>
+                  )}
+                  <ShortcutTip label={text.fit} keys={['Shift', '1']}>
+                    <IconButton
+                      size="sm"
+                      label={text.fit}
+                      title=""
+                      icon={<FullscreenGlyph />}
+                      onClick={() => content && fitNow(content)}
+                      disabled={!ready}
+                    />
+                  </ShortcutTip>
                   {controlsExtra}
                 </>
               )}
@@ -868,6 +1008,21 @@ export function Canvas({
     </div>
   );
 }
+
+/**
+ * Every pointer cursor, as custom properties on the canvas's root: the field
+ * reads the one its [CanvasCursor] names, and content inside the canvas (a
+ * board's shield, a resize handle's neighbours) reads the same drawings
+ * rather than the browser's own, so one pointer family runs across the whole
+ * surface. Each falls back to its keyword where it is read.
+ */
+const CURSOR_PROPERTIES = {
+  '--crewlet-canvas-cursor-pointer': CURSORS.pointer,
+  '--crewlet-canvas-cursor-hand': CURSORS.hand,
+  '--crewlet-canvas-cursor-grabbing': CURSORS.grabbing,
+  '--crewlet-canvas-cursor-crosshair': CURSORS.crosshair,
+  '--crewlet-canvas-cursor-text': CURSORS.text,
+} as CSSProperties;
 
 /**
  * What the zoom is, and where a reader says what it should be.

@@ -11,43 +11,74 @@
  * [CANVAS_BOARD_MAX_LIVE] at once; every other board draws as a placeholder of
  * its size, so a canvas of sixty boards runs a dozen pages, not sixty.
  *
+ * TOOLS, AS A DESIGN TOOL HAS THEM (CanvasToolbar). Move (`V`) selects: a
+ * click on a board or a note selects it, a click on the field clears it, and
+ * the pointer is the arrow. Hand (`H`, or Space held) pans whatever is under
+ * the pointer, boards included, with the open hand. An editable canvas that
+ * can create notes adds Text (`T`) and Sticky (`S`): a click on the field
+ * places one there, opens it for typing, and hands back the Move tool. The
+ * pointer is always the tool's (the Canvas cursors), and a pan in progress is
+ * always the closed hand.
+ *
  * A PAGE INSIDE A BOARD NEVER TAKES THE CANVAS'S POINTER BY SURPRISE. A live
  * board is covered by a shield that pans the canvas like the field around it;
- * a click (not a drag) on it activates that board, and only then does the page
- * receive the pointer. Escape gives the pointer back to the canvas.
+ * a click on it selects the board, a double-click activates it, and only then
+ * does the page receive the pointer. Escape gives the pointer back to the
+ * canvas, and a second Escape clears the selection.
  *
- * EDITING (`editable`). A board's title bar becomes its move handle and a
- * corner its resize handle, by pointer or by the arrow keys (Shift for a larger
- * step); a note gains the same handles, and its text is edited in place. Each
- * finished gesture is reported once, with whole canvas pixels, and the caller
- * decides what a change is (for a design, a new version of its canvas).
+ * EDITING (`editable`). A board's name becomes its move handle and a selected
+ * item's corners its resize handles, by pointer or, on the bottom right
+ * corner, by the arrow keys (Shift for a larger step); a note is moved by its
+ * own paper or its handle, retyped on a double-click, and deleted with Delete
+ * while selected. Each finished gesture is reported once, with whole canvas
+ * pixels, and the caller decides what a change is (for a design, a new
+ * version of its canvas).
  *
- * THE CHROME STAYS ONE SIZE ON SCREEN. Titles and handles are counter-scaled
- * by the zoom, so a board's label is readable and its handle is a full pointer
- * target whatever the zoom, while the board itself scales with the canvas.
+ * HOVER AND SELECTION ARE OUTLINES IN THE ACCENT, at one screen pixel and two,
+ * over a board's own hairline edge; hovering a board's name outlines its board,
+ * because the name is how a reader picks a board out of a crowded canvas.
+ *
+ * THE CHROME STAYS ONE SIZE ON SCREEN. Titles, edges, outlines and handles
+ * are counter-scaled by the zoom, so a board's label is readable, its edge is
+ * a hairline and its handle is a full pointer target whatever the zoom, while
+ * the board itself scales with the canvas.
  */
 
 import {
   useCallback,
+  useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type Ref,
 } from 'react';
-import { MaximizeGlyph, PencilGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
+import {
+  HandGlyph,
+  MaximizeGlyph,
+  MousePointer2Glyph,
+  PencilGlyph,
+  StickyNoteGlyph,
+  TrashGlyph,
+  TypeGlyph,
+} from '@crewlethq/icons/glyphs';
 import {
   Canvas,
   IDENTITY_VIEW,
+  type CanvasCursor,
   type CanvasHandle,
   type CanvasLabels,
   type CanvasRect,
   type CanvasSize,
+  type CanvasPoint,
   type CanvasView,
 } from '../Canvas/index.js';
+import { CanvasToolbar, toolForKey, type CanvasTool } from '../CanvasToolbar/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { Note } from '../Note/index.js';
 import type { SurfaceTone } from '../ArrangeGroup/index.js';
@@ -84,6 +115,22 @@ const NOTE_TONES: Record<CanvasNoteColor, SurfaceTone> = {
   green: 'green',
   purple: 'purple',
 };
+
+/**
+ * The type size a title is set in, in canvas pixels: as large as its box's
+ * height allows (three fifths of it), and no larger than lets its text run
+ * the box's width on one line, measured at an average glyph of
+ * [TITLE_GLYPH_EM] of the size. A long title is set smaller rather than run
+ * past its box over the boards beside it; the box clips whatever an unusually
+ * wide face still overruns.
+ */
+export function titleSize(note: Pick<CanvasBoardNote, 'w' | 'h' | 'text'>): number {
+  const chars = Math.max(1, Array.from(note.text.trim()).length);
+  return Math.max(1, Math.min(note.h * 0.6, note.w / (chars * TITLE_GLYPH_EM)));
+}
+
+/** The average advance of a title's glyph, as a share of its size. */
+export const TITLE_GLYPH_EM = 0.58;
 
 /** A note's name for its handles: its first words. */
 function noteName(note: CanvasBoardNote): string {
@@ -131,6 +178,15 @@ export interface CanvasBoardLabels {
   paused: string;
   /** Said by an active board, so a reader knows how to give the pointer back. */
   active: string;
+  /** Said by a selected live board, so a reader knows how to use its page. */
+  interact: string;
+  /** The tool palette's name. */
+  tools: string;
+  /** Each tool's name. */
+  moveTool: string;
+  handTool: string;
+  textTool: string;
+  stickyTool: string;
 }
 
 const LABELS: CanvasBoardLabels = {
@@ -143,7 +199,39 @@ const LABELS: CanvasBoardLabels = {
   noteText: 'Note text',
   paused: 'Zoom in to run this board',
   active: 'Press Escape to return to the canvas',
+  interact: 'Double-click to use this board',
+  tools: 'Tools',
+  moveTool: 'Move',
+  handTool: 'Hand',
+  textTool: 'Text',
+  stickyTool: 'Sticky note',
 };
+
+/**
+ * The tools a board canvas offers. Move and Hand always; Text and Sticky only
+ * where a person may edit and the caller places notes (`onNoteCreate`).
+ *
+ * NO FRAME TOOL. A board is a page an agent or an upload made, with a file
+ * behind it, and an empty frame drawn here would be a board with nothing to
+ * render. NO COMMENT TOOL until a canvas has comments to anchor.
+ */
+export type CanvasBoardTool = 'move' | 'hand' | 'text' | 'sticky';
+
+/** The pointer each tool shows over the field. */
+const TOOL_CURSOR: Record<CanvasBoardTool, CanvasCursor> = {
+  move: 'pointer',
+  hand: 'hand',
+  text: 'text',
+  sticky: 'crosshair',
+};
+
+/**
+ * The smallest zoom a board canvas fits at. A design laid out across many
+ * full-size pages is many screens wide, and every board has to be on screen
+ * at the fit, so the floor is far below a chart's; the visibility budget is
+ * what keeps a canvas this far out cheap.
+ */
+export const CANVAS_BOARD_MIN_ZOOM = 0.02;
 
 /** The step an arrow key moves or resizes by, and with Shift. */
 const KEY_STEP = 8;
@@ -174,12 +262,22 @@ export interface CanvasBoardProps {
   onNoteChange?: ((note: CanvasBoardNote) => void) | undefined;
   /** A note was deleted. */
   onNoteRemove?: ((id: string) => void) | undefined;
+  /**
+   * The Text or Sticky tool placed a note at a canvas point (its top left, in
+   * canvas pixels). The caller adds the note, with whatever size and starting
+   * text it gives new notes, and returns its id, which the canvas then opens
+   * for typing. Absent, or on a canvas that is not editable, neither tool is
+   * offered.
+   */
+  onNoteCreate?: ((kind: CanvasBoardNote['kind'], at: CanvasPoint) => string | undefined) | undefined;
   /** The control that opens one board full size; absent, there is none. */
   onOpen?: ((id: string) => void) | undefined;
   /** The board that holds the pointer changed; null is the canvas itself. */
   onActivate?: ((id: string | null) => void) | undefined;
   /** Anything else in the canvas's control bar. */
   controlsExtra?: ReactNode | undefined;
+  /** The floating tool palette. On by default; the keys work either way. */
+  toolbar?: boolean | undefined;
   labels?: Partial<CanvasBoardLabels> | undefined;
   canvasLabels?: Partial<CanvasLabels> | undefined;
   /** The canvas underneath, for a caller that reveals or fits a board. */
@@ -214,10 +312,26 @@ function contentOf(
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
+/**
+ * A press on these is a control's own: it presses the control rather than
+ * dragging the item it sits on, and Space presses it rather than holding the
+ * hand.
+ */
+const CONTROL = "button, a[href], input, select, textarea, [contenteditable='true']";
+
+/**
+ * What a gesture does to a frame: move it, or resize it from one corner, the
+ * opposite corner staying where it is.
+ */
+type DragMode = 'move' | 'resize-nw' | 'resize-ne' | 'resize-sw' | 'resize-se';
+
+/** The three corners a pointer resizes from; the fourth also takes keys. */
+const POINTER_CORNERS = ['resize-nw', 'resize-ne', 'resize-sw'] as const;
+
 /** A gesture in progress: which item, how, and where it began. */
 interface Drag {
   id: string;
-  mode: 'move' | 'resize';
+  mode: DragMode;
   pointer: number;
   startX: number;
   startY: number;
@@ -240,23 +354,42 @@ function useFrameGestures(
   const drag = useRef<Drag | null>(null);
 
   const next = useCallback(
-    (d: Drag, dx: number, dy: number): CanvasBoardRect =>
-      d.mode === 'move'
-        ? { ...d.from, x: Math.round(d.from.x + dx), y: Math.round(d.from.y + dy) }
-        : {
-            ...d.from,
-            w: clamp(Math.round(d.from.w + dx), minSide, maxSide),
-            h: clamp(Math.round(d.from.h + dy), minSide, maxSide),
-          },
+    (d: Drag, dx: number, dy: number): CanvasBoardRect => {
+      const { from } = d;
+      if (d.mode === 'move') return { ...from, x: Math.round(from.x + dx), y: Math.round(from.y + dy) };
+      // A west or north corner moves its own edge, so the frame grows the
+      // other way and the opposite edge stays put, through the clamp too.
+      const west = d.mode === 'resize-nw' || d.mode === 'resize-sw';
+      const north = d.mode === 'resize-nw' || d.mode === 'resize-ne';
+      const w = clamp(Math.round(from.w + (west ? -dx : dx)), minSide, maxSide);
+      const h = clamp(Math.round(from.h + (north ? -dy : dy)), minSide, maxSide);
+      return {
+        x: west ? from.x + from.w - w : from.x,
+        y: north ? from.y + from.h - h : from.y,
+        w,
+        h,
+      };
+    },
     [minSide, maxSide],
   );
 
-  const handle = (id: string, mode: Drag['mode'], item: CanvasBoardRect) => {
+  /*
+   * THE POINTER HALF AND THE KEY HALF, apart: a corner only a pointer can use
+   * is drawn without a tab stop, and an element that takes no focus takes no
+   * key handler either.
+   */
+  const pointer = (id: string, mode: DragMode, item: CanvasBoardRect) => {
     const from: CanvasBoardRect = { x: item.x, y: item.y, w: item.w, h: item.h };
     return {
-      onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      onPointerDown: (event: ReactPointerEvent<HTMLElement>) => {
         if (event.pointerType === 'mouse' && event.button !== 0) return;
+        // A control inside the item (a note's edit button, its text field)
+        // takes its own press; the item is dragged from anywhere else.
+        const control = event.target instanceof Element ? event.target.closest(CONTROL) : null;
+        if (control !== null && control !== event.currentTarget) return;
         event.preventDefault();
+        // The canvas beneath must not start a pan from the same press.
+        event.stopPropagation();
         try {
           event.currentTarget.setPointerCapture(event.pointerId);
         } catch {
@@ -272,7 +405,7 @@ function useFrameGestures(
           moved: false,
         };
       },
-      onPointerMove: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      onPointerMove: (event: ReactPointerEvent<HTMLElement>) => {
         const d = drag.current;
         if (!d || d.pointer !== event.pointerId) return;
         d.moved = true;
@@ -281,7 +414,7 @@ function useFrameGestures(
           rect: next(d, (event.clientX - d.startX) / zoom, (event.clientY - d.startY) / zoom),
         });
       },
-      onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      onPointerUp: (event: ReactPointerEvent<HTMLElement>) => {
         const d = drag.current;
         if (!d || d.pointer !== event.pointerId) return;
         drag.current = null;
@@ -300,7 +433,13 @@ function useFrameGestures(
         drag.current = null;
         setPreview(null);
       },
-      onKeyDown: (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    };
+  };
+
+  const keys = (id: string, mode: DragMode, item: CanvasBoardRect) => {
+    const from: CanvasBoardRect = { x: item.x, y: item.y, w: item.w, h: item.h };
+    return {
+      onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => {
         const step = event.shiftKey ? KEY_STEP_LARGE : KEY_STEP;
         const delta: Record<string, [number, number]> = {
           ArrowLeft: [-step, 0],
@@ -324,8 +463,23 @@ function useFrameGestures(
     };
   };
 
-  return { preview, handle };
+  const handle = (id: string, mode: DragMode, item: CanvasBoardRect) => ({
+    ...pointer(id, mode, item),
+    ...keys(id, mode, item),
+  });
+
+  return { preview, handle, pointer };
 }
+
+/** What is selected: one board or one note. */
+interface Selection {
+  kind: 'board' | 'note';
+  id: string;
+}
+
+/** Where a key is a character being typed rather than an instruction to the canvas. */
+const TYPING = "input, textarea, select, [contenteditable='true']";
+
 
 export function CanvasBoard({
   label,
@@ -340,9 +494,11 @@ export function CanvasBoard({
   onBoardChange,
   onNoteChange,
   onNoteRemove,
+  onNoteCreate,
   onOpen,
   onActivate,
   controlsExtra,
+  toolbar = true,
   labels,
   canvasLabels,
   canvasRef,
@@ -353,6 +509,29 @@ export function CanvasBoard({
   const [viewport, setViewport] = useState<CanvasSize>({ width: 0, height: 0 });
   const [active, setActive] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Selection | null>(null);
+  const [chosenTool, setTool] = useState<CanvasBoardTool>('move');
+  const [spaceHeld, setSpaceHeld] = useState(false);
+
+  // The canvas is the caller's to reach too: one handle, handed to both.
+  const canvas = useRef<CanvasHandle>(null);
+  useImperativeHandle(canvasRef, () => canvas.current as CanvasHandle, []);
+
+  const creates = editable && onNoteCreate !== undefined;
+  const tools: CanvasTool<CanvasBoardTool>[] = [
+    { id: 'move', label: text.moveTool, icon: <MousePointer2Glyph />, shortcut: 'V' },
+    { id: 'hand', label: text.handTool, icon: <HandGlyph />, shortcut: 'H' },
+    ...(creates
+      ? ([
+          { id: 'text', label: text.textTool, icon: <TypeGlyph />, shortcut: 'T' },
+          { id: 'sticky', label: text.stickyTool, icon: <StickyNoteGlyph />, shortcut: 'S' },
+        ] as const)
+      : []),
+  ];
+  // A tool the canvas no longer offers (editing ended) is put down.
+  const tool: CanvasBoardTool = tools.some((t) => t.id === chosenTool) ? chosenTool : 'move';
+  // Space held is the Hand for as long as it is held, whatever is in hand.
+  const acting: CanvasBoardTool = spaceHeld ? 'hand' : tool;
 
   const activate = (id: string | null) => {
     setActive(id);
@@ -389,47 +568,155 @@ export function CanvasBoard({
   const largest = boards.reduce((w, b) => Math.max(w, b.w), 0);
   const live = new Set(liveBoards(drawnBoards, view, viewport, maxLive, minLiveWidth));
 
+  // A selection whose item has gone (deleted, or a new version without it)
+  // is no selection.
+  const shownSelection =
+    selected !== null &&
+    (selected.kind === 'board' ? boards : notes).some((item) => item.id === selected.id)
+      ? selected
+      : null;
+  const isSelected = (kind: Selection['kind'], id: string) =>
+    shownSelection?.kind === kind && shownSelection.id === id;
+
+  // ---- Space held: the Hand, until it is let go or the window loses focus --
+  useEffect(() => {
+    if (!spaceHeld) return;
+    const release = (event: KeyboardEvent | FocusEvent) => {
+      if (event instanceof KeyboardEvent && event.key !== ' ') return;
+      setSpaceHeld(false);
+    };
+    window.addEventListener('keyup', release);
+    window.addEventListener('blur', release);
+    return () => {
+      window.removeEventListener('keyup', release);
+      window.removeEventListener('blur', release);
+    };
+  }, [spaceHeld]);
+
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape' && active !== null) {
-      event.stopPropagation();
-      activate(null);
+    const target = event.target instanceof Element ? event.target : null;
+    if (event.key === 'Escape') {
+      if (active !== null) {
+        event.stopPropagation();
+        activate(null);
+      } else if (shownSelection !== null) {
+        event.stopPropagation();
+        setSelected(null);
+      }
+      return;
     }
+    if (event.defaultPrevented || target?.closest(TYPING)) return;
+    if (event.key === ' ') {
+      // A focused control keeps its own Space: it is how a button is pressed.
+      if (target?.closest(CONTROL)) return;
+      event.preventDefault();
+      if (!event.repeat) setSpaceHeld(true);
+      return;
+    }
+    if ((event.key === 'Delete' || event.key === 'Backspace') && editable && shownSelection?.kind === 'note') {
+      event.preventDefault();
+      onNoteRemove?.(shownSelection.id);
+      setSelected(null);
+      return;
+    }
+    const picked = toolForKey(tools, event);
+    if (picked !== undefined) {
+      event.preventDefault();
+      setTool(picked);
+    }
+  };
+
+  /*
+   * A CLICK ON THE FIELD. Under Move it clears the selection; under Text or
+   * Sticky it places a note there. A click that ended a pan never arrives:
+   * the canvas swallows it.
+   */
+  const onClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target?.closest('.crewlet-canvas__viewport')) return;
+    if (target.closest('.crewlet-canvas-board__board, .crewlet-canvas-board__note')) return;
+    if ((acting === 'text' || acting === 'sticky') && onNoteCreate && canvas.current) {
+      const at = canvas.current.worldAt({ x: event.clientX, y: event.clientY });
+      const id = onNoteCreate(acting === 'text' ? 'title' : 'sticky', {
+        x: Math.round(at.x),
+        y: Math.round(at.y),
+      });
+      setTool('move');
+      if (id !== undefined) {
+        setSelected({ kind: 'note', id });
+        setEditing(id);
+      }
+      return;
+    }
+    if (acting === 'move') setSelected(null);
   };
 
   const zoomVar = { '--crewlet-canvas-board-zoom': String(view.k) } as CSSProperties;
 
+  /*
+   * WHAT A PRESS WILL DO NEXT, in the canvas's status note beside its zoom bar
+   * rather than under the board: drawn on the canvas it sat over whatever lay
+   * below the board, the palette included, and a status region says it to a
+   * reader who cannot see it too. Empty rather than absent, so the region is
+   * in place before its message arrives.
+   */
+  const activeBoard = boards.find((b) => b.id === active && live.has(b.id));
+  const chosenBoard = shownSelection?.kind === 'board' ? shownSelection.id : null;
+  const hint =
+    !editable && activeBoard
+      ? text.active
+      : !editable && chosenBoard !== null && live.has(chosenBoard)
+        ? text.interact
+        : '';
+
   return (
-    // The wrapper only hears Escape bubbling from inside the canvas; the
+    // The wrapper hears keys and clicks bubbling from inside the canvas; the
     // canvas's own viewport is the focusable, labelled control.
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={cx('crewlet-canvas-board', className)}
       data-editable={editable || undefined}
+      data-tool={acting}
       onKeyDown={onKeyDown}
+      onClick={onClick}
     >
       <Canvas
         label={label}
         content={content}
         largestItemWidth={largest || undefined}
         ground="dotted"
+        cursor={TOOL_CURSOR[acting]}
+        minZoom={CANVAS_BOARD_MIN_ZOOM}
+        refitOnResize
+        controlsActualSize
         controlsExtra={controlsExtra}
+        hint={hint}
         labels={canvasLabels}
+        overlay={
+          toolbar ? (
+            <div className="crewlet-canvas-board__tools">
+              <CanvasToolbar label={text.tools} tools={tools} value={tool} onChange={setTool} />
+            </div>
+          ) : undefined
+        }
         onViewChange={(nextView, size) => {
           setView(nextView);
           setViewport(size);
         }}
-        ref={canvasRef}
+        ref={canvas}
       >
         <div className="crewlet-canvas-board__layer" style={zoomVar}>
           {drawnBoards.map((b) => {
             const isLive = live.has(b.id);
             const isActive = !editable && active === b.id && isLive;
+            const chosen = isSelected('board', b.id);
             return (
               <section
                 key={b.id}
                 className="crewlet-canvas-board__board"
                 data-live={isLive || undefined}
                 data-active={isActive || undefined}
+                data-selected={chosen || undefined}
                 aria-label={`${b.title}, ${text.size(b.w, b.h)}`}
                 style={{ left: b.x, top: b.y, width: b.w, height: b.h }}
               >
@@ -439,12 +726,23 @@ export function CanvasBoard({
                       type="button"
                       className="crewlet-canvas-board__title crewlet-canvas-board__handle"
                       aria-label={text.move(b.title)}
+                      aria-pressed={chosen}
+                      onFocus={() => setSelected({ kind: 'board', id: b.id })}
                       {...boardGestures.handle(b.id, 'move', b)}
                     >
                       {b.title}
                     </button>
                   ) : (
-                    <span className="crewlet-canvas-board__title">{b.title}</span>
+                    // The name selects its board, as a press on the board
+                    // does; the board's keyboard route is its own page and
+                    // its open control, so the name is pointer only.
+                    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+                    <span
+                      className="crewlet-canvas-board__title"
+                      onClick={() => setSelected({ kind: 'board', id: b.id })}
+                    >
+                      {b.title}
+                    </span>
                   )}
                   {onOpen && (
                     <IconButton
@@ -468,25 +766,27 @@ export function CanvasBoard({
                       </span>
                     </div>
                   )}
-                  {isLive && !isActive && (
+                  {!isActive && (
                     // A press here pans the canvas like the field around it;
-                    // a click without a drag hands this board the pointer.
-                    // The board's page stays reachable by keyboard through
-                    // its own frame, so the shield is pointer only.
-                    // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+                    // a click selects the board and a double-click hands a
+                    // live board the pointer. The board's page stays
+                    // reachable by keyboard through its own frame, so the
+                    // shield is pointer only.
+                    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
                     <div
                       className="crewlet-canvas-board__shield"
-                      onClick={editable ? undefined : () => activate(b.id)}
+                      onClick={() => setSelected({ kind: 'board', id: b.id })}
+                      onDoubleClick={editable || !isLive ? undefined : () => activate(b.id)}
                     />
                   )}
                 </div>
-                {isActive && <p className="crewlet-canvas-board__hint">{text.active}</p>}
                 {editable && (
-                  <button
-                    type="button"
-                    className="crewlet-canvas-board__resize"
-                    aria-label={text.resize(b.title)}
-                    {...boardGestures.handle(b.id, 'resize', b)}
+                  <Corners
+                    title={b.title}
+                    selected={chosen}
+                    text={text}
+                    keyed={boardGestures.handle(b.id, 'resize-se', b)}
+                    pointer={(mode) => boardGestures.pointer(b.id, mode, b)}
                   />
                 )}
               </section>
@@ -498,9 +798,13 @@ export function CanvasBoard({
               note={n}
               editable={editable}
               editing={editing === n.id}
+              selected={isSelected('note', n.id)}
               text={text}
               moveHandle={noteGestures.handle(n.id, 'move', n)}
-              resizeHandle={noteGestures.handle(n.id, 'resize', n)}
+              dragPaper={noteGestures.pointer(n.id, 'move', n)}
+              resizeHandle={noteGestures.handle(n.id, 'resize-se', n)}
+              resizePointer={(mode) => noteGestures.pointer(n.id, mode, n)}
+              onSelect={() => setSelected({ kind: 'note', id: n.id })}
               onEdit={() => setEditing(n.id)}
               onDone={(value) => {
                 setEditing(null);
@@ -520,15 +824,66 @@ export function CanvasBoard({
   );
 }
 
-type Handle = ReturnType<ReturnType<typeof useFrameGestures>['handle']>;
+type Gestures = ReturnType<typeof useFrameGestures>;
+type Handle = ReturnType<Gestures['handle']>;
+type PointerHandle = ReturnType<Gestures['pointer']>;
+
+/**
+ * A selected item's resize corners.
+ *
+ * THE BOTTOM RIGHT IS THE ONE WITH A TAB STOP, always present and drawn while
+ * it is selected or focused, so every item can be resized from the keyboard
+ * with the arrows. The other three are a pointer's extra reach, drawn only on
+ * a selected item and hidden from assistive technology, because a fourth tab
+ * stop per item would say nothing the first does not.
+ */
+function Corners({
+  title,
+  selected,
+  text,
+  keyed,
+  pointer,
+}: {
+  title: string;
+  selected: boolean;
+  text: CanvasBoardLabels;
+  keyed: Handle;
+  pointer: (mode: DragMode) => PointerHandle;
+}) {
+  return (
+    <>
+      {selected &&
+        POINTER_CORNERS.map((mode) => (
+          <span
+            key={mode}
+            aria-hidden
+            className="crewlet-canvas-board__resize"
+            data-corner={mode}
+            {...pointer(mode)}
+          />
+        ))}
+      <button
+        type="button"
+        className="crewlet-canvas-board__resize"
+        data-corner="resize-se"
+        aria-label={text.resize(title)}
+        {...keyed}
+      />
+    </>
+  );
+}
 
 function NoteView({
   note,
   editable,
   editing,
+  selected,
   text,
   moveHandle,
+  dragPaper,
   resizeHandle,
+  resizePointer,
+  onSelect,
   onEdit,
   onDone,
   onCancel,
@@ -537,9 +892,13 @@ function NoteView({
   note: CanvasBoardNote;
   editable: boolean;
   editing: boolean;
+  selected: boolean;
   text: CanvasBoardLabels;
   moveHandle: Handle;
+  dragPaper: PointerHandle;
   resizeHandle: Handle;
+  resizePointer: (mode: DragMode) => PointerHandle;
+  onSelect: () => void;
   onEdit: () => void;
   onDone: (value: string) => void;
   onCancel: () => void;
@@ -555,6 +914,9 @@ function NoteView({
           // Focus moves into the field the reader just asked to type in.
           // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
+          // A new note opens on its starting words, selected, so typing
+          // replaces them rather than adding to them.
+          onFocus={(event) => event.currentTarget.select()}
           onBlur={(event) => onDone(event.currentTarget.value)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
@@ -568,7 +930,12 @@ function NoteView({
           }}
         />
       ) : (
-        <p className="crewlet-canvas-board__note-text">{note.text}</p>
+        <p
+          className="crewlet-canvas-board__note-text"
+          style={note.kind === 'title' ? { fontSize: titleSize(note) } : undefined}
+        >
+          {note.text}
+        </p>
       )}
       {editable && !editing && (
         <div className="crewlet-canvas-board__note-tools">
@@ -576,6 +943,7 @@ function NoteView({
             type="button"
             className="crewlet-canvas-board__handle crewlet-canvas-board__note-move"
             aria-label={text.move(noteName(note))}
+            onFocus={onSelect}
             {...moveHandle}
           />
           <IconButton
@@ -595,16 +963,28 @@ function NoteView({
         </div>
       )}
       {editable && !editing && (
-        <button
-          type="button"
-          className="crewlet-canvas-board__resize"
-          aria-label={text.resize(noteName(note))}
-          {...resizeHandle}
+        <Corners
+          title={noteName(note)}
+          selected={selected}
+          text={text}
+          keyed={resizeHandle}
+          pointer={resizePointer}
         />
       )}
     </>
   );
   const frame = { left: note.x, top: note.y, width: note.w, height: note.h };
+  /*
+   * THE PAPER ITSELF selects the note, moves it when the canvas is editable,
+   * and opens it for typing on a double-click, as a design tool's note does.
+   * Its keyboard route is the move handle and the edit control above it, so
+   * the paper's own handlers are pointer only.
+   */
+  const paper = {
+    'data-selected': selected || undefined,
+    onClick: onSelect,
+    ...(editable && !editing ? { ...dragPaper, onDoubleClick: onEdit } : {}),
+  };
   if (note.kind === 'sticky') {
     return (
       <Note
@@ -612,13 +992,14 @@ function NoteView({
         className="crewlet-canvas-board__note"
         data-kind="sticky"
         style={frame}
+        {...paper}
       >
         {body}
       </Note>
     );
   }
   return (
-    <div className="crewlet-canvas-board__note" data-kind="title" style={frame}>
+    <div className="crewlet-canvas-board__note" data-kind="title" style={frame} {...paper}>
       {body}
     </div>
   );

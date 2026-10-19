@@ -117,6 +117,8 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `globe` | `GlobeGlyph` | `package/icons/globe.svg` |
 | `grip-vertical` | `GripVerticalGlyph` | `package/icons/grip-vertical.svg` |
 | `group` | `GroupGlyph` | `package/icons/group.svg` |
+| `hand` | `HandGlyph` | `package/icons/hand.svg` |
+| `hand-grab` | `HandGrabGlyph` | `package/icons/hand-grab.svg` |
 | `hash` | `HashGlyph` | `package/icons/hash.svg` |
 | `heading` | `HeadingGlyph` | `package/icons/heading.svg` |
 | `heading-1` | `Heading1Glyph` | `package/icons/heading-1.svg` |
@@ -193,6 +195,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `text-align-center` | `TextAlignCenterGlyph` | `package/icons/text-align-center.svg` |
 | `text-align-end` | `TextAlignEndGlyph` | `package/icons/text-align-end.svg` |
 | `text-align-start` | `TextAlignStartGlyph` | `package/icons/text-align-start.svg` |
+| `text-cursor` | `TextCursorGlyph` | `package/icons/text-cursor.svg` |
 | `text-quote` | `TextQuoteGlyph` | `package/icons/text-quote.svg` |
 | `trash` | `TrashGlyph` | `package/icons/trash.svg` |
 | `triangle-alert` | `TriangleAlertGlyph` | `package/icons/triangle-alert.svg` |

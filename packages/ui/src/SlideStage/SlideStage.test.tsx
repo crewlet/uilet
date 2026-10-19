@@ -25,6 +25,17 @@ test('a slide is a named group laid out at 1920 by 1080 and scaled as a whole', 
   expect(group.style.width).toBe('480px');
 });
 
+test('a stage of another size names what it holds', () => {
+  render(
+    <SlideStage label="Pricing, 1440 by 900" scale={0.5} width={1440} height={900} roleDescription="artboard">
+      <h1>Pricing</h1>
+    </SlideStage>,
+  );
+  const group = screen.getByRole('group', { name: 'Pricing, 1440 by 900' });
+  expect(group.getAttribute('aria-roledescription')).toBe('artboard');
+  expect((group.firstElementChild as HTMLElement).style.width).toBe('1440px');
+});
+
 test('an unmeasured stage paints nothing at full size', () => {
   render(
     <SlideStage label="Slide">

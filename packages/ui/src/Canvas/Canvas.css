@@ -37,7 +37,7 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  cursor: grab;
+  cursor: var(--crewlet-canvas-cursor-hand, grab);
   /* Until it is tapped, one finger belongs to the page's vertical scroll. */
   touch-action: pan-y;
 }
@@ -55,8 +55,28 @@
   touch-action: none;
 }
 
-.crewlet-canvas[data-panning='true'] .crewlet-canvas__viewport {
-  cursor: grabbing;
+/*
+ * THE POINTER SAYS WHAT A PRESS WILL DO. The drawings are the component's
+ * (`CURSORS`, written on the root), each falling back to its keyword. A pan in
+ * progress shows the closed hand whatever the tool, and it is set on the whole
+ * canvas rather than the field, so a drag that crosses a board or a note keeps
+ * the hand it started with.
+ */
+.crewlet-canvas[data-cursor='pointer'] .crewlet-canvas__viewport {
+  cursor: var(--crewlet-canvas-cursor-pointer, default);
+}
+
+.crewlet-canvas[data-cursor='crosshair'] .crewlet-canvas__viewport {
+  cursor: var(--crewlet-canvas-cursor-crosshair, crosshair);
+}
+
+.crewlet-canvas[data-cursor='text'] .crewlet-canvas__viewport {
+  cursor: var(--crewlet-canvas-cursor-text, text);
+}
+
+.crewlet-canvas[data-panning='true'] .crewlet-canvas__viewport,
+.crewlet-canvas[data-panning='true'] .crewlet-canvas__viewport * {
+  cursor: var(--crewlet-canvas-cursor-grabbing, grabbing);
   user-select: none;
 }
 
@@ -259,6 +279,22 @@
 .crewlet-canvas__zoom {
   cursor: pointer;
   border-radius: var(--radius-chip);
+}
+
+/* Actual size, as a ratio: the readout's own control, at the button step. */
+.crewlet-canvas__actual {
+  width: var(--size-control-sm);
+}
+
+/*
+ * A control's tip with its shortcut (ShortcutTip.tsx): the words, then the
+ * keycaps, on one line.
+ */
+.crewlet-shortcut-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  white-space: nowrap;
 }
 
 .crewlet-canvas__zoom:hover:not(:disabled) {
