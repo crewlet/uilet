@@ -101,6 +101,13 @@
     "qr": {
       "dark": { "value": "#000000", "comment": "A QR code's dark modules. Part of the symbol a camera reads rather than a colour of the palette, so it is the same in every palette and theme and is never spent on anything else. A code is specified dark on light, and some authenticator apps do not read one inverted for a dark theme, which is why it is not themed." },
       "light": { "value": "#ffffff", "comment": "A QR code's light plate, its quiet zone included. Fixed for the same reason as the dark modules: the plate is what gives a scanner light to find the finder patterns against, on any page." }
+    },
+    "projection": {
+      "letterbox": { "value": "#000000", "comment": "The bars round a slide shown full screen, where its shape and the screen's differ. Black in every palette and theme, as on a projector or a television: the room sees the slide and nothing of the interface, and a lit bar beside a dark slide would read as part of it." },
+      "ground": { "value": "rgba(0, 0, 0, 0.6)", "comment": "The pill a full screen show's controls float on, over the slide or its bars. Fixed for the same reason as the letterbox: what is under it is the slide, in the slide's own colours, never the theme's." },
+      "ink": { "value": "#ffffff", "comment": "The controls' glyphs and the position on the projection ground: white over a 60% black, which clears 4.5:1 over any slide behind it." },
+      "hover": { "value": "rgba(255, 255, 255, 0.16)", "comment": "A control under the pointer on the projection ground." },
+      "rule": { "value": "rgba(255, 255, 255, 0.24)", "comment": "The hairline that sets the show's own controls (full screen) apart from Previous and Next on the projection ground." }
     }
   }
 }
