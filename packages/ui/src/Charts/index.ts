@@ -19,6 +19,8 @@ export type {
   StackedColumnsProps,
   StackedColumnsSeries,
 } from './StackedColumns.js';
+export { ChartEmpty } from './ChartEmpty.js';
+export type { ChartEmptyProps } from './ChartEmpty.js';
 export { ChartTooltip } from './ChartTooltip.js';
 export type { ChartTooltipProps, ChartTooltipRow } from './ChartTooltip.js';
 export { useChartHover } from './useChartHover.js';

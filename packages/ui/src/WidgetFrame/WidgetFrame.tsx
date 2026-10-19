@@ -68,6 +68,13 @@ export interface WidgetFrameProps extends Omit<HTMLAttributes<HTMLElement>, 'tit
    * other figure keeps the frame's inset.
    */
   flush?: boolean | undefined;
+  /**
+   * Keep the title's two lines whether it fills them or not, so the figures of
+   * a row of frames start on one line: a number under a title of one line and
+   * a number under a title of two stood a line apart. For a row of figures
+   * read across (stats and meters), never for a frame alone in its row.
+   */
+  holdTitle?: boolean | undefined;
   /** The heading level of the title. Default 3, under a board's own heading. */
   headingLevel?: 2 | 3 | 4 | undefined;
   /** Overrides the shared clock, for a story or a suite. */
@@ -108,6 +115,7 @@ export function WidgetFrame({
   onCite,
   actions,
   flush = false,
+  holdTitle = false,
   headingLevel = 3,
   now,
   labels,
@@ -125,7 +133,9 @@ export function WidgetFrame({
   // them read as one run-on word ("Source:Spend by seatas of").
   const citation = (
     <>
-      <VisuallyHidden>{text.cite}</VisuallyHidden> <span className="crewlet-widget-frame__source">{source.label}</span>
+      <VisuallyHidden>{text.cite}</VisuallyHidden> <span className="crewlet-widget-frame__source" title={source.label}>
+        {source.label}
+      </span>
       {source.status === 'live' ? (
         <>
           {' '}
@@ -158,6 +168,7 @@ export function WidgetFrame({
         'crewlet-widget-frame',
         `crewlet-widget-frame--${source.status}`,
         flush && 'crewlet-widget-frame--flush',
+        holdTitle && 'crewlet-widget-frame--hold-title',
         className,
       )}
       aria-labelledby={titleId}

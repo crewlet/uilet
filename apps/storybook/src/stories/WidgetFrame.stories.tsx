@@ -132,3 +132,31 @@ export const Narrow: Story = {
     ),
   ],
 };
+
+/**
+ * In a row of stats read across, `holdTitle` keeps the title's two lines so
+ * every number starts on one line, and a narrow frame's citation takes a
+ * second line before it ends (the whole source is its tooltip).
+ */
+export const ARowOfNumbers: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ padding: 16, background: 'var(--color-surface-background)' }}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 190px)', gap: 16, height: 220 }}>
+      <WidgetFrame holdTitle title="Open work items" now={NOW} source={{ label: 'Open work', status: 'live' }}>
+        <StatCard flush hideLabel label="Open work" value="12" />
+      </WidgetFrame>
+      <WidgetFrame holdTitle title="Tokens, last 14 days" now={NOW} source={{ label: 'Token spend per seat, 14 days', status: 'live' }}>
+        <StatCard flush hideLabel label="Tokens" value="831.3k" />
+      </WidgetFrame>
+      <WidgetFrame holdTitle title="Deploys this month" now={NOW} source={{ label: 'Deploys for the chosen service', status: 'live' }}>
+        <StatCard flush hideLabel label="Deploys" value="0" />
+      </WidgetFrame>
+    </div>
+  ),
+};

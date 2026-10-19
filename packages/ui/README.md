@@ -240,6 +240,12 @@ What to change:
 
 **`Note` spaces its paragraphs** a step apart, whatever the host's base sheet resets.
 
+**A chart's empty sentence stands in the middle of its plot, at the plot's height.** `ChartEmpty` is exported for a host drawing a figure's empty state itself; it takes `height` and `align` (`start` for a list, which `BarList` uses).
+
+**`ArrangeGroup` takes `variant="section"`**: a quiet header on the page's ground (the name at a card title's step, its count, the chevron) over a hairline in the hue, and the blocks on the page's grid with no inset, for a page being read rather than arranged. `band`, the default, is unchanged.
+
+**`WidgetFrame` takes `holdTitle`**, which keeps the title's two lines so the numbers of a row of frames start on one line. A narrow frame's stacked citation takes a second line before it ends, and the source's whole title is its tooltip.
+
 **A compact `DataTable` takes `--crewlet-data-table-row-height`**, its row's height (`--size-row-md` by default), so a host whose list keeps another rhythm sets it rather than reaching past the table into its cells.
 
 **A design's canvas lays its grid on the boards' plane.** `Canvas` takes `ground="grid"`: the dotted ground's dots, panned with the content and pitched by the zoom (doubling or halving to stay between one and two spacing steps on screen), as a design tool's grid is. `gridOf(view)` is that rule on its own. `CanvasBoard` draws on it; `dotted` is unchanged and still stays put under a chart.

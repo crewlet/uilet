@@ -1294,6 +1294,19 @@ describe('a chart of the cases a board draws: none, one, below zero, more than t
       expect(container.textContent).not.toMatch(/1969|1970/);
       cleanup();
     }
+    // In the middle of the plot it stands in for, at the plot's height; a
+    // list's sentence where its rows would have begun.
+    const plot = render(<StackedColumns label="Deploys" series={[]} buckets={[]} height="10rem" />);
+    const centred = plot.container.querySelector<HTMLElement>('.crewlet-chart-empty')!;
+    expect(centred.style.minHeight).toBe('10rem');
+    expect(centred.classList.contains('crewlet-chart-empty--start')).toBe(false);
+    cleanup();
+    const list = render(<BarList data={[]} />);
+    expect(list.container.querySelector('.crewlet-chart-empty--start')).toBeTruthy();
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Charts.css'), 'utf8');
+    const rule = [...css.matchAll(/\.crewlet-chart-empty \{([^}]*)\}/g)].map((m) => m[1]).join('');
+    expect(rule).toMatch(/align-items:\s*center/);
+    expect(rule).toMatch(/justify-content:\s*center/);
   });
 
   test('a time series of one point draws the point, at the middle of a window of one instant', () => {
