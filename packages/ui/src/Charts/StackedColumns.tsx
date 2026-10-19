@@ -251,15 +251,20 @@ export function StackedColumns({
           .map((one) => `${one.name} ${format(one.total)}`)
           .join(', ')}.`;
 
+  /*
+   * A LEGEND OF ONE SERIES SAYS WHAT THE LABEL ALREADY SAYS: there is one hue,
+   * and the chart's name (its card's title) is what it is. A key is drawn for
+   * two series or more.
+   */
   const key =
-    legend === 'none' ? null : (
+    legend === 'none' || shown.length < 2 ? null : (
       <Legend
         className={cx('crewlet-stacked-columns__legend', `crewlet-stacked-columns__legend--${legend}`)}
         items={shown.map((one) => ({ id: one.id, label: one.name, color: one.color }))}
       />
     );
   const hasHead = head !== undefined && head !== null && head !== false;
-  const headed = hasHead || legend === 'head';
+  const headed = hasHead || (legend === 'head' && key !== null);
   const fill = height === 'fill';
   /*
    * A FILL CHART'S ROWS, as a style property because the head is not always

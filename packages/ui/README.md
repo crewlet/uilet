@@ -212,7 +212,7 @@ places:
 
 **`TimeSeries` draws below zero, a single point, and its own legend.** The scale runs from zero to the peak, and below zero when a value is, with the baseline on zero, an area filled to it, and "low" beside "peak" under the plot. A series of one point draws its point, a window of one instant draws it at the middle, and the reading draws every series' point on the crosshair. Two series or more are lines with no wash, keyed by a legend of line keys the chart draws itself (`legend`, `below` by default, or `none`). The grid is a solid hairline. Under 18rem the range leaves the line to the window's ends.
 
-**`StackedColumns` stands on zero.** A negative part hangs from the zero line, zero is always one of the scale's lines, and the tooltip reads values with their sign. `formatScale` writes the scale's words apart from the tooltip's. The scale's words are the sans at the caption step, as the dates are; a column is at most 24px wide; the middle date leaves a chart narrower than 22rem.
+**`StackedColumns` stands on zero.** A negative part hangs from the zero line, zero is always one of the scale's lines, and the tooltip reads values with their sign. `formatScale` writes the scale's words apart from the tooltip's. A chart of one series draws no legend, since its label names it. The scale's words are the sans at the caption step, as the dates are; a column is at most 24px wide; the middle date leaves a chart narrower than 22rem.
 
 **`ActivityStrip` takes `reading`,** which makes the strip one tab stop whose cells read their time and value by pointer or by ←/→. A cell is at most 24px wide, so a strip of one day is one mark.
 

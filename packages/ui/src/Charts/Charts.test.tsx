@@ -1381,6 +1381,8 @@ describe('a chart of the cases a board draws: none, one, below zero, more than t
     const above = container.querySelector<HTMLElement>('.crewlet-stacked-columns__column:not(.crewlet-stacked-columns__column--below)')!;
     // The column above stands where the one below hangs from.
     expect(Number.parseFloat(above.style.bottom) + Number.parseFloat(below!.style.top)).toBeCloseTo(100, 3);
+    // One series is named by the chart's label: no legend box restates it.
+    expect(container.querySelector('.crewlet-legend')).toBeNull();
   });
 
   test('an activity strip given a reading is one tab stop whose cells read their time and value', () => {
