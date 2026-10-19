@@ -52,12 +52,12 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Arranging a page | `ArrangeBoard`, `ArrangeGrid`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
-| Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
+| Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen`, `useIdle` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
 | Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `ArtifactBar` and `ArtifactVersionChip` (an open artifact's one slim bar), `ArtifactPanel` and `ArtifactWorkspace` (the panels it opens beside or over the artifact), `CanvasBoard` (a design's artboards and notes on a `Canvas`, with the visibility budget `liveBoards`), `CanvasToolbar` (a canvas's tool palette, with `toolForKey`), `CanvasSchematic` (a design's cover, drawn from its boards' frames), `AccessDeniedCard`, `ArtifactIcon` (with `artifactIconGlyph` and `ARTIFACT_ICON_WORDS`), the native gallery covers (`DocCover`, `SheetCover`, `DashboardCover`), `MergeConflicts`, the dashboard pieces (`WidgetFrame`, `DatasetSource` and `DatasetSourceList`), and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
 | Sheets | `SheetGrid`, the cells on their own (`CheckboxCell`, `TextCell`, `LongTextCell`, `NumberCell`, `SelectCell`, `MultiSelectCell`, `PersonCell`, `StatusCell`, `DateCell`, `UrlCell`, `RatingCell`, and `SheetCell` for any type), `ChangeMark`, and `SheetModel` (every rule a sheet is drawn from, with no React in it: values, parsing, the keyboard model, TSV, the pending edits of D23) |
 | Presence | `PresenceStack`, `PresenceRing` and `presenceHueClass`, `CursorFlag`, `LiveCursor`, `FollowBanner`, `PeopleRail` (with `peopleRailKey`), and `PresenceModel` (the roster order, one entry per person, the session hues from `PRESENCE_HUES`, with no React in it) |
-| Presentations | `SlideStage` (a slide laid out at 1920 by 1080 and scaled to its box, with `SLIDE_WIDTH` and `SLIDE_HEIGHT`), `useSlideKeys` (the keys a show and a clicker send), `SlideFilmstrip`, `SlideGrid`, `SlideCompare` (with `SLIDE_COMPARE_LABELS`), `PresenterView` (with `formatStopwatch`) |
+| Presentations | `SlideStage` (a slide laid out at 1920 by 1080 and scaled to its box, with `SLIDE_WIDTH` and `SLIDE_HEIGHT`), `useSlideKeys` (the keys a show and a clicker send), `SlideNav` (Previous, the position and Next, with `SLIDE_NAV_LABELS`), `SlideFilmstrip`, `SlideGrid`, `SlideCompare` (with `SLIDE_COMPARE_LABELS`), `PresenterView` (with `formatStopwatch`) |
 
 Storybook stories live under `apps/storybook/src/stories`.
 
@@ -204,6 +204,23 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in the next release
+
+**A presentation's pieces are finished for the page, full screen and a phone.**
+
+- **`SlideStage` takes `framed`**, the slide's own hairline edge on a small radius, so a slide whose ground is the page's colour still reads as a slide. Grid cards, the comparison's sides and the presenter's slides use it. In full screen a `contain` or `view` stage letterboxes on `--color-projection-letterbox`, black in every theme.
+- **`SlideNav` is new**: Previous, the position and Next, off at the ends with the reason on the control, and a slot for the show's own controls after a rule. `tone="projection"` floats it over a slide shown full screen, in the projection's fixed colours (`--color-projection-ground`, `-ink`, `-hover`, `-rule`, new in `@crewlethq/tokens`).
+- **`useIdle(ref, enabled)` is new**: whether the pointer has rested over an element, for a full screen show to put its controls and cursor away. A move, a press or focus wakes it; a key (a clicker) does not.
+- **`PresenterView` shows the room's slide whole on a phone**, where it used to collapse to nothing, and as large as fits beside the side column elsewhere, drawn as the slide rather than letterboxed in a well. Its controls are `SlideNav`; the room's slide, the next one and the notes carry visible captions; the end of the deck holds the next slide's shape so nothing moves on the last slide.
+- **`SlideFilmstrip` keeps the slide on the stage in view**, scrolling only itself, and takes `orientation="horizontal"` for a row under the stage on a phone (Left and Right step it). The strip is its own scroller now: a host bounds its height and no longer sets `overflow`.
+- **`SlideGrid` lays a phone out two to a row.**
+- **`SlideCompare` names its columns** by version over the first row (over each side once they stack), and the side a version lacks reads "Not in this version". Two identical versions draw no empty list.
+
+What to change:
+
+- `SlideCompareLabels.missing` is a string now, not a function of the version.
+- A host that drew a show's Previous, count and Next itself uses `SlideNav`.
+
 ## Changes in 0.32.0
 
 **A canvas title fits its box.** `CanvasBoard` sets a title note in a size fitted to its box both ways (three fifths of its height, smaller when its text would run past its width; `titleSize` is that rule on its own), and the text clips at the box where an unusually wide face still overruns it. A long heading used to run past its box over the boards beside it, at every zoom.
@@ -339,13 +356,15 @@ Slides:
 
 **`useSlideKeys`** answers the keys every presentation and every clicker sends: forward on Right, Down, Page Down, Space and Enter, back on Left, Up, Page Up and Backspace, Home and End to the ends, Escape out. It listens at the document while `enabled`, and leaves alone a field the reader is typing in, a composition, a key a nearer surface handled, and modified keys.
 
-**`SlideFilmstrip`** is the column of thumbnails beside a deck's stage: the slide on the stage marked `aria-current`, one tab stop whose arrow keys move to the next slide, and, with `onReorder`, a handle per slide that moves it by drag or by its arrow keys and announces where it landed. A hidden slide is dimmed and says so.
+**`SlideFilmstrip`** is the column of thumbnails beside a deck's stage (a row under it with `orientation="horizontal"`), scrolled by itself to keep the slide on the stage in view: the slide on the stage marked `aria-current`, one tab stop whose arrow keys move to the next slide, and, with `onReorder`, a handle per slide that moves it by drag or by its arrow keys and announces where it landed. A hidden slide is dimmed and says so.
 
 **`SlideGrid`** lays every slide out by the outline's sections, numbered across the deck, each a button that opens its slide.
 
 **`SlideCompare`** compares two versions of a deck slide by slide: each slide's older and newer drawings side by side, paired by its id, a slide one version lacks drawn as an empty side naming that version, and every change said in words beside a glyph (Changed, Added, Removed, Moved from 6 to 7), the list opening with the count of each. Unchanged slides fold away behind one control.
 
 **`VersionCompare`** takes `versions`, a comparison the host draws in the versions lens in place of the two panes, for content compared item by item (a deck's slides, which two independent panes could not line up).
+
+**`SlideNav`** is Previous, the position and Next, off at the ends with the reason on the control, on the page or (`tone="projection"`) floating over a slide shown full screen.
 
 **`PresenterView`** is the presenter's own screen: the slide the room sees, the next one, the speaker notes large and on their own scroll, a timer that pauses, resumes and resets (`formatStopwatch` reads it as m:ss), and controls that stop at the ends of the deck.
 
