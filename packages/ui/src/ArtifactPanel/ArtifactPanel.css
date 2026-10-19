@@ -104,6 +104,12 @@
   --crewlet-section-title-size: var(--font-size-sm);
   --crewlet-artifact-panel-inset: var(--spacing-4);
 
+  /* A COLUMN, so content that should fit the panel rather than scroll it
+     can: a child that sets `min-height: 0` shrinks to the room the body has
+     (a sheet's rows, whose grid then scrolls itself), and every other child
+     keeps its content's height and scrolls the body as before. */
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   padding: var(--crewlet-artifact-panel-inset);

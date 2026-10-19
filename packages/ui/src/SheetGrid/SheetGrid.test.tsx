@@ -547,6 +547,16 @@ describe('audit fixes', () => {
     expect(scroller().style.height).toBe('100px');
   });
 
+  test('fit="content" gives way in a bounded column, never below its floor or its rows', () => {
+    const { container } = render(<Host fit="content" />);
+    const scroller = container.querySelector<HTMLElement>('.crewlet-sheet-grid__scroller')!;
+    expect(scroller.style.getPropertyValue('--crewlet-sheet-content-height')).toBe(`${32 + 3 * 32 + 2}px`);
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+    const rule = /\.crewlet-sheet-grid--fit-content > \.crewlet-sheet-grid__scroller\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/flex:\s*0 1 auto;/);
+    expect(rule).toMatch(/min-height:\s*min\(var\(--crewlet-sheet-min-height, 0px\), var\(--crewlet-sheet-content-height, 0px\)\);/);
+  });
+
   test('the last column takes the slack, so no empty strip sits beside it (A16)', () => {
     render(<Host />);
     const template = grid().style.getPropertyValue('--crewlet-sheet-columns');

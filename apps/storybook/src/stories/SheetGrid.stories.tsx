@@ -135,6 +135,30 @@ export const RefusedHeld: Story = {
 export const FitContent: Story = { render: () => <LiveSheet fit="content" height={480} /> };
 
 /**
+ * In a column of bounded height, a content-fit sheet gives way: a thousand
+ * rows shrink to the room under the bar above them, so Add row sits on the
+ * column's edge, and never below the 12rem floor the page sets.
+ */
+export const FitsItsColumn: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        height: 420,
+        ['--crewlet-sheet-min-height' as string]: '12rem',
+        ['--crewlet-sheet-max-height' as string]: 'none',
+      }}
+    >
+      <p style={{ margin: 0 }}>A bar above the sheet</p>
+      {/* No height of its own to stop at: the column is what bounds it. */}
+      <LiveSheet start={manyRows(1_000)} fit="content" height={Number.MAX_SAFE_INTEGER} />
+    </div>
+  ),
+};
+
+/**
  * A remote write landing on the cell being edited. Press Enter on Globex's
  * Score to edit it: two seconds later Maya changes it to 6.5, and the editor
  * stays open and names her.

@@ -152,7 +152,9 @@ export interface SheetGridProps {
    * `content` is as tall as its rows, up to `height` (or the
    * `--crewlet-sheet-max-height` the page sets, 70% of the viewport by
    * default), so twelve rows draw no empty bordered slab under the last one
-   * and Add row sits right under them.
+   * and Add row sits right under them. In a column of bounded height it
+   * shrinks to the room left, down to the `--crewlet-sheet-min-height` the
+   * page sets.
    */
   fit?: 'container' | 'content' | undefined;
   /**
@@ -854,7 +856,10 @@ export function SheetGrid({
   const contentHeight = headerHeight + rows.length * rowHeight + 2;
   const scrollerStyle: CSSProperties | undefined =
     fit === 'content'
-      ? { height: `${height !== undefined ? Math.min(contentHeight, height) : contentHeight}px` }
+      ? ({
+          height: `${height !== undefined ? Math.min(contentHeight, height) : contentHeight}px`,
+          '--crewlet-sheet-content-height': `${contentHeight}px`,
+        } as CSSProperties)
       : height !== undefined
         ? { height: `${height}px` }
         : undefined;

@@ -77,9 +77,16 @@
 }
 
 /* AS TALL AS ITS ROWS (fit="content"): the component writes the height, the
-   page may cap it, and the grid never grows past the height it was given. */
+   page may cap it, and the grid never grows past the height it was given.
+   IN A BOUNDED COLUMN IT GIVES WAY: the scroller shrinks to the room its
+   container has left under whatever stands above it (a bar that wraps on a
+   phone included), so the foot lands on the container's edge rather than
+   on a guess of how tall the rest is. It never shrinks below the floor the
+   page sets (--crewlet-sheet-min-height), and never below its own rows'
+   height, so a short sheet is not stretched into an empty slab. */
 .crewlet-sheet-grid--fit-content > .crewlet-sheet-grid__scroller {
-  flex: none;
+  flex: 0 1 auto;
+  min-height: min(var(--crewlet-sheet-min-height, 0px), var(--crewlet-sheet-content-height, 0px));
   max-height: var(--crewlet-sheet-max-height, 70vh);
 }
 
