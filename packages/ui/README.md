@@ -203,6 +203,16 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.24.0
+
+**The `markdown` artifact kind is now `doc`**, as the engine names it (`artifacts.KindDoc`). `ArtifactKind`, `ARTIFACT_KINDS`, `ArtifactKindGlyph` and `ArtifactCard` take `doc`, and the card's default label for it is "Doc".
+
+What to change: pass `kind="doc"` wherever you passed `kind="markdown"`, and rename the `markdown` key of a custom `labels.kinds` to `doc`.
+
+**`ArtifactKind` names every kind the engine ships**: `html`, `doc`, `slides`, `design`, `dashboard` and `sheet`, in the engine's order (`artifacts.Kinds`), which `ARTIFACT_KINDS` lists. Each draws its own glyph where a card has no preview (`slides` a presentation, `design` a palette, `dashboard` a dashboard layout), and its own default label ("Slides", "Design", "Dashboard"). A custom `labels.kinds` passes only the kinds it renames. `@crewlethq/icons` adds `PresentationGlyph`.
+
+What to change: a `Record<ArtifactKind, ...>` of your own needs the three new keys.
+
 ## Changes in 0.23.0
 
 **A text field's edge is quieter.** `Input`, the textarea, `TagsInput`, `MarkdownEditor` and the typed boxes inside `DateTimePicker` and `TimeWindowPicker` draw `--color-border-field` (new in `@crewlethq/tokens` 0.23.0): the secondary button's edge lifted only as far as 3:1 on the surfaces a field stands on, rather than the control boundary that was the brightest edge on the page. Under the pointer the edge steps up to `--color-border-control`; it used to step down to the hover hairline and fade. Checkboxes, switches and editors inside a row keep `--color-border-control`.
