@@ -245,7 +245,7 @@ export const OlderVersion: Story = {
 
 /** The title is still being read. */
 export const Pending: Story = {
-  args: { title: '', kind: 'html', kindLabel: 'Page', pending: true, back: { href: '#', label: 'Back to artifacts' } },
+  args: { title: '', kind: 'html', kindLabel: 'HTML', pending: true, back: { href: '#', label: 'Back to artifacts' } },
 };
 
 /**

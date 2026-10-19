@@ -74,6 +74,14 @@ export interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
    * says otherwise.
    */
   trend?: ReactNode;
+  /**
+   * Where `trend` stands: at the END of the value's line (the default), or
+   * BELOW it at the tile's full width. Below is a quota's tile, a number of a
+   * known ceiling whose bar is the reading and not a sparkline beside it; a
+   * row of them keeps one shape at every width, where three end slots wrapped
+   * one by one as each number's width decided.
+   */
+  trendPlacement?: 'end' | 'below' | undefined;
   /** A glyph before the label. A component, not a name. */
   icon?: ReactNode;
   /** Colours the VALUE's ink. See the type for when that is right. */
@@ -123,6 +131,7 @@ export const StatCard = ({
   subTone = 'neutral',
   delta,
   trend,
+  trendPlacement = 'end',
   icon,
   tone = 'neutral',
   loading = false,
@@ -151,7 +160,7 @@ export const StatCard = ({
           {label}
         </div>
       )}
-      <div className="crewlet-statcard__reading">
+      <div className={cx('crewlet-statcard__reading', trendPlacement === 'below' && 'crewlet-statcard__reading--below')}>
         <div className="crewlet-statcard__value">
           {loading ? (
             <>
@@ -160,7 +169,7 @@ export const StatCard = ({
             </>
           ) : (
             <>
-              {value}
+              <span className="crewlet-statcard__number">{value}</span>
               {unit ? <span className="crewlet-statcard__unit">{unit}</span> : null}
             </>
           )}

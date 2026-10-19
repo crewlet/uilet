@@ -6,7 +6,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
-import { ARTIFACT_KINDS, ArtifactCard } from './index.js';
+import { ARTIFACT_KINDS, ArtifactCard, ArtifactPreviewGlyph } from './index.js';
 
 afterEach(cleanup);
 
@@ -39,6 +39,23 @@ test('is one link, named by the title alone and described by its facts', () => {
   expect(link.querySelectorAll('button, a[href] a[href], input')).toHaveLength(0);
 });
 
+test('says when it changed before who changed it, and leaves out a changer it was not given', () => {
+  const said = () => document.querySelectorAll('.crewlet-artifact-card__line')[1]?.textContent ?? '';
+  const { rerender } = render(
+    <ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW - 4 * 60_000} updatedBy="Ana" now={NOW} />,
+  );
+  // "Ana 4m ago" beside the owner read as a second owner.
+  expect(said()).toMatch(/Maya Ortiz\s*Updated 4m ago by Ana$/);
+  rerender(<ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW - 4 * 60_000} now={NOW} />);
+  expect(said()).toMatch(/Maya Ortiz\s*Updated 4m ago$/);
+});
+
+test('offers the whole title to a pointer, since the card cuts it to one line', () => {
+  const long = 'Integration requirements review for the payments platform migration, second quarter';
+  render(<ArtifactCard title={long} kind="sheet" href="#/a" updatedAt={NOW} now={NOW} />);
+  expect(screen.getByRole('link', { name: long }).querySelector('[title]')?.getAttribute('title')).toBe(long);
+});
+
 test('draws no changes line for none, and none for never opened', () => {
   const { rerender } = render(<ArtifactCard title="Pricing explorer" kind="html" href="#/a" updatedAt={NOW} changes={0} now={NOW} />);
   expect(screen.queryByText(/since you looked/)).toBeNull();
@@ -65,7 +82,20 @@ test('gives every kind its own glyph and label when no preview is given', () => 
     unmount();
   }
   expect(drawings.size).toBe(ARTIFACT_KINDS.length);
-  expect(words).toEqual(['Page', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
+  expect(words).toEqual(['HTML', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
+});
+
+test('a host whose cover has nothing to draw stands in the same glyph the card would', () => {
+  // A cover that rendered nothing left an empty box: the card cannot see that
+  // a preview it was given drew nothing, so the host draws the fallback.
+  const { container } = render(
+    <>
+      <ArtifactCard title="Runbook" kind="sheet" href="#/a" updatedAt={NOW} now={NOW} />
+      <ArtifactCard title="Runbook" kind="sheet" href="#/b" updatedAt={NOW} now={NOW} preview={<ArtifactPreviewGlyph kind="sheet" />} />
+    </>,
+  );
+  const [own, given] = [...container.querySelectorAll('.crewlet-artifact-card__preview')];
+  expect(given!.innerHTML).toBe(own!.innerHTML);
 });
 
 test('compact draws no preview', () => {

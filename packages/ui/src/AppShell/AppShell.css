@@ -610,8 +610,10 @@
     display: inline-flex;
   }
 
+  /* THE TOP BAR'S GUTTER, 16px: the content's 12px stood every page's first
+     line 4px left of the title and the controls over it. */
   .crewlet-app-shell__content {
-    padding: var(--spacing-4) var(--spacing-3) var(--spacing-9);
+    padding: var(--spacing-4) var(--spacing-4) var(--spacing-9);
   }
 }
 
