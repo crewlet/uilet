@@ -24,6 +24,18 @@ describe('a backslash escape', () => {
 });
 
 describe('a link', () => {
+  test('may hold a picture in its label, which neither ends the label nor gives the link its address', () => {
+    expect(inline('[![build](ci/badge.svg)](https://example.com/ci)')).toEqual([
+      expect.objectContaining({ label: '![build](ci/badge.svg)', href: 'https://example.com/ci' }),
+    ]);
+    expect(inline('see [the ![rota](r.png "Rota") page](https://example.com/oncall) now')).toEqual([
+      expect.objectContaining({ label: 'the ![rota](r.png "Rota") page', href: 'https://example.com/oncall' }),
+    ]);
+    // A picture on its own is still a picture, and a bracket alone still ends a label.
+    expect(inline('![rota](r.png)')[0]).toEqual(expect.objectContaining({ alt: 'rota', src: 'r.png' }));
+    expect(inline('[a ! b](x) and ](y)')[0]).toEqual(expect.objectContaining({ label: 'a ! b', href: 'x' }));
+  });
+
   test('may carry an escaped bracket in its label', () => {
     expect(inline('[a \\] b](#/knowledge/pages/1)')[0]).toEqual(
       expect.objectContaining({ label: 'a \\] b', href: '#/knowledge/pages/1' }),

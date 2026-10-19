@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
-import { Document, DocumentTitle } from './index.js';
+import { Document, DocumentTitle, DocumentTitleField } from './index.js';
 
 afterEach(cleanup);
 
@@ -91,4 +91,15 @@ test('a task list and a wide table are recognised by their shape, not by a class
   expect(css).toContain("ul:has(> li > input[type='checkbox'])");
   expect(css).toContain(':where(div):has(> table)');
   expect(css).not.toMatch(/\.md-|\.markdown/);
+});
+
+test('a title being written is a named text field set as the title, refused by aria-invalid', () => {
+  render(<DocumentTitleField aria-label="Title" placeholder="Untitled" defaultValue="" />);
+  const field = screen.getByRole('textbox', { name: 'Title' });
+  expect(field.getAttribute('type')).toBe('text');
+  expect(field.className).toContain('crewlet-document-title');
+  expect(field.getAttribute('aria-invalid')).toBeNull();
+  cleanup();
+  render(<DocumentTitleField aria-label="Title" error defaultValue="Taken" />);
+  expect(screen.getByRole('textbox', { name: 'Title' }).getAttribute('aria-invalid')).toBe('true');
 });
