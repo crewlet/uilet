@@ -30,10 +30,16 @@ export interface BoardFrame {
 export const CANVAS_BOARD_MAX_LIVE = 12;
 
 /**
- * The narrowest a board may be drawn, in screen pixels, and still be live:
- * below it a page's text is unreadable, so running it buys nothing.
+ * The narrowest a board may be drawn, in screen pixels, and still be live.
+ *
+ * Below it a page is a smear, so running it buys nothing. Above it the page's
+ * text may be too small to read, but its layout and colour are not, and they
+ * are how a reader tells one board of a design from the next: a canvas
+ * fitted on a phone or zoomed out over a dozen boards draws them a hundred or
+ * so pixels wide, and at a wider floor every one of them was a grey box. The
+ * cost of running more is held by [CANVAS_BOARD_MAX_LIVE], not by this.
  */
-export const CANVAS_BOARD_MIN_LIVE_WIDTH = 160;
+export const CANVAS_BOARD_MIN_LIVE_WIDTH = 96;
 
 /**
  * The boards to frame for a view: those on screen and at least `minWidth`

@@ -243,6 +243,24 @@ What to change for charts:
 
 - Nothing for an existing host. A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
 
+**A design's canvas lays its grid on the boards' plane.** `Canvas` takes `ground="grid"`: the dotted ground's dots, panned with the content and pitched by the zoom (doubling or halving to stay between one and two spacing steps on screen), as a design tool's grid is. `gridOf(view)` is that rule on its own. `CanvasBoard` draws on it; `dotted` is unchanged and still stays put under a chart.
+
+**A board says only what it has room for.** A board drawn narrower than `BOARD_TITLE_MIN_WIDTH` (40px) goes unnamed until it is zoomed into, and a placeholder drops its lines in turn (why it is not running, then its size) rather than clipping them at both ends over the boards beside it; `boardRoom(width, height)` is that rule. A placeholder no longer repeats the board's name, which the title above it already says. A board's title row is one line of type tall, so a row of boards zoomed out loses less to the names above it.
+
+**More boards run as thumbnails.** `CANVAS_BOARD_MIN_LIVE_WIDTH` is 96px (was 160), so a design fitted on a phone or zoomed out over a dozen boards draws its pages rather than a grey box each; `CANVAS_BOARD_MAX_LIVE` still caps how many run.
+
+**The chrome is drawn over the content.** A board's name and open control, a note's tools and the resize corners sit above every board and note. Far out, a note laid out after a board covered the board's name and took its presses.
+
+**The open control and a note's tools are the item's.** Where a pointer can hover they show on the board or note under it, the selected one and the one holding focus; a touch screen always shows them.
+
+**A board name that is a move handle keeps the name's type and place.** In edit mode the title was set at the page's size (the handle's `font: inherit` won) and moved off the board's edge by the handle's padding.
+
+**The palette is the zoom bar's height, and moves on a narrow canvas.** `CanvasToolbar`'s tools are the small control step (26px), the toolbar and panel step every canvas control takes, where they were 30px and stood taller than the zoom bar beside them. On a canvas narrower than 36rem the palette sits in the top left corner instead of over the zoom bar.
+
+**A canvas's hint no longer moves its zoom bar.** In a bottom corner the status note ("Double-click to use this board") is drawn above the bar, so the bar stays under a pointer on its way to it.
+
+**A caller can hold a board canvas's selection.** `selected` and `onSelectedChange` (with `CanvasBoardSelection`) let a list of boards beside the canvas mark the board picked on it, and pick one there.
+
 ## Changes in 0.32.0
 
 **A canvas title fits its box.** `CanvasBoard` sets a title note in a size fitted to its box both ways (three fifths of its height, smaller when its text would run past its width; `titleSize` is that rule on its own), and the text clips at the box where an unusually wide face still overruns it. A long heading used to run past its box over the boards beside it, at every zoom.

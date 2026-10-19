@@ -33,6 +33,19 @@
   background-size: var(--spacing-5) var(--spacing-5);
 }
 
+/*
+ * A GRID ON THE CONTENT'S PLANE (`ground="grid"`): the same dots, but pitched
+ * and placed by the view (`gridOf`), so they pan and zoom with the content.
+ * The dots themselves stay one screen pixel, as a design tool's do.
+ */
+.crewlet-canvas[data-ground='grid'] {
+  background-image: radial-gradient(var(--color-border-strong) 1px, transparent 1.2px);
+  background-size:
+    calc(var(--spacing-5) * var(--crewlet-canvas-grid-scale, 1))
+    calc(var(--spacing-5) * var(--crewlet-canvas-grid-scale, 1));
+  background-position: var(--crewlet-canvas-grid-x, 0) var(--crewlet-canvas-grid-y, 0);
+}
+
 .crewlet-canvas__viewport {
   position: absolute;
   inset: 0;
@@ -237,6 +250,16 @@
 
 .crewlet-canvas__hint:empty {
   display: none;
+}
+
+/*
+ * THE NOTE GROWS AWAY FROM THE CORNER. It comes and goes as the canvas's state
+ * does, and drawn on the corner's side of the zoom bar it would push the bar
+ * out from under a pointer on its way to it; so in a bottom corner it is drawn
+ * above the bar, and the bar never moves.
+ */
+.crewlet-canvas__controls:not([data-placement='top-right']) .crewlet-canvas__hint {
+  order: -1;
 }
 
 /*
