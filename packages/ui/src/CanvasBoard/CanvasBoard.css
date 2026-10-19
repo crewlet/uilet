@@ -176,18 +176,20 @@
 }
 
 /*
- * A TITLE IS SET IN ITS BOX'S OWN HEIGHT, so the author's frame is the type
- * size: a heading over a group of boards is as large as the box drawn for it.
+ * A TITLE IS SET TO FILL ITS BOX, so the author's frame is the type size: a
+ * heading over a group of boards is as large as the box drawn for it, and a
+ * long one is set smaller rather than run over the boards beside it.
  */
 .crewlet-canvas-board__note[data-kind='title'] {
-  container-type: size;
   display: flex;
   align-items: center;
+  overflow: hidden;
   color: var(--color-text-primary);
 }
 
+/* The size is the component's (`titleSize`), fitted to the box both ways. */
 .crewlet-canvas-board__note[data-kind='title'] .crewlet-canvas-board__note-text {
-  font-size: 60cqh;
+  overflow: hidden;
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-tight);
   line-height: var(--font-line-height-tight);

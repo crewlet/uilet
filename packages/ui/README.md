@@ -204,6 +204,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in the next release
+
+**A canvas title fits its box.** `CanvasBoard` sets a title note in a size fitted to its box both ways (three fifths of its height, smaller when its text would run past its width; `titleSize` is that rule on its own), and the box clips anything an unusually wide face still overruns. A long heading used to run past its box over the boards beside it, at every zoom.
+
+**`SlideStage` names what it holds.** `roleDescription` replaces the screen reader's "slide" for a stage that holds something else, such as a design's board shown at its own layout ("artboard").
+
 ## Changes in 0.27.0
 
 **`SlideStage` presents in the page with `fit="view"`.** A slide presented inside a page sits below a title, a description and tabs, so a stage as tall as its column ran past the foot of the window and hid the bottom of the slide and the controls under it. A `view` stage letterboxes its slide as `contain` does, in a box whose height is measured: the room from the top of the stage's parent (the show: the stage and its controls) to the foot of its scrollport, less what else the parent holds and its `scroll-margin-bottom`, or the slide's height at the stage's width if that is less. The room is measured with the scrollport at its top, so it does not change as the reader scrolls, and again whenever the view, the show or the stage is resized. A show too low on the page to get half of what it asks takes the scrollport's whole height and is scrolled into view, clear of its `scroll-margin-top`. In full screen the stage fills its box, sharing a flex column with the show's controls.

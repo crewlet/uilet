@@ -1,6 +1,6 @@
 import './CanvasBoard.css';
 
-export { CanvasBoard, CANVAS_NOTE_COLORS } from './CanvasBoard.js';
+export { CanvasBoard, CANVAS_NOTE_COLORS, TITLE_GLYPH_EM, titleSize } from './CanvasBoard.js';
 export type {
   CanvasBoardItem,
   CanvasBoardLabels,
