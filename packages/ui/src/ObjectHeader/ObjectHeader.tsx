@@ -193,6 +193,12 @@ export interface ObjectHeaderProps {
    * a second reading. The header draws exactly what it is handed.
    */
   facts?: readonly ObjectFact[] | undefined;
+  /**
+   * What the object says about itself, in a sentence its author wrote: drawn
+   * under the title at the compact step in the secondary ink, at most two
+   * lines.
+   */
+  description?: ReactNode;
   /** What the reader can do with the object. */
   actions?: ReactNode;
   /** A page's header, or the tighter one a peek or a hover card draws. */
@@ -223,6 +229,7 @@ export function ObjectHeader({
   title,
   status,
   facts,
+  description,
   actions,
   size = 'page',
   className,
@@ -246,6 +253,7 @@ export function ObjectHeader({
         {status ? <div className="crewlet-object-header__status">{status}</div> : null}
         {actions ? <div className="crewlet-object-header__actions">{actions}</div> : null}
       </div>
+      {description ? <p className="crewlet-object-header__description">{description}</p> : null}
       {facts ? <FactLine facts={facts} /> : null}
     </header>
   );

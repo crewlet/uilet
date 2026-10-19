@@ -152,4 +152,10 @@ export interface SheetSyncState {
   offline?: boolean | undefined;
   /** Edits that could not be saved and can be retried. */
   failed?: number | undefined;
+  /**
+   * Edits the engine refused, each reverted and said on its cell. The strip
+   * holds them until the reader dismisses them, so a refusal is never
+   * followed by "Saved".
+   */
+  refused?: number | undefined;
 }

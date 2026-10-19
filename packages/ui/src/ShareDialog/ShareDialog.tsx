@@ -71,7 +71,8 @@ const AGENT_CAN: Record<ArtifactRole, string> = {
 };
 
 const LABELS: ShareDialogLabels = {
-  title: (artifact) => `Share "${artifact}"`,
+  // Curly quotes, as every other dialog title in the product draws them.
+  title: (artifact) => `Share “${artifact}”`,
   addRole: 'Role for people you add',
   audience: 'Who has access',
   you: '(you)',

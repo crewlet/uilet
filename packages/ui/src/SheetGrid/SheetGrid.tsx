@@ -42,12 +42,13 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import { ArrowDownGlyph, ArrowUpGlyph, CircleAlertGlyph, PlusGlyph, RotateCcwClockGlyph } from '@crewlethq/icons/glyphs';
+import { ArrowDownGlyph, ArrowUpGlyph, CircleAlertGlyph, EllipsisGlyph, PlusGlyph, RotateCcwClockGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
 import { Avatar } from '../Avatar/index.js';
 import { Button } from '../Button/index.js';
 import { ChangeMark } from '../ChangeMark/index.js';
 import { CursorFlag } from '../CursorFlag/index.js';
 import { isComposing } from '../Layer/index.js';
+import { Menu } from '../Menu/index.js';
 import { presenceHueClass } from '../PresenceRing/index.js';
 import { presenceLabels, type PresenceLabels } from '../PresenceModel/index.js';
 import {
@@ -138,8 +139,30 @@ export interface SheetGridProps {
   /** Where the host's writes stand, for the sync strip. No strip without it. */
   sync?: SheetSyncState | undefined;
   onRetry?: (() => void) | undefined;
-  /** The scroller's height in px. Without it the grid takes the height its container gives it. */
+  /**
+   * The scroller's height in px. Without it the grid takes the height its
+   * container gives it. With `fit="content"` it is the MOST the grid takes.
+   */
   height?: number | undefined;
+  /**
+   * `container` (the default) fills the height its container gives it.
+   * `content` is as tall as its rows, up to `height` (or the
+   * `--crewlet-sheet-max-height` the page sets, 70% of the viewport by
+   * default), so twelve rows draw no empty bordered slab under the last one
+   * and Add row sits right under them.
+   */
+  fit?: 'container' | 'content' | undefined;
+  /**
+   * Shows the row actions menu on a row's number (the active row, a hovered
+   * one, and Shift+F10 from any of its cells) with Delete row. The grid only
+   * asks: the host confirms with its own dialog before it deletes anything.
+   */
+  onDeleteRow?: ((rowId: string) => void) | undefined;
+  /**
+   * Shows Dismiss in the sync strip while refused changes are held there
+   * (`sync.refused`), so the reader clears them once they have read why.
+   */
+  onDismissRefused?: (() => void) | undefined;
   /** A BCP 47 tag for numbers and dates; the reader's own locale when absent. */
   locale?: string | undefined;
   className?: string | undefined;
@@ -186,6 +209,9 @@ export function SheetGrid({
   sync,
   onRetry,
   height,
+  fit = 'container',
+  onDeleteRow,
+  onDismissRefused,
   locale,
   className,
   labels: labelOverrides,
@@ -198,6 +224,7 @@ export function SheetGrid({
   const columns = useMemo(() => drawnColumns(declared), [declared]);
   const rows = useMemo(() => sortRows(columns, given, sort, context), [columns, given, sort, context]);
   const editable = mode === 'edit' && onEdit !== undefined;
+  const rowActions = mode === 'edit' && onDeleteRow !== undefined;
 
   const scroller = useRef<HTMLDivElement>(null);
   const probe = useRef<HTMLDivElement>(null);
@@ -215,8 +242,28 @@ export function SheetGrid({
   const [local, setLocal] = useState<LocalRefusals>(new Map());
   const [announcement, setAnnouncement] = useState({ text: '', n: 0 });
   const dragging = useRef(false);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [rowMenu, setRowMenu] = useState<string | null>(null);
 
   const say = useCallback((text: string) => setAnnouncement((current) => ({ text, n: current.n + 1 })), []);
+
+  // A REFUSAL IS SAID AS IT ARRIVES, not only on the cell: the value has
+  // already reverted, and a reader whose focus is elsewhere would otherwise
+  // never learn their change was not kept.
+  const heardRefusals = useRef<ReadonlyMap<string, string>>(new Map());
+  useEffect(() => {
+    const now = new Map<string, string>();
+    for (const row of given) {
+      for (const [field, reason] of Object.entries(row.refused ?? {})) now.set(cellKey(row.id, field), reason);
+    }
+    for (const [key, reason] of now) {
+      if (heardRefusals.current.get(key) !== reason) {
+        say(labels.notSaved(reason));
+        break;
+      }
+    }
+    heardRefusals.current = now;
+  }, [given, labels, say]);
 
   /* ----- geometry -------------------------------------------------------- */
 
@@ -237,8 +284,15 @@ export function SheetGrid({
   }, []);
 
   const offsets = useMemo(() => columnOffsets(columns), [columns]);
+  // THE LAST TRACK TAKES THE SLACK: a grid narrower than its container
+  // stretches its last column to the border rather than leaving an empty
+  // strip beside it, and a wider one scrolls as before.
   const template = useMemo(
-    () => [`${SHEET_ROW_NUMBER_WIDTH}px`, ...columns.map((column) => `${columnWidth(column)}px`)].join(' '),
+    () =>
+      [
+        `${SHEET_ROW_NUMBER_WIDTH}px`,
+        ...columns.map((column, index) => (index === columns.length - 1 ? `minmax(${columnWidth(column)}px, 1fr)` : `${columnWidth(column)}px`)),
+      ].join(' '),
     [columns],
   );
   const totalWidth = useMemo(() => columns.reduce((sum, column) => sum + columnWidth(column), SHEET_ROW_NUMBER_WIDTH), [columns]);
@@ -579,6 +633,12 @@ export function SheetGrid({
       return;
     }
 
+    if (rowActions && currentCell.rowId !== null && (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10'))) {
+      event.preventDefault();
+      setRowMenu(currentCell.rowId);
+      return;
+    }
+
     const moved = moveFrom(current, event, { rows: rows.length, cols: columns.length, page });
     if (moved) {
       event.preventDefault();
@@ -712,6 +772,16 @@ export function SheetGrid({
     width: `${totalWidth}px`,
   } as CSSProperties;
 
+  // Content height: the header, every row, and the scroller's own two
+  // hairlines, so the last row's bottom edge is the scroller's.
+  const contentHeight = headerHeight + rows.length * rowHeight + 2;
+  const scrollerStyle: CSSProperties | undefined =
+    fit === 'content'
+      ? { height: `${height !== undefined ? Math.min(contentHeight, height) : contentHeight}px` }
+      : height !== undefined
+        ? { height: `${height}px` }
+        : undefined;
+
   const side = (rowAt: number): 'below' | 'above' => {
     const top = headerHeight + rowAt * rowHeight - scrollTop;
     const view = viewport > 0 ? viewport : rowHeight * 12;
@@ -719,12 +789,12 @@ export function SheetGrid({
   };
 
   return (
-    <div className={cx('crewlet-sheet-grid', mode === 'read' && 'crewlet-sheet-grid--read', className)}>
+    <div className={cx('crewlet-sheet-grid', mode === 'read' && 'crewlet-sheet-grid--read', fit === 'content' && 'crewlet-sheet-grid--fit-content', className)}>
       <div ref={probe} className="crewlet-sheet-grid__probe" aria-hidden="true" />
       <div
         ref={scroller}
         className="crewlet-sheet-grid__scroller"
-        style={height !== undefined ? { height: `${height}px` } : undefined}
+        style={scrollerStyle}
         onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
       >
         <div
@@ -740,6 +810,17 @@ export function SheetGrid({
           className="crewlet-sheet-grid__grid"
           style={style}
           onKeyDown={onKeyDown}
+          // Which row the pointer is over, for its row actions: read from the
+          // row under it rather than a handler on every row.
+          onMouseMove={
+            rowActions
+              ? (event) => {
+                  const over = (event.target as HTMLElement).closest<HTMLElement>('[data-row-id]')?.dataset['rowId'] ?? null;
+                  setHoveredRow((was) => (was === over ? was : over));
+                }
+              : undefined
+          }
+          onMouseLeave={rowActions ? () => setHoveredRow(null) : undefined}
           onCopy={onCopy}
           onCut={onCut}
           onPaste={onPaste}
@@ -804,6 +885,7 @@ export function SheetGrid({
                   aria-rowindex={index + 2}
                   className="crewlet-sheet-grid__row"
                   style={{ top: `${index * rowHeight}px` }}
+                  data-row-id={row.id}
                 >
                   <div
                     role="rowheader"
@@ -812,6 +894,26 @@ export function SheetGrid({
                   >
                     <span aria-hidden="true">{index + 1}</span>
                     <VisuallyHidden>{rowName(columns, row, index, context)}</VisuallyHidden>
+                    {rowActions && (rowMenu === row.id || hoveredRow === row.id || current?.row === index) ? (
+                      <span className="crewlet-sheet-grid__row-actions">
+                        <Menu
+                          label={labels.rowActions(index + 1)}
+                          icon={<EllipsisGlyph size="xs" />}
+                          triggerTabIndex={-1}
+                          open={rowMenu === row.id}
+                          onOpenChange={(open) => setRowMenu(open ? row.id : null)}
+                          items={[
+                            {
+                              key: 'delete',
+                              label: labels.deleteRow,
+                              icon: <TrashGlyph size="sm" />,
+                              danger: true,
+                              onSelect: () => onDeleteRow?.(row.id),
+                            },
+                          ]}
+                        />
+                      </span>
+                    ) : null}
                   </div>
                   {columns.map((column, col) => {
                     const position = { row: index, col };
@@ -925,7 +1027,7 @@ export function SheetGrid({
         </div>
       </div>
       <VisuallyHidden id={describedId}>{description}</VisuallyHidden>
-      <VisuallyHidden id={helpId}>{labels.keyboardHelp}</VisuallyHidden>
+      <VisuallyHidden id={helpId}>{rowActions ? `${labels.keyboardHelp} ${labels.rowActionsHelp}` : labels.keyboardHelp}</VisuallyHidden>
       <VisuallyHidden>
         <span role="status" aria-live="polite">
           <span key={announcement.n}>{announcement.text}</span>
@@ -939,11 +1041,21 @@ export function SheetGrid({
             </Button>
           ) : null}
           {sync ? (
-            <span className={cx('crewlet-sheet-grid__sync', (sync.failed ?? 0) > 0 && 'crewlet-sheet-grid__sync--failed')}>
+            <span
+              className={cx(
+                'crewlet-sheet-grid__sync',
+                ((sync.failed ?? 0) > 0 || (!sync.offline && (sync.refused ?? 0) > 0)) && 'crewlet-sheet-grid__sync--failed',
+              )}
+            >
               <span>{labels.sync(sync)}</span>
               {(sync.failed ?? 0) > 0 && onRetry ? (
                 <Button size="small" variant="ghost" onClick={onRetry}>
                   {labels.retry}
+                </Button>
+              ) : null}
+              {(sync.failed ?? 0) === 0 && (sync.refused ?? 0) > 0 && onDismissRefused ? (
+                <Button size="small" variant="ghost" onClick={onDismissRefused}>
+                  {labels.dismiss}
                 </Button>
               ) : null}
             </span>

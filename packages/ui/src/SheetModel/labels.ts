@@ -57,6 +57,15 @@ export interface SheetLabels {
   /** The sync strip. */
   sync: (state: SheetSyncState) => string;
   retry: string;
+  /** Clears the strip's refused changes once the reader has read them. */
+  dismiss: string;
+  /** A refusal, as the grid announces it: "Not saved: <reason>". */
+  notSaved: (reason: string) => string;
+  /** The row actions control on a row's number, and its delete item. */
+  rowActions: (row: number) => string;
+  deleteRow: string;
+  /** Appended to the keyboard help when a row has actions. */
+  rowActionsHelp: string;
   /** The editor's filter box in an option list. */
   filter: string;
   /** An option list with nothing left to show. */
@@ -122,10 +131,16 @@ export const SHEET_LABELS: SheetLabels = {
       return state.saving === 0 ? 'Offline.' : `Offline. ${changes(state.saving)} will sync when you reconnect.`;
     }
     if (state.failed !== undefined && state.failed > 0) return 'Could not save.';
+    if (state.refused !== undefined && state.refused > 0) return `${changes(state.refused)} not saved`;
     if (state.saving > 0) return `Saving ${changes(state.saving)}`;
     return 'Saved';
   },
   retry: 'Retry',
+  dismiss: 'Dismiss',
+  notSaved: (reason) => `Not saved: ${reason}`,
+  rowActions: (row) => `Row actions for row ${row}`,
+  deleteRow: 'Delete row',
+  rowActionsHelp: 'Shift and F10 opens the actions of the row.',
   filter: 'Filter options',
   noOptions: 'No matching options',
   clear: 'Clear',
