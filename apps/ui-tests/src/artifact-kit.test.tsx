@@ -16,6 +16,7 @@ import {
   columnsFromSchema,
   memberHues,
   parseSort,
+  membersIn,
   rosterFromMembers,
 } from '../../../packages/artifact-kit/src/bind.js';
 import { defineElements, mountSheet } from '../../../packages/artifact-kit/src/elements.js';
@@ -538,9 +539,26 @@ describe('<crewlet-sheet>', () => {
     ]);
     expect(cell(1, 1).className).toContain('crewlet-presence-ring');
     expect(cell(1, 1).querySelector('.crewlet-cursor-flag')?.textContent).toBe('Jane Founder');
-    expect(screen.getByRole('img', { name: /You and 2 others are here/ })).toBeDefined();
+    // The sheet's stack is who is in it: Sam, on another collection, is in the
+    // page's room, which the dashboard's bar draws, and not in this sheet.
+    expect(screen.getByRole('img', { name: /^1 other person is in this sheet\. Jane Founder/ })).toBeDefined();
+    expect(screen.queryByRole('img', { name: /are here/ })).toBeNull();
     act(() => cell(0, 1).focus());
     expect(fake.presenceSets.at(-1)).toEqual({ activity: 'viewing', focus: { collection: 'vendors', doc: 'acme', field: 'score' } });
+  });
+
+  test('a sheet nobody else is in draws no stack, however full the room', async () => {
+    const fake = fakeRuntime();
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(cell(0, 0)).toBeDefined());
+    fake.members([
+      member('sam-1', 'sam', 'Sam Lee', 'editing', { collection: 'notes', doc: 'x', field: 'y' }),
+      member('ada-1', 'ada', 'Ada', 'viewing', {}),
+    ]);
+    expect(document.querySelector('.crewlet-kit-sheet__presence')).toBeNull();
+    expect(document.querySelector('.crewlet-presence-ring')).toBeNull();
   });
 
   test('a paste of several cells is one batch, all or nothing', async () => {
@@ -664,6 +682,17 @@ describe('mountSheet', () => {
 });
 
 describe('bindings', () => {
+  test('the members in a sheet are those whose focus is in its collection', () => {
+    const members = [
+      member('a', 'jane', 'Jane', 'viewing', { collection: 'vendors', doc: 'acme', field: 'score' }),
+      member('b', 'sam', 'Sam', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
+      member('c', 'ada', 'Ada', 'viewing', { region: 'chart' }),
+    ];
+    expect(membersIn(members, 'vendors').map((m) => m.session)).toEqual(['a']);
+    expect(membersIn(members, 'tasks')).toEqual([]);
+  });
+
+
   test('a schema column of a type this build does not know is kept, as read-only text', () => {
     expect(columnsFromSchema({ name: 'vendors', columns: [{ key: 'ticket', type: 'workitem', label: 'Ticket' }, { key: 'tags', type: 'multiselect', max_items: 3, options: [{ id: 'a', label: 'A', category: 'nonsense' }] }] })).toEqual([
       { field: 'ticket', label: 'Ticket', type: 'text', readOnly: true },

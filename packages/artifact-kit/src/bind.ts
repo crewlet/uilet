@@ -190,7 +190,16 @@ export function cellPresence(members: readonly KitMember[], collection: string, 
   return out;
 }
 
-/** Everybody else on the page, for the sheet's presence stack. */
+/**
+ * The members in one sheet: those whose focus is in its collection. A page's
+ * room is drawn once, in the bar of the dashboard around it; a sheet draws
+ * only who is in it, so two sheets on a page never both repeat the room.
+ */
+export function membersIn(members: readonly KitMember[], collection: string): KitMember[] {
+  return members.filter((member) => member.focus.collection === collection);
+}
+
+/** Everybody else among members, for the sheet's presence stack. */
 export function rosterFromMembers(members: readonly KitMember[], self: string | null, hues: ReadonlyMap<string, NodeHue>): PresenceMember[] {
   return others(members, self).map((member) => {
     const out: PresenceMember = {
