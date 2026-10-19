@@ -45,6 +45,14 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Changed in 0.23.0: a text field's edge
+
+`--color-border-field` is new, in every theme and both palettes: the edge of a box a person types into. It is the strong border (a secondary button's edge) lifted only as far as 3:1 on the four rungs a field stands on, and the palette suite holds it there (`a field boundary clears 3:1`). `--color-border-control` keeps its 3:1 over every row composite as well, for a checkbox, a switch and an editor inside a row; held to those, it measured 4.9:1 on the card a search box sits on, the brightest edge on the page.
+
+| What changed | What to change |
+| --- | --- |
+| `--color-border-field` added | Nothing. A stylesheet drawing a text box of its own can take it in place of `--color-border-control`. |
+
 ## Changed in 0.18.0: presence, change marks and the sheet row
 
 Five tokens for the collaborative sheet and the presence marks. Nothing that existed moved.
@@ -261,6 +269,8 @@ Where an approved value failed one of the suite's floors, the floor won and the 
 | `--color-text-muted` light | `#8a90a3` | `#878d9f` | 1.04 | 2.69:1 on the frame, under the decoration band |
 | `--color-border-control` dark | `#6a7186`, the neutral mark | `#7f879c` | 7.38 | 2.23:1 on a pressed row inside a raised surface |
 | `--color-border-control` light | `#a5a8b1`, the neutral mark | `#777a83` | 15.20 | 1.66:1 on a pressed row on the frame |
+| `--color-border-field` dark | `#2d3448`, the strong border | `#687187` | 22.16 | 1.19:1 on the raised rung |
+| `--color-border-field` light | `#c9cfdc`, the strong border | `#838894` | 22.72 | 1.32:1 on the frame |
 | `--color-data-other` light | `#a5a8b1` | `#85868d` | 11.05 | 2.01:1 as a mark on the frame |
 
 ### Breaking change in 0.5.0: the four rungs

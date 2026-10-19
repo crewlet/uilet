@@ -102,6 +102,10 @@
       "control": {
         "value": "#7b738e",
         "comment": "The design's #6f6782, moved dE 4.13. At the design value: a control boundary clears 3:1, measured 2.53:1, worst on a pressed row on raised."
+      },
+      "field": {
+        "value": "#6b5f86",
+        "comment": "The strong border, #3c3054, lightened dE 17.28: the least move that clears 3:1 on every rung a text field sits on (3.01:1 on the raised rung, the worst). A field stands on a rung and never inside a hovered or pressed row, so it is held to the rungs alone rather than to the composites the control boundary clears, and it reads as quietly as a secondary button's edge allows."
       }
     },
     "focus": {

@@ -598,8 +598,11 @@ test('the chip variant outlines the lens that is on in the accent, and a focused
   // Same weight, so the one declared later wins on a chip that is both.
   expect(ring).toBeGreaterThan(on);
   const rule = css.slice(on, css.indexOf('}', on));
-  expect(rule).toContain('outline: 1px solid var(--color-brand-accent)');
-  expect(rule).not.toMatch(/background|box-shadow/);
+  // The accent's soft pair, as a chosen FilterChip draws it: never the
+  // solid accent, the brightest edge in the bar.
+  expect(rule).toContain('background: var(--color-brand-accent-soft)');
+  expect(rule).toContain('outline: 1px solid var(--color-brand-accent-soft-strong)');
+  expect(rule).not.toMatch(/box-shadow/);
   // A lens's count is a figure in the quiet ink, not a pill inside the chip.
   expect(screen.getByRole('tab', { name: /Tasks/ }).querySelector('.crewlet-count')?.textContent).toBe('2');
   const count = /\.crewlet-tabs--chip \.crewlet-count\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';

@@ -139,7 +139,10 @@ describe('the panel', () => {
     expect(fair.classList.contains('is-current')).toBe(true);
     expect(screen.getByRole('option', { name: 'Split engine, SPLIT, 4 open' }).getAttribute('aria-current')).toBeNull();
     const current = /\.crewlet-switcher__option\.is-current\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(current).toMatch(/outline:\s*1px solid var\(--color-brand-accent\)/);
+    expect(current).toMatch(/outline:\s*1px solid var\(--color-brand-accent-soft-strong\)/);
+    // The tint stands down on the row the arrows or the pointer are on, so
+    // the listbox's own fill still says where they are.
+    expect(css).toMatch(/\.is-current:not\(\[aria-selected='true'\]\):not\(:hover\)\s*\{\s*background:\s*var\(--color-brand-accent-soft\)/);
     expect(current).not.toMatch(/box-shadow/);
   });
 

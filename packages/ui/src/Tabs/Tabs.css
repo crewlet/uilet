@@ -305,8 +305,9 @@
  * QUIET CHIPS WITH NO WELL: the lenses of an object or a scope, set beside its
  * name in a page's bar. A well round them was a second box beside the name the
  * lenses are about, and a raised chip inside it a second highlight. Here the
- * chip that is on is drawn by its own border in the accent and nothing else,
- * which is the kit's one way of saying "this one is chosen".
+ * chip that is on is drawn in the accent's soft pair, the tint and the line
+ * paired with it, which is how the kit says "this one is chosen" on a chip
+ * (FilterChip draws the same pair).
  */
 .crewlet-tabs--chip {
   display: inline-flex;
@@ -334,11 +335,17 @@
   background: none;
 }
 
-/* An outline rather than a border, so a chip turning on does not move its
-   neighbours by a pixel, and forced-colors mode keeps it. */
+/*
+ * THE SOFT PAIR, not the solid accent. A full-strength accent ring round a
+ * chip is the brightest edge in the bar, louder than the name the lenses are
+ * about; the soft tint says which chip is on and the paired line gives it an
+ * edge. An outline rather than a border, so a chip turning on does not move
+ * its neighbours by a pixel, and forced-colors mode keeps it.
+ */
 .crewlet-tabs--chip .crewlet-tabs__tab.is-active {
+  background: var(--color-brand-accent-soft);
   color: var(--color-text-primary);
-  outline: 1px solid var(--color-brand-accent);
+  outline: 1px solid var(--color-brand-accent-soft-strong);
   outline-offset: -1px;
 }
 

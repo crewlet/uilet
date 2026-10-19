@@ -102,6 +102,10 @@
       },
       "control": {
         "value": "#5b5b69"
+      },
+      "field": {
+        "value": "#4f4f60",
+        "comment": "The strong border, as it is: it already clears 3:1 on every rung a text field sits on (6.78:1 on the frame, the worst)."
       }
     },
     "focus": {

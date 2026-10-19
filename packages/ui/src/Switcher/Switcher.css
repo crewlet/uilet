@@ -218,15 +218,21 @@ svg.crewlet-switcher-trigger__chevron {
 }
 
 /*
- * THE CURRENT SUBJECT, outlined by its own accent hairline inside the row: an
+ * THE CURRENT SUBJECT, in the accent's soft pair: the tint, and the line
+ * paired with it drawn inside the row, as a chosen chip is (see Tabs.css). An
  * outline rather than a shadow, so forced-colours mode keeps it. The row the
- * arrows are on takes the raised fill as every listbox row does; both can land
- * on one row, and it never gains a second border.
+ * arrows are on takes the raised fill as every listbox row does, and keeps it
+ * when it is the current row too, so the tint never hides where the arrows
+ * are; that row keeps the line, and it never gains a second border.
  */
 .crewlet-listbox__option.crewlet-switcher__option.is-current {
   color: var(--color-text-primary);
-  outline: 1px solid var(--color-brand-accent);
+  outline: 1px solid var(--color-brand-accent-soft-strong);
   outline-offset: -1px;
+}
+
+.crewlet-listbox__option.crewlet-switcher__option.is-current:not([aria-selected='true']):not(:hover) {
+  background: var(--color-brand-accent-soft);
 }
 
 /* A HELD ROW answers no pointer: no fill under it, and the reason in the quiet
