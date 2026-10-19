@@ -254,9 +254,10 @@ interface Pinching {
 
 /**
  * What the field under the content is drawn as. `plain` is the page's own
- * ground; `dotted` lays a grid of dots on it. See [CanvasProps.ground].
+ * ground; `dotted` lays a grid of dots on the frame, and `grid` lays one on
+ * the content's own plane. See [CanvasProps.ground].
  */
-export type CanvasGround = 'plain' | 'dotted';
+export type CanvasGround = 'plain' | 'dotted' | 'grid';
 
 export interface CanvasProps {
   /** The accessible name of the viewport, such as "Organization chart". */
@@ -345,6 +346,13 @@ export interface CanvasProps {
    * anybody drags it. They are drawn on the frame rather than on the content,
    * so they stay put while the content moves over them. `plain`, the default,
    * is the page's own ground and nothing else.
+   *
+   * `grid` is a design tool's ground: the same dots laid on the content's own
+   * plane, so they pan with it and their pitch follows the zoom (see
+   * [gridOf]). For a canvas of things a person places and arranges, where the
+   * grid is the surface they are placed ON rather than a texture behind a
+   * chart, and a grid that stayed put while the boards moved over it would
+   * read as two planes sliding apart.
    */
   ground?: CanvasGround | undefined;
   /**
@@ -876,7 +884,7 @@ export function Canvas({
     <div
       className={cx('crewlet-canvas', className)}
       ref={root}
-      style={CURSOR_PROPERTIES}
+      style={ground === 'grid' ? { ...CURSOR_PROPERTIES, ...gridProperties(view) } : CURSOR_PROPERTIES}
       data-cursor={cursor}
       data-dimmed={dimmed}
       data-ground={ground}
@@ -1016,6 +1024,22 @@ export function Canvas({
  * rather than the browser's own, so one pointer family runs across the whole
  * surface. Each falls back to its keyword where it is read.
  */
+/**
+ * WHERE A `grid` GROUND'S DOTS FALL for a view: their pitch on screen as a
+ * multiple of the dotted step, and the screen point one of them sits on.
+ *
+ * The world's pitch doubles or halves with the zoom so the screen pitch stays
+ * between one and two steps, as a design tool's grid does: at every zoom the
+ * dots are as dense as the dotted ground's and never twice as sparse, and one
+ * of them always sits on the content's origin, so the grid and the content
+ * never slide apart. The offset is the view's own translation, since the
+ * background repeats from it both ways.
+ */
+export function gridOf(view: CanvasView): { scale: number; x: number; y: number } {
+  const k = view.k > 0 && Number.isFinite(view.k) ? view.k : 1;
+  return { scale: k * 2 ** -Math.floor(Math.log2(k)), x: view.x, y: view.y };
+}
+
 const CURSOR_PROPERTIES = {
   '--crewlet-canvas-cursor-pointer': CURSORS.pointer,
   '--crewlet-canvas-cursor-hand': CURSORS.hand,
@@ -1023,6 +1047,16 @@ const CURSOR_PROPERTIES = {
   '--crewlet-canvas-cursor-crosshair': CURSORS.crosshair,
   '--crewlet-canvas-cursor-text': CURSORS.text,
 } as CSSProperties;
+
+/** A `grid` ground's pitch and offset, as the custom properties its rule reads. */
+function gridProperties(view: CanvasView): CSSProperties {
+  const grid = gridOf(view);
+  return {
+    '--crewlet-canvas-grid-scale': String(grid.scale),
+    '--crewlet-canvas-grid-x': `${grid.x}px`,
+    '--crewlet-canvas-grid-y': `${grid.y}px`,
+  } as CSSProperties;
+}
 
 /**
  * What the zoom is, and where a reader says what it should be.

@@ -491,6 +491,15 @@ const label = (name: string) => String.raw`(?<${name}>(?:\\[\s\S]|[^\]\\])*)`;
 const destination = (name: string, title: string) =>
   String.raw`(?<${name}>(?:[^()\s]|\([^()\s]*\))*)(?:\s+"(?<${title}>[^"]*)")?\)`;
 
+/**
+ * A link's label, which may also hold a picture: `[![build](badge.svg)](ci)`
+ * is how a badge that links somewhere is written. The picture is matched
+ * whole before its brackets are read as the label's, so its `]` does not end
+ * the label and its address is not taken for the link's.
+ */
+const linkLabel = (name: string) =>
+  String.raw`(?<${name}>(?:\\[\s\S]|!\[(?:\\[\s\S]|[^\]\\])*\]\((?:[^()\s]|\([^()\s]*\))*(?:\s+"[^"]*")?\)|[^\]\\])*)`;
+
 /** ASCII punctuation, the characters a backslash escapes. */
 const ASCII_PUNCTUATION = String.raw`[!-\/:-@\[-\x60{-~]`;
 
@@ -498,7 +507,7 @@ const INLINE_SOURCE = [
   String.raw`\\(?<esc>${ASCII_PUNCTUATION})`,
   String.raw`(?<tick>\x60+)(?<code>[\s\S]*?)\k<tick>`,
   String.raw`!\[` + label('alt') + String.raw`\]\(` + destination('src', 'srcTitle'),
-  String.raw`\[` + label('label') + String.raw`\]\(` + destination('href', 'hrefTitle'),
+  String.raw`\[` + linkLabel('label') + String.raw`\]\(` + destination('href', 'hrefTitle'),
   String.raw`<(?<auto>(?:https?:|mailto:)[^>\s]+)>`,
   // A strong run closes on a `**` no third asterisk follows, so `***both***`
   // is strong around emphasis rather than strong around `*both` and a stray.

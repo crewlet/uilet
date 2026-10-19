@@ -1,9 +1,20 @@
 /*
- * SlideFilmstrip: the column of slide thumbnails beside a deck's stage.
+ * SlideFilmstrip: the column of slide thumbnails beside a deck's stage, or
+ * the row under it on a phone.
  *
  * The selected slide is ringed in the brand accent rather than filled, so its
  * thumbnail still shows the slide's own colours.
+ *
+ * THE STRIP IS ITS OWN SCROLLER: a host bounds it (a column's max-height, a
+ * row's width) and the strip scrolls inside that, keeping the selected slide
+ * in view, with its scroll chained to nothing so a flick at its end does not
+ * scroll the page under the reader's thumb.
  */
+
+.crewlet-slide-filmstrip {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
 
 .crewlet-slide-filmstrip__list {
   display: flex;
@@ -105,4 +116,51 @@
 
 .crewlet-slide-filmstrip__item[data-reorder-target='after'] .crewlet-slide-filmstrip__thumb {
   box-shadow: 0 var(--spacing-1) 0 var(--color-brand-accent);
+}
+
+/* A ROW UNDER THE STAGE: fixed-width thumbnails that scroll sideways, each
+   with its number and its handle under it rather than beside it. */
+/* NO SCROLL SNAP: a snap point would pull the strip back to the start of an
+   earlier thumbnail just after it scrolled the selected one into view. */
+.crewlet-slide-filmstrip--horizontal {
+  overflow-y: hidden;
+}
+
+.crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__list {
+  flex-direction: row;
+  gap: var(--spacing-3);
+  width: max-content;
+}
+
+.crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__item {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'thumb thumb'
+    'number handle';
+  align-items: center;
+  width: 7.5rem;
+}
+
+.crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__thumb {
+  grid-area: thumb;
+}
+
+.crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__number {
+  grid-area: number;
+  padding-top: 0;
+  text-align: left;
+}
+
+.crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__handle {
+  grid-area: handle;
+  min-height: var(--size-control-sm);
+  cursor: grab;
+}
+
+.crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__item[data-reorder-target='before'] .crewlet-slide-filmstrip__thumb {
+  box-shadow: calc(var(--spacing-1) * -1) 0 0 var(--color-brand-accent);
+}
+
+.crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__item[data-reorder-target='after'] .crewlet-slide-filmstrip__thumb {
+  box-shadow: var(--spacing-1) 0 0 var(--color-brand-accent);
 }

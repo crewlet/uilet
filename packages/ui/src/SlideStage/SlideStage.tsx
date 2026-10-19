@@ -38,6 +38,14 @@ export interface SlideStageProps {
    * "artboard" for a design's board shown at its own layout.
    */
   roleDescription?: string | undefined;
+  /**
+   * The slide's own edge, a hairline on a small radius, so a slide whose
+   * ground is the page's own colour still reads as a slide: a thumbnail, a
+   * card, the editor's stage, a show in the page. Not for `fit="contain"`,
+   * whose box is letterboxed by design, nor in full screen, where the screen's
+   * own edge is the slide's.
+   */
+  framed?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -74,6 +82,7 @@ export function SlideStage({
   width = SLIDE_WIDTH,
   height = SLIDE_HEIGHT,
   roleDescription = 'slide',
+  framed = false,
   className,
 }: SlideStageProps) {
   const box = useRef<HTMLDivElement | null>(null);
@@ -125,7 +134,12 @@ export function SlideStage({
   return (
     <div
       ref={box}
-      className={cx('crewlet-slide-stage', `crewlet-slide-stage--${fit}`, className)}
+      className={cx(
+        'crewlet-slide-stage',
+        `crewlet-slide-stage--${fit}`,
+        framed && fit !== 'contain' && 'crewlet-slide-stage--framed',
+        className,
+      )}
       style={boxStyle}
       role="group"
       aria-roledescription={roleDescription}

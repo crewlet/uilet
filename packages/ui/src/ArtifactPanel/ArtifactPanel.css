@@ -28,7 +28,9 @@
 }
 
 .crewlet-artifact-panel {
-  --crewlet-artifact-panel-width: 25rem;
+  /* THE TEXT WIDTH, every panel of facts, a list or a form: three widths for
+     those moved the artifact's edge 80px between Details and History. */
+  --crewlet-artifact-panel-width: 22.5rem;
   display: flex;
   flex: none;
   flex-direction: column;
@@ -36,10 +38,6 @@
   min-height: 0;
   border-left: 1px solid var(--color-border-default);
   background: var(--color-surface-background);
-}
-
-.crewlet-artifact-panel--sm {
-  --crewlet-artifact-panel-width: 20rem;
 }
 
 .crewlet-artifact-panel--lg {

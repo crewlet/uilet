@@ -231,7 +231,7 @@ export const Quotas: Story = {
           label="Data"
           value="3.4 MB"
           unit="of 1.0 GB"
-          sub="In 3 sheets and pages"
+          sub="Kept by 3 artifacts"
           trendPlacement="below"
           trend={<Meter value={3.4} max={1024} label="Data" hideLabel />}
         />
@@ -250,4 +250,13 @@ export const NarrowWithAnEndFigure: Story = {
       <StatCard label="Weekly budget" value="12.6M" unit="tokens" trend={<Meter value={63} max={100} label="Weekly budget" hideLabel />} />
     </div>
   ),
+};
+
+/**
+ * A HIDDEN LABEL, for a tile its container already names: a dashboard
+ * widget's frame titles the number, and the tile's own label under that title
+ * said the same thing twice. The label stays in the accessibility tree.
+ */
+export const LabelHidden: Story = {
+  args: { label: 'Open work items', hideLabel: true, value: '1,968', unit: 'items' },
 };

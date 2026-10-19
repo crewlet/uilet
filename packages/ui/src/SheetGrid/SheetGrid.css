@@ -13,8 +13,8 @@
 
 .crewlet-sheet-grid {
   --crewlet-sheet-row-height: var(--size-sheet-row);
-  /* The history control's glyph (xs), which its room in the cell is sized from. */
-  --crewlet-sheet-history-glyph: 12px;
+  /* The history control: a target-sized button, which its room in the cell is sized from. */
+  --crewlet-sheet-history-size: var(--size-target-min);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -22,7 +22,33 @@
   min-height: 0;
   color: var(--color-text-primary);
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-sm);
+  /* Values at the compact step, a grid's own register: the headers stay a
+     step under them, in sentence case. */
+  font-size: var(--font-size-compact);
+}
+
+/* THE MEASURING ROW: each sized column's header and sampled values, drawn by
+   the real header and cell rules at their natural width, out of sight and out
+   of reach. The grid reads each one's widest part as the column's width. */
+.crewlet-sheet-grid__measure {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.crewlet-sheet-grid__measure > div {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+}
+
+.crewlet-sheet-grid__measure :is(.crewlet-sheet-grid__header, .crewlet-sheet-grid__cell) {
+  width: max-content;
 }
 
 /* Measured by the component: the resolved row height at the current density. */
@@ -309,12 +335,12 @@
    centred in a column wider than it, needs no room made. */
 .crewlet-sheet-grid__grid:focus-within .crewlet-sheet-grid__cell--history,
 .crewlet-sheet-grid__cell--history:hover {
-  padding-inline-end: calc(var(--spacing-1) * 4 + var(--crewlet-sheet-history-glyph));
+  padding-inline-end: calc(var(--spacing-1) * 2 + var(--crewlet-sheet-history-size));
 }
 
 .crewlet-sheet-grid__grid:focus-within :is(.crewlet-sheet-grid__cell--number, .crewlet-sheet-grid__cell--rating).crewlet-sheet-grid__cell--history,
 :is(.crewlet-sheet-grid__cell--number, .crewlet-sheet-grid__cell--rating).crewlet-sheet-grid__cell--history:hover {
-  padding-inline: calc(var(--spacing-1) * 4 + var(--crewlet-sheet-history-glyph)) var(--spacing-2);
+  padding-inline: calc(var(--spacing-1) * 2 + var(--crewlet-sheet-history-size)) var(--spacing-2);
 }
 
 .crewlet-sheet-grid__grid:focus-within .crewlet-sheet-grid__cell--checkbox.crewlet-sheet-grid__cell--history,
@@ -333,9 +359,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-1);
+  width: var(--crewlet-sheet-history-size);
+  height: var(--crewlet-sheet-history-size);
+  padding: 0;
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--color-surface-elevated);
   color: var(--color-text-secondary);
   transform: translateY(-50%);
@@ -343,6 +371,7 @@
 }
 
 .crewlet-sheet-grid__history:hover {
+  background: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
 

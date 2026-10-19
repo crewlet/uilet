@@ -108,6 +108,23 @@ export const DottedGround: Story = {
 };
 
 /**
+ * A grid on the content's plane, as a design tool lays one.
+ *
+ * The same dots, but they pan with the content and their pitch follows the
+ * zoom, doubling or halving to stay between one and two spacing steps on
+ * screen. For a canvas of things a person places, such as a design's boards.
+ */
+export const GridGround: Story = {
+  render: () => (
+    <Frame>
+      <Canvas label="Organization chart" content={CONTENT} ground="grid">
+        <Chart />
+      </Canvas>
+    </Frame>
+  ),
+};
+
+/**
  * A note over the viewport.
  *
  * It is drawn in the untransformed overlay, so it neither scales with the zoom
