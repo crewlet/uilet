@@ -72,12 +72,18 @@
  * The value's line: the number at its start, the figure at its end, both on
  * the line's FOOT, so a 28px number and a 28px sparkline share a baseline
  * rather than centring on each other.
+ *
+ * THE FIGURE GIVES WAY BEFORE THE NUMBER. Where a tile is too narrow for
+ * both (a row of tiles on a phone, two to a line), the figure moves under the
+ * number rather than the number being cut to its first digit: "2…" beside a
+ * meter said nothing, and the meter alone says less than the number.
  */
 .crewlet-statcard__reading {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  gap: var(--spacing-2) calc(var(--spacing-2) + var(--spacing-1) / 2);
   min-width: 0;
 }
 
@@ -100,8 +106,11 @@
  */
 .crewlet-statcard__value {
   display: block;
-  flex: 1 1 auto;
+  /* Never narrower than the number, so the figure wraps first; never wider
+     than the tile, so a number too long for the tile alone still ends. */
+  flex: 1 0 auto;
   min-width: 0;
+  max-width: 100%;
   font-size: var(--font-size-display);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-tight);

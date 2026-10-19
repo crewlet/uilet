@@ -198,3 +198,41 @@ export const AGroupStillLoading: Story = {
     </StatGroup>
   ),
 };
+
+/**
+ * Tiles too narrow for a number and its figure side by side, as a row of
+ * quotas draws on a phone: the figure moves under the number, and the number
+ * is never cut.
+ */
+export const NarrowWithAFigure: Story = {
+  render: () => (
+    <div style={{ maxWidth: 358 }}>
+      <StatGroup columns={3}>
+        <StatCard
+          flush
+          label="Files"
+          value="279 KB"
+          unit="of 10 GB"
+          sub="Every version of 82 artifacts"
+          trend={<Meter value={279} max={10_000_000} label="Files" hideLabel />}
+        />
+        <StatCard
+          flush
+          label="Artifacts"
+          value="82"
+          unit="of 50k"
+          sub="Counts private ones and the trash"
+          trend={<Meter value={82} max={50_000} label="Artifacts" hideLabel />}
+        />
+        <StatCard
+          flush
+          label="Data"
+          value="3.4 MB"
+          unit="of 1.0 GB"
+          sub="In 3 sheets and pages"
+          trend={<Meter value={3.4} max={1024} label="Data" hideLabel />}
+        />
+      </StatGroup>
+    </div>
+  ),
+};
