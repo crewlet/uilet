@@ -13,6 +13,8 @@
 
 .crewlet-sheet-grid {
   --crewlet-sheet-row-height: var(--size-sheet-row);
+  /* The history control's glyph (xs), which its room in the cell is sized from. */
+  --crewlet-sheet-history-glyph: 12px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -137,6 +139,24 @@
   margin-inline-start: auto;
 }
 
+/* A HEADER SITS ON ITS COLUMN'S EDGE: a number's and a rating's name end
+   where their values end, the sort mark on the inner side, and a checkbox's
+   name is centred over its boxes. A name on the leading edge over values on
+   the trailing one read as belonging to the column before. */
+.crewlet-sheet-grid__header--number,
+.crewlet-sheet-grid__header--rating {
+  flex-direction: row-reverse;
+}
+
+.crewlet-sheet-grid__header--number > .crewlet-sheet-grid__header-presence,
+.crewlet-sheet-grid__header--rating > .crewlet-sheet-grid__header-presence {
+  margin-inline: 0 auto;
+}
+
+.crewlet-sheet-grid__header--checkbox {
+  justify-content: center;
+}
+
 .crewlet-sheet-grid .crewlet-sheet-grid__header-badge {
   box-shadow: 0 0 0 2px var(--crewlet-presence-hue);
 }
@@ -155,6 +175,13 @@
   inset-inline-end: 0;
   display: inline-flex;
   transform: translateY(-50%);
+}
+
+/* The active row's actions and the active cell's history are the reader's
+   tools while they are in the grid, not marks on a sheet nobody has entered. */
+.crewlet-sheet-grid__grid:not(:focus-within) .crewlet-sheet-grid__row-actions--active-row,
+.crewlet-sheet-grid__grid:not(:focus-within) .crewlet-sheet-grid__cell--history:not(:hover) > .crewlet-sheet-grid__history {
+  visibility: hidden;
 }
 
 /* The bar at a row's leading edge while somebody has it selected. */
@@ -192,8 +219,19 @@
   justify-content: center;
 }
 
-.crewlet-sheet-grid__cell--selected {
+/* THE SELECTION IS TINTED WHILE THE READER IS IN THE GRID, or while it
+   spans more than one cell. A grid nobody has entered still holds its first
+   cell as the active one (the keys start there), and tinting it drew a stray
+   highlight on every sheet as it opened. */
+.crewlet-sheet-grid__grid:is(:focus-within, .crewlet-sheet-grid__grid--range) .crewlet-sheet-grid__cell--selected {
   background: var(--color-brand-accent-soft);
+}
+
+/* THE FROZEN EDGE once the grid is scrolled sideways: the columns that stay
+   (or the row numbers, where none do) end on the strong hairline, so the
+   values passing under them read as scrolled rather than cut. */
+.crewlet-sheet-grid__scroller--across .crewlet-sheet-grid__frozen-edge {
+  border-inline-end-color: var(--color-border-strong);
 }
 
 .crewlet-sheet-grid__cell:focus-visible,
@@ -261,6 +299,31 @@
   color: var(--color-feedback-danger-ink);
   font-size: var(--font-size-xs);
   white-space: normal;
+}
+
+/* THE HISTORY CONTROL HAS ITS OWN ROOM while it shows, so a value ends, or
+   ellipsises, before it rather than running under it. It sits at the edge
+   the value does not start from: the trailing edge of a value drawn from the
+   leading one, the leading edge of a number or a rating (drawn on the
+   trailing one), so neither moves when its cell becomes active. A checkbox,
+   centred in a column wider than it, needs no room made. */
+.crewlet-sheet-grid__grid:focus-within .crewlet-sheet-grid__cell--history,
+.crewlet-sheet-grid__cell--history:hover {
+  padding-inline-end: calc(var(--spacing-1) * 4 + var(--crewlet-sheet-history-glyph));
+}
+
+.crewlet-sheet-grid__grid:focus-within :is(.crewlet-sheet-grid__cell--number, .crewlet-sheet-grid__cell--rating).crewlet-sheet-grid__cell--history,
+:is(.crewlet-sheet-grid__cell--number, .crewlet-sheet-grid__cell--rating).crewlet-sheet-grid__cell--history:hover {
+  padding-inline: calc(var(--spacing-1) * 4 + var(--crewlet-sheet-history-glyph)) var(--spacing-2);
+}
+
+.crewlet-sheet-grid__grid:focus-within .crewlet-sheet-grid__cell--checkbox.crewlet-sheet-grid__cell--history,
+.crewlet-sheet-grid__cell--checkbox.crewlet-sheet-grid__cell--history:hover {
+  padding-inline-end: var(--spacing-2);
+}
+
+:is(.crewlet-sheet-grid__cell--number, .crewlet-sheet-grid__cell--rating) > .crewlet-sheet-grid__history {
+  inset-inline: var(--spacing-1) auto;
 }
 
 .crewlet-sheet-grid__history {
@@ -654,7 +717,7 @@
 }
 
 @media (forced-colors: active) {
-  .crewlet-sheet-grid__cell--selected {
+  .crewlet-sheet-grid__grid:is(:focus-within, .crewlet-sheet-grid__grid--range) .crewlet-sheet-grid__cell--selected {
     background: Highlight;
     color: HighlightText;
   }
