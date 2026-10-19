@@ -3253,7 +3253,8 @@ own face. It was monospace, one size up, semibold and on the wider track, and
 and not the 4.5:1 a word owes; it paints `--color-brand-accent-ink` now.
 `Text variant="heading"` and a `Section` title track tighter, a `Section`
 description is 13px with a measure rather than 12px truncated, and `Container`'s
-gutter is 20px, 12px under 480px.
+gutter is 20px, 16px under 480px (the shell's phone gutter, the top bar's own
+inset).
 
 **Rows, expanders and records (C1).** `List` renders `variant="divided"` unless
 told otherwise: it is the list every screen draws, and `plain` is one word away.
