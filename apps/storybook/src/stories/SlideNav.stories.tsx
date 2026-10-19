@@ -24,7 +24,7 @@ export const OnThePage: Story = {
         onPrevious={() => setAt((i) => Math.max(0, i - 1))}
         onNext={() => setAt((i) => Math.min(last, i + 1))}
       >
-        <IconButton label="Full screen" icon={<MaximizeGlyph />} variant="ghost" />
+        <IconButton label="Full screen" icon={<MaximizeGlyph />} variant="ghost" size="sm" />
       </SlideNav>
     );
   },
@@ -47,7 +47,7 @@ export const OverAProjectedSlide: Story = {
             onPrevious={() => setAt((i) => Math.max(0, i - 1))}
             onNext={() => setAt((i) => Math.min(last, i + 1))}
           >
-            <IconButton label="Exit full screen" icon={<MaximizeGlyph />} variant="ghost" />
+            <IconButton label="Exit full screen" icon={<MaximizeGlyph />} variant="ghost" size="sm" />
           </SlideNav>
         </div>
       </div>

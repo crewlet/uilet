@@ -125,6 +125,7 @@ export const PresentInThePage: Story = {
                   label={fullscreen.active ? 'Exit full screen' : 'Full screen'}
                   icon={fullscreen.active ? <MinimizeGlyph /> : <MaximizeGlyph />}
                   variant="ghost"
+                  size="sm"
                   onClick={fullscreen.toggle}
                 />
               ) : null}

@@ -83,6 +83,9 @@
   color: var(--color-text-secondary);
 }
 
+/* A CONTROL'S CORNER: the handle is a 24px control like any toolbar button,
+   so it takes --radius-md; the thumbnail beside it is a slide, and keeps the
+   slide's own smaller corner. */
 .crewlet-slide-filmstrip__handle {
   display: inline-flex;
   align-items: center;
@@ -91,7 +94,7 @@
   min-height: var(--size-target-min);
   padding: 0;
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-tertiary);
   cursor: grab;
