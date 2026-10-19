@@ -45,8 +45,10 @@
   max-width: none;
 }
 
+/* A PHONE'S GUTTER IS THE SHELL'S, 16px, the top bar's own inset: a narrower
+   one stood a page's content left of the title over it. */
 @media (max-width: 480px) {
   .crewlet-container {
-    padding-inline: var(--spacing-3);
+    padding-inline: var(--spacing-4);
   }
 }
