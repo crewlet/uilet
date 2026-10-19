@@ -1,0 +1,53 @@
+/*
+ * The editing status (EditingStatus.tsx): a word and a dot, in the bar's own
+ * small step, quiet until something is unsaved.
+ */
+
+.crewlet-editing-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-compact);
+  white-space: nowrap;
+}
+
+.crewlet-editing-status__dot {
+  flex: none;
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+  border-radius: var(--radius-circle);
+  background: var(--color-text-tertiary);
+}
+
+.crewlet-editing-status--dirty .crewlet-editing-status__dot {
+  background: var(--color-brand-accent);
+}
+
+.crewlet-editing-status__label {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-editing-status__state {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  text-overflow: ellipsis;
+}
+
+.crewlet-editing-status__state::before {
+  content: '\00b7';
+  margin-right: var(--spacing-2);
+}
+
+@media (width < 480px) {
+  .crewlet-editing-status__state {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}

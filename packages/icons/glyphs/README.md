@@ -20,6 +20,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **The widget tray of an arranged page**, each drawn on an `IconTile` in `@crewlethq/ui`: `gauge` for a row of figures, `radio` for what is live now, `chart-column` for a daily chart, `chart-pie` for a split by team, `folder-kanban` for a project, `rotate-ccw-clock` for recent activity and `message-circle-question-mark` for a question waiting on the reader.
 - **`log-out` and `log-in`**, signing out and signing in from the reader's own menu, which `AppShell.AccountRow` opens from the foot of the rail.
 - **The formatting bar of `MarkdownEditor`** in `@crewlethq/ui`: `heading-2` and `heading-3` for the two heading levels a page's outline lists, `bold`, `italic`, `list-ordered` for a numbered list beside `list`, and `list-checks` for a checklist. Each is a control a writer recognises by its drawing, so the bar draws all of them as glyphs rather than spelling some as letters ("H2", "B") beside the glyphs of the rest.
+- **The rich editor's blocks and formatting** in `@crewlethq/ui` (`RichEditor`): `heading-1` beside the two heading levels already here, `type` for a plain paragraph, `strikethrough`, `text-quote` for a quote, `square-code` for a code block, `unlink` for removing a link, and `text-align-start`, `text-align-center` and `text-align-end` for a table column's alignment. The slash menu and the selection toolbar draw every block and format as a glyph a writer recognises, as the `MarkdownEditor` bar does.
 - **`mouse-pointer-2`**, the pointer a collaborator's `LiveCursor` in `@crewlethq/ui` is drawn with, beside its name flag, on a board or a page that shares cursors.
 
 ## Provenance
@@ -118,6 +119,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `group` | `GroupGlyph` | `package/icons/group.svg` |
 | `hash` | `HashGlyph` | `package/icons/hash.svg` |
 | `heading` | `HeadingGlyph` | `package/icons/heading.svg` |
+| `heading-1` | `Heading1Glyph` | `package/icons/heading-1.svg` |
 | `heading-2` | `Heading2Glyph` | `package/icons/heading-2.svg` |
 | `heading-3` | `Heading3Glyph` | `package/icons/heading-3.svg` |
 | `house` | `HouseGlyph` | `package/icons/house.svg` |
@@ -179,17 +181,25 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `shield-user` | `ShieldUserGlyph` | `package/icons/shield-user.svg` |
 | `sliders-vertical` | `SlidersVerticalGlyph` | `package/icons/sliders-vertical.svg` |
 | `split` | `SplitGlyph` | `package/icons/split.svg` |
+| `square-code` | `SquareCodeGlyph` | `package/icons/square-code.svg` |
 | `square-kanban` | `SquareKanbanGlyph` | `package/icons/square-kanban.svg` |
 | `square-terminal` | `SquareTerminalGlyph` | `package/icons/square-terminal.svg` |
 | `star` | `StarGlyph` | `package/icons/star.svg` |
 | `sticky-note` | `StickyNoteGlyph` | `package/icons/sticky-note.svg` |
+| `strikethrough` | `StrikethroughGlyph` | `package/icons/strikethrough.svg` |
 | `sun` | `SunGlyph` | `package/icons/sun.svg` |
 | `table` | `TableGlyph` | `package/icons/table.svg` |
 | `target` | `TargetGlyph` | `package/icons/target.svg` |
+| `text-align-center` | `TextAlignCenterGlyph` | `package/icons/text-align-center.svg` |
+| `text-align-end` | `TextAlignEndGlyph` | `package/icons/text-align-end.svg` |
+| `text-align-start` | `TextAlignStartGlyph` | `package/icons/text-align-start.svg` |
+| `text-quote` | `TextQuoteGlyph` | `package/icons/text-quote.svg` |
 | `trash` | `TrashGlyph` | `package/icons/trash.svg` |
 | `triangle-alert` | `TriangleAlertGlyph` | `package/icons/triangle-alert.svg` |
+| `type` | `TypeGlyph` | `package/icons/type.svg` |
 | `undo` | `UndoGlyph` | `package/icons/undo.svg` |
 | `ungroup` | `UngroupGlyph` | `package/icons/ungroup.svg` |
+| `unlink` | `UnlinkGlyph` | `package/icons/unlink.svg` |
 | `upload` | `UploadGlyph` | `package/icons/upload.svg` |
 | `user` | `UserGlyph` | `package/icons/user.svg` |
 | `user-plus` | `UserPlusGlyph` | `package/icons/user-plus.svg` |

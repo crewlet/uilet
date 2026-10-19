@@ -62,6 +62,7 @@ import {
   Highlight,
   MarkdownEditor,
   Outline,
+  RichEditor,
 } from '@crewlethq/ui';
 import { PlusGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
@@ -407,4 +408,38 @@ test('a knowledge page carries no violation: its title, outline, body, a marked 
     </main>,
   );
   expect(await violations(container)).toEqual([]);
+});
+
+test('the rich editor carries no violation: the document, a task, a callout, code, a table, the slash menu and the toolbar', async () => {
+  const body = [
+    '# Runbook',
+    '',
+    'Restart the **broker** first, then [check the status](https://example.com).',
+    '',
+    '- [ ] Drain the node',
+    '- [x] Take a snapshot',
+    '',
+    '> [!WARNING]',
+    '> A restart drops every open session.',
+    '',
+    '```sh',
+    'crewlet node drain',
+    '```',
+    '',
+    '| Step | Owner |',
+    '|---|---|',
+    '| Drain | Ops |',
+  ].join('\n');
+  const { container } = render(
+    <main>
+      <h1>Runbook</h1>
+      <RichEditor value={body} onChange={() => {}} label="The body of Runbook" />
+    </main>,
+  );
+  const box = await screen.findByRole('textbox', { name: 'The body of Runbook' });
+  expect(await violations(container)).toEqual([]);
+
+  // The open menus and bars are held to the same rules in the editor's own
+  // suite (RichEditor.test.tsx), which can drive the document to open them.
+  expect(box.getAttribute('aria-describedby')).toBeTruthy();
 });

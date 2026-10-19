@@ -41,11 +41,11 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Area | Components |
 | ---- | ---------- |
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `DownloadButton`, `Kbd` |
-| Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document` and `DocumentTitle`, `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider` |
-| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor` |
+| Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document` and `DocumentTitle`, the Markdown grammar (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref` and the line readers, with no React in it), `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider` |
+| Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor`, `RichEditor` (with `preloadRichEditor`, and the round trip `roundTripMarkdown` and `canonicalMarkdown` from `@crewlethq/ui/RichEditorMarkdown`) |
 | Data display | `DataTable`, `CopyableCell`, `Table`, the read-only table cells (`TableKeyCell`, `TableNumberCell`, `TableDateCell`, `TableEntityCell`, `TableStatusCell`, `TableTagsCell`, `TableTextCell`), `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
-| Feedback and overlays | `Callout`, `ConflictNote`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
+| Feedback and overlays | `Callout`, `ConflictNote`, `EditingStatus`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Documents and review | `DiffView` and `DiffSummary` with the line diff they draw (`diffLines`, `diffStat`, `collapseDiff`, `firstChangedLines`, `splitLines`, `MAX_DIFF_LINES`, with no React in it), `DiffList`, `VersionCompare`, `CommentThread` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
@@ -203,6 +203,27 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.30.0
+
+**`RichEditor` edits Markdown in place, as the document it reads as.** The editable element is set by `Document`, so a page looks the same while it is edited as when it is read, and there is no separate preview. It is built on ProseMirror and loaded lazily: the component is a shell that fetches the editor's code with `import()` the first time one is drawn, so a screen that only reads pays for none of it, and `preloadRichEditor()` starts that fetch from a press that is about to open an editor.
+
+- **Blocks**: headings, bulleted, numbered and task lists, quotes, callouts, code blocks with their language, tables, links, pictures and dividers.
+- **A slash menu**: type `/` at the start of a line or after a space, filter by name, move with the arrows and choose with Enter. An application adds entries of its own (`commands`), each opening a panel it draws ("Link to a page").
+- **A selection toolbar**: heading levels, bold, italic, strikethrough, inline code and a link, reached from the keyboard with Alt+F10.
+- **Markdown typed as Markdown** becomes the block or the format it spells (`# `, `- `, `1. `, `[ ] `, `> `, three backticks and a language, `---`, `**bold**`, `*em*`, `~~struck~~`, `` `code` ``, `[text](address)`), and Backspace right after gives back what was typed. The shortcuts are the ones every editor shares, and Command or Control with Enter is the caller's `onSubmit`.
+- **A paste of Markdown or HTML converts cleanly, under Trusted Types.** ProseMirror reads pasted HTML by assigning it to `innerHTML` behind a pass-through policy of its own, which a page enforcing `trusted-types 'none'` refuses and a page allowing it should not want. The editor takes paste and drop itself and reads HTML with a tokenizer that builds elements one by one in an inert document, keeping only the elements and attributes it has a meaning for, and copy writes Markdown as the plain text.
+- **A load and a save with no edit change no byte.** Every top-level block remembers the lines it was read from and is written back as them until it is edited; a changed block is written in the spelling it was read with (its bullet, its fence, `*` or `_`), checked by reading it back. `@crewlethq/ui/RichEditorMarkdown` exports the round trip (`roundTripMarkdown`, `canonicalMarkdown`) for an application to hold its own bodies to.
+
+**The Markdown grammar is part of the package** (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref`, `markdownHeadingOf`, `markdownFenceOf`, `markdownClosesFence`), so an application's renderer and `RichEditor` read a body by one grammar and cannot disagree about it. It reads what the Crewlet engine's renderer read, plus three things that renderer did not: backslash escapes (`\*` is an asterisk), an escaped pipe inside a table cell, and a link label holding an escaped bracket. It also reads **callouts** in GitHub's alert syntax, `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]` and `> [!CAUTION]`.
+
+**`Document` sets a callout and a cell aligned by `data-align`.** A renderer emits an element with `data-callout="<tone>"`, the tone's name in an element with `data-callout-label` and the blocks in one with `data-callout-body`; each tone is drawn from the same three steps `Callout` paints with.
+
+**`EditingStatus` says a page is being edited**: "Editing", and an accent dot with "Unsaved changes" once anything differs from what was opened (or "Saving" while a save is in flight), announced politely. It sits in a page bar beside the caller's own Cancel and Save, and on a phone the words fold away behind the dot.
+
+**`@crewlethq/icons` carries the editor's glyphs**: `heading-1`, `type`, `strikethrough`, `text-quote`, `square-code`, `unlink`, and `text-align-start`, `text-align-center` and `text-align-end`.
+
+What to change: nothing. An application that renders Markdown itself may read it through `parseMarkdown` and `markdownInline` instead, and draws a callout by the shape above.
 
 ## Changes in 0.29.0
 
