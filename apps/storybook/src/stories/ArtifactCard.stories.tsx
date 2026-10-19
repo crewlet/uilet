@@ -67,6 +67,25 @@ export const Gallery: Story = {
           />
         }
       />
+      {/* A BOARD WHOSE FIGURES THE GALLERY DOES NOT HOLD: each row says what
+          it measures and the dataset it cites, the label at the card's width. */}
+      <ArtifactCard
+        title="Delivery pulse"
+        kind="dashboard"
+        href="#/artifacts/6"
+        owner={CTO}
+        updatedAt={NOW - 2 * 86_400_000}
+        now={NOW}
+        preview={
+          <DashboardCover
+            stats={[
+              { label: 'Open work items', source: 'Open work' },
+              { label: 'Tokens, last 7 days', source: 'Token spend' },
+              { label: 'Deploys this week', source: 'Deploys' },
+            ]}
+          />
+        }
+      />
     </AutoGrid>
   ),
 };

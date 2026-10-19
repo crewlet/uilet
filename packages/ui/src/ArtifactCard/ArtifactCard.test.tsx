@@ -6,7 +6,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
-import { ARTIFACT_KINDS, ArtifactCard } from './index.js';
+import { ARTIFACT_KINDS, ArtifactCard, ArtifactPreviewGlyph } from './index.js';
 
 afterEach(cleanup);
 
@@ -83,6 +83,19 @@ test('gives every kind its own glyph and label when no preview is given', () => 
   }
   expect(drawings.size).toBe(ARTIFACT_KINDS.length);
   expect(words).toEqual(['Page', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
+});
+
+test('a host whose cover has nothing to draw stands in the same glyph the card would', () => {
+  // A cover that rendered nothing left an empty box: the card cannot see that
+  // a preview it was given drew nothing, so the host draws the fallback.
+  const { container } = render(
+    <>
+      <ArtifactCard title="Runbook" kind="sheet" href="#/a" updatedAt={NOW} now={NOW} />
+      <ArtifactCard title="Runbook" kind="sheet" href="#/b" updatedAt={NOW} now={NOW} preview={<ArtifactPreviewGlyph kind="sheet" />} />
+    </>,
+  );
+  const [own, given] = [...container.querySelectorAll('.crewlet-artifact-card__preview')];
+  expect(given!.innerHTML).toBe(own!.innerHTML);
 });
 
 test('compact draws no preview', () => {

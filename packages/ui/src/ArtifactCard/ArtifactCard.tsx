@@ -28,6 +28,21 @@ export function ArtifactKindGlyph({ kind, size = 'md' }: { kind: ArtifactKind; s
   return <Drawn size={size} />;
 }
 
+/**
+ * What a card's preview draws when there is no cover: the kind's glyph,
+ * centred in the preview. Exported for a host whose cover has nothing to draw
+ * YET (its outline still loading) or at all (a sheet with no columns): a cover
+ * that rendered nothing left an empty box where every other card has a
+ * picture, since the card cannot know that a cover it was given drew nothing.
+ */
+export function ArtifactPreviewGlyph({ kind }: { kind: ArtifactKind }) {
+  return (
+    <span className="crewlet-artifact-card__glyph">
+      <ArtifactKindGlyph kind={kind} size={32} />
+    </span>
+  );
+}
+
 export type ArtifactCardSize = 'card' | 'compact';
 
 export interface ArtifactCardLabels {
@@ -129,11 +144,7 @@ export function ArtifactCard({
     >
       {size === 'card' ? (
         <span className="crewlet-artifact-card__preview" aria-hidden>
-          {preview ?? (
-            <span className="crewlet-artifact-card__glyph">
-              <ArtifactKindGlyph kind={kind} size={32} />
-            </span>
-          )}
+          {preview ?? <ArtifactPreviewGlyph kind={kind} />}
         </span>
       ) : (
         <span className="crewlet-artifact-card__glyph crewlet-artifact-card__glyph--compact" aria-hidden>
