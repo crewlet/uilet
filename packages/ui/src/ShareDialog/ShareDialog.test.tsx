@@ -104,6 +104,25 @@ describe('the audience', () => {
     dialog();
     expect(within(row('@pm')).getByText('@pm can read this artifact in its turns and edit its data.')).toBeDefined();
   });
+
+  test('a share that reaches nobody is listed with why, reads no access, and offers Remove alone', () => {
+    // A STORED SHARE THE ENGINE NO LONGER HONOURS is the owner's to take away:
+    // hidden, it was a record nobody could see or remove.
+    const LOGIN: ShareAudienceRow = {
+      id: 'seat:token:maya',
+      principal: { id: 'token:maya', kind: 'person', name: 'maya (API token)' },
+      role: 'viewer',
+      invalid: 'token:maya is a sign-in, not a seat. Remove it and share with their seat.',
+    };
+    const { onRemove } = dialog({ audience: [MAYA, LOGIN] });
+    const it = row('maya (API token)');
+    expect(it.className).toContain('is-invalid');
+    expect(within(it).getByText('token:maya is a sign-in, not a seat. Remove it and share with their seat.')).toBeDefined();
+    expect(within(it).getByText('No access')).toBeDefined();
+    expect(within(it).queryByRole('combobox')).toBeNull();
+    fireEvent.click(within(it).getByRole('button', { name: 'Remove maya (API token)' }));
+    expect(onRemove).toHaveBeenCalledWith(LOGIN);
+  });
 });
 
 describe('a reader who cannot share', () => {

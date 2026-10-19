@@ -63,7 +63,9 @@
    ring sits outside the box, where a frame filling a clipping card loses it,
    so the region draws its ring inside its edge, on a layer above the frame. */
 .crewlet-sandboxed-frame:focus-visible {
-  outline: none;
+  /* Transparent rather than none: forced-colors mode paints a transparent
+     outline in the system ink, so the region's edge is never left bare. */
+  outline: 2px solid transparent;
 }
 
 .crewlet-sandboxed-frame:focus-visible::after {

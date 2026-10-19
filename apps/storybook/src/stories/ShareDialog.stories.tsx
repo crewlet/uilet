@@ -126,6 +126,39 @@ export const ReadOnly: Story = {
   },
 };
 
+/**
+ * A share an earlier build stored that reaches nobody (a sign-in named as a
+ * seat) is listed with why, reads "No access", and offers Remove alone, so
+ * its owner takes it away rather than it lingering out of sight.
+ */
+export const ShareThatReachesNobody: Story = {
+  render: function Render() {
+    const [audience, setAudience] = useState<ShareAudienceRow[]>([
+      ...START,
+      {
+        id: 'seat:token:maya',
+        principal: { id: 'token:maya', kind: 'person', name: 'maya (API token)' },
+        role: 'viewer',
+        invalid: 'token:maya is a sign-in, not a seat. Remove it and share with their seat.',
+      },
+    ]);
+    return (
+      <ShareDialog
+        open
+        onClose={() => {}}
+        title="Vendor scorecard"
+        audience={audience}
+        onRoleChange={() => {}}
+        onRemove={(row) => setAudience((was) => was.filter((r) => r.id !== row.id))}
+        companyName="Acme"
+        companyAccess="none"
+        onCompanyAccessChange={() => {}}
+        link="https://acme.example.com/#/artifacts/7b0c"
+      />
+    );
+  },
+};
+
 /** An administrator managing an artifact they hold no relation to is told why they can. */
 export const AdministratorClamp: Story = {
   render: function Render() {
