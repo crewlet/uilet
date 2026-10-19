@@ -100,3 +100,23 @@ test('carries no violation on either lens', async () => {
     unmount();
   }
 });
+
+test("the host's own item-by-item comparison is drawn in place of the two panes", () => {
+  const onLensChange = vi.fn();
+  render(
+    <VersionCompare
+      fromLabel="Version 1"
+      toLabel="Version 2"
+      lens="versions"
+      onLensChange={onLensChange}
+      changes={<p>files</p>}
+      versions={<p>slide by slide</p>}
+      from={<p>never drawn</p>}
+      labels={{ versions: 'By slide' }}
+    />,
+  );
+  expect(screen.getByText('slide by slide')).toBeTruthy();
+  expect(screen.queryByText('never drawn')).toBeNull();
+  fireEvent.click(screen.getByRole('radio', { name: 'Changes' }));
+  expect(onLensChange).toHaveBeenCalledWith('changes');
+});
