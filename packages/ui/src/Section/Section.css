@@ -56,7 +56,11 @@
 .crewlet-section__title {
   margin: 0;
   font-family: var(--font-family-display);
-  font-size: var(--font-size-lg);
+  /* THE REGISTER IS THE CONTAINER'S TO SET. A screen's band heads at the large
+     step; a side panel, whose own title is the small step, sets
+     `--crewlet-section-title-size` so the sections inside it never outrank the
+     heading they sit under. */
+  font-size: var(--crewlet-section-title-size, var(--font-size-lg));
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-normal);
   letter-spacing: var(--font-letter-spacing-tight);
@@ -115,15 +119,34 @@
     padding-block: var(--spacing-10);
   }
 
-  /*
-   * Narrow: the sentence moves under the heading rather than competing with it
-   * for a line that has room for neither.
-   */
   .crewlet-section__header {
     flex-wrap: wrap;
+    row-gap: var(--spacing-1);
   }
 
   .crewlet-section__description {
+    order: 1;
+    white-space: normal;
+    flex-basis: 100%;
+  }
+}
+
+/*
+ * NARROW: the sentence moves under the heading rather than competing with it
+ * for a line that has room for neither, and the actions stay on the heading's
+ * line. Measured on the column the section sits in where it sits in a size
+ * container (a side panel, a screen's content column), since a panel beside a
+ * wide window is as narrow as a phone; the window's width above is the answer
+ * where there is no container to ask.
+ */
+@container (width < 36rem) {
+  .crewlet-section__header {
+    flex-wrap: wrap;
+    row-gap: var(--spacing-1);
+  }
+
+  .crewlet-section__description {
+    order: 1;
     white-space: normal;
     flex-basis: 100%;
   }

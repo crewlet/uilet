@@ -45,6 +45,22 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Changed in the next release: the projection
+
+Five fixed colours for a slide shown full screen, the same in every palette and theme, as `--color-qr-*` is: what is under them is the slide in its own colours, or a projector's black, never the theme's ground.
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| `--color-projection-letterbox` | `#000000` | The bars round a slide whose shape is not the screen's |
+| `--color-projection-ground` | `rgba(0, 0, 0, 0.6)` | The pill a full screen show's controls float on |
+| `--color-projection-ink` | `#ffffff` | The controls and the position on that pill |
+| `--color-projection-hover` | `rgba(255, 255, 255, 0.16)` | A control under the pointer there |
+| `--color-projection-rule` | `rgba(255, 255, 255, 0.24)` | The hairline before the show's own controls |
+
+| What changed | What to change |
+| --- | --- |
+| `--color-projection-*` added | Nothing. A full screen surface of your own can take them in place of black and white literals. |
+
 ## Changed in 0.23.0: a text field's edge
 
 `--color-border-field` is new, in every theme and both palettes: the edge of a box a person types into. It is the strong border (a secondary button's edge) lifted only as far as 3:1 on the four rungs a field stands on, and the palette suite holds it there (`a field boundary clears 3:1`). `--color-border-control` keeps its 3:1 over every row composite as well, for a checkbox, a switch and an editor inside a row; held to those, it measured 4.9:1 on the card a search box sits on, the brightest edge on the page.

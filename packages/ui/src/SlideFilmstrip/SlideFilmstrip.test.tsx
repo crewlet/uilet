@@ -18,7 +18,13 @@ const SLIDES: FilmstripSlide[] = [
   { id: 'thanks', title: 'Thank you', hidden: true },
 ];
 
-function Strip({ onReorder }: { onReorder?: (ids: string[]) => void }) {
+function Strip({
+  onReorder,
+  orientation,
+}: {
+  onReorder?: (ids: string[]) => void;
+  orientation?: 'vertical' | 'horizontal';
+}) {
   const [selected, setSelected] = useState('cover');
   const [slides, setSlides] = useState(SLIDES);
   return (
@@ -29,6 +35,7 @@ function Strip({ onReorder }: { onReorder?: (ids: string[]) => void }) {
         selected={selected}
         onSelect={setSelected}
         renderSlide={(id) => <p>{id}</p>}
+        orientation={orientation}
         onReorder={
           onReorder &&
           ((ids) => {
@@ -57,6 +64,35 @@ test('the thumbnails are one tab stop whose arrow keys move the slide on the sta
   fireEvent.keyDown(thumbs()[1]!, { key: 'End' });
   expect(thumbs()[2]!.getAttribute('aria-current')).toBe('true');
   expect(document.activeElement).toBe(thumbs()[2]);
+});
+
+test('a row steps with Left and Right, and leaves Up and Down alone', () => {
+  render(<Strip orientation="horizontal" />);
+  fireEvent.keyDown(thumbs()[0]!, { key: 'ArrowDown' });
+  expect(thumbs()[0]!.getAttribute('aria-current')).toBe('true');
+  fireEvent.keyDown(thumbs()[0]!, { key: 'ArrowRight' });
+  expect(thumbs()[1]!.getAttribute('aria-current')).toBe('true');
+  fireEvent.keyDown(thumbs()[1]!, { key: 'ArrowLeft' });
+  expect(thumbs()[0]!.getAttribute('aria-current')).toBe('true');
+});
+
+test('the strip scrolls itself, and only itself, to the slide on the stage', () => {
+  const { container, rerender } = render(
+    <SlideFilmstrip slides={SLIDES} selected="cover" onSelect={() => {}} renderSlide={(id) => <p>{id}</p>} />,
+  );
+  const port = container.querySelector<HTMLElement>('.crewlet-slide-filmstrip')!;
+  // A strip 100px tall holding three 80px items, the last at 180 to 260.
+  Object.defineProperty(port, 'clientHeight', { configurable: true, value: 100 });
+  Object.defineProperty(port, 'scrollHeight', { configurable: true, value: 260 });
+  port.getBoundingClientRect = () => DOMRect.fromRect({ x: 0, y: 0, width: 160, height: 100 });
+  container.querySelectorAll('li').forEach((li, i) => {
+    li.getBoundingClientRect = () => DOMRect.fromRect({ x: 0, y: i * 90 - port.scrollTop, width: 160, height: 80 });
+  });
+  const scrolled = vi.spyOn(window, 'scrollTo');
+  rerender(<SlideFilmstrip slides={SLIDES} selected="thanks" onSelect={() => {}} renderSlide={(id) => <p>{id}</p>} />);
+  // 260 - 100 to bring its foot in, and a quarter of an item more.
+  expect(port.scrollTop).toBe(180);
+  expect(scrolled).not.toHaveBeenCalled();
 });
 
 test('a read-only strip draws no handles', () => {

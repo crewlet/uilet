@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, InputHTMLAttributes } from 'react';
 import { cx } from '../utils/cx.js';
 
 export type DocumentSize =
@@ -86,5 +86,33 @@ export function DocumentTitle({ as: Tag = 'h1', className, children, ...rest }: 
     <Tag {...rest} className={cx('crewlet-document-title', className)}>
       {children}
     </Tag>
+  );
+}
+
+export interface DocumentTitleFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
+  /** Marks the title as refused. Sets `aria-invalid`, which is what a screen reader reads. */
+  error?: boolean | undefined;
+}
+
+/**
+ * A title being written: the field a new page's title is typed into, set as
+ * `DocumentTitle` sets it once the page exists, so what a writer types is what
+ * a reader will see above the body rather than a form's field above a page.
+ *
+ * IT DRAWS NO BOX. The words are the field, as the body under it is; a line
+ * along its foot marks it under the pointer, in focus (the ring's colour,
+ * since the caret alone is no indicator a keyboard can rely on) and in the
+ * danger ink when the title is refused. The name is the caller's
+ * (`aria-label`, or a label it points at), because a title field's visible
+ * cue is its placeholder, and a placeholder is not a name.
+ */
+export function DocumentTitleField({ error = false, className, ...rest }: DocumentTitleFieldProps) {
+  return (
+    <input
+      {...rest}
+      type="text"
+      aria-invalid={error || undefined}
+      className={cx('crewlet-document-title', 'crewlet-document-title-field', className)}
+    />
   );
 }

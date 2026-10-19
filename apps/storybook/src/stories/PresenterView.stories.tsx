@@ -38,3 +38,25 @@ export const Presenting: Story = {
     );
   },
 };
+
+/** The last slide: the next slide's place holds its shape, so nothing under it moves. */
+export const AtTheEnd: Story = {
+  render: () => {
+    const last = STORY_SLIDES.length - 1;
+    const slide = STORY_SLIDES[last]!;
+    return (
+      <div style={{ height: '80vh' }}>
+        <PresenterView
+          current={storySlide(slide.id)}
+          currentTitle={slide.title}
+          next={null}
+          notes={slide.notes}
+          position={last + 1}
+          total={last + 1}
+          onNext={() => {}}
+          onPrevious={() => {}}
+        />
+      </div>
+    );
+  },
+};
