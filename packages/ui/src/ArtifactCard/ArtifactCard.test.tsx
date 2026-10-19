@@ -82,7 +82,7 @@ test('gives every kind its own glyph and label when no preview is given', () => 
     unmount();
   }
   expect(drawings.size).toBe(ARTIFACT_KINDS.length);
-  expect(words).toEqual(['Page', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
+  expect(words).toEqual(['HTML', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
 });
 
 test('a host whose cover has nothing to draw stands in the same glyph the card would', () => {
