@@ -19,7 +19,7 @@ import { motion } from '@crewlethq/tokens';
 import {
   LAYER_GAP,
   LAYER_REPOSITION_EVENT,
-  outsideBounds,
+  anchorGone,
   placePopup,
   useLayerContainer,
   usePopupLayer,
@@ -217,14 +217,13 @@ export function Tooltip({
       width: rect.width,
       height: rect.height,
     };
-    const whole: PlacementRect = { x: 0, y: 0, width: host.width, height: host.height };
     const bounds: PlacementRect = {
       x: LAYER_GAP,
       y: LAYER_GAP,
       width: host.width - 2 * LAYER_GAP,
       height: host.height - 2 * LAYER_GAP,
     };
-    if (outsideBounds({ ...local, x: rect.x - (inHost ? host.x : 0) }, whole)) {
+    if (anchorGone(rect, host, inHost)) {
       setOpen(false);
       return;
     }

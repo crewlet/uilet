@@ -415,6 +415,23 @@ test('a match-width panel is placed by the width its own floor gives it', () => 
   }
 });
 
+test('an end-aligned panel wider than its trigger\'s right edge opens, held inside the layer', () => {
+  // A phone's toolbar wraps its last control to the left edge: a 64px trigger
+  // at x 12, and a 260px panel aligned to its end would start at 76 - 260.
+  const restore = stubBoxes({ anchor: rect(12, 100, 64, 32), panel: rect(0, 0, 260, 200) });
+  const onOpenChange = vi.fn();
+  try {
+    render(<Chip align="end" onOpenChange={onOpenChange} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
+    const panel = screen.getByRole('dialog', { name: 'Owner' });
+    expect(onOpenChange).not.toHaveBeenCalledWith(false, 'anchor-gone');
+    // Clamped to the layer's gap rather than hung off its left edge.
+    expect(Number.parseFloat(panel.style.left)).toBeGreaterThanOrEqual(0);
+  } finally {
+    restore();
+  }
+});
+
 /*
  * AND IT IS RE-PLACED WHEN THE PANEL'S OWN SIZE CHANGES. Every listener the
  * placement effect registers — resize, capture-phase scroll, the layer host's

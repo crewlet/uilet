@@ -91,6 +91,32 @@ export function viewportBounds(): PlacementRect {
   return { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
 }
 
+/**
+ * Whether an anchor has left its layer: the ANCHOR'S OWN BOX, in the layer's
+ * coordinates, carried entirely outside the layer's whole rectangle (not the
+ * gap-inset one a surface is placed in, since an anchor in the gap is at the
+ * layer's edge, not off it).
+ *
+ * ASKED OF THE ANCHOR, never of where the aligned surface would start: an
+ * end-aligned panel wider than its trigger's right edge starts left of the
+ * layer while the trigger is in plain view, and every surface that asked of
+ * that start closed on the frame it opened. Placement clamps such a panel
+ * inside the bounds instead.
+ */
+export function anchorGone(
+  anchor: { left: number; top: number; width: number; height: number },
+  host: PlacementRect,
+  inHost: boolean,
+): boolean {
+  const own: PlacementRect = {
+    x: anchor.left - (inHost ? host.x : 0),
+    y: anchor.top - (inHost ? host.y : 0),
+    width: anchor.width,
+    height: anchor.height,
+  };
+  return outsideBounds(own, { x: 0, y: 0, width: host.width, height: host.height });
+}
+
 /** Whether an anchor has been carried entirely outside its bounds. */
 export function outsideBounds(anchor: PlacementRect, bounds: PlacementRect): boolean {
   return (

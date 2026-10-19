@@ -60,7 +60,7 @@ import { IconButton } from '../IconButton/index.js';
 import { focusables, useModalLayer } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
-import { useMediaMatch } from '../utils/useMediaMatch.js';
+import { useMediaMatch } from '../MediaMatch/index.js';
 import { AccountRow } from './AccountRow.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
