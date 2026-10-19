@@ -1307,7 +1307,8 @@ stands a small figure at the END of the value's line, such as a `Sparkline`,
 a `Meter` or a `SegmentedMeter`, or a small control that acts on the number,
 in a slot `--crewlet-statcard-trend-width` wide (96px); a figure fills it and a control
 keeps its own width at its end. In a tile too narrow for both, the figure moves
-under the number rather than the number being cut. `trendPlacement="below"`
+under the number rather than the number being cut, and a `unit` too long to
+share the number's line moves under it whole. `trendPlacement="below"`
 stands the figure under the number at the tile's width instead, for a quota
 whose bar is the reading, so a row of them keeps one shape at every width. `delta` heads the second line with a change
 against an earlier reading, `{ value, polarity }`, drawn in the ink of whether

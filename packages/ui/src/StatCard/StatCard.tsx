@@ -157,7 +157,7 @@ export const StatCard = ({
             </>
           ) : (
             <>
-              {value}
+              <span className="crewlet-statcard__number">{value}</span>
               {unit ? <span className="crewlet-statcard__unit">{unit}</span> : null}
             </>
           )}

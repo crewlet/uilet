@@ -264,6 +264,26 @@ describe('StatCard', () => {
     expect(value.querySelector('.crewlet-statcard__unit')?.textContent).toBe('ms');
   });
 
+  test('a unit too long to share the line moves under the number whole, and only the number may end', () => {
+    // "279 KB of 1…" in a phone's two-to-a-line tile said nothing about the
+    // ceiling. The unit is kept whole and wraps; the number keeps its own
+    // ellipsis for a figure too long for the tile alone.
+    const uninstall = installSheets('StatCard/StatCard.css');
+    try {
+      const { container } = render(<StatCard label="Files" value="279 KB" unit="of 10 GB" />);
+      const value = getComputedStyle(container.querySelector('.crewlet-statcard__value')!);
+      expect(value.flexWrap).toBe('wrap');
+      const unit = getComputedStyle(container.querySelector('.crewlet-statcard__unit')!);
+      expect(unit.whiteSpace).toBe('nowrap');
+      expect(unit.flexShrink).toBe('0');
+      const number = getComputedStyle(container.querySelector('.crewlet-statcard__number')!);
+      expect(number.textOverflow).toBe('ellipsis');
+      expect(number.whiteSpace).toBe('nowrap');
+    } finally {
+      uninstall();
+    }
+  });
+
   test('the second line keeps its space whether or not there is one', () => {
     const { container } = render(
       <>
