@@ -15,6 +15,12 @@ export interface LegendItem {
   color?: string;
   /** The number beside the name, where the legend doubles as the readout. */
   value?: ReactNode;
+  /**
+   * The key's shape, which MIRRORS THE MARK it names: a `swatch` for a fill
+   * (a bar, a column, a part of a whole), the default, and a `line` for a
+   * series drawn as a line, so a reader matches a stroke to a stroke.
+   */
+  shape?: 'swatch' | 'line';
 }
 
 export interface LegendProps {
@@ -48,7 +54,7 @@ export function Legend({ items, className }: LegendProps) {
       {items.map((item, index) => (
         <li key={item.id} className="crewlet-legend__item">
           <span
-            className="crewlet-legend__swatch"
+            className={cx('crewlet-legend__swatch', item.shape === 'line' && 'crewlet-legend__swatch--line')}
             aria-hidden
             style={{ '--crewlet-legend-swatch-color': item.color ?? dataColor(index) } as CSSProperties}
           />

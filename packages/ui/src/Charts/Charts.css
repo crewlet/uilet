@@ -39,6 +39,12 @@
   background: var(--crewlet-legend-swatch-color, var(--color-data-other));
 }
 
+.crewlet-legend__swatch--line {
+  width: 12px;
+  height: 2px;
+  border-radius: calc(var(--radius-xs) / 4);
+}
+
 .crewlet-legend__label {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -157,7 +163,7 @@
  */
 .crewlet-bar-list__sub,
 .crewlet-bar-list__more,
-.crewlet-bar-list__empty {
+.crewlet-chart-empty {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
@@ -174,9 +180,10 @@
  * A card draws its own content in a body now, so a padding here is the panel's
  * inset a second time.
  */
-.crewlet-bar-list__empty {
+.crewlet-chart-empty {
   margin: 0;
   padding: 0;
+  line-height: var(--font-line-height-normal);
 }
 
 .crewlet-bar-list__sub {
@@ -403,6 +410,8 @@
   row-gap: var(--spacing-1);
   margin: 0;
   min-width: 0;
+  /* Measured by its own width, for the dates under the plot. */
+  container: crewlet-stacked-columns / inline-size;
 }
 
 /*
@@ -427,12 +436,16 @@
   align-items: flex-end;
 }
 
+/*
+ * The scale's words are set as the dates under the plot are, the sans at the
+ * caption step with tabular figures, so the two axes of one chart read as one
+ * scale. They were the mono at the step below, beside dates in the sans.
+ */
 .crewlet-stacked-columns__tick {
   display: flex;
   align-items: center;
   height: 0;
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   line-height: var(--font-line-height-tight);
   color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
@@ -447,7 +460,7 @@
  * keeps that half line above the plot itself.
  */
 .crewlet-stacked-columns--headless {
-  padding-block-start: calc(var(--font-size-2xs) * var(--font-line-height-tight) / 2);
+  padding-block-start: calc(var(--font-size-xs) * var(--font-line-height-tight) / 2);
 }
 
 .crewlet-stacked-columns__plot {
@@ -497,14 +510,23 @@
 /*
  * THE COLUMN IS ITS TOTAL'S HEIGHT (a style property), and its parts share it
  * by value, first series at the baseline. They stand 2px apart for the reason
- * a stacked bar's do, and the gap comes out of the parts.
+ * a stacked bar's do, and the gap comes out of the parts. It stands on the
+ * zero line (a style property), centred in its slot; the column of a
+ * bucket's negative parts hangs from the same line, first series nearest it.
  */
 .crewlet-stacked-columns__column {
+  position: absolute;
+  inset-inline-start: 50%;
   display: flex;
   flex-direction: column-reverse;
   gap: 2px;
   width: 63%;
-  max-width: var(--spacing-7);
+  max-width: var(--spacing-6);
+  transform: translateX(-50%);
+}
+
+.crewlet-stacked-columns__column--below {
+  flex-direction: column;
 }
 
 .crewlet-stacked-columns__segment {
@@ -516,11 +538,17 @@
   background: var(--crewlet-stacked-columns-segment-color, var(--color-data-other));
 }
 
-/* The VALUE END: the top of the topmost part, rounded at the smallest step.
-   The foot stays square on the baseline every column shares. */
-.crewlet-stacked-columns__segment:last-child {
+/* The VALUE END: the top of the topmost part, rounded at the smallest step
+   (the foot of the lowest one, below zero). The end on the zero line stays
+   square, where every column starts. */
+.crewlet-stacked-columns__column:not(.crewlet-stacked-columns__column--below) > .crewlet-stacked-columns__segment:last-child {
   border-top-left-radius: var(--radius-xs);
   border-top-right-radius: var(--radius-xs);
+}
+
+.crewlet-stacked-columns__column--below > .crewlet-stacked-columns__segment:last-child {
+  border-bottom-left-radius: var(--radius-xs);
+  border-bottom-right-radius: var(--radius-xs);
 }
 
 .crewlet-stacked-columns__scale {
@@ -574,12 +602,24 @@
   margin-top: var(--spacing-2);
 }
 
-/* The middle label stands on the column it names (a style property). */
+/* The middle label stands on the column it names (a style property). On a
+   chart too narrow for three dates it leaves the line to the two ends, which
+   it ran into; the tooltip reads every column's date. */
 .crewlet-stacked-columns__middle {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
   white-space: nowrap;
+}
+
+.crewlet-stacked-columns__scale > span {
+  white-space: nowrap;
+}
+
+@container crewlet-stacked-columns (width < 22rem) {
+  .crewlet-stacked-columns__middle {
+    display: none;
+  }
 }
 
 /* ─── The reading layer: a focusable plot and its tooltip ─────── */
@@ -710,9 +750,14 @@
   width: 100%;
 }
 
+/*
+ * A cell shares the strip's width with the others, up to a column's width,
+ * so a strip of one day is one mark rather than a slab across the figure.
+ */
 .crewlet-activity-strip__cell {
   flex: 1;
   min-width: var(--crewlet-activity-strip-cell-min-width, 2px);
+  max-width: var(--crewlet-activity-strip-cell-max-width, var(--spacing-6));
   height: var(--crewlet-activity-strip-fill, 10%);
   /*
    * A quarter of the smallest step. A cell is two pixels wide, so at the step
@@ -728,6 +773,12 @@
 
 .crewlet-activity-strip__cell.is-active {
   background: var(--color-data-1);
+}
+
+/* The cell being read lifts, as a column being read does, by the hover step
+   behind it rather than by a second colour. */
+.crewlet-activity-strip__cell.is-read {
+  box-shadow: 0 0 0 2px var(--color-surface-hover);
 }
 
 /* ─── Time series, and the sparkline beside a number ──────────── */
@@ -756,14 +807,16 @@
 }
 
 /*
- * The grid is DASHED, which is what keeps three horizontal lines from reading
- * as three series. They carry no values of their own: the peak under the plot
- * is the scale, and a chart this size cannot label four gridlines legibly.
+ * The grid is a SOLID HAIRLINE in the default border, the ink the column
+ * chart's grid is drawn in. It was dashed, so that three lines would
+ * not read as three series, but a one pixel rule in a border ink beside a two
+ * pixel line in a data hue reads as neither, and a dash is how a chart says
+ * "projection" or "threshold". The lines carry no values of their own: the
+ * peak under the plot is the scale.
  */
 .crewlet-chart__grid-line {
   stroke: var(--color-border-default);
   stroke-width: 1;
-  stroke-dasharray: 2 4;
 }
 
 /*
@@ -788,7 +841,34 @@
   pointer-events: none;
 }
 
-/* The window's two ends and its peak, under the plot: the scale, as words. */
+/*
+ * A POINT: a disc 8px across in its series' hue, cut out of the ground by a
+ * 2px ring of the card (`--crewlet-spark-ground`, as a sparkline's point is),
+ * centred on its value. It stands over the plot rather than in it, so it stays
+ * round at every width, and is drawn for a series of one point and for every
+ * series at the instant being read.
+ */
+.crewlet-time-series__dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--crewlet-time-series-dot-color, var(--color-data-other));
+  box-shadow: 0 0 0 2px var(--crewlet-spark-ground, var(--color-surface-subtle));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/*
+ * The window's two ends and its peak, under the plot: the scale, as words.
+ * The ends hold their words whole and the range between them gives way, so a
+ * narrow chart never runs one into another; under 18rem the range leaves the
+ * line to the tooltip and the summary, which carry it too.
+ */
+.crewlet-time-series {
+  container: crewlet-time-series / inline-size;
+}
+
 .crewlet-time-series__scale {
   display: flex;
   justify-content: space-between;
@@ -797,6 +877,33 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
+}
+
+.crewlet-time-series__scale > span {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* A window of one instant is drawn at the plot's middle, and so is its date. */
+.crewlet-time-series__scale--instant {
+  justify-content: center;
+}
+
+.crewlet-time-series__scale > .crewlet-time-series__range {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@container crewlet-time-series (width < 18rem) {
+  .crewlet-time-series__range {
+    display: none;
+  }
+}
+
+.crewlet-time-series__legend {
+  margin-top: var(--spacing-2);
 }
 
 /*
