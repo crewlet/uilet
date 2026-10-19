@@ -677,3 +677,24 @@ test('a menu with a header carries no axe violation', async () => {
   expect(container).toBeDefined();
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test('an end-aligned menu wider than its trigger\'s right edge opens, held inside the window', () => {
+  // A phone's toolbar wraps its last control to the left edge: an end-aligned
+  // 200px menu under a 64px trigger at x 12 would start left of the window.
+  const box = (left: number, width: number) =>
+    ({ left, top: 100, width, height: 32, right: left + width, bottom: 132, x: left, y: 100 }) as DOMRect;
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-menu')) return box(0, 200);
+    if (this.tagName === 'BUTTON' && !this.classList.contains('crewlet-menu__item')) return box(12, 64);
+    return realRect.call(this);
+  };
+  try {
+    render(<Menu label="Actions for Software Engineer" align="end" items={entries()} />);
+    fireEvent.click(trigger());
+    const panel = screen.getByRole('menu');
+    expect(Number.parseFloat(panel.style.left)).toBeGreaterThanOrEqual(0);
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+  }
+});

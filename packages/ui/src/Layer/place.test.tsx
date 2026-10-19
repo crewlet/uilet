@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { LAYER_GAP, LAYER_REPOSITION_EVENT, outsideBounds, placePopup } from './place.js';
+import { LAYER_GAP, LAYER_REPOSITION_EVENT, anchorGone, outsideBounds, placePopup } from './place.js';
 
 const bounds = { x: 0, y: 0, width: 800, height: 600 };
 const size = { width: 200, height: 160 };
@@ -78,4 +78,25 @@ test('the reposition event keeps the name every layer already listens for', () =
   // A surface following its anchor listens on the layer it was rendered into,
   // and the canvas that pans dispatches it. The string is the contract.
   expect(LAYER_REPOSITION_EVENT).toBe('crewlet:viewchange');
+});
+
+describe('anchorGone', () => {
+  const view = { x: 0, y: 0, width: 390, height: 844 };
+
+  test('asks of the anchor itself, so a trigger at the left edge is still there', () => {
+    // A 64px trigger at x 12: an end-aligned 260px panel would start at -184,
+    // which is not the anchor leaving.
+    expect(anchorGone({ left: 12, top: 100, width: 64, height: 32 }, view, false)).toBe(false);
+  });
+
+  test('is true once the anchor is carried wholly off the layer, either way', () => {
+    expect(anchorGone({ left: -80, top: 100, width: 64, height: 32 }, view, false)).toBe(true);
+    expect(anchorGone({ left: 12, top: 900, width: 64, height: 32 }, view, false)).toBe(true);
+  });
+
+  test("reads an anchor inside a layer host in the host's own coordinates", () => {
+    const host = { x: 100, y: 50, width: 600, height: 400 };
+    expect(anchorGone({ left: 150, top: 80, width: 80, height: 24 }, host, true)).toBe(false);
+    expect(anchorGone({ left: 3000, top: 80, width: 80, height: 24 }, host, true)).toBe(true);
+  });
 });
