@@ -75,11 +75,19 @@ const STATUS_FILL: Record<AvatarStatus, string> = {
 };
 
 describe('getInitials', () => {
-  test('splits on whitespace, hyphen, underscore and dot', () => {
+  test('splits on whitespace, hyphen, underscore, dot and colon', () => {
     expect(getInitials('Carlos Diaz')).toBe('CD');
     expect(getInitials('backend-engineer')).toBe('BE');
     expect(getInitials('sre_lead')).toBe('SL');
     expect(getInitials('carlos.diaz')).toBe('CD');
+    expect(getInitials('ci:release')).toBe('CR');
+  });
+
+  test('punctuation around a word is not a letter', () => {
+    // "review (API token)" drew R( on the share dialog's row.
+    expect(getInitials('review (API token)')).toBe('RA');
+    expect(getInitials('"Ada" Byron')).toBe('AB');
+    expect(getInitials('(ops)')).toBe('OP');
   });
 
   test('a single word still gives two letters: at its case humps, or its first two', () => {
