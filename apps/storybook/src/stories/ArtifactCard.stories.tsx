@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ARTIFACT_KINDS, ArtifactCard, AutoGrid } from '@crewlethq/ui';
+import { ARTIFACT_KINDS, ArtifactCard, AutoGrid, DashboardCover } from '@crewlethq/ui';
 
 const meta: Meta<typeof ArtifactCard> = {
   title: 'UI/ArtifactCard',
@@ -38,6 +38,24 @@ export const Gallery: Story = {
       />
       <ArtifactCard title="Pricing explorer" kind="html" href="#/artifacts/2" owner={CTO} updatedAt={NOW - 12 * 60_000} project="GTM" version={3} pinned now={NOW} />
       <ArtifactCard title="Incident runbook" kind="doc" href="#/artifacts/3" owner={MAYA} updatedAt={NOW - 86_400_000} now={NOW} />
+      <ArtifactCard
+        title="Delivery board"
+        kind="dashboard"
+        href="#/artifacts/4"
+        owner={CTO}
+        updatedAt={NOW - 30 * 60_000}
+        version={2}
+        now={NOW}
+        preview={
+          <DashboardCover
+            stats={[
+              { label: 'Open tasks', value: '12' },
+              { label: 'Spend today', value: '$4.20' },
+              { label: 'Agents working', source: 'Agent status' },
+            ]}
+          />
+        }
+      />
     </AutoGrid>
   ),
 };
