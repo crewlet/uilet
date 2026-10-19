@@ -51,7 +51,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
-| Arranging a page | `ArrangeBoard`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
+| Arranging a page | `ArrangeBoard`, `ArrangeGrid`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
 | Artifacts | `SandboxedFrame`, `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard` and `ArtifactKindGlyph`, `CanvasBoard` (a design's artboards and notes on a `Canvas`, with the visibility budget `liveBoards`), `CanvasSchematic` (a design's cover, drawn from its boards' frames), `AccessDeniedCard`, `ArtifactIcon` (with `artifactIconGlyph` and `ARTIFACT_ICON_WORDS`), the native gallery covers (`DocCover`, `SheetCover`, `DashboardCover`), `MergeConflicts`, the dashboard pieces (`WidgetFrame`, `DatasetSource` and `DatasetSourceList`), and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it) |
@@ -203,6 +203,14 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.28.0
+
+**`ArrangeGrid`** is the page grid a board's blocks stand on: equal columns (twelve unless `columns` says otherwise), the board's own gap, each `ArrangeFrame` spanning the columns it names. A frame writes `grid-column: span N`, which only a grid parent reads, so frames placed straight in an `ArrangeBoard` stacked at full width; every board now lays its blocks on this one grid rather than on a grid of its own. `ArrangeGroup`'s body is the same grid inside the group, so a block is one width on the page and in a group, and while the page is arranged the grid opens its rows a step for each block's toolbar.
+
+**`StackedColumns` keeps its top value inside the figure.** The axis's top tick is centred on the plot's top edge, so half of it stood above the plot; with no head row it fell outside the figure, and a container that clips its content cut the highest value in half. A chart with no head now keeps that half line above its plot, and the tick's line height is the tight step it is measured at.
+
+What to change: wrap a board's page of frames in `ArrangeGrid` (inside `ArrangeBoard`) in place of a grid of your own.
 
 ## Changes in 0.27.0
 
