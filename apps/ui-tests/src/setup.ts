@@ -81,3 +81,21 @@ function memoryStorage(): Storage {
 for (const area of ['localStorage', 'sessionStorage'] as const) {
   provide(area, memoryStorage());
 }
+
+/*
+ * A Range has no layout in jsdom, and an editor measures one to place what
+ * floats beside the caret. An empty rectangle is what a browser answers for a
+ * collapsed range in a hidden element, so it is a value rather than a pretence.
+ */
+const emptyRect = () => ({ x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON: () => ({}) });
+if (typeof Range !== 'undefined') {
+  if (typeof Range.prototype.getBoundingClientRect !== 'function') {
+    Range.prototype.getBoundingClientRect = emptyRect as unknown as Range['getBoundingClientRect'];
+  }
+  if (typeof Range.prototype.getClientRects !== 'function') {
+    Range.prototype.getClientRects = (() => ({ length: 0, item: () => null, [Symbol.iterator]: [][Symbol.iterator] })) as unknown as Range['getClientRects'];
+  }
+}
+if (typeof document !== 'undefined' && typeof document.elementFromPoint !== 'function') {
+  document.elementFromPoint = () => null;
+}

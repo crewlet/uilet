@@ -286,3 +286,74 @@
   color: var(--color-text-primary);
   overflow-wrap: anywhere;
 }
+
+/*
+ * A TABLE CELL'S ALIGNMENT, read off `data-align` as well as off a style: an
+ * editor that may not write a style attribute under a strict policy marks a
+ * column this way, and the cell is set as the reader's is.
+ */
+.crewlet-document :where(th, td)[data-align='center'] {
+  text-align: center;
+}
+
+.crewlet-document :where(th, td)[data-align='right'] {
+  text-align: end;
+}
+
+/*
+ * A CALLOUT (`> [!NOTE]` and its four siblings): a tinted block with its tone
+ * named on a line of its own, read by its shape as everything here is. A
+ * renderer emits an element with `data-callout="<tone>"` and `role="note"`,
+ * the tone's name in an element with `data-callout-label`, and the blocks in
+ * one with `data-callout-body`. The fill, the ink and the line are each tone's
+ * declared steps, the same three `Callout` paints with.
+ */
+.crewlet-document [data-callout] {
+  --crewlet-document-callout-fill: var(--color-feedback-info-soft);
+  --crewlet-document-callout-ink: var(--color-feedback-info-ink);
+  --crewlet-document-callout-line: var(--color-feedback-info-line);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-inline-start: 3px solid var(--crewlet-document-callout-line);
+  border-radius: var(--radius-sm);
+  background: var(--crewlet-document-callout-fill);
+}
+
+.crewlet-document [data-callout='tip'] {
+  --crewlet-document-callout-fill: var(--color-feedback-success-soft);
+  --crewlet-document-callout-ink: var(--color-feedback-success-ink);
+  --crewlet-document-callout-line: var(--color-feedback-success-line);
+}
+
+.crewlet-document [data-callout='important'] {
+  --crewlet-document-callout-fill: var(--color-brand-accent-soft);
+  --crewlet-document-callout-ink: var(--color-brand-accent-ink);
+  --crewlet-document-callout-line: var(--color-brand-accent);
+}
+
+.crewlet-document [data-callout='warning'] {
+  --crewlet-document-callout-fill: var(--color-feedback-warning-soft);
+  --crewlet-document-callout-ink: var(--color-feedback-warning-ink);
+  --crewlet-document-callout-line: var(--color-feedback-warning-line);
+}
+
+.crewlet-document [data-callout='caution'] {
+  --crewlet-document-callout-fill: var(--color-feedback-danger-soft);
+  --crewlet-document-callout-ink: var(--color-feedback-danger-ink);
+  --crewlet-document-callout-line: var(--color-feedback-danger-line);
+}
+
+.crewlet-document [data-callout-label] {
+  margin: 0 0 var(--spacing-1);
+  color: var(--crewlet-document-callout-ink);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-document [data-callout-body] {
+  color: var(--color-text-primary);
+}
+
+.crewlet-document [data-callout-body] > * + * {
+  margin-block-start: var(--crewlet-document-gap);
+}

@@ -1710,6 +1710,48 @@ describe('a table fitted to its container', () => {
     expect(statedTotal()).toBe(400);
   });
 
+  test('shrinks a column no narrower than its own minWidth, and scrolls past it', () => {
+    /*
+     * A title beside two held columns in a box 240px short: the fit took the
+     * whole shortfall from the title, down to the table's 80px floor, and the
+     * title read "READ…". Its own floor holds it at what still reads.
+     */
+    const held: Record<string, DataTableColumn<Seat>> = {
+      name: { label: 'Seat', defaultWidth: 300, minWidth: 200 },
+      note: { label: 'Note', width: 120 },
+      live: { label: 'Live', width: 120 },
+    };
+    restore = scrollerWidth(360);
+    render(<DataTable<Seat> variant="compact" data={seats} columns={held} getRowKey={(row) => row.id} />);
+    expect(statedWidths()).toEqual([200, 120, 120, 0]);
+    cleanup();
+    render(
+      <DataTable<Seat>
+        variant="compact"
+        data={seats}
+        columns={{ ...held, name: { label: 'Seat', defaultWidth: 300 } }}
+        getRowKey={(row) => row.id}
+      />,
+    );
+    expect(statedWidths()).toEqual([120, 120, 120, 0]);
+  });
+
+  test('grows a column with a minWidth as any other, to fill its box', () => {
+    restore = scrollerWidth(600);
+    render(
+      <DataTable<Seat>
+        variant="compact"
+        data={seats}
+        columns={{
+          name: { label: 'Seat', defaultWidth: 150, minWidth: 200 },
+          note: { label: 'Note', width: 120 },
+        }}
+        getRowKey={(row) => row.id}
+      />,
+    );
+    expect(statedWidths()).toEqual([480, 120, 0]);
+  });
+
   test('is not left a pixel wider than its container', () => {
     /*
      * The tolerance was symmetric, so a row one pixel over its box was left

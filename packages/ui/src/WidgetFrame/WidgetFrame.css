@@ -7,24 +7,44 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2);
+  gap: var(--spacing-3);
   min-width: 0;
   height: 100%;
   min-height: 0;
-  padding: var(--spacing-3) var(--spacing-4);
+  /* THE CARD'S OWN INSET, set on each part rather than on the frame, so a
+     flush figure can give up its sides while the title and the citation keep
+     theirs. */
+  padding-block: var(--spacing-4);
+  /* THE CARD RECIPE: the ground, the hairline and the corner every card on a
+     board stands on, so a figure and the cards around it are one object. */
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
-  background: var(--color-surface-elevated);
+  background: var(--color-surface-subtle);
+  /* Measured by its own width, for the citation below. */
+  container: crewlet-widget-frame / inline-size;
+}
+
+.crewlet-widget-frame__head,
+.crewlet-widget-frame__body,
+.crewlet-widget-frame__cite {
+  padding-inline: var(--spacing-4);
 }
 
 .crewlet-widget-frame__head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-2);
   min-width: 0;
 }
 
+/*
+ * THE TITLE IS THE FIGURE'S ONLY NAME, so it is read whole: it takes a second
+ * line before it gives up a word, and only a title longer than two lines ends
+ * in an ellipsis. Cut at one line, a frame three columns wide named "Tokens,
+ * last 14 days" as "Tokens, last 14 da".
+ */
 .crewlet-widget-frame__title {
+  display: -webkit-box;
   flex: 1;
   min-width: 0;
   margin: 0;
@@ -33,15 +53,21 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-snug);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
+/* The controls stand on the title's first line: the box is one line of the
+   title tall and the control is centred in it, whatever its own height. */
 .crewlet-widget-frame__actions {
   display: inline-flex;
   flex: none;
   align-items: center;
   gap: var(--spacing-1);
+  height: calc(var(--font-size-sm) * var(--font-line-height-snug));
 }
 
 .crewlet-widget-frame__body {
@@ -49,6 +75,24 @@
   min-width: 0;
   min-height: 0;
   overflow: auto;
+}
+
+/* A flush figure reaches the frame's sides, and a table's cells take the
+   frame's inset, so its first column starts under the title and its row
+   rules meet the border. */
+.crewlet-widget-frame--flush .crewlet-widget-frame__body {
+  padding-inline: 0;
+}
+
+.crewlet-widget-frame--flush .crewlet-data-table--compact {
+  --crewlet-data-table-cell-pad-x: var(--spacing-4);
+}
+
+/* A stat tile drawn flush as the figure stands on the frame's inset; its own
+   is for a column of a StatGroup, and inside a frame it doubled the space
+   around the label and under the value. */
+.crewlet-widget-frame__body .crewlet-statcard--flush {
+  padding: 0;
 }
 
 .crewlet-widget-frame__blocked {
@@ -73,10 +117,16 @@
   min-width: 0;
 }
 
+/*
+ * ONE LINE: the dataset's title gives up its tail before the time leaves the
+ * line. Allowed to wrap, a long title was cut and its "as of" fell to a line
+ * of its own that began with the separator.
+ */
 .crewlet-widget-frame__cite-text,
 .crewlet-widget-frame__cite-button {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  max-width: 100%;
   align-items: center;
   gap: 0 var(--spacing-1);
   min-width: 0;
@@ -108,6 +158,8 @@
 }
 
 .crewlet-widget-frame__source {
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
   color: var(--color-text-secondary);
   font-weight: var(--font-weight-medium);
@@ -121,7 +173,34 @@
   margin-inline-end: var(--spacing-1);
 }
 
+.crewlet-widget-frame__when {
+  flex: none;
+  white-space: nowrap;
+}
+
+/*
+ * A NARROW FRAME STACKS ITS CITATION: the dataset's title on one line and
+ * when it was true under it, with no separator to begin a line. Side by side
+ * in a frame three columns wide, the title kept four letters ("Open w...").
+ */
+@container crewlet-widget-frame (width < 18rem) {
+  .crewlet-widget-frame__cite-text,
+  .crewlet-widget-frame__cite-button {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .crewlet-widget-frame__source {
+    max-width: 100%;
+  }
+
+  .crewlet-widget-frame__when::before {
+    content: none;
+  }
+}
+
 .crewlet-widget-frame__stale {
   display: inline-flex;
+  flex: none;
   color: var(--color-feedback-warning-ink);
 }

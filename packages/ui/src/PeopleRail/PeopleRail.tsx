@@ -57,6 +57,13 @@ export interface PeopleRailProps {
   /** Further controls for one member, before Follow: "Open turn" for an agent at work. */
   actions?: ((member: PresenceMember) => ReactNode) | undefined;
   labels?: Partial<PeopleRailLabels> | undefined;
+  /**
+   * `card` is the rail on its own: a bordered card with its heading and its
+   * close. `plain` is its list alone, for a host that already frames and
+   * names it (an artifact's side panel), so the two are never a box drawn in
+   * a box with the same title twice.
+   */
+  variant?: 'card' | 'plain' | undefined;
   className?: string | undefined;
 }
 
@@ -88,6 +95,7 @@ export function PeopleRail({
   onClose,
   actions,
   labels: overrides,
+  variant = 'card',
   className,
 }: PeopleRailProps) {
   const labels: PeopleRailLabels = overrides ? { ...PEOPLE_RAIL_LABELS, ...overrides } : PEOPLE_RAIL_LABELS;
@@ -95,16 +103,23 @@ export function PeopleRail({
   const Heading = headingTag(useHeadingLevel());
   const others = presenceOrder(collapseSessions(members));
 
+  const plain = variant === 'plain';
+  const Root = plain ? 'div' : 'aside';
   return (
-    <aside className={cx('crewlet-people-rail', className)} aria-labelledby={headingID}>
-      <div className="crewlet-people-rail__head">
-        <Heading className="crewlet-people-rail__title" id={headingID}>
-          {labels.title}
-        </Heading>
-        {onClose && (
-          <IconButton size="sm" variant="ghost" label={labels.close} icon={<XGlyph size="sm" />} onClick={onClose} />
-        )}
-      </div>
+    <Root
+      className={cx('crewlet-people-rail', plain && 'crewlet-people-rail--plain', className)}
+      aria-labelledby={plain ? undefined : headingID}
+    >
+      {plain ? null : (
+        <div className="crewlet-people-rail__head">
+          <Heading className="crewlet-people-rail__title" id={headingID}>
+            {labels.title}
+          </Heading>
+          {onClose && (
+            <IconButton size="sm" variant="ghost" label={labels.close} icon={<XGlyph size="sm" />} onClick={onClose} />
+          )}
+        </div>
+      )}
       {/* The markers are off, and WebKit drops the list role with them, so
           the role is declared and the redundant-role rule silenced for that. */}
       {/* eslint-disable-next-line jsx-a11y/no-redundant-roles */}
@@ -151,7 +166,7 @@ export function PeopleRail({
         })}
       </ul>
       {others.length === 0 && <p className="crewlet-people-rail__note">{labels.nobody}</p>}
-    </aside>
+    </Root>
   );
 }
 

@@ -489,9 +489,12 @@
 }
 
 /* A screen that draws to the bottom of the window: the scroller stops
-   scrolling and the content column takes the height that is left. */
+   scrolling and the content column takes the height that is left. It
+   reserves no scrollbar gutter either, since nothing in it scrolls: the
+   reserved strip was a dead band down the screen's end edge. */
 .crewlet-app-shell--fill .crewlet-app-shell__main {
   overflow: hidden;
+  scrollbar-gutter: auto;
 }
 
 .crewlet-app-shell--fill .crewlet-app-shell__content {

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { BarList, IconButton, StatCard, WidgetFrame } from '@crewlethq/ui';
+import { BarList, DataTable, IconButton, StatCard, WidgetFrame } from '@crewlethq/ui';
 import { EllipsisGlyph } from '@crewlethq/icons/glyphs';
 
 /*
@@ -76,4 +76,59 @@ export const Failed: Story = {
 /** Not read yet: busy, with a placeholder. */
 export const Loading: Story = {
   args: { source: { label: 'My open work', status: 'loading' } },
+};
+
+/**
+ * A table is `flush`: its row rules meet the frame's border and its first
+ * column starts under the title. The short columns are held at what they hold
+ * (`width`); the title column alone is fitted (`defaultWidth`), no narrower
+ * than its `minWidth`.
+ */
+export const FlushTable: Story = {
+  args: {
+    title: 'Open work',
+    flush: true,
+    source: { label: 'Open work', status: 'ready', asOf: NOW - 60_000 },
+    children: (
+      <DataTable
+        variant="compact"
+        paginated={false}
+        showSettings={false}
+        defaultWrapLines={false}
+        columns={{
+          key: { label: 'Key', width: 88, sortable: false },
+          title: { label: 'Title', defaultWidth: 300, minWidth: 180, sortable: false },
+          status: { label: 'Status', width: 112, sortable: false },
+        }}
+        data={[
+          { id: 1, key: 'FAIR-2', title: 'README and MVP acceptance run-through', status: 'In review' },
+          { id: 2, key: 'FAIR-1', title: 'Write the FairSplit product brief', status: 'In progress' },
+        ]}
+        getRowKey={(row) => Number(row.id)}
+      />
+    ),
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: 520, height: 220, padding: 16, background: 'var(--color-surface-background)' }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+/** In a frame narrower than 18rem the citation stacks: the dataset's title, then when it was true. */
+export const Narrow: Story = {
+  args: {
+    title: 'Tokens, last 14 days',
+    source: { label: 'Token spend per seat, 14 days', status: 'ready', asOf: NOW - 60_000 },
+    children: <StatCard label="Tokens" value="0" flush />,
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 200, height: 220, padding: 16, background: 'var(--color-surface-background)' }}>
+        <Story />
+      </div>
+    ),
+  ],
 };

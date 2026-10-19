@@ -62,6 +62,12 @@ export interface WidgetFrameProps extends Omit<HTMLAttributes<HTMLElement>, 'tit
   onCite?: (() => void) | undefined;
   /** The host's controls for this figure, such as a menu offering CSV and PNG. */
   actions?: ReactNode;
+  /**
+   * The figure reaches the frame's sides: a table, whose row rules meet the
+   * frame's border and whose first column starts where the title does. Any
+   * other figure keeps the frame's inset.
+   */
+  flush?: boolean | undefined;
   /** The heading level of the title. Default 3, under a board's own heading. */
   headingLevel?: 2 | 3 | 4 | undefined;
   /** Overrides the shared clock, for a story or a suite. */
@@ -86,6 +92,13 @@ export interface WidgetFrameProps extends Omit<HTMLAttributes<HTMLElement>, 'tit
  * of the figure itself: a host that passed rows by mistake still shows none.
  * `failed` reads the same way with its own sentence.
  *
+ * ONE INSET FOR EVERY PART. The title, the figure and the citation stand on
+ * the card's own 16px from each side, so a frame lines up with every other
+ * card on a board. A table passes `flush` and reaches the sides instead, its
+ * cells taking the same inset so its first column starts under the title. A
+ * stat tile drawn `flush` as the figure takes the frame's inset, not one of
+ * its own on top of it.
+ *
  * Sits inside the host's `ArrangeFrame`, which owns the grid, the drag and
  * the resize; this owns what is inside the card.
  */
@@ -94,6 +107,7 @@ export function WidgetFrame({
   source,
   onCite,
   actions,
+  flush = false,
   headingLevel = 3,
   now,
   labels,
@@ -140,7 +154,12 @@ export function WidgetFrame({
   return (
     <section
       {...rest}
-      className={cx('crewlet-widget-frame', `crewlet-widget-frame--${source.status}`, className)}
+      className={cx(
+        'crewlet-widget-frame',
+        `crewlet-widget-frame--${source.status}`,
+        flush && 'crewlet-widget-frame--flush',
+        className,
+      )}
       aria-labelledby={titleId}
       aria-busy={source.status === 'loading' || undefined}
     >

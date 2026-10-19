@@ -4,6 +4,7 @@
  */
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { useLayoutEffect, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { SlideStage, useSlideKeys, type SlideKeys } from './index.js';
 
@@ -81,4 +82,26 @@ test('a show that is off listens to nothing', () => {
   render(<Show onNext={onNext} onPrevious={vi.fn()} enabled={false} />);
   fireEvent.keyDown(document.body, { key: 'ArrowRight' });
   expect(onNext).not.toHaveBeenCalled();
+});
+
+/**
+ * A show whose handlers close over its slide, and a key that arrives the
+ * moment a step commits, as a clicker's second press can.
+ */
+function Stepper({ onAt }: { onAt: (at: number) => void }) {
+  const [at, setAt] = useState(0);
+  useSlideKeys({ onNext: () => setAt(at + 1), onPrevious: () => setAt(at - 1) });
+  useLayoutEffect(() => {
+    onAt(at);
+    if (at === 1) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }));
+  }, [at, onAt]);
+  return <p>{at}</p>;
+}
+
+test("a key that arrives as a step commits moves on from the new slide, never the old one's", () => {
+  const seen: number[] = [];
+  const onAt = (at: number) => seen.push(at);
+  render(<Stepper onAt={onAt} />);
+  fireEvent.keyDown(document.body, { key: 'ArrowRight' });
+  expect(seen).toEqual([0, 1, 2]);
 });

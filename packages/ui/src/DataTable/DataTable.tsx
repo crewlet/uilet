@@ -242,6 +242,15 @@ export interface DataTableColumn<TRow = DataTableRow> {
    */
   hideable?: boolean;
   defaultWidth?: number;
+  /**
+   * The narrowest the fit pass shrinks a `defaultWidth` column to, where it
+   * is wider than the table's `minColumnWidth`. For the one column that
+   * gives up room to its box but has to stay readable while it does, a
+   * title beside short held columns: without it the fit took every pixel
+   * the box was short down to the table's floor, and a title read "READ…".
+   * Past it the table scrolls sideways. A reader's own drag is not held to it.
+   */
+  minWidth?: number;
   /** Override the value used when sorting this column (defaults to row[key]). */
   sortValue?: (row: TRow) => string | number | Date | null | undefined;
   /**
@@ -1553,6 +1562,7 @@ export const DataTable = <TRow,>({
      */
     const next = { ...columnWidths };
     const widthOf = (key: string): number => next[key] ?? minColumnWidth;
+    const floorOf = (key: string): number => Math.max(minColumnWidth, columns[key]?.minWidth ?? 0);
     visibleDataKeys.forEach((key) => {
       next[key] = widthOf(key);
     });
@@ -1568,10 +1578,10 @@ export const DataTable = <TRow,>({
         const rawShare = idx === pool.length - 1
           ? outstanding - moved
           : Math.round(outstanding * (current / poolTotal));
-        const clamped = Math.max(minColumnWidth, current + rawShare);
+        const clamped = Math.max(Math.min(floorOf(key), current), current + rawShare);
         moved += clamped - current;
         next[key] = clamped;
-        if (clamped > minColumnWidth) roomLeft.push(key);
+        if (clamped > floorOf(key)) roomLeft.push(key);
       });
       if (moved === 0) break;
       outstanding -= moved;

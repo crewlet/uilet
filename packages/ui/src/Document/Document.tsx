@@ -26,7 +26,7 @@ export interface DocumentProps extends HTMLAttributes<HTMLElement> {
 
 /**
  * Rendered markdown, set as a document: headings, paragraphs, lists and task
- * lists, quotes, code, tables, rules, links and images.
+ * lists, quotes, callouts, code, tables, rules, links and images.
  *
  * A STYLESHEET OVER ELEMENTS, NOT A RENDERER. What a body may contain (which
  * link schemes are safe, whether raw HTML is text) is a decision about the
@@ -41,6 +41,13 @@ export interface DocumentProps extends HTMLAttributes<HTMLElement> {
  * renderer gets them by emitting the markup it would emit anyway. A renderer
  * gives that element `tabIndex={0}`, a `region` role and a name, because a
  * scroller no keyboard can reach is a table no keyboard can read to its end.
+ *
+ * A CALLOUT is recognised the same way: an element with `data-callout` set
+ * to its tone (`note`, `tip`, `important`, `warning`, `caution`), the tone's
+ * name in an element with `data-callout-label` and its blocks in one with
+ * `data-callout-body`. A table cell aligned by `data-align` is set as one
+ * aligned by a style, so an editor that may write no style attribute sets a
+ * column exactly as the reader's renderer does.
  *
  * THE TITLE IS NOT PART OF IT. A page's title is its address and its `h1`, set
  * above the body by `DocumentTitle`, so a renderer draws the body's own

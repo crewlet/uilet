@@ -1,0 +1,419 @@
+/*
+ * The rich editor (RichEditor.tsx).
+ *
+ * THE DOCUMENT IS SET BY `Document`'s stylesheet, not by this one: the
+ * editable element carries `crewlet-document`, so a heading, a list, a quote
+ * or a table looks the same while it is edited as when it is read. What is
+ * here is only what editing adds: the caret's world (ProseMirror's own
+ * required rules, the placeholder, a selected node), the controls a block
+ * draws in its slot, and the surfaces that float over the page (the slash
+ * menu, the selection toolbar, the link and picture panels, the table bar).
+ */
+
+.crewlet-rich-editor {
+  position: relative;
+  min-width: 0;
+}
+
+/* ── the editable document ─────────────────────────────────────────────── */
+
+/*
+ * ProseMirror's own required rules: whitespace is preserved as typed (the
+ * view maps it to positions one to one), and ligatures are off so a caret
+ * never lands inside one.
+ */
+.crewlet-rich-editor__content {
+  position: relative;
+  min-height: calc(var(--spacing-10) * 3);
+  outline: none;
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  word-wrap: break-word;
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0;
+  caret-color: var(--color-brand-accent);
+}
+
+.crewlet-rich-editor__content pre {
+  white-space: pre-wrap;
+}
+
+.crewlet-rich-editor__content li {
+  position: relative;
+}
+
+.crewlet-rich-editor__content [draggable][contenteditable='false'] {
+  user-select: text;
+}
+
+.crewlet-rich-editor__content.ProseMirror-hideselection *::selection {
+  background: transparent;
+}
+
+.crewlet-rich-editor__content.ProseMirror-hideselection {
+  caret-color: transparent;
+}
+
+.crewlet-rich-editor__content img.ProseMirror-separator {
+  display: inline !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+/* A selected block (a picture, a rule) is outlined, as a focused control is. */
+.crewlet-rich-editor__content .ProseMirror-selectednode {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* The caret between two blocks nobody can type into (two tables, say). */
+.crewlet-rich-editor__content .ProseMirror-gapcursor {
+  display: none;
+  position: absolute;
+  pointer-events: none;
+}
+
+.crewlet-rich-editor__content .ProseMirror-gapcursor::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: calc(var(--spacing-2) * -1);
+  width: var(--spacing-5);
+  border-top: 1px solid var(--color-text-primary);
+  animation: crewlet-rich-editor-caret calc(var(--motion-duration-breath) / 2) steps(2, start) infinite;
+}
+
+@keyframes crewlet-rich-editor-caret {
+  to {
+    visibility: hidden;
+  }
+}
+
+.crewlet-rich-editor__content.ProseMirror-focused .ProseMirror-gapcursor {
+  display: block;
+}
+
+/*
+ * The placeholder and the empty line's hint: a decoration's attribute, drawn
+ * here, so neither is text in the document. Floated with no height, so the
+ * caret stands at the start of the line rather than after the words.
+ */
+.crewlet-rich-editor__content .is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+/* The slash and the word after it, while the menu is open. */
+.crewlet-rich-editor__slash {
+  border-radius: var(--radius-xs);
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+}
+
+/* An EMPTY table cell keeps a width a pointer can land in; one with text is
+   sized as the reader's is, so the columns do not move when editing starts. */
+.crewlet-rich-editor__content :where(th, td):has(> br.ProseMirror-trailingBreak:only-child) {
+  min-width: calc(var(--spacing-10) * 1.5);
+}
+
+/* A task's box is pressed here, where a reader's is only read. */
+.crewlet-rich-editor__content li > input[type='checkbox'] {
+  cursor: pointer;
+}
+
+/* A picture the page cannot show reads as its alt text, set apart as a chip. */
+.crewlet-rich-editor__image-alt {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--spacing-2);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-rich-editor--disabled .crewlet-rich-editor__content {
+  caret-color: transparent;
+}
+
+/* ── a block's controls ─────────────────────────────────────────────────── */
+
+.crewlet-rich-editor__code {
+  position: relative;
+}
+
+/*
+ * A code block's language: a quiet field at the block's top right, read as
+ * the language's name and turning into a field under the pointer or the
+ * keyboard. An empty one shows only while the block is pointed at.
+ */
+.crewlet-rich-editor__code-bar {
+  position: absolute;
+  top: var(--spacing-1);
+  right: var(--spacing-1);
+  z-index: var(--z-index-raised);
+}
+
+.crewlet-rich-editor__lang {
+  width: 12ch;
+  height: var(--size-control-sm);
+  padding: 0 var(--spacing-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+  text-align: right;
+}
+
+.crewlet-rich-editor__lang::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-rich-editor__lang:placeholder-shown {
+  opacity: 0;
+}
+
+.crewlet-rich-editor__code:hover .crewlet-rich-editor__lang,
+.crewlet-rich-editor__lang:focus {
+  opacity: 1;
+  border-color: var(--color-border-default);
+  background: var(--color-surface-elevated);
+  text-align: left;
+}
+
+.crewlet-rich-editor__lang:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+}
+
+/* A callout's tone, drawn as its label, and a menu under it. */
+.crewlet-rich-editor__tone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.crewlet-rich-editor__tone > svg {
+  opacity: 0;
+}
+
+.crewlet-rich-editor__tone:hover > svg,
+.crewlet-rich-editor__tone:focus-visible > svg,
+.crewlet-rich-editor__tone[aria-expanded='true'] > svg {
+  opacity: 1;
+}
+
+.crewlet-rich-editor__tone:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.crewlet-rich-editor__tone:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── the floating surfaces ───────────────────────────────────────────────── */
+
+/* Every one is the menu's surface: the same ground, line, radius and shadow. */
+.crewlet-rich-editor__menu,
+.crewlet-rich-editor__bar,
+.crewlet-rich-editor__bubble,
+.crewlet-rich-editor__panel {
+  position: fixed;
+  z-index: var(--z-index-popover);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  box-shadow: var(--shadow-xl);
+  font-family: var(--font-family-sans);
+  animation: crewlet-rich-editor-in var(--motion-duration-fast) var(--motion-easing-emphasized);
+}
+
+@keyframes crewlet-rich-editor-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-1));
+  }
+}
+
+.crewlet-rich-editor__bar,
+.crewlet-rich-editor__bubble {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-1);
+  box-shadow: var(--shadow-lg);
+}
+
+.crewlet-rich-editor__group {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-1) / 2);
+}
+
+.crewlet-rich-editor__group + .crewlet-rich-editor__group {
+  margin-left: var(--spacing-1);
+  padding-left: var(--spacing-1);
+  border-left: 1px solid var(--color-border-default);
+}
+
+/* The slash menu: a block's glyph on a tile, its name, and what it is. */
+.crewlet-rich-editor__menu {
+  width: min(300px, calc(100vw - var(--spacing-8)));
+  max-height: min(360px, 50vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-1);
+}
+
+.crewlet-rich-editor__group-heading {
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.crewlet-rich-editor__option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.crewlet-rich-editor__option.is-active {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-rich-editor__option-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-rich-editor__option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.crewlet-rich-editor__option-label {
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-rich-editor__option-description {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-rich-editor__option-hint {
+  flex: none;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-rich-editor__empty {
+  margin: 0;
+  padding: var(--spacing-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
+}
+
+/* The link under the caret: where it goes, and what can be done with it. */
+.crewlet-rich-editor__bubble-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  max-width: min(260px, calc(100vw - 160px));
+  padding: 0 var(--spacing-2);
+  color: var(--color-brand-accent-ink);
+  font-size: var(--font-size-compact);
+  text-decoration: none;
+}
+
+.crewlet-rich-editor__bubble-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.crewlet-rich-editor__bubble-link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-rich-editor__bubble-href {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-rich-editor__bubble-refused {
+  padding: 0 var(--spacing-2);
+  color: var(--color-feedback-warning-ink);
+  font-size: var(--font-size-xs);
+}
+
+/* A panel: the link's address, a picture's address and alt text, a caller's own. */
+.crewlet-rich-editor__panel {
+  width: min(320px, calc(100vw - var(--spacing-8)));
+  padding: var(--spacing-3);
+}
+
+.crewlet-rich-editor__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin: 0;
+}
+
+.crewlet-rich-editor__form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-rich-editor__content .ProseMirror-gapcursor::after {
+    animation: none;
+  }
+
+  .crewlet-rich-editor__menu,
+  .crewlet-rich-editor__bar,
+  .crewlet-rich-editor__bubble,
+  .crewlet-rich-editor__panel {
+    animation: none;
+  }
+}
