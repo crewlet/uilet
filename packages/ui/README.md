@@ -161,7 +161,7 @@ land at once.
   `runPalette({ tokens, themes: themes + override })` from
   `@crewlethq/tokens/test/palette`.
 
-- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg` and `--crewlet-data-table-archived-rail` on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), `--crewlet-bar-list-label-width` (128px) and `--crewlet-bar-list-value-room` (`6ch` and a gap) for the words' column and the value's room in a `BarList layout="beside"`, and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
+- **Component variables.** A few components expose their own `--crewlet-*` variables for values that are not tokens, for example `--crewlet-data-table-active-sort-color`, `--crewlet-data-table-row-hover-bg`, `--crewlet-data-table-archived-rail` and `--crewlet-data-table-row-height` (the list row token, `--size-row-md`, by default; rebind `--crewlet-data-table-cell-pad-y` with it) on the compact `DataTable`, `--crewlet-avatar-stack-ground` for the cut-out round each badge of an `AvatarStack` (the sheet, `--color-surface-background`, by default, which is where the design draws every stack; on a card or any other surface, set it to that surface), `--crewlet-spark-ground` for the ring a `Sparkline`'s current point is cut out of the ground by (the card, `--color-surface-subtle`, by default, where a sparkline stands beside its number), `--crewlet-statcard-trend-width` for the figure at the end of a `StatCard`'s value line (96px), `--crewlet-bar-list-label-width` (128px) and `--crewlet-bar-list-value-room` (`6ch` and a gap) for the words' column and the value's room in a `BarList layout="beside"`, and `--crewlet-search-trigger-width` for a `SearchTrigger variant="toolbar"` at rest (200px). Override them from a rule that targets the component's root.
 
 The component stylesheets read only variables that `@crewlethq/tokens` emits or
 that the components declare themselves, and the same check refuses a glyph
@@ -233,6 +233,8 @@ places:
 **A flush `WidgetFrame` insets only its table's outer cells.** The first and last columns stand on the frame's 16px; between columns a cell keeps the compact table's own inset.
 
 **`Note` spaces its paragraphs** a step apart, whatever the host's base sheet resets.
+
+**A compact `DataTable` takes `--crewlet-data-table-row-height`**, its row's height (`--size-row-md` by default), so a host whose list keeps another rhythm sets it rather than reaching past the table into its cells.
 
 What to change:
 
