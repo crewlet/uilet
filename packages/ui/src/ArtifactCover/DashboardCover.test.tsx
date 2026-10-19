@@ -7,6 +7,7 @@ import { cleanup, render } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
 import { ArtifactCard } from '../ArtifactCard/index.js';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { DashboardCover } from './index.js';
 
 afterEach(cleanup);
@@ -26,6 +27,22 @@ test('draws at most three stats, each value where the gallery holds it', () => {
   expect(stats).toHaveLength(3);
   expect(container.textContent).toContain('Open tasks12');
   expect(container.textContent).not.toContain('Fourth');
+});
+
+test('the stats are rows, so each label has the card width rather than a third of it', () => {
+  // Three tiles side by side cut every label to its first word: "Open w...".
+  const uninstall = installSheets('ArtifactCover/DashboardCover.css');
+  try {
+    const { container } = render(
+      <DashboardCover stats={[{ label: 'Open work items', source: 'Open work' }, { label: 'Tokens, last 7 days', source: 'Token spend' }]} />,
+    );
+    const frame = getComputedStyle(container.querySelector('.crewlet-dashboard-cover--stats')!);
+    expect(frame.gridAutoFlow).not.toBe('column');
+    const stat = getComputedStyle(container.querySelector('.crewlet-dashboard-cover__stat')!);
+    expect(stat.flexDirection).toBe('row');
+  } finally {
+    uninstall();
+  }
 });
 
 test('a stat with no value draws its source, never a number', () => {

@@ -4,7 +4,14 @@
  * facts. `compact` is a row with the kind's glyph in place of the preview.
  */
 
-.crewlet-artifact-card {
+/*
+ * ON TOP OF CARD, so every rule that changes Card's own layout carries Card's
+ * class too. The two sheets meet at equal weight and the bundle orders them
+ * by file name, which puts this one first: `.crewlet-card` and
+ * `.crewlet-card--p-none` then won, and the compact row was drawn as a
+ * padless column with its glyph on a line of its own.
+ */
+.crewlet-card.crewlet-artifact-card {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -13,7 +20,7 @@
   text-decoration: none;
 }
 
-.crewlet-artifact-card--compact {
+.crewlet-card.crewlet-artifact-card--compact {
   flex-direction: row;
   align-items: flex-start;
   gap: var(--spacing-3);
@@ -93,6 +100,14 @@
   align-items: center;
   gap: var(--spacing-1) var(--spacing-2);
   min-width: 0;
+}
+
+/* THE FACTS OF ONE LINE ARE A RUN, "Sheet · OPS · v12", each after the first
+   opened by a quiet dot, so two short words never read as one phrase. */
+.crewlet-artifact-card__line > * + *::before {
+  content: '·';
+  margin-inline-end: var(--spacing-2);
+  color: var(--color-text-tertiary);
 }
 
 .crewlet-artifact-card__owner,

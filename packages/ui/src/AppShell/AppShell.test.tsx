@@ -546,6 +546,20 @@ describe('the frame and the sheet', () => {
     expect(sheet.contains(rail)).toBe(false);
   });
 
+  test('under the step the content keeps the top bar gutter, so a page lines up with the bar over it', () => {
+    const uninstall = installAtWidth(step - 1, 'light', 'AppShell/AppShell.css');
+    try {
+      const { container } = render(<Console />);
+      const bar = container.querySelector('.crewlet-app-shell__topbar')!;
+      const content = container.querySelector('.crewlet-app-shell__content')!;
+      expect(px(content, 'padding-left')).toBe(px(bar, 'padding-left'));
+      expect(px(content, 'padding-right')).toBe(px(bar, 'padding-right'));
+      expect(px(content, 'padding-left')).toBe(16);
+    } finally {
+      uninstall();
+    }
+  });
+
   test('under the step the sheet is the whole window: no inset, no corner, no hairline', () => {
     for (const theme of ['dark', 'light'] as const) {
       const uninstall = installAtWidth(step - 1, theme, 'AppShell/AppShell.css');

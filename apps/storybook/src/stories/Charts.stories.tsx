@@ -312,7 +312,7 @@ export const OverTime: Story = {
     <div style={{ padding: 20 }}>
       <Frame
         title="Turns per half hour"
-        hint="The x domain is the WINDOW, not the data: these six and a half hours are drawn in the first quarter of a day, never stretched across it. The peak and both ends of the window are text under the plot, so the figures are there for a reader who cannot see the shape. Point at the plot, or focus it and use ←/→, to read both series at one instant on a crosshair."
+        hint="The x domain is the WINDOW, not the data: these six and a half hours are drawn in the first quarter of a day, never stretched across it. The peak and both ends of the window are text under the plot, so the figures are there for a reader who cannot see the shape. Point at the plot, or focus it and use ←/→, to read both series at one instant on a crosshair. Two series or more are lines with no wash, keyed by a legend of line keys the chart draws itself."
       >
         <TimeSeries
           label="Turns per half hour"
@@ -323,12 +323,6 @@ export const OverTime: Story = {
             { id: 'reviews', name: 'reviews', points: reviews },
           ]}
           formatTime={(at) => new Date(at).toUTCString().slice(17, 22)}
-        />
-        <Legend
-          items={[
-            { id: 'turns', label: 'turns' },
-            { id: 'reviews', label: 'reviews' },
-          ]}
         />
       </Frame>
     </div>
@@ -555,4 +549,68 @@ function FillingCard() {
 export const ColumnsFill: Story = {
   name: 'StackedColumns / Filling a stretched card',
   render: () => <FillingCard />,
+};
+
+const net = Array.from({ length: 14 }, (_, index) => ({
+  t: start + index * day,
+  v: Math.round(9_000 * Math.sin(index / 2.2) - 1_500),
+}));
+const dayLabel = (at: number) => new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+
+export const EdgeCases: Story = {
+  name: 'Edge cases / None, one, below zero',
+  render: () => (
+    <div style={{ padding: 20, display: 'grid', gap: 'var(--spacing-6)' }}>
+      <Frame
+        title="Below zero"
+        hint="A net change goes negative. The time series stands its baseline on zero and says the low under the plot; a column below zero hangs from the zero line, and zero is one of the scale's lines."
+      >
+        <TimeSeries
+          label="Net change per day"
+          from={net[0]!.t}
+          to={net[net.length - 1]!.t}
+          series={[{ id: 'net', name: 'Net change', points: net }]}
+          formatTime={dayLabel}
+        />
+        <StackedColumns
+          label="Net change per day"
+          series={[{ id: 'net', name: 'Net change' }]}
+          buckets={net.map((point) => ({ t: point.t, values: { net: point.v } }))}
+          formatTime={dayLabel}
+        />
+      </Frame>
+      <Frame
+        title="One point"
+        hint="A series of one point draws its point, and a window of one instant draws it, and its date, at the middle. A strip of one bucket is one mark a column wide, never a slab across the figure."
+      >
+        <TimeSeries
+          label="Deploys"
+          from={start}
+          to={start}
+          series={[{ id: 'n', name: 'Deploys', points: [{ t: start, v: 42 }] }]}
+          formatTime={dayLabel}
+        />
+        <ActivityStrip label="Deploys" buckets={[{ t: start, v: 4 }]} />
+      </Frame>
+      <Frame
+        title="Nothing to draw"
+        hint="Every chart says so in one sentence in its place, rather than drawing a scale of nothing or a window that starts at the epoch."
+      >
+        <TimeSeries label="Deploys" from={0} to={0} series={[]} emptyLabel="No data to show." />
+        <StackedColumns label="Deploys" series={[{ id: 'n', name: 'Deploys' }]} buckets={[]} emptyLabel="No data to show." />
+        <StackedBar segments={[]} emptyLabel="No data to show." />
+        <ActivityStrip label="Deploys" buckets={[]} emptyLabel="No data to show." />
+      </Frame>
+      <Frame
+        title="A strip a reader can read"
+        hint="Given a reading, a strip is one tab stop whose cells open a tooltip with their time and value, by pointer or by ←/→. Without one it stays a glance beside a row."
+      >
+        <ActivityStrip
+          label="Deploys per day"
+          buckets={net.map((point) => ({ t: point.t, v: Math.max(0, point.v) }))}
+          reading={{ formatTime: dayLabel, format: (value) => value.toLocaleString() }}
+        />
+      </Frame>
+    </div>
+  ),
 };

@@ -23,3 +23,10 @@ crewlet-column {
   display: flex;
   justify-content: flex-end;
 }
+
+/* The stack's hue ring is drawn outside its box, so it keeps the ring's reach
+   clear round it: flush to the sheet's edge, or inside a page's own card that
+   clips, the ring would otherwise be cut. */
+.crewlet-kit-sheet__presence > .crewlet-presence-stack {
+  margin: var(--crewlet-presence-stack-reach);
+}

@@ -28,7 +28,9 @@
 }
 
 .crewlet-artifact-panel {
-  --crewlet-artifact-panel-width: 25rem;
+  /* THE TEXT WIDTH, every panel of facts, a list or a form: three widths for
+     those moved the artifact's edge 80px between Details and History. */
+  --crewlet-artifact-panel-width: 22.5rem;
   display: flex;
   flex: none;
   flex-direction: column;
@@ -36,10 +38,6 @@
   min-height: 0;
   border-left: 1px solid var(--color-border-default);
   background: var(--color-surface-background);
-}
-
-.crewlet-artifact-panel--sm {
-  --crewlet-artifact-panel-width: 20rem;
 }
 
 .crewlet-artifact-panel--lg {
@@ -94,10 +92,27 @@
   gap: var(--spacing-1);
 }
 
+/* THE BODY'S INSET IS PUBLISHED (--crewlet-artifact-panel-inset) for content
+   that sticks to its scrollport: a sticky edge stops at the padding, so a
+   foot with `bottom: 0` left a band under it that the content scrolled
+   through; such a foot offsets itself by the inset to sit on the edge. */
 .crewlet-artifact-panel__body {
+  /* THE PANEL'S OWN MEASURE, so what it holds folds to the panel's width
+     rather than the window's; and its sections head at the panel title's
+     step, a level under it and never louder than it. */
+  container: crewlet-artifact-panel / inline-size;
+  --crewlet-section-title-size: var(--font-size-sm);
+  --crewlet-artifact-panel-inset: var(--spacing-4);
+
+  /* A COLUMN, so content that should fit the panel rather than scroll it
+     can: a child that sets `min-height: 0` shrinks to the room the body has
+     (a sheet's rows, whose grid then scrolls itself), and every other child
+     keeps its content's height and scrolls the body as before. */
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  padding: var(--spacing-4);
+  padding: var(--crewlet-artifact-panel-inset);
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -111,7 +126,10 @@
     inset-inline-end: 0;
     z-index: var(--z-index-overlay);
     width: min(var(--crewlet-artifact-panel-width), 100%);
-    box-shadow: var(--shadow-lg);
+    /* THE DRAWER'S LIFT, the shell's own rail drawer's: the large step falls
+       below a box and left the panel's start edge reading as a cut through
+       the artifact rather than a sheet over it. */
+    box-shadow: var(--shadow-xl);
   }
 
   .crewlet-artifact-panel[data-expanded] {

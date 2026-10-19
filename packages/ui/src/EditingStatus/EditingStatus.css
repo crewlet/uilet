@@ -45,12 +45,25 @@
 /*
  * THE WORDS FOLD AND THE DOT STAYS where room is short, hidden from the eye
  * and still read by a screen reader, so the status says the same thing to
- * everyone. On a phone the state folds. On an artifact bar's narrow
- * arrangement (below 640px, as ArtifactBar.css draws it) "Editing" folds too:
- * the title has the row's room first, and Cancel and Save beside the dot
- * already say an edit is open.
+ * everyone. On a phone the state folds. On an artifact bar the title has the
+ * row's room first: below 900px (a small laptop's bar beside the rail) the
+ * state folds, since the dot already turns the accent once anything is
+ * unsaved, so a title is not cut to two words to make room for the sentence;
+ * on the narrow arrangement (below 640px, as ArtifactBar.css draws it)
+ * "Editing" folds too, and Cancel and Save beside the dot say an edit is open.
  */
 @media (width < 480px) {
+  .crewlet-editing-status__state {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+@container crewlet-artifact-bar (width < 900px) {
   .crewlet-editing-status__state {
     position: absolute;
     width: 1px;

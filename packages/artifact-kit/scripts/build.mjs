@@ -3,6 +3,9 @@
 //   dist/kit.css      the tokens, every theme, the density steps, the fonts
 //                     and the base stylesheet, then the stylesheet of every
 //                     component the sheet draws, in one file
+//   dist/content.css  the opt-in content stylesheet: the design system's look
+//                     for the plain HTML a page writes itself, linked after
+//                     kit.css by a page that wants it
 //   dist/fonts/       the Geist faces kit.css references, with the OFL.txt
 //                     their license requires beside them
 //   dist/theme.js     the blocking theme bootstrap, an IIFE
@@ -13,7 +16,7 @@
 //
 // The engine serves this directory, unchanged, at /_crewlet/kit/<version>/ on
 // the artifact origin, so every path inside it is relative and every name is
-// stable: a page links kit.css and theme.js by those names.
+// stable: a page links kit.css, content.css and theme.js by those names.
 //
 // It builds from @crewlethq/tokens and @crewlethq/ui as a consumer installs
 // them (their dist), so the kit carries exactly what the published packages
@@ -45,6 +48,22 @@ await build({
   assetNames: 'fonts/[name]',
   // The font license note in the tokens' fonts stylesheet travels in
   // dist/fonts/OFL.txt, which is the file the license names.
+  legalComments: 'none',
+  logLevel: 'warning',
+});
+
+// The content stylesheet, a file of its own so a page opts in by linking it
+// and a page published before it existed paints as it did. Its source nests
+// every rule under the one filter that keeps it off what the kit draws; the
+// target is the oldest browsers that read its `:has()`, which predate CSS
+// nesting, so the build flattens the nesting into selectors any of them read.
+await build({
+  absWorkingDir: root,
+  entryPoints: { content: 'src/content.css' },
+  bundle: true,
+  outdir: dist,
+  minify: true,
+  target: ['chrome105', 'edge105', 'firefox121', 'safari15.4'],
   legalComments: 'none',
   logLevel: 'warning',
 });
@@ -121,7 +140,12 @@ const notices = [
 await writeFile(join(dist, 'THIRD_PARTY_NOTICES.txt'), `${notices.join(`\n\n${'-'.repeat(72)}\n\n`)}\n`);
 
 const gzipped = (file) => gzipSync(readFileSync(join(dist, file))).length;
-const sizes = { themeGzip: gzipped('theme.js'), cssGzip: gzipped('kit.css'), kitGzip: gzipped('kit.js') };
+const sizes = {
+  themeGzip: gzipped('theme.js'),
+  cssGzip: gzipped('kit.css'),
+  contentGzip: gzipped('content.css'),
+  kitGzip: gzipped('kit.js'),
+};
 const over = Object.entries(BUDGETS).filter(([name, budget]) => sizes[name] > budget);
 if (over.length > 0) {
   throw new Error(over.map(([name, budget]) => `${name} is ${sizes[name]} bytes, over its budget of ${budget}`).join('; '));
@@ -130,5 +154,5 @@ if (over.length > 0) {
 const fonts = (await readdir(join(dist, 'fonts'))).filter((file) => file.endsWith('.woff2'));
 const total = (await Promise.all(fonts.map(async (file) => (await stat(join(dist, 'fonts', file))).size))).reduce((sum, size) => sum + size, 0);
 console.warn(
-  `[artifact-kit] kit.css ${sizes.cssGzip} B gzip, theme.js ${sizes.themeGzip} B gzip, kit.js ${sizes.kitGzip} B gzip, ${fonts.length} font file(s) ${total} B`,
+  `[artifact-kit] kit.css ${sizes.cssGzip} B gzip, content.css ${sizes.contentGzip} B gzip, theme.js ${sizes.themeGzip} B gzip, kit.js ${sizes.kitGzip} B gzip, ${fonts.length} font file(s) ${total} B`,
 );

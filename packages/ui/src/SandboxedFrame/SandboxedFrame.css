@@ -2,10 +2,6 @@
  * The frame fills the box it is given. The page around it does not scroll
  * round the artifact: the artifact scrolls inside its own document, which is
  * what a viewer body that holds one wants.
- *
- * The region takes focus when the frame hands it back, and keeps the
- * document's own focus treatment then: a reader who just left a page by
- * keyboard needs to see where they landed.
  */
 
 .crewlet-sandboxed-frame {
@@ -29,6 +25,10 @@
   background: transparent;
 }
 
+/* THE PLACEHOLDER AND THE END STATES SIT AT ONE INSET, the frame's margin,
+   so a reader who watches a page load and then fail sees the callout take
+   the placeholder's place rather than jump beside it. */
+
 /* Kept out of sight while it starts, so a document that has not painted in
    the reader's palette yet is never what they see. It still loads. */
 .crewlet-sandboxed-frame[data-state='loading'] .crewlet-sandboxed-frame__frame {
@@ -39,7 +39,7 @@
   position: absolute;
   inset: 0;
   display: flex;
-  padding: var(--spacing-3);
+  padding: var(--spacing-4);
 }
 
 .crewlet-sandboxed-frame__end {
@@ -47,4 +47,26 @@
   flex-direction: column;
   justify-content: flex-start;
   padding: var(--spacing-4);
+}
+
+/* THE REGION TAKES FOCUS WHEN THE FRAME HANDS IT BACK, and a reader who just
+   left a page by keyboard needs to see where they landed. The document's own
+   ring sits outside the box, where a frame filling a clipping card loses it,
+   so the region draws its ring inside its edge, on a layer above the frame. */
+.crewlet-sandboxed-frame:focus-visible {
+  /* Transparent rather than none: forced-colors mode paints a transparent
+     outline in the system ink, so the region's edge is never left bare. */
+  outline: 2px solid transparent;
+}
+
+.crewlet-sandboxed-frame:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  /* An outline, never a shadow: forced-colors mode keeps only outlines. */
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+  pointer-events: none;
 }

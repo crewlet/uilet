@@ -12,7 +12,7 @@ The engine serves this package's `dist/` directory, unchanged, from the artifact
 <script type="module" src="/_crewlet/kit/<version>/kit.js"></script>
 ```
 
-`<version>` is the exact kit version the page was written against (the engine's authoring guide names the newest it serves); the engine serves every kit version it has shipped, so a published page keeps its own. Link the first two in the `<head>`, `theme.js` as a classic blocking script, before anything paints. `kit.js` is only needed by a page that draws a sheet. Then write colours, spacing and type with the tokens rather than literal values:
+`<version>` is the exact kit version the page was written against (the engine's authoring guide names the newest it serves); the engine serves every kit version it has shipped, so a published page keeps its own. Link the first two in the `<head>`, `theme.js` as a classic blocking script, before anything paints. `kit.js` is only needed by a page that draws a sheet. `content.css`, linked right after `kit.css`, styles the plain HTML a page writes itself ([below](#plain-html-content)). Then write colours, spacing and type with the tokens rather than literal values:
 
 ```css
 .summary {
@@ -22,6 +22,26 @@ The engine serves this package's `dist/` directory, unchanged, from the artifact
   color: var(--color-text-primary);
 }
 ```
+
+## Plain HTML content
+
+`kit.css` paints the tokens and a quiet document baseline, which zeroes the margins of headings and paragraphs and strips buttons to bare text: a page that writes its own components wants exactly that. A page that writes plain HTML (a report, a brief, a form) links `content.css` as well, AFTER `kit.css`, and its headings, paragraphs, lists, quotes, code, tables, rules, figures, disclosures and form controls take the design system's look in every theme:
+
+```html
+<link rel="stylesheet" href="/_crewlet/kit/<version>/kit.css">
+<link rel="stylesheet" href="/_crewlet/kit/<version>/content.css">
+<script src="/_crewlet/kit/<version>/theme.js"></script>
+```
+
+The reading column is Document's prose (a page's `h1` at the title's step, running text at the reading step and leading, one gap between blocks and more above a heading); a button is the secondary Button and a submit button the primary one; a text field, a textarea and a select are Input, Textarea and Select at their medium size; a box, a dot, a slider and a bar take the accent; a table has a firmer rule under its head, figures in a column, and `data-align="right"` (or `"center"`) for an alignment a strict policy keeps out of a style attribute. A wide table scrolls inside the `<div>` or `<figure>` it is written in rather than moving the page, and a long line of code wraps.
+
+It is opt in and it is scoped, so it never fights anything else on the page:
+
+- **A page that does not link it is unchanged**, including every page published before it existed: it is a file of its own and `kit.css` carries none of it.
+- **It styles only what the author wrote.** A `<crewlet-sheet>`, any element carrying a `crewlet-` class (such as a sheet's menu, which is drawn on the body) and everything inside either are left to the kit's own stylesheet. A region of the page that keeps a design of its own opts out with `data-crewlet-content="off"`, and everything inside it keeps the baseline.
+- **A class of the page's own always wins.** Every rule weighs exactly its element (`button` is 0,0,1, whatever its type or state), so `.chip { ... }` overrides it in every state. The keyboard ring is the one rule weighed as a pseudo-class, so a control keeps its own corners as it takes focus; a page restyling it writes `.chip:focus-visible`.
+
+Link it after `kit.css`: each of its rules wins over the baseline's rule for the same element by coming later at the same weight.
 
 ## The sheet
 
@@ -88,17 +108,19 @@ The sheet talks only to the page's runtime, `window.crewlet` (runtime contract 1
 | `data.collection(name).set(id, {})` | Add row, under an id the kit mints | `db` |
 | `data.collection(name).delete(id)` | Delete row, from a row's actions, once the reader confirms it | `db` |
 | `data.undo()`, `data.redo()` | Mod+Z and Mod+Shift+Z over the page's own writes; a step somebody overtook is skipped and said | `db` |
-| `presence.roster()`, `presence.subscribe(…)`, `presence.set({ activity, focus })` | Collaborators' rings and flags, the presence stack, and the reader's own cell | `presence` |
+| `presence.roster()`, `presence.subscribe(…)`, `presence.set({ activity, focus })` | Collaborators' rings and flags, a small stack of who is in this sheet, and the reader's own cell | `presence` |
 | `identity.me()`, `identity.people()` | A viewer's read-only sheet, and the people a person cell offers and names | `identity` |
 | `connection.subscribe(…)` | Offline in the sync strip | none |
+| `openLink(url)` | A url cell's link, which the host names before it opens it (a frame cannot open a window) | none |
 
-A write resolves with the engine's verdict (`applied`, `pending`, `conflict`, `invalid`, `forbidden`, `quota` or `gone`) and rejects only where nothing was decided (`rate_limited`, `unavailable`, `capability_not_declared`); the sheet says either on the cell it wrote, and a paste is refused whole, never in part. An Add row that fails is said under the sheet with Retry. Delete row (on a row's number, or Shift+F10) asks in the kit's own confirmation, never a browser dialog, which an artifact frame refuses; a delete the engine refuses or the runtime rejects keeps the row and is said on its first cell, held as a write's refusal is. A viewer and a `readonly` sheet are offered neither. A subscription the runtime refuses (`forbidden`, `not_found`, `unavailable`, `capability_not_declared`) is said in place of the grid, never drawn as an empty collection. A page that did not declare `db` gets a sheet that says so rather than an empty grid; without `presence` or `identity` the sheet draws without collaborators or without names. When the kit loads before the runtime, it waits for the runtime's `crewlet:ready` event on `window` (exported as `RUNTIME_READY_EVENT`).
+A write resolves with the engine's verdict (`applied`, `pending`, `conflict`, `invalid`, `forbidden`, `quota` or `gone`) and rejects only where nothing was decided (`rate_limited`, `unavailable`, `capability_not_declared`); the sheet says either on the cell it wrote, and a paste is refused whole, never in part. An Add row that fails is said under the sheet with Retry. Delete row (on a row's number, or Shift+F10) asks in the kit's own confirmation, never a browser dialog, which an artifact frame refuses; a delete the engine refuses or the runtime rejects keeps the row and is said on its first cell, held as a write's refusal is. A viewer and a `readonly` sheet are offered neither. A subscription the runtime refuses (`forbidden`, `not_found`, `unavailable`, `capability_not_declared`) is said in place of the grid, never drawn as an empty collection. A page that did not declare `db` gets a sheet that says so rather than an empty grid; without `presence` or `identity` the sheet draws without collaborators or without names. A sheet shows only who is in it: the members whose focus is in its collection wear their rings on the cells they are on, and a small stack above the grid names them. It never draws the page's whole room, which the dashboard's artifact bar draws once for the page, so a page with two sheets does not repeat it twice. A sheet is drawn once the runtime's handshake with the host has completed (`crewlet.ready`): the runtime is installed before it but learns the version's capabilities only then, so a sheet drawn earlier would read a page that declared `db` as one that did not. When the kit loads before the runtime, it waits for the runtime's `crewlet:ready` event on `window` (exported as `RUNTIME_READY_EVENT`), which the runtime dispatches at the same moment. A viewer's sheet, and a `readonly` one, has no sync strip: there is nothing of the reader's to save.
 
 ## What is in it
 
 | File | Content |
 | ---- | ------- |
 | `kit.css` | The canonical variables, the dark and light palettes of the default theme, every named theme under `data-palette`, the density steps under `data-density`, the self-hosted Geist and Geist Mono faces and the document baseline, then the stylesheet of the sheet, its cells and the presence marks, in one file. |
+| `content.css` | The opt-in content stylesheet: the design system's look for the plain HTML a page writes itself, linked after `kit.css`. See [Plain HTML content](#plain-html-content). |
 | `fonts/` | The four Geist faces `kit.css` references, with `OFL.txt`. |
 | `theme.js` | The theme bootstrap, under 2 KB gzipped. |
 | `kit.js` | The `crewlet-sheet` and `crewlet-column` elements and `mountSheet`, an ES module. It carries the design system's React components and React itself, so a page needs no framework of its own. |
@@ -116,6 +138,7 @@ The build refuses a kit over any budget, and the suite holds the built files to 
 | ---- | -------------- |
 | `theme.js` | 2 KB |
 | `kit.css` | 40 KB |
+| `content.css` | 6 KB |
 | `kit.js` | 160 KB |
 
 ## Building

@@ -1,44 +1,54 @@
 /*
  * PresenterView: the presenter's own screen beside the room's.
  *
- * The notes take the space a glance needs: a large, readable size and their
- * own scroll, so a long note never pushes the next slide or the timer away.
+ * The room's slide is as large as fits the column with its controls right
+ * under it, drawn as the slide itself rather than letterboxed in a well. The
+ * notes take the space a glance needs: a large, readable size and their own
+ * scroll, so a long note never pushes the next slide or the timer away.
  */
 
 .crewlet-presenter {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
-  gap: var(--spacing-4);
+  gap: var(--spacing-5);
   height: 100%;
   min-height: 0;
   padding: var(--spacing-4);
+  box-sizing: border-box;
   background: var(--color-surface-background);
   color: var(--color-text-primary);
 }
 
+/* THE SLIDE AS LARGE AS FITS, measured against the room under its caption
+   (a size container), less the controls under it: the largest box of the
+   slide's shape that fits both ways, so nothing is letterboxed and the
+   controls sit on the slide's foot wherever that is. */
 .crewlet-presenter__main {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-3);
+  gap: var(--spacing-2);
+  min-width: 0;
   min-height: 0;
+  margin: 0;
 }
 
-.crewlet-presenter__main .crewlet-slide-stage {
+.crewlet-presenter__screen {
+  container-type: size;
   flex: 1;
-  min-height: 0;
-  border-radius: var(--radius-md);
-}
-
-.crewlet-presenter__controls {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: var(--spacing-3);
+  min-height: 0;
 }
 
-.crewlet-presenter__position {
-  color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
+.crewlet-presenter__screen > .crewlet-slide-stage {
+  flex: none;
+  width: min(
+    100cqw,
+    (100cqh - var(--size-control-sm) - var(--spacing-3)) * var(--crewlet-presenter-ratio, 1.7778)
+  );
+  border-radius: var(--radius-md);
 }
 
 .crewlet-presenter__side {
@@ -48,17 +58,31 @@
   min-height: 0;
 }
 
-.crewlet-presenter__next .crewlet-slide-stage {
-  border-radius: var(--radius-sm);
-  outline: 1px solid var(--color-border-default);
+.crewlet-presenter__next,
+.crewlet-presenter__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-height: 0;
+  margin: 0;
 }
 
-.crewlet-presenter__end {
+.crewlet-presenter__caption {
   margin: 0;
-  padding: var(--spacing-6) var(--spacing-3);
-  border: 1px dashed var(--color-border-default);
+}
+
+/* THE END HOLDS THE NEXT SLIDE'S PLACE at its shape, so the timer and the
+   notes under it stay where they were on the last slide. */
+.crewlet-presenter__end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: var(--crewlet-presenter-ratio, 1.7778);
+  margin: 0;
+  border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-sm);
   color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
   text-align: center;
 }
 
@@ -77,9 +101,13 @@
 
 .crewlet-presenter__notes {
   flex: 1;
+}
+
+.crewlet-presenter__notes-body {
+  flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
   border-radius: var(--radius-md);
   background: var(--color-surface-subtle);
   font-size: var(--font-size-lg);
@@ -87,7 +115,7 @@
   white-space: pre-wrap;
 }
 
-.crewlet-presenter__notes p {
+.crewlet-presenter__notes-body p {
   margin: 0;
 }
 
@@ -95,9 +123,25 @@
   color: var(--color-text-tertiary);
 }
 
+/* ONE COLUMN on a narrow screen: the page scrolls, so the slide is as wide as
+   the column and the notes as tall as they are. */
 @media (max-width: 48rem) {
   .crewlet-presenter {
     grid-template-columns: minmax(0, 1fr);
     height: auto;
+  }
+
+  .crewlet-presenter__screen {
+    container-type: normal;
+    flex: none;
+  }
+
+  .crewlet-presenter__screen > .crewlet-slide-stage {
+    width: 100%;
+  }
+
+  .crewlet-presenter__notes-body {
+    flex: none;
+    overflow: visible;
   }
 }

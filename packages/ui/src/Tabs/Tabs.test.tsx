@@ -14,6 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRef } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -178,6 +179,58 @@ test('a router row is a nav of links, with no tab roles at all', () => {
   expect(screen.getByRole('link', { name: 'Overview', current: 'page' })).toBeTruthy();
   // Every link is its own tab stop, as navigation is.
   expect(nav.querySelectorAll('a')).toHaveLength(2);
+});
+
+// A NAVIGATION ROW CARRIES ITS OWN OVERFLOW. A row of sections that folds what
+// does not fit into a "More" menu needs that menu inside the landmark, beside
+// the links it continues, and needs the row's own box to measure what fits.
+test('a router row draws its trailing node inside the nav, and hands over its root', () => {
+  const root = createRef<HTMLElement>();
+  render(
+    <Tabs
+      ref={root}
+      ariaLabel="Wallet sections"
+      variant="underline"
+      value="/wallet/overview"
+      items={[
+        { value: '/wallet/overview', label: 'Overview', count: '1.2k' },
+        { value: '/wallet/referrals', label: 'Referrals', count: '' },
+      ]}
+      renderItem={({ item, className, isActive, children }) => (
+        <a href={item.value} className={className} aria-current={isActive ? 'page' : undefined}>
+          {children}
+        </a>
+      )}
+      trailing={<button type="button">More</button>}
+    />,
+  );
+  const nav = screen.getByRole('navigation', { name: 'Wallet sections' });
+  expect(root.current).toBe(nav);
+  // AFTER THE LAST ITEM, inside the landmark.
+  expect(nav.lastElementChild).toBe(screen.getByRole('button', { name: 'More' }));
+  // A FORMATTED FIGURE IS DRAWN AS GIVEN, and an empty one draws no count.
+  const overview = screen.getByRole('link', { name: /Overview/ });
+  expect(overview.querySelector('.crewlet-count')?.textContent).toBe('1.2k');
+  expect(screen.getByRole('link', { name: /Referrals/ }).querySelector('.crewlet-count')).toBeNull();
+});
+
+// A TAB LIST HOLDS TABS ALONE, so a row of in-page sections ignores a trailing
+// node rather than putting a stray control inside the tablist.
+test('a tab row ignores a trailing node', () => {
+  render(
+    <Tabs
+      ariaLabel="Seat sections"
+      variant="underline"
+      value="profile"
+      onValueChange={() => {}}
+      items={[
+        { value: 'profile', label: 'Profile' },
+        { value: 'work', label: 'Work' },
+      ]}
+      trailing={<button type="button">More</button>}
+    />,
+  );
+  expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
 });
 
 test('the sliding bar is measured without a ResizeObserver, where there is none', () => {
@@ -457,14 +510,13 @@ test('a chip standing on the floor centres what it draws', () => {
 });
 
 test('a chip takes the corner that nests in its well, from the token', () => {
-  // 6px is the sm step and the approved design's chip: the well's 8px less its
-  // 1px boundary and 2px inset is a 5px concentric curve, and a chip a pixel
-  // rounder than that reads as sitting IN the well rather than as a second
-  // well inside it.
+  // 7px is --radius-chip: the well's 8px less its 1px boundary and 1px inset
+  // is a 6px concentric curve, and a chip a pixel rounder than that reads as
+  // sitting IN the well rather than as a second well inside it.
   const remove = drawAt(1);
   try {
     render(railFoot('sm'));
-    expect(length(screen.getAllByRole('radio')[0]!, 'border-radius')).toBe(6);
+    expect(length(screen.getAllByRole('radio')[0]!, 'border-radius')).toBe(7);
   } finally {
     remove();
   }

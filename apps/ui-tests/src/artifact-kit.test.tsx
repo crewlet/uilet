@@ -16,9 +16,11 @@ import {
   columnsFromSchema,
   memberHues,
   parseSort,
+  membersIn,
   rosterFromMembers,
 } from '../../../packages/artifact-kit/src/bind.js';
 import { defineElements, mountSheet } from '../../../packages/artifact-kit/src/elements.js';
+import { KIT_SHEET_LABELS } from '../../../packages/artifact-kit/src/KitSheet.js';
 import {
   RUNTIME_READY_EVENT,
   whenRuntime,
@@ -76,6 +78,12 @@ interface FakeOptions {
   reject?: string;
   /** How a delete is answered; applied when absent. */
   deleted?: KitWriteOutcome;
+  /**
+   * Holds the host's handshake until `handshake()` is called. Until then the
+   * runtime declares nothing, as the engine's does before the host's first
+   * message arrives.
+   */
+  held?: boolean;
 }
 
 /** A rejection as the runtime raises it: an `Error` carrying the contract's code. */
@@ -83,7 +91,17 @@ const refusal = (code: string, message: string): KitError => Object.assign(new E
 
 /** A runtime with the shape of `window.crewlet` (contract 1.0), holding its documents in memory. */
 function fakeRuntime(options: FakeOptions = {}) {
-  const capabilities = new Set(options.capabilities ?? ['db', 'presence', 'identity']);
+  const declared = new Set(options.capabilities ?? ['db', 'presence', 'identity']);
+  let capabilities = options.held ? new Set<string>() : declared;
+  let handshake = () => {};
+  const ready = options.held
+    ? new Promise<void>((resolve) => {
+        handshake = () => {
+          capabilities = declared;
+          resolve();
+        };
+      })
+    : Promise.resolve();
   let docs = options.docs ?? [
     { id: 'acme', data: { vendor: 'Acme Corp', score: 7.2, owner: 'maya' } },
     { id: 'globex', data: { vendor: 'Globex', score: 6.8, owner: 'gone' } },
@@ -101,8 +119,14 @@ function fakeRuntime(options: FakeOptions = {}) {
   const apply = (id: string, fields: Record<string, Json>) => {
     docs = docs.map((doc) => (doc.id === id ? { ...doc, data: { ...doc.data, ...fields } } : doc));
   };
+  const opened: string[] = [];
   const runtime: KitRuntime = {
+    ready,
     capabilities: { has: (name) => capabilities.has(name) },
+    openLink: async (url) => {
+      opened.push(url);
+      return true;
+    },
     identity: {
       me: async () => ({ seat: 'reader', kind: 'human', displayName: 'Reader', role: options.role ?? 'editor' }),
       people: async () => [
@@ -182,6 +206,8 @@ function fakeRuntime(options: FakeOptions = {}) {
   };
   return {
     runtime,
+    handshake: () => act(async () => handshake()),
+    opened,
     merges,
     sets,
     deletes,
@@ -304,15 +330,15 @@ describe('<crewlet-sheet>', () => {
     window.crewlet = fake.runtime;
     defineElements();
     document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
-    await waitFor(() => expect(screen.getByText('This page did not declare the db capability, so the sheet cannot load.')).toBeDefined());
+    await waitFor(() => expect(screen.getByText(KIT_SHEET_LABELS.noData)).toBeDefined());
     expect(fake.views.size).toBe(0);
   });
 
   test.each([
-    ['forbidden', 'You do not have access to the vendors collection.'],
-    ['not_found', 'There is no vendors collection in this artifact.'],
-    ['unavailable', 'The vendors collection could not be loaded. Reload the page to try again.'],
-    ['capability_not_declared', 'The vendors collection could not be loaded. Reload the page to try again.'],
+    ['forbidden', 'You do not have access to the \u201cvendors\u201d collection.'],
+    ['not_found', 'This page has no collection named \u201cvendors\u201d.'],
+    ['unavailable', 'The \u201cvendors\u201d collection could not be loaded. Reload the page to try again.'],
+    ['capability_not_declared', 'The \u201cvendors\u201d collection could not be loaded. Reload the page to try again.'],
   ])('a subscription the runtime refuses with %s is said in place of the grid, never drawn as an empty sheet', async (code, said) => {
     const fake = fakeRuntime({ refuse: code });
     window.crewlet = fake.runtime;
@@ -474,6 +500,25 @@ describe('<crewlet-sheet>', () => {
     await waitFor(() => expect(sheetGrid().closest('.crewlet-sheet-grid')?.className).toContain('crewlet-sheet-grid--fit-content'));
   });
 
+  test('a sheet the reader cannot edit says nothing about saving', async () => {
+    const fake = fakeRuntime({ role: 'viewer' });
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(sheetGrid().getAttribute('aria-readonly')).toBe('true'));
+    expect(screen.queryByText('Saved')).toBeNull();
+  });
+
+  test('a link in a url cell is opened through the host, since the frame cannot open a window', async () => {
+    const fake = fakeRuntime({ docs: [{ id: 'acme', data: { vendor: 'Acme Corp', site: 'https://acme.example.com/' } }] });
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column><crewlet-column field="site" type="url" label="Website"></crewlet-column></crewlet-sheet>`;
+    const link = await screen.findByRole('link', { name: 'https://acme.example.com/' });
+    fireEvent.click(link);
+    expect(fake.opened).toEqual(['https://acme.example.com/']);
+  });
+
   test('a viewer gets a read-only sheet', async () => {
     const fake = fakeRuntime({ role: 'viewer' });
     window.crewlet = fake.runtime;
@@ -494,9 +539,26 @@ describe('<crewlet-sheet>', () => {
     ]);
     expect(cell(1, 1).className).toContain('crewlet-presence-ring');
     expect(cell(1, 1).querySelector('.crewlet-cursor-flag')?.textContent).toBe('Jane Founder');
-    expect(screen.getByRole('img', { name: /You and 2 others are here/ })).toBeDefined();
+    // The sheet's stack is who is in it: Sam, on another collection, is in the
+    // page's room, which the dashboard's bar draws, and not in this sheet.
+    expect(screen.getByRole('img', { name: /^1 other person is in this sheet\. Jane Founder/ })).toBeDefined();
+    expect(screen.queryByRole('img', { name: /are here/ })).toBeNull();
     act(() => cell(0, 1).focus());
     expect(fake.presenceSets.at(-1)).toEqual({ activity: 'viewing', focus: { collection: 'vendors', doc: 'acme', field: 'score' } });
+  });
+
+  test('a sheet nobody else is in draws no stack, however full the room', async () => {
+    const fake = fakeRuntime();
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(cell(0, 0)).toBeDefined());
+    fake.members([
+      member('sam-1', 'sam', 'Sam Lee', 'editing', { collection: 'notes', doc: 'x', field: 'y' }),
+      member('ada-1', 'ada', 'Ada', 'viewing', {}),
+    ]);
+    expect(document.querySelector('.crewlet-kit-sheet__presence')).toBeNull();
+    expect(document.querySelector('.crewlet-presence-ring')).toBeNull();
   });
 
   test('a paste of several cells is one batch, all or nothing', async () => {
@@ -577,9 +639,60 @@ describe('mountSheet', () => {
     window.crewlet = fake.runtime;
     await expect(whenRuntime()).resolves.toBe(fake.runtime);
   });
+
+  test('whenRuntime waits for the handshake of a runtime installed before it', async () => {
+    const fake = fakeRuntime({ held: true });
+    window.crewlet = fake.runtime;
+    let found: KitRuntime | null = null;
+    void whenRuntime().then((runtime) => {
+      found = runtime;
+    });
+    await act(async () => {});
+    expect(found).toBeNull();
+    await fake.handshake();
+    expect(found).toBe(fake.runtime);
+  });
+
+  test('a sheet over a runtime still shaking hands waits, rather than saying the page declared no db', async () => {
+    const fake = fakeRuntime({ held: true });
+    window.crewlet = fake.runtime;
+    const host = document.createElement('div');
+    document.body.append(host);
+    const mounted = mountSheet(host, { collection: 'vendors', columns: [{ field: 'vendor', label: 'Vendor', type: 'text' }], label: 'Vendors' });
+    await act(async () => {});
+    expect(screen.queryByText(KIT_SHEET_LABELS.noData)).toBeNull();
+    expect(screen.queryByRole('grid')).toBeNull();
+    await fake.handshake();
+    await waitFor(() => expect(screen.getByRole('grid', { name: 'Vendors' })).toBeDefined());
+    expect(screen.queryByText(KIT_SHEET_LABELS.noData)).toBeNull();
+    await act(async () => mounted.unmount());
+  });
+
+  test('a sheet handed its runtime waits for that runtime\'s handshake too', async () => {
+    const fake = fakeRuntime({ held: true });
+    const host = document.createElement('div');
+    document.body.append(host);
+    const mounted = mountSheet(host, { collection: 'vendors', columns: [{ field: 'vendor', label: 'Vendor', type: 'text' }], label: 'Vendors', runtime: fake.runtime });
+    await act(async () => {});
+    expect(screen.queryByText(KIT_SHEET_LABELS.noData)).toBeNull();
+    await fake.handshake();
+    await waitFor(() => expect(screen.getByRole('grid', { name: 'Vendors' })).toBeDefined());
+    await act(async () => mounted.unmount());
+  });
 });
 
 describe('bindings', () => {
+  test('the members in a sheet are those whose focus is in its collection', () => {
+    const members = [
+      member('a', 'jane', 'Jane', 'viewing', { collection: 'vendors', doc: 'acme', field: 'score' }),
+      member('b', 'sam', 'Sam', 'viewing', { collection: 'notes', doc: 'x', field: 'y' }),
+      member('c', 'ada', 'Ada', 'viewing', { region: 'chart' }),
+    ];
+    expect(membersIn(members, 'vendors').map((m) => m.session)).toEqual(['a']);
+    expect(membersIn(members, 'tasks')).toEqual([]);
+  });
+
+
   test('a schema column of a type this build does not know is kept, as read-only text', () => {
     expect(columnsFromSchema({ name: 'vendors', columns: [{ key: 'ticket', type: 'workitem', label: 'Ticket' }, { key: 'tags', type: 'multiselect', max_items: 3, options: [{ id: 'a', label: 'A', category: 'nonsense' }] }] })).toEqual([
       { field: 'ticket', label: 'Ticket', type: 'text', readOnly: true },

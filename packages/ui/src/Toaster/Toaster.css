@@ -234,13 +234,22 @@
  * THE COUNTDOWN IS A WASH BEHIND THE WORDS, the variant's soft step over the
  * whole strip, draining from the right as the time runs out. It sits under
  * every raised child, and it is the timer's picture, not the timer.
+ *
+ * ITS LEADING EDGE FADES OUT rather than stopping. Cut square, the wash read
+ * as a strip painted in two tones whenever it stood still: in a still frame,
+ * and under the pointer, which pauses it, which is when a reader is looking.
+ * Feathered, a stopped wash still reads as a tint running out.
  */
 .crewlet-toast__progress {
   position: absolute;
   inset: 0;
   z-index: var(--z-index-base);
   transform-origin: left center;
-  background: var(--crewlet-toast-wash);
+  background: linear-gradient(
+    to right,
+    var(--crewlet-toast-wash) calc(100% - var(--spacing-7)),
+    transparent
+  );
   pointer-events: none;
   animation-name: crewlet-toast-drain;
   animation-timing-function: linear;

@@ -16,7 +16,7 @@ import {
   LAYER_GAP,
   LAYER_REPOSITION_EVENT,
   focusables,
-  outsideBounds,
+  anchorGone,
   placePopup,
   useLayerContainer,
   usePopupLayer,
@@ -239,19 +239,17 @@ export function Popover({
       height: rect.height,
     };
     /*
-     * TWO RECTANGLES, and the difference matters. The surface is PLACED inside
-     * a box inset by the gap, so it never touches an edge; whether the anchor
-     * is still on screen is asked of the WHOLE box, because an anchor sitting
-     * in the gap itself is at the edge of the layer, not off it.
+     * The surface is PLACED inside a box inset by the gap, so it never touches
+     * an edge; whether the anchor is still on screen is asked of the anchor
+     * itself ([anchorGone]).
      */
-    const whole: PlacementRect = { x: 0, y: 0, width: host.width, height: host.height };
     const bounds: PlacementRect = {
       x: LAYER_GAP,
       y: LAYER_GAP,
       width: host.width - 2 * LAYER_GAP,
       height: host.height - 2 * LAYER_GAP,
     };
-    if (outsideBounds(local, whole)) {
+    if (anchorGone(rect, host, inHost)) {
       close('anchor-gone');
       return;
     }

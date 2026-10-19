@@ -4,6 +4,14 @@
  * each present collaborator's hue, outside the cut-out, and the idle fade.
  */
 
+/* HOW FAR THE RING REACHES past each badge: the cut-out, then the hue. The
+   ring is drawn outside the stack's own box, so a container that places the
+   stack flush to an edge (or clips) keeps this much clear round it. */
+.crewlet-presence-stack {
+  --crewlet-presence-stack-cutout: 2px;
+  --crewlet-presence-stack-reach: calc(var(--crewlet-presence-stack-cutout) * 2);
+}
+
 /* The wrapper (a span, or a button when badges select) carries no edge of its
    own: the cut-out and the hue ring are drawn on the badge inside it, which
    has the badge's own outline to follow. */
@@ -36,15 +44,15 @@ button.crewlet-presence-stack__member:focus-visible {
 }
 
 .crewlet-presence-stack .crewlet-presence-stack__badge {
-  box-shadow: 0 0 0 2px var(--crewlet-avatar-stack-ground);
+  box-shadow: 0 0 0 var(--crewlet-presence-stack-cutout) var(--crewlet-avatar-stack-ground);
 }
 
 /* The hue ring sits outside the cut-out, so it reads as a ring round the
    badge rather than a stroke on it. */
 .crewlet-presence-stack .crewlet-presence-stack__badge--present {
   box-shadow:
-    0 0 0 2px var(--crewlet-avatar-stack-ground),
-    0 0 0 4px var(--crewlet-presence-hue);
+    0 0 0 var(--crewlet-presence-stack-cutout) var(--crewlet-avatar-stack-ground),
+    0 0 0 var(--crewlet-presence-stack-reach) var(--crewlet-presence-hue);
 }
 
 .crewlet-presence-stack .crewlet-presence-stack__badge--idle {

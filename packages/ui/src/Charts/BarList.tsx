@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
-import { dataColor } from './dataColor.js';
+import { ChartEmpty } from './ChartEmpty.js';
+import { DATA_COLORS, dataColor } from './dataColor.js';
 import { Legend } from './Legend.js';
 
 /** One part of a row's value: see [BarDatum.parts]. */
@@ -31,6 +32,12 @@ export interface BarDatum {
   display?: ReactNode;
   /** A second line under the label. */
   sub?: ReactNode;
+  /**
+   * The bar's hue. Defaults to the first data hue for EVERY row: a ranked
+   * list is one series, and a hue per rank (blue, orange, green, amber, then
+   * the residual grey) gave five rows five identities the data does not have
+   * and painted the tail as "the rest" although every row is named.
+   */
   color?: string;
   /** Where the row leads. A link, wherever the destination is an address. */
   href?: string;
@@ -115,7 +122,12 @@ export function BarList({
   const top = max ?? Math.max(1, ...data.map((datum) => datum.value));
   const remaining = capped ? Math.max(0, data.length - limit) : 0;
 
-  if (!shown.length) return <p className="crewlet-bar-list__empty">{emptyLabel}</p>;
+  if (!shown.length)
+    return (
+      <ChartEmpty align="start" className={className}>
+        {emptyLabel}
+      </ChartEmpty>
+    );
 
   return (
     // A list, and said to be one: the markers are off, and WebKit drops the
@@ -123,7 +135,7 @@ export function BarList({
     // redundant-role rule is silenced rather than obeyed.
     // eslint-disable-next-line jsx-a11y/no-redundant-roles
     <ul role="list" className={cx('crewlet-bar-list', `crewlet-bar-list--${layout}`, className)}>
-      {shown.map((datum, index) => {
+      {shown.map((datum) => {
         const width = top > 0 && datum.value > 0 ? Math.max(1, (datum.value / top) * 100) : 0;
         /*
          * A SPLIT BAR IS ONE BAR, divided. Its length is still the row's share
@@ -145,7 +157,7 @@ export function BarList({
                   ? { width: `${width}%` }
                   : ({
                       width: `${width}%`,
-                      '--crewlet-bar-list-bar-color': datum.color ?? dataColor(index),
+                      '--crewlet-bar-list-bar-color': datum.color ?? DATA_COLORS[0],
                     } as CSSProperties)
               }
             >

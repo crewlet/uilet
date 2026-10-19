@@ -60,6 +60,11 @@
   line-clamp: 2;
 }
 
+/* A held title keeps its two lines empty or not (see `holdTitle`). */
+.crewlet-widget-frame--hold-title .crewlet-widget-frame__title {
+  min-height: calc(2 * 1em * var(--font-line-height-snug));
+}
+
 /* The controls stand on the title's first line: the box is one line of the
    title tall and the control is centred in it, whatever its own height. */
 .crewlet-widget-frame__actions {
@@ -77,15 +82,27 @@
   overflow: auto;
 }
 
-/* A flush figure reaches the frame's sides, and a table's cells take the
-   frame's inset, so its first column starts under the title and its row
-   rules meet the border. */
+/*
+ * A flush figure reaches the frame's sides, and a table's OUTER cells take the
+ * frame's inset, so its first column starts under the title, its last ends
+ * where the title row's controls do, and its row rules meet the border.
+ *
+ * ONLY THE OUTER ONES. Every cell took the frame's 16px a side, so two columns
+ * stood 32px apart and a table of eight columns ran past a widget the full
+ * width of a board; between columns a cell keeps the compact table's own
+ * inset. The last column is the last before the table's trailing spacer,
+ * which is not a column of the data.
+ */
 .crewlet-widget-frame--flush .crewlet-widget-frame__body {
   padding-inline: 0;
 }
 
-.crewlet-widget-frame--flush .crewlet-data-table--compact {
-  --crewlet-data-table-cell-pad-x: var(--spacing-4);
+.crewlet-widget-frame--flush .crewlet-data-table--compact :is(th, td):first-child {
+  padding-inline-start: var(--spacing-4);
+}
+
+.crewlet-widget-frame--flush .crewlet-data-table--compact :is(th, td):nth-last-child(1 of :not(.crewlet-data-table__th--spacer, .crewlet-data-table__td--spacer)) {
+  padding-inline-end: var(--spacing-4);
 }
 
 /* A stat tile drawn flush as the figure stands on the frame's inset; its own
@@ -93,6 +110,23 @@
    around the label and under the value. */
 .crewlet-widget-frame__body .crewlet-statcard--flush {
   padding: 0;
+}
+
+/* A FRAME TOO NARROW FOR THE DISPLAY NUMBER sets it a step down rather than
+   cutting it: two columns of a board are about 120px, and a number at the
+   display step lost its last digits there ("123.…"). */
+@container crewlet-widget-frame (width < 11rem) {
+  .crewlet-widget-frame__body .crewlet-statcard__value {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* NOR DOES IT RESERVE A SECOND LINE IT HAS NOTHING FOR. The reserve keeps a
+   StatGroup's tiles at one height; a frame takes its height from the board,
+   and the empty line stood as a band of air between the number and the
+   citation that no other figure has. */
+.crewlet-widget-frame__body .crewlet-statcard__sub:empty {
+  display: none;
 }
 
 .crewlet-widget-frame__blocked {
@@ -190,8 +224,18 @@
     align-items: flex-start;
   }
 
+  /* STACKED, THE TITLE TAKES A SECOND LINE BEFORE IT ENDS: a frame three
+     columns wide cut "Deploys for the chosen service" to "Deploys for the
+     chosen se…". Past two lines it ends in an ellipsis, and the whole title
+     is the citation's tooltip. */
   .crewlet-widget-frame__source {
+    display: -webkit-box;
     max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .crewlet-widget-frame__when::before {

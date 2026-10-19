@@ -219,6 +219,29 @@ describe('StatCard', () => {
     }
   });
 
+  test('a figure placed below stands under the number at the tile width, and one at the end gives way before the number', () => {
+    // A QUOTA'S BAR IS THE READING, so a row of quotas draws it under each
+    // number; and in a tile too narrow for both on one line, an end figure
+    // wraps rather than the number being cut to its first digit.
+    const uninstall = installSheets('StatCard/StatCard.css');
+    try {
+      const { container } = render(
+        <>
+          <StatCard label="Files" value="279 KB" unit="of 10 GB" trendPlacement="below" trend={<Meter value={1} max={100} label="Files" hideLabel />} />
+          <StatCard label="Tokens" value="12.6M" trend={<Meter value={63} max={100} label="Weekly budget" hideLabel />} />
+        </>,
+      );
+      const [below, end] = [...container.querySelectorAll('.crewlet-statcard__reading')];
+      expect(getComputedStyle(below!).flexDirection).toBe('column');
+      expect(getComputedStyle(below!.querySelector('.crewlet-statcard__trend')!).width).toBe('auto');
+      expect(getComputedStyle(end!).flexDirection).toBe('row');
+      expect(getComputedStyle(end!).flexWrap).toBe('wrap');
+      expect(getComputedStyle(end!.querySelector('.crewlet-statcard__value')!).flexShrink).toBe('0');
+    } finally {
+      uninstall();
+    }
+  });
+
   test('a loading tile is busy and says so, rather than drawing two dashes', () => {
     render(<StatCard label="Total tokens" value="831.3K" loading />);
     const tile = screen.getByText('Total tokens').closest('.crewlet-statcard')!;
@@ -239,6 +262,26 @@ describe('StatCard', () => {
     const value = container.querySelector('.crewlet-statcard__value')!;
     expect(value.textContent).toBe('412ms');
     expect(value.querySelector('.crewlet-statcard__unit')?.textContent).toBe('ms');
+  });
+
+  test('a unit too long to share the line moves under the number whole, and only the number may end', () => {
+    // "279 KB of 1…" in a phone's two-to-a-line tile said nothing about the
+    // ceiling. The unit is kept whole and wraps; the number keeps its own
+    // ellipsis for a figure too long for the tile alone.
+    const uninstall = installSheets('StatCard/StatCard.css');
+    try {
+      const { container } = render(<StatCard label="Files" value="279 KB" unit="of 10 GB" />);
+      const value = getComputedStyle(container.querySelector('.crewlet-statcard__value')!);
+      expect(value.flexWrap).toBe('wrap');
+      const unit = getComputedStyle(container.querySelector('.crewlet-statcard__unit')!);
+      expect(unit.whiteSpace).toBe('nowrap');
+      expect(unit.flexShrink).toBe('0');
+      const number = getComputedStyle(container.querySelector('.crewlet-statcard__number')!);
+      expect(number.textOverflow).toBe('ellipsis');
+      expect(number.whiteSpace).toBe('nowrap');
+    } finally {
+      uninstall();
+    }
   });
 
   test('the second line keeps its space whether or not there is one', () => {
@@ -361,4 +404,10 @@ describe('StatGroup', () => {
     );
     expect(container.querySelector<HTMLElement>('.crewlet-stat-group')!.style.getPropertyValue('--crewlet-stat-group-cols')).toBe('4');
   });
+});
+
+test('a hidden label is said and not drawn, for a tile its container already names', () => {
+  const { container } = render(<StatCard label="Open work" hideLabel value="12" />);
+  expect(container.querySelector('.crewlet-statcard__label')).toBeNull();
+  expect(screen.getByText('Open work').closest('.crewlet-visually-hidden')).toBeTruthy();
 });

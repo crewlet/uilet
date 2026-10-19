@@ -24,8 +24,8 @@ test('the comparison opens with what changed, in words', () => {
   render(<SlideCompare rows={ROWS} fromLabel="Version 1" toLabel="Version 2" />);
   expect(screen.getByText('1 slide changed, 1 added, 1 removed, 2 moved.')).toBeTruthy();
   expect(screen.getByText('Moved from 3 to 4')).toBeTruthy();
-  expect(screen.getByText('Not in Version 1')).toBeTruthy();
-  expect(screen.getByText('Not in Version 2')).toBeTruthy();
+  const missing = screen.getAllByText(/Not in this version/).map((p) => p.textContent);
+  expect(missing).toEqual(['Version 1: Not in this version', 'Version 2: Not in this version']);
   expect(screen.queryByText('1. Plan')).toBeNull();
 });
 
@@ -36,9 +36,18 @@ test('unchanged slides fold away behind one control', () => {
   expect(screen.getByRole('button', { name: 'Hide the unchanged slides' })).toBeTruthy();
 });
 
-test('two identical decks say so', () => {
-  render(<SlideCompare rows={[ROWS[0]!]} fromLabel="Version 1" toLabel="Version 2" />);
+test('each column is headed by its version', () => {
+  const { container } = render(<SlideCompare rows={ROWS} fromLabel="Version 1" toLabel="Version 2" />);
+  const columns = container.querySelector('.crewlet-slide-compare__columns');
+  expect([...(columns?.children ?? [])].map((c) => c.textContent)).toEqual(['Version 1', 'Version 2']);
+});
+
+test('two identical decks say so, with no empty list or headings under it', () => {
+  const { container } = render(<SlideCompare rows={[ROWS[0]!]} fromLabel="Version 1" toLabel="Version 2" />);
   expect(screen.getByText('The two versions hold the same slides, in the same order.')).toBeTruthy();
+  expect(container.querySelector('ol')).toBeNull();
+  expect(container.querySelector('.crewlet-slide-compare__columns')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Show the 1 unchanged slide' })).toBeTruthy();
 });
 
 test('the comparison passes axe', async () => {

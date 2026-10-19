@@ -771,3 +771,11 @@ test('a framed list keeps the fence over whatever follows its rows', () => {
   // And one rule, not two: a second copy is the one that stops matching.
   expect(css.split('tr:last-child').length - 1).toBe(1);
 });
+
+test("a compact row's height is the table's own hook, the list row token by default", () => {
+  const css = sheet('DataTable/DataTable.css');
+  expect(css).toMatch(/--crewlet-data-table-row-height:\s*var\(--size-row-md\);/);
+  expect(css).toMatch(
+    /\n\.crewlet-data-table--compact \.crewlet-data-table__table td \{\s*\/\*[^]*?\*\/\s*height:\s*var\(--crewlet-data-table-row-height\);/,
+  );
+});

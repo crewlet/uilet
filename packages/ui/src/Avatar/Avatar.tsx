@@ -203,10 +203,12 @@ export const AVATAR_CHARACTER_FULL_DETAIL = 56;
 /**
  * Two uppercase initials, or one where the name has only one letter to give.
  *
- * SPLIT ON WHITESPACE, HYPHEN, UNDERSCORE AND DOT, because half the names this
- * draws are handles rather than names: `backend-engineer` gives BE,
- * `sre_lead` gives SL and `carlos.diaz` gives CD, where splitting on spaces
- * alone gives B, S and C and a roster of identical badges.
+ * SPLIT ON WHITESPACE, HYPHEN, UNDERSCORE, DOT AND COLON, because half the
+ * names this draws are handles rather than names: `backend-engineer` gives BE,
+ * `sre_lead` gives SL, `carlos.diaz` gives CD and `ci:release` CR, where
+ * splitting on spaces alone gives B, S, C and C and a roster of identical
+ * badges. PUNCTUATION AROUND A WORD IS NOT A LETTER: "review (API token)"
+ * gave R( where it gives RA.
  *
  * A SINGLE WORD STILL GIVES TWO LETTERS, because the seats an org chart names
  * in one word are the ones it draws most (CEO, SWE, PM, DevRel), and a badge
@@ -224,7 +226,11 @@ export const AVATAR_CHARACTER_FULL_DETAIL = 56;
  */
 export const getInitials = (name?: string): string => {
   if (!name) return '?';
-  const words = name.trim().split(/[\s\-_.]+/).filter(Boolean);
+  const words = name
+    .trim()
+    .split(/[\s\-_.:]+/)
+    .map((word) => word.replace(/^\p{P}+|\p{P}+$/gu, ''))
+    .filter(Boolean);
   if (words.length === 0) return '?';
   // Array.from keeps astral characters (emoji, combined scripts) intact where
   // charAt would split a surrogate pair.

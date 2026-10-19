@@ -21,11 +21,11 @@ import {
   type SheetSort,
 } from '@crewlethq/ui/SheetModel';
 import type { NodeHue } from '@crewlethq/ui/utils';
-import { cellPresence, columnsFromSchema, freezeLeading, memberHues, personFromPerson, rosterFromMembers } from './bind.js';
+import { cellPresence, columnsFromSchema, freezeLeading, memberHues, membersIn, personFromPerson, rosterFromMembers } from './bind.js';
 import { newDocId, type Json, type KitError, type KitFocus, type KitMember, type KitRuntime, type KitViewer, type KitWriteOutcome } from './runtime.js';
 
 export interface KitSheetLabels {
-  /** The page declared no `db` capability, so there is nothing to draw. */
+  /** The page's version declared no `db` capability, so there is nothing to draw. */
   noData: string;
   /** The collection has no schema and the page declared no columns. */
   noColumns: (collection: string) => string;
@@ -33,6 +33,8 @@ export interface KitSheetLabels {
   loadFailed: (collection: string, code: string) => string;
   /** An undo or a redo the engine refused because somebody changed the field since. */
   stepOvertaken: (step: 'undo' | 'redo') => string;
+  /** The sheet's presence stack, by how many others are in it. */
+  inSheet: (others: number) => string;
   /** A new row the engine refused. */
   addRowFailed: (reason: string) => string;
   /** The confirmation Delete row asks before anything is deleted. */
@@ -43,14 +45,15 @@ export interface KitSheetLabels {
 }
 
 export const KIT_SHEET_LABELS: KitSheetLabels = {
-  noData: 'This page did not declare the db capability, so the sheet cannot load.',
-  noColumns: (collection) => `The ${collection} collection has no columns yet.`,
+  noData: 'This sheet cannot load, because this version of the page was published without access to its data.',
+  noColumns: (collection) => `The \u201c${collection}\u201d collection has no columns yet.`,
   loadFailed: (collection, code) =>
     code === 'forbidden'
-      ? `You do not have access to the ${collection} collection.`
+      ? `You do not have access to the \u201c${collection}\u201d collection.`
       : code === 'not_found'
-        ? `There is no ${collection} collection in this artifact.`
-        : `The ${collection} collection could not be loaded. Reload the page to try again.`,
+        ? `This page has no collection named \u201c${collection}\u201d.`
+        : `The \u201c${collection}\u201d collection could not be loaded. Reload the page to try again.`,
+  inSheet: (others) => (others === 1 ? '1 other person is in this sheet' : `${others} other people are in this sheet`),
   stepOvertaken: (step) => `Somebody changed this after you, so the ${step} was skipped.`,
   addRowFailed: (reason) => `Could not add a row. ${reason}`,
   deleteRowTitle: 'Delete this row?',
@@ -194,7 +197,9 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
   }, [members]);
   const selfSeat = me?.seat ?? null;
   const onCells = useMemo(() => cellPresence(members, collection, selfSeat, hues), [members, collection, selfSeat, hues]);
-  const roster = useMemo(() => rosterFromMembers(members, selfSeat, hues), [members, selfSeat, hues]);
+  // WHO IS IN THIS SHEET, never the whole room: the dashboard's bar draws the
+  // room once, and a sheet draws the members whose focus is in its collection.
+  const roster = useMemo(() => rosterFromMembers(membersIn(members, collection), selfSeat, hues), [members, collection, selfSeat, hues]);
 
   const write = useCallback(
     (batch: readonly SheetEdit[]) => {
@@ -303,6 +308,7 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
   }
 
   const viewOnly = readOnly || me?.role === 'viewer';
+  // A sheet the reader cannot edit has nothing of theirs to save, so it says nothing about saving.
   const sync = { ...edits.sync(offline), failed: failedCreate };
   // A row somebody else deleted while the reader was being asked closes the question.
   const doomed = deleting === null ? undefined : docs.find((doc) => doc.id === deleting);
@@ -311,7 +317,7 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
     <div className="crewlet-kit-sheet">
       {roster.length > 0 ? (
         <div className="crewlet-kit-sheet__presence">
-          <PresenceStack members={roster} />
+          <PresenceStack members={roster} self={false} size="xs" label={KIT_SHEET_LABELS.inSheet(roster.length)} />
         </div>
       ) : null}
       <SheetGrid
@@ -325,12 +331,16 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
         onDeleteRow={viewOnly ? undefined : setDeleting}
         onActiveCellChange={focus}
         onEditingChange={editing}
+        onOpenLink={(url) => {
+          // A frame cannot open a window: the host shows where the link goes first.
+          runtime.openLink(url).catch((error: unknown) => warn('a link could not be opened', error));
+        }}
         onUndo={() => step('undo')}
         onRedo={() => step('redo')}
         presence={onCells}
         sort={sort}
         onSortChange={setSort}
-        sync={sync}
+        sync={viewOnly ? undefined : sync}
         onRetry={failedCreate > 0 ? addRow : undefined}
         onDismissRefused={() => edits.dismissAll()}
         height={height}

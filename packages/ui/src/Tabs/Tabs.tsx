@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, type ReactNode } from 'react';
+import React, { useImperativeHandle, useLayoutEffect, useRef, type ReactNode, type Ref } from 'react';
 import { Count } from '../Count/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
@@ -21,8 +21,12 @@ export interface TabsItem {
   label: ReactNode;
   /** A glyph drawn before the label. A component, not a name. */
   icon?: ReactNode;
-  /** How many things are behind this tab. Drawn as a Count beside the label. */
-  count?: number | null;
+  /**
+   * How many things are behind this tab. Drawn as a Count beside the label,
+   * as it is given: a string is a figure the caller has already formatted
+   * ("1.2k", "50+").
+   */
+  count?: number | string | null;
   /**
    * What needs the reader behind this tab, drawn after the label: problems
    * as a danger count, a warning or an unsaved change as a 6px dot. It
@@ -82,6 +86,19 @@ export interface TabsProps {
    * and a screen reader told otherwise looks for a panel that never arrives.
    */
   renderItem?: (props: TabsRenderItemProps) => ReactNode;
+  /**
+   * Drawn inside the row after the last item, ROUTER MODE ONLY: the menu a
+   * navigation row folds its overflow into ("More"), or a note about every
+   * section. It is part of the navigation landmark, so a screen reader meets
+   * it with the links it continues. A tab list holds tabs alone, so a row
+   * without `renderItem` ignores it.
+   */
+  trailing?: ReactNode;
+  /**
+   * The row's root element, for a consumer that measures the row: which of
+   * its items fit, and what folds into its trailing menu.
+   */
+  ref?: Ref<HTMLElement> | undefined;
 }
 
 /**
@@ -144,8 +161,11 @@ export function Tabs({
   onValueChange,
   panelId,
   renderItem,
+  trailing,
+  ref,
 }: TabsProps) {
   const navRef = useRef<HTMLDivElement | null>(null);
+  useImperativeHandle(ref, () => navRef.current as HTMLElement, []);
   const { buttons, onKeyDown } = useRoving(items.length, null);
 
   /*
@@ -254,7 +274,7 @@ export function Tabs({
               <VisuallyHidden>{item.marker.label}</VisuallyHidden>
             </span>
           )
-        ) : item.count != null ? (
+        ) : item.count != null && item.count !== '' ? (
           <Count value={item.count} />
         ) : null}
       </>
@@ -306,6 +326,7 @@ export function Tabs({
     return (
       <nav ref={navRef} className={rootClass} aria-label={ariaLabel}>
         {rows}
+        {trailing}
       </nav>
     );
   }

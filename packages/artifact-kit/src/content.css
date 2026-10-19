@@ -1,0 +1,676 @@
+/*
+ * The artifact kit's content stylesheet: the design system's look for the
+ * plain HTML a page writes itself (headings, paragraphs, lists, quotes, code,
+ * tables, rules, figures, disclosures and form controls), so a page that
+ * never names a class still reads like a Crewlet document.
+ *
+ * OPT IN, AND LINKED AFTER kit.css. It is a separate file because it styles
+ * element selectors, which a page with a design of its own does not want, and
+ * because a page published before it existed must keep painting exactly as it
+ * did. kit.css carries the tokens it reads and the document baseline it builds
+ * on (the reset that zeroes a heading's margin and a button's border), and
+ * every rule here is written to win over that baseline by coming after it at
+ * the same weight, so the order of the two links is the contract:
+ *
+ *   <link rel="stylesheet" href="/_crewlet/kit/<version>/kit.css">
+ *   <link rel="stylesheet" href="/_crewlet/kit/<version>/content.css">
+ *
+ * IT STYLES ONLY WHAT THE PAGE'S AUTHOR WROTE. Every rule sits under one
+ * filter that leaves out anything the kit draws (a `<crewlet-sheet>`, any
+ * element carrying a `crewlet-` class, such as a sheet's menu portalled to the
+ * body, and everything inside either) and anything the author marked with
+ * `data-crewlet-content="off"` to keep for a design of its own. The filter is
+ * a `:where()`, so it adds no weight: a rule here weighs exactly its element
+ * (`button` is 0,0,1), and the author's own class (0,1,0) always wins.
+ *
+ * Every value is a token, so the light and dark palettes, every named theme
+ * and the density steps reach this content as they reach the kit's own
+ * components. The values are the design system's own: the reading column is
+ * Document's prose, the controls are Button, Input, Textarea and Select at
+ * their medium size, and the key cap is Kbd. The few lengths written out are
+ * measurements of one thing (a box's size, a chevron's stroke), as the
+ * baseline's are.
+ *
+ * The source nests every rule under the filter so it is written once; the
+ * build flattens the nesting so the shipped file reads in any browser the kit
+ * supports.
+ */
+
+:where(
+    :not(
+      crewlet-sheet,
+      crewlet-sheet *,
+      [class^='crewlet-'],
+      [class^='crewlet-'] *,
+      [class*=' crewlet-'],
+      [class*=' crewlet-'] *,
+      [data-crewlet-content='off'],
+      [data-crewlet-content='off'] *
+    )
+  ) {
+  /* ------------------------------------------------------------------ */
+  /* The reading column                                                 */
+  /* ------------------------------------------------------------------ */
+
+  /*
+   * THE RHYTHM IS ONE RULE OVER SIBLINGS. Every block's own margin is zeroed
+   * (the baseline already zeroes a paragraph's and a heading's), and a block
+   * that follows another takes the gap above it, so the first block in any
+   * container sits flush with its top and no block ever doubles a gap.
+   */
+  &:is(ul, ol, dl, blockquote, details, fieldset) {
+    margin: 0;
+  }
+
+  * + &:is(p, ul, ol, dl, pre, blockquote, figure, table, details, fieldset, form) {
+    margin-block-start: var(--spacing-4);
+  }
+
+  /* The element a wide table scrolls in (below) is the table's block. */
+  * + &:is(div):where(:has(> table)) {
+    margin-block-start: var(--spacing-4);
+  }
+
+  /* A heading opens a section, so it takes more air above it than below. */
+  * + &:is(h1, h2, h3, h4, h5, h6) {
+    margin-block-start: var(--spacing-6);
+  }
+
+  :is(h1, h2, h3, h4, h5, h6) + &:is(p, ul, ol, dl, pre, blockquote, figure, table, details, fieldset, form) {
+    margin-block-start: var(--spacing-3);
+  }
+
+  /* On its own, as every `:has()` here is: a browser that cannot read one
+     drops only the rule that asks it, never the list it would have shared. */
+  :is(h1, h2, h3, h4, h5, h6) + &:is(div):where(:has(> table)) {
+    margin-block-start: var(--spacing-3);
+  }
+
+  &:is(h1, h2, h3, h4, h5, h6) {
+    color: var(--color-text-primary);
+    /* A link to a heading scrolls it into view with a little air above it. */
+    scroll-margin-block-start: var(--spacing-6);
+  }
+
+  /*
+   * EVERY LEVEL A STEP OF ITS OWN. A page's `h1` is its title, at the step
+   * Document sets a title in; the levels under it are Document's.
+   */
+  &:is(h1) {
+    font-size: var(--font-size-3xl);
+  }
+
+  &:is(h2) {
+    font-size: var(--font-size-xl);
+    letter-spacing: var(--font-letter-spacing-snug);
+  }
+
+  &:is(h3) {
+    font-size: var(--font-size-lg);
+    letter-spacing: var(--font-letter-spacing-snug);
+  }
+
+  &:is(h4) {
+    font-size: var(--font-size-md);
+    letter-spacing: var(--font-letter-spacing-snug);
+  }
+
+  &:is(h5, h6) {
+    font-size: var(--font-size-sm);
+    letter-spacing: var(--font-letter-spacing-snug);
+  }
+
+  &:is(h6) {
+    color: var(--color-text-secondary);
+  }
+
+  /*
+   * RUNNING TEXT IS SET FOR READING: the step and the leading Document sets a
+   * body in, in the secondary ink, so the headings and the strong words above
+   * it carry the hierarchy. The page's own body stays the dense base the
+   * kit's baseline sets, which is what a table or a control is read at.
+   */
+  &:is(p, li, dt, dd, blockquote) {
+    font-size: var(--font-size-sm);
+    line-height: var(--font-line-height-relaxed);
+    color: var(--color-text-secondary);
+  }
+
+  &:is(strong, b) {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  &:is(small) {
+    font-size: var(--font-size-xs);
+  }
+
+  &:is(mark) {
+    padding-inline: 2px;
+    border-radius: var(--radius-xs);
+    background: var(--color-brand-accent-soft-strong);
+    color: inherit;
+  }
+
+  &:is(del, s) {
+    color: var(--color-text-tertiary);
+  }
+
+  &:is(ul, ol) {
+    padding-inline-start: var(--spacing-5);
+  }
+
+  &:is(li) + &:is(li),
+  &:is(li) > &:is(ul, ol) {
+    margin-block-start: var(--spacing-1);
+  }
+
+  &:is(li)::marker {
+    color: var(--color-text-tertiary);
+  }
+
+  &:is(dt) {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+  }
+
+  &:is(dd) {
+    margin: 0;
+    padding-inline-start: var(--spacing-4);
+  }
+
+  &:is(dd) + &:is(dt) {
+    margin-block-start: var(--spacing-3);
+  }
+
+  &:is(blockquote) {
+    padding-inline-start: var(--spacing-3);
+    border-inline-start: 2px solid var(--color-border-strong);
+  }
+
+  &:is(blockquote) > * + & {
+    margin-block-start: var(--spacing-3);
+  }
+
+  &:is(hr) {
+    margin-block: var(--spacing-6);
+    border: 0;
+    border-block-start: 1px solid var(--color-border-default);
+  }
+
+  /*
+   * A LINK IN RUNNING TEXT keeps a permanent underline, through hover too:
+   * colour alone is not what says "link" (WCAG 1.4.1). The pointer is
+   * answered by the ink moving to the primary step. A link that stands alone
+   * in the page's own layout keeps the baseline's quiet treatment.
+   */
+  :is(p, li, dt, dd, blockquote, td, th, caption, figcaption, label, small) &:is(a) {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  :is(p, li, dt, dd, blockquote, td, th, caption, figcaption, label, small) &:is(a):where(:hover) {
+    color: var(--color-text-primary);
+  }
+
+  &:is(img, video) {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+  }
+
+  &:is(figcaption) {
+    margin-block-start: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    line-height: var(--font-line-height-normal);
+    color: var(--color-text-tertiary);
+  }
+
+  &:is(summary) {
+    cursor: pointer;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+  }
+
+  &:is(details):where([open]) > &:is(summary) {
+    margin-block-end: var(--spacing-2);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Code                                                               */
+  /* ------------------------------------------------------------------ */
+
+  /*
+   * A BLOCK OF CODE WRAPS RATHER THAN SCROLLING. One long line in a page
+   * otherwise pushes the whole page sideways at a phone's width, and a block
+   * that scrolled instead would owe a tab stop the page has no way to give.
+   */
+  &:is(pre) {
+    padding: var(--spacing-3);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-inset);
+    font-size: var(--font-size-xs);
+    line-height: var(--font-line-height-normal);
+    color: var(--color-text-primary);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 2;
+  }
+
+  &:is(pre) &:is(code) {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  /* Inline code and sample output, at the inline code's own step: a share of
+     the line it sits in, so it fits a heading as well as a paragraph. */
+  :where(:not(pre)) > &:is(code, samp) {
+    padding: 1px var(--spacing-1);
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-inset);
+    font-size: 0.92em;
+    color: var(--color-text-primary);
+    overflow-wrap: anywhere;
+  }
+
+  &:is(kbd) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    padding: 0 var(--spacing-1);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-elevated);
+    font-size: var(--font-size-2xs);
+    line-height: var(--font-line-height-body);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Tables                                                             */
+  /* ------------------------------------------------------------------ */
+
+  /*
+   * A TABLE IS READ BY ROWS: the dense base step, a hairline under every row
+   * and a firmer one under the head, figures that line up in a column, and
+   * no fill, so a table sits in the column it was written into. A table
+   * wider than its column scrolls inside the element the page wraps it in
+   * rather than moving the page; the table itself keeps its display, because
+   * a table set `display: block` loses its semantics to more than one screen
+   * reader.
+   */
+  &:is(div, figure):where(:has(> table)) {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  &:is(table) {
+    font-size: var(--font-size-compact);
+    line-height: var(--font-line-height-snug);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &:is(caption) {
+    caption-side: top;
+    padding-block-end: var(--spacing-2);
+    font-size: var(--font-size-compact);
+    text-align: start;
+    color: var(--color-text-tertiary);
+  }
+
+  &:is(th, td) {
+    padding: var(--spacing-2) var(--spacing-3);
+    border-block-end: 1px solid var(--color-border-default);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  /* A cell breaks a word only where nothing else fits (`break-word`, which
+     leaves the column its natural width), never mid-word to squeeze a column:
+     a table too wide for a phone scrolls in its wrapper rather than reading
+     "Northwin d". */
+  &:is(td) {
+    color: var(--color-text-primary);
+    overflow-wrap: break-word;
+  }
+
+  &:is(th) {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  &:is(thead) > &:is(tr) > &:is(th) {
+    border-block-end-color: var(--color-border-strong);
+    vertical-align: bottom;
+  }
+
+  &:is(tfoot) &:is(th, td) {
+    border-block-start: 1px solid var(--color-border-strong);
+    border-block-end: 0;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  /* A column's alignment, read off `data-align` as Document reads it, for a
+     page whose policy forbids a style attribute. */
+  &:is(th, td):where([data-align='center']) {
+    text-align: center;
+  }
+
+  /* An end-aligned column holds figures, and a figure never breaks across
+     lines: "€ 1,208,500" split after its sign reads as two values. */
+  &:is(th, td):where([data-align='right'], [data-align='end']) {
+    text-align: end;
+    white-space: nowrap;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Buttons                                                            */
+  /* ------------------------------------------------------------------ */
+
+  /*
+   * A BUTTON IS THE DESIGN SYSTEM'S SECONDARY BUTTON at its medium size, and
+   * a submit button is its primary: the one action a form exists for is the
+   * one that carries the accent. A file input's own button is drawn the same
+   * way, so a picker reads as a control of this page.
+   *
+   * Every type, state and attribute is asked inside a `:where()`, so each of
+   * these weighs exactly `button` or `input` and a class of the page's own
+   * still wins, in every state. The keyboard ring is the one exception: the
+   * baseline draws it at the weight of a pseudo-class, and a ring that kept
+   * the baseline's corners would square a rounded control as it took focus.
+   */
+  &:is(button, input:where([type='button'], [type='reset'], [type='submit'])),
+  &:is(input:where([type='file']))::file-selector-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    min-height: var(--size-control-md);
+    padding: 0 var(--spacing-3);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-compact);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--font-line-height-tight);
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background var(--motion-duration-fast) var(--motion-easing-default),
+      border-color var(--motion-duration-fast) var(--motion-easing-default);
+  }
+
+  &:is(button, input:where([type='button'], [type='reset'], [type='submit'])):where(:hover:not(:disabled)) {
+    border-color: var(--color-border-strong-hover);
+    background: var(--color-surface-elevated);
+  }
+
+  /* Only a user action may follow a pseudo-element, so this hover is asked
+     outright rather than inside a `:where()`. */
+  &:is(input):where([type='file']:not(:disabled))::file-selector-button:hover {
+    border-color: var(--color-border-strong-hover);
+    background: var(--color-surface-elevated);
+  }
+
+  &:is(button, input:where([type='button'], [type='reset'], [type='submit'])):where(:active:not(:disabled)) {
+    background: var(--color-surface-pressed);
+  }
+
+  &:is(button, input):where([type='submit']) {
+    border-color: transparent;
+    background: var(--color-brand-accent);
+    color: var(--color-text-on-accent);
+  }
+
+  &:is(button, input):where([type='submit']:hover:not(:disabled)) {
+    border-color: transparent;
+    background: var(--color-brand-accent-hover);
+  }
+
+  &:is(button, input):where([type='submit']:active:not(:disabled)) {
+    background: var(--color-brand-accent-active);
+  }
+
+  &:is(button):where([aria-pressed='true']) {
+    border-color: var(--color-brand-accent-soft-strong);
+    background: var(--color-brand-accent-soft);
+    color: var(--color-brand-accent-ink);
+  }
+
+  /* The ring sits over a bordered button's own edge, as the secondary
+     button's does, and two pixels off a filled one, as the primary's does. */
+  &:is(button, input:where([type='button'], [type='reset'], [type='submit'])):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: var(--size-focus-ring-inset-offset);
+    border-radius: var(--radius-md);
+  }
+
+  &:is(button, input):where([type='submit']):focus-visible {
+    outline-offset: 2px;
+  }
+
+  &:is(button, input, select, textarea):where(:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Fields                                                             */
+  /* ------------------------------------------------------------------ */
+
+  /*
+   * A TEXT FIELD IS THE DESIGN SYSTEM'S INPUT: the value on one line centred
+   * in a box the control height makes, the field boundary that clears 3:1 on
+   * the surfaces a field stands on, and one ring when it has focus, drawn as
+   * an outline over that boundary. A field fills its column, as a form row
+   * does; a page that wants it narrower says so with a class of its own.
+   */
+  &:is(
+      input:where(
+          :not([type]),
+          [type='text'],
+          [type='email'],
+          [type='password'],
+          [type='search'],
+          [type='url'],
+          [type='tel'],
+          [type='number'],
+          [type='date'],
+          [type='time'],
+          [type='datetime-local'],
+          [type='month'],
+          [type='week']
+        ),
+      select,
+      textarea
+    ) {
+    width: 100%;
+    min-height: var(--size-control-md);
+    padding: 0 var(--spacing-3);
+    border: 1px solid var(--color-border-field);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-compact);
+    line-height: var(--font-line-height-normal);
+    transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
+  }
+
+  &:is(input):where([type='search']) {
+    appearance: none;
+  }
+
+  &:is(textarea) {
+    display: block;
+    min-height: var(--spacing-11);
+    padding: var(--spacing-2) var(--spacing-3);
+    resize: vertical;
+  }
+
+  &:is(input, select, textarea):where(:hover:not(:disabled, :focus-visible)) {
+    border-color: var(--color-border-control);
+  }
+
+  /* A value the reader has touched and the browser refuses. Never before the
+     reader has typed: a form that opens in red has accused nobody yet. */
+  &:is(input, select, textarea):where(:user-invalid) {
+    border-color: var(--color-feedback-danger);
+    outline-color: var(--color-feedback-danger);
+  }
+
+  &:is(input, select, textarea):focus-visible {
+    outline: 1px solid var(--color-focus);
+    outline-offset: -1px;
+    border-radius: var(--radius-md);
+  }
+
+  &:is(input, select, textarea):where(:user-invalid):focus-visible {
+    outline-color: var(--color-feedback-danger);
+  }
+
+  &:is(input, textarea)::placeholder {
+    color: var(--color-text-tertiary);
+    opacity: 1;
+  }
+
+  /*
+   * A SELECT DRAWS THE SELECT'S CHEVRON, from two gradients in the muted
+   * ink, so it follows the theme with no image behind it; under forced
+   * colours, which drop a background, the browser's own arrow comes back
+   * (below). A list box (`multiple`, or a `size` over one) keeps its rows.
+   */
+  &:is(select):where(:not([multiple], [size]:not([size='1']))) {
+    appearance: none;
+    padding-inline-end: var(--spacing-7);
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
+      linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+    background-position:
+      calc(100% - var(--spacing-3) - 5px) 50%,
+      calc(100% - var(--spacing-3)) 50%;
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+    cursor: pointer;
+  }
+
+  &:is(select):where([multiple], [size]:not([size='1'])) {
+    padding: var(--spacing-1);
+  }
+
+  /* A box, a dot, a slider and a bar take the accent and keep the browser's
+     own drawing, which the theme's colour scheme already paints. */
+  &:is(input):where([type='checkbox'], [type='radio']) {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    accent-color: var(--color-brand-accent);
+    cursor: pointer;
+  }
+
+  &:is(input):where([type='checkbox'], [type='radio']):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 0;
+    border-radius: var(--radius-xs);
+  }
+
+  &:is(progress, meter, input:where([type='range'])) {
+    accent-color: var(--color-brand-accent);
+  }
+
+  &:is(input):where([type='file']) {
+    font-size: var(--font-size-compact);
+    color: var(--color-text-secondary);
+  }
+
+  &:is(input):where([type='file'])::file-selector-button {
+    margin-inline-end: var(--spacing-3);
+  }
+
+  &:is(output) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * A LABEL NAMES THE FIELD UNDER IT, a step above the field's own value in
+   * weight; a label that holds a box or a dot is the box's line instead, the
+   * box on the first line's centre as the design system's Checkbox sets it.
+   */
+  &:is(label) {
+    display: block;
+    font-size: var(--font-size-compact);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--font-line-height-snug);
+    color: var(--color-text-primary);
+  }
+
+  &:is(label):where(:has(> input:is([type='checkbox'], [type='radio']))) {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+    font-weight: var(--font-weight-regular);
+    cursor: pointer;
+  }
+
+  &:is(label) > &:is(input):where([type='checkbox'], [type='radio']) {
+    margin-block-start: calc((var(--font-line-height-snug) * 1em - 16px) / 2);
+  }
+
+  /* A form stacks its rows a step apart, and a field sits close under the
+     label that names it, whether written after it or inside it. */
+  :is(form, fieldset) > * + & {
+    margin-block-start: var(--spacing-3);
+  }
+
+  &:is(label) + &:is(input, select, textarea),
+  &:is(label) > &:is(input, select, textarea):where(:not([type='checkbox'], [type='radio'])) {
+    margin-block-start: var(--spacing-1);
+  }
+
+  &:is(fieldset) {
+    min-width: 0;
+    padding: var(--spacing-3) var(--spacing-4) var(--spacing-4);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+  }
+
+  &:is(legend) {
+    padding-inline: var(--spacing-1);
+    font-size: var(--font-size-compact);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  &:is(legend) + & {
+    margin-block-start: 0;
+  }
+}
+
+/* Forced colours drop every background, the select's chevron with them, so
+   the browser draws its own arrow again. */
+@media (forced-colors: active) {
+  :where(
+      :not(
+        crewlet-sheet,
+        crewlet-sheet *,
+        [class^='crewlet-'],
+        [class^='crewlet-'] *,
+        [class*=' crewlet-'],
+        [class*=' crewlet-'] *,
+        [data-crewlet-content='off'],
+        [data-crewlet-content='off'] *
+      )
+    ):is(select) {
+    appearance: auto;
+    padding-inline-end: var(--spacing-3);
+  }
+}

@@ -547,6 +547,16 @@ describe('audit fixes', () => {
     expect(scroller().style.height).toBe('100px');
   });
 
+  test('fit="content" gives way in a bounded column, never below its floor or its rows', () => {
+    const { container } = render(<Host fit="content" />);
+    const scroller = container.querySelector<HTMLElement>('.crewlet-sheet-grid__scroller')!;
+    expect(scroller.style.getPropertyValue('--crewlet-sheet-content-height')).toBe(`${32 + 3 * 32 + 2}px`);
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+    const rule = /\.crewlet-sheet-grid--fit-content > \.crewlet-sheet-grid__scroller\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/flex:\s*0 1 auto;/);
+    expect(rule).toMatch(/min-height:\s*min\(var\(--crewlet-sheet-min-height, 0px\), var\(--crewlet-sheet-content-height, 0px\)\);/);
+  });
+
   test('the last column takes the slack, so no empty strip sits beside it (A16)', () => {
     render(<Host />);
     const template = grid().style.getPropertyValue('--crewlet-sheet-columns');
@@ -567,6 +577,105 @@ describe('audit fixes', () => {
     render(<Host columns={[columns[0]!, tags]} start={[{ id: 'acme', values: { vendor: 'Acme Corp', tags: ['a', 'b'] } }]} />);
     const list = within(cell(0, 1)).getByRole('list', { name: 'Tags, 2' });
     expect(list.className).toContain('crewlet-tag-group--fit');
+  });
+});
+
+describe('polish', () => {
+  const css = () => readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+
+  test('a header sits on its column edge: numbers and ratings end, checkboxes centre', () => {
+    render(<Host />);
+    const headers = within(grid()).getAllByRole('columnheader');
+    expect(headers[2]!.className).toContain('crewlet-sheet-grid__header--number');
+    expect(headers[3]!.className).toContain('crewlet-sheet-grid__header--checkbox');
+    const sheet = css();
+    expect(sheet).toMatch(/\.crewlet-sheet-grid__header--number,\s*\.crewlet-sheet-grid__header--rating\s*\{\s*flex-direction:\s*row-reverse;/);
+    expect(sheet).toMatch(/\.crewlet-sheet-grid__header--checkbox\s*\{\s*justify-content:\s*center;/);
+  });
+
+  test('a header carries its whole name, which a narrow column cuts short', () => {
+    render(<SheetGrid label="Vendor scorecard" columns={columns} rows={initial} />);
+    expect(within(grid()).getAllByRole('columnheader')[1]!.getAttribute('title')).toBe('Vendor');
+  });
+
+  test('the active cell reserves room for its history control, shown while the reader is in the grid', () => {
+    render(<Host onShowHistory={() => {}} />);
+    expect(cell(0, 0).className).toContain('crewlet-sheet-grid__cell--history');
+    expect(cell(1, 0).className).not.toContain('crewlet-sheet-grid__cell--history');
+    const sheet = css();
+    expect(sheet).toMatch(/:focus-within \.crewlet-sheet-grid__cell--history,[^{]*\{\s*padding-inline-end:/);
+    expect(sheet).toMatch(/:not\(:focus-within\)[^{]*__history\s*\{\s*visibility:\s*hidden;/);
+    // A number keeps its edge: its control and its room are on the leading side.
+    expect(sheet).toMatch(/__cell--rating\) > \.crewlet-sheet-grid__history\s*\{\s*inset-inline:\s*var\(--spacing-1\) auto;/);
+  });
+
+  test('a single selected cell is tinted only while the reader is in the grid; a range always is', () => {
+    render(<Host />);
+    expect(grid().className).not.toContain('crewlet-sheet-grid__grid--range');
+    act(() => cell(0, 0).focus());
+    key(cell(0, 0), 'ArrowDown', { shiftKey: true });
+    expect(grid().className).toContain('crewlet-sheet-grid__grid--range');
+    expect(css()).toMatch(/__grid:is\(:focus-within, \.crewlet-sheet-grid__grid--range\) \.crewlet-sheet-grid__cell--selected\s*\{/);
+  });
+
+  test('the last frozen column is the frozen edge, or the row numbers where nothing is frozen', () => {
+    const { container, rerender } = render(<Host />);
+    expect(cell(0, 0).className).toContain('crewlet-sheet-grid__frozen-edge');
+    expect(cell(0, 1).className).not.toContain('crewlet-sheet-grid__frozen-edge');
+    rerender(<Host columns={columns.map((column) => ({ ...column, frozen: false }))} />);
+    expect(container.querySelector('.crewlet-sheet-grid__rownum')?.className).toContain('crewlet-sheet-grid__frozen-edge');
+    const scroller = container.querySelector<HTMLElement>('.crewlet-sheet-grid__scroller')!;
+    scroller.scrollLeft = 40;
+    fireEvent.scroll(scroller);
+    expect(scroller.className).toContain('crewlet-sheet-grid__scroller--across');
+  });
+});
+
+describe('column widths', () => {
+  test('a column is sized to its widest header or value as drawn, within its type bounds', () => {
+    // jsdom lays nothing out: each measured part is as wide as 8px a character.
+    const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const width = this.closest('.crewlet-sheet-grid__measure') ? (this.textContent ?? '').length * 8 : 0;
+      return { width, height: 0, top: 0, left: 0, right: width, bottom: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    try {
+      const wide: SheetColumn = { field: 'approved', label: 'Finance approved', type: 'checkbox' };
+      const huge: SheetColumn = { field: 'tier', label: 'Approved by the finance lead and the board', type: 'checkbox' };
+      render(<Host columns={[columns[0]!, columns[1]!, wide, huge, columns[4]!]} />);
+      const tracks = grid().style.getPropertyValue('--crewlet-sheet-columns').match(/minmax\([^)]*\)|\S+/g)!;
+      // Vendor: "Initech" and "Acme Corp" and the header, all under the text floor.
+      expect(tracks[1]).toBe('120px');
+      // The checkbox's long name widens it past its floor, to its measure.
+      expect(tracks[3]).toBe(`${'Finance approved'.length * 8}px`);
+      // And no further than its ceiling, however long the name.
+      expect(tracks[4]).toBe('180px');
+      const measurer = document.querySelector('.crewlet-sheet-grid__measure')!;
+      expect(measurer.getAttribute('aria-hidden')).toBe('true');
+      expect(measurer.hasAttribute('inert')).toBe(true);
+    } finally {
+      measure.mockRestore();
+    }
+  });
+
+  test('the frozen columns hold at most a share of a narrow view, never below their floor', () => {
+    const width = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains('crewlet-sheet-grid__scroller') ? 360 : 0;
+    });
+    try {
+      render(<Host />);
+      const tracks = grid().style.getPropertyValue('--crewlet-sheet-columns').match(/minmax\([^)]*\)|\S+/g)!;
+      // 60% of 360 less the 52px row numbers leaves the frozen Vendor 164px of its 200.
+      expect(tracks[1]).toBe('164px');
+    } finally {
+      width.mockRestore();
+    }
+  });
+
+  test('a declared width wins, and nothing measured keeps the type default', () => {
+    render(<Host columns={[{ ...columns[0]!, width: 240 }, columns[1]!]} />);
+    const tracks = grid().style.getPropertyValue('--crewlet-sheet-columns').match(/minmax\([^)]*\)|\S+/g)!;
+    expect(tracks[1]).toBe('240px');
+    expect(tracks[2]).toBe('minmax(112px, 1fr)');
   });
 });
 

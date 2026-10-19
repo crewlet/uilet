@@ -135,6 +135,30 @@ export const RefusedHeld: Story = {
 export const FitContent: Story = { render: () => <LiveSheet fit="content" height={480} /> };
 
 /**
+ * In a column of bounded height, a content-fit sheet gives way: a thousand
+ * rows shrink to the room under the bar above them, so Add row sits on the
+ * column's edge, and never below the 12rem floor the page sets.
+ */
+export const FitsItsColumn: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        height: 420,
+        ['--crewlet-sheet-min-height' as string]: '12rem',
+        ['--crewlet-sheet-max-height' as string]: 'none',
+      }}
+    >
+      <p style={{ margin: 0 }}>A bar above the sheet</p>
+      {/* No height of its own to stop at: the column is what bounds it. */}
+      <LiveSheet start={manyRows(1_000)} fit="content" height={Number.MAX_SAFE_INTEGER} />
+    </div>
+  ),
+};
+
+/**
  * A remote write landing on the cell being edited. Press Enter on Globex's
  * Score to edit it: two seconds later Maya changes it to 6.5, and the editor
  * stays open and names her.
@@ -193,11 +217,55 @@ export const TenThousandRows: Story = {
   render: () => <LiveSheet start={manyRows(10_000)} height={480} />,
 };
 
-/** The leading column stays in view while the sheet scrolls sideways, at a phone's width. */
+/**
+ * The leading column stays in view while the sheet scrolls sideways, at a
+ * phone's width, and once scrolled its trailing hairline turns strong: the
+ * frozen edge the other columns pass under.
+ */
 export const MobileWidth: Story = {
   render: () => (
     <div style={{ maxWidth: 360 }}>
       <LiveSheet height={420} />
     </div>
+  ),
+};
+
+/**
+ * A sheet with its columns and no rows yet: the header keeps the shape the
+ * rows will land in, and Add row sits right under it.
+ */
+export const NoRows: Story = {
+  render: () => <LiveSheet start={[]} fit="content" />,
+};
+
+/**
+ * Columns sized to what they hold: a status wide enough for its longest
+ * choice, a checkbox for its long name, and a title column that stops at its
+ * ceiling and ellipsises rather than pushing every other column away.
+ */
+export const FittedColumns: Story = {
+  render: () => (
+    <SheetGrid
+      label="Launch gates"
+      fit="content"
+      columns={[
+        { field: 'gate', label: 'Gate', type: 'text', frozen: true },
+        {
+          field: 'status',
+          label: 'Status',
+          type: 'status',
+          options: [
+            { id: 'ready', label: 'Ready', category: 'done' },
+            { id: 'changes', label: 'Changes requested', category: 'blocked' },
+          ],
+        },
+        { field: 'approved', label: 'Finance approved', type: 'checkbox' },
+        { field: 'effort', label: 'Effort (days)', type: 'number' },
+      ]}
+      rows={[
+        { id: 'g1', values: { gate: 'Settlement algorithm returns the fewest payments for every group', status: 'ready', approved: true, effort: 4 } },
+        { id: 'g2', values: { gate: 'CSV import of a group\'s expenses', status: 'changes', approved: false, effort: 0.5 } },
+      ]}
+    />
   ),
 };

@@ -28,6 +28,21 @@ export function ArtifactKindGlyph({ kind, size = 'md' }: { kind: ArtifactKind; s
   return <Drawn size={size} />;
 }
 
+/**
+ * What a card's preview draws when there is no cover: the kind's glyph,
+ * centred in the preview. Exported for a host whose cover has nothing to draw
+ * YET (its outline still loading) or at all (a sheet with no columns): a cover
+ * that rendered nothing left an empty box where every other card has a
+ * picture, since the card cannot know that a cover it was given drew nothing.
+ */
+export function ArtifactPreviewGlyph({ kind }: { kind: ArtifactKind }) {
+  return (
+    <span className="crewlet-artifact-card__glyph">
+      <ArtifactKindGlyph kind={kind} size={32} />
+    </span>
+  );
+}
+
 export type ArtifactCardSize = 'card' | 'compact';
 
 export interface ArtifactCardLabels {
@@ -36,16 +51,20 @@ export interface ArtifactCardLabels {
   version: (version: number) => string;
   changes: (count: number) => string;
   present: (count: number) => string;
+  /** The change's time, opening the line: "Updated" before "4m ago". */
   updated: string;
+  /** Who made it, after the time: "by Maya". */
+  by: (name: string) => string;
 }
 
 const LABELS: ArtifactCardLabels = {
-  kinds: { html: 'Page', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet' },
+  kinds: { html: 'HTML', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet' },
   pinned: 'Pinned',
   version: (version) => `v${version}`,
   changes: (count) => (count === 1 ? '1 change since you looked' : `${count} changes since you looked`),
   present: (count) => (count === 1 ? '1 here now' : `${count} here now`),
   updated: 'Updated',
+  by: (name) => `by ${name}`,
 };
 
 export interface ArtifactCardProps {
@@ -58,9 +77,14 @@ export interface ArtifactCardProps {
    * Never a screenshot. The kind's glyph stands in when there is none.
    */
   preview?: ReactNode;
+  /** Who owns it. Leave it out where the reader is the owner and saying so would only repeat it. */
   owner?: Principal | undefined;
   updatedAt: TimeValue;
-  /** Who made the latest change, when it is worth saying ("Maya"). */
+  /**
+   * Who made the latest change, when it is worth saying ("Maya"): read as
+   * "Updated 4m ago by Maya". Left unsaid where it is the owner, whose name
+   * the line already carries.
+   */
   updatedBy?: string | undefined;
   /** Who has it open now. */
   presence?: readonly AvatarStackMember[] | undefined;
@@ -109,6 +133,9 @@ export function ArtifactCard({
   const titleId = useId();
   const factsId = useId();
   const present = presence && presence.length > 0 ? presence : null;
+  // THE OWNER IS ALREADY ON THE LINE, so a change they made reads "Updated 4m
+  // ago" beside their name rather than the name twice.
+  const changedBy = updatedBy && updatedBy !== owner?.name ? updatedBy : undefined;
 
   return (
     <Card
@@ -121,11 +148,7 @@ export function ArtifactCard({
     >
       {size === 'card' ? (
         <span className="crewlet-artifact-card__preview" aria-hidden>
-          {preview ?? (
-            <span className="crewlet-artifact-card__glyph">
-              <ArtifactKindGlyph kind={kind} size={32} />
-            </span>
-          )}
+          {preview ?? <ArtifactPreviewGlyph kind={kind} />}
         </span>
       ) : (
         <span className="crewlet-artifact-card__glyph crewlet-artifact-card__glyph--compact" aria-hidden>
@@ -134,7 +157,7 @@ export function ArtifactCard({
       )}
       <span className="crewlet-artifact-card__body">
         <span className="crewlet-artifact-card__title-row">
-          <span id={titleId} className="crewlet-artifact-card__title">
+          <span id={titleId} className="crewlet-artifact-card__title" title={title}>
             {title}
           </span>
           {pinned ? (
@@ -158,8 +181,9 @@ export function ArtifactCard({
               </span>
             ) : null}
             <span>
-              {updatedBy ? `${updatedBy} ` : `${text.updated} `}
+              {`${text.updated} `}
               <RelativeTime value={updatedAt} now={now} />
+              {changedBy ? ` ${text.by(changedBy)}` : null}
             </span>
           </span>
           {present || (changes !== undefined && changes > 0) ? (
