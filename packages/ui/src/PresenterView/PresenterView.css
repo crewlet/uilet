@@ -1,0 +1,103 @@
+/*
+ * PresenterView: the presenter's own screen beside the room's.
+ *
+ * The notes take the space a glance needs: a large, readable size and their
+ * own scroll, so a long note never pushes the next slide or the timer away.
+ */
+
+.crewlet-presenter {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  gap: var(--spacing-4);
+  height: 100%;
+  min-height: 0;
+  padding: var(--spacing-4);
+  background: var(--color-surface-background);
+  color: var(--color-text-primary);
+}
+
+.crewlet-presenter__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-height: 0;
+}
+
+.crewlet-presenter__main .crewlet-slide-stage {
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--radius-md);
+}
+
+.crewlet-presenter__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+}
+
+.crewlet-presenter__position {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-presenter__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  min-height: 0;
+}
+
+.crewlet-presenter__next .crewlet-slide-stage {
+  border-radius: var(--radius-sm);
+  outline: 1px solid var(--color-border-default);
+}
+
+.crewlet-presenter__end {
+  margin: 0;
+  padding: var(--spacing-6) var(--spacing-3);
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.crewlet-presenter__timer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-presenter__elapsed {
+  margin-right: auto;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-presenter__notes {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--spacing-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  font-size: var(--font-size-lg);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.crewlet-presenter__notes p {
+  margin: 0;
+}
+
+.crewlet-presenter__empty {
+  color: var(--color-text-tertiary);
+}
+
+@media (max-width: 48rem) {
+  .crewlet-presenter {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+}

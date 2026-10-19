@@ -1,0 +1,80 @@
+/*
+ * SlideCompare: two versions of a deck, slide by slide.
+ *
+ * A row that changed carries its change in words beside a glyph; the side a
+ * version lacks is a dashed, empty box of the slide's shape, so the pairing
+ * still reads at a glance.
+ */
+
+.crewlet-slide-compare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.crewlet-slide-compare__summary {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-slide-compare__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-slide-compare__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+  margin-bottom: var(--spacing-2);
+}
+
+.crewlet-slide-compare__title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-slide-compare__change {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-slide-compare__sides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-3);
+}
+
+.crewlet-slide-compare__side .crewlet-slide-stage {
+  border-radius: var(--radius-sm);
+  outline: 1px solid var(--color-border-default);
+}
+
+.crewlet-slide-compare__missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  margin: 0;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+@media (width < 640px) {
+  .crewlet-slide-compare__sides {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
