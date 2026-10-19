@@ -5,6 +5,9 @@ underscores_, ~~struck~~, `inline code`, a [link](https://example.com/docs "The 
 an [in-app link](#/knowledge/pages/7c1e), an autolink <https://example.com>, and a
 picture ![a chart](images/chart.png "Quarterly").
 
+A badge that links somewhere, [![build](images/build.svg)](https://example.com/ci), beside
+[the ![logo](images/logo.png) home](https://example.com).
+
 ## Lists
 
 - one

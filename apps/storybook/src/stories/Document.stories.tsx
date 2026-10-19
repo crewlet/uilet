@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Document, DocumentTitle } from '@crewlethq/ui';
+import { useState } from 'react';
+import { Document, DocumentTitle, DocumentTitleField } from '@crewlethq/ui';
 
 /**
  * UI / Document.
@@ -105,4 +106,71 @@ export const Small: Story = {
       <Body />
     </Document>
   ),
+};
+
+/**
+ * Every heading level a body draws, h2 to h6, each a step of its own, and the
+ * blocks that hold blocks: a quote of two paragraphs and a list item of two,
+ * which keep the rhythm the body's own blocks keep.
+ */
+export const Structure: Story = {
+  render: (args) => (
+    <Document {...args}>
+      <h2>Section</h2>
+      <p>A paragraph under the section.</p>
+      <h3>Subsection</h3>
+      <p>A paragraph under the subsection.</p>
+      <h4>Topic</h4>
+      <p>A paragraph under the topic.</p>
+      <h5>Point</h5>
+      <p>A paragraph under the point.</p>
+      <h6>Aside</h6>
+      <p>A paragraph under the aside.</p>
+      <blockquote>
+        <p>The first paragraph of a quote, long enough to wrap onto a second line in the reading column.</p>
+        <p>The second paragraph of the same quote.</p>
+      </blockquote>
+      <ul>
+        <li>
+          <p>An item of two paragraphs.</p>
+          <p>Its second paragraph, set a small step below the first.</p>
+          <ul>
+            <li>
+              <p>A nested item.</p>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <p>The next item.</p>
+        </li>
+      </ul>
+    </Document>
+  ),
+};
+
+/**
+ * A new page's title as it is written: the title's own type with no box, a
+ * line at its foot under the pointer and in focus, and the danger line once
+ * the title is refused.
+ */
+export const TitleField: Story = {
+  render: function Render(args) {
+    const [title, setTitle] = useState('');
+    const taken = title.trim().toLowerCase() === 'settlement algorithm';
+    return (
+      <article>
+        <DocumentTitleField
+          aria-label="Title"
+          placeholder="Untitled"
+          value={title}
+          error={taken}
+          onChange={(event) => setTitle(event.target.value)}
+        />
+        <div style={{ height: 'var(--spacing-5)' }} />
+        <Document {...args}>
+          <p>Type “Settlement algorithm” to see a refused title.</p>
+        </Document>
+      </article>
+    );
+  },
 };

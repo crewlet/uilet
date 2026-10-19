@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
+import { ChartEmpty } from './ChartEmpty.js';
 import { ChartTooltip } from './ChartTooltip.js';
 import { dataColor } from './dataColor.js';
 import { Legend } from './Legend.js';
@@ -16,7 +17,10 @@ export interface StackedColumnsSeries {
 export interface StackedColumnsBucket {
   /** The bucket's start, epoch milliseconds. It is the column's identity. */
   t: number;
-  /** Each series' value in this bucket, by series id. A missing id is zero. */
+  /**
+   * Each series' value in this bucket, by series id. A missing id is zero. A
+   * negative value stands below the zero line, its parts stacked down from it.
+   */
   values: Readonly<Record<string, number>>;
 }
 
@@ -76,10 +80,18 @@ export interface StackedColumnsProps {
    * a plot given none.
    */
   minHeight?: string;
-  /** How a value reads out, on the scale and in the tooltip. Defaults to a compact number. */
+  /** How a value reads out, in the tooltip and the summary. Defaults to a compact number. */
   format?: (value: number) => string;
+  /**
+   * How the scale's words read. Defaults to `format`. A scale is read at a
+   * glance, so a caller whose values carry a unit or every digit ("7,500 USD")
+   * passes the short form here and keeps the exact one for the tooltip.
+   */
+  formatScale?: (value: number) => string;
   /** How a bucket reads out, under the plot and in the tooltip. Defaults to the reader's date. */
   formatTime?: (at: number) => string;
+  /** What the chart says in place of the plot when there is no bucket to draw. */
+  emptyLabel?: ReactNode;
   /** The chart's own sentence. The default names the window, the tallest column and each series' total. */
   summary?: (facts: {
     from: number | null;
@@ -166,24 +178,56 @@ export function StackedColumns({
   height = PLOT_HEIGHT,
   minHeight = PLOT_HEIGHT,
   format = (value) => COMPACT.format(value),
+  formatScale = format,
   formatTime = (at) => new Date(at).toLocaleDateString(),
+  emptyLabel = 'Nothing recorded in this window',
   summary,
   className,
 }: StackedColumnsProps) {
   // Every series keeps the colour of its place in the FULL list.
   const colored = series.map((one, index) => ({ ...one, color: one.color ?? dataColor(index) }));
   const shown = colored.filter((one) => !hidden.includes(one.id));
-  const valueOf = (bucket: StackedColumnsBucket, id: string) => Math.max(0, bucket.values[id] ?? 0);
-  const totals = buckets.map((bucket) => shown.reduce((sum, one) => sum + valueOf(bucket, one.id), 0));
-  const peak = Math.max(0, ...totals);
-  const { top, step } = niceScale(peak);
-  const intervals = Math.round(top / step);
+  const valueOf = (bucket: StackedColumnsBucket, id: string) => bucket.values[id] ?? 0;
+  const sumOf = (bucket: StackedColumnsBucket, sign: 1 | -1) =>
+    shown.reduce((sum, one) => {
+      const value = valueOf(bucket, one.id);
+      return sign * value > 0 ? sum + value : sum;
+    }, 0);
+  /*
+   * A COLUMN STANDS ON ZERO, UP FOR WHAT IS ABOVE IT AND DOWN FOR WHAT IS
+   * BELOW. A net change or a refund is negative, and drawn as nothing it read
+   * as a quiet day. The positive parts stack up from the zero line and the
+   * negative ones down from it, so each half is its own total's length.
+   */
+  const above = buckets.map((bucket) => sumOf(bucket, 1));
+  const below = buckets.map((bucket) => sumOf(bucket, -1));
+  const totals = buckets.map((_, index) => (above[index] ?? 0) + (below[index] ?? 0));
+  const peak = Math.max(0, ...above);
+  const trough = Math.min(0, ...below);
+  /*
+   * The scale steps the whole range, and its ends are whole steps past the
+   * tallest and the deepest column, so zero is always one of its lines.
+   */
+  const { top, step } = niceScale(peak - trough);
+  const roof = trough < 0 ? Number((Math.ceil(peak / step - 1e-9) * step).toPrecision(12)) : top;
+  const floor = trough < 0 ? Number((Math.floor(trough / step + 1e-9) * step).toPrecision(12)) : 0;
+  const range = roof - floor;
+  const intervals = Math.round(range / step);
   const ticks = Array.from({ length: intervals + 1 }, (_, index) =>
-    Number(((intervals - index) * step).toPrecision(12)),
+    Number((roof - index * step).toPrecision(12)),
   );
+  const zero = (-floor / range) * 100;
 
   const hover = useChartHover(buckets.length);
   const active = hover.active == null ? null : buckets[hover.active]!;
+
+  /*
+   * NOTHING TO DRAW IS SAID, NOT DRAWN: a scale of 0 to 4 over no columns read
+   * as four days of nothing.
+   */
+  if (buckets.length === 0) {
+    return <ChartEmpty className={cx('crewlet-stacked-columns', className)}>{emptyLabel}</ChartEmpty>;
+  }
 
   const first = buckets[0]?.t ?? null;
   const last = buckets[buckets.length - 1]?.t ?? null;
@@ -207,15 +251,20 @@ export function StackedColumns({
           .map((one) => `${one.name} ${format(one.total)}`)
           .join(', ')}.`;
 
+  /*
+   * A LEGEND OF ONE SERIES SAYS WHAT THE LABEL ALREADY SAYS: there is one hue,
+   * and the chart's name (its card's title) is what it is. A key is drawn for
+   * two series or more.
+   */
   const key =
-    legend === 'none' ? null : (
+    legend === 'none' || shown.length < 2 ? null : (
       <Legend
         className={cx('crewlet-stacked-columns__legend', `crewlet-stacked-columns__legend--${legend}`)}
         items={shown.map((one) => ({ id: one.id, label: one.name, color: one.color }))}
       />
     );
   const hasHead = head !== undefined && head !== null && head !== false;
-  const headed = hasHead || legend === 'head';
+  const headed = hasHead || (legend === 'head' && key !== null);
   const fill = height === 'fill';
   /*
    * A FILL CHART'S ROWS, as a style property because the head is not always
@@ -246,7 +295,7 @@ export function StackedColumns({
       <div className="crewlet-stacked-columns__axis" aria-hidden style={{ height: plotHeight }}>
         {ticks.map((tick) => (
           <span key={tick} className="crewlet-stacked-columns__tick">
-            {format(tick)}
+            {formatScale(tick)}
           </span>
         ))}
       </div>
@@ -263,17 +312,16 @@ export function StackedColumns({
             ))}
           </div>
           {buckets.map((bucket, index) => {
-            const total = totals[index] ?? 0;
-            const parts = shown.filter((one) => valueOf(bucket, one.id) > 0);
-            return (
-              <div
-                key={bucket.t}
-                className={cx('crewlet-stacked-columns__slot', hover.active === index && 'is-active')}
-                onPointerEnter={() => hover.point(index)}
-              >
+            const stack = (sign: 1 | -1, total: number) => {
+              const parts = shown.filter((one) => sign * valueOf(bucket, one.id) > 0);
+              if (parts.length === 0) return null;
+              return (
                 <div
-                  className="crewlet-stacked-columns__column"
-                  style={{ height: `${((total / top) * 100).toFixed(3)}%` }}
+                  className={cx('crewlet-stacked-columns__column', sign < 0 && 'crewlet-stacked-columns__column--below')}
+                  style={{
+                    height: `${((Math.abs(total) / range) * 100).toFixed(3)}%`,
+                    ...(sign > 0 ? { bottom: `${zero.toFixed(3)}%` } : { top: `${(100 - zero).toFixed(3)}%` }),
+                  }}
                 >
                   {parts.map((one) => (
                     <span
@@ -282,13 +330,23 @@ export function StackedColumns({
                       data-series={one.id}
                       style={
                         {
-                          flexGrow: valueOf(bucket, one.id),
+                          flexGrow: Math.abs(valueOf(bucket, one.id)),
                           '--crewlet-stacked-columns-segment-color': one.color,
                         } as CSSProperties
                       }
                     />
                   ))}
                 </div>
+              );
+            };
+            return (
+              <div
+                key={bucket.t}
+                className={cx('crewlet-stacked-columns__slot', hover.active === index && 'is-active')}
+                onPointerEnter={() => hover.point(index)}
+              >
+                {stack(1, above[index] ?? 0)}
+                {stack(-1, below[index] ?? 0)}
               </div>
             );
           })}

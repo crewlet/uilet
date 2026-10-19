@@ -198,3 +198,12 @@ export const AGroupStillLoading: Story = {
     </StatGroup>
   ),
 };
+
+/**
+ * A HIDDEN LABEL, for a tile its container already names: a dashboard
+ * widget's frame titles the number, and the tile's own label under that title
+ * said the same thing twice. The label stays in the accessibility tree.
+ */
+export const LabelHidden: Story = {
+  args: { label: 'Open work items', hideLabel: true, value: '1,968', unit: 'items' },
+};

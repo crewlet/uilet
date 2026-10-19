@@ -41,7 +41,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Area | Components |
 | ---- | ---------- |
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `DownloadButton`, `Kbd` |
-| Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document` and `DocumentTitle`, the Markdown grammar (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref` and the line readers, with no React in it), `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider` |
+| Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document`, `DocumentTitle` and `DocumentTitleField`, the Markdown grammar (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref` and the line readers, with no React in it), `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider` |
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor`, `RichEditor` (with `preloadRichEditor`, and the round trip `roundTripMarkdown` and `canonicalMarkdown` from `@crewlethq/ui/RichEditorMarkdown`) |
 | Data display | `DataTable`, `CopyableCell`, `Table`, the read-only table cells (`TableKeyCell`, `TableNumberCell`, `TableDateCell`, `TableEntityCell`, `TableStatusCell`, `TableTagsCell`, `TableTextCell`), `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
@@ -227,6 +227,46 @@ What to change:
 - An application with its own media query hook can use `useMediaMatch` instead.
 - A host that drew a show's Previous, count and Next itself uses `SlideNav`.
 
+**Every chart says when it has nothing to draw.** `TimeSeries`, `StackedColumns`, `StackedBar` and `ActivityStrip` take `emptyLabel`, as `BarList` did, and draw that one sentence in the chart's place (`.crewlet-chart-empty`) rather than an empty grid, a scale of 0 to 4, a bare track or a window starting at the epoch.
+
+**`BarList` draws every bar in the first data hue.** A ranked list is one series; a hue per rank gave five rows five identities and painted the tail as the residual. A row's `color` still overrides it.
+
+**`TimeSeries` draws below zero, a single point, and its own legend.** The scale runs from zero to the peak, and below zero when a value is, with the baseline on zero, an area filled to it, and "low" beside "peak" under the plot. A series of one point draws its point, a window of one instant draws it at the middle, and the reading draws every series' point on the crosshair. Two series or more are lines with no wash, keyed by a legend of line keys the chart draws itself (`legend`, `below` by default, or `none`). The grid is a solid hairline. Under 18rem the range leaves the line to the window's ends.
+
+**`StackedColumns` stands on zero.** A negative part hangs from the zero line, zero is always one of the scale's lines, and the tooltip reads values with their sign. `formatScale` writes the scale's words apart from the tooltip's. A chart of one series draws no legend, since its label names it. The scale's words are the sans at the caption step, as the dates are; a column is at most 24px wide; the middle date leaves a chart narrower than 22rem.
+
+**`ActivityStrip` takes `reading`,** which makes the strip one tab stop whose cells read their time and value by pointer or by ←/→. A cell is at most 24px wide, so a strip of one day is one mark.
+
+**`Legend` items take `shape: 'line'`** for a series drawn as a line.
+
+**`StatCard` takes `hideLabel`**, as `Meter` does, for a tile its container names. In a `WidgetFrame` a tile reserves no empty second line, and in a frame narrower than 11rem its number steps down to `--font-size-xl` rather than being cut.
+
+**A flush `WidgetFrame` insets only its table's outer cells.** The first and last columns stand on the frame's 16px; between columns a cell keeps the compact table's own inset.
+
+**`Note` spaces its paragraphs** a step apart, whatever the host's base sheet resets.
+
+What to change for charts:
+
+- Nothing for an existing host. A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
+
+**A design's canvas lays its grid on the boards' plane.** `Canvas` takes `ground="grid"`: the dotted ground's dots, panned with the content and pitched by the zoom (doubling or halving to stay between one and two spacing steps on screen), as a design tool's grid is. `gridOf(view)` is that rule on its own. `CanvasBoard` draws on it; `dotted` is unchanged and still stays put under a chart.
+
+**A board says only what it has room for.** A board drawn narrower than `BOARD_TITLE_MIN_WIDTH` (40px) goes unnamed until it is zoomed into, and a placeholder drops its lines in turn (why it is not running, then its size) rather than clipping them at both ends over the boards beside it; `boardRoom(width, height)` is that rule. A placeholder no longer repeats the board's name, which the title above it already says. A board's title row is one line of type tall, so a row of boards zoomed out loses less to the names above it.
+
+**More boards run as thumbnails.** `CANVAS_BOARD_MIN_LIVE_WIDTH` is 96px (was 160), so a design fitted on a phone or zoomed out over a dozen boards draws its pages rather than a grey box each; `CANVAS_BOARD_MAX_LIVE` still caps how many run.
+
+**The chrome is drawn over the content.** A board's name and open control, a note's tools and the resize corners sit above every board and note. Far out, a note laid out after a board covered the board's name and took its presses.
+
+**The open control and a note's tools are the item's.** Where a pointer can hover they show on the board or note under it, the selected one and the one holding focus; a touch screen always shows them.
+
+**A board name that is a move handle keeps the name's type and place.** In edit mode the title was set at the page's size (the handle's `font: inherit` won) and moved off the board's edge by the handle's padding.
+
+**The palette is the zoom bar's height, and moves on a narrow canvas.** `CanvasToolbar`'s tools are the small control step (26px), the toolbar and panel step every canvas control takes, where they were 30px and stood taller than the zoom bar beside them. On a canvas narrower than 36rem the palette sits in the top left corner instead of over the zoom bar.
+
+**A canvas's hint no longer moves its zoom bar.** In a bottom corner the status note ("Double-click to use this board") is drawn above the bar, so the bar stays under a pointer on its way to it.
+
+**A caller can hold a board canvas's selection.** `selected` and `onSelectedChange` (with `CanvasBoardSelection`) let a list of boards beside the canvas mark the board picked on it, and pick one there.
+
 ## Changes in 0.32.0
 
 **A canvas title fits its box.** `CanvasBoard` sets a title note in a size fitted to its box both ways (three fifths of its height, smaller when its text would run past its width; `titleSize` is that rule on its own), and the text clips at the box where an unusually wide face still overruns it. A long heading used to run past its box over the boards beside it, at every zoom.
@@ -284,7 +324,7 @@ What to change: nothing. An application that renders Markdown itself may read it
 
 **`ArtifactVersionChip`** is the version on show as a quiet chip beside the title that opens a menu of versions (`items`, so the host decides which and what else the menu offers). An older version than `latest` reads `v2 of 3` in the accent, so history never passes for the present.
 
-**`ArtifactPanel`** is a panel at the artifact's side: a complementary region named by its heading, a head with its title, optional `actions`, an expand toggle where `onExpandedChange` is given, and Close, then a body that scrolls under the head. Opening moves focus to the heading unless `focusOnOpen` is false (a panel a link opened); closing with focus inside hands focus back to whatever held it before; Escape from anywhere inside closes it, unless something inside answered the press first. Its body starts headings at level 3, so a `Section` inside it nests under the panel's title. Sizes `sm`, `md` and `lg` rest at 20, 25 and 36rem.
+**`ArtifactPanel`** is a panel at the artifact's side: a complementary region named by its heading, a head with its title, optional `actions`, an expand toggle where `onExpandedChange` is given, and Close, then a body that scrolls under the head. Opening moves focus to the heading unless `focusOnOpen` is false (a panel a link opened); closing with focus inside hands focus back to whatever held it before; Escape from anywhere inside closes it, unless something inside answered the press first. Its body starts headings at level 3, so a `Section` inside it nests under the panel's title. Two sizes: `md`, at 22.5rem, for every panel of text (facts, a list, a form), so moving between them never moves the artifact's edge, and `lg`, at 36rem, for a table.
 
 **`ArtifactWorkspace`** lays the artifact's body and its one panel side by side: the panel is a column where the workspace holds two useful columns (960px), slides over the body's end edge under that, and is the whole screen under 640px. `expanded` gives the panel the whole workspace, with the body kept mounted behind it. The body scrolls itself; `bodyRef`, `bodyClassName` and `bodyLabel` are for the host's own listeners, styles and region name.
 

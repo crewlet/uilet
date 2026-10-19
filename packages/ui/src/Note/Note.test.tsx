@@ -3,6 +3,9 @@
  * start or centred, at the body size or a size read across the room.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, render } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
@@ -74,4 +77,10 @@ test('passes axe', async () => {
   );
   const results = await axe.run(container);
   expect(results.violations).toEqual([]);
+});
+
+test('paragraphs stand a step apart, whatever the host resets', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Note.css'), 'utf8');
+  expect(css).toMatch(/\.crewlet-note :is\(p, ul, ol\) \+ :is\(p, ul, ol\) \{\s*margin-block-start: var\(--spacing-2\);/);
+  expect(css).toMatch(/\.crewlet-note :is\(p, ul, ol\) \{\s*margin-block: 0;/);
 });

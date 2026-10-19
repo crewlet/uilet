@@ -5,6 +5,7 @@ import {
   type CanvasBoardItem,
   type CanvasBoardNote,
   type CanvasBoardRect,
+  type CanvasBoardSelection,
 } from '@crewlethq/ui';
 
 /**
@@ -15,7 +16,9 @@ import {
  * page inside each live board; here each board draws a plain stand-in.
  *
  * Try it: the palette at the foot of the field holds Move (V) and Hand (H, or
- * hold Space), and the pointer follows the tool. Hover a board or its name to
+ * hold Space), and the pointer follows the tool. On a canvas narrower than
+ * 36rem the palette moves to the top left corner, clear of the zoom bar. The
+ * dot grid lies on the boards' own plane, so it pans and zooms with them. Hover a board or its name to
  * outline it, click to select it, double-click to hand its page the pointer,
  * and press Escape to give it back. Zoom out until boards turn into
  * placeholders (a board runs only while it is on screen and wide enough to
@@ -110,6 +113,68 @@ function EditableBoard() {
 
 /** Move and resize boards, place notes with Text and Sticky, and edit, move or delete them. */
 export const Editable: Story = { render: () => <EditableBoard /> };
+
+const LIST: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--spacing-1)',
+  width: '10rem',
+  margin: 0,
+  padding: 0,
+  listStyle: 'none',
+};
+
+function ListedBoards() {
+  const [selected, setSelected] = useState<CanvasBoardSelection | null>(null);
+  return (
+    <div style={{ display: 'flex', gap: 'var(--spacing-3)', height: '80vh', padding: 'var(--spacing-4)' }}>
+      <ol style={LIST} aria-label="Boards">
+        {BOARDS.map((b) => (
+          <li key={b.id}>
+            <button
+              type="button"
+              aria-current={selected?.kind === 'board' && selected.id === b.id ? 'true' : undefined}
+              style={{ fontWeight: selected?.id === b.id ? 'var(--font-weight-semibold)' : undefined }}
+              onClick={() => setSelected({ kind: 'board', id: b.id })}
+            >
+              {b.title}
+            </button>
+          </li>
+        ))}
+      </ol>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <CanvasBoard
+          label="Launch landing page"
+          boards={BOARDS}
+          notes={NOTES}
+          renderBoard={stand}
+          selected={selected}
+          onSelectedChange={setSelected}
+          onOpen={() => {}}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The selection held by the caller: a list of boards beside the canvas marks
+ * the board picked on it, and a board picked in the list is selected there.
+ */
+export const HeldSelection: Story = { render: () => <ListedBoards /> };
+
+/**
+ * A canvas as narrow as a phone's: the palette sits in the top left corner,
+ * the boards are drawn as thumbnails, and a board too narrow to name goes
+ * unnamed until it is zoomed into.
+ */
+export const Narrow: Story = {
+  render: () => (
+    <div style={{ width: '22rem', height: '36rem', padding: 'var(--spacing-4)' }}>
+      <CanvasBoard label="Launch landing page" boards={BOARDS} notes={NOTES} renderBoard={stand} onOpen={() => {}} />
+    </div>
+  ),
+};
 
 /** Without the floating palette: the tool keys still work. */
 export const KeysOnly: Story = {

@@ -40,6 +40,13 @@ export interface StatCardDelta {
 export interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
   /** What is being counted, in sentence case: "Tasks in progress". */
   label: ReactNode;
+  /**
+   * Keep the label out of the picture. It stays in the accessibility tree.
+   * For a tile whose container already names it, such as a dashboard
+   * widget's frame, where the frame's title above the label said the same
+   * thing twice. A Meter's `hideLabel`, for the same reason.
+   */
+  hideLabel?: boolean;
   /** The headline value, already formatted by the caller. */
   value: ReactNode;
   /** A unit after the value, at a quieter weight: "ms", "/ 7", "per turn". */
@@ -109,6 +116,7 @@ export interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
  */
 export const StatCard = ({
   label,
+  hideLabel = false,
   value,
   unit,
   sub,
@@ -131,14 +139,18 @@ export const StatCard = ({
       className={cx('crewlet-statcard', `crewlet-statcard--${tone}`, flush && 'crewlet-statcard--flush', className)}
       aria-busy={loading || undefined}
     >
-      <div className="crewlet-statcard__label">
-        {icon ? (
-          <span className="crewlet-statcard__icon" aria-hidden>
-            {icon}
-          </span>
-        ) : null}
-        {label}
-      </div>
+      {hideLabel ? (
+        <VisuallyHidden>{label}</VisuallyHidden>
+      ) : (
+        <div className="crewlet-statcard__label">
+          {icon ? (
+            <span className="crewlet-statcard__icon" aria-hidden>
+              {icon}
+            </span>
+          ) : null}
+          {label}
+        </div>
+      )}
       <div className="crewlet-statcard__reading">
         <div className="crewlet-statcard__value">
           {loading ? (

@@ -118,7 +118,7 @@ export const OverADeck: Story = {
             bodyLabel={title}
             panel={
               panel ? (
-                <ArtifactPanel key={panel} title={PANEL_TITLES[panel]} onClose={() => setPanel(null)} size={panel === 'details' || panel === 'people' ? 'sm' : 'md'}>
+                <ArtifactPanel key={panel} title={PANEL_TITLES[panel]} onClose={() => setPanel(null)} size="md">
                   <p style={{ margin: 0 }}>The {PANEL_TITLES[panel].toLowerCase()} of this deck.</p>
                 </ArtifactPanel>
               ) : null
@@ -213,6 +213,22 @@ export const EditingADoc: Story = {
       { key: 'share', label: 'Share', icon: <Share2Glyph size="sm" />, labelled: true, onSelect: () => {} },
     ],
   },
+};
+
+/**
+ * The same bar where room is short (a small laptop's bar beside the rail): the
+ * unsaved state folds to its accent dot, still read by a screen reader, so the
+ * title keeps its words rather than being cut to two.
+ */
+export const EditingADocNarrow: Story = {
+  args: { ...EditingADoc.args, title: 'Architecture notes for the 1.0 release' },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 760 }}>
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 /** An older version on show: the chip takes the accent and says which of how many. */

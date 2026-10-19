@@ -1,6 +1,6 @@
 import './Canvas.css';
 
-export { Canvas } from './Canvas.js';
+export { Canvas, gridOf } from './Canvas.js';
 export type { CanvasCursor, CanvasGround, CanvasHandle, CanvasLabels, CanvasProps } from './Canvas.js';
 export { ShortcutTip } from './ShortcutTip.js';
 export type { ShortcutTipProps } from './ShortcutTip.js';

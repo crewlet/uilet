@@ -1,78 +1,189 @@
 /*
- * DocTabsEditor: a document's tabs as rows an editor titles, opens, moves and
- * removes, with the row whose text is open marked, and a field to add one.
- * The rows are quiet inset bands, as ArrangeList's are.
+ * DocTabsEditor: a document's tabs as the rows of a list, set in the register
+ * of the outline a reader sees in the same column. A row is its title, the
+ * open one filled as an inbox's open row is; its handle and its menu wait at
+ * its edges and show under the pointer or the keyboard, so six tabs read as
+ * six titles.
  */
 
 .crewlet-doc-tabs-editor {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2);
+  gap: var(--spacing-1);
   min-width: 0;
+}
+
+/* The list's name in the outline's register, with Add at its end. */
+.crewlet-doc-tabs-editor__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  min-height: var(--size-control-sm);
+}
+
+.crewlet-doc-tabs-editor__heading {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-tight);
+  color: var(--color-text-tertiary);
 }
 
 .crewlet-doc-tabs-editor__list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
+  gap: calc(var(--spacing-1) / 2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/*
+ * A ROW IS THREE TRACKS that every row shares: the handle, the title and the
+ * menu. The title's column starts at one edge all the way down, and a title
+ * wraps rather than being cut, since a tab cut to fit is one an editor
+ * cannot tell from its neighbour.
+ */
 .crewlet-doc-tabs-editor__item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-1);
-  padding: var(--spacing-1);
-  border: 1px solid transparent;
+  display: grid;
+  grid-template-columns: var(--size-control-sm) minmax(0, 1fr) var(--size-control-sm);
+  align-items: start;
+  gap: calc(var(--spacing-1) / 2);
+  padding: calc(var(--spacing-1) / 2);
   border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-.crewlet-doc-tabs-editor__item.is-open {
-  border-color: var(--color-border-strong);
+.crewlet-doc-tabs-editor__item:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-doc-tabs-editor__item.is-open,
+.crewlet-doc-tabs-editor__item.is-open:hover {
+  background: var(--color-surface-pressed);
+}
+
+/* A row being renamed is its field: the fill would sit around a second box. */
+.crewlet-doc-tabs-editor__item.is-renaming,
+.crewlet-doc-tabs-editor__item.is-renaming:hover {
+  background: none;
+}
+
+/* The new tab's field stands where its title will, in the title's track. */
+.crewlet-doc-tabs-editor__item--new > .crewlet-doc-tabs-editor__field {
+  grid-column: 2;
 }
 
 .crewlet-doc-tabs-editor__item[data-reorder='dragging'] {
-  border-style: dashed;
-  border-color: var(--color-border-strong);
+  outline: 1px dashed var(--color-border-strong);
+  outline-offset: -1px;
   background: transparent;
 }
+
 .crewlet-doc-tabs-editor__item[data-reorder='dragging'] > * {
   opacity: 0.4;
 }
 
 .crewlet-doc-tabs-editor__handle {
-  flex-shrink: 0;
   cursor: grab;
   color: var(--color-text-tertiary);
 }
+
 .crewlet-doc-tabs-editor__handle:active {
   cursor: grabbing;
 }
 
 .crewlet-doc-tabs-editor__field {
   display: flex;
-  flex: 1 1 12rem;
   flex-direction: column;
-  gap: var(--spacing-1);
+  gap: calc(var(--spacing-1) / 2);
   min-width: 0;
 }
 
+/*
+ * The title, which opens the tab: the row's own words, never a second box.
+ * Its words start where the small field's do (its side padding and its 1px
+ * border), so a title does not jump sideways when Rename turns it into one.
+ */
+.crewlet-doc-tabs-editor__open {
+  display: block;
+  width: 100%;
+  min-height: var(--size-control-sm);
+  margin: 0;
+  padding: calc((var(--size-control-sm) - var(--font-size-compact) * var(--font-line-height-snug)) / 2)
+    calc(var(--spacing-2) + 1px);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--font-line-height-snug);
+  text-align: start;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.crewlet-doc-tabs-editor__item:hover .crewlet-doc-tabs-editor__open,
+.crewlet-doc-tabs-editor__open[aria-current='true'] {
+  color: var(--color-text-primary);
+}
+
+.crewlet-doc-tabs-editor__open:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-doc-tabs-editor__open:disabled {
+  cursor: not-allowed;
+}
+
 .crewlet-doc-tabs-editor__problem {
+  padding-inline: calc(var(--spacing-2) + 1px);
   color: var(--color-feedback-danger-ink);
   font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
 }
 
-.crewlet-doc-tabs-editor__moves {
+/*
+ * THE EDGES WAIT FOR THE POINTER. The handle and the menu are drawn on the
+ * row under the pointer, on the open row, on a row the keyboard is inside and
+ * on a row whose menu is open; elsewhere they keep their place unseen, so
+ * nothing moves when they appear. A device with no hover shows them always,
+ * since there is no pointer to wait for.
+ */
+@media (hover: hover) {
+  .crewlet-doc-tabs-editor__handle,
+  .crewlet-doc-tabs-editor__actions {
+    opacity: 0;
+    transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+  }
+
+  .crewlet-doc-tabs-editor__item:is(:hover, :focus-within, .is-open, :has([aria-expanded='true']))
+    :is(.crewlet-doc-tabs-editor__handle, .crewlet-doc-tabs-editor__actions) {
+    opacity: 1;
+  }
+}
+
+.crewlet-doc-tabs-editor__actions {
   display: inline-flex;
-  flex-shrink: 0;
 }
 
-.crewlet-doc-tabs-editor__add {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--spacing-2);
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-doc-tabs-editor__item,
+  .crewlet-doc-tabs-editor__handle,
+  .crewlet-doc-tabs-editor__actions {
+    transition: none;
+  }
+}
+
+/* FORCED COLORS drop the open row's fill, so it is outlined instead. */
+@media (forced-colors: active) {
+  .crewlet-doc-tabs-editor__item.is-open {
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
+  }
 }
