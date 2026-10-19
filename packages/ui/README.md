@@ -206,15 +206,23 @@ places:
 
 ## Changes in 0.29.0
 
-**`ArtifactBar`** is an open artifact's one slim bar. Back, the kind's glyph, a title that editors rename in place and an `ArtifactVersionChip` sit at its start. At its end come the kind's own views (`modes`), presence, the tools that open panels (`tools`) and a More menu. The bar folds by its own width: presence goes first, then tool words, and below its narrowest step the views and tools move into More with their shortcut keys shown.
+0.29.0 adds the chrome an open artifact sits in: one slim bar over the artifact, and one panel at its side, so a host can give the artifact the screen and open everything else on demand.
 
-**`ArtifactPanel` and `ArtifactWorkspace`** hold what the bar's tools open. A panel sits beside the artifact when the workspace is wide enough, slides over it when it is not, fills the screen on a phone, and can expand to the whole workspace (`size`). Focus moves into a panel as it opens, and Escape closes it and returns focus to its control.
+**`ArtifactBar`** is the bar, the height of a large row. At its start, the way back (`back`, a link), the kind's glyph (the artifact's own `icon` word where it has one), the title as the heading (renamed in place where `onRename` is given: Enter takes it, Escape puts it back without reaching anything under the field, leaving the field takes it, and a sentence `onRename` answers keeps the field open and says it), and the `version` slot. In its middle, the kind's views (`modes`, one segmented choice, centred while both sides have room). At its end, `presence`, the kind's tools (`kindTools`), every artifact's tools (`tools`) and More (`menu`). A tool is data, not an element (a label, a glyph, its `keys`, `pressed`, a `badge`, `disabledReason`), because the bar draws each one twice: as an icon button with its name and keys in a tooltip and as `aria-keyshortcuts`, and as a row of More. It folds by its own width, a container query: under 860px the presence stack goes (a tool's `badge` comes back in its place), under 720px a `labelled` tool keeps only its glyph, and under 640px the views and every unlabelled tool fold into More as rows with their keys, and the kind's glyph gives the title its room. Both arrangements are drawn and the stylesheet shows one. `renaming` and `onRenamingChange` start a rename from elsewhere (a Rename row); `pending` stands a placeholder in for a title still being read; `as="div"` sits it inside a host's own banner.
 
-**`PeopleRail` takes `variant="plain"`**, the rail without its own card edge, for a panel that is already the frame.
+**`ArtifactVersionChip`** is the version on show as a quiet chip beside the title that opens a menu of versions (`items`, so the host decides which and what else the menu offers). An older version than `latest` reads `v2 of 3` in the accent, so history never passes for the present.
 
-**`AppShell` reserves no scrollbar gutter on a screen that fills the shell.** A fill screen's main never scrolls, so the gutter was a dead band beside an artifact drawn edge to edge.
+**`ArtifactPanel`** is a panel at the artifact's side: a complementary region named by its heading, a head with its title, optional `actions`, an expand toggle where `onExpandedChange` is given, and Close, then a body that scrolls under the head. Opening moves focus to the heading unless `focusOnOpen` is false (a panel a link opened); closing with focus inside hands focus back to whatever held it before; Escape from anywhere inside closes it, unless something inside answered the press first. Its body starts headings at level 3, so a `Section` inside it nests under the panel's title. Sizes `sm`, `md` and `lg` rest at 20, 25 and 36rem.
 
-What to change: nothing. Hosts that drew their own artifact header can move to `ArtifactBar` and `ArtifactPanel`.
+**`ArtifactWorkspace`** lays the artifact's body and its one panel side by side: the panel is a column where the workspace holds two useful columns (960px), slides over the body's end edge under that, and is the whole screen under 640px. `expanded` gives the panel the whole workspace, with the body kept mounted behind it. The body scrolls itself; `bodyRef`, `bodyClassName` and `bodyLabel` are for the host's own listeners, styles and region name.
+
+**`PeopleRail` takes `variant="plain"`**: its list alone, with no border, heading or close, for a host that already frames and names it, such as an `ArtifactPanel`.
+
+**`AppShell` reserves no scrollbar gutter on a `fill` screen.** Its main never scrolls there, so the reserved gutter was a dead strip down the screen's end edge, which an artifact drawn edge to edge showed as a band beside it.
+
+What to change:
+
+- Nothing for an existing host. A `fill` screen's content column is the gutter's width wider than before.
 
 ## Changes in 0.28.0
 
