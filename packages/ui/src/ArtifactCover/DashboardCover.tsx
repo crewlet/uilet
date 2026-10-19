@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { LayoutDashboardGlyph } from '@crewlethq/icons/glyphs';
+import { ArtifactKindGlyph } from '../ArtifactCard/index.js';
 import { cx } from '../utils/cx.js';
 
 /** One headline figure a cover draws. */
@@ -41,6 +41,9 @@ const MAX_SCHEMATIC = 8;
 
 const GRID_COLUMNS = 12;
 
+/** The frame every native cover shares (ArtifactCover.css), then this cover's own block. */
+const COVER = 'crewlet-artifact-cover crewlet-dashboard-cover';
+
 /**
  * A dashboard artifact's cover in a gallery, passed as `ArtifactCard`'s
  * `preview`: drawn natively, never a screenshot.
@@ -62,7 +65,7 @@ export function DashboardCover({ stats = [], layout = [], className, ...rest }: 
   const shown = stats.slice(0, MAX_STATS);
   if (shown.length > 0) {
     return (
-      <div {...rest} className={cx('crewlet-dashboard-cover', 'crewlet-dashboard-cover--stats', className)}>
+      <div {...rest} className={cx(COVER, 'crewlet-dashboard-cover--stats', className)}>
         {shown.map((stat, index) => (
           <div key={`${index}:${stat.label}`} className="crewlet-dashboard-cover__stat">
             <span className="crewlet-dashboard-cover__label">{stat.label}</span>
@@ -79,7 +82,7 @@ export function DashboardCover({ stats = [], layout = [], className, ...rest }: 
   const blocks = layout.slice(0, MAX_SCHEMATIC);
   if (blocks.length > 0) {
     return (
-      <div {...rest} className={cx('crewlet-dashboard-cover', 'crewlet-dashboard-cover--layout', className)}>
+      <div {...rest} className={cx(COVER, 'crewlet-dashboard-cover--layout', className)}>
         {blocks.map((block, index) => (
           <span
             key={index}
@@ -108,8 +111,8 @@ export function DashboardCover({ stats = [], layout = [], className, ...rest }: 
     );
   }
   return (
-    <div {...rest} className={cx('crewlet-dashboard-cover', 'crewlet-dashboard-cover--empty', className)}>
-      <LayoutDashboardGlyph size={32} />
+    <div {...rest} className={cx(COVER, 'crewlet-dashboard-cover--empty', className)}>
+      <ArtifactKindGlyph kind="dashboard" size={32} />
     </div>
   );
 }

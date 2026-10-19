@@ -8,6 +8,9 @@ import { cx } from '../utils/cx.js';
  * artifact's own content drawn by the design system at card size. A card
  * whose kind has no cover keeps its glyph.
  *
+ * The dashboard's cover is DashboardCover.tsx beside this file. All three
+ * share one frame, `.crewlet-artifact-cover`, so a card draws each the same way.
+ *
  * DECORATIVE. The card is one link named by its title and described by its
  * facts, and its preview is hidden from assistive tech, so a cover carries no
  * names, roles or focusable parts of its own.
@@ -26,7 +29,7 @@ export interface DocCoverProps {
 /** A doc's cover: its opening, set as a small page that fades out at the card's edge. */
 export function DocCover({ children, className }: DocCoverProps) {
   return (
-    <span className={cx('crewlet-doc-cover', className)}>
+    <span className={cx('crewlet-artifact-cover crewlet-doc-cover', className)}>
       <Document className="crewlet-doc-cover__page" size="sm" measure="none">
         {children}
       </Document>
@@ -50,7 +53,7 @@ export const SHEET_COVER_ROWS = 5;
 export function SheetCover({ columns, rows, className }: SheetCoverProps) {
   const shown = columns.slice(0, SHEET_COVER_COLUMNS);
   return (
-    <span className={cx('crewlet-sheet-cover', className)} style={{ ['--crewlet-sheet-cover-columns' as string]: Math.max(shown.length, 1) }}>
+    <span className={cx('crewlet-artifact-cover crewlet-sheet-cover', className)} style={{ ['--crewlet-sheet-cover-columns' as string]: Math.max(shown.length, 1) }}>
       {shown.map((c, i) => (
         <span key={`h${i}`} className="crewlet-sheet-cover__cell crewlet-sheet-cover__cell--head">
           {c}
