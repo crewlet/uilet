@@ -221,14 +221,16 @@
  * there.
  */
 @media (hover: hover) {
-  .crewlet-canvas-board__open {
+  /*
+   * HIDDEN, IT TAKES NO ROOM: out of the row rather than only transparent, so
+   * a narrow board's name has the whole width to itself at rest instead of
+   * being cut to its first letter beside an empty slot. It still takes focus,
+   * and is put back in the row when it has it.
+   */
+  .crewlet-canvas-board__board:not(:hover, [data-selected]) .crewlet-canvas-board__open:not(:focus-visible) {
+    position: absolute;
     opacity: 0;
-  }
-
-  .crewlet-canvas-board__board:hover .crewlet-canvas-board__open,
-  .crewlet-canvas-board__board[data-selected] .crewlet-canvas-board__open,
-  .crewlet-canvas-board__open:focus-visible {
-    opacity: 1;
+    pointer-events: none;
   }
 }
 

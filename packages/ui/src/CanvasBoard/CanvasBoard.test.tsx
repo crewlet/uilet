@@ -8,7 +8,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { createRef } from 'react';
 import { IDENTITY_VIEW, type CanvasHandle } from '../Canvas/index.js';
-import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { installHover, installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import {
   BOARD_TITLE_MIN_WIDTH,
   CanvasBoard,
@@ -590,5 +590,25 @@ test('a board\'s name and controls are drawn over every board and note, so a not
   expect(getComputedStyle(chrome).zIndex).toBe('1');
   expect(getComputedStyle(tools).zIndex).toBe('1');
   expect(getComputedStyle(note).zIndex).not.toBe('1');
+  uninstall();
+});
+
+test('a hidden open control takes no room from its board\'s name, and a touch screen always shows it', () => {
+  let uninstall = installHover('hover', 'CanvasBoard/CanvasBoard.css');
+  mount({ onOpen: () => {} });
+  const open = () => screen.getByRole('button', { name: 'Open Hero full size' });
+  // At rest the control is out of the row, so the name may run the board's
+  // whole width; it took that width while only transparent.
+  expect(getComputedStyle(open()).position).toBe('absolute');
+  expect(getComputedStyle(open()).opacity).toBe('0');
+  // Selected, it is back in the row and drawn.
+  fireEvent.click(screen.getByRole('region', { name: 'Hero, 1440 by 900' }).querySelector('.crewlet-canvas-board__shield')!);
+  expect(getComputedStyle(open()).position).not.toBe('absolute');
+  expect(getComputedStyle(open()).opacity).not.toBe('0');
+  uninstall();
+  cleanup();
+  uninstall = installHover('none', 'CanvasBoard/CanvasBoard.css');
+  mount({ onOpen: () => {} });
+  expect(getComputedStyle(open()).opacity).not.toBe('0');
   uninstall();
 });
