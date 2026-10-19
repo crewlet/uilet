@@ -485,6 +485,23 @@ test('the first fit is reported once, and a later data push does not report it a
   expect(ready).toHaveBeenCalledTimes(1);
 });
 
+test('the view is reported from the first fit on, with the viewport, and on every zoom', () => {
+  const seen = vi.fn();
+  render(
+    <Canvas label="Design" content={SMALL} onViewChange={seen}>
+      <div />
+    </Canvas>,
+  );
+  expect(seen).not.toHaveBeenCalled();
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
+  expect(seen).toHaveBeenLastCalledWith(fitView(SMALL, SIZE), SIZE);
+  const calls = seen.mock.calls.length;
+  fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+  expect(seen.mock.calls.length).toBe(calls + 1);
+  const [view] = seen.mock.lastCall as [CanvasView];
+  expect(view.k).toBeCloseTo(fitView(SMALL, SIZE).k * CANVAS_ZOOM_STEP);
+});
+
 /*
  * ───────────────────────────────────────────────────────────────────────────
  * The zoom readout

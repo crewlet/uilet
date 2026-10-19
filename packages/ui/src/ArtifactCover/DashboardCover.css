@@ -1,0 +1,143 @@
+/*
+ * DashboardCover: a dashboard's cover at a gallery card's preview size (16:9,
+ * about 280 by 158 pixels at its smallest). Up to three headline figures, or a
+ * schematic of the board's first widgets, or the kind's glyph. Its frame is
+ * the shared .crewlet-artifact-cover in ArtifactCover.css.
+ */
+
+.crewlet-dashboard-cover {
+  height: 100%;
+  padding: var(--spacing-3);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-dashboard-cover--stats {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-dashboard-cover__stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  height: 100%;
+  max-height: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+}
+
+.crewlet-dashboard-cover__label,
+.crewlet-dashboard-cover__source {
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-dashboard-cover__label {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-dashboard-cover__value {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-dashboard-cover__source {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-dashboard-cover--layout {
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--spacing-2);
+}
+
+.crewlet-dashboard-cover__block {
+  box-sizing: border-box;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+}
+
+.crewlet-dashboard-cover__block--chart {
+  align-items: flex-end;
+  gap: var(--spacing-1);
+}
+
+.crewlet-dashboard-cover__block--table,
+.crewlet-dashboard-cover__block--note {
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-dashboard-cover__block--stat {
+  align-items: center;
+}
+
+.crewlet-dashboard-cover__bar {
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--radius-xs);
+  background: var(--color-data-1);
+}
+
+.crewlet-dashboard-cover__bar:nth-child(1) {
+  height: 40%;
+}
+
+.crewlet-dashboard-cover__bar:nth-child(2) {
+  height: 70%;
+}
+
+.crewlet-dashboard-cover__bar:nth-child(3) {
+  height: 55%;
+}
+
+.crewlet-dashboard-cover__bar:nth-child(4) {
+  height: 90%;
+}
+
+.crewlet-dashboard-cover__line {
+  height: var(--spacing-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-border-strong);
+}
+
+.crewlet-dashboard-cover__line:last-child {
+  width: 60%;
+}
+
+.crewlet-dashboard-cover__figure {
+  width: 50%;
+  height: var(--spacing-3);
+  border-radius: var(--radius-xs);
+  background: var(--color-text-tertiary);
+  opacity: 0.5;
+}
+
+.crewlet-dashboard-cover--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

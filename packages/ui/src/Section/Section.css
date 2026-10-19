@@ -61,7 +61,10 @@
   line-height: var(--font-line-height-normal);
   letter-spacing: var(--font-letter-spacing-tight);
   color: var(--color-text-primary);
-  min-width: 0;
+  /* THE TITLE NEVER WRAPS to make room for its hint: the hint is the one that
+     gives way (truncated beside it, or under it on a narrow screen). */
+  flex: none;
+  white-space: nowrap;
 }
 
 /*

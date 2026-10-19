@@ -54,6 +54,8 @@ function LiveSheet({ start = SHEET_ROWS, height = 360, ...rest }: { start?: Shee
       onAddRow={() => setRows((current) => [...current, { id: `new-${current.length}`, values: { vendor: `New vendor ${current.length + 1}` } }])}
       onShowHistory={(cell) => window.alert(`History of ${cell.field} on ${cell.rowId}`)}
       sync={edits.sync()}
+      onDismissRefused={() => edits.dismissAll()}
+      onDeleteRow={(rowId) => setRows((current) => current.filter((row) => row.id !== rowId))}
       height={height}
       {...rest}
     />
@@ -108,6 +110,29 @@ export const Refused: Story = {
     />
   ),
 };
+
+/** A refused edit held in the strip as "1 change not saved" until the reader dismisses it. */
+export const RefusedHeld: Story = {
+  render: () => (
+    <SheetGrid
+      label="Vendor scorecard"
+      columns={SHEET_COLUMNS}
+      rows={SHEET_ROWS.map((row) => (row.id === 'globex' ? { ...row, refused: { score: 'It changed since it was read.' } } : row))}
+      people={SHEET_PEOPLE}
+      onEdit={() => {}}
+      sync={{ saving: 0, refused: 1 }}
+      onDismissRefused={() => {}}
+      height={320}
+    />
+  ),
+};
+
+/**
+ * As tall as its rows (`fit="content"`): no empty bordered slab under the last
+ * row, and Add row right under it. Hover a row's number, or press Shift+F10
+ * on a cell, for its actions; the host confirms a delete.
+ */
+export const FitContent: Story = { render: () => <LiveSheet fit="content" height={480} /> };
 
 /**
  * A remote write landing on the cell being edited. Press Enter on Globex's

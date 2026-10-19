@@ -80,3 +80,16 @@ export const Indeterminate: Story = {
     </div>
   ),
 };
+
+/**
+ * The compact step, beside the small controls of a dense form row: a column's
+ * flags in a schema editor, set at the same step as its small selects.
+ */
+export const Compact: Story = {
+  render: () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Checkbox size="sm" label="Required" checked onChange={() => {}} />
+      <Checkbox size="sm" label="Hidden" checked={false} onChange={() => {}} />
+    </div>
+  ),
+};

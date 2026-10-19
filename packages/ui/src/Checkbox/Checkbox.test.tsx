@@ -10,6 +10,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { Checkbox } from './Checkbox.js';
 import { CheckboxGroup } from './CheckboxGroup.js';
 
@@ -124,4 +125,25 @@ test('a group with nothing to offer says so rather than drawing an empty fieldse
     </CheckboxGroup>,
   );
   expect(screen.getByText('Nothing to offer.')).toBeTruthy();
+});
+
+// THE COMPACT STEP MATCHES A DENSE ROW. In the schema editor's column rows a
+// body-step "Required" stood a step above the small selects beside it.
+test('a small checkbox sets its label at the compact step, and a default one at the body step', () => {
+  const uninstall = installSheets('Checkbox/Checkbox.css');
+  try {
+    render(
+      <>
+        <Checkbox size="sm" label="Required" checked={false} onChange={() => {}} />
+        <Checkbox label="Enabled" checked={false} onChange={() => {}} />
+      </>,
+    );
+    const small = screen.getByText('Required');
+    const body = screen.getByText('Enabled');
+    expect(small.closest('label')?.classList.contains('crewlet-checkbox--sm')).toBe(true);
+    expect(px(small, 'font-size')).toBe(13);
+    expect(px(body, 'font-size')).toBe(14);
+  } finally {
+    uninstall();
+  }
 });

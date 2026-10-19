@@ -104,3 +104,57 @@ describe('TagGroup', () => {
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 });
+
+describe('TagGroup overflow="fit"', () => {
+  /**
+   * jsdom lays nothing out, so each item's line is stubbed: the first
+   * `perLine` items sit on the first line and the rest wrap below it.
+   */
+  const lay = (perLine: number) => {
+    const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetTop');
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+      configurable: true,
+      get(this: HTMLElement) {
+        const parent = this.parentElement;
+        if (!parent?.classList.contains('crewlet-tag-group')) return 0;
+        return [...parent.children].indexOf(this) < perLine ? 0 : 24;
+      },
+    });
+    return () => {
+      if (original) Object.defineProperty(HTMLElement.prototype, 'offsetTop', original);
+    };
+  };
+
+  test('keeps one line and counts what wrapped, room left for the count, with no button to tab to', () => {
+    const restore = lay(3);
+    try {
+      render(
+        <TagGroup label="Tags" overflow="fit">
+          {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name) => (
+            <Tag key={name}>{name}</Tag>
+          ))}
+        </TagGroup>,
+      );
+      const list = screen.getByRole('list', { name: 'Tags, 5' });
+      // Three fit; the count chip needs the third one's place, so two stay.
+      expect(screen.queryByText('Gamma')).toBeNull();
+      expect(screen.getByText('Beta')).toBeDefined();
+      expect(screen.getByText('+3')).toBeDefined();
+      expect(list.className).toContain('crewlet-tag-group--fit');
+      expect(screen.queryByRole('button')).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  test('draws every tag and no count when they all fit', () => {
+    render(
+      <TagGroup label="Tags" overflow="fit">
+        <Tag>Alpha</Tag>
+        <Tag>Beta</Tag>
+      </TagGroup>,
+    );
+    expect(screen.getByText('Beta')).toBeDefined();
+    expect(screen.queryByText(/^\+/)).toBeNull();
+  });
+});

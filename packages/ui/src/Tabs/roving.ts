@@ -149,10 +149,14 @@ export function useRoving(
     select?.(next);
   };
 
+  /** Forgets where focus landed, so the stop goes back to the chosen option. */
+  const reset = () => setLanded(null);
+
   return {
     buttons,
     onKeyDown,
     onFocusAt,
+    reset,
     /*
      * Where the stop belongs, or null for "on the caller's selection, as
      * ever". Bounded by the CURRENT count, because a row whose options

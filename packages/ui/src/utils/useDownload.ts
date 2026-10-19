@@ -44,25 +44,36 @@ export function useDownload(options: OutcomeOptions = {}): Download {
  * it, with the name it was offered under ([safeFilename] of `filename`).
  *
  * For a control that cannot say so on itself, such as a menu item that
- * closes on the press: the caller raises a toast from the answer.
- *
- * TWO THINGS ARE CHECKED UP FRONT rather than assumed. Without
- * `URL.createObjectURL` there is nothing to point a saveable link at, and a
- * `data:` URL is the wrong fallback because several engines cap it near two
- * megabytes, so it would fail silently on exactly the large files. Without the
- * `download` attribute the click NAVIGATES to the text instead of saving it,
- * which looks enough like something happening that nobody checks.
- *
- * The blob URL is revoked on the NEXT macrotask: the click only queues the
- * download, and freeing the entry inside the same task races the fetch that is
- * about to read it. Never revoking is the other failure, a second copy of the
- * text held for the life of the tab.
+ * closes on the press: the caller raises a toast from the answer. The save
+ * itself is [downloadBlob]'s, so text and binary files share one path.
  */
 export function downloadText(
   text: string,
   filename: string,
   mime: string = DEFAULT_MIME,
 ): { started: boolean; name: string } {
+  if (typeof Blob === 'undefined') return { started: false, name: safeFilename(filename) };
+  return downloadBlob(new Blob([text], { type: mime }), filename);
+}
+
+/**
+ * Saves `blob` on the reader's machine and reports whether the browser took
+ * it, with the name it was offered under ([safeFilename] of `filename`): a
+ * chart rasterised to PNG, an archive, any bytes the page already holds.
+ *
+ * TWO THINGS ARE CHECKED UP FRONT rather than assumed. Without
+ * `URL.createObjectURL` there is nothing to point a saveable link at, and a
+ * `data:` URL is the wrong fallback because several engines cap it near two
+ * megabytes, so it would fail silently on exactly the large files. Without the
+ * `download` attribute the click NAVIGATES to the file instead of saving it,
+ * which looks enough like something happening that nobody checks.
+ *
+ * The blob URL is revoked on the NEXT macrotask: the click only queues the
+ * download, and freeing the entry inside the same task races the fetch that is
+ * about to read it. Never revoking is the other failure, a second copy of the
+ * bytes held for the life of the tab.
+ */
+export function downloadBlob(blob: Blob, filename: string): { started: boolean; name: string } {
   const name = safeFilename(filename);
   if (
     typeof URL === 'undefined' ||
@@ -74,7 +85,7 @@ export function downloadText(
   }
   let url = '';
   try {
-    url = URL.createObjectURL(new Blob([text], { type: mime }));
+    url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = name;

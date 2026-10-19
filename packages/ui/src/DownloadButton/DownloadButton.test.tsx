@@ -9,7 +9,7 @@
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { downloadText, safeFilename } from '@crewlethq/ui';
+import { downloadBlob, downloadText, safeFilename } from '@crewlethq/ui';
 import { DownloadButton } from './index.js';
 
 afterEach(() => {
@@ -120,6 +120,13 @@ describe('DownloadButton', () => {
     expect(answer).toEqual({ started: true, name: 'turn-1.json' });
     expect(seen.clicked[0]!.download).toBe('turn-1.json');
     expect(safeFilename('reports/a.json')).toBe('reports-a.json');
+  });
+
+  test('downloadBlob saves bytes the page already holds, through the same anchor', () => {
+    const png = new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' });
+    expect(downloadBlob(png, 'Open tasks/chart.png')).toEqual({ started: true, name: 'Open-tasks-chart.png' });
+    expect(seen.blobs).toEqual([png]);
+    expect(seen.clicked).toEqual([{ href: 'blob:test/1', download: 'Open-tasks-chart.png', connected: true }]);
   });
 
   test('frees the object URL, but only after the click that reads it', async () => {

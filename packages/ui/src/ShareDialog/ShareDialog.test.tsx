@@ -52,7 +52,7 @@ describe('the role ladder', () => {
 describe('the audience', () => {
   test('names the dialog for the artifact and lists who has access', () => {
     dialog();
-    expect(screen.getByRole('dialog', { name: 'Share "Vendor scorecard"' })).toBeDefined();
+    expect(screen.getByRole('dialog', { name: 'Share “Vendor scorecard”' })).toBeDefined();
     const list = within(screen.getByRole('region', { name: 'Who has access' })).getAllByRole('listitem');
     expect(list).toHaveLength(4);
     expect(row('Maya Ortiz').textContent).toContain('(you)');

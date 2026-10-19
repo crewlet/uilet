@@ -1,0 +1,108 @@
+/*
+ * SlideFilmstrip: the column of slide thumbnails beside a deck's stage.
+ *
+ * The selected slide is ringed in the brand accent rather than filled, so its
+ * thumbnail still shows the slide's own colours.
+ */
+
+.crewlet-slide-filmstrip__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: var(--spacing-1);
+  list-style: none;
+}
+
+.crewlet-slide-filmstrip__item {
+  display: grid;
+  grid-template-columns: var(--spacing-5) minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--spacing-1);
+}
+
+.crewlet-slide-filmstrip__number {
+  padding-top: var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.crewlet-slide-filmstrip__thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  outline: 1px solid var(--color-border-default);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.crewlet-slide-filmstrip__thumb:hover {
+  outline-color: var(--color-border-hover);
+}
+
+.crewlet-slide-filmstrip__item[data-selected='true'] .crewlet-slide-filmstrip__thumb {
+  outline: 2px solid var(--color-brand-accent);
+}
+
+/* ONE RING, OVER THE THUMBNAIL'S OWN EDGE: the focus outline takes the place
+   of the edge rather than standing off it as a second one. */
+.crewlet-slide-filmstrip__thumb:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-slide-filmstrip__item[data-hidden='true'] .crewlet-slide-stage {
+  opacity: 0.45;
+}
+
+.crewlet-slide-filmstrip__hidden {
+  position: absolute;
+  right: var(--spacing-1);
+  bottom: var(--spacing-1);
+  display: inline-flex;
+  padding: var(--spacing-0);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-slide-filmstrip__handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-target-min);
+  min-height: var(--size-target-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: grab;
+}
+
+.crewlet-slide-filmstrip__handle:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-slide-filmstrip__handle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-slide-filmstrip__item[data-reorder='dragging'] {
+  opacity: 0.4;
+}
+
+.crewlet-slide-filmstrip__item[data-reorder-target='before'] .crewlet-slide-filmstrip__thumb {
+  box-shadow: 0 calc(var(--spacing-1) * -1) 0 var(--color-brand-accent);
+}
+
+.crewlet-slide-filmstrip__item[data-reorder-target='after'] .crewlet-slide-filmstrip__thumb {
+  box-shadow: 0 var(--spacing-1) 0 var(--color-brand-accent);
+}

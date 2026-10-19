@@ -1,0 +1,36 @@
+/*
+ * A design's schematic (CanvasSchematic.tsx): rectangles drawn in the
+ * canvas's own coordinates, filling the box they are given.
+ */
+
+.crewlet-canvas-schematic {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.crewlet-canvas-schematic svg {
+  width: 100%;
+  height: 100%;
+}
+
+.crewlet-canvas-schematic__board {
+  fill: var(--color-surface-elevated);
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+}
+
+.crewlet-canvas-schematic__board[data-cover] {
+  fill: var(--color-brand-accent-soft);
+  stroke: var(--color-brand-accent);
+}
+
+.crewlet-canvas-schematic__note {
+  fill: var(--color-surface-inset);
+}
+
+.crewlet-canvas-schematic__title {
+  fill: var(--color-brand-accent-ink);
+  font-weight: var(--font-weight-semibold);
+}

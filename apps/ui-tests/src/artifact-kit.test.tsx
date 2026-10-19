@@ -201,6 +201,10 @@ describe('<crewlet-sheet>', () => {
     // Enter moved the reader down a row; the reason is said where they go back to.
     act(() => cell(0, 0).focus());
     await waitFor(() => expect(cell(0, 0).textContent).toContain('You can view this sheet but not edit it.'));
+    // The strip holds the refusal rather than going back to "Saved", until the reader dismisses it.
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull();
+    expect(cell(0, 0).className).not.toContain('crewlet-sheet-grid__cell--refused');
   });
 
   test('with no columns of its own it draws the collection schema, primary column frozen, hidden ones left out', async () => {
@@ -228,6 +232,14 @@ describe('<crewlet-sheet>', () => {
     document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
     await waitFor(() => expect(screen.getByText('This page did not declare the data capability, so the sheet cannot load.')).toBeDefined());
     expect(fake.views.size).toBe(0);
+  });
+
+  test('the sheet is as tall as its rows, so no empty slab sits under Add row', async () => {
+    const fake = fakeRuntime({});
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(sheetGrid().closest('.crewlet-sheet-grid')?.className).toContain('crewlet-sheet-grid--fit-content'));
   });
 
   test('a viewer gets a read-only sheet', async () => {

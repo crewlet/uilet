@@ -1,0 +1,236 @@
+/*
+ * A canvas of artboards and notes (CanvasBoard.tsx). Boards and notes are laid
+ * out in canvas pixels inside the canvas's world and scale with it; their
+ * chrome (titles, handles, tools) is counter-scaled by the zoom the component
+ * writes on the layer, so it stays one size on screen.
+ */
+
+.crewlet-canvas-board {
+  height: 100%;
+  min-height: 0;
+}
+
+.crewlet-canvas-board__layer {
+  --crewlet-canvas-board-zoom: 1;
+  --crewlet-canvas-board-unzoom: calc(1 / var(--crewlet-canvas-board-zoom));
+  position: relative;
+}
+
+/* ---- a board ------------------------------------------------------------ */
+
+.crewlet-canvas-board__board {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.crewlet-canvas-board__body {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-default);
+  box-shadow: var(--shadow-xs);
+}
+
+/* The page a live board runs fills its frame exactly. */
+.crewlet-canvas-board__body > :not(.crewlet-canvas-board__shield) {
+  width: 100%;
+  height: 100%;
+}
+
+.crewlet-canvas-board__board[data-active] .crewlet-canvas-board__body {
+  outline: calc(2px * var(--crewlet-canvas-board-unzoom)) solid var(--color-focus);
+  outline-offset: 0;
+}
+
+/*
+ * THE SHIELD over a live board that does not hold the pointer: a press on it
+ * pans the canvas as the field around it does, because a sandboxed page would
+ * otherwise swallow every press that began over it.
+ */
+.crewlet-canvas-board__shield {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+
+.crewlet-canvas-board[data-editable] .crewlet-canvas-board__shield {
+  cursor: inherit;
+}
+
+/* A board that is not running draws its title and size at screen size. */
+.crewlet-canvas-board__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+/* ONE BLOCK, SCALED ONCE: its lines keep their spacing at screen size rather
+   than each line shrinking back into the space the zoom left it. */
+.crewlet-canvas-board__placeholder-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex: none;
+  transform: scale(var(--crewlet-canvas-board-unzoom));
+}
+
+.crewlet-canvas-board__placeholder-title {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---- chrome, at screen size --------------------------------------------- */
+
+.crewlet-canvas-board__chrome {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  box-sizing: border-box;
+  width: calc(100% * var(--crewlet-canvas-board-zoom));
+  padding-bottom: var(--spacing-1);
+  transform: scale(var(--crewlet-canvas-board-unzoom));
+  transform-origin: bottom left;
+}
+
+.crewlet-canvas-board__title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-canvas-board__handle {
+  appearance: none;
+  margin: 0;
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  cursor: move;
+  touch-action: none;
+}
+
+.crewlet-canvas-board__handle:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-default);
+}
+
+/* Both handles draw an edge of their own, so the ring sits over it. */
+.crewlet-canvas-board__handle:focus-visible,
+.crewlet-canvas-board__resize:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-canvas-board__resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--color-brand-accent);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-elevated);
+  cursor: nwse-resize;
+  touch-action: none;
+  transform: translate(50%, 50%) scale(var(--crewlet-canvas-board-unzoom));
+}
+
+.crewlet-canvas-board__hint {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin: 0;
+  padding-top: var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  transform: scale(var(--crewlet-canvas-board-unzoom));
+  transform-origin: top left;
+}
+
+/* ---- a note ------------------------------------------------------------- */
+
+.crewlet-canvas-board__note {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+/*
+ * A TITLE IS SET IN ITS BOX'S OWN HEIGHT, so the author's frame is the type
+ * size: a heading over a group of boards is as large as the box drawn for it.
+ */
+.crewlet-canvas-board__note[data-kind='title'] {
+  container-type: size;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-primary);
+}
+
+.crewlet-canvas-board__note[data-kind='title'] .crewlet-canvas-board__note-text {
+  font-size: 60cqh;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  line-height: var(--font-line-height-tight);
+  white-space: nowrap;
+}
+
+.crewlet-canvas-board__note-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.crewlet-canvas-board__note-field {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: none;
+}
+
+.crewlet-canvas-board__note-field:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-canvas-board__note-tools {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding-bottom: var(--spacing-1);
+  transform: scale(var(--crewlet-canvas-board-unzoom));
+  transform-origin: bottom left;
+}
+
+.crewlet-canvas-board__note-move {
+  width: var(--spacing-6);
+  height: var(--spacing-6);
+  background-image: radial-gradient(var(--color-text-tertiary) 1px, transparent 1.5px);
+  background-size: var(--spacing-2) var(--spacing-2);
+}
