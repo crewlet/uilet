@@ -171,6 +171,19 @@ test('a pointer drag previews the move and reports it once, in canvas pixels', (
   });
 });
 
+test('a drag released where the last move left it is still reported', () => {
+  // The item is drawn at its preview while the drag runs, so the release
+  // must be judged against the frame the drag began on.
+  const onBoardChange = vi.fn();
+  mount({ editable: true, onBoardChange });
+  const handle = screen.getByRole('button', { name: 'Move Hero' });
+  fireEvent.pointerDown(handle, { pointerId: 1, button: 0, clientX: 100, clientY: 100 });
+  fireEvent.pointerMove(handle, { pointerId: 1, clientX: 180, clientY: 140 });
+  fireEvent.pointerUp(handle, { pointerId: 1, clientX: 180, clientY: 140 });
+  expect(onBoardChange).toHaveBeenCalledTimes(1);
+  expect(onBoardChange.mock.calls[0]![1]).not.toEqual({ x: 0, y: 0, w: 1440, h: 900 });
+});
+
 test('a press on a handle that never moves reports nothing', () => {
   const onBoardChange = vi.fn();
   mount({ editable: true, onBoardChange });

@@ -287,8 +287,12 @@ function useFrameGestures(
         drag.current = null;
         setPreview(null);
         if (!d.moved) return;
+        // AGAINST THE FRAME THE DRAG BEGAN ON, never this render's: while a
+        // drag runs the item is drawn at its preview, so the frame handed to
+        // this handle is where the pointer already is.
         const rect = next(d, (event.clientX - d.startX) / zoom, (event.clientY - d.startY) / zoom);
-        if (rect.x !== from.x || rect.y !== from.y || rect.w !== from.w || rect.h !== from.h) {
+        const start = d.from;
+        if (rect.x !== start.x || rect.y !== start.y || rect.w !== start.w || rect.h !== start.h) {
           commit(id, rect);
         }
       },
