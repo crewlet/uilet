@@ -1406,3 +1406,12 @@ describe('a chart of the cases a board draws: none, one, below zero, more than t
     expect(glance.container.querySelector('.crewlet-chart-frame')).toBeNull();
   });
 });
+
+test('a long series name in the tooltip ends before its value, which is never cut', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Charts.css'), 'utf8');
+  const name = /\.crewlet-chart-tooltip__name\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(name).toMatch(/text-overflow:\s*ellipsis/);
+  expect(name).toMatch(/overflow:\s*hidden/);
+  const value = /\.crewlet-chart-tooltip__value\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(value).toMatch(/flex:\s*none/);
+});

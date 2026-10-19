@@ -721,13 +721,18 @@
   background: var(--crewlet-chart-tooltip-swatch-color, var(--color-data-other));
 }
 
+/* A name too long for the box ends in an ellipsis before its value: it ran
+   under the number ("lifec1,397 USD"). The value is never cut. */
 .crewlet-chart-tooltip__name {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--color-text-secondary);
 }
 
 .crewlet-chart-tooltip__value {
+  flex: none;
   color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
 }
