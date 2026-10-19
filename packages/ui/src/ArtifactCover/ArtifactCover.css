@@ -1,0 +1,63 @@
+/* A doc's cover: a small page, inset from the card's edges, whose text runs
+   off the bottom under a fade rather than stopping mid-line at a hard edge. */
+.crewlet-doc-cover {
+  position: relative;
+  align-self: stretch;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: var(--spacing-3) var(--spacing-4) 0;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+}
+
+.crewlet-doc-cover::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 40%;
+  background: linear-gradient(to bottom, transparent, var(--color-surface-elevated));
+  pointer-events: none;
+}
+
+.crewlet-doc-cover__page {
+  font-size: var(--font-size-2xs);
+  line-height: 1.45;
+}
+
+.crewlet-doc-cover__page > :first-child {
+  margin-top: 0;
+}
+
+.crewlet-doc-cover__page h1,
+.crewlet-doc-cover__page h2,
+.crewlet-doc-cover__page h3 {
+  font-size: var(--font-size-sm);
+}
+
+/* A sheet's cover: its first columns and rows as a hairline grid. */
+.crewlet-sheet-cover {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(var(--crewlet-sheet-cover-columns), minmax(0, 1fr));
+  grid-auto-rows: min-content;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-surface-elevated);
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-sheet-cover__cell {
+  overflow: hidden;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-bottom: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.crewlet-sheet-cover__cell--head {
+  background: var(--color-surface-inset);
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-medium);
+}

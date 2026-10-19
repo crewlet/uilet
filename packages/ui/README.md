@@ -203,6 +203,14 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.25.0
+
+**`MergeConflicts`** settles a three-way merge of one text: each passage both edits changed shows the other side's lines (`theirs`, "version 4") beside the draft's, and the person keeps theirs, yours or both. Nothing is pre-chosen, `onApply` reports one `MergeChoice` per clash in order once each has one, and focus moves to its heading when it opens. The merge itself stays the host's.
+
+**`DocCover` and `SheetCover`** are native gallery covers for `ArtifactCard.preview`: a doc's opening, rendered by the host's own Markdown renderer, set as a small page that fades at the card's edge; and a sheet's first columns and rows (at most `SHEET_COVER_COLUMNS` and `SHEET_COVER_ROWS`) as a hairline grid. Both are decorative, as the card's preview is.
+
+What to change: nothing.
+
 ## Changes in 0.24.0
 
 **The `markdown` artifact kind is now `doc`**, as the engine names it (`artifacts.KindDoc`). `ArtifactKind`, `ARTIFACT_KINDS`, `ArtifactKindGlyph` and `ArtifactCard` take `doc`, and the card's default label for it is "Doc".
