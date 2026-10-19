@@ -285,6 +285,36 @@
 }
 
 /*
+ * WITH A SUBTITLE, THE HEAD'S CONTROLS SIT ON THE TITLE'S LINE. Centred on
+ * the whole head, the mark, the actions and the close control floated beside
+ * the description, belonging to neither line; top-aligned, they hung from the
+ * head's top edge, a few pixels above the title they belong to. So the row
+ * aligns to the top and each control is centred on the title's first line:
+ * the mark and the actions in a box one title line tall (what is taller
+ * overflows it evenly, into the head's padding), and a lone control by the
+ * margin that puts its centre there. A dialog with no subtitle keeps the
+ * centring above, where the two are the same thing.
+ *
+ * DIALOGS ONLY. A sheet's head is a bar at the shell's top-bar height and
+ * centres what it holds on the bar, as the bar behind it does.
+ */
+.crewlet-modal__header--subtitled {
+  --crewlet-modal-title-line: calc(var(--font-size-sm) * var(--font-line-height-tight));
+  align-items: flex-start;
+}
+
+.crewlet-modal__header--subtitled > .crewlet-modal__icon,
+.crewlet-modal__header--subtitled > .crewlet-modal__actions {
+  align-items: center;
+  height: var(--crewlet-modal-title-line);
+}
+
+.crewlet-modal__header--subtitled > .crewlet-modal__close,
+.crewlet-modal__header--subtitled > .crewlet-modal__back {
+  margin-block: calc((var(--crewlet-modal-title-line) - var(--size-control-md)) / 2);
+}
+
+/*
  * A SHEET IS COMMITTED FROM ITS HEAD, so its head is the taller band, not the
  * tighter one. It stands at the shell's own top-bar height, which is what puts
  * it on the line the bar behind it draws, and holds the two buttons that
