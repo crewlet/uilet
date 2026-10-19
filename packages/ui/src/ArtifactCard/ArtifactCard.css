@@ -95,6 +95,14 @@
   min-width: 0;
 }
 
+/* THE FACTS OF ONE LINE ARE A RUN, "Sheet · OPS · v12", each after the first
+   opened by a quiet dot, so two short words never read as one phrase. */
+.crewlet-artifact-card__line > * + *::before {
+  content: '·';
+  margin-inline-end: var(--spacing-2);
+  color: var(--color-text-tertiary);
+}
+
 .crewlet-artifact-card__owner,
 .crewlet-artifact-card__presence {
   display: inline-flex;

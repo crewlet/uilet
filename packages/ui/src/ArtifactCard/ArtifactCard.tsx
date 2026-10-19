@@ -36,7 +36,10 @@ export interface ArtifactCardLabels {
   version: (version: number) => string;
   changes: (count: number) => string;
   present: (count: number) => string;
+  /** The change's time, opening the line: "Updated" before "4m ago". */
   updated: string;
+  /** Who made it, after the time: "by Maya". */
+  by: (name: string) => string;
 }
 
 const LABELS: ArtifactCardLabels = {
@@ -46,6 +49,7 @@ const LABELS: ArtifactCardLabels = {
   changes: (count) => (count === 1 ? '1 change since you looked' : `${count} changes since you looked`),
   present: (count) => (count === 1 ? '1 here now' : `${count} here now`),
   updated: 'Updated',
+  by: (name) => `by ${name}`,
 };
 
 export interface ArtifactCardProps {
@@ -58,9 +62,13 @@ export interface ArtifactCardProps {
    * Never a screenshot. The kind's glyph stands in when there is none.
    */
   preview?: ReactNode;
+  /** Who owns it. Leave it out where the reader is the owner and saying so would only repeat it. */
   owner?: Principal | undefined;
   updatedAt: TimeValue;
-  /** Who made the latest change, when it is worth saying ("Maya"). */
+  /**
+   * Who made the latest change, when it is worth saying ("Maya"): read as
+   * "Updated 4m ago by Maya". Leave it out where it is the owner already named.
+   */
   updatedBy?: string | undefined;
   /** Who has it open now. */
   presence?: readonly AvatarStackMember[] | undefined;
@@ -134,7 +142,7 @@ export function ArtifactCard({
       )}
       <span className="crewlet-artifact-card__body">
         <span className="crewlet-artifact-card__title-row">
-          <span id={titleId} className="crewlet-artifact-card__title">
+          <span id={titleId} className="crewlet-artifact-card__title" title={title}>
             {title}
           </span>
           {pinned ? (
@@ -158,8 +166,9 @@ export function ArtifactCard({
               </span>
             ) : null}
             <span>
-              {updatedBy ? `${updatedBy} ` : `${text.updated} `}
+              {`${text.updated} `}
               <RelativeTime value={updatedAt} now={now} />
+              {updatedBy ? ` ${text.by(updatedBy)}` : null}
             </span>
           </span>
           {present || (changes !== undefined && changes > 0) ? (

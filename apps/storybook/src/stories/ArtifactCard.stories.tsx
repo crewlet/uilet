@@ -15,8 +15,8 @@ const CTO = { id: 'cto', kind: 'agent' as const, name: '@cto', character: 'hexle
 
 /**
  * A gallery's cards shape. The whole card is one link named by its title; the
- * facts are its description. A missing preview is the kind's glyph, never a
- * screenshot.
+ * facts are its description, read as "Updated 4m ago by Maya". A missing
+ * preview is the kind's glyph, never a screenshot.
  */
 export const Gallery: Story = {
   render: () => (
@@ -38,6 +38,17 @@ export const Gallery: Story = {
       />
       <ArtifactCard title="Pricing explorer" kind="html" href="#/artifacts/2" owner={CTO} updatedAt={NOW - 12 * 60_000} project="GTM" version={3} pinned now={NOW} />
       <ArtifactCard title="Incident runbook" kind="doc" href="#/artifacts/3" owner={MAYA} updatedAt={NOW - 86_400_000} now={NOW} />
+      {/* THE READER'S OWN, so no owner is named, and a long title cut to one
+          line with the whole of it offered to a pointer. */}
+      <ArtifactCard
+        title="Integration requirements review for the payments platform migration"
+        kind="sheet"
+        href="#/artifacts/5"
+        updatedAt={NOW - 2 * 3_600_000}
+        updatedBy="Maya"
+        version={4}
+        now={NOW}
+      />
       <ArtifactCard
         title="Delivery board"
         kind="dashboard"
