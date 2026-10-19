@@ -131,3 +131,30 @@ test('passes axe, read only and while editing', async () => {
   );
   expect((await axe.run(container)).violations).toEqual([]);
 });
+
+test('a section is a quiet header over a hairline, its blocks on the page grid with no inset', async () => {
+  const { container } = render(
+    <ArrangeGroup title="Delivery" tone="cyan" variant="section" count={2} collapsed={false} onCollapsedChange={() => {}}>
+      <p>Card</p>
+    </ArrangeGroup>,
+  );
+  const group = container.querySelector('.crewlet-arrange-group')!;
+  expect(group.classList.contains('crewlet-arrange-group--section')).toBe(true);
+  expect(group.classList.contains('crewlet-arrange-group--cyan')).toBe(true);
+  // Still a region named by its title, with a header that folds it.
+  expect(screen.getByRole('region', { name: 'Delivery' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /Delivery/ }).getAttribute('aria-expanded')).toBe('true');
+  const { readFileSync } = await import('node:fs');
+  const { dirname, join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ArrangeGroup.css'), 'utf8');
+  const rule = (selector: string) =>
+    new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+  expect(rule('.crewlet-arrange-group--section .crewlet-arrange-group__head')).toMatch(/background:\s*none/);
+  expect(rule('.crewlet-arrange-group--section .crewlet-arrange-group__head')).toMatch(
+    /border-bottom:\s*1px solid var\(--crewlet-arrange-group-line\)/,
+  );
+  expect(rule('.crewlet-arrange-group--section .crewlet-arrange-group__body')).toMatch(/padding:\s*var\(--spacing-3\) 0 0/);
+  expect(rule('.crewlet-arrange-group--section {')).toBe('');
+  expect(/\.crewlet-arrange-group--section \{([^}]*)\}/.exec(css)?.[1]).toMatch(/border:\s*0/);
+});

@@ -9,10 +9,26 @@ export type SurfaceTone = NodeHue | 'none';
 
 const PLACEHOLDER = 'Name this group';
 
+/**
+ * How a group is drawn.
+ *
+ * `band`, the default, is a bordered box whose header is a band in the tone,
+ * for a page being arranged, where each group is an object to move.
+ *
+ * `section` is a quiet section of a page being read: the name, its count and
+ * the chevron on the page's ground over a hairline (in the tone, where there
+ * is one), and the blocks on the page's own grid with no inset, so a block in
+ * the section lines up with the blocks outside it. A filled band among cards
+ * outweighed every card on the page.
+ */
+export type ArrangeGroupVariant = 'band' | 'section';
+
 export interface ArrangeGroupProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   /** What the group holds, in the reader's words: "Delivery". */
   title: string;
   tone?: SurfaceTone | undefined;
+  /** How the group is drawn: see the type. Defaults to `band`. */
+  variant?: ArrangeGroupVariant | undefined;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   /** How many blocks it holds, beside the title. */
@@ -48,6 +64,7 @@ export interface ArrangeGroupProps extends Omit<HTMLAttributes<HTMLElement>, 'ti
 export function ArrangeGroup({
   title,
   tone = 'none',
+  variant = 'band',
   collapsed,
   onCollapsedChange,
   count,
@@ -65,7 +82,13 @@ export function ArrangeGroup({
   const hasChildren = Array.isArray(children) ? children.some(Boolean) : Boolean(children);
   return (
     <section
-      className={cx('crewlet-arrange-group', `crewlet-arrange-group--${tone}`, collapsed && 'is-collapsed', className)}
+      className={cx(
+        'crewlet-arrange-group',
+        `crewlet-arrange-group--${tone}`,
+        variant === 'section' && 'crewlet-arrange-group--section',
+        collapsed && 'is-collapsed',
+        className,
+      )}
       aria-label={title || 'Untitled group'}
       {...rest}
     >

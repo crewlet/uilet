@@ -181,9 +181,21 @@
  * inset a second time.
  */
 .crewlet-chart-empty {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   margin: 0;
   padding: 0;
   line-height: var(--font-line-height-normal);
+  text-align: center;
+}
+
+.crewlet-chart-empty--start {
+  display: block;
+  height: auto;
+  text-align: start;
 }
 
 .crewlet-bar-list__sub {

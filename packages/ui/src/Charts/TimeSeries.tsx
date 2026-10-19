@@ -156,7 +156,11 @@ export function TimeSeries({
    * over a scale of the epoch ("12/31/1969 … peak 1"), which read as data.
    */
   if (instants.length === 0) {
-    return <ChartEmpty className={cx('crewlet-time-series', className)}>{emptyLabel}</ChartEmpty>;
+    return (
+      <ChartEmpty height={height} className={className}>
+        {emptyLabel}
+      </ChartEmpty>
+    );
   }
 
   /*

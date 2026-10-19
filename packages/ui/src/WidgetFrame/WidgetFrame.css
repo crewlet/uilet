@@ -60,6 +60,11 @@
   line-clamp: 2;
 }
 
+/* A held title keeps its two lines empty or not (see `holdTitle`). */
+.crewlet-widget-frame--hold-title .crewlet-widget-frame__title {
+  min-height: calc(2 * 1em * var(--font-line-height-snug));
+}
+
 /* The controls stand on the title's first line: the box is one line of the
    title tall and the control is centred in it, whatever its own height. */
 .crewlet-widget-frame__actions {
@@ -219,8 +224,18 @@
     align-items: flex-start;
   }
 
+  /* STACKED, THE TITLE TAKES A SECOND LINE BEFORE IT ENDS: a frame three
+     columns wide cut "Deploys for the chosen service" to "Deploys for the
+     chosen se…". Past two lines it ends in an ellipsis, and the whole title
+     is the citation's tooltip. */
   .crewlet-widget-frame__source {
+    display: -webkit-box;
     max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .crewlet-widget-frame__when::before {

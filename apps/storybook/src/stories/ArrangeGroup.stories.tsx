@@ -10,13 +10,22 @@ const meta: Meta<typeof ArrangeGroup> = {
 export default meta;
 type Story = StoryObj<typeof ArrangeGroup>;
 
-function Group({ tone, editing = false }: { tone: SurfaceTone; editing?: boolean }) {
+function Group({
+  tone,
+  editing = false,
+  variant,
+}: {
+  tone: SurfaceTone;
+  editing?: boolean;
+  variant?: 'band' | 'section';
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const [title, setTitle] = useState('Delivery');
   return (
     <ArrangeGroup
       title={title}
       tone={tone}
+      variant={variant}
       collapsed={collapsed}
       onCollapsedChange={setCollapsed}
       count={2}
@@ -30,6 +39,20 @@ function Group({ tone, editing = false }: { tone: SurfaceTone; editing?: boolean
 
 /** A titled band that folds; the header is one button with `aria-expanded`. */
 export const Basic: Story = { render: () => <Group tone="blue" /> };
+
+/**
+ * A SECTION of a page being read, such as a dashboard: the name, its count
+ * and the chevron on the page's ground over a hairline in the hue, and the
+ * blocks on the page's own grid with no inset.
+ */
+export const Section: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 24 }}>
+      <Group tone="none" variant="section" />
+      <Group tone="cyan" variant="section" />
+    </div>
+  ),
+};
 
 /** Editing, the name is a field in the header. */
 export const Editing: Story = { render: () => <Group tone="purple" editing /> };
