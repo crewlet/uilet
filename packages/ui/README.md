@@ -240,6 +240,8 @@ Docs, sheets and every kind:
 
 **`ArtifactIcon`** draws the one short word an artifact's author gave it ("chart", "calendar") as a glyph, from a closed, case-insensitive vocabulary (`ARTIFACT_ICON_WORDS`, looked up by `artifactIconGlyph`), and the kind's glyph for any other word. **`ObjectHeader`** takes a `description`, the author's sentence under the title, clamped to two lines.
 
+**`DocTabsEditor`** is a document's tabs as an editor arranges them: each tab's title edited at its field and held to the host's `titleProblem` there, the open tab marked (`selected`, `onSelect`), tabs moved by their handle, the arrow keys or Move up and Move down, removed (never the last), and a new tab added by its title after the open one. The host owns the tabs; every change is reported.
+
 Fixes from the artifact audit:
 
 - **`SheetGrid`**: a row's number carries its actions (on the active row, on hover, and Shift+F10) with Delete row through `onDeleteRow`, which the host confirms. A refusal is announced as it arrives, and the sync strip holds it as "N changes not saved" (`SheetSyncState.refused`) until the reader dismisses it through `onDismissRefused`, which calls `SheetPendingEdits.dismissAll`, so a refused write is never followed by "Saved". Text and long text edit in an overlay at least the column's width that wraps and grows to six lines. `fit="content"` sizes the grid to its rows, capped by `height` or `--crewlet-sheet-max-height`. List editors show a filter only above eight choices, and multi-select cells keep their chips on one line with a "+N" count.
