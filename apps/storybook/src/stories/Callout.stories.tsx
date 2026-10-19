@@ -64,6 +64,29 @@ export const WithAnAction: Story = {
 };
 
 /**
+ * NARROWER THAN 28REM, THE ACTION MOVES UNDER THE TEXT, at the start of the
+ * text's column, so the sentence keeps the callout's whole measure. A phone's
+ * width beside a button left the message a column of a word or two a line.
+ */
+export const WithAnActionNarrow: Story = {
+  args: {
+    variant: 'danger',
+    title: 'This page failed to load',
+    children: 'It did not finish starting. Reload it, and if it fails again, ask its owner to republish it.',
+    action: (
+      <Button size="small" variant="outline">
+        Reload
+      </Button>
+    ),
+  },
+  render: (args) => (
+    <div style={{ width: 358 }}>
+      <Callout {...args} />
+    </div>
+  ),
+};
+
+/**
  * The banner layout is what a shell puts above a screen: against both edges,
  * with no radius and only a bottom border.
  */

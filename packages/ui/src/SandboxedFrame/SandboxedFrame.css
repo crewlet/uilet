@@ -49,15 +49,6 @@
   padding: var(--spacing-4);
 }
 
-.crewlet-sandboxed-frame__detail {
-  display: block;
-}
-
-.crewlet-sandboxed-frame__action {
-  display: flex;
-  margin-top: var(--spacing-2);
-}
-
 /* THE REGION TAKES FOCUS WHEN THE FRAME HANDS IT BACK, and a reader who just
    left a page by keyboard needs to see where they landed. The document's own
    ring sits outside the box, where a frame filling a clipping card loses it,
