@@ -1,7 +1,8 @@
 import { useId } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { ChartEmpty } from './ChartEmpty.js';
 import { ChartTooltip } from './ChartTooltip.js';
 import { dataColor } from './dataColor.js';
 import { useChartHover } from './useChartHover.js';
@@ -27,6 +28,8 @@ export interface StackedBarProps {
    * Defaults to the reader's own number format.
    */
   format?: (value: number) => string;
+  /** What the bar says in place of the track when no part holds anything. */
+  emptyLabel?: ReactNode;
   className?: string;
 }
 
@@ -59,7 +62,13 @@ export interface StackedBarProps {
  * `segments`, zero parts included, so the swatch in its reading is the hue the
  * Legend keyed from the same list shows.
  */
-export function StackedBar({ segments, summary, format = (value) => value.toLocaleString(), className }: StackedBarProps) {
+export function StackedBar({
+  segments,
+  summary,
+  format = (value) => value.toLocaleString(),
+  emptyLabel = 'Nothing recorded in this window',
+  className,
+}: StackedBarProps) {
   const named = useId();
   const total = segments.reduce((sum, segment) => sum + Math.max(0, segment.value), 0);
   const drawn = segments
@@ -79,6 +88,9 @@ export function StackedBar({ segments, summary, format = (value) => value.toLoca
   // Where each part starts and ends across the track, as fractions of the
   // whole: the gaps are two pixels at any width and are left out.
   const edges = drawn.reduce<number[]>((at, segment) => [...at, at[at.length - 1]! + segment.value / total], [0]);
+
+  // A whole of nothing is a sentence, not an empty track that reads as a bar.
+  if (drawn.length === 0) return <ChartEmpty className={className}>{emptyLabel}</ChartEmpty>;
 
   return (
     <div className={cx('crewlet-stacked-bar', className)}>

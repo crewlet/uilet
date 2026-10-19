@@ -221,6 +221,28 @@ What to change:
 - `SlideCompareLabels.missing` is a string now, not a function of the version.
 - A host that drew a show's Previous, count and Next itself uses `SlideNav`.
 
+**Every chart says when it has nothing to draw.** `TimeSeries`, `StackedColumns`, `StackedBar` and `ActivityStrip` take `emptyLabel`, as `BarList` did, and draw that one sentence in the chart's place (`.crewlet-chart-empty`) rather than an empty grid, a scale of 0 to 4, a bare track or a window starting at the epoch.
+
+**`BarList` draws every bar in the first data hue.** A ranked list is one series; a hue per rank gave five rows five identities and painted the tail as the residual. A row's `color` still overrides it.
+
+**`TimeSeries` draws below zero, a single point, and its own legend.** The scale runs from zero to the peak, and below zero when a value is, with the baseline on zero, an area filled to it, and "low" beside "peak" under the plot. A series of one point draws its point, a window of one instant draws it at the middle, and the reading draws every series' point on the crosshair. Two series or more are lines with no wash, keyed by a legend of line keys the chart draws itself (`legend`, `below` by default, or `none`). The grid is a solid hairline. Under 18rem the range leaves the line to the window's ends.
+
+**`StackedColumns` stands on zero.** A negative part hangs from the zero line, zero is always one of the scale's lines, and the tooltip reads values with their sign. `formatScale` writes the scale's words apart from the tooltip's. A chart of one series draws no legend, since its label names it. The scale's words are the sans at the caption step, as the dates are; a column is at most 24px wide; the middle date leaves a chart narrower than 22rem.
+
+**`ActivityStrip` takes `reading`,** which makes the strip one tab stop whose cells read their time and value by pointer or by ←/→. A cell is at most 24px wide, so a strip of one day is one mark.
+
+**`Legend` items take `shape: 'line'`** for a series drawn as a line.
+
+**`StatCard` takes `hideLabel`**, as `Meter` does, for a tile its container names. In a `WidgetFrame` a tile reserves no empty second line, and in a frame narrower than 11rem its number steps down to `--font-size-xl` rather than being cut.
+
+**A flush `WidgetFrame` insets only its table's outer cells.** The first and last columns stand on the frame's 16px; between columns a cell keeps the compact table's own inset.
+
+**`Note` spaces its paragraphs** a step apart, whatever the host's base sheet resets.
+
+What to change for charts:
+
+- Nothing for an existing host. A `TimeSeries` caller that drew its own `Legend` beside it passes `legend="none"` or drops its own.
+
 ## Changes in 0.32.0
 
 **A canvas title fits its box.** `CanvasBoard` sets a title note in a size fitted to its box both ways (three fifths of its height, smaller when its text would run past its width; `titleSize` is that rule on its own), and the text clips at the box where an unusually wide face still overruns it. A long heading used to run past its box over the boards beside it, at every zoom.

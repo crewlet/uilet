@@ -1,8 +1,10 @@
 import { useId } from 'react';
-import type { PointerEvent } from 'react';
+import type { CSSProperties, PointerEvent, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
+import { ChartEmpty } from './ChartEmpty.js';
 import { ChartTooltip } from './ChartTooltip.js';
 import { DATA_COLOR_OTHER, dataColor } from './dataColor.js';
+import { Legend } from './Legend.js';
 import { useChartHover } from './useChartHover.js';
 
 export interface SeriesPoint {
@@ -43,6 +45,14 @@ export interface TimeSeriesProps {
    * shows.
    */
   summary?: (facts: { from: number; to: number; peak: number; series: { name: string; peak: number }[] }) => string;
+  /**
+   * Where the legend goes: `below`, the default, under the scale, or `none`
+   * for a screen that names the series somewhere the chart cannot reach. A
+   * chart of one series draws none either way: its label already names it.
+   */
+  legend?: 'below' | 'none';
+  /** What the chart says in place of the plot when no series has a point. */
+  emptyLabel?: ReactNode;
   className?: string;
 }
 
@@ -83,6 +93,8 @@ export function TimeSeries({
   format = (value) => value.toLocaleString(),
   formatTime = (at) => new Date(at).toLocaleString(),
   summary,
+  legend = 'below',
+  emptyLabel = 'Nothing recorded in this window',
   className,
 }: TimeSeriesProps) {
   const id = useId();
@@ -97,11 +109,23 @@ export function TimeSeries({
   const plot = 120;
   const footer = 18;
   const head = 6;
-  const span = Math.max(1, to - from);
+  const span = to - from;
   const peaks = series.map((one) => Math.max(0, ...one.points.map((point) => point.v)));
   const peak = Math.max(1, ...peaks);
-  const x = (at: number) => ((at - from) / span) * width;
-  const y = (value: number) => head + (1 - value / peak) * (plot - head - footer);
+  /*
+   * THE SCALE RUNS FROM ZERO TO THE PEAK, AND BELOW ZERO WHEN A VALUE IS. A
+   * net change, a balance or a margin goes negative, and a scale that started
+   * at zero drew those points under the plot, through the scale's words.
+   * The baseline is zero wherever it falls, and an area fills to it.
+   */
+  const low = Math.min(0, ...series.flatMap((one) => one.points.map((point) => point.v)));
+  /*
+   * A WINDOW OF ONE INSTANT is drawn at the middle of the plot. Over a span
+   * of nothing, every point stood on the plot's left edge, half outside it.
+   */
+  const x = (at: number) => (span > 0 ? ((at - from) / span) * width : width / 2);
+  const y = (value: number) => head + ((peak - value) / (peak - low)) * (plot - head - footer);
+  const zero = y(0);
 
   /*
    * The instants a reading can stand on: every one any series has a point
@@ -115,7 +139,7 @@ export function TimeSeries({
   const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
     const box = event.currentTarget.getBoundingClientRect();
     if (box.width <= 0 || instants.length === 0) return;
-    const at = from + ((event.clientX - box.left) / box.width) * span;
+    const at = from + ((event.clientX - box.left) / box.width) * Math.max(1, span);
     let nearest = 0;
     for (let index = 1; index < instants.length; index += 1) {
       if (Math.abs(instants[index]! - at) < Math.abs(instants[nearest]! - at)) nearest = index;
@@ -125,7 +149,35 @@ export function TimeSeries({
 
   const sentence = summary
     ? summary({ from, to, peak, series: series.map((one, index) => ({ name: one.name, peak: peaks[index] ?? 0 })) })
-    : `${label}. ${formatTime(from)} to ${formatTime(to)}, peak ${format(peak)}.`;
+    : `${label}. ${formatTime(from)} to ${formatTime(to)}, peak ${format(peak)}${low < 0 ? `, low ${format(low)}` : ''}.`;
+
+  /*
+   * NOTHING TO DRAW IS SAID, NOT DRAWN. A plot of no points was an empty grid
+   * over a scale of the epoch ("12/31/1969 … peak 1"), which read as data.
+   */
+  if (instants.length === 0) {
+    return <ChartEmpty className={cx('crewlet-time-series', className)}>{emptyLabel}</ChartEmpty>;
+  }
+
+  /*
+   * ONE SERIES IS A LINE OVER A WASH; SEVERAL ARE LINES. Each series' area
+   * over the next one's was a stack of translucent fills that mixed into a
+   * colour no series has, under lines that crossed through it.
+   */
+  const washed = series.length === 1;
+  const colorOf = (one: Series, index: number) => one.color ?? dataColor(index);
+  /*
+   * THE POINTS ARE MARKS OF THEIR OWN over the plot, never circles in it: the
+   * plot is stretched to its box, so a circle drawn in its viewBox would come
+   * out as an ellipse. A series of one point draws its point, since a line
+   * through one point is nothing at all; a reading draws every series' point
+   * at the instant read, on the crosshair.
+   */
+  const dots = series.flatMap((one, index) =>
+    one.points
+      .filter((point) => one.points.length === 1 || point.t === reading)
+      .map((point) => ({ key: `${one.id}-${point.t}`, point, color: colorOf(one, index) })),
+  );
 
   return (
     <figure className={cx('crewlet-time-series', className)}>
@@ -139,34 +191,52 @@ export function TimeSeries({
           aria-label={sentence}
           onPointerMove={onPointerMove}
         >
-          {[0.25, 0.5, 0.75].map((fraction) => (
+          {[0.25, 0.5, 0.75, 1].map((fraction) => {
+            const at = y(low + (peak - low) * fraction);
+            return (
+              <line
+                key={fraction}
+                className="crewlet-chart__grid-line"
+                x1={0}
+                x2={width}
+                y1={at}
+                y2={at}
+                vectorEffect="non-scaling-stroke"
+              />
+            );
+          })}
+          {low < 0 ? (
             <line
-              key={fraction}
               className="crewlet-chart__grid-line"
               x1={0}
               x2={width}
-              y1={y(peak * fraction)}
-              y2={y(peak * fraction)}
+              y1={plot - footer}
+              y2={plot - footer}
+              vectorEffect="non-scaling-stroke"
             />
-          ))}
-          <line className="crewlet-chart__axis-line" x1={0} x2={width} y1={plot - footer} y2={plot - footer} />
+          ) : null}
+          <line className="crewlet-chart__axis-line" x1={0} x2={width} y1={zero} y2={zero} vectorEffect="non-scaling-stroke" />
           {series.map((one, index) => {
-            const color = one.color ?? dataColor(index);
+            const color = colorOf(one, index);
             const points = [...one.points].sort((a, b) => a.t - b.t);
-            if (points.length === 0) return null;
+            if (points.length < 2) return null;
             const line = points.map((point) => `${x(point.t).toFixed(2)},${y(point.v).toFixed(2)}`).join(' ');
             const first = points[0]!;
             const last = points[points.length - 1]!;
-            const area = `${x(first.t).toFixed(2)},${plot - footer} ${line} ${x(last.t).toFixed(2)},${plot - footer}`;
+            const area = `${x(first.t).toFixed(2)},${zero.toFixed(2)} ${line} ${x(last.t).toFixed(2)},${zero.toFixed(2)}`;
             return (
               <g key={one.id}>
-                <defs>
-                  <linearGradient id={`${id}-${index}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity="0.22" />
-                    <stop offset="100%" stopColor={color} stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <polygon points={area} fill={`url(#${id}-${index})`} />
+                {washed ? (
+                  <>
+                    <defs>
+                      <linearGradient id={`${id}-${index}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <polygon points={area} fill={`url(#${id}-${index})`} />
+                  </>
+                ) : null}
                 <polyline
                   className="crewlet-chart__series"
                   points={line}
@@ -187,9 +257,23 @@ export function TimeSeries({
             />
           )}
         </svg>
+        {dots.map(({ key, point, color }) => (
+          <span
+            key={key}
+            className="crewlet-time-series__dot"
+            aria-hidden
+            style={
+              {
+                left: `${((x(point.t) / width) * 100).toFixed(3)}%`,
+                top: `${((y(point.v) / plot) * 100).toFixed(3)}%`,
+                '--crewlet-time-series-dot-color': color,
+              } as CSSProperties
+            }
+          />
+        ))}
         <ChartTooltip
           open={reading != null}
-          anchor={reading == null ? undefined : { start: (reading - from) / span }}
+          anchor={reading == null ? undefined : { start: x(reading) / width }}
           title={reading == null ? undefined : formatTime(reading)}
           rows={
             reading == null
@@ -197,17 +281,26 @@ export function TimeSeries({
               : series.flatMap((one, index) => {
                   const point = one.points.find((candidate) => candidate.t === reading);
                   return point
-                    ? [{ id: one.id, name: one.name, value: format(point.v), color: one.color ?? dataColor(index) }]
+                    ? [{ id: one.id, name: one.name, value: format(point.v), color: colorOf(one, index) }]
                     : [];
                 })
           }
         />
       </div>
-      <figcaption className="crewlet-time-series__scale">
+      <figcaption className={cx('crewlet-time-series__scale', span <= 0 && 'crewlet-time-series__scale--instant')}>
         <span>{formatTime(from)}</span>
-        <span>peak {format(peak)}</span>
-        <span>{formatTime(to)}</span>
+        <span className="crewlet-time-series__range">
+          peak {format(peak)}
+          {low < 0 ? <>, low {format(low)}</> : null}
+        </span>
+        {span > 0 ? <span>{formatTime(to)}</span> : null}
       </figcaption>
+      {legend === 'below' && series.length > 1 ? (
+        <Legend
+          className="crewlet-time-series__legend"
+          items={series.map((one, index) => ({ id: one.id, label: one.name, color: colorOf(one, index), shape: 'line' }))}
+        />
+      ) : null}
     </figure>
   );
 }

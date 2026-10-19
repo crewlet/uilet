@@ -1244,13 +1244,17 @@ describe('StackedColumns keeps its top value inside the figure', () => {
    * figure, and a container that clips (a dashboard widget's body) cut the
    * axis's highest value in half.
    */
+  const tickRule = (css: string) => /\.crewlet-stacked-columns__tick\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+
   test('a chart with no head reserves the half line above its plot', () => {
     const { container } = render(columns({ legend: 'below' }));
     const figure = container.querySelector('.crewlet-stacked-columns');
     expect(figure?.classList.contains('crewlet-stacked-columns--headless')).toBe(true);
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Charts.css'), 'utf8');
     const rule = /\.crewlet-stacked-columns--headless\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(rule).toMatch(/padding-block-start:\s*calc\(var\(--font-size-2xs\)\s*\*\s*var\(--font-line-height-tight\)\s*\/\s*2\)/);
+    expect(rule).toMatch(/padding-block-start:\s*calc\(var\(--font-size-xs\)\s*\*\s*var\(--font-line-height-tight\)\s*\/\s*2\)/);
+    // The reserve is half of the tick's own line, at the tick's own step.
+    expect(tickRule(css)).toMatch(/font-size:\s*var\(--font-size-xs\)/);
     const tick = /\.crewlet-stacked-columns__tick\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
     expect(tick).toMatch(/line-height:\s*var\(--font-line-height-tight\)/);
   });
@@ -1259,4 +1263,155 @@ describe('StackedColumns keeps its top value inside the figure', () => {
     const { container } = render(columns({ legend: 'head' }));
     expect(container.querySelector('.crewlet-stacked-columns--headless')).toBeNull();
   });
+});
+
+describe('a chart of the cases a board draws: none, one, below zero, more than the ramp', () => {
+  test('a ranked list is one series, so every bar takes the first data hue', () => {
+    const { container } = render(
+      <BarList
+        data={['a', 'b', 'c', 'd', 'e', 'f'].map((id, at) => ({ id, label: id, value: 60 - at * 10 }))}
+      />,
+    );
+    const hues = [...container.querySelectorAll<HTMLElement>('.crewlet-bar-list__bar')].map((bar) =>
+      bar.style.getPropertyValue('--crewlet-bar-list-bar-color'),
+    );
+    expect(new Set(hues)).toEqual(new Set([DATA_COLORS[0]]));
+  });
+
+  test('every chart says it has nothing to draw, in one sentence, rather than drawing a scale', () => {
+    const empty = 'No data to show.';
+    for (const chart of [
+      <TimeSeries key="t" label="Deploys" from={0} to={0} series={[]} emptyLabel={empty} />,
+      <StackedColumns key="c" label="Deploys" series={[{ id: 'n', name: 'n' }]} buckets={[]} emptyLabel={empty} />,
+      <StackedBar key="b" segments={[{ id: 'a', label: 'a', value: 0 }]} emptyLabel={empty} />,
+      <ActivityStrip key="a" label="Deploys" buckets={[]} emptyLabel={empty} />,
+      <BarList key="l" data={[]} emptyLabel={empty} />,
+    ]) {
+      const { container } = render(chart);
+      expect(container.querySelector('.crewlet-chart-empty')?.textContent).toBe(empty);
+      expect(container.querySelector('svg, .crewlet-stacked-columns__tick, .crewlet-stacked-bar__track')).toBeNull();
+      // Never a window starting at the epoch.
+      expect(container.textContent).not.toMatch(/1969|1970/);
+      cleanup();
+    }
+  });
+
+  test('a time series of one point draws the point, at the middle of a window of one instant', () => {
+    const { container } = render(
+      <TimeSeries
+        label="Deploys"
+        from={HOUR}
+        to={HOUR}
+        series={[{ id: 'n', name: 'n', points: [{ t: HOUR, v: 42 }] }]}
+        formatTime={() => 'Sep 1'}
+      />,
+    );
+    const dot = container.querySelector<HTMLElement>('.crewlet-time-series__dot');
+    expect(dot).toBeTruthy();
+    expect(dot!.style.left).toBe('50%');
+    // One date, under the point, and no second copy of it at the end.
+    expect(container.querySelector('.crewlet-time-series__scale')!.textContent).toBe('Sep 1peak 42');
+  });
+
+  test('a time series below zero stands its baseline on zero and fills to it', () => {
+    const { container } = render(
+      <TimeSeries
+        label="Net"
+        from={0}
+        to={2 * HOUR}
+        series={[{ id: 'n', name: 'net', points: [{ t: 0, v: 10 }, { t: HOUR, v: -10 }, { t: 2 * HOUR, v: 10 }] }]}
+        format={(v) => String(v)}
+        formatTime={() => ''}
+      />,
+    );
+    const ys = container
+      .querySelector('polyline.crewlet-chart__series')!
+      .getAttribute('points')!
+      .split(' ')
+      .map((pair) => Number(pair.split(',')[1]));
+    const axis = Number(container.querySelector('.crewlet-chart__axis-line')!.getAttribute('y1'));
+    // The low point is under the baseline and inside the plot, not under it.
+    expect(ys[1]!).toBeGreaterThan(axis);
+    expect(ys[1]!).toBeLessThanOrEqual(120 - 18);
+    expect(axis).toBeCloseTo((ys[0]! + ys[1]!) / 2, 5);
+    expect(container.textContent).toMatch(/low -10/);
+  });
+
+  test('a time series of two series or more keys them with lines, and one series draws no legend', () => {
+    const two = render(
+      <TimeSeries
+        label="Turns"
+        from={0}
+        to={HOUR}
+        series={[
+          { id: 'a', name: 'turns', points: [{ t: 0, v: 1 }, { t: HOUR, v: 2 }] },
+          { id: 'b', name: 'reviews', points: [{ t: 0, v: 2 }, { t: HOUR, v: 1 }] },
+        ]}
+      />,
+    );
+    expect(two.container.querySelectorAll('.crewlet-legend__swatch--line')).toHaveLength(2);
+    // Lines only: a wash under each crossed into a colour no series has.
+    expect(two.container.querySelector('polygon')).toBeNull();
+    cleanup();
+    const one = render(
+      <TimeSeries label="Turns" from={0} to={HOUR} series={[{ id: 'a', name: 'turns', points: [{ t: 0, v: 1 }, { t: HOUR, v: 2 }] }]} />,
+    );
+    expect(one.container.querySelector('.crewlet-legend')).toBeNull();
+    expect(one.container.querySelector('polygon')).toBeTruthy();
+  });
+
+  test('a column below zero hangs from the zero line, and zero is one of the scale\'s lines', () => {
+    const { container } = render(
+      <StackedColumns
+        label="Net"
+        series={[{ id: 'n', name: 'net' }]}
+        buckets={[
+          { t: 1, values: { n: 30 } },
+          { t: 2, values: { n: -10 } },
+        ]}
+        format={(v) => String(v)}
+        formatScale={(v) => `${v}u`}
+      />,
+    );
+    const ticks = [...container.querySelectorAll('.crewlet-stacked-columns__tick')].map((t) => t.textContent);
+    expect(ticks).toContain('0u');
+    expect(ticks.at(-1)).toMatch(/^-/);
+    const below = container.querySelector<HTMLElement>('.crewlet-stacked-columns__column--below');
+    expect(below).toBeTruthy();
+    const above = container.querySelector<HTMLElement>('.crewlet-stacked-columns__column:not(.crewlet-stacked-columns__column--below)')!;
+    // The column above stands where the one below hangs from.
+    expect(Number.parseFloat(above.style.bottom) + Number.parseFloat(below!.style.top)).toBeCloseTo(100, 3);
+    // One series is named by the chart's label: no legend box restates it.
+    expect(container.querySelector('.crewlet-legend')).toBeNull();
+  });
+
+  test('an activity strip given a reading is one tab stop whose cells read their time and value', () => {
+    const { container } = render(
+      <ActivityStrip
+        label="Deploys"
+        buckets={[
+          { t: 1, v: 3 },
+          { t: 2, v: 5 },
+        ]}
+        reading={{ formatTime: (at) => `day ${at}`, format: (v) => `${v} deploys` }}
+      />,
+    );
+    const frame = container.querySelector<HTMLElement>('.crewlet-chart-frame')!;
+    expect(frame.tabIndex).toBe(0);
+    fireEvent.pointerEnter(container.querySelectorAll('.crewlet-activity-strip__cell')[1]!);
+    expect(container.querySelector('.crewlet-chart-tooltip')!.textContent).toMatch(/day 2.*5 deploys/);
+    cleanup();
+    // Without one it stays a glance, with no tab stop of its own.
+    const glance = render(<ActivityStrip label="Deploys" buckets={[{ t: 1, v: 3 }]} />);
+    expect(glance.container.querySelector('.crewlet-chart-frame')).toBeNull();
+  });
+});
+
+test('a long series name in the tooltip ends before its value, which is never cut', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Charts.css'), 'utf8');
+  const name = /\.crewlet-chart-tooltip__name\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(name).toMatch(/text-overflow:\s*ellipsis/);
+  expect(name).toMatch(/overflow:\s*hidden/);
+  const value = /\.crewlet-chart-tooltip__value\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(value).toMatch(/flex:\s*none/);
 });
