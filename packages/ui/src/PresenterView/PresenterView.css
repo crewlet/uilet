@@ -46,7 +46,7 @@
   flex: none;
   width: min(
     100cqw,
-    (100cqh - var(--size-control-md) - var(--spacing-3)) * var(--crewlet-presenter-ratio, 1.7778)
+    (100cqh - var(--size-control-sm) - var(--spacing-3)) * var(--crewlet-presenter-ratio, 1.7778)
   );
   border-radius: var(--radius-md);
 }

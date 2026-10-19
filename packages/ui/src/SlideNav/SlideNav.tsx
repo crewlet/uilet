@@ -38,7 +38,10 @@ export interface SlideNavProps {
   onPrevious: () => void;
   onNext: () => void;
   tone?: SlideNavTone | undefined;
-  /** Controls after Next, set apart by a rule: Full screen. IconButtons take the tone. */
+  /**
+   * Controls after Next, set apart by a rule: Full screen. IconButtons take
+   * the tone; give them `size="sm"`, the step Previous and Next are drawn at.
+   */
   children?: ReactNode;
   className?: string | undefined;
   labels?: Partial<SlideNavLabels> | undefined;
@@ -47,6 +50,9 @@ export interface SlideNavProps {
 /**
  * Previous, where the show is, and Next: the one set of controls every way of
  * presenting a deck moves by, in the page, full screen and at the lectern.
+ *
+ * A TOOLBAR'S STEP: Previous and Next are the small control step, as tall as
+ * the buttons a toolbar or a panel sets beside them (the presenter's Pause).
  *
  * STOPS AT THE ENDS, SAYING WHY. Previous on the first slide and Next on the
  * last are off, with the reason on the control, rather than pressable and
@@ -72,6 +78,7 @@ export function SlideNav({
         label={text.previous}
         icon={<ChevronLeftGlyph />}
         variant="ghost"
+        size="sm"
         onClick={onPrevious}
         disabledReason={position <= 1 ? text.start : undefined}
       />
@@ -80,6 +87,7 @@ export function SlideNav({
         label={text.next}
         icon={<ChevronRightGlyph />}
         variant="ghost"
+        size="sm"
         onClick={onNext}
         disabledReason={position >= total ? text.end : undefined}
       />

@@ -17,7 +17,7 @@ import { CheckGlyph, ChevronDownGlyph, SearchGlyph } from '@crewlethq/icons/glyp
 import {
   LAYER_GAP,
   LAYER_REPOSITION_EVENT,
-  outsideBounds,
+  anchorGone,
   placePopup,
   useLayerContainer,
   viewportBounds,
@@ -735,8 +735,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       width: rect.width,
       height: rect.height,
     };
-    const whole: PlacementRect = { x: 0, y: 0, width: host.width, height: host.height };
-    if (outsideBounds(local, whole)) {
+    if (anchorGone(rect, host, inHost)) {
       /*
        * HAND FOCUS BACK IF IT IS IN THE THING BEING REMOVED. A searchable
        * Select is focused on its search box, which lives in the portalled
