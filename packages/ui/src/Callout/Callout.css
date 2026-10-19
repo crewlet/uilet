@@ -38,17 +38,29 @@
   line-height: var(--font-line-height-normal);
 }
 
+/*
+ * WITH AN ACTION, ONE LINE OF TEXT CENTRES ON THE BUTTON. The row is the
+ * button's height and the text sat at its top, three pixels above the
+ * button's label. The content is padded by half of what the control is
+ * taller than a line, and the icon moved down with it, so a one-line callout
+ * reads as one line and a longer one keeps its icon on its first line.
+ */
+.crewlet-callout:has(> .crewlet-callout__action) {
+  --crewlet-callout-lead: max(0px, calc((var(--size-control-sm) - 1lh) / 2));
+}
+
 .crewlet-callout__icon {
   display: inline-flex;
   flex: none;
   /* On the first line's optical centre rather than its box top, which a 16px
      glyph beside a 13px line sits two pixels above. */
-  margin-top: 2px;
+  margin-top: calc(2px + var(--crewlet-callout-lead, 0px));
 }
 
 .crewlet-callout__content {
   min-width: 0;
   flex: 1;
+  padding-block: var(--crewlet-callout-lead, 0px);
 }
 
 .crewlet-callout__title {

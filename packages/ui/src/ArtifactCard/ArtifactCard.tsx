@@ -82,7 +82,8 @@ export interface ArtifactCardProps {
   updatedAt: TimeValue;
   /**
    * Who made the latest change, when it is worth saying ("Maya"): read as
-   * "Updated 4m ago by Maya". Leave it out where it is the owner already named.
+   * "Updated 4m ago by Maya". Left unsaid where it is the owner, whose name
+   * the line already carries.
    */
   updatedBy?: string | undefined;
   /** Who has it open now. */
@@ -132,6 +133,9 @@ export function ArtifactCard({
   const titleId = useId();
   const factsId = useId();
   const present = presence && presence.length > 0 ? presence : null;
+  // THE OWNER IS ALREADY ON THE LINE, so a change they made reads "Updated 4m
+  // ago" beside their name rather than the name twice.
+  const changedBy = updatedBy && updatedBy !== owner?.name ? updatedBy : undefined;
 
   return (
     <Card
@@ -179,7 +183,7 @@ export function ArtifactCard({
             <span>
               {`${text.updated} `}
               <RelativeTime value={updatedAt} now={now} />
-              {updatedBy ? ` ${text.by(updatedBy)}` : null}
+              {changedBy ? ` ${text.by(changedBy)}` : null}
             </span>
           </span>
           {present || (changes !== undefined && changes > 0) ? (

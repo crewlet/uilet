@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Checkbox } from '@crewlethq/ui';
+import { Checkbox, Input, Select } from '@crewlethq/ui';
 
 const meta: Meta<typeof Checkbox> = {
   title: 'UI/Checkbox',
@@ -83,11 +83,15 @@ export const Indeterminate: Story = {
 
 /**
  * The compact step, beside the small controls of a dense form row: a column's
- * flags in a schema editor, set at the same step as its small selects.
+ * flags in a schema editor, set at the same step as its small inputs and
+ * selects. Its line is centred in the row, so its label shares the line the
+ * inputs' text is on.
  */
 export const Compact: Story = {
   render: () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Input inputSize="sm" width="sm" aria-label="Column name" defaultValue="Gate" />
+      <Select size="sm" width="auto" ariaLabel="Type" value="text" onChange={() => {}} options={[{ value: 'text', label: 'Text' }]} />
       <Checkbox size="sm" label="Required" checked onChange={() => {}} />
       <Checkbox size="sm" label="Hidden" checked={false} onChange={() => {}} />
     </div>

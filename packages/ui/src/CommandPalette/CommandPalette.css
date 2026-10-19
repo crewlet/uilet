@@ -147,7 +147,11 @@
   background: var(--color-surface-background);
 }
 
+/* THE LEGEND SPANS THE BAND: a palette's foot has no actions, so its start
+   slot takes the whole width, and a consumer that ends the legend with what
+   the search is doing can push that to the band's end. */
 .crewlet-palette .crewlet-modal__footer-start {
+  flex: 1 1 auto;
   gap: var(--spacing-4);
   font-size: var(--font-size-xs);
 }

@@ -570,6 +570,57 @@ describe('audit fixes', () => {
   });
 });
 
+describe('polish', () => {
+  const css = () => readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+
+  test('a header sits on its column edge: numbers and ratings end, checkboxes centre', () => {
+    render(<Host />);
+    const headers = within(grid()).getAllByRole('columnheader');
+    expect(headers[2]!.className).toContain('crewlet-sheet-grid__header--number');
+    expect(headers[3]!.className).toContain('crewlet-sheet-grid__header--checkbox');
+    const sheet = css();
+    expect(sheet).toMatch(/\.crewlet-sheet-grid__header--number,\s*\.crewlet-sheet-grid__header--rating\s*\{\s*flex-direction:\s*row-reverse;/);
+    expect(sheet).toMatch(/\.crewlet-sheet-grid__header--checkbox\s*\{\s*justify-content:\s*center;/);
+  });
+
+  test('a header carries its whole name, which a narrow column cuts short', () => {
+    render(<SheetGrid label="Vendor scorecard" columns={columns} rows={initial} />);
+    expect(within(grid()).getAllByRole('columnheader')[1]!.getAttribute('title')).toBe('Vendor');
+  });
+
+  test('the active cell reserves room for its history control, shown while the reader is in the grid', () => {
+    render(<Host onShowHistory={() => {}} />);
+    expect(cell(0, 0).className).toContain('crewlet-sheet-grid__cell--history');
+    expect(cell(1, 0).className).not.toContain('crewlet-sheet-grid__cell--history');
+    const sheet = css();
+    expect(sheet).toMatch(/:focus-within \.crewlet-sheet-grid__cell--history,[^{]*\{\s*padding-inline-end:/);
+    expect(sheet).toMatch(/:not\(:focus-within\)[^{]*__history\s*\{\s*visibility:\s*hidden;/);
+    // A number keeps its edge: its control and its room are on the leading side.
+    expect(sheet).toMatch(/__cell--rating\) > \.crewlet-sheet-grid__history\s*\{\s*inset-inline:\s*var\(--spacing-1\) auto;/);
+  });
+
+  test('a single selected cell is tinted only while the reader is in the grid; a range always is', () => {
+    render(<Host />);
+    expect(grid().className).not.toContain('crewlet-sheet-grid__grid--range');
+    act(() => cell(0, 0).focus());
+    key(cell(0, 0), 'ArrowDown', { shiftKey: true });
+    expect(grid().className).toContain('crewlet-sheet-grid__grid--range');
+    expect(css()).toMatch(/__grid:is\(:focus-within, \.crewlet-sheet-grid__grid--range\) \.crewlet-sheet-grid__cell--selected\s*\{/);
+  });
+
+  test('the last frozen column is the frozen edge, or the row numbers where nothing is frozen', () => {
+    const { container, rerender } = render(<Host />);
+    expect(cell(0, 0).className).toContain('crewlet-sheet-grid__frozen-edge');
+    expect(cell(0, 1).className).not.toContain('crewlet-sheet-grid__frozen-edge');
+    rerender(<Host columns={columns.map((column) => ({ ...column, frozen: false }))} />);
+    expect(container.querySelector('.crewlet-sheet-grid__rownum')?.className).toContain('crewlet-sheet-grid__frozen-edge');
+    const scroller = container.querySelector<HTMLElement>('.crewlet-sheet-grid__scroller')!;
+    scroller.scrollLeft = 40;
+    fireEvent.scroll(scroller);
+    expect(scroller.className).toContain('crewlet-sheet-grid__scroller--across');
+  });
+});
+
 describe('accessibility', () => {
   test('carries no axe violation, at rest and while editing', async () => {
     const { container } = render(

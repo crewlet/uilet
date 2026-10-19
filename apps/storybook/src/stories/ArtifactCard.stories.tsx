@@ -100,6 +100,33 @@ export const Compact: Story = {
   ),
 };
 
+/**
+ * A task's rail, 280px wide: a long title is cut on one line inside the card,
+ * and a change the owner made names them once.
+ */
+export const CompactInARail: Story = {
+  render: () => (
+    <ul style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4, width: 280, margin: 0, padding: 0, listStyle: 'none' }}>
+      <li>
+        <ArtifactCard
+          title="Launch checklist for the October release, with every gate the review asked for"
+          kind="html"
+          href="#/artifacts/3"
+          owner={MAYA}
+          updatedAt={NOW - 26_000}
+          updatedBy={MAYA.name}
+          version={1}
+          size="compact"
+          now={NOW}
+        />
+      </li>
+      <li>
+        <ArtifactCard title="Launch notes" kind="doc" href="#/artifacts/4" owner={MAYA} updatedAt={NOW - 3_600_000} updatedBy="PM" version={4} size="compact" now={NOW} />
+      </li>
+    </ul>
+  ),
+};
+
 /** Every kind with no preview: the glyph and the label each kind is drawn with until it has a cover. */
 export const Kinds: Story = {
   render: () => (

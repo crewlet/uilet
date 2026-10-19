@@ -119,3 +119,11 @@ test('carries no axe violation, as a card and compact', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test('says the owner once when the owner made the latest change', () => {
+  render(<ArtifactCard title="Vendor scorecard" kind="sheet" href="#/artifacts/7b0c" owner={MAYA} updatedAt={NOW - 4 * 60_000} updatedBy="Maya Ortiz" size="compact" now={NOW} />);
+  const link = screen.getByRole('link', { name: 'Vendor scorecard' });
+  const facts = document.getElementById(link.getAttribute('aria-describedby') ?? '')?.textContent ?? '';
+  expect(facts.match(/Maya Ortiz/g)).toHaveLength(1);
+  expect(facts).toContain('Updated 4m ago');
+});

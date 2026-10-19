@@ -103,7 +103,11 @@ describe('Toaster', () => {
     // The strip reads them: the mark on the glyph and the wash on the countdown,
     // and the words keep the strip's own inks on the strip's own hairline.
     expect(css).toMatch(/\.crewlet-toast__icon\s*\{[^}]*color:\s*var\(--crewlet-toast-mark\)/);
-    expect(css).toMatch(/\.crewlet-toast__progress\s*\{[^}]*background:\s*var\(--crewlet-toast-wash\)/);
+    // Feathered at its leading edge, so a paused wash is a tint running out
+    // rather than a strip painted in two tones.
+    expect(css).toMatch(
+      /\.crewlet-toast__progress\s*\{[^}]*background:\s*linear-gradient\(\s*to right,\s*var\(--crewlet-toast-wash\) calc\(100% - var\(--spacing-7\)\),\s*transparent\s*\)/,
+    );
     expect(css).toMatch(/\.crewlet-toast\s*\{[^}]*border:\s*1px solid var\(--color-border-default\)/);
     expect(css).toMatch(/\.crewlet-toast__message\s*\{[^}]*color:\s*var\(--color-text-secondary\)/);
   });
