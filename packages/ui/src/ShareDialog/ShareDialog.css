@@ -91,9 +91,17 @@
 }
 
 .crewlet-share-dialog__note,
+.crewlet-share-dialog__invalid,
 .crewlet-share-dialog__refusal {
   grid-column: 2 / -1;
   font-size: var(--font-size-xs);
+}
+
+/* A SHARE THAT REACHES NOBODY says why in the warning ink, the state a person
+   is asked to act on, and its "No access" stands in the quiet ink a role
+   would. */
+.crewlet-share-dialog__invalid {
+  color: var(--color-feedback-warning-ink);
 }
 
 .crewlet-share-dialog__note {

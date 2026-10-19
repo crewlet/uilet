@@ -38,6 +38,14 @@ export interface ShareAudienceRow {
   removable?: boolean | undefined;
   /** A line under the row. An agent's row says what the agent may do with its role when this is left out. */
   note?: string | undefined;
+  /**
+   * Why this share reaches nobody, in words ("token:maya is a sign-in, not a
+   * seat. Remove it and share with their seat."). A stored share the engine
+   * can no longer honour is LISTED, not hidden, so its owner sees it and takes
+   * it away: the row says so in the warning ink in place of its note, reads
+   * `labels.noAccess` in place of a role, and offers Remove as its one action.
+   */
+  invalid?: string | undefined;
 }
 
 export interface ShareDialogLabels {
@@ -49,6 +57,8 @@ export interface ShareDialogLabels {
   roleDescriptions: Record<ArtifactRole, string>;
   roleFor: (name: string) => string;
   remove: (name: string) => string;
+  /** What an invalid row ([ShareAudienceRow.invalid]) reads in place of its role. */
+  noAccess: string;
   saving: string;
   /** Why a row's controls wait while its change is in flight. */
   busy: string;
@@ -86,6 +96,7 @@ const LABELS: ShareDialogLabels = {
   },
   roleFor: (name) => `Role for ${name}`,
   remove: (name) => `Remove ${name}`,
+  noAccess: 'No access',
   saving: 'Saving',
   busy: 'Wait for the change to finish.',
   agentNote: (name, role) => `${name} can ${AGENT_CAN[role]}.`,
@@ -247,12 +258,20 @@ export function ShareDialog({
         <ul className="crewlet-share-dialog__audience">
           {audience.map((row) => {
             const direct = row.via === undefined && row.role !== 'owner';
-            const editable = !readOnly && onRoleChange !== undefined && (row.editable ?? direct);
-            const removable = !readOnly && onRemove !== undefined && (row.removable ?? (row.editable ?? direct));
-            const rowNote = row.note ?? (row.principal.kind === 'agent' ? text.agentNote(row.principal.name, row.role) : undefined);
+            const invalid = row.invalid !== undefined && row.invalid !== '';
+            const editable = !invalid && !readOnly && onRoleChange !== undefined && (row.editable ?? direct);
+            const removable =
+              !readOnly && onRemove !== undefined && (invalid ? (row.removable ?? true) : (row.removable ?? (row.editable ?? direct)));
+            const rowNote = invalid
+              ? undefined
+              : (row.note ?? (row.principal.kind === 'agent' ? text.agentNote(row.principal.name, row.role) : undefined));
             const detail = row.via ?? row.principal.detail;
             return (
-              <li key={row.id} className={cx('crewlet-share-dialog__row', row.pending && 'is-pending')} aria-busy={row.pending || undefined}>
+              <li
+                key={row.id}
+                className={cx('crewlet-share-dialog__row', row.pending && 'is-pending', invalid && 'is-invalid')}
+                aria-busy={row.pending || undefined}
+              >
                 <PrincipalAvatar principal={row.principal} size="md" />
                 <span className="crewlet-share-dialog__who">
                   <span className="crewlet-share-dialog__name">
@@ -275,7 +294,7 @@ export function ShareDialog({
                       align="right"
                     />
                   ) : (
-                    <span className="crewlet-share-dialog__role">{text.roles[row.role]}</span>
+                    <span className="crewlet-share-dialog__role">{invalid ? text.noAccess : text.roles[row.role]}</span>
                   )}
                   {removable ? (
                     <IconButton
@@ -289,6 +308,7 @@ export function ShareDialog({
                   ) : null}
                 </span>
                 {rowNote ? <span className="crewlet-share-dialog__note">{rowNote}</span> : null}
+                {invalid ? <span className="crewlet-share-dialog__invalid">{row.invalid}</span> : null}
                 <span className="crewlet-share-dialog__refusal" aria-live="polite">
                   {row.refusal ?? ''}
                 </span>
