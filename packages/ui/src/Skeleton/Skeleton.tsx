@@ -43,7 +43,8 @@ export interface SkeletonProps {
   /* box-only props */
   width?: number | string;
   height?: number | string;
-  borderRadius?: number;
+  /** A number of px, or any CSS length, such as a radius token: `var(--radius-md)`. */
+  borderRadius?: number | string;
   marginTop?: number;
   marginBottom?: number;
 }
@@ -88,7 +89,7 @@ const Placeholder = ({
             style={{
               height: typeof height === 'number' ? `${height}px` : height,
               width: typeof width === 'number' ? `${width}px` : width,
-              borderRadius: `${borderRadius}px`,
+              borderRadius: typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
             }}
           >
             <div className="crewlet-skeleton__glow-wave" />

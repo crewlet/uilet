@@ -11,6 +11,8 @@ import {
   readFramePortMessage,
   readFrameTheme,
   SandboxedFrame,
+  SandboxedFrameNotice,
+  SandboxedFramePlaceholder,
   Stack,
   Text,
   type FrameTheme,
@@ -178,6 +180,41 @@ export const Loading: Story = {
         nonce={NONCE}
         helloTimeoutMs={3_600_000}
       />
+    </div>
+  ),
+};
+
+/**
+ * Before there is a frame to mount (its ticket is still being minted), the
+ * host draws the frame's own loading state, so the placeholder never changes
+ * shape when the frame takes over from it.
+ */
+export const Placeholder: Story = {
+  render: () => (
+    <div style={{ height: 280 }}>
+      <SandboxedFramePlaceholder title="Vendor scorecard" />
+    </div>
+  ),
+};
+
+/**
+ * A frame that could not be opened at all (the engine refused its ticket) is
+ * said exactly as the frame's own end states are, with the host's one action.
+ */
+export const Notice: Story = {
+  render: () => (
+    <div style={{ height: 200 }}>
+      <SandboxedFrameNotice
+        title="Vendor scorecard"
+        heading="This page could not be opened"
+        action={
+          <Button variant="outline" size="small">
+            Try again
+          </Button>
+        }
+      >
+        This version has no page to open.
+      </SandboxedFrameNotice>
     </div>
   ),
 };

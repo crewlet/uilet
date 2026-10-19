@@ -29,6 +29,10 @@
   background: transparent;
 }
 
+/* THE PLACEHOLDER AND THE END STATES SIT AT ONE INSET, the frame's margin,
+   so a reader who watches a page load and then fail sees the callout take
+   the placeholder's place rather than jump beside it. */
+
 /* Kept out of sight while it starts, so a document that has not painted in
    the reader's palette yet is never what they see. It still loads. */
 .crewlet-sandboxed-frame[data-state='loading'] .crewlet-sandboxed-frame__frame {
@@ -39,7 +43,7 @@
   position: absolute;
   inset: 0;
   display: flex;
-  padding: var(--spacing-3);
+  padding: var(--spacing-4);
 }
 
 .crewlet-sandboxed-frame__end {
