@@ -85,3 +85,18 @@ test('the rail is a named complementary region and carries no violation', async 
   });
   expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(', ')}`)).toEqual([]);
 });
+
+test('plain, it is the list alone: no region, no heading and no close of its own', () => {
+  render(
+    <PeopleRail
+      variant="plain"
+      members={[{ id: 's1', seat: 'maya', name: 'Maya Ortiz', kind: 'human', activity: 'editing', hue: 'purple' }]}
+      self={{ name: 'Miles', kind: 'human' }}
+      onClose={() => {}}
+    />,
+  );
+  expect(screen.queryByRole('complementary')).toBeNull();
+  expect(screen.queryByRole('heading')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Close people' })).toBeNull();
+  expect(screen.getByRole('list').querySelectorAll('li')).toHaveLength(2);
+});

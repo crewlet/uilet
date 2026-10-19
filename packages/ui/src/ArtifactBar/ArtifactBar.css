@@ -1,0 +1,358 @@
+/*
+ * One row, one hairline under it, the height of a large row. The lead (the
+ * way back, the glyph, the title, the version) takes what the end leaves it
+ * and the title is what gives way, ellipsised; the views sit between the two,
+ * centred while both sides have room, because the lead and the end each grow
+ * from a zero basis and the end never shrinks below its controls.
+ *
+ * Three widths of its OWN fold it (a container query, since a sidebar or a
+ * panel beside it decides its room, not the window): under a laptop sheet's
+ * width the presence stack goes (the People control still counts who is
+ * here), then the labelled tools' words, and under a phone's two panes the
+ * views, the unlabelled tools and the kind's glyph fold away, the first two
+ * into More.
+ */
+
+.crewlet-artifact-bar {
+  container: crewlet-artifact-bar / inline-size;
+  display: block;
+  min-width: 0;
+  background: var(--color-surface-background);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-artifact-bar__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  height: var(--size-row-lg);
+  padding: 0 var(--spacing-3);
+  min-width: 0;
+}
+
+.crewlet-artifact-bar__lead {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-artifact-bar__end {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  margin-inline-start: auto;
+}
+
+/* WITH VIEWS TO CENTRE, the end grows from zero as the lead does, so the two
+   sides stay equal while there is room and the views sit in the middle; the
+   end never shrinks below its controls, so it is the title that gives way. */
+.crewlet-artifact-bar__row--centred .crewlet-artifact-bar__end {
+  flex: 1 0 0;
+  min-width: max-content;
+}
+
+.crewlet-artifact-bar__modes {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.crewlet-artifact-bar__glyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  color: var(--color-text-secondary);
+}
+
+/* THE TITLE. Read only, it is text; renamable, its words are a button drawn
+   as text that answers the pointer with the hover ground, as a field would. */
+.crewlet-artifact-bar__title {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  line-height: var(--font-line-height-snug);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-artifact-bar__title--editing {
+  overflow: visible;
+}
+
+.crewlet-artifact-bar__rename {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--spacing-1) var(--spacing-2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-artifact-bar__rename:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-artifact-bar__rename:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* The field is as wide as what is typed in it: the grid cell is sized by a
+   hidden copy of the text, and the field fills that cell. */
+.crewlet-artifact-bar__sizer {
+  display: inline-grid;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.crewlet-artifact-bar__sizer::after {
+  content: attr(data-value) ' ';
+  visibility: hidden;
+  grid-area: 1 / 1;
+  padding: var(--spacing-1) var(--spacing-2);
+  overflow: hidden;
+  white-space: pre;
+  font: inherit;
+}
+
+.crewlet-artifact-bar__field {
+  grid-area: 1 / 1;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: calc(var(--spacing-1) - 1px) calc(var(--spacing-2) - 1px);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+.crewlet-artifact-bar__field:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-artifact-bar__field[aria-invalid='true'] {
+  border-color: var(--color-feedback-danger);
+}
+
+.crewlet-artifact-bar__error {
+  position: absolute;
+  top: calc(100% + var(--spacing-1));
+  left: 0;
+  z-index: var(--z-index-dropdown);
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-md);
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  white-space: nowrap;
+}
+
+.crewlet-artifact-bar__placeholder {
+  display: block;
+  flex: 0 1 12rem;
+  height: var(--font-size-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-artifact-bar__version {
+  display: inline-flex;
+  flex: none;
+  margin-inline-start: var(--spacing-1);
+}
+
+.crewlet-artifact-bar__presence {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-end: var(--spacing-1);
+}
+
+.crewlet-artifact-bar__tools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-artifact-bar__tool {
+  position: relative;
+  display: inline-flex;
+}
+
+/* A figure on the glyph's corner, inside the button's own box so it never
+   reaches past the bar's edge. */
+.crewlet-artifact-bar__badge {
+  position: absolute;
+  top: calc(-1 * var(--spacing-1));
+  right: calc(-1 * var(--spacing-1));
+  min-width: var(--spacing-4);
+  height: var(--spacing-4);
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--spacing-4);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* WHILE THE PRESENCE STACK IS DRAWN it says who is here, so a tool's figure
+   saying the same is not drawn beside it; it comes back where the stack
+   folds away. */
+.crewlet-artifact-bar--present .crewlet-artifact-bar__badge {
+  display: none;
+}
+
+/* A rule between two groups of tools: the kind's, then every artifact's. */
+.crewlet-artifact-bar__rule {
+  width: 1px;
+  height: var(--spacing-4);
+  margin: 0 var(--spacing-1);
+  background: var(--color-border-default);
+}
+
+.crewlet-artifact-bar__tip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* Both arrangements are drawn; the bar's width says which one shows. */
+.crewlet-artifact-bar__narrow,
+.crewlet-artifact-bar__tight {
+  display: none;
+}
+
+.crewlet-artifact-bar__wide,
+.crewlet-artifact-bar__roomy {
+  display: inline-flex;
+}
+
+@container crewlet-artifact-bar (width < 860px) {
+  .crewlet-artifact-bar__presence {
+    display: none;
+  }
+
+  .crewlet-artifact-bar--present .crewlet-artifact-bar__badge {
+    display: block;
+  }
+}
+
+@container crewlet-artifact-bar (width < 720px) {
+  .crewlet-artifact-bar__roomy {
+    display: none;
+  }
+
+  .crewlet-artifact-bar__tight {
+    display: inline-flex;
+  }
+}
+
+@container crewlet-artifact-bar (width < 640px) {
+  .crewlet-artifact-bar__row {
+    gap: var(--spacing-1);
+    padding: 0 var(--spacing-2);
+  }
+
+  /* The title has the row's room before the kind's glyph does: the glyph
+     says again what the title already names. */
+  .crewlet-artifact-bar__wide,
+  .crewlet-artifact-bar__glyph {
+    display: none;
+  }
+
+  .crewlet-artifact-bar__narrow {
+    display: inline-flex;
+  }
+
+  /* The views have folded, so there is nothing to centre: the title takes
+     the room. */
+  .crewlet-artifact-bar__row--centred .crewlet-artifact-bar__end {
+    flex: none;
+    min-width: 0;
+  }
+}
+
+/*
+ * THE VERSION CHIP: quiet at rest, the hover ground under the pointer, and
+ * the accent's soft ground while an older version than the newest is on
+ * show, so history never passes for the present.
+ */
+.crewlet-version-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: var(--size-target-min);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-version-chip:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.crewlet-version-chip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-version-chip--older {
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-version-chip--older:hover {
+  background: var(--color-brand-accent-soft-strong);
+  color: var(--color-brand-accent-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-artifact-bar__rename,
+  .crewlet-version-chip {
+    transition: none;
+  }
+}
