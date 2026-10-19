@@ -1,0 +1,78 @@
+/*
+ * DocTabsEditor: a document's tabs as rows an editor titles, opens, moves and
+ * removes, with the row whose text is open marked, and a field to add one.
+ * The rows are quiet inset bands, as ArrangeList's are.
+ */
+
+.crewlet-doc-tabs-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-doc-tabs-editor__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-doc-tabs-editor__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-doc-tabs-editor__item.is-open {
+  border-color: var(--color-border-strong);
+}
+
+.crewlet-doc-tabs-editor__item[data-reorder='dragging'] {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  background: transparent;
+}
+.crewlet-doc-tabs-editor__item[data-reorder='dragging'] > * {
+  opacity: 0.4;
+}
+
+.crewlet-doc-tabs-editor__handle {
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--color-text-tertiary);
+}
+.crewlet-doc-tabs-editor__handle:active {
+  cursor: grabbing;
+}
+
+.crewlet-doc-tabs-editor__field {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-doc-tabs-editor__problem {
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-doc-tabs-editor__moves {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.crewlet-doc-tabs-editor__add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}

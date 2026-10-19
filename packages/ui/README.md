@@ -209,6 +209,8 @@ places:
 
 **`DocCover` and `SheetCover`** are native gallery covers for `ArtifactCard.preview`: a doc's opening, rendered by the host's own Markdown renderer, set as a small page that fades at the card's edge; and a sheet's first columns and rows (at most `SHEET_COVER_COLUMNS` and `SHEET_COVER_ROWS`) as a hairline grid. Both are decorative, as the card's preview is.
 
+**`DocTabsEditor`** is a document's tabs as an editor arranges them: each tab's title edited at its field and held to the host's `titleProblem` there, the open tab marked (`selected`, `onSelect`), tabs moved by their handle, the arrow keys or Move up and Move down, removed (never the last), and a new tab added by its title after the open one. The host owns the tabs; every change is reported.
+
 What to change: nothing.
 
 ## Changes in 0.24.0
