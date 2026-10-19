@@ -43,6 +43,12 @@ export interface ArtifactBarTool {
    * or a kind's primary action such as a doc's Edit.
    */
   labelled?: boolean | undefined;
+  /**
+   * `primary`: the one action a kind's state turns on, such as Save while a
+   * doc is edited. Drawn as the primary button, labelled, and its word kept at
+   * every width, because a glyph alone does not say what a press commits.
+   */
+  emphasis?: 'primary' | undefined;
 }
 
 /** The ways a kind draws itself, as one choice: a deck's Edit, Grid and Present. */
@@ -98,6 +104,12 @@ export interface ArtifactBarProps {
   modes?: ArtifactBarModes | undefined;
   /** Who else is here, such as a presence stack. Folded away first on a narrower bar. */
   presence?: ReactNode;
+  /**
+   * What the kind is doing now, said before its tools: an `EditingStatus`
+   * while a doc is edited. Never folded away; a status that has words to
+   * spare folds them itself.
+   */
+  status?: ReactNode;
   /** The kind's own controls, before the panels: a doc's Edit. */
   kindTools?: readonly ArtifactBarTool[] | undefined;
   /** The panels and actions every artifact has: details, history, people, share. */
@@ -147,6 +159,7 @@ export function ArtifactBar({
   version,
   modes,
   presence,
+  status,
   kindTools = [],
   tools = [],
   menu = [],
@@ -239,6 +252,7 @@ export function ArtifactBar({
           </div>
         ) : null}
         <div className="crewlet-artifact-bar__end">
+          {status ? <span className="crewlet-artifact-bar__status">{status}</span> : null}
           {presence ? <span className="crewlet-artifact-bar__presence">{presence}</span> : null}
           {kindTools.some((t) => !t.labelled) ? (
             <span className="crewlet-artifact-bar__tools crewlet-artifact-bar__wide">
@@ -333,6 +347,22 @@ function ToolButton({ tool, apple }: { tool: ArtifactBarTool; apple: boolean }) 
 /** A labelled tool: its word beside the glyph while the bar is wide, the glyph alone when it is not. */
 function LabelledTool({ tool, apple }: { tool: ArtifactBarTool; apple: boolean }) {
   const shortcut = tool.keys ? ariaKeys(tool.keys, apple) : undefined;
+  if (tool.emphasis === 'primary') {
+    return (
+      <Tooltip content={<Tip tool={tool} apple={apple} />} placement="bottom" disabled={!tool.keys}>
+        <Button
+          size="small"
+          variant="primary"
+          leadingIcon={tool.icon}
+          disabledReason={tool.disabledReason}
+          aria-keyshortcuts={shortcut}
+          onClick={tool.onSelect}
+        >
+          {tool.label}
+        </Button>
+      </Tooltip>
+    );
+  }
   return (
     <>
       <span className="crewlet-artifact-bar__roomy">

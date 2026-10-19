@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.31.0
+
+**`ArtifactBar` carries an editing state**: a `status` slot said before the kind's tools (an `EditingStatus` while a doc is edited), never folded away, and a tool's `emphasis: 'primary'`, drawn as the primary button with its word kept at every width, for the one action the state turns on, such as Save.
+
 ## Changes in 0.30.0
 
 **`RichEditor` edits Markdown in place, as the document it reads as.** The editable element is set by `Document`, so a page looks the same while it is edited as when it is read, and there is no separate preview. It is built on ProseMirror and loaded lazily: the component is a shell that fetches the editor's code with `import()` the first time one is drawn, so a screen that only reads pays for none of it, and `preloadRichEditor()` starts that fetch from a press that is about to open an editor.
