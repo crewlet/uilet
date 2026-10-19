@@ -74,6 +74,8 @@ interface FakeOptions {
   refuse?: string;
   /** A code every write rejects with: nothing about it was decided. */
   reject?: string;
+  /** How a delete is answered; applied when absent. */
+  deleted?: KitWriteOutcome;
 }
 
 /** A rejection as the runtime raises it: an `Error` carrying the contract's code. */
@@ -89,9 +91,10 @@ function fakeRuntime(options: FakeOptions = {}) {
   const views = new Set<(docs: KitDoc[], change: { changed: string[]; removed: string[] }) => void>();
   const rosterListeners = new Set<(roster: KitRoster) => void>();
   const asDocs = (): KitDoc[] => docs.map((doc) => ({ ...doc, version: 1, pending: false }));
-  const publish = (changed: string[]) => views.forEach((listener) => listener(asDocs(), { changed, removed: [] }));
+  const publish = (changed: string[], removed: string[] = []) => views.forEach((listener) => listener(asDocs(), { changed, removed }));
   const merges: { id: string; fields: Record<string, Json> }[] = [];
   const sets: { id: string; fields: Record<string, Json> }[] = [];
+  const deletes: string[] = [];
   const batches: { id: string; fields: Record<string, Json> }[][] = [];
   const presenceSets: unknown[] = [];
   const outcome = options.outcome ?? (() => ({ verdict: 'applied' as const }));
@@ -133,6 +136,16 @@ function fakeRuntime(options: FakeOptions = {}) {
           }
           return answer;
         },
+        delete: async (id) => {
+          deletes.push(id);
+          if (options.reject) throw refusal(options.reject, 'The engine could not be reached. Try again.');
+          const answer = options.deleted ?? { verdict: 'applied' as const };
+          if (answer.verdict === 'applied') {
+            docs = docs.filter((doc) => doc.id !== id);
+            publish([], [id]);
+          }
+          return answer;
+        },
       }),
       batch: () => {
         const ops: { id: string; fields: Record<string, Json> }[] = [];
@@ -171,6 +184,7 @@ function fakeRuntime(options: FakeOptions = {}) {
     runtime,
     merges,
     sets,
+    deletes,
     batches,
     presenceSets,
     views,
@@ -197,6 +211,13 @@ const cell = (row: number, col: number) => {
     .find((element) => element.getAttribute('aria-rowindex') === String(row + 2));
   if (!target) throw new Error(`row ${row} is not drawn`);
   return within(target).getAllByRole('gridcell')[col]!;
+};
+/** Opens the row actions of the row the reader is on, as Shift+F10 does, and picks Delete row. */
+const askToDelete = (row: number) => {
+  act(() => cell(row, 0).focus());
+  fireEvent.keyDown(document.activeElement!, { key: 'F10', shiftKey: true });
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Delete row' }));
+  return screen.getByRole('alertdialog', { name: 'Delete this row?' });
 };
 const spoken = (element: Element) => {
   const copy = element.cloneNode(true) as Element;
@@ -378,6 +399,71 @@ describe('<crewlet-sheet>', () => {
     });
     expect(fake.sets).toHaveLength(2);
     expect(fake.sets[1]!.id).not.toBe(fake.sets[0]!.id);
+  });
+
+  test('Delete row asks first, then deletes the document through the runtime, and the row leaves', async () => {
+    const fake = fakeRuntime();
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(spoken(cell(0, 0))).toBe('Acme Corp'));
+    const dialog = askToDelete(0);
+    // Nothing is deleted until the reader answers.
+    expect(fake.deletes).toEqual([]);
+    expect(within(dialog).getByText('The row is removed for everyone who can open this page.')).toBeDefined();
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Delete row' }));
+    });
+    expect(fake.deletes).toEqual(['acme']);
+    await waitFor(() => expect(spoken(cell(0, 0))).toBe('Globex'));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(screen.getByText('Saved')).toBeDefined();
+  });
+
+  test('a cancelled Delete row deletes nothing', async () => {
+    const fake = fakeRuntime();
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(spoken(cell(0, 0))).toBe('Acme Corp'));
+    fireEvent.click(within(askToDelete(0)).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect(fake.deletes).toEqual([]);
+    expect(spoken(cell(0, 0))).toBe('Acme Corp');
+  });
+
+  test.each([
+    ['refused by the engine', { deleted: { verdict: 'forbidden' as const, reason: 'Only editors delete rows.' } }, 'You can view this sheet but not edit it.'],
+    ['rejected with nothing decided', { reject: 'unavailable' }, 'The engine could not be reached. Try again.'],
+  ])('a Delete row %s keeps the row, says why on it and holds the strip until dismissed', async (_, options, said) => {
+    const fake = fakeRuntime(options);
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(spoken(cell(0, 0))).toBe('Acme Corp'));
+    const dialog = askToDelete(0);
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Delete row' }));
+    });
+    expect(fake.deletes).toEqual(['acme']);
+    await waitFor(() => expect(cell(0, 0).className).toContain('crewlet-sheet-grid__cell--refused'));
+    expect(spoken(cell(0, 0))).toContain('Acme Corp');
+    act(() => cell(0, 0).focus());
+    await waitFor(() => expect(cell(0, 0).textContent).toContain(said));
+    expect(screen.getByText('1 change not saved')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await waitFor(() => expect(screen.getByText('Saved')).toBeDefined());
+    expect(cell(0, 0).className).not.toContain('crewlet-sheet-grid__cell--refused');
+  });
+
+  test('a viewer is offered no Delete row', async () => {
+    const fake = fakeRuntime({ role: 'viewer' });
+    window.crewlet = fake.runtime;
+    defineElements();
+    document.body.innerHTML = `<crewlet-sheet collection="vendors"><crewlet-column field="vendor" label="Vendor"></crewlet-column></crewlet-sheet>`;
+    await waitFor(() => expect(sheetGrid().getAttribute('aria-readonly')).toBe('true'));
+    act(() => cell(0, 0).focus());
+    expect(screen.queryByRole('button', { name: /Row actions/ })).toBeNull();
   });
 
   test('the sheet is as tall as its rows, so no empty slab sits under Add row', async () => {

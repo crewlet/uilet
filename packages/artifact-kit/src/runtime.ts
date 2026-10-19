@@ -94,6 +94,8 @@ export interface KitCollection {
   set(id: string, fields: Record<string, Json>): Promise<KitWriteOutcome>;
   /** Sets the named fields and leaves the rest; a null removes a field. */
   merge(id: string, fields: Record<string, Json>): Promise<KitWriteOutcome>;
+  /** Tombstones the document, so every reader's subscription drops it. */
+  delete(id: string): Promise<KitWriteOutcome>;
 }
 
 export interface KitBatch {

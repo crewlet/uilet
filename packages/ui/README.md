@@ -211,6 +211,7 @@ places:
 - asks for the `db` capability, and reads its collection's title and columns from `data.schema()`, which answers every collection;
 - reads its rows through `subscribe(callback, onError)`, and says a refused subscription (`forbidden`, `not_found`, `unavailable`, `capability_not_declared`) in place of the grid rather than drawing an empty sheet;
 - writes an edit with `merge`, a paste or a cleared range as one `batch().merge(...).commit()`, all or nothing, and Add row with `set` under an id the kit mints;
+- deletes a row with `delete`, from SheetGrid's row actions (`onDeleteRow`), once the reader confirms it in the kit's own `ConfirmModal` (an artifact frame refuses `window.confirm`); a refused delete keeps the row and is said on its first cell;
 - says on the cell both a write the engine refused (its verdict: `conflict`, `invalid`, `forbidden`, `quota`, `gone`) and one the runtime rejected with nothing decided (`rate_limited`, `unavailable`), and holds either in the sync strip until the reader dismisses it, as 0.25.0's audit made the native sheet do;
 - steps Mod+Z and Mod+Shift+Z through `data.undo()` and `data.redo()`, the page's own writes, and says a step somebody overtook;
 - offers every seat from `identity.people()` to a person cell, and reads presence as the room's members from `presence.roster()` and its subscription, publishing the reader's own cell as an activity and a focus.
@@ -220,7 +221,7 @@ The kit's README documents each call it makes and the capability it needs.
 What to change:
 
 - A page whose version declared `data` for its sheet declares `db`.
-- A page that passes its own runtime to `mountSheet` (`runtime` in `SheetOptions`) passes one of contract 1.0's shape, as `KitRuntime` now declares it: `identity.me()` answers a `seat` where it answered an `id`, `identity.lookup` is gone in favour of `identity.people()`, a collection answers `subscribe`, `set` and `merge` (no `schema`, `create` or `update`), a batch answers `merge`, writes resolve with `{ verdict, seq?, reason? }`, and presence answers `roster()` and a subscription to the roster's `members` rather than peers. `KitPeer`, `KitSchema` and `KitViewer.id` are gone, in favour of `KitMember`, `KitCollectionSchema` and `KitViewer.seat`.
+- A page that passes its own runtime to `mountSheet` (`runtime` in `SheetOptions`) passes one of contract 1.0's shape, as `KitRuntime` now declares it: `identity.me()` answers a `seat` where it answered an `id`, `identity.lookup` is gone in favour of `identity.people()`, a collection answers `subscribe`, `set`, `merge` and `delete` (no `schema`, `create` or `update`), a batch answers `merge`, writes resolve with `{ verdict, seq?, reason? }`, and presence answers `roster()` and a subscription to the roster's `members` rather than peers. `KitPeer`, `KitSchema` and `KitViewer.id` are gone, in favour of `KitMember`, `KitCollectionSchema` and `KitViewer.seat`.
 - A page that relies on the window's own `crewlet` changes nothing beyond the capability.
 
 ## Changes in 0.25.0

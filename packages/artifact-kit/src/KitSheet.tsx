@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Callout } from '@crewlethq/ui/Callout';
+import { ConfirmModal } from '@crewlethq/ui/Modal';
 import { PresenceStack } from '@crewlethq/ui/PresenceStack';
 import { SheetGrid, type SheetCellRef } from '@crewlethq/ui/SheetGrid';
 import {
@@ -34,6 +35,11 @@ export interface KitSheetLabels {
   stepOvertaken: (step: 'undo' | 'redo') => string;
   /** A new row the engine refused. */
   addRowFailed: (reason: string) => string;
+  /** The confirmation Delete row asks before anything is deleted. */
+  deleteRowTitle: string;
+  deleteRowMessage: string;
+  deleteRowConfirm: string;
+  deleteRowCancel: string;
 }
 
 export const KIT_SHEET_LABELS: KitSheetLabels = {
@@ -47,6 +53,10 @@ export const KIT_SHEET_LABELS: KitSheetLabels = {
         : `The ${collection} collection could not be loaded. Reload the page to try again.`,
   stepOvertaken: (step) => `Somebody changed this after you, so the ${step} was skipped.`,
   addRowFailed: (reason) => `Could not add a row. ${reason}`,
+  deleteRowTitle: 'Delete this row?',
+  deleteRowMessage: 'The row is removed for everyone who can open this page.',
+  deleteRowConfirm: 'Delete row',
+  deleteRowCancel: 'Cancel',
 };
 
 /** A failure the sheet can still draw around, said to the page's developer rather than dropped. */
@@ -98,6 +108,7 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
   const [offline, setOffline] = useState(false);
   const [failedCreate, setFailedCreate] = useState(0);
   const [notice, setNotice] = useState({ text: '', n: 0 });
+  const [deleting, setDeleting] = useState<string | null>(null);
   const say = useCallback((text: string) => setNotice((current) => ({ text, n: current.n + 1 })), []);
   const [, redraw] = useState(0);
   const held = useRef<Map<string, NodeHue>>(new Map());
@@ -224,6 +235,28 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
     );
   }, [store, say]);
 
+  /**
+   * Delete row, once the reader confirmed it. The verdict is said as an edit's
+   * is, on the row's first cell: Saving while it is in flight, and a refusal
+   * held there and in the sync strip until it is dismissed. A row the engine
+   * deleted leaves through the subscription, taking any refusal it held.
+   */
+  const deleteRow = useCallback(
+    (rowId: string) => {
+      const first = columns[0];
+      const settle = first ? edits.begin(rowId, first.field) : () => {};
+      store.delete(rowId).then(
+        (outcome) => {
+          const message = outcomeMessage(outcome);
+          settle(message === null ? { ok: true } : { ok: false, message });
+          if (message === null) for (const column of columns) edits.dismiss(rowId, column.field);
+        },
+        (error: unknown) => settle({ ok: false, message: rejectionMessage(error) }),
+      );
+    },
+    [columns, edits, store],
+  );
+
   /** Undo and redo are the runtime's: the page's own writes, on this tab. A step somebody overtook is skipped and said. */
   const step = useCallback(
     (which: 'undo' | 'redo') => {
@@ -271,6 +304,8 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
 
   const viewOnly = readOnly || me?.role === 'viewer';
   const sync = { ...edits.sync(offline), failed: failedCreate };
+  // A row somebody else deleted while the reader was being asked closes the question.
+  const doomed = deleting === null ? undefined : docs.find((doc) => doc.id === deleting);
 
   return (
     <div className="crewlet-kit-sheet">
@@ -287,6 +322,7 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
         mode={viewOnly ? 'read' : 'edit'}
         onEdit={viewOnly ? undefined : write}
         onAddRow={viewOnly ? undefined : addRow}
+        onDeleteRow={viewOnly ? undefined : setDeleting}
         onActiveCellChange={focus}
         onEditingChange={editing}
         onUndo={() => step('undo')}
@@ -299,6 +335,19 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
         onDismissRefused={() => edits.dismissAll()}
         height={height}
         fit="content"
+      />
+      <ConfirmModal
+        open={doomed !== undefined}
+        onClose={() => setDeleting(null)}
+        onConfirm={() => {
+          if (doomed) deleteRow(doomed.id);
+          setDeleting(null);
+        }}
+        title={KIT_SHEET_LABELS.deleteRowTitle}
+        message={KIT_SHEET_LABELS.deleteRowMessage}
+        confirmLabel={KIT_SHEET_LABELS.deleteRowConfirm}
+        cancelLabel={KIT_SHEET_LABELS.deleteRowCancel}
+        destructive
       />
       {notice.text ? (
         <Callout key={notice.n} variant="warning" live="polite">
