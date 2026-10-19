@@ -95,6 +95,11 @@
 }
 
 .crewlet-artifact-panel__body {
+  /* THE PANEL'S OWN MEASURE, so what it holds folds to the panel's width
+     rather than the window's; and its sections head at the panel title's
+     step, a level under it and never louder than it. */
+  container: crewlet-artifact-panel / inline-size;
+  --crewlet-section-title-size: var(--font-size-sm);
   flex: 1 1 auto;
   min-height: 0;
   padding: var(--spacing-4);
