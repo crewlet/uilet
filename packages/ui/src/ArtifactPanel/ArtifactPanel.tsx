@@ -4,8 +4,12 @@ import { IconButton } from '../IconButton/index.js';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
 import { cx } from '../utils/cx.js';
 
-/** How wide a panel rests beside the artifact: facts, a list, or a table. */
-export type ArtifactPanelSize = 'sm' | 'md' | 'lg';
+/**
+ * How wide a panel rests beside the artifact: text (facts, a list, a form) or
+ * a table. ONE WIDTH FOR TEXT, so moving from one text panel to another never
+ * moves the artifact's edge under the reader.
+ */
+export type ArtifactPanelSize = 'md' | 'lg';
 
 export interface ArtifactPanelLabels {
   close: (title: string) => string;

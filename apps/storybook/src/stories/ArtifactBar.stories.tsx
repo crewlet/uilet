@@ -118,7 +118,7 @@ export const OverADeck: Story = {
             bodyLabel={title}
             panel={
               panel ? (
-                <ArtifactPanel key={panel} title={PANEL_TITLES[panel]} onClose={() => setPanel(null)} size={panel === 'details' || panel === 'people' ? 'sm' : 'md'}>
+                <ArtifactPanel key={panel} title={PANEL_TITLES[panel]} onClose={() => setPanel(null)} size="md">
                   <p style={{ margin: 0 }}>The {PANEL_TITLES[panel].toLowerCase()} of this deck.</p>
                 </ArtifactPanel>
               ) : null
