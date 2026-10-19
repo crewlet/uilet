@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { isComposing } from '../Layer/index.js';
 
 export interface SlideKeys {
@@ -27,13 +27,27 @@ function typing(target: EventTarget | null): boolean {
  * its key wherever focus is. A key a field is typing, a composition is using,
  * or a nearer surface (a menu, a dialog) already handled is left alone, and
  * modified keys are the browser's.
+ *
+ * THE NEWEST HANDLERS ANSWER EVERY KEY. A show's handlers close over the slide
+ * it is on, so a key must never reach the handlers of a slide already left.
+ * They are read from a ref the hook brings up to date as each render commits,
+ * before the browser can dispatch another event, and the listener itself
+ * stays put. Re-adding the listener after each render instead left a gap
+ * after every step, between the new slide's commit and the effect that
+ * re-added it, where a quick second press (a clicker held down, or two taps)
+ * went to the old slide's handlers and moved to the slide already shown.
  */
 export function useSlideKeys({ onNext, onPrevious, onFirst, onLast, onExit, enabled = true }: SlideKeys): void {
+  const keys = useRef({ onNext, onPrevious, onFirst, onLast, onExit });
+  useLayoutEffect(() => {
+    keys.current = { onNext, onPrevious, onFirst, onLast, onExit };
+  });
   useEffect(() => {
     if (!enabled) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || isComposing(event) || typing(event.target)) return;
       if (event.altKey || event.ctrlKey || event.metaKey) return;
+      const { onNext, onPrevious, onFirst, onLast, onExit } = keys.current;
       const act: Record<string, (() => void) | undefined> = {
         ArrowRight: onNext,
         ArrowDown: onNext,
@@ -57,5 +71,5 @@ export function useSlideKeys({ onNext, onPrevious, onFirst, onLast, onExit, enab
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [enabled, onNext, onPrevious, onFirst, onLast, onExit]);
+  }, [enabled]);
 }

@@ -224,6 +224,12 @@ What to change:
 - Pass `flush` to a `WidgetFrame` whose figure is a table.
 - A host that relied on the frame's elevated ground or its one-line title restyles nothing: both changed for every figure.
 
+## Changes in 0.27.1
+
+**`useSlideKeys` answers every key with the newest handlers.** It re-added its document listener after each render, so after every step there was a gap, between the new slide's commit and the effect that re-added the listener, in which a quick second press (a clicker held down, two taps) reached the previous slide's handlers and moved to the slide already shown: the press was lost. The hook now keeps one listener for as long as it is `enabled` and reads the handlers from a ref it brings up to date as each render commits, before the browser can dispatch another event. A show whose stage stays mounted across slides, as `SlideStage fit="view"` does, met the gap on almost every quick press.
+
+Nothing to change: handlers that close over the current slide are right as they are.
+
 ## Changes in 0.27.0
 
 **`SlideStage` presents in the page with `fit="view"`.** A slide presented inside a page sits below a title, a description and tabs, so a stage as tall as its column ran past the foot of the window and hid the bottom of the slide and the controls under it. A `view` stage letterboxes its slide as `contain` does, in a box whose height is measured: the room from the top of the stage's parent (the show: the stage and its controls) to the foot of its scrollport, less what else the parent holds and its `scroll-margin-bottom`, or the slide's height at the stage's width if that is less. The room is measured with the scrollport at its top, so it does not change as the reader scrolls, and again whenever the view, the show or the stage is resized. A show too low on the page to get half of what it asks takes the scrollport's whole height and is scrolled into view, clear of its `scroll-margin-top`. In full screen the stage fills its box, sharing a flex column with the show's controls.
