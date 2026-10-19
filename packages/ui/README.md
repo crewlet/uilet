@@ -209,6 +209,10 @@ places:
 
 What to change: pass `kind="doc"` wherever you passed `kind="markdown"`, and rename the `markdown` key of a custom `labels.kinds` to `doc`.
 
+**`ArtifactKind` names every kind the engine ships**: `html`, `doc`, `slides`, `design`, `dashboard` and `sheet`, in the engine's order (`artifacts.Kinds`), which `ARTIFACT_KINDS` lists. Each draws its own glyph where a card has no preview (`slides` a presentation, `design` a palette, `dashboard` a dashboard layout), and its own default label ("Slides", "Design", "Dashboard"). A custom `labels.kinds` passes only the kinds it renames. `@crewlethq/icons` adds `PresentationGlyph`.
+
+What to change: a `Record<ArtifactKind, ...>` of your own needs the three new keys.
+
 ## Changes in 0.21.0
 
 **`AppShell.AccountRow` takes `menu`** (`AccountRowMenu`: `label`, `header`, `items`): pressing who you are opens the reader's own menu instead of linking anywhere, which is where a reader looks for their account and for signing out. The row becomes the menu button, ending in the up-and-down chevron a menu's trigger draws, keeps the account page's current-row lift (`data-current`), and the menu's header holds the facts the row does not already say, such as the reader's access. Given, `menu` takes the place of `href`.

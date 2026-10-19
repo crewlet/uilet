@@ -6,7 +6,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
-import { ArtifactCard } from './index.js';
+import { ARTIFACT_KINDS, ArtifactCard } from './index.js';
 
 afterEach(cleanup);
 
@@ -51,6 +51,21 @@ test('stands the kind glyph in for a missing preview, and draws a given preview 
   expect(container.querySelector('.crewlet-artifact-card__preview svg')).not.toBeNull();
   rerender(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} preview={<span data-testid="cover">cover</span>} />);
   expect(screen.getByTestId('cover')).toBeDefined();
+});
+
+test('gives every kind its own glyph and label when no preview is given', () => {
+  const words: string[] = [];
+  const drawings = new Set<string>();
+  for (const kind of ARTIFACT_KINDS) {
+    const { container, unmount } = render(<ArtifactCard title="Untitled" kind={kind} href="#/a" updatedAt={NOW} now={NOW} />);
+    const glyph = container.querySelector('.crewlet-artifact-card__preview svg');
+    expect(glyph, kind).not.toBeNull();
+    drawings.add(glyph?.innerHTML ?? '');
+    words.push(container.querySelector('.crewlet-artifact-card__line span')?.textContent ?? '');
+    unmount();
+  }
+  expect(drawings.size).toBe(ARTIFACT_KINDS.length);
+  expect(words).toEqual(['Page', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
 });
 
 test('compact draws no preview', () => {
