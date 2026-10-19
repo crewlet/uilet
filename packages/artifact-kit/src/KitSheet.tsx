@@ -296,6 +296,7 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
         onSortChange={setSort}
         sync={sync}
         onRetry={failedCreate > 0 ? addRow : undefined}
+        onDismissRefused={() => edits.dismissAll()}
         height={height}
         fit="content"
       />

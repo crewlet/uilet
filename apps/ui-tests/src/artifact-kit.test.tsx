@@ -201,6 +201,10 @@ describe('<crewlet-sheet>', () => {
     // Enter moved the reader down a row; the reason is said where they go back to.
     act(() => cell(0, 0).focus());
     await waitFor(() => expect(cell(0, 0).textContent).toContain('You can view this sheet but not edit it.'));
+    // The strip holds the refusal rather than going back to "Saved", until the reader dismisses it.
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull();
+    expect(cell(0, 0).className).not.toContain('crewlet-sheet-grid__cell--refused');
   });
 
   test('with no columns of its own it draws the collection schema, primary column frozen, hidden ones left out', async () => {
