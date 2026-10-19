@@ -362,3 +362,9 @@ describe('StatGroup', () => {
     expect(container.querySelector<HTMLElement>('.crewlet-stat-group')!.style.getPropertyValue('--crewlet-stat-group-cols')).toBe('4');
   });
 });
+
+test('a hidden label is said and not drawn, for a tile its container already names', () => {
+  const { container } = render(<StatCard label="Open work" hideLabel value="12" />);
+  expect(container.querySelector('.crewlet-statcard__label')).toBeNull();
+  expect(screen.getByText('Open work').closest('.crewlet-visually-hidden')).toBeTruthy();
+});
