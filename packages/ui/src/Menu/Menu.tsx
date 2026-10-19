@@ -170,6 +170,12 @@ export interface MenuProps {
   icon?: ReactNode;
   /** Visible trigger text; without it the trigger is an icon button named by `label`. */
   trigger?: ReactNode;
+  /**
+   * A glyph after the trigger's text, such as the chevron of a picker. Drawn
+   * as the button's trailing icon, a gap away from the words; a glyph written
+   * into `trigger` instead sits flush against them. Read only with `trigger`.
+   */
+  trailingIcon?: ReactNode;
   triggerVariant?: ButtonVariant | undefined;
   /** -1 for a pointer-only trigger whose actions the keyboard reaches another way. */
   triggerTabIndex?: number | undefined;
@@ -198,6 +204,7 @@ export function Menu({
   items,
   icon,
   trigger,
+  trailingIcon,
   triggerVariant = 'ghost',
   triggerTabIndex,
   open: controlled,
@@ -536,7 +543,7 @@ export function Menu({
       ) : trigger === undefined ? (
         <IconButton {...shared} label={label} icon={icon ?? <EllipsisVerticalGlyph />} size="sm" />
       ) : (
-        <Button {...shared} variant={triggerVariant} size="small" leadingIcon={icon}>
+        <Button {...shared} variant={triggerVariant} size="small" leadingIcon={icon} trailingIcon={trailingIcon}>
           {trigger}
         </Button>
       )}

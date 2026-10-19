@@ -12,7 +12,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import axe from 'axe-core';
 import { useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { FolderInputGlyph, PencilGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronDownGlyph, FolderInputGlyph, PencilGlyph } from '@crewlethq/icons/glyphs';
 import { LAYER_REPOSITION_EVENT, LayerHost, useModalLayer } from '../Layer/index.js';
 import { Menu, type MenuEntry } from './index.js';
 
@@ -150,6 +150,26 @@ test('only a row with a second line is drawn at the taller register', () => {
     screen.getByText(label).closest('.crewlet-menu__item')!.classList.contains('crewlet-menu__item--described');
   expect(described('Edit')).toBe(false);
   expect(described('Move to')).toBe(true);
+});
+
+/*
+ * A TRIGGER'S GLYPHS ARE THE BUTTON'S ICONS, each in its own slot a gap away
+ * from the words: a glyph written into the trigger text sat flush against it.
+ */
+test('a text trigger draws its leading and trailing glyphs as the button icons', () => {
+  render(
+    <Menu
+      label="Rank by: Keyword"
+      trigger="Keyword"
+      icon={<PencilGlyph />}
+      trailingIcon={<ChevronDownGlyph />}
+      items={entries()}
+    />,
+  );
+  const button = screen.getByRole('button', { name: 'Keyword' });
+  const slots = [...button.children].map((child) => child.className);
+  expect(slots).toEqual(['crewlet-btn__icon', 'crewlet-btn__label', 'crewlet-btn__icon']);
+  expect(button.querySelector('.crewlet-btn__label')?.textContent).toBe('Keyword');
 });
 
 test('the trigger announces a menu, and opening it puts focus on the first item', () => {
