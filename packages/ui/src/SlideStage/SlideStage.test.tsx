@@ -25,6 +25,21 @@ test('a slide is a named group laid out at 1920 by 1080 and scaled as a whole', 
   expect(group.style.width).toBe('480px');
 });
 
+test("a framed stage draws the slide's edge, except where the box is letterboxed by design", () => {
+  const { rerender } = render(
+    <SlideStage label="Plan" framed>
+      <h1>Plan</h1>
+    </SlideStage>,
+  );
+  expect(screen.getByRole('group', { name: 'Plan' }).classList.contains('crewlet-slide-stage--framed')).toBe(true);
+  rerender(
+    <SlideStage label="Plan" framed fit="contain">
+      <h1>Plan</h1>
+    </SlideStage>,
+  );
+  expect(screen.getByRole('group', { name: 'Plan' }).classList.contains('crewlet-slide-stage--framed')).toBe(false);
+});
+
 test('a stage of another size names what it holds', () => {
   render(
     <SlideStage label="Pricing, 1440 by 900" scale={0.5} width={1440} height={900} roleDescription="artboard">
