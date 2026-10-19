@@ -35,6 +35,25 @@ test('names the dataset, its source kind, its definition, its rows and its refre
   expect(document.querySelector('time')?.getAttribute('dateTime')).toBe('2026-10-18T11:58:00.000Z');
 });
 
+test('how it is kept current is a line of its own, never wrapped under the facts', () => {
+  render(
+    <DatasetSource
+      title="My open work"
+      kind="engine"
+      definition="tracker.items"
+      refresh="When the board opens or is refreshed"
+      status="ready"
+      asOf={NOW}
+      rows={2}
+      now={NOW}
+    />,
+  );
+  const refresh = document.querySelector('.crewlet-dataset-source__refresh')!;
+  expect(refresh.textContent).toContain('When the board opens or is refreshed');
+  expect(refresh.closest('.crewlet-dataset-source__meta')).toBeNull();
+  expect(document.querySelector('.crewlet-dataset-source__meta')!.textContent).toContain('2 rows');
+});
+
 test('one row is a row, and a large count is grouped', () => {
   const { rerender } = render(<DatasetSource title="A" kind="file" definition="data.csv" status="ready" rows={1} />);
   expect(document.body.textContent).toContain('1 row');

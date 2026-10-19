@@ -3,6 +3,9 @@
  * and drawing nothing of the figure where its reader may not read the data.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -133,4 +136,64 @@ test('carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WidgetFrame.css'), 'utf8').replace(
+  /\/\*[\s\S]*?\*\//g,
+  '',
+);
+const rule = (selector: string) =>
+  new RegExp(`(?:^|\\})\\s*${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+
+test('stands on the card recipe: its ground, and one inset on every part', () => {
+  const root = rule('.crewlet-widget-frame');
+  expect(root).toMatch(/background:\s*var\(--color-surface-subtle\)/);
+  expect(root).toMatch(/padding-block:\s*var\(--spacing-4\)/);
+  expect(root).not.toMatch(/padding:/);
+  expect(rule('.crewlet-widget-frame__head,\n.crewlet-widget-frame__body,\n.crewlet-widget-frame__cite')).toMatch(
+    /padding-inline:\s*var\(--spacing-4\)/,
+  );
+});
+
+test('a flush frame lets its figure reach the sides, and a table take the inset', () => {
+  const { container } = render(
+    <WidgetFrame title="Latest deploys" flush source={{ label: 'Deploys', status: 'live' }}>
+      <table />
+    </WidgetFrame>,
+  );
+  expect(container.querySelector('section')!.classList.contains('crewlet-widget-frame--flush')).toBe(true);
+  expect(rule('.crewlet-widget-frame--flush .crewlet-widget-frame__body')).toMatch(/padding-inline:\s*0/);
+  expect(rule('.crewlet-widget-frame--flush .crewlet-data-table--compact')).toMatch(
+    /--crewlet-data-table-cell-pad-x:\s*var\(--spacing-4\)/,
+  );
+  cleanup();
+  const { container: plain } = render(
+    <WidgetFrame title="Open" source={{ label: 'Open', status: 'live' }}>
+      <p>2</p>
+    </WidgetFrame>,
+  );
+  expect(plain.querySelector('section')!.classList.contains('crewlet-widget-frame--flush')).toBe(false);
+});
+
+test('a flush stat tile as the figure brings no inset of its own', () => {
+  expect(rule('.crewlet-widget-frame__body .crewlet-statcard--flush')).toMatch(/padding:\s*0/);
+});
+
+test('the title takes a second line before it gives up a word', () => {
+  const title = rule('.crewlet-widget-frame__title');
+  expect(title).toMatch(/-webkit-line-clamp:\s*2/);
+  expect(title).not.toMatch(/white-space:\s*nowrap/);
+});
+
+test('the citation is one line, the time kept whole beside a title that ends', () => {
+  expect(rule('.crewlet-widget-frame__cite-text,\n.crewlet-widget-frame__cite-button')).toMatch(/flex-wrap:\s*nowrap/);
+  expect(rule('.crewlet-widget-frame__source')).toMatch(/text-overflow:\s*ellipsis/);
+  expect(rule('.crewlet-widget-frame__when')).toMatch(/flex:\s*none/);
+});
+
+test('a narrow frame stacks its citation, with no separator to begin a line', () => {
+  expect(rule('.crewlet-widget-frame')).toMatch(/container:\s*crewlet-widget-frame\s*\/\s*inline-size/);
+  const narrow = /@container crewlet-widget-frame \(width < 18rem\)\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+  expect(narrow).toMatch(/flex-direction:\s*column/);
+  expect(narrow).toMatch(/\.crewlet-widget-frame__when::before\s*\{\s*content:\s*none/);
 });

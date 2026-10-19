@@ -155,16 +155,18 @@ export function DatasetSource({
             <span className="crewlet-dataset-source__rows">{text.rows(rows)}</span>
           </>
         ) : null}
-        {refresh ? (
-          <>
-            {' '}
-            <span className="crewlet-dataset-source__refresh">
-              <VisuallyHidden>{text.refresh} </VisuallyHidden>
-              {refresh}
-            </span>
-          </>
-        ) : null}
       </span>
+      {/* HOW IT IS KEPT CURRENT IS A LINE OF ITS OWN. On the line of facts
+          above it, it wrapped under them and began with the separator. */}
+      {refresh ? (
+        <>
+          {' '}
+          <span className="crewlet-dataset-source__refresh">
+            <VisuallyHidden>{text.refresh} </VisuallyHidden>
+            {refresh}
+          </span>
+        </>
+      ) : null}
     </>
   );
 
