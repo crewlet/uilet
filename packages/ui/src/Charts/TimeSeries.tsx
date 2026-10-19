@@ -47,8 +47,9 @@ export interface TimeSeriesProps {
   summary?: (facts: { from: number; to: number; peak: number; series: { name: string; peak: number }[] }) => string;
   /**
    * Where the legend goes: `below`, the default, under the scale, or `none`
-   * for a screen that names the series somewhere the chart cannot reach. A
-   * chart of one series draws none either way: its label already names it.
+   * for a screen that names the series somewhere the chart cannot reach, such
+   * as a card whose title names its one series. A split that answered one band
+   * still draws its key: nothing else names the band.
    */
   legend?: 'below' | 'none';
   /** What the chart says in place of the plot when no series has a point. */
@@ -299,7 +300,7 @@ export function TimeSeries({
         </span>
         {span > 0 ? <span>{formatTime(to)}</span> : null}
       </figcaption>
-      {legend === 'below' && series.length > 1 ? (
+      {legend === 'below' && series.length > 0 ? (
         <Legend
           className="crewlet-time-series__legend"
           items={series.map((one, index) => ({ id: one.id, label: one.name, color: colorOf(one, index), shape: 'line' }))}

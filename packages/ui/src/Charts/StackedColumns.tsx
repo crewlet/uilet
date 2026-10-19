@@ -256,19 +256,20 @@ export function StackedColumns({
           .join(', ')}.`;
 
   /*
-   * A LEGEND OF ONE SERIES SAYS WHAT THE LABEL ALREADY SAYS: there is one hue,
-   * and the chart's name (its card's title) is what it is. A key is drawn for
-   * two series or more.
+   * A LEGEND FOR ANY NUMBER OF SERIES, one included: a split that answered one
+   * band (a seat, a team) is named nowhere else, so the key is what says which
+   * band it is. A caller whose card title already names its one series passes
+   * `legend="none"`.
    */
   const key =
-    legend === 'none' || shown.length < 2 ? null : (
+    legend === 'none' ? null : (
       <Legend
         className={cx('crewlet-stacked-columns__legend', `crewlet-stacked-columns__legend--${legend}`)}
         items={shown.map((one) => ({ id: one.id, label: one.name, color: one.color }))}
       />
     );
   const hasHead = head !== undefined && head !== null && head !== false;
-  const headed = hasHead || (legend === 'head' && key !== null);
+  const headed = hasHead || legend === 'head';
   const fill = height === 'fill';
   /*
    * A FILL CHART'S ROWS, as a style property because the head is not always
