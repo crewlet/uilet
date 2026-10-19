@@ -33,14 +33,12 @@
 /* ---- the tool palette, floating at the foot of the field ----------------- */
 
 /*
- * CENTRED AT THE FOOT, ON THE ZOOM BAR'S LINE. The palette's buttons are a
- * step larger than the zoom bar's, since a tool is picked far more often than
- * a zoom; so the palette sits half that step lower, and the two bars share a
- * centre line rather than a foot with one top edge out of line.
+ * CENTRED AT THE FOOT, on the zoom bar's line: the two bars are one control
+ * step tall and stand the same inset from the field's edge.
  */
 .crewlet-canvas-board__tools {
   position: absolute;
-  bottom: calc(var(--spacing-3) - (var(--size-control-md) - var(--size-control-sm)) / 2);
+  bottom: var(--spacing-3);
   left: 50%;
   z-index: var(--z-index-raised);
   transform: translateX(-50%);
@@ -257,7 +255,7 @@
   margin: 0;
   padding: var(--spacing-1) var(--spacing-2);
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   font: inherit;
   cursor: var(--crewlet-canvas-cursor-pointer, default);
