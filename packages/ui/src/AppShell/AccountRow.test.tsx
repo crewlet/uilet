@@ -125,6 +125,25 @@ describe('AccountRow', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
+  test('the reader’s menu is never narrower than the row that opens it', () => {
+    const realRect = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () {
+      if (this.classList.contains('crewlet-account-row__who')) {
+        return { left: 12, top: 600, width: 232, height: 44, right: 244, bottom: 644, x: 12, y: 600 } as DOMRect;
+      }
+      return realRect.call(this);
+    };
+    try {
+      render(
+        <AccountRow avatar={badge} name="Lee Park" menu={{ items: [{ key: 'out', label: 'Sign out', onSelect: () => {} }] }} />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: /Lee Park/ }));
+      expect(screen.getByRole('menu', { name: 'Your account' }).style.getPropertyValue('--crewlet-menu-floor')).toBe('232px');
+    } finally {
+      Element.prototype.getBoundingClientRect = realRect;
+    }
+  });
+
   test('a row that opens a menu is still marked on the account page, and drawn as the link is', () => {
     render(
       <AccountRow

@@ -11,12 +11,14 @@
  * with padding on all four sides a 32px field drew 39px tall, so a field, the
  * button beside it and the select beside that were three heights.
  *
- * THE BOUNDARY IS --color-border-control, not the default border. A text
- * box, a checkbox and a switch are the three things on a page whose OUTLINE
- * is the control: with the ordinary hairline they measured 1.27:1 in light
- * and 1.75:1 in dark, which is a box a reader has to already know is there.
- * It is the one place this register does not follow the product's own
- * stylesheet, which draws every field on the panel hairline.
+ * THE BOUNDARY IS --color-border-field, not the default border. A text box
+ * is one of the few things on a page whose OUTLINE is the control: with the
+ * ordinary hairline it measured 1.27:1 in light and 1.75:1 in dark, which is
+ * a box a reader has to already know is there. The field step is the strong
+ * border lifted only as far as 3:1 on the rungs a field stands on, so it
+ * clears that floor without being the brightest edge on the page, which the
+ * control boundary was: held to every row composite a checkbox meets, it
+ * measured 4.9:1 on the card a search box nearly always sits on.
  *
  * AND A FOCUSED FIELD SHOWS ONE RING, drawn as an outline over that boundary.
  * Every field in this package states that rule for itself and states it the
@@ -40,7 +42,7 @@
   width: 100%;
   min-height: var(--size-control-md);
   background-color: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-control);
+  border: 1px solid var(--color-border-field);
   border-radius: var(--radius-md);
   /* The boundary is the only thing that moves here. The ring is an outline,
      which takes no transition, and nothing else paints a shadow. */
@@ -55,8 +57,13 @@
 
 .crewlet-input--sm { min-height: var(--size-control-sm); }
 
+/*
+ * UNDER THE POINTER THE EDGE STEPS UP, to the control boundary. The hover
+ * border is a hairline step, darker than the field's own edge, so a field
+ * that took it faded as the pointer reached it.
+ */
 .crewlet-input:hover {
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-control);
 }
 
 /*
@@ -344,7 +351,7 @@
   line-height: var(--font-line-height-normal);
   color: var(--color-text-primary);
   background-color: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-control);
+  border: 1px solid var(--color-border-field);
   border-radius: var(--radius-md);
   transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
   box-sizing: border-box;

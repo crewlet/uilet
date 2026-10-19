@@ -107,6 +107,10 @@
       "control": {
         "value": "#a2a2b4",
         "comment": "A step the kit draws: the design draws no control boundary; it starts from the neutral mark. Placed where every rule holds."
+      },
+      "field": {
+        "value": "#9a9aae",
+        "comment": "The strong border, as it is: it already clears 3:1 on every rung a text field sits on (6.52:1 on the raised rung, the worst)."
       }
     },
     "focus": {

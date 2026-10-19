@@ -255,6 +255,7 @@ const ALPHA_STEP = 0.001;
 const ANCHORS = {
   '--color-focus': { of: '--color-brand-accent', why: 'the ring is drawn in the accent' },
   '--color-border-control': { design: '--mark', why: "the design draws no control boundary; it starts from the neutral mark" },
+  '--color-border-field': { of: '--color-border-strong', why: "a field's edge is the strong border, lifted only as far as its rungs need" },
   '--color-surface-pressed': { of: '--color-surface-hover', beyond: true, why: 'the design draws no pressed row; a press is a stronger hover' },
   '--color-feedback-danger-hover': {
     of: '--color-feedback-danger',

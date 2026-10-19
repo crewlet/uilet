@@ -203,7 +203,7 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.22.0
+## Changes in 0.24.0
 
 **The `markdown` artifact kind is now `doc`**, as the engine names it (`artifacts.KindDoc`). `ArtifactKind`, `ARTIFACT_KINDS`, `ArtifactKindGlyph` and `ArtifactCard` take `doc`, and the card's default label for it is "Doc".
 
@@ -212,6 +212,28 @@ What to change: pass `kind="doc"` wherever you passed `kind="markdown"`, and ren
 **`ArtifactKind` names every kind the engine ships**: `html`, `doc`, `slides`, `design`, `dashboard` and `sheet`, in the engine's order (`artifacts.Kinds`), which `ARTIFACT_KINDS` lists. Each draws its own glyph where a card has no preview (`slides` a presentation, `design` a palette, `dashboard` a dashboard layout), and its own default label ("Slides", "Design", "Dashboard"). A custom `labels.kinds` passes only the kinds it renames. `@crewlethq/icons` adds `PresentationGlyph`.
 
 What to change: a `Record<ArtifactKind, ...>` of your own needs the three new keys.
+
+## Changes in 0.23.0
+
+**A text field's edge is quieter.** `Input`, the textarea, `TagsInput`, `MarkdownEditor` and the typed boxes inside `DateTimePicker` and `TimeWindowPicker` draw `--color-border-field` (new in `@crewlethq/tokens` 0.23.0): the secondary button's edge lifted only as far as 3:1 on the surfaces a field stands on, rather than the control boundary that was the brightest edge on the page. Under the pointer the edge steps up to `--color-border-control`; it used to step down to the hover hairline and fade. Checkboxes, switches and editors inside a row keep `--color-border-control`.
+
+**A chosen chip draws the accent's soft pair.** The chip that is on in a `Tabs` chip row, and the current row of a `Switcher`, take `--color-brand-accent-soft` with a `--color-brand-accent-soft-strong` hairline, as a chosen `FilterChip` does, instead of a full-strength accent ring. A switcher row the arrows or the pointer are on keeps the listbox's own fill.
+
+**Inside a flush card the `TreeGrid` draws no frame of its own.** The card is the frame, so the grid's border, corner and ground step aside and its rows run to the card's edges, its footer included.
+
+What to change: nothing.
+
+## Changes in 0.22.0
+
+**`Menu` takes `width`** (`'content'`, the default, or `'trigger'`). `'trigger'` keeps the panel no narrower than its trigger, so a trigger that spans a column opens a menu that covers it edge to edge, and still lets it grow past the trigger when a row needs the room.
+
+**`Menu` takes `trailingIcon`**, a glyph after a text trigger's words, such as a picker's chevron. It is drawn as the button's trailing icon, a gap away from the words, where a glyph written into `trigger` sat flush against them.
+
+**`Menu` reads more easily.** A header's name and value share one line (`Access … Admin`), and a row's description is one type step under its label rather than two.
+
+**`AppShell.AccountRow`'s menu covers the row.** Pressing who you are opens a menu at least as wide as the row itself.
+
+What to change: nothing.
 
 ## Changes in 0.21.0
 
@@ -355,7 +377,7 @@ What to change: a screen that leaned on `max` to clear old failures now keeps th
 
 **Toasts are the first release's strip again**: a dark strip on `--color-surface-background` with the large shadow and the rim light, a 12px corner, a 20px mark, a slide in from the right, and the countdown as a wash behind the words that drains from the right. A variant spends its hue on its mark (the feedback ink step) and its wash (the feedback soft step) only, so a failure is a rose mark on a faint rose wash with a rose action, never red words on a red edge. Reduced motion keeps the strip still and draws no wash.
 
-**A picker's boundary is a button's.** `Select`, `DateTimePicker` and `TimeWindowPicker` draw their trigger on `--color-border-strong`, as the secondary button does, and step to `--color-border-strong-hover` under the pointer. Text boxes, checkboxes and switches keep `--color-border-control` at 3:1, as do the typed boxes inside the pickers' panels.
+**A picker's boundary is a button's.** `Select`, `DateTimePicker` and `TimeWindowPicker` draw their trigger on `--color-border-strong`, as the secondary button does, and step to `--color-border-strong-hover` under the pointer. Text boxes and the typed boxes inside the pickers' panels draw `--color-border-field` (see 0.23.0); checkboxes and switches keep `--color-border-control` at 3:1.
 
 **A `Select` list that leads with marks ends its rows with the tick**, so a swatch, an avatar or a glyph starts at the panel's edge. A list of words keeps the tick's column first.
 
