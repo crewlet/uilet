@@ -56,11 +56,13 @@
  * - FIT HAPPENS ONCE, on the first layout that has both a measured viewport
  *   and content bounds, and again only on request. A data push that changes
  *   the content never moves the operator's view, and nothing is shown before
- *   that first fit. A RESIZE refits only a view nobody has moved since its
- *   last fit: that view was the whole content, and a window made narrower
- *   that kept the old zoom would cut the content off for a reader who never
- *   asked to look at less of it. Once the reader has panned or zoomed, a
- *   resize keeps their view and only keeps the content reachable.
+ *   that first fit. With `refitOnResize`, a RESIZE refits a view nobody has
+ *   moved since its last fit: that view was the whole content, and a window
+ *   made narrower that kept the old zoom would cut the content off for a
+ *   reader who never asked to look at less of it. Once the reader has panned
+ *   or zoomed, a resize keeps their view and only keeps the content
+ *   reachable. It is opt in because a screen that chooses its own views
+ *   after a fit (a chart held at a legible zoom) decides its own refits.
  * - MOTION ONLY ON REQUEST. A fit, a zoom button or a reveal eases; a drag, a
  *   pinch, a wheel and a relayout anchor never do, and under reduced motion
  *   nothing does. An easing lasts as long as its transition: a clamp that
@@ -354,6 +356,14 @@ export interface CanvasProps {
   /** The pointer the field shows: see [CanvasCursor]. */
   cursor?: CanvasCursor | undefined;
   /**
+   * Refit on a resize while the view is still the last fit, rather than keep
+   * the zoom the old size was fitted at. For a surface whose fit is the view
+   * a reader expects back whatever the window does, such as a design's
+   * boards. Off by default: a screen that adjusts the view after each fit
+   * (holding a zoom, revealing a card) runs its own refit.
+   */
+  refitOnResize?: boolean | undefined;
+  /**
    * Whether one finger can pan the canvas at all.
    *
    * On by default, behind the tap that activates it. Turned off, one finger
@@ -396,6 +406,7 @@ export function Canvas({
   ground = 'plain',
   minZoom = CANVAS_MIN_ZOOM,
   cursor = 'hand',
+  refitOnResize = false,
   touch = true,
   labels,
   onReady,
@@ -532,7 +543,7 @@ export function Canvas({
     const was = fitted.current;
     const now = viewNow.current;
     const untouched = was !== null && was.x === now.x && was.y === now.y && was.k === now.k;
-    if (resized && untouched && content) {
+    if (refitOnResize && resized && untouched && content) {
       apply(fitOf(content), false);
       fitted.current = viewNow.current;
     } else {
@@ -540,7 +551,7 @@ export function Canvas({
       // A clamp of an untouched view is still the fit the reader was shown.
       if (untouched) fitted.current = viewNow.current;
     }
-  }, [ready, size, content, apply, fitOf]);
+  }, [ready, size, content, apply, fitOf, refitOnResize]);
 
   // ---- tell the caller where the view is -----------------------------------
   const reportView = useRef(onViewChange);

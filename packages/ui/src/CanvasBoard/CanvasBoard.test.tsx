@@ -140,6 +140,19 @@ test('a board that is not running is still selected by a click, but never handed
   expect(onActivate).not.toHaveBeenCalled();
 });
 
+test('a narrower window refits a canvas nobody has moved, so no board is cut off', () => {
+  const { container } = mount();
+  const zoom = () =>
+    Number(
+      (container.querySelector('.crewlet-canvas-board__layer') as HTMLElement).style.getPropertyValue(
+        '--crewlet-canvas-board-zoom',
+      ),
+    );
+  const wide = zoom();
+  FakeResizeObserver.last!.resize(600, 800);
+  expect(zoom()).toBeLessThan(wide);
+});
+
 // ---- tools -----------------------------------------------------------------
 
 const toolNames = () => within(screen.getByRole('toolbar', { name: 'Tools' })).getAllByRole('button').map((b) => b.getAttribute('aria-label'));

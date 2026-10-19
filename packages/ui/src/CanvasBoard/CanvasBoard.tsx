@@ -687,6 +687,7 @@ export function CanvasBoard({
         ground="dotted"
         cursor={TOOL_CURSOR[acting]}
         minZoom={CANVAS_BOARD_MIN_ZOOM}
+        refitOnResize
         controlsActualSize
         controlsExtra={controlsExtra}
         hint={hint}

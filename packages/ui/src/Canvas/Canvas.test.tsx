@@ -145,8 +145,21 @@ test('a data push that reshapes the content never refits the view the operator s
   expect(viewOf(container)).toEqual(fitView(grown, SIZE));
 });
 
-test('a resize refits a view nobody has moved since its fit, and keeps one somebody has', () => {
-  const { container, handle } = mount(WIDE);
+test('a canvas that refits on resize refits a view nobody has moved since its fit, and keeps one somebody has', () => {
+  // Without it, a resize keeps the zoom the old size was fitted at.
+  mount(WIDE);
+  const kept = viewOf(document.body).k;
+  FakeResizeObserver.last!.resize(500, 600);
+  expect(viewOf(document.body).k).toBe(kept);
+  cleanup();
+
+  const handle = createRef<CanvasHandle>();
+  const { container } = render(
+    <Canvas label="Organization chart" content={WIDE} refitOnResize ref={handle}>
+      <div />
+    </Canvas>,
+  );
+  FakeResizeObserver.last!.resize(SIZE.width, SIZE.height);
   expect(viewOf(container)).toEqual(fitView(WIDE, SIZE));
   // The window narrows: the untouched fit follows it, so nothing is cut off.
   const narrow = { width: 500, height: 600 };
