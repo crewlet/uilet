@@ -52,3 +52,12 @@
   justify-content: flex-start;
   padding: var(--spacing-4);
 }
+
+.crewlet-sandboxed-frame__detail {
+  display: block;
+}
+
+.crewlet-sandboxed-frame__action {
+  display: flex;
+  margin-top: var(--spacing-2);
+}
