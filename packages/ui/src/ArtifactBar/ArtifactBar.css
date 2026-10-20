@@ -198,11 +198,19 @@
   margin-inline-start: var(--spacing-1);
 }
 
+/* THE STATUS IS QUIET by default, in the bar's small step and the secondary
+   ink that `EditingStatus` takes, so a host that hands it words ("Creating…",
+   "25 words") draws them as the open artifact draws its own, never at the
+   title's weight. Its figures are tabular, so a count does not jitter. */
 .crewlet-artifact-bar__status {
   display: inline-flex;
   align-items: center;
   min-width: 0;
   margin-inline-end: var(--spacing-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .crewlet-artifact-bar__presence {

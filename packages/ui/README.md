@@ -248,6 +248,10 @@ A host has nothing else to change. A host stylesheet that drew its own chosen st
 
 **`createLivePreviewBudget().request` answers a slot** (`LivePreviewSlot`: `release`, `park` and `resume`) in place of a give-back function, and takes the holder's `reclaim` and whether it is a `frame`. A host that called the answer to give a slot back calls `release()`.
 
+**A framed slide keeps its edge on the dark theme** (`SlideStage` with `framed`). The slide's outline takes `--color-border-strong` rather than `--color-border-default`. On the dark theme the default border is a step off the page, so a dark slide (most themes are dark) on a dark page drew no edge and read as a hole in the page; the strong border is the third step of the ramp and clears the page in both themes. Hosts that recolour the outline for a marked stage are unchanged.
+
+**An artifact bar's status is quiet by default** (`ArtifactBar`'s `status`). Plain words handed to it ("Creating…", "25 words", "4 slides · Nightshade") are drawn in the compact step and the secondary ink, with tabular figures, as `EditingStatus` draws itself, rather than at the bar title's size and ink. A host that styled its own status span for this can drop the span; one that wants a stronger status passes an element with its own colour.
+
 ## Changes in 0.35.1
 
 **A column given another type keeps only what every type has** (`SheetColumnEditor`, and `retypeColumn` in the sheet model). Its field, name, width, freezing, read-only flag and Required stay, and so does its length cap between text and long text, which both read it. Every other setting belongs to the old type and is dropped: a number's bounds, decimals and format, a choice's options, a date's time of day. The column is built up from what is kept rather than pared down from the old one, so a setting a type adds later is dropped without the editor having to name it. Before, a date's time of day and a text's length cap rode along, unseen, into a type that ignores them, and came back if the old type was picked again. A host that relied on a setting surviving a type change sets it again on the column it is handed.

@@ -111,7 +111,8 @@ export interface ArtifactBarProps {
   presence?: ReactNode;
   /**
    * What the kind is doing now, said before its tools: an `EditingStatus`
-   * while a doc is edited. Never folded away; a status that has words to
+   * while a doc is edited, or plain words ("Creating…"), which the bar draws
+   * in its quiet small step. Never folded away; a status that has words to
    * spare folds them itself.
    */
   status?: ReactNode;
