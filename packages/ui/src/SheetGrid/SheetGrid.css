@@ -286,9 +286,11 @@
 /* THE SELECTION IS TINTED WHILE THE READER IS IN THE GRID, or while it
    spans more than one cell. A grid nobody has entered still holds its first
    cell as the active one (the keys start there), and tinting it drew a stray
-   highlight on every sheet as it opened. */
+   highlight on every sheet as it opened. The tint is laid over the cell's
+   own ground: alone, a translucent tint on a frozen cell let the values
+   scrolling under it show through. */
 .crewlet-sheet-grid__grid:is(:focus-within, .crewlet-sheet-grid__grid--range) .crewlet-sheet-grid__cell--selected {
-  background: var(--color-brand-accent-soft);
+  background: linear-gradient(var(--color-brand-accent-soft), var(--color-brand-accent-soft)) var(--color-surface-background);
 }
 
 /* THE FROZEN EDGE once the grid is scrolled sideways: the columns that stay

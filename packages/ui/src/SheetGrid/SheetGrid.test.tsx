@@ -516,6 +516,7 @@ describe('audit fixes', () => {
     expect(headers.map((header) => header.className.includes('crewlet-sheet-grid__rownum--selected'))).toEqual([true, true, false]);
     const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
     expect(sheet).toMatch(/__rownum--selected \{\s*background: linear-gradient\([^)]*\)[^;]*var\(--color-surface-background\);/);
+    expect(sheet).toMatch(/__cell--selected \{\s*background: linear-gradient\([^)]*\)[^;]*var\(--color-surface-background\);/);
   });
 
   test('no row actions are drawn without a host that deletes, or on a read-only sheet', () => {
