@@ -10,9 +10,10 @@ import { createRef } from 'react';
 import { IDENTITY_VIEW, type CanvasHandle } from '../Canvas/index.js';
 import { installHover, installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import {
-  BOARD_TITLE_MIN_WIDTH,
+  BOARD_NAME_MIN_CHARS,
   CanvasBoard,
   TITLE_GLYPH_EM,
+  boardName,
   boardRoom,
   titleSize,
   type CanvasBoardItem,
@@ -102,36 +103,62 @@ test('only live boards render their page; the rest draw a placeholder of their s
   expect(text).not.toContain('Mobile');
 });
 
-test('what a board says is held to the room it is drawn in', () => {
-  // Named only when wide enough to read a name.
-  expect(boardRoom(BOARD_TITLE_MIN_WIDTH - 1, 200).title).toBe(false);
-  expect(boardRoom(BOARD_TITLE_MIN_WIDTH, 200).title).toBe(true);
-  // A placeholder drops its lines in turn rather than clipping them.
+test('a placeholder drops its lines in turn rather than clipping them', () => {
   expect(boardRoom(400, 300).lines).toBe(2);
   expect(boardRoom(120, 300).lines).toBe(1);
   expect(boardRoom(400, 40).lines).toBe(1);
   expect(boardRoom(60, 300).lines).toBe(0);
 });
 
-test('a board drawn too narrow to name is drawn unnamed, and a placeholder says only what fits', () => {
+test('a board name is shortened to a few letters, then to its number, and only then left out', () => {
+  // Room for the whole name.
+  expect(boardName('Pricing', 2, 200)).toEqual({ text: 'Pricing', whole: true });
+  // Room for a shortened name: the whole name is drawn and the row's own
+  // ellipsis cuts it, so it is offered whole as a tooltip.
+  const least = (BOARD_NAME_MIN_CHARS + 1) * 9;
+  expect(boardName('Home on phone', 3, least)).toEqual({ text: 'Home on phone', whole: false });
+  // Too little room for those letters: its place in the design, never a lone
+  // ellipsis or one stray letter.
+  expect(boardName('Home on phone', 3, least - 1)).toEqual({ text: '3', whole: false });
+  expect(boardName('Home on phone', 12, 18)).toEqual({ text: '12', whole: false });
+  // A short name needs only its own letters and the ellipsis's room.
+  expect(boardName('Ok', 1, 27)).toEqual({ text: 'Ok', whole: true });
+  // Narrower than the number itself: nothing.
+  expect(boardName('Home on phone', 12, 17)).toBeNull();
+  expect(boardName('Home on phone', 3, 8)).toBeNull();
+});
+
+test('a narrow board is named by its number, with its name as a tooltip, and a placeholder says only what fits', () => {
   // Fitted into 1200 pixels, the design is drawn at about a third; held to
   // twelve, the 390 pixel board is about 130 pixels wide.
   mount({ maxLive: 0 });
   const mobile = screen.getByRole('region', { name: 'Mobile, 390 by 844' });
   expect(mobile.hasAttribute('data-untitled')).toBe(false);
+  expect(mobile.querySelector('.crewlet-canvas-board__title')!.textContent).toBe('Mobile');
   const lines = mobile.querySelectorAll('.crewlet-canvas-board__placeholder-text > *');
   expect(lines).toHaveLength(1);
   expect(lines[0]!.textContent).toBe('390 by 844');
-  // The same canvas in a viewport a tenth as wide draws every board too
-  // narrow to name.
+  // The same canvas in a viewport a quarter as wide: the wide boards keep
+  // their names, the phone board is called by its place, fourth.
   cleanup();
   render(<CanvasBoard label="Landing page" boards={BOARDS} renderBoard={page} maxLive={0} />);
-  FakeResizeObserver.last!.resize(120, 80);
-  for (const board of BOARDS) {
-    expect(
-      screen.getByRole('region', { name: new RegExp(`^${board.title},`) }).hasAttribute('data-untitled'),
-    ).toBe(true);
-  }
+  FakeResizeObserver.last!.resize(300, 200);
+  const titleOf = (title: string) =>
+    screen
+      .getByRole('region', { name: new RegExp(`^${title},`) })
+      .querySelector<HTMLElement>('.crewlet-canvas-board__title');
+  expect(titleOf('Hero')!.textContent).toBe('Hero');
+  const phone = titleOf('Mobile')!;
+  expect(phone.textContent).toBe('4');
+  expect(phone.title).toBe('Mobile');
+  // Zoomed all the way out, a wide board is still called by its number,
+  // and only a board narrower than a digit goes unnamed.
+  cleanup();
+  render(<CanvasBoard label="Landing page" boards={BOARDS} renderBoard={page} maxLive={0} />);
+  FakeResizeObserver.last!.resize(12, 8);
+  expect(titleOf('Hero')!.textContent).toBe('1');
+  expect(titleOf('Pricing')!.textContent).toBe('3');
+  expect(screen.getByRole('region', { name: /^Mobile,/ }).hasAttribute('data-untitled')).toBe(true);
 });
 
 test('a caller can hold the selection, and hears every change to it', () => {
