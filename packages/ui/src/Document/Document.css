@@ -350,6 +350,11 @@
   border-radius: 0;
   background: none;
   outline: none;
+  /* A textarea of one row that grows with the title (DocumentTitleField sets
+     its height): no handle, no scrollbar, and the title's own wrapping. */
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
   transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 

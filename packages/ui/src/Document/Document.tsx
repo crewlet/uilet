@@ -1,4 +1,14 @@
-import type { HTMLAttributes, InputHTMLAttributes } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ChangeEvent,
+  type HTMLAttributes,
+  type KeyboardEvent,
+  type TextareaHTMLAttributes,
+} from 'react';
 import { cx } from '../utils/cx.js';
 import { useFocusModality } from '../utils/focusModality.js';
 
@@ -90,10 +100,14 @@ export function DocumentTitle({ as: Tag = 'h1', className, children, ...rest }: 
   );
 }
 
-export interface DocumentTitleFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
+export interface DocumentTitleFieldProps
+  extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'rows' | 'cols' | 'wrap'> {
   /** Marks the title as refused. Sets `aria-invalid`, which is what a screen reader reads. */
   error?: boolean | undefined;
 }
+
+/** Every line break a paste, a drop or an autofill can carry, for one space each. */
+const LINE_BREAKS = /\r\n|[\r\n\u2028\u2029]/g;
 
 /**
  * A title being written: the field a new page's title is typed into, set as
@@ -106,15 +120,119 @@ export interface DocumentTitleFieldProps extends Omit<InputHTMLAttributes<HTMLIn
  * danger ink when the title is refused. The name is the caller's
  * (`aria-label`, or a label it points at), because a title field's visible
  * cue is its placeholder, and a placeholder is not a name.
+ *
+ * IT WRAPS, AND IT IS STILL ONE LINE OF TEXT. A title is set in the page's
+ * largest type, and an `<input>` cuts what does not fit: on a phone a long
+ * title, or the example in its placeholder, was clipped mid-word ("Weekly
+ * planning, Octobe"). So it is a textarea of one row that grows with what it
+ * holds, as the title it becomes wraps, and every way it could take a second
+ * line is closed: Enter inserts nothing (its `keydown` reaches the caller and
+ * the page exactly as an input's does, and in a form with a submit button it
+ * submits, as an input's Enter does), and a pasted, dropped or autofilled line
+ * break becomes a space before the caller's `onChange` reads the value. It is
+ * named to assistive technology as a single-line text field
+ * (`aria-multiline="false"`).
  */
-export function DocumentTitleField({ error = false, className, ...rest }: DocumentTitleFieldProps) {
+export const DocumentTitleField = forwardRef<HTMLTextAreaElement, DocumentTitleFieldProps>(function DocumentTitleField(
+  { error = false, className, onChange, onKeyDown, value, defaultValue, ...rest },
+  forwarded,
+) {
   useFocusModality();
+  const own = useRef<HTMLTextAreaElement | null>(null);
+  const ref = useCallback(
+    (element: HTMLTextAreaElement | null) => {
+      own.current = element;
+      if (typeof forwarded === 'function') forwarded(element);
+      else if (forwarded) forwarded.current = element;
+    },
+    [forwarded],
+  );
+
+  // GROW TO WHAT IT HOLDS: one row's height and no more, so the line along
+  // its foot sits under the last line of the title. Measured on every value
+  // and whenever its width changes, which is when a title rewraps.
+  const fit = useCallback(() => {
+    const element = own.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    const style = getComputedStyle(element);
+    const edges =
+      style.boxSizing === 'border-box'
+        ? parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
+        : -(parseFloat(style.paddingTop) + parseFloat(style.paddingBottom));
+    element.style.height = `${element.scrollHeight + (Number.isFinite(edges) ? edges : 0)}px`;
+  }, []);
+  useLayoutEffect(fit, [fit, value]);
+  useEffect(() => {
+    const element = own.current;
+    if (!element || typeof ResizeObserver === 'undefined') return undefined;
+    let width = element.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (element.clientWidth === width) return;
+      width = element.clientWidth;
+      fit();
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [fit]);
+
+  // ENTER INSERTS NOTHING. Refused at `beforeinput`, the one event every way
+  // of typing a line break passes through, so the keydown is left exactly as
+  // an input's: the caller's handler and the page's see it unprevented.
+  useEffect(() => {
+    const element = own.current;
+    if (!element) return undefined;
+    const refuse = (event: InputEvent) => {
+      if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') event.preventDefault();
+    };
+    element.addEventListener('beforeinput', refuse);
+    return () => element.removeEventListener('beforeinput', refuse);
+  }, []);
+
+  const change = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const element = event.currentTarget;
+    if (LINE_BREAKS.test(element.value)) {
+      LINE_BREAKS.lastIndex = 0;
+      const caret = element.selectionStart;
+      element.value = element.value.replace(LINE_BREAKS, ' ');
+      element.setSelectionRange(caret, caret);
+    }
+    LINE_BREAKS.lastIndex = 0;
+    onChange?.(event);
+    if (value === undefined) fit();
+  };
+
+  const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    onKeyDown?.(event);
+    if (event.key !== 'Enter' || event.defaultPrevented || event.nativeEvent.isComposing) return;
+    // An input's Enter submits its form when the form has a submit button, or
+    // when the input is the only field in it. A textarea's never does, so
+    // that is done here, through the form's own submission.
+    const form = event.currentTarget.form;
+    if (!form) return;
+    const submitter = form.querySelector<HTMLButtonElement | HTMLInputElement>(
+      'button[type="submit"], button:not([type]), input[type="submit"], input[type="image"]',
+    );
+    if (submitter) {
+      if (!submitter.disabled) form.requestSubmit(submitter);
+      return;
+    }
+    const fields = form.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea');
+    if (fields.length === 1) form.requestSubmit();
+  };
+
   return (
-    <input
+    <textarea
       {...rest}
-      type="text"
+      ref={ref}
+      rows={1}
+      value={value}
+      defaultValue={defaultValue}
+      aria-multiline="false"
       aria-invalid={error || undefined}
       className={cx('crewlet-document-title', 'crewlet-document-title-field', className)}
+      onChange={change}
+      onKeyDown={keyDown}
     />
   );
-}
+});
