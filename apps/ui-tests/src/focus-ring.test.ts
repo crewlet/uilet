@@ -187,6 +187,9 @@ test('a control that draws an edge rings over it, never off it', () => {
     ['FilterChip/FilterChip.css | .crewlet-filter-chip:focus-visible', inset],
     ['NewItemsNotice/NewItemsNotice.css | .crewlet-new-items:focus-visible', inset],
     ['Card/Card.css | .crewlet-card.is-interactive:focus-visible', inset],
+    // A gallery card and a Make row tile's holder, each a hairline edge the ring covers.
+    ['ArtifactCard/ArtifactCard.css | .crewlet-artifact-card--card:has(.crewlet-artifact-card__link:focus-visible)', inset],
+    ['ArtifactKindIllustration/ArtifactKindIllustration.css | .crewlet-kind-tile:focus-visible .crewlet-kind-tile__frame', inset],
     ['PricingCard/PricingCard.css | .crewlet-pricing-card:focus-visible', inset],
     ['Popover/Popover.css | .crewlet-popover:focus-visible', inset],
     ['TagGroup/TagGroup.css | .crewlet-tag-group__more:focus-visible', inset],
