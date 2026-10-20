@@ -97,6 +97,35 @@
   border-color: var(--color-feedback-danger);
 }
 
+/*
+ * QUIET: no boundary and no fill at rest, the hover overlay under the
+ * pointer, and the ring on focus as every field draws it. It sizes to its
+ * answer with no floor, since a quiet picker in a toolbar reads as its words.
+ * A quiet filter that is on takes the accent's soft fill under its accent ink,
+ * so "this narrows the list" still shows without a box around it.
+ */
+.crewlet-select--quiet {
+  --crewlet-select-auto-min-width: 0px;
+
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.crewlet-select--quiet:hover {
+  border-color: transparent;
+  background-color: var(--color-surface-hover);
+}
+
+.crewlet-select--quiet.is-open {
+  background-color: var(--color-surface-hover);
+}
+
+.crewlet-select--quiet.is-active,
+.crewlet-select--quiet.is-active:hover {
+  border-color: transparent;
+  background-color: var(--color-brand-accent-soft);
+}
+
 /* A refused picker keeps its colour while the reader is in it: the ring
    covers the boundary, so a focus-coloured one would paint out the refusal.
    See Input.css. */

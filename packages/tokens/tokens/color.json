@@ -95,6 +95,34 @@
     "presence": {
       "flagText": { "value": "#07080d", "comment": "The name on a presence flag: the plate a collaborator's cursor, cell or selection is labelled with, filled with that collaborator's node hue. It is the one place a node hue is a ground for text rather than a tint, so its ink is a step of its own, per palette, and the palette suite holds it at 4.5:1 on each of the six hues in every theme. Presence colour is the narrow exception to colour carrying state: it ties a mark to a name, and the name is always on the flag." }
     },
+    "artifact": {
+      "kind": {
+        "doc": { "value": "{color.node.blue}", "comment": "The hue an artifact kind is drawn in wherever its kind is pictured: the illustration on a Make something new tile and the ground a gallery card shows before its live preview arrives. Each kind is an ALIAS of one node hue (doc blue, slides amber, design purple, dashboard cyan, HTML rose, sheet green), so every theme repaints it with no value of its own, and the Ink, Fill and Line steps follow the node hue's own derived steps. A kind's hue is identity and never state: the kind's name is always drawn beside it." },
+        "docInk": { "value": "{color.node.blueInk}" },
+        "docFill": { "value": "{color.node.blueFill}" },
+        "docLine": { "value": "{color.node.blueLine}" },
+        "slides": { "value": "{color.node.amber}" },
+        "slidesInk": { "value": "{color.node.amberInk}" },
+        "slidesFill": { "value": "{color.node.amberFill}" },
+        "slidesLine": { "value": "{color.node.amberLine}" },
+        "design": { "value": "{color.node.purple}" },
+        "designInk": { "value": "{color.node.purpleInk}" },
+        "designFill": { "value": "{color.node.purpleFill}" },
+        "designLine": { "value": "{color.node.purpleLine}" },
+        "dashboard": { "value": "{color.node.cyan}" },
+        "dashboardInk": { "value": "{color.node.cyanInk}" },
+        "dashboardFill": { "value": "{color.node.cyanFill}" },
+        "dashboardLine": { "value": "{color.node.cyanLine}" },
+        "html": { "value": "{color.node.rose}" },
+        "htmlInk": { "value": "{color.node.roseInk}" },
+        "htmlFill": { "value": "{color.node.roseFill}" },
+        "htmlLine": { "value": "{color.node.roseLine}" },
+        "sheet": { "value": "{color.node.green}" },
+        "sheetInk": { "value": "{color.node.greenInk}" },
+        "sheetFill": { "value": "{color.node.greenFill}" },
+        "sheetLine": { "value": "{color.node.greenLine}" }
+      }
+    },
     "changeMark": { "value": "{color.brand.accentSoftStrong}", "comment": "The corner mark on a cell or an element that changed since the reader last looked. An alias of the accent's strong soft step, so the meaning has a name of its own and follows the accent in every palette; the mark is always paired with a tooltip that says who changed it and what it was." },
     "scrollbar": { "value": "rgba(255, 255, 255, 0.16)", "comment": "Scrollbars belong to the palette. A bright system gutter down the side of a dark page is the most visible way an application admits it is a web page." },
     "scrollbarHover": { "value": "rgba(255, 255, 255, 0.26)" },

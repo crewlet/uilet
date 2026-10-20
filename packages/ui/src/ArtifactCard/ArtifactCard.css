@@ -1,7 +1,8 @@
 /*
  * A card in a gallery: the preview on top at a fixed ratio, so a grid of them
- * lines up whatever each preview is, then the title and up to three lines of
- * facts. `compact` is a row with the kind's glyph in place of the preview.
+ * lines up whatever each preview is, the kind's badge over its foot, then the
+ * title and one quiet line. `compact` is a row with the kind's glyph in place
+ * of the preview, drawn on Card.
  */
 
 /*
@@ -25,17 +26,6 @@
   align-items: flex-start;
   gap: var(--spacing-3);
   padding: var(--spacing-3);
-}
-
-.crewlet-artifact-card__preview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-bottom: 1px solid var(--color-border-default);
-  background: var(--color-surface-inset);
-  color: var(--color-text-tertiary);
 }
 
 .crewlet-artifact-card__glyph {
@@ -121,4 +111,179 @@
 .crewlet-artifact-card__changes {
   color: var(--color-text-secondary);
   font-weight: var(--font-weight-medium);
+}
+
+/* ---- the gallery card ---- */
+
+/*
+ * A SOFT PANE WITH A GENEROUS CORNER. The card is the card rung with its
+ * hairline, rounded a step past a plain card's because the preview inside it
+ * is a picture, and a picture in a tight corner reads as a screenshot pasted
+ * into a box. Hover lifts the edge and the shadow, never the colour.
+ */
+.crewlet-artifact-card--card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-subtle);
+  transition:
+    border-color var(--motion-duration-base) var(--motion-easing-out),
+    box-shadow var(--motion-duration-base) var(--motion-easing-out),
+    transform var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-artifact-card--card:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+.crewlet-artifact-card--card:has(.crewlet-artifact-card__link:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-artifact-card__link {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: inherit;
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+}
+
+.crewlet-artifact-card__preview {
+  position: relative;
+  display: flex;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: var(--color-surface-inset);
+}
+
+.crewlet-artifact-card__preview > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crewlet-artifact-card--trashed .crewlet-artifact-card__preview > * {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.crewlet-artifact-card--card .crewlet-artifact-card__body {
+  gap: var(--spacing-1);
+  padding: 0 var(--spacing-5) var(--spacing-5);
+}
+
+/*
+ * THE KIND'S BADGE STANDS ON THE PREVIEW'S FOOT, half over the picture and
+ * half over the card, the glyph in the kind's ink: what the artifact is, read
+ * before its title, in the one place every card has it.
+ */
+.crewlet-artifact-card__badge {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  width: 40px;
+  height: 40px;
+  margin-top: -22px;
+  margin-bottom: var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-background);
+  box-shadow: var(--shadow-sm);
+  color: var(--crewlet-kind-ink, var(--color-text-secondary));
+}
+
+.crewlet-artifact-card--card .crewlet-artifact-card__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.35;
+}
+
+.crewlet-artifact-card--card .crewlet-artifact-card__facts {
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-artifact-card__meta {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.crewlet-artifact-card__access {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.crewlet-artifact-card__meta > .crewlet-artifact-card__owner {
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+
+.crewlet-artifact-card__owner-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewlet-artifact-card__meta > :last-child {
+  flex: none;
+}
+
+/*
+ * THE CARD'S OWN CONTROLS, over the preview's top corner and outside the
+ * link: hidden until the card is hovered or holds focus, so a gallery rests
+ * as pictures, and always there on a screen with no hover.
+ */
+.crewlet-artifact-card__actions {
+  position: absolute;
+  top: var(--spacing-3);
+  right: var(--spacing-3);
+  display: inline-flex;
+  gap: var(--spacing-1);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-background);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-artifact-card--card:hover .crewlet-artifact-card__actions,
+.crewlet-artifact-card--card:focus-within .crewlet-artifact-card__actions,
+.crewlet-artifact-card__actions:has([aria-expanded='true']) {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .crewlet-artifact-card__actions {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-artifact-card--card,
+  .crewlet-artifact-card__actions {
+    transition: none;
+  }
+
+  .crewlet-artifact-card--card:hover {
+    transform: none;
+  }
+}
+
+.crewlet-artifact-card--skeleton {
+  pointer-events: none;
+}
+
+.crewlet-artifact-card--skeleton .crewlet-artifact-card__badge {
+  box-shadow: none;
 }

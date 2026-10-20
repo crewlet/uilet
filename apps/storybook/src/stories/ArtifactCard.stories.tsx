@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ARTIFACT_KINDS, ArtifactCard, AutoGrid, DashboardCover } from '@crewlethq/ui';
+import { ARTIFACT_KINDS, ArtifactCard, ArtifactCardSkeleton, ArtifactKindGround, AutoGrid, DashboardCover, Document, LivePreview, Menu, useLivePreview } from '@crewlethq/ui';
+import { useEffect } from 'react';
+import { CopyGlyph, EllipsisGlyph, PencilGlyph, PinGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof ArtifactCard> = {
   title: 'UI/ArtifactCard',
@@ -14,9 +16,9 @@ const MAYA = { id: 'maya', kind: 'person' as const, name: 'Maya Ortiz' };
 const CTO = { id: 'cto', kind: 'agent' as const, name: '@cto', character: 'hexlet' as const, hue: 'amber' as const };
 
 /**
- * A gallery's cards shape. The whole card is one link named by its title; the
- * facts are its description, read as "Updated 4m ago by Maya". A missing
- * preview is the kind's glyph, never a screenshot.
+ * A gallery's cards. The whole card is one link named by its title; the facts
+ * are its description, read as "Edited 4m ago by Maya". A missing preview is
+ * the kind's drawing on its tinted ground, never a screenshot.
  */
 export const Gallery: Story = {
   render: () => (
@@ -127,7 +129,7 @@ export const CompactInARail: Story = {
   ),
 };
 
-/** Every kind with no preview: the glyph and the label each kind is drawn with until it has a cover. */
+/** Every kind with no preview: the drawing, the badge and the word each kind is drawn with until it has one. */
 export const Kinds: Story = {
   render: () => (
     <AutoGrid min="sm" gap={3}>
@@ -135,5 +137,89 @@ export const Kinds: Story = {
         <ArtifactCard key={kind} title={`Untitled ${kind}`} kind={kind} href={`#/artifacts/${kind}`} updatedAt={NOW - 3_600_000} now={NOW} />
       ))}
     </AutoGrid>
+  ),
+};
+
+/** A More menu as a gallery draws one beside a card's link. */
+function More({ title }: { title: string }) {
+  return (
+    <Menu
+      label={`More for “${title}”`}
+      icon={<EllipsisGlyph size="sm" />}
+      triggerVariant="ghost"
+      align="end"
+      items={[
+        { key: 'pin', label: 'Pin to your sidebar', icon: <PinGlyph size="sm" />, onSelect: () => {} },
+        { key: 'copy', label: 'Copy link', icon: <CopyGlyph size="sm" />, onSelect: () => {} },
+        { key: 'rename', label: 'Rename', icon: <PencilGlyph size="sm" />, onSelect: () => {} },
+        { kind: 'separator', key: 'sep' },
+        { key: 'trash', label: 'Move to the trash', icon: <TrashGlyph size="sm" />, danger: true, onSelect: () => {} },
+      ]}
+    />
+  );
+}
+
+/** A doc's opening, drawn live and small, as a gallery's preview draws one. */
+function Opening() {
+  const preview = useLivePreview();
+  useEffect(() => preview.ready(), [preview]);
+  return (
+    <div style={{ padding: 40, background: 'var(--color-surface-background)', minHeight: '100%', boxSizing: 'border-box' }}>
+      <Document measure="none">
+        <h1>Incident runbook</h1>
+        <p>Who answers the pager, how quickly, and what they look at first.</p>
+        <h2>First five minutes</h2>
+        <p>Acknowledge the page, open the incident channel and say you are on it.</p>
+      </Document>
+    </div>
+  );
+}
+
+/**
+ * THE GALLERY CARD as the Artifacts page draws it: a live preview of the
+ * artifact's own content, the kind's badge over the preview's foot, the title
+ * on one line, who can open it (a lock, people, the company) and when it was
+ * edited, and a More menu beside the link, shown on hover and focus.
+ */
+export const GalleryCards: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, maxWidth: 1120 }}>
+      <ArtifactCard
+        title="Incident runbook"
+        kind="doc"
+        href="#/artifacts/1"
+        updatedAt={NOW - 20 * 3_600_000}
+        access="private"
+        now={NOW}
+        actions={<More title="Incident runbook" />}
+        preview={
+          <LivePreview width={600} fallback={<ArtifactKindGround kind="doc" />} dwellMs={0}>
+            <Opening />
+          </LivePreview>
+        }
+      />
+      <ArtifactCard title="Vendor scorecard" kind="sheet" href="#/artifacts/2" owner={MAYA} updatedAt={NOW - 26 * 3_600_000} access="shared" pinned now={NOW} actions={<More title="Vendor scorecard" />} />
+      <ArtifactCard title="Company handbook" kind="slides" href="#/artifacts/3" owner={CTO} updatedAt={NOW - 3 * 86_400_000} access="company" now={NOW} actions={<More title="Company handbook" />} />
+    </div>
+  ),
+};
+
+/** A card in the trash: its preview faded, so the trash's grid reads as put away. */
+export const Trashed: Story = {
+  render: () => (
+    <div style={{ width: 360 }}>
+      <ArtifactCard title="Old pricing page" kind="html" href="#/artifacts/9" updatedAt={NOW - 5 * 86_400_000} access="private" trashed now={NOW} />
+    </div>
+  ),
+};
+
+/** The placeholder a gallery draws while its listing loads: the card's own shape. */
+export const Skeleton: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, maxWidth: 1120 }}>
+      <ArtifactCardSkeleton />
+      <ArtifactCardSkeleton />
+      <ArtifactCardSkeleton />
+    </div>
   ),
 };
