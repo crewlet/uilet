@@ -1,8 +1,11 @@
 /*
  * A message written in place: the field and its footer strip in one box. The
- * BOX takes the focus ring, an accent border and a 2px soft halo, so the
- * field inside draws no border or outline of its own and the footer reads as
- * part of what is being written.
+ * BOX takes the focus ring every field in the package draws (see Input.css):
+ * an outline over its boundary, 2px for the keyboard and the hairline for a
+ * pointer, so the field inside draws no border or outline of its own and the
+ * footer reads as part of what is being written. It used to recolour the
+ * border to the accent AND lay a 2px soft halo outside it: two highlights for
+ * one state, and the loudest edge on a page whose field was focused on load.
  */
 .crewlet-composer {
   display: grid;
@@ -10,18 +13,22 @@
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background: var(--color-surface-background);
-  transition:
-    border-color var(--motion-duration-fast) var(--motion-easing-default),
-    box-shadow var(--motion-duration-fast) var(--motion-easing-default);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-composer:hover {
   border-color: var(--color-border-strong-hover);
 }
 
-.crewlet-composer:focus-within {
-  border-color: var(--color-brand-accent);
-  box-shadow: 0 0 0 2px var(--color-brand-accent-soft);
+/* Keyed on the FIELD, not :focus-within: the footer holds the send action,
+   and a reader tabbing onto it is shown that button's ring, not the box's. */
+.crewlet-composer:has(.crewlet-composer__field:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -1px;
+}
+
+:root[data-crewlet-focus='pointer'] .crewlet-composer:has(.crewlet-composer__field:focus-visible) {
+  outline-width: 1px;
 }
 
 .crewlet-composer .crewlet-composer__field {
@@ -34,11 +41,12 @@
   resize: none;
 }
 
-/* The ring is the box's, above. A transparent outline stays, because forced
-   colors drops the box's shadow and paints an outline in its place. */
-.crewlet-composer .crewlet-composer__field:focus-visible {
-  outline: 2px solid transparent;
-  outline-offset: -2px;
+/* The ring is the box's, above, so the field inside never draws one: left to
+   the textarea's own rule it would be a second ring inside the box's, and in
+   forced colours the box's outline is the one the system repaints. Stated on
+   the field at rest, at a weight the textarea's focus rule cannot outrank. */
+.crewlet-composer .crewlet-composer__field.crewlet-textarea {
+  outline: none;
 }
 
 /* Past its cap the field scrolls rather than pushing the page. */

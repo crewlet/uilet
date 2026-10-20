@@ -71,8 +71,13 @@
  * leave the other bare.
  */
 .crewlet-select:focus-within {
-  outline: 1px solid var(--color-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: -1px;
+}
+
+/* Narrowed for a pointer, as the text box's ring is. See Input.css. */
+:root[data-crewlet-focus='pointer'] .crewlet-select:focus-within {
+  outline-width: 1px;
 }
 
 /*
@@ -426,8 +431,13 @@ svg.crewlet-select__chevron {
  * outset ring on the input would be cut by the menu's own `overflow: hidden`.
  */
 .crewlet-select__search:focus-within {
-  outline: 1px solid var(--color-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: -1px;
+}
+
+/* Narrowed for a pointer, as the text box's ring is. See Input.css. */
+:root[data-crewlet-focus='pointer'] .crewlet-select__search:focus-within {
+  outline-width: 1px;
 }
 
 .crewlet-select__search {

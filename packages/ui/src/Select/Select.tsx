@@ -25,6 +25,7 @@ import {
 } from '../Layer/index.js';
 import { useHighlightRest, useListbox, useOptionKeys } from '../Listbox/index.js';
 import { cx } from '../utils/cx.js';
+import { useFocusModality } from '../utils/focusModality.js';
 
 export type SelectValue = string | number;
 export type SelectSize = 'sm' | 'md';
@@ -248,6 +249,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
   },
   ref,
 ) {
+  useFocusModality();
   const generatedId = useId();
   const rootId = id ?? generatedId;
   /*

@@ -327,14 +327,26 @@
  * on no surface of its own, with a line along its foot that answers the
  * pointer, the focus and a refusal. The line is a border rather than a
  * shadow, because forced colours keep a border and drop a shadow.
+ *
+ * ONE PIXEL, AND A TINT, WHERE A POINTER PUT THE CARET. The line is the
+ * hairline under the pointer and the selected edge (the accent mixed toward
+ * the page) once a click has put the caret in it: the reader is already
+ * looking at the title, and a page that focuses its title on load drew a 2px
+ * accent bar under it before anybody had touched anything.
+ *
+ * TWO PIXELS IN THE FOCUS COLOUR FOR THE KEYBOARD, the area WCAG 2.2's focus
+ * appearance asks of an indicator: the border takes the focus colour and a
+ * shadow lays the second pixel under it, with a transparent outline that
+ * forced colours paints in its place. The padding takes the pixel the border
+ * no longer reserves, so the title sits where it always did.
  */
 .crewlet-document-title-field {
   display: block;
   width: 100%;
   min-width: 0;
-  padding: 0 0 var(--spacing-1);
+  padding: 0 0 calc(var(--spacing-1) + 1px);
   border: 0;
-  border-block-end: 2px solid transparent;
+  border-block-end: 1px solid transparent;
   border-radius: 0;
   background: none;
   outline: none;
@@ -352,9 +364,24 @@
 
 .crewlet-document-title-field:focus-visible {
   border-block-end-color: var(--color-focus);
+  box-shadow: 0 1px 0 var(--color-focus);
+  outline: 2px solid transparent;
+}
+
+:root[data-crewlet-focus='pointer'] .crewlet-document-title-field:focus-visible {
+  border-block-end-color: var(--color-border-selected);
+  box-shadow: none;
 }
 
 .crewlet-document-title-field[aria-invalid='true'] {
+  border-block-end-color: var(--color-feedback-danger);
+}
+
+.crewlet-document-title-field[aria-invalid='true']:focus-visible {
+  box-shadow: 0 1px 0 var(--color-feedback-danger);
+}
+
+:root[data-crewlet-focus='pointer'] .crewlet-document-title-field[aria-invalid='true']:focus-visible {
   border-block-end-color: var(--color-feedback-danger);
 }
 

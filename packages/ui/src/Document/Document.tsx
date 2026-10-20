@@ -1,5 +1,6 @@
 import type { HTMLAttributes, InputHTMLAttributes } from 'react';
 import { cx } from '../utils/cx.js';
+import { useFocusModality } from '../utils/focusModality.js';
 
 export type DocumentSize =
   /**
@@ -107,6 +108,7 @@ export interface DocumentTitleFieldProps extends Omit<InputHTMLAttributes<HTMLIn
  * cue is its placeholder, and a placeholder is not a name.
  */
 export function DocumentTitleField({ error = false, className, ...rest }: DocumentTitleFieldProps) {
+  useFocusModality();
   return (
     <input
       {...rest}

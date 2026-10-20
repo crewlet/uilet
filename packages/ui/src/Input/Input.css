@@ -81,14 +81,18 @@
  * forced-colors mode drops every box-shadow and keeps outlines: a ring drawn
  * as a shadow disappears for exactly the readers who most need one.
  *
- * It is ONE PIXEL, LAID EXACTLY ON THE BOUNDARY: the field's own hairline,
- * drawn in the focus colour, which is how the console's fields say focus. At
- * two pixels it was a heavy band round every box a caret landed in, and on a
- * form of them the field being typed in read as the loudest thing on the page.
- * Drawn on the boundary rather than outside it, a scroller cannot clip it and
- * the field does not grow a halo the moment a caret lands in it, which is what
- * a filter box in a toolbar of them did to the row it sits in. Every boxed
- * field in the package rings this way (`Input.test.tsx` holds them to it).
+ * It is TWO PIXELS FOR THE KEYBOARD AND ONE FOR A POINTER, laid over the
+ * boundary. Two pixels is the area WCAG 2.2's focus appearance asks of an
+ * indicator, and one pixel (the field's own hairline in the focus colour) was
+ * half of it for every reader tabbing through a form. But at two pixels round
+ * every box a caret landed in, a click into a title or a filter box drew a
+ * heavy band round the one thing the reader was already looking at, so the
+ * rule after this one narrows the ring where the document says the last move
+ * was a pointer. Drawn over the boundary rather than outside it, a scroller
+ * cannot clip it and the field does not grow a halo the moment a caret lands
+ * in it, which is what a filter box in a toolbar of them did to the row it
+ * sits in. Every boxed field in the package rings this way (`Input.test.tsx`
+ * holds them to it).
  *
  * THE BORDER IS LEFT ALONE. Recolouring it under the ring says nothing the
  * ring has not already said, and it is what cost the error state its own
@@ -104,8 +108,22 @@
  * on a pointer press as well as on a tab.
  */
 .crewlet-input:has(.crewlet-input__control:focus-visible) {
-  outline: 1px solid var(--color-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: -1px;
+}
+
+/*
+ * NARROWED FOR A POINTER. The ring above is the keyboard's: 2px, the area
+ * WCAG 2.2's focus appearance asks of an indicator, drawn over the boundary
+ * and one pixel into the box. A field matches :focus-visible on a click as
+ * well, and a reader who put the caret there with a pointer is already looking
+ * at it, so where the document says the last move was a pointer
+ * (`data-crewlet-focus`, kept by `trackFocusModality`, which every field
+ * starts) the ring is the field's own hairline in the focus colour, as it
+ * always was. A document that tracks nothing keeps the keyboard's ring.
+ */
+:root[data-crewlet-focus='pointer'] .crewlet-input:has(.crewlet-input__control:focus-visible) {
+  outline-width: 1px;
 }
 
 .crewlet-input.is-error {
@@ -364,8 +382,13 @@
    on the control itself: a textarea is the field, with nothing wrapped round
    it and nothing focusable inside it. */
 .crewlet-textarea:focus-visible {
-  outline: 1px solid var(--color-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: -1px;
+}
+
+/* Narrowed for a pointer, as the text box's ring is. See Input.css. */
+:root[data-crewlet-focus='pointer'] .crewlet-textarea:focus-visible {
+  outline-width: 1px;
 }
 
 .crewlet-textarea.is-error {

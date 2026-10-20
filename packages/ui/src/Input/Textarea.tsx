@@ -7,6 +7,7 @@ import {
   type TextareaHTMLAttributes,
 } from 'react';
 import { cx } from '../utils/cx.js';
+import { useFocusModality } from '../utils/focusModality.js';
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   /** Marks the value as refused. Sets `aria-invalid`. */
@@ -27,6 +28,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   { error = false, autoResize = false, trailing, className = '', value, disabled, ...rest },
   ref,
 ) {
+  useFocusModality();
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   useImperativeHandle(ref, () => localRef.current as HTMLTextAreaElement);
 

@@ -6,6 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import axe from 'axe-core';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { Document, DocumentTitle, DocumentTitleField } from './index.js';
@@ -102,4 +103,20 @@ test('a title being written is a named text field set as the title, refused by a
   cleanup();
   render(<DocumentTitleField aria-label="Title" error defaultValue="Taken" />);
   expect(screen.getByRole('textbox', { name: 'Title' }).getAttribute('aria-invalid')).toBe('true');
+});
+
+test('a title being written, and one refused, carries no accessibility violation', async () => {
+  const { container } = render(
+    <main>
+      <h1>New document</h1>
+      <DocumentTitleField aria-label="Title" placeholder="Untitled" />
+      <DocumentTitleField aria-label="Second title" error />
+    </main>,
+  );
+  const result = await axe.run(container, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });

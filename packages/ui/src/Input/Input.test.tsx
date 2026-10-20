@@ -477,15 +477,46 @@ test('one element draws the ring, and it is the one a reader reads as the field'
   expect(drawnOnNothing).toEqual([]);
 });
 
+test('a boxed ring narrows to the hairline where a pointer put the caret, and nowhere else', () => {
+  /*
+   * THE KEYBOARD'S RING IS THE DEFAULT, and the pointer's is a narrowing of
+   * it rather than a ring of its own: a rule under `data-crewlet-focus` that
+   * sets the WIDTH alone, so it cannot move the ring, recolour it or draw a
+   * second one. Every boxed field has exactly one, and nothing else does: a
+   * checkbox, a switch and a chip ring outside or inside themselves at 2px,
+   * and are reached by a pointer only through a press the platform already
+   * keeps off :focus-visible.
+   */
+  const pointer = ":root[data-crewlet-focus='pointer'] ";
+  const narrowed = sheetRules()
+    .filter((rule) => rule.selector.startsWith(pointer))
+    .map((rule) => {
+      expect([...rule.declared.keys()], rule.selector).toEqual(['outline-width']);
+      expect(rule.declared.get('outline-width'), rule.selector).toBe('1px');
+      return rule.selector
+        .split(',')
+        .map((part) => part.trim().slice(pointer.length))
+        .join(', ');
+    })
+    .sort();
+  const boxed = focusRules()
+    .filter((rule) => !rule.selector.startsWith(pointer))
+    .filter((rule) => rule.declared.get('outline') === '2px solid var(--color-focus)' && rule.declared.get('outline-offset') === '-1px')
+    .map((rule) => rule.selector)
+    .sort();
+  expect(boxed.length).toBeGreaterThan(5);
+  expect(narrowed).toEqual(boxed);
+});
+
 test('every field rings on one geometry, and a boxed one rings on its own boundary', () => {
   /*
    * ONE OUTLINE, --color-focus, and two geometries for one reason.
    *
-   * A BOXED FIELD RINGS ON ITS OWN BOUNDARY, one pixel laid exactly over its
-   * one-pixel hairline, which is the console's own focused field: the
-   * boundary drawn in the focus colour. At two pixels inset it was a heavy
-   * band round every box a caret landed in. On the boundary it is clipped by
-   * no scroller, grows no halo, and shows no second edge under the ring.
+   * A BOXED FIELD RINGS ON ITS OWN BOUNDARY: two pixels laid over its
+   * one-pixel hairline and one pixel into the box, the area WCAG 2.2's focus
+   * appearance asks of a keyboard indicator. On the boundary it is clipped by
+   * no scroller, grows no halo, and shows no second edge under the ring. A
+   * pointer narrows it to the hairline alone: see the next test.
    *
    * A CHECKBOX AND A SWITCH RING OUTSIDE, because each IS its own target
    * rather than a frame around one: 2px eaten off a 16px box is a box with no
@@ -494,7 +525,7 @@ test('every field rings on one geometry, and a boxed one rings on its own bounda
    * round a drawn boundary is two edges, which reads as a second outline
    * rather than as focus.
    */
-  const onBoundary = ['1px', '-1px'] as const;
+  const onBoundary = ['2px', '-1px'] as const;
   const inset = ['2px', 'var(--size-focus-ring-inset-offset)'] as const;
   const flush = ['2px', '0'] as const;
   const geometry = focusRules()
