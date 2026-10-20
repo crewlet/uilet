@@ -2,17 +2,11 @@
  * A kind's drawing, its tinted ground and the Make something new tile.
  *
  * Every colour is the kind's token, `--color-artifact-kind-<kind>` and its
- * Fill and Line steps, set once per kind on `--crewlet-kind-*` and read by
- * every rule below, so the drawing, the ground and the tile repaint together
- * with the theme.
+ * Fill and Line steps, set once per kind on `--crewlet-kind-*`
+ * (`ArtifactKinds.css`) and read by every rule below, so the drawing, the
+ * ground and the tile repaint together with the theme.
  */
 
-.crewlet-kind--doc { --crewlet-kind-hue: var(--color-artifact-kind-doc); --crewlet-kind-fill: var(--color-artifact-kind-doc-fill); --crewlet-kind-line: var(--color-artifact-kind-doc-line); --crewlet-kind-ink: var(--color-artifact-kind-doc-ink); }
-.crewlet-kind--slides { --crewlet-kind-hue: var(--color-artifact-kind-slides); --crewlet-kind-fill: var(--color-artifact-kind-slides-fill); --crewlet-kind-line: var(--color-artifact-kind-slides-line); --crewlet-kind-ink: var(--color-artifact-kind-slides-ink); }
-.crewlet-kind--design { --crewlet-kind-hue: var(--color-artifact-kind-design); --crewlet-kind-fill: var(--color-artifact-kind-design-fill); --crewlet-kind-line: var(--color-artifact-kind-design-line); --crewlet-kind-ink: var(--color-artifact-kind-design-ink); }
-.crewlet-kind--dashboard { --crewlet-kind-hue: var(--color-artifact-kind-dashboard); --crewlet-kind-fill: var(--color-artifact-kind-dashboard-fill); --crewlet-kind-line: var(--color-artifact-kind-dashboard-line); --crewlet-kind-ink: var(--color-artifact-kind-dashboard-ink); }
-.crewlet-kind--html { --crewlet-kind-hue: var(--color-artifact-kind-html); --crewlet-kind-fill: var(--color-artifact-kind-html-fill); --crewlet-kind-line: var(--color-artifact-kind-html-line); --crewlet-kind-ink: var(--color-artifact-kind-html-ink); }
-.crewlet-kind--sheet { --crewlet-kind-hue: var(--color-artifact-kind-sheet); --crewlet-kind-fill: var(--color-artifact-kind-sheet-fill); --crewlet-kind-line: var(--color-artifact-kind-sheet-line); --crewlet-kind-ink: var(--color-artifact-kind-sheet-ink); }
 
 /* ---- the drawing ---- */
 

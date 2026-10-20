@@ -64,6 +64,9 @@
   align-items: center;
 }
 
+/* THE KIND'S GLYPH IN THE KIND'S INK, as the gallery's badge and the Make
+   row draw it, so an open artifact and a create page say what they are in the
+   same colour the reader picked it by. */
 .crewlet-artifact-bar__glyph {
   display: inline-flex;
   flex: none;
@@ -71,7 +74,7 @@
   justify-content: center;
   width: var(--size-control-sm);
   height: var(--size-control-sm);
-  color: var(--color-text-secondary);
+  color: var(--crewlet-kind-ink, var(--color-text-secondary));
 }
 
 /* THE TITLE. Read only, it is text; renamable, its words are a button drawn
