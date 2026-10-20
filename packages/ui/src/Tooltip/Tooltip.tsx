@@ -30,11 +30,23 @@ import { cx } from '../utils/cx.js';
 
 export type TooltipPlacement = 'top' | 'bottom';
 
+/**
+ * Where along the trigger the panel lines up: `center` on its middle, or
+ * `start` on its leading edge, running toward the inline end.
+ */
+export type TooltipAlign = 'center' | 'start';
+
 export interface TooltipProps {
   /** One short line. A tooltip is not a place to put a list or a paragraph. */
   content: ReactNode;
   /** The preferred side. It flips when there is not room and there is more room the other way. */
   placement?: TooltipPlacement | undefined;
+  /**
+   * `start` for a trigger at the leading edge of what it belongs to, such as a
+   * grid's row gutter: a centred tip there hangs past that edge, and at the
+   * page's edge is pushed off its trigger by the clamp.
+   */
+  align?: TooltipAlign | undefined;
   /** Nothing opens: for a trigger whose tip is only worth showing sometimes. */
   disabled?: boolean | undefined;
   /** Milliseconds a pointer rests on the trigger before the panel appears. Focus never waits. */
@@ -131,6 +143,7 @@ const CLOSE_DELAY = ms(motion.duration.base);
 export function Tooltip({
   content,
   placement = 'top',
+  align = 'center',
   disabled = false,
   openDelay = OPEN_DELAY,
   closeDelay = CLOSE_DELAY,
@@ -209,10 +222,14 @@ export function Tooltip({
      * aligns a panel to its anchor's start, which is right for a menu hanging
      * off a button and wrong for a label about one. Handing it an anchor whose
      * start is already the centred position keeps the clamping, the flip and
-     * the bounds in one place rather than reimplementing them here.
+     * the bounds in one place rather than reimplementing them here. `start`
+     * lines the panel up with the trigger's leading edge instead: its left
+     * edge, or its right edge in a right-to-left page.
      */
+    const rtl = getComputedStyle(at).direction === 'rtl';
+    const startX = align === 'center' ? rect.x + rect.width / 2 - own.width / 2 : rtl ? rect.right - own.width : rect.x;
     const local: PlacementRect = {
-      x: rect.x + rect.width / 2 - own.width / 2 - (inHost ? host.x : 0),
+      x: startX - (inHost ? host.x : 0),
       y: rect.y - (inHost ? host.y : 0),
       width: rect.width,
       height: rect.height,
@@ -231,7 +248,7 @@ export function Tooltip({
     setPlace((was) =>
       was && was.left === spot.left && was.top === spot.top && was.side === spot.side ? was : spot,
     );
-  }, [container, placement]);
+  }, [align, container, placement]);
 
   useLayoutEffect(() => {
     if (!open) return;
