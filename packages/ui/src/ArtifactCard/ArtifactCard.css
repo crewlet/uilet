@@ -119,7 +119,12 @@
  * A SOFT PANE WITH A GENEROUS CORNER. The card is the card rung with its
  * hairline, rounded a step past a plain card's because the preview inside it
  * is a picture, and a picture in a tight corner reads as a screenshot pasted
- * into a box. Hover lifts the edge and the shadow, never the colour.
+ * into a box.
+ *
+ * HOVER IS A STEP, NEVER A MOVE: the hairline darkens and a hairline shadow
+ * settles under the card, quickly and with the standard ease. A card that rose
+ * and cast a wide shadow made a gallery ripple as the pointer crossed it, and
+ * the preview inside it never moves.
  */
 .crewlet-artifact-card--card {
   position: relative;
@@ -130,15 +135,13 @@
   border-radius: var(--radius-xl);
   background: var(--color-surface-subtle);
   transition:
-    border-color var(--motion-duration-base) var(--motion-easing-out),
-    box-shadow var(--motion-duration-base) var(--motion-easing-out),
-    transform var(--motion-duration-base) var(--motion-easing-out);
+    border-color var(--motion-duration-fast) var(--motion-easing-out),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-out);
 }
 
 .crewlet-artifact-card--card:hover {
   border-color: var(--color-border-hover);
-  box-shadow: var(--shadow-card);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-xs);
 }
 
 .crewlet-artifact-card--card:has(.crewlet-artifact-card__link:focus-visible) {
@@ -178,7 +181,7 @@
 
 .crewlet-artifact-card--card .crewlet-artifact-card__body {
   gap: var(--spacing-1);
-  padding: 0 var(--spacing-5) var(--spacing-5);
+  padding: 0 var(--spacing-4) var(--spacing-4);
 }
 
 /*
@@ -193,19 +196,19 @@
   align-items: center;
   justify-content: center;
   align-self: flex-start;
-  width: 40px;
-  height: 40px;
-  margin-top: -22px;
+  width: 32px;
+  height: 32px;
+  margin-top: -18px;
   margin-bottom: var(--spacing-2);
   border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--color-surface-background);
   box-shadow: var(--shadow-sm);
   color: var(--crewlet-kind-ink, var(--color-text-secondary));
 }
 
 .crewlet-artifact-card--card .crewlet-artifact-card__title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   line-height: 1.35;
 }
@@ -273,10 +276,6 @@
   .crewlet-artifact-card--card,
   .crewlet-artifact-card__actions {
     transition: none;
-  }
-
-  .crewlet-artifact-card--card:hover {
-    transform: none;
   }
 }
 

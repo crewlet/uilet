@@ -135,19 +135,13 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-2xl);
   background: var(--color-surface-subtle);
-  transition:
-    border-color var(--motion-duration-base) var(--motion-easing-out),
-    box-shadow var(--motion-duration-base) var(--motion-easing-out);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-out);
 }
 
 .crewlet-kind-tile__ground {
   border-radius: var(--radius-xl);
   box-shadow: inset 0 0 0 1px var(--crewlet-kind-line);
   overflow: hidden;
-}
-
-.crewlet-kind-tile__ground > .crewlet-kind-illustration {
-  transition: transform var(--motion-duration-base) var(--motion-easing-out);
 }
 
 .crewlet-kind-tile__label {
@@ -177,12 +171,10 @@
   font-weight: var(--font-weight-medium);
 }
 
+/* HOVER IS THE FRAME'S STEP ALONE: the drawing inside stays still, as a
+   card's preview does, so a row of tiles never ripples under the pointer. */
 a.crewlet-kind-tile:hover .crewlet-kind-tile__frame {
   border-color: var(--color-border-hover);
-}
-
-a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustration {
-  transform: translateY(-2px) scale(1.03);
 }
 
 .crewlet-kind-tile:focus-visible .crewlet-kind-tile__frame {
@@ -200,12 +192,7 @@ a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustratio
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .crewlet-kind-tile__frame,
-  .crewlet-kind-tile__ground > .crewlet-kind-illustration {
+  .crewlet-kind-tile__frame {
     transition: none;
-  }
-
-  a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustration {
-    transform: none;
   }
 }

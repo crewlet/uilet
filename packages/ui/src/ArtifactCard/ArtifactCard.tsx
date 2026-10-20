@@ -236,7 +236,7 @@ export function ArtifactCard({
         </span>
         <span className="crewlet-artifact-card__body">
           <span className={cx('crewlet-artifact-card__badge', `crewlet-kind--${kind}`)} aria-hidden>
-            <ArtifactKindGlyph kind={kind} size="md" />
+            <ArtifactKindGlyph kind={kind} size="sm" />
           </span>
           <span className="crewlet-artifact-card__title-row">
             <span id={titleId} className="crewlet-artifact-card__title" title={title}>

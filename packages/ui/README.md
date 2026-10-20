@@ -204,6 +204,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.35.0
+
+**The gallery card is a step smaller and calm under the pointer** (`ArtifactCard`, `size="card"`). Its title is the body size rather than a large one, its body inset is one spacing step tighter, and the kind's badge on the preview's foot is 32px (from 40px) with the small glyph, so a gallery fits four cards across a laptop's page in the same design. Hover no longer lifts the card or casts the wide card shadow: the hairline darkens and an extra-small shadow settles under it, over the fast duration, and the card never moves. The More menu still appears on hover and focus. A host that relied on the lift has nothing to change.
+
+**A Make row's tile keeps its drawing still on hover** (`ArtifactKindTile`). The illustration used to rise and grow inside its frame; the frame's border now steps alone, over the fast duration. Reduced motion drops the transition.
+
 ## Changes in 0.34.1
 
 **`ArtifactKindGlyph`, `ARTIFACT_KINDS` and `ArtifactKind` have a module of their own** (`@crewlethq/ui/ArtifactKindGlyph`), and it imports nothing but the glyphs. They were defined in `ArtifactCard`'s module, and a bundler places a module whole, so a host that drew one kind glyph in its frame (a sidebar's pins, a command palette's hits) took the whole card into its first screen, and with 0.34.0 the kind illustrations the card draws: about 11 KB of script for a gallery the reader had not opened. Nothing is renamed: the root export and `@crewlethq/ui/ArtifactCard` still answer for all three, and `ArtifactIcon`, `ArtifactBar`, `DashboardCover` and `ArtifactKindIllustration` now import them from the new module.
