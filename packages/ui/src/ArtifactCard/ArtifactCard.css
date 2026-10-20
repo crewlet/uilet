@@ -214,6 +214,66 @@
   font-size: var(--font-size-sm);
 }
 
+.crewlet-artifact-card__badge--mark.crewlet-kind-mark {
+  width: var(--crewlet-kind-mark-size);
+  height: var(--crewlet-kind-mark-size);
+  margin-top: -26px;
+  border-radius: calc(var(--crewlet-kind-mark-size) * 0.29);
+  color: var(--crewlet-kind-hue);
+  border-color: var(--crewlet-kind-line);
+  background: var(--crewlet-kind-fill);
+  box-shadow: 0 0 0 3px var(--color-surface-subtle);
+}
+
+/*
+ * THE TILE: the card a step smaller. The preview keeps the card's ratio's
+ * neighbour (16:10, a touch taller than 16:9, so a doc's first lines and a
+ * sheet's header both clear the badge at a quarter of a laptop's page), and
+ * every type step and inset comes down one.
+ */
+.crewlet-artifact-card--tile {
+  border-radius: var(--radius-lg);
+}
+
+.crewlet-artifact-card--tile .crewlet-artifact-card__preview {
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.crewlet-artifact-card--tile .crewlet-artifact-card__body {
+  gap: 2px;
+  padding: 0 var(--spacing-4) var(--spacing-4);
+}
+
+.crewlet-artifact-card--tile .crewlet-artifact-card__badge {
+  width: 32px;
+  height: 32px;
+  margin-top: -18px;
+  margin-bottom: var(--spacing-1);
+  border-radius: var(--radius-md);
+}
+
+.crewlet-artifact-card--tile .crewlet-artifact-card__badge--mark.crewlet-kind-mark {
+  width: var(--crewlet-kind-mark-size);
+  height: var(--crewlet-kind-mark-size);
+  margin-top: -18px;
+  border-radius: calc(var(--crewlet-kind-mark-size) * 0.29);
+}
+
+.crewlet-artifact-card--tile .crewlet-artifact-card__title {
+  font-size: var(--font-size-md);
+  line-height: 1.4;
+}
+
+.crewlet-artifact-card--tile .crewlet-artifact-card__facts {
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-artifact-card--tile .crewlet-artifact-card__actions {
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+}
+
 .crewlet-artifact-card__meta {
   flex-wrap: nowrap;
   white-space: nowrap;

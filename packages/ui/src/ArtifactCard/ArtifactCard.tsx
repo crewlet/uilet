@@ -2,6 +2,7 @@ import { useId, type ReactNode } from 'react';
 import { BuildingComplexGlyph, LockGlyph, PinGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
 import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { ArtifactKindGround } from '../ArtifactKindIllustration/index.js';
+import { ArtifactKindMark } from '../ArtifactKindMark/index.js';
 import { AvatarStack, type AvatarStackMember } from '../Avatar/index.js';
 import { Card } from '../Card/index.js';
 import { PrincipalAvatar, type Principal } from '../Principal/index.js';
@@ -35,7 +36,19 @@ const ACCESS_GLYPHS: Readonly<Record<ArtifactAccess, typeof LockGlyph>> = {
   company: BuildingComplexGlyph,
 };
 
-export type ArtifactCardSize = 'card' | 'compact';
+/**
+ * `card` is a gallery's card at its full size; `tile` is the same card a
+ * step smaller (a shorter preview, the title and the facts a type step down,
+ * a smaller badge), for a gallery that shows more at once; `compact` is a row
+ * for a narrow rail or a phone, with no preview.
+ */
+export type ArtifactCardSize = 'card' | 'tile' | 'compact';
+
+/**
+ * What the card's badge draws: the kind's `glyph`, or its maker `character`
+ * on the kind's plate (`ArtifactKindMark`).
+ */
+export type ArtifactCardKindMark = 'glyph' | 'character';
 
 export interface ArtifactCardLabels {
   kinds: Record<ArtifactKind, string>;
@@ -100,8 +113,10 @@ export interface ArtifactCardProps {
   actions?: ReactNode;
   /** It is in the trash: the preview is drawn faded. */
   trashed?: boolean | undefined;
-  /** `compact` is a row for a narrow rail or a phone, with no preview. */
+  /** Defaults to `card`. */
   size?: ArtifactCardSize | undefined;
+  /** What the badge over the preview's foot draws. Defaults to `glyph`; not read by `compact`. */
+  kindMark?: ArtifactCardKindMark | undefined;
   className?: string | undefined;
   /** Overrides the shared clock, for a story or a suite. */
   now?: number | undefined;
@@ -124,6 +139,9 @@ export interface ArtifactCardProps {
  * inside it, over the preview's corner, so they are real controls a keyboard
  * reaches in turn after the link.
  *
+ * THE TILE (`size="tile"`) is the card a step smaller, for a gallery that
+ * shows four across a laptop's page rather than three.
+ *
  * THE COMPACT ROW (`size="compact"`) is a task rail's: the kind's glyph, the
  * title and the facts, with no preview and no actions.
  */
@@ -144,6 +162,7 @@ export function ArtifactCard({
   actions,
   trashed = false,
   size = 'card',
+  kindMark = 'glyph',
   className,
   now,
   labels,
@@ -229,22 +248,34 @@ export function ArtifactCard({
 
   const Access = access ? ACCESS_GLYPHS[access] : null;
   return (
-    <div className={cx('crewlet-artifact-card', 'crewlet-artifact-card--card', trashed && 'crewlet-artifact-card--trashed', className)}>
+    <div
+      className={cx(
+        'crewlet-artifact-card',
+        'crewlet-artifact-card--card',
+        size === 'tile' && 'crewlet-artifact-card--tile',
+        trashed && 'crewlet-artifact-card--trashed',
+        className,
+      )}
+    >
       <a href={href} className="crewlet-artifact-card__link" aria-labelledby={titleId} aria-describedby={factsId}>
         <span className="crewlet-artifact-card__preview" aria-hidden>
           {preview ?? <ArtifactPreviewGlyph kind={kind} />}
         </span>
         <span className="crewlet-artifact-card__body">
-          <span className={cx('crewlet-artifact-card__badge', `crewlet-kind--${kind}`)} aria-hidden>
-            <ArtifactKindGlyph kind={kind} size="md" />
-          </span>
+          {kindMark === 'character' ? (
+            <ArtifactKindMark kind={kind} size={size === 'tile' ? 'md' : 'lg'} className="crewlet-artifact-card__badge crewlet-artifact-card__badge--mark" />
+          ) : (
+            <span className={cx('crewlet-artifact-card__badge', `crewlet-kind--${kind}`)} aria-hidden>
+              <ArtifactKindGlyph kind={kind} size={size === 'tile' ? 'sm' : 'md'} />
+            </span>
+          )}
           <span className="crewlet-artifact-card__title-row">
             <span id={titleId} className="crewlet-artifact-card__title" title={title}>
               {title}
             </span>
             {pinned ? (
               <span className="crewlet-artifact-card__pin" title={text.pinned} aria-hidden>
-                <PinGlyph size="sm" />
+                <PinGlyph size={size === 'tile' ? 'xs' : 'sm'} />
               </span>
             ) : null}
           </span>
@@ -286,9 +317,25 @@ export function ArtifactCard({
  * reflowing the page. Decorative: the host says once what is loading
  * (`Skeleton`'s `label`, or its own status line).
  */
-export function ArtifactCardSkeleton({ className }: { className?: string | undefined }) {
+export function ArtifactCardSkeleton({
+  size = 'card',
+  className,
+}: {
+  /** The card size the gallery draws, so the placeholder is that card's shape. */
+  size?: Exclude<ArtifactCardSize, 'compact'> | undefined;
+  className?: string | undefined;
+}) {
   return (
-    <div className={cx('crewlet-artifact-card', 'crewlet-artifact-card--card', 'crewlet-artifact-card--skeleton', className)} aria-hidden>
+    <div
+      className={cx(
+        'crewlet-artifact-card',
+        'crewlet-artifact-card--card',
+        size === 'tile' && 'crewlet-artifact-card--tile',
+        'crewlet-artifact-card--skeleton',
+        className,
+      )}
+      aria-hidden
+    >
       <span className="crewlet-artifact-card__preview">
         <Skeleton variant="box" width="100%" height="100%" borderRadius={0} />
       </span>

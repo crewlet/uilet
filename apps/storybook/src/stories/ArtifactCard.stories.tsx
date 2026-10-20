@@ -223,3 +223,29 @@ export const Skeleton: Story = {
     </div>
   ),
 };
+
+/**
+ * The tile: the gallery card a step smaller, four across a laptop's page,
+ * each badged with its kind's maker character (`kindMark="character"`).
+ */
+export const TileCards: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 20, maxWidth: 1120 }}>
+      {ARTIFACT_KINDS.slice(0, 4).map((kind, i) => (
+        <ArtifactCard
+          key={kind}
+          title={['Settlement page', 'Incident runbook', 'Company handbook', 'Mobile companion'][i]!}
+          kind={kind}
+          href={`#/artifacts/${i}`}
+          owner={i % 2 ? MAYA : CTO}
+          updatedAt={NOW - (i + 1) * 3_600_000}
+          access="shared"
+          now={NOW}
+          size="tile"
+          kindMark="character"
+          actions={<More title="Tile" />}
+        />
+      ))}
+    </div>
+  ),
+};
