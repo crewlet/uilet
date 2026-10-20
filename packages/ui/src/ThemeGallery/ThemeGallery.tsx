@@ -1,4 +1,4 @@
-import { useId, type CSSProperties, type HTMLAttributes } from 'react';
+import { useId, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
 import { themeGroups, themeRegistry, type ThemeId } from '@crewlethq/tokens';
 import { useHighlightRest } from '../Listbox/index.js';
 import { tabStop, useRoving } from '../Tabs/roving.js';
@@ -13,7 +13,8 @@ export interface ThemeGalleryTheme<T extends string = string> {
   tag: string;
   /** The id of the group it is listed under. */
   group: string;
-  swatch: ThemeSwatchPair;
+  /** Its two palettes, drawn as the card's thumbnail unless `renderPreview` draws one. */
+  swatch?: ThemeSwatchPair | undefined;
 }
 
 /** A heading the themes are listed under, as `themeGroups` carries it. */
@@ -45,6 +46,12 @@ export interface ThemeGalleryProps<T extends string = ThemeId>
   columns?: number | undefined;
   /** Nothing can be chosen, and the gallery says so. */
   disabled?: boolean | undefined;
+  /**
+   * Draws a card's thumbnail in place of its swatch: a theme of something
+   * other than the product's chrome, such as a slide deck's, shown as what it
+   * themes. Decoration, as the swatch is: the card is named by its theme.
+   */
+  renderPreview?: ((theme: ThemeGalleryTheme<T>) => ReactNode) | undefined;
 }
 
 /**
@@ -79,6 +86,7 @@ export function ThemeGallery<T extends string = ThemeId>({
   groups = themeGroups,
   columns = 3,
   disabled = false,
+  renderPreview,
   className,
   style,
   ...rest
@@ -151,7 +159,13 @@ export function ThemeGallery<T extends string = ThemeId>({
                       onKeyDown={(event) => onKeyDown(event, true)}
                       onMouseEnter={() => preview.rest(theme.id)}
                     >
-                      <ThemeSwatch swatch={theme.swatch} size="card" />
+                      {renderPreview ? (
+                        <span className="crewlet-theme-gallery__preview" aria-hidden="true">
+                          {renderPreview(theme)}
+                        </span>
+                      ) : theme.swatch ? (
+                        <ThemeSwatch swatch={theme.swatch} size="card" />
+                      ) : null}
                       <span className="crewlet-theme-gallery__name">{theme.name}</span>
                     </button>
                   );

@@ -124,6 +124,32 @@ test('a theme whose group is not listed is still offered, after the groups and u
   expect(card('Beta, Loose').getAttribute('aria-describedby')).toBeNull();
 });
 
+test('a caller-drawn preview takes the swatch\'s place, hidden as decoration, with no groups needed', () => {
+  const themes: ThemeGalleryTheme[] = [
+    { id: 'ink', name: 'Ink', tag: 'Navy and paper', group: 'deck' },
+    { id: 'grove', name: 'Grove', tag: 'Deep green', group: 'deck' },
+  ];
+  const onValueChange = vi.fn();
+  const { container } = render(
+    <ThemeGallery
+      label="Deck theme"
+      value="ink"
+      onValueChange={onValueChange}
+      themes={themes}
+      groups={[]}
+      renderPreview={(theme) => <span data-testid={`cover-${theme.id}`}>{theme.name} cover</span>}
+    />,
+  );
+  const cards = within(screen.getByRole('radiogroup', { name: 'Deck theme' })).getAllByRole('radio');
+  expect(cards.map((c) => c.getAttribute('aria-label'))).toEqual(['Ink, Navy and paper', 'Grove, Deep green']);
+  expect(screen.getByTestId('cover-grove').closest('[aria-hidden="true"]')).not.toBeNull();
+  expect(container.querySelector('.crewlet-theme-swatch')).toBeNull();
+  expect(container.querySelector('.crewlet-theme-gallery__heading')).toBeNull();
+  cards[0]!.focus();
+  fireEvent.keyDown(cards[0]!, { key: 'ArrowRight' });
+  expect(onValueChange).toHaveBeenCalledWith('grove');
+});
+
 test('the gallery carries no accessibility violation', async () => {
   const { container } = render(
     <main>

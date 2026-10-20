@@ -91,3 +91,12 @@
     border-width: 2px;
   }
 }
+
+/* A THUMBNAIL THE CALLER DRAWS (`renderPreview`) fills the card's width, as
+   the swatch does, and is clipped to the card's inner corner. */
+.crewlet-theme-gallery__preview {
+  display: block;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
