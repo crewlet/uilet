@@ -1,0 +1,71 @@
+/*
+ * What a checker found: a quiet list, one row each, the tone's glyph in its
+ * ink, the location in mono over the sentence. A row that goes somewhere takes
+ * the hover ground and the focus ring as a whole.
+ */
+.crewlet-finding-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-finding-list__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--spacing-2);
+  align-items: start;
+  width: 100%;
+  padding: var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: start;
+}
+
+button.crewlet-finding-list__row {
+  cursor: pointer;
+}
+
+button.crewlet-finding-list__row:hover {
+  background: var(--color-surface-hover);
+}
+
+button.crewlet-finding-list__row:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.crewlet-finding-list__glyph {
+  display: inline-flex;
+  padding-top: 2px;
+}
+
+.crewlet-finding-list__glyph.is-danger {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-finding-list__glyph.is-warning {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-finding-list__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-finding-list__location {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-finding-list__message {
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-normal);
+  overflow-wrap: anywhere;
+}
