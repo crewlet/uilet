@@ -1,8 +1,8 @@
 /*
- * A live preview: the stand-in, a still copy of what was drawn before and the
- * live layer, stacked in that order in one box. The box takes its size from
- * its parent (a card's preview area), so it fills it and clips whatever the
- * content lays out past its edge.
+ * A live preview: the stand-in, the still copy of what the content drew and
+ * the live layer it is drawn in, stacked in that order in one box. The box
+ * takes its size from its parent (a card's preview area), so it fills it and
+ * clips whatever the content lays out past its edge.
  */
 
 .crewlet-live-preview {
@@ -20,8 +20,9 @@
   display: flex;
 }
 
-/* A STILL COPY of what the content drew before its slot was taken back:
-   static DOM over the stand-in, so a card scrolled back to looks as it was. */
+/* THE STILL COPY: static DOM over the stand-in, which it hides. A copy just
+   taken fades in; one the preview was given back from its store is simply
+   there, so a card scrolled or filtered back to is as it was. */
 .crewlet-live-preview__still {
   position: absolute;
   inset: 0;
@@ -31,6 +32,29 @@
   user-select: none;
 }
 
+.crewlet-live-preview[data-fresh] > .crewlet-live-preview__still {
+  animation: crewlet-live-preview-arrive var(--motion-duration-base) var(--motion-easing-out);
+}
+
+@keyframes crewlet-live-preview-arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A COPY IS FROZEN: what it drew never moves, so nothing in it animates or
+   transitions, whatever the content's own styles ask of the elements it
+   copied (a skeleton's shimmer, a chart's entrance). */
+.crewlet-live-preview__still *,
+.crewlet-live-preview__still *::before,
+.crewlet-live-preview__still *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* THE LIVE LAYER renders out of sight: content that is copied is never seen
+   live, only its copy is. A frame's page is kept rather than copied, so a
+   framed preview's live layer is what fades in once it has drawn. */
 .crewlet-live-preview__live {
   position: absolute;
   inset: 0;
@@ -39,7 +63,14 @@
   opacity: 0;
   pointer-events: none;
   user-select: none;
+}
+
+.crewlet-live-preview[data-frame] > .crewlet-live-preview__live {
   transition: opacity var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-live-preview[data-frame][data-state='ready'] > .crewlet-live-preview__live {
+  opacity: 1;
 }
 
 /* LAID OUT AT ITS OWN SIZE from the top left corner, and scaled from there:
@@ -60,34 +91,23 @@
   transform-origin: 0 0;
 }
 
-/* THE CONTENT FADES IN OVER WHAT IS UNDER IT, and what is under it is
-   hidden only once the fade is done. Fading the stand-in out at the same time
-   showed both at half strength halfway through: a double exposure. */
-.crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__live {
-  opacity: 1;
-}
-
-.crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__fallback,
-.crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__still {
+/* WHAT IS UNDER A DRAWING is hidden only once it has faded in. Fading the
+   stand-in out at the same time showed both at half strength halfway
+   through: a double exposure. */
+.crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__fallback {
   visibility: hidden;
   /* Visibility is discrete and stays visible for the whole of a transition
-     to hidden, so this holds it exactly as long as the fade above. */
+     to hidden, so this holds it exactly as long as the fade above. A copy
+     given back from the store is ready from its first style, which runs no
+     transition, so its stand-in is never shown at all. */
   transition: visibility var(--motion-duration-base) linear;
 }
 
-/* OVER A STILL COPY the content is what was already there, drawn again, so
-   it arrives with no fade at all. */
-.crewlet-live-preview[data-still] > .crewlet-live-preview__live {
-  transition: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .crewlet-live-preview__live {
-    transition: none;
-  }
-
-  .crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__fallback,
-  .crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__still {
+  .crewlet-live-preview[data-fresh] > .crewlet-live-preview__still,
+  .crewlet-live-preview[data-frame] > .crewlet-live-preview__live,
+  .crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__fallback {
+    animation: none;
     transition: none;
   }
 }
