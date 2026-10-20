@@ -25,9 +25,8 @@ name: release
 # code holds a credential worth stealing, and so that the bytes that receive
 # provenance are produced by as little third-party code as possible:
 #
-#   verify   contents: read. Installs the whole workspace and runs the build
-#            (the Storybook included), lint, typecheck and tests. Uploads
-#            nothing.
+#   verify   contents: read. The verify.yml jobs ci.yml also runs: the whole
+#            workspace's build, lint, typecheck and tests. Uploads nothing.
 #   pack     contents: read. Installs only the root tooling and the published
 #            workspaces, builds only those packages, computes the version,
 #            packs them and compares them with the registry, then uploads the
@@ -77,28 +76,11 @@ concurrency:
 jobs:
   verify:
     name: verify the merged commit
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
     permissions:
       contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: $/.github/actions/verify-release-ref
-      - uses: $/.github/actions/setup-node
-
-      # Runs before npm ci, on Node alone, so inconsistent release metadata
-      # fails before any third-party code has executed.
-      - name: Check the release metadata
-        run: node scripts/release.mjs check
-
-      - run: npm ci --ignore-scripts
-      - run: npm run build
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
+    uses: ./.github/workflows/verify.yml
+    with:
+      release: true
 
   pack:
     name: build, version and pack the published packages

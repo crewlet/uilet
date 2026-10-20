@@ -1,0 +1,16 @@
+name: Install the whole workspace
+description: >-
+  Checks the release metadata, then installs the workspace from the lockfile
+  without install scripts.
+
+runs:
+  using: composite
+  steps:
+    # Runs on Node alone, before any third-party code is installed.
+    - name: Check the release metadata
+      shell: bash
+      run: node scripts/release.mjs check
+
+    - name: Install the workspace
+      shell: bash
+      run: npm ci --ignore-scripts

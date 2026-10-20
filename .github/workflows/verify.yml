@@ -1,0 +1,89 @@
+name: verify
+
+# Build, lint, typecheck and test the workspace. Called by ci.yml and
+# release.yml, so both run the same checks. Read-only, no secrets.
+#
+# The jsdom suite runs as parallel shards; everything else runs in one
+# Turborepo run. No build or test cache is restored.
+
+on:
+  workflow_call:
+    inputs:
+      release:
+        description: >-
+          Set by release.yml: verify the release ref and skip the npm cache.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  workspace:
+    name: build, lint, typecheck and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - if: inputs.release
+        uses: $/.github/actions/verify-release-ref
+      - uses: $/.github/actions/setup-node
+        with:
+          cache: ${{ !inputs.release && 'npm' || '' }}
+      - uses: $/.github/actions/install-workspace
+
+      # npm ci accepts a lockfile whose workspace entries drift from the
+      # manifests, so a refresh must change nothing. Pull requests only.
+      - name: Check that the lockfile matches the manifests
+        if: ${{ !inputs.release }}
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts
+          git diff --exit-code -- package-lock.json
+
+      # One Turborepo run so independent tasks overlap. The jsdom suite's
+      # tests run in the ui-tests job.
+      - name: Build, lint, typecheck and test every workspace but the jsdom suite
+        run: npx --no turbo run build lint typecheck test --filter='!@crewlethq/ui-tests'
+      - name: Lint and typecheck the jsdom suite
+        run: npx --no turbo run lint typecheck --filter=@crewlethq/ui-tests
+      - run: npm run lint:scripts
+      - run: npm run test:scripts
+
+      - if: ${{ !inputs.release }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: storybook-static
+          path: apps/storybook/storybook-static
+          retention-days: 7
+          if-no-files-found: error
+
+  ui-tests:
+    name: ui tests (${{ matrix.shard }} of ${{ strategy.job-total }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      # Let every shard report its failures.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - if: inputs.release
+        uses: $/.github/actions/verify-release-ref
+      - uses: $/.github/actions/setup-node
+        with:
+          cache: ${{ !inputs.release && 'npm' || '' }}
+      - uses: $/.github/actions/install-workspace
+
+      # Vitest runs each test file in exactly one shard.
+      - name: Run this shard of the jsdom suite
+        env:
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: npx --no turbo run test --filter=@crewlethq/ui-tests -- --shard="${SHARD}"
