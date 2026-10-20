@@ -16,6 +16,7 @@ export type {
   SheetSyncState,
   SheetValue,
 } from './types.js';
+export { retypeColumn } from './columns.js';
 export { SHEET_LABELS, sheetLabels } from './labels.js';
 export type { SheetLabels } from './labels.js';
 export { findOption, liveOptions, optionHue, parseOptionList, statusTone } from './options.js';

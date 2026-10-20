@@ -30,6 +30,7 @@ import {
   presenceByCell,
   rangeOf,
   refusalText,
+  retypeColumn,
   sortRows,
   statusTone,
   toTSV,
@@ -176,6 +177,34 @@ describe('values', () => {
     expect(nextSort(null, 'score')).toEqual({ field: 'score', direction: 'ascending' });
     expect(nextSort({ field: 'score', direction: 'ascending' }, 'score')).toEqual({ field: 'score', direction: 'descending' });
     expect(nextSort({ field: 'score', direction: 'descending' }, 'score')).toBeNull();
+  });
+});
+
+describe('columns', () => {
+  test('a retyped column keeps what every type has and none of its old type\'s settings', () => {
+    const price: SheetColumn = {
+      field: 'price',
+      label: 'Price',
+      type: 'number',
+      width: 140,
+      frozen: true,
+      required: true,
+      min: 0,
+      max: 1000,
+      precision: 2,
+      numberStyle: 'currency',
+      currency: 'EUR',
+    };
+    expect(retypeColumn(price, 'text')).toEqual({ field: 'price', label: 'Price', type: 'text', width: 140, frozen: true, required: true });
+    // A date's time of day is the date's: it does not ride along into text and back.
+    const at: SheetColumn = { field: 'at', label: 'At', type: 'date', time: true, readOnly: true };
+    expect(retypeColumn(at, 'text')).toEqual({ field: 'at', label: 'At', type: 'text', readOnly: true });
+  });
+
+  test('the length cap moves between text and long text, and nowhere else', () => {
+    const note: SheetColumn = { field: 'note', label: 'Note', type: 'text', maxLength: 80 };
+    expect(retypeColumn(note, 'longtext')).toEqual({ field: 'note', label: 'Note', type: 'longtext', maxLength: 80 });
+    expect(retypeColumn(note, 'number')).toEqual({ field: 'note', label: 'Note', type: 'number' });
   });
 });
 

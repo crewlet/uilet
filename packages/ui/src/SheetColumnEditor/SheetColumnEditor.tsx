@@ -43,7 +43,7 @@ import { Kbd } from '../Kbd/index.js';
 import { FormField, Input } from '../Input/index.js';
 import { Menu } from '../Menu/index.js';
 import { Select } from '../Select/index.js';
-import { SHEET_COLUMN_TYPES, SHEET_LABELS, optionHue, type SheetColumn, type SheetColumnType, type SheetOption, type SheetStatusCategory } from '../SheetModel/index.js';
+import { SHEET_COLUMN_TYPES, SHEET_LABELS, optionHue, retypeColumn, type SheetColumn, type SheetColumnType, type SheetOption, type SheetStatusCategory } from '../SheetModel/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { NODE_HUES, NODE_HUE_NAMES, type NodeHue } from '../utils/nodeHue.js';
@@ -254,8 +254,7 @@ export function SheetColumnEditor({
 
   const setType = (type: SheetColumnType) => {
     if (type === column.type) return;
-    const { options: _options, min: _min, max: _max, maxItems: _maxItems, precision: _precision, numberStyle: _style, currency: _currency, ...rest } = column;
-    const next: SheetColumn = { ...rest, type };
+    const next = retypeColumn(column, type);
     if (hasChoices(type)) {
       const kept = hasChoices(column.type) ? options : [];
       next.options =

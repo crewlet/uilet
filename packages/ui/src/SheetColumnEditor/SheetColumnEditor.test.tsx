@@ -135,6 +135,18 @@ test('a rating column picks its stars; a checkbox offers no Required', () => {
   expect(screen.queryByRole('checkbox', { name: /Required/ })).toBeNull();
 });
 
+test('a new type drops the old type\'s settings and keeps the name, width and Required', () => {
+  const onColumn = vi.fn();
+  render(
+    <Host
+      start={{ field: 'p', label: 'Price', type: 'number', width: 120, required: true, precision: 2, numberStyle: 'currency', currency: 'EUR' }}
+      onColumn={onColumn}
+    />,
+  );
+  pickType(/^Text/);
+  expect(onColumn).toHaveBeenLastCalledWith({ field: 'p', label: 'Price', type: 'text', width: 120, required: true });
+});
+
 test('move and delete reach the host, and a refused delete says why', () => {
   const onMove = vi.fn();
   const onDelete = vi.fn();
