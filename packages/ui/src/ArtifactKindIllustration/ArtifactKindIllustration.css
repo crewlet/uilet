@@ -1,0 +1,211 @@
+/*
+ * A kind's drawing, its tinted ground and the Make something new tile.
+ *
+ * Every colour is the kind's token, `--color-artifact-kind-<kind>` and its
+ * Fill and Line steps, set once per kind on `--crewlet-kind-*` and read by
+ * every rule below, so the drawing, the ground and the tile repaint together
+ * with the theme.
+ */
+
+.crewlet-kind--doc { --crewlet-kind-hue: var(--color-artifact-kind-doc); --crewlet-kind-fill: var(--color-artifact-kind-doc-fill); --crewlet-kind-line: var(--color-artifact-kind-doc-line); --crewlet-kind-ink: var(--color-artifact-kind-doc-ink); }
+.crewlet-kind--slides { --crewlet-kind-hue: var(--color-artifact-kind-slides); --crewlet-kind-fill: var(--color-artifact-kind-slides-fill); --crewlet-kind-line: var(--color-artifact-kind-slides-line); --crewlet-kind-ink: var(--color-artifact-kind-slides-ink); }
+.crewlet-kind--design { --crewlet-kind-hue: var(--color-artifact-kind-design); --crewlet-kind-fill: var(--color-artifact-kind-design-fill); --crewlet-kind-line: var(--color-artifact-kind-design-line); --crewlet-kind-ink: var(--color-artifact-kind-design-ink); }
+.crewlet-kind--dashboard { --crewlet-kind-hue: var(--color-artifact-kind-dashboard); --crewlet-kind-fill: var(--color-artifact-kind-dashboard-fill); --crewlet-kind-line: var(--color-artifact-kind-dashboard-line); --crewlet-kind-ink: var(--color-artifact-kind-dashboard-ink); }
+.crewlet-kind--html { --crewlet-kind-hue: var(--color-artifact-kind-html); --crewlet-kind-fill: var(--color-artifact-kind-html-fill); --crewlet-kind-line: var(--color-artifact-kind-html-line); --crewlet-kind-ink: var(--color-artifact-kind-html-ink); }
+.crewlet-kind--sheet { --crewlet-kind-hue: var(--color-artifact-kind-sheet); --crewlet-kind-fill: var(--color-artifact-kind-sheet-fill); --crewlet-kind-line: var(--color-artifact-kind-sheet-line); --crewlet-kind-ink: var(--color-artifact-kind-sheet-ink); }
+
+/* ---- the drawing ---- */
+
+.crewlet-kind-illustration {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* THE FOUR WEIGHTS, each the kind's hue at a fixed opacity: the body is a
+   translucent pane with a hairline edge, lines are content, a soft block is
+   a picture or a bar, and the mark is the one solid thing the eye lands on. */
+.crewlet-kind-illustration .b {
+  fill: var(--crewlet-kind-hue);
+  fill-opacity: 0.14;
+  stroke: var(--crewlet-kind-hue);
+  stroke-opacity: 0.5;
+  stroke-width: 1.5;
+}
+
+.crewlet-kind-illustration .l {
+  fill: var(--crewlet-kind-hue);
+  fill-opacity: 0.45;
+}
+
+.crewlet-kind-illustration .s {
+  fill: var(--crewlet-kind-hue);
+  fill-opacity: 0.62;
+}
+
+.crewlet-kind-illustration .m {
+  fill: var(--crewlet-kind-hue);
+}
+
+/* A rule across the body (a window's bar, a grid's lines). */
+.crewlet-kind-illustration .r {
+  fill: none;
+  stroke: var(--crewlet-kind-hue);
+  stroke-opacity: 0.3;
+  stroke-width: 1.5;
+}
+
+/* A stroke drawn as a glyph: the angle brackets of a page of code. */
+.crewlet-kind-illustration .k {
+  fill: none;
+  stroke: var(--crewlet-kind-hue);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 5;
+}
+
+.crewlet-kind-illustration .k--soft {
+  stroke-opacity: 0.55;
+}
+
+/* Cut out of a solid mark in the ground's colour: a checkbox's tick. */
+.crewlet-kind-illustration .c {
+  fill: none;
+  stroke: var(--color-surface-background);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.crewlet-kind-illustration .c--fill {
+  fill: var(--crewlet-kind-hue);
+  fill-opacity: 0.4;
+  stroke: none;
+}
+
+/* ---- the ground ---- */
+
+/*
+ * THE KIND'S FILL OVER THE CARD, brightest at the top and settling into the
+ * card at the foot, the way light falls on a tinted pane: a flat fill read as
+ * a coloured box, and a hue strong enough to read on its own fought the
+ * previews beside it.
+ */
+.crewlet-kind-ground {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 8% 10%;
+  background:
+    linear-gradient(180deg, var(--crewlet-kind-fill) 0%, transparent 115%),
+    var(--color-surface-subtle);
+}
+
+.crewlet-kind-ground > .crewlet-kind-illustration {
+  max-width: 12rem;
+  max-height: 100%;
+}
+
+/* ---- the tile ---- */
+
+.crewlet-kind-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  outline: none;
+}
+
+/*
+ * A FRAME AROUND A PANE: the tile is a hairline ring with the tinted ground
+ * set inside it a few pixels in, one radius step tighter, so the pane reads
+ * as sitting in a holder rather than as a coloured rectangle.
+ */
+.crewlet-kind-tile__frame {
+  display: block;
+  box-sizing: border-box;
+  aspect-ratio: 4 / 3;
+  padding: 5px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface-subtle);
+  transition:
+    border-color var(--motion-duration-base) var(--motion-easing-out),
+    box-shadow var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-kind-tile__ground {
+  border-radius: var(--radius-xl);
+  box-shadow: inset 0 0 0 1px var(--crewlet-kind-line);
+  overflow: hidden;
+}
+
+.crewlet-kind-tile__ground > .crewlet-kind-illustration {
+  transition: transform var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-kind-tile__label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  padding-inline: var(--spacing-1);
+}
+
+.crewlet-kind-tile__name {
+  overflow: hidden;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-kind-tile__badge {
+  flex: none;
+  padding: 1px var(--spacing-2);
+  border-radius: var(--radius-sm);
+  background: var(--crewlet-kind-fill);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+a.crewlet-kind-tile:hover .crewlet-kind-tile__frame {
+  border-color: var(--color-border-hover);
+}
+
+a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustration {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.crewlet-kind-tile:focus-visible .crewlet-kind-tile__frame {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-kind-tile--disabled {
+  cursor: not-allowed;
+}
+
+.crewlet-kind-tile--disabled .crewlet-kind-tile__ground,
+.crewlet-kind-tile--disabled .crewlet-kind-tile__name {
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-kind-tile__frame,
+  .crewlet-kind-tile__ground > .crewlet-kind-illustration {
+    transition: none;
+  }
+
+  a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustration {
+    transform: none;
+  }
+}
