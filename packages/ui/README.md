@@ -210,6 +210,8 @@ places:
 
 **An artifact's bar draws the kind's glyph in the kind's colour** (`ArtifactBar`), as the gallery's badge and the Make row do, on an open artifact and on a create page alike. The kinds' colour classes (`crewlet-kind--<kind>`, which set `--crewlet-kind-ink` and its siblings) moved to a sheet of their own that the bar, the card and the illustrations each import, so the bar is tinted on a page that draws no card. `ArtifactKindGlyph`'s module still carries no stylesheet.
 
+**An artifact bar's primary action can take a short word on a narrow bar** (`ArtifactBar`, `shortLabel` on an `ArtifactBarTool`), so "Create and ask SRE Lead" reads "Create" on a phone and keeps its full word as its accessible name. **On a narrow bar the status gives way before the title**: it is cut to an ellipsis instead of drawn over the title, and its words stay whole for a screen reader.
+
 **A menu's `label` names its trigger when the trigger shows text** (`Menu`). It was the accessible name of an icon trigger only, so a "New" button that opens a menu of kinds was announced as "New". Keep the visible words in the label ("New artifact"), so a person who speaks what they see still reaches it. A test that found a text trigger by its words alone finds it by its label now.
 
 **A choice can carry a picture** (`ChoiceList`, `media` on an option): drawn between the radio and the words and hidden from the name, such as an agent's character in a "who builds it" list. A list without pictures is unchanged.

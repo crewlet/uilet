@@ -89,6 +89,32 @@ test('a status is said before the tools, and a primary tool keeps its word at ev
   expect(within(end as HTMLElement).getAllByRole('button', { name: 'Cancel' })).toHaveLength(2);
 });
 
+// A SHORT WORD FOR A NARROW BAR: both words are drawn and the bar's width
+// picks one, while the accessible name stays the full one at every width.
+test('a primary tool with a short word keeps its full word as its name', () => {
+  render(
+    <ArtifactBar
+      title="New design"
+      kind="design"
+      kindLabel="Design"
+      kindTools={[
+        {
+          key: 'create',
+          label: 'Create and ask SRE Lead',
+          shortLabel: 'Create',
+          icon: <Share2Glyph size="sm" />,
+          labelled: true,
+          emphasis: 'primary',
+          onSelect: vi.fn(),
+        },
+      ]}
+    />,
+  );
+  const create = screen.getByRole('button', { name: 'Create and ask SRE Lead' });
+  expect(create.querySelector('.crewlet-artifact-bar__word-full')?.textContent).toBe('Create and ask SRE Lead');
+  expect(create.querySelector('.crewlet-artifact-bar__word-short')?.textContent).toBe('Create');
+});
+
 test('on a narrow bar the views and the unlabelled tools are rows of More, with their keys', () => {
   const onMode = vi.fn();
   const set = tools();
