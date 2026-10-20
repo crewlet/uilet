@@ -117,6 +117,15 @@
   overscroll-behavior: contain;
 }
 
+/* THE FOOT holds the panel's own commit, outside the scrolling body, so it
+   stays in reach at every scroll. Its inset is the body's. */
+.crewlet-artifact-panel__foot {
+  flex: none;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-surface-background);
+}
+
 /* NOT ROOM FOR TWO COLUMNS: the panel slides over the artifact's end edge,
    raised off it, rather than squeezing the artifact under a useful width. */
 @container crewlet-artifact-workspace (width < 960px) {

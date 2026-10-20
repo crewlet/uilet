@@ -156,3 +156,15 @@ test('carries no axe violation', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+test('a footer stays outside the scrolling body, at the panel foot', () => {
+  render(
+    <ArtifactPanel title="Ask" onClose={() => {}} footer={<button type="button">Send</button>}>
+      <p>Brief</p>
+    </ArtifactPanel>,
+  );
+  const send = screen.getByRole('button', { name: 'Send' });
+  const body = screen.getByText('Brief').closest('.crewlet-artifact-panel__body');
+  expect(body?.contains(send)).toBe(false);
+  expect(send.closest('.crewlet-artifact-panel__foot')).toBeTruthy();
+});
