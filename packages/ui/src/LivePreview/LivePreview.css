@@ -1,7 +1,8 @@
 /*
- * A live preview: the stand-in and the live layer stacked in one box. The box
- * takes its size from its parent (a card's preview area), so it fills it and
- * clips whatever the content lays out past its edge.
+ * A live preview: the stand-in, a still copy of what was drawn before and the
+ * live layer, stacked in that order in one box. The box takes its size from
+ * its parent (a card's preview area), so it fills it and clips whatever the
+ * content lays out past its edge.
  */
 
 .crewlet-live-preview {
@@ -17,7 +18,17 @@
   position: absolute;
   inset: 0;
   display: flex;
-  transition: opacity var(--motion-duration-base) var(--motion-easing-out);
+}
+
+/* A STILL COPY of what the content drew before its slot was taken back:
+   static DOM over the stand-in, so a card scrolled back to looks as it was. */
+.crewlet-live-preview__still {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
 }
 
 .crewlet-live-preview__live {
@@ -49,17 +60,34 @@
   transform-origin: 0 0;
 }
 
+/* THE CONTENT FADES IN OVER WHAT IS UNDER IT, and what is under it is
+   hidden only once the fade is done. Fading the stand-in out at the same time
+   showed both at half strength halfway through: a double exposure. */
 .crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__live {
   opacity: 1;
 }
 
-.crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__fallback {
-  opacity: 0;
+.crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__fallback,
+.crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__still {
+  visibility: hidden;
+  /* Visibility is discrete and stays visible for the whole of a transition
+     to hidden, so this holds it exactly as long as the fade above. */
+  transition: visibility var(--motion-duration-base) linear;
+}
+
+/* OVER A STILL COPY the content is what was already there, drawn again, so
+   it arrives with no fade at all. */
+.crewlet-live-preview[data-still] > .crewlet-live-preview__live {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .crewlet-live-preview__fallback,
   .crewlet-live-preview__live {
+    transition: none;
+  }
+
+  .crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__fallback,
+  .crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__still {
     transition: none;
   }
 }

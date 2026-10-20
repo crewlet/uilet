@@ -204,6 +204,18 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.36.0
+
+**A live preview that leaves keeps what it drew** (`LivePreview`, `LivePreviewBudgetProvider`, `createLivePreviewBudget`). Scrolling a gallery up and down tore every card down as it left and drew it again from its stand-in as it came back, so the kind's drawing flickered over content the reader had just seen. Now a preview that leaves parks its slot and stays drawn; a parked slot is taken back only when a preview coming into view needs it, and then what it drew is kept as a still copy (its DOM, cloned), so a card scrolled back to is exactly as it was. Measured on a gallery of 44 cards at 1440, scrolling down and back at reading pace and in flings: visible cards showing their stand-in again after they had drawn fell from 614 samples to 0, and cards seen before their first draw from 174 to 12.
+
+**A preview's margin is measured against its scroll container.** The observer was rooted at the window, and a page that scrolls inside a frame clips its content at the frame's edge, so `rootMargin` never applied and every card started drawing only once it was on screen. It now observes against the nearest ancestor that scrolls.
+
+**The budget is thirty-two, no more than twelve of them frames** (`LIVE_PREVIEW_MAX`, from twelve, and the new `LIVE_PREVIEW_MAX_FRAMES`). Four cards across and up to four rows on a 1440 by 900 screen put sixteen on screen and about twenty-four near it, so twelve left cards in view waiting for slots and kept nothing a reader had left. A preview whose content runs a page in a frame says so (`frame`), and counts against the frames' cap too, which is the number of pages a design's canvas runs at once; a frame waiting on that cap holds up no other preview behind it. A slot is reclaimed from a preview that keeps a still copy before one whose stand-in would show (a frame's page cannot be copied), and among each from the one the reader left longest ago. `LivePreviewBudgetProvider` takes `maxFrames` beside `max`.
+
+**The content fades in over what is under it.** The stand-in faded out while the content faded in, which showed both at half strength halfway through: a double exposure on every card. The stand-in now stays until the fade is done, and content drawn again over its still copy arrives with no fade at all.
+
+**`createLivePreviewBudget().request` answers a slot** (`LivePreviewSlot`: `release`, `park` and `resume`) in place of a give-back function, and takes the holder's `reclaim` and whether it is a `frame`. A host that called the answer to give a slot back calls `release()`.
+
 ## Changes in 0.35.1
 
 **A column given another type keeps only what every type has** (`SheetColumnEditor`, and `retypeColumn` in the sheet model). Its field, name, width, freezing, read-only flag and Required stay, and so does its length cap between text and long text, which both read it. Every other setting belongs to the old type and is dropped: a number's bounds, decimals and format, a choice's options, a date's time of day. The column is built up from what is kept rather than pared down from the old one, so a setting a type adds later is dropped without the editor having to name it. Before, a date's time of day and a text's length cap rode along, unseen, into a type that ignores them, and came back if the old type was picked again. A host that relied on a setting surviving a type change sets it again on the column it is handed.
