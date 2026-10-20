@@ -3,6 +3,7 @@
  * how the keyboard walks it.
  */
 
+import axe from 'axe-core';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
@@ -89,4 +90,19 @@ test('the entries hang into the gutter by their padding and edge, are cut to one
   expect(getComputedStyle(hero).whiteSpace).toBe('nowrap');
   expect(getComputedStyle(hero).textOverflow).toBe('ellipsis');
   uninstall();
+});
+
+test('a list with a picked entry carries no accessibility violation', async () => {
+  const { container } = render(
+    <main>
+      <h1>Design</h1>
+      <LayersList label="Boards" items={ITEMS} selected="features" />
+    </main>,
+  );
+  const result = await axe.run(container, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });

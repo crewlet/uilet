@@ -1,5 +1,6 @@
 import { useId, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
 import { themeGroups, themeRegistry, type ThemeId } from '@crewlethq/tokens';
+import { CheckGlyph } from '@crewlethq/icons/glyphs';
 import { useHighlightRest } from '../Listbox/index.js';
 import { tabStop, useRoving } from '../Tabs/roving.js';
 import { ThemeSwatch, type ThemeSwatchPair } from '../ThemeSwatch/index.js';
@@ -166,7 +167,12 @@ export function ThemeGallery<T extends string = ThemeId>({
                       ) : theme.swatch ? (
                         <ThemeSwatch swatch={theme.swatch} size="card" />
                       ) : null}
-                      <span className="crewlet-theme-gallery__name">{theme.name}</span>
+                      <span className="crewlet-theme-gallery__label">
+                        <span className="crewlet-theme-gallery__name">{theme.name}</span>
+                        {/* The mark that says "this one" at 3:1, beside the
+                            tinted edge and fill, which are calm on purpose. */}
+                        {chosen ? <CheckGlyph size="xs" className="crewlet-theme-gallery__check" aria-hidden="true" /> : null}
+                      </span>
                     </button>
                   );
                 })}

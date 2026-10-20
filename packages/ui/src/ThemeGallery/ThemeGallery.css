@@ -33,8 +33,15 @@
 
 /*
  * A CARD IS ITS BORDER. Resting, the plain hairline; under the pointer, the
- * strong one; chosen, the accent. One line round the card in every state, so
- * the chosen card is never a card inside a frame.
+ * strong one; chosen, the selected edge (the accent mixed toward the card)
+ * over the selected fill, with a check beside the name. One line round the
+ * card in every state, so the chosen card is never a card inside a frame.
+ *
+ * THE CHOSEN CARD IS CALM ON PURPOSE. It was the full accent, which on a grid
+ * of six read as the loudest edge on the page and as a second focus ring. The
+ * tint and the fill say which card is on at a glance; the check says it at
+ * the 3:1 a state mark clears, so the state never rests on the tint alone;
+ * and the focus ring stays the one 2px accent line, for the keyboard only.
  */
 .crewlet-theme-gallery__card {
   display: flex;
@@ -51,14 +58,15 @@
   cursor: pointer;
 }
 
-/* Not on the chosen card: under the pointer it keeps the accent, or the one
-   card that says "this one" would stop saying it while it is being pointed at. */
+/* Not on the chosen card: under the pointer it keeps its selected edge, or the
+   one card that says "this one" would stop saying it while it is pointed at. */
 .crewlet-theme-gallery__card:hover:not(:disabled):not(.is-chosen) {
   border-color: var(--color-border-strong);
 }
 
 .crewlet-theme-gallery__card.is-chosen {
-  border-color: var(--color-brand-accent);
+  border-color: var(--color-border-selected);
+  background: var(--color-surface-selected);
 }
 
 /* The ring is drawn OVER the border, inset by its width, never a second line outside it. */
@@ -70,6 +78,19 @@
 .crewlet-theme-gallery__card:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.crewlet-theme-gallery__label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-theme-gallery__check {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--color-brand-accent-ink);
 }
 
 .crewlet-theme-gallery__name {

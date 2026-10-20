@@ -68,11 +68,24 @@
   color: var(--color-text-primary);
 }
 
-/* The accent edge every current row in the system takes, in the primary ink.
-   A border, so forced colours keep it. */
+/*
+ * THE PICKED ENTRY IS A SELECTION, drawn as the package draws a chosen
+ * option: the selected fill under the primary ink, as a canvas's layers panel
+ * marks the board picked on it. It used to take the accent rail a CURRENT row
+ * takes (the outline's heading, the page in the rail), which says "you are
+ * here" and beside a canvas read as a second selection ring. The rail's room
+ * is still held, so nothing moves, and forced colours draw it in the system's
+ * own selected colour, since they drop the fill.
+ */
 .crewlet-layers-list__item[aria-current='true'] {
-  border-inline-start-color: var(--color-brand-accent);
+  background: var(--color-surface-selected);
   color: var(--color-text-primary);
+}
+
+@media (forced-colors: active) {
+  .crewlet-layers-list__item[aria-current='true'] {
+    border-inline-start-color: Highlight;
+  }
 }
 
 /* The ring lies inside the entry, where the scroller beside it cannot cut it. */

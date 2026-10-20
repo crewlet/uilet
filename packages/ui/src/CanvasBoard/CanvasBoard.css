@@ -82,19 +82,26 @@
 }
 
 /*
- * HOVER, then SELECTION, in the accent: one screen pixel and then two, over
- * the hairline. Hovering a board's name is hovering its board, which is how a
- * reader finds the board a name belongs to on a crowded canvas.
+ * HOVER, then SELECTION: one screen pixel each, over the hairline. Hover is
+ * the selected edge, the accent mixed toward the canvas, so pointing at a
+ * board previews the pick without claiming it; selection is the full accent,
+ * crisp, with its four corners drawn, which are what say "this one" on a
+ * canvas where a board's own content can be any colour. It was two pixels,
+ * the focus ring's weight in the focus ring's hue, so a picked board and the
+ * board the keyboard was on read alike; the 2px ring is the live board's now
+ * alone ([data-active], below), which takes the pointer like a focused frame.
+ * Hovering a board's name is hovering its board, which is how a reader finds
+ * the board a name belongs to on a crowded canvas.
  */
 .crewlet-canvas-board__board:hover .crewlet-canvas-board__body,
 .crewlet-canvas-board__note:hover {
-  outline: calc(1px * var(--crewlet-canvas-board-unzoom)) solid var(--color-brand-accent);
+  outline: calc(1px * var(--crewlet-canvas-board-unzoom)) solid var(--color-border-selected);
   outline-offset: 0;
 }
 
 .crewlet-canvas-board__board[data-selected] .crewlet-canvas-board__body,
 .crewlet-canvas-board__note[data-selected] {
-  outline: calc(2px * var(--crewlet-canvas-board-unzoom)) solid var(--color-brand-accent);
+  outline: calc(1px * var(--crewlet-canvas-board-unzoom)) solid var(--color-brand-accent);
   outline-offset: 0;
 }
 

@@ -167,17 +167,25 @@ test('the gallery carries no accessibility violation', async () => {
 
 /*
  * ONE LINE ROUND A CARD IN EVERY STATE. The chosen card is its own border in
- * the accent, never a frame round a card, and the focus ring is drawn over
- * that border rather than as a second line outside it.
+ * the selected edge (a tint of the accent, never the full accent a focus ring
+ * is drawn in) over the selected fill, never a frame round a card, and the
+ * focus ring is drawn over that border rather than as a second line outside
+ * it. The tint is calm on purpose, so the chosen card also carries a check,
+ * and only the chosen card does.
  */
-test('the chosen card is its own border in the accent, and focus draws over it', () => {
+test('the chosen card is its own border in the selected edge, marked by a check, and focus draws over it', () => {
   const uninstall = installThemed('dark', 'ThemeGallery/ThemeGallery.css');
   try {
     render(<Gallery />);
     const colours = themeColours('dark');
     const chosen = getComputedStyle(card(/^Crewlet,/));
     const resting = getComputedStyle(card(/^Violet,/));
-    expect(channels(chosen.borderTopColor)).toEqual(channels(colours.get(token('color-brand-accent'))!));
+    // Compared as strings, alpha included: the tint shares the accent's
+    // channels, so a comparison of channels alone would pass the full accent.
+    expect(chosen.borderTopColor).toBe(colours.get(token('color-border-selected')));
+    expect(chosen.borderTopColor).not.toBe(colours.get(token('color-brand-accent')));
+    expect(card(/^Crewlet,/).querySelector('.crewlet-theme-gallery__check')).not.toBeNull();
+    expect(card(/^Violet,/).querySelector('.crewlet-theme-gallery__check')).toBeNull();
     expect(channels(resting.borderTopColor)).toEqual(channels(colours.get(token('color-border-default'))!));
     expect(chosen.borderTopWidth).toBe(resting.borderTopWidth);
     expect(chosen.outlineStyle === '' || chosen.outlineStyle === 'none').toBe(true);
@@ -191,6 +199,15 @@ test('the chosen card is its own border in the accent, and focus draws over it',
  * :hover, so the stylesheet's own rule is read: the hover border is never
  * drawn on the chosen card, which would otherwise outrank its accent.
  */
+test('the chosen card stands on the selected fill', () => {
+  // Read off the stylesheet: the fill is an alias of the accent's soft tint,
+  // and jsdom does not resolve a custom property whose value is a var().
+  const here = dirname(fileURLToPath(import.meta.url));
+  const css = readFileSync(resolve(here, 'ThemeGallery.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const chosen = /\.crewlet-theme-gallery__card\.is-chosen\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(chosen).toMatch(/background:\s*var\(--color-surface-selected\)/);
+});
+
 test('the hover border is never drawn on the chosen card', () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const css = readFileSync(resolve(here, 'ThemeGallery.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');

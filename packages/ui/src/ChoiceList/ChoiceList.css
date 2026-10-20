@@ -1,7 +1,9 @@
 /*
  * A short list of answers in one bordered box: a radio, the label with a line
  * of detail under it, and a tag at the row's end. The selected row takes the
- * accent's soft fill, so the answer reads at a glance without the radio.
+ * selected fill (the accent's soft tint), so the answer reads at a glance; the
+ * radio is the mark that clears 3:1, and no row is ever ringed in the accent,
+ * which is the focus ring's colour.
  */
 .crewlet-choice-list {
   /* The platform's radio, sized here so a panel can line up with the text beside it. */
@@ -66,7 +68,7 @@
 }
 
 .crewlet-choice-list__row.is-checked {
-  background: var(--color-brand-accent-soft);
+  background: var(--color-surface-selected);
 }
 
 .crewlet-choice-list.is-disabled .crewlet-choice-list__row {
@@ -131,7 +133,7 @@
   padding: var(--spacing-1) var(--spacing-2) var(--spacing-3) calc(var(--spacing-2) + var(--crewlet-choice-list-radio-size) + var(--spacing-3));
   border-end-start-radius: var(--radius-sm);
   border-end-end-radius: var(--radius-sm);
-  background: var(--color-brand-accent-soft);
+  background: var(--color-surface-selected);
 }
 
 .crewlet-choice-list__footer {
