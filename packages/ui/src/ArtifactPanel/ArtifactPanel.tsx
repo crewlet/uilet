@@ -39,6 +39,13 @@ export interface ArtifactPanelProps {
   /** Controls in the head, before expand and close. */
   actions?: ReactNode;
   /**
+   * What stays under the body however far it scrolls: the panel's own
+   * commit, such as a hand-off's Send. Drawn on a hairline at the panel's
+   * foot, never inside the scrolling body, so it is in reach while the
+   * reader is at the top of a long form.
+   */
+  footer?: ReactNode;
+  /**
    * Whether focus moves to the panel's heading when it opens. True when the
    * reader opened it; false for a panel a link opened on arrival, which must
    * not take focus from wherever the page put it.
@@ -77,6 +84,7 @@ export function ArtifactPanel({
   expanded = false,
   onExpandedChange,
   actions,
+  footer,
   focusOnOpen = true,
   labels,
   className,
@@ -160,6 +168,7 @@ export function ArtifactPanel({
       <div className="crewlet-artifact-panel__body">
         <HeadingLevelProvider level={3}>{children}</HeadingLevelProvider>
       </div>
+      {footer ? <div className="crewlet-artifact-panel__foot">{footer}</div> : null}
     </aside>
   );
 }
