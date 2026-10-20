@@ -1,0 +1,31 @@
+/*
+ * The canvas's dotted field as a still surface. The dots are `Canvas`'s own
+ * values, restated here because a stylesheet cannot import another's rule:
+ * the strong hairline's ink, one spacing step apart.
+ */
+
+.crewlet-dotted-ground {
+  position: relative;
+  min-width: 0;
+  background-color: var(--color-surface-subtle);
+  background-image: radial-gradient(
+    var(--color-border-strong) 1px,
+    transparent 1.2px
+  );
+  background-size: var(--spacing-5) var(--spacing-5);
+}
+
+.crewlet-dotted-ground--inset {
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xl);
+}
+
+/* A KIND'S GROUND: its line for the dots, over its fill falling into the page. */
+.crewlet-dotted-ground--kind {
+  background-image:
+    radial-gradient(var(--crewlet-kind-line) 1px, transparent 1.2px),
+    linear-gradient(180deg, var(--crewlet-kind-fill) 0%, transparent 70%);
+  background-size:
+    var(--spacing-5) var(--spacing-5),
+    100% 100%;
+}

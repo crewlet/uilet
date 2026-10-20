@@ -1,0 +1,123 @@
+/*
+ * A starting point: its preview on top, its name and a line on what it holds
+ * under it. Chosen, it is ringed in the accent, the one colour that means
+ * "this one" everywhere in the product.
+ */
+
+.crewlet-template-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-out),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-template-card:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-card);
+}
+
+.crewlet-template-card[aria-pressed="true"] {
+  border-color: var(--color-brand-accent);
+  box-shadow: 0 0 0 1px var(--color-brand-accent);
+}
+
+.crewlet-template-card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-template-card__preview {
+  position: relative;
+  display: flex;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-surface-inset);
+}
+
+.crewlet-template-card__preview > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crewlet-template-card__tag {
+  position: absolute;
+  top: var(--spacing-2);
+  left: var(--spacing-2);
+  padding: 1px var(--spacing-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-background);
+  box-shadow: var(--shadow-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-template-card__body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+}
+
+.crewlet-template-card__words {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-template-card__title {
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-template-card__detail {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* A ROW for a narrow rail: the preview a thumbnail at the row's start. */
+.crewlet-template-card--row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2);
+}
+
+.crewlet-template-card--row .crewlet-template-card__preview {
+  flex: none;
+  width: 88px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+
+.crewlet-template-card--row .crewlet-template-card__body {
+  padding: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-template-card {
+    transition: none;
+  }
+}

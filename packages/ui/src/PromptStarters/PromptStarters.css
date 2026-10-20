@@ -1,0 +1,63 @@
+/*
+ * Suggested briefs: quiet chips that wrap, each a glyph and a few words. They
+ * sit under a field and must not compete with it, so they are drawn at the
+ * small type step on the page's own ground with a hairline edge.
+ */
+
+.crewlet-prompt-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-prompt-starters__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  max-width: 100%;
+  height: var(--size-control-sm);
+  padding: 0 var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-background);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-out),
+    background-color var(--motion-duration-fast) var(--motion-easing-out),
+    color var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-prompt-starters__chip:hover {
+  border-color: var(--color-border-hover);
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.crewlet-prompt-starters__chip[aria-pressed="true"] {
+  border-color: var(--color-brand-accent-soft-strong);
+  background: var(--color-brand-accent-soft);
+  color: var(--color-text-primary);
+}
+
+.crewlet-prompt-starters__chip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-prompt-starters__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-prompt-starters__chip {
+    transition: none;
+  }
+}
