@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState, type ReactNode } from 'react';
 import type { ThemeId } from '@crewlethq/tokens';
-import { ChoiceList, Composer, DocumentTitleField, Input, LayersList, ThemeGallery } from '@crewlethq/ui';
+import { ArtifactKindTile, Card, ChoiceList, Composer, DocumentTitleField, Input, LayersList, ThemeGallery } from '@crewlethq/ui';
 
 /**
  * Foundations / Selection and focus.
@@ -47,6 +47,8 @@ export const Overview: StoryObj = {
     const [theme, setTheme] = useState<ThemeId>('nightshade');
     const [who, setWho] = useState<string | null>('analyst');
     const [board, setBoard] = useState('features');
+    const [start, setStart] = useState<'landing' | 'screens'>('landing');
+    const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
     const [title, setTitle] = useState('');
     const [brief, setBrief] = useState('');
     return (
@@ -66,6 +68,27 @@ export const Overview: StoryObj = {
             ]}
           />
           <LayersList label="Boards" items={BOARDS} selected={board} onSelect={setBoard} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--spacing-3)' }}>
+            {(['landing', 'screens'] as const).map((layout) => (
+              <ArtifactKindTile
+                key={layout}
+                kind="design"
+                label={layout === 'landing' ? 'Landing page' : 'App screens'}
+                detail={layout === 'landing' ? 'Desktop and phone' : 'Four phone screens'}
+                selected={start === layout}
+                onSelect={() => setStart(layout)}
+              />
+            ))}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--spacing-3)' }}>
+            {(['monthly', 'annual'] as const).map((plan) => (
+              <Card key={plan} interactive selected={billing === plan} asChild>
+                <button type="button" aria-pressed={billing === plan} onClick={() => setBilling(plan)} style={{ textAlign: 'start', font: 'inherit', color: 'inherit' }}>
+                  {plan === 'monthly' ? 'Monthly' : 'Annual'}
+                </button>
+              </Card>
+            ))}
+          </div>
         </Section>
         <Section
           title="A field in focus"

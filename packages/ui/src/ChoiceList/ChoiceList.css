@@ -75,12 +75,38 @@
   cursor: not-allowed;
 }
 
+/*
+ * THE RADIO IS DRAWN, not the platform's. In a dark palette the platform's
+ * own radio fills an unchosen answer with a grey disc, which beside the one
+ * chosen read as a second, muted choice. Drawn here, an unchosen answer is an
+ * empty ring on the control boundary (3:1 on every ground) and the chosen one
+ * the accent ring round an accent dot. Forced colours hand it back to the
+ * platform, which draws it in the system's own colours.
+ */
 .crewlet-choice-list__radio {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  box-sizing: border-box;
   width: var(--crewlet-choice-list-radio-size);
   height: var(--crewlet-choice-list-radio-size);
   margin: 3px 0 0;
-  accent-color: var(--color-brand-accent);
+  border: 1px solid var(--color-border-control);
+  border-radius: 50%;
+  background: transparent;
   cursor: inherit;
+}
+
+.crewlet-choice-list__radio:checked {
+  border-color: var(--color-brand-accent);
+  background: radial-gradient(circle, var(--color-brand-accent) 0 3px, transparent 3.5px);
+}
+
+@media (forced-colors: active) {
+  .crewlet-choice-list__radio {
+    appearance: auto;
+  }
 }
 
 /* A radio draws its own edge, so the ring sits on it, as a checkbox's does. */
@@ -107,13 +133,16 @@
   overflow-wrap: anywhere;
 }
 
+/* A tag says something ABOUT an answer ("Suggested"), so it is set in the
+   tertiary ink: in the accent ink it was a second accent mark on the chosen
+   row, beside the radio and the fill that already say which one is chosen. */
 .crewlet-choice-list__tag {
   padding-top: 2px;
   font-size: var(--font-size-2xs);
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--color-brand-accent-ink);
+  color: var(--color-text-tertiary);
   white-space: nowrap;
 }
 

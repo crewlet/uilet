@@ -201,6 +201,42 @@ a.crewlet-kind-tile:hover .crewlet-kind-tile__frame,
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/*
+ * A TILE THAT STARTS SOMETHING IN PLACE (a create page's starting layouts)
+ * DRAWS ONE EDGE. Its face is a picture of the layout, with boards of its
+ * own, so the ground's tinted inner line was a second outline a few pixels
+ * inside the frame's, and with the focus ring over the frame the tile read as
+ * three nested rings. The frame is the tile's one edge; the ground keeps its
+ * tint.
+ */
+.crewlet-kind-tile--button .crewlet-kind-tile__ground {
+  box-shadow: none;
+}
+
+/*
+ * CHOSEN, as every chosen option is drawn: the selected edge (the accent
+ * mixed toward the page) on the frame, over the selected fill, and a check
+ * beside the name, the mark that clears 3:1. Under the pointer it keeps its
+ * edge, and the focus ring is drawn over it for the keyboard alone.
+ */
+.crewlet-kind-tile--button.is-selected .crewlet-kind-tile__frame,
+.crewlet-kind-tile--button.is-selected:hover .crewlet-kind-tile__frame {
+  border-color: var(--color-border-selected);
+  background-image: linear-gradient(var(--color-surface-selected), var(--color-surface-selected));
+}
+
+.crewlet-kind-tile__check {
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--color-brand-accent-ink);
+}
+
+@media (forced-colors: active) {
+  .crewlet-kind-tile--button.is-selected .crewlet-kind-tile__frame {
+    border-color: Highlight;
+  }
+}
+
 .crewlet-kind-tile--disabled {
   cursor: not-allowed;
 }

@@ -53,13 +53,17 @@
   border: 0;
   background: transparent;
   border-radius: var(--radius-sm);
-  outline: 1px solid var(--color-border-default);
+  /* THE STRONG LINE AT REST: a deck's slides are mostly dark, and on the dark
+     page the plain hairline sat within a few steps of both the page and the
+     slide, so a strip of them had no edges at all. Under the pointer it takes
+     the strong line's own hover step, so pointing still moves the edge. */
+  outline: 1px solid var(--color-border-strong);
   cursor: pointer;
   overflow: hidden;
 }
 
 .crewlet-slide-filmstrip__thumb:hover {
-  outline-color: var(--color-border-hover);
+  outline-color: var(--color-border-strong-hover);
 }
 
 .crewlet-slide-filmstrip__item[data-selected='true'] .crewlet-slide-filmstrip__thumb {

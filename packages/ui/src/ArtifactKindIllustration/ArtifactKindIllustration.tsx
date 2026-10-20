@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react';
+import { CheckGlyph } from '@crewlethq/icons/glyphs';
 import type { ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -155,6 +156,13 @@ export interface ArtifactKindTileProps {
    */
   onSelect?: (() => void) | undefined;
   /**
+   * For a tile that is a button: whether it is the one chosen (a starting
+   * layout already picked). Drawn as every chosen option is, the selected
+   * edge over the selected fill with a check beside the name, and announced
+   * as a pressed button. Left out, the tile is an action with no state.
+   */
+  selected?: boolean | undefined;
+  /**
    * Drawn on the kind's ground in place of its drawing: a picture of this
    * particular starting point, such as a design layout's schematic.
    */
@@ -182,6 +190,7 @@ export function ArtifactKindTile({
   label,
   href,
   onSelect,
+  selected,
   face,
   detail,
   badge,
@@ -201,6 +210,8 @@ export function ArtifactKindTile({
       <span className="crewlet-kind-tile__label">
         <span className="crewlet-kind-tile__name">{label}</span>
         {badge ? <span className="crewlet-kind-tile__badge">{badge}</span> : null}
+        {/* The mark that says "this one" at 3:1, beside the tinted edge. */}
+        {selected && href === undefined ? <CheckGlyph size="xs" className="crewlet-kind-tile__check" aria-hidden="true" /> : null}
       </span>
       {detail ? (
         <span id={detailId} className="crewlet-kind-tile__detail">
@@ -237,7 +248,8 @@ export function ArtifactKindTile({
         type="button"
         aria-label={name}
         aria-describedby={describedBy}
-        className={cx('crewlet-kind-tile', 'crewlet-kind-tile--button', className)}
+        aria-pressed={selected}
+        className={cx('crewlet-kind-tile', 'crewlet-kind-tile--button', selected && 'is-selected', className)}
         onClick={onSelect}
       >
         {body}

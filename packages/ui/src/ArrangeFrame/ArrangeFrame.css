@@ -59,9 +59,8 @@
 
 /*
  * THE ONE RING, over the block's own edge, on the innermost block the
- * pointer or the focus is in. A hairline drawn exactly over the block's own
- * 1px border, so the border turns to the accent rather than a second, heavier
- * line appearing around it.
+ * pointer or the focus is in. Drawn exactly over the block's own 1px border,
+ * so the border changes colour rather than a second line appearing around it.
  *
  * IT IS A LAYER OF ITS OWN, above the content. An outline is painted with the
  * block, under any content that is positioned or scrolls (a card with a fixed
@@ -78,12 +77,30 @@
   border-radius: inherit;
   pointer-events: none;
 }
-.crewlet-arrange-frame.is-editing:is(:hover, :focus-visible, :has(:focus-visible)):not(
+/*
+ * THREE STRENGTHS ON THE ONE LAYER. The innermost block under the pointer, or
+ * holding the focus in one of its fields, takes the selected edge, the accent
+ * mixed toward the page: it says where the reader is working, and in the full
+ * accent a caret in a cell's field drew a frame in the focus ring's own hue
+ * round the whole block. The block ITSELF in keyboard focus takes the focus
+ * ring, two pixels in the focus colour, the area a keyboard indicator needs.
+ * A picked or resizing block takes one crisp pixel of the full accent, as a
+ * picked board on a canvas does, its handles saying the rest.
+ */
+.crewlet-arrange-frame.is-editing:is(:hover, :has(:focus-visible)):not(:focus-visible, .is-selected, .is-resizing):not(
     :has(.crewlet-arrange-frame:is(:hover, :focus-visible, :has(:focus-visible)))
-  )::after,
+  )::after {
+  border-color: var(--color-border-selected);
+}
+
 .crewlet-arrange-frame.is-selected::after,
 .crewlet-arrange-frame.is-resizing::after {
   border-color: var(--color-brand-accent);
+}
+
+.crewlet-arrange-frame.is-editing:focus-visible::after {
+  border-width: 2px;
+  border-color: var(--color-focus);
 }
 
 /* A block with no surface of its own takes its ring a step outside it. */

@@ -9,6 +9,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* Held transparent at rest so nothing moves when an entry opens. */
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
 }
 
@@ -42,12 +44,25 @@ button.crewlet-dataset-source__summary:focus-visible {
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
-/* The selected edge over the selected fill, as every chosen option is drawn:
-   a tint of the accent, never the full accent the focus ring is drawn in. The
-   rows it opens under it are what say which entry is open. */
-.crewlet-dataset-source--selected .crewlet-dataset-source__summary {
+/*
+ * The selected edge round the WHOLE ENTRY, over the selected fill on its
+ * summary, as every chosen option is drawn: a tint of the accent, never the
+ * full accent the focus ring is drawn in. The edge used to ring the summary
+ * alone, so the settings and figures an open source shows under it hung
+ * below the ring with nothing saying they belonged to it; inside one edge they
+ * read as the entry's own. The rows it opens are what say which entry is open.
+ */
+.crewlet-dataset-source--selected {
   border-color: var(--color-border-selected);
+}
+
+.crewlet-dataset-source--selected .crewlet-dataset-source__summary {
   background: var(--color-surface-selected);
+}
+
+.crewlet-dataset-source--selected:has(> .crewlet-dataset-source__preview) > .crewlet-dataset-source__summary {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
 }
 
 .crewlet-dataset-source__head {
