@@ -180,7 +180,7 @@ export interface ArtifactKindTileProps {
  * One kind, or one starting point of a kind, as a tile: the kind's drawing on
  * its tinted ground (or the starting point's own `face`), framed, with its
  * name under it, such as a create page's starting layouts. The whole tile is
- * one link or button named by the name. The gallery's Make something new row
+ * one link or button named by the name. The gallery's "Start a new artifact" row
  * is the quieter `ArtifactMakeRow`, a toolbar of glyphs rather than pictures.
  *
  * A TILE THAT CANNOT START is still a stop on the row, so a reader moving

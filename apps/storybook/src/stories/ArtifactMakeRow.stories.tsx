@@ -19,7 +19,7 @@ const ITEMS: ArtifactMakeRowItem[] = [
 ];
 
 /**
- * The gallery's Make something new tray: each kind's glyph on its own tint,
+ * The gallery's "Start a new artifact" tray: each kind's glyph on its own tint,
  * its name and what it is for, the whole item one link named by the kind.
  * The tray is Crewlet's dotted field, and an item lifts off it as a card
  * under the pointer. Switch the theme to see every hue repainted.
@@ -27,7 +27,7 @@ const ITEMS: ArtifactMakeRowItem[] = [
 export const Row: Story = {
   render: () => (
     <div style={{ width: 1120 }}>
-      <ArtifactMakeRow aria-label="Make something new" items={ITEMS} />
+      <ArtifactMakeRow aria-label="Start a new artifact" items={ITEMS} />
     </div>
   ),
 };
@@ -42,7 +42,7 @@ export const Widths: Story = {
     <div style={{ display: 'grid', gap: 24 }}>
       {[1120, 720, 360].map((width) => (
         <div key={width} style={{ width }}>
-          <ArtifactMakeRow aria-label={`Make something new, ${width} wide`} items={ITEMS} />
+          <ArtifactMakeRow aria-label={`Start a new artifact, ${width} wide`} items={ITEMS} />
         </div>
       ))}
     </div>
@@ -54,7 +54,7 @@ export const Unavailable: Story = {
   render: () => (
     <div style={{ width: 1120 }}>
       <ArtifactMakeRow
-        aria-label="Make something new"
+        aria-label="Start a new artifact"
         items={ITEMS.map((item) =>
           item.kind === 'sheet'
             ? { ...item, href: undefined, disabledReason: 'Starting a sheet needs the Artifacts app. Ask an administrator for it.' }

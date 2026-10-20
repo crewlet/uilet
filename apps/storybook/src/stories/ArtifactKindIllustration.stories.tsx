@@ -57,7 +57,7 @@ export const Sizes: Story = {
  * A row of tiles, one per kind, each one link named by the kind's name. A tag
  * is for a kind that is genuinely new, and a tile a reader cannot use stays
  * on the row and says why. Hover steps the frame's border; the drawing inside
- * stays still. The gallery's own Make something new row is the quieter
+ * stays still. The gallery's own "Start a new artifact" row is the quieter
  * `ArtifactMakeRow`.
  */
 export const TileRow: Story = {
