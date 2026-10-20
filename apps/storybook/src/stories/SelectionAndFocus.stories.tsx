@@ -15,7 +15,7 @@ import { ArtifactKindTile, Card, ChoiceList, Composer, DocumentTitleField, Input
  *   ink), so the state never rests on the tint.
  * - FOCUS is the one accent line on the page: `--color-focus` at 2px on
  *   `:focus-visible`, the area WCAG 2.2's focus appearance asks for. A text
- *   field draws that ring for the keyboard and narrows it to its own hairline
+ *   field draws that ring for the keyboard and narrows it to one tinted pixel
  *   where a pointer put the caret, as the page tracks with
  *   `trackFocusModality` (every field starts it). Press Tab into the fields
  *   below, then click into them, to see both.
@@ -92,7 +92,7 @@ export const Overview: StoryObj = {
         </Section>
         <Section
           title="A field in focus"
-          note="Two pixels in the focus colour for the keyboard; the field's own hairline, or a tinted underline under a title, where a pointer put the caret."
+          note="Two pixels in the focus colour for the keyboard; one pixel of the selected edge, round a box or under a title, where a pointer put the caret."
         >
           <DocumentTitleField aria-label="Title" placeholder="Untitled" value={title} onChange={(event) => setTitle(event.target.value)} />
           <Input aria-label="Search" placeholder="Search the boards" />
