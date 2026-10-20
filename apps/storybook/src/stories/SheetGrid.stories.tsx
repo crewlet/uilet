@@ -401,3 +401,32 @@ export const ColumnSettings: Story = {
     );
   },
 };
+
+/**
+ * A number column with its own bounds, decimals and format. Pick another type
+ * and they go: the column keeps its name, width and Required, and nothing its
+ * old type set (`retypeColumn`).
+ */
+export const ColumnSettingsRetype: Story = {
+  render: function Render() {
+    const [column, setColumn] = useState<SheetColumn>({
+      field: 'budget',
+      label: 'Budget',
+      type: 'number',
+      width: 140,
+      required: true,
+      min: 0,
+      precision: 2,
+      numberStyle: 'currency',
+      currency: 'EUR',
+    });
+    return (
+      <div style={{ display: 'grid', gap: 12, width: 300 }}>
+        <div style={{ padding: 12, border: '1px solid var(--color-border-default)', borderRadius: 8 }}>
+          <SheetColumnEditor column={column} onChange={setColumn} onDone={() => {}} onDelete={() => {}} onMove={() => {}} />
+        </div>
+        <pre style={{ margin: 0, fontSize: 12 }}>{JSON.stringify(column, null, 2)}</pre>
+      </div>
+    );
+  },
+};

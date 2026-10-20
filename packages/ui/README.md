@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.35.1
+
+**A column given another type keeps only what every type has** (`SheetColumnEditor`, and `retypeColumn` in the sheet model). Its field, name, width, freezing, read-only flag and Required stay, and so does its length cap between text and long text, which both read it. Every other setting belongs to the old type and is dropped: a number's bounds, decimals and format, a choice's options, a date's time of day. The column is built up from what is kept rather than pared down from the old one, so a setting a type adds later is dropped without the editor having to name it. Before, a date's time of day and a text's length cap rode along, unseen, into a type that ignores them, and came back if the old type was picked again. A host that relied on a setting surviving a type change sets it again on the column it is handed.
+
 ## Changes in 0.35.0
 
 **The gallery card is a step smaller and calm under the pointer** (`ArtifactCard`, `size="card"`). Its title is the body size rather than a large one, its body inset is one spacing step tighter, and the kind's badge on the preview's foot is 32px (from 40px) with the small glyph, so a gallery fits four cards across a laptop's page in the same design. Hover no longer lifts the card or casts the wide card shadow: the hairline darkens and an extra-small shadow settles under it, over the fast duration, and the card never moves. The More menu still appears on hover and focus. A host that relied on the lift has nothing to change.
