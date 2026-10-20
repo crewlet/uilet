@@ -43,6 +43,22 @@
   transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+/* A choice with a picture: the radio, the picture, the words, the tag. The
+   picture centres on the label and its detail together. */
+.crewlet-choice-list__row.has-media {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.crewlet-choice-list__row.has-media .crewlet-choice-list__radio {
+  margin-top: 0;
+}
+
+.crewlet-choice-list__media {
+  display: inline-flex;
+  flex: none;
+}
+
 .crewlet-choice-list__row:hover {
   background: var(--color-surface-hover);
 }

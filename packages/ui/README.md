@@ -206,6 +206,16 @@ places:
 
 ## Changes in 0.35.0
 
+**The gallery card is a step smaller and calm under the pointer** (`ArtifactCard`, `size="card"`). Its title is the body size rather than a large one, its body inset is one spacing step tighter, and the kind's badge on the preview's foot is 32px (from 40px) with the small glyph, so a gallery fits four cards across a laptop's page in the same design. Hover no longer lifts the card or casts the wide card shadow: the hairline darkens and an extra-small shadow settles under it, over the fast duration, and the card never moves. The More menu still appears on hover and focus. A host that relied on the lift has nothing to change.
+
+**An artifact's bar draws the kind's glyph in the kind's colour** (`ArtifactBar`), as the gallery's badge and the Make row do, on an open artifact and on a create page alike. The kinds' colour classes (`crewlet-kind--<kind>`, which set `--crewlet-kind-ink` and its siblings) moved to a sheet of their own that the bar, the card and the illustrations each import, so the bar is tinted on a page that draws no card. `ArtifactKindGlyph`'s module still carries no stylesheet.
+
+**A menu's `label` names its trigger when the trigger shows text** (`Menu`). It was the accessible name of an icon trigger only, so a "New" button that opens a menu of kinds was announced as "New". Keep the visible words in the label ("New artifact"), so a person who speaks what they see still reaches it. A test that found a text trigger by its words alone finds it by its label now.
+
+**A choice can carry a picture** (`ChoiceList`, `media` on an option): drawn between the radio and the words and hidden from the name, such as an agent's character in a "who builds it" list. A list without pictures is unchanged.
+
+**A Make row's tile keeps its drawing still on hover** (`ArtifactKindTile`). The illustration used to rise and grow inside its frame; the frame's border now steps alone, over the fast duration. Reduced motion drops the transition.
+
 **`CanvasBoard` can shape a canvas before it is drawn.** An editable board given `onBoardCreate` adds Frame (`F`) to its palette, between Hand and Text: a click on the field hands the caller the canvas point, the caller adds a board of whatever size and name it gives new ones and returns its id, and the canvas selects it and hands back Move. `onBoardRemove` lets Delete (or Backspace) remove a selected board, as it removes a selected note. Neither is offered on a view-only canvas, so a published design's viewer is unchanged. The `Shaping` story lays out a design's boards this way. `@crewlethq/icons` vendors `frame`, `laptop`, `tablet` and `smartphone` for it and for frame presets.
 
 **`ArtifactKindTile` can start something in place.** Given `onSelect` and no `href`, the tile is a button drawn exactly as the link is, for a create page's starting points. `face` draws on the kind's ground in place of its drawing (a design layout's `CanvasSchematic`), and `detail` is one quiet line under the name, read as the tile's description. The `StartingPoints` story shows a row of them.

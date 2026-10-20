@@ -124,7 +124,7 @@ function Harness({
       case 4:
         return entity.kind === 'unit' && !readOnly ? (
           <Menu
-            label={`Lead of ${entity.name}`}
+            label={`Lead of ${entity.name}: VP Engineering`}
             trigger="VP Engineering"
             items={[{ key: 'none', label: 'No lead', checked: false, onSelect: () => {} }, { key: 'vp', label: 'VP Engineering', checked: true, onSelect: () => {} }]}
             triggerTabIndex={grid.tabStop(id, column) ? 0 : -1}
@@ -565,9 +565,9 @@ describe('keys', () => {
     mount();
     // A menu with a visible trigger takes its name from the trigger's text;
     // `label` names the menu the trigger opens.
-    const lead = within(rowOf('unit:eng')).getByRole('button', { name: 'VP Engineering' });
+    const lead = within(rowOf('unit:eng')).getByRole('button', { name: 'Lead of Engineering: VP Engineering' });
     fireEvent.click(lead);
-    const menu = screen.getByRole('menu', { name: 'Lead of Engineering' });
+    const menu = screen.getByRole('menu', { name: 'Lead of Engineering: VP Engineering' });
     const answers = within(menu).getAllByRole('menuitemradio');
     expect(document.activeElement).toBe(answers[0]);
     press('ArrowDown');
@@ -575,7 +575,7 @@ describe('keys', () => {
     press('End');
     expect(document.activeElement).toBe(answers[answers.length - 1]);
     // The grid moved nowhere, and the menu is still open.
-    expect(screen.getByRole('menu', { name: 'Lead of Engineering' })).toBe(menu);
+    expect(screen.getByRole('menu', { name: 'Lead of Engineering: VP Engineering' })).toBe(menu);
   });
 
   test('an add row is entered with Enter and its buttons are walked with the arrows', () => {

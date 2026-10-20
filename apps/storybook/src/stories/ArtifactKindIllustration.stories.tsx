@@ -56,14 +56,15 @@ export const Sizes: Story = {
 /**
  * The gallery's Make something new row: one tile per kind, each one link
  * named by the kind's name. A tag is for a kind that is genuinely new, and a
- * tile a reader cannot use stays on the row and says why.
+ * tile a reader cannot use stays on the row and says why. Hover steps the
+ * frame's border; the drawing inside stays still.
  */
 export const MakeRow: Story = {
   render: () => (
     <ul style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 16, maxWidth: 1100, margin: 0, padding: 0, listStyle: 'none' }}>
       {ORDER.map((kind) => (
         <li key={kind}>
-          <ArtifactKindTile kind={kind} label={WORDS[kind]} href={`#/artifacts/new?kind=${kind}`} badge={kind === 'dashboard' ? 'New' : undefined} />
+          <ArtifactKindTile kind={kind} label={WORDS[kind]} href={`#/artifacts/new/${kind}`} badge={kind === 'dashboard' ? 'New' : undefined} />
         </li>
       ))}
     </ul>
