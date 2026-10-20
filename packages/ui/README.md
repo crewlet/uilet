@@ -204,6 +204,19 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.35.0
+
+- `SlideFilmstrip` takes a slide's actions, as a presentation editor's
+  filmstrip has them: `onDuplicate` (Command+D, Control+D elsewhere, on a
+  thumbnail), `onDelete` (Delete or Backspace) and `actions` (further menu
+  entries), named with their keys in a per-slide menu that the Menu key or
+  Shift+F10 opens from the thumbnail. `footer` holds what follows the last
+  slide inside the strip, such as a New slide control.
+- `ThemeGallery` takes `renderPreview`, which draws a card's thumbnail in
+  place of its swatch, for a theme of something other than the product's
+  chrome (a slide deck's, drawn as its cover). A theme's `swatch` is optional
+  when the gallery is given one.
+
 ## Changes in 0.34.1
 
 **`ArtifactKindGlyph`, `ARTIFACT_KINDS` and `ArtifactKind` have a module of their own** (`@crewlethq/ui/ArtifactKindGlyph`), and it imports nothing but the glyphs. They were defined in `ArtifactCard`'s module, and a bundler places a module whole, so a host that drew one kind glyph in its frame (a sidebar's pins, a command palette's hits) took the whole card into its first screen, and with 0.34.0 the kind illustrations the card draws: about 11 KB of script for a gallery the reader had not opened. Nothing is renamed: the root export and `@crewlethq/ui/ArtifactCard` still answer for all three, and `ArtifactIcon`, `ArtifactBar`, `DashboardCover` and `ArtifactKindIllustration` now import them from the new module.

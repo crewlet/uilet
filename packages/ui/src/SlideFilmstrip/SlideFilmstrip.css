@@ -167,3 +167,52 @@
 .crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__item[data-reorder-target='after'] .crewlet-slide-filmstrip__thumb {
   box-shadow: var(--spacing-1) 0 0 var(--color-brand-accent);
 }
+
+/* A SLIDE'S CONTROLS, beside its thumbnail: the handle over the actions menu,
+   one column, so a thumbnail keeps the strip's full width beside them. The
+   menu's trigger shows on the selected slide and under the pointer or focus,
+   so a strip of twelve slides is not twelve rows of ellipses. */
+.crewlet-slide-filmstrip__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-0);
+}
+
+.crewlet-slide-filmstrip__controls .crewlet-menu-anchor {
+  opacity: 0;
+}
+
+.crewlet-slide-filmstrip__item[data-selected='true'] .crewlet-menu-anchor,
+.crewlet-slide-filmstrip__item:hover .crewlet-menu-anchor,
+.crewlet-slide-filmstrip__controls .crewlet-menu-anchor:focus-within,
+.crewlet-slide-filmstrip__controls .crewlet-menu-anchor:has([aria-expanded='true']) {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .crewlet-slide-filmstrip__controls .crewlet-menu-anchor {
+    opacity: 1;
+  }
+}
+
+/* What follows the slides (a New slide control), aligned with the thumbnails
+   rather than with the numbers beside them. */
+.crewlet-slide-filmstrip__footer {
+  padding: var(--spacing-1) var(--spacing-1) var(--spacing-2) calc(var(--spacing-5) + var(--spacing-2));
+}
+
+.crewlet-slide-filmstrip--horizontal {
+  display: flex;
+  align-items: flex-start;
+}
+
+.crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__controls {
+  grid-area: handle;
+  flex-direction: row;
+}
+
+.crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__footer {
+  flex: none;
+  padding: var(--spacing-1) var(--spacing-2);
+}

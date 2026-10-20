@@ -1,5 +1,7 @@
-import { useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
-import { EyeOffGlyph, GripVerticalGlyph } from '@crewlethq/icons/glyphs';
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { CopyGlyph, EllipsisGlyph, EyeOffGlyph, GripVerticalGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
+import { Kbd } from '../Kbd/index.js';
+import { Menu, type MenuEntry } from '../Menu/index.js';
 import { useReorder } from '../Reorder/index.js';
 import { SlideStage } from '../SlideStage/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -21,6 +23,10 @@ export interface SlideFilmstripLabels {
   slide: (position: number, title: string) => string;
   hidden: string;
   untitled: string;
+  /** A slide's actions menu: "Actions for slide 4, The plan". */
+  actions: (position: number, title: string) => string;
+  duplicate: string;
+  delete: string;
 }
 
 const LABELS: SlideFilmstripLabels = {
@@ -28,6 +34,9 @@ const LABELS: SlideFilmstripLabels = {
   slide: (position, title) => `Slide ${position}, ${title}`,
   hidden: 'Hidden when presenting',
   untitled: 'Untitled',
+  actions: (position, title) => `Actions for slide ${position}, ${title}`,
+  duplicate: 'Duplicate slide',
+  delete: 'Delete slide',
 };
 
 /**
@@ -49,6 +58,23 @@ export interface SlideFilmstripProps {
    */
   onReorder?: ((ids: string[]) => void) | undefined;
   orientation?: SlideFilmstripOrientation | undefined;
+  /**
+   * Copy a slide in place, after itself: Command+D (Control+D elsewhere) on
+   * its thumbnail, or its actions menu. Left out, nothing duplicates.
+   */
+  onDuplicate?: ((id: string) => void) | undefined;
+  /**
+   * Remove a slide: Delete or Backspace on its thumbnail, or its actions
+   * menu. Left out, nothing deletes. The caller moves the selection.
+   */
+  onDelete?: ((id: string) => void) | undefined;
+  /** Further entries of a slide's actions menu, after Duplicate and Delete. */
+  actions?: ((id: string) => readonly MenuEntry[]) | undefined;
+  /**
+   * What follows the last slide inside the strip, such as a New slide
+   * control, so it scrolls with the slides it adds to.
+   */
+  footer?: ReactNode;
   className?: string | undefined;
   labels?: Partial<SlideFilmstripLabels> | undefined;
 }
@@ -80,6 +106,13 @@ const STEP_KEYS: Readonly<Record<SlideFilmstripOrientation, { back: string; forw
  *
  * THUMBNAILS ARE THE SLIDES THEMSELVES, drawn by the caller at the slide's own
  * size and scaled by `SlideStage`, so what the strip shows is what presents.
+ *
+ * A SLIDE'S ACTIONS ARE KEYS ON ITS THUMBNAIL AND A MENU BESIDE IT, as a
+ * presentation editor's filmstrip has them: Command+D (Control+D) duplicates,
+ * Delete or Backspace deletes, and the menu names both with their keys, so the
+ * pointer and the keyboard reach the same acts and the menu teaches the keys.
+ * The menu's trigger is out of the tab order, since the thumbnail's keys reach
+ * every act it holds and the Menu key (or Shift+F10) opens it from there.
  */
 export function SlideFilmstrip({
   slides,
@@ -88,6 +121,10 @@ export function SlideFilmstrip({
   renderSlide,
   onReorder,
   orientation = 'vertical',
+  onDuplicate,
+  onDelete,
+  actions,
+  footer,
   className,
   labels,
 }: SlideFilmstripProps) {
@@ -119,7 +156,38 @@ export function SlideFilmstrip({
     onSelect(id);
     options.current.get(id)?.focus();
   };
+  // The slide whose actions menu is open: its trigger, or the Menu key (or
+  // Shift+F10) on its thumbnail, which returns focus to the thumbnail on close.
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const menuOf = (id: string): MenuEntry[] => [
+    ...(onDuplicate
+      ? [{ key: 'duplicate', label: text.duplicate, icon: <CopyGlyph size="sm" />, onSelect: () => onDuplicate(id),
+          hint: <Kbd subtle keys={['Mod', 'D']} /> }]
+      : []),
+    ...(onDelete
+      ? [{ key: 'delete', label: text.delete, icon: <TrashGlyph size="sm" />, onSelect: () => onDelete(id),
+          danger: true, hint: <Kbd subtle keys={['Delete']} /> }]
+      : []),
+    ...(actions?.(id) ?? []),
+  ];
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const mod = event.metaKey || event.ctrlKey;
+    if (onDuplicate && mod && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'd') {
+      event.preventDefault();
+      onDuplicate(selected);
+      return;
+    }
+    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+      if (menuOf(selected).length === 0) return;
+      event.preventDefault();
+      setMenuFor(selected);
+      return;
+    }
+    if (onDelete && !mod && !event.altKey && (event.key === 'Delete' || event.key === 'Backspace')) {
+      event.preventDefault();
+      onDelete(selected);
+      return;
+    }
     const at = order.indexOf(selected);
     const step = STEP_KEYS[orientation];
     const to = {
@@ -147,6 +215,7 @@ export function SlideFilmstrip({
         {order.map((id, i) => {
           const slide = byId.get(id);
           const isSelected = id === selected;
+          const menu = menuOf(id);
           return (
             <li
               key={id}
@@ -178,15 +247,30 @@ export function SlideFilmstrip({
                   </span>
                 ) : null}
               </button>
-              {onReorder ? (
-                <button type="button" className="crewlet-slide-filmstrip__handle" {...reorder.handleProps(id)}>
-                  <GripVerticalGlyph size="sm" />
-                </button>
+              {onReorder || menu.length > 0 ? (
+                <span className="crewlet-slide-filmstrip__controls">
+                  {onReorder ? (
+                    <button type="button" className="crewlet-slide-filmstrip__handle" {...reorder.handleProps(id)}>
+                      <GripVerticalGlyph size="sm" />
+                    </button>
+                  ) : null}
+                  {menu.length > 0 ? (
+                    <Menu
+                      label={text.actions(i + 1, titleOf(id))}
+                      icon={<EllipsisGlyph size="sm" />}
+                      triggerTabIndex={-1}
+                      items={menu}
+                      open={menuFor === id}
+                      onOpenChange={(open) => setMenuFor(open ? id : null)}
+                    />
+                  ) : null}
+                </span>
               ) : null}
             </li>
           );
         })}
       </ol>
+      {footer ? <div className="crewlet-slide-filmstrip__footer">{footer}</div> : null}
     </div>
   );
 }
