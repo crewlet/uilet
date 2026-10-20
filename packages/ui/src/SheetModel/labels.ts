@@ -61,7 +61,7 @@ export interface SheetLabels {
   dismiss: string;
   /** A refusal, as the grid announces it: "Not saved: <reason>". */
   notSaved: (reason: string) => string;
-  /** The row actions control on a row's number, and its delete item. */
+  /** The row actions button in a row's number gutter (its name and tooltip), and its delete item. */
   rowActions: (row: number) => string;
   deleteRow: string;
   /** Appended to the keyboard help when a row has actions. */
@@ -138,9 +138,9 @@ export const SHEET_LABELS: SheetLabels = {
   retry: 'Retry',
   dismiss: 'Dismiss',
   notSaved: (reason) => `Not saved: ${reason}`,
-  rowActions: (row) => `Row actions for row ${row}`,
+  rowActions: (row) => `Actions for row ${row}`,
   deleteRow: 'Delete row',
-  rowActionsHelp: 'Shift and F10 opens the actions of the row.',
+  rowActionsHelp: 'Shift with F10 opens the actions of the row.',
   filter: 'Filter options',
   noOptions: 'No matching options',
   clear: 'Clear',

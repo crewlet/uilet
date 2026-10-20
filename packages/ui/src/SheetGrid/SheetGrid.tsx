@@ -47,6 +47,7 @@ import { Avatar } from '../Avatar/index.js';
 import { Button } from '../Button/index.js';
 import { ChangeMark } from '../ChangeMark/index.js';
 import { CursorFlag } from '../CursorFlag/index.js';
+import { IconButton } from '../IconButton/index.js';
 import { isComposing } from '../Layer/index.js';
 import { Menu } from '../Menu/index.js';
 import { presenceHueClass } from '../PresenceRing/index.js';
@@ -99,6 +100,7 @@ import {
   type SheetValue,
   type SheetValueContext,
 } from '../SheetModel/index.js';
+import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { CellDisplay, CellEditor, hasEditor, takesTyping, type CellConflict, type CellMove } from './cells.js';
@@ -158,8 +160,10 @@ export interface SheetGridProps {
    */
   fit?: 'container' | 'content' | undefined;
   /**
-   * Shows the row actions menu on a row's number (the active row, a hovered
-   * one, and Shift+F10 from any of its cells) with Delete row. The grid only
+   * Shows the row actions menu in a row's number gutter (the number gives way
+   * to the button under the pointer, on the row holding focus, and while the
+   * menu is open; a tap on the number opens it on a touch screen; Shift+F10
+   * opens it from any of the row's cells) with Delete row. The grid only
    * asks: the host confirms with its own dialog before it deletes anything.
    */
   onDeleteRow?: ((rowId: string) => void) | undefined;
@@ -317,7 +321,6 @@ export function SheetGrid({
   const [local, setLocal] = useState<LocalRefusals>(new Map());
   const [announcement, setAnnouncement] = useState({ text: '', n: 0 });
   const dragging = useRef(false);
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [rowMenu, setRowMenu] = useState<string | null>(null);
 
   const say = useCallback((text: string) => setAnnouncement((current) => ({ text, n: current.n + 1 })), []);
@@ -677,6 +680,9 @@ export function SheetGrid({
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     if (editing || isComposing(event) || !current || !currentCell) return;
+    // Keys on a row's actions button are the menu button's own: ArrowDown opens
+    // its menu there, and must not also move the active cell.
+    if ((event.target as HTMLElement).closest('.crewlet-sheet-grid__row-actions')) return;
     // Keys inside the header's own sort control are the header cell's.
     const column = columns[current.col];
     const mod = isMod(event);
@@ -895,17 +901,6 @@ export function SheetGrid({
           className={cx('crewlet-sheet-grid__grid', range && (range.top !== range.bottom || range.left !== range.right) && 'crewlet-sheet-grid__grid--range')}
           style={style}
           onKeyDown={onKeyDown}
-          // Which row the pointer is over, for its row actions: read from the
-          // row under it rather than a handler on every row.
-          onMouseMove={
-            rowActions
-              ? (event) => {
-                  const over = (event.target as HTMLElement).closest<HTMLElement>('[data-row-id]')?.dataset['rowId'] ?? null;
-                  setHoveredRow((was) => (was === over ? was : over));
-                }
-              : undefined
-          }
-          onMouseLeave={rowActions ? () => setHoveredRow(null) : undefined}
           onCopy={onCopy}
           onCut={onCut}
           onPaste={onPaste}
@@ -970,6 +965,9 @@ export function SheetGrid({
             {drawn.map((index) => {
               const row = rows[index]!;
               const rowPresence = onRows.get(row.id);
+              const rowNameId = `${id}-r${index}-name`;
+              const rowSelected = range !== null && index >= range.top && index <= range.bottom;
+              const actionsLabel = labels.rowActions(index + 1);
               return (
                 <div
                   key={row.id}
@@ -979,31 +977,46 @@ export function SheetGrid({
                   style={{ top: `${index * rowHeight}px` }}
                   data-row-id={row.id}
                 >
+                  {/* THE GUTTER: the row's number, centred in a fixed width
+                      and in tabular figures, and, where the host takes row
+                      actions, the actions button drawn in the same place. The
+                      button is always there, so a tap on the number opens the
+                      menu where there is no pointer to hover with; it shows,
+                      and the number gives way to it, under the pointer, on the
+                      row holding focus and while the menu is open (see
+                      SheetGrid.css). The row header is named by the row alone,
+                      not by the button inside it. */}
                   <div
                     role="rowheader"
                     aria-colindex={1}
+                    aria-labelledby={rowNameId}
                     className={cx(
                       'crewlet-sheet-grid__rownum',
                       lastFrozen < 0 && 'crewlet-sheet-grid__frozen-edge',
+                      rowActions && 'crewlet-sheet-grid__rownum--actions',
+                      rowSelected && 'crewlet-sheet-grid__rownum--selected',
+                      rowMenu === row.id && 'crewlet-sheet-grid__rownum--open',
                       rowPresence && 'crewlet-sheet-grid__rownum--present',
                       rowPresence && presenceHueClass(rowPresence.hue),
                     )}
                   >
-                    <span aria-hidden="true">{index + 1}</span>
-                    <VisuallyHidden>{rowName(columns, row, index, context)}</VisuallyHidden>
-                    {rowActions && (rowMenu === row.id || hoveredRow === row.id || current?.row === index) ? (
-                      <span
-                        className={cx(
-                          'crewlet-sheet-grid__row-actions',
-                          rowMenu !== row.id && hoveredRow !== row.id && 'crewlet-sheet-grid__row-actions--active-row',
-                        )}
-                      >
+                    <span className="crewlet-sheet-grid__rownum-number" aria-hidden="true">
+                      {index + 1}
+                    </span>
+                    <VisuallyHidden id={rowNameId}>{rowName(columns, row, index, context)}</VisuallyHidden>
+                    {rowActions ? (
+                      <span className="crewlet-sheet-grid__row-actions">
                         <Menu
-                          label={labels.rowActions(index + 1)}
-                          icon={<EllipsisGlyph size="xs" />}
+                          label={actionsLabel}
                           triggerTabIndex={-1}
                           open={rowMenu === row.id}
                           onOpenChange={(open) => setRowMenu(open ? row.id : null)}
+                          renderTrigger={(trigger) => (
+                            <Tooltip content={actionsLabel}>
+                              {/* The tooltip carries the name; a native one beside it is a second tip. */}
+                              <IconButton {...trigger} label={actionsLabel} icon={<EllipsisGlyph />} size="sm" title="" />
+                            </Tooltip>
+                          )}
                           items={[
                             {
                               key: 'delete',

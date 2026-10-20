@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { SheetGrid, SheetPendingEdits, type SheetEdit, type SheetRow, type SheetSort } from '@crewlethq/ui';
 import { SHEET_COLUMNS, SHEET_PEOPLE, SHEET_PRESENCE, SHEET_ROWS, manyRows } from '../fixtures/sheet.js';
 
@@ -209,6 +209,49 @@ export const ChangedMarks: Story = {
       people={SHEET_PEOPLE}
       height={320}
     />
+  ),
+};
+
+/**
+ * Opens scrolled to the given row, so a story can show a stretch deep in a
+ * long sheet: row 995 to row 1010, where the numbers cross from three digits
+ * to four.
+ */
+function ScrolledTo({ row, children }: { row: number; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const scroller = box.current?.querySelector<HTMLElement>('.crewlet-sheet-grid__scroller');
+    const probe = box.current?.querySelector<HTMLElement>('.crewlet-sheet-grid__probe');
+    if (scroller && probe) scroller.scrollTop = (row - 1) * probe.offsetHeight;
+  }, [row]);
+  return <div ref={box}>{children}</div>;
+}
+
+/**
+ * THE ROW GUTTER. Each row's number sits centred in a fixed-width gutter, in
+ * the tertiary ink and tabular figures, so row 9 and row 1000 stand in one
+ * column. Where the host takes row actions, the number gives way, in the same
+ * place, to the actions button at the small icon button step, with a tooltip
+ * and the name "Actions for row N":
+ *
+ * - under the pointer (hover any row);
+ * - on the row holding focus (press a cell, then move with the arrows);
+ * - while its menu is open (Shift+F10 from any cell of the row);
+ * - on a touch screen, a tap on the number opens the menu.
+ *
+ * A selection marks its rows' numbers as it marks its cells (Shift with an
+ * arrow), on an opaque ground, so the gutter and the frozen column stay solid
+ * over the values scrolling under them when the sheet scrolls sideways. The
+ * sheet on the right opens at row 995, where the numbers cross to four digits.
+ */
+export const RowGutter: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-6)', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))' }}>
+      <LiveSheet height={360} />
+      <ScrolledTo row={995}>
+        <LiveSheet start={manyRows(1_200)} height={360} />
+      </ScrolledTo>
+    </div>
   ),
 };
 

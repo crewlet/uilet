@@ -194,25 +194,56 @@
   box-shadow: 0 0 0 2px var(--crewlet-presence-hue);
 }
 
+/* THE GUTTER: one centred stack, so the number and the row's actions button
+   take exactly the same place and swapping one for the other moves nothing.
+   Its width is the component's fixed track (SHEET_ROW_NUMBER_WIDTH), which
+   holds five tabular digits, so row 9 and row 10000 stand in one column. */
 .crewlet-sheet-grid__rownum {
+  display: grid;
+  grid-template-areas: 'gutter';
+  place-items: center;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
 }
 
-/* The row actions sit at the number's trailing edge, over the cell's own
-   background, so the number stays readable beside them. */
+.crewlet-sheet-grid__rownum-number,
 .crewlet-sheet-grid__row-actions {
-  position: absolute;
-  top: 50%;
-  inset-inline-end: 0;
-  display: inline-flex;
-  transform: translateY(-50%);
+  grid-area: gutter;
 }
 
-/* The active row's actions and the active cell's history are the reader's
-   tools while they are in the grid, not marks on a sheet nobody has entered. */
-.crewlet-sheet-grid__grid:not(:focus-within) .crewlet-sheet-grid__row-actions--active-row,
+/* THE ACTIONS BUTTON IS ALWAYS THERE, drawn clear until it is wanted, so a
+   tap on the number opens the row's menu on a screen with no pointer to
+   hover with. It shows, and the number gives way to it, under the pointer,
+   on the row holding focus (the active cell, or the button itself) and while
+   its menu is open. A row the reader has not entered keeps its number. */
+.crewlet-sheet-grid__row-actions {
+  display: inline-flex;
+  opacity: 0;
+}
+
+.crewlet-sheet-grid__row:is(:hover, :focus-within) > .crewlet-sheet-grid__rownum > .crewlet-sheet-grid__row-actions,
+.crewlet-sheet-grid__rownum--open > .crewlet-sheet-grid__row-actions {
+  opacity: 1;
+}
+
+.crewlet-sheet-grid__row:is(:hover, :focus-within) > .crewlet-sheet-grid__rownum--actions > .crewlet-sheet-grid__rownum-number,
+.crewlet-sheet-grid__rownum--open > .crewlet-sheet-grid__rownum-number {
+  visibility: hidden;
+}
+
+/* THE SELECTED ROWS' NUMBERS are marked as their cells are, and on the same
+   condition (the reader is in the grid, or the selection spans more than one
+   cell), the way a spreadsheet lights the row headers of a selection. The
+   tint is laid over the gutter's own ground, which a sticky gutter needs: a
+   translucent tint alone lets the values scrolling under it show through. */
+.crewlet-sheet-grid__grid:is(:focus-within, .crewlet-sheet-grid__grid--range) .crewlet-sheet-grid__rownum--selected {
+  background: linear-gradient(var(--color-brand-accent-soft), var(--color-brand-accent-soft)) var(--color-surface-background);
+  color: var(--color-brand-accent-ink);
+}
+
+/* The active cell's history is the reader's tool while they are in the grid,
+   not a mark on a sheet nobody has entered. */
 .crewlet-sheet-grid__grid:not(:focus-within) .crewlet-sheet-grid__cell--history:not(:hover) > .crewlet-sheet-grid__history {
   visibility: hidden;
 }
@@ -756,6 +787,14 @@
   .crewlet-sheet-grid__grid:is(:focus-within, .crewlet-sheet-grid__grid--range) .crewlet-sheet-grid__cell--selected {
     background: Highlight;
     color: HighlightText;
+  }
+
+  /* A selected row's number takes the selection's ink on the page's ground:
+     on a Highlight ground the browser's backplate behind the digits drew
+     them as a solid block. */
+  .crewlet-sheet-grid__grid:is(:focus-within, .crewlet-sheet-grid__grid--range) .crewlet-sheet-grid__rownum--selected {
+    background: Canvas;
+    color: Highlight;
   }
 
   .crewlet-sheet-grid__rownum--present::before {

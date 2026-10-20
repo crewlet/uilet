@@ -457,27 +457,74 @@ describe('the clipboard', () => {
 });
 
 describe('audit fixes', () => {
-  test('a row offers its actions on its number, and Delete row only asks the host (A05)', () => {
+  test('a row offers its actions in its number gutter, and Delete row only asks the host (A05)', () => {
     const onDeleteRow = vi.fn();
     render(<Host onDeleteRow={onDeleteRow} />);
     act(() => cell(1, 1).focus());
-    const trigger = screen.getByRole('button', { name: 'Row actions for row 2' });
+    // Every drawn row carries its button, so a tap on the number reaches it where nothing hovers.
+    const triggers = within(grid()).getAllByRole('button', { name: /^Actions for row \d+$/ });
+    expect(triggers.map((trigger) => trigger.getAttribute('aria-label'))).toEqual(['Actions for row 1', 'Actions for row 2', 'Actions for row 3']);
     // Pointer only: the grid stays one tab stop, and the keys reach it through Shift+F10.
-    expect(trigger.getAttribute('tabindex')).toBe('-1');
-    expect(screen.queryByRole('button', { name: 'Row actions for row 1' })).toBeNull();
+    for (const trigger of triggers) expect(trigger.getAttribute('tabindex')).toBe('-1');
     key(focused(), 'F10', { shiftKey: true });
     const item = screen.getByRole('menuitem', { name: 'Delete row' });
+    expect(triggers[1]!.closest('[role="rowheader"]')!.className).toContain('crewlet-sheet-grid__rownum--open');
     expect(onDeleteRow).not.toHaveBeenCalled();
     fireEvent.click(item);
     expect(onDeleteRow).toHaveBeenCalledWith('globex');
   });
 
+  test('the gutter is named by its row alone, and its button carries a tooltip of its own name', () => {
+    render(<Host onDeleteRow={() => {}} />);
+    const header = within(grid()).getAllByRole('rowheader')[0]!;
+    const name = document.getElementById(header.getAttribute('aria-labelledby') ?? '');
+    expect(name?.textContent).toBe('Acme Corp');
+    const trigger = within(header).getByRole('button', { name: 'Actions for row 1' });
+    // One tip: the native title would be a second one beside it.
+    expect(trigger.getAttribute('title')).toBe('');
+    act(() => trigger.focus());
+    expect(screen.getByRole('tooltip').textContent).toBe('Actions for row 1');
+  });
+
+  test('a press on a row\'s actions button opens its menu, and its keys never move the active cell', () => {
+    render(<Host onDeleteRow={() => {}} />);
+    act(() => cell(0, 1).focus());
+    const trigger = within(grid()).getByRole('button', { name: 'Actions for row 3' });
+    fireEvent.click(trigger);
+    expect(screen.getByRole('menu', { name: 'Actions for row 3' })).toBeDefined();
+    fireEvent.keyDown(screen.getByRole('menuitem', { name: 'Delete row' }), { key: 'Escape' });
+    act(() => trigger.focus());
+    key(trigger, 'ArrowDown');
+    expect(screen.getByRole('menu', { name: 'Actions for row 3' })).toBeDefined();
+    expect(cell(0, 1).getAttribute('tabindex')).toBe('0');
+  });
+
+  test('the number and the button share one centred place in the gutter, and the button shows only where it is wanted', () => {
+    const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+    expect(sheet).toMatch(/\.crewlet-sheet-grid__rownum \{[^}]*display: grid;[^}]*place-items: center;[^}]*tabular-nums/);
+    expect(sheet).toMatch(/\.crewlet-sheet-grid__rownum-number,\s*\.crewlet-sheet-grid__row-actions\s*\{\s*grid-area: gutter;/);
+    expect(sheet).toMatch(/\.crewlet-sheet-grid__row-actions \{[^}]*opacity: 0;/);
+    expect(sheet).toMatch(/__row:is\(:hover, :focus-within\) > \.crewlet-sheet-grid__rownum > \.crewlet-sheet-grid__row-actions,\s*\.crewlet-sheet-grid__rownum--open > \.crewlet-sheet-grid__row-actions\s*\{\s*opacity: 1;/);
+    expect(sheet).toMatch(/__rownum--actions > \.crewlet-sheet-grid__rownum-number,\s*\.crewlet-sheet-grid__rownum--open > \.crewlet-sheet-grid__rownum-number\s*\{\s*visibility: hidden;/);
+  });
+
+  test('the selected rows mark their numbers, on an opaque ground a sticky gutter needs', () => {
+    render(<Host onDeleteRow={() => {}} />);
+    act(() => cell(0, 0).focus());
+    key(cell(0, 0), 'ArrowDown', { shiftKey: true });
+    const headers = within(grid()).getAllByRole('rowheader');
+    expect(headers.map((header) => header.className.includes('crewlet-sheet-grid__rownum--selected'))).toEqual([true, true, false]);
+    const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+    expect(sheet).toMatch(/__rownum--selected \{\s*background: linear-gradient\([^)]*\)[^;]*var\(--color-surface-background\);/);
+  });
+
   test('no row actions are drawn without a host that deletes, or on a read-only sheet', () => {
     const { rerender } = render(<Host />);
     act(() => cell(0, 1).focus());
-    expect(screen.queryByRole('button', { name: /Row actions/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Actions for row/ })).toBeNull();
+    expect(within(grid()).getAllByRole('rowheader')[0]!.className).not.toContain('crewlet-sheet-grid__rownum--actions');
     rerender(<Host mode="read" onDeleteRow={() => {}} />);
-    expect(screen.queryByRole('button', { name: /Row actions/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Actions for row/ })).toBeNull();
   });
 
   test('a refusal arriving from the host is announced, and the strip holds it with Dismiss (A07)', () => {
@@ -684,7 +731,7 @@ describe('accessibility', () => {
     const { container } = render(
       <main>
         <h1>Vendor scorecard</h1>
-        <Host onAddRow={() => {}} sync={{ saving: 1 }} presence={[{ rowId: 'acme', field: 'tier', id: 's', name: 'Jane', kind: 'human', hue: 'cyan' }]} />
+        <Host onAddRow={() => {}} onDeleteRow={() => {}} sync={{ saving: 1 }} presence={[{ rowId: 'acme', field: 'tier', id: 's', name: 'Jane', kind: 'human', hue: 'cyan' }]} />
       </main>,
     );
     const run = async () =>
@@ -698,6 +745,11 @@ describe('accessibility', () => {
     expect(await run()).toEqual([]);
     act(() => cell(0, 3).focus());
     key(focused(), 'Enter');
+    expect(await run()).toEqual([]);
+    fireEvent.keyDown(focused(), { key: 'Escape' });
+    act(() => cell(1, 0).focus());
+    key(focused(), 'F10', { shiftKey: true });
+    expect(screen.getByRole('menu', { name: 'Actions for row 2' })).toBeDefined();
     expect(await run()).toEqual([]);
   });
 });
