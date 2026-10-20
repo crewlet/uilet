@@ -7,7 +7,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
-import { ARTIFACT_KINDS } from '../ArtifactCard/index.js';
+import { ARTIFACT_KINDS } from '../ArtifactKindGlyph/index.js';
 import { ArtifactKindGround, ArtifactKindIllustration, ArtifactKindTile } from './index.js';
 
 afterEach(cleanup);

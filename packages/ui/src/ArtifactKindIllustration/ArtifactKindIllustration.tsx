@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react';
-import type { ArtifactKind } from '../ArtifactCard/index.js';
+import type { ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 

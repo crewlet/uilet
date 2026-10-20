@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { ChevronDownGlyph, ChevronLeftGlyph, EllipsisGlyph } from '@crewlethq/icons/glyphs';
 import { ArtifactIcon } from '../ArtifactIcon/index.js';
-import type { ArtifactKind } from '../ArtifactCard/index.js';
+import type { ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { Button } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { Kbd, isApplePlatform } from '../Kbd/index.js';

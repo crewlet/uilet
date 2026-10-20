@@ -45,7 +45,7 @@ import {
   WandSparklesGlyph,
   type GlyphSize,
 } from '@crewlethq/icons/glyphs';
-import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactCard/index.js';
+import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index.js';
 
 type Glyph = typeof ChartColumnGlyph;
 

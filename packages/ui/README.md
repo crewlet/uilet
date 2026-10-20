@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.34.1
+
+**`ArtifactKindGlyph`, `ARTIFACT_KINDS` and `ArtifactKind` have a module of their own** (`@crewlethq/ui/ArtifactKindGlyph`), and it imports nothing but the glyphs. They were defined in `ArtifactCard`'s module, and a bundler places a module whole, so a host that drew one kind glyph in its frame (a sidebar's pins, a command palette's hits) took the whole card into its first screen, and with 0.34.0 the kind illustrations the card draws: about 11 KB of script for a gallery the reader had not opened. Nothing is renamed: the root export and `@crewlethq/ui/ArtifactCard` still answer for all three, and `ArtifactIcon`, `ArtifactBar`, `DashboardCover` and `ArtifactKindIllustration` now import them from the new module.
+
 ## Changes in 0.34.0
 
 **`ArtifactCard` is redesigned as a gallery card.** The `card` size draws a large preview on top with a generous corner, the kind's glyph on a badge standing over the preview's foot in the kind's ink, the title at the large step on one line, and one quiet line under it: who can open it (`access`: `private` a lock, `shared` people, `company` a building, each said in words to assistive technology through `labels.access`), the owner when the reader is not the owner, and when it was last edited. The default change word is "Edited" ("Edited 20h ago by Maya"), in both sizes. `actions` (a More menu) is drawn beside the link rather than inside it, over the preview's top corner, shown on hover, while focus is inside the card and while its menu is open, and always on a screen with no hover; a keyboard reaches it after the link. `trashed` fades the preview. Hover lifts the card's edge and shadow (not under `prefers-reduced-motion`), and focus rings the whole card. The `compact` row is unchanged but for "Edited". **`ArtifactCardSkeleton`** is the card's own shape while a gallery loads. **`ArtifactPreviewGlyph`** now draws the kind's illustration on its tinted ground (`ArtifactKindGround`) rather than a lone glyph.

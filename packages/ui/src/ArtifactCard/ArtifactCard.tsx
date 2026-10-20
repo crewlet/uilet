@@ -1,17 +1,6 @@
 import { useId, type ReactNode } from 'react';
-import {
-  BuildingComplexGlyph,
-  FileCodeGlyph,
-  FileTextGlyph,
-  LayoutDashboardGlyph,
-  LockGlyph,
-  PaletteGlyph,
-  PinGlyph,
-  PresentationGlyph,
-  TableGlyph,
-  UsersGlyph,
-  type GlyphSize,
-} from '@crewlethq/icons/glyphs';
+import { BuildingComplexGlyph, LockGlyph, PinGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
+import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { ArtifactKindGround } from '../ArtifactKindIllustration/index.js';
 import { AvatarStack, type AvatarStackMember } from '../Avatar/index.js';
 import { Card } from '../Card/index.js';
@@ -20,27 +9,6 @@ import { RelativeTime, type TimeValue } from '../RelativeTime/index.js';
 import { Skeleton } from '../Skeleton/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
-
-/** What an artifact is, as the engine names it (`artifacts.Kind`), which decides how it is drawn. */
-export type ArtifactKind = 'html' | 'doc' | 'slides' | 'design' | 'dashboard' | 'sheet';
-
-/** Every kind, in the engine's order (`artifacts.Kinds`). */
-export const ARTIFACT_KINDS = ['html', 'doc', 'slides', 'design', 'dashboard', 'sheet'] as const satisfies readonly ArtifactKind[];
-
-const KIND_GLYPHS: Readonly<Record<ArtifactKind, typeof FileCodeGlyph>> = {
-  html: FileCodeGlyph,
-  doc: FileTextGlyph,
-  slides: PresentationGlyph,
-  design: PaletteGlyph,
-  dashboard: LayoutDashboardGlyph,
-  sheet: TableGlyph,
-};
-
-/** The glyph a kind is drawn with, wherever a kind is drawn, at a glyph size step or in px. */
-export function ArtifactKindGlyph({ kind, size = 'md' }: { kind: ArtifactKind; size?: GlyphSize | undefined }) {
-  const Drawn = KIND_GLYPHS[kind];
-  return <Drawn size={size} />;
-}
 
 /**
  * What a card's preview draws when there is no cover: the kind's drawing on
