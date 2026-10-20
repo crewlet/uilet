@@ -209,7 +209,7 @@
   transform-origin: bottom left;
 }
 
-/* A board drawn too narrow to name goes unnamed (`boardRoom`). */
+/* A board drawn too narrow for even its number goes unnamed (`boardName`). */
 .crewlet-canvas-board__board[data-untitled] > .crewlet-canvas-board__chrome {
   display: none;
 }

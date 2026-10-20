@@ -84,8 +84,10 @@
   flex: 1;
 }
 
+/* On a phone the hint goes, and a footer that held only the hint goes with it. */
 @media (width < 640px) {
-  .crewlet-composer__hint {
+  .crewlet-composer__hint,
+  .crewlet-composer__footer[data-hint-only] {
     display: none;
   }
 }

@@ -48,9 +48,10 @@
  * are counter-scaled by the zoom, so a board's label is readable, its edge is
  * a hairline and its handle is a full pointer target whatever the zoom, while
  * the board itself scales with the canvas. What a board says is held to the
- * room it is drawn in (`boardRoom`): a name too narrow to read is not drawn,
+ * room it is drawn in: a name with too little room is shortened to a few
+ * letters, then to the board's number, and only then left out (`boardName`),
  * and a placeholder drops the lines it has no room for rather than spill them
- * over the boards beside it.
+ * over the boards beside it (`boardRoom`).
  */
 
 import {
@@ -518,24 +519,62 @@ const sameSelection = (a: Selection | null, b: Selection | null) =>
   a === b || (a !== null && b !== null && a.kind === b.kind && a.id === b.id);
 
 /**
- * WHAT A BOARD HAS ROOM TO SAY, from its size on screen.
- *
- * `title` is whether its name is drawn above it: a name narrower than a few
- * letters reads as a stray mark, so a board drawn narrower than
- * [BOARD_TITLE_MIN_WIDTH] goes unnamed until it is zoomed into. `lines` is how
- * many of a placeholder's two lines (its size, then why it is not running) fit
- * inside it at the chrome's own type, so the lines it has no room for are left
- * out rather than clipped at both ends.
+ * WHAT A BOARD'S PLACEHOLDER HAS ROOM TO SAY, from its size on screen: how
+ * many of its two lines (its size, then why it is not running) fit inside it
+ * at the chrome's own type, so the lines it has no room for are left out
+ * rather than clipped at both ends.
  */
-export function boardRoom(width: number, height: number): { title: boolean; lines: 0 | 1 | 2 } {
-  const title = width >= BOARD_TITLE_MIN_WIDTH;
-  if (width >= PLACEHOLDER_FULL.width && height >= PLACEHOLDER_FULL.height) return { title, lines: 2 };
-  if (width >= PLACEHOLDER_SIZE.width && height >= PLACEHOLDER_SIZE.height) return { title, lines: 1 };
-  return { title, lines: 0 };
+export function boardRoom(width: number, height: number): { lines: 0 | 1 | 2 } {
+  if (width >= PLACEHOLDER_FULL.width && height >= PLACEHOLDER_FULL.height) return { lines: 2 };
+  if (width >= PLACEHOLDER_SIZE.width && height >= PLACEHOLDER_SIZE.height) return { lines: 1 };
+  return { lines: 0 };
 }
 
-/** The narrowest a board is drawn, in screen pixels, with its name above it. */
-export const BOARD_TITLE_MIN_WIDTH = 40;
+/**
+ * WHAT A BOARD IS CALLED ABOVE IT, from the room its name row has on screen
+ * (`room`, in screen pixels: the board's width, less what the row's other
+ * controls take).
+ *
+ * Its name, while at least [BOARD_NAME_MIN_CHARS] letters and an ellipsis
+ * fit, so a shortened name still says which board it is ("Hom..." rather than
+ * "H..." or a lone ellipsis); `whole` is false once the name may be shortened,
+ * so the full name can be offered as a tooltip. Narrower than that, its place
+ * in the design ("3"), which a reader can count to and which stays legible
+ * down to a single digit's width. Narrower still, nothing: a mark that narrow
+ * reads as a stray scratch. The name row is counter-scaled, so the type is the
+ * same size at every zoom and only the room changes.
+ */
+export function boardName(
+  title: string,
+  position: number,
+  room: number,
+): { text: string; whole: boolean } | null {
+  const letters = Array.from(title).length;
+  if (room >= (Math.min(letters, BOARD_NAME_MIN_CHARS) + 1) * NAME_GLYPH_PX) {
+    return { text: title, whole: room >= letters * NAME_GLYPH_PX };
+  }
+  const number = String(position);
+  if (room >= number.length * NAME_GLYPH_PX) return { text: number, whole: false };
+  return null;
+}
+
+/** The fewest letters a shortened board name keeps before its ellipsis. */
+export const BOARD_NAME_MIN_CHARS = 3;
+
+/**
+ * A board name's glyph at its extra small type (12px), in screen pixels, on
+ * the generous side of the face's average so a wide letter ("m", "W") still
+ * fits the room it is counted in.
+ */
+const NAME_GLYPH_PX = 9;
+
+/**
+ * What the name row gives its other parts, in screen pixels: a move handle's
+ * end padding and edge (its start is taken back by a margin), and the open
+ * control with the gap before it, which a touch screen always draws.
+ */
+const HANDLE_END = 9;
+const OPEN_CONTROL = 30;
 
 /**
  * The least a placeholder needs, in screen pixels, for its size line alone,
@@ -796,16 +835,21 @@ export function CanvasBoard({
         ref={canvas}
       >
         <div className="crewlet-canvas-board__layer" style={zoomVar}>
-          {drawnBoards.map((b) => {
+          {drawnBoards.map((b, index) => {
             const isLive = live.has(b.id);
             const isActive = !editable && active === b.id && isLive;
             const chosen = isSelected('board', b.id);
             const room = boardRoom(b.w * view.k, b.h * view.k);
+            const name = boardName(
+              b.title,
+              index + 1,
+              b.w * view.k - (editable ? HANDLE_END : 0) - (onOpen ? OPEN_CONTROL : 0),
+            );
             return (
               <section
                 key={b.id}
                 className="crewlet-canvas-board__board"
-                data-untitled={!room.title || undefined}
+                data-untitled={!name || undefined}
                 data-live={isLive || undefined}
                 data-active={isActive || undefined}
                 data-selected={chosen || undefined}
@@ -819,10 +863,11 @@ export function CanvasBoard({
                       className="crewlet-canvas-board__title crewlet-canvas-board__handle"
                       aria-label={text.move(b.title)}
                       aria-pressed={chosen}
+                      title={name?.whole === false ? b.title : undefined}
                       onFocus={() => setSelected({ kind: 'board', id: b.id })}
                       {...boardGestures.handle(b.id, 'move', b)}
                     >
-                      {b.title}
+                      {name?.text ?? b.title}
                     </button>
                   ) : (
                     // The name selects its board, as a press on the board
@@ -831,9 +876,10 @@ export function CanvasBoard({
                     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
                     <span
                       className="crewlet-canvas-board__title"
+                      title={name?.whole === false ? b.title : undefined}
                       onClick={() => setSelected({ kind: 'board', id: b.id })}
                     >
-                      {b.title}
+                      {name?.text ?? b.title}
                     </span>
                   )}
                   {onOpen && (

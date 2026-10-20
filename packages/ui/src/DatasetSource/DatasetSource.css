@@ -135,9 +135,29 @@ button.crewlet-dataset-source__summary:focus-visible {
   color: var(--color-feedback-warning-ink);
 }
 
+/*
+ * AN OPEN ENTRY IS ONE CARD: a frame around the summary and the preview, the
+ * summary its head. The head lies over the frame's own edge (a pixel out on
+ * three sides), so its selected boundary is the card's top and a single
+ * line. The preview is a well under it, inset on the summary's padding, so
+ * the figures in it (cards of their own) stand on a ground that is plainly
+ * the source's rather than the rail's.
+ */
+.crewlet-dataset-source--open {
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-border-default);
+  background: var(--color-surface-inset);
+}
+
+.crewlet-dataset-source--open > .crewlet-dataset-source__summary {
+  width: calc(100% + 2px);
+  margin: -1px -1px 0;
+}
+
 .crewlet-dataset-source__preview {
   min-width: 0;
-  padding: var(--spacing-2) var(--spacing-3) var(--spacing-3);
+  padding: var(--spacing-3);
 }
 
 .crewlet-dataset-source-list {

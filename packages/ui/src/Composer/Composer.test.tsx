@@ -7,6 +7,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installAtWidth } from '../../../../apps/ui-tests/src/cascade.js';
 import { COMPOSER_COUNTER_AT, Composer } from './index.js';
 
 afterEach(cleanup);
@@ -56,6 +57,30 @@ test('the counter appears only near the limit', () => {
   expect(container.querySelector('.crewlet-composer__counter')).toBeNull();
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'x'.repeat(100 * COMPOSER_COUNTER_AT) } });
   expect(container.querySelector('.crewlet-composer__counter')!.textContent).toBe('80 / 100');
+});
+
+test('the footer is drawn only with something in it, and a phone drops one holding only the hint', () => {
+  const footer = (container: HTMLElement) => container.querySelector<HTMLElement>('.crewlet-composer__footer');
+  // Nothing to show: no strip at all.
+  const { container, rerender } = render(<Composer label="Brief" value="" onChange={() => {}} />);
+  expect(footer(container)).toBeNull();
+  // Only the hint: drawn at a desk, gone on a phone with the hint it held.
+  rerender(<Composer label="Brief" value="" onChange={() => {}} onSubmit={() => {}} />);
+  let uninstall = installAtWidth(1024, 'light', 'Composer/Composer.css');
+  expect(getComputedStyle(footer(container)!).display).toBe('flex');
+  uninstall();
+  uninstall = installAtWidth(390, 'light', 'Composer/Composer.css');
+  expect(getComputedStyle(footer(container)!).display).toBe('none');
+  // With actions beside the hint, a phone keeps the strip for them.
+  rerender(
+    <Composer label="Brief" value="" onChange={() => {}} onSubmit={() => {}} actions={<button type="button">Send</button>} />,
+  );
+  expect(getComputedStyle(footer(container)!).display).toBe('flex');
+  expect(getComputedStyle(container.querySelector('.crewlet-composer__hint')!).display).toBe('none');
+  // And the counter near the limit keeps it too.
+  rerender(<Composer label="Brief" value={'x'.repeat(9)} maxLength={10} onChange={() => {}} onSubmit={() => {}} />);
+  expect(getComputedStyle(footer(container)!).display).toBe('flex');
+  uninstall();
 });
 
 test('the actions sit in the footer', () => {

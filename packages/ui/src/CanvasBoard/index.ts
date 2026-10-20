@@ -1,11 +1,12 @@
 import './CanvasBoard.css';
 
 export {
-  BOARD_TITLE_MIN_WIDTH,
+  BOARD_NAME_MIN_CHARS,
   CanvasBoard,
   CANVAS_BOARD_MIN_ZOOM,
   CANVAS_NOTE_COLORS,
   TITLE_GLYPH_EM,
+  boardName,
   boardRoom,
   titleSize,
 } from './CanvasBoard.js';
