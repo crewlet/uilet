@@ -204,6 +204,25 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.36.0
+
+**A chosen option is calm, and the focus ring is the one accent line on a page.** Two tokens name what a chosen option draws: `--color-border-selected`, the accent at 0.6 (the full accent in a high-contrast theme), so a tint mixed toward its ground, and `--color-surface-selected`, the soft fill. Every component that marks a pick takes them, at one pixel, and pairs them with a mark of its own that clears 3:1, so the state never rests on the tint:
+
+- `ThemeGallery`: the chosen card's edge is the selected edge over the selected fill, and a check stands beside its name. It was a full accent border.
+- `SlideFilmstrip` and `SlideGrid`: the slide being edited keeps its one-pixel edge in the selected edge, with the selected fill as a 3px band outside it, and its number in the accent ink. It was a 2px ring in the full accent, the focus ring's weight and colour.
+- `DatasetSource`: the open source's edge and fill are the selected pair. It was the full accent.
+- `ChoiceList` and `LayersList`: the picked row stands on the selected fill. A layer used to take the accent rail of a current row (the outline's heading, the page in the rail), which beside a canvas read as a second selection; the rail's room is kept, and forced colours draw it in `Highlight`.
+- `SlideFilmstrip`'s focus ring grows outward from the thumbnail's edge. It sat on the inset offset, inside the thumbnail, where a dark slide swallowed it and tabbing through the strip showed nothing.
+- `CanvasBoard`: hover is one screen pixel of the selected edge, and a pick one crisp pixel of the full accent with its four corners. It was two pixels, so a picked board and the live board ([data-active], which keeps the 2px focus ring) read alike.
+
+**A field rings at 2px for the keyboard and at its own hairline for a pointer.** `trackFocusModality` (and `useFocusModality`, exported with `FOCUS_MODALITY_ATTRIBUTE`) writes `data-crewlet-focus="keyboard" | "pointer"` on the root: Tab, or any key pressed outside a text-entry control, is the keyboard, a pointer press is the pointer, and typing in a field is neither. Every field (`Input`, `Textarea`, `Select` and its search box, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `Composer`, `DocumentTitleField`) starts it while mounted, and an application may call `trackFocusModality()` at boot so the first key a reader presses is seen before any field mounts. A boxed field's ring is now 2px in `--color-focus` over its boundary, the area WCAG 2.2's focus appearance asks of a keyboard indicator, and narrows to the one-pixel hairline it always drew where a pointer put the caret. A document that tracks nothing keeps the 2px ring. `Input.test.tsx` holds every boxed ring to one narrowing rule.
+
+**`Composer` rings as a field does.** Its box takes the field ring above, keyed on the field so tabbing onto the send action shows that button's ring. It used to recolour its border to the accent and lay a 2px soft halo outside it: two highlights for one state.
+
+**`DocumentTitleField` underlines in a tint for a pointer and in two focus pixels for the keyboard.** The line along its foot is one pixel (the hairline under the pointer, the selected edge once a click has put the caret in it), and two pixels in the focus colour for the keyboard, drawn as the border and a shadow under it with a transparent outline that forced colours paint. The padding takes the pixel the border no longer reserves, so the title sits where it did. A page that focuses its title on load no longer draws a 2px accent bar under it before anybody has touched anything.
+
+A host has nothing to change. A host stylesheet that drew its own chosen state in `--color-brand-accent` can take the two tokens in its place, and one that drew a title underline of its own can follow `DocumentTitleField`.
+
 ## Changes in 0.35.1
 
 **A column given another type keeps only what every type has** (`SheetColumnEditor`, and `retypeColumn` in the sheet model). Its field, name, width, freezing, read-only flag and Required stay, and so does its length cap between text and long text, which both read it. Every other setting belongs to the old type and is dropped: a number's bounds, decimals and format, a choice's options, a date's time of day. The column is built up from what is kept rather than pared down from the old one, so a setting a type adds later is dropped without the editor having to name it. Before, a date's time of day and a text's length cap rode along, unseen, into a type that ignores them, and came back if the old type was picked again. A host that relied on a setting surviving a type change sets it again on the column it is handed.
