@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.35.0
+
+**A list marker alone on its line is an empty list item**, as CommonMark reads it: `-`, `*`, `+`, `1.`, `1)` and a task's `- [ ]` or `- [x]` with nothing after them, with or without the trailing space an editor strips. The grammar read a bare `1.` as text, so an outline whose trailing spaces were lost drew "1. 2. 3." inside a paragraph, in `RichEditor` and in every renderer alike. An empty item does not interrupt a paragraph, again as in CommonMark, so a lone `-` under a line of text stays that text's next line. Bodies that already round-tripped still do byte for byte, and the editor's corpus holds the bare forms (`bare-markers.md`).
+
 ## Changes in 0.34.1
 
 **`ArtifactKindGlyph`, `ARTIFACT_KINDS` and `ArtifactKind` have a module of their own** (`@crewlethq/ui/ArtifactKindGlyph`), and it imports nothing but the glyphs. They were defined in `ArtifactCard`'s module, and a bundler places a module whole, so a host that drew one kind glyph in its frame (a sidebar's pins, a command palette's hits) took the whole card into its first screen, and with 0.34.0 the kind illustrations the card draws: about 11 KB of script for a gallery the reader had not opened. Nothing is renamed: the root export and `@crewlethq/ui/ArtifactCard` still answer for all three, and `ArtifactIcon`, `ArtifactBar`, `DashboardCover` and `ArtifactKindIllustration` now import them from the new module.

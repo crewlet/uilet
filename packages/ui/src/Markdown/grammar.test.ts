@@ -86,6 +86,51 @@ describe('a list', () => {
     expect(parseMarkdown('* a\n* b')[0]).toEqual(expect.objectContaining({ marker: '*', loose: false }));
     expect(parseMarkdown('1) a\n\n2) b')[0]).toEqual(expect.objectContaining({ marker: ')', loose: true, ordered: true }));
   });
+
+  const empty = { checked: null, blocks: [] };
+
+  test.each(['-', '*', '+'])('reads a bare %s on its own line as an empty item', (marker) => {
+    expect(parseMarkdown(`${marker}\n${marker} b\n${marker}`)).toEqual([
+      {
+        kind: 'list',
+        ordered: false,
+        start: 1,
+        marker,
+        loose: false,
+        items: [empty, { checked: null, blocks: [{ kind: 'paragraph', text: 'b' }] }, empty],
+      },
+    ]);
+  });
+
+  test('reads bare numbers as empty items, with or without the space an editor strips', () => {
+    const list = { kind: 'list', ordered: true, start: 1, marker: '.', loose: false, items: [empty, empty, empty] };
+    expect(parseMarkdown('## Steps\n\n1.\n2.\n3.')).toEqual([{ kind: 'heading', level: 2, text: 'Steps' }, list]);
+    expect(parseMarkdown('1. \n2. \n3. ')).toEqual([list]);
+    expect(parseMarkdown('1)\n2)')[0]).toEqual(expect.objectContaining({ marker: ')', items: [empty, empty] }));
+  });
+
+  test('reads a bare task marker as an empty task, ticked or not', () => {
+    expect(parseMarkdown('- [ ]\n- [x]\n- [ ] ')[0]).toEqual(
+      expect.objectContaining({
+        items: [
+          { checked: false, blocks: [] },
+          { checked: true, blocks: [] },
+          { checked: false, blocks: [] },
+        ],
+      }),
+    );
+  });
+
+  test('does not let an empty item interrupt a paragraph, as CommonMark does not', () => {
+    expect(parseMarkdown('The total is\n-\nand more')).toEqual([{ kind: 'paragraph', text: 'The total is\n-\nand more' }]);
+    expect(parseMarkdown('Steps\n1.')).toEqual([{ kind: 'paragraph', text: 'Steps\n1.' }]);
+    // An item with text still starts a list under a paragraph, as it always did.
+    expect(parseMarkdown('Steps\n- one')[1]).toEqual(expect.objectContaining({ kind: 'list' }));
+  });
+
+  test('keeps a marker joined to its text as text', () => {
+    expect(parseMarkdown('-x\n1.5 litres')).toEqual([{ kind: 'paragraph', text: '-x\n1.5 litres' }]);
+  });
 });
 
 describe('the spans of a body', () => {
