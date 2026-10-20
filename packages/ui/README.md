@@ -261,6 +261,10 @@ Measured on a gallery of 44 cards at 1440 by 900, scrolling down and back at rea
 
 **`createLivePreviewBudget().request` answers a slot** (`LivePreviewSlot`: `release`, `drawn`, `park` and `resume`) in place of a give-back function, and takes the holder's `reclaim` and whether it is a `frame`. `drawn()` ends a render: it gives a page's slot back for good and keeps a frame among the frames. A host that called the answer to give a slot back calls `release()`.
 
+### Artifact kit
+
+**A kit sheet reads the page's capabilities again once the runtime's handshake lands** (`@crewlethq/artifact-kit`: `<crewlet-sheet>`, `mountSheet`). Before the handshake the runtime answers `capabilities.has` from what the origin told it as the page loaded, and from the handshake on the host's word is the authority. The sheet read the answer once, when it was first drawn, and kept it, so a sheet drawn on one answer and handed another by the handshake kept the first: a page whose host said `db` at the handshake could still show "This sheet cannot load" for good. The sheet now reads the declaration again when `ready` resolves, its subscriptions following what it reads, and says a page has no datastore only once the handshake has said so; before then it draws nothing. `mountSheet` and the element still wait for the handshake before they draw, so a page sees no change unless a host's handshake disagrees with what its page loaded with.
+
 ### Smaller fixes
 
 **A framed slide keeps its edge on the dark theme** (`SlideStage` with `framed`). The slide's outline takes `--color-border-strong` rather than `--color-border-default`. On the dark theme the default border is a step off the page, so a dark slide (most themes are dark) on a dark page drew no edge and read as a hole in the page; the strong border is the third step of the ramp and clears the page in both themes. Hosts that recolour the outline for a marked stage are unchanged.
