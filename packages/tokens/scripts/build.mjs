@@ -65,6 +65,18 @@ const NODE_HUES = ['purple', 'cyan', 'green', 'amber', 'rose', 'blue'];
 // its r, g, b to the accent's.
 const ACCENT_LINE_ALPHA = 0.32;
 
+// THE SELECTED EDGE, `border.selected`: the one-pixel line round a chosen
+// option (a theme card, the slide being edited, a starting template), drawn
+// as the accent at this alpha so it is the accent mixed toward whatever
+// ground it lands on. It replaced the full accent, which on a page of options
+// read as the loudest edge on the screen and as a second focus ring beside the
+// real one. It is a TINT, so it is never the state's only cue: every selected
+// component pairs it with the soft fill or a mark of its own that clears 3:1,
+// and the palette suite holds it to reading apart from the resting hairline.
+// A high-contrast theme draws it as the full accent instead, because a tint
+// is the opposite of what that theme promises its reader.
+const SELECTED_EDGE_ALPHA = 0.6;
+
 // The theme that paints the bare root. Every other theme paints under its own
 // data-palette attribute, so a document that names none gets this one, and an
 // application that never adopts the attribute is unchanged.
@@ -101,7 +113,7 @@ async function readBaseTokens() {
  * Add the soft and line steps a palette's own fills imply. The fill is the one
  * source: every tint follows it, in every palette, without a second edit.
  */
-function deriveTints(tokens, where) {
+function deriveTints(tokens, where, { contrast = 'standard' } = {}) {
   const fill = (group, name) => {
     const token = tokens.color?.[group]?.[name];
     if (token === undefined) throw new Error(`${where}: color.${group}.${name} is missing, and its soft tint is derived from it`);
@@ -120,6 +132,9 @@ function deriveTints(tokens, where) {
   if (accent === null) throw new Error(`${where}: color.brand.accent is "${fill('brand', 'accent')}"; the accent is authored as #rrggbb, and its companions are derived from it`);
   tokens.color.brand.accentRgb = { value: `${accent.r}, ${accent.g}, ${accent.b}` };
   tokens.color.brand.accentSoftStrong = { value: withAlpha(fill('brand', 'accent'), ACCENT_LINE_ALPHA) };
+  tokens.color.border.selected = {
+    value: contrast === 'high' ? fill('brand', 'accent') : withAlpha(fill('brand', 'accent'), SELECTED_EDGE_ALPHA),
+  };
   return tokens;
 }
 
@@ -173,7 +188,7 @@ async function readThemes() {
     const meta = validateThemeMeta(await readTokenFile(resolve(dir, 'theme.json')), id, groups);
     const read = async (mode) => {
       const where = `tokens/themes/${id}/${mode}.json`;
-      return validate(deriveTints(await readTokenFile(resolve(dir, `${mode}.json`)), where), where);
+      return validate(deriveTints(await readTokenFile(resolve(dir, `${mode}.json`)), where, { contrast: meta.contrast }), where);
     };
     palettes.push({ id, meta, light: await read('light'), dark: await read('dark') });
   }

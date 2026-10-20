@@ -71,8 +71,14 @@
  * leave the other bare.
  */
 .crewlet-select:focus-within {
-  outline: 1px solid var(--color-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: -1px;
+}
+
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
+:root[data-crewlet-focus='pointer'] .crewlet-select:focus-within {
+  outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 /*
@@ -130,6 +136,10 @@
    covers the boundary, so a focus-coloured one would paint out the refusal.
    See Input.css. */
 .crewlet-select.is-error:focus-within {
+  outline-color: var(--color-feedback-danger);
+}
+
+:root[data-crewlet-focus='pointer'] .crewlet-select.is-error:focus-within {
   outline-color: var(--color-feedback-danger);
 }
 
@@ -426,8 +436,14 @@ svg.crewlet-select__chevron {
  * outset ring on the input would be cut by the menu's own `overflow: hidden`.
  */
 .crewlet-select__search:focus-within {
-  outline: 1px solid var(--color-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: -1px;
+}
+
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
+:root[data-crewlet-focus='pointer'] .crewlet-select__search:focus-within {
+  outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-select__search {

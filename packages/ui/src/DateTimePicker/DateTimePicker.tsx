@@ -18,6 +18,7 @@ import {
 import { IconButton } from '../IconButton/index.js';
 import { Popover } from '../Popover/index.js';
 import { cx } from '../utils/cx.js';
+import { useFocusModality } from '../utils/focusModality.js';
 
 export interface DateTimePickerProps {
   /** YYYY-MM-DDTHH:MM:SS, as `<input type="datetime-local" step="1">` emits. Empty when unset. */
@@ -211,6 +212,7 @@ export function DateTimePicker({
   size = 'md',
   labels: labelOverrides,
 }: DateTimePickerProps) {
+  useFocusModality();
   const labels = useMemo(
     () => (labelOverrides ? { ...DEFAULT_DATE_TIME_PICKER_LABELS, ...labelOverrides } : DEFAULT_DATE_TIME_PICKER_LABELS),
     [labelOverrides],

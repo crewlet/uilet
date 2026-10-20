@@ -81,9 +81,13 @@
   cursor: not-allowed;
 }
 
+/* The selected fill, and the accent's lighter line rather than the selected
+   edge: on a pill this small the 0.6 edge, the fill and the accent ink were
+   three accent marks on one word. The ink is the mark that clears 4.5:1, and
+   the keyboard's 2px focus ring stays the only full-weight line. */
 .crewlet-filter-chip[aria-pressed='true'],
 .crewlet-filter-chip[aria-checked='true'] {
-  background: var(--color-brand-accent-soft);
+  background: var(--color-surface-selected);
   border-color: var(--color-brand-accent-soft-strong);
   color: var(--color-brand-accent-ink);
 }

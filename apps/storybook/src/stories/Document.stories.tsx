@@ -174,3 +174,25 @@ export const TitleField: Story = {
     );
   },
 };
+
+/**
+ * A long title on a phone's width WRAPS, as the title it becomes does, rather
+ * than being cut at the field's edge; so does a long example in its
+ * placeholder. Enter adds no line, and a pasted line break arrives as a space.
+ */
+export const TitleFieldWraps: Story = {
+  render: function Render(args) {
+    const [title, setTitle] = useState('Weekly planning, October: what shipped, what slipped and what is next');
+    return (
+      <article style={{ maxWidth: 358 }}>
+        <DocumentTitleField aria-label="Title" placeholder="Untitled" value={title} onChange={(event) => setTitle(event.target.value)} />
+        <div style={{ height: 'var(--spacing-5)' }} />
+        <DocumentTitleField aria-label="Second title" placeholder="Weekly planning, October 20: decisions and owners" defaultValue="" />
+        <div style={{ height: 'var(--spacing-5)' }} />
+        <Document {...args}>
+          <p>Narrowed to a phone's column. Paste text with line breaks into either title to see them become spaces.</p>
+        </Document>
+      </article>
+    );
+  },
+};

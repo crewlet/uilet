@@ -75,6 +75,8 @@ export const TINT_HUE_RANGE: number;
 export const ACCENT_OVER_TINT: number;
 /** The floors a high-contrast theme is held to on top of the table. */
 export const HIGH_CONTRAST: { readonly text: number; readonly ink: number; readonly muted: number; readonly hairline: number };
+/** How far the selected edge sits from a hairline, in OKLab dE, on every rung. */
+export const SELECTED_EDGE_SEPARATION: number;
 
 /** One line per failing check, for an assertion message. */
 export function describeFailure(check: PaletteCheck): string;
