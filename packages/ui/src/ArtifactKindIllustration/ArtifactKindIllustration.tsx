@@ -123,8 +123,8 @@ const DRAWINGS: Readonly<Record<ArtifactKind, ReactNode>> = {
 
 /**
  * A kind's drawing on its tinted ground: the stand-in a preview shows while
- * nothing live is drawn (off screen, still loading, over the live budget,
- * failed or empty), and the face of a Make something new tile.
+ * nothing live is drawn (never yet near, still loading, over the live budget,
+ * failed or empty), and the face of a kind tile.
  */
 export function ArtifactKindGround({
   kind,
@@ -145,7 +145,7 @@ export function ArtifactKindGround({
 
 export interface ArtifactKindTileProps {
   kind: ArtifactKind;
-  /** The kind's name, under the tile: "Docs". */
+  /** The name under the tile: "Docs", or a starting point's "Landing page". */
   label: string;
   /** Where starting one goes. Left out with `disabledReason`, the tile starts nothing. */
   href?: string | undefined;
@@ -177,9 +177,11 @@ export interface ArtifactKindTileProps {
 }
 
 /**
- * One kind on a "Make something new" row: the kind's drawing on its tinted
- * ground, framed, with its name under it. The whole tile is one link named by
- * the kind's name.
+ * One kind, or one starting point of a kind, as a tile: the kind's drawing on
+ * its tinted ground (or the starting point's own `face`), framed, with its
+ * name under it, such as a create page's starting layouts. The whole tile is
+ * one link or button named by the name. The gallery's Make something new row
+ * is the quieter `ArtifactMakeRow`, a toolbar of glyphs rather than pictures.
  *
  * A TILE THAT CANNOT START is still a stop on the row, so a reader moving
  * through it by keyboard hears why (`disabledReason`) rather than finding a

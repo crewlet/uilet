@@ -48,13 +48,16 @@ export const ScaledPage: Story = {
 };
 
 /**
- * THE BUDGET: twenty-four previews in a scroller with a budget of four.
- * Only the boxes near the scroller's viewport that are granted a slot draw
- * live; the rest draw the kind's stand-in, and scrolling hands the slots on.
+ * THE BUDGET: twenty-four previews in a scroller with a budget of eight. A
+ * box starts drawing a little before the scroller shows it, and one the
+ * scroller carries away stays drawn: its slot is taken back only when a box
+ * coming into view needs it, and then what it drew is kept as a still copy.
+ * Scroll down and back up: every box is as it was, and none shows its
+ * stand-in fading back into content.
  */
 export const Budget: Story = {
   render: () => (
-    <LivePreviewBudgetProvider max={4}>
+    <LivePreviewBudgetProvider max={8}>
       <div style={{ height: 420, overflow: 'auto', display: 'grid', gridTemplateColumns: 'repeat(3, 240px)', gap: 16, padding: 4 }}>
         {Array.from({ length: 24 }, (_, i) => (
           <div key={i} style={{ ...box, width: 240 }}>

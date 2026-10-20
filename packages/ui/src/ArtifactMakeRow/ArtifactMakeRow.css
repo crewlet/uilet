@@ -1,0 +1,167 @@
+/*
+ * The Make something new tray.
+ *
+ * Every colour is a token: the tray's ground, its dots and its hairlines are
+ * the surface and border steps, and each kind's mark reads the kind's own
+ * Fill, Line and Ink (`ArtifactKinds.css`), so the tray repaints with the
+ * theme and holds no colour of its own.
+ *
+ * THE TRAY SIZES ITSELF BY ITS OWN WIDTH, never the window's: it sits in a
+ * page column a sidebar narrows, so three steps are container queries on the
+ * tray. Under 560px three across in two lines; from 560px the six in one
+ * line, each its mark over its name, so a long name is never cut; from 920px
+ * the mark beside the name and what the kind is for under it.
+ */
+
+.crewlet-make-row {
+  container-type: inline-size;
+  /* A WORKBENCH: the canvas's dotted field on the sheet itself, one step
+     quieter than a canvas that pans, inside a hairline ring. */
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-background);
+  background-image: radial-gradient(var(--color-border-default) 1px, transparent 1.2px);
+  background-size: var(--spacing-4) var(--spacing-4);
+  background-position: calc(var(--spacing-4) / 2) calc(var(--spacing-4) / 2);
+}
+
+.crewlet-make-row__list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: var(--spacing-1);
+  list-style: none;
+}
+
+.crewlet-make-row__cell {
+  display: flex;
+  min-width: 0;
+}
+
+.crewlet-make-row__item {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--spacing-3) var(--spacing-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  outline: none;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-out),
+    border-color var(--motion-duration-fast) var(--motion-easing-out),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+/* THE GLYPH ON ITS KIND'S TINT, the one coloured thing in the item. */
+.crewlet-make-row__mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--crewlet-kind-fill);
+  box-shadow: inset 0 0 0 1px var(--crewlet-kind-line);
+  color: var(--crewlet-kind-ink);
+}
+
+.crewlet-make-row__words {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.crewlet-make-row__name,
+.crewlet-make-row__detail {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-make-row__name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+/* WHAT IT IS FOR is the widest step's: on a narrower tray the name alone
+   says it, and the details are kept as the item's description. */
+.crewlet-make-row__detail {
+  display: none;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+}
+
+@container (width >= 560px) {
+  .crewlet-make-row__list {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .crewlet-make-row__item {
+    padding: var(--spacing-2) var(--spacing-1);
+  }
+}
+
+@container (width >= 920px) {
+  .crewlet-make-row__item {
+    flex-direction: row;
+    gap: var(--spacing-3);
+    padding: var(--spacing-2);
+  }
+
+  .crewlet-make-row__words {
+    align-items: flex-start;
+  }
+
+  .crewlet-make-row__detail {
+    display: block;
+  }
+}
+
+/* AN ITEM LIFTS OFF THE BENCH under the pointer as a card: the card's
+   ground, the hairline a card is found by and the lightest shadow, and
+   nothing inside it moves. */
+a.crewlet-make-row__item:hover {
+  border-color: var(--color-border-default);
+  background-color: var(--color-surface-subtle);
+  box-shadow: var(--shadow-xs);
+}
+
+a.crewlet-make-row__item:active {
+  background-color: var(--color-surface-pressed);
+  box-shadow: none;
+}
+
+/* ON ITS OWN EDGE: an item draws a hairline once lifted, so the ring sits on
+   it rather than standing off it with a gap between two edges. */
+.crewlet-make-row__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-make-row__item--disabled {
+  cursor: not-allowed;
+}
+
+.crewlet-make-row__item--disabled .crewlet-make-row__mark,
+.crewlet-make-row__item--disabled .crewlet-make-row__words {
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-make-row__item {
+    transition: none;
+  }
+}
