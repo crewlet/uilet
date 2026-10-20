@@ -7,6 +7,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { DatasetSource, DatasetSourceList } from './index.js';
 
 afterEach(cleanup);
@@ -95,6 +96,35 @@ test('with onSelect it is a toggle named in words, and the preview sits outside 
   const preview = screen.getByRole('group', { name: 'Spend' });
   expect(preview.textContent).toBe('preview');
   expect(button.contains(preview)).toBe(false);
+});
+
+test('an open entry frames its summary and its preview as one card', () => {
+  const uninstall = installSheets('DatasetSource/DatasetSource.css');
+  const preview = <p>figures</p>;
+  const { container, rerender } = render(
+    <DatasetSource title="Spend" kind="store" definition="spend" status="live" onSelect={() => {}} selected>
+      {preview}
+    </DatasetSource>,
+  );
+  const entry = container.querySelector<HTMLElement>('.crewlet-dataset-source')!;
+  const summary = entry.querySelector<HTMLElement>('.crewlet-dataset-source__summary')!;
+  // The frame holds both, and the head lies over its edge so the two
+  // boundaries draw as one line rather than a doubled one.
+  expect(entry.contains(screen.getByRole('group', { name: 'Spend' }))).toBe(true);
+  expect(getComputedStyle(entry).borderTopStyle).toBe('solid');
+  expect(px(entry, 'border-top-width')).toBe(1);
+  expect(px(summary, 'margin-top')).toBe(-1);
+  expect(px(summary, 'margin-left')).toBe(-1);
+  // Selected with nothing to preview, or closed, there is no frame.
+  rerender(<DatasetSource title="Spend" kind="store" definition="spend" status="live" onSelect={() => {}} selected />);
+  expect(getComputedStyle(entry).borderTopStyle).not.toBe('solid');
+  rerender(
+    <DatasetSource title="Spend" kind="store" definition="spend" status="live" onSelect={() => {}}>
+      {preview}
+    </DatasetSource>,
+  );
+  expect(getComputedStyle(entry).borderTopStyle).not.toBe('solid');
+  uninstall();
 });
 
 test('a refusal says why and counts no rows, and a failure falls back to the default words', () => {
