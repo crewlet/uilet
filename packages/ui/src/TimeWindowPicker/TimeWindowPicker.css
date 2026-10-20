@@ -51,10 +51,11 @@
   outline-offset: -1px;
 }
 
-/* Narrowed for a pointer, as the text box's ring is. See Input.css. */
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
 :root[data-crewlet-focus='pointer'] .crewlet-time-window:focus-visible,
 :root[data-crewlet-focus='pointer'] .crewlet-time-window.is-open {
   outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-time-window.is-disabled,
@@ -328,9 +329,10 @@ svg.crewlet-time-window__tick {
   outline-offset: -1px;
 }
 
-/* Narrowed for a pointer, as the text box's ring is. See Input.css. */
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
 :root[data-crewlet-focus='pointer'] .crewlet-time-window__masked:has(.crewlet-time-window__masked-input:focus-visible) {
   outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-time-window__masked-input {

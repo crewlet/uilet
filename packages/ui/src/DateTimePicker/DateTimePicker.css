@@ -55,10 +55,11 @@
   outline-offset: -1px;
 }
 
-/* Narrowed for a pointer, as the text box's ring is. See Input.css. */
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
 :root[data-crewlet-focus='pointer'] .crewlet-datetime:focus-visible,
 :root[data-crewlet-focus='pointer'] .crewlet-datetime.is-open {
   outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-datetime.is-disabled,
@@ -187,9 +188,10 @@ svg.crewlet-datetime__chevron {
   outline-offset: -1px;
 }
 
-/* Narrowed for a pointer, as the text box's ring is. See Input.css. */
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
 :root[data-crewlet-focus='pointer'] .crewlet-datetime__time-input:focus-visible {
   outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-datetime__footer {

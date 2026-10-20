@@ -29,6 +29,7 @@
 
 :root[data-crewlet-focus='pointer'] .crewlet-composer:has(.crewlet-composer__field:focus-visible) {
   outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-composer .crewlet-composer__field {

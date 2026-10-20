@@ -383,7 +383,11 @@ test('one element draws the ring, and it is the one a reader reads as the field'
    * So a new entry here is the question "is this drawn inside another ring?"
    * being asked, which is the only thing that stops the answer being two.
    */
+  // A pointer's narrowing (`:root[data-crewlet-focus='pointer'] …`) restyles
+  // a ring listed here and draws none of its own, so it is not counted: the
+  // test above holds every one of them to that.
   const ringed = focusRules()
+    .filter((rule) => !rule.selector.startsWith(':root'))
     .filter((rule) => rule.declared.has('outline') || rule.declared.has('outline-color'))
     .map((rule) => rule.selector)
     .sort();
@@ -477,26 +481,36 @@ test('one element draws the ring, and it is the one a reader reads as the field'
   expect(drawnOnNothing).toEqual([]);
 });
 
-test('a boxed ring narrows to the hairline where a pointer put the caret, and nowhere else', () => {
+test('a boxed ring narrows to a tinted hairline where a pointer put the caret, and nowhere else', () => {
   /*
    * THE KEYBOARD'S RING IS THE DEFAULT, and the pointer's is a narrowing of
    * it rather than a ring of its own: a rule under `data-crewlet-focus` that
-   * sets the WIDTH alone, so it cannot move the ring, recolour it or draw a
-   * second one. Every boxed field has exactly one, and nothing else does: a
-   * checkbox, a switch and a chip ring outside or inside themselves at 2px,
-   * and are reached by a pointer only through a press the platform already
-   * keeps off :focus-visible.
+   * sets the WIDTH and the COLOUR alone, so it cannot move the ring or draw a
+   * second one. One pixel in the selected edge, the accent mixed toward the
+   * page: the reader put the caret there and is looking at it, and a page that
+   * focuses its first field on load drew the focus colour round it before
+   * anybody had touched a key. Every boxed field has exactly one, and nothing
+   * else does: a checkbox, a switch and a chip ring outside or inside
+   * themselves at 2px, and are reached by a pointer only through a press the
+   * platform already keeps off :focus-visible.
+   *
+   * A REFUSED FIELD KEEPS ITS COLOUR under a pointer too, by a rule of its
+   * own that says nothing but the danger colour.
    */
   const pointer = ":root[data-crewlet-focus='pointer'] ";
-  const narrowed = sheetRules()
-    .filter((rule) => rule.selector.startsWith(pointer))
+  const under = sheetRules().filter((rule) => rule.selector.startsWith(pointer));
+  const strip = (rule: RingRule) =>
+    rule.selector
+      .split(',')
+      .map((part) => part.trim().slice(pointer.length))
+      .join(', ');
+  const narrowed = under
+    .filter((rule) => !rule.selector.includes('.is-error'))
     .map((rule) => {
-      expect([...rule.declared.keys()], rule.selector).toEqual(['outline-width']);
+      expect([...rule.declared.keys()], rule.selector).toEqual(['outline-width', 'outline-color']);
       expect(rule.declared.get('outline-width'), rule.selector).toBe('1px');
-      return rule.selector
-        .split(',')
-        .map((part) => part.trim().slice(pointer.length))
-        .join(', ');
+      expect(rule.declared.get('outline-color'), rule.selector).toBe('var(--color-border-selected)');
+      return strip(rule);
     })
     .sort();
   const boxed = focusRules()
@@ -506,6 +520,17 @@ test('a boxed ring narrows to the hairline where a pointer put the caret, and no
     .sort();
   expect(boxed.length).toBeGreaterThan(5);
   expect(narrowed).toEqual(boxed);
+  const refused = under.filter((rule) => rule.selector.includes('.is-error'));
+  expect(refused.map(strip).sort()).toEqual(
+    [
+      '.crewlet-input.is-error:has(.crewlet-input__control:focus-visible)',
+      '.crewlet-select.is-error:focus-within',
+      '.crewlet-textarea.is-error:focus-visible',
+    ].sort(),
+  );
+  for (const rule of refused) {
+    expect([...rule.declared.entries()], rule.selector).toEqual([['outline-color', 'var(--color-feedback-danger)']]);
+  }
 });
 
 test('every field rings on one geometry, and a boxed one rings on its own boundary', () => {
@@ -565,7 +590,7 @@ test('every field rings on one geometry, and a boxed one rings on its own bounda
    * same place, so "here" and "refused" stay one edge rather than two.
    */
   const refused = focusRules()
-    .filter((rule) => rule.selector.includes('.is-error'))
+    .filter((rule) => rule.selector.includes('.is-error') && !rule.selector.startsWith(':root'))
     .map((rule) => `${rule.selector} | ${rule.declared.get('outline-color')}`)
     .sort();
   expect(refused).toEqual(

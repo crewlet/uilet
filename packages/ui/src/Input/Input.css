@@ -119,11 +119,15 @@
  * well, and a reader who put the caret there with a pointer is already looking
  * at it, so where the document says the last move was a pointer
  * (`data-crewlet-focus`, kept by `trackFocusModality`, which every field
- * starts) the ring is the field's own hairline in the focus colour, as it
- * always was. A document that tracks nothing keeps the keyboard's ring.
+ * starts) the ring is one pixel in the selected edge, the accent mixed toward
+ * the page: a page that focuses its first field on load drew the focus colour
+ * round it before anybody had touched a key. A refused field keeps its own
+ * colour under a pointer too (below). A document that tracks nothing keeps
+ * the keyboard's ring.
  */
 :root[data-crewlet-focus='pointer'] .crewlet-input:has(.crewlet-input__control:focus-visible) {
   outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-input.is-error {
@@ -143,6 +147,10 @@
  * --color-feedback-danger to 3:1 on every surface a mark can be drawn on.
  */
 .crewlet-input.is-error:has(.crewlet-input__control:focus-visible) {
+  outline-color: var(--color-feedback-danger);
+}
+
+:root[data-crewlet-focus='pointer'] .crewlet-input.is-error:has(.crewlet-input__control:focus-visible) {
   outline-color: var(--color-feedback-danger);
 }
 
@@ -386,9 +394,10 @@
   outline-offset: -1px;
 }
 
-/* Narrowed for a pointer, as the text box's ring is. See Input.css. */
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
 :root[data-crewlet-focus='pointer'] .crewlet-textarea:focus-visible {
   outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-textarea.is-error {
@@ -396,6 +405,10 @@
 }
 
 .crewlet-textarea.is-error:focus-visible {
+  outline-color: var(--color-feedback-danger);
+}
+
+:root[data-crewlet-focus='pointer'] .crewlet-textarea.is-error:focus-visible {
   outline-color: var(--color-feedback-danger);
 }
 

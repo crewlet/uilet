@@ -11,6 +11,7 @@ import {
 } from "react";
 import { VisuallyHidden } from "../VisuallyHidden/index.js";
 import { cx } from "../utils/cx.js";
+import { useFocusModality } from "../utils/focusModality.js";
 
 /** How a marked line reads: a refusal, or advice. */
 export type SourceMarkTone = "danger" | "warning";
@@ -129,6 +130,7 @@ export const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
     },
     ref,
   ) {
+    useFocusModality();
     const field = useRef<HTMLTextAreaElement>(null);
     const tabLeaves = useRef(false);
     const keysId = useId();
