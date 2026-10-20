@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { SheetGrid, SheetPendingEdits, type SheetEdit, type SheetRow, type SheetSort } from '@crewlethq/ui';
+import { SheetColumnEditor, SheetGrid, SheetPendingEdits, type SheetColumn, type SheetEdit, type SheetRow, type SheetSort } from '@crewlethq/ui';
 import { SHEET_COLUMNS, SHEET_PEOPLE, SHEET_PRESENCE, SHEET_ROWS, manyRows } from '../fixtures/sheet.js';
 
 const meta: Meta<typeof SheetGrid> = {
@@ -311,4 +311,93 @@ export const FittedColumns: Story = {
       ]}
     />
   ),
+};
+
+/**
+ * A sheet shaped in place: a press on a header (or Enter on it) opens that
+ * column's settings in a popover, and Add column, after the last header,
+ * appends one and opens it. Every change redraws the grid at once, which is
+ * how a new sheet is shaped before it is made.
+ */
+function ShapingSheet() {
+  const [columns, setColumns] = useState<SheetColumn[]>([
+    { field: 'item', label: 'Item', type: 'text', frozen: true, required: true },
+    { field: 'owner', label: 'Owner', type: 'person' },
+  ]);
+  const [rows, setRows] = useState<SheetRow[]>([
+    { id: 'r1', values: { item: 'Pricing page copy', owner: 'seat:maya' } },
+    { id: 'r2', values: { item: 'Status page', owner: null } },
+  ]);
+  const [open, setOpen] = useState<string | null>(null);
+  const counter = useRef(columns.length);
+  return (
+    <SheetGrid
+      label="Launch checklist"
+      columns={columns}
+      rows={rows}
+      people={SHEET_PEOPLE}
+      fit="content"
+      onEdit={(edits) => setRows((now) => apply(now, edits))}
+      onAddRow={() => setRows((now) => [...now, { id: `r${now.length + 1}`, values: {} }])}
+      settingsColumn={open}
+      onSettingsColumnChange={setOpen}
+      onAddColumn={() => {
+        counter.current += 1;
+        const field = `column_${counter.current}`;
+        setColumns((now) => [...now, { field, label: `Column ${counter.current}`, type: 'text' }]);
+        setOpen(field);
+      }}
+      renderColumnEditor={(column, close) => {
+        const at = columns.findIndex((c) => c.field === column.field);
+        return (
+          <SheetColumnEditor
+            column={column}
+            selectName
+            onChange={(next) => setColumns((now) => now.map((c) => (c.field === next.field ? next : c)))}
+            onDone={close}
+            typeLockedReason={at === 0 ? 'Every row is named by this column, so it stays text.' : undefined}
+            suggestedType={/date|due/i.test(column.label) ? 'date' : undefined}
+            onMove={(step) =>
+              setColumns((now) => {
+                const next = [...now];
+                const [moved] = next.splice(at, 1);
+                next.splice(at + step, 0, moved!);
+                return next;
+              })
+            }
+            canMoveBefore={at > 1}
+            canMoveAfter={at > 0 && at < columns.length - 1}
+            onDelete={() => {
+              setColumns((now) => now.filter((c) => c.field !== column.field));
+              close();
+            }}
+            deleteDisabledReason={at === 0 ? 'A sheet keeps the column its rows are named by.' : undefined}
+          />
+        );
+      }}
+    />
+  );
+}
+
+export const ShapeColumns: Story = { render: () => <ShapingSheet /> };
+
+/** The settings panel on its own, for a column of each kind of setting: a status with its categories. */
+export const ColumnSettings: Story = {
+  render: function Render() {
+    const [column, setColumn] = useState<SheetColumn>({
+      field: 'status',
+      label: 'Status',
+      type: 'status',
+      options: [
+        { id: 'todo', label: 'Not started', category: 'todo' },
+        { id: 'doing', label: 'In progress', category: 'in_progress' },
+        { id: 'done', label: 'Done', category: 'done' },
+      ],
+    });
+    return (
+      <div style={{ width: 300, padding: 12, border: '1px solid var(--color-border-default)', borderRadius: 8 }}>
+        <SheetColumnEditor column={column} onChange={setColumn} onDone={() => {}} onDelete={() => {}} onMove={() => {}} />
+      </div>
+    );
+  },
 };

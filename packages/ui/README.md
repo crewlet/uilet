@@ -204,6 +204,16 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.35.0
+
+**`SheetGrid` shapes its columns in place.** `renderColumnEditor` makes each column header open that column's settings in a popover anchored to it: a press, Enter or Space on a header opens it, Escape closes it and returns focus to the header, and the host draws what is inside. `settingsColumn` and `onSettingsColumnChange` let the host open a column itself (one it has just added). A header that opens settings does not sort on a press; a host that offers both puts its sort in the settings. `onAddColumn` draws Add column after the last header, outside the grid's roles (a grid's rows hold cells only), sticking to the top with the header row and reached as its own tab stop after the grid's. Keys, presses and pastes inside a portalled popover no longer reach the grid's own handlers. New labels: `columnSettings`, `columnSettingsHelp` and `addColumn`.
+
+**`SheetColumnEditor`** is one column's settings as a compact panel: its name, its type (each with its `SheetColumnTypeGlyph` and a line on what it holds), the choices a select, multi-select or status column offers (each with its colour from a hue menu, or its category for a status; a new status column starts with Not started, In progress and Done), the stars of a rating, Required, Move left and Move right, Delete column (with `deleteDisabledReason`) and Done. Every change is handed to the host at once as the next `SheetColumn`, so the grid beside it redraws as the reader types; a name cleared to nothing is held and restored. `suggestedType` offers a type the host proposes (from a column's name or its values) as one press, and `typeLockedReason` says why a type cannot change. A choice's id is made once from its label (`optionId` for a store's own rule) and never changes after.
+
+**`parseCsv`** reads CSV the way spreadsheets write it: quoted separators, doubled quotes and line breaks inside a field, CRLF, LF or CR line ends, a byte order mark dropped, and the separator found from the first record (a comma, a semicolon or a tab) unless given. It reads back what `toCsv` writes, defused formulas included, keeps every value as text, and refuses an unclosed quote or more than `maxRows` records with the line it happened on rather than cutting silently.
+
+**`HueSwatch`** is the dot `HuePicker` draws for a hue (or the hairline ring of no hue), exported for a hue menu or a list of coloured choices.
+
 ## Changes in 0.34.1
 
 **`ArtifactKindGlyph`, `ARTIFACT_KINDS` and `ArtifactKind` have a module of their own** (`@crewlethq/ui/ArtifactKindGlyph`), and it imports nothing but the glyphs. They were defined in `ArtifactCard`'s module, and a bundler places a module whole, so a host that drew one kind glyph in its frame (a sidebar's pins, a command palette's hits) took the whole card into its first screen, and with 0.34.0 the kind illustrations the card draws: about 11 KB of script for a gallery the reader had not opened. Nothing is renamed: the root export and `@crewlethq/ui/ArtifactCard` still answer for all three, and `ArtifactIcon`, `ArtifactBar`, `DashboardCover` and `ArtifactKindIllustration` now import them from the new module.
