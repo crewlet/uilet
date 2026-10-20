@@ -18,6 +18,7 @@ import { isComposing } from '../Layer/index.js';
 import { useListbox } from '../Listbox/index.js';
 import { Tag, type TagVariant } from '../Tag/index.js';
 import { cx } from '../utils/cx.js';
+import { useFocusModality } from '../utils/focusModality.js';
 
 export interface TagsInputOption {
   /** What is stored when the option is taken. */
@@ -167,6 +168,7 @@ export const TagsInput = forwardRef<TagsInputHandle, TagsInputProps>(function Ta
   },
   ref,
 ) {
+  useFocusModality();
   const [draft, setDraft] = useState('');
   const [open, setOpen] = useState(false);
   const field = useRef<HTMLInputElement | null>(null);

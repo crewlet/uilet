@@ -51,8 +51,15 @@
  */
 .crewlet-datetime:focus-visible,
 .crewlet-datetime.is-open {
-  outline: 1px solid var(--color-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: -1px;
+}
+
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
+:root[data-crewlet-focus='pointer'] .crewlet-datetime:focus-visible,
+:root[data-crewlet-focus='pointer'] .crewlet-datetime.is-open {
+  outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-datetime.is-disabled,
@@ -177,8 +184,14 @@ svg.crewlet-datetime__chevron {
 
 /* The same one ring the trigger draws, over the box's own boundary. */
 .crewlet-datetime__time-input:focus-visible {
-  outline: 1px solid var(--color-focus);
+  outline: 2px solid var(--color-focus);
   outline-offset: -1px;
+}
+
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
+:root[data-crewlet-focus='pointer'] .crewlet-datetime__time-input:focus-visible {
+  outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-datetime__footer {

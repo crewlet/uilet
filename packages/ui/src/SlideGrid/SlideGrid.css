@@ -42,8 +42,18 @@
   outline-color: var(--color-border-hover);
 }
 
+/* THE CURRENT SLIDE, drawn as the filmstrip draws it: the selected edge on
+   the slide's own line, the selected fill as a soft band outside it, and its
+   number in the accent ink, the mark that clears 3:1. Never the full accent
+   at 2px, which is the focus ring's weight and colour. */
 .crewlet-slide-grid__card[aria-current='true'] .crewlet-slide-stage {
-  outline: 2px solid var(--color-brand-accent);
+  outline-color: var(--color-border-selected);
+  box-shadow: 0 0 0 3px var(--color-surface-selected);
+}
+
+.crewlet-slide-grid__card[aria-current='true'] .crewlet-slide-grid__number {
+  color: var(--color-brand-accent-ink);
+  font-weight: var(--font-weight-semibold);
 }
 
 /* ONE RING, round the whole card (its slide and its caption), on the inset

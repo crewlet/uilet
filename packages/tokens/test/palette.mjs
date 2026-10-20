@@ -681,6 +681,19 @@ export const ACCENT_OVER_TINT = 2;
  */
 export const HIGH_CONTRAST = { text: 7, ink: 7, muted: 4.5, hairline: 3 };
 
+/**
+ * How far the SELECTED EDGE (`--color-border-selected`) sits from a hairline,
+ * in OKLab dE, on every rung: 9, the distance this file holds two neighbouring
+ * chart series to. The edge is the accent at an alpha, a tint mixed toward its
+ * ground, so it is not held to the 3:1 a mark clears: at that floor the default
+ * dark palette, whose accent itself clears 2.61:1 on its worst ground, could
+ * not draw a tint at all. What it has to do is read as CHOSEN rather than as
+ * one more line, and the component that draws it pairs it with the soft fill
+ * or a mark of its own that does clear 3:1, so the state never rests on it.
+ * Measured at the build's 0.6, the closest any palette comes is dE 10.1.
+ */
+export const SELECTED_EDGE_SEPARATION = 9;
+
 // ---------------------------------------------------------------------------
 // Theme states
 // ---------------------------------------------------------------------------
@@ -1175,6 +1188,38 @@ function checkState(state, values, profile, push, theme = { tint: null, contrast
     // control boundary.
     const low = worst(colour('--color-border-field'), opaque);
     say('a field boundary clears 3:1', low.ratio >= 3, '--color-border-field', low.ratio, `${low.ratio.toFixed(2)}:1 (worst on ${low.name})`);
+  }
+
+  {
+    // THE SELECTED EDGE, on the rungs a chosen option stands on. See
+    // SELECTED_EDGE_SEPARATION: it is a tint, so the floor is that it reads
+    // as the accent and never as one more hairline, against the resting line
+    // and the strong one, which is the line a card under the pointer takes.
+    let low = { measured: Infinity, name: '' };
+    for (const [name, rgb] of opaque) {
+      const edge = flatten(values.get('--color-border-selected'), rgb);
+      for (const line of ['--color-border-default', '--color-border-strong']) {
+        const measured = deltaE(edge, flatten(values.get(line), rgb));
+        if (measured < low.measured) low = { measured, name: `${line} on ${name}` };
+      }
+    }
+    say(
+      'the selected edge reads apart from a hairline',
+      low.measured >= SELECTED_EDGE_SEPARATION,
+      '--color-border-selected',
+      low.measured,
+      `dE ${low.measured.toFixed(2)} >= ${SELECTED_EDGE_SEPARATION} (closest to ${low.name})`,
+    );
+  }
+
+  if (high) {
+    // A high-contrast theme draws the selected edge as the full accent, and
+    // holds it to the hairline floor it holds the card's own line to.
+    const [, card, sheet] = CARD_HAIRLINE;
+    for (const side of [card, sheet]) {
+      const ratio = contrast(colour('--color-border-selected'), colour(side));
+      say('the selected edge clears 3:1 in high contrast', ratio >= HIGH_CONTRAST.hairline, `--color-border-selected on ${side}`, ratio, `${ratio.toFixed(2)}:1 >= ${HIGH_CONTRAST.hairline}`);
+    }
   }
 
   // Glass is the ground of what floats OVER CONTENT rather than over

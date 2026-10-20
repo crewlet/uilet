@@ -19,10 +19,12 @@
 /* THE SLIDE'S OWN EDGE: the box is the slide (or, for a show in the page,
    the room it was measured into), so its outline is the slide's edge, drawn over the slide's corners rather than outside them. A host that
    marks a stage (selected, current) recolours this outline rather than adding
-   a second line. */
+   a second line. It takes the STRONG border, not the default one: most decks
+   are dark, and in the dark theme the default border is a step off the page,
+   so a dark slide on a dark page had no edge at all. */
 .crewlet-slide-stage--framed {
   border-radius: var(--radius-sm);
-  outline: 1px solid var(--color-border-default);
+  outline: 1px solid var(--color-border-strong);
 }
 
 :fullscreen .crewlet-slide-stage--framed,

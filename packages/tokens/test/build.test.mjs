@@ -275,6 +275,10 @@ describe('the derived tints', () => {
       accents.add(accent);
       assert.equal(values.get('--color-brand-accent-rgb'), `${r}, ${g}, ${b}`, `${state} accent-rgb`);
       assert.equal(values.get('--color-brand-accent-soft-strong'), withAlpha(accent, 0.32), `${state} accent-soft-strong`);
+      // The selected edge is the accent at 0.6, a tint of the hue this palette
+      // has, or the full accent under a high-contrast theme.
+      const edge = values.get('--color-border-selected');
+      assert.ok(edge === withAlpha(accent, 0.6) || edge === accent, `${state} border-selected is ${edge}, not a tint of ${accent}`);
       const soft = parseRgba(values.get('--color-brand-accent-soft'));
       assert.deepEqual(soft?.rgb, { r, g, b }, `${state} accent-soft is a tint of ${accent}`);
       assert.ok(soft.a > 0 && soft.a < 1, `${state} accent-soft is translucent`);

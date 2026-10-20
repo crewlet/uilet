@@ -42,7 +42,7 @@
  * `box-shadow: <shadow>, none` is invalid at computed-value time, so the
  * declaration is dropped and the light card loses the elevation the list was
  * built around. Alone on a pseudo element the same token is valid in both
- * themes, and it composes with the selection ring rather than replacing
+ * themes, and it composes with a chosen card's edge rather than replacing
  * whichever was declared last, exactly as the rail does.
  */
 .crewlet-card--elevated::after {
@@ -116,8 +116,8 @@
 /*
  * THE FLUSH RECIPE. The slots reach the card's edges, and the clip is what
  * makes the header's hairline and a table's own corners follow the radius
- * instead of crossing it. The selection ring survives the clip because it is
- * an INSET shadow; an outset one would be cut off here.
+ * instead of crossing it. A chosen card's edge and fill survive the clip
+ * because they are its own border and background.
  */
 .crewlet-card--flush {
   overflow: hidden;
@@ -200,29 +200,34 @@
 
 /* One ring, over the card's own boundary rather than 2px off it, which is two
    edges with a gap between them: the rule every field keeps (see Input.css).
-   A chosen card keeps an accent line inside the ring, since the selection
-   ring below is two pixels deep and the focus ring covers one of them. */
+   On a chosen card it covers the selected edge, and the selected fill inside
+   it still says the card is chosen. */
 .crewlet-card.is-interactive:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 /*
- * Chosen. A ring rather than a tint, because a card carries its own surface
- * and a tint under it would change the ground every value on it was measured
- * against.
+ * Chosen, as every chosen option in the package is drawn: the selected edge
+ * (the accent mixed toward the card) over the selected fill. It was the full
+ * accent border under --shadow-selection, a second accent ring two pixels
+ * deep, which is the focus ring's weight in the focus ring's hue, so a grid
+ * of cards showed the pick and the keyboard's place alike. The fill is laid
+ * as an IMAGE over the card's own surface rather than in place of it, so the
+ * card keeps its ground and the tint composites over it, as it does over a
+ * row.
  */
 .crewlet-card.is-selected {
-  box-shadow: var(--shadow-selection);
-  border-color: var(--color-brand-accent);
+  border-color: var(--color-border-selected);
+  background-image: linear-gradient(var(--color-surface-selected), var(--color-surface-selected));
 }
 
 /* ---- Rails ------------------------------------------------------------- */
 
 /*
  * A state down the leading edge. Drawn as a pseudo element rather than a
- * border or an inset shadow, so it composes with the elevated shadow and the
- * selection ring instead of replacing whichever one was declared last.
+ * border or an inset shadow, so it composes with the elevated shadow and a
+ * chosen card's edge instead of replacing whichever one was declared last.
  */
 .crewlet-card--rail-info::before,
 .crewlet-card--rail-warning::before,

@@ -159,7 +159,7 @@ function More({ title }: { title: string }) {
   );
 }
 
-/** A doc's opening, drawn live and small, as a gallery's preview draws one. */
+/** A doc's opening, drawn once and small and kept as a snapshot, as a gallery's preview draws one. */
 function Opening() {
   const preview = useLivePreview();
   useEffect(() => preview.ready(), [preview]);
@@ -176,8 +176,8 @@ function Opening() {
 }
 
 /**
- * THE GALLERY CARD as the Artifacts page draws it: a live preview of the
- * artifact's own content, the kind's badge over the preview's foot, the title
+ * THE GALLERY CARD as the Artifacts page draws it: a snapshot of the
+ * artifact's own content, drawn once when the card first comes near, the kind's badge over the preview's foot, the title
  * on one line, who can open it (a lock, people, the company) and when it was
  * edited, and a More menu beside the link, shown on hover and focus. Four
  * across a laptop's page, as the gallery lays them out; hover is a border and

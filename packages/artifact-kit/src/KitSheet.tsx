@@ -94,10 +94,54 @@ function rejectionMessage(error: unknown): string {
   return refusalText(code, message, SHEET_LABELS);
 }
 
+/** What the sheet reads of the runtime's declaration, and whether its handshake has settled it. */
+interface Declared {
+  settled: boolean;
+  db: boolean;
+  presence: boolean;
+  identity: boolean;
+}
+
+function declaredBy(runtime: KitRuntime, settled: boolean): Declared {
+  const { capabilities } = runtime;
+  return { settled, db: capabilities.has('db'), presence: capabilities.has('presence'), identity: capabilities.has('identity') };
+}
+
+const sameDeclared = (a: Declared, b: Declared) => a.settled === b.settled && a.db === b.db && a.presence === b.presence && a.identity === b.identity;
+
+/**
+ * The runtime's declaration, read again once its handshake completes. Until
+ * then the runtime answers from what the origin told it as the page loaded,
+ * and from the handshake on the host's word is the authority, so a sheet
+ * that read once and kept the answer could keep one the handshake changed,
+ * and say for good that its page declared no datastore. A sheet drawn
+ * before the handshake therefore reads again when it lands, and says the
+ * page has no datastore only once the handshake has said so.
+ */
+function useDeclared(runtime: KitRuntime): Declared {
+  const [declared, setDeclared] = useState(() => declaredBy(runtime, false));
+  useEffect(() => {
+    let live = true;
+    const read = (settled: boolean) => {
+      const next = declaredBy(runtime, settled);
+      setDeclared((current) => (sameDeclared(current, next) ? current : next));
+    };
+    read(false);
+    void runtime.ready.then(() => {
+      if (live) read(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [runtime]);
+  return declared;
+}
+
 export function KitSheet({ runtime, collection, columns: declared, sort: initialSort, frozen, readOnly = false, label, height }: KitSheetProps) {
-  const hasData = runtime.capabilities.has('db');
-  const hasPresence = runtime.capabilities.has('presence');
-  const hasIdentity = runtime.capabilities.has('identity');
+  const capabilities = useDeclared(runtime);
+  const hasData = capabilities.db;
+  const hasPresence = capabilities.presence;
+  const hasIdentity = capabilities.identity;
   const store = useMemo(() => runtime.data.collection(collection), [runtime, collection]);
 
   const [schemaColumns, setSchemaColumns] = useState<SheetColumn[] | null>(null);
@@ -301,7 +345,7 @@ export function KitSheet({ runtime, collection, columns: declared, sort: initial
     [publish],
   );
 
-  if (!hasData) return <Callout variant="warning">{KIT_SHEET_LABELS.noData}</Callout>;
+  if (!hasData) return capabilities.settled ? <Callout variant="warning">{KIT_SHEET_LABELS.noData}</Callout> : null;
   if (loadError !== null) return <Callout variant="warning">{loadError}</Callout>;
   if (columns.length === 0 && (declared !== null || schemaColumns !== null)) {
     return <Callout variant="neutral">{KIT_SHEET_LABELS.noColumns(collection)}</Callout>;

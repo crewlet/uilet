@@ -198,14 +198,37 @@ function ListedBoards() {
 export const HeldSelection: Story = { render: () => <ListedBoards /> };
 
 /**
- * A canvas as narrow as a phone's: the palette sits in the top left corner,
- * the boards are drawn as thumbnails, and a board too narrow to name goes
- * unnamed until it is zoomed into.
+ * A canvas as narrow as a phone's: the palette sits in the top left corner
+ * and the boards are drawn as thumbnails. A name with too little room keeps
+ * at least three letters before its ellipsis; a board narrower than that is
+ * called by its number, with its name as a tooltip, until it is zoomed into.
  */
 export const Narrow: Story = {
   render: () => (
     <div style={{ width: '22rem', height: '36rem', padding: 'var(--spacing-4)' }}>
       <CanvasBoard label="Launch landing page" boards={BOARDS} notes={NOTES} renderBoard={stand} onOpen={() => {}} />
+    </div>
+  ),
+};
+
+/**
+ * Long names on a phone sized canvas, as a design's create page lays them
+ * out: the desktop boards keep a shortened name, the phone board shows its
+ * number. Zoom in and each name grows back to whole.
+ */
+export const NarrowNames: Story = {
+  render: () => (
+    <div style={{ width: '22rem', height: '28rem', padding: 'var(--spacing-4)' }}>
+      <CanvasBoard
+        label="Marketing site"
+        editable
+        boards={[
+          { id: 'home', x: 0, y: 0, w: 1440, h: 1024, title: 'Home with the launch banner' },
+          { id: 'pricing', x: 1540, y: 0, w: 1440, h: 1024, title: 'Pricing for teams' },
+          { id: 'phone', x: 3080, y: 0, w: 390, h: 844, title: 'Home on phone' },
+        ]}
+        renderBoard={stand}
+      />
     </div>
   ),
 };

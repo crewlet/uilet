@@ -27,6 +27,10 @@ export interface ComposerProps
  * and a footer strip holding the send shortcut, a counter and the actions, in
  * one box that takes the focus ring as a whole.
  *
+ * THE FOOTER IS DRAWN ONLY WITH SOMETHING IN IT. With no shortcut, counter or
+ * actions there is no strip at all, and one holding only the shortcut's hint
+ * goes on a phone, where the hint is not drawn, rather than stand there empty.
+ *
  * THE COUNTER IS DRAWN ONLY NEAR THE LIMIT, from [COMPOSER_COUNTER_AT] of
  * `maxLength`: a count under every short reply is noise, and a field that
  * stops taking text with no warning reads as a broken keyboard.
@@ -36,6 +40,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   ref,
 ) {
   const near = maxLength !== undefined && value.length >= maxLength * COMPOSER_COUNTER_AT;
+  const hasActions = actions !== undefined && actions !== null && actions !== false;
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     onKeyDown?.(event);
     if (event.defaultPrevented || !onSubmit) return;
@@ -58,20 +63,22 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         autoResize
         {...rest}
       />
-      <div className="crewlet-composer__footer">
-        {onSubmit ? (
-          <span className="crewlet-composer__hint">
-            <Kbd keys={['Mod', 'Enter']} subtle /> to send
-          </span>
-        ) : null}
-        {near ? (
-          <span className="crewlet-composer__counter" aria-live="polite">
-            {`${value.length.toLocaleString()} / ${maxLength.toLocaleString()}`}
-          </span>
-        ) : null}
-        <span className="crewlet-composer__spacer" />
-        {actions}
-      </div>
+      {onSubmit || near || hasActions ? (
+        <div className="crewlet-composer__footer" data-hint-only={(!near && !hasActions) || undefined}>
+          {onSubmit ? (
+            <span className="crewlet-composer__hint">
+              <Kbd keys={['Mod', 'Enter']} subtle /> to send
+            </span>
+          ) : null}
+          {near ? (
+            <span className="crewlet-composer__counter" aria-live="polite">
+              {`${value.length.toLocaleString()} / ${maxLength.toLocaleString()}`}
+            </span>
+          ) : null}
+          <span className="crewlet-composer__spacer" />
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 });

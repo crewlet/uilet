@@ -85,6 +85,10 @@ export interface DatasetSourceProps extends Omit<HTMLAttributes<HTMLDivElement>,
  * it, outside it: a table inside a button is invalid markup and unreachable
  * to a screen reader.
  *
+ * AN OPEN ENTRY IS ONE CARD. Once its preview is drawn, the entry frames the
+ * summary and the preview together, the summary as the card's head, so the
+ * figures read as this source's rather than as the next item of the rail.
+ *
  * A refusal reads as calmly here as on the figure: the reader may not read
  * the data, which is an ordinary state, so it takes the secondary ink and
  * never an error colour.
@@ -109,6 +113,7 @@ export function DatasetSource({
   const text: DatasetSourceLabels = { ...LABELS, ...labels, kinds: { ...LABELS.kinds, ...labels?.kinds } };
   const titleId = useId();
   const blocked = status === 'refused' || status === 'failed';
+  const open = selected && children !== undefined && children !== null && children !== false;
 
   const state =
     status === 'loading' ? (
@@ -177,6 +182,7 @@ export function DatasetSource({
         'crewlet-dataset-source',
         `crewlet-dataset-source--${status}`,
         selected && 'crewlet-dataset-source--selected',
+        open && 'crewlet-dataset-source--open',
         className,
       )}
       aria-busy={status === 'loading' || undefined}
@@ -188,7 +194,7 @@ export function DatasetSource({
       ) : (
         <div className="crewlet-dataset-source__summary">{summary}</div>
       )}
-      {selected && children ? (
+      {open ? (
         <div className="crewlet-dataset-source__preview" role="group" aria-labelledby={titleId}>
           {children}
         </div>

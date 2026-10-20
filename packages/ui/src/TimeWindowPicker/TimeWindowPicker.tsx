@@ -41,6 +41,7 @@ import {
   stepSegment,
   type MaskSegment,
 } from './mask.js';
+import { useFocusModality } from '../utils/focusModality.js';
 
 export type TimeWindowMode = 'relative' | 'absolute';
 
@@ -605,6 +606,7 @@ export function TimeWindowPicker({
   size = 'md',
   labels: labelOverrides,
 }: TimeWindowPickerProps) {
+  useFocusModality();
   const labels = useMemo(() => withLabels(labelOverrides), [labelOverrides]);
   const isSet = isTimeWindowSet(value);
   /*

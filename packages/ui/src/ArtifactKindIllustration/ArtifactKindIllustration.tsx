@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react';
+import { CheckGlyph } from '@crewlethq/icons/glyphs';
 import type { ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -122,8 +123,8 @@ const DRAWINGS: Readonly<Record<ArtifactKind, ReactNode>> = {
 
 /**
  * A kind's drawing on its tinted ground: the stand-in a preview shows while
- * nothing live is drawn (off screen, still loading, over the live budget,
- * failed or empty), and the face of a Make something new tile.
+ * nothing live is drawn (never yet near, still loading, over the live budget,
+ * failed or empty), and the face of a kind tile.
  */
 export function ArtifactKindGround({
   kind,
@@ -144,7 +145,7 @@ export function ArtifactKindGround({
 
 export interface ArtifactKindTileProps {
   kind: ArtifactKind;
-  /** The kind's name, under the tile: "Docs". */
+  /** The name under the tile: "Docs", or a starting point's "Landing page". */
   label: string;
   /** Where starting one goes. Left out with `disabledReason`, the tile starts nothing. */
   href?: string | undefined;
@@ -154,6 +155,13 @@ export interface ArtifactKindTileProps {
    * button. `href` wins where both are given.
    */
   onSelect?: (() => void) | undefined;
+  /**
+   * For a tile that is a button: whether it is the one chosen (a starting
+   * layout already picked). Drawn as every chosen option is, the selected
+   * edge over the selected fill with a check beside the name, and announced
+   * as a pressed button. Left out, the tile is an action with no state.
+   */
+  selected?: boolean | undefined;
   /**
    * Drawn on the kind's ground in place of its drawing: a picture of this
    * particular starting point, such as a design layout's schematic.
@@ -169,9 +177,11 @@ export interface ArtifactKindTileProps {
 }
 
 /**
- * One kind on a "Make something new" row: the kind's drawing on its tinted
- * ground, framed, with its name under it. The whole tile is one link named by
- * the kind's name.
+ * One kind, or one starting point of a kind, as a tile: the kind's drawing on
+ * its tinted ground (or the starting point's own `face`), framed, with its
+ * name under it, such as a create page's starting layouts. The whole tile is
+ * one link or button named by the name. The gallery's Make something new row
+ * is the quieter `ArtifactMakeRow`, a toolbar of glyphs rather than pictures.
  *
  * A TILE THAT CANNOT START is still a stop on the row, so a reader moving
  * through it by keyboard hears why (`disabledReason`) rather than finding a
@@ -182,6 +192,7 @@ export function ArtifactKindTile({
   label,
   href,
   onSelect,
+  selected,
   face,
   detail,
   badge,
@@ -201,6 +212,8 @@ export function ArtifactKindTile({
       <span className="crewlet-kind-tile__label">
         <span className="crewlet-kind-tile__name">{label}</span>
         {badge ? <span className="crewlet-kind-tile__badge">{badge}</span> : null}
+        {/* The mark that says "this one" at 3:1, beside the tinted edge. */}
+        {selected && href === undefined ? <CheckGlyph size="xs" className="crewlet-kind-tile__check" aria-hidden="true" /> : null}
       </span>
       {detail ? (
         <span id={detailId} className="crewlet-kind-tile__detail">
@@ -237,7 +250,8 @@ export function ArtifactKindTile({
         type="button"
         aria-label={name}
         aria-describedby={describedBy}
-        className={cx('crewlet-kind-tile', 'crewlet-kind-tile--button', className)}
+        aria-pressed={selected}
+        className={cx('crewlet-kind-tile', 'crewlet-kind-tile--button', selected && 'is-selected', className)}
         onClick={onSelect}
       >
         {body}

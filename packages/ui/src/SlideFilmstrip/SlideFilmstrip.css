@@ -2,8 +2,13 @@
  * SlideFilmstrip: the column of slide thumbnails beside a deck's stage, or
  * the row under it on a phone.
  *
- * The selected slide is ringed in the brand accent rather than filled, so its
- * thumbnail still shows the slide's own colours.
+ * The selected slide is ringed rather than filled, so its thumbnail still
+ * shows the slide's own colours: the selected edge (a tint of the accent) on
+ * the thumbnail's own line, the selected fill as a soft band outside it, and
+ * its number in the accent ink. It was a 2px ring in the full accent, the
+ * same weight and colour as the focus ring beside it, so the slide being
+ * edited and the slide the keyboard was on could not be told apart. The
+ * number is the mark that clears 3:1, so the state never rests on the tint.
  *
  * THE STRIP IS ITS OWN SCROLLER: a host bounds it (a column's max-height, a
  * row's width) and the strip scrolls inside that, keeping the selected slide
@@ -48,24 +53,38 @@
   border: 0;
   background: transparent;
   border-radius: var(--radius-sm);
-  outline: 1px solid var(--color-border-default);
+  /* THE STRONG LINE AT REST: a deck's slides are mostly dark, and on the dark
+     page the plain hairline sat within a few steps of both the page and the
+     slide, so a strip of them had no edges at all. Under the pointer it takes
+     the strong line's own hover step, so pointing still moves the edge. */
+  outline: 1px solid var(--color-border-strong);
   cursor: pointer;
   overflow: hidden;
 }
 
 .crewlet-slide-filmstrip__thumb:hover {
-  outline-color: var(--color-border-hover);
+  outline-color: var(--color-border-strong-hover);
 }
 
 .crewlet-slide-filmstrip__item[data-selected='true'] .crewlet-slide-filmstrip__thumb {
-  outline: 2px solid var(--color-brand-accent);
+  outline-color: var(--color-border-selected);
+  box-shadow: 0 0 0 3px var(--color-surface-selected);
+}
+
+.crewlet-slide-filmstrip__item[data-selected='true'] .crewlet-slide-filmstrip__number {
+  color: var(--color-brand-accent-ink);
+  font-weight: var(--font-weight-semibold);
 }
 
 /* ONE RING, OVER THE THUMBNAIL'S OWN EDGE: the focus outline takes the place
-   of the edge rather than standing off it as a second one. */
+   of the edge rather than standing off it as a second one, and grows OUTWARD
+   from it onto the strip's ground. It used to sit on the inset offset, inside
+   the thumbnail, where a dark slide (most of a deck's themes) swallowed it:
+   the focus colour measured close to the slide's own ground, and tabbing
+   through the strip showed nothing at all. The list's own padding holds it. */
 .crewlet-slide-filmstrip__thumb:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: var(--size-focus-ring-inset-offset);
+  outline-offset: 0;
 }
 
 .crewlet-slide-filmstrip__item[data-hidden='true'] .crewlet-slide-stage {

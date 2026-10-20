@@ -36,6 +36,16 @@
     border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+/*
+ * AN OPTION WITH A DETAIL STARTS AT ITS TOP. Laid out as tiles (a host's grid
+ * of columns), the options in one row stretch to the tallest, and centred
+ * text put a one-line detail's label lower than its neighbour's two-line
+ * one. A column of options is unchanged: each is as tall as its own text.
+ */
+.crewlet-choice-buttons__option:has(.crewlet-choice-buttons__detail) {
+  align-items: flex-start;
+}
+
 .crewlet-choice-buttons__option:hover:not([aria-disabled='true']) {
   background: var(--color-surface-elevated);
   border-color: var(--color-border-strong-hover);

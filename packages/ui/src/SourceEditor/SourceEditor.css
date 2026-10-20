@@ -5,7 +5,11 @@
  * so a number and a mark always sit on the line they name; the layers follow
  * the field's scroll by a transform.
  *
- * The BOX takes the focus ring, as the Composer's does.
+ * The BOX takes the focus ring every field draws (see Input.css): 2px in the
+ * focus colour for the keyboard, one pixel of the selected edge where a
+ * pointer put the caret. It used to recolour its border to the accent and lay
+ * a 2px soft halo outside it, two highlights for one state, as the Composer's
+ * did.
  */
 .crewlet-source-editor {
   --crewlet-source-inset: var(--spacing-2);
@@ -21,18 +25,21 @@
   font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
   line-height: var(--font-line-height-normal);
-  transition:
-    border-color var(--motion-duration-fast) var(--motion-easing-default),
-    box-shadow var(--motion-duration-fast) var(--motion-easing-default);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
 .crewlet-source-editor:hover {
   border-color: var(--color-border-strong-hover);
 }
 
-.crewlet-source-editor:focus-within {
-  border-color: var(--color-brand-accent);
-  box-shadow: 0 0 0 2px var(--color-brand-accent-soft);
+.crewlet-source-editor:has(.crewlet-source-editor__field:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -1px;
+}
+
+:root[data-crewlet-focus='pointer'] .crewlet-source-editor:has(.crewlet-source-editor__field:focus-visible) {
+  outline-width: 1px;
+  outline-color: var(--color-border-selected);
 }
 
 .crewlet-source-editor.is-fill {
@@ -135,11 +142,11 @@
   color: var(--color-text-tertiary);
 }
 
-/* The ring is the box's, above. A transparent outline stays, because forced
-   colors drops the box's shadow and paints an outline in its place. */
-.crewlet-source-editor .crewlet-source-editor__field:focus-visible {
-  outline: 2px solid transparent;
-  outline-offset: -2px;
+/* The ring is the box's, above, an outline that forced colours repaint, so
+   the field inside draws none of its own. Stated at rest, as the Composer's
+   field is. */
+.crewlet-source-editor .crewlet-source-editor__field {
+  outline: none;
 }
 
 .crewlet-source-editor .crewlet-source-editor__field[readonly] {

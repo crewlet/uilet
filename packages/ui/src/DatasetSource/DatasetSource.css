@@ -9,6 +9,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* Held transparent at rest so nothing moves when an entry opens. */
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
 }
 
@@ -42,11 +44,22 @@ button.crewlet-dataset-source__summary:focus-visible {
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
-/* The accent boundary, as a selected card takes it, and the soft accent fill. */
-.crewlet-dataset-source--selected .crewlet-dataset-source__summary {
-  border-color: var(--color-brand-accent);
-  background: var(--color-brand-accent-soft);
+/*
+ * The selected edge round the WHOLE ENTRY, over the selected fill on its
+ * summary, as every chosen option is drawn: a tint of the accent, never the
+ * full accent the focus ring is drawn in. The edge used to ring the summary
+ * alone, so the settings and figures an open source shows under it hung
+ * below the ring with nothing saying they belonged to it; inside one edge they
+ * read as the entry's own. The rows it opens are what say which entry is open.
+ */
+.crewlet-dataset-source--selected {
+  border-color: var(--color-border-selected);
 }
+
+.crewlet-dataset-source--selected .crewlet-dataset-source__summary {
+  background: var(--color-surface-selected);
+}
+
 
 .crewlet-dataset-source__head {
   display: flex;
@@ -118,9 +131,30 @@ button.crewlet-dataset-source__summary:focus-visible {
   color: var(--color-feedback-warning-ink);
 }
 
+/*
+ * AN OPEN ENTRY IS ONE CARD: the selected edge above frames the summary and
+ * the preview together, the summary its head on the selected fill and the
+ * preview a well under it, inset on the summary's padding, so the figures in
+ * it (cards of their own) stand on a ground that is plainly the source's
+ * rather than the rail's. One line separates head from well, in the same
+ * selected edge, and the head sits INSIDE the frame rather than over it: its
+ * fill laid over the frame's edge would paint that edge out.
+ */
+.crewlet-dataset-source--open {
+  background: var(--color-surface-inset);
+}
+
+.crewlet-dataset-source--open > .crewlet-dataset-source__summary {
+  border-block-end-color: var(--color-border-selected);
+  border-start-start-radius: calc(var(--radius-md) - 1px);
+  border-start-end-radius: calc(var(--radius-md) - 1px);
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
 .crewlet-dataset-source__preview {
   min-width: 0;
-  padding: var(--spacing-2) var(--spacing-3) var(--spacing-3);
+  padding: var(--spacing-3);
 }
 
 .crewlet-dataset-source-list {

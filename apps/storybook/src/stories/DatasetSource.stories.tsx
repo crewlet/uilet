@@ -112,7 +112,7 @@ function Rail() {
   );
 }
 
-/** The whole rail, each entry a toggle; the selected one shows its rows. */
+/** The whole rail, each entry a toggle; the selected one opens into one card with its rows. */
 export const TheRail: Story = {
   render: () => <Rail />,
 };

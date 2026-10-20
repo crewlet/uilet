@@ -4,6 +4,9 @@
  * the kind's name, or a stop that says why it cannot start one.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -92,7 +95,7 @@ test('a row of tiles carries no axe violation', async () => {
           <ArtifactKindTile kind="sheet" label="Sheet" disabledReason="Not now." />
         </li>
         <li>
-          <ArtifactKindTile kind="design" label="Blank canvas" detail="No boards yet" onSelect={() => {}} />
+          <ArtifactKindTile kind="design" label="Blank canvas" detail="No boards yet" onSelect={() => {}} selected />
         </li>
       </ul>
     </main>,
@@ -103,4 +106,33 @@ test('a row of tiles carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test('a starting tile that is chosen is a pressed button with a check, and one that is not carries no state', () => {
+  render(
+    <>
+      <ArtifactKindTile kind="design" label="Landing page" onSelect={() => {}} selected />
+      <ArtifactKindTile kind="design" label="App screens" onSelect={() => {}} selected={false} />
+      <ArtifactKindTile kind="design" label="Blank canvas" onSelect={() => {}} />
+    </>,
+  );
+  const chosen = screen.getByRole('button', { name: 'Landing page' });
+  expect(chosen.getAttribute('aria-pressed')).toBe('true');
+  expect(chosen.classList.contains('is-selected')).toBe(true);
+  expect(chosen.querySelector('.crewlet-kind-tile__check')).not.toBeNull();
+  expect(screen.getByRole('button', { name: 'App screens' }).getAttribute('aria-pressed')).toBe('false');
+  // A tile with no `selected` is an action, not a toggle.
+  const plain = screen.getByRole('button', { name: 'Blank canvas' });
+  expect(plain.hasAttribute('aria-pressed')).toBe(false);
+  expect(plain.querySelector('.crewlet-kind-tile__check')).toBeNull();
+});
+
+test('a starting tile draws one edge: its ground has no inner line, and its chosen state is the selected pair', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const css = readFileSync(resolve(here, 'ArtifactKindIllustration.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  expect(/\.crewlet-kind-tile--button \.crewlet-kind-tile__ground\s*\{\s*box-shadow:\s*none;\s*\}/.test(css)).toBe(true);
+  const chosen = /\.crewlet-kind-tile--button\.is-selected \.crewlet-kind-tile__frame,[^{]*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(chosen).toMatch(/border-color:\s*var\(--color-border-selected\)/);
+  expect(chosen).toMatch(/var\(--color-surface-selected\)/);
+  expect(chosen).not.toMatch(/--color-brand-accent\)|outline/);
 });

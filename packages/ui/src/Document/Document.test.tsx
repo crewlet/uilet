@@ -6,8 +6,10 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, expect, test } from 'vitest';
+import axe from 'axe-core';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { createRef, useState } from 'react';
+import { afterEach, expect, test, vi } from 'vitest';
 import { Document, DocumentTitle, DocumentTitleField } from './index.js';
 
 afterEach(cleanup);
@@ -96,10 +98,113 @@ test('a task list and a wide table are recognised by their shape, not by a class
 test('a title being written is a named text field set as the title, refused by aria-invalid', () => {
   render(<DocumentTitleField aria-label="Title" placeholder="Untitled" defaultValue="" />);
   const field = screen.getByRole('textbox', { name: 'Title' });
-  expect(field.getAttribute('type')).toBe('text');
+  // A textarea that wraps, named as ONE line of text: assistive technology
+  // announces a single-line field, as the input it replaced was.
+  expect(field.tagName).toBe('TEXTAREA');
+  expect(field.getAttribute('aria-multiline')).toBe('false');
+  expect(field.getAttribute('rows')).toBe('1');
   expect(field.className).toContain('crewlet-document-title');
   expect(field.getAttribute('aria-invalid')).toBeNull();
   cleanup();
   render(<DocumentTitleField aria-label="Title" error defaultValue="Taken" />);
   expect(screen.getByRole('textbox', { name: 'Title' }).getAttribute('aria-invalid')).toBe('true');
+});
+
+test('a title being written, and one refused, carries no accessibility violation', async () => {
+  const { container } = render(
+    <main>
+      <h1>New document</h1>
+      <DocumentTitleField aria-label="Title" placeholder="Untitled" />
+      <DocumentTitleField aria-label="Second title" error />
+    </main>,
+  );
+  const result = await axe.run(container, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+function Controlled({ onKeyDown }: { onKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void }) {
+  const [title, setTitle] = useState('Quarterly plan');
+  return (
+    <>
+      <DocumentTitleField aria-label="Title" value={title} onChange={(event) => setTitle(event.target.value)} onKeyDown={onKeyDown} />
+      <output data-testid="value">{title}</output>
+    </>
+  );
+}
+
+test('Enter inserts no line break, and reaches the caller as an input would hand it on', () => {
+  const onKeyDown = vi.fn();
+  render(<Controlled onKeyDown={onKeyDown} />);
+  const field = screen.getByRole('textbox', { name: 'Title' });
+  // The key is the caller's, unprevented, exactly as an input's is.
+  fireEvent.keyDown(field, { key: 'Enter' });
+  expect(onKeyDown).toHaveBeenCalledTimes(1);
+  expect(onKeyDown.mock.calls[0]![0].defaultPrevented).toBe(false);
+  // The line break itself is refused where every way of typing one passes.
+  for (const inputType of ['insertLineBreak', 'insertParagraph']) {
+    const typed = new InputEvent('beforeinput', { inputType, bubbles: true, cancelable: true });
+    field.dispatchEvent(typed);
+    expect(typed.defaultPrevented, inputType).toBe(true);
+  }
+  const letter = new InputEvent('beforeinput', { inputType: 'insertText', data: 'a', bubbles: true, cancelable: true });
+  field.dispatchEvent(letter);
+  expect(letter.defaultPrevented).toBe(false);
+});
+
+test('Enter submits the form it is in when the form has a submit button, as an input does', () => {
+  const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
+  render(
+    <form onSubmit={onSubmit}>
+      <DocumentTitleField aria-label="Title" defaultValue="Plan" />
+      <button type="submit">Create</button>
+    </form>,
+  );
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Title' }), { key: 'Enter' });
+  expect(onSubmit).toHaveBeenCalledTimes(1);
+  // A caller that takes Enter for itself keeps it.
+  cleanup();
+  const submitted = vi.fn((event: React.FormEvent) => event.preventDefault());
+  render(
+    <form onSubmit={submitted}>
+      <DocumentTitleField aria-label="Title" defaultValue="Plan" onKeyDown={(event) => event.preventDefault()} />
+      <button type="submit">Create</button>
+    </form>,
+  );
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Title' }), { key: 'Enter' });
+  expect(submitted).not.toHaveBeenCalled();
+});
+
+test('a pasted line break becomes a space before the caller reads the value', () => {
+  render(<Controlled />);
+  const field = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Title' });
+  fireEvent.change(field, { target: { value: 'Quarterly\nplan\r\nfor Q4' } });
+  expect(screen.getByTestId('value').textContent).toBe('Quarterly plan for Q4');
+  expect(field.value).toBe('Quarterly plan for Q4');
+});
+
+test('it grows to what it holds, so a long title wraps instead of being cut', () => {
+  // jsdom lays nothing out, so the content's height is given: what the field
+  // is asked is that its height follows its scrollHeight as the value grows.
+  let content = 40;
+  const scroll = vi.spyOn(HTMLTextAreaElement.prototype, 'scrollHeight', 'get').mockImplementation(() => content);
+  try {
+    render(<Controlled />);
+    const field = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Title' });
+    expect(field.style.height).toBe('40px');
+    content = 120;
+    fireEvent.change(field, { target: { value: 'Weekly planning, October: what shipped, what slipped and what is next' } });
+    expect(field.style.height).toBe('120px');
+  } finally {
+    scroll.mockRestore();
+  }
+});
+
+test('a ref reaches the field itself', () => {
+  const ref = createRef<HTMLTextAreaElement>();
+  render(<DocumentTitleField ref={ref} aria-label="Title" defaultValue="Plan" />);
+  expect(ref.current).toBe(screen.getByRole('textbox', { name: 'Title' }));
 });

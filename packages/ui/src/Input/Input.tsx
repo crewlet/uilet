@@ -3,6 +3,7 @@ import { XGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
+import { useFocusModality } from '../utils/focusModality.js';
 
 export type InputSize = 'sm' | 'md';
 
@@ -95,6 +96,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   },
   ref,
 ) {
+  useFocusModality();
   const field = useRef<HTMLInputElement | null>(null);
   /*
    * Whether an UNCONTROLLED field holds anything. A controlled one is read

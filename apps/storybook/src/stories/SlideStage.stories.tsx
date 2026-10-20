@@ -21,7 +21,7 @@ export const FitsTheWidth: Story = {
   ),
 };
 
-/** Framed: the slide's own edge, so a slide on the page's own ground still reads as a slide. */
+/** Framed: the slide's own edge, so a slide on the page's own ground still reads as a slide, a dark slide on the dark theme included. */
 export const Framed: Story = {
   render: () => (
     <div style={{ maxWidth: '48rem' }}>
