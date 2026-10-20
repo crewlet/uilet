@@ -46,3 +46,25 @@ export const Default: Story = { render: () => <Reply /> };
 export const NearTheLimit: Story = {
   render: () => <Reply initial={'Keep greedy settlement for groups above twelve, and exact search below. '.repeat(3)} />,
 };
+
+function Brief() {
+  const [text, setText] = useState('');
+  return (
+    <div style={{ maxWidth: 560 }}>
+      <Composer
+        label="Brief"
+        value={text}
+        onChange={setText}
+        onSubmit={() => {}}
+        placeholder="What it is for, who it is for, and what done looks like"
+      />
+    </div>
+  );
+}
+
+/**
+ * Only the send shortcut, as a create page's brief has it: on a phone the
+ * hint is not drawn and its footer goes with it, so no empty strip is left
+ * under the field. Narrow the viewport under 640px to see it.
+ */
+export const HintOnly: Story = { render: () => <Brief /> };

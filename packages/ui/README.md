@@ -210,6 +210,8 @@ places:
 
 **An open source is one card** (`DatasetSource`). Selected with a preview, the entry draws a frame around its summary and the preview, the summary as the card's head and the preview a well under it, so the figures under a source read as its own rather than as loose items of the rail. Selected without a preview, or closed, it is unchanged.
 
+**A composer's footer is drawn only with something in it** (`Composer`). With no send shortcut, counter or actions there is no strip under the field, and a footer holding only the shortcut's hint goes on a phone, where the hint is not drawn, instead of leaving an empty strip. A footer with actions or a counter stays on every width.
+
 ## Changes in 0.35.1
 
 **A column given another type keeps only what every type has** (`SheetColumnEditor`, and `retypeColumn` in the sheet model). Its field, name, width, freezing, read-only flag and Required stay, and so does its length cap between text and long text, which both read it. Every other setting belongs to the old type and is dropped: a number's bounds, decimals and format, a choice's options, a date's time of day. The column is built up from what is kept rather than pared down from the old one, so a setting a type adds later is dropped without the editor having to name it. Before, a date's time of day and a text's length cap rode along, unseen, into a type that ignores them, and came back if the old type was picked again. A host that relied on a setting surviving a type change sets it again on the column it is handed.
