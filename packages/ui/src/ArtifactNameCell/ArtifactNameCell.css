@@ -1,0 +1,104 @@
+/*
+ * An artifact's name in a list: the kind's mark on its tint, the title over
+ * one quiet line. Every colour is a token: the mark reads the kind's own Fill,
+ * Line and Ink (`ArtifactKinds.css`), the words the text steps.
+ */
+
+.crewlet-artifact-name {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-width: 0;
+  max-width: 100%;
+  padding-block: var(--spacing-1);
+}
+
+/* THE MARK, the Make row's tile at a list's size: the kind's glyph on its
+   tint inside the kind's hairline. */
+.crewlet-artifact-name__mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  border-radius: var(--radius-md);
+  background: var(--crewlet-kind-fill);
+  box-shadow: inset 0 0 0 1px var(--crewlet-kind-line);
+  color: var(--crewlet-kind-ink);
+  transition: box-shadow var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+/* UNDER THE POINTER the row's ground moves (the row's own hover), and the
+   mark's hairline takes the kind's hue, so the one coloured thing on the row
+   answers too. No lift and no movement: a list is read down, not played. */
+:is(tr, [role='row']):hover .crewlet-artifact-name__mark {
+  box-shadow: inset 0 0 0 1px var(--crewlet-kind-hue);
+}
+
+.crewlet-artifact-name--trashed .crewlet-artifact-name__mark {
+  background: var(--color-surface-inset);
+  box-shadow: inset 0 0 0 1px var(--color-border-default);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-artifact-name__words {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-artifact-name__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-artifact-name__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.35;
+}
+
+.crewlet-artifact-name__pin {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-artifact-name__detail {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+}
+
+.crewlet-artifact-name__kind,
+.crewlet-artifact-name__dot {
+  flex: none;
+}
+
+.crewlet-artifact-name__about {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-artifact-name__mark {
+    transition: none;
+  }
+}

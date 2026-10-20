@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react';
-import { BuildingComplexGlyph, LockGlyph, PinGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
+import { PinGlyph } from '@crewlethq/icons/glyphs';
+import { ArtifactAccessGlyph, type ArtifactAccess } from '../ArtifactAccess/index.js';
 import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { ArtifactKindGround } from '../ArtifactKindIllustration/index.js';
 import { AvatarStack, type AvatarStackMember } from '../Avatar/index.js';
@@ -21,19 +22,6 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 export function ArtifactPreviewGlyph({ kind }: { kind: ArtifactKind }) {
   return <ArtifactKindGround kind={kind} />;
 }
-
-/**
- * Who can open an artifact, as its card says it: only its owner (and those
- * they shared it with by name, which the owner alone sees), people it is
- * shared with, or the whole company.
- */
-export type ArtifactAccess = 'private' | 'shared' | 'company';
-
-const ACCESS_GLYPHS: Readonly<Record<ArtifactAccess, typeof LockGlyph>> = {
-  private: LockGlyph,
-  shared: UsersGlyph,
-  company: BuildingComplexGlyph,
-};
 
 export type ArtifactCardSize = 'card' | 'compact';
 
@@ -227,7 +215,6 @@ export function ArtifactCard({
     );
   }
 
-  const Access = access ? ACCESS_GLYPHS[access] : null;
   return (
     <div className={cx('crewlet-artifact-card', 'crewlet-artifact-card--card', trashed && 'crewlet-artifact-card--trashed', className)}>
       <a href={href} className="crewlet-artifact-card__link" aria-labelledby={titleId} aria-describedby={factsId}>
@@ -256,9 +243,9 @@ export function ArtifactCard({
               {pinned ? `, ${text.pinned}` : ''}
             </VisuallyHidden>
             <span className="crewlet-artifact-card__line crewlet-artifact-card__meta">
-              {Access && access ? (
+              {access ? (
                 <span className="crewlet-artifact-card__access" title={text.access[access]}>
-                  <Access size="sm" />
+                  <ArtifactAccessGlyph access={access} />
                   <VisuallyHidden>{text.access[access]}</VisuallyHidden>
                 </span>
               ) : null}

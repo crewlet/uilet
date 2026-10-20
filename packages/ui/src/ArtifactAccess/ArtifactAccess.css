@@ -1,0 +1,31 @@
+/*
+ * An artifact's access as a glyph and its word. No colour of its own: the
+ * glyph is the tertiary step and the word the secondary, one step stronger
+ * where others can open it.
+ */
+
+.crewlet-artifact-access {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-1) * 1.5);
+  min-width: 0;
+  max-width: 100%;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-artifact-access__glyph {
+  display: inline-flex;
+  flex: none;
+}
+
+.crewlet-artifact-access__word {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-artifact-access--shared,
+.crewlet-artifact-access--company {
+  color: var(--color-text-secondary);
+}
