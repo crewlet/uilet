@@ -15,10 +15,12 @@
  * click on a board or a note selects it, a click on the field clears it, and
  * the pointer is the arrow. Hand (`H`, or Space held) pans whatever is under
  * the pointer, boards included, with the open hand. An editable canvas that
- * can create notes adds Text (`T`) and Sticky (`S`): a click on the field
- * places one there, opens it for typing, and hands back the Move tool. The
- * pointer is always the tool's (the Canvas cursors), and a pan in progress is
- * always the closed hand.
+ * can create boards adds Frame (`F`): a click on the field places a board
+ * there, selected, and hands back the Move tool. One that can create notes
+ * adds Text (`T`) and Sticky (`S`): a click on the field places one there,
+ * opens it for typing, and hands back the Move tool. The pointer is always
+ * the tool's (the Canvas cursors), and a pan in progress is always the closed
+ * hand.
  *
  * A PAGE INSIDE A BOARD NEVER TAKES THE CANVAS'S POINTER BY SURPRISE. A live
  * board is covered by a shield that pans the canvas like the field around it;
@@ -32,7 +34,8 @@
  * own paper or its handle, retyped on a double-click, and deleted with Delete
  * while selected. Each finished gesture is reported once, with whole canvas
  * pixels, and the caller decides what a change is (for a design, a new
- * version of its canvas).
+ * version of its canvas). Delete removes a selected note, and a selected
+ * board where the caller removes boards (`onBoardRemove`).
  *
  * HOVER AND SELECTION ARE OUTLINES IN THE ACCENT, at one screen pixel and two,
  * over a board's own hairline edge; hovering a board's name outlines its board,
@@ -65,6 +68,7 @@ import {
   type Ref,
 } from 'react';
 import {
+  FrameGlyph,
   HandGlyph,
   MaximizeGlyph,
   MousePointer2Glyph,
@@ -197,6 +201,7 @@ export interface CanvasBoardLabels {
   /** Each tool's name. */
   moveTool: string;
   handTool: string;
+  frameTool: string;
   textTool: string;
   stickyTool: string;
 }
@@ -215,24 +220,28 @@ const LABELS: CanvasBoardLabels = {
   tools: 'Tools',
   moveTool: 'Move',
   handTool: 'Hand',
+  frameTool: 'Frame',
   textTool: 'Text',
   stickyTool: 'Sticky note',
 };
 
 /**
- * The tools a board canvas offers. Move and Hand always; Text and Sticky only
- * where a person may edit and the caller places notes (`onNoteCreate`).
+ * The tools a board canvas offers. Move and Hand always; Frame only where a
+ * person may edit and the caller places boards (`onBoardCreate`), and Text and
+ * Sticky only where the caller places notes (`onNoteCreate`).
  *
- * NO FRAME TOOL. A board is a page an agent or an upload made, with a file
- * behind it, and an empty frame drawn here would be a board with nothing to
- * render. NO COMMENT TOOL until a canvas has comments to anchor.
+ * FRAME IS FOR SHAPING A CANVAS BEFORE IT IS DRAWN: a design's create page,
+ * where a person lays out the boards an agent then fills. A published design's
+ * board is a page with a file behind it, so its viewer offers no Frame. NO
+ * COMMENT TOOL until a canvas has comments to anchor.
  */
-export type CanvasBoardTool = 'move' | 'hand' | 'text' | 'sticky';
+export type CanvasBoardTool = 'move' | 'hand' | 'frame' | 'text' | 'sticky';
 
 /** The pointer each tool shows over the field. */
 const TOOL_CURSOR: Record<CanvasBoardTool, CanvasCursor> = {
   move: 'pointer',
   hand: 'hand',
+  frame: 'crosshair',
   text: 'text',
   sticky: 'crosshair',
 };
@@ -274,6 +283,18 @@ export interface CanvasBoardProps {
   onNoteChange?: ((note: CanvasBoardNote) => void) | undefined;
   /** A note was deleted. */
   onNoteRemove?: ((id: string) => void) | undefined;
+  /**
+   * The Frame tool placed a board at a canvas point (its top left, in canvas
+   * pixels). The caller adds the board, with whatever size and name it gives
+   * new boards, and returns its id, which the canvas then selects. Absent, or
+   * on a canvas that is not editable, the tool is not offered.
+   */
+  onBoardCreate?: ((at: CanvasPoint) => string | undefined) | undefined;
+  /**
+   * Delete pressed on a selected board. Absent, a board is not deleted from
+   * the canvas.
+   */
+  onBoardRemove?: ((id: string) => void) | undefined;
   /**
    * The Text or Sticky tool placed a note at a canvas point (its top left, in
    * canvas pixels). The caller adds the note, with whatever size and starting
@@ -542,6 +563,8 @@ export function CanvasBoard({
   onNoteChange,
   onNoteRemove,
   onNoteCreate,
+  onBoardCreate,
+  onBoardRemove,
   onOpen,
   onActivate,
   selected: heldSelection,
@@ -573,9 +596,11 @@ export function CanvasBoard({
   useImperativeHandle(canvasRef, () => canvas.current as CanvasHandle, []);
 
   const creates = editable && onNoteCreate !== undefined;
+  const frames = editable && onBoardCreate !== undefined;
   const tools: CanvasTool<CanvasBoardTool>[] = [
     { id: 'move', label: text.moveTool, icon: <MousePointer2Glyph />, shortcut: 'V' },
     { id: 'hand', label: text.handTool, icon: <HandGlyph />, shortcut: 'H' },
+    ...(frames ? ([{ id: 'frame', label: text.frameTool, icon: <FrameGlyph />, shortcut: 'F' }] as const) : []),
     ...(creates
       ? ([
           { id: 'text', label: text.textTool, icon: <TypeGlyph />, shortcut: 'T' },
@@ -668,11 +693,14 @@ export function CanvasBoard({
       if (!event.repeat) setSpaceHeld(true);
       return;
     }
-    if ((event.key === 'Delete' || event.key === 'Backspace') && editable && shownSelection?.kind === 'note') {
-      event.preventDefault();
-      onNoteRemove?.(shownSelection.id);
-      setSelected(null);
-      return;
+    if ((event.key === 'Delete' || event.key === 'Backspace') && editable && shownSelection !== null) {
+      const remove = shownSelection.kind === 'note' ? onNoteRemove : onBoardRemove;
+      if (remove) {
+        event.preventDefault();
+        remove(shownSelection.id);
+        setSelected(null);
+        return;
+      }
     }
     const picked = toolForKey(tools, event);
     if (picked !== undefined) {
@@ -690,6 +718,13 @@ export function CanvasBoard({
     const target = event.target instanceof Element ? event.target : null;
     if (!target?.closest('.crewlet-canvas__viewport')) return;
     if (target.closest('.crewlet-canvas-board__board, .crewlet-canvas-board__note')) return;
+    if (acting === 'frame' && onBoardCreate && canvas.current) {
+      const at = canvas.current.worldAt({ x: event.clientX, y: event.clientY });
+      const id = onBoardCreate({ x: Math.round(at.x), y: Math.round(at.y) });
+      setTool('move');
+      if (id !== undefined) setSelected({ kind: 'board', id });
+      return;
+    }
     if ((acting === 'text' || acting === 'sticky') && onNoteCreate && canvas.current) {
       const at = canvas.current.worldAt({ x: event.clientX, y: event.clientY });
       const id = onNoteCreate(acting === 'text' ? 'title' : 'sticky', {

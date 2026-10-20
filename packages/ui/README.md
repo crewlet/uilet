@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.35.0
+
+**`CanvasBoard` can shape a canvas before it is drawn.** An editable board given `onBoardCreate` adds Frame (`F`) to its palette, between Hand and Text: a click on the field hands the caller the canvas point, the caller adds a board of whatever size and name it gives new ones and returns its id, and the canvas selects it and hands back Move. `onBoardRemove` lets Delete (or Backspace) remove a selected board, as it removes a selected note. Neither is offered on a view-only canvas, so a published design's viewer is unchanged. The `Shaping` story lays out a design's boards this way. `@crewlethq/icons` vendors `frame`, `laptop`, `tablet` and `smartphone` for it and for frame presets.
+
 ## Changes in 0.34.1
 
 **`ArtifactKindGlyph`, `ARTIFACT_KINDS` and `ArtifactKind` have a module of their own** (`@crewlethq/ui/ArtifactKindGlyph`), and it imports nothing but the glyphs. They were defined in `ArtifactCard`'s module, and a bundler places a module whole, so a host that drew one kind glyph in its frame (a sidebar's pins, a command palette's hits) took the whole card into its first screen, and with 0.34.0 the kind illustrations the card draws: about 11 KB of script for a gallery the reader had not opened. Nothing is renamed: the root export and `@crewlethq/ui/ArtifactCard` still answer for all three, and `ArtifactIcon`, `ArtifactBar`, `DashboardCover` and `ArtifactKindIllustration` now import them from the new module.
