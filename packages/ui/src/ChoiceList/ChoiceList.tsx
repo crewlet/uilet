@@ -7,6 +7,11 @@ export interface ChoiceListOption {
   value: string;
   /** What the choice is, in a few words. */
   label: ReactNode;
+  /**
+   * A picture of the choice, drawn between the radio and the words: an
+   * agent's character, a kind's glyph. Decorative; the label names it.
+   */
+  media?: ReactNode;
   /** One line under the label saying what choosing it means. */
   detail?: ReactNode;
   /** A short word at the row's end, such as "Recommended". */
@@ -38,7 +43,8 @@ export interface ChoiceListProps {
 
 /**
  * One answer from a short list, each choice a row with its label, a line of
- * detail and an optional tag, in one bordered box.
+ * detail, an optional picture (`media`) and an optional tag, in one bordered
+ * box.
  *
  * NATIVE RADIOS, so the arrow keys move the choice and Tab leaves the group as
  * the platform does, and every row is its radio's label, so the whole row
@@ -56,7 +62,7 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
           const checked = option.value === value;
           return (
             <div key={option.value} className={cx('crewlet-choice-list__item', option.separated && 'is-separated')}>
-              <label className={cx('crewlet-choice-list__row', checked && 'is-checked')} htmlFor={id}>
+              <label className={cx('crewlet-choice-list__row', option.media != null && 'has-media', checked && 'is-checked')} htmlFor={id}>
                 <input
                   id={id}
                   type="radio"
@@ -67,6 +73,11 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
                   onChange={() => onChange(option.value)}
                   className="crewlet-choice-list__radio"
                 />
+                {option.media != null ? (
+                  <span className="crewlet-choice-list__media" aria-hidden>
+                    {option.media}
+                  </span>
+                ) : null}
                 <span className="crewlet-choice-list__text">
                   <span className="crewlet-choice-list__label">{option.label}</span>
                   {option.detail ? <span className="crewlet-choice-list__detail">{option.detail}</span> : null}

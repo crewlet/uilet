@@ -58,6 +58,29 @@ test('the tag and the separating rule are drawn where asked, and the footer afte
   expect(container.querySelector('.crewlet-choice-list__footer')!.textContent).toBe('Submit');
 });
 
+test('a picture is drawn between the radio and the words, hidden from the name', () => {
+  render(
+    <ChoiceList
+      label="Who builds it"
+      value="ada"
+      onChange={() => {}}
+      options={[
+        { value: 'ada', label: 'Ada', detail: 'Designer', media: <span data-testid="face">A</span> },
+        { value: 'lin', label: 'Lin' },
+      ]}
+    />,
+  );
+  const row = screen.getByRole('radio', { name: /Ada\s*Designer/ }).closest('label')!;
+  expect(row.classList.contains('has-media')).toBe(true);
+  expect([...row.children].map((c) => c.className)).toEqual([
+    'crewlet-choice-list__radio',
+    'crewlet-choice-list__media',
+    'crewlet-choice-list__text',
+  ]);
+  expect(screen.getByTestId('face').parentElement!.getAttribute('aria-hidden')).toBe('true');
+  expect(screen.getByRole('radio', { name: 'Lin' }).closest('label')!.classList.contains('has-media')).toBe(false);
+});
+
 test('a disabled list takes no choice', () => {
   render(<ChoiceList label="Settlement" options={OPTIONS} value={null} onChange={() => {}} disabled />);
   expect((screen.getAllByRole('radio') as HTMLInputElement[]).every((r) => r.disabled)).toBe(true);
