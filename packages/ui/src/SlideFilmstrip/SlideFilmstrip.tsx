@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CopyGlyph, EllipsisGlyph, EyeOffGlyph, GripVerticalGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
-import { Kbd } from '../Kbd/index.js';
+import { Kbd, isApplePlatform } from '../Kbd/index.js';
 import { Menu, type MenuEntry } from '../Menu/index.js';
 import { useReorder } from '../Reorder/index.js';
 import { SlideStage } from '../SlideStage/index.js';
@@ -78,6 +78,12 @@ export interface SlideFilmstripProps {
   className?: string | undefined;
   labels?: Partial<SlideFilmstripLabels> | undefined;
 }
+
+/**
+ * The delete key as the reader's keyboard names it: the key marked Delete on
+ * an Apple keyboard is Backspace to the browser, and both delete here.
+ */
+const DELETE_KEY = (): string => (isApplePlatform() ? 'Backspace' : 'Delete');
 
 /** The keys that step the selection, by the way the strip runs. */
 const STEP_KEYS: Readonly<Record<SlideFilmstripOrientation, { back: string; forward: string }>> = {
@@ -166,7 +172,7 @@ export function SlideFilmstrip({
       : []),
     ...(onDelete
       ? [{ key: 'delete', label: text.delete, icon: <TrashGlyph size="sm" />, onSelect: () => onDelete(id),
-          danger: true, hint: <Kbd subtle keys={['Delete']} /> }]
+          danger: true, hint: <Kbd subtle keys={[DELETE_KEY()]} /> }]
       : []),
     ...(actions?.(id) ?? []),
   ];
