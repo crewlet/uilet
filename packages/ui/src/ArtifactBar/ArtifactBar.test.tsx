@@ -30,6 +30,13 @@ test('the title is the page heading, beside the kind said in words', () => {
   );
 });
 
+// THE GLYPH IS IN THE KIND'S INK, as the gallery's badge and the Make row
+// draw it: the bar carries the kind's class, which sets `--crewlet-kind-ink`.
+test("the kind's glyph is drawn in the kind's colour", () => {
+  render(<ArtifactBar title="Q4 roadmap" kind="design" kindLabel="Design" />);
+  expect(screen.getByRole('img', { name: 'Design' }).classList.contains('crewlet-kind--design')).toBe(true);
+});
+
 test('the way back is a link named by where it goes', () => {
   render(<ArtifactBar title="Q4 roadmap" kind="slides" kindLabel="Slides" back={{ href: '#/artifacts', label: 'Back to artifacts' }} />);
   const back = screen.getByRole('link', { name: 'Back to artifacts' });

@@ -220,7 +220,7 @@ export function ArtifactBar({
               </IconButton>
             </Tooltip>
           ) : null}
-          <span className="crewlet-artifact-bar__glyph" role="img" aria-label={kindLabel} title={kindLabel}>
+          <span className={cx('crewlet-artifact-bar__glyph', `crewlet-kind--${kind}`)} role="img" aria-label={kindLabel} title={kindLabel}>
             <ArtifactIcon icon={icon ?? undefined} kind={kind} size="sm" />
           </span>
           {pending ? (

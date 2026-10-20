@@ -89,7 +89,7 @@ const handles = () =>
 
 test('an axis picked from the menu becomes a chip before it has a value, with its editor open', () => {
   render(<Screen />);
-  fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add filter' }));
   fireEvent.click(screen.getByRole('menuitem', { name: 'Role' }));
 
   // The chip is on screen although nothing has been ticked, which is the whole
@@ -103,14 +103,14 @@ test('an axis picked from the menu becomes a chip before it has a value, with it
    * gone rather than opening onto nothing.
    */
   fireEvent.keyDown(screen.getByRole('listbox', { name: 'Role options' }), { key: 'Escape' });
-  expect(screen.queryByRole('button', { name: 'Filter' })).toBe(null);
+  expect(screen.queryByRole('button', { name: 'Add filter' })).toBe(null);
 });
 
 test('a column filter narrows the rows it hands the table', () => {
   render(<Screen />);
   expect(handles()).toEqual(['ada', 'grace', 'linus']);
 
-  fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add filter' }));
   fireEvent.click(screen.getByRole('menuitem', { name: 'Role' }));
   const list = screen.getByRole('listbox', { name: 'Role options' });
   fireEvent.keyDown(list, { key: 'ArrowDown' });
@@ -182,7 +182,7 @@ test('Clear filters takes every chip off and leaves the search box alone', () =>
 test('the search box is always drawn and is never one of the axes the menu offers', () => {
   render(<Screen />);
   expect(screen.getByRole('searchbox', { name: 'Search seats' })).toBeDefined();
-  fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add filter' }));
   expect(screen.queryByRole('menuitem', { name: 'Search seats' })).toBe(null);
 });
 
@@ -407,7 +407,7 @@ test('the chip band is drawn only once an axis is on', () => {
   render(<Screen />);
   expect(document.querySelector('.crewlet-data-table__filter-bar')).toBe(null);
 
-  fireEvent.click(screen.getByRole('button', { name: 'Filter' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add filter' }));
   fireEvent.click(screen.getByRole('menuitem', { name: 'Role' }));
 
   const band = document.querySelector('.crewlet-data-table__filter-bar')!;

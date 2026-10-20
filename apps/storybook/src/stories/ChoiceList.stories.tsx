@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, ChoiceList, Composer } from '@crewlethq/ui';
+import { Avatar, Button, ChoiceList, Composer } from '@crewlethq/ui';
+import { CREWLET_CHARACTERS } from '@crewlethq/icons/characters';
 
 /**
  * One answer from a short list: each choice a row with a line of detail and an
@@ -73,3 +74,35 @@ function Decision() {
 }
 
 export const Default: Story = { render: () => <Decision /> };
+
+/**
+ * Who builds it: each agent drawn as its Crewlet character beside its name and
+ * role (`media`), the suggested one first and tagged, as a create page offers
+ * the seats that can make an artifact.
+ */
+function WhoBuildsIt() {
+  const agents = [
+    { handle: 'designer', name: 'Agent Designer', role: 'Design · Product', character: CREWLET_CHARACTERS[3] },
+    { handle: 'frontend', name: 'Agent Frontend', role: 'Engineering · Web', character: CREWLET_CHARACTERS[7] },
+    { handle: 'pm', name: 'Agent PM', role: 'Product', character: CREWLET_CHARACTERS[12] },
+  ];
+  const [value, setValue] = useState<string | null>('designer');
+  return (
+    <div style={{ maxWidth: 420 }}>
+      <ChoiceList
+        label="Who builds it"
+        value={value}
+        onChange={setValue}
+        options={agents.map((agent, i) => ({
+          value: agent.handle,
+          label: agent.name,
+          detail: agent.role,
+          media: <Avatar name={agent.name} kind="agent" character={agent.character} size="sm" />,
+          tag: i === 0 ? 'Suggested' : undefined,
+        }))}
+      />
+    </div>
+  );
+}
+
+export const WithPictures: Story = { render: () => <WhoBuildsIt /> };

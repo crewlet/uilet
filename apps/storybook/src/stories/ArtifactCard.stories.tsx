@@ -179,11 +179,13 @@ function Opening() {
  * THE GALLERY CARD as the Artifacts page draws it: a live preview of the
  * artifact's own content, the kind's badge over the preview's foot, the title
  * on one line, who can open it (a lock, people, the company) and when it was
- * edited, and a More menu beside the link, shown on hover and focus.
+ * edited, and a More menu beside the link, shown on hover and focus. Four
+ * across a laptop's page, as the gallery lays them out; hover is a border and
+ * hairline shadow step, and nothing moves.
  */
 export const GalleryCards: Story = {
   render: () => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 24, maxWidth: 1120 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '24px 20px', maxWidth: 1140 }}>
       <ArtifactCard
         title="Incident runbook"
         kind="doc"

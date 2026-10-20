@@ -163,7 +163,12 @@ export interface MenuTriggerProps {
 }
 
 export interface MenuProps {
-  /** The trigger's accessible name, such as "Actions for Software Engineer". */
+  /**
+   * The trigger's accessible name, such as "Actions for Software Engineer".
+   * It names a text trigger too, so "New" can be announced as "New artifact":
+   * keep the trigger's visible words in it, so a person who speaks what they
+   * see still reaches the button.
+   */
   label: string;
   items: readonly MenuEntry[];
   /** The trigger's glyph, when it has no visible text. */
@@ -541,7 +546,7 @@ export function Menu({
       ) : trigger === undefined ? (
         <IconButton {...shared} label={label} icon={icon ?? <EllipsisVerticalGlyph />} size="sm" />
       ) : (
-        <Button {...shared} variant={triggerVariant} size="small" leadingIcon={icon} trailingIcon={trailingIcon}>
+        <Button {...shared} aria-label={label} variant={triggerVariant} size="small" leadingIcon={icon} trailingIcon={trailingIcon}>
           {trigger}
         </Button>
       )}
