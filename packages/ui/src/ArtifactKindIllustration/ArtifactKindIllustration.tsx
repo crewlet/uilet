@@ -148,6 +148,19 @@ export interface ArtifactKindTileProps {
   label: string;
   /** Where starting one goes. Left out with `disabledReason`, the tile starts nothing. */
   href?: string | undefined;
+  /**
+   * What a press does, for a tile that starts something in place rather than
+   * going somewhere (a create page's starting layouts): the tile is then a
+   * button. `href` wins where both are given.
+   */
+  onSelect?: (() => void) | undefined;
+  /**
+   * Drawn on the kind's ground in place of its drawing: a picture of this
+   * particular starting point, such as a design layout's schematic.
+   */
+  face?: ReactNode;
+  /** One quiet line under the name saying what the tile starts: "3 boards". */
+  detail?: ReactNode;
   /** A short tag after the name ("New", "Beta"), for a kind that is genuinely new. */
   badge?: string | undefined;
   /** Why this reader cannot start one. The tile stays focusable and says so. */
@@ -164,20 +177,39 @@ export interface ArtifactKindTileProps {
  * through it by keyboard hears why (`disabledReason`) rather than finding a
  * kind missing.
  */
-export function ArtifactKindTile({ kind, label, href, badge, disabledReason, className }: ArtifactKindTileProps) {
+export function ArtifactKindTile({
+  kind,
+  label,
+  href,
+  onSelect,
+  face,
+  detail,
+  badge,
+  disabledReason,
+  className,
+}: ArtifactKindTileProps) {
   const reasonId = useId();
-  const off = disabledReason !== undefined || href === undefined;
+  const detailId = useId();
+  const off = disabledReason !== undefined || (href === undefined && onSelect === undefined);
   const body = (
     <>
       <span className="crewlet-kind-tile__frame">
-        <ArtifactKindGround kind={kind} className="crewlet-kind-tile__ground" />
+        <ArtifactKindGround kind={kind} className="crewlet-kind-tile__ground">
+          {face}
+        </ArtifactKindGround>
       </span>
       <span className="crewlet-kind-tile__label">
         <span className="crewlet-kind-tile__name">{label}</span>
         {badge ? <span className="crewlet-kind-tile__badge">{badge}</span> : null}
       </span>
+      {detail ? (
+        <span id={detailId} className="crewlet-kind-tile__detail">
+          {detail}
+        </span>
+      ) : null}
     </>
   );
+  const describedBy = detail ? detailId : undefined;
   // THE NAME IS THE KIND, then its tag: "Docs, New". The two are spans side
   // by side, which an accessible name would run together as "DocsNew".
   const name = badge ? `${label}, ${badge}` : label;
@@ -189,7 +221,7 @@ export function ArtifactKindTile({ kind, label, href, badge, disabledReason, cla
           tabIndex={0}
           aria-label={name}
           aria-disabled="true"
-          aria-describedby={disabledReason ? reasonId : undefined}
+          aria-describedby={disabledReason ? reasonId : describedBy}
           title={disabledReason}
           className={cx('crewlet-kind-tile', 'crewlet-kind-tile--disabled', className)}
         >
@@ -199,8 +231,21 @@ export function ArtifactKindTile({ kind, label, href, badge, disabledReason, cla
       </>
     );
   }
+  if (href === undefined) {
+    return (
+      <button
+        type="button"
+        aria-label={name}
+        aria-describedby={describedBy}
+        className={cx('crewlet-kind-tile', 'crewlet-kind-tile--button', className)}
+        onClick={onSelect}
+      >
+        {body}
+      </button>
+    );
+  }
   return (
-    <a href={href} aria-label={name} className={cx('crewlet-kind-tile', className)}>
+    <a href={href} aria-label={name} aria-describedby={describedBy} className={cx('crewlet-kind-tile', className)}>
       {body}
     </a>
   );

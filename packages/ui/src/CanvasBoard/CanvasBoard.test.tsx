@@ -354,6 +354,65 @@ test('Text and Sticky place a note where the field is clicked, open it for typin
   expect(onNoteCreate).toHaveBeenCalledTimes(2);
 });
 
+test('Frame is offered only where a person can place boards, and places one where the field is clicked', () => {
+  const canvasRef = createRef<CanvasHandle>();
+  const onBoardCreate = vi.fn(() => 'b9');
+  const onSelectedChange = vi.fn();
+  const props = { label: 'Landing page', boards: BOARDS, notes: NOTES, renderBoard: page, minLiveWidth: 0 };
+  const { container, rerender } = mount({ onBoardCreate });
+  // A view-only canvas never offers Frame, whatever the caller passes.
+  expect(toolNames()).toEqual(['Move', 'Hand']);
+  rerender(<CanvasBoard {...props} editable onBoardCreate={onBoardCreate} onNoteCreate={() => undefined} />);
+  expect(toolNames()).toEqual(['Move', 'Hand', 'Frame', 'Text', 'Sticky note']);
+  rerender(
+    <CanvasBoard
+      {...props}
+      editable
+      onBoardCreate={onBoardCreate}
+      onSelectedChange={onSelectedChange}
+      canvasRef={canvasRef}
+    />,
+  );
+  const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+  const state = () => [
+    container.querySelector('.crewlet-canvas-board')!.getAttribute('data-tool'),
+    container.querySelector('.crewlet-canvas')!.getAttribute('data-cursor'),
+  ];
+  fireEvent.keyDown(viewport, { key: 'f' });
+  expect(state()).toEqual(['frame', 'crosshair']);
+  // A click on a board is the board's, not a place for a new one.
+  fireEvent.click(container.querySelector('.crewlet-canvas-board__shield')!);
+  expect(onBoardCreate).not.toHaveBeenCalled();
+  fireEvent.click(viewport, { clientX: 300, clientY: 200 });
+  const at = canvasRef.current!.worldAt({ x: 300, y: 200 });
+  expect(onBoardCreate).toHaveBeenCalledWith({ x: Math.round(at.x), y: Math.round(at.y) });
+  expect(onSelectedChange).toHaveBeenLastCalledWith({ kind: 'board', id: 'b9' });
+  expect(state()).toEqual(['move', 'pointer']);
+});
+
+test('Delete removes a selected board only where the caller removes boards', () => {
+  const onBoardRemove = vi.fn();
+  const { container, rerender } = mount({ editable: true });
+  const viewport = container.querySelector('.crewlet-canvas__viewport')!;
+  fireEvent.click(container.querySelector('.crewlet-canvas-board__shield')!);
+  fireEvent.keyDown(viewport, { key: 'Delete' });
+  expect(container.querySelector('[data-selected]')).not.toBeNull();
+  rerender(
+    <CanvasBoard
+      label="Landing page"
+      boards={BOARDS}
+      notes={NOTES}
+      renderBoard={page}
+      minLiveWidth={0}
+      editable
+      onBoardRemove={onBoardRemove}
+    />,
+  );
+  fireEvent.keyDown(viewport, { key: 'Backspace' });
+  expect(onBoardRemove).toHaveBeenCalledWith('hero');
+  expect(container.querySelector('.crewlet-canvas-board__board[data-selected]')).toBeNull();
+});
+
 test('a selected item draws four corners, and a corner resizes with the opposite corner held still', () => {
   const onBoardChange = vi.fn();
   const { container } = mount({ editable: true, onBoardChange });

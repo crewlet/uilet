@@ -112,6 +112,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `folder-input` | `FolderInputGlyph` | `package/icons/folder-input.svg` |
 | `folder-kanban` | `FolderKanbanGlyph` | `package/icons/folder-kanban.svg` |
 | `folder-plus` | `FolderPlusGlyph` | `package/icons/folder-plus.svg` |
+| `frame` | `FrameGlyph` | `package/icons/frame.svg` |
 | `fullscreen` | `FullscreenGlyph` | `package/icons/fullscreen.svg` |
 | `gauge` | `GaugeGlyph` | `package/icons/gauge.svg` |
 | `globe` | `GlobeGlyph` | `package/icons/globe.svg` |
@@ -130,6 +131,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `info` | `InfoGlyph` | `package/icons/info.svg` |
 | `italic` | `ItalicGlyph` | `package/icons/italic.svg` |
 | `key` | `KeyGlyph` | `package/icons/key.svg` |
+| `laptop` | `LaptopGlyph` | `package/icons/laptop.svg` |
 | `layers` | `LayersGlyph` | `package/icons/layers.svg` |
 | `layout-dashboard` | `LayoutDashboardGlyph` | `package/icons/layout-dashboard.svg` |
 | `layout-grid` | `LayoutGridGlyph` | `package/icons/layout-grid.svg` |
@@ -182,6 +184,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `shield` | `ShieldGlyph` | `package/icons/shield.svg` |
 | `shield-user` | `ShieldUserGlyph` | `package/icons/shield-user.svg` |
 | `sliders-vertical` | `SlidersVerticalGlyph` | `package/icons/sliders-vertical.svg` |
+| `smartphone` | `SmartphoneGlyph` | `package/icons/smartphone.svg` |
 | `split` | `SplitGlyph` | `package/icons/split.svg` |
 | `square-code` | `SquareCodeGlyph` | `package/icons/square-code.svg` |
 | `square-kanban` | `SquareKanbanGlyph` | `package/icons/square-kanban.svg` |
@@ -191,6 +194,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `strikethrough` | `StrikethroughGlyph` | `package/icons/strikethrough.svg` |
 | `sun` | `SunGlyph` | `package/icons/sun.svg` |
 | `table` | `TableGlyph` | `package/icons/table.svg` |
+| `tablet` | `TabletGlyph` | `package/icons/tablet.svg` |
 | `target` | `TargetGlyph` | `package/icons/target.svg` |
 | `text-align-center` | `TextAlignCenterGlyph` | `package/icons/text-align-center.svg` |
 | `text-align-end` | `TextAlignEndGlyph` | `package/icons/text-align-end.svg` |
