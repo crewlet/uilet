@@ -38,12 +38,12 @@ function Harness({
   const [value, setValue] = useState(initial);
   return (
     <SourceEditor
-      ref={handle}
+      {...(handle ? { ref: handle } : {})}
       label="Page source"
       value={value}
       onChange={setValue}
-      marks={marks}
-      onSubmit={onSubmit}
+      {...(marks ? { marks } : {})}
+      {...(onSubmit ? { onSubmit } : {})}
     />
   );
 }
