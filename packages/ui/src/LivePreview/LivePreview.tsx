@@ -1,45 +1,58 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 import { createLivePreviewBudget, LIVE_PREVIEW_MAX, LIVE_PREVIEW_MAX_FRAMES, perFrame, type LivePreviewBudget, type LivePreviewSlot } from './budget.js';
+import { copyOf, createLivePreviewStills, LIVE_PREVIEW_STILLS_KEPT, type LivePreviewStill, type LivePreviewStills } from './stills.js';
 
 /**
- * Real content drawn small: a live, scaled-down snapshot of a page, a grid or
- * a frame inside a fixed box, the way a gallery card previews what it opens.
+ * Real content drawn small, once: a scaled-down snapshot of a page, a grid or
+ * a slide, rendered by the content's own renderer from its real data and
+ * then frozen, the way a gallery card previews what it opens.
  *
  * LAID OUT AT FULL SIZE, THEN SCALED. The content is given `width` CSS pixels
  * to lay itself out in, exactly as it would on its own page, and the whole is
  * scaled down to the box with a CSS transform, so the preview is the page
  * itself at a smaller size and never a second layout of it. Left out, the
- * content fills the box unscaled (a slide stage that scales itself).
+ * content fills the box unscaled.
  *
- * DRAWN BEFORE IT IS SEEN, AND ONLY SO MANY AT ONCE. The content is mounted
- * once the box comes within `rootMargin` of what its scroll container shows
- * and the shared budget (`LivePreviewBudgetProvider`: thirty-two by default,
- * no more than twelve of them pages in a frame) grants it a slot. The margin is measured against the NEAREST SCROLL
- * CONTAINER, not the window: a page that scrolls inside a frame clips its
- * content at the frame's edge, and an observer rooted at the window never
- * saw a box until it was already on screen, so every card was drawn as the
- * reader looked at it.
+ * RENDERED ONCE, THEN A STILL COPY. The content is mounted once the box has
+ * stayed within `rootMargin` (a screen, by default) of what its scroll
+ * container shows for `dwellMs` and the shared budget
+ * (`LivePreviewBudgetProvider`) grants it one of the renders it allows at
+ * once. It reads what it needs and draws, out of sight behind the stand-in.
+ * When it says it has drawn (`useLivePreview().ready()`) its render is given
+ * to the next box, and once the page's fonts have loaded and the layout has
+ * settled, what it drew is copied (its DOM, cloned: `stills.ts`), the copy
+ * fades in over the stand-in, and the content is unmounted in the same
+ * commit. From then on the preview holds nothing live: no React tree under
+ * it, no subscription, no observer of its own and no timer, and it never
+ * reads, polls or redraws again. A copy laid out at `width` is scaled to its
+ * box by one observer the provider's copies share, so a resized window
+ * rescales it rather than drawing it again; one with no `width` is drawn
+ * again only if its box changes size.
  *
- * WHAT HAS DRAWN STAYS DRAWN. A preview that leaves keeps its content and
- * parks its slot (`budget.ts`); only when another preview needs the slot is
- * it taken back, and then what it drew is kept as a still copy, so a reader
- * scrolling back finds every card as they left it rather than its stand-in
- * fading back into content. A still copy is the drawn DOM, cloned; content
- * with a frame in it cannot be cloned (a frame's page lives in another
- * document) and shows its stand-in instead.
+ * KEPT FOR THE PAGE. With a `snapshot` key, the copy is kept by the provider
+ * under that key, and a preview mounted again under it (a card back after a
+ * filter, a change of shape or a page of results) shows the same copy at
+ * once, with nothing read. A page loaded afresh draws afresh.
  *
- * Until the content says it has drawn (`useLivePreview().ready()`), while it
- * waits for a slot, when it failed (`fail()`) and in a browser with no
- * IntersectionObserver, the box shows `fallback` (or the still copy). The
- * content fades in over it, and the stand-in is hidden once the fade is done:
- * fading the stand-in out at the same time showed both at half strength
- * halfway through, a double exposure on every card.
+ * A FRAME CANNOT BE COPIED. Content that runs a page in a frame (`frame`)
+ * lives in another document: there is nothing in this one to clone, and a
+ * clone of the frame would load the page again. So a framed preview keeps its
+ * frame once drawn, fading it in over the stand-in. Kept frames are capped
+ * apart; one the reader has left is taken back only when a frame coming near
+ * needs its place, and shows its stand-in until it is drawn again.
  *
- * NEVER INTERACTIVE, NEVER ANNOUNCED. The live layer is `inert`, takes no
- * pointer and is hidden from assistive technology: nothing in it can be
- * focused or clicked, and whatever surrounds the preview (a card's link)
- * names what it shows. Under `prefers-reduced-motion` nothing fades.
+ * Until it has drawn, while it waits for a render, when it failed (`fail()`,
+ * or no drawing within `LIVE_PREVIEW_RENDER_MS`), and in a browser with no
+ * IntersectionObserver, the box shows `fallback`. What has drawn is shown
+ * over it, and the stand-in is hidden once the fade is done: fading the
+ * stand-in out at the same time showed both at half strength halfway through.
+ *
+ * NEVER INTERACTIVE, NEVER ANNOUNCED. The live layer and the copy are
+ * `inert`, take no pointer and are hidden from assistive technology: nothing
+ * in them can be focused or clicked, and whatever surrounds the preview (a
+ * card's link) names what it shows. Under `prefers-reduced-motion` nothing
+ * fades.
  */
 
 /**
@@ -49,27 +62,63 @@ import { createLivePreviewBudget, LIVE_PREVIEW_MAX, LIVE_PREVIEW_MAX_FRAMES, per
  */
 export const LIVE_PREVIEW_DWELL_MS = 120;
 
-const DefaultBudget = createLivePreviewBudget(LIVE_PREVIEW_MAX, perFrame);
-const BudgetContext = createContext<LivePreviewBudget>(DefaultBudget);
+/**
+ * How far ahead of what its scroll container shows a box starts rendering: a
+ * whole screen in each direction. A snapshot costs nothing once it is taken,
+ * so drawing a screen ahead is paid once, and it is what lets a reader
+ * scrolling at any pace meet every card already drawn. Measured on a gallery
+ * of 44 cards at 1440 by 900 with the CPU slowed fourfold, 200 pixels ahead
+ * left cards on screen before their first draw in about sixty samples of a
+ * scroll down and back; a screen ahead left none, and the first screen was
+ * drawn within a frame or two of the time it took before.
+ */
+export const LIVE_PREVIEW_MARGIN = '100% 0px';
 
-/** Gives the previews under it a budget of their own: `max` live at once, `maxFrames` of them in a frame. */
+/**
+ * The longest a render may take before it gives up and keeps its stand-in.
+ * A preview is a glimpse: content that has not drawn in fifteen seconds is
+ * waiting on a read that is failing slowly, and holding one of the budget's
+ * few renders for it would hold the rest of a gallery up behind it. Fifteen
+ * is past the ten seconds a page in a frame is given to answer at all
+ * (`FRAME_HELLO_TIMEOUT_MS`) and its grace after, so a frame settles itself
+ * first.
+ */
+export const LIVE_PREVIEW_RENDER_MS = 15_000;
+
+interface Shared {
+  budget: LivePreviewBudget;
+  stills: LivePreviewStills;
+}
+
+const DefaultShared: Shared = { budget: createLivePreviewBudget(LIVE_PREVIEW_MAX, perFrame), stills: createLivePreviewStills() };
+const SharedContext = createContext<Shared>(DefaultShared);
+
+/**
+ * Gives the previews under it a budget and a store of their own: `max`
+ * rendering at once, `maxFrames` frames kept, and up to `kept` still copies
+ * kept by key for as long as the provider is mounted.
+ */
 export function LivePreviewBudgetProvider({
   max = LIVE_PREVIEW_MAX,
-  maxFrames = Math.min(max, LIVE_PREVIEW_MAX_FRAMES),
+  maxFrames = LIVE_PREVIEW_MAX_FRAMES,
+  kept = LIVE_PREVIEW_STILLS_KEPT,
   children,
 }: {
   max?: number | undefined;
   maxFrames?: number | undefined;
+  kept?: number | undefined;
   children: ReactNode;
 }) {
   const budget = useMemo(() => createLivePreviewBudget(max, perFrame, maxFrames), [max, maxFrames]);
-  return <BudgetContext.Provider value={budget}>{children}</BudgetContext.Provider>;
+  const stills = useMemo(() => createLivePreviewStills(kept), [kept]);
+  const shared = useMemo(() => ({ budget, stills }), [budget, stills]);
+  return <SharedContext.Provider value={shared}>{children}</SharedContext.Provider>;
 }
 
 export interface LivePreviewSignals {
-  /** The content has drawn: the stand-in gives way to it. */
+  /** The content has drawn: it is copied and the copy shown, or for a frame, the frame is shown. */
   ready: () => void;
-  /** The content has nothing to draw or could not draw: the stand-in stays, and the slot is given back. */
+  /** The content has nothing to draw or could not draw: the stand-in stays, and the render is given back. */
   fail: () => void;
 }
 
@@ -81,25 +130,36 @@ export function useLivePreview(): LivePreviewSignals {
   return useContext(SignalContext);
 }
 
-/** Where a preview is in its life. */
+/**
+ * Where a preview is in its life: `idle` (not asked for), `waiting` (asked,
+ * no render yet), `live` (rendering), `ready` (drawn: a still copy, or a kept
+ * frame) and `failed` (the stand-in for good).
+ */
 export type LivePreviewState = 'idle' | 'waiting' | 'live' | 'ready' | 'failed';
 
 export interface LivePreviewProps {
-  /** What is drawn small. Mounted only while the preview is live. */
+  /** What is drawn small. Mounted only while it renders, or for a frame while it is kept. */
   children: ReactNode;
-  /** The stand-in, drawn whenever the content is not. */
+  /** The stand-in, drawn whenever nothing else is. */
   fallback: ReactNode;
   /** The width, in CSS pixels, the content lays itself out at before it is scaled to the box. */
   width?: number | undefined;
-  /** How near what its scroll container shows the box comes before its content is mounted. */
+  /** How near what its scroll container shows the box comes before its content is rendered (`LIVE_PREVIEW_MARGIN`). */
   rootMargin?: string | undefined;
-  /** Nothing live is drawn: the stand-in only (no content to show, or a host that has turned previews off). */
+  /** Nothing is drawn: the stand-in only (no content to show, or a host that has turned previews off). */
   disabled?: boolean | undefined;
   /**
-   * The content runs a page in a frame: it counts against the budget's
-   * frames as well, and what it drew cannot be kept as a still copy.
+   * The content runs a page in a frame: it is kept rather than copied, and
+   * counts against the budget's frames for as long as it is.
    */
   frame?: boolean | undefined;
+  /**
+   * What is drawn, as a key: previews under one provider with the same key
+   * share one still copy, so a preview mounted again shows it at once and
+   * renders nothing. A key names a version of the content; content that has
+   * changed takes a new key and is drawn afresh.
+   */
+  snapshot?: string | undefined;
   /** How long the box stays near the viewport before its content is asked for, in ms. */
   dwellMs?: number | undefined;
   /** Told each time the state moves, for a host that measures. */
@@ -121,57 +181,152 @@ export function scrollRoot(el: Element): Element | null {
 }
 
 /**
- * A still copy of what a live layer drew, or null where none can be made: a
- * frame's page is another document, which a clone would load again from the
- * start rather than copy.
+ * Runs `then` once the page's fonts have loaded and two frames have painted,
+ * and answers how to call it off. The content says it has drawn from an
+ * effect, and what it measures from the layout that render produced (a
+ * column fitted to its text, a stage scaled to its box) settles in the frame
+ * after: a copy taken at once would freeze the first layout, not the last.
  */
-function stillOf(live: HTMLElement | null): Node[] | null {
-  if (!stillable(live)) return null;
-  return [...live.childNodes].map((node) => node.cloneNode(true));
+function afterDrawn(then: () => void): () => void {
+  let off = false;
+  let frame = 0;
+  const paint = (left: number) => {
+    if (off) return;
+    if (left === 0 || typeof requestAnimationFrame === 'undefined') then();
+    else frame = requestAnimationFrame(() => paint(left - 1));
+  };
+  const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+  if (fonts) void fonts.ready.then(() => paint(2));
+  else paint(2);
+  return () => {
+    off = true;
+    if (frame && typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(frame);
+  };
 }
 
-/** Whether a live layer's drawing can be kept as a still copy. */
-function stillable(live: HTMLElement | null): live is HTMLElement {
-  return live !== null && live.querySelector('iframe, canvas, video') === null;
+/**
+ * The layout a layer is given to fit a box: laid out at `width` (and
+ * `height`, or as tall as the box allows at the scale its width sets) and
+ * scaled to the box's width from its top, or to fit inside it whole, centred.
+ */
+function fitTo(size: { w: number; h: number }, width: number, height: number | undefined, fit: 'width' | 'contain') {
+  const k = fit === 'contain' && height ? Math.min(size.w / width, size.h / height) : size.w / width;
+  const h = height ?? size.h / k;
+  const left = fit === 'contain' ? (size.w - width * k) / 2 : 0;
+  const top = fit === 'contain' ? (size.h - h * k) / 2 : 0;
+  return { width, height: h, transform: `translate(${left}px, ${top}px) scale(${k})` };
 }
 
-/** How long a still copy stays under content drawn again: longer than the fade the content arrives with. */
-const STILL_OUTLASTS_FADE_MS = 1000;
+/** What a live layer drew, as a still copy, at the box's size now. */
+function stillOf(live: HTMLElement, width: number | undefined, box: HTMLElement): LivePreviewStill {
+  const rect = box.getBoundingClientRect();
+  // LAID OUT AT A WIDTH, the copy is of the content inside the scaled layer,
+  // and scaled again wherever it is placed; otherwise of what fills the box.
+  const from = width === undefined ? live : (live.querySelector(':scope > .crewlet-preview-scale > .crewlet-preview-scale__layer') ?? live);
+  return { nodes: copyOf([...from.childNodes]), width, size: { w: rect.width, h: rect.height } };
+}
 
-export function LivePreview({ children, fallback, width, rootMargin = '200px 0px', disabled = false, frame = false, dwellMs = LIVE_PREVIEW_DWELL_MS, onStateChange, className }: LivePreviewProps) {
-  const budget = useContext(BudgetContext);
+/**
+ * A preview whose `snapshot` key changes is another preview: what it holds
+ * belongs to the content it drew, so it starts again under the new key.
+ */
+export function LivePreview(props: LivePreviewProps) {
+  return <Preview key={props.snapshot ?? ''} {...props} />;
+}
+
+function Preview({ children, fallback, width, rootMargin = LIVE_PREVIEW_MARGIN, disabled = false, frame = false, snapshot, dwellMs = LIVE_PREVIEW_DWELL_MS, onStateChange, className }: LivePreviewProps) {
+  const { budget, stills } = useContext(SharedContext);
   const box = useRef<HTMLSpanElement>(null);
   const liveLayer = useRef<HTMLSpanElement>(null);
+  const stillLayer = useRef<HTMLSpanElement>(null);
   const slot = useRef<LivePreviewSlot | null>(null);
-  const [near, setNear] = useState(false);
-  const [state, setState] = useState<LivePreviewState>('idle');
+  const granted = useRef(false);
+
+  // WHAT THE STORE ALREADY HOLDS for this key, read once as the preview
+  // mounts: a copy drawn before, or a preview that had nothing to draw.
+  const [kept] = useState(() => (snapshot !== undefined && !frame && !disabled ? stills.get(snapshot) : undefined));
+  const [state, setState] = useState<LivePreviewState>(kept === 'failed' ? 'failed' : kept ? 'ready' : 'idle');
   const current = useRef(state);
   current.current = state;
-  const [failed, setFailed] = useState(false);
-  const [still, setStill] = useState<Node[] | null>(null);
+  const [still, setStill] = useState<{ drawing: LivePreviewStill; fresh: boolean } | null>(kept && kept !== 'failed' ? { drawing: kept, fresh: false } : null);
+  const [near, setNear] = useState(false);
+
+  // NOTHING LEFT TO DO: a copy holds no slot and watches nothing, and a
+  // failure asks again only on a page loaded afresh. A kept frame is still
+  // watched, so that it parks when the reader leaves it.
+  const done = state === 'failed' || (state === 'ready' && !frame);
+
+  const settle = useCallback((next: 'ready' | 'failed') => {
+    slot.current?.release();
+    slot.current = null;
+    granted.current = false;
+    setState(next);
+  }, []);
 
   // NEAR WHAT THE SCROLLER SHOWS. No observer, no preview: a browser without
   // one, a server render and a suite all draw the stand-in.
   useEffect(() => {
     const el = box.current;
-    if (!el || disabled || typeof IntersectionObserver === 'undefined') return undefined;
+    if (!el || disabled || done || typeof IntersectionObserver === 'undefined') return undefined;
     const seen = new IntersectionObserver((entries) => setNear(entries.some((e) => e.isIntersecting)), { root: scrollRoot(el), rootMargin });
     seen.observe(el);
     return () => seen.disconnect();
-  }, [disabled, rootMargin]);
+  }, [disabled, done, rootMargin]);
 
-  // TAKEN BACK WHILE PARKED: what was drawn is kept as a still copy, made
-  // before the content unmounts, in the same commit as the unmount, so no
-  // frame shows the stand-in between them.
+  // A KEPT FRAME TAKEN BACK while parked: its page is torn down and the
+  // stand-in shows until it is drawn again.
   const reclaim = useCallback(() => {
     slot.current = null;
-    if (current.current === 'ready') setStill(stillOf(liveLayer.current));
+    granted.current = false;
     setState('idle');
   }, []);
 
-  // WHETHER A RECLAIM WOULD GO UNSEEN: drawn, and drawn as DOM a still copy
-  // can be made of.
-  const keeps = useCallback(() => current.current === 'ready' && stillable(liveLayer.current), []);
+  // A RENDER WHILE NEAR. One that has been granted runs on to its end
+  // wherever the box goes, since what it is drawing is about to be kept; a
+  // kept frame parks when its box leaves, and is found again when it comes
+  // back. An ask not yet granted is withdrawn when the box leaves.
+  useEffect(() => {
+    if (disabled || done) return undefined;
+    const held = slot.current;
+    if (!near) {
+      if (held && granted.current) held.park();
+      else if (held) {
+        held.release();
+        slot.current = null;
+      }
+      setState((s) => (s === 'waiting' ? 'idle' : s));
+      return undefined;
+    }
+    if (held) {
+      if (granted.current) held.resume();
+      return undefined;
+    }
+    setState('waiting');
+    // A BOX THAT ONLY FLIES PAST asks for nothing: a fling through a gallery
+    // brings dozens of cards near for a frame or two each.
+    const dwell = setTimeout(() => {
+      granted.current = false;
+      slot.current = budget.request(
+        () => {
+          granted.current = true;
+          setState('live');
+        },
+        reclaim,
+        frame,
+      );
+    }, dwellMs);
+    return () => clearTimeout(dwell);
+  }, [near, disabled, done, frame, budget, dwellMs, reclaim]);
+
+  // TURNED OFF: everything is given back, and the stand-in shows.
+  useEffect(() => {
+    if (!disabled) return;
+    slot.current?.release();
+    slot.current = null;
+    granted.current = false;
+    setStill(null);
+    setState((s) => (s === 'failed' ? s : 'idle'));
+  }, [disabled]);
 
   // GIVEN BACK FOR GOOD on unmount.
   useEffect(
@@ -182,88 +337,107 @@ export function LivePreview({ children, fallback, width, rootMargin = '200px 0px
     [],
   );
 
-  // A SLOT WHILE NEAR, parked on leaving. A preview that failed never asks
-  // again in this life: it would fail again and hold a slot to do it.
+  // A RENDER THAT NEVER DRAWS gives up, rather than hold a render for the
+  // rest of the page's life. It is not remembered as having nothing to draw:
+  // a page loaded afresh asks again.
   useEffect(() => {
-    if (disabled || failed) {
-      slot.current?.release();
-      slot.current = null;
-      setState(failed ? 'failed' : 'idle');
-      return undefined;
-    }
-    if (!near) return undefined;
-    // BACK BEFORE ANYBODY NEEDED THE SLOT: nothing to do, it is still drawn.
-    if (slot.current?.resume()) {
-      const held = slot.current;
-      return () => held.park(keeps());
-    }
-    setState('waiting');
-    let asked: LivePreviewSlot | null = null;
-    let granted = false;
-    // A BOX THAT ONLY FLIES PAST asks for nothing: a fling through a gallery
-    // brings dozens of cards near for a frame or two each, and a preview
-    // mounted for one of them is work thrown away the moment it leaves.
-    const dwell = setTimeout(() => {
-      asked = budget.request(() => {
-        granted = true;
-        setState('live');
-      }, reclaim, frame);
-      slot.current = asked;
-    }, dwellMs);
-    return () => {
-      clearTimeout(dwell);
-      if (asked && granted) {
-        asked.park(keeps());
-        return;
-      }
-      asked?.release();
-      if (slot.current === asked) slot.current = null;
-      setState('idle');
-    };
-  }, [near, disabled, failed, frame, budget, dwellMs, reclaim, keeps]);
-
-  // A STILL COPY IS LET GO once the content has drawn over it again, and
-  // dropped when the box changes size, since it is drawn at the old one.
-  useEffect(() => {
-    if (!still || state !== 'ready') return undefined;
-    const t = setTimeout(() => setStill(null), STILL_OUTLASTS_FADE_MS);
+    if (state !== 'live') return undefined;
+    const t = setTimeout(() => settle('failed'), LIVE_PREVIEW_RENDER_MS);
     return () => clearTimeout(t);
-  }, [still, state]);
-  useEffect(() => {
+  }, [state, settle]);
+
+  // THE COPY. Taken once the content has drawn and settled, then shown and
+  // the content unmounted in the same commit, so no frame shows the stand-in
+  // between them.
+  const capture = useRef<(() => void) | null>(null);
+  useEffect(() => () => capture.current?.(), []);
+  const signals = useMemo<LivePreviewSignals>(
+    () => ({
+      ready: () => {
+        if (current.current !== 'live' || capture.current) return;
+        // DRAWN IS THE END OF THE RENDER: what is left is waiting for a copy,
+        // which takes no work, so the next render starts now.
+        slot.current?.drawn();
+        if (frame) {
+          setState('ready');
+          return;
+        }
+        capture.current = afterDrawn(() => {
+          capture.current = null;
+          const live = liveLayer.current;
+          const el = box.current;
+          if (current.current !== 'live' || !live || !el) return;
+          const drawing = stillOf(live, width, el);
+          if (snapshot !== undefined) stills.put(snapshot, drawing);
+          setStill({ drawing, fresh: true });
+          settle('ready');
+        });
+      },
+      fail: () => {
+        if (current.current === 'failed') return;
+        capture.current?.();
+        capture.current = null;
+        if (snapshot !== undefined && !frame) stills.put(snapshot, 'failed');
+        settle('failed');
+      },
+    }),
+    [frame, width, snapshot, stills, settle],
+  );
+
+  // THE COPY IN ITS BOX: placed (or, where another preview shows the same
+  // copy, a copy of it), and scaled to the box by the page's one shared
+  // observer (`LivePreviewStills.watch`). A copy with no layout width is good at the size it was drawn
+  // at only, so a box that changes size draws it again.
+  useLayoutEffect(() => {
+    const target = stillLayer.current;
     const el = box.current;
-    if (!el || !still || typeof ResizeObserver === 'undefined') return undefined;
-    let first = true;
-    const watch = new ResizeObserver(() => {
-      if (first) first = false;
-      else setStill(null);
-    });
-    watch.observe(el);
-    return () => watch.disconnect();
-  }, [still]);
+    if (!still || !target || !el) return undefined;
+    const { drawing } = still;
+    const placed = drawing.nodes.some((n) => n.isConnected) ? copyOf(drawing.nodes) : drawing.nodes;
+    if (drawing.width === undefined) {
+      target.replaceChildren(...placed);
+      return stills.watch(el, (size) => {
+        if (Math.abs(size.w - drawing.size.w) < 1 && Math.abs(size.h - drawing.size.h) < 1) return;
+        if (snapshot !== undefined) stills.forget(snapshot);
+        setStill(null);
+        setState('idle');
+      });
+    }
+    const outer = target.ownerDocument.createElement('span');
+    outer.className = 'crewlet-preview-scale';
+    const layer = target.ownerDocument.createElement('span');
+    layer.className = 'crewlet-preview-scale__layer';
+    layer.append(...placed);
+    outer.append(layer);
+    target.replaceChildren(outer);
+    const scale = (size: { w: number; h: number }) => {
+      if (size.w <= 0) return;
+      const fitted = fitTo(size, drawing.width!, undefined, 'width');
+      layer.style.width = `${fitted.width}px`;
+      layer.style.height = `${fitted.height}px`;
+      layer.style.transform = fitted.transform;
+    };
+    const rect = el.getBoundingClientRect();
+    scale({ w: rect.width, h: rect.height });
+    return stills.watch(el, scale);
+  }, [still, snapshot, stills]);
 
   useEffect(() => onStateChange?.(state), [state, onStateChange]);
 
-  const mounted = state === 'live' || state === 'ready';
-
-  const signals = useMemo<LivePreviewSignals>(
-    () => ({
-      ready: () => setState((s) => (s === 'live' ? 'ready' : s)),
-      fail: () => setFailed(true),
-    }),
-    [],
-  );
-
-  const placeStill = useCallback(
-    (el: HTMLSpanElement | null) => {
-      if (el && still) el.replaceChildren(...still);
-    },
-    [still],
-  );
+  const mounted = state === 'live' || (frame && state === 'ready');
 
   return (
-    <span ref={box} className={cx('crewlet-live-preview', className)} data-state={state} data-still={still ? '' : undefined} aria-hidden="true">
+    <span
+      ref={box}
+      className={cx('crewlet-live-preview', className)}
+      data-state={state}
+      data-still={still ? '' : undefined}
+      data-fresh={still?.fresh ? '' : undefined}
+      data-frame={frame ? '' : undefined}
+      aria-hidden="true"
+    >
       <span className="crewlet-live-preview__fallback">{fallback}</span>
-      {still ? <span ref={placeStill} className="crewlet-live-preview__still" inert /> : null}
+      {still ? <span ref={stillLayer} className="crewlet-live-preview__still" inert /> : null}
       {mounted ? (
         <span ref={liveLayer} className="crewlet-live-preview__live" inert>
           <SignalContext.Provider value={signals}>
@@ -310,14 +484,7 @@ export function PreviewScale({ children, width, height, fit = 'width' }: Preview
     watch.observe(el);
     return () => watch.disconnect();
   }, []);
-  let layer: CSSProperties = { width, visibility: 'hidden' };
-  if (size) {
-    const k = fit === 'contain' && height ? Math.min(size.w / width, size.h / height) : size.w / width;
-    const h = height ?? size.h / k;
-    const left = fit === 'contain' ? (size.w - width * k) / 2 : 0;
-    const top = fit === 'contain' ? (size.h - h * k) / 2 : 0;
-    layer = { width, height: h, transform: `translate(${left}px, ${top}px) scale(${k})` };
-  }
+  const layer: CSSProperties = size ? fitTo(size, width, height, fit) : { width, visibility: 'hidden' };
   return (
     <span ref={box} className="crewlet-preview-scale">
       <span className="crewlet-preview-scale__layer" style={layer}>
