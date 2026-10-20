@@ -9,6 +9,11 @@ export interface ChoiceListOption {
   label: ReactNode;
   /** One line under the label saying what choosing it means. */
   detail?: ReactNode;
+  /**
+   * A picture before the words, decorative: an avatar for a choice of who, a
+   * kind's mark for a choice of what. The label still says it.
+   */
+  leading?: ReactNode;
   /** A short word at the row's end, such as "Recommended". */
   tag?: ReactNode;
   /**
@@ -56,7 +61,10 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
           const checked = option.value === value;
           return (
             <div key={option.value} className={cx('crewlet-choice-list__item', option.separated && 'is-separated')}>
-              <label className={cx('crewlet-choice-list__row', checked && 'is-checked')} htmlFor={id}>
+              <label
+                className={cx('crewlet-choice-list__row', checked && 'is-checked', option.leading !== undefined && 'has-leading')}
+                htmlFor={id}
+              >
                 <input
                   id={id}
                   type="radio"
@@ -67,6 +75,11 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
                   onChange={() => onChange(option.value)}
                   className="crewlet-choice-list__radio"
                 />
+                {option.leading !== undefined ? (
+                  <span className="crewlet-choice-list__leading" aria-hidden="true">
+                    {option.leading}
+                  </span>
+                ) : null}
                 <span className="crewlet-choice-list__text">
                   <span className="crewlet-choice-list__label">{option.label}</span>
                   {option.detail ? <span className="crewlet-choice-list__detail">{option.detail}</span> : null}

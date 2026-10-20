@@ -891,3 +891,20 @@ test('no step back is drawn unless one is asked for', () => {
   );
   expect(document.querySelector('.crewlet-modal__back')).toBeNull();
 });
+
+test('a sheet takes the lg and xl widths when asked, and its own width otherwise', () => {
+  render(
+    <>
+      <Modal open variant="sheet" size="lg" onClose={() => {}} title="New sheet">
+        <input aria-label="Title" />
+      </Modal>
+      <Modal open variant="sheet" onClose={() => {}} title="Edit unit">
+        <input aria-label="Name" />
+      </Modal>
+    </>,
+  );
+  const frames = [...document.querySelectorAll<HTMLElement>('.crewlet-modal--sheet')];
+  expect(frames.map((f) => f.classList.contains('crewlet-modal--sheet-lg'))).toEqual([true, false]);
+  // A SHEET NEVER TAKES A DIALOG'S SIZE CLASS, which sets a dialog's width.
+  expect(frames.some((f) => f.classList.contains('crewlet-modal--lg'))).toBe(false);
+});

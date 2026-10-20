@@ -77,3 +77,17 @@ test('carries no axe violation', async () => {
   });
   expect(result.violations).toEqual([]);
 });
+
+test('a leading picture sits before the words and is not read', () => {
+  render(
+    <ChoiceList
+      label="Who builds it"
+      value="data"
+      onChange={() => {}}
+      options={[{ value: 'data', label: 'Crewlet-Data', detail: 'Product and Engineering', leading: <span data-testid="face" /> }]}
+    />,
+  );
+  expect(screen.getByRole('radio', { name: /Crewlet-Data/ })).toBeDefined();
+  expect(screen.getByTestId('face').closest('[aria-hidden="true"]')).not.toBeNull();
+  expect(screen.getByTestId('face').closest('label')?.classList.contains('has-leading')).toBe(true);
+});

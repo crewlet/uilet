@@ -171,3 +171,12 @@ export const HelperOnFocus: Story = {
     </div>
   ),
 };
+
+/** A document's own title, typed where it will be read: a new doc opens on it. */
+export const Title: Story = {
+  render: () => (
+    <div style={{ maxWidth: 560 }}>
+      <Input appearance="title" aria-label="Title" placeholder="Untitled doc" width="full" />
+    </div>
+  ),
+};

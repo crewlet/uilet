@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, ChoiceList, Composer } from '@crewlethq/ui';
+import { Avatar, Button, ChoiceList, Composer } from '@crewlethq/ui';
 
 /**
  * One answer from a short list: each choice a row with a line of detail and an
@@ -73,3 +73,34 @@ function Decision() {
 }
 
 export const Default: Story = { render: () => <Decision /> };
+
+/** A choice of who: each row led by the agent's own face, the suggested one tagged. */
+export const WithLeading: Story = {
+  render: function Render() {
+    const [value, setValue] = useState<string | null>('data');
+    return (
+      <div style={{ maxWidth: 360 }}>
+        <ChoiceList
+          label="Who builds it"
+          value={value}
+          onChange={setValue}
+          options={[
+            {
+              value: 'data',
+              label: 'Crewlet-Data',
+              detail: 'Product and Engineering',
+              tag: 'Suggested',
+              leading: <Avatar name="Crewlet-Data" character="dashlet" hue="cyan" decorative />,
+            },
+            {
+              value: 'design',
+              label: 'Crewlet-Design',
+              detail: 'Product and Engineering',
+              leading: <Avatar name="Crewlet-Design" character="prismlet" hue="purple" decorative />,
+            },
+          ]}
+        />
+      </div>
+    );
+  },
+};

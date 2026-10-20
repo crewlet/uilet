@@ -393,6 +393,7 @@ test('one element draws the ring, and it is the one a reader reads as the field'
       '.crewlet-input:has(.crewlet-input__control:focus-visible)',
       '.crewlet-input.is-error:has(.crewlet-input__control:focus-visible)',
       '.crewlet-input--command:has(.crewlet-input__control:focus-visible)',
+      '.crewlet-input--title:has(.crewlet-input__control:focus-visible)',
       '.crewlet-textarea:focus-visible',
       '.crewlet-textarea.is-error:focus-visible',
       '.crewlet-select:focus-within',
@@ -803,4 +804,10 @@ test('ListInput passes helperOnFocus to its field', () => {
     <ListInput label="Repositories" itemName="repository" value={[]} onChange={() => {}} helper="Empty means every repository." helperOnFocus />,
   );
   expect(container.querySelector('.crewlet-list-input')!.className).toContain('crewlet-form-field--helper-on-focus');
+});
+
+test("a title field is drawn as the document's own title, and is still a named text field", () => {
+  const { container } = render(<Input appearance="title" aria-label="Title" placeholder="Untitled doc" />);
+  expect(container.querySelector('.crewlet-input--title')).not.toBeNull();
+  expect(screen.getByRole('textbox', { name: 'Title' }).getAttribute('placeholder')).toBe('Untitled doc');
 });

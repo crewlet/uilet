@@ -317,6 +317,32 @@
   font-size: var(--font-size-lg);
 }
 
+/*
+ * A document's own title, typed where it will be read: borderless at the
+ * heading step, so a new doc opens on its title rather than on a form asking
+ * for one. The page under it is the field's boundary, and the caret is what
+ * says it takes text, so it draws no ring, as the palette's field draws none.
+ */
+.crewlet-input--title {
+  height: auto;
+  border-color: transparent;
+  background: transparent;
+  padding-inline: 0;
+}
+
+.crewlet-input--title:has(.crewlet-input__control:focus-visible) {
+  outline-color: transparent;
+}
+
+.crewlet-input--title .crewlet-input__control {
+  /* FLUSH WITH THE TEXT UNDER IT: a title inset from its own page's first line reads as a field. */
+  padding: 0;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--font-letter-spacing-tight);
+  line-height: 1.2;
+}
+
 /* ── Textarea ────────────────────────────────────────────────────────── */
 /* A textarea with trailing content is wrapped so the content can sit inside
    its top right corner; the textarea itself is unchanged. */

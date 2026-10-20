@@ -233,6 +233,14 @@
  * sheet measured against the viewport there hangs out of the box it was drawn
  * into and takes its footer with it.
  */
+.crewlet-modal--sheet-lg {
+  --crewlet-modal-sheet-width: 760px;
+}
+
+.crewlet-modal--sheet-xl {
+  --crewlet-modal-sheet-width: 960px;
+}
+
 .crewlet-modal--sheet {
   /*
    * WHERE THE SHEET COMES FROM, as a distance it can be flipped at: the frame

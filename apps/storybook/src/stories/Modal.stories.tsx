@@ -401,3 +401,35 @@ export const ConfirmDestructive: Story = {
     );
   },
 };
+
+/**
+ * A wide sheet (`size="lg"`, 760px; `xl` is 960px): for an editor that needs
+ * the room beside the page it was opened from, such as a new doc's page or a
+ * sheet's columns. Without a size a sheet keeps its own 560px.
+ */
+export const WideSheet: Story = {
+  render: function WideSheetStory() {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <Button onClick={() => setOpen(true)}>New doc</Button>
+        <Modal
+          open={open}
+          variant="sheet"
+          size="lg"
+          title="New doc"
+          subtitle="A document in tabs that you write and edit in place."
+          onClose={() => setOpen(false)}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={() => setOpen(false)}>Create doc</Button>
+            </>
+          }
+        >
+          <Input appearance="title" aria-label="Title" placeholder="Untitled doc" width="full" />
+        </Modal>
+      </>
+    );
+  },
+};

@@ -26,8 +26,11 @@ export type InputWidth = 'full' | 'xs' | 'sm' | 'md' | 'lg';
  * prose. `command` is the search field of a command palette: borderless and
  * large, because the surface around it IS the field and a boundary inside a
  * dialog whose whole body is one input is a boundary around nothing.
+ * `title` is a document's own title typed where it will be read: borderless
+ * at the heading step, so a new document opens on its title rather than on
+ * a form that asks for one.
  */
-export type InputAppearance = 'default' | 'reference' | 'command';
+export type InputAppearance = 'default' | 'reference' | 'command' | 'title';
 
 export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'width'> {
   inputSize?: InputSize | undefined;

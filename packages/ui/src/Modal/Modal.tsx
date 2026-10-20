@@ -320,6 +320,9 @@ function ModalFrame({
       'crewlet-modal',
       `crewlet-modal--${variant}`,
       variant === 'dialog' ? `crewlet-modal--${size}` : undefined,
+      // A SHEET IS ITS OWN WIDTH UNLESS ASKED: `lg` and `xl` widen it for an
+      // editor that needs the room (a doc's page, a sheet's columns).
+      variant === 'sheet' && (size === 'lg' || size === 'xl') ? `crewlet-modal--sheet-${size}` : undefined,
       prompt ? 'crewlet-modal--prompt' : undefined,
       className,
     ),

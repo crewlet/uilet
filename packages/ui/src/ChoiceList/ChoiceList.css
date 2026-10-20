@@ -43,6 +43,20 @@
   transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+.crewlet-choice-list__row.has-leading {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.crewlet-choice-list__row.has-leading .crewlet-choice-list__radio {
+  margin: 0;
+}
+
+.crewlet-choice-list__leading {
+  display: inline-flex;
+  align-items: center;
+}
+
 .crewlet-choice-list__row:hover {
   background: var(--color-surface-hover);
 }
