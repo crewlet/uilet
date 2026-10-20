@@ -1,5 +1,5 @@
 /*
- * A kind's drawing, its tinted ground and the Make something new tile.
+ * A kind's drawing, its tinted ground and the "Start a new artifact" tile.
  *
  * Every colour is the kind's token, `--color-artifact-kind-<kind>` and its
  * Fill and Line steps, set once per kind on `--crewlet-kind-*`

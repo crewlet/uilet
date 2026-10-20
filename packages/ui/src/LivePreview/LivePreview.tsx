@@ -204,17 +204,42 @@ function afterDrawn(then: () => void): () => void {
   };
 }
 
+/** How a layer laid out at a size of its own is fitted to its box (`PreviewScaleProps.fit`). */
+export type PreviewFit = 'width' | 'contain' | 'fill';
+
+/**
+ * The most of a filled layer's content that may fall outside its box, on
+ * either axis, before `fill` contains it instead: a fifth. A laptop's board
+ * (16:10) in a card's 16:9 loses a tenth of its foot; a phone's board would
+ * lose four fifths of itself, and is shown whole.
+ */
+export const PREVIEW_FILL_MAX_CUT = 0.2;
+
 /**
  * The layout a layer is given to fit a box: laid out at `width` (and
  * `height`, or as tall as the box allows at the scale its width sets) and
- * scaled to the box's width from its top, or to fit inside it whole, centred.
+ * scaled to the box's width from its top, to fit inside it whole and
+ * centred, or to fill it (see `PreviewScaleProps.fit`).
  */
-function fitTo(size: { w: number; h: number }, width: number, height: number | undefined, fit: 'width' | 'contain') {
-  const k = fit === 'contain' && height ? Math.min(size.w / width, size.h / height) : size.w / width;
-  const h = height ?? size.h / k;
-  const left = fit === 'contain' ? (size.w - width * k) / 2 : 0;
-  const top = fit === 'contain' ? (size.h - h * k) / 2 : 0;
-  return { width, height: h, transform: `translate(${left}px, ${top}px) scale(${k})` };
+function fitTo(size: { w: number; h: number }, width: number, height: number | undefined, fit: PreviewFit) {
+  if (!height || fit === 'width') {
+    const k = size.w / width;
+    return { width, height: height ?? size.h / k, transform: `translate(0px, 0px) scale(${k})` };
+  }
+  const contain = Math.min(size.w / width, size.h / height);
+  const cover = Math.max(size.w / width, size.h / height);
+  // FILLED WHERE LITTLE IS LOST: the cut is what the covering scale puts
+  // outside the box, as a share of the scaled content on the axis it spills.
+  const cut = 1 - contain / cover;
+  if (fit === 'fill' && cut <= PREVIEW_FILL_MAX_CUT) {
+    // CENTRED ACROSS AND HELD AT THE TOP, where a board or a page says what
+    // it is: what falls outside is its foot, or an even sliver of each side.
+    const left = (size.w - width * cover) / 2;
+    return { width, height, transform: `translate(${left}px, 0px) scale(${cover})` };
+  }
+  const left = (size.w - width * contain) / 2;
+  const top = (size.h - height * contain) / 2;
+  return { width, height, transform: `translate(${left}px, ${top}px) scale(${contain})` };
 }
 
 /** What a live layer drew, as a still copy, at the box's size now. */
@@ -457,10 +482,13 @@ export interface PreviewScaleProps {
   height?: number | undefined;
   /**
    * `width` scales the content to the box's width from its top (the top of a
-   * page); `contain` scales it to fit inside the box whole, centred (a board
-   * of its own size).
+   * page); `contain` scales it to fit inside the box whole, centred; `fill`
+   * covers the box edge to edge, centred across and held at the top, wherever
+   * that leaves at most [PREVIEW_FILL_MAX_CUT] of the content outside it, and
+   * contains it otherwise (a design's board, which may be a laptop's screen
+   * or a phone's). `contain` and `fill` need a `height`.
    */
-  fit?: 'width' | 'contain' | undefined;
+  fit?: PreviewFit | undefined;
 }
 
 /**

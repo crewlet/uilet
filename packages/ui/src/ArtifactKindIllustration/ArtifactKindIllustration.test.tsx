@@ -1,6 +1,6 @@
 /**
  * A kind pictured: one drawing per kind in the kind's own hue, hidden from
- * assistive technology, and the Make something new tile, one link named by
+ * assistive technology, and the "Start a new artifact" tile, one link named by
  * the kind's name, or a stop that says why it cannot start one.
  */
 
@@ -84,7 +84,7 @@ test('a tile that starts something in place is a button with its own face and a 
 test('a row of tiles carries no axe violation', async () => {
   const { container } = render(
     <main>
-      <h1>Make something new</h1>
+      <h1>Start a new artifact</h1>
       <ul>
         {ARTIFACT_KINDS.map((kind) => (
           <li key={kind}>

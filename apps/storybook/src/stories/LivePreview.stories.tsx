@@ -125,3 +125,31 @@ export const ContainedBoard: Story = {
     </div>
   ),
 };
+
+/**
+ * A LAPTOP'S BOARD FILLS ITS CARD (`fit="fill"`): a 16:10 board in a 16:9
+ * box, centred across and held at the top, loses a sliver of its foot rather
+ * than leaving an empty strip down each side. A phone's board beside it would
+ * lose four fifths of itself filled, so it is contained instead.
+ */
+export const FilledBoard: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 24 }}>
+      {[
+        { w: 1440, h: 900, title: 'Hero' },
+        { w: 390, h: 844, title: 'Sign in' },
+      ].map((board) => (
+        <div key={board.title} style={{ ...box, position: 'relative', background: 'var(--color-surface-inset)' }}>
+          <PreviewScale width={board.w} height={board.h} fit="fill">
+            <div style={{ width: '100%', height: '100%', background: 'var(--color-surface-background)', padding: 48, boxSizing: 'border-box', borderInline: '8px solid var(--color-border-hover)' }}>
+              <Document measure="none">
+                <h1>{board.title}</h1>
+                <p>The board's own edges are drawn in a heavier hairline: filled, both reach the card's sides.</p>
+              </Document>
+            </div>
+          </PreviewScale>
+        </div>
+      ))}
+    </div>
+  ),
+};

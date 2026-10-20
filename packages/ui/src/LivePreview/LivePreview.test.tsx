@@ -21,6 +21,7 @@ import {
   LIVE_PREVIEW_RENDER_MS,
   LivePreview,
   LivePreviewBudgetProvider,
+  PREVIEW_FILL_MAX_CUT,
   PreviewScale,
   useLivePreview,
   type LivePreviewSchedule,
@@ -595,6 +596,51 @@ test('a scaled layer is laid out at its own width and scaled to the box', () => 
   expect(layer.style.width).toBe('1280px');
   expect(layer.style.height).toBe('720px');
   expect(layer.style.transform).toBe('translate(0px, 0px) scale(0.25)');
+  rect.mockRestore();
+});
+
+test('a filled layer covers the box edge to edge, centred across and held at the top', () => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
+  // A LAPTOP'S BOARD (16:10) IN A CARD'S 16:9: contained, it left an empty
+  // strip down each side of the card; filled, it loses a tenth of its foot.
+  const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 282.9, height: 158.1 } as DOMRect);
+  const { container } = render(
+    <PreviewScale width={1440} height={900} fit="fill">
+      <span />
+    </PreviewScale>,
+  );
+  const layer = container.querySelector<HTMLElement>('.crewlet-preview-scale__layer')!;
+  const k = 282.9 / 1440;
+  expect(layer.style.transform).toBe(`translate(${(282.9 - 1440 * k) / 2}px, 0px) scale(${k})`);
+  expect(900 * k).toBeGreaterThanOrEqual(158.1);
+  rect.mockRestore();
+});
+
+test('a filled layer that would lose more than a fifth of itself is contained instead', () => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
+  // A PHONE'S BOARD in the same card would show only its top fifth filled.
+  const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 320, height: 180 } as DOMRect);
+  const { container } = render(
+    <PreviewScale width={390} height={844} fit="fill">
+      <span />
+    </PreviewScale>,
+  );
+  const layer = container.querySelector<HTMLElement>('.crewlet-preview-scale__layer')!;
+  const k = 180 / 844;
+  expect(layer.style.transform).toBe(`translate(${(320 - 390 * k) / 2}px, 0px) scale(${k})`);
+  expect(PREVIEW_FILL_MAX_CUT).toBe(0.2);
   rect.mockRestore();
 });
 
