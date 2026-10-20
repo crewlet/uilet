@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.36.0
+
+**A kit sheet reads the page's capabilities again once the runtime's handshake lands** (`@crewlethq/artifact-kit`: `<crewlet-sheet>`, `mountSheet`). Before the handshake the runtime answers `capabilities.has` from what the origin told it as the page loaded, and from the handshake on the host's word is the authority. The sheet read the answer once, when it was first drawn, and kept it, so a sheet drawn on one answer and handed another by the handshake kept the first: a page whose host said `db` at the handshake could still show "This sheet cannot load" for good. The sheet now reads the declaration again when `ready` resolves, its subscriptions following what it reads, and says a page has no datastore only once the handshake has said so; before then it draws nothing. `mountSheet` and the element still wait for the handshake before they draw, so a page sees no change unless a host's handshake disagrees with what its page loaded with.
+
 ## Changes in 0.35.1
 
 **A column given another type keeps only what every type has** (`SheetColumnEditor`, and `retypeColumn` in the sheet model). Its field, name, width, freezing, read-only flag and Required stay, and so does its length cap between text and long text, which both read it. Every other setting belongs to the old type and is dropped: a number's bounds, decimals and format, a choice's options, a date's time of day. The column is built up from what is kept rather than pared down from the old one, so a setting a type adds later is dropped without the editor having to name it. Before, a date's time of day and a text's length cap rode along, unseen, into a type that ignores them, and came back if the old type was picked again. A host that relied on a setting surviving a type change sets it again on the column it is handed.

@@ -7,7 +7,7 @@
  * among its devDependencies would be installed by the release pack job. The
  * kit's own node suite holds the BUILT files to their budgets and contents.
  */
-import { act, cleanup, configure, fireEvent, getConfig, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, configure, fireEvent, getConfig, render, screen, waitFor, within } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import {
   applyNumberFormat,
@@ -20,7 +20,7 @@ import {
   rosterFromMembers,
 } from '../../../packages/artifact-kit/src/bind.js';
 import { defineElements, mountSheet } from '../../../packages/artifact-kit/src/elements.js';
-import { KIT_SHEET_LABELS } from '../../../packages/artifact-kit/src/KitSheet.js';
+import { KIT_SHEET_LABELS, KitSheet } from '../../../packages/artifact-kit/src/KitSheet.js';
 import {
   RUNTIME_READY_EVENT,
   whenRuntime,
@@ -84,6 +84,11 @@ interface FakeOptions {
    * message arrives.
    */
   held?: boolean;
+  /**
+   * What a held runtime answers before its handshake: what the origin wrote
+   * on the runtime's element as the page loaded. Nothing when absent.
+   */
+  early?: string[];
 }
 
 /** A rejection as the runtime raises it: an `Error` carrying the contract's code. */
@@ -92,7 +97,7 @@ const refusal = (code: string, message: string): KitError => Object.assign(new E
 /** A runtime with the shape of `window.crewlet` (contract 1.0), holding its documents in memory. */
 function fakeRuntime(options: FakeOptions = {}) {
   const declared = new Set(options.capabilities ?? ['db', 'presence', 'identity']);
-  let capabilities = options.held ? new Set<string>() : declared;
+  let capabilities = options.held ? new Set<string>(options.early ?? []) : declared;
   let handshake = () => {};
   const ready = options.held
     ? new Promise<void>((resolve) => {
@@ -666,6 +671,34 @@ describe('mountSheet', () => {
     await waitFor(() => expect(screen.getByRole('grid', { name: 'Vendors' })).toBeDefined());
     expect(screen.queryByText(KIT_SHEET_LABELS.noData)).toBeNull();
     await act(async () => mounted.unmount());
+  });
+
+  test('a sheet drawn before the handshake reads the runtime again once it lands', async () => {
+    const fake = fakeRuntime({ held: true });
+    render(<KitSheet runtime={fake.runtime} collection="vendors" columns={[{ field: 'vendor', label: 'Vendor', type: 'text' }]} sort={null} label="Vendors" />);
+    await act(async () => {});
+    // Before the handshake the runtime declares nothing: that is not the page declaring no db.
+    expect(screen.queryByText(KIT_SHEET_LABELS.noData)).toBeNull();
+    expect(screen.queryByRole('grid')).toBeNull();
+    await fake.handshake();
+    await waitFor(() => expect(screen.getByRole('grid', { name: 'Vendors' })).toBeDefined());
+    expect(screen.queryByText(KIT_SHEET_LABELS.noData)).toBeNull();
+  });
+
+  test('a sheet drawn before the handshake takes the handshake\'s word over what the page loaded with', async () => {
+    // The origin said db as the page loaded, and the host's handshake says otherwise.
+    const fake = fakeRuntime({ held: true, early: ['db'], capabilities: ['presence'] });
+    render(<KitSheet runtime={fake.runtime} collection="vendors" columns={[{ field: 'vendor', label: 'Vendor', type: 'text' }]} sort={null} label="Vendors" />);
+    await waitFor(() => expect(screen.getByRole('grid', { name: 'Vendors' })).toBeDefined());
+    await fake.handshake();
+    await waitFor(() => expect(screen.getByText(KIT_SHEET_LABELS.noData)).toBeDefined());
+    expect(screen.queryByRole('grid')).toBeNull();
+  });
+
+  test('a sheet whose runtime finished its handshake before it was drawn says a page with no db at once', async () => {
+    const fake = fakeRuntime({ capabilities: ['presence'] });
+    render(<KitSheet runtime={fake.runtime} collection="vendors" columns={[{ field: 'vendor', label: 'Vendor', type: 'text' }]} sort={null} label="Vendors" />);
+    await waitFor(() => expect(screen.getByText(KIT_SHEET_LABELS.noData)).toBeDefined());
   });
 
   test('a sheet handed its runtime waits for that runtime\'s handshake too', async () => {
