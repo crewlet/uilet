@@ -212,6 +212,8 @@ places:
 
 **`parseCsv`** reads CSV the way spreadsheets write it: quoted separators, doubled quotes and line breaks inside a field, CRLF, LF or CR line ends, a byte order mark dropped, and the separator found from the first record (a comma, a semicolon or a tab) unless given. It reads back what `toCsv` writes, defused formulas included, keeps every value as text, and refuses an unclosed quote or more than `maxRows` records with the line it happened on rather than cutting silently.
 
+**`ChoiceList`'s panel is styled as part of its choice.** A selected choice's `panel` had no styles at all: it sat under the row against the box's edge, outside the selected fill. It now continues the row's fill and starts where the label does.
+
 **`HueSwatch`** is the dot `HuePicker` draws for a hue (or the hairline ring of no hue), exported for a hue menu or a list of coloured choices.
 
 ## Changes in 0.34.1
