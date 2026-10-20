@@ -48,3 +48,29 @@ export const Default: Story = {
 export const Unavailable: Story = {
   render: () => <Answer reason="Only the approver on FAIR-3 can answer." />,
 };
+
+const STARTERS = [
+  { value: 'poll', label: 'Poll', detail: 'One vote per person, results live' },
+  { value: 'tracker', label: 'Tracker', detail: 'A shared list with owners and status' },
+  { value: 'form', label: 'Form', detail: 'Answers collected in one place' },
+  { value: 'retro', label: 'Retro board', detail: 'Went well, to improve, actions' },
+  { value: 'calculator', label: 'Calculator', detail: 'Inputs and a live result' },
+  { value: 'explainer', label: 'Explainer', detail: 'One idea, step by step' },
+];
+
+/**
+ * Laid out as tiles by the host's own grid. Every label in a row starts on
+ * one line, whether its detail takes one line or two.
+ */
+export const AsTiles: Story = {
+  render: () => (
+    <div style={{ maxWidth: 640 }}>
+      <ChoiceButtons
+        label="Start from"
+        options={STARTERS}
+        style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}
+        onChoose={() => {}}
+      />
+    </div>
+  ),
+};
