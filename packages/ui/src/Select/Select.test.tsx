@@ -209,6 +209,19 @@ test('the toolbar width reaches the root of both controls', () => {
   expect(container.querySelector('.crewlet-select')?.className).not.toContain('crewlet-select--auto');
 });
 
+// A QUIET PICKER IS THE SAME CONTROL in less chrome: its class reaches the
+// root of both modes, and a filter that is on still says so.
+test('the quiet appearance reaches the root of both controls, and keeps a filter that is on', () => {
+  const { container, rerender } = render(<Picker width="auto" appearance="quiet" active />);
+  const root = () => container.querySelector('.crewlet-select')?.className ?? '';
+  expect(root()).toContain('crewlet-select--quiet');
+  expect(root()).toContain('is-active');
+  rerender(<Picker width="auto" mode="native" appearance="quiet" />);
+  expect(root()).toContain('crewlet-select--quiet');
+  rerender(<Picker width="auto" />);
+  expect(root()).not.toContain('crewlet-select--quiet');
+});
+
 test('an "Any" answer the list offers is shown rather than a placeholder over it', () => {
   const ANY: SelectOption[] = [
     { value: '', label: 'Any role' },
