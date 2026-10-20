@@ -80,6 +80,52 @@ export const ToolbarRow: Story = {
     return <Bar />;
   },
 };
+/**
+ * QUIET: the same pickers with no boundary until the pointer is over one,
+ * for a toolbar whose pickers arrange content that is the page's point (a
+ * gallery's type and order above its cards). The one narrowing the list
+ * takes the accent's soft fill under its accent ink.
+ */
+export const QuietToolbar: Story = {
+  render: () => {
+    function Bar() {
+      const [kind, setKind] = useState<SelectValue | SelectValue[] | undefined>('sheet');
+      const [order, setOrder] = useState<SelectValue | SelectValue[] | undefined>('updated');
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Select
+            ariaLabel="Type"
+            size="sm"
+            width="auto"
+            appearance="quiet"
+            options={[
+              { value: '', label: 'Every type' },
+              { value: 'doc', label: 'Doc' },
+              { value: 'sheet', label: 'Sheet' },
+            ]}
+            value={kind}
+            active={kind !== ''}
+            onChange={(next) => setKind(next)}
+          />
+          <Select
+            ariaLabel="Order"
+            size="sm"
+            width="auto"
+            appearance="quiet"
+            options={[
+              { value: 'updated', label: 'Recent activity' },
+              { value: 'title', label: 'Title, A to Z' },
+            ]}
+            value={order}
+            onChange={(next) => setOrder(next)}
+          />
+        </div>
+      );
+    }
+    return <Bar />;
+  },
+};
+
 export const Small: Story = { render: () => <Demo size="sm" /> };
 export const Searchable: Story = { render: () => <Demo searchable options={seats} /> };
 export const Disabled: Story = { render: () => <Demo disabled /> };

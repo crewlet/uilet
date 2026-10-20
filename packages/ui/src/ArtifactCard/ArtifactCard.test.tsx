@@ -1,17 +1,23 @@
 /**
  * One artifact as a card: one real link named by its title, the facts as its
- * description, and nothing inside a second control.
+ * description, the kind on a badge over the preview's foot, who can open it
+ * and when it was edited on one quiet line, and the card's own controls
+ * beside the link rather than inside it.
  */
 
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
-import { ARTIFACT_KINDS, ArtifactCard, ArtifactPreviewGlyph } from './index.js';
+import { ARTIFACT_KINDS, ArtifactCard, ArtifactCardSkeleton, ArtifactPreviewGlyph } from './index.js';
 
 afterEach(cleanup);
 
 const NOW = Date.parse('2026-10-17T12:00:00Z');
 const MAYA = { id: 'maya', kind: 'person' as const, name: 'Maya Ortiz' };
+
+function factsOf(link: HTMLElement): string {
+  return document.getElementById(link.getAttribute('aria-describedby') ?? '')?.textContent ?? '';
+}
 
 test('is one link, named by the title alone and described by its facts', () => {
   render(
@@ -21,9 +27,8 @@ test('is one link, named by the title alone and described by its facts', () => {
       href="#/artifacts/7b0c"
       owner={MAYA}
       updatedAt={NOW - 4 * 60_000}
-      updatedBy="Maya"
-      project="OPS"
-      version={12}
+      updatedBy="Ana"
+      access="shared"
       changes={14}
       presence={[{ name: 'Maya Ortiz', kind: 'human' }, { name: 'PM', character: 'gemlet', hue: 'rose' }]}
       pinned
@@ -32,22 +37,39 @@ test('is one link, named by the title alone and described by its facts', () => {
   );
   const link = screen.getByRole('link', { name: 'Vendor scorecard' });
   expect(link.getAttribute('href')).toBe('#/artifacts/7b0c');
-  const facts = document.getElementById(link.getAttribute('aria-describedby') ?? '')?.textContent ?? '';
-  for (const fact of ['Sheet', 'OPS', 'v12', 'Pinned', 'Maya Ortiz', '4m ago', '2 here now', '14 changes since you looked']) {
+  const facts = factsOf(link);
+  for (const fact of ['Sheet', 'Pinned', 'Shared', 'Maya Ortiz', 'Edited 4m ago by Ana', '2 here now', '14 changes since you looked']) {
     expect(facts).toContain(fact);
   }
   expect(link.querySelectorAll('button, a[href] a[href], input')).toHaveLength(0);
 });
 
-test('says when it changed before who changed it, and leaves out a changer it was not given', () => {
-  const said = () => document.querySelectorAll('.crewlet-artifact-card__line')[1]?.textContent ?? '';
-  const { rerender } = render(
-    <ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW - 4 * 60_000} updatedBy="Ana" now={NOW} />,
-  );
-  // "Ana 4m ago" beside the owner read as a second owner.
-  expect(said()).toMatch(/Maya Ortiz\s*Updated 4m ago by Ana$/);
-  rerender(<ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW - 4 * 60_000} now={NOW} />);
-  expect(said()).toMatch(/Maya Ortiz\s*Updated 4m ago$/);
+test('says who can open it by a glyph and its words, for each audience', () => {
+  const said: string[] = [];
+  for (const access of ['private', 'shared', 'company'] as const) {
+    const { unmount } = render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} access={access} now={NOW} />);
+    const glyph = document.querySelector('.crewlet-artifact-card__access');
+    expect(glyph?.querySelector('svg'), access).not.toBeNull();
+    said.push(glyph?.getAttribute('title') ?? '');
+    unmount();
+  }
+  expect(said).toEqual(['Private', 'Shared', 'Shared with the company']);
+});
+
+test('says when it was edited, and by whom only when that is not the owner already named', () => {
+  const said = () => document.querySelector('.crewlet-artifact-card__meta')?.textContent ?? '';
+  const { rerender } = render(<ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW - 4 * 60_000} updatedBy="Ana" now={NOW} />);
+  expect(said()).toMatch(/Maya Ortiz\s*Edited 4m ago by Ana$/);
+  rerender(<ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW - 4 * 60_000} updatedBy="Maya Ortiz" now={NOW} />);
+  expect(said()).toMatch(/Maya Ortiz\s*Edited 4m ago$/);
+});
+
+test("draws its actions beside its link, where a keyboard reaches them after it", () => {
+  render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} actions={<button type="button">More for Runbook</button>} />);
+  const link = screen.getByRole('link', { name: 'Runbook' });
+  const more = screen.getByRole('button', { name: 'More for Runbook' });
+  expect(link.contains(more)).toBe(false);
+  expect(link.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 test('offers the whole title to a pointer, since the card cuts it to one line', () => {
@@ -63,29 +85,32 @@ test('draws no changes line for none, and none for never opened', () => {
   expect(screen.queryByText(/since you looked/)).toBeNull();
 });
 
-test('stands the kind glyph in for a missing preview, and draws a given preview instead', () => {
+test("stands the kind's drawing in for a missing preview, and draws a given preview instead", () => {
   const { container, rerender } = render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} />);
-  expect(container.querySelector('.crewlet-artifact-card__preview svg')).not.toBeNull();
+  expect(container.querySelector('.crewlet-artifact-card__preview .crewlet-kind-ground svg')).not.toBeNull();
   rerender(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} preview={<span data-testid="cover">cover</span>} />);
   expect(screen.getByTestId('cover')).toBeDefined();
 });
 
-test('gives every kind its own glyph and label when no preview is given', () => {
+test('gives every kind its own drawing, badge and word when no preview is given', () => {
   const words: string[] = [];
   const drawings = new Set<string>();
+  const badges = new Set<string>();
   for (const kind of ARTIFACT_KINDS) {
     const { container, unmount } = render(<ArtifactCard title="Untitled" kind={kind} href="#/a" updatedAt={NOW} now={NOW} />);
-    const glyph = container.querySelector('.crewlet-artifact-card__preview svg');
-    expect(glyph, kind).not.toBeNull();
-    drawings.add(glyph?.innerHTML ?? '');
-    words.push(container.querySelector('.crewlet-artifact-card__line span')?.textContent ?? '');
+    const drawing = container.querySelector('.crewlet-artifact-card__preview svg');
+    expect(drawing, kind).not.toBeNull();
+    drawings.add(drawing?.innerHTML ?? '');
+    badges.add(container.querySelector('.crewlet-artifact-card__badge svg')?.innerHTML ?? '');
+    words.push(factsOf(screen.getByRole('link', { name: 'Untitled' })).split('Edited')[0] ?? '');
     unmount();
   }
   expect(drawings.size).toBe(ARTIFACT_KINDS.length);
+  expect(badges.size).toBe(ARTIFACT_KINDS.length);
   expect(words).toEqual(['HTML', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
 });
 
-test('a host whose cover has nothing to draw stands in the same glyph the card would', () => {
+test('a host whose cover has nothing to draw stands in the same drawing the card would', () => {
   // A cover that rendered nothing left an empty box: the card cannot see that
   // a preview it was given drew nothing, so the host draws the fallback.
   const { container } = render(
@@ -98,17 +123,52 @@ test('a host whose cover has nothing to draw stands in the same glyph the card w
   expect(given!.innerHTML).toBe(own!.innerHTML);
 });
 
-test('compact draws no preview', () => {
-  const { container } = render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} size="compact" now={NOW} />);
+test('a card in the trash says so in its look', () => {
+  const { container } = render(<ArtifactCard title="Old draft" kind="doc" href="#/a" updatedAt={NOW} trashed now={NOW} />);
+  expect(container.querySelector('.crewlet-artifact-card--trashed')).not.toBeNull();
+});
+
+test('compact draws no preview and no actions, and keeps its facts', () => {
+  const { container } = render(
+    <ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} size="compact" version={3} project="OPS" now={NOW} actions={<button type="button">More</button>} />,
+  );
   expect(container.querySelector('.crewlet-artifact-card__preview')).toBeNull();
   expect(container.querySelector('.crewlet-artifact-card--compact')).not.toBeNull();
+  expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
+  expect(factsOf(screen.getByRole('link', { name: 'Runbook' }))).toMatch(/Doc.*OPS.*v3/);
+});
+
+test('says the owner once when the owner made the latest change', () => {
+  render(<ArtifactCard title="Vendor scorecard" kind="sheet" href="#/artifacts/7b0c" owner={MAYA} updatedAt={NOW - 4 * 60_000} updatedBy="Maya Ortiz" size="compact" now={NOW} />);
+  const facts = factsOf(screen.getByRole('link', { name: 'Vendor scorecard' }));
+  expect(facts.match(/Maya Ortiz/g)).toHaveLength(1);
+  expect(facts).toContain('Edited 4m ago');
+});
+
+test("the placeholder is the card's own shape and is hidden from assistive technology", () => {
+  const { container } = render(<ArtifactCardSkeleton />);
+  const skeleton = container.querySelector('.crewlet-artifact-card--skeleton');
+  expect(skeleton?.getAttribute('aria-hidden')).toBe('true');
+  expect(skeleton?.querySelector('.crewlet-artifact-card__preview')).not.toBeNull();
+  expect(skeleton?.querySelector('.crewlet-artifact-card__badge')).not.toBeNull();
 });
 
 test('carries no axe violation, as a card and compact', async () => {
   const { container } = render(
     <main>
       <h1>Artifacts</h1>
-      <ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a" owner={MAYA} updatedAt={NOW} pinned changes={3} now={NOW} />
+      <ArtifactCard
+        title="Vendor scorecard"
+        kind="sheet"
+        href="#/a"
+        owner={MAYA}
+        updatedAt={NOW}
+        access="company"
+        pinned
+        changes={3}
+        now={NOW}
+        actions={<button type="button">More for Vendor scorecard</button>}
+      />
       <ArtifactCard title="Runbook" kind="doc" href="#/b" updatedAt={NOW} size="compact" now={NOW} />
     </main>,
   );
@@ -118,12 +178,4 @@ test('carries no axe violation, as a card and compact', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
-});
-
-test('says the owner once when the owner made the latest change', () => {
-  render(<ArtifactCard title="Vendor scorecard" kind="sheet" href="#/artifacts/7b0c" owner={MAYA} updatedAt={NOW - 4 * 60_000} updatedBy="Maya Ortiz" size="compact" now={NOW} />);
-  const link = screen.getByRole('link', { name: 'Vendor scorecard' });
-  const facts = document.getElementById(link.getAttribute('aria-describedby') ?? '')?.textContent ?? '';
-  expect(facts.match(/Maya Ortiz/g)).toHaveLength(1);
-  expect(facts).toContain('Updated 4m ago');
 });

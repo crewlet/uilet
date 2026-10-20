@@ -3,6 +3,7 @@ import './Select.css';
 export { Select } from './Select.js';
 export type {
   SelectAlign,
+  SelectAppearance,
   SelectMode,
   SelectOption,
   SelectProps,

@@ -1,0 +1,65 @@
+/*
+ * A live preview: the stand-in and the live layer stacked in one box. The box
+ * takes its size from its parent (a card's preview area), so it fills it and
+ * clips whatever the content lays out past its edge.
+ */
+
+.crewlet-live-preview {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  contain: layout paint;
+}
+
+.crewlet-live-preview__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  transition: opacity var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-live-preview__live {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity var(--motion-duration-base) var(--motion-easing-out);
+}
+
+/* LAID OUT AT ITS OWN SIZE from the top left corner, and scaled from there:
+   to the box's width, its top left the box's, or whole and centred. */
+.crewlet-preview-scale {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+}
+
+.crewlet-preview-scale__layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  overflow: hidden;
+  transform-origin: 0 0;
+}
+
+.crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__live {
+  opacity: 1;
+}
+
+.crewlet-live-preview[data-state='ready'] > .crewlet-live-preview__fallback {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-live-preview__fallback,
+  .crewlet-live-preview__live {
+    transition: none;
+  }
+}

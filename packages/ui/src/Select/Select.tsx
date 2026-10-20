@@ -41,6 +41,9 @@ export type SelectAlign = 'left' | 'right';
  */
 export type SelectWidth = 'full' | 'auto';
 
+/** How much chrome a picker draws. See [SelectProps.appearance]. */
+export type SelectAppearance = 'field' | 'quiet';
+
 /**
  * Which control this is.
  *
@@ -159,6 +162,14 @@ export interface SelectProps extends NativePassthrough {
   active?: boolean;
   /** Marks the value as refused. Sets `aria-invalid`. */
   error?: boolean;
+  /**
+   * `field` (the default) is a bordered picker, a form's. `quiet` draws no
+   * boundary until the pointer is over it, for a toolbar whose pickers
+   * arrange content that is the page's point (a gallery's type and order): a
+   * row of bordered boxes above a grid of cards read as a form to fill in.
+   * A quiet filter that is on takes the accent's soft fill and ink.
+   */
+  appearance?: SelectAppearance;
   ariaLabel?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -223,6 +234,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
     align = 'left',
     active = false,
     error = false,
+    appearance = 'field',
     ariaLabel,
     searchable = false,
     searchPlaceholder = 'Search',
@@ -242,7 +254,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(
    * The width is a class on the root of whichever control is drawn, so it is
    * decided once here rather than threaded through both branches.
    */
-  const classes = cx(className, width === 'auto' && 'crewlet-select--auto');
+  const classes = cx(className, width === 'auto' && 'crewlet-select--auto', appearance === 'quiet' && 'crewlet-select--quiet');
 
   /*
    * WHAT IS CHOSEN, and the one case that is not obvious: the EMPTY STRING.

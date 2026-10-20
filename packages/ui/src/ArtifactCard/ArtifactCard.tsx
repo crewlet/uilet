@@ -1,9 +1,23 @@
 import { useId, type ReactNode } from 'react';
-import { FileCodeGlyph, FileTextGlyph, LayoutDashboardGlyph, PaletteGlyph, PinGlyph, PresentationGlyph, TableGlyph, type GlyphSize } from '@crewlethq/icons/glyphs';
+import {
+  BuildingComplexGlyph,
+  FileCodeGlyph,
+  FileTextGlyph,
+  LayoutDashboardGlyph,
+  LockGlyph,
+  PaletteGlyph,
+  PinGlyph,
+  PresentationGlyph,
+  TableGlyph,
+  UsersGlyph,
+  type GlyphSize,
+} from '@crewlethq/icons/glyphs';
+import { ArtifactKindGround } from '../ArtifactKindIllustration/index.js';
 import { AvatarStack, type AvatarStackMember } from '../Avatar/index.js';
 import { Card } from '../Card/index.js';
 import { PrincipalAvatar, type Principal } from '../Principal/index.js';
 import { RelativeTime, type TimeValue } from '../RelativeTime/index.js';
+import { Skeleton } from '../Skeleton/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -29,19 +43,29 @@ export function ArtifactKindGlyph({ kind, size = 'md' }: { kind: ArtifactKind; s
 }
 
 /**
- * What a card's preview draws when there is no cover: the kind's glyph,
- * centred in the preview. Exported for a host whose cover has nothing to draw
- * YET (its outline still loading) or at all (a sheet with no columns): a cover
- * that rendered nothing left an empty box where every other card has a
- * picture, since the card cannot know that a cover it was given drew nothing.
+ * What a card's preview draws when there is no cover: the kind's drawing on
+ * its tinted ground (`ArtifactKindGround`). Exported for a host whose cover
+ * has nothing to draw YET (its content still loading) or at all (a sheet with
+ * no columns): a cover that rendered nothing left an empty box where every
+ * other card has a picture, since the card cannot know that a cover it was
+ * given drew nothing.
  */
 export function ArtifactPreviewGlyph({ kind }: { kind: ArtifactKind }) {
-  return (
-    <span className="crewlet-artifact-card__glyph">
-      <ArtifactKindGlyph kind={kind} size={32} />
-    </span>
-  );
+  return <ArtifactKindGround kind={kind} />;
 }
+
+/**
+ * Who can open an artifact, as its card says it: only its owner (and those
+ * they shared it with by name, which the owner alone sees), people it is
+ * shared with, or the whole company.
+ */
+export type ArtifactAccess = 'private' | 'shared' | 'company';
+
+const ACCESS_GLYPHS: Readonly<Record<ArtifactAccess, typeof LockGlyph>> = {
+  private: LockGlyph,
+  shared: UsersGlyph,
+  company: BuildingComplexGlyph,
+};
 
 export type ArtifactCardSize = 'card' | 'compact';
 
@@ -51,8 +75,10 @@ export interface ArtifactCardLabels {
   version: (version: number) => string;
   changes: (count: number) => string;
   present: (count: number) => string;
-  /** The change's time, opening the line: "Updated" before "4m ago". */
+  /** The change's time, opening the line: "Edited" before "4m ago". */
   updated: string;
+  /** Who can open it, said to assistive technology beside its glyph. */
+  access: Record<ArtifactAccess, string>;
   /** Who made it, after the time: "by Maya". */
   by: (name: string) => string;
 }
@@ -63,8 +89,9 @@ const LABELS: ArtifactCardLabels = {
   version: (version) => `v${version}`,
   changes: (count) => (count === 1 ? '1 change since you looked' : `${count} changes since you looked`),
   present: (count) => (count === 1 ? '1 here now' : `${count} here now`),
-  updated: 'Updated',
+  updated: 'Edited',
   by: (name) => `by ${name}`,
+  access: { private: 'Private', shared: 'Shared', company: 'Shared with the company' },
 };
 
 export interface ArtifactCardProps {
@@ -94,6 +121,17 @@ export interface ArtifactCardProps {
   version?: number | undefined;
   /** The project or task it belongs to, as its key ("OPS", "ENG-412"). */
   project?: string | undefined;
+  /** Who can open it, drawn as a glyph opening the card's line. Left out, nothing is said about it. */
+  access?: ArtifactAccess | undefined;
+  /**
+   * The card's own controls (a More menu), drawn OUTSIDE its link in the
+   * preview's top corner and shown on hover and while focus is inside the
+   * card, so they are reachable by keyboard and never nested in the link.
+   * The `card` size only.
+   */
+  actions?: ReactNode;
+  /** It is in the trash: the preview is drawn faded. */
+  trashed?: boolean | undefined;
   /** `compact` is a row for a narrow rail or a phone, with no preview. */
   size?: ArtifactCardSize | undefined;
   className?: string | undefined;
@@ -103,13 +141,23 @@ export interface ArtifactCardProps {
 }
 
 /**
- * One artifact, as a card in a gallery, a row in a task's rail or an embed.
+ * One artifact, as a card in a gallery or a row in a task's rail.
+ *
+ * THE CARD (`size="card"`) is a gallery's: a large preview of the artifact's
+ * own content on top, the kind's glyph on a badge over the preview's foot,
+ * then the title on one line and one quiet line under it, who can open it
+ * and when it was last edited ("Edited 20h ago"), with the owner named when
+ * the reader is not the owner.
  *
  * THE WHOLE CARD IS ONE LINK, named by the title alone and described by the
  * rest, so a reader moving through a gallery by link hears "Vendor scorecard"
- * and then, if they wait, what it is and who changed it. Nothing inside is a
- * second control: a pin or a menu inside a link is a control nobody can reach
- * without opening the artifact. Those live on the gallery row's own menu.
+ * and then, if they wait, what it is and who changed it. The card's own
+ * controls (`actions`, a More menu) are drawn beside the link rather than
+ * inside it, over the preview's corner, so they are real controls a keyboard
+ * reaches in turn after the link.
+ *
+ * THE COMPACT ROW (`size="compact"`) is a task rail's: the kind's glyph, the
+ * title and the facts, with no preview and no actions.
  */
 export function ArtifactCard({
   title,
@@ -124,81 +172,163 @@ export function ArtifactCard({
   pinned = false,
   version,
   project,
+  access,
+  actions,
+  trashed = false,
   size = 'card',
   className,
   now,
   labels,
 }: ArtifactCardProps) {
-  const text = { ...LABELS, ...labels, kinds: { ...LABELS.kinds, ...labels?.kinds } };
+  const text = {
+    ...LABELS,
+    ...labels,
+    kinds: { ...LABELS.kinds, ...labels?.kinds },
+    access: { ...LABELS.access, ...labels?.access },
+  };
   const titleId = useId();
   const factsId = useId();
   const present = presence && presence.length > 0 ? presence : null;
-  // THE OWNER IS ALREADY ON THE LINE, so a change they made reads "Updated 4m
+  // THE OWNER IS ALREADY ON THE LINE, so a change they made reads "Edited 4m
   // ago" beside their name rather than the name twice.
   const changedBy = updatedBy && updatedBy !== owner?.name ? updatedBy : undefined;
+  const edited = (
+    <span>
+      {`${text.updated} `}
+      <RelativeTime value={updatedAt} now={now} />
+      {changedBy ? ` ${text.by(changedBy)}` : null}
+    </span>
+  );
+  const extra =
+    present || (changes !== undefined && changes > 0) ? (
+      <span className="crewlet-artifact-card__line">
+        {present ? (
+          <span className="crewlet-artifact-card__presence">
+            <AvatarStack members={present} max={3} size="xs" decorative />
+            <span>{text.present(present.length)}</span>
+          </span>
+        ) : null}
+        {changes !== undefined && changes > 0 ? <span className="crewlet-artifact-card__changes">{text.changes(changes)}</span> : null}
+      </span>
+    ) : null;
 
-  return (
-    <Card
-      href={href}
-      variant="subtle"
-      padding="none"
-      className={cx('crewlet-artifact-card', `crewlet-artifact-card--${size}`, className)}
-      aria-labelledby={titleId}
-      aria-describedby={factsId}
-    >
-      {size === 'card' ? (
-        <span className="crewlet-artifact-card__preview" aria-hidden>
-          {preview ?? <ArtifactPreviewGlyph kind={kind} />}
-        </span>
-      ) : (
+  if (size === 'compact') {
+    return (
+      <Card
+        href={href}
+        variant="subtle"
+        padding="none"
+        className={cx('crewlet-artifact-card', 'crewlet-artifact-card--compact', className)}
+        aria-labelledby={titleId}
+        aria-describedby={factsId}
+      >
         <span className="crewlet-artifact-card__glyph crewlet-artifact-card__glyph--compact" aria-hidden>
           <ArtifactKindGlyph kind={kind} size="lg" />
         </span>
-      )}
-      <span className="crewlet-artifact-card__body">
-        <span className="crewlet-artifact-card__title-row">
-          <span id={titleId} className="crewlet-artifact-card__title" title={title}>
-            {title}
-          </span>
-          {pinned ? (
-            <span className="crewlet-artifact-card__pin" title={text.pinned} aria-hidden>
-              <PinGlyph size="xs" />
+        <span className="crewlet-artifact-card__body">
+          <span className="crewlet-artifact-card__title-row">
+            <span id={titleId} className="crewlet-artifact-card__title" title={title}>
+              {title}
             </span>
-          ) : null}
-        </span>
-        <span id={factsId} className="crewlet-artifact-card__facts">
-          <span className="crewlet-artifact-card__line">
-            <span>{text.kinds[kind]}</span>
-            {project ? <span>{project}</span> : null}
-            {version !== undefined ? <span>{text.version(version)}</span> : null}
-            {pinned ? <VisuallyHidden>{text.pinned}</VisuallyHidden> : null}
-          </span>
-          <span className="crewlet-artifact-card__line">
-            {owner ? (
-              <span className="crewlet-artifact-card__owner">
-                <PrincipalAvatar principal={owner} size="xs" />
-                <span>{owner.name}</span>
+            {pinned ? (
+              <span className="crewlet-artifact-card__pin" title={text.pinned} aria-hidden>
+                <PinGlyph size="xs" />
               </span>
             ) : null}
-            <span>
-              {`${text.updated} `}
-              <RelativeTime value={updatedAt} now={now} />
-              {changedBy ? ` ${text.by(changedBy)}` : null}
-            </span>
           </span>
-          {present || (changes !== undefined && changes > 0) ? (
+          <span id={factsId} className="crewlet-artifact-card__facts">
             <span className="crewlet-artifact-card__line">
-              {present ? (
-                <span className="crewlet-artifact-card__presence">
-                  <AvatarStack members={present} max={3} size="xs" decorative />
-                  <span>{text.present(present.length)}</span>
+              <span>{text.kinds[kind]}</span>
+              {project ? <span>{project}</span> : null}
+              {version !== undefined ? <span>{text.version(version)}</span> : null}
+              {pinned ? <VisuallyHidden>{text.pinned}</VisuallyHidden> : null}
+            </span>
+            <span className="crewlet-artifact-card__line">
+              {owner ? (
+                <span className="crewlet-artifact-card__owner">
+                  <PrincipalAvatar principal={owner} size="xs" />
+                  <span>{owner.name}</span>
                 </span>
               ) : null}
-              {changes !== undefined && changes > 0 ? <span className="crewlet-artifact-card__changes">{text.changes(changes)}</span> : null}
+              {edited}
             </span>
-          ) : null}
+            {extra}
+          </span>
         </span>
+      </Card>
+    );
+  }
+
+  const Access = access ? ACCESS_GLYPHS[access] : null;
+  return (
+    <div className={cx('crewlet-artifact-card', 'crewlet-artifact-card--card', trashed && 'crewlet-artifact-card--trashed', className)}>
+      <a href={href} className="crewlet-artifact-card__link" aria-labelledby={titleId} aria-describedby={factsId}>
+        <span className="crewlet-artifact-card__preview" aria-hidden>
+          {preview ?? <ArtifactPreviewGlyph kind={kind} />}
+        </span>
+        <span className="crewlet-artifact-card__body">
+          <span className={cx('crewlet-artifact-card__badge', `crewlet-kind--${kind}`)} aria-hidden>
+            <ArtifactKindGlyph kind={kind} size="md" />
+          </span>
+          <span className="crewlet-artifact-card__title-row">
+            <span id={titleId} className="crewlet-artifact-card__title" title={title}>
+              {title}
+            </span>
+            {pinned ? (
+              <span className="crewlet-artifact-card__pin" title={text.pinned} aria-hidden>
+                <PinGlyph size="sm" />
+              </span>
+            ) : null}
+          </span>
+          <span id={factsId} className="crewlet-artifact-card__facts">
+            {/* THE KIND AND THE PIN ARE SAID, not drawn: the badge and the pin
+                glyph are pictures of them. */}
+            <VisuallyHidden>
+              {text.kinds[kind]}
+              {pinned ? `, ${text.pinned}` : ''}
+            </VisuallyHidden>
+            <span className="crewlet-artifact-card__line crewlet-artifact-card__meta">
+              {Access && access ? (
+                <span className="crewlet-artifact-card__access" title={text.access[access]}>
+                  <Access size="sm" />
+                  <VisuallyHidden>{text.access[access]}</VisuallyHidden>
+                </span>
+              ) : null}
+              {owner ? (
+                <span className="crewlet-artifact-card__owner">
+                  <PrincipalAvatar principal={owner} size="xs" />
+                  <span className="crewlet-artifact-card__owner-name">{owner.name}</span>
+                </span>
+              ) : null}
+              {edited}
+            </span>
+            {extra}
+          </span>
+        </span>
+      </a>
+      {actions ? <span className="crewlet-artifact-card__actions">{actions}</span> : null}
+    </div>
+  );
+}
+
+/**
+ * A gallery card while its listing loads: the card's own shape (the preview
+ * at its ratio, the badge over its foot, a title line and a meta line), so a
+ * gallery that arrives replaces each placeholder in place rather than
+ * reflowing the page. Decorative: the host says once what is loading
+ * (`Skeleton`'s `label`, or its own status line).
+ */
+export function ArtifactCardSkeleton({ className }: { className?: string | undefined }) {
+  return (
+    <div className={cx('crewlet-artifact-card', 'crewlet-artifact-card--card', 'crewlet-artifact-card--skeleton', className)} aria-hidden>
+      <span className="crewlet-artifact-card__preview">
+        <Skeleton variant="box" width="100%" height="100%" borderRadius={0} />
       </span>
-    </Card>
+      <span className="crewlet-artifact-card__body">
+        <span className="crewlet-artifact-card__badge" />
+        <Skeleton variant="box" width="62%" height={18} borderRadius="var(--radius-sm)" />
+        <Skeleton variant="box" width="38%" height={12} borderRadius="var(--radius-sm)" marginTop={6} />
+      </span>
+    </div>
   );
 }
