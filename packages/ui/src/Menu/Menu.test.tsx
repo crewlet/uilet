@@ -166,10 +166,23 @@ test('a text trigger draws its leading and trailing glyphs as the button icons',
       items={entries()}
     />,
   );
-  const button = screen.getByRole('button', { name: 'Keyword' });
+  const button = screen.getByRole('button', { name: 'Rank by: Keyword' });
   const slots = [...button.children].map((child) => child.className);
   expect(slots).toEqual(['crewlet-btn__icon', 'crewlet-btn__label', 'crewlet-btn__icon']);
   expect(button.querySelector('.crewlet-btn__label')?.textContent).toBe('Keyword');
+});
+
+/*
+ * THE LABEL NAMES A TEXT TRIGGER TOO. A "New" button whose menu makes an
+ * artifact read as "New" alone, and `label` was dropped on the floor whenever
+ * the trigger had words: the name a screen reader announces is the label,
+ * which keeps the visible word in it.
+ */
+test('a text trigger is named by the label, which keeps its visible words', () => {
+  render(<Menu label="New artifact" trigger="New" items={entries()} />);
+  const button = screen.getByRole('button', { name: 'New artifact' });
+  expect(button.textContent).toBe('New');
+  expect(screen.queryByRole('button', { name: 'New' })).toBeNull();
 });
 
 test('the trigger announces a menu, and opening it puts focus on the first item', () => {

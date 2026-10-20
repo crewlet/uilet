@@ -1,3 +1,4 @@
+import '../ArtifactKindIllustration/ArtifactKinds.css';
 import './ArtifactCard.css';
 
 export { ArtifactCard, ArtifactCardSkeleton, ArtifactPreviewGlyph } from './ArtifactCard.js';

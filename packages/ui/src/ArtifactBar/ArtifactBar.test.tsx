@@ -30,6 +30,13 @@ test('the title is the page heading, beside the kind said in words', () => {
   );
 });
 
+// THE GLYPH IS IN THE KIND'S INK, as the gallery's badge and the Make row
+// draw it: the bar carries the kind's class, which sets `--crewlet-kind-ink`.
+test("the kind's glyph is drawn in the kind's colour", () => {
+  render(<ArtifactBar title="Q4 roadmap" kind="design" kindLabel="Design" />);
+  expect(screen.getByRole('img', { name: 'Design' }).classList.contains('crewlet-kind--design')).toBe(true);
+});
+
 test('the way back is a link named by where it goes', () => {
   render(<ArtifactBar title="Q4 roadmap" kind="slides" kindLabel="Slides" back={{ href: '#/artifacts', label: 'Back to artifacts' }} />);
   const back = screen.getByRole('link', { name: 'Back to artifacts' });
@@ -80,6 +87,32 @@ test('a status is said before the tools, and a primary tool keeps its word at ev
   expect(save).toHaveBeenCalledTimes(1);
   // Cancel is an ordinary labelled tool: its word while wide, its glyph when not.
   expect(within(end as HTMLElement).getAllByRole('button', { name: 'Cancel' })).toHaveLength(2);
+});
+
+// A SHORT WORD FOR A NARROW BAR: both words are drawn and the bar's width
+// picks one, while the accessible name stays the full one at every width.
+test('a primary tool with a short word keeps its full word as its name', () => {
+  render(
+    <ArtifactBar
+      title="New design"
+      kind="design"
+      kindLabel="Design"
+      kindTools={[
+        {
+          key: 'create',
+          label: 'Create and ask SRE Lead',
+          shortLabel: 'Create',
+          icon: <Share2Glyph size="sm" />,
+          labelled: true,
+          emphasis: 'primary',
+          onSelect: vi.fn(),
+        },
+      ]}
+    />,
+  );
+  const create = screen.getByRole('button', { name: 'Create and ask SRE Lead' });
+  expect(create.querySelector('.crewlet-artifact-bar__word-full')?.textContent).toBe('Create and ask SRE Lead');
+  expect(create.querySelector('.crewlet-artifact-bar__word-short')?.textContent).toBe('Create');
 });
 
 test('on a narrow bar the views and the unlabelled tools are rows of More, with their keys', () => {

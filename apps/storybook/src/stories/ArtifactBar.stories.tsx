@@ -231,6 +231,41 @@ export const EditingADocNarrow: Story = {
   ],
 };
 
+/**
+ * A create page's bar on a phone (390): the status is cut to an ellipsis
+ * rather than drawn over the title, and the primary action takes its short
+ * word ("Create" for "Create and ask SRE Lead"), keeping the full one as its
+ * name.
+ */
+export const CreatingOnAPhone: Story = {
+  args: {
+    title: 'New sheet',
+    kind: 'sheet',
+    kindLabel: 'Sheet',
+    back: { href: '#', label: 'Back to artifacts' },
+    status: <span>Draft saved a moment ago</span>,
+    kindTools: [
+      { key: 'cancel', label: 'Cancel', icon: <XGlyph size="sm" />, labelled: true, onSelect: () => {} },
+      {
+        key: 'create',
+        label: 'Create and ask SRE Lead',
+        shortLabel: 'Create',
+        icon: <CheckGlyph size="sm" />,
+        labelled: true,
+        emphasis: 'primary',
+        onSelect: () => {},
+      },
+    ],
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 390 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
 /** An older version on show: the chip takes the accent and says which of how many. */
 export const OlderVersion: Story = {
   args: {

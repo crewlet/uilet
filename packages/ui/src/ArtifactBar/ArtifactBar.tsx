@@ -48,6 +48,12 @@ export interface ArtifactBarTool {
    * every width, because a glyph alone does not say what a press commits.
    */
   emphasis?: 'primary' | undefined;
+  /**
+   * A primary tool's word on a narrow bar, where the full one would push the
+   * title out: "Create" for "Create and ask SRE Lead". The full word stays its
+   * accessible name at every width, and it is drawn whole while there is room.
+   */
+  shortLabel?: string | undefined;
 }
 
 /** The ways a kind draws itself, as one choice: a deck's Edit, Grid and Present. */
@@ -220,7 +226,7 @@ export function ArtifactBar({
               </IconButton>
             </Tooltip>
           ) : null}
-          <span className="crewlet-artifact-bar__glyph" role="img" aria-label={kindLabel} title={kindLabel}>
+          <span className={cx('crewlet-artifact-bar__glyph', `crewlet-kind--${kind}`)} role="img" aria-label={kindLabel} title={kindLabel}>
             <ArtifactIcon icon={icon ?? undefined} kind={kind} size="sm" />
           </span>
           {pending ? (
@@ -355,9 +361,17 @@ function LabelledTool({ tool, apple }: { tool: ArtifactBarTool; apple: boolean }
           leadingIcon={tool.icon}
           disabledReason={tool.disabledReason}
           aria-keyshortcuts={shortcut}
+          aria-label={tool.shortLabel ? tool.label : undefined}
           onClick={tool.onSelect}
         >
-          {tool.label}
+          {tool.shortLabel ? (
+            <>
+              <span className="crewlet-artifact-bar__word-full">{tool.label}</span>
+              <span className="crewlet-artifact-bar__word-short">{tool.shortLabel}</span>
+            </>
+          ) : (
+            tool.label
+          )}
         </Button>
       </Tooltip>
     );

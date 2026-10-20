@@ -64,6 +64,9 @@
   align-items: center;
 }
 
+/* THE KIND'S GLYPH IN THE KIND'S INK, as the gallery's badge and the Make
+   row draw it, so an open artifact and a create page say what they are in the
+   same colour the reader picked it by. */
 .crewlet-artifact-bar__glyph {
   display: inline-flex;
   flex: none;
@@ -71,7 +74,7 @@
   justify-content: center;
   width: var(--size-control-sm);
   height: var(--size-control-sm);
-  color: var(--color-text-secondary);
+  color: var(--crewlet-kind-ink, var(--color-text-secondary));
 }
 
 /* THE TITLE. Read only, it is text; renamable, its words are a button drawn
@@ -262,7 +265,8 @@
 
 /* Both arrangements are drawn; the bar's width says which one shows. */
 .crewlet-artifact-bar__narrow,
-.crewlet-artifact-bar__tight {
+.crewlet-artifact-bar__tight,
+.crewlet-artifact-bar__word-short {
   display: none;
 }
 
@@ -307,6 +311,39 @@
 
   .crewlet-artifact-bar__narrow {
     display: inline-flex;
+  }
+
+  /* A PRIMARY ACTION TAKES ITS SHORT WORD, where it has one, so "Create and
+     ask SRE Lead" does not push the title out of a phone's bar. */
+  .crewlet-artifact-bar__word-full {
+    display: none;
+  }
+
+  .crewlet-artifact-bar__word-short {
+    display: inline;
+  }
+
+  /* THE STATUS GIVES WAY BEFORE THE TITLE: the end may shrink, and the
+     status is the part of it that does, cut to an ellipsis rather than drawn
+     over the title. Its words stay whole for a screen reader. */
+  .crewlet-artifact-bar__end {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .crewlet-artifact-bar__end > * {
+    flex: none;
+  }
+
+  .crewlet-artifact-bar__end > .crewlet-artifact-bar__status {
+    display: block;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 30cqi;
+    margin-inline-end: var(--spacing-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* The views have folded, so there is nothing to centre: the title takes
