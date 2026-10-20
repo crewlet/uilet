@@ -179,6 +179,8 @@
 
 /* A tile that starts something in place is a button, drawn as the link is. */
 .crewlet-kind-tile--button {
+  /* A button shrinks to its content where a link in a grid cell fills it. */
+  width: 100%;
   padding: 0;
   border: 0;
   background: none;
