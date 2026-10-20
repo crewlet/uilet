@@ -28,6 +28,11 @@ import {
  * field to place one. Drag a board's name to move it, a selected item's
  * corners to resize it, a note's paper to move it, double-click a note to
  * retype it, and press Delete to remove a selected note.
+ *
+ * In the Shaping story the palette adds Frame (F) too: click the field to
+ * place a phone sized board there, and press Delete to remove a selected
+ * board. It is how a design's create page lets a person lay out the boards
+ * an agent then fills.
  */
 const meta: Meta<typeof CanvasBoard> = {
   title: 'UI/CanvasBoard',
@@ -113,6 +118,35 @@ function EditableBoard() {
 
 /** Move and resize boards, place notes with Text and Sticky, and edit, move or delete them. */
 export const Editable: Story = { render: () => <EditableBoard /> };
+
+function ShapingBoard() {
+  const [boards, setBoards] = useState<CanvasBoardItem[]>([
+    { id: 'home', x: 0, y: 0, w: 1440, h: 1024, title: 'Home' },
+  ]);
+  const [made, setMade] = useState(1);
+  const place = (at: { x: number; y: number }) => {
+    const id = `board-${made + 1}`;
+    setMade((n) => n + 1);
+    setBoards((all) => [...all, { id, ...at, w: 390, h: 844, title: `Screen ${made + 1}` }]);
+    return id;
+  };
+  return (
+    <Frame>
+      <CanvasBoard
+        label="New design"
+        boards={boards}
+        renderBoard={stand}
+        editable
+        onBoardCreate={place}
+        onBoardRemove={(id) => setBoards((all) => all.filter((b) => b.id !== id))}
+        onBoardChange={(id, rect) => setBoards((all) => all.map((b) => (b.id === id ? { ...b, ...rect } : b)))}
+      />
+    </Frame>
+  );
+}
+
+/** Lay out the boards of a design before it is drawn: place them with Frame, move, resize and delete them. */
+export const Shaping: Story = { render: () => <ShapingBoard /> };
 
 const LIST: CSSProperties = {
   display: 'flex',

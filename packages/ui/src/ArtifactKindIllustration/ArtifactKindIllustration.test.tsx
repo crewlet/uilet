@@ -4,9 +4,9 @@
  * the kind's name, or a stop that says why it cannot start one.
  */
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { ARTIFACT_KINDS } from '../ArtifactKindGlyph/index.js';
 import { ArtifactKindGround, ArtifactKindIllustration, ArtifactKindTile } from './index.js';
 
@@ -59,6 +59,25 @@ test('a tile that cannot start stays a stop on the row and says why', () => {
   expect(document.getElementById(tile.getAttribute('aria-describedby') ?? '')?.textContent).toBe('This needs the Artifacts app.');
 });
 
+test('a tile that starts something in place is a button with its own face and a line saying what it starts', () => {
+  const onSelect = vi.fn();
+  render(
+    <ArtifactKindTile
+      kind="design"
+      label="Landing page"
+      detail="3 boards"
+      face={<span data-testid="face" />}
+      onSelect={onSelect}
+    />,
+  );
+  const tile = screen.getByRole('button', { name: 'Landing page' });
+  expect(document.getElementById(tile.getAttribute('aria-describedby') ?? '')?.textContent).toBe('3 boards');
+  expect(screen.getByTestId('face').closest('.crewlet-kind-ground')).not.toBeNull();
+  expect(tile.querySelector('svg')).toBeNull();
+  fireEvent.click(tile);
+  expect(onSelect).toHaveBeenCalledTimes(1);
+});
+
 test('a row of tiles carries no axe violation', async () => {
   const { container } = render(
     <main>
@@ -71,6 +90,9 @@ test('a row of tiles carries no axe violation', async () => {
         ))}
         <li>
           <ArtifactKindTile kind="sheet" label="Sheet" disabledReason="Not now." />
+        </li>
+        <li>
+          <ArtifactKindTile kind="design" label="Blank canvas" detail="No boards yet" onSelect={() => {}} />
         </li>
       </ul>
     </main>,

@@ -49,3 +49,39 @@ export const TwoColumns: Story = {
     );
   },
 };
+
+/**
+ * A THEME OF SOMETHING OTHER THAN THE PRODUCT: a slide deck's themes, each
+ * card drawn by the caller as the deck's cover in that theme (`renderPreview`),
+ * listed under no heading.
+ */
+export const CallerDrawnPreview: Story = {
+  render: function Render() {
+    const decks = [
+      { id: 'nightshade', name: 'Nightshade', tag: 'Periwinkle on blue-black', group: 'deck', ground: '#0d0f16', ink: '#e8ebf4', accent: '#9584ff' },
+      { id: 'ink', name: 'Ink', tag: 'Navy and paper', group: 'deck', ground: '#1d2433', ink: '#f5f3ee', accent: '#2f5d8c' },
+      { id: 'paper', name: 'Paper', tag: 'White, quiet and exact', group: 'deck', ground: '#f2f2ee', ink: '#111111', accent: '#2450e6' },
+    ];
+    const [value, setValue] = useState('nightshade');
+    return (
+      <div style={{ maxWidth: 420 }}>
+        <ThemeGallery
+          label="Deck theme"
+          value={value}
+          onValueChange={setValue}
+          themes={decks}
+          groups={[]}
+          renderPreview={(theme) => {
+            const deck = decks.find((d) => d.id === theme.id)!;
+            return (
+              <span style={{ display: 'grid', gap: 6, aspectRatio: '16 / 9', padding: 12, background: deck.ground, color: deck.ink, fontSize: 11, alignContent: 'center' }}>
+                <span style={{ width: 16, height: 2, background: deck.accent }} />
+                Quarterly plan
+              </span>
+            );
+          }}
+        />
+      </div>
+    );
+  },
+};

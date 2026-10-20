@@ -1,4 +1,4 @@
 import './HuePicker.css';
 
-export { HuePicker } from './HuePicker.js';
+export { HuePicker, HueSwatch } from './HuePicker.js';
 export type { HuePickerProps } from './HuePicker.js';

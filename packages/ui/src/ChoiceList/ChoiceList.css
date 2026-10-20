@@ -4,6 +4,8 @@
  * accent's soft fill, so the answer reads at a glance without the radio.
  */
 .crewlet-choice-list {
+  /* The platform's radio, sized here so a panel can line up with the text beside it. */
+  --crewlet-choice-list-radio-size: 13px;
   display: grid;
   gap: var(--spacing-1);
   padding: var(--spacing-1);
@@ -43,6 +45,22 @@
   transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+/* A choice with a picture: the radio, the picture, the words, the tag. The
+   picture centres on the label and its detail together. */
+.crewlet-choice-list__row.has-media {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.crewlet-choice-list__row.has-media .crewlet-choice-list__radio {
+  margin-top: 0;
+}
+
+.crewlet-choice-list__media {
+  display: inline-flex;
+  flex: none;
+}
+
 .crewlet-choice-list__row:hover {
   background: var(--color-surface-hover);
 }
@@ -56,6 +74,8 @@
 }
 
 .crewlet-choice-list__radio {
+  width: var(--crewlet-choice-list-radio-size);
+  height: var(--crewlet-choice-list-radio-size);
   margin: 3px 0 0;
   accent-color: var(--color-brand-accent);
   cursor: inherit;
@@ -93,6 +113,25 @@
   text-transform: uppercase;
   color: var(--color-brand-accent-ink);
   white-space: nowrap;
+}
+
+/* A SELECTED CHOICE'S PANEL is part of the choice: it continues the row's
+   fill under it, and its content starts where the label does, not under the
+   radio. */
+.crewlet-choice-list__item:has(> .crewlet-choice-list__panel) {
+  gap: 0;
+}
+
+.crewlet-choice-list__item:has(> .crewlet-choice-list__panel) > .crewlet-choice-list__row {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.crewlet-choice-list__panel {
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-3) calc(var(--spacing-2) + var(--crewlet-choice-list-radio-size) + var(--spacing-3));
+  border-end-start-radius: var(--radius-sm);
+  border-end-end-radius: var(--radius-sm);
+  background: var(--color-brand-accent-soft);
 }
 
 .crewlet-choice-list__footer {

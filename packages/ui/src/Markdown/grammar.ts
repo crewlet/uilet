@@ -136,12 +136,21 @@ export function safeHref(raw: string): string | null {
 const HEADING = /^(#{1,6})\s+(.*)$/;
 const FENCE = /^(```|~~~)\s*([A-Za-z0-9_+-]*)\s*$/;
 const RULE = /^(?:\s*(?:-{3,}|\*{3,}|_{3,})\s*)$/;
-const BULLET = /^(\s*)([-*+])\s+(.*)$/;
-const ORDERED = /^(\s*)(\d{1,9})([.)])\s+(.*)$/;
+// A MARKER ALONE ON ITS LINE IS AN EMPTY ITEM, as CommonMark reads it: "1."
+// and "-" with nothing after them, or with only the space an editor strips.
+// Its text group is then undefined, which an item reads as nothing.
+const BULLET = /^(\s*)([-*+])(?:\s+(.*))?$/;
+const ORDERED = /^(\s*)(\d{1,9})([.)])(?:\s+(.*))?$/;
 const QUOTE = /^\s{0,3}>\s?(.*)$/;
 const TABLE_RULE = /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/;
 const CALLOUT = /^\[!(note|tip|important|warning|caution)\]\s*$/i;
-const TASK = /^\[([ xX])\]\s+(.*)$/;
+const TASK = /^\[([ xX])\](?:\s+(.*))?$/;
+
+/** Whether a list line is a marker with nothing after it: an empty item. */
+function bareMarker(line: string): boolean {
+  const found = BULLET.exec(line) ?? ORDERED.exec(line);
+  return found !== null && (found[found.length - 1] ?? '').trim() === '';
+}
 
 /**
  * What CLOSES a fence opened with each marker.
@@ -307,7 +316,10 @@ function blocksOf(lines: string[]): MarkdownSpan[] {
       continue;
     }
 
-    if (BULLET.test(line) || ORDERED.test(line)) {
+    // AN EMPTY ITEM DOES NOT INTERRUPT A PARAGRAPH, as in CommonMark: a "-"
+    // or a "1." under a line of text is that text's next line, so a sum
+    // wrapped before its last figure is not cut into a paragraph and a list.
+    if ((BULLET.test(line) || ORDERED.test(line)) && !(paragraph.length > 0 && bareMarker(line))) {
       flush();
       const [list, next] = parseList(lines, i);
       out.push({ block: list, start, end: next });

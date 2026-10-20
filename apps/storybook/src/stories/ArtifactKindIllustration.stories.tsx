@@ -1,5 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ARTIFACT_KINDS, ArtifactKindGround, ArtifactKindIllustration, ArtifactKindTile } from '@crewlethq/ui';
+import {
+  ARTIFACT_KINDS,
+  ArtifactKindGround,
+  ArtifactKindIllustration,
+  ArtifactKindTile,
+  CanvasSchematic,
+} from '@crewlethq/ui';
 
 const meta: Meta<typeof ArtifactKindIllustration> = {
   title: 'UI/ArtifactKindIllustration',
@@ -50,14 +56,15 @@ export const Sizes: Story = {
 /**
  * The gallery's Make something new row: one tile per kind, each one link
  * named by the kind's name. A tag is for a kind that is genuinely new, and a
- * tile a reader cannot use stays on the row and says why.
+ * tile a reader cannot use stays on the row and says why. Hover steps the
+ * frame's border; the drawing inside stays still.
  */
 export const MakeRow: Story = {
   render: () => (
     <ul style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 16, maxWidth: 1100, margin: 0, padding: 0, listStyle: 'none' }}>
       {ORDER.map((kind) => (
         <li key={kind}>
-          <ArtifactKindTile kind={kind} label={WORDS[kind]} href={`#/artifacts/new?kind=${kind}`} badge={kind === 'dashboard' ? 'New' : undefined} />
+          <ArtifactKindTile kind={kind} label={WORDS[kind]} href={`#/artifacts/new/${kind}`} badge={kind === 'dashboard' ? 'New' : undefined} />
         </li>
       ))}
     </ul>
@@ -70,5 +77,47 @@ export const Disabled: Story = {
     <div style={{ width: 180 }}>
       <ArtifactKindTile kind="sheet" label="Sheet" disabledReason="Starting an artifact needs the Artifacts app. Ask an administrator for it." />
     </div>
+  ),
+};
+
+const LAYOUTS = [
+  {
+    label: 'Landing page',
+    detail: 'Desktop and phone, 3 boards',
+    boards: [
+      { id: 'a', x: 0, y: 0, w: 1440, h: 1024 },
+      { id: 'b', x: 1560, y: 0, w: 1440, h: 1024 },
+      { id: 'c', x: 3120, y: 0, w: 390, h: 844 },
+    ],
+  },
+  {
+    label: 'App screens',
+    detail: 'Phone, 4 boards',
+    boards: [0, 1, 2, 3].map((i) => ({ id: `p${i}`, x: i * 510, y: 0, w: 390, h: 844 })),
+  },
+];
+
+/**
+ * Starting points on a create page: each tile a button that starts in place,
+ * its face a picture of what it starts and a quiet line saying so.
+ */
+export const StartingPoints: Story = {
+  render: () => (
+    <ul style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 200px)', gap: 16, margin: 0, padding: 0, listStyle: 'none' }}>
+      {LAYOUTS.map((l) => (
+        <li key={l.label}>
+          <ArtifactKindTile
+            kind="design"
+            label={l.label}
+            detail={l.detail}
+            face={<CanvasSchematic label={l.label} boards={l.boards} />}
+            onSelect={() => {}}
+          />
+        </li>
+      ))}
+      <li>
+        <ArtifactKindTile kind="design" label="Blank canvas" detail="Place boards yourself" onSelect={() => {}} />
+      </li>
+    </ul>
   ),
 };

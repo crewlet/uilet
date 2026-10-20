@@ -426,6 +426,54 @@
   font-size: var(--font-size-xs);
 }
 
+/* A HEADER THAT OPENS ITS COLUMN'S SETTINGS reads as pressable: the pointer,
+   and the hover tint the open header keeps while its popover is up. */
+.crewlet-sheet-grid__header--settings {
+  cursor: pointer;
+}
+
+.crewlet-sheet-grid__header--settings:hover,
+.crewlet-sheet-grid__header--open {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/* A COLUMN'S SETTINGS: the popover holds a short form, so it is padded as a
+   panel and given the room a list of choices needs before it scrolls. */
+.crewlet-popover.crewlet-sheet-grid__column-settings {
+  width: 300px;
+  max-height: min(560px, 80vh);
+  padding: var(--spacing-3);
+}
+
+/* ADD COLUMN stands beside the header row, outside the grid's roles: the
+   scroller lays the grid and the control side by side, the grid's last track
+   still takes the slack up to the control, and the control sticks to the top
+   with the header while the rows scroll under it. */
+.crewlet-sheet-grid__scroller--add-column {
+  --crewlet-sheet-add-column-width: var(--size-target-min);
+  display: flex;
+  align-items: flex-start;
+}
+
+.crewlet-sheet-grid__scroller--add-column > .crewlet-sheet-grid__grid {
+  flex: 0 0 auto;
+  min-width: calc(100% - var(--crewlet-sheet-add-column-width));
+}
+
+.crewlet-sheet-grid__add-column {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  display: flex;
+  flex: 0 0 var(--crewlet-sheet-add-column-width);
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+}
+
 .crewlet-sheet-grid__sync {
   display: inline-flex;
   align-items: center;

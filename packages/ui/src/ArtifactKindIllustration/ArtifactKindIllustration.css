@@ -2,17 +2,11 @@
  * A kind's drawing, its tinted ground and the Make something new tile.
  *
  * Every colour is the kind's token, `--color-artifact-kind-<kind>` and its
- * Fill and Line steps, set once per kind on `--crewlet-kind-*` and read by
- * every rule below, so the drawing, the ground and the tile repaint together
- * with the theme.
+ * Fill and Line steps, set once per kind on `--crewlet-kind-*`
+ * (`ArtifactKinds.css`) and read by every rule below, so the drawing, the
+ * ground and the tile repaint together with the theme.
  */
 
-.crewlet-kind--doc { --crewlet-kind-hue: var(--color-artifact-kind-doc); --crewlet-kind-fill: var(--color-artifact-kind-doc-fill); --crewlet-kind-line: var(--color-artifact-kind-doc-line); --crewlet-kind-ink: var(--color-artifact-kind-doc-ink); }
-.crewlet-kind--slides { --crewlet-kind-hue: var(--color-artifact-kind-slides); --crewlet-kind-fill: var(--color-artifact-kind-slides-fill); --crewlet-kind-line: var(--color-artifact-kind-slides-line); --crewlet-kind-ink: var(--color-artifact-kind-slides-ink); }
-.crewlet-kind--design { --crewlet-kind-hue: var(--color-artifact-kind-design); --crewlet-kind-fill: var(--color-artifact-kind-design-fill); --crewlet-kind-line: var(--color-artifact-kind-design-line); --crewlet-kind-ink: var(--color-artifact-kind-design-ink); }
-.crewlet-kind--dashboard { --crewlet-kind-hue: var(--color-artifact-kind-dashboard); --crewlet-kind-fill: var(--color-artifact-kind-dashboard-fill); --crewlet-kind-line: var(--color-artifact-kind-dashboard-line); --crewlet-kind-ink: var(--color-artifact-kind-dashboard-ink); }
-.crewlet-kind--html { --crewlet-kind-hue: var(--color-artifact-kind-html); --crewlet-kind-fill: var(--color-artifact-kind-html-fill); --crewlet-kind-line: var(--color-artifact-kind-html-line); --crewlet-kind-ink: var(--color-artifact-kind-html-ink); }
-.crewlet-kind--sheet { --crewlet-kind-hue: var(--color-artifact-kind-sheet); --crewlet-kind-fill: var(--color-artifact-kind-sheet-fill); --crewlet-kind-line: var(--color-artifact-kind-sheet-line); --crewlet-kind-ink: var(--color-artifact-kind-sheet-ink); }
 
 /* ---- the drawing ---- */
 
@@ -135,19 +129,13 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-2xl);
   background: var(--color-surface-subtle);
-  transition:
-    border-color var(--motion-duration-base) var(--motion-easing-out),
-    box-shadow var(--motion-duration-base) var(--motion-easing-out);
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-out);
 }
 
 .crewlet-kind-tile__ground {
   border-radius: var(--radius-xl);
   box-shadow: inset 0 0 0 1px var(--crewlet-kind-line);
   overflow: hidden;
-}
-
-.crewlet-kind-tile__ground > .crewlet-kind-illustration {
-  transition: transform var(--motion-duration-base) var(--motion-easing-out);
 }
 
 .crewlet-kind-tile__label {
@@ -177,12 +165,35 @@
   font-weight: var(--font-weight-medium);
 }
 
-a.crewlet-kind-tile:hover .crewlet-kind-tile__frame {
-  border-color: var(--color-border-hover);
+/* A tile that starts something in place is a button, drawn as the link is. */
+.crewlet-kind-tile--button {
+  /* A button shrinks to its content where a link in a grid cell fills it. */
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
 }
 
-a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustration {
-  transform: translateY(-2px) scale(1.03);
+/* What the tile starts, under its name, in the quiet ink. */
+.crewlet-kind-tile__detail {
+  margin-top: calc(-1 * var(--spacing-1));
+  padding-inline: var(--spacing-1);
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-compact);
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* HOVER IS THE FRAME'S STEP ALONE: the drawing inside stays still, as a
+   card's preview does, so a row of tiles never ripples under the pointer. */
+a.crewlet-kind-tile:hover .crewlet-kind-tile__frame,
+.crewlet-kind-tile--button:hover .crewlet-kind-tile__frame {
+  border-color: var(--color-border-hover);
 }
 
 .crewlet-kind-tile:focus-visible .crewlet-kind-tile__frame {
@@ -200,12 +211,7 @@ a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustratio
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .crewlet-kind-tile__frame,
-  .crewlet-kind-tile__ground > .crewlet-kind-illustration {
+  .crewlet-kind-tile__frame {
     transition: none;
-  }
-
-  a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustration {
-    transform: none;
   }
 }

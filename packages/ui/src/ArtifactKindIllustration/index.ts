@@ -1,3 +1,4 @@
+import './ArtifactKinds.css';
 import './ArtifactKindIllustration.css';
 
 export { ArtifactKindGround, ArtifactKindIllustration, ArtifactKindTile } from './ArtifactKindIllustration.js';

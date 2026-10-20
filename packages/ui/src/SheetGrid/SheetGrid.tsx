@@ -41,6 +41,7 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
+  type ReactNode,
 } from 'react';
 import { ArrowDownGlyph, ArrowUpGlyph, CircleAlertGlyph, EllipsisGlyph, PlusGlyph, RotateCcwClockGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
 import { Avatar } from '../Avatar/index.js';
@@ -50,6 +51,7 @@ import { CursorFlag } from '../CursorFlag/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { isComposing } from '../Layer/index.js';
 import { Menu } from '../Menu/index.js';
+import { Popover } from '../Popover/index.js';
 import { presenceHueClass } from '../PresenceRing/index.js';
 import { presenceLabels, type PresenceLabels } from '../PresenceModel/index.js';
 import {
@@ -172,6 +174,23 @@ export interface SheetGridProps {
    * (`sync.refused`), so the reader clears them once they have read why.
    */
   onDismissRefused?: (() => void) | undefined;
+  /**
+   * Makes each column header open the host's column settings in a popover
+   * anchored to it: a click, Enter or Space on a header opens it, and Escape
+   * closes it and returns to the header. The grid owns the popover and its
+   * placement; the host draws what is inside and changes its own `columns`.
+   * A header that opens settings does not sort on a click: a host that offers
+   * both puts its sort in the settings, as a spreadsheet's column menu does.
+   */
+  renderColumnEditor?: ((column: SheetColumn, close: () => void) => ReactNode) | undefined;
+  /**
+   * The field whose settings are open, for a host that opens them itself (a
+   * column it has just added, say). Leave it out and the grid keeps its own.
+   */
+  settingsColumn?: string | null | undefined;
+  onSettingsColumnChange?: ((field: string | null) => void) | undefined;
+  /** Shows the Add column control after the last header. The host appends the column. */
+  onAddColumn?: (() => void) | undefined;
   /** A BCP 47 tag for numbers and dates; the reader's own locale when absent. */
   locale?: string | undefined;
   className?: string | undefined;
@@ -224,6 +243,10 @@ export function SheetGrid({
   fit = 'container',
   onDeleteRow,
   onDismissRefused,
+  renderColumnEditor,
+  settingsColumn,
+  onSettingsColumnChange,
+  onAddColumn,
   locale,
   className,
   labels: labelOverrides,
@@ -303,6 +326,14 @@ export function SheetGrid({
   const rows = useMemo(() => sortRows(columns, given, sort, context), [columns, given, sort, context]);
   const editable = mode === 'edit' && onEdit !== undefined;
   const rowActions = mode === 'edit' && onDeleteRow !== undefined;
+  const columnSettings = mode === 'edit' && renderColumnEditor !== undefined;
+  const addsColumns = mode === 'edit' && onAddColumn !== undefined;
+  const [ownSettingsColumn, setOwnSettingsColumn] = useState<string | null>(null);
+  const openColumn = settingsColumn !== undefined ? settingsColumn : ownSettingsColumn;
+  const setOpenColumn = (field: string | null) => {
+    if (settingsColumn === undefined) setOwnSettingsColumn(field);
+    onSettingsColumnChange?.(field);
+  };
 
   const scroller = useRef<HTMLDivElement>(null);
   const probe = useRef<HTMLDivElement>(null);
@@ -640,7 +671,7 @@ export function SheetGrid({
   /* ----- clipboard ------------------------------------------------------- */
 
   const onCopy = (event: ReactClipboardEvent<HTMLDivElement>) => {
-    if (editing || !range) return;
+    if (editing || !range || fromElsewhere(event)) return;
     event.preventDefault();
     event.clipboardData.setData('text/plain', toTSV(columns, rows, range, context));
   };
@@ -657,13 +688,13 @@ export function SheetGrid({
   }, [columns, context, editable, emit, labels.forbidden, range, refuseLocally, rows, say]);
 
   const onCut = (event: ReactClipboardEvent<HTMLDivElement>) => {
-    if (editing || !range) return;
+    if (editing || !range || fromElsewhere(event)) return;
     onCopy(event);
     clearRange();
   };
 
   const onPaste = (event: ReactClipboardEvent<HTMLDivElement>) => {
-    if (editing || !range) return;
+    if (editing || !range || fromElsewhere(event)) return;
     event.preventDefault();
     if (!editable) {
       say(labels.forbidden);
@@ -679,7 +710,7 @@ export function SheetGrid({
   const page = Math.max(1, Math.floor(Math.max(viewport - headerHeight, rowHeight) / rowHeight) - 1);
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (editing || isComposing(event) || !current || !currentCell) return;
+    if (editing || isComposing(event) || !current || !currentCell || fromElsewhere(event)) return;
     // Keys on a row's actions button are the menu button's own: ArrowDown opens
     // its menu there, and must not also move the active cell.
     if ((event.target as HTMLElement).closest('.crewlet-sheet-grid__row-actions')) return;
@@ -743,7 +774,10 @@ export function SheetGrid({
     }
 
     if (current.row === HEADER) {
-      if ((event.key === 'Enter' || event.key === ' ') && column && onSortChange) {
+      if ((event.key === 'Enter' || event.key === ' ') && column && columnSettings) {
+        event.preventDefault();
+        setOpenColumn(column.field);
+      } else if ((event.key === 'Enter' || event.key === ' ') && column && onSortChange) {
         event.preventDefault();
         onSortChange(nextSort(sort, column.field));
       }
@@ -881,7 +915,7 @@ export function SheetGrid({
       <div ref={probe} className="crewlet-sheet-grid__probe" aria-hidden="true" />
       <div
         ref={scroller}
-        className={cx('crewlet-sheet-grid__scroller', scrolledAcross && 'crewlet-sheet-grid__scroller--across')}
+        className={cx('crewlet-sheet-grid__scroller', scrolledAcross && 'crewlet-sheet-grid__scroller--across', addsColumns && 'crewlet-sheet-grid__scroller--add-column')}
         style={scrollerStyle}
         onScroll={(event) => {
           setScrollTop(event.currentTarget.scrollTop);
@@ -915,8 +949,8 @@ export function SheetGrid({
                 const isActive = current?.row === HEADER && current.col === col;
                 const sorted = sort?.field === column.field ? sort.direction : undefined;
                 const here = onColumns.get(column.field) ?? [];
-                return (
-                  // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- keys reach the grid's own handler, which sorts on Enter and Space
+                const header = (
+                  // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- keys reach the grid's own handler, which sorts or opens the column's settings on Enter and Space
                   <div
                     key={column.field}
                     id={cellDomId(id, position)}
@@ -930,17 +964,23 @@ export function SheetGrid({
                       column.frozen && 'crewlet-sheet-grid__cell--frozen',
                       col === lastFrozen && 'crewlet-sheet-grid__frozen-edge',
                       isActive && 'crewlet-sheet-grid__header--active',
+                      columnSettings && 'crewlet-sheet-grid__header--settings',
+                      openColumn === column.field && 'crewlet-sheet-grid__header--open',
                     )}
                     style={column.frozen ? { insetInlineStart: `${offsets[col]}px` } : undefined}
-                    onMouseDown={(event) => onCellMouseDown(event, { rowId: null, field: column.field })}
+                    onMouseDown={(event) => {
+                      if (!fromElsewhere(event)) onCellMouseDown(event, { rowId: null, field: column.field });
+                    }}
                     onFocus={(event) => {
                       if (event.target === event.currentTarget) onCellFocus({ rowId: null, field: column.field });
                     }}
-                    onClick={() => {
-                      if (onSortChange) onSortChange(nextSort(sort, column.field));
+                    onClick={(event) => {
+                      if (fromElsewhere(event)) return;
+                      if (columnSettings) setOpenColumn(openColumn === column.field ? null : column.field);
+                      else if (onSortChange) onSortChange(nextSort(sort, column.field));
                     }}
                     // The whole name, which a narrow column cuts short.
-                    title={onSortChange ? labels.sortBy(column.label) : column.label}
+                    title={columnSettings ? labels.columnSettings(column.label) : onSortChange ? labels.sortBy(column.label) : column.label}
                   >
                     <span className="crewlet-sheet-grid__header-label">{column.label}</span>
                     <VisuallyHidden>{`, ${labels.types[column.type]}`}</VisuallyHidden>
@@ -957,6 +997,22 @@ export function SheetGrid({
                       </span>
                     ) : null}
                   </div>
+                );
+                return columnSettings ? (
+                  <Popover
+                    key={column.field}
+                    label={labels.columnSettings(column.label)}
+                    open={openColumn === column.field}
+                    onOpenChange={(open) => {
+                      if (!open && openColumn === column.field) setOpenColumn(null);
+                    }}
+                    trigger={() => header}
+                    className="crewlet-sheet-grid__column-settings"
+                  >
+                    {(close) => renderColumnEditor(column, close)}
+                  </Popover>
+                ) : (
+                  header
                 );
               })}
             </div>
@@ -1145,6 +1201,16 @@ export function SheetGrid({
             })}
           </div>
         </div>
+        {addsColumns ? (
+          // OUTSIDE THE GRID'S ROLES: a grid's rows hold cells only, so the
+          // control stands beside the header row, sticks with it, and is its
+          // own tab stop after the grid's.
+          <div className="crewlet-sheet-grid__add-column" style={{ height: `${headerHeight}px` }}>
+            <Tooltip content={labels.addColumn}>
+              <IconButton label={labels.addColumn} icon={<PlusGlyph />} size="sm" title="" onClick={onAddColumn} />
+            </Tooltip>
+          </div>
+        ) : null}
       </div>
       {samples ? (
         <div ref={measurer} className="crewlet-sheet-grid__measure" aria-hidden="true" inert>
@@ -1173,7 +1239,9 @@ export function SheetGrid({
         </div>
       ) : null}
       <VisuallyHidden id={describedId}>{description}</VisuallyHidden>
-      <VisuallyHidden id={helpId}>{rowActions ? `${labels.keyboardHelp} ${labels.rowActionsHelp}` : labels.keyboardHelp}</VisuallyHidden>
+      <VisuallyHidden id={helpId}>
+        {[labels.keyboardHelp, rowActions ? labels.rowActionsHelp : '', columnSettings ? labels.columnSettingsHelp : ''].filter(Boolean).join(' ')}
+      </VisuallyHidden>
       <VisuallyHidden>
         <span role="status" aria-live="polite">
           <span key={announcement.n}>{announcement.text}</span>
@@ -1210,6 +1278,15 @@ export function SheetGrid({
       ) : null}
     </div>
   );
+}
+
+/**
+ * Whether an event reached the grid through React's tree from somewhere else
+ * in the document: a column's settings popover is portalled out of the grid,
+ * and its keys, pastes and presses still bubble here. They are the popover's.
+ */
+function fromElsewhere(event: { currentTarget: EventTarget; target: EventTarget }): boolean {
+  return !(event.currentTarget as Node).contains(event.target as Node);
 }
 
 /** A cell's DOM id: the header row is row -1. */

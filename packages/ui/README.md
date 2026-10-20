@@ -204,6 +204,53 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.35.0
+
+**The gallery card is a step smaller and calm under the pointer** (`ArtifactCard`, `size="card"`). Its title is the body size rather than a large one, its body inset is one spacing step tighter, and the kind's badge on the preview's foot is 32px (from 40px) with the small glyph, so a gallery fits four cards across a laptop's page in the same design. Hover no longer lifts the card or casts the wide card shadow: the hairline darkens and an extra-small shadow settles under it, over the fast duration, and the card never moves. The More menu still appears on hover and focus. A host that relied on the lift has nothing to change.
+
+**An artifact's bar draws the kind's glyph in the kind's colour** (`ArtifactBar`), as the gallery's badge and the Make row do, on an open artifact and on a create page alike. The kinds' colour classes (`crewlet-kind--<kind>`, which set `--crewlet-kind-ink` and its siblings) moved to a sheet of their own that the bar, the card and the illustrations each import, so the bar is tinted on a page that draws no card. `ArtifactKindGlyph`'s module still carries no stylesheet.
+
+**An artifact bar's primary action can take a short word on a narrow bar** (`ArtifactBar`, `shortLabel` on an `ArtifactBarTool`), so "Create and ask SRE Lead" reads "Create" on a phone and keeps its full word as its accessible name. **On a narrow bar the status gives way before the title**: it is cut to an ellipsis instead of drawn over the title, and its words stay whole for a screen reader.
+
+**A menu's `label` names its trigger when the trigger shows text** (`Menu`). It was the accessible name of an icon trigger only, so a "New" button that opens a menu of kinds was announced as "New". Keep the visible words in the label ("New artifact"), so a person who speaks what they see still reaches it. A test that found a text trigger by its words alone finds it by its label now.
+
+**A choice can carry a picture** (`ChoiceList`, `media` on an option): drawn between the radio and the words and hidden from the name, such as an agent's character in a "who builds it" list. A list without pictures is unchanged.
+
+**A Make row's tile keeps its drawing still on hover** (`ArtifactKindTile`). The illustration used to rise and grow inside its frame; the frame's border now steps alone, over the fast duration. Reduced motion drops the transition.
+
+**A list marker alone on its line is an empty list item**, as CommonMark reads it: `-`, `*`, `+`, `1.`, `1)` and a task's `- [ ]` or `- [x]` with nothing after them, with or without the trailing space an editor strips. The grammar read a bare `1.` as text, so an outline whose trailing spaces were lost drew "1. 2. 3." inside a paragraph, in `RichEditor` and in every renderer alike. An empty item does not interrupt a paragraph, again as in CommonMark, so a lone `-` under a line of text stays that text's next line. Bodies that already round-tripped still do byte for byte, and the editor's corpus holds the bare forms (`bare-markers.md`).
+
+- `SlideFilmstrip` takes a slide's actions, as a presentation editor's
+  filmstrip has them: `onDuplicate` (Command+D, Control+D elsewhere, on a
+  thumbnail), `onDelete` (Delete or Backspace) and `actions` (further menu
+  entries), named with their keys in a per-slide menu that the Menu key or
+  Shift+F10 opens from the thumbnail. `footer` holds what follows the last
+  slide inside the strip, such as a New slide control.
+- `ThemeGallery` takes `renderPreview`, which draws a card's thumbnail in
+  place of its swatch, for a theme of something other than the product's
+  chrome (a slide deck's, drawn as its cover). A theme's `swatch` is optional
+  when the gallery is given one.
+
+**`SheetGrid` shapes its columns in place.** `renderColumnEditor` makes each column header open that column's settings in a popover anchored to it: a press, Enter or Space on a header opens it, Escape closes it and returns focus to the header, and the host draws what is inside. `settingsColumn` and `onSettingsColumnChange` let the host open a column itself (one it has just added). A header that opens settings does not sort on a press; a host that offers both puts its sort in the settings. `onAddColumn` draws Add column after the last header, outside the grid's roles (a grid's rows hold cells only), sticking to the top with the header row and reached as its own tab stop after the grid's. Keys, presses and pastes inside a portalled popover no longer reach the grid's own handlers. New labels: `columnSettings`, `columnSettingsHelp` and `addColumn`.
+
+**`SheetColumnEditor`** is one column's settings as a compact panel: its name, its type (each with its `SheetColumnTypeGlyph` and a line on what it holds), the choices a select, multi-select or status column offers (each with its colour from a hue menu, or its category for a status; a new status column starts with Not started, In progress and Done), the stars of a rating, Required, Move left and Move right, Delete column (with `deleteDisabledReason`) and Done. Every change is handed to the host at once as the next `SheetColumn`, so the grid beside it redraws as the reader types; a name cleared to nothing is held and restored. `suggestedType` offers a type the host proposes (from a column's name or its values) as one press, and `typeLockedReason` says why a type cannot change. A choice's id is made once from its label (`optionId` for a store's own rule) and never changes after.
+
+**`parseCsv`** reads CSV the way spreadsheets write it: quoted separators, doubled quotes and line breaks inside a field, CRLF, LF or CR line ends, a byte order mark dropped, and the separator found from the first record (a comma, a semicolon or a tab) unless given. It reads back what `toCsv` writes, defused formulas included, keeps every value as text, and refuses an unclosed quote or more than `maxRows` records with the line it happened on rather than cutting silently.
+
+**`ChoiceList`'s panel is styled as part of its choice.** A selected choice's `panel` had no styles at all: it sat under the row against the box's edge, outside the selected fill. It now continues the row's fill and starts where the label does.
+
+**`HueSwatch`** is the dot `HuePicker` draws for a hue (or the hairline ring of no hue), exported for a hue menu or a list of coloured choices.
+
+**`CanvasBoard` can shape a canvas before it is drawn.** An editable board given `onBoardCreate` adds Frame (`F`) to its palette, between Hand and Text: a click on the field hands the caller the canvas point, the caller adds a board of whatever size and name it gives new ones and returns its id, and the canvas selects it and hands back Move. `onBoardRemove` lets Delete (or Backspace) remove a selected board, as it removes a selected note. Neither is offered on a view-only canvas, so a published design's viewer is unchanged. The `Shaping` story lays out a design's boards this way. `@crewlethq/icons` vendors `frame`, `laptop`, `tablet` and `smartphone` for it and for frame presets.
+
+**`ArtifactKindTile` can start something in place.** Given `onSelect` and no `href`, the tile is a button drawn exactly as the link is, for a create page's starting points. `face` draws on the kind's ground in place of its drawing (a design layout's `CanvasSchematic`), and `detail` is one quiet line under the name, read as the tile's description. The `StartingPoints` story shows a row of them.
+
+**`SourceEditor` writes source text in place**: a real, monospaced textarea with a line gutter, and the lines a checker named (`marks`, each a `line`, a `tone` of `danger` or `warning`, and an optional `message` shown as the gutter number's tooltip) drawn in the gutter and behind the text. Lines never wrap, so a number and a mark always sit on their line. Tab and Shift+Tab indent and outdent the lines under the selection, Escape then Tab leaves the field (the field's description says so to a screen reader, as `SOURCE_EDITOR_KEYS`), Enter keeps the line's indent and Command+Enter (Control+Enter) calls `onSubmit`. A refusal on any line sets `aria-invalid`. The handle's `revealLine(n)` focuses the field with the caret at line `n`, scrolled into view; `fill` makes it take its parent's height.
+
+**`FindingList` lists what a checker found**: one row per `Finding` (a `tone` of `danger` or `warning`, an optional `location` such as `index.html, line 6`, and the `message`), refusals before advice, the tone's glyph in its ink and the tone said in words to a screen reader (`toneLabels` renames them). A finding with `onSelect` is a button that takes the reader there, so a keyboard walks the findings with Tab.
+
+**`FileDrop` and `FilePickButton` bring files in.** `FileDrop` is a dashed target of its own (a `title`, a `hint` and `actions`) or, given children, a region that takes files dropped on it and shows a frosted overlay saying so only while files are held over it. Dropped folders are walked through the entries API, and every file is answered as a `PickedFile` (`path` with forward slashes, inside the folder it came from, and the `File`). A drag that carries no files (text moved inside an editor) passes through untouched. `FilePickButton` is the keyboard's and the screen reader's way in: a `Button` that opens the system picker, for files (`accept`, `multiple`) or a whole folder (`directory`). `droppedFiles` and `pickedFiles` are the readers, exported for a host with its own target.
+
 ## Changes in 0.34.1
 
 **`ArtifactKindGlyph`, `ARTIFACT_KINDS` and `ArtifactKind` have a module of their own** (`@crewlethq/ui/ArtifactKindGlyph`), and it imports nothing but the glyphs. They were defined in `ArtifactCard`'s module, and a bundler places a module whole, so a host that drew one kind glyph in its frame (a sidebar's pins, a command palette's hits) took the whole card into its first screen, and with 0.34.0 the kind illustrations the card draws: about 11 KB of script for a gallery the reader had not opened. Nothing is renamed: the root export and `@crewlethq/ui/ArtifactCard` still answer for all three, and `ArtifactIcon`, `ArtifactBar`, `DashboardCover` and `ArtifactKindIllustration` now import them from the new module.

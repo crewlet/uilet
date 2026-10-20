@@ -21,11 +21,20 @@ export type HuePickerProps = HuePickerBase &
     | { none: string; value: NodeHue | 'none'; onValueChange: (hue: NodeHue | 'none') => void }
   );
 
+/**
+ * A hue's swatch, a dot in the hue, or the hairline ring of no hue: what a
+ * hue picker, a hue menu or a list of coloured choices draws beside a name.
+ * Decorative: the name beside it carries the hue.
+ */
+export function HueSwatch({ hue, className }: { hue: NodeHue | 'none'; className?: string | undefined }) {
+  return <span aria-hidden="true" className={cx('crewlet-hue-picker__swatch', `crewlet-hue-picker__swatch--${hue}`, className)} />;
+}
+
 const optionsFor = (disabled: boolean) =>
   NODE_HUES.map((hue) => ({
     value: hue,
     label: NODE_HUE_NAMES[hue],
-    icon: <span className={`crewlet-hue-picker__swatch crewlet-hue-picker__swatch--${hue}`} />,
+    icon: <HueSwatch hue={hue} />,
     disabled,
   }));
 
@@ -55,7 +64,7 @@ export function HuePicker(props: HuePickerProps) {
           {
             value: 'none' as const,
             label: props.none,
-            icon: <span className="crewlet-hue-picker__swatch crewlet-hue-picker__swatch--none" />,
+            icon: <HueSwatch hue="none" />,
             disabled,
           },
           ...hues,

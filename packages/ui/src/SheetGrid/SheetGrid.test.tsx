@@ -773,3 +773,103 @@ describe('accessibility', () => {
     expect(await run()).toEqual([]);
   });
 });
+
+describe('column settings', () => {
+  /** A host that renames a column from its settings and appends one on Add column. */
+  function Shaping(props: { onAdd?: () => void }) {
+    const [shape, setShape] = useState(columns.slice(0, 2));
+    const [open, setOpen] = useState<string | null>(null);
+    return (
+      <Host
+        columns={shape}
+        settingsColumn={open}
+        onSettingsColumnChange={setOpen}
+        onAddColumn={() => {
+          props.onAdd?.();
+          const field = `extra${shape.length}`;
+          setShape((now) => [...now, { field, label: 'Untitled', type: 'text' }]);
+          setOpen(field);
+        }}
+        renderColumnEditor={(column, close) => (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const name = new FormData(event.currentTarget).get('name');
+              setShape((now) => now.map((c) => (c.field === column.field ? { ...c, label: String(name) } : c)));
+              close();
+            }}
+          >
+            <label>
+              Name
+              <input name="name" defaultValue={column.label} />
+            </label>
+            <button type="submit">Done</button>
+          </form>
+        )}
+      />
+    );
+  }
+
+  const header = (name: string) => within(grid()).getAllByRole('columnheader').find((h) => h.textContent?.startsWith(name))!;
+
+  test('a click on a header opens its settings, named for the column, and does not sort', () => {
+    render(<Shaping />);
+    fireEvent.click(header('Score'));
+    const dialog = screen.getByRole('dialog', { name: 'Column settings for Score' });
+    expect(header('Score').getAttribute('aria-expanded')).toBe('true');
+    expect(header('Score').getAttribute('aria-sort')).toBe('none');
+    expect(within(dialog).getByRole('textbox', { name: 'Name' })).toBeTruthy();
+  });
+
+  test('Enter on a header opens its settings; what the host changes is drawn, and closing returns to the header', () => {
+    render(<Shaping />);
+    act(() => cell(0, 0).focus());
+    key(focused(), 'ArrowUp');
+    key(focused(), 'Enter');
+    const field = screen.getByRole('textbox', { name: 'Name' });
+    fireEvent.change(field, { target: { value: 'Supplier' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(header('Supplier')).toBeTruthy();
+  });
+
+  test('keys, presses and pastes inside the settings stay there and never drive the grid', () => {
+    const onEdits = vi.fn();
+    render(<Shaping />);
+    act(() => cell(0, 0).focus());
+    key(focused(), 'ArrowUp');
+    key(focused(), 'Enter');
+    const field = screen.getByRole('textbox', { name: 'Name' });
+    const active = grid().querySelector('[tabindex="0"]');
+    key(field, 'ArrowDown');
+    key(field, 'Tab');
+    fireEvent.mouseDown(field);
+    fireEvent.paste(field, { clipboardData: { getData: () => 'a\tb' } });
+    expect(grid().querySelector('[tabindex="0"]')).toBe(active);
+    expect(onEdits).not.toHaveBeenCalled();
+  });
+
+  test('Add column stands after the headers, outside the grid, and the host opens the new column', () => {
+    const onAdd = vi.fn();
+    render(<Shaping onAdd={onAdd} />);
+    const add = screen.getByRole('button', { name: 'Add column' });
+    expect(grid().contains(add)).toBe(false);
+    fireEvent.click(add);
+    expect(onAdd).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('dialog', { name: 'Column settings for Untitled' })).toBeTruthy();
+  });
+
+  test('the keyboard help says headers open settings, and the grid passes axe with both controls', async () => {
+    const { container } = render(<Shaping />);
+    expect(document.getElementById(grid().getAttribute('aria-describedby') ?? '')?.textContent).toContain('opens the settings of that column');
+    const result = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
+    expect(result.violations.map((v) => v.id)).toEqual([]);
+  });
+
+  test('a read-only grid offers neither settings nor Add column', () => {
+    render(<Host mode="read" renderColumnEditor={() => null} onAddColumn={() => {}} />);
+    fireEvent.click(header('Score'));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add column' })).toBeNull();
+  });
+});

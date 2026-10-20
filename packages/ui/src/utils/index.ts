@@ -4,7 +4,8 @@ export type { Clipboard, ClipboardOptions, ClipboardState } from './useClipboard
 export { useOutcome } from './useOutcome.js';
 export type { Outcome, OutcomeOptions, OutcomeState } from './useOutcome.js';
 export { downloadBlob, downloadText, safeFilename, useDownload } from './useDownload.js';
-export { toCsv } from './csv.js';
+export { parseCsv, toCsv } from './csv.js';
+export type { CsvDelimiter, CsvProblem, ParseCsvOptions, ParseCsvResult } from './csv.js';
 export { ElementToPngError, elementToPng, serializeElement } from './elementToPng.js';
 export type { ElementToPngOptions, ElementToPngReason } from './elementToPng.js';
 export type { Download, DownloadState } from './useDownload.js';

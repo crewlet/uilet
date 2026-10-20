@@ -76,6 +76,12 @@ export interface SheetLabels {
   keyboardHelp: string;
   /** A sort, for the header's control. */
   sortBy: (column: string) => string;
+  /** A column's settings popover, its name and its header's tip. */
+  columnSettings: (column: string) => string;
+  /** Appended to the keyboard help when headers open their column's settings. */
+  columnSettingsHelp: string;
+  /** The control after the last header that adds a column. */
+  addColumn: string;
 }
 
 const TYPE_NAMES: Record<SheetColumnType, string> = {
@@ -147,6 +153,9 @@ export const SHEET_LABELS: SheetLabels = {
   keyboardHelp:
     'Arrow keys move between cells. Enter or F2 edits a cell, Escape cancels, and typing replaces its value. Space toggles a checkbox. Control or Command with C and V copies and pastes. Control or Command with Alt and H opens the history of a cell.',
   sortBy: (column) => `Sort by ${column}`,
+  columnSettings: (column) => `Column settings for ${column}`,
+  columnSettingsHelp: 'Enter on a column header opens the settings of that column.',
+  addColumn: 'Add column',
 };
 
 /** Labels with a caller's overrides applied, the one way both renderers merge them. */
