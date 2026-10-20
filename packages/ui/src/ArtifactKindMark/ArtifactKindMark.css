@@ -1,0 +1,64 @@
+/*
+ * A kind's mark, and the kind's colours every module that pictures a kind
+ * reads.
+ *
+ * THE KIND'S COLOURS ARE SET HERE, once per kind on `--crewlet-kind-*`, from
+ * `--color-artifact-kind-<kind>` and its Fill, Line and Ink steps. This is the
+ * lowest module that draws a kind, so the illustration, the Make tile and the
+ * card's badge import it and read the same four values.
+ */
+
+.crewlet-kind--doc { --crewlet-kind-hue: var(--color-artifact-kind-doc); --crewlet-kind-fill: var(--color-artifact-kind-doc-fill); --crewlet-kind-line: var(--color-artifact-kind-doc-line); --crewlet-kind-ink: var(--color-artifact-kind-doc-ink); }
+.crewlet-kind--slides { --crewlet-kind-hue: var(--color-artifact-kind-slides); --crewlet-kind-fill: var(--color-artifact-kind-slides-fill); --crewlet-kind-line: var(--color-artifact-kind-slides-line); --crewlet-kind-ink: var(--color-artifact-kind-slides-ink); }
+.crewlet-kind--design { --crewlet-kind-hue: var(--color-artifact-kind-design); --crewlet-kind-fill: var(--color-artifact-kind-design-fill); --crewlet-kind-line: var(--color-artifact-kind-design-line); --crewlet-kind-ink: var(--color-artifact-kind-design-ink); }
+.crewlet-kind--dashboard { --crewlet-kind-hue: var(--color-artifact-kind-dashboard); --crewlet-kind-fill: var(--color-artifact-kind-dashboard-fill); --crewlet-kind-line: var(--color-artifact-kind-dashboard-line); --crewlet-kind-ink: var(--color-artifact-kind-dashboard-ink); }
+.crewlet-kind--html { --crewlet-kind-hue: var(--color-artifact-kind-html); --crewlet-kind-fill: var(--color-artifact-kind-html-fill); --crewlet-kind-line: var(--color-artifact-kind-html-line); --crewlet-kind-ink: var(--color-artifact-kind-html-ink); }
+.crewlet-kind--sheet { --crewlet-kind-hue: var(--color-artifact-kind-sheet); --crewlet-kind-fill: var(--color-artifact-kind-sheet-fill); --crewlet-kind-line: var(--color-artifact-kind-sheet-line); --crewlet-kind-ink: var(--color-artifact-kind-sheet-ink); }
+
+/*
+ * THE PLATE IS AN AGENT'S SQUIRCLE (Avatar's corner ratio, 0.29 of the side):
+ * a kind is introduced as one of the crew, and a plate cut like the avatars
+ * beside it reads as that rather than as an app icon.
+ */
+.crewlet-kind-mark {
+  --crewlet-kind-mark-size: 32px;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--crewlet-kind-mark-size);
+  height: var(--crewlet-kind-mark-size);
+  border: 1px solid var(--crewlet-kind-line);
+  border-radius: calc(var(--crewlet-kind-mark-size) * 0.29);
+  background: var(--crewlet-kind-fill);
+  color: var(--crewlet-kind-hue);
+  font-size: calc(var(--crewlet-kind-mark-size) * 0.74);
+  line-height: 1;
+}
+
+.crewlet-kind-mark--sm {
+  --crewlet-kind-mark-size: 24px;
+}
+
+.crewlet-kind-mark--md {
+  --crewlet-kind-mark-size: 32px;
+}
+
+.crewlet-kind-mark--lg {
+  --crewlet-kind-mark-size: 48px;
+}
+
+.crewlet-kind-mark--xl {
+  --crewlet-kind-mark-size: 72px;
+}
+
+.crewlet-kind-mark--bare {
+  border-color: transparent;
+  background: none;
+  font-size: var(--crewlet-kind-mark-size);
+}
+
+.crewlet-kind-mark > svg {
+  display: block;
+}

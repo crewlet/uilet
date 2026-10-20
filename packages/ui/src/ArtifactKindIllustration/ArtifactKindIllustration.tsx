@@ -1,5 +1,7 @@
 import { useId, type ReactNode } from 'react';
 import type { ArtifactKind } from '../ArtifactKindGlyph/index.js';
+import { ArtifactKindMark } from '../ArtifactKindMark/index.js';
+import { Kbd } from '../Kbd/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -142,45 +144,150 @@ export function ArtifactKindGround({
   );
 }
 
+/**
+ * How a Make tile pictures its kind.
+ *
+ * - `illustration`: the kind's drawing on its tinted ground, framed (the
+ *   default, and the tile 0.34 shipped).
+ * - `stage`: the kind's maker character presenting the kind's object on a
+ *   dotted canvas of the kind's fill, the org chart's own ground: shorter than
+ *   the illustration, with a line under the name saying who makes it.
+ * - `figure`: the maker character standing on its own, unframed, on the
+ *   page's ground, for a row that reads as the crew offering to help.
+ * - `chip`: one line, the kind's mark beside its name and an optional
+ *   shortcut, for a composer's or a toolbar's row of kinds.
+ * - `preview`: a frame holding `children` (a starting point drawn live), the
+ *   kind's mark standing over its foot as a gallery card's badge does.
+ */
+export type ArtifactKindTileAppearance = 'illustration' | 'stage' | 'figure' | 'chip' | 'preview';
+
 export interface ArtifactKindTileProps {
   kind: ArtifactKind;
   /** The kind's name, under the tile: "Docs". */
   label: string;
   /** Where starting one goes. Left out with `disabledReason`, the tile starts nothing. */
   href?: string | undefined;
+  /**
+   * Starting one opens something on this page (a panel, a composer, a menu)
+   * rather than going anywhere: the tile is a button. Wins over `href`.
+   */
+  onSelect?: (() => void) | undefined;
+  /**
+   * The kind this row has chosen, for a row of tiles that acts as a choice (a
+   * composer's kinds): drawn chosen and said as pressed. Only read with
+   * `onSelect`.
+   */
+  selected?: boolean | undefined;
   /** A short tag after the name ("New", "Beta"), for a kind that is genuinely new. */
   badge?: string | undefined;
+  /** One line under the name, read after it: what starting one does ("You write it", "An agent builds it"). */
+  hint?: string | undefined;
+  /** A key that starts one on this page, drawn at the chip's end (`chip` only). */
+  shortcut?: string | undefined;
   /** Why this reader cannot start one. The tile stays focusable and says so. */
   disabledReason?: string | undefined;
+  /** Defaults to `illustration`. */
+  appearance?: ArtifactKindTileAppearance | undefined;
+  /** What a `preview` tile frames: a starting point, drawn live. Ignored by every other appearance. */
+  children?: ReactNode;
   className?: string | undefined;
 }
 
+/** The face each appearance draws above (or, for a chip, before) the name. */
+function TileFace({ kind, appearance, children }: { kind: ArtifactKind; appearance: ArtifactKindTileAppearance; children?: ReactNode }) {
+  switch (appearance) {
+    case 'chip':
+      return <ArtifactKindMark kind={kind} size="sm" className="crewlet-kind-tile__mark" />;
+    case 'figure':
+      return (
+        <span className="crewlet-kind-tile__figure" aria-hidden="true">
+          <ArtifactKindMark kind={kind} size="xl" surface="bare" className="crewlet-kind-tile__character" />
+        </span>
+      );
+    case 'stage':
+      return (
+        <span className="crewlet-kind-tile__frame">
+          <span aria-hidden="true" className={cx('crewlet-kind-tile__stage', `crewlet-kind--${kind}`)}>
+            <span className="crewlet-kind-tile__object">
+              <ArtifactKindIllustration kind={kind} />
+            </span>
+            <ArtifactKindMark kind={kind} size="lg" className="crewlet-kind-tile__maker" />
+          </span>
+        </span>
+      );
+    case 'preview':
+      return (
+        <span className="crewlet-kind-tile__frame crewlet-kind-tile__frame--preview">
+          <span aria-hidden="true" className="crewlet-kind-tile__preview">
+            {children ?? <ArtifactKindGround kind={kind} />}
+          </span>
+          <ArtifactKindMark kind={kind} size="md" className="crewlet-kind-tile__badge-mark" />
+        </span>
+      );
+    case 'illustration':
+      return (
+        <span className="crewlet-kind-tile__frame">
+          <ArtifactKindGround kind={kind} className="crewlet-kind-tile__ground" />
+        </span>
+      );
+  }
+}
+
 /**
- * One kind on a "Make something new" row: the kind's drawing on its tinted
- * ground, framed, with its name under it. The whole tile is one link named by
- * the kind's name.
+ * One kind on a "Make something new" row: a picture of the kind
+ * ([ArtifactKindTileAppearance]) and its name. The whole tile is one link, or
+ * one button with `onSelect`, named by the kind's name and described by its
+ * hint.
  *
  * A TILE THAT CANNOT START is still a stop on the row, so a reader moving
  * through it by keyboard hears why (`disabledReason`) rather than finding a
  * kind missing.
  */
-export function ArtifactKindTile({ kind, label, href, badge, disabledReason, className }: ArtifactKindTileProps) {
+export function ArtifactKindTile({
+  kind,
+  label,
+  href,
+  onSelect,
+  selected,
+  badge,
+  hint,
+  shortcut,
+  disabledReason,
+  appearance = 'illustration',
+  children,
+  className,
+}: ArtifactKindTileProps) {
   const reasonId = useId();
-  const off = disabledReason !== undefined || href === undefined;
+  const hintId = useId();
+  const off = disabledReason !== undefined || (href === undefined && onSelect === undefined);
+  const chip = appearance === 'chip';
   const body = (
     <>
-      <span className="crewlet-kind-tile__frame">
-        <ArtifactKindGround kind={kind} className="crewlet-kind-tile__ground" />
-      </span>
+      <TileFace kind={kind} appearance={appearance}>
+        {children}
+      </TileFace>
       <span className="crewlet-kind-tile__label">
-        <span className="crewlet-kind-tile__name">{label}</span>
-        {badge ? <span className="crewlet-kind-tile__badge">{badge}</span> : null}
+        <span className="crewlet-kind-tile__words">
+          <span className="crewlet-kind-tile__name">
+            {label}
+            {badge ? <span className="crewlet-kind-tile__badge">{badge}</span> : null}
+          </span>
+          {hint && !chip ? (
+            <span id={hintId} className="crewlet-kind-tile__hint">
+              {hint}
+            </span>
+          ) : null}
+        </span>
+        {chip && shortcut ? <Kbd className="crewlet-kind-tile__shortcut">{shortcut}</Kbd> : null}
       </span>
     </>
   );
   // THE NAME IS THE KIND, then its tag: "Docs, New". The two are spans side
-  // by side, which an accessible name would run together as "DocsNew".
+  // by side, which an accessible name would run together as "DocsNew". The
+  // hint is a description, read after the name.
   const name = badge ? `${label}, ${badge}` : label;
+  const classes = cx('crewlet-kind-tile', `crewlet-kind-tile--${appearance}`, `crewlet-kind--${kind}`, className);
+  const described = hint && !chip ? hintId : undefined;
   if (off) {
     return (
       <>
@@ -189,9 +296,9 @@ export function ArtifactKindTile({ kind, label, href, badge, disabledReason, cla
           tabIndex={0}
           aria-label={name}
           aria-disabled="true"
-          aria-describedby={disabledReason ? reasonId : undefined}
+          aria-describedby={disabledReason ? reasonId : described}
           title={disabledReason}
-          className={cx('crewlet-kind-tile', 'crewlet-kind-tile--disabled', className)}
+          className={cx(classes, 'crewlet-kind-tile--disabled')}
         >
           {body}
         </span>
@@ -199,8 +306,22 @@ export function ArtifactKindTile({ kind, label, href, badge, disabledReason, cla
       </>
     );
   }
+  if (onSelect) {
+    return (
+      <button
+        type="button"
+        aria-label={name}
+        aria-describedby={described}
+        aria-pressed={selected === undefined ? undefined : selected}
+        className={cx(classes, 'crewlet-kind-tile--action')}
+        onClick={onSelect}
+      >
+        {body}
+      </button>
+    );
+  }
   return (
-    <a href={href} aria-label={name} className={cx('crewlet-kind-tile', className)}>
+    <a href={href} aria-label={name} aria-describedby={described} className={cx(classes, 'crewlet-kind-tile--action')}>
       {body}
     </a>
   );

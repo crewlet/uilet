@@ -2,17 +2,11 @@
  * A kind's drawing, its tinted ground and the Make something new tile.
  *
  * Every colour is the kind's token, `--color-artifact-kind-<kind>` and its
- * Fill and Line steps, set once per kind on `--crewlet-kind-*` and read by
+ * Fill and Line steps, set once per kind on `--crewlet-kind-*` (in
+ * ArtifactKindMark.css, the lowest module that draws a kind) and read by
  * every rule below, so the drawing, the ground and the tile repaint together
  * with the theme.
  */
-
-.crewlet-kind--doc { --crewlet-kind-hue: var(--color-artifact-kind-doc); --crewlet-kind-fill: var(--color-artifact-kind-doc-fill); --crewlet-kind-line: var(--color-artifact-kind-doc-line); --crewlet-kind-ink: var(--color-artifact-kind-doc-ink); }
-.crewlet-kind--slides { --crewlet-kind-hue: var(--color-artifact-kind-slides); --crewlet-kind-fill: var(--color-artifact-kind-slides-fill); --crewlet-kind-line: var(--color-artifact-kind-slides-line); --crewlet-kind-ink: var(--color-artifact-kind-slides-ink); }
-.crewlet-kind--design { --crewlet-kind-hue: var(--color-artifact-kind-design); --crewlet-kind-fill: var(--color-artifact-kind-design-fill); --crewlet-kind-line: var(--color-artifact-kind-design-line); --crewlet-kind-ink: var(--color-artifact-kind-design-ink); }
-.crewlet-kind--dashboard { --crewlet-kind-hue: var(--color-artifact-kind-dashboard); --crewlet-kind-fill: var(--color-artifact-kind-dashboard-fill); --crewlet-kind-line: var(--color-artifact-kind-dashboard-line); --crewlet-kind-ink: var(--color-artifact-kind-dashboard-ink); }
-.crewlet-kind--html { --crewlet-kind-hue: var(--color-artifact-kind-html); --crewlet-kind-fill: var(--color-artifact-kind-html-fill); --crewlet-kind-line: var(--color-artifact-kind-html-line); --crewlet-kind-ink: var(--color-artifact-kind-html-ink); }
-.crewlet-kind--sheet { --crewlet-kind-hue: var(--color-artifact-kind-sheet); --crewlet-kind-fill: var(--color-artifact-kind-sheet-fill); --crewlet-kind-line: var(--color-artifact-kind-sheet-line); --crewlet-kind-ink: var(--color-artifact-kind-sheet-ink); }
 
 /* ---- the drawing ---- */
 
@@ -117,9 +111,19 @@
   flex-direction: column;
   gap: var(--spacing-2);
   min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--color-text-primary);
+  font: inherit;
+  text-align: start;
   text-decoration: none;
   outline: none;
+}
+
+button.crewlet-kind-tile {
+  cursor: pointer;
 }
 
 /*
@@ -128,6 +132,7 @@
  * as sitting in a holder rather than as a coloured rectangle.
  */
 .crewlet-kind-tile__frame {
+  position: relative;
   display: block;
   box-sizing: border-box;
   aspect-ratio: 4 / 3;
@@ -158,11 +163,32 @@
   padding-inline: var(--spacing-1);
 }
 
+.crewlet-kind-tile__words {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .crewlet-kind-tile__name {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
   overflow: hidden;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-kind-tile__hint {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -177,11 +203,13 @@
   font-weight: var(--font-weight-medium);
 }
 
-a.crewlet-kind-tile:hover .crewlet-kind-tile__frame {
+.crewlet-kind-tile--action:hover .crewlet-kind-tile__frame {
   border-color: var(--color-border-hover);
 }
 
-a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustration {
+.crewlet-kind-tile--action:hover
+  .crewlet-kind-tile__ground
+  > .crewlet-kind-illustration {
   transform: translateY(-2px) scale(1.03);
 }
 
@@ -194,18 +222,248 @@ a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustratio
   cursor: not-allowed;
 }
 
-.crewlet-kind-tile--disabled .crewlet-kind-tile__ground,
+.crewlet-kind-tile--disabled .crewlet-kind-tile__frame > *,
+.crewlet-kind-tile--disabled .crewlet-kind-tile__figure,
+.crewlet-kind-tile--disabled .crewlet-kind-tile__mark,
 .crewlet-kind-tile--disabled .crewlet-kind-tile__name {
   opacity: 0.55;
 }
 
+/* ---- stage: the maker presenting its kind on a dotted canvas ---- */
+
+/*
+ * THE ORG CHART'S GROUND, in the kind's colour: a dot grid on the kind's
+ * fill. The canvas the crew is drawn on everywhere else in the product is
+ * the ground a kind is offered on, so the row reads as Crewlet's rather than
+ * as a stock set of tinted panes.
+ */
+.crewlet-kind-tile--stage .crewlet-kind-tile__frame {
+  aspect-ratio: 16 / 10;
+}
+
+.crewlet-kind-tile__stage {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(
+        circle at 1px 1px,
+        var(--crewlet-kind-line) 1px,
+        transparent 1.5px
+      )
+      0 0 / 12px 12px,
+    linear-gradient(180deg, var(--crewlet-kind-fill) 0%, transparent 120%),
+    var(--color-surface-subtle);
+  box-shadow: inset 0 0 0 1px var(--crewlet-kind-line);
+}
+
+.crewlet-kind-tile__object {
+  position: absolute;
+  inset: 12% 14% 12% 30%;
+  transition: transform var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-kind-tile__maker.crewlet-kind-mark {
+  position: absolute;
+  bottom: 12%;
+  left: 12%;
+  background: var(--color-surface-background);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--motion-duration-base) var(--motion-easing-spring);
+}
+
+.crewlet-kind-tile--stage.crewlet-kind-tile--action:hover
+  .crewlet-kind-tile__maker {
+  transform: translateY(-3px) rotate(-4deg);
+}
+
+.crewlet-kind-tile--stage.crewlet-kind-tile--action:hover
+  .crewlet-kind-tile__object {
+  transform: translateX(2px);
+}
+
+/* ---- figure: the maker on its own ---- */
+
+.crewlet-kind-tile--figure {
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4) var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-xl);
+  text-align: center;
+  transition: background-color var(--motion-duration-base)
+    var(--motion-easing-out);
+}
+
+.crewlet-kind-tile--figure .crewlet-kind-tile__label {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.crewlet-kind-tile--figure .crewlet-kind-tile__name {
+  justify-content: center;
+}
+
+/* A figure's hint wraps under it: the row is narrow, and a cut hint says half of who makes it. */
+.crewlet-kind-tile--figure .crewlet-kind-tile__hint {
+  white-space: normal;
+  text-wrap: balance;
+}
+
+/* The character stands on a soft pool of its own colour, not in a box. */
+.crewlet-kind-tile__figure {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding-bottom: var(--spacing-2);
+}
+
+.crewlet-kind-tile__figure::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 64px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--crewlet-kind-fill);
+  transform: translateX(-50%);
+}
+
+.crewlet-kind-tile__character {
+  position: relative;
+  z-index: 1;
+  transition: transform var(--motion-duration-moderate)
+    var(--motion-easing-spring);
+}
+
+.crewlet-kind-tile--figure.crewlet-kind-tile--action:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-kind-tile--figure.crewlet-kind-tile--action:hover
+  .crewlet-kind-tile__character,
+.crewlet-kind-tile--figure[aria-pressed='true'] .crewlet-kind-tile__character {
+  transform: translateY(-6px);
+}
+
+.crewlet-kind-tile--figure[aria-pressed='true'] {
+  background: var(--crewlet-kind-fill);
+}
+
+.crewlet-kind-tile--figure:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ---- chip: one line ---- */
+
+.crewlet-kind-tile--chip {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-2);
+  height: var(--size-control-lg);
+  padding: 0 var(--spacing-3) 0 var(--spacing-1);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-background);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-out),
+    background-color var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-kind-tile--chip .crewlet-kind-tile__label {
+  padding-inline: 0;
+}
+
+.crewlet-kind-tile--chip .crewlet-kind-tile__name {
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-kind-tile--chip .crewlet-kind-mark {
+  border-radius: var(--radius-pill);
+}
+
+.crewlet-kind-tile--chip.crewlet-kind-tile--action:hover {
+  border-color: var(--color-border-hover);
+  background: var(--color-surface-hover);
+}
+
+.crewlet-kind-tile--chip[aria-pressed='true'] {
+  border-color: var(--crewlet-kind-line);
+  background: var(--crewlet-kind-fill);
+}
+
+.crewlet-kind-tile--chip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.crewlet-kind-tile__shortcut {
+  margin-inline-start: var(--spacing-1);
+}
+
+/* ---- preview: a starting point, drawn live ---- */
+
+.crewlet-kind-tile__frame--preview {
+  padding: 0;
+  overflow: visible;
+}
+
+.crewlet-kind-tile__preview {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-inset);
+}
+
+.crewlet-kind-tile__preview > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crewlet-kind-tile__badge-mark.crewlet-kind-mark {
+  position: absolute;
+  bottom: calc(var(--spacing-3) * -1);
+  left: var(--spacing-3);
+  box-shadow: 0 0 0 3px var(--color-surface-background);
+}
+
+.crewlet-kind-tile--preview .crewlet-kind-tile__label {
+  padding-top: var(--spacing-3);
+}
+
+.crewlet-kind-tile--preview.crewlet-kind-tile--action:hover
+  .crewlet-kind-tile__frame {
+  box-shadow: var(--shadow-card);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .crewlet-kind-tile--figure,
+  .crewlet-kind-tile--chip,
   .crewlet-kind-tile__frame,
-  .crewlet-kind-tile__ground > .crewlet-kind-illustration {
+  .crewlet-kind-tile__ground > .crewlet-kind-illustration,
+  .crewlet-kind-tile__object,
+  .crewlet-kind-tile__maker.crewlet-kind-mark,
+  .crewlet-kind-tile__character {
     transition: none;
   }
 
-  a.crewlet-kind-tile:hover .crewlet-kind-tile__ground > .crewlet-kind-illustration {
+  .crewlet-kind-tile--action:hover
+    .crewlet-kind-tile__ground
+    > .crewlet-kind-illustration,
+  .crewlet-kind-tile--stage.crewlet-kind-tile--action:hover
+    .crewlet-kind-tile__maker,
+  .crewlet-kind-tile--stage.crewlet-kind-tile--action:hover
+    .crewlet-kind-tile__object,
+  .crewlet-kind-tile--figure.crewlet-kind-tile--action:hover
+    .crewlet-kind-tile__character,
+  .crewlet-kind-tile--figure[aria-pressed='true']
+    .crewlet-kind-tile__character {
     transform: none;
   }
 }
