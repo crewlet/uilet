@@ -486,6 +486,25 @@ describe('audit fixes', () => {
     expect(screen.getByRole('tooltip').textContent).toBe('Actions for row 1');
   });
 
+  test('the row actions tip opens from the button\'s leading edge, never past the grid\'s', () => {
+    const box = (left: number, width: number) =>
+      ({ left, top: 200, width, height: 26, right: left + width, bottom: 226, x: left, y: 200 }) as DOMRect;
+    const realRect = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () {
+      if (this.getAttribute('role') === 'tooltip') return box(0, 110);
+      if (this.matches('.crewlet-sheet-grid__row-actions button')) return box(29.5, 26);
+      return realRect.call(this);
+    };
+    try {
+      render(<Host onDeleteRow={() => {}} />);
+      act(() => within(grid()).getByRole('button', { name: 'Actions for row 2' }).focus());
+      // Centred, it started at 29.5 + 13 - 55 = -12.5: past the grid, and clamped to the window.
+      expect(screen.getByRole('tooltip').style.left).toBe('29.5px');
+    } finally {
+      Element.prototype.getBoundingClientRect = realRect;
+    }
+  });
+
   test('a press on a row\'s actions button opens its menu, and its keys never move the active cell', () => {
     render(<Host onDeleteRow={() => {}} />);
     act(() => cell(0, 1).focus());

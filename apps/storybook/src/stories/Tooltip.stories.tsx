@@ -33,6 +33,25 @@ export const Basic: Story = {
 };
 
 /**
+ * Lined up with the trigger's leading edge (`align="start"`), for a control
+ * at the leading edge of what it belongs to, such as a grid's row gutter: a
+ * centred tip there hangs past that edge, and at the page's edge the clamp
+ * pushes it off its trigger.
+ */
+export const StartAligned: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 'var(--spacing-4)', paddingBlock: 'var(--spacing-10)' }}>
+      <Tooltip content="Actions for row 2" align="start">
+        <IconButton label="Actions for row 2" icon={<ClockGlyph />} size="sm" variant="ghost" title="" />
+      </Tooltip>
+      <Tooltip content="Centred on the control, the default">
+        <IconButton label="Centred" icon={<CircleQuestionMarkGlyph />} size="sm" variant="ghost" title="" />
+      </Tooltip>
+    </div>
+  ),
+};
+
+/**
  * The line is long enough to want reading at leisure, so the pointer may travel
  * from the control onto the panel and the panel stays. That is WCAG 2.2's
  * 1.4.13, and it is the half a hand-rolled tooltip always drops.

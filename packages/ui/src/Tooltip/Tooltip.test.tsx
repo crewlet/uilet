@@ -281,3 +281,40 @@ test('a tooltip whose content changes while open is centred again', () => {
     globalThis.ResizeObserver = realRO;
   }
 });
+
+test('a start-aligned tip lines up with its trigger\'s leading edge, on either side of the page', () => {
+  const box = (left: number, width: number) =>
+    ({ left, top: 200, width, height: 24, right: left + width, bottom: 224, x: left, y: 200 }) as DOMRect;
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.getAttribute('role') === 'tooltip') return box(0, 120);
+    if (this.tagName === 'BUTTON') return box(500, 26);
+    return realRect.call(this);
+  };
+  try {
+    const { unmount } = render(
+      <Tooltip content="Actions for row 2" align="start">
+        <button>Actions</button>
+      </Tooltip>,
+    );
+    fireEvent.pointerEnter(screen.getByRole('button', { name: 'Actions' }));
+    settle();
+    // At the trigger's left edge, where centring put it at 500 + 13 - 60 = 453.
+    expect(tip()!.style.left).toBe('500px');
+    unmount();
+
+    render(
+      <div dir="rtl" style={{ direction: 'rtl' }}>
+        <Tooltip content="Actions for row 2" align="start">
+          <button>Actions</button>
+        </Tooltip>
+      </div>,
+    );
+    fireEvent.pointerEnter(screen.getByRole('button', { name: 'Actions' }));
+    settle();
+    // Right to left, its right edge on the trigger's: 526 - 120 = 406.
+    expect(tip()!.style.left).toBe('406px');
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+  }
+});

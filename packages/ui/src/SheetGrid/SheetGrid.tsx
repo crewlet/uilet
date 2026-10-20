@@ -1012,7 +1012,9 @@ export function SheetGrid({
                           open={rowMenu === row.id}
                           onOpenChange={(open) => setRowMenu(open ? row.id : null)}
                           renderTrigger={(trigger) => (
-                            <Tooltip content={actionsLabel}>
+                            // Lined up with the button's leading edge: the gutter is the
+                            // grid's first column, and a centred tip hung past the grid.
+                            <Tooltip content={actionsLabel} align="start">
                               {/* The tooltip carries the name; a native one beside it is a second tip. */}
                               <IconButton {...trigger} label={actionsLabel} icon={<EllipsisGlyph />} size="sm" title="" />
                             </Tooltip>
