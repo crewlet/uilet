@@ -45,6 +45,21 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Changed in 0.36.0: a chosen option's edge and fill
+
+Two tokens name what a CHOSEN option draws (the template, theme, agent or starting layout a reader picked, the slide being edited), so a page of options is calm and the focus ring is the only accent line on it.
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| `--color-border-selected` | the accent at 0.6; the full accent in a high-contrast theme | The one-pixel edge round a chosen option. It is derived by the build from each palette's accent, so it is a tint mixed toward whatever ground it lands on. |
+| `--color-surface-selected` | an alias of `--color-brand-accent-soft` | The fill behind a chosen option. |
+
+The edge is a TINT, so it is not held to the 3:1 a mark clears: the default dark accent itself clears 2.61:1 on its worst ground, which leaves no room for a tint at that floor. The palette suite holds it instead to reading apart from the resting and the strong hairline by dE 9 on every rung (`the selected edge reads apart from a hairline`), and a high-contrast theme to 3:1 on the card and the sheet. A component that draws it never lets the state rest on it alone: it pairs it with the soft fill or a mark of its own (a radio, a check, the slide number in the accent ink) that does clear 3:1. Neither token is a focus indicator; that stays `--color-focus`, at 2px, on `:focus-visible`.
+
+| What changed | What to change |
+| --- | --- |
+| `--color-border-selected` and `--color-surface-selected` added | Nothing. A stylesheet that draws a chosen option in the full accent can take them in its place. |
+
 ## Changed in 0.33.0: the projection
 
 Five fixed colours for a slide shown full screen, the same in every palette and theme, as `--color-qr-*` is: what is under them is the slide in its own colours, or a projector's black, never the theme's ground.
@@ -483,13 +498,14 @@ The accent is a violet, and it is **per palette**:
 | `--color-text-link-quiet` | `#a9b0ea` | `#484e99` | A link inside running text or a row, which must not compete with the words around it: the accent ink mixed 65% with the secondary text, in OKLab. It takes the accent ink under the pointer and on focus. Measured as an ink. |
 | `--color-brand-accent-soft` | the accent at 0.16 | the accent at 0.125 | The tint behind a selected row or a toggle that is on. |
 | `--color-brand-accent-soft-strong` | the accent at 0.32 | the accent at 0.32 | The border paired with the soft tint. |
+| `--color-border-selected` | the accent at 0.6 | the accent at 0.6 | The edge round a chosen option, paired with `--color-surface-selected` (an alias of the soft tint). |
 | `--color-brand-accent-rgb` | `114, 91, 230` | `115, 90, 242` | The accent as an `r, g, b` triple, for a translucent tint of a stylesheet's own. `--shadow-glow` is composed from it. |
 | `--color-focus` | `#8572fe` | `#735af2` | The focus ring. |
 | `--color-text-on-accent` | `#ffffff` | `#ffffff` | The label on the accent's three fills. |
 
 A label on a fill that is not the accent has a token of its own, so a theme whose accent is light enough to carry a dark label (Iris's periwinkle does, at night) never darkens the destructive action's label or a label on the scrim: `--color-text-on-danger` labels the danger fill and its hover, and `--color-text-on-scrim` labels the scrim and the seeded avatar tints. Both are white in every theme.
 
-`-rgb` and `-soft-strong` are derived from the accent by the build, per palette, and the build suite holds the written `-soft` to the accent's own channels. The marketing root keeps the brand's `#7c56ff` and its own steps (`tokens/color.json`).
+`-rgb`, `-soft-strong` and `--color-border-selected` are derived from the accent by the build, per palette, and the build suite holds the written `-soft` to the accent's own channels. The marketing root keeps the brand's `#7c56ff` and its own steps (`tokens/color.json`).
 
 - **The primary action is the accent.** The monochrome `--color-brand-primary` (white on dark, black on light) is gone: a white primary beside a light-grey secondary was one pair of greys. White clears 4.82:1 on the dark accent and 4.69:1 on the light one.
 - **Its hover and its press are darker, a step each, never brighter.** The label is white, so a brighter fill is a step toward it: a `brightness(1.08)` hover takes the dark accent's label to 4.25:1, under the text floor at the moment the reader is about to press. The approved palette's hover and press are a darker step each (the hover dE 3.44 off the accent in dark and 3.92 in light, the press dE 6.14 past the hover), and the palette suite holds both halves: `a hovered primary action is a visible step away from its label` and `a pressed primary action is a visible step past a hovered one`.
