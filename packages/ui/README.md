@@ -204,6 +204,18 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.35.0
+
+**`ArtifactKindMark` pictures a kind as one of the crew.** Each kind has a maker among the Crewlet characters (`ARTIFACT_KIND_CHARACTERS`: a page for a doc, a wide screen for slides, a prism for a design, a gauge for a dashboard, a chip for a page of code, a stack of rows for a sheet), drawn in the kind's hue on a plate cut to an agent's squircle, at `sm`, `md`, `lg` and `xl`, or `bare` for a ground that is already the kind's. Decorative: the kind's name is always printed beside it. The kind colour variables (`--crewlet-kind-*`) now live in its stylesheet, the lowest module that draws a kind, and the illustration, the tile and the card's badge read them from there.
+
+**`ArtifactKindTile` takes an `appearance`**: `illustration` (the default, unchanged), `stage` (the maker presenting the kind's object on a dotted canvas of the kind's colour, shorter than the illustration), `figure` (the maker standing on its own), `chip` (one line, with an optional `shortcut` key) and `preview` (a frame holding `children`, a starting point drawn live, with the kind's mark over its foot). A `hint` line under the name describes the tile, and `onSelect` makes the tile a button that opens something on the page, said as pressed with `selected`.
+
+**`ArtifactCard` gains a `tile` size**, the gallery card a step smaller (a 16:10 preview, the title and facts a type step down, a 32px badge), and `kindMark="character"` badges the card with the kind's maker instead of its glyph. `ArtifactCardSkeleton` takes the same `size`.
+
+**`ArtifactTemplateCard`** is one starting point for a new artifact: a button named by its title and described by its detail, its preview the starting point drawn small, ringed in the accent when chosen; `layout="row"` for a narrow rail. **`PromptStarters`** is a row of suggested briefs under a composer: a chip fills the field with its whole prompt and never sends it. **`DottedGround`** is the canvas's dotted field as a still surface, in a kind's colours when given one, for a place where something is being made.
+
+**`Input` takes `appearance="title"`**, a document's own title typed where it will be read: borderless, at the heading step, flush with the text under it. **`ChoiceList` options take `leading`**, a decorative picture before the words (an agent's avatar in a choice of who). **`Modal`'s side sheet honours `size="lg"` (760px) and `size="xl"` (960px)**, and keeps its own 560px otherwise.
+
 ## Changes in 0.34.1
 
 **`ArtifactKindGlyph`, `ARTIFACT_KINDS` and `ArtifactKind` have a module of their own** (`@crewlethq/ui/ArtifactKindGlyph`), and it imports nothing but the glyphs. They were defined in `ArtifactCard`'s module, and a bundler places a module whole, so a host that drew one kind glyph in its frame (a sidebar's pins, a command palette's hits) took the whole card into its first screen, and with 0.34.0 the kind illustrations the card draws: about 11 KB of script for a gallery the reader had not opened. Nothing is renamed: the root export and `@crewlethq/ui/ArtifactCard` still answer for all three, and `ArtifactIcon`, `ArtifactBar`, `DashboardCover` and `ArtifactKindIllustration` now import them from the new module.
