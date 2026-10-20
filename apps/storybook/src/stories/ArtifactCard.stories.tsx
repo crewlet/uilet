@@ -226,7 +226,7 @@ export const Skeleton: Story = {
 
 /**
  * The tile: the gallery card a step smaller, four across a laptop's page,
- * each badged with its kind's maker character (`kindMark="character"`).
+ * its badge the kind's glyph in its ink, as on every card.
  */
 export const TileCards: Story = {
   render: () => (
@@ -242,7 +242,6 @@ export const TileCards: Story = {
           access="shared"
           now={NOW}
           size="tile"
-          kindMark="character"
           actions={<More title="Tile" />}
         />
       ))}

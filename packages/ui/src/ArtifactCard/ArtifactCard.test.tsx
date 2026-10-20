@@ -180,17 +180,15 @@ test('carries no axe violation, as a card and compact', async () => {
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
 
-test('the tile is the card a step smaller, and either size may badge the kind with its maker', () => {
-  const { container } = render(
-    <ArtifactCard title="Beta health" kind="dashboard" href="#/artifacts/b" updatedAt={NOW} now={NOW} size="tile" kindMark="character" />,
-  );
+test('the tile is the card a step smaller, its badge the kind\'s glyph', () => {
+  const { container } = render(<ArtifactCard title="Beta health" kind="dashboard" href="#/artifacts/b" updatedAt={NOW} now={NOW} size="tile" />);
   const card = container.querySelector('.crewlet-artifact-card')!;
   expect(card.classList.contains('crewlet-artifact-card--card')).toBe(true);
   expect(card.classList.contains('crewlet-artifact-card--tile')).toBe(true);
-  // THE BADGE IS THE KIND'S MAKER, still decorative: the kind is said in words.
-  const badge = container.querySelector('.crewlet-artifact-card__badge--mark')!;
-  expect(badge.getAttribute('aria-hidden')).toBe('true');
-  expect(badge.querySelector('svg[data-character="dashlet"]')).not.toBeNull();
+  // THE BADGE IS THE KIND'S GLYPH IN ITS INK, as on every card.
+  const badge = container.querySelector('.crewlet-artifact-card__badge')!;
+  expect(badge.classList.contains('crewlet-kind--dashboard')).toBe(true);
+  expect(badge.querySelector('svg')).not.toBeNull();
   expect(factsOf(screen.getByRole('link', { name: 'Beta health' }))).toContain('Dashboard');
 });
 

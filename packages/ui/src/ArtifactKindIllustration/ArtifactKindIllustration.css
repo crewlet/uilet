@@ -184,6 +184,18 @@ button.crewlet-kind-tile {
   white-space: nowrap;
 }
 
+.crewlet-kind-tile__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewlet-kind-tile__glyph {
+  display: inline-flex;
+  flex: none;
+  color: var(--crewlet-kind-ink);
+}
+
 .crewlet-kind-tile__hint {
   overflow: hidden;
   color: var(--color-text-tertiary);

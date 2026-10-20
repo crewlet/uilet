@@ -10,11 +10,11 @@ export default meta;
 type Story = StoryObj<typeof ArtifactKindMark>;
 
 /**
- * Every kind's maker, at every step, on its plate and bare: a page for a doc,
- * a wide screen for slides, a prism for a design, a gauge for a dashboard, a
- * chip for a page of code and a stack of rows for a sheet.
+ * Every kind's glyph on its plate, at every step: the same drawing in the same
+ * ink a card's badge, a list row and the sidebar carry, so a kind marked on a
+ * chip or a template reads as the kind it is everywhere else.
  */
-export const Makers: Story = {
+export const Glyphs: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 16 }}>
       {(['sm', 'md', 'lg', 'xl'] as const).map((size) => (
@@ -24,14 +24,24 @@ export const Makers: Story = {
           ))}
         </div>
       ))}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        {ARTIFACT_KINDS.map((kind) => (
-          <figure key={kind} style={{ margin: 0, textAlign: 'center' }}>
-            <ArtifactKindMark kind={kind} size="xl" surface="bare" />
-            <figcaption style={{ fontSize: 12 }}>{ARTIFACT_KIND_CHARACTERS[kind]}</figcaption>
-          </figure>
-        ))}
-      </div>
+    </div>
+  ),
+};
+
+/**
+ * Every kind's maker, for a Make tile's art: a page for a doc, a wide screen
+ * for slides, a prism for a design, a gauge for a dashboard, a chip for a page
+ * of code and a stack of rows for a sheet.
+ */
+export const Makers: Story = {
+  render: () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      {ARTIFACT_KINDS.map((kind) => (
+        <figure key={kind} style={{ margin: 0, textAlign: 'center' }}>
+          <ArtifactKindMark kind={kind} art="character" size="xl" surface="bare" />
+          <figcaption style={{ fontSize: 12 }}>{ARTIFACT_KIND_CHARACTERS[kind]}</figcaption>
+        </figure>
+      ))}
     </div>
   ),
 };

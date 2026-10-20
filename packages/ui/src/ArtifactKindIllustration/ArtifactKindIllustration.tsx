@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react';
-import type { ArtifactKind } from '../ArtifactKindGlyph/index.js';
+import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { ArtifactKindMark } from '../ArtifactKindMark/index.js';
 import { Kbd } from '../Kbd/index.js';
 import { cx } from '../utils/cx.js';
@@ -154,10 +154,15 @@ export function ArtifactKindGround({
  *   the illustration, with a line under the name saying who makes it.
  * - `figure`: the maker character standing on its own, unframed, on the
  *   page's ground, for a row that reads as the crew offering to help.
- * - `chip`: one line, the kind's mark beside its name and an optional
- *   shortcut, for a composer's or a toolbar's row of kinds.
+ * - `chip`: one line, the kind's glyph on its plate beside its name and an
+ *   optional shortcut, for a composer's or a toolbar's row of kinds.
  * - `preview`: a frame holding `children` (a starting point drawn live), the
- *   kind's mark standing over its foot as a gallery card's badge does.
+ *   kind's glyph standing over its foot as a gallery card's badge does.
+ *
+ * THE KIND'S GLYPH IS ON EVERY TILE, in the kind's ink: it is the mark the
+ * kind wears on a card, a list row, the sidebar and the palette, so the art
+ * above a name may vary while the kind is always recognised by the same
+ * drawing. The two appearances whose art is a character lead the name with it.
  */
 export type ArtifactKindTileAppearance = 'illustration' | 'stage' | 'figure' | 'chip' | 'preview';
 
@@ -201,7 +206,7 @@ function TileFace({ kind, appearance, children }: { kind: ArtifactKind; appearan
     case 'figure':
       return (
         <span className="crewlet-kind-tile__figure" aria-hidden="true">
-          <ArtifactKindMark kind={kind} size="xl" surface="bare" className="crewlet-kind-tile__character" />
+          <ArtifactKindMark kind={kind} size="xl" art="character" surface="bare" className="crewlet-kind-tile__character" />
         </span>
       );
     case 'stage':
@@ -211,7 +216,7 @@ function TileFace({ kind, appearance, children }: { kind: ArtifactKind; appearan
             <span className="crewlet-kind-tile__object">
               <ArtifactKindIllustration kind={kind} />
             </span>
-            <ArtifactKindMark kind={kind} size="lg" className="crewlet-kind-tile__maker" />
+            <ArtifactKindMark kind={kind} size="lg" art="character" className="crewlet-kind-tile__maker" />
           </span>
         </span>
       );
@@ -269,7 +274,12 @@ export function ArtifactKindTile({
       <span className="crewlet-kind-tile__label">
         <span className="crewlet-kind-tile__words">
           <span className="crewlet-kind-tile__name">
-            {label}
+            {appearance === 'stage' || appearance === 'figure' ? (
+              <span className="crewlet-kind-tile__glyph" aria-hidden="true">
+                <ArtifactKindGlyph kind={kind} size="sm" />
+              </span>
+            ) : null}
+            <span className="crewlet-kind-tile__text">{label}</span>
             {badge ? <span className="crewlet-kind-tile__badge">{badge}</span> : null}
           </span>
           {hint && !chip ? (

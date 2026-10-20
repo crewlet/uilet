@@ -53,6 +53,11 @@
   --crewlet-kind-mark-size: 72px;
 }
 
+/* THE GLYPH IS DRAWN IN THE KIND'S INK, as a card's badge draws it, at its own size. */
+.crewlet-kind-mark--glyph {
+  color: var(--crewlet-kind-ink);
+}
+
 .crewlet-kind-mark--bare {
   border-color: transparent;
   background: none;

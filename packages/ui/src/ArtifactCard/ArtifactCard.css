@@ -214,17 +214,6 @@
   font-size: var(--font-size-sm);
 }
 
-.crewlet-artifact-card__badge--mark.crewlet-kind-mark {
-  width: var(--crewlet-kind-mark-size);
-  height: var(--crewlet-kind-mark-size);
-  margin-top: -26px;
-  border-radius: calc(var(--crewlet-kind-mark-size) * 0.29);
-  color: var(--crewlet-kind-hue);
-  border-color: var(--crewlet-kind-line);
-  background: var(--crewlet-kind-fill);
-  box-shadow: 0 0 0 3px var(--color-surface-subtle);
-}
-
 /*
  * THE TILE: the card a step smaller. The preview keeps the card's ratio's
  * neighbour (16:10, a touch taller than 16:9, so a doc's first lines and a
@@ -251,13 +240,6 @@
   margin-top: -18px;
   margin-bottom: var(--spacing-1);
   border-radius: var(--radius-md);
-}
-
-.crewlet-artifact-card--tile .crewlet-artifact-card__badge--mark.crewlet-kind-mark {
-  width: var(--crewlet-kind-mark-size);
-  height: var(--crewlet-kind-mark-size);
-  margin-top: -18px;
-  border-radius: calc(var(--crewlet-kind-mark-size) * 0.29);
 }
 
 .crewlet-artifact-card--tile .crewlet-artifact-card__title {

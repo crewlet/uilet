@@ -103,6 +103,8 @@ test("a tile's hint describes it, and a chip draws its shortcut and no hint", ()
   // THE STAGE pictures the kind's object and its maker character together.
   expect(link.querySelector('.crewlet-kind-illustration')).not.toBeNull();
   expect(link.querySelector('.crewlet-kind-mark svg[data-character="pagelet"]')).not.toBeNull();
+  // AND THE NAME LEADS WITH THE KIND'S GLYPH, the mark it wears on every card.
+  expect(link.querySelector('.crewlet-kind-tile__glyph svg')).not.toBeNull();
   rerender(<ArtifactKindTile kind="doc" label="Docs" hint="You write it" appearance="chip" shortcut="D" href="#/new" />);
   const chip = screen.getByRole('link', { name: 'Docs' });
   expect(chip.getAttribute('aria-describedby')).toBeNull();

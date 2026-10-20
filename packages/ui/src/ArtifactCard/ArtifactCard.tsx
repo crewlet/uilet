@@ -2,7 +2,6 @@ import { useId, type ReactNode } from 'react';
 import { BuildingComplexGlyph, LockGlyph, PinGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
 import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { ArtifactKindGround } from '../ArtifactKindIllustration/index.js';
-import { ArtifactKindMark } from '../ArtifactKindMark/index.js';
 import { AvatarStack, type AvatarStackMember } from '../Avatar/index.js';
 import { Card } from '../Card/index.js';
 import { PrincipalAvatar, type Principal } from '../Principal/index.js';
@@ -43,12 +42,6 @@ const ACCESS_GLYPHS: Readonly<Record<ArtifactAccess, typeof LockGlyph>> = {
  * for a narrow rail or a phone, with no preview.
  */
 export type ArtifactCardSize = 'card' | 'tile' | 'compact';
-
-/**
- * What the card's badge draws: the kind's `glyph`, or its maker `character`
- * on the kind's plate (`ArtifactKindMark`).
- */
-export type ArtifactCardKindMark = 'glyph' | 'character';
 
 export interface ArtifactCardLabels {
   kinds: Record<ArtifactKind, string>;
@@ -115,8 +108,6 @@ export interface ArtifactCardProps {
   trashed?: boolean | undefined;
   /** Defaults to `card`. */
   size?: ArtifactCardSize | undefined;
-  /** What the badge over the preview's foot draws. Defaults to `glyph`; not read by `compact`. */
-  kindMark?: ArtifactCardKindMark | undefined;
   className?: string | undefined;
   /** Overrides the shared clock, for a story or a suite. */
   now?: number | undefined;
@@ -162,7 +153,6 @@ export function ArtifactCard({
   actions,
   trashed = false,
   size = 'card',
-  kindMark = 'glyph',
   className,
   now,
   labels,
@@ -262,13 +252,9 @@ export function ArtifactCard({
           {preview ?? <ArtifactPreviewGlyph kind={kind} />}
         </span>
         <span className="crewlet-artifact-card__body">
-          {kindMark === 'character' ? (
-            <ArtifactKindMark kind={kind} size={size === 'tile' ? 'md' : 'lg'} className="crewlet-artifact-card__badge crewlet-artifact-card__badge--mark" />
-          ) : (
-            <span className={cx('crewlet-artifact-card__badge', `crewlet-kind--${kind}`)} aria-hidden>
-              <ArtifactKindGlyph kind={kind} size={size === 'tile' ? 'sm' : 'md'} />
-            </span>
-          )}
+          <span className={cx('crewlet-artifact-card__badge', `crewlet-kind--${kind}`)} aria-hidden>
+            <ArtifactKindGlyph kind={kind} size={size === 'tile' ? 'sm' : 'md'} />
+          </span>
           <span className="crewlet-artifact-card__title-row">
             <span id={titleId} className="crewlet-artifact-card__title" title={title}>
               {title}
