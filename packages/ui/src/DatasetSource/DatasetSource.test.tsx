@@ -108,22 +108,29 @@ test('an open entry frames its summary and its preview as one card', () => {
   );
   const entry = container.querySelector<HTMLElement>('.crewlet-dataset-source')!;
   const summary = entry.querySelector<HTMLElement>('.crewlet-dataset-source__summary')!;
-  // The frame holds both, and the head lies over its edge so the two
-  // boundaries draw as one line rather than a doubled one.
+  // The frame holds both, its one edge drawn by the entry. The head sits
+  // inside it rather than over it, so its fill never paints that edge out, and
+  // the two boundaries draw as one line rather than a doubled one.
   expect(entry.contains(screen.getByRole('group', { name: 'Spend' }))).toBe(true);
+  expect(entry.classList.contains('crewlet-dataset-source--open')).toBe(true);
   expect(getComputedStyle(entry).borderTopStyle).toBe('solid');
   expect(px(entry, 'border-top-width')).toBe(1);
-  expect(px(summary, 'margin-top')).toBe(-1);
-  expect(px(summary, 'margin-left')).toBe(-1);
-  // Selected with nothing to preview, or closed, there is no frame.
+  expect(px(summary, 'margin-top')).toBe(0);
+  expect(px(summary, 'margin-left')).toBe(0);
+  expect(getComputedStyle(summary).borderBottomLeftRadius).toBe('0');
+  // Selected with nothing to preview, or closed, it is not opened into a card,
+  // and its frame keeps the width it has open, so nothing moves as it opens.
   rerender(<DatasetSource title="Spend" kind="store" definition="spend" status="live" onSelect={() => {}} selected />);
-  expect(getComputedStyle(entry).borderTopStyle).not.toBe('solid');
+  expect(entry.classList.contains('crewlet-dataset-source--open')).toBe(false);
+  expect(px(entry, 'border-top-width')).toBe(1);
   rerender(
     <DatasetSource title="Spend" kind="store" definition="spend" status="live" onSelect={() => {}}>
       {preview}
     </DatasetSource>,
   );
-  expect(getComputedStyle(entry).borderTopStyle).not.toBe('solid');
+  expect(entry.classList.contains('crewlet-dataset-source--open')).toBe(false);
+  expect(screen.queryByRole('group', { name: 'Spend' })).toBeNull();
+  expect(px(entry, 'border-top-width')).toBe(1);
   uninstall();
 });
 

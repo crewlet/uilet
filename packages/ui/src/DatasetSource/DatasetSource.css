@@ -60,10 +60,6 @@ button.crewlet-dataset-source__summary:focus-visible {
   background: var(--color-surface-selected);
 }
 
-.crewlet-dataset-source--selected:has(> .crewlet-dataset-source__preview) > .crewlet-dataset-source__summary {
-  border-end-start-radius: 0;
-  border-end-end-radius: 0;
-}
 
 .crewlet-dataset-source__head {
   display: flex;
@@ -136,23 +132,24 @@ button.crewlet-dataset-source__summary:focus-visible {
 }
 
 /*
- * AN OPEN ENTRY IS ONE CARD: a frame around the summary and the preview, the
- * summary its head. The head lies over the frame's own edge (a pixel out on
- * three sides), so its selected boundary is the card's top and a single
- * line. The preview is a well under it, inset on the summary's padding, so
- * the figures in it (cards of their own) stand on a ground that is plainly
- * the source's rather than the rail's.
+ * AN OPEN ENTRY IS ONE CARD: the selected edge above frames the summary and
+ * the preview together, the summary its head on the selected fill and the
+ * preview a well under it, inset on the summary's padding, so the figures in
+ * it (cards of their own) stand on a ground that is plainly the source's
+ * rather than the rail's. One line separates head from well, in the same
+ * selected edge, and the head sits INSIDE the frame rather than over it: its
+ * fill laid over the frame's edge would paint that edge out.
  */
 .crewlet-dataset-source--open {
-  border-width: 1px;
-  border-style: solid;
-  border-color: var(--color-border-default);
   background: var(--color-surface-inset);
 }
 
 .crewlet-dataset-source--open > .crewlet-dataset-source__summary {
-  width: calc(100% + 2px);
-  margin: -1px -1px 0;
+  border-block-end-color: var(--color-border-selected);
+  border-start-start-radius: calc(var(--radius-md) - 1px);
+  border-start-end-radius: calc(var(--radius-md) - 1px);
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
 }
 
 .crewlet-dataset-source__preview {
