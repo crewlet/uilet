@@ -25,9 +25,8 @@ name: release
 # code holds a credential worth stealing, and so that the bytes that receive
 # provenance are produced by as little third-party code as possible:
 #
-#   verify   contents: read. Installs the whole workspace and runs the build
-#            (the Storybook included), lint, typecheck and tests. Uploads
-#            nothing.
+#   verify   contents: read. The verify.yml jobs ci.yml also runs: the whole
+#            workspace's build, lint, typecheck and tests. Uploads nothing.
 #   pack     contents: read. Installs only the root tooling and the published
 #            workspaces, builds only those packages, computes the version,
 #            packs them and compares them with the registry, then uploads the
@@ -77,28 +76,11 @@ concurrency:
 jobs:
   verify:
     name: verify the merged commit
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
     permissions:
       contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: $/.github/actions/verify-release-ref
-      - uses: $/.github/actions/setup-node
-
-      # Runs before npm ci, on Node alone, so inconsistent release metadata
-      # fails before any third-party code has executed.
-      - name: Check the release metadata
-        run: node scripts/release.mjs check
-
-      - run: npm ci --ignore-scripts
-      - run: npm run build
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
+    uses: ./.github/workflows/verify.yml
+    with:
+      release: true
 
   pack:
     name: build, version and pack the published packages
@@ -188,8 +170,7 @@ jobs:
     # Publishing takes seconds; being served takes longer. npm scans every new
     # version for malware before the registry serves it, typically for about
     # five minutes and for fifteen or more at peak times, and the read-back
-    # below waits up to thirty minutes per package, so three packages can
-    # legitimately hold the job an hour and a half.
+    # below waits up to thirty minutes per publish level.
     timeout-minutes: 100
     environment: npm-publish
     permissions:
@@ -216,10 +197,9 @@ jobs:
           name: packages
           path: ${{ runner.temp }}/packages
 
-      # The package list below is an allowlist, in dependency order: tokens
-      # and icons are on the registry before the ui version that pins them,
-      # and the artifact kit, which is built from the tokens and the ui, comes
-      # last.
+      # The publish levels are an allowlist, in dependency order. A level
+      # starts once the registry serves the previous one, and a package whose
+      # @crewlethq dependencies are not in an earlier level is refused.
       # Each tarball must be exactly that package at the version release.json
       # names, with exactly the publishConfig scripts/release.mjs check
       # enforces and no top-level tag field: npm publish applies every
@@ -256,7 +236,15 @@ jobs:
           PACKAGES_DIR: ${{ runner.temp }}/packages
         run: |
           set -euo pipefail
-          packages=(tokens icons ui artifact-kit)
+          levels=("tokens icons" "ui artifact-kit")
+          read -r -a packages <<<"${levels[*]}"
+          declare -A level_of
+          for index in "${!levels[@]}"; do
+            read -r -a level_packages <<<"${levels[index]}"
+            for package in "${level_packages[@]}"; do
+              level_of["${package}"]="${index}"
+            done
+          done
           expected_publish_config='{"access":"public","registry":"https://registry.npmjs.org"}'
 
           version="$(jq -r .version "${PACKAGES_DIR}/release.json")"
@@ -305,6 +293,12 @@ jobs:
               echo "::error::${file} must carry exactly the publishConfig ${expected_publish_config} and no top-level tag field"
               exit 1
             fi
+            while read -r dependency; do
+              if [ -z "${level_of[${dependency}]+set}" ] || [ "${level_of[${dependency}]}" -ge "${level_of[${package}]}" ]; then
+                echo "::error::${name} depends on @crewlethq/${dependency}, which is not published in an earlier level than it"
+                exit 1
+              fi
+            done < <(jq -r '[.dependencies, .peerDependencies, .optionalDependencies] | map(. // {} | keys[]) | .[] | select(startswith("@crewlethq/")) | ltrimstr("@crewlethq/")' <<<"${manifest}")
 
             integrity="sha512-$(openssl dgst -sha512 -binary "${file}" | base64 -w 0)"
             integrity_of["${package}"]="${integrity}"
@@ -364,12 +358,20 @@ jobs:
             exit 1
           fi
 
+          declare -A publishing
           for package in "${to_publish[@]}"; do
-            name="@crewlethq/${package}"
-            file="${PACKAGES_DIR}/crewlethq-${package}-${version}.tgz"
-            integrity="${integrity_of[${package}]}"
+            publishing["${package}"]=true
+          done
 
-            npm publish "${file}" --provenance --ignore-scripts --access public --tag latest
+          for level in "${levels[@]}"; do
+            read -r -a level_packages <<<"${level}"
+            pending=()
+            for package in "${level_packages[@]}"; do
+              if [ -n "${publishing[${package}]+set}" ]; then
+                npm publish "${PACKAGES_DIR}/crewlethq-${package}-${version}.tgz" --provenance --ignore-scripts --access public --tag latest
+                pending+=("${package}")
+              fi
+            done
 
             # npm accepts a version well before it serves it: it scans every
             # new version for malware first, which takes about five minutes and
@@ -377,29 +379,41 @@ jobs:
             # flags. Thirty minutes covers the scan with room to spare. Giving
             # up sooner leaves the version published with no tag recording it,
             # and the next merge's run then computes the same version and is
-            # refused too. Waiting here, before the next package is published,
-            # is also what makes tokens and icons installable before the ui
-            # version that pins them is.
+            # refused too. Waiting for the whole level keeps every dependency
+            # installable before its dependents.
             attempt=1
-            until [ "$(fetch_packument "${package}")" = 200 ] && [ "$(published_integrity)" != "null" ]; do
+            while [ "${#pending[@]}" -gt 0 ]; do
+              unserved=()
+              for package in "${pending[@]}"; do
+                name="@crewlethq/${package}"
+                integrity="${integrity_of[${package}]}"
+                if [ "$(fetch_packument "${package}")" != 200 ] || [ "$(published_integrity)" = "null" ]; then
+                  unserved+=("${package}")
+                  continue
+                fi
+                published="$(published_integrity)"
+                tagged="$(jq -r '."dist-tags".latest // "null"' "${registry_response}")"
+                if [ "${published}" != "${integrity}" ]; then
+                  echo "::error::${name}@${version} was published with integrity ${published}, but this run packed ${integrity}"
+                  exit 1
+                fi
+                if [ "${tagged}" != "${version}" ]; then
+                  echo "::error::${name}@${version} was published, but its latest dist-tag names ${tagged}. Point it at the release with: npm dist-tag add ${name}@${version} latest"
+                  exit 1
+                fi
+                echo "::notice::published ${name}@${version} under latest with integrity ${integrity}"
+              done
+              pending=("${unserved[@]}")
+              if [ "${#pending[@]}" -eq 0 ]; then
+                break
+              fi
               if [ "${attempt}" -ge 180 ]; then
-                echo "::error::${name}@${version} was published, but the registry did not serve it within thirty minutes. npm may be holding it for review or have blocked it: check it on npmjs.com before re-running. A re-run while npm still holds it fails with 409 \"Cannot publish over previously staged version\"."
+                echo "::error::version ${version} of ${pending[*]} was published, but the registry did not serve it within thirty minutes. npm may be holding it for review or have blocked it: check it on npmjs.com before re-running. A re-run while npm still holds a version fails with 409 \"Cannot publish over previously staged version\"."
                 exit 1
               fi
               attempt=$((attempt + 1))
               sleep 10
             done
-            published="$(published_integrity)"
-            tagged="$(jq -r '."dist-tags".latest // "null"' "${registry_response}")"
-            if [ "${published}" != "${integrity}" ]; then
-              echo "::error::${name}@${version} was published with integrity ${published}, but this run packed ${integrity}"
-              exit 1
-            fi
-            if [ "${tagged}" != "${version}" ]; then
-              echo "::error::${name}@${version} was published, but its latest dist-tag names ${tagged}. Point it at the release with: npm dist-tag add ${name}@${version} latest"
-              exit 1
-            fi
-            echo "::notice::published ${name}@${version} under latest with integrity ${integrity}"
           done
 
           echo "version=${version}" >>"${GITHUB_OUTPUT}"

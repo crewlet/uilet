@@ -14,9 +14,11 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
-    "lint": "turbo run lint && eslint scripts",
+    "lint": "turbo run lint && npm run lint:scripts",
+    "lint:scripts": "eslint scripts",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test && node --test \"scripts/*.test.mjs\"",
+    "test": "turbo run test && npm run test:scripts",
+    "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "storybook": "npm run dev --workspace @crewlethq/storybook",
     "release:check": "node scripts/release.mjs check",

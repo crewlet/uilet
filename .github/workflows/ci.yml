@@ -10,8 +10,8 @@ name: ci
 # repository's "Require actions to be pinned to a full-length commit SHA"
 # setting refuses a workflow that drops a pin.
 #
-# No job runs a dependency's install script: every install is
-# `npm ci --ignore-scripts`, and nothing in the workspace needs one.
+# No job runs a dependency's install script: every install runs with
+# --ignore-scripts, and nothing in the workspace needs one.
 
 on:
   push:
@@ -28,45 +28,29 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Parallel build, lint, typecheck and test jobs. See verify.yml.
+  checks:
+    name: checks
+    uses: ./.github/workflows/verify.yml
+
+  # The "verify" check the main ruleset requires. It always runs, because a
+  # skipped job would report success, and passes only if every check passed.
   verify:
     name: verify
+    needs: checks
+    if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: $/.github/actions/setup-node
-        with:
-          cache: npm
-
-      # Manifest metadata, workspace pins, lockfile sources and toolchain pins,
-      # on Node alone and before anything is installed.
-      - name: Check the release metadata
-        run: node scripts/release.mjs check
-
-      - run: npm ci --ignore-scripts
-
-      # npm ci accepts a lockfile whose workspace entries no longer match the
-      # manifests (a changed license or description, for example); refreshing
-      # the lockfile must change nothing.
-      - name: Check that the lockfile matches the manifests
+      - name: Require every verification job to have passed
+        env:
+          RESULT: ${{ needs.checks.result }}
         run: |
           set -euo pipefail
-          npm install --package-lock-only --ignore-scripts
-          git diff --exit-code -- package-lock.json
-
-      - run: npm run build
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
-
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: storybook-static
-          path: apps/storybook/storybook-static
-          retention-days: 7
-          if-no-files-found: error
+          if [ "${RESULT}" != success ]; then
+            echo "::error::the verification jobs finished with the result \"${RESULT}\""
+            exit 1
+          fi
 
   # The install, build, version and pack the release workflow runs, from a
   # fresh checkout, so a manifest, an exports entry, a license file or a build
