@@ -1,0 +1,80 @@
+/*
+ * Where files are dropped. A target of its own is a dashed, quiet area with a
+ * heading, a hint and the pickers; a region wrapping content draws nothing
+ * until files are held over it, then an accent overlay saying what dropping
+ * does. The overlay takes no pointer, so the drop lands on the region.
+ */
+.crewlet-file-drop {
+  position: relative;
+  min-width: 0;
+}
+
+.crewlet-file-drop.is-target {
+  display: grid;
+  justify-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-6) var(--spacing-4);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  text-align: center;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-file-drop.is-target.is-over {
+  border-color: var(--color-brand-accent);
+  background: var(--color-brand-accent-soft);
+}
+
+.crewlet-file-drop.is-disabled {
+  opacity: 0.6;
+}
+
+.crewlet-file-drop__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.crewlet-file-drop__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-file-drop__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.crewlet-file-drop__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--spacing-1);
+  border: 1px dashed var(--color-brand-accent);
+  border-radius: var(--radius-md);
+  /* Floats over the region's content, so it takes the frosted ground. */
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(var(--blur-sm));
+  pointer-events: none;
+  text-align: center;
+}
+
+/* The input the picker opens is never drawn or reached: the button is. */
+.crewlet-file-drop__input {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-file-drop.is-target {
+    transition: none;
+  }
+}

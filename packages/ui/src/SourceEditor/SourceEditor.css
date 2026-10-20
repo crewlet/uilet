@@ -1,0 +1,160 @@
+/*
+ * Source text written in place: a gutter of line numbers beside a real
+ * textarea, and the marks a checker placed drawn behind the text. The gutter,
+ * the marks and the field share one font, one line height and one top inset,
+ * so a number and a mark always sit on the line they name; the layers follow
+ * the field's scroll by a transform.
+ *
+ * The BOX takes the focus ring, as the Composer's does.
+ */
+.crewlet-source-editor {
+  --crewlet-source-inset: var(--spacing-2);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-background);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-source-editor:hover {
+  border-color: var(--color-border-strong-hover);
+}
+
+.crewlet-source-editor:focus-within {
+  border-color: var(--color-brand-accent);
+  box-shadow: 0 0 0 2px var(--color-brand-accent-soft);
+}
+
+.crewlet-source-editor.is-fill {
+  height: 100%;
+}
+
+.crewlet-source-editor__gutter {
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+  user-select: none;
+}
+
+.crewlet-source-editor__numbers {
+  display: grid;
+  padding: var(--crewlet-source-inset) 0;
+  will-change: transform;
+}
+
+.crewlet-source-editor__number {
+  /* Wide enough for the longest number, so the text never shifts as lines are added. */
+  min-width: calc(var(--crewlet-source-digits, 2) * 1ch + var(--spacing-2) * 2);
+  padding: 0 var(--spacing-2);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-source-editor__number.is-danger {
+  color: var(--color-feedback-danger-ink);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: inset 2px 0 0 var(--color-feedback-danger-ink);
+}
+
+.crewlet-source-editor__number.is-warning {
+  color: var(--color-feedback-warning-ink);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: inset 2px 0 0 var(--color-feedback-warning-ink);
+}
+
+.crewlet-source-editor__body {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+
+.crewlet-source-editor__marks {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.crewlet-source-editor__marks > div {
+  position: relative;
+  will-change: transform;
+}
+
+.crewlet-source-editor__mark {
+  position: absolute;
+  top: calc(var(--crewlet-source-inset) + var(--crewlet-source-line) * 1lh);
+  left: 0;
+  right: 0;
+  height: 1lh;
+}
+
+.crewlet-source-editor__mark.is-danger {
+  background: var(--color-feedback-danger-soft);
+}
+
+.crewlet-source-editor__mark.is-warning {
+  background: var(--color-feedback-warning-soft);
+}
+
+.crewlet-source-editor .crewlet-source-editor__field {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: var(--crewlet-source-inset) var(--spacing-3);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  white-space: pre;
+  overflow: auto;
+  resize: none;
+  tab-size: 2;
+  caret-color: var(--color-brand-accent);
+}
+
+.crewlet-source-editor.is-fill .crewlet-source-editor__field {
+  height: 100%;
+}
+
+.crewlet-source-editor .crewlet-source-editor__field::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* The ring is the box's, above. A transparent outline stays, because forced
+   colors drops the box's shadow and paints an outline in its place. */
+.crewlet-source-editor .crewlet-source-editor__field:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+.crewlet-source-editor .crewlet-source-editor__field[readonly] {
+  color: var(--color-text-secondary);
+}
+
+@media (forced-colors: active) {
+  .crewlet-source-editor__mark {
+    background: Highlight;
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-source-editor {
+    transition: none;
+  }
+}

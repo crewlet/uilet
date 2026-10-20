@@ -204,6 +204,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.35.0
+
+**`SourceEditor` writes source text in place**: a real, monospaced textarea with a line gutter, and the lines a checker named (`marks`, each a `line`, a `tone` of `danger` or `warning`, and an optional `message` shown as the gutter number's tooltip) drawn in the gutter and behind the text. Lines never wrap, so a number and a mark always sit on their line. Tab and Shift+Tab indent and outdent the lines under the selection, Escape then Tab leaves the field (the field's description says so to a screen reader, as `SOURCE_EDITOR_KEYS`), Enter keeps the line's indent and Command+Enter (Control+Enter) calls `onSubmit`. A refusal on any line sets `aria-invalid`. The handle's `revealLine(n)` focuses the field with the caret at line `n`, scrolled into view; `fill` makes it take its parent's height.
+
+**`FileDrop` and `FilePickButton` bring files in.** `FileDrop` is a dashed target of its own (a `title`, a `hint` and `actions`) or, given children, a region that takes files dropped on it and shows a frosted overlay saying so only while files are held over it. Dropped folders are walked through the entries API, and every file is answered as a `PickedFile` (`path` with forward slashes, inside the folder it came from, and the `File`). A drag that carries no files (text moved inside an editor) passes through untouched. `FilePickButton` is the keyboard's and the screen reader's way in: a `Button` that opens the system picker, for files (`accept`, `multiple`) or a whole folder (`directory`). `droppedFiles` and `pickedFiles` are the readers, exported for a host with its own target.
+
 ## Changes in 0.34.1
 
 **`ArtifactKindGlyph`, `ARTIFACT_KINDS` and `ArtifactKind` have a module of their own** (`@crewlethq/ui/ArtifactKindGlyph`), and it imports nothing but the glyphs. They were defined in `ArtifactCard`'s module, and a bundler places a module whole, so a host that drew one kind glyph in its frame (a sidebar's pins, a command palette's hits) took the whole card into its first screen, and with 0.34.0 the kind illustrations the card draws: about 11 KB of script for a gallery the reader had not opened. Nothing is renamed: the root export and `@crewlethq/ui/ArtifactCard` still answer for all three, and `ArtifactIcon`, `ArtifactBar`, `DashboardCover` and `ArtifactKindIllustration` now import them from the new module.
