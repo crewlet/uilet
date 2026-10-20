@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { ArtifactKindGlyph } from '../ArtifactCard/index.js';
+import { ArtifactKindGlyph } from '../ArtifactKindGlyph/index.js';
 import { cx } from '../utils/cx.js';
 
 /** One headline figure a cover draws. */
