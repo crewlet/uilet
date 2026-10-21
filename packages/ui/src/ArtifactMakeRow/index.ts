@@ -1,3 +1,4 @@
+import '../HitArea/HitArea.css';
 import '../ArtifactKindIllustration/ArtifactKinds.css';
 import './ArtifactMakeRow.css';
 

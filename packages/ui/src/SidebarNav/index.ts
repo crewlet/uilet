@@ -1,3 +1,4 @@
+import '../HitArea/HitArea.css';
 import './SidebarNav.css';
 
 export { NavGroup, NavItem, SidebarNav } from './SidebarNav.js';

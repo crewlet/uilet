@@ -1,0 +1,35 @@
+/*
+ * A ROW'S TARGET RUNS TO ITS NEIGHBOUR'S. The rows of one list are drawn a
+ * step apart, and the gap between them belonged to no row: a pointer crossing
+ * the list slowly met the list itself there, so the hand turned into the arrow
+ * and the hover fill went out between every two rows and came back on the
+ * next, which a reader sees as the cursor flickering. Each row that carries
+ * this class reaches half the gap on each side with an empty `::after`, so the
+ * targets meet in the middle of every gap and the drawn rows keep their
+ * spacing. The pseudo-element is part of its row: it takes the row's cursor,
+ * makes the row `:hover`, and a press on it is a press on the row.
+ *
+ * The reach is set on the ROW, from the gap its list is laid out with, as
+ * `--crewlet-hit-area-block` and `--crewlet-hit-area-inline` (each side may be
+ * set alone with the `-start` and `-end` forms). A row that sets none reaches
+ * nowhere. It stays inside the list's own padding, so no scroller grows.
+ *
+ * IT IS MEASURED FROM THE ROW'S PADDING EDGE, which is where an absolutely
+ * placed box starts, so a row drawn with a border (a transparent one
+ * included) adds the border's width to its reach.
+ *
+ * `position: relative` is at zero specificity, so a row positioned on purpose
+ * keeps its own position and is still the pseudo-element's containing block.
+ */
+:where(.crewlet-hit-area) {
+  position: relative;
+}
+
+.crewlet-hit-area::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--crewlet-hit-area-block-start, var(--crewlet-hit-area-block, 0px)) * -1);
+  bottom: calc(var(--crewlet-hit-area-block-end, var(--crewlet-hit-area-block, 0px)) * -1);
+  inset-inline-start: calc(var(--crewlet-hit-area-inline-start, var(--crewlet-hit-area-inline, 0px)) * -1);
+  inset-inline-end: calc(var(--crewlet-hit-area-inline-end, var(--crewlet-hit-area-inline, 0px)) * -1);
+}

@@ -25,8 +25,10 @@
  * equal weight in a file that happens to come later takes them back.
  */
 .crewlet-tabs.crewlet-segmented--cards {
+  --crewlet-tabs-gap: var(--spacing-2);
+  --crewlet-tabs-row-gap: var(--spacing-2);
   display: grid;
-  gap: var(--spacing-2);
+  gap: var(--crewlet-tabs-gap);
   width: 100%;
   align-items: stretch;
 }
@@ -37,6 +39,9 @@
  * surface inside a panel of the same surface reads as a second panel.
  */
 .crewlet-segmented--cards .crewlet-segmented__option {
+  /* A card's 1px border is inside the reach (HitArea.css). */
+  --crewlet-hit-area-inline: calc(var(--crewlet-tabs-gap) / 2 + 1px);
+  --crewlet-hit-area-block: calc(var(--crewlet-tabs-row-gap) / 2 + 1px);
   justify-content: flex-start;
   text-align: left;
   /* A sentence under a name is a sentence: it wraps rather than being cut. */
@@ -81,7 +86,8 @@
   /* No gap between ROWS: each chip's target already overhangs its drawing by
      half a step above and below, so two rows' drawings stand a whole step
      apart while their targets meet. */
-  gap: 0 var(--spacing-1);
+  --crewlet-tabs-gap: var(--spacing-1);
+  gap: 0 var(--crewlet-tabs-gap);
 }
 
 /*
@@ -185,6 +191,7 @@
  * every option stays visible and inside the focus ring's room.
  */
 .crewlet-tabs--pill.crewlet-segmented {
+  --crewlet-tabs-row-gap: var(--crewlet-tabs-gap);
   flex-wrap: wrap;
   min-width: 0;
   max-width: 100%;

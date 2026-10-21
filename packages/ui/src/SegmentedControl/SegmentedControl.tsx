@@ -3,6 +3,7 @@ import { Count } from '../Count/index.js';
 import { tabId } from '../Tabs/index.js';
 import { tabStop, useRoving } from '../Tabs/roving.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 
 export type SegmentedSize = 'sm' | 'md';
@@ -279,6 +280,7 @@ export function SegmentedControl<T extends string = string>({
             className={cx(
               'crewlet-tabs__tab',
               'crewlet-segmented__option',
+              HIT_AREA_CLASS,
               chosen && 'is-active',
               option.disabled && 'is-disabled',
             )}

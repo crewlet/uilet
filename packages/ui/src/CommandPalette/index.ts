@@ -1,3 +1,4 @@
+import '../HitArea/HitArea.css';
 import './CommandPalette.css';
 
 export { CommandPalette } from './CommandPalette.js';

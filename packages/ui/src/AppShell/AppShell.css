@@ -146,10 +146,11 @@
 /* The same gutter the nav takes, so what the foot says lines up with the rows
    above it rather than sitting further out. */
 .crewlet-app-shell__rail-foot {
+  --crewlet-rail-foot-gap: var(--spacing-1);
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
+  gap: var(--crewlet-rail-foot-gap);
   padding: var(--spacing-2) var(--size-nav-gutter);
   border-top: 1px solid var(--color-border-default);
 }
@@ -209,6 +210,10 @@
 
 .crewlet-app-shell__rail-row--action,
 .crewlet-app-shell__rail-foot > .crewlet-btn {
+  /* Half the foot's gap to each neighbour, so the rows' targets meet
+     (HitArea.css), across the row's 1px border; the account row below
+     reaches back the same way. */
+  --crewlet-hit-area-block: calc(var(--crewlet-rail-foot-gap, 0px) / 2 + 1px);
   cursor: pointer;
   transition:
     background var(--motion-duration-fast) var(--motion-easing-default),
@@ -635,11 +640,12 @@
  * the controls off the rail.
  */
 .crewlet-account-row {
+  --crewlet-account-row-pad: var(--spacing-1);
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
   min-width: 0;
-  padding: var(--spacing-1) 0;
+  padding: var(--crewlet-account-row-pad) 0;
 }
 
 .crewlet-account-row__who {
@@ -654,6 +660,12 @@
   text-decoration: none;
   /* The fill eases under the pointer, as the rail's rows do. */
   transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* In the rail's foot, the account row reaches up across its own padding to
+   half the foot's gap, to meet the row above (HitArea.css). */
+.crewlet-app-shell__rail-foot .crewlet-account-row__who {
+  --crewlet-hit-area-block-start: calc(var(--crewlet-rail-foot-gap) / 2 + var(--crewlet-account-row-pad));
 }
 
 /* The row as the reader's menu button: a button drawn as the link is. */

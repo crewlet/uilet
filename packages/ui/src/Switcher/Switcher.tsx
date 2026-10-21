@@ -75,6 +75,7 @@ import { Skeleton } from '../Skeleton/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import { highlightMatch } from '../utils/highlight.js';
+import { returnFocus } from '../utils/focusModality.js';
 import { useMediaMatch } from '../MediaMatch/index.js';
 
 /** Where the panel opens. Derived, never asked for: see the component doc. */
@@ -223,7 +224,7 @@ export function Switcher({ label, open, onOpenChange, trigger, className, ...pan
 
   function done() {
     close();
-    if (place === 'anchored') document.getElementById(triggerId)?.focus();
+    if (place === 'anchored') returnFocus(document.getElementById(triggerId));
   }
 
   // ON TO WHAT FOLLOWS THE BUTTON, the stop Tab would have reached from it; or

@@ -28,9 +28,12 @@
  * old step, so the gap is paid for many times over by the row it sits beside.
  */
 .crewlet-nav-group {
+  --crewlet-nav-group-gap: calc(var(--spacing-1) / 2);
+  /* What a row reaches across (HitArea.css): its own list's gap. */
+  --crewlet-nav-row-gap: var(--crewlet-nav-group-gap);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--spacing-1) / 2);
+  gap: var(--crewlet-nav-group-gap);
   min-width: 0;
 }
 
@@ -175,6 +178,20 @@
   transition:
     background var(--motion-duration-fast) var(--motion-easing-default),
     color var(--motion-duration-fast) var(--motion-easing-default);
+  /* Half the gap to each neighbour, so the targets meet (HitArea.css). */
+  --crewlet-hit-area-block: calc(var(--crewlet-nav-row-gap, 0px) / 2);
+}
+
+/*
+ * AN OPEN ROW AND ITS FIRST NESTED ROW ABUT, with no gap between them to
+ * cross, so neither reaches into the other.
+ */
+.crewlet-nav-item:has(> .crewlet-nav-item__children:not([hidden])) > .crewlet-nav-item__head > .crewlet-nav-item__row {
+  --crewlet-hit-area-block-end: 0px;
+}
+
+.crewlet-nav-item__children > .crewlet-nav-item:first-child > .crewlet-nav-item__head > .crewlet-nav-item__row {
+  --crewlet-hit-area-block-start: 0px;
 }
 
 .crewlet-nav-item__row:hover {
@@ -386,9 +403,11 @@
  * rail keeps for the one count that asks the reader to act.
  */
 .crewlet-nav-item__children {
+  --crewlet-nav-children-gap: var(--spacing-1);
+  --crewlet-nav-row-gap: var(--crewlet-nav-children-gap);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
+  gap: var(--crewlet-nav-children-gap);
   margin-left: var(--size-nav-row-pad);
   padding-left: var(--spacing-2);
   border-left: 1px solid var(--color-border-default);

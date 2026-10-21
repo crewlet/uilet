@@ -9,6 +9,7 @@ import { Menu, type MenuEntry, type MenuItem } from '../Menu/index.js';
 import { SegmentedControl } from '../SegmentedControl/index.js';
 import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
+import { returnFocus } from '../utils/focusModality.js';
 
 /**
  * One control at the bar's end: a panel it opens, or an action it runs.
@@ -484,7 +485,7 @@ function BarTitle({
     settled.current = true;
     setEditing(false);
     setError(null);
-    if (refocus) requestAnimationFrame(() => button.current?.focus());
+    if (refocus) requestAnimationFrame(() => returnFocus(button.current));
   };
 
   const commit = async (refocus: boolean) => {

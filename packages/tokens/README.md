@@ -45,6 +45,10 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Changed in 0.37.1: focus handed back
+
+The baseline keeps the ring off an element marked `data-crewlet-focus-returned` (by `@crewlethq/ui`'s `returnFocus`) while the root says the last move was a pointer's (`data-crewlet-focus="pointer"`). A trigger focused again when its palette closes matched `:focus-visible` because the palette's field did, so a click and an Escape left it ringed. The outline turns transparent rather than going, so forced colors still paints one.
+
 ## Changed in 0.36.0: a chosen option's edge and fill
 
 Two tokens name what a CHOSEN option draws (the template, theme, agent or starting layout a reader picked, the slide being edited), so a page of options is calm and the focus ring is the only accent line on it.

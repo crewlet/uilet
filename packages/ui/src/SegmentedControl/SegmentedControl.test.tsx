@@ -529,7 +529,8 @@ test('a chip is drawn smaller than the target floor and hit at it, in the micro 
   expect(sheet).toContain('--crewlet-segmented-chip-height: calc(var(--size-target-min) - var(--spacing-1))');
   // Rows meet at their targets, so their drawings stand a whole step apart.
   const row = /\.crewlet-tabs\.crewlet-segmented--chips\s*\{([^}]*)\}/.exec(sheet)?.[1] ?? '';
-  expect(row).toContain('gap: 0 var(--spacing-1)');
+  expect(row).toContain('--crewlet-tabs-gap: var(--spacing-1)');
+  expect(row).toContain('gap: 0 var(--crewlet-tabs-gap)');
   uninstall();
 });
 

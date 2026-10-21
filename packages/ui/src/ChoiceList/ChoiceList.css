@@ -8,8 +8,10 @@
 .crewlet-choice-list {
   /* The platform's radio, sized here so a panel can line up with the text beside it. */
   --crewlet-choice-list-radio-size: 13px;
+  /* The step between two answers. Every row's pointer target reaches half of it. */
+  --crewlet-choice-list-gap: var(--spacing-1);
   display: grid;
-  gap: var(--spacing-1);
+  gap: var(--crewlet-choice-list-gap);
   padding: var(--spacing-1);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
@@ -22,21 +24,24 @@
 
 .crewlet-choice-list__group {
   display: grid;
-  gap: var(--spacing-1);
+  gap: var(--crewlet-choice-list-gap);
 }
 
 .crewlet-choice-list__item {
   display: grid;
-  gap: var(--spacing-1);
+  gap: var(--crewlet-choice-list-gap);
 }
 
 /* The "Something else" a list ends with, set apart by a dashed rule. */
 .crewlet-choice-list__item.is-separated {
-  padding-top: var(--spacing-1);
+  --crewlet-choice-list-rule-pad: var(--spacing-1);
+  padding-top: var(--crewlet-choice-list-rule-pad);
   border-top: 1px dashed var(--color-border-strong);
 }
 
 .crewlet-choice-list__row {
+  /* Half the step to each neighbour, so the targets meet (HitArea.css). */
+  --crewlet-hit-area-block: calc(var(--crewlet-choice-list-gap) / 2);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
@@ -45,6 +50,23 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/*
+ * THE ANSWER AFTER THE RULE reaches up across it, so the pointer leaving the
+ * row above lands on this one rather than on the rule: the dashed line sets
+ * the answer apart for the eye, and is no gap for the hand.
+ */
+.crewlet-choice-list__item.is-separated > .crewlet-choice-list__row {
+  --crewlet-hit-area-block-start: calc(var(--crewlet-choice-list-gap) / 2 + var(--crewlet-choice-list-rule-pad) + 1px);
+}
+
+/*
+ * A ROW WITH ITS PANEL OPEN reaches nothing downward: the panel is part of the
+ * answer and holds controls of its own, which the row must not cover.
+ */
+.crewlet-choice-list__item:has(> .crewlet-choice-list__panel) > .crewlet-choice-list__row {
+  --crewlet-hit-area-block-end: 0px;
 }
 
 /* A choice with a picture: the radio, the picture, the words, the tag. The

@@ -97,6 +97,7 @@ import {
 import { Button, type ButtonVariant } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { cx } from '../utils/cx.js';
+import { returnFocus } from '../utils/focusModality.js';
 
 export interface MenuItem {
   kind?: 'item';
@@ -247,7 +248,7 @@ export function Menu({
   const giveFocusBack = useCallback(() => {
     const back = opener.current;
     const target = back && back.isConnected && back !== document.body ? back : triggerRef.current;
-    target?.focus();
+    returnFocus(target);
   }, []);
 
   const close = useCallback(

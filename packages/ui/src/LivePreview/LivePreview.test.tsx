@@ -11,6 +11,9 @@
  * copied, and a live layer and a copy that are inert and unannounced.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { useEffect, type ReactNode } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -662,4 +665,13 @@ test('a contained layer is scaled to fit the box whole, and centred', () => {
   const k = 180 / 844;
   expect(layer.style.transform).toBe(`translate(${(320 - 390 * k) / 2}px, 0px) scale(${k})`);
   rect.mockRestore();
+});
+
+test('a still copy, and the live layer it is copied from, draw no scrollbar, since nothing in a picture scrolls', () => {
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'LivePreview.css'), 'utf8');
+  const scope = ':is(.crewlet-live-preview__live, .crewlet-live-preview__still) *';
+  const at = (selector: string) => css.indexOf(`${selector} {`);
+  expect(at(scope)).toBeGreaterThan(-1);
+  expect(css.slice(at(scope), css.indexOf('}', at(scope)))).toMatch(/scrollbar-width:\s*none/);
+  expect(css.slice(at(`${scope}::-webkit-scrollbar`))).toMatch(/^[^}]*display:\s*none;/);
 });

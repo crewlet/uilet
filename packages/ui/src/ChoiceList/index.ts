@@ -1,3 +1,4 @@
+import '../HitArea/HitArea.css';
 import './ChoiceList.css';
 
 export { ChoiceList } from './ChoiceList.js';

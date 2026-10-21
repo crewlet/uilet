@@ -1,6 +1,7 @@
 import React, { useImperativeHandle, useLayoutEffect, useRef, type ReactNode, type Ref } from 'react';
 import { Count } from '../Count/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 import { tabStop, useRoving } from './roving.js';
 
@@ -255,6 +256,7 @@ export function Tabs({
     const isActive = value !== undefined && value === item.value;
     const tabClassName = cx(
       'crewlet-tabs__tab',
+      HIT_AREA_CLASS,
       isActive && 'is-active',
       item.disabled && 'is-disabled',
     );

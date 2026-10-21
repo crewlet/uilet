@@ -24,8 +24,9 @@ import {
   type PlacementRect,
 } from '../Layer/index.js';
 import { useHighlightRest, useListbox, useOptionKeys } from '../Listbox/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
-import { useFocusModality } from '../utils/focusModality.js';
+import { returnFocus, useFocusModality } from '../utils/focusModality.js';
 
 export type SelectValue = string | number;
 export type SelectSize = 'sm' | 'md';
@@ -546,10 +547,10 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
    */
   const tickAtEnd = useMemo(() => flat.some((option) => option.leading !== undefined), [flat]);
 
-  const close = useCallback((returnFocus: boolean) => {
+  const close = useCallback((restore: boolean) => {
     setOpen(false);
     setQuery('');
-    if (returnFocus) trigger.current?.focus();
+    if (restore) returnFocus(trigger.current);
   }, []);
 
   const commit = useCallback(
@@ -945,6 +946,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
           className={cx(
             'crewlet-listbox__option',
             'crewlet-select__option',
+            HIT_AREA_CLASS,
             selected && 'is-selected',
             highlighted && 'is-highlight',
             option.disabled && 'is-disabled',

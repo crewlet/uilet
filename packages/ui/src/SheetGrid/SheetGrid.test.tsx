@@ -624,6 +624,31 @@ describe('audit fixes', () => {
     expect(rule).toMatch(/min-height:\s*min\(var\(--crewlet-sheet-min-height, 0px\), var\(--crewlet-sheet-content-height, 0px\)\);/);
   });
 
+  test('fit="content" makes room for a horizontal scrollbar, so a sheet that scrolls sideways does not also scroll down', () => {
+    // A platform that draws its scrollbars in the layout: the scroller's
+    // outer box is 17px taller than the room inside it, past its hairlines.
+    const scrollerOnly = (value: number) =>
+      function (this: HTMLElement) {
+        return this.classList.contains('crewlet-sheet-grid__scroller') ? value : 0;
+      };
+    const outer = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(scrollerOnly(117));
+    const inner = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(scrollerOnly(100));
+    const { container } = render(<Host fit="content" />);
+    const scroller = container.querySelector<HTMLElement>('.crewlet-sheet-grid__scroller')!;
+    expect(scroller.style.height).toBe(`${32 + 3 * 32 + 2 + 17}px`);
+    outer.mockRestore();
+    inner.mockRestore();
+  });
+
+  test('with Add column, the grid grows into the room the control leaves rather than a width assumed for it', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+    const rule = /\.crewlet-sheet-grid__scroller--add-column > \.crewlet-sheet-grid__grid\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/flex:\s*1 0 auto;/);
+    // A floor of 100% less the control's assumed width overflowed the
+    // scroller by however much wider the control drew.
+    expect(rule).not.toMatch(/calc\(100%/);
+  });
+
   test('the last column takes the slack, so no empty strip sits beside it (A16)', () => {
     render(<Host />);
     const template = grid().style.getPropertyValue('--crewlet-sheet-columns');
@@ -864,6 +889,15 @@ describe('column settings', () => {
     expect(document.getElementById(grid().getAttribute('aria-describedby') ?? '')?.textContent).toContain('opens the settings of that column');
     const result = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(result.violations.map((v) => v.id)).toEqual([]);
+  });
+
+  test('Add column is a small square inset in a track sized from it, not a track narrower than the square', () => {
+    render(<Shaping />);
+    expect(screen.getByRole('button', { name: 'Add column' }).className).toContain('crewlet-icon-btn--sm');
+    const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+    const width = /--crewlet-sheet-add-column-width:\s*([^;]+);/.exec(sheet)?.[1] ?? '';
+    // The track is the square (--size-control-sm) plus an inset on each side.
+    expect(width).toMatch(/^calc\(var\(--size-control-sm\) \+ 2 \* var\(--spacing-\d+\)\)$/);
   });
 
   test('a read-only grid offers neither settings nor Add column', () => {

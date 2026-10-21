@@ -76,7 +76,7 @@
 }
 
 /* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
-:root[data-crewlet-focus='pointer'] .crewlet-select:focus-within {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-select:focus-within {
   outline-width: 1px;
   outline-color: var(--color-border-selected);
 }
@@ -139,7 +139,7 @@
   outline-color: var(--color-feedback-danger);
 }
 
-:root[data-crewlet-focus='pointer'] .crewlet-select.is-error:focus-within {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-select.is-error:focus-within {
   outline-color: var(--color-feedback-danger);
 }
 
@@ -286,9 +286,10 @@ svg.crewlet-select__chevron {
 }
 
 .crewlet-select__group {
+  --crewlet-listbox-gap: 1px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--crewlet-listbox-gap);
 }
 
 .crewlet-select__option {
@@ -441,7 +442,7 @@ svg.crewlet-select__chevron {
 }
 
 /* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
-:root[data-crewlet-focus='pointer'] .crewlet-select__search:focus-within {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-select__search:focus-within {
   outline-width: 1px;
   outline-color: var(--color-border-selected);
 }

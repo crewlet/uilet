@@ -77,7 +77,7 @@
 }
 
 /* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
-:root[data-crewlet-focus='pointer'] .crewlet-tags-input__box:focus-visible {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-tags-input__box:focus-visible {
   outline-width: 1px;
   outline-color: var(--color-border-selected);
 }

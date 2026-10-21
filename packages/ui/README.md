@@ -204,6 +204,30 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.37.1
+
+### Sheets
+
+**`SheetGrid`'s Add column fits the header's end.** Its track was the 24px pointer-target floor, narrower than the small icon button it holds (26px at the normal density, more at comfortable), so the square filled the track edge to edge and pushed it wider. The track is now the button's square plus a 4px inset on each side, at every density, and the plus is drawn at the button's own glyph size.
+
+**`SheetGrid` with Add column no longer scrolls sideways by a few pixels.** The grid was held to the scroller's width less an assumed width for the Add column control, so it overflowed by however much wider the control drew (2px at the default density), and the platform drew a horizontal scrollbar under a sheet with room to spare. The grid now grows into whatever room the control leaves.
+
+**`fit="content"` makes room for a horizontal scrollbar.** Sized exactly to its rows, a sheet wider than its box lost the scrollbar's height to it wherever the platform draws scrollbars in the layout, and scrolled down by that much as well. The grid measures the bar and adds its height, so a wide, short sheet scrolls sideways only.
+
+**A `LivePreview` still copy draws no scrollbar,** and nor does the live layer it is copied from. A copy of a box that scrolled (a sheet wider than its card) is a picture of its first view, and its scrollbar sat across the card as a stray band; with none in the live layer either, a sheet there leaves no room for one under its rows.
+
+### Focus
+
+**Focus handed back after a pointer press draws no ring.** A trigger focused again when its palette, menu, listbox or popover closes matched `:focus-visible`, because the field inside always did, so a palette opened with a click and closed with Escape left the sidebar's search box ringed. `returnFocus(el)` (exported with `FOCUS_RETURNED_ATTRIBUTE`) focuses the element and marks it until it blurs, and the base stylesheet in `@crewlethq/tokens` keeps the ring off a marked element while the modality is the pointer's. A key pressed afterwards brings it back. The modal stack, `Menu`, `Popover`, `Select`, `Switcher`, `Canvas`'s zoom field and `ArtifactBar`'s rename all hand focus back through it.
+
+**A shortcut outside a field is the keyboard** (`trackFocusModality`). Cmd+K or Ctrl+K opens the palette, so closing it with Escape rings whatever focus returns to. Inside a field a shortcut is still neither, since it is copy, paste or undo.
+
+**The palette's search field draws no ring under the pointer either.** Every field's pointer narrowing now matches the modality inside `:where()`, so it narrows a ring and never outranks a variant's own. Matched bare, it beat `Input`'s command variant and drew a square accent hairline round the palette's borderless field.
+
+### Hit areas
+
+**The rows of a list meet at their targets.** A list draws its rows a step apart, and the gap between two rows used to belong to no row: a pointer crossing a list slowly met the list itself there, so the hand turned into the arrow and the hover fill went out between every two rows and came back on the next, which reads as the cursor flickering. Measured on the sheet create page's "Start from" list, a slow pass down it switched the cursor 14 times and crossed six dead strips of 4px; it now switches twice, on entering and leaving. Each row reaches half the gap on each side with an empty `::after`, so the drawn spacing is unchanged and the targets meet in the middle of the gap. The reach is `HIT_AREA_CLASS` (`HitArea.css`), set on the row from the gap its list is laid out with as `--crewlet-hit-area-block` and `--crewlet-hit-area-inline`, measured from the row's padding edge. `ChoiceList` (with the answer after a dashed rule reaching up across it, and a row with its panel open reaching nothing downward), `SidebarNav`'s rows and nested rows, the rail foot's `AppShellRailRow` and `AccountRow`, `ArtifactMakeRow`'s tray, `Tabs` in every variant, `SegmentedControl`, `Select`'s and `Combobox`'s options, `DatasetSourceList`'s entries and the command palette's scopes take it. A list of an application's own takes it the same way (Foundations / Hit areas). No scroller grows: the reach stays inside each list's padding, and a scrolling row of tabs reaches nothing past its first and last tab.
+
 ## Changes in 0.37.0
 
 ### An artifact list with an identity
