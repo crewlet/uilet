@@ -866,6 +866,15 @@ describe('column settings', () => {
     expect(result.violations.map((v) => v.id)).toEqual([]);
   });
 
+  test('Add column is a small square inset in a track sized from it, not a track narrower than the square', () => {
+    render(<Shaping />);
+    expect(screen.getByRole('button', { name: 'Add column' }).className).toContain('crewlet-icon-btn--sm');
+    const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SheetGrid.css'), 'utf8');
+    const width = /--crewlet-sheet-add-column-width:\s*([^;]+);/.exec(sheet)?.[1] ?? '';
+    // The track is the square (--size-control-sm) plus an inset on each side.
+    expect(width).toMatch(/^calc\(var\(--size-control-sm\) \+ 2 \* var\(--spacing-\d+\)\)$/);
+  });
+
   test('a read-only grid offers neither settings nor Add column', () => {
     render(<Host mode="read" renderColumnEditor={() => null} onAddColumn={() => {}} />);
     fireEvent.click(header('Score'));

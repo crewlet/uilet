@@ -204,6 +204,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.38.0
+
+### Sheets
+
+**`SheetGrid`'s Add column fits the header's end.** Its track was the 24px pointer-target floor, narrower than the small icon button it holds (26px at the normal density, more at comfortable), so the square filled the track edge to edge and pushed it wider. The track is now the button's square plus a 4px inset on each side, at every density, and the plus is drawn at the button's own glyph size.
+
 ## Changes in 0.37.0
 
 ### An artifact list with an identity

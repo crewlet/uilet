@@ -1207,7 +1207,7 @@ export function SheetGrid({
           // own tab stop after the grid's.
           <div className="crewlet-sheet-grid__add-column" style={{ height: `${headerHeight}px` }}>
             <Tooltip content={labels.addColumn}>
-              <IconButton label={labels.addColumn} icon={<PlusGlyph />} size="sm" title="" onClick={onAddColumn} />
+              <IconButton label={labels.addColumn} icon={<PlusGlyph size="xs" />} size="sm" title="" onClick={onAddColumn} />
             </Tooltip>
           </div>
         ) : null}

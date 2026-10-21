@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { SheetColumnEditor, SheetGrid, SheetPendingEdits, type SheetColumn, type SheetEdit, type SheetRow, type SheetSort } from '@crewlethq/ui';
+import { density } from '@crewlethq/tokens';
 import { SHEET_COLUMNS, SHEET_PEOPLE, SHEET_PRESENCE, SHEET_ROWS, manyRows } from '../fixtures/sheet.js';
 
 const meta: Meta<typeof SheetGrid> = {
@@ -380,6 +381,24 @@ function ShapingSheet() {
 }
 
 export const ShapeColumns: Story = { render: () => <ShapingSheet /> };
+
+/**
+ * Add column at all three densities. Its track is the small control's square
+ * plus an inset on each side, so the square sits inside the header's end
+ * with room around it rather than filling it edge to edge.
+ */
+export const AddColumnEveryDensity: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)' }}>
+      {(['compact', 'normal', 'comfortable'] as const).map((step) => (
+        <div key={step} style={{ ['--density' as string]: density[step] }}>
+          <div style={{ marginBottom: 'var(--spacing-2)' }}>{step}</div>
+          <ShapingSheet />
+        </div>
+      ))}
+    </div>
+  ),
+};
 
 /** The settings panel on its own, for a column of each kind of setting: a status with its categories. */
 export const ColumnSettings: Story = {
