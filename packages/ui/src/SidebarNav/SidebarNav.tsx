@@ -28,6 +28,7 @@
 
 import { useId, useState, type MouseEventHandler, type ReactNode } from 'react';
 import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { KeyChip } from '../KeyChip/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -309,7 +310,7 @@ export function NavItem({
     </>
   );
 
-  const rowClass = 'crewlet-nav-item__row';
+  const rowClass = cx('crewlet-nav-item__row', HIT_AREA_CLASS);
   let row: ReactNode;
   if (inert) {
     /*

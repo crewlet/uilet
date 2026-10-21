@@ -1,3 +1,4 @@
+import '../HitArea/HitArea.css';
 import './Select.css';
 
 export { Select } from './Select.js';

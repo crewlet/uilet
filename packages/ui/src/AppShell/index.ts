@@ -1,3 +1,4 @@
+import '../HitArea/HitArea.css';
 import './AppShell.css';
 
 export { AppShell, AppShellRail, AppShellRailRow, AppShellToggle, AppShellTopbar, useAppShell } from './AppShell.js';

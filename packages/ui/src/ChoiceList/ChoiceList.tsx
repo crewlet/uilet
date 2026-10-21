@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 
 /** One choice in a [ChoiceList]. */
@@ -62,7 +63,7 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
           const checked = option.value === value;
           return (
             <div key={option.value} className={cx('crewlet-choice-list__item', option.separated && 'is-separated')}>
-              <label className={cx('crewlet-choice-list__row', option.media != null && 'has-media', checked && 'is-checked')} htmlFor={id}>
+              <label className={cx('crewlet-choice-list__row', HIT_AREA_CLASS, option.media != null && 'has-media', checked && 'is-checked')} htmlFor={id}>
                 <input
                   id={id}
                   type="radio"

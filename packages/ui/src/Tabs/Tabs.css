@@ -28,8 +28,9 @@
  * row is reachable by the arrow keys either way.
  */
 .crewlet-tabs--underline {
+  --crewlet-tabs-gap: var(--spacing-2);
   display: flex;
-  gap: var(--spacing-2);
+  gap: var(--crewlet-tabs-gap);
   border-bottom: 1px solid var(--color-border-default);
   position: relative;
   width: 100%;
@@ -103,8 +104,9 @@
  */
 .crewlet-tabs--pill {
   --crewlet-tabs-pill-inset: 1px;
+  --crewlet-tabs-gap: var(--crewlet-tabs-pill-inset);
 
-  gap: var(--crewlet-tabs-pill-inset);
+  gap: var(--crewlet-tabs-gap);
   padding: var(--crewlet-tabs-pill-inset);
   background: var(--color-surface-elevated);
   border: 1px solid var(--color-border-default);
@@ -165,6 +167,20 @@
     background-color var(--motion-duration-fast) var(--motion-easing-default),
     color var(--motion-duration-fast) var(--motion-easing-default),
     box-shadow var(--motion-duration-fast) var(--motion-easing-default);
+  /* Half the gap to each neighbour, so the targets meet (HitArea.css). A row
+     that wraps reaches across its rows' gap too. */
+  --crewlet-hit-area-inline: calc(var(--crewlet-tabs-gap, 0px) / 2);
+  --crewlet-hit-area-block: calc(var(--crewlet-tabs-row-gap, 0px) / 2);
+}
+
+/* The row's two ends reach nothing past it: the underline row is a scroller,
+   and a target past its last tab would be width it scrolls by. */
+.crewlet-tabs__tab:first-child {
+  --crewlet-hit-area-inline-start: 0px;
+}
+
+.crewlet-tabs__tab:last-child {
+  --crewlet-hit-area-inline-end: 0px;
 }
 
 /*
@@ -311,9 +327,10 @@
  * (FilterChip draws the same pair).
  */
 .crewlet-tabs--chip {
+  --crewlet-tabs-gap: calc(var(--spacing-1) / 2);
   display: inline-flex;
   align-items: center;
-  gap: calc(var(--spacing-1) / 2);
+  gap: var(--crewlet-tabs-gap);
 }
 
 .crewlet-tabs--chip .crewlet-tabs__tab {

@@ -204,6 +204,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Unreleased
+
+### Hit areas
+
+**The rows of a list meet at their targets.** A list draws its rows a step apart, and the gap between two rows used to belong to no row: a pointer crossing a list slowly met the list itself there, so the hand turned into the arrow and the hover fill went out between every two rows and came back on the next, which reads as the cursor flickering. Measured on the sheet create page's "Start from" list, a slow pass down it switched the cursor 14 times and crossed six dead strips of 4px; it now switches twice, on entering and leaving. Each row reaches half the gap on each side with an empty `::after`, so the drawn spacing is unchanged and the targets meet in the middle of the gap. The reach is `HIT_AREA_CLASS` (`HitArea.css`), set on the row from the gap its list is laid out with as `--crewlet-hit-area-block` and `--crewlet-hit-area-inline`, measured from the row's padding edge. `ChoiceList` (with the answer after a dashed rule reaching up across it, and a row with its panel open reaching nothing downward), `SidebarNav`'s rows and nested rows, the rail foot's `AppShellRailRow` and `AccountRow`, `ArtifactMakeRow`'s tray, `Tabs` in every variant, `SegmentedControl`, `Select`'s and `Combobox`'s options, `DatasetSourceList`'s entries and the command palette's scopes take it. A list of an application's own takes it the same way (Foundations / Hit areas). No scroller grows: the reach stays inside each list's padding, and a scrolling row of tabs reaches nothing past its first and last tab.
+
 ## Changes in 0.37.0
 
 ### An artifact list with an identity

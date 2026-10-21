@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Input, type InputProps } from '../Input/index.js';
 import { useListbox } from '../Listbox/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 
 export interface ComboboxOption {
@@ -222,6 +223,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
                     aria-disabled={option.disabled || undefined}
                     className={cx(
                       'crewlet-listbox__option',
+                      HIT_AREA_CLASS,
                       index === listbox.active && 'is-highlight',
                       option.disabled && 'is-disabled',
                     )}

@@ -2,6 +2,7 @@ import { Children, isValidElement, useId, type HTMLAttributes, type ReactNode } 
 import { ClockGlyph } from '@crewlethq/icons/glyphs';
 import { RelativeTime, type TimeValue } from '../RelativeTime/index.js';
 import { Tag } from '../Tag/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import type { DatasetStatus } from '../WidgetFrame/index.js';
@@ -188,7 +189,12 @@ export function DatasetSource({
       aria-busy={status === 'loading' || undefined}
     >
       {onSelect ? (
-        <button type="button" className="crewlet-dataset-source__summary" aria-pressed={selected} onClick={onSelect}>
+        <button
+          type="button"
+          className={cx('crewlet-dataset-source__summary', HIT_AREA_CLASS)}
+          aria-pressed={selected}
+          onClick={onSelect}
+        >
           {summary}
         </button>
       ) : (

@@ -58,6 +58,7 @@ import { breakpoint } from '@crewlethq/tokens';
 import { ChevronUpGlyph, MenuGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { focusables, useModalLayer } from '../Layer/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
 import { useMediaMatch } from '../MediaMatch/index.js';
@@ -598,7 +599,7 @@ export const AppShellRailRow = forwardRef<HTMLElement, AppShellRailRowProps>(fun
     <button
       ref={ref as Ref<HTMLButtonElement>}
       type="button"
-      className={cx(shape, 'crewlet-app-shell__rail-row--action')}
+      className={cx(shape, 'crewlet-app-shell__rail-row--action', HIT_AREA_CLASS)}
       aria-label={label}
       aria-expanded={expanded}
       aria-haspopup={haspopup}

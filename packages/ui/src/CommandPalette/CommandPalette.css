@@ -163,10 +163,11 @@
  * draw and no slider to measure, and the bar is each tab's own edge.
  */
 .crewlet-palette__scopes {
+  --crewlet-palette-scope-gap: var(--spacing-4);
   flex-shrink: 0;
   display: flex;
   align-items: stretch;
-  gap: var(--spacing-4);
+  gap: var(--crewlet-palette-scope-gap);
   min-height: var(--size-row-md);
   padding-inline: var(--spacing-4);
   border-bottom: 1px solid var(--color-border-default);
@@ -195,6 +196,9 @@
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
   cursor: pointer;
+  /* Half the gap to each neighbour, so the scopes' targets meet (HitArea.css).
+     The row's own inline padding holds the reach at either end. */
+  --crewlet-hit-area-inline: calc(var(--crewlet-palette-scope-gap) / 2);
 }
 
 .crewlet-palette__scope:hover,

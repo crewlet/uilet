@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -95,7 +96,7 @@ function MakeItem({ item }: { item: ArtifactMakeRowItem }) {
           aria-disabled="true"
           aria-describedby={disabledReason ? reasonId : describedBy}
           title={disabledReason}
-          className="crewlet-make-row__item crewlet-make-row__item--disabled"
+          className={cx('crewlet-make-row__item', 'crewlet-make-row__item--disabled', HIT_AREA_CLASS)}
         >
           {body}
         </span>
@@ -104,7 +105,7 @@ function MakeItem({ item }: { item: ArtifactMakeRowItem }) {
     );
   }
   return (
-    <a href={href} aria-label={label} aria-describedby={describedBy} className="crewlet-make-row__item">
+    <a href={href} aria-label={label} aria-describedby={describedBy} className={cx('crewlet-make-row__item', HIT_AREA_CLASS)}>
       {body}
     </a>
   );

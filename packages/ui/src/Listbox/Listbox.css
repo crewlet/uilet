@@ -72,6 +72,9 @@
   cursor: pointer;
   /* A row is chosen by the arrows as often as by the pointer, so the highlight
      lands with no transition: a fade would lag a held arrow key. */
+  /* Where a list sets its rows apart, each row's target reaches half the gap
+     (HitArea.css), so the pointer never falls between two of them. */
+  --crewlet-hit-area-block: calc(var(--crewlet-listbox-gap, 0px) / 2);
 }
 
 /*

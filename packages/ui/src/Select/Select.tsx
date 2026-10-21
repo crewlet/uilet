@@ -24,6 +24,7 @@ import {
   type PlacementRect,
 } from '../Layer/index.js';
 import { useHighlightRest, useListbox, useOptionKeys } from '../Listbox/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 import { useFocusModality } from '../utils/focusModality.js';
 
@@ -945,6 +946,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
           className={cx(
             'crewlet-listbox__option',
             'crewlet-select__option',
+            HIT_AREA_CLASS,
             selected && 'is-selected',
             highlighted && 'is-highlight',
             option.disabled && 'is-disabled',

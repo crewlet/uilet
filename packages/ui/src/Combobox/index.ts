@@ -1,3 +1,4 @@
+import '../HitArea/HitArea.css';
 import './Combobox.css';
 
 export { Combobox } from './Combobox.js';
