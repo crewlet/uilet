@@ -1,3 +1,4 @@
+import '../HitArea/HitArea.css';
 import './DatasetSource.css';
 
 export { DATASET_SOURCE_KINDS, DatasetSource, DatasetSourceList } from './DatasetSource.js';

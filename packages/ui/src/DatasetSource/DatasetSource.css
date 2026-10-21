@@ -33,6 +33,20 @@
 
 button.crewlet-dataset-source__summary {
   cursor: pointer;
+  /* Half the list's gap to each neighbour, so the entries' targets meet
+     (HitArea.css), across the entry's 1px boundary and the summary's own. */
+  --crewlet-hit-area-block: calc(var(--crewlet-dataset-source-list-gap, 0px) / 2 + 2px);
+}
+
+/* The list has no padding, so its first and last entries reach nothing past
+   it; and an open entry's preview holds controls the summary must not cover. */
+.crewlet-dataset-source-list__item:first-child button.crewlet-dataset-source__summary {
+  --crewlet-hit-area-block-start: 0px;
+}
+
+.crewlet-dataset-source-list__item:last-child button.crewlet-dataset-source__summary,
+.crewlet-dataset-source--open > button.crewlet-dataset-source__summary {
+  --crewlet-hit-area-block-end: 0px;
 }
 
 button.crewlet-dataset-source__summary:hover {
@@ -158,9 +172,10 @@ button.crewlet-dataset-source__summary:focus-visible {
 }
 
 .crewlet-dataset-source-list {
+  --crewlet-dataset-source-list-gap: var(--spacing-1);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-1);
+  gap: var(--crewlet-dataset-source-list-gap);
   margin: 0;
   padding: 0;
   list-style: none;

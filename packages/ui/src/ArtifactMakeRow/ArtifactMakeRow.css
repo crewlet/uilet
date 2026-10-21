@@ -26,9 +26,10 @@
 }
 
 .crewlet-make-row__list {
+  --crewlet-make-row-gap: var(--spacing-1);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--spacing-1);
+  gap: var(--crewlet-make-row-gap);
   margin: 0;
   padding: var(--spacing-1);
   list-style: none;
@@ -53,6 +54,10 @@
   color: var(--color-text-primary);
   text-decoration: none;
   outline: none;
+  /* Half the gap to each neighbour, so the targets meet (HitArea.css), and
+     the 1px border the reach is measured inside of. */
+  --crewlet-hit-area-block: calc(var(--crewlet-make-row-gap) / 2 + 1px);
+  --crewlet-hit-area-inline: calc(var(--crewlet-make-row-gap) / 2 + 1px);
   transition:
     background-color var(--motion-duration-fast) var(--motion-easing-out),
     border-color var(--motion-duration-fast) var(--motion-easing-out),

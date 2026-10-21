@@ -7,6 +7,7 @@ import { isComposing } from '../Layer/stack.js';
 import { useHighlightRest, useListbox } from '../Listbox/index.js';
 import { Modal } from '../Modal/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 
 export interface CommandPaletteItem {
@@ -452,7 +453,7 @@ function Palette({
                 type="button"
                 role="tab"
                 id={tabId(candidate.id)}
-                className={cx('crewlet-palette__scope', selected && 'is-active')}
+                className={cx('crewlet-palette__scope', HIT_AREA_CLASS, selected && 'is-active')}
                 aria-selected={selected}
                 aria-controls={panelId}
                 // Never a stop: the field drives the row (see the doc above).

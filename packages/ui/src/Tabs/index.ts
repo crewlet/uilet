@@ -1,3 +1,4 @@
+import '../HitArea/HitArea.css';
 import './Tabs.css';
 
 export { TabPanel, Tabs, tabId } from './Tabs.js';

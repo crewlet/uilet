@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ChevronRightGlyph, ChevronsUpDownGlyph } from '@crewlethq/icons/glyphs';
 import { Menu, type MenuEntry } from '../Menu/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
 
 /** The menu the row opens (`AccountRowProps.menu`). */
@@ -108,7 +109,7 @@ export function AccountRow({
           renderTrigger={(trigger) => (
             <button
               type="button"
-              className="crewlet-account-row__who"
+              className={cx('crewlet-account-row__who', HIT_AREA_CLASS)}
               title={title}
               // WHERE THE READER IS: a button carries no `aria-current`, so the
               // account page's lift is drawn from this.
@@ -125,7 +126,7 @@ export function AccountRow({
         <span className="crewlet-account-row__who">{who}</span>
       ) : (
         <a
-          className="crewlet-account-row__who"
+          className={cx('crewlet-account-row__who', HIT_AREA_CLASS)}
           href={href}
           title={title}
           aria-current={current ? 'page' : undefined}

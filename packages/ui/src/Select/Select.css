@@ -286,9 +286,10 @@ svg.crewlet-select__chevron {
 }
 
 .crewlet-select__group {
+  --crewlet-listbox-gap: 1px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--crewlet-listbox-gap);
 }
 
 .crewlet-select__option {

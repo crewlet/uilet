@@ -24,9 +24,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--spacing-1);
+  --crewlet-listbox-gap: 1px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--crewlet-listbox-gap);
   /*
    * OPAQUE, and the product's own panel surface: a translucent list over a
    * form puts two sets of words in the same place, and the words underneath

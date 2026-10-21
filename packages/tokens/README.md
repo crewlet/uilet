@@ -45,7 +45,7 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
-## Unreleased: focus handed back
+## Changed in 0.37.1: focus handed back
 
 The baseline keeps the ring off an element marked `data-crewlet-focus-returned` (by `@crewlethq/ui`'s `returnFocus`) while the root says the last move was a pointer's (`data-crewlet-focus="pointer"`). A trigger focused again when its palette closes matched `:focus-visible` because the palette's field did, so a click and an Escape left it ringed. The outline turns transparent rather than going, so forced colors still paints one.
 
