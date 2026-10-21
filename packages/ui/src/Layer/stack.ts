@@ -63,6 +63,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { zIndex } from '@crewlethq/tokens';
+import { returnFocus } from '../utils/focusModality.js';
 
 export type LayerKind = 'modal' | 'popup';
 
@@ -461,8 +462,7 @@ export function useModalLayer({ onClose, dismissable = true, initialFocus }: Mod
       // there left focus on the body.
       for (const el of back) {
         if (!(el instanceof HTMLElement) || !el.isConnected || el === document.body) continue;
-        el.focus();
-        if (document.activeElement === el) return;
+        if (returnFocus(el)) return;
       }
     };
   }, [back]);

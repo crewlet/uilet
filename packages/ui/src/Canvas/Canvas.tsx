@@ -100,6 +100,7 @@ import { IconButton } from '../IconButton/index.js';
 import { ShortcutTip } from './ShortcutTip.js';
 import { LAYER_REPOSITION_EVENT, LayerHost } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
+import { returnFocus } from '../utils/focusModality.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { LayerNodeBridge } from './layerNode.js';
 import {
@@ -1117,7 +1118,7 @@ function ZoomReadout({
     }
     if (!returning.current) return;
     returning.current = false;
-    button.current?.focus();
+    returnFocus(button.current);
   }, [typing]);
 
   const close = (apply: boolean) => {

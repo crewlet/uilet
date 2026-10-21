@@ -24,7 +24,10 @@ import { useLayoutEffect } from 'react';
  * focus is NOT in a text-entry control (Enter on a link, the arrows in a
  * radio group, Escape out of a menu), because those keys move focus. Typing
  * inside a field does not, or the ring would widen under every character a
- * reader typed into a field they clicked. A modifier on its own is neither.
+ * reader typed into a field they clicked. A modifier on its own is neither. A
+ * shortcut (Cmd or Ctrl with a key) is the keyboard outside a field, since it
+ * opens a palette or a dialog whose focus goes back on Escape, and neither
+ * inside one, where it is copy, paste or undo.
  *
  * One listener set per document however many fields mount, counted, and taken
  * down when the last one unmounts.
@@ -69,7 +72,7 @@ export function trackFocusModality(doc: Document = document): () => void {
       if (root.getAttribute(FOCUS_MODALITY_ATTRIBUTE) !== modality) root.setAttribute(FOCUS_MODALITY_ATTRIBUTE, modality);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (MODIFIERS.has(event.key) || event.metaKey || event.ctrlKey) return;
+      if (MODIFIERS.has(event.key)) return;
       if (event.key === 'Tab' || !isTextEntry(event.target)) set('keyboard');
     };
     const onPointer = () => set('pointer');
@@ -102,4 +105,29 @@ export function trackFocusModality(doc: Document = document): () => void {
 /** Track the modality for as long as the calling component is mounted. */
 export function useFocusModality(): void {
   useLayoutEffect(() => trackFocusModality(), []);
+}
+
+export const FOCUS_RETURNED_ATTRIBUTE = 'data-crewlet-focus-returned';
+
+/**
+ * Hand focus back to `el` (the trigger a surface opened from, the button an
+ * inline editor replaced) and report whether it took it.
+ *
+ * A focus moved by script after a text field matches `:focus-visible`, since
+ * the field always did. So a palette opened with a click and closed with
+ * Escape left its trigger ringed as if it had been tabbed to. The element is
+ * marked until it blurs, and the base stylesheet draws no ring on a marked
+ * element while the modality is the pointer's. A key pressed afterwards makes
+ * it the keyboard's, and the ring shows.
+ */
+export function returnFocus(el: HTMLElement | null | undefined, options?: FocusOptions): boolean {
+  if (!el) return false;
+  const clear = () => el.removeAttribute(FOCUS_RETURNED_ATTRIBUTE);
+  el.setAttribute(FOCUS_RETURNED_ATTRIBUTE, '');
+  el.addEventListener('blur', clear, { once: true });
+  el.focus(options);
+  if (el.ownerDocument.activeElement === el) return true;
+  el.removeEventListener('blur', clear);
+  clear();
+  return false;
 }

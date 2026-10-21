@@ -124,8 +124,13 @@
  * round it before anybody had touched a key. A refused field keeps its own
  * colour under a pointer too (below). A document that tracks nothing keeps
  * the keyboard's ring.
+ *
+ * The modality is matched inside :where(), here and in every field's narrowing
+ * rule, so it narrows a ring and never outranks a variant's own: at the
+ * attribute's specificity it beat `.crewlet-input--command`, and the palette's
+ * borderless search field drew a square accent hairline round its text.
  */
-:root[data-crewlet-focus='pointer'] .crewlet-input:has(.crewlet-input__control:focus-visible) {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-input:has(.crewlet-input__control:focus-visible) {
   outline-width: 1px;
   outline-color: var(--color-border-selected);
 }
@@ -150,7 +155,7 @@
   outline-color: var(--color-feedback-danger);
 }
 
-:root[data-crewlet-focus='pointer'] .crewlet-input.is-error:has(.crewlet-input__control:focus-visible) {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-input.is-error:has(.crewlet-input__control:focus-visible) {
   outline-color: var(--color-feedback-danger);
 }
 
@@ -395,7 +400,7 @@
 }
 
 /* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
-:root[data-crewlet-focus='pointer'] .crewlet-textarea:focus-visible {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-textarea:focus-visible {
   outline-width: 1px;
   outline-color: var(--color-border-selected);
 }
@@ -408,7 +413,7 @@
   outline-color: var(--color-feedback-danger);
 }
 
-:root[data-crewlet-focus='pointer'] .crewlet-textarea.is-error:focus-visible {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-textarea.is-error:focus-visible {
   outline-color: var(--color-feedback-danger);
 }
 

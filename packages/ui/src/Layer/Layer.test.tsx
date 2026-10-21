@@ -20,6 +20,7 @@ import {
   useModalLayer,
   usePopupLayer,
 } from './index.js';
+import { FOCUS_RETURNED_ATTRIBUTE } from '../utils/focusModality.js';
 
 afterEach(cleanup);
 
@@ -344,6 +345,37 @@ test('focus returns to the opener even when a field in the dialog took autoFocus
 
   press('Escape');
   expect(document.activeElement).toBe(opener);
+});
+
+test('focus handed back to the opener is marked, so a pointer reader sees no ring on it', () => {
+  /*
+   * The opener matches :focus-visible when it gets focus back, because the
+   * field it got it from always did: a palette opened with a click and closed
+   * with Escape left its trigger ringed. The mark is what the base stylesheet
+   * keeps that ring off by while the last move was a pointer's.
+   */
+  function Opener() {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <button onClick={() => setOpen(true)}>Search</button>
+        {open && (
+          <Dialog title="Search" onClose={() => setOpen(false)}>
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the case under test */}
+            <input aria-label="Query" autoFocus />
+          </Dialog>
+        )}
+      </>
+    );
+  }
+  render(<Opener />);
+  const opener = screen.getByRole('button', { name: 'Search' });
+  opener.focus();
+  fireEvent.click(opener);
+  expect(opener.hasAttribute(FOCUS_RETURNED_ATTRIBUTE)).toBe(false);
+  press('Escape');
+  expect(document.activeElement).toBe(opener);
+  expect(opener.hasAttribute(FOCUS_RETURNED_ATTRIBUTE)).toBe(true);
 });
 
 test('a modal opened as the modal around its opener closes returns focus where that one would have', () => {

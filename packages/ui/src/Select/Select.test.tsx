@@ -19,6 +19,7 @@ import { act } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { HIGHLIGHT_REST_MS } from '../Listbox/index.js';
 import { Modal } from '../Modal/index.js';
+import { FOCUS_RETURNED_ATTRIBUTE } from '../utils/focusModality.js';
 import { Select, type SelectOption, type SelectProps, type SelectValue } from './Select.js';
 
 afterEach(cleanup);
@@ -108,6 +109,7 @@ test('Enter takes the highlighted row, closes the list and gives focus back', ()
   expect(chosen()).toBe('sre');
   expect(screen.queryByRole('listbox')).toBeNull();
   expect(document.activeElement).toBe(trigger());
+  expect(trigger().hasAttribute(FOCUS_RETURNED_ATTRIBUTE)).toBe(true);
 });
 
 test('Tab leaves the field and takes the list with it, choosing nothing', () => {

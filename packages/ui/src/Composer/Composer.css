@@ -27,7 +27,7 @@
   outline-offset: -1px;
 }
 
-:root[data-crewlet-focus='pointer'] .crewlet-composer:has(.crewlet-composer__field:focus-visible) {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-composer:has(.crewlet-composer__field:focus-visible) {
   outline-width: 1px;
   outline-color: var(--color-border-selected);
 }

@@ -25,6 +25,7 @@ import {
   type PlacementRect,
 } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
+import { returnFocus } from '../utils/focusModality.js';
 
 export type PopoverAlign = 'start' | 'end';
 export type PopoverSide = 'top' | 'bottom';
@@ -197,7 +198,7 @@ export function Popover({
       // otherwise: pulling focus back after a press somewhere else would take
       // it off whatever was just pressed.
       const held = panel.current?.contains(document.activeElement) ?? false;
-      if (reason === 'escape' || reason === 'tab' || (reason === 'content' && held)) anchor.current?.focus();
+      if (reason === 'escape' || reason === 'tab' || (reason === 'content' && held)) returnFocus(anchor.current);
       setOpen(false, reason);
     },
     [setOpen],
