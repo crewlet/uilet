@@ -344,6 +344,9 @@ export function SheetGrid({
   const [rowHeight, setRowHeight] = useState(SHEET_ROW_HEIGHT);
   const [headerHeight, setHeaderHeight] = useState(SHEET_ROW_HEIGHT);
   const [viewport, setViewport] = useState(0);
+  // The height a horizontal scrollbar takes from the scroller (0 where the
+  // platform draws its scrollbars over the content, or none is shown).
+  const [crossbar, setCrossbar] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
   const [scrolledAcross, setScrolledAcross] = useState(false);
   const [active, setActive] = useState<ActiveCell | null>(null);
@@ -384,6 +387,12 @@ export function SheetGrid({
       if (head > 0) setHeaderHeight(head);
       setViewport(scroller.current?.clientHeight ?? 0);
       setViewportWidth(scroller.current?.clientWidth ?? 0);
+      const box = scroller.current;
+      if (box) {
+        const edges = getComputedStyle(box);
+        const bar = box.offsetHeight - box.clientHeight - (parseFloat(edges.borderTopWidth) || 0) - (parseFloat(edges.borderBottomWidth) || 0);
+        setCrossbar(Math.max(0, Math.round(bar)));
+      }
     };
     measure();
     if (typeof ResizeObserver !== 'function') return undefined;
@@ -891,9 +900,11 @@ export function SheetGrid({
     width: `${totalWidth}px`,
   } as CSSProperties;
 
-  // Content height: the header, every row, and the scroller's own two
-  // hairlines, so the last row's bottom edge is the scroller's.
-  const contentHeight = headerHeight + rows.length * rowHeight + 2;
+  // Content height: the header, every row, the scroller's own two hairlines,
+  // and a horizontal scrollbar where one takes room, so the last row's bottom
+  // edge is the scroller's. Without the bar's room, a sheet that only scrolls
+  // sideways lost the bar's height to it and scrolled down by that much too.
+  const contentHeight = headerHeight + rows.length * rowHeight + 2 + crossbar;
   const scrollerStyle: CSSProperties | undefined =
     fit === 'content'
       ? ({

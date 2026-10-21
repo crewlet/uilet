@@ -204,11 +204,17 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.38.0
+## Changes in 0.37.1
 
 ### Sheets
 
 **`SheetGrid`'s Add column fits the header's end.** Its track was the 24px pointer-target floor, narrower than the small icon button it holds (26px at the normal density, more at comfortable), so the square filled the track edge to edge and pushed it wider. The track is now the button's square plus a 4px inset on each side, at every density, and the plus is drawn at the button's own glyph size.
+
+**`SheetGrid` with Add column no longer scrolls sideways by a few pixels.** The grid was held to the scroller's width less an assumed width for the Add column control, so it overflowed by however much wider the control drew (2px at the default density), and the platform drew a horizontal scrollbar under a sheet with room to spare. The grid now grows into whatever room the control leaves.
+
+**`fit="content"` makes room for a horizontal scrollbar.** Sized exactly to its rows, a sheet wider than its box lost the scrollbar's height to it wherever the platform draws scrollbars in the layout, and scrolled down by that much as well. The grid measures the bar and adds its height, so a wide, short sheet scrolls sideways only.
+
+**A `LivePreview` still copy draws no scrollbar,** and nor does the live layer it is copied from. A copy of a box that scrolled (a sheet wider than its card) is a picture of its first view, and its scrollbar sat across the card as a stray band; with none in the live layer either, a sheet there leaves no room for one under its rows.
 
 ## Changes in 0.37.0
 
