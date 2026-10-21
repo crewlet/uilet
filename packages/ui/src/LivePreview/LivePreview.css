@@ -52,6 +52,19 @@
   transition: none !important;
 }
 
+/* NOR DOES ANYTHING IN IT SCROLL: a copy of a box that scrolled (a sheet
+   wider than the card, a long list) is a picture of its first view, so it
+   draws no scrollbar. Shown, the bar sat across the card as a stray band.
+   The live layer it is copied from draws none either, so what is laid out
+   there (a sheet's room for a bar included) is what the copy shows. */
+:is(.crewlet-live-preview__live, .crewlet-live-preview__still) * {
+  scrollbar-width: none !important;
+}
+
+:is(.crewlet-live-preview__live, .crewlet-live-preview__still) *::-webkit-scrollbar {
+  display: none;
+}
+
 /* THE LIVE LAYER renders out of sight: content that is copied is never seen
    live, only its copy is. A frame's page is kept rather than copied, so a
    framed preview's live layer is what fades in once it has drawn. */

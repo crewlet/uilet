@@ -159,6 +159,25 @@ export const FitsItsColumn: Story = {
 };
 
 /**
+ * Scrolls only where it overflows: three rows of every column type in a box
+ * narrower than the columns scroll sideways, and not down, even where the
+ * platform's scrollbar takes room in the layout; the short, narrow sheet
+ * beside it, with Add column, scrolls neither way.
+ */
+export const ScrollsOnlyWhereItOverflows: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ width: 480 }}>
+        <LiveSheet start={SHEET_ROWS.slice(0, 3)} fit="content" height={480} />
+      </div>
+      <div style={{ width: 640 }}>
+        <ShapingSheet />
+      </div>
+    </div>
+  ),
+};
+
+/**
  * A remote write landing on the cell being edited. Press Enter on Globex's
  * Score to edit it: two seconds later Maya changes it to 6.5, and the editor
  * stays open and names her.

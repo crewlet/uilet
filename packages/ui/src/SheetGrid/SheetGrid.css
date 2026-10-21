@@ -449,7 +449,10 @@
 /* ADD COLUMN stands beside the header row, outside the grid's roles: the
    scroller lays the grid and the control side by side, the grid's last track
    still takes the slack up to the control, and the control sticks to the top
-   with the header while the rows scroll under it. */
+   with the header while the rows scroll under it. THE GRID GROWS INTO
+   WHATEVER THE CONTROL LEAVES rather than into a width assumed for it: held
+   to 100% less an assumed width, it overflowed by the difference whenever
+   the control drew wider, and the sheet scrolled sideways by a few pixels. */
 .crewlet-sheet-grid__scroller--add-column {
   --crewlet-sheet-add-column-width: var(--size-target-min);
   display: flex;
@@ -457,8 +460,8 @@
 }
 
 .crewlet-sheet-grid__scroller--add-column > .crewlet-sheet-grid__grid {
-  flex: 0 0 auto;
-  min-width: calc(100% - var(--crewlet-sheet-add-column-width));
+  flex: 1 0 auto;
+  min-width: 0;
 }
 
 .crewlet-sheet-grid__add-column {
