@@ -37,7 +37,7 @@
   outline-offset: -1px;
 }
 
-:root[data-crewlet-focus='pointer'] .crewlet-source-editor:has(.crewlet-source-editor__field:focus-visible) {
+:where(:root[data-crewlet-focus='pointer']) .crewlet-source-editor:has(.crewlet-source-editor__field:focus-visible) {
   outline-width: 1px;
   outline-color: var(--color-border-selected);
 }

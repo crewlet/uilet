@@ -25,7 +25,7 @@ import {
 } from '../Layer/index.js';
 import { useHighlightRest, useListbox, useOptionKeys } from '../Listbox/index.js';
 import { cx } from '../utils/cx.js';
-import { useFocusModality } from '../utils/focusModality.js';
+import { returnFocus, useFocusModality } from '../utils/focusModality.js';
 
 export type SelectValue = string | number;
 export type SelectSize = 'sm' | 'md';
@@ -546,10 +546,10 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
    */
   const tickAtEnd = useMemo(() => flat.some((option) => option.leading !== undefined), [flat]);
 
-  const close = useCallback((returnFocus: boolean) => {
+  const close = useCallback((restore: boolean) => {
     setOpen(false);
     setQuery('');
-    if (returnFocus) trigger.current?.focus();
+    if (restore) returnFocus(trigger.current);
   }, []);
 
   const commit = useCallback(

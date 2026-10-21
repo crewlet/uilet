@@ -356,6 +356,16 @@ describe('the document baseline', () => {
     assert.doesNotMatch(base, /:focus-visible\s*\{[^}]*outline:\s*none/);
   });
 
+  test('focus handed back after a pointer press draws no ring, and keeps its outline', () => {
+    // A trigger focused again when its palette closes matches :focus-visible
+    // because the palette's field did. Under the pointer it is quiet; the
+    // outline turns transparent rather than going, so forced colors paints it.
+    assert.match(
+      base,
+      /:root\[data-crewlet-focus='pointer'\] \[data-crewlet-focus-returned\]:focus-visible\s*\{\s*outline-color: transparent;\s*\}/,
+    );
+  });
+
   test('it honours a reduced-motion preference', () => {
     assert.match(base, /@media \(prefers-reduced-motion: reduce\)/);
   });

@@ -1,7 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState, type ReactNode } from 'react';
 import type { ThemeId } from '@crewlethq/tokens';
-import { ArtifactKindTile, Card, ChoiceList, Composer, DocumentTitleField, Input, LayersList, ThemeGallery } from '@crewlethq/ui';
+import {
+  ArtifactKindTile,
+  Card,
+  ChoiceList,
+  CommandPalette,
+  Composer,
+  DocumentTitleField,
+  Input,
+  LayersList,
+  SearchTrigger,
+  ThemeGallery,
+} from '@crewlethq/ui';
 
 /**
  * Foundations / Selection and focus.
@@ -19,6 +30,10 @@ import { ArtifactKindTile, Card, ChoiceList, Composer, DocumentTitleField, Input
  *   where a pointer put the caret, as the page tracks with
  *   `trackFocusModality` (every field starts it). Press Tab into the fields
  *   below, then click into them, to see both.
+ * - FOCUS HANDED BACK (a trigger after its palette closes) is marked by
+ *   `returnFocus` and draws no ring while the last move was a pointer's.
+ *   Click the search box, then press Escape: no ring. Tab to it, press Enter,
+ *   then Escape: the ring is back.
  */
 const meta: Meta = {
   title: 'Foundations/Selection and focus',
@@ -51,6 +66,8 @@ export const Overview: StoryObj = {
     const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
     const [title, setTitle] = useState('');
     const [brief, setBrief] = useState('');
+    const [searching, setSearching] = useState(false);
+    const [query, setQuery] = useState('');
     return (
       <div style={{ display: 'grid', gap: 'var(--spacing-8)' }}>
         <Section
@@ -97,6 +114,20 @@ export const Overview: StoryObj = {
           <DocumentTitleField aria-label="Title" placeholder="Untitled" value={title} onChange={(event) => setTitle(event.target.value)} />
           <Input aria-label="Search" placeholder="Search the boards" />
           <Composer label="Brief" value={brief} onChange={setBrief} onSubmit={() => {}} placeholder="What should it show?" />
+        </Section>
+        <Section
+          title="Focus handed back"
+          note="Closing the palette returns focus to the box that opened it. Opened with a click it shows no ring; opened from the keyboard it does."
+        >
+          <SearchTrigger label="Ask or jump to…" onClick={() => setSearching(true)} />
+          <CommandPalette
+            open={searching}
+            onClose={() => setSearching(false)}
+            query={query}
+            onQueryChange={setQuery}
+            groups={[]}
+            placeholder="Search, or ask a question"
+          />
         </Section>
       </div>
     );

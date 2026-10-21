@@ -14,5 +14,11 @@ export { NODE_HUES, NODE_HUE_NAMES, isNodeHue } from './nodeHue.js';
 export type { NodeHue } from './nodeHue.js';
 export { HeadingLevelProvider, headingTag, nextHeadingLevel, useHeadingLevel } from './headingLevel.js';
 export type { HeadingLevel, HeadingLevelProviderProps } from './headingLevel.js';
-export { FOCUS_MODALITY_ATTRIBUTE, trackFocusModality, useFocusModality } from './focusModality.js';
+export {
+  FOCUS_MODALITY_ATTRIBUTE,
+  FOCUS_RETURNED_ATTRIBUTE,
+  returnFocus,
+  trackFocusModality,
+  useFocusModality,
+} from './focusModality.js';
 export type { FocusModality } from './focusModality.js';

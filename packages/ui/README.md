@@ -204,6 +204,16 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Unreleased
+
+### Focus
+
+**Focus handed back after a pointer press draws no ring.** A trigger focused again when its palette, menu, listbox or popover closes matched `:focus-visible`, because the field inside always did, so a palette opened with a click and closed with Escape left the sidebar's search box ringed. `returnFocus(el)` (exported with `FOCUS_RETURNED_ATTRIBUTE`) focuses the element and marks it until it blurs, and the base stylesheet in `@crewlethq/tokens` keeps the ring off a marked element while the modality is the pointer's. A key pressed afterwards brings it back. The modal stack, `Menu`, `Popover`, `Select`, `Switcher`, `Canvas`'s zoom field and `ArtifactBar`'s rename all hand focus back through it.
+
+**A shortcut outside a field is the keyboard** (`trackFocusModality`). Cmd+K or Ctrl+K opens the palette, so closing it with Escape rings whatever focus returns to. Inside a field a shortcut is still neither, since it is copy, paste or undo.
+
+**The palette's search field draws no ring under the pointer either.** Every field's pointer narrowing now matches the modality inside `:where()`, so it narrows a ring and never outranks a variant's own. Matched bare, it beat `Input`'s command variant and drew a square accent hairline round the palette's borderless field.
+
 ## Changes in 0.37.0
 
 ### An artifact list with an identity

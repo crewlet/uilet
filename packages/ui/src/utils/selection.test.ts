@@ -108,13 +108,13 @@ test('every component that draws a chosen option keeps a 2px focus ring for the 
 test('a title being written underlines in a tint for a pointer and in two focus pixels for the keyboard', () => {
   const doc = rulesOf('Document/Document.css');
   expect(doc.get('.crewlet-document-title-field:focus-visible')).toMatch(/border-block-end-color:\s*var\(--color-focus\); box-shadow: 0 1px 0 var\(--color-focus\)/);
-  expect(doc.get(":root[data-crewlet-focus='pointer'] .crewlet-document-title-field:focus-visible")).toMatch(
+  expect(doc.get(":where(:root[data-crewlet-focus='pointer']) .crewlet-document-title-field:focus-visible")).toMatch(
     /border-block-end-color:\s*var\(--color-border-selected\); box-shadow: none/,
   );
   // The composer's box rings as a field does, and draws no halo any more.
   const composer = rulesOf('Composer/Composer.css');
   expect(composer.get('.crewlet-composer:has(.crewlet-composer__field:focus-visible)')).toBe('outline: 2px solid var(--color-focus); outline-offset: -1px;');
-  expect(composer.get(":root[data-crewlet-focus='pointer'] .crewlet-composer:has(.crewlet-composer__field:focus-visible)")).toBe(
+  expect(composer.get(":where(:root[data-crewlet-focus='pointer']) .crewlet-composer:has(.crewlet-composer__field:focus-visible)")).toBe(
     'outline-width: 1px; outline-color: var(--color-border-selected);',
   );
   expect([...composer.values()].join(' ')).not.toMatch(/--color-brand-accent-soft/);
@@ -142,7 +142,7 @@ test("a list's radio is drawn, an empty ring until it is chosen, and the platfor
 test('the source editor rings as a field does, and draws no halo', () => {
   const editor = rulesOf('SourceEditor/SourceEditor.css');
   expect(editor.get('.crewlet-source-editor:has(.crewlet-source-editor__field:focus-visible)')).toBe('outline: 2px solid var(--color-focus); outline-offset: -1px;');
-  expect(editor.get(":root[data-crewlet-focus='pointer'] .crewlet-source-editor:has(.crewlet-source-editor__field:focus-visible)")).toBe(
+  expect(editor.get(":where(:root[data-crewlet-focus='pointer']) .crewlet-source-editor:has(.crewlet-source-editor__field:focus-visible)")).toBe(
     'outline-width: 1px; outline-color: var(--color-border-selected);',
   );
   expect([...editor.values()].join(' ')).not.toMatch(/--color-brand-accent-soft/);

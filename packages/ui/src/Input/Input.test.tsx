@@ -383,11 +383,11 @@ test('one element draws the ring, and it is the one a reader reads as the field'
    * So a new entry here is the question "is this drawn inside another ring?"
    * being asked, which is the only thing that stops the answer being two.
    */
-  // A pointer's narrowing (`:root[data-crewlet-focus='pointer'] …`) restyles
+  // A pointer's narrowing (`:where(:root[data-crewlet-focus='pointer']) …`) restyles
   // a ring listed here and draws none of its own, so it is not counted: the
   // test above holds every one of them to that.
   const ringed = focusRules()
-    .filter((rule) => !rule.selector.startsWith(':root'))
+    .filter((rule) => !rule.selector.startsWith(':where(:root'))
     .filter((rule) => rule.declared.has('outline') || rule.declared.has('outline-color'))
     .map((rule) => rule.selector)
     .sort();
@@ -496,8 +496,12 @@ test('a boxed ring narrows to a tinted hairline where a pointer put the caret, a
    *
    * A REFUSED FIELD KEEPS ITS COLOUR under a pointer too, by a rule of its
    * own that says nothing but the danger colour.
+   *
+   * THE MODALITY IS MATCHED INSIDE :where(), so a narrowing never outranks a
+   * variant's own ring. Matched bare, it beat `.crewlet-input--command` and
+   * drew a square accent hairline round the palette's borderless field.
    */
-  const pointer = ":root[data-crewlet-focus='pointer'] ";
+  const pointer = ":where(:root[data-crewlet-focus='pointer']) ";
   const under = sheetRules().filter((rule) => rule.selector.startsWith(pointer));
   const strip = (rule: RingRule) =>
     rule.selector
@@ -590,7 +594,7 @@ test('every field rings on one geometry, and a boxed one rings on its own bounda
    * same place, so "here" and "refused" stay one edge rather than two.
    */
   const refused = focusRules()
-    .filter((rule) => rule.selector.includes('.is-error') && !rule.selector.startsWith(':root'))
+    .filter((rule) => rule.selector.includes('.is-error') && !rule.selector.startsWith(':where(:root'))
     .map((rule) => `${rule.selector} | ${rule.declared.get('outline-color')}`)
     .sort();
   expect(refused).toEqual(

@@ -1,6 +1,12 @@
 import { afterEach, expect, test } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { FOCUS_MODALITY_ATTRIBUTE, trackFocusModality, useFocusModality } from './focusModality.js';
+import {
+  FOCUS_MODALITY_ATTRIBUTE,
+  FOCUS_RETURNED_ATTRIBUTE,
+  returnFocus,
+  trackFocusModality,
+  useFocusModality,
+} from './focusModality.js';
 
 const modality = () => document.documentElement.getAttribute(FOCUS_MODALITY_ATTRIBUTE);
 
@@ -32,11 +38,19 @@ test('typing in a field is not the keyboard moving focus, but a key elsewhere is
   );
   fireEvent.keyDown(textarea!, { key: 'a' });
   fireEvent.keyDown(editable!, { key: 'Enter' });
+  // A shortcut inside a field is copy, paste or undo.
+  fireEvent.keyDown(textarea!, { key: 'v', metaKey: true });
+  fireEvent.keyDown(textarea!, { key: 'z', ctrlKey: true });
   expect(modality()).toBe('pointer');
-  // A modifier on its own, and a shortcut, are neither.
+  // A modifier on its own is neither.
   fireEvent.keyDown(button!, { key: 'Shift' });
-  fireEvent.keyDown(button!, { key: 'k', metaKey: true });
+  fireEvent.keyDown(button!, { key: 'Meta', metaKey: true });
   expect(modality()).toBe('pointer');
+  // A shortcut outside a field is the keyboard: Cmd+K opens the palette, and
+  // focus goes back on Escape to wherever the reader was, ringed.
+  fireEvent.keyDown(button!, { key: 'k', metaKey: true });
+  expect(modality()).toBe('keyboard');
+  fireEvent.pointerDown(document.body);
   // Space on a checkbox and Enter on a button move nothing, but they are the
   // keyboard: what they open next may focus a field.
   fireEvent.keyDown(checkbox!, { key: ' ' });
@@ -76,4 +90,24 @@ test('a component tracks for as long as it is mounted', () => {
   expect(modality()).toBe('keyboard');
   unmount();
   expect(modality()).toBeNull();
+});
+
+test('focus handed back is marked until it leaves, and a refusal leaves no mark', () => {
+  /*
+   * A trigger focused again when its palette closes matches :focus-visible,
+   * because the palette's field always did. The mark is what lets the base
+   * stylesheet keep that ring off under the pointer.
+   */
+  document.body.innerHTML = '<button>Open</button><button>Other</button><button disabled>Off</button>';
+  const [open, other, off] = [...document.querySelectorAll('button')];
+  expect(returnFocus(open)).toBe(true);
+  expect(document.activeElement).toBe(open);
+  expect(open!.hasAttribute(FOCUS_RETURNED_ATTRIBUTE)).toBe(true);
+  // Focus that leaves takes the mark with it, so a later Tab back rings.
+  other!.focus();
+  expect(open!.hasAttribute(FOCUS_RETURNED_ATTRIBUTE)).toBe(false);
+  // An element that cannot take focus is reported, and not left marked.
+  expect(returnFocus(off)).toBe(false);
+  expect(off!.hasAttribute(FOCUS_RETURNED_ATTRIBUTE)).toBe(false);
+  expect(returnFocus(null)).toBe(false);
 });

@@ -149,6 +149,16 @@ img {
   border-radius: var(--radius-xs);
 }
 
+/* Focus handed back by script (a trigger after its palette or menu closes,
+   marked by @crewlethq/ui's returnFocus) draws no ring while the last move
+   was a pointer's. The browser rings it because the field it left always
+   matched :focus-visible, so a palette opened with a click and closed with
+   Escape left its trigger ringed. The outline stays, transparent, so forced
+   colors still paints one. */
+:root[data-crewlet-focus='pointer'] [data-crewlet-focus-returned]:focus-visible {
+  outline-color: transparent;
+}
+
 ::selection {
   background: var(--color-brand-accent-soft);
 }

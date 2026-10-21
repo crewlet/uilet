@@ -14,6 +14,7 @@ import { useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { ChevronDownGlyph, FolderInputGlyph, PencilGlyph } from '@crewlethq/icons/glyphs';
 import { LAYER_REPOSITION_EVENT, LayerHost, useModalLayer } from '../Layer/index.js';
+import { FOCUS_RETURNED_ATTRIBUTE } from '../utils/focusModality.js';
 import { Menu, type MenuEntry } from './index.js';
 
 afterEach(cleanup);
@@ -264,6 +265,8 @@ test('Escape closes the menu and returns focus to the trigger, even inside a dia
   press('Escape');
   expect(screen.queryByRole('menu')).toBeNull();
   expect(document.activeElement).toBe(trigger());
+  // Marked as focus handed back, which keeps a pointer reader's ring off it.
+  expect(trigger().hasAttribute(FOCUS_RETURNED_ATTRIBUTE)).toBe(true);
   expect(closed).not.toHaveBeenCalled();
 });
 
