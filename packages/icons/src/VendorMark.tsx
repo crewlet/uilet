@@ -22,6 +22,13 @@
  * spill past the tilted edges, and painting the surface behind it would put a
  * vendor's colour on a card.
  *
+ * CREWLET ITSELF IS ONE OF THEM, for the services built into it (its own
+ * tracker, its knowledge base) that a catalogue lists beside the third-party
+ * apps they stand in for. Its drawing is the brand mark the package already
+ * carries (svg/crewlet-icon.svg, compiled as CrewletIcon), never a second
+ * copy, so the mark on a catalogue tile is the mark everywhere else, and it
+ * takes the same size and the same muted state as every vendor beside it.
+ *
  * The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram and Microsoft
  * Teams drawings are Simple Icons' renderings (CC0 1.0). Using a mark to name
  * the app it belongs to is nominative use; TRADEMARKS.md says what that does
@@ -33,12 +40,14 @@ import type { ComponentType, SVGProps } from 'react';
 import './VendorMark.css';
 import type { GlyphSize } from './Glyph.js';
 import { cssLength } from './Glyph.js';
+import CrewletIcon from './generated/CrewletIcon.js';
 import * as marks from './generated/vendors/index.js';
 
-/** The apps this package carries a mark for. */
+/** The apps this package carries a mark for, Crewlet's own services among them. */
 export const VENDORS = [
   'atlassian',
   'clickup',
+  'crewlet',
   'datadog',
   'discord',
   'figma',
@@ -69,6 +78,7 @@ export interface VendorMarkProps extends Omit<SVGProps<SVGSVGElement>, 'title'> 
 const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   atlassian: marks.Atlassian,
   clickup: marks.Clickup,
+  crewlet: CrewletIcon,
   datadog: marks.Datadog,
   discord: marks.Discord,
   figma: marks.Figma,

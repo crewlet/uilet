@@ -72,7 +72,7 @@ import { VendorMark } from '@crewlethq/icons';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `vendor` | `Vendor`: `'atlassian' \| 'clickup' \| 'datadog' \| 'discord' \| 'figma' \| 'github' \| 'gitlab' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'slack' \| 'telegram'` | required | Which mark. |
+| `vendor` | `Vendor`: `'atlassian' \| 'clickup' \| 'crewlet' \| 'datadog' \| 'discord' \| 'figma' \| 'github' \| 'gitlab' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'slack' \| 'telegram'` | required | Which mark. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `muted` | boolean | `false` | Drains the colour, for an application that is available but not connected. |
@@ -80,6 +80,8 @@ import { VendorMark } from '@crewlethq/icons';
 **This is the one place the design system draws somebody else's colours.** Colour here carries state and never identity, and a third-party application's mark is the deliberate exception: identity is exactly what a mark is for, and a recoloured Slack mark is not Slack's. No hue in `svg/vendor/` is a token, nothing reads state from a mark, and a mark appears only beside the name of the application it belongs to.
 
 GitHub's and Notion's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: both publish one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
+
+**`crewlet` is Crewlet's own mark**, for the services built into it (its tracker, its knowledge base) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
 
 A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is drawn to fit the square `size` and centred in it, at the aspect ratio the vendor draws.
 

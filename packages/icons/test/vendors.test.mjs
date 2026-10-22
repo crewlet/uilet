@@ -14,16 +14,27 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { VENDORS, VendorMark } from '../dist/index.js';
+import { CrewletIcon, VENDORS, VendorMark } from '../dist/index.js';
 import { PACKAGE, attribute, render } from './support.mjs';
 
 describe('the vendor list', () => {
-  it('is exactly the drawings the package carries', async () => {
+  it('is exactly the drawings the package carries, and Crewlet', async () => {
     const files = (await readdir(resolve(PACKAGE, 'svg/vendor')))
       .filter((file) => file.endsWith('.svg'))
       .map((file) => file.slice(0, -'.svg'.length))
       .sort();
-    assert.deepEqual([...VENDORS].sort(), files);
+    assert.deepEqual(VENDORS.filter((vendor) => vendor !== 'crewlet').sort(), files);
+  });
+
+  it("draws Crewlet's own services with the brand mark, never a second copy of it", () => {
+    // The built-in services stand beside the apps they replace, and their
+    // mark is the one the product is known by: the same paths as CrewletIcon,
+    // so a change to the brand mark reaches the catalogue too.
+    const paths = (markup) => [...markup.matchAll(/\sd="([^"]+)"/g)].map((match) => match[1]);
+    const mark = render(VendorMark, { vendor: 'crewlet' });
+    assert.deepEqual(paths(mark), paths(render(CrewletIcon, {})));
+    assert.ok(paths(mark).length > 0);
+    assert.match(attribute(render(VendorMark, { vendor: 'crewlet', muted: true }), 'class'), /--muted/);
   });
 
   it('gives each vendor its own drawing', () => {
@@ -79,7 +90,13 @@ describe('a vendor mark', () => {
      * a mark quietly joining this list is a mark that has lost them.
      */
     const monochrome = ['github', 'notion'];
-    const inherited = VENDORS.filter((vendor) => attribute(render(VendorMark, { vendor }), 'fill') === 'currentColor');
+    // Monochrome is the current text colour AND no colour of the mark's own
+    // beneath it: Crewlet's drawing is rooted in currentColor, as every
+    // illustration is, and paints its brand violet on the group inside.
+    const inherited = VENDORS.filter((vendor) => {
+      const markup = render(VendorMark, { vendor });
+      return attribute(markup, 'fill') === 'currentColor' && !/fill="#/.test(markup);
+    });
     assert.deepEqual([...inherited].sort(), monochrome);
   });
 
