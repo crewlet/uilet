@@ -156,6 +156,68 @@
 }
 
 /*
+ * THE HEAD'S STATUS, at the end of the name's line (`AppShell.RailStatus`):
+ * the application's state as a dot and a count, its words in its name and
+ * title. It ends on the nav's gutter, where every row's background ends, and
+ * it reserves the width of a dot and a two-figure count, so the name beside
+ * it truncates at one place whether the engine is healthy or has alarms.
+ */
+.crewlet-app-shell__rail-status {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: calc(var(--size-target-min) * 2 + var(--spacing-1));
+  margin-inline-end: var(--size-nav-gutter);
+}
+
+/* A lockup beside a status gives up its end inset: the head's gap parts the
+   two, and the inset is what kept a lockup alone on its line off the edge. */
+.crewlet-app-shell__rail-head:has(> .crewlet-app-shell__rail-status) > .crewlet-brand {
+  padding-inline-end: 0;
+}
+
+/* The dot and the count on one compact target: the 24px floor each way. */
+.crewlet-app-shell__rail-status-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--spacing-1) + var(--spacing-1) / 2);
+  min-width: var(--size-target-min);
+  min-height: var(--size-target-min);
+  margin: 0;
+  padding: 0 var(--spacing-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+}
+
+.crewlet-app-shell__rail-status-icon,
+.crewlet-app-shell__rail-status-trailing {
+  display: inline-flex;
+  align-items: center;
+}
+
+.crewlet-app-shell__rail-status-mark--action {
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* Open is pointed at, as the foot's row draws it: the lift stays while the panel is open. */
+.crewlet-app-shell__rail-status-mark--action:hover,
+.crewlet-app-shell__rail-status-mark--action[aria-expanded='true'] {
+  background: var(--color-surface-hover);
+}
+
+/* Inside its own box, so the ring is never cut by the head or the drawer's edge. */
+.crewlet-app-shell__rail-status-mark--action:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
  * THE RAIL'S FIELD ON THE NAV'S COLUMNS. It stands on the nav's gutter, so
  * its right edge is where every row's background ends; and its glyph stands
  * on the nav's glyph column: a row's glyph is the gutter and the row's pad
@@ -700,7 +762,8 @@
   .crewlet-app-shell__rail,
   .crewlet-app-shell__rail[data-open='true'],
   .crewlet-app-shell__rail-row--action,
-  .crewlet-app-shell__rail-foot > .crewlet-btn {
+  .crewlet-app-shell__rail-foot > .crewlet-btn,
+  .crewlet-app-shell__rail-status-mark--action {
     transition: none;
   }
 }

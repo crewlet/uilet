@@ -1398,6 +1398,148 @@ describe('the rail head, its field and the scroller', () => {
     expect(body.querySelector('nav')?.previousElementSibling).toBe(slot);
   });
 
+  // THE HEAD'S STATUS stands after the name, in a slot of its own, so the
+  // name takes what the status leaves and truncates there.
+  test('the rail draws its status at the end of the head, after the name', () => {
+    const { container } = render(
+      <AppShell
+        sidebar={
+          <AppShell.Rail
+            header={<a href="#/">Acme</a>}
+            status={
+              <AppShell.RailStatus icon={<StatusDot tone="success" />} onClick={() => {}}>
+                Engine healthy
+              </AppShell.RailStatus>
+            }
+          >
+            <nav aria-label="Navigation" />
+          </AppShell.Rail>
+        }
+      >
+        content
+      </AppShell>,
+    );
+    const head = container.querySelector('.crewlet-app-shell__rail-head')!;
+    expect(head.firstElementChild?.textContent).toBe('Acme');
+    expect(head.lastElementChild?.classList.contains('crewlet-app-shell__rail-status')).toBe(true);
+    expect(within(head as HTMLElement).getByRole('button', { name: 'Engine healthy' })).toBeTruthy();
+  });
+
+  test('a rail with no status draws no slot', () => {
+    const { container } = render(
+      <AppShell sidebar={<AppShell.Rail header={<a href="#/">Acme</a>}>rows</AppShell.Rail>}>content</AppShell>,
+    );
+    expect(container.querySelector('.crewlet-app-shell__rail-status')).toBeNull();
+  });
+
+  // ITS WORDS ARE ITS NAME AND ITS TITLE, never drawn; the count is drawn as
+  // a figure and read once, in words; and it is the trigger of what it opens.
+  test('a status that opens a panel is its trigger, named by its words and its count', () => {
+    render(
+      <Popover
+        label="Engine"
+        side="bottom"
+        trigger={(_open, toggle) => (
+          <AppShell.RailStatus
+            icon={<StatusDot tone="success" />}
+            count={{ value: 1, label: 'alarm', mark: <span data-mark="alarm" />, tone: 'warning' }}
+            onClick={toggle}
+          >
+            Engine serving
+          </AppShell.RailStatus>
+        )}
+      >
+        <button type="button">Open node</button>
+      </Popover>,
+    );
+    const status = screen.getByRole('button', { name: 'Engine serving, 1 alarm' });
+    expect(status.getAttribute('title')).toBe('Engine serving, 1 alarm');
+    expect(status.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(status.getAttribute('aria-expanded')).toBe('false');
+    // No word is drawn: the figure is the one text, hidden where it is drawn.
+    expect(status.textContent).toBe('1');
+    const figure = status.querySelector('.crewlet-app-shell__rail-row-count--warning')!;
+    expect(figure.getAttribute('aria-hidden')).toBe('true');
+    fireEvent.click(status);
+    expect(status.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Open node' })).toBeTruthy();
+  });
+
+  test('a status nothing presses is a statement: no control, its words still said', () => {
+    const { container } = render(
+      <AppShell.RailStatus icon={<StatusDot tone="danger" />}>Access refused</AppShell.RailStatus>,
+    );
+    const status = container.querySelector('.crewlet-app-shell__rail-status-mark')!;
+    expect(status.tagName).toBe('SPAN');
+    expect(status.getAttribute('title')).toBe('Access refused');
+    expect(screen.getByText('Access refused')).toBeTruthy();
+    expect(container.querySelector('button, [tabindex]')).toBeNull();
+  });
+
+  // A LABEL NAMES WHAT A PRESS DOES where the state is not that.
+  test("a status's label replaces its name and its title", () => {
+    render(
+      <AppShell.RailStatus icon={<StatusDot tone="danger" />} label="Engine signed out. Sign in" onClick={() => {}}>
+        Engine signed out
+      </AppShell.RailStatus>,
+    );
+    const status = screen.getByRole('button', { name: 'Engine signed out. Sign in' });
+    expect(status.getAttribute('title')).toBe('Engine signed out. Sign in');
+  });
+
+  // THE NAME TRUNCATES AT ONE PLACE: the slot reserves a dot and a two-figure count
+  // whatever the count says, the status is a 24px target each way, and its
+  // ring is drawn inside its own box.
+  test('the status reserves its width, keeps the 24px target and draws its ring inside', () => {
+    const slot = rule('.crewlet-app-shell__rail-status');
+    expect(slot).toContain('flex: none;');
+    expect(slot).toContain('min-width: calc(var(--size-target-min) * 2 + var(--spacing-1));');
+    // And a lockup beside it gives up its end inset to the head's gap.
+    expect(rule('.crewlet-app-shell__rail-head:has(> .crewlet-app-shell__rail-status) > .crewlet-brand')).toContain(
+      'padding-inline-end: 0;',
+    );
+    expect(slot).toContain('margin-inline-end: var(--size-nav-gutter);');
+    const mark = rule('.crewlet-app-shell__rail-status-mark');
+    expect(mark).toContain('min-width: var(--size-target-min);');
+    expect(mark).toContain('min-height: var(--size-target-min);');
+    expect(rule('.crewlet-app-shell__rail-status-mark--action:focus-visible')).toContain(
+      'outline-offset: var(--size-focus-ring-inset-offset);',
+    );
+  });
+
+  test('a head with its status carries no accessibility violation', async () => {
+    const { container } = render(
+      <AppShell
+        sidebar={
+          <AppShell.Rail
+            header={<a href="#/">Acme</a>}
+            status={
+              <AppShell.RailStatus
+                icon={<StatusDot tone="success" />}
+                count={{ value: 2, label: 'alarms', tone: 'warning' }}
+                aria-haspopup="dialog"
+                aria-expanded={false}
+                onClick={() => {}}
+              >
+                Engine serving
+              </AppShell.RailStatus>
+            }
+          >
+            <nav aria-label="Navigation" />
+          </AppShell.Rail>
+        }
+      >
+        content
+      </AppShell>,
+    );
+    const result = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
+
   test('a rail with no field draws no slot', () => {
     const { container } = render(<AppShell sidebar={<AppShell.Rail>rows</AppShell.Rail>}>content</AppShell>);
     expect(container.querySelector('.crewlet-app-shell__rail-search')).toBeNull();

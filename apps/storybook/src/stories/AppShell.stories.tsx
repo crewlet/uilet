@@ -88,70 +88,99 @@ const ALARMS = [
  * that acts on them. The layout and the inset here are the story's own; an
  * application spends its own on them.
  */
-function EngineRow({ alarms = ALARMS, defaultOpen = false }: { alarms?: string[]; defaultOpen?: boolean }) {
+/** What the engine panel says, from the foot's row or the head's status. */
+function EnginePanelBody({ alarms, words }: { alarms: string[]; words: string }) {
   const serving = alarms.length > 0;
-  const words = serving ? 'Engine serving' : 'Engine healthy';
+  return (
+  <Stack gap={3} style={{ padding: 'var(--spacing-3)' }}>
+    <Inline gap={2}>
+      <StatusDot tone="success">
+        <Text variant="cell">{words}</Text>
+      </StatusDot>
+      <Spacer />
+      <Text variant="caption" mono>
+        node-a
+      </Text>
+    </Inline>
+    <DescriptionList fit dense>
+      <DescriptionList.Item term="Nodes">1 live</DescriptionList.Item>
+      <DescriptionList.Item term="Config">Epoch 8</DescriptionList.Item>
+      <DescriptionList.Item term="Up">2 days</DescriptionList.Item>
+      <DescriptionList.Item term="Alarms">
+        {serving ? (
+          <Stack as="ul" gap={1}>
+            {alarms.map((alarm) => (
+              <li key={alarm}>{alarm}</li>
+            ))}
+          </Stack>
+        ) : (
+          'None'
+        )}
+      </DescriptionList.Item>
+    </DescriptionList>
+    <Inline gap={2} wrap>
+      <ButtonLink href="#/settings/nodes/node-a" variant="secondary" size="small">
+        Open node
+      </ButtonLink>
+      {serving ? (
+        <ButtonLink href="#/settings/backups" variant="secondary" size="small">
+          Open alarms
+        </ButtonLink>
+      ) : null}
+    </Inline>
+  </Stack>
+  );
+}
+
+/** The alarms as a rail count, or nothing on a healthy engine. */
+function alarmCount(alarms: string[]) {
+  return alarms.length > 0
+    ? {
+        value: alarms.length,
+        label: alarms.length === 1 ? 'alarm' : 'alarms',
+        mark: <TriangleAlertGlyph size="xs" />,
+        tone: 'warning' as const,
+      }
+    : undefined;
+}
+
+function EngineRow({ alarms = ALARMS, defaultOpen = false }: { alarms?: string[]; defaultOpen?: boolean }) {
+  const words = alarms.length > 0 ? 'Engine serving' : 'Engine healthy';
   return (
     <Popover
       label="Engine"
       side="top"
       defaultOpen={defaultOpen}
       trigger={(_open, toggle) => (
-        <AppShell.RailRow
-          icon={<StatusDot tone="success" />}
-          count={
-            serving
-              ? {
-                  value: alarms.length,
-                  label: alarms.length === 1 ? 'alarm' : 'alarms',
-                  mark: <TriangleAlertGlyph size="xs" />,
-                  tone: 'warning',
-                }
-              : undefined
-          }
-          onClick={toggle}
-        >
+        <AppShell.RailRow icon={<StatusDot tone="success" />} count={alarmCount(alarms)} onClick={toggle}>
           {words}
         </AppShell.RailRow>
       )}
     >
-      <Stack gap={3} style={{ padding: 'var(--spacing-3)' }}>
-        <Inline gap={2}>
-          <StatusDot tone="success">
-            <Text variant="cell">{words}</Text>
-          </StatusDot>
-          <Spacer />
-          <Text variant="caption" mono>
-            node-a
-          </Text>
-        </Inline>
-        <DescriptionList fit dense>
-          <DescriptionList.Item term="Nodes">1 live</DescriptionList.Item>
-          <DescriptionList.Item term="Config">Epoch 8</DescriptionList.Item>
-          <DescriptionList.Item term="Up">2 days</DescriptionList.Item>
-          <DescriptionList.Item term="Alarms">
-            {serving ? (
-              <Stack as="ul" gap={1}>
-                {alarms.map((alarm) => (
-                  <li key={alarm}>{alarm}</li>
-                ))}
-              </Stack>
-            ) : (
-              'None'
-            )}
-          </DescriptionList.Item>
-        </DescriptionList>
-        <Inline gap={2} wrap>
-          <ButtonLink href="#/settings/nodes/node-a" variant="secondary" size="small">
-            Open node
-          </ButtonLink>
-          {serving ? (
-            <ButtonLink href="#/settings/backups" variant="secondary" size="small">
-              Open alarms
-            </ButtonLink>
-          ) : null}
-        </Inline>
-      </Stack>
+      <EnginePanelBody alarms={alarms} words={words} />
+    </Popover>
+  );
+}
+
+/**
+ * The same state, compact, at the end of the head's line: a dot and the
+ * alarms, its words its name and title, and the same panel below it.
+ */
+function EngineStatus({ alarms = ALARMS, defaultOpen = false }: { alarms?: string[]; defaultOpen?: boolean }) {
+  const words = alarms.length > 0 ? 'Engine serving' : 'Engine healthy';
+  return (
+    <Popover
+      label="Engine"
+      side="bottom"
+      align="start"
+      defaultOpen={defaultOpen}
+      trigger={(_open, toggle) => (
+        <AppShell.RailStatus icon={<StatusDot tone="success" />} count={alarmCount(alarms)} onClick={toggle}>
+          {words}
+        </AppShell.RailStatus>
+      )}
+    >
+      <EnginePanelBody alarms={alarms} words={words} />
     </Popover>
   );
 }
@@ -170,10 +199,19 @@ function EngineRow({ alarms = ALARMS, defaultOpen = false }: { alarms?: string[]
  * either and nothing here moves off that line: the two insets and every row
  * height scale together.
  */
-function Rail({ context = 'Acme Holdings', foot }: { context?: string; foot?: ReactNode }) {
+function Rail({
+  context = 'Acme Holdings',
+  foot,
+  status,
+}: {
+  context?: string;
+  foot?: ReactNode;
+  status?: ReactNode;
+}) {
   return (
     <AppShell.Rail
       header={<BrandLockup name="Crewlet" mark={<CrewletIcon />} context={context} href="#/" />}
+      status={status}
       // THE RAIL'S FIELD in its own slot: on the nav's gutter, its glyph on the
       // rows' glyph column, with no wrapper of the application's own.
       search={
@@ -193,7 +231,7 @@ function Rail({ context = 'Acme Holdings', foot }: { context?: string; foot?: Re
           <AppShell.RailRow icon={<SettingsGlyph size="sm" />} label="Settings" onClick={() => {}}>
             Settings
           </AppShell.RailRow>
-          {foot ?? <EngineRow />}
+          {foot ?? (status ? null : <EngineRow />)}
         </>
       }
     >
@@ -452,6 +490,48 @@ export const FootRowsOnTheNavColumns: Story = {
       }
       topbar={<Topbar />}
     >
+      <Screen />
+    </AppShell>
+  ),
+};
+
+/**
+ * THE ENGINE'S STATE IN THE HEAD. A state the application reports stands at
+ * the end of the head's line (`status`), compact: the dot and the alarms, its
+ * words in its name and title, and the panel opening below it. The name
+ * truncates at one place whatever the count says, because the status
+ * reserves its width, and the foot keeps only what a reader reaches for
+ * rarely. It stands in the drawer's head the same way.
+ */
+export const EngineStatusInTheHead: Story = {
+  render: () => (
+    <AppShell
+      sidebar={
+        <Rail
+          context="FairSplit"
+          status={<EngineStatus />}
+          foot={
+            <AccountRow
+              avatar={<Avatar name="Lee Park" kind="human" size="sm" ring="brand" decorative />}
+              name="Lee Park"
+              detail="Admin"
+              href="#/account"
+              actions={<IconButton label="Preferences" icon={<PaletteGlyph size="sm" />} size="sm" variant="ghost" />}
+            />
+          }
+        />
+      }
+      topbar={<Topbar />}
+    >
+      <Screen />
+    </AppShell>
+  ),
+};
+
+/** A healthy engine draws its dot alone, and the name keeps the same room. */
+export const EngineStatusHealthy: Story = {
+  render: () => (
+    <AppShell sidebar={<Rail context="FairSplit" status={<EngineStatus alarms={[]} />} />} topbar={<Topbar />}>
       <Screen />
     </AppShell>
   ),
