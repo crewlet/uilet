@@ -825,3 +825,23 @@ test('a header draws no count of zero, and every other count', () => {
   );
   expect([...container.querySelectorAll('.crewlet-count')].map((count) => count.textContent)).toEqual(['3']);
 });
+
+test('a header asked to stack its subtitle says so, and only when it has one', () => {
+  const { container } = render(
+    <>
+      <Card>
+        <Card.Header subtitle="Last 30 days" subtitlePlacement="below">
+          By model
+        </Card.Header>
+      </Card>
+      <Card>
+        <Card.Header subtitlePlacement="below">Workers</Card.Header>
+      </Card>
+      <Card>
+        <Card.Header subtitle="Last 30 days">By team</Card.Header>
+      </Card>
+    </>,
+  );
+  const heads = [...container.querySelectorAll('.crewlet-card__header')];
+  expect(heads.map((head) => head.classList.contains('crewlet-card__header--stacked'))).toEqual([true, false, false]);
+});

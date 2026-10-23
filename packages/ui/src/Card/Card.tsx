@@ -440,6 +440,14 @@ export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
   count?: number | string | undefined;
   /** A second line under the title. It truncates; a title does not. */
   subtitle?: ReactNode;
+  /**
+   * Where the subtitle stands. `beside` (the default) keeps the head one line
+   * and moves the subtitle under the title only on a card narrower than
+   * 480px; `below` always puts it under the title, for a row of cards of
+   * different widths (a wide card beside a narrow one) whose heads must stand
+   * at one height.
+   */
+  subtitlePlacement?: 'beside' | 'below' | undefined;
   /** The card's own controls, at the end of the header row. */
   actions?: ReactNode;
 }
@@ -456,6 +464,7 @@ const CardHeader = ({
   icon,
   count,
   subtitle,
+  subtitlePlacement = 'beside',
   actions,
   className,
   children,
@@ -476,7 +485,15 @@ const CardHeader = ({
     [host],
   );
   return (
-    <div {...rest} className={cx('crewlet-card__header', !divided && 'crewlet-card__header--plain', className)}>
+    <div
+      {...rest}
+      className={cx(
+        'crewlet-card__header',
+        !divided && 'crewlet-card__header--plain',
+        subtitle !== undefined && subtitlePlacement === 'below' && 'crewlet-card__header--stacked',
+        className,
+      )}
+    >
       <div className="crewlet-card__header-main">
         {icon === undefined ? null : (
           <span className="crewlet-card__header-icon" aria-hidden>
