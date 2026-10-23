@@ -91,6 +91,23 @@ test('a numbered list is an ol and the rest are ul, because the element is the c
   expect(plain.querySelector('ul')).not.toBeNull();
 });
 
+test('a numbered and divided list is an ol too, its rows framed by the variant', () => {
+  // The position is the list's claim, so the element carries it; the drawn
+  // figure is the stylesheet's counter and is not a second copy in the text.
+  const { container } = render(
+    <List variant="numbered-divided">
+      <ListItem>Every amount is exact to the cent.</ListItem>
+      <ListItem>Ask before deleting anything.</ListItem>
+    </List>,
+  );
+  const list = container.querySelector('ol')!;
+  expect(list.classList.contains('crewlet-list--numbered-divided')).toBe(true);
+  expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+    'Every amount is exact to the cent.',
+    'Ask before deleting anything.',
+  ]);
+});
+
 test('the column template is set once, on the list', () => {
   // Set per row it lines nothing up, which is the whole reason it belongs to
   // the list.
