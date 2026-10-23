@@ -366,3 +366,27 @@ export const WithMetadata: Story = {
     </Card>
   ),
 };
+
+/**
+ * A ROW OF CARDS OF DIFFERENT WIDTHS, one head height: `subtitlePlacement="below"`
+ * puts the subtitle under the title at every width, where the default keeps a
+ * wide card's head on one line and stacks only a narrow one's.
+ */
+export const SubtitleBelow: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--spacing-4)', maxWidth: 960 }}>
+      <Card>
+        <Card.Header subtitle="Input and output tokens, the last 30 days" subtitlePlacement="below">
+          <Card.Title>By model</Card.Title>
+        </Card.Header>
+        <Card.Body>Wide card</Card.Body>
+      </Card>
+      <Card>
+        <Card.Header subtitle="The last 30 days" subtitlePlacement="below">
+          <Card.Title>Workers</Card.Title>
+        </Card.Header>
+        <Card.Body>Side card</Card.Body>
+      </Card>
+    </div>
+  ),
+};

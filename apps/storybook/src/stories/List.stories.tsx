@@ -6,7 +6,7 @@ const meta: Meta<typeof List> = {
   title: 'UI/List',
   component: List,
   argTypes: {
-    variant: { control: 'inline-radio', options: ['plain', 'bulleted', 'numbered', 'divided'] },
+    variant: { control: 'inline-radio', options: ['plain', 'bulleted', 'numbered', 'numbered-divided', 'divided'] },
   },
 };
 
@@ -101,6 +101,26 @@ export const Framings: Story = {
           </List>
         </div>
       ))}
+    </div>
+  ),
+};
+
+/**
+ * NUMBERED AND DIVIDED, for statements a reader cites by number: a
+ * company's standing policies in a card, each row at the body's leading, the
+ * number in a column of its own so a second line wraps under the words.
+ */
+export const NumberedAndDivided: Story = {
+  render: () => (
+    <div style={{ maxWidth: '72ch', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)' }}>
+      <List variant="numbered-divided">
+        <ListItem>Every amount is exact to the cent.</ListItem>
+        <ListItem>Ask before deleting anything.</ListItem>
+        <ListItem>
+          A change that reaches a customer is reviewed by a second agent before it ships, and the review is linked from
+          the task it closes.
+        </ListItem>
+      </List>
     </div>
   ),
 };

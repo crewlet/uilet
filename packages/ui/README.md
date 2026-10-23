@@ -43,14 +43,14 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Actions | `Button` and `ButtonLink` (variants `primary`, `secondary`, `outline`, `ghost`, `accent`, `danger`; sizes `small`, `medium`, `large`; shapes `square`, `pill`), `IconButton`, `Menu`, `Link`, `Copyable`, `CopyButton`, `DownloadButton`, `Kbd` |
 | Content and text | `Text` (the eight registers and `inherit`), `Prose`, `Document`, `DocumentTitle` and `DocumentTitleField`, the Markdown grammar (`parseMarkdown`, `parseMarkdownSpans`, `markdownInline`, `safeHref` and the line readers, with no React in it), `Highlight`, `InlineCode`, `List` and `ListItem`, `DescriptionList`, `Timeline`, `RelativeTime`, `Note`, `Divider` |
 | Forms | `Input`, `Textarea`, `Label`, `FormField`, `FormRow`, `Checkbox`, `CheckboxGroup`, `ConfirmField`, `Select`, `Tag`, `TagsInput`, `DateTimePicker`, `TimeWindowPicker`, `ImageUpload`, `CharacterPicker`, `HuePicker`, `AvatarPicker`, `FactList`, `ChoiceList`, `Composer`, `MarkdownEditor`, `RichEditor` (with `preloadRichEditor`, and the round trip `roundTripMarkdown` and `canonicalMarkdown` from `@crewlethq/ui/RichEditorMarkdown`) |
-| Data display | `DataTable`, `CopyableCell`, `Table`, the read-only table cells (`TableKeyCell`, `TableNumberCell`, `TableDateCell`, `TableEntityCell`, `TableStatusCell`, `TableTagsCell`, `TableTextCell`), `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile` |
+| Data display | `DataTable`, `CopyableCell`, `Table`, the read-only table cells (`TableKeyCell`, `TableNumberCell`, `TableDateCell`, `TableEntityCell`, `TableStatusCell`, `TableTagsCell`, `TableTextCell`), `StatCard`, `Meter`, `SegmentedMeter`, `Stepper`, `PricingCard`, `Avatar`, `AvatarStack`, `EntityChip`, `CodeBlock`, `QrCode`, `ObjectHeader`, `FactLine`, `SetByLine`, `Skeleton`, `Eyebrow`, `StatGroup`, `PinTile`, `IconTile`, `SettingsTable` (with `SettingsTable.Row`), `CatalogTile` |
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `ConflictNote`, `EditingStatus`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Documents and review | `DiffView` and `DiffSummary` with the line diff they draw (`diffLines`, `diffStat`, `collapseDiff`, `firstChangedLines`, `splitLines`, `MAX_DIFF_LINES`, with no React in it), `DiffList`, `VersionCompare`, `CommentThread` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
-| Layout | `Container`, `Section`, `Card`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
+| Layout | `Container`, `Section`, `Card`, `TileGrid`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Arranging a page | `ArrangeBoard`, `ArrangeGrid`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
 | Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen`, `useIdle`, `useMediaMatch` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
@@ -203,6 +203,40 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.39.0
+
+These come from a production polish of the engine dashboard's Settings › Limits, Company › Integrations and Company › Policies, and the same patterns everywhere else it draws them.
+
+### New
+
+**`SettingsTable` draws a read-only table of settings** (with `SettingsTable.Row`). Each row is the setting's name with its key in the document it is written in under it (`settingKey`, in the monospace face, quiet), the value in force in tabular figures, and where the value comes from (`source`). A value that is the default says so as a quiet word; a row marked `changed` carries a mark before its source, the one row in a table a reader scanning it came to find. The tracks are fractions of the table's width (`--crewlet-settings-table-columns`), so a page that stacks a table per group in cards of one width puts every value and every source on one line down the page, which a term column sized to its own longest term never did. It is announced as a table with Setting, Value and Source column headers (drawn with `header`, renamed with `columns`) and each setting's name as its row's header. In a `Card` (with `padding="none"`) it gives up its own edge and corner, as `StatGroup` does; under 32rem of table the name takes the row's first line and the value and its source share the second.
+
+**`TileGrid` lays tiles out on a fixed track count that folds by its own width.** Two sections of tiles each on a track count of its own put their edges in different places, and an `auto-fill` grid left a hole at the end of a short section. `columns` is the count at full width: `3` (the default) folds straight to one under 40rem of grid, never to two, so a set of three or six never strands a tile; `4` folds to two under 56rem; every count is one track under 28rem. `as="ul"` makes the track the list.
+
+**`CatalogTile` is one entry in a catalogue**: the mark in a well of one size and ground for every tile, the name as a heading at the level its place gives it, a `status` only when the state carries meaning (On, Connected, Needs attention, Coming soon), one sentence, and a foot with a quiet `meta` fact and one `action`, drawn only when there is something to put in it. A tile in its resting state carries no pill, and its name stands centred beside its mark; `quiet` puts a tile that is available but not set up on the page's own ground rather than draining its mark, because a drained vendor mark (Datadog's white plate on grey) read as a placeholder image. The sentence reserves two lines in a row of tiles so their feet line up, and reserves nothing once the grid is one track.
+
+**`List` takes `variant="numbered-divided"`**: an `ol` whose numbers stand in a column of their own, in tabular figures, with a hairline between rows at a card's inset and the body's leading. For statements a reader cites by number, such as a company's standing policies, each of which may run to several lines and wraps under its own first word. The drawn number is the list's counter and is not read a second time.
+
+**`ListInput` takes `focusOnMount`**, as `TagsInput` does: the focus goes to the new-item box when the list mounts, once, so a form opened to change that one list (an "Edit policies" link) lands where the next item is written. It is taken during mount, so a dialog the list opens in keeps it rather than moving focus to its own first control.
+
+### Fixes
+
+**A card header's plain words are its title** (`Card.Header`). A header given a string or a number drew it as a bare text node at the regular weight with no heading element, beside cards whose `Card.Title` was a semibold heading: two title treatments on one page (Models, People, Nodes and a dozen more beside Limits and Sign-in policy), and the plain ones missing from the document outline. Plain words are now drawn as `Card.Title`. **A count of zero is not drawn**: the card's own empty state already says there is nothing, and "Models 0" said it twice.
+
+**A card head can stack its subtitle at every width** (`Card.Header` `subtitlePlacement="below"`), for a row of cards of different widths whose heads must stand at one height: by default a wide card keeps its subtitle beside the title while a narrow one stacks it, so one row drew heads of 48 and 68px. **A code block that is a card's content is that card's surface** (`CodeBlock`): placed straight in a `Card` with `padding="none"` it gives up its own edge, corner and ground, so there is no box inside a box; in a padded body it stays a well.
+
+**A dataset source can leave out its kind** (`DatasetSource` `kind` is optional): a list whose every entry reads from one place, grouped under list labels of its own, draws no kind tag on every row.
+
+**A catalogue tile's fact-only foot stands as tall as one with a button** (`CatalogTile`), so the rules of a row's feet sit on one line.
+
+**A dialog's title is its `h1`** (`Modal`). It was a paragraph while the body's headings started at level 2, so the outline a screen reader walks had no top; it keeps its register (the text face at the dialog's size), and still names the dialog.
+
+**An object header's eyebrow and fact labels keep the words as written** (`ObjectHeader`, `FactLine`). They were the uppercase, tracked-open micro-caps of a table's column head, so a unit's page read "UNIT" over its name and TYPE, LEAD and SEATS under it, like a form. They are sentence case at the caption step now, as `StatCard`'s label already is.
+
+**A row of stat tiles shares its lines** (`StatGroup`). Each tile in a row is a subgrid over the row's three lines (label, number, sub), so a label that wraps no longer pushes its own figure below the others; and a label stands on its number, one gap above it, where another label in the row takes two lines. **A stat tile's sub wraps** (`StatCard`), balanced, rather than ending in an ellipsis: its end is the half that says what the number means, and a grid of tiles gives every tile in a row one height anyway. These were the engine dashboard's own rules over the components; an application that restated them drops them.
+
+**The artifact bar takes the shell top bar's inset** (`ArtifactBar`): 20px, 16px under the shell's breakpoint, plus the scroller's gutter at its end, since it stands in that bar's place. At a 12px inset of its own a create page's controls ended past the content under them.
 
 ## Changes in 0.38.0
 

@@ -120,6 +120,52 @@
   padding-inline: 0;
 }
 
+/*
+ * NUMBERED AND DIVIDED: the divided list's hairlines, with the number in a
+ * column of its own rather than in the margin, so a statement that runs to a
+ * second line wraps under its own first word and not under its number. The
+ * row grows with its text (no row height), at the body's leading, and the
+ * number stands on the first line's baseline.
+ *
+ * The number is the list's counter, drawn by the row. The `ol` already
+ * announces each item's position, so the drawn figure is given empty
+ * alternative text and is not read a second time.
+ */
+.crewlet-list--numbered-divided {
+  counter-reset: crewlet-list-item;
+}
+
+.crewlet-list--numbered-divided .crewlet-list__item {
+  counter-increment: crewlet-list-item;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-list--numbered-divided .crewlet-list__item:last-child {
+  border-bottom: none;
+}
+
+.crewlet-list--numbered-divided .crewlet-list__row {
+  align-items: baseline;
+  min-height: 0;
+  /* At a card's own inset, since a card is where these stand: the numbers
+     line up under the card head's glyph rather than 4px left of it. */
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: 0;
+  line-height: var(--font-line-height-body);
+}
+
+.crewlet-list--numbered-divided .crewlet-list__row::before {
+  content: counter(crewlet-list-item);
+  content: counter(crewlet-list-item) / '';
+  flex: none;
+  min-width: 2ch;
+  text-align: end;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
 /* ---- States ------------------------------------------------------------ */
 
 /*

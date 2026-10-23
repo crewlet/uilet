@@ -25,6 +25,14 @@ export type ListVariant =
   /** A number per row: an order somebody follows. */
   | 'numbered'
   /**
+   * A number per row in a column of its own, with a hairline between rows:
+   * statements a reader counts and cites by number (a company's standing
+   * policies), each of which may run to several lines. The numbers are the
+   * list's own (an `ol`), drawn in tabular figures so a tenth row's number
+   * stands where the first one's does.
+   */
+  | 'numbered-divided'
+  /**
    * A hairline between rows: a feed, a set of results, a conversation. THE
    * DEFAULT, because it is the list every screen in the product draws: rows a
    * reader scans down want a boundary they can count.
@@ -61,7 +69,7 @@ export interface ListProps extends HTMLAttributes<HTMLElement> {
  * without the promise.
  */
 export function List({ variant = 'divided', template, className, style, children, ...rest }: ListProps) {
-  const Tag = variant === 'numbered' ? 'ol' : 'ul';
+  const Tag = variant === 'numbered' || variant === 'numbered-divided' ? 'ol' : 'ul';
   const templated = template !== undefined;
   return (
     <ListContext.Provider value={{ variant, templated }}>

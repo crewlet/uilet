@@ -33,6 +33,14 @@ export interface ListInputProps {
   optional?: boolean | undefined;
   /** Draws the Enter keycap inside the new-item box, which is what adds one. */
   enterHint?: boolean | undefined;
+  /**
+   * Puts the focus in the new-item box when the list mounts, for a form
+   * opened to change THIS list ("Edit policies"): the reader lands where the
+   * next item is written rather than on the form's first field. It is taken
+   * during mount, so a dialog the list opens in keeps it rather than moving
+   * focus to its own first control. Named as `TagsInput`'s is.
+   */
+  focusOnMount?: boolean | undefined;
   /** The name of the control beside the legend that appends what the box holds. */
   addLabel?: ((itemName: string) => string) | undefined;
   itemLabel?: ((name: string, position: string) => string) | undefined;
@@ -101,6 +109,7 @@ export function ListInput({
   disabled = false,
   optional,
   enterHint = true,
+  focusOnMount = false,
   addLabel = (name) => `Add ${name}`,
   itemLabel = (name, position) => `${name} ${position}`,
   newItemLabel = (name) => `New ${name}`,
@@ -131,6 +140,13 @@ export function ListInput({
   const downs = useRef(new Map<string, HTMLButtonElement>());
   const addBox = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const focusNext = useRef<{ id: string; target: Target } | null>(null);
+
+  // ONCE, ON MOUNT: a list that grabbed the focus on every render would take
+  // it back from the item the reader moved to.
+  const focusAtMount = useRef(focusOnMount);
+  useLayoutEffect(() => {
+    if (focusAtMount.current) addBox.current?.focus();
+  }, []);
 
   useLayoutEffect(() => {
     const want = focusNext.current;

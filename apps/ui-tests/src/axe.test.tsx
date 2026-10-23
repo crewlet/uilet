@@ -64,6 +64,11 @@ import {
   MarkdownEditor,
   Outline,
   RichEditor,
+  CatalogTile,
+  List,
+  ListItem,
+  SettingsTable,
+  TileGrid,
 } from '@crewlethq/ui';
 import { PlusGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
@@ -83,6 +88,42 @@ async function violations(element: Element): Promise<string[]> {
     (violation) => `${violation.id}: ${violation.help} (${violation.nodes.map((node) => node.html).join(', ')})`,
   );
 }
+
+test('a settings table, a catalogue of tiles and a numbered list carry no violation', async () => {
+  const { container } = render(
+    <main>
+      <h1>Limits</h1>
+      <h2 id="turn">Guardrails on every turn</h2>
+      <SettingsTable aria-labelledby="turn">
+        <SettingsTable.Row label="Review rounds per turn" settingKey="turn_engine.max_iterations" source="Default">
+          3
+        </SettingsTable.Row>
+        <SettingsTable.Row label="Tool rounds per run" source="Changed from 24" changed>
+          32
+        </SettingsTable.Row>
+      </SettingsTable>
+      <TileGrid columns={3}>
+        <CatalogTile
+          mark={<svg />}
+          title="GitHub"
+          status={<Tag size="sm">Connected</Tag>}
+          description="Issues and pull requests."
+          meta="2 agents"
+          action={<Button size="small">Manage</Button>}
+        />
+        <CatalogTile quiet mark={<svg />} title="Slack" description="Each agent posts as its own bot." />
+      </TileGrid>
+      <TileGrid as="ul" aria-label="Spaces">
+        <CatalogTile as="li" mark={<svg />} title="Engineering" />
+      </TileGrid>
+      <List variant="numbered-divided" aria-label="Standing policies">
+        <ListItem>Every amount is exact to the cent.</ListItem>
+        <ListItem>Ask before deleting anything.</ListItem>
+      </List>
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
 
 test('the buttons, the marks and the hidden text carry no violation', async () => {
   const { container } = render(

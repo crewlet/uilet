@@ -426,3 +426,17 @@ test('plain is about the header and never about the wrapping', () => {
   expect(headed.querySelector('.crewlet-codeblock__header')).toBeTruthy();
   expect(headed.querySelector('.crewlet-codeblock')?.className).toContain('crewlet-codeblock--nowrap');
 });
+
+// A BLOCK THAT IS A CARD'S CONTENT IS THAT CARD'S SURFACE: no box inside a
+// box under the card's head rule. In a padded body it stays a well.
+test("a block straight in a card gives up its edge, corner and ground", () => {
+  const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'CodeBlock.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const rule = /\.crewlet-card > \.crewlet-codeblock \{([^}]*)\}/.exec(sheet)?.[1] ?? '';
+  expect(rule).toMatch(/border:\s*0;/);
+  expect(rule).toMatch(/border-radius:\s*var\(--radius-none\);/);
+  expect(rule).toMatch(/background:\s*transparent;/);
+  expect(sheet).not.toMatch(/\.crewlet-card__body > \.crewlet-codeblock/);
+});

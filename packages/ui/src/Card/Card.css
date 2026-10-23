@@ -495,6 +495,26 @@
   }
 }
 
+/*
+ * STACKED, ASKED FOR: the subtitle under the title at every width, the shape
+ * the narrow step above draws, for a row of cards of different widths whose
+ * heads have to stand at one height rather than one inline and one stacked.
+ */
+.crewlet-card__header--stacked {
+  flex-wrap: wrap;
+  row-gap: var(--spacing-1);
+}
+
+.crewlet-card__header--stacked > .crewlet-card__header-main {
+  flex: 1 1 0;
+}
+
+.crewlet-card__header--stacked > .crewlet-card__subtitle {
+  order: 1;
+  flex: 1 1 100%;
+  white-space: normal;
+}
+
 .crewlet-card__description {
   margin: 0;
   font-size: var(--font-size-compact);

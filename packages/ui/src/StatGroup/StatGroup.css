@@ -76,6 +76,33 @@
 }
 
 /*
+ * A ROW OF TILES SHARES ITS LINES. A tile stacks its label, its number and its
+ * sub in a column of its own, so a label that wrapped pushed its own number
+ * down and no other: beside a node's peek at 1440, "Behind on config" broke
+ * over two lines and its figure sat 18px below the other three. Inside a row
+ * each tile is a SUBGRID over the row's lines, one per line the tile renders
+ * (StatCard always renders three, an absent sub included), so a line is as
+ * tall as the tallest of it across the row and every figure starts together.
+ *
+ * A LABEL SITS ON ITS NUMBER: where one label in the row takes two lines, the
+ * others end at the foot of the label row, one gap above their figure, rather
+ * than floating at its top a line away from what they name.
+ *
+ * These were the engine dashboard's own rules over this component, held there
+ * with a note that the kit should carry them; they are the kit's now, with the
+ * sub's wrap (see StatCard), which the engine applied to every tile.
+ */
+.crewlet-stat-group > .crewlet-statcard {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 3;
+}
+
+.crewlet-stat-group > .crewlet-statcard > .crewlet-statcard__label {
+  align-self: end;
+}
+
+/*
  * Each tile spans its share of the twelve tracks: the row's `columns`, set on
  * it as `--crewlet-stat-group-cols`, a row.
  */

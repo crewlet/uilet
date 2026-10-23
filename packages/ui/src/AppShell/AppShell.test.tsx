@@ -447,9 +447,9 @@ describe('the shell breakpoint', () => {
   });
 
   test('every component that follows the shell switches with it', () => {
-    // A modal sheet going full width, a toolbar folding into its overflow and
-    // a search field dropping its label all happen "where the rail becomes a
-    // drawer", and each spells the number
+    // A modal sheet going full width, a toolbar folding into its overflow, a
+    // search field dropping its label and the artifact bar taking the top
+    // bar's narrow inset all happen "where the rail becomes a drawer", and each spells the number
     // because a media query cannot read a token. Spelt as `max-width` it
     // switches a pixel before the shell does, and at exactly the step the
     // wide shell is drawn with a narrow toolbar in it.
@@ -470,6 +470,7 @@ describe('the shell breakpoint', () => {
     const files = new Set(found.map((entry) => entry.split(':')[0]));
     expect([...files].sort()).toEqual([
       'AppShell/AppShell.css',
+      'ArtifactBar/ArtifactBar.css',
       'Modal/Modal.css',
       'SearchTrigger/SearchTrigger.css',
       'Toolbar/Toolbar.css',

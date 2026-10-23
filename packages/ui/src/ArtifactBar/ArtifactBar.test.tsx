@@ -10,6 +10,8 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { InfoGlyph, RotateCcwClockGlyph, Share2Glyph } from '@crewlethq/icons/glyphs';
 import { LayerHost } from '../Layer/index.js';
 import { ArtifactBar, ArtifactVersionChip, type ArtifactBarTool } from './index.js';
+import { breakpoint } from '@crewlethq/tokens';
+import { installAtWidth, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
 
@@ -300,4 +302,28 @@ test('the rename hint is the title button\'s description and no text of its own'
   const hint = document.getElementById(title.getAttribute('aria-describedby')!)!;
   expect(hint.textContent).toBe('Rename');
   expect(hint.hidden).toBe(true);
+});
+
+// THE SHELL TOP BAR'S INSET. The bar stands in that bar's place, so its ends
+// sit where the top bar's do over the content: 20px wide and 16px under the
+// shell's breakpoint. At 12px of its own a create page's controls ended past
+// the content under them.
+test('the bar takes the shell top bar inset on both sides, at both steps', () => {
+  const step = Number.parseFloat(breakpoint.shell);
+  for (const [width, expected] of [
+    [step - 1, 16],
+    [step, 20],
+  ] as const) {
+    const uninstall = installAtWidth(width, 'light', 'ArtifactBar/ArtifactBar.css');
+    try {
+      const { container, unmount } = render(<ArtifactBar title="Q3 plan" kind="doc" kindLabel="Doc" />);
+      const row = container.querySelector('.crewlet-artifact-bar__row')!;
+      expect(px(row, 'padding-left'), `at ${width}`).toBe(expected);
+      // jsdom reserves no gutter, so the end is the same step.
+      expect(px(row, 'padding-right'), `at ${width}`).toBe(expected);
+      unmount();
+    } finally {
+      uninstall();
+    }
+  }
 });

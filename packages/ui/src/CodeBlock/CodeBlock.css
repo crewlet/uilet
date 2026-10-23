@@ -16,6 +16,19 @@
   min-width: 0;
 }
 
+/*
+ * A BLOCK THAT IS A CARD'S CONTENT IS THAT CARD'S SURFACE. Placed straight in
+ * a card (with `padding="none"`), it gives up its own edge, corner and ground,
+ * so the card's head rule is the only line over the code and there is no box
+ * inside a box. In a padded body it stays a well, which is what tells code
+ * from the prose beside it.
+ */
+.crewlet-card > .crewlet-codeblock {
+  border: 0;
+  border-radius: var(--radius-none);
+  background: transparent;
+}
+
 .crewlet-codeblock__header {
   display: flex;
   align-items: center;

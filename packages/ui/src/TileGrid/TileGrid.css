@@ -1,0 +1,52 @@
+/*
+ * TileGrid: tiles on a fixed track count that folds by the grid's own width.
+ *
+ * Equal tracks, so two grids of one count and one width put every tile edge
+ * on the same line; the tiles in a row stretch to the tallest of them. The
+ * folds are steps of the grid's own width (see the component): three tracks
+ * go straight to one, so a set of three never strands a tile.
+ */
+
+.crewlet-tile-grid {
+  container: crewlet-tile-grid / inline-size;
+  min-width: 0;
+}
+
+.crewlet-tile-grid__track {
+  --crewlet-tile-grid-tracks: 3;
+
+  display: grid;
+  grid-template-columns: repeat(var(--crewlet-tile-grid-tracks), minmax(0, 1fr));
+  gap: var(--spacing-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-tile-grid[data-columns='2'] > .crewlet-tile-grid__track {
+  --crewlet-tile-grid-tracks: 2;
+}
+
+.crewlet-tile-grid[data-columns='4'] > .crewlet-tile-grid__track {
+  --crewlet-tile-grid-tracks: 4;
+}
+
+/* Four tracks fold to two where a tile would be narrower than its content. */
+@container crewlet-tile-grid (width < 56rem) {
+  .crewlet-tile-grid[data-columns='4'] > .crewlet-tile-grid__track {
+    --crewlet-tile-grid-tracks: 2;
+  }
+}
+
+/* Three fold to one: two up would leave the third tile alone on a row. */
+@container crewlet-tile-grid (width < 40rem) {
+  .crewlet-tile-grid[data-columns='3'] > .crewlet-tile-grid__track {
+    --crewlet-tile-grid-tracks: 1;
+  }
+}
+
+@container crewlet-tile-grid (width < 28rem) {
+  .crewlet-tile-grid > .crewlet-tile-grid__track {
+    --crewlet-tile-grid-tracks: 1;
+  }
+}

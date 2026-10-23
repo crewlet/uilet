@@ -186,6 +186,12 @@
  * tiles where only some carry one still stands at one height: its leading is
  * set here and the reserve is exactly one line of it, where a reserve in `em`
  * was a line shorter than the one a sub actually draws.
+ *
+ * IT WRAPS, balanced, rather than ending in an ellipsis. The line qualifies
+ * the number, so its end is the half that says what the number means, and
+ * `nowrap` cut it: "6 seats idle and waiting for ..." on a phone, a caption
+ * mid-clause at 1440. A grid of tiles (a StatGroup, or a caller's own) gives
+ * every tile in a row one height, so a second line costs no alignment.
  */
 .crewlet-statcard__sub {
   min-height: calc(1em * var(--font-line-height-body));
@@ -194,9 +200,8 @@
   /* The quiet step, with the label. The line qualifies the number rather than
      being a second one. */
   color: var(--color-text-tertiary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 /*

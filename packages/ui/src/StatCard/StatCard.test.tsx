@@ -399,3 +399,16 @@ test('a hidden label is said and not drawn, for a tile its container already nam
   expect(container.querySelector('.crewlet-statcard__label')).toBeNull();
   expect(screen.getByText('Open work').closest('.crewlet-visually-hidden')).toBeTruthy();
 });
+
+// THE SUB KEEPS ITS ENDING: it wraps, balanced, rather than ending in an
+// ellipsis, because the end of the line is what says what the number means.
+test("the sub wraps rather than ending in an ellipsis", () => {
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'StatCard.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const rule = /\.crewlet-statcard__sub \{([^}]*)\}/.exec(sheet)?.[1] ?? '';
+  expect(rule).not.toMatch(/white-space:\s*nowrap/);
+  expect(rule).not.toMatch(/text-overflow:\s*ellipsis/);
+  expect(rule).toMatch(/text-wrap:\s*balance/);
+});

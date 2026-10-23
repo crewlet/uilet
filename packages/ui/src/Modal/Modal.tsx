@@ -355,13 +355,18 @@ function ModalFrame({
             </span>
           ) : null}
           <div className="crewlet-modal__heading">
+            {/*
+              * THE DIALOG'S OWN HEADING, the h1 of the document a dialog is:
+              * its body's headings start at level 2 (the provider below), and
+              * a title drawn as a paragraph left that outline with no top.
+              */}
             {given(title) ? (
-              <p
+              <h1
                 className={cx('crewlet-modal__title', sheet ? 'crewlet-modal__title--sheet' : undefined)}
                 id={titleId}
               >
                 {title}
-              </p>
+              </h1>
             ) : null}
             {given(subtitle) ? (
               <p className="crewlet-modal__subtitle" id={subtitleId}>
