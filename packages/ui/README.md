@@ -224,6 +224,10 @@ These come from a production polish of the engine dashboard's Settings › Limit
 
 **A card header's plain words are its title** (`Card.Header`). A header given a string or a number drew it as a bare text node at the regular weight with no heading element, beside cards whose `Card.Title` was a semibold heading: two title treatments on one page (Models, People, Nodes and a dozen more beside Limits and Sign-in policy), and the plain ones missing from the document outline. Plain words are now drawn as `Card.Title`. **A count of zero is not drawn**: the card's own empty state already says there is nothing, and "Models 0" said it twice.
 
+**A card head can stack its subtitle at every width** (`Card.Header` `subtitlePlacement="below"`), for a row of cards of different widths whose heads must stand at one height: by default a wide card keeps its subtitle beside the title while a narrow one stacks it, so one row drew heads of 48 and 68px. **A code block that is a card's content is that card's surface** (`CodeBlock`): placed straight in a `Card` with `padding="none"` it gives up its own edge, corner and ground, so there is no box inside a box; in a padded body it stays a well.
+
+**A catalogue tile's fact-only foot stands as tall as one with a button** (`CatalogTile`), so the rules of a row's feet sit on one line.
+
 **A dialog's title is its `h1`** (`Modal`). It was a paragraph while the body's headings started at level 2, so the outline a screen reader walks had no top; it keeps its register (the text face at the dialog's size), and still names the dialog.
 
 **An object header's eyebrow and fact labels keep the words as written** (`ObjectHeader`, `FactLine`). They were the uppercase, tracked-open micro-caps of a table's column head, so a unit's page read "UNIT" over its name and TYPE, LEAD and SEATS under it, like a form. They are sentence case at the caption step now, as `StatCard`'s label already is.
