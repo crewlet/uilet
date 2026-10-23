@@ -12,13 +12,16 @@
  * exist is a type error rather than a blank square nobody notices. The answer
  * is the component registered under that name with its own type, so a
  * FILLABLE name answers with a component that takes `filled` and every other
- * name with one that does not.
+ * name with one that does not. `NamedGlyph` and `glyphFor` are the same lookup
+ * typed to the props every glyph takes, for a caller whose name is a union.
  */
 
 import type { GlyphName } from './generated/glyphs/index.js';
 import { GLYPHS } from './generated/glyphs/registry.js';
 
 export { GLYPHS };
+export { NamedGlyph, glyphFor } from './NamedGlyph.js';
+export type { NamedGlyphProps } from './NamedGlyph.js';
 
 export function glyphByName<Name extends GlyphName>(name: Name): (typeof GLYPHS)[Name] {
   return GLYPHS[name];

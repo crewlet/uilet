@@ -1,0 +1,6 @@
+/* RelatedRow: the glyphs in the quiet ink; everything else is the kit's card. */
+.crewlet-related-row__glyph {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}

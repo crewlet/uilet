@@ -28,7 +28,7 @@
 
 .crewlet-catalog-tile__head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-3);
   min-width: 0;
 }
@@ -46,13 +46,17 @@
   color: var(--color-text-primary);
 }
 
-/* The name, and under it the state when there is one; centred on the mark
-   either way, so a tile with no state is not a tile with a hole in it. */
+/* The name, and under it the state when there is one. THE NAME STANDS ON ONE
+   LINE ACROSS A ROW whether or not a tile has a state: centred on the mark, a
+   name with a pill under it rose 13px above its stateless neighbour's, so the
+   names of one row stood at two heights. It starts one step below the mark's
+   top edge in every tile instead. */
 .crewlet-catalog-tile__title {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: var(--spacing-1);
   gap: var(--spacing-1);
   min-width: 0;
 }

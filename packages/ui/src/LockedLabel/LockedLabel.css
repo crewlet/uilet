@@ -1,0 +1,16 @@
+/*
+ * LockedLabel: a place's words with the key after them. The words keep their
+ * own ink and size; the key takes the quiet step, a step closer to the words
+ * than the words are to anything else.
+ */
+.crewlet-locked-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-locked-label__key {
+  flex: none;
+  color: var(--color-text-tertiary);
+}

@@ -1,8 +1,12 @@
 import React, { useImperativeHandle, useLayoutEffect, useRef, type ReactNode, type Ref } from 'react';
+import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
 import { Count } from '../Count/index.js';
+import { Menu, type MenuItem } from '../Menu/index.js';
+import { StatusDot } from '../StatusDot/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
+import { useFold } from './fold.js';
 import { tabStop, useRoving } from './roving.js';
 
 /**
@@ -14,6 +18,13 @@ import { tabStop, useRoving } from './roving.js';
 export type TabsVariant = 'pill' | 'underline' | 'chip';
 
 export type TabsSize = 'sm' | 'md';
+
+/**
+ * What a row does with tabs it has no room for. `scroll` scrolls the row with
+ * its bar hidden; `menu` draws the tabs that fit and folds the rest into a
+ * "More" menu at the row's end.
+ */
+export type TabsOverflow = 'scroll' | 'menu';
 
 export interface TabsItem {
   /** Stable identity: the value reported, and half of the tab's id. */
@@ -34,6 +45,18 @@ export interface TabsItem {
    * replaces the count while it is set. `label` is what a screen reader hears.
    */
   marker?: TabsMarker | undefined;
+  /**
+   * What is happening behind the tab right now, IN WORDS ("running now"):
+   * drawn as a pulsing dot in place of the icon and read after the label. The
+   * words rather than a flag, so a tab cannot be marked without saying what
+   * the mark means; folded into "More", they are the item's second line.
+   */
+  live?: string | undefined;
+  /**
+   * How the tab reads folded into "More", where `label` is a node (a label
+   * drawn with a lock, say). A string `label` is used as it is.
+   */
+  menuLabel?: string | undefined;
   disabled?: boolean;
   /** Any extra props the consumer's renderItem needs to read. */
   [key: string]: unknown;
@@ -62,7 +85,25 @@ export interface TabsRenderItemProps {
   onSelect: () => void;
   /** Pre-rendered icon, label and count nodes for the tab body. */
   children: ReactNode;
+  /** Folded into "More" (overflow `menu`): drawn there, and kept here only to be measured. */
+  folded: boolean;
+  /**
+   * SPREAD THESE on the element you render. A folded link stays in the row to
+   * be measured, and these take it out of reach of the pointer, the keyboard
+   * and a screen reader, which meet it in the menu instead. Empty while it is
+   * drawn.
+   */
+  foldProps: TabsFoldProps;
 }
+
+/** What takes a folded item out of reach. See [TabsRenderItemProps.foldProps]. */
+export interface TabsFoldProps {
+  'aria-hidden'?: true;
+  inert?: true;
+}
+
+const FOLDED: TabsFoldProps = { 'aria-hidden': true, inert: true };
+const SHOWN: TabsFoldProps = {};
 
 export interface TabsProps {
   items: TabsItem[];
@@ -70,6 +111,7 @@ export interface TabsProps {
   size?: TabsSize;
   /** Names the row. A tab row with no name is announced as "tab list" alone. */
   ariaLabel?: string;
+  /** On the row's root: the row, or with overflow `menu` on a tab list, the box holding the row and "More". */
   className?: string;
   /** Currently active item value. */
   value?: string;
@@ -96,10 +138,37 @@ export interface TabsProps {
    */
   trailing?: ReactNode;
   /**
+   * What the row does with tabs it has no room for. `scroll` (the default)
+   * scrolls it. `menu` draws the tabs that FIT, in order, and folds the rest
+   * into a "More" menu at its end, each entry with its figure; the tab the
+   * reader is on is always drawn, taking the last place that fits. The widths
+   * are measured, not guessed, and measured again whenever anything in the
+   * row changes size. Choosing an entry calls `onValueChange`, in router mode
+   * too, where it is the consumer's navigation.
+   */
+  overflow?: TabsOverflow | undefined;
+  /** The "More" trigger's words. */
+  moreLabel?: string | undefined;
+  /** The menu's accessible name. Defaults to "More of" the row's `ariaLabel`. */
+  moreMenuLabel?: string | undefined;
+  /**
+   * A sentence about every tab, at the row's far end, overflow `menu` only.
+   * It GIVES WAY TO THE TABS: drawn only where every tab fits beside it, and
+   * gone before a single tab folds, because a tab is a place and the note is
+   * not.
+   */
+  note?: ReactNode;
+  /**
    * The row's root element, for a consumer that measures the row: which of
    * its items fit, and what folds into its trailing menu.
    */
   ref?: Ref<HTMLElement> | undefined;
+}
+
+/** A tab's figure, as a menu entry's hint: a number in the reader's own grouping, a string as given. */
+function figureOf(count: TabsItem['count']): string | undefined {
+  if (count === null || count === undefined || count === '') return undefined;
+  return typeof count === 'number' ? count.toLocaleString() : count;
 }
 
 /**
@@ -163,11 +232,28 @@ export function Tabs({
   panelId,
   renderItem,
   trailing,
+  overflow = 'scroll',
+  moreLabel = 'More',
+  moreMenuLabel,
+  note,
   ref,
 }: TabsProps) {
   const navRef = useRef<HTMLDivElement | null>(null);
-  useImperativeHandle(ref, () => navRef.current as HTMLElement, []);
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const folding = overflow === 'menu';
+  // A tab list holds tabs alone, so "More" stands beside it in a box of its
+  // own; a row of links holds its menu itself.
+  const boxed = folding && !renderItem;
+  useImperativeHandle(ref, () => (boxed ? boxRef.current : navRef.current) as HTMLElement, [boxed]);
   const { buttons, onKeyDown } = useRoving(items.length, null);
+  const fold = useFold(
+    folding,
+    boxed ? boxRef : navRef,
+    navRef,
+    items.map((item) => item.value),
+    value,
+  );
+  const isFolded = (item: TabsItem) => fold.folded.includes(item.value);
 
   /*
    * Slider-position effect. Runs only for the underline variant. It reads the
@@ -243,9 +329,15 @@ export function Tabs({
     };
   }, [variant, value, items]);
 
-  const rootClass = cx('crewlet-tabs', `crewlet-tabs--${variant}`, `crewlet-tabs--${size}`, className);
+  const rootClass = cx(
+    'crewlet-tabs',
+    `crewlet-tabs--${variant}`,
+    `crewlet-tabs--${size}`,
+    folding && 'crewlet-tabs--fold',
+    !boxed && className,
+  );
   const selected = tabStop(
-    items,
+    items.map((item) => ({ disabled: item.disabled || isFolded(item) })),
     Math.max(
       0,
       items.findIndex((item) => item.value === value),
@@ -254,17 +346,23 @@ export function Tabs({
 
   const rows = items.map((item, index) => {
     const isActive = value !== undefined && value === item.value;
+    const folded = isFolded(item);
     const tabClassName = cx(
       'crewlet-tabs__tab',
       HIT_AREA_CLASS,
       isActive && 'is-active',
       item.disabled && 'is-disabled',
+      folded && 'is-folded',
     );
 
+    const icon = item.live ? <StatusDot tone="info" pulse /> : item.icon;
     const children = (
       <>
-        {item.icon ? <span className="crewlet-tabs__icon">{item.icon}</span> : null}
-        <span className="crewlet-tabs__label">{item.label}</span>
+        {icon ? <span className="crewlet-tabs__icon">{icon}</span> : null}
+        <span className="crewlet-tabs__label">
+          {item.label}
+          {item.live ? <VisuallyHidden>{`, ${item.live}`}</VisuallyHidden> : null}
+        </span>
         {item.marker ? (
           item.marker.tone === 'danger' ? (
             <span className="crewlet-tabs__marker crewlet-tabs__marker--danger">
@@ -290,7 +388,15 @@ export function Tabs({
     if (renderItem) {
       return (
         <React.Fragment key={item.value}>
-          {renderItem({ item, className: tabClassName, isActive, onSelect, children })}
+          {renderItem({
+            item,
+            className: tabClassName,
+            isActive,
+            onSelect,
+            children,
+            folded,
+            foldProps: folded ? FOLDED : SHOWN,
+          })}
         </React.Fragment>
       );
     }
@@ -309,6 +415,7 @@ export function Tabs({
         tabIndex={index === selected ? 0 : -1}
         disabled={item.disabled}
         className={tabClassName}
+        {...(folded ? FOLDED : SHOWN)}
         onClick={onSelect}
         // On the TAB, not on the row: a key pressed on a tab is the tab's, and
         // a row that is not focusable has no business listening for one.
@@ -324,18 +431,82 @@ export function Tabs({
    * navigation landmark: a screen reader listing a page's landmarks was
    * offered every tab strip on it. A row of router links IS one.
    */
+  const out = folding ? items.filter(isFolded) : [];
+  /*
+   * "MORE" AND THE NOTE ARE ALWAYS IN THE DOCUMENT while the row folds, so
+   * their widths are known before they are needed; each is folded itself (out
+   * of the flow, out of reach) while it has nothing to say or no room.
+   */
+  const more = folding ? (
+    <span
+      className={cx('crewlet-tabs__more', out.length === 0 && 'is-folded')}
+      data-tabs-more=""
+      {...(out.length === 0 ? FOLDED : SHOWN)}
+    >
+      <Menu
+        label={moreMenuLabel ?? (ariaLabel ? `More of ${ariaLabel}` : moreLabel)}
+        // THE CHEVRON SAYS IT OPENS: a bare "More" after a row of tabs read
+        // as one more tab.
+        trigger={moreLabel}
+        trailingIcon={<ChevronDownGlyph size="xs" aria-hidden="true" />}
+        triggerVariant="ghost"
+        align="end"
+        // NO GLYPHS but the live dot: a tab's glyph at the head of a menu row
+        // sits where a menu draws its check. The name and its figure are the
+        // row, and what is happening behind it is the second line.
+        items={out.map(
+          (item): MenuItem => ({
+            key: item.value,
+            label: item.menuLabel ?? (typeof item.label === 'string' ? item.label : item.value),
+            hint: figureOf(item.count),
+            disabled: item.disabled,
+            ...(item.live ? { icon: <StatusDot tone="info" pulse />, description: item.live } : {}),
+            ...(!item.live && item.marker ? { description: item.marker.label } : {}),
+            onSelect: () => onValueChange?.(item.value),
+          }),
+        )}
+      />
+    </span>
+  ) : null;
+  const noteNode =
+    folding && note ? (
+      <span
+        className={cx('crewlet-tabs__note', !fold.note && 'is-folded')}
+        data-tabs-note=""
+        {...(fold.note ? {} : { 'aria-hidden': true })}
+      >
+        {note}
+      </span>
+    ) : null;
+
   if (renderItem) {
     return (
       <nav ref={navRef} className={rootClass} aria-label={ariaLabel}>
         {rows}
-        {trailing}
+        {more}
+        {noteNode}
+        {folding && trailing ? (
+          <span className="crewlet-tabs__trailing" data-tabs-trailing="">
+            {trailing}
+          </span>
+        ) : (
+          trailing
+        )}
       </nav>
     );
   }
 
-  return (
+  const list = (
     <div ref={navRef} className={rootClass} aria-label={ariaLabel} role="tablist">
       {rows}
+    </div>
+  );
+  if (!boxed) return list;
+  return (
+    <div ref={boxRef} className={cx('crewlet-tabs-fold', `crewlet-tabs-fold--${variant}`, className)}>
+      {list}
+      {more}
+      {noteNode}
     </div>
   );
 }

@@ -172,6 +172,16 @@ function Rail({ context = 'Acme Holdings', foot }: { context?: string; foot?: Re
   return (
     <AppShell.Rail
       header={<BrandLockup name="Crewlet" mark={<CrewletIcon />} context={context} href="#/" />}
+      // THE RAIL'S FIELD in its own slot: on the nav's gutter, its glyph on the
+      // rows' glyph column, with no wrapper of the application's own.
+      search={
+        <SearchTrigger
+          variant="rail"
+          label="Ask or jump to…"
+          shortcut={<Kbd keys={['Mod', 'k']} subtle />}
+          keyshortcuts="Control+K Meta+K"
+        />
+      }
       footer={
         <>
           {/* The engine puts its theme and density switchers here too. They

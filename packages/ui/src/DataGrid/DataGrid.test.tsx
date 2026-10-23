@@ -1,0 +1,300 @@
+/**
+ * DataGrid: one track list on the grid, a row link that never holds a cell's
+ * link, heads that are buttons only where they sort, columns that give way in
+ * order, bands for a grouped answer, and a cursor an application drives.
+ */
+
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRef } from 'react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import {
+  ChooserList,
+  ColumnChooser,
+  DataGrid,
+  columnChoicesOf,
+  fitGridColumns,
+  parseGridSort,
+  type DataGridColumn,
+  type DataGridHandle,
+} from './index.js';
+
+afterEach(cleanup);
+
+interface Row {
+  id: string;
+  name: string;
+  seat?: string;
+  tokens?: number;
+}
+
+const ROWS: Row[] = [
+  { id: 'a', name: 'Bravo', seat: 'ada', tokens: 30 },
+  { id: 'b', name: 'Alpha', tokens: 10 },
+  { id: 'c', name: 'Charlie', seat: 'grace' },
+];
+
+const COLUMNS: DataGridColumn<Row>[] = [
+  { key: 'name', header: 'Name', cell: (r) => r.name, sortValue: (r) => r.name, floor: '8rem' },
+  {
+    key: 'seat',
+    header: 'Seat',
+    shrink: true,
+    cell: (r) => (r.seat ? <a href={`#/seats/${r.seat}`}>{r.seat}</a> : null),
+  },
+  { key: 'tokens', header: 'Tokens', align: 'right', cell: (r) => r.tokens ?? '', sortValue: (r) => r.tokens },
+  { key: 'mark', header: '', label: 'Kind', cell: () => <svg /> },
+  { key: 'go', header: '', action: true, cell: (r) => <button type="button">Open {r.name}</button> },
+];
+
+const sheet = () =>
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'DataGrid.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+
+const names = () => [...document.querySelectorAll('.crewlet-data-grid__row')].map((row) => row.textContent);
+
+describe('the row link', () => {
+  test('is an overlay, so a row never holds a link inside a link, and it is named by its row', () => {
+    const { container } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} rowHref={(r) => `#/x/${r.id}`} />);
+    expect(container.querySelector('a a')).toBeNull();
+    const row = container.querySelector('.crewlet-data-grid__row')!;
+    const link = row.querySelector('.crewlet-data-grid__row-link')!;
+    expect(link.getAttribute('href')).toBe('#/x/a');
+    expect(link.getAttribute('aria-labelledby')).toBe(row.id);
+    expect(row.querySelector('a[href="#/seats/ada"]')).not.toBeNull();
+  });
+
+  test('is a button where the row acts and has no address, and nothing where it does neither', () => {
+    const open = vi.fn();
+    const { container, rerender } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} onRowActivate={open} />);
+    expect(container.querySelector('a.crewlet-data-grid__row-link')).toBeNull();
+    const row = container.querySelector<HTMLElement>('.crewlet-data-grid__row')!;
+    const overlay = row.querySelector<HTMLButtonElement>('button.crewlet-data-grid__row-link')!;
+    expect(overlay.getAttribute('aria-labelledby')).toBe(row.id);
+    fireEvent.click(overlay);
+    expect(open).toHaveBeenCalledWith(ROWS[0], expect.anything());
+    // A control inside the row is that control's own.
+    fireEvent.click(within(row).getByRole('button', { name: 'Open Bravo' }));
+    expect(open).toHaveBeenCalledTimes(1);
+    rerender(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} />);
+    expect(container.querySelector('.crewlet-data-grid__row-link')).toBeNull();
+  });
+
+  test('is a table of rows and cells with its column heads, named by its caller', () => {
+    render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} aria-label="Tasks" />);
+    const table = screen.getByRole('table', { name: 'Tasks' });
+    expect(within(table).getAllByRole('row')).toHaveLength(4);
+    expect(within(table).getAllByRole('columnheader')).toHaveLength(5);
+    expect(within(within(table).getAllByRole('row')[1]!).getAllByRole('cell')).toHaveLength(5);
+  });
+
+  test('marks the selected row and says so', () => {
+    const { container } = render(
+      <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} rowHref={(r) => `#/x/${r.id}`} isSelected={(r) => r.id === 'b'} />,
+    );
+    const rows = [...container.querySelectorAll('.crewlet-data-grid__row')];
+    expect(rows.map((r) => r.classList.contains('crewlet-data-grid__row--selected'))).toEqual([false, true, false]);
+    expect(rows[1]!.querySelector('.crewlet-data-grid__row-link')!.getAttribute('aria-current')).toBe('true');
+  });
+});
+
+describe('the columns', () => {
+  test('are declared once, on the grid, with shrink columns capped and a floor kept', () => {
+    const { container } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} />);
+    const grid = container.querySelector<HTMLElement>('.crewlet-data-grid')!;
+    expect(grid.style.gridTemplateColumns).toBe(
+      'minmax(8rem, 1fr) fit-content(20%) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)',
+    );
+    expect(container.querySelector<HTMLElement>('.crewlet-data-grid__row')!.getAttribute('style')).toBeNull();
+    expect(sheet()).toMatch(/\.crewlet-data-grid__row \{[^}]*grid-template-columns: subgrid;/);
+  });
+
+  test('name each cell for the phone card where the column has a word, and leave an action cell unnamed', () => {
+    const { container } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} />);
+    const cells = [...container.querySelector('.crewlet-data-grid__row')!.children];
+    expect(cells.map((c) => c.getAttribute('data-label'))).toEqual(['Name', 'Seat', 'Tokens', 'Kind', null]);
+  });
+
+  test('leave a cell with no value childless, so the card drops its line', () => {
+    const { container } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} />);
+    const seat = container.querySelectorAll('.crewlet-data-grid__row')[1]!.children[1]!;
+    expect(seat.childNodes).toHaveLength(0);
+    expect(sheet()).toMatch(/\.crewlet-data-grid__cell:empty \{\s*display: none;/);
+  });
+
+  test('draw the set asked for in the order asked, and offer the way back', () => {
+    const onCols = vi.fn();
+    const { container } = render(
+      <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} cols="tokens,name" onColsChange={onCols} />,
+    );
+    expect([...container.querySelector('.crewlet-data-grid__row')!.children].map((c) => c.textContent)).toEqual([
+      '30',
+      'Bravo',
+    ]);
+    fireEvent.click(screen.getByRole('button', { name: 'Show every column' }));
+    expect(onCols).toHaveBeenCalledWith('');
+  });
+});
+
+describe('the heads', () => {
+  test('are buttons only where they sort, with the sort said on the column head', () => {
+    render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-tokens" onSortChange={() => {}} />);
+    const heads = screen.getAllByRole('columnheader');
+    expect(heads.map((h) => h.querySelector('button') !== null)).toEqual([true, false, true, false, false]);
+    expect(heads[2]!.getAttribute('aria-sort')).toBe('descending');
+    expect(heads[0]!.getAttribute('aria-sort')).toBeNull();
+    // A glyph head is named by its label; an action head is not.
+    expect(heads[3]!.textContent).toBe('Kind');
+    expect(heads[3]!.getAttribute('title')).toBe('Kind');
+    expect(heads[4]!.textContent).toBe('');
+  });
+
+  test('cycle the sort ascending, descending, then off', () => {
+    const onSort = vi.fn();
+    const { rerender } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="" onSortChange={onSort} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Name' }));
+    rerender(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="name" onSortChange={onSort} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Name' }));
+    rerender(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-name" onSortChange={onSort} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Name' }));
+    expect(onSort.mock.calls.map((c) => c[0])).toEqual(['name', '-name', '']);
+  });
+
+  test('sort the rows by the column, an absent value last both ways, and leave a server order alone', () => {
+    const { rerender } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="tokens" onSortChange={() => {}} />);
+    expect(names().map((n) => n?.slice(0, 5))).toEqual(['Alpha', 'Bravo', 'Charl']);
+    rerender(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-tokens" onSortChange={() => {}} />);
+    expect(names().map((n) => n?.slice(0, 5))).toEqual(['Bravo', 'Alpha', 'Charl']);
+    rerender(
+      <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-tokens" serverSorted onSortChange={() => {}} />,
+    );
+    expect(names().map((n) => n?.slice(0, 5))).toEqual(['Bravo', 'Alpha', 'Charl']);
+    expect(parseGridSort('-a')).toEqual({ key: 'a', desc: true });
+    expect(parseGridSort('')).toBeNull();
+  });
+});
+
+describe('bands', () => {
+  test('draw sub-bands and count what is under them, the source count beside the loaded one', () => {
+    const { container } = render(
+      <DataGrid
+        columns={COLUMNS}
+        rowKey={(r) => r.id}
+        bands={[
+          {
+            key: 'eng',
+            label: 'Engineering',
+            total: 5,
+            rows: [],
+            bands: [
+              { key: 'ada', label: 'Ada', rows: [ROWS[0]!] },
+              { key: 'none', label: 'Nobody', rows: [ROWS[1]!, ROWS[2]!] },
+            ],
+          },
+          { key: 'empty', label: 'Design', total: 3, rows: [] },
+        ]}
+      />,
+    );
+    const counts = [...container.querySelectorAll('.crewlet-data-grid__band-count')].map((c) => c.textContent);
+    expect(counts).toEqual(['3 of 5', '1', '2', '0 of 3']);
+    // A band with no rows on this page still draws its heading, not the empty state.
+    expect(screen.getByText('Design')).toBeTruthy();
+  });
+});
+
+describe('the fit', () => {
+  test('drops the column that goes first on an overrun, and only that one', () => {
+    const fit = { set: 'a,b,c', width: 800, dropped: [] as string[] };
+    const visible = [{ key: 'a' }, { key: 'b', drop: 2 }, { key: 'c', drop: 1 }];
+    expect(fitGridColumns({ fit, width: 600, overflows: true, visible })).toEqual({ ...fit, width: 600, dropped: ['c'] });
+    // A column with no place in the order never goes, so nothing changes.
+    expect(fitGridColumns({ fit, width: 600, overflows: true, visible: [{ key: 'a' }] })).toBeNull();
+  });
+
+  test('gives every column another chance once the grid grows, and leaves a fit that stands', () => {
+    const fit = { set: 'a', width: 600, dropped: ['c'] };
+    expect(fitGridColumns({ fit, width: 700, overflows: false, visible: [] })).toEqual({ set: 'a', width: 700, dropped: [] });
+    expect(fitGridColumns({ fit: { set: 'a', width: 600, dropped: [] }, width: 600, overflows: false, visible: [] })).toBeNull();
+  });
+});
+
+describe('the frame', () => {
+  test('is flush where asked and inside a card, its empty state included', () => {
+    const { container, rerender } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} flush />);
+    expect(container.querySelector('.crewlet-data-grid')!.hasAttribute('data-flush')).toBe(true);
+    rerender(<DataGrid rows={[]} columns={COLUMNS} rowKey={(r) => r.id} flush empty={{ title: 'Nothing here' }} />);
+    expect(container.querySelector('.crewlet-data-grid')!.hasAttribute('data-flush')).toBe(true);
+    expect(screen.getByText('Nothing here')).toBeTruthy();
+    expect(sheet()).toMatch(/\.crewlet-card > \.crewlet-data-grid,/);
+  });
+
+  test('marks a compact phone grid and its lead cells', () => {
+    const columns: DataGridColumn<Row>[] = [{ ...COLUMNS[0]!, phoneLead: true }, COLUMNS[2]!];
+    const { container } = render(<DataGrid rows={ROWS} columns={columns} rowKey={(r) => r.id} phoneRows="compact" />);
+    expect(container.querySelector('.crewlet-data-grid')!.getAttribute('data-phone-rows')).toBe('compact');
+    expect(container.querySelector('.crewlet-data-grid__cell')!.hasAttribute('data-lead')).toBe(true);
+  });
+
+  test('says the rows loaded and offers more', () => {
+    const more = vi.fn();
+    render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} loadedNote="3 of 40 loaded" onLoadMore={more} />);
+    expect(screen.getByText('3 of 40 loaded')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
+    expect(more).toHaveBeenCalled();
+  });
+});
+
+test('an application drives the cursor through the handle, and Enter activates the row it is on', () => {
+  const handle = createRef<DataGridHandle>();
+  const open = vi.fn();
+  const { container } = render(
+    <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} onRowActivate={open} handleRef={handle} />,
+  );
+  Element.prototype.scrollIntoView = vi.fn();
+  expect(handle.current!.rowCount()).toBe(3);
+  expect(handle.current!.activate(new KeyboardEvent('keydown'))).toBe(false);
+  fireEvent.pointerDown(container.querySelector('.crewlet-data-grid')!);
+  act(() => handle.current!.step(1));
+  act(() => handle.current!.step(1));
+  // Clamped at the last row.
+  act(() => handle.current!.step(5));
+  expect(container.querySelectorAll('.crewlet-data-grid__row--cursor')).toHaveLength(1);
+  expect(container.querySelector('.crewlet-data-grid__row--cursor')!.getAttribute('data-row-index')).toBe('2');
+  let activated = false;
+  act(() => {
+    activated = handle.current!.activate(new KeyboardEvent('keydown'));
+  });
+  expect(activated).toBe(true);
+  expect(open.mock.calls[0]![0]).toBe(ROWS[2]);
+});
+
+test('a chooser writes the declaration order whatever the order of the ticks, and an empty value is the default set', () => {
+  const onChange = vi.fn();
+  const choices = columnChoicesOf([...COLUMNS, { key: 'extra', header: 'Extra', cell: () => '', optional: true }]);
+  expect(choices.map((c) => c.label)).toEqual(['Name', 'Seat', 'Tokens', 'Kind', 'go', 'Extra']);
+  render(<ColumnChooser choices={choices} value="" onChange={onChange} />);
+  const box = (name: string) => screen.getByRole('checkbox', { name });
+  expect((box('Name') as HTMLInputElement).checked).toBe(true);
+  expect((box('Extra') as HTMLInputElement).checked).toBe(false);
+  fireEvent.click(box('Extra'));
+  expect(onChange).toHaveBeenLastCalledWith('name,seat,tokens,mark,go,extra');
+});
+
+test('a chooser list is one group named by its heading, and a box says which item it toggles', () => {
+  const onToggle = vi.fn();
+  render(
+    <ChooserList
+      label="Card shows"
+      items={[
+        { key: 'due', label: 'Due', checked: true },
+        { key: 'owner', label: 'Owner', checked: false },
+      ]}
+      onToggle={onToggle}
+    />,
+  );
+  const group = screen.getByRole('group', { name: 'Card shows' });
+  expect(group.querySelectorAll('input[type="checkbox"]')).toHaveLength(2);
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Owner' }));
+  expect(onToggle).toHaveBeenLastCalledWith('owner');
+});

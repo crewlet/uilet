@@ -1,0 +1,164 @@
+/*
+ * SectionFrame: a column of sections beside the screen, and the one-row
+ * picker it folds to.
+ */
+
+/* THE FRAME TAKES THE CONTENT COLUMN'S PADDING BACK and gives it to the body,
+   so the column is flush with the sheet and the section keeps the inset. */
+.crewlet-app-shell__content:has(> .crewlet-section-frame) {
+  min-height: 100%;
+  padding: 0;
+}
+
+.crewlet-section-frame {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: var(--crewlet-section-frame-column) minmax(0, 1fr);
+  min-height: 100%;
+}
+
+/*
+ * AS TALL AS THE VIEW, NEVER AS THE GRID. A sticky box moves only inside its
+ * grid area, which the section beside it makes as tall as its content; sized
+ * against that area the column was exactly as tall as the section, had
+ * nowhere to stick, and a wheel over a long section carried the list off the
+ * top. At the view's height (`100cqb`: the shell's scroller is a size
+ * container) it sticks for the whole scroll and a long list scrolls in itself.
+ *
+ * IT KEEPS THE WHEEL AT ITS ENDS. A box whose bottom is below the fold traps
+ * the wheel; this one is exactly the view and always all on screen, so what
+ * chaining would do is move the section beside it at the list's end, which
+ * is not what the pointer is over.
+ */
+.crewlet-section-frame__nav {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100cqb;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-4) 0;
+  border-right: 1px solid var(--color-border-default);
+}
+
+.crewlet-section-frame__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  min-width: 0;
+  padding: var(--spacing-5) var(--spacing-5) var(--spacing-10);
+}
+
+/* BESIDE THE SECTION there is room for the whole list: no toggle, and the
+   list is always drawn. */
+.crewlet-section-frame__toggle {
+  display: none;
+}
+
+/*
+ * FOLDED: one pane, the picker above the section. The picker's row is its
+ * own height and the section takes the rest: two `auto` rows split a short
+ * section's spare height and opened a band of nothing between the picker
+ * and the section it names.
+ */
+.crewlet-section-frame[data-folded] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+}
+
+/* IN THE FLOW, as tall as it is, on the section's own gutter: the list it
+   unfolds is part of the page rather than a pane of its own. */
+.crewlet-section-frame[data-folded] > .crewlet-section-frame__nav {
+  position: static;
+  height: auto;
+  overflow-y: visible;
+  padding: var(--spacing-2) var(--spacing-5);
+  border-right: none;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+/* ONE ROW NAMING WHERE THE READER IS, which unfolds the list. Its glyph and
+   name stand over the glyphs and names of the rows: the rows' own inset,
+   less the toggle's border. */
+.crewlet-section-frame[data-folded] .crewlet-section-frame__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  min-height: var(--size-target-min);
+  padding: 0 calc(var(--size-nav-row-pad) - 1px);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  cursor: pointer;
+}
+
+.crewlet-section-frame[data-folded] .crewlet-section-frame__toggle:hover {
+  background: var(--color-surface-hover);
+}
+
+/* INSIDE ITS OWN EDGE, as every control that draws one rings. */
+.crewlet-section-frame__toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-section-frame__toggle-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.crewlet-section-frame__toggle-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "Section ·" BEFORE THE NAME, in the quiet ink, so the row reads as a
+   control holding the other sections rather than as the page's title. */
+.crewlet-section-frame__toggle-prefix {
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-section-frame__chevron {
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-section-frame__nav[data-open] .crewlet-section-frame__chevron {
+  transform: rotate(180deg);
+}
+
+.crewlet-section-frame[data-folded] .crewlet-section-frame__nav:not([data-open]) .crewlet-section-frame__list {
+  display: none;
+}
+
+.crewlet-section-frame[data-folded] .crewlet-section-frame__nav[data-open] .crewlet-section-frame__list {
+  padding-top: var(--spacing-2);
+}
+
+/* THE LIST TAKES NO GUTTER OF ITS OWN inside the folded picker, which is
+   inset already: with the rail's gutter on top, its glyphs sat 11px right of
+   the toggle's. */
+.crewlet-section-frame[data-folded] .crewlet-section-frame__list > .crewlet-sidebar-nav {
+  padding-inline: 0;
+}
+
+/* A PHONE'S ONE GUTTER: the section and the picker start where every other
+   screen's content does. */
+@media (width < 640px) {
+  .crewlet-section-frame__body {
+    padding: var(--spacing-4) var(--spacing-4) var(--spacing-9);
+  }
+
+  .crewlet-section-frame[data-folded] > .crewlet-section-frame__nav {
+    padding-inline: var(--spacing-4);
+  }
+}

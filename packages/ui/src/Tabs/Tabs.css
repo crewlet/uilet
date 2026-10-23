@@ -400,6 +400,83 @@
   display: contents;
 }
 
+/* ─── Fold (overflow: menu) ───────────────────────────────────── */
+/*
+ * THE ROW NEVER SCROLLS: what does not fit has already left it for "More".
+ * A scroll with its bar hidden cut a whole tab off at a phone's edge with
+ * nothing to say it was there, and a fade at the edge is too quiet to read as
+ * "there is more"; a menu that says More is not.
+ */
+.crewlet-tabs--fold {
+  position: relative;
+  min-width: 0;
+  overflow: visible;
+}
+
+/*
+ * A FOLDED ITEM STAYS IN THE DOCUMENT, out of the flow and invisible, so it
+ * can be measured again when the row grows. Pinned to the row's start, inside
+ * it, so it can never widen the page. A tab, "More" with nothing in it, and a
+ * note with no room alike.
+ */
+.crewlet-tabs--fold > .crewlet-tabs__tab.is-folded,
+.crewlet-tabs__more.is-folded,
+.crewlet-tabs__note.is-folded {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* "More" is the quiet menu button, centred on the tabs' line. */
+.crewlet-tabs__more {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+/* The note sits at the row's far end, a sentence about every tab and never
+   one of them. */
+.crewlet-tabs__note {
+  flex: none;
+  align-self: center;
+  margin-inline-start: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.crewlet-tabs__trailing {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+/*
+ * A TAB LIST HOLDS TABS ALONE, so its "More" stands beside it in a box. The
+ * row is as wide as the tabs it draws, and the underline's rule is the box's,
+ * painted on its last pixel row (the one the row's own border sits on), so
+ * it runs on under "More" to the edge.
+ */
+.crewlet-tabs-fold {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-tabs-fold > .crewlet-tabs {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.crewlet-tabs-fold--underline {
+  box-shadow: inset 0 -1px 0 var(--color-border-default);
+}
+
 /*
  * The slider ARRIVES rather than travels, and a chip changes without a fade.
  * The indicator still moves; what stops is the animation between the two

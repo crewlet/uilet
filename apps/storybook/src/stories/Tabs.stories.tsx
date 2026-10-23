@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, Menu, TabPanel, Tabs } from '@crewlethq/ui';
+import { Button, TabPanel, Tabs } from '@crewlethq/ui';
 import {
   ChartNoAxesGanttGlyph,
-  ChevronDownGlyph,
   InboxGlyph,
   SquareTerminalGlyph,
 } from '@crewlethq/icons/glyphs';
@@ -225,10 +224,11 @@ export const RouterLinks: Story = {
 
 /**
  * A WORKSPACE'S SECTIONS, as the console's header draws them: router links
- * with a glyph and a formatted figure each, and the sections that do not fit
- * folded into a "More" menu drawn as the row's `trailing` node, inside the
- * navigation landmark. The consumer decides what folds (it measures the row
- * through `ref`); the row draws whatever it is handed.
+ * with a glyph and a formatted figure each, and `overflow="menu"`. The row
+ * draws the sections that FIT and folds the rest into "More", inside the
+ * navigation landmark; the reading note at its end gives way before a single
+ * section folds. Narrow the canvas to watch them go, last first, with the
+ * section the reader is on always drawn.
  */
 export const SectionsWithMore: Story = {
   render: () => {
@@ -236,47 +236,66 @@ export const SectionsWithMore: Story = {
       { value: '/me', label: 'Queue', icon: <InboxGlyph />, count: '12' },
       { value: '/me/asked', label: 'Asked of me', icon: <SquareTerminalGlyph />, count: '3' },
       { value: '/me/watching', label: 'Watching', icon: <ChartNoAxesGanttGlyph />, count: '1.2k' },
-    ];
-    const folded = [
-      { key: '/me/checklist', label: 'Checklist', hint: '0' },
-      { key: '/me/unblocked', label: 'Unblocked', hint: '4' },
+      { value: '/me/checklist', label: 'Checklist', icon: <InboxGlyph />, count: '0' },
+      { value: '/me/unblocked', label: 'Unblocked', icon: <SquareTerminalGlyph />, count: '4' },
     ];
     return (
-      <div style={{ width: 560 }}>
+      <div style={{ maxWidth: 720, resize: 'horizontal', overflow: 'hidden', paddingBottom: 'var(--spacing-2)' }}>
         <Tabs
+          overflow="menu"
           ariaLabel="My work sections"
+          moreMenuLabel="More sections of My work"
           variant="underline"
           value="/me"
           items={sections}
-          renderItem={({ item, className, isActive, children }) => (
+          note="Counts are over everything open"
+          renderItem={({ item, className, isActive, children, foldProps }) => (
             <a
               href={item.value}
               className={className}
               aria-current={isActive ? 'page' : undefined}
               onClick={(event) => event.preventDefault()}
+              {...foldProps}
             >
               {children}
             </a>
           )}
-          trailing={
-            <Menu
-              label="More sections of My work"
-              triggerVariant="ghost"
-              align="end"
-              trigger={
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-1)' }}>
-                  More
-                  <ChevronDownGlyph size="xs" aria-hidden="true" />
-                </span>
-              }
-              items={folded.map((s) => ({ ...s, onSelect: () => {} }))}
-            />
-          }
         />
       </div>
     );
   },
 };
+
+function SeatTabs() {
+  const [value, setValue] = useState('overview');
+  return (
+    <div style={{ maxWidth: 360, resize: 'horizontal', overflow: 'hidden', paddingBottom: 'var(--spacing-2)' }}>
+      <Tabs
+        overflow="menu"
+        variant="underline"
+        ariaLabel="SWE sections"
+        value={value}
+        onValueChange={setValue}
+        items={[
+          { value: 'overview', label: 'Overview' },
+          { value: 'work', label: 'Work', count: 12 },
+          { value: 'turns', label: 'Turns', live: 'running now' },
+          { value: 'memory', label: 'Memory' },
+          { value: 'schedules', label: 'Schedules' },
+          { value: 'settings', label: 'Settings' },
+        ]}
+      />
+    </div>
+  );
+}
+
+/**
+ * AN OBJECT'S OWN TABS on a phone's width: a tab list that folds, "More"
+ * beside it. A tab with something running behind it pulses and says so in
+ * words, on the row and as its menu entry's second line. A tab picked from
+ * the menu is chosen and drawn in the last place that fits.
+ */
+export const FoldIntoMore: Story = { render: () => <SeatTabs /> };
 
 function MarkedTabs() {
   const [value, setValue] = useState('profile');

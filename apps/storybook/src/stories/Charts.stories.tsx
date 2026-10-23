@@ -12,6 +12,7 @@ import {
   TimeSeries,
   DATA_COLOR_OTHER,
   dataColor,
+  Histogram,
 } from '@crewlethq/ui';
 
 /*
@@ -294,6 +295,42 @@ export const Strip: Story = {
       </Frame>
     </div>
   ),
+};
+
+const hourMs = 3_600_000;
+const weekStart = Date.UTC(2026, 8, 22);
+/* A quiet week with one busy day, and a few failures on the busiest days. */
+const week = [0, 3, 0, 1, 48, 12, 2].map((v, index) => ({
+  t: weekStart + index * 24 * hourMs,
+  v,
+  part: v > 10 ? Math.round(v / 8) : 0,
+}));
+
+function PickableWeek() {
+  const [picked, setPicked] = useState<string>('none');
+  return (
+    <div style={{ padding: 20 }}>
+      <Frame
+        title="Turns that ended over the week"
+        hint="Each bar is a button that narrows the window to its bucket; the danger foot is the failed share of the same fill, and an empty day keeps a visible floor."
+      >
+        <Histogram
+          bars={week}
+          label="Turns that ended over the week"
+          summary={`${week.reduce((sum, bar) => sum + bar.v, 0)} turns in this window`}
+          formatTitle={(bar) => `${shortDate(bar.t)}, ${bar.v} turns` + (bar.part ? `, ${bar.part} failed` : '')}
+          formatTick={(bar) => shortDate(bar.t)}
+          onSelect={(bar) => setPicked(shortDate(bar.t))}
+        />
+        <p style={{ margin: 0, fontSize: 'var(--font-size-compact)' }}>Narrowed to: {picked}</p>
+      </Frame>
+    </div>
+  );
+}
+
+export const HistogramWindow: Story = {
+  name: 'Histogram / Where in the window things happened',
+  render: () => <PickableWeek />,
 };
 
 const day = 24 * 3_600_000;

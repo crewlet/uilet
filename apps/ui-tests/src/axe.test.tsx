@@ -24,7 +24,7 @@
  * by the palette suite in @crewlethq/tokens, over composites a browser would
  * have to be driven through every state to produce.
  */
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test } from 'vitest';
@@ -65,7 +65,11 @@ import {
   Outline,
   RichEditor,
   CatalogTile,
+  DataGrid,
+  Histogram,
   List,
+  PropertyList,
+  Tabs,
   ListItem,
   SettingsTable,
   TileGrid,
@@ -123,6 +127,116 @@ test('a settings table, a catalogue of tiles and a numbered list carry no violat
     </main>,
   );
   expect(await violations(container)).toEqual([]);
+});
+
+test('a data grid, its sortable heads, its row links and its bands carry no violation', async () => {
+  const rows = [
+    { id: 'ENG-1', title: 'Rotate the key' },
+    { id: 'ENG-2', title: 'Write the runbook' },
+  ];
+  const columns = [
+    { key: 'id', header: 'Key', shrink: true, cell: (r: (typeof rows)[number]) => r.id, sortValue: (r: (typeof rows)[number]) => r.id },
+    { key: 'title', header: 'Title', cell: (r: (typeof rows)[number]) => r.title },
+    { key: 'mark', header: '', label: 'Kind', cell: () => <svg aria-hidden="true" /> },
+  ];
+  const { container } = render(
+    <main>
+      <h1>Work</h1>
+      <DataGrid rows={rows} columns={columns} rowKey={(r) => r.id} rowHref={(r) => `#/work/${r.id}`} sort="id" onSortChange={() => {}} />
+      <DataGrid
+        columns={columns}
+        rowKey={(r) => r.id}
+        onRowActivate={() => {}}
+        bands={[{ key: 'a', label: 'Ada', total: 3, rows }]}
+      />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('a histogram, as a picture and as controls, carries no violation', async () => {
+  const bars = [0, 3, 1].map((v, i) => ({ t: Date.UTC(2026, 8, 16 + i), v, part: v > 2 ? 1 : 0 }));
+  const title = (bar: { t: number; v: number }) => `${new Date(bar.t).toISOString().slice(0, 10)}, ${bar.v}`;
+  const { container } = render(
+    <main>
+      <h1>Activity</h1>
+      <Histogram bars={bars} label="A picture" summary="4 turns in this window" formatTitle={title} formatTick={title} />
+      <Histogram bars={bars} label="Controls" summary="4 turns in this window" formatTitle={title} onSelect={() => {}} />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('a list of properties carries no violation: named sections, a link, a by-line and a collapsed section', async () => {
+  const setBy = { actor: 'agent-ceo', ago: '21h ago', turnHref: '#/live/turns/t-1' };
+  const { container } = render(
+    <main>
+      <h1>LEAD-4</h1>
+      <PropertyList
+        groups={[
+          {
+            items: [
+              { label: 'Status', value: 'In progress', setBy },
+              { label: 'Assignee', value: 'ada', href: '#/company/org/seats/ada', setBy },
+              { label: 'Due' },
+            ],
+          },
+          { name: 'Plan', whenAllAbsent: 'Nothing scheduled.', items: [{ label: 'Start' }] },
+          { name: 'Record', items: [{ label: 'GITHUB_TOKEN', value: '${GH}', identifierLabel: true }] },
+        ]}
+      />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('a folded tab row carries no violation: a tab list and a row of links, each with tabs in More', async () => {
+  // Laid out by hand, as jsdom computes no layout: every tab 100 wide, "More"
+  // 70, and each row 280 wide, so two tabs are drawn and the rest fold.
+  const rect = HTMLElement.prototype.getBoundingClientRect;
+  const client = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+  HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+    const w = this.classList.contains('crewlet-tabs__tab') ? 100 : this.hasAttribute('data-tabs-more') ? 70 : 0;
+    return { width: w, height: 20, top: 0, left: 0, right: w, bottom: 20, x: 0, y: 0 } as DOMRect;
+  };
+  Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.matches('.crewlet-tabs-fold, nav.crewlet-tabs--fold') ? 280 : 0;
+    },
+  });
+  try {
+    const items = ['Overview', 'Work', 'Turns', 'Memory', 'Settings'].map((label) => ({
+      value: label.toLowerCase(),
+      label,
+      ...(label === 'Turns' ? { live: 'running now' } : {}),
+    }));
+    const { container } = render(
+      <main>
+        <h1>SWE</h1>
+        <Tabs overflow="menu" variant="underline" ariaLabel="Seat sections" items={items} value="overview" />
+        <Tabs
+          overflow="menu"
+          variant="underline"
+          ariaLabel="Workspace sections"
+          items={items}
+          value="work"
+          note="Counts are over the last 30 days"
+          renderItem={({ item, className, isActive, children, foldProps }) => (
+            <a href={`#/${item.value}`} className={className} aria-current={isActive ? 'page' : undefined} {...foldProps}>
+              {children}
+            </a>
+          )}
+        />
+      </main>,
+    );
+    await waitFor(() => expect(container.querySelectorAll('.crewlet-tabs__tab.is-folded')).toHaveLength(6));
+    expect(await violations(container)).toEqual([]);
+  } finally {
+    HTMLElement.prototype.getBoundingClientRect = rect;
+    if (client) Object.defineProperty(HTMLElement.prototype, 'clientWidth', client);
+    else delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth;
+  }
 });
 
 test('the buttons, the marks and the hidden text carry no violation', async () => {

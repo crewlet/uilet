@@ -1,0 +1,482 @@
+/*
+ * DataGrid: a list as columns, one track list on the grid.
+ *
+ * THE GRID MAKES NO SCROLLPORT OF ITS OWN. `overflow: clip` rounds the rows off
+ * at the corner exactly as `hidden` would, and it is the difference between a
+ * sticky head that works and one that cannot: `hidden` makes a scroll
+ * container, a sticky box is confined to its nearest scrollport, and this one
+ * grows to its rows, so its offset is always 0. The head sticks against the
+ * page's own scroller; an application whose scroller carries a sticky bar of
+ * its own sets `--crewlet-data-grid-sticky-top` to that bar's height.
+ *
+ * THE COLUMNS BELONG TO THE GRID, NOT TO A ROW. The tracks are declared once,
+ * on the grid (its inline `grid-template-columns`), and the head, the body,
+ * the bands and the rows are `subgrid` passthroughs, so a head cell and a cell
+ * twenty rows down size the same track. Everything that is not a row of cells
+ * spans the whole width.
+ */
+
+.crewlet-data-grid {
+  display: grid;
+  min-width: 0;
+  border: 1px solid var(--color-border-hover);
+  border-radius: var(--radius-md);
+  overflow: clip;
+  background: var(--color-surface-subtle);
+}
+
+/*
+ * A CARD'S BODY (`flush`, and every grid straight in a Card or its body, told
+ * or not): the card is the frame, so the grid draws none of its own and one
+ * rule parts it from the card's head. Under the card's header, the header's
+ * own rule is that one.
+ */
+.crewlet-data-grid[data-flush],
+.crewlet-card > .crewlet-data-grid,
+.crewlet-card__body > .crewlet-data-grid {
+  border: 0;
+  border-top: 1px solid var(--color-border-default);
+  border-radius: var(--radius-none);
+  background: transparent;
+}
+
+.crewlet-card__header + .crewlet-data-grid {
+  border-top: 0;
+}
+
+/* A full-width band by default: the head, the body, the foot, the reset and
+   the empty state, which is the one child when the grid carries no tracks. */
+.crewlet-data-grid > * {
+  grid-column: 1 / -1;
+}
+
+.crewlet-data-grid__head,
+.crewlet-data-grid__body,
+.crewlet-data-grid__band,
+.crewlet-data-grid__row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+}
+
+.crewlet-data-grid__band-head,
+.crewlet-data-grid__band-foot {
+  grid-column: 1 / -1;
+}
+
+/*
+ * The head: a floor at the row height (density shrinks the padding, not the
+ * label), on the raised ground, sticky at the application's offset.
+ */
+.crewlet-data-grid__head {
+  align-items: center;
+  min-height: var(--size-row-md);
+  border-bottom: 1px solid var(--color-border-hover);
+  background: var(--color-surface-elevated);
+  position: sticky;
+  top: var(--crewlet-data-grid-sticky-top, var(--spacing-0));
+  z-index: var(--z-index-sticky);
+}
+
+/*
+ * THE LIST TABLE'S HEAD: the micro-label register every table takes, 11/500
+ * uppercase. A sortable head is a button with its chrome reset; the reset
+ * takes the focus ring with it, so the ring is restated below.
+ */
+.crewlet-data-grid__th {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--font-letter-spacing-wide);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  min-width: 0;
+  transition: color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-data-grid__th--plain {
+  cursor: default;
+}
+
+/* A sortable head's control fills the head: the whole cell is the target. */
+.crewlet-data-grid__sort {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: calc(-1 * var(--spacing-2)) calc(-1 * var(--spacing-3));
+  padding: var(--spacing-2) var(--spacing-3);
+  cursor: pointer;
+}
+
+.crewlet-data-grid__th--right .crewlet-data-grid__sort {
+  justify-content: flex-end;
+}
+
+.crewlet-data-grid__th:not(.crewlet-data-grid__th--plain):hover,
+.crewlet-data-grid__th--sorted {
+  color: var(--color-text-primary);
+}
+
+.crewlet-data-grid__th--right {
+  justify-content: flex-end;
+}
+
+.crewlet-data-grid__sort:focus-visible,
+.crewlet-data-grid__cols-reset:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-data-grid__body {
+  min-width: 0;
+}
+
+.crewlet-data-grid__row {
+  align-items: center;
+  min-height: var(--size-row-md);
+  border-bottom: 1px solid var(--color-border-default);
+  color: inherit;
+  cursor: pointer;
+  /* The containing block for the row's link. */
+  position: relative;
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* THE ROW'S OWN LINK, STRETCHED OVER IT, out of flow so it takes no track. */
+.crewlet-data-grid__row-link {
+  position: absolute;
+  inset: 0;
+}
+
+/* A button overlay (a row that acts and has no address) gives up the chrome a
+   button brings, and draws the focus ring inside the row. */
+button.crewlet-data-grid__row-link {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+
+.crewlet-data-grid__row-link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
+ * AND THE CELLS' OWN CONTROLS SIT ABOVE IT: positioned and later in the
+ * document than the overlay, they win the hit test in the same stacking
+ * context, with no z-index to reason about against the sticky head. A cell's
+ * element that is not a link or a button but must take its own clicks (a
+ * refusal sentence a reader selects) carries `data-above-row`.
+ */
+.crewlet-data-grid__row a:not(.crewlet-data-grid__row-link),
+.crewlet-data-grid__row button:not(.crewlet-data-grid__row-link),
+.crewlet-data-grid__row [data-above-row] {
+  position: relative;
+}
+
+.crewlet-data-grid__row:last-child {
+  border-bottom: none;
+}
+
+.crewlet-data-grid__row:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-data-grid__row--selected,
+.crewlet-data-grid__row--selected:hover {
+  background: var(--color-brand-accent-soft);
+}
+
+.crewlet-data-grid__row--cursor {
+  box-shadow: inset 2px 0 0 var(--color-brand-accent);
+}
+
+/* A FAILED ROW IS MARKED ON ITS EDGE, not tinted: the status column already
+   says so, and two signals for one fact teach a reader to trust neither. */
+.crewlet-data-grid__row--failed {
+  box-shadow: inset 2px 0 0 var(--color-feedback-danger-ink);
+}
+
+.crewlet-data-grid__cell {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-compact);
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/*
+ * A SHRINK COLUMN does not wrap inside its capped track, and does not paint
+ * outside it: a nowrap cell narrower than its content would spill over the
+ * column beside it. `clip`, since a scrollport here would cut the sticky head.
+ */
+.crewlet-data-grid__th--shrink,
+.crewlet-data-grid__cell--shrink {
+  white-space: nowrap;
+  overflow: clip;
+}
+
+.crewlet-data-grid__cell--right {
+  justify-content: flex-end;
+}
+
+.crewlet-data-grid__truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-data-grid__band + .crewlet-data-grid__band {
+  border-top: 1px solid var(--color-border-hover);
+}
+
+.crewlet-data-grid__band-head,
+.crewlet-data-grid__band-foot {
+  display: flex;
+}
+
+/* The band row's one cell lays its parts out on the row's own flex line. */
+.crewlet-data-grid__band-cell {
+  display: contents;
+}
+
+.crewlet-data-grid__band-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--color-surface-elevated);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  position: sticky;
+  /* Under the column heads, which are a row tall and parked at the offset;
+     confined to its own band, so it leaves with the band. Above the rows
+     (positioned for the row link) and below the heads. */
+  top: calc(var(--crewlet-data-grid-sticky-top, var(--spacing-0)) + var(--size-row-md));
+  z-index: var(--z-index-raised);
+}
+
+/* A SECOND AXIS IS A BAND INSIDE A BAND, inset and quieter, so it does not
+   read as its parent's sibling; and it draws no rule above itself. */
+.crewlet-data-grid__band .crewlet-data-grid__band > .crewlet-data-grid__band-head {
+  padding-left: calc(var(--spacing-3) + var(--spacing-4));
+  background: var(--color-surface-subtle);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-data-grid__band .crewlet-data-grid__band + .crewlet-data-grid__band {
+  border-top: none;
+}
+
+.crewlet-data-grid__band-count {
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-regular);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-data-grid__band-foot {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+  background: var(--color-surface-elevated);
+}
+
+.crewlet-data-grid__band-foot a {
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-data-grid__band-foot a:hover {
+  color: var(--color-text-primary);
+}
+
+.crewlet-data-grid__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-top: 1px solid var(--color-border-hover);
+  background: var(--color-surface-elevated);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-data-grid__foot-spacer {
+  flex: 1 1 auto;
+}
+
+.crewlet-data-grid__note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-data-grid__cols-reset {
+  all: unset;
+  /* After the reset, which takes `grid-column` too. */
+  grid-column: 1 / -1;
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-2xs);
+  color: var(--color-brand-accent-ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* ---- The column chooser ------------------------------------------------ */
+
+.crewlet-column-chooser__label {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/* TWO COLUMNS: a single file of short words makes a menu as tall as the grid
+   has columns. */
+.crewlet-column-chooser__choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-1) var(--spacing-3);
+}
+
+/* The pointer target is the row, not the 13px box. */
+.crewlet-column-chooser__choice {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-target-min);
+  font-size: var(--font-size-compact);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-data-grid__th,
+  .crewlet-data-grid__row {
+    transition: none;
+  }
+}
+
+/* ---- A ROW IS A CARD ON A PHONE -----------------------------------------
+   A GRID IS COLUMNS, AND A PHONE DOES NOT HAVE THEM: the grid clips (for its
+   sticky head), so the columns past the edge were cut off with nothing to
+   scroll to, and a sideways scroller resolves every flexible track to zero. So
+   the head goes and each cell draws its own name beside its value
+   (`data-label`); the subgrid chain is unwound to blocks and each cell is a
+   flex line, label then value. A cell with nothing in it is no line
+   (`:empty`), and a cell that draws a marked absence has content and stays.
+   The sort is in the application's state, so a sorted list still arrives
+   sorted. */
+@media (width < 640px) {
+  .crewlet-data-grid {
+    display: block;
+  }
+
+  .crewlet-data-grid__head {
+    display: none;
+  }
+
+  .crewlet-data-grid__body,
+  .crewlet-data-grid__band {
+    display: block;
+  }
+
+  .crewlet-data-grid__row {
+    display: block;
+    padding: var(--spacing-2) var(--spacing-3);
+    min-height: 0;
+  }
+
+  /* A FIXED BASIS lines the names up without a track, and the name wraps
+     inside it rather than pushing its value past every other card line. */
+  .crewlet-data-grid__cell {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-3);
+    padding: 1px 0;
+    min-width: 0;
+  }
+
+  .crewlet-data-grid__cell:empty {
+    display: none;
+  }
+
+  .crewlet-data-grid__cell[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 7rem;
+    overflow-wrap: anywhere;
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--font-letter-spacing-wide);
+    color: var(--color-text-tertiary);
+  }
+
+  /* `shrink` and `right` are column shapes, and there are no columns here. */
+  .crewlet-data-grid__cell--shrink,
+  .crewlet-data-grid__cell--right {
+    white-space: normal;
+    justify-content: flex-start;
+  }
+
+  .crewlet-data-grid__cell .crewlet-data-grid__truncate {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  /* ---- THE COMPACT ROW (`phoneRows="compact"`) ---------------------------
+     TWO LINES, NO LABELS: what the row is, then its marks. One flex run that
+     breaks once: the lead cells first, a zero-height full-width `::after`
+     between them and the rest, then every other cell in column order. */
+  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-1) var(--spacing-2);
+  }
+
+  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__row::after {
+    content: '';
+    order: 1;
+    flex-basis: 100%;
+    height: 0;
+  }
+
+  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__cell {
+    order: 2;
+    padding: 0;
+    align-items: center;
+    gap: var(--spacing-1);
+  }
+
+  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__cell[data-lead] {
+    order: 0;
+  }
+
+  /* The title takes the rest of the first line, beside the key. */
+  .crewlet-data-grid[data-phone-rows='compact']
+    .crewlet-data-grid__cell[data-lead]:not(.crewlet-data-grid__cell--shrink) {
+    flex: 1 1 0;
+    min-width: 0;
+    font-weight: var(--font-weight-medium);
+  }
+
+  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__cell[data-label]::before {
+    content: none;
+  }
+
+  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__cell[data-phone-omit] {
+    display: none;
+  }
+}

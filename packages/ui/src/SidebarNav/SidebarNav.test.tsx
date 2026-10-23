@@ -746,3 +746,87 @@ describe('the rail geometry', () => {
     }
   });
 });
+
+// A LOCKED ROW STAYS, AND STAYS A LINK: its words carry the key after them,
+// the pointer's title says why, and the reason is read after the name. A row
+// the reader may open draws no mark at all.
+test('a locked row keeps its link and words, and says why it is closed', () => {
+  render(
+    <SidebarNav label="Settings">
+      <SidebarNav.Item label="Nodes" href="#/settings/nodes" locked="Needs Admin access" />
+      <SidebarNav.Item label="Account" href="#/account" />
+    </SidebarNav>,
+  );
+  const nodes = screen.getByRole('link', { name: 'Nodes, Needs Admin access' });
+  expect(nodes.getAttribute('href')).toBe('#/settings/nodes');
+  expect(nodes.querySelector('.crewlet-locked-label')?.getAttribute('title')).toBe('Needs Admin access');
+  expect(screen.getByRole('link', { name: 'Account' }).querySelector('.crewlet-locked-label')).toBeNull();
+});
+
+// THE READER DECIDING IS THE MOMENT TO FETCH: the pointer reaching a row and
+// the keyboard focusing it both call onPrefetch, on the kit's own anchor and
+// on a router's, and the row's hint is its title on both.
+test('a row prefetches where it leads on hover and on focus, and carries its hint', () => {
+  const warm = vi.fn();
+  render(
+    <SidebarNav label="Settings">
+      <SidebarNav.Item label="Nodes" href="#/settings/nodes" title="Leases and duties" onPrefetch={warm} />
+      <SidebarNav.Item
+        label="Secrets"
+        href="#/settings/secrets"
+        title="Names, never values"
+        onPrefetch={warm}
+        renderLink={({ children, ...rest }) => (
+          <a {...rest} data-router="">
+            {children}
+          </a>
+        )}
+      />
+    </SidebarNav>,
+  );
+  for (const name of ['Nodes', 'Secrets']) {
+    const link = screen.getByRole('link', { name });
+    fireEvent.pointerEnter(link);
+    fireEvent.focus(link);
+  }
+  expect(warm).toHaveBeenCalledTimes(4);
+  expect(screen.getByRole('link', { name: 'Nodes' }).getAttribute('title')).toBe('Leases and duties');
+  expect(screen.getByRole('link', { name: 'Secrets' }).getAttribute('title')).toBe('Names, never values');
+});
+
+// A GROUP THE READER HOLDS NONE OF CARRIES ONE KEY: on its label, which names
+// the reason for a screen reader and as its title. Its rows stay links, draw
+// no key of their own and still say their reason; a mixed group, and a run
+// with no label to carry it, keep the key on each locked row.
+test('a wholly locked group draws its key once, on its label, and its rows none', () => {
+  const { container } = render(
+    <SidebarNav label="Settings sections">
+      <SidebarNav.Group label="Engine" locked="Needs Admin access">
+        <SidebarNav.Item label="Nodes" href="#/nodes" locked="Needs Admin access" />
+        <SidebarNav.Item label="Configuration" href="#/config" locked="Needs Admin access" />
+      </SidebarNav.Group>
+      <SidebarNav.Group label="Spend">
+        <SidebarNav.Item label="Token spend" href="#/spend" />
+        <SidebarNav.Item label="Expensive tasks" href="#/tasks" locked="Needs Tracker access" />
+      </SidebarNav.Group>
+      <SidebarNav.Group locked="Needs Admin access">
+        <SidebarNav.Item label="Secrets" href="#/secrets" locked="Needs Admin access" />
+      </SidebarNav.Group>
+    </SidebarNav>,
+  );
+  const engine = screen.getByRole('group', { name: 'Engine, Needs Admin access' });
+  expect(engine.querySelectorAll('svg.crewlet-locked-label__key')).toHaveLength(1);
+  expect(engine.querySelector('.crewlet-nav-group__label .crewlet-locked-label')?.getAttribute('title')).toBe(
+    'Needs Admin access',
+  );
+  const nodes = screen.getByRole('link', { name: 'Nodes, Needs Admin access' });
+  expect(nodes.querySelector('.crewlet-locked-label')?.getAttribute('title')).toBe('Needs Admin access');
+  expect(engine.classList.contains('crewlet-nav-group--locked')).toBe(true);
+  // MIXED: the locked row keeps its key, the open one has none.
+  const spend = screen.getByRole('group', { name: 'Spend' });
+  expect(spend.querySelectorAll('svg.crewlet-locked-label__key')).toHaveLength(1);
+  // UNNAMED: no heading to carry the key, so the row keeps its own.
+  const secrets = screen.getByRole('link', { name: 'Secrets, Needs Admin access' });
+  expect(secrets.querySelectorAll('svg.crewlet-locked-label__key')).toHaveLength(1);
+  expect(container.querySelectorAll('.crewlet-nav-group--locked')).toHaveLength(1);
+});

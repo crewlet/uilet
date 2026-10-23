@@ -20,6 +20,16 @@ export function tabStop(items: readonly { disabled?: boolean | undefined }[], se
 }
 
 /**
+ * Whether a button can take focus from an arrow key. A DISABLED one cannot,
+ * and neither can an INERT one: a tab folded out of its row into a "More" menu
+ * stays in the document to be measured, inert, and a move that landed on it
+ * would drop focus on the page body.
+ */
+function reachable(el: HTMLButtonElement | null | undefined): el is HTMLButtonElement {
+  return Boolean(el) && !el!.disabled && !el!.hasAttribute('inert');
+}
+
+/**
  * How a row places its ONE TAB STOP while focus moves inside it.
  */
 export interface RovingOptions {
@@ -67,9 +77,9 @@ export interface RovingOptions {
  * under manual activation and wants `followFocus`, because the stop and the
  * selection have come apart; a caller that passes one wants neither.
  *
- * A DISABLED BUTTON IS STEPPED OVER rather than focused: a browser refuses it
- * focus, so a move that lands on one drops focus on the page body and the
- * next arrow press does nothing at all.
+ * A DISABLED OR INERT BUTTON IS STEPPED OVER rather than focused: a browser
+ * refuses it focus, so a move that lands on one drops focus on the page body
+ * and the next arrow press does nothing at all.
  */
 export function useRoving(
   count: number,
@@ -89,8 +99,7 @@ export function useRoving(
   function step(from: number, by: 1 | -1): number | null {
     for (let i = 0; i < count; i += 1) {
       const at = (((from + by * i) % count) + count) % count;
-      const el = buttons.current[at];
-      if (el && !el.disabled) return at;
+      if (reachable(buttons.current[at])) return at;
     }
     return null;
   }
@@ -99,8 +108,7 @@ export function useRoving(
   function rowStep(at: number, by: 1 | -1, across: number): number | null {
     const target = at + by * across;
     if (target < 0 || target >= count) return null;
-    const el = buttons.current[target];
-    return el && !el.disabled ? target : null;
+    return reachable(buttons.current[target]) ? target : null;
   }
 
   function moveTo(key: string, at: number, vertical: boolean): number | null {
