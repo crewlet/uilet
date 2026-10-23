@@ -4,6 +4,9 @@
  */
 
 import { cleanup, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, expect, test } from 'vitest';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
 import { CatalogTile } from './index.js';
@@ -59,4 +62,14 @@ test('as a list item, it is not also named as an article', () => {
   );
   const item = screen.getByRole('listitem');
   expect(item.hasAttribute('aria-labelledby')).toBe(false);
+});
+
+// A FOOT HOLDING ONLY A FACT STANDS AS TALL AS ONE HOLDING A BUTTON, so the
+// rules of a row's feet sit on one line: the floor is a small control's
+// height of CONTENT, under the rule and the padding.
+test("a foot's floor is a small control's height of content", () => {
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'CatalogTile.css'), 'utf8');
+  const foot = /\.crewlet-catalog-tile__foot \{([^}]*)\}/.exec(sheet.replace(/\/\*[\s\S]*?\*\//g, ''))?.[1] ?? '';
+  expect(foot).toMatch(/box-sizing:\s*content-box;/);
+  expect(foot).toMatch(/min-height:\s*var\(--size-control-sm\);/);
 });

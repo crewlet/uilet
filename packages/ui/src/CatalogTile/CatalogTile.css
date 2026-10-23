@@ -86,6 +86,12 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+  /* A SMALL CONTROL'S HEIGHT OF CONTENT, under the rule and the padding: a
+     foot holding only a fact stands as tall as one holding a button, so the
+     rules of every foot in a row sit on one line. Measured on the content
+     box, since under border-box sizing the padding spent the floor and a
+     fact-only foot stood 8px shorter. */
+  box-sizing: content-box;
   min-height: var(--size-control-sm);
   padding-top: var(--spacing-3);
   border-top: 1px solid var(--color-border-default);
