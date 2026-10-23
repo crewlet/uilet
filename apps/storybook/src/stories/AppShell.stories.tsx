@@ -16,6 +16,7 @@ import {
   PlusGlyph,
   ServerGlyph,
   SettingsGlyph,
+  SlidersVerticalGlyph,
   SquareKanbanGlyph,
   TriangleAlertGlyph,
 } from '@crewlethq/icons/glyphs';
@@ -29,6 +30,7 @@ import {
   Callout,
   DescriptionList,
   IconButton,
+  IconButtonLink,
   Inline,
   Kbd,
   NavGroup,
@@ -514,9 +516,21 @@ export const EngineStatusInTheHead: Story = {
             <AccountRow
               avatar={<Avatar name="Lee Park" kind="human" size="sm" ring="brand" decorative />}
               name="Lee Park"
-              detail="Admin"
+              detail="Admin · via API token review"
               href="#/account"
-              actions={<IconButton label="Preferences" icon={<PaletteGlyph size="sm" />} size="sm" variant="ghost" />}
+              // SETTINGS AS ITS GLYPH beside Preferences: a link, current on a
+              // Settings page, and the foot is the reader's row alone.
+              actions={
+                <>
+                  <IconButtonLink
+                    label="Settings"
+                    href="#/settings"
+                    icon={<SlidersVerticalGlyph size="sm" />}
+                    size="sm"
+                  />
+                  <IconButton label="Preferences" icon={<PaletteGlyph size="sm" />} size="sm" variant="ghost" />
+                </>
+              }
             />
           }
         />

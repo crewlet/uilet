@@ -41,6 +41,7 @@ import {
   FormField,
   HuePicker,
   IconButton,
+  IconButtonLink,
   Kbd,
   Menu,
   Meter,
@@ -254,6 +255,7 @@ test('the buttons, the marks and the hidden text carry no violation', async () =
       </ButtonLink>
       <IconButton label="Close" icon={<XGlyph />} />
       <IconButton label="Pin" icon={<PlusGlyph />} pressed />
+      <IconButtonLink label="Settings" href="#/settings" icon={<PlusGlyph />} current />
       <p>
         Open incidents <Count value={3} label="open incidents" />
       </p>

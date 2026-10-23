@@ -4,6 +4,7 @@ import {
   forwardRef,
   isValidElement,
   useId,
+  type AnchorHTMLAttributes,
   type ButtonHTMLAttributes,
   type MouseEvent,
   type ReactElement,
@@ -122,5 +123,54 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       </button>
       {inert ? <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden> : null}
     </>
+  );
+});
+
+export interface IconButtonLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'aria-label' | 'aria-current'> {
+  /** Where it goes, in words: the link's name and its title. REQUIRED, for IconButton's reason. */
+  label: string;
+  href: string;
+  /** The glyph. A component from @crewlethq/icons/glyphs, not a name. */
+  icon: ReactNode;
+  size?: IconButtonSize | undefined;
+  variant?: IconButtonVariant | undefined;
+  /**
+   * The reader is on the page it leads to: `aria-current="page"` and the
+   * selected treatment a nav row draws, the lifted ground inside a hairline.
+   */
+  current?: boolean | undefined;
+}
+
+/**
+ * An icon-only LINK, drawn as an IconButton: a place reached by its glyph, such
+ * as Settings beside the reader's own row in a rail's foot.
+ *
+ * A REAL LINK rather than a button that navigates, so a modified press opens a
+ * tab and the address can be copied, and it says when the reader is already
+ * there, as a nav row does. A router's link is the `asChild` form of
+ * IconButton; this is the plain anchor.
+ */
+export const IconButtonLink = forwardRef<HTMLAnchorElement, IconButtonLinkProps>(function IconButtonLink(
+  { label, href, icon, size = 'md', variant = 'ghost', current = false, className, title, ...rest },
+  ref,
+) {
+  return (
+    <a
+      {...rest}
+      ref={ref}
+      href={href}
+      className={cx(
+        'crewlet-icon-btn',
+        `crewlet-icon-btn--${size}`,
+        `crewlet-icon-btn--${variant}`,
+        current && 'crewlet-icon-btn--current',
+        className,
+      )}
+      title={title ?? label}
+      aria-label={label}
+      aria-current={current ? 'page' : undefined}
+    >
+      {icon}
+    </a>
   );
 });

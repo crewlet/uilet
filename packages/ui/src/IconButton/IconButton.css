@@ -116,6 +116,27 @@
   background: var(--color-surface-pressed);
 }
 
+/*
+ * THE PLACE THE READER IS ON (`IconButtonLink current`): the selected
+ * treatment a nav row draws, the lifted ground inside the default hairline,
+ * drawn on the square's own transparent boundary so nothing moves. With an
+ * edge to draw, its ring covers the edge, as the bordered squares' does.
+ */
+a.crewlet-icon-btn {
+  text-decoration: none;
+}
+
+.crewlet-icon-btn--current,
+.crewlet-icon-btn--current:hover {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+.crewlet-icon-btn--current:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
 /* ghost: transparent, neutral ink, a mild tint on hover. */
 .crewlet-icon-btn--ghost {
   color: var(--color-text-secondary);

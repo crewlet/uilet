@@ -1,4 +1,4 @@
 import './IconButton.css';
 
-export { IconButton } from './IconButton.js';
-export type { IconButtonProps, IconButtonSize, IconButtonVariant } from './IconButton.js';
+export { IconButton, IconButtonLink } from './IconButton.js';
+export type { IconButtonLinkProps, IconButtonProps, IconButtonSize, IconButtonVariant } from './IconButton.js';
