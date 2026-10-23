@@ -27,16 +27,18 @@
 }
 
 /*
- * THE RAIL'S FIELD: the full width of the sidebar, on the SHEET's ground, and
- * a step taller than a control. It is the rail's one field and the first
- * thing in it under the company's name, and the design stands it at 34px,
- * the medium control and one scale step, so it reads as the way in rather
- * than as one more button.
+ * THE RAIL'S FIELD: the width of the slot it stands in, on the SHEET's
+ * ground, on the rail's compact step (the small control, 26px, never under
+ * the 24px target), with a tighter pad at each end. The rail's search slot
+ * names the pad (`--crewlet-rail-field-pad`), so its inset and the field's
+ * pad are one measure and the glyph lands on the nav's glyph column; outside
+ * that slot the field keeps the trigger's own pad.
  */
 .crewlet-search-trigger--rail {
   display: flex;
   width: 100%;
-  height: calc(var(--size-control-md) + var(--spacing-1));
+  height: var(--size-control-sm);
+  padding-inline: var(--crewlet-rail-field-pad, calc(var(--spacing-2) + var(--spacing-1) / 2));
   background: var(--color-surface-background);
 }
 

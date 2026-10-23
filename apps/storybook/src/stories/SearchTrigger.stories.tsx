@@ -19,10 +19,11 @@ export default meta;
 type Story = StoryObj<typeof SearchTrigger>;
 
 /*
- * The rail's field, as the approved design draws it: the width of the
- * sidebar, on the frame, in the sheet's ground. It keeps its words at every
- * width, because under the shell breakpoint the rail is a drawer as wide as
- * it ever was.
+ * The rail's field: on the rail's compact step (26px), in the sheet's ground
+ * on the frame. In the AppShell rail's search slot it stands on the nav's
+ * content columns with a tighter pad (see the AppShell stories). It keeps its
+ * words at every width, because under the shell breakpoint the rail is a
+ * drawer as wide as it ever was.
  */
 export const InTheRail: Story = {
   render: (args) => (
@@ -31,6 +32,25 @@ export const InTheRail: Story = {
         width: 'var(--size-shell-rail)',
         padding: '12px 10px 12px 12px',
         boxSizing: 'border-box',
+        background: 'var(--color-surface-frame)',
+      }}
+    >
+      <SearchTrigger {...args} />
+    </div>
+  ),
+};
+
+/*
+ * NARROWER THAN ITS WORDS AND ITS KEYS, the label gives way first: it ends in
+ * an ellipsis, and the shortcut keeps its width at the field's end.
+ */
+export const NarrowInTheRail: Story = {
+  render: (args) => (
+    <div
+      style={{
+        width: 140,
+        padding: 12,
+        boxSizing: 'content-box',
         background: 'var(--color-surface-frame)',
       }}
     >
