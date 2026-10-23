@@ -105,6 +105,37 @@ export const Appearances: Story = {
 };
 
 /**
+ * THE TWO NEUTRAL PILLS share one edge, the strong step, and differ by their
+ * fill alone: the soft pill stands on the raised fill, the outline on nothing.
+ * Drawn on a card, the ground they meet most often, so the outline's edge can
+ * be judged where it has to be seen. It used to take the plain hairline, which
+ * on a dark card measured 1.07:1, and an "Off" beside a filled "Default" read
+ * as a loose word.
+ */
+export const NeutralOnACard: Story = {
+  render: () => (
+    <div
+      style={{
+        background: 'var(--color-surface-subtle)',
+        border: '1px solid var(--color-border-default)',
+        borderRadius: 'var(--radius-lg)',
+        padding: 'var(--spacing-4)',
+      }}
+    >
+      <Row>
+        <Tag>Default</Tag>
+        <Tag appearance="outline">Off</Tag>
+        <Tag appearance="outline" monospace>
+          builtin
+        </Tag>
+        <Tag>Coming soon</Tag>
+        <Tag appearance="outline">Not in use</Tag>
+      </Row>
+    </div>
+  ),
+};
+
+/**
  * THREE HEIGHTS OF ONE PILL. `sm` is the approved design's pill and the
  * default: 22px with round ends, a 12px label in the medium weight and 9px
  * inside each end. `xs` is the design's 18px count pill for a packed row, at
