@@ -218,20 +218,20 @@
 }
 
 /*
- * THE RAIL'S FIELD ON THE NAV'S CONTENT COLUMNS, compact. Its glyph stands on
- * the nav's glyph column and its shortcut ends where a row's words can end:
- * a row's content is the gutter and the row's pad in from each edge, the
- * field's is the slot's inset, its own 1px edge and its pad
+ * THE RAIL'S FIELD IS A ROW'S WIDTH, compact: its edges are a nav row's
+ * highlight edges, the nav's gutter in from each side of the rail, and its
+ * content stands on a row's content columns through its pad
  * (`--crewlet-rail-field-pad`, which the rail variant of `SearchTrigger`
- * takes), so the inset at each end makes up the difference. Standing on the
- * rows' content rather than on their backgrounds' edges, the field is
- * narrower than a row, a field in the rail rather than a bar across it.
+ * takes): the glyph on the nav's glyph column and the shortcut ending where a
+ * row's words end. A row's content is the gutter and the row's pad in; the
+ * field's is the slot's inset, its own 1px edge and its pad, so the inset at
+ * each end makes up the difference, which is the gutter.
  *
  * And it is held off the nav by the nav's own top inset alone, one step, so
  * the field and the rows read as one group with the field first.
  */
 .crewlet-app-shell__rail-search {
-  --crewlet-rail-field-pad: calc(var(--spacing-1) + var(--spacing-1) / 2);
+  --crewlet-rail-field-pad: calc(var(--size-nav-row-pad) - 1px);
   padding: 0 calc(var(--size-nav-gutter) + var(--size-nav-row-pad) - var(--crewlet-rail-field-pad) - 1px);
 }
 
@@ -813,22 +813,40 @@
  * whatever size of badge a caller hands the row, it is centred where a glyph
  * is, and the row takes the nav row's pad and its glyph-to-word gap.
  */
+/*
+ * AND THE WORDS TAKE THE ROOM: the name and the detail are what the row is
+ * for, so every gap after the name is the half step and the menu's chevron
+ * stands one step off the words at least, at the link's end. The controls
+ * beside the link (Settings, Preferences) are half a step apart and half a
+ * step off the link, so a reader's name keeps the width two controls leave.
+ */
 .crewlet-app-shell__rail-foot .crewlet-account-row {
   --crewlet-account-row-pad: var(--spacing-0);
+  gap: calc(var(--spacing-1) / 2);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__who {
   --crewlet-hit-area-block-start: calc(var(--crewlet-rail-foot-gap) / 2 + var(--crewlet-account-row-pad));
-  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  gap: 0;
   /* On the foot's compact step: the two lines of name and detail with half a
      step above and below them, which still clears the avatar. */
   padding-block: calc(var(--spacing-1) / 2);
-  padding-inline-start: var(--size-nav-row-pad);
+  padding-inline: var(--size-nav-row-pad) calc(var(--spacing-1) / 2);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__avatar {
   justify-content: center;
   width: 14px;
+  /* The nav's glyph-to-word gap, so the name starts on the nav's word line. */
+  margin-inline-end: calc(var(--spacing-2) + var(--spacing-1) / 2);
+}
+
+.crewlet-app-shell__rail-foot .crewlet-account-row__text {
+  margin-inline-end: var(--spacing-1);
+}
+
+.crewlet-app-shell__rail-foot .crewlet-account-row__actions {
+  gap: calc(var(--spacing-1) / 2);
 }
 
 /* The row as the reader's menu button: a button drawn as the link is. */

@@ -857,11 +857,23 @@ describe("the rail's foot", () => {
      * takes a nav glyph's width with the badge centred over it.
      */
     const who = body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__who');
-    expect(who).toContain('padding-inline-start: var(--size-nav-row-pad)');
-    expect(who).toContain(`gap: ${/gap:\s*([^;]+);/.exec(body(nav, '.crewlet-nav-item__row'))?.[1] ?? 'missing'}`);
+    expect(who).toContain('padding-inline: var(--size-nav-row-pad) calc(var(--spacing-1) / 2)');
     const avatar = body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__avatar');
     expect(avatar).toContain('width: 14px');
     expect(avatar).toContain('justify-content: center');
+    // The nav's glyph-to-word gap is the avatar's, so the name starts on the
+    // nav's word line; every gap after the name is smaller, so the words keep
+    // the room the controls leave.
+    expect(avatar).toContain(
+      `margin-inline-end: ${/gap:\s*([^;]+);/.exec(body(nav, '.crewlet-nav-item__row'))?.[1] ?? 'missing'}`,
+    );
+    expect(who).toContain('gap: 0');
+    expect(body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__text')).toContain(
+      'margin-inline-end: var(--spacing-1)',
+    );
+    expect(body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__actions')).toContain(
+      'gap: calc(var(--spacing-1) / 2)',
+    );
     expect(body(css, `${CONTROL} > .crewlet-app-shell__rail-row-icon`)).toContain('min-width: 14px');
   });
 
@@ -1552,7 +1564,10 @@ describe('the rail head, its field and the scroller', () => {
   // name truncates.
   test("the field stands on the nav's content columns, and the head's first child takes its width", () => {
     const search = rule('.crewlet-app-shell__rail-search');
-    expect(search).toContain('--crewlet-rail-field-pad: calc(var(--spacing-1) + var(--spacing-1) / 2);');
+    // THE FIELD IS A ROW'S WIDTH: its pad is a row's pad less its own edge,
+    // so the slot's inset comes to the gutter and the field's edges are a
+    // row's highlight edges.
+    expect(search).toContain('--crewlet-rail-field-pad: calc(var(--size-nav-row-pad) - 1px);');
     expect(search).toContain(
       'padding: 0 calc(var(--size-nav-gutter) + var(--size-nav-row-pad) - var(--crewlet-rail-field-pad) - 1px);',
     );

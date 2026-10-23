@@ -204,6 +204,14 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.42.0
+
+**`IconButtonLink` is an icon-only link** drawn as an `IconButton`: a place reached by its glyph, such as Settings beside the reader's own row in a rail's foot. It is a real anchor (`href`), named and titled by its `label`, and `current` marks the page the reader is on with `aria-current="page"` and a nav row's selected treatment, the lifted ground inside the default hairline, drawn on the square's own transparent boundary so nothing moves; its ring then covers that edge.
+
+**The rail's search field is a row's width.** Its edges are a nav row's highlight edges (the gutter in from each side), and its glyph and shortcut stay on the rows' content columns through its pad (`--crewlet-rail-field-pad` is the row's pad less the field's edge). It keeps the compact step and the one-step gap to the nav.
+
+**The account row's words take the room in a rail's foot.** The avatar keeps the nav's glyph-to-word gap, so the name starts on the nav's word line, and every gap after the name is smaller: the menu's chevron stands one step off the words, the link ends half a step after it, and the controls beside the link are half a step apart and half a step off it. With two controls beside it (Settings and Preferences), the name and the detail keep 110px where the same row with the earlier gaps kept 98px.
+
 ## Changes in 0.41.1
 
 **The rail's search field is compact and stands on the nav's content columns** (`SearchTrigger variant="rail"` in the `AppShell.Rail` search slot). It is 26px tall (the small control step, never under the 24px target) where it was 34px, with 6px inside each end where it had 10px. Its glyph stays on the nav's glyph column, and its shortcut now ends where a row's words end, so the field is 210px wide in a 236px rail where it ran 219px from gutter to gutter. The slot names the pad (`--crewlet-rail-field-pad`), so its inset and the field's pad are one measure; outside the slot the field keeps the trigger's own pad. The slot no longer adds its own 12px under the field, so the nav's top inset (8px) is the one gap between the field and the first row, where it was 20px. The rail's rows start 20px higher. A label longer than the field still truncates before the shortcut does.

@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { IconButton } from '@crewlethq/ui';
+import { IconButton, IconButtonLink } from '@crewlethq/ui';
 import {
   CopyGlyph,
   GripVerticalGlyph,
   PlusGlyph,
   SettingsGlyph,
+  SlidersVerticalGlyph,
   TrashGlyph,
   XGlyph,
 } from '@crewlethq/icons/glyphs';
@@ -92,5 +93,21 @@ export const AllVariants: Story = {
       <IconButton variant="ghost-brand" label="Ghost brand" icon={<CopyGlyph />} />
       <IconButton variant="ghost-danger" label="Ghost danger" icon={<XGlyph />} />
     </div>
+  ),
+};
+
+/**
+ * AN ICON-ONLY LINK: a place reached by its glyph (Settings beside the
+ * reader's own row in a rail's foot), named in words, and a real link, so a
+ * modified press opens a tab.
+ */
+export const ALink: Story = {
+  render: () => <IconButtonLink label="Settings" href="#/settings" icon={<SlidersVerticalGlyph size="sm" />} size="sm" />,
+};
+
+/** The reader is on the page it leads to: `aria-current` and a nav row's selected treatment. */
+export const ALinkToTheCurrentPage: Story = {
+  render: () => (
+    <IconButtonLink label="Settings" href="#/settings" icon={<SlidersVerticalGlyph size="sm" />} size="sm" current />
   ),
 };
