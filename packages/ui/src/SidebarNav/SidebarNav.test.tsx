@@ -746,3 +746,50 @@ describe('the rail geometry', () => {
     }
   });
 });
+
+// A LOCKED ROW STAYS, AND STAYS A LINK: its words carry the key after them,
+// the pointer's title says why, and the reason is read after the name. A row
+// the reader may open draws no mark at all.
+test('a locked row keeps its link and words, and says why it is closed', () => {
+  render(
+    <SidebarNav label="Settings">
+      <SidebarNav.Item label="Nodes" href="#/settings/nodes" locked="Needs Admin access" />
+      <SidebarNav.Item label="Account" href="#/account" />
+    </SidebarNav>,
+  );
+  const nodes = screen.getByRole('link', { name: 'Nodes, Needs Admin access' });
+  expect(nodes.getAttribute('href')).toBe('#/settings/nodes');
+  expect(nodes.querySelector('.crewlet-locked-label')?.getAttribute('title')).toBe('Needs Admin access');
+  expect(screen.getByRole('link', { name: 'Account' }).querySelector('.crewlet-locked-label')).toBeNull();
+});
+
+// THE READER DECIDING IS THE MOMENT TO FETCH: the pointer reaching a row and
+// the keyboard focusing it both call onPrefetch, on the kit's own anchor and
+// on a router's, and the row's hint is its title on both.
+test('a row prefetches where it leads on hover and on focus, and carries its hint', () => {
+  const warm = vi.fn();
+  render(
+    <SidebarNav label="Settings">
+      <SidebarNav.Item label="Nodes" href="#/settings/nodes" title="Leases and duties" onPrefetch={warm} />
+      <SidebarNav.Item
+        label="Secrets"
+        href="#/settings/secrets"
+        title="Names, never values"
+        onPrefetch={warm}
+        renderLink={({ children, ...rest }) => (
+          <a {...rest} data-router="">
+            {children}
+          </a>
+        )}
+      />
+    </SidebarNav>,
+  );
+  for (const name of ['Nodes', 'Secrets']) {
+    const link = screen.getByRole('link', { name });
+    fireEvent.pointerEnter(link);
+    fireEvent.focus(link);
+  }
+  expect(warm).toHaveBeenCalledTimes(4);
+  expect(screen.getByRole('link', { name: 'Nodes' }).getAttribute('title')).toBe('Leases and duties');
+  expect(screen.getByRole('link', { name: 'Secrets' }).getAttribute('title')).toBe('Names, never values');
+});

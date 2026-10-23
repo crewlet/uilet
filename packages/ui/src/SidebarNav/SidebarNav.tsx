@@ -32,6 +32,7 @@ import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { KeyChip } from '../KeyChip/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { LockedLabel } from '../LockedLabel/index.js';
 
 export interface SidebarNavProps {
   /**
@@ -89,6 +90,11 @@ export interface NavLinkProps {
   href?: string | undefined;
   'aria-current'?: 'page' | undefined;
   onClick?: MouseEventHandler<HTMLElement> | undefined;
+  /** The row's hint, as the pointer's title. */
+  title?: string | undefined;
+  /** The row's `onPrefetch`, on the pointer reaching it and on focus. */
+  onPointerEnter?: (() => void) | undefined;
+  onFocus?: (() => void) | undefined;
 }
 
 /**
@@ -158,6 +164,23 @@ export interface NavItemProps {
    * read after its name.
    */
   disabledReason?: string | undefined;
+  /**
+   * Closed to this reader, and why, as a sentence: "Needs Admin access". The
+   * row stays and stays a link (a place that vanished is one the reader
+   * cannot ask for); its words carry the key after them, the pointer's title
+   * says why, and a screen reader hears the reason after the name. See
+   * `LockedLabel`. Unlike `disabledReason`, the destination is reachable: it
+   * is the page that says the reader may not read it.
+   */
+  locked?: string | undefined;
+  /** The row's hint, as the pointer's title: what the destination answers. */
+  title?: string | undefined;
+  /**
+   * Called when the pointer reaches the row and when it takes focus: the
+   * reader deciding, which is the moment to start fetching where it leads,
+   * so the destination is usually in by the time the press lands.
+   */
+  onPrefetch?: (() => void) | undefined;
   /** Draws the row's element, for a router that owns navigation. */
   renderLink?: ((props: NavLinkProps) => ReactNode) | undefined;
   onClick?: MouseEventHandler<HTMLElement> | undefined;
@@ -268,6 +291,9 @@ export function NavItem({
   href,
   current = false,
   disabledReason,
+  locked,
+  title,
+  onPrefetch,
   renderLink,
   onClick,
   children,
@@ -302,7 +328,7 @@ export function NavItem({
           label run together into "ENGCore platform". */}
       {lead ? ' ' : null}
       <span className="crewlet-nav-item__label">
-        {label}
+        <LockedLabel reason={locked}>{label}</LockedLabel>
         {count || badge ? <VisuallyHidden>{spoken([count, badge])}</VisuallyHidden> : null}
       </span>
       {count ? <Figure figure={count} mark={count.mark} className="crewlet-nav-item__count" /> : null}
@@ -340,10 +366,20 @@ export function NavItem({
       ...(href === undefined ? {} : { href }),
       ...(current ? { 'aria-current': 'page' as const } : {}),
       ...(onClick === undefined ? {} : { onClick }),
+      ...(title === undefined ? {} : { title }),
+      ...(onPrefetch === undefined ? {} : { onPointerEnter: onPrefetch, onFocus: onPrefetch }),
     });
   } else if (href !== undefined) {
     row = (
-      <a className={rowClass} href={href} aria-current={current ? 'page' : undefined} onClick={onClick}>
+      <a
+        className={rowClass}
+        href={href}
+        aria-current={current ? 'page' : undefined}
+        onClick={onClick}
+        title={title}
+        onPointerEnter={onPrefetch}
+        onFocus={onPrefetch}
+      >
         {inside}
       </a>
     );
