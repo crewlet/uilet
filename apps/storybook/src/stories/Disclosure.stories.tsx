@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { CodeBlock, CopyButton, Disclosure, Prose, Text } from '@crewlethq/ui';
+import { CodeBlock, CopyButton, Disclosure, Prose, Tag, Text } from '@crewlethq/ui';
 
 const meta: Meta<typeof Disclosure> = {
   title: 'UI/Disclosure',
@@ -104,6 +104,38 @@ export const TheHeadRegister: Story = {
           block by its shape rather than by reading it.
         </Prose>
       </Disclosure>
+    </div>
+  ),
+};
+
+/**
+ * A long fact beside a control, in a narrow column: a log's row on a settings
+ * page, its replay mode, generation, range and size as the fact and its trim
+ * status as the action. The fact gives up its room first and ends in an
+ * ellipsis, so the title still says which log the row is, and nothing runs
+ * out of the toggle under the badge beside it. The fact is still the
+ * toggle's name in full.
+ */
+export const ALongFactInANarrowRow: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-1)', maxWidth: 340 }}>
+      {['tracker', 'iam', 'pages'].map((log) => (
+        <Disclosure
+          key={log}
+          title={log}
+          mono
+          size="compact"
+          headingLevel="none"
+          meta="replays from the snapshot, generation 14, 1201…48211, 1.6 MB"
+          actions={
+            <Tag variant="warning" appearance="soft">
+              Held by the backup
+            </Tag>
+          }
+        >
+          <Prose>Six checks on how far the {log} log has been trimmed.</Prose>
+        </Disclosure>
+      ))}
     </div>
   ),
 };
