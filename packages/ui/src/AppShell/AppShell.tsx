@@ -203,6 +203,28 @@ export function AppShell({
     [mainRef],
   );
 
+  /*
+   * THE SCROLLER'S GUTTER, measured, so the top bar can reserve the same
+   * strip. The scroller keeps its scrollbar's gutter at every height (see
+   * AppShell.css), and where the platform draws scrollbars in the layout
+   * that strip moves the content's end edge in by its width while the bar
+   * above it, which does not scroll, kept its own: every page's actions ended
+   * 15px past the cards under them. CSS cannot read a scrollbar's width, so
+   * it is read here, as the scroller's border box less its client box, and
+   * handed to the stylesheet as `--crewlet-app-shell-gutter`. It is 0 where
+   * scrollbars overlay the content, and on a screen that does not scroll.
+   */
+  const [gutter, setGutter] = useState(0);
+  useLayoutEffect(() => {
+    if (!scroller) return undefined;
+    const measure = () => setGutter(Math.max(0, scroller.offsetWidth - scroller.clientWidth));
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(scroller);
+    return () => observer.disconnect();
+  }, [scroller]);
+
   const shell: AppShellContextValue = {
     narrow,
     drawerOpen,
@@ -227,7 +249,11 @@ export function AppShell({
           !shell.hasRail && 'crewlet-app-shell--no-rail',
           className,
         )}
-        style={drawerZ === null ? style : { ...style, ['--crewlet-app-shell-drawer-z' as string]: String(drawerZ) }}
+        style={{
+          ...style,
+          ['--crewlet-app-shell-gutter' as string]: `${gutter}px`,
+          ...(drawerZ === null ? null : { ['--crewlet-app-shell-drawer-z' as string]: String(drawerZ) }),
+        }}
       >
         {/*
          * FIRST IN THE DOCUMENT, and it moves focus itself rather than letting

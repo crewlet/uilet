@@ -49,6 +49,34 @@ export const Widths: Story = {
   ),
 };
 
+/**
+ * THE TRAY FITS THE KINDS IT IS GIVEN. A reader is offered the kinds their
+ * company runs, so a tray holds five (here without Design) as often as six.
+ * The line takes a column per kind, so five stand in five columns with no
+ * empty sixth at the end, and on a phone the last row of two stands in the
+ * middle under the three. Four stand two by two on a phone.
+ */
+export const FewerKinds: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 24 }}>
+      {[1120, 720, 360].map((width) => (
+        <div key={width} style={{ width }}>
+          <ArtifactMakeRow
+            aria-label={`Start a new artifact, five kinds, ${width} wide`}
+            items={ITEMS.filter((item) => item.kind !== 'design')}
+          />
+        </div>
+      ))}
+      <div style={{ width: 360 }}>
+        <ArtifactMakeRow
+          aria-label="Start a new artifact, four kinds, 360 wide"
+          items={ITEMS.filter((item) => item.kind !== 'design' && item.kind !== 'html')}
+        />
+      </div>
+    </div>
+  ),
+};
+
 /** A kind the reader cannot start stays a stop on the row and says why. */
 export const Unavailable: Story = {
   render: () => (

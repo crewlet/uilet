@@ -181,7 +181,9 @@
  * compact density cannot take the target under it.
  *
  * And the boundary is TRANSPARENT rather than absent, spending one pixel of
- * that step rather than adding one on top of it. A button carries one at every
+ * that step rather than adding one on top of it. It spends a pixel of the row
+ * pad too: added to it, the boundary stood the row's mark and words a pixel
+ * right of every nav glyph and word above them. A button carries one at every
  * variant so that a bordered variant and a borderless one stand the same
  * height, and the row this package draws carries the same one for the same
  * reason: without it the two rows in one foot are 34px and 36px, and the
@@ -196,7 +198,7 @@
   width: 100%;
   min-width: 0;
   min-height: var(--size-row-sm);
-  padding: calc(var(--spacing-2) - 1px) var(--size-nav-row-pad);
+  padding: calc(var(--spacing-2) - 1px) calc(var(--size-nav-row-pad) - 1px);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
@@ -427,13 +429,22 @@
   overflow: hidden;
 }
 
+/*
+ * THE BAR'S INSET IS THE CONTENT'S, so a page's first line starts under the
+ * bar's title and its cards end under the bar's last control. It stood 16px
+ * from each edge over a content column inset 20px, and at its end the
+ * content also gives up the scroller's gutter, which the bar, not scrolling,
+ * did not: with scrollbars drawn in the layout every page's actions ended
+ * 15px past the cards under them. The gutter is measured by the shell
+ * (`--crewlet-app-shell-gutter`, 0 where scrollbars overlay the content).
+ */
 .crewlet-app-shell__topbar {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
   flex: none;
   height: var(--crewlet-app-shell-topbar);
-  padding: 0 var(--spacing-4);
+  padding: 0 calc(var(--spacing-5) + var(--crewlet-app-shell-gutter, 0px)) 0 var(--spacing-5);
   border-bottom: 1px solid var(--color-border-default);
   background: var(--color-surface-background);
 }
@@ -616,7 +627,12 @@
   }
 
   /* THE TOP BAR'S GUTTER, 16px: the content's 12px stood every page's first
-     line 4px left of the title and the controls over it. */
+     line 4px left of the title and the controls over it. The bar and the
+     content take it together. */
+  .crewlet-app-shell__topbar {
+    padding: 0 calc(var(--spacing-4) + var(--crewlet-app-shell-gutter, 0px)) 0 var(--spacing-4);
+  }
+
   .crewlet-app-shell__content {
     padding: var(--spacing-4) var(--spacing-4) var(--spacing-9);
   }
@@ -662,10 +678,27 @@
   transition: background var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-/* In the rail's foot, the account row reaches up across its own padding to
-   half the foot's gap, to meet the row above (HitArea.css). */
+/*
+ * In the rail's foot, the account row reaches up across its own padding to
+ * half the foot's gap, to meet the row above (HitArea.css).
+ *
+ * AND IT STANDS ON THE NAV'S COLUMNS: the avatar centred on the column every
+ * nav glyph is centred on, and the name starting on the line every nav word
+ * starts on. On a 4px inset with an 8px gap a 26px avatar stood 2px left of
+ * the glyphs above it and the name 2px right of their words. The avatar's box
+ * takes a nav glyph's width (`sm`, 14px) and the badge is centred over it, so
+ * whatever size of badge a caller hands the row, it is centred where a glyph
+ * is, and the row takes the nav row's pad and its glyph-to-word gap.
+ */
 .crewlet-app-shell__rail-foot .crewlet-account-row__who {
   --crewlet-hit-area-block-start: calc(var(--crewlet-rail-foot-gap) / 2 + var(--crewlet-account-row-pad));
+  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  padding-inline-start: var(--size-nav-row-pad);
+}
+
+.crewlet-app-shell__rail-foot .crewlet-account-row__avatar {
+  justify-content: center;
+  width: 14px;
 }
 
 /* The row as the reader's menu button: a button drawn as the link is. */

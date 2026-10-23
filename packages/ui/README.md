@@ -204,6 +204,40 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.38.0
+
+### Icons
+
+**`VendorMark` draws Crewlet's own mark** (`vendor="crewlet"`), for the services built into Crewlet (its tracker, its knowledge base) where a catalogue of integrations lists them beside the third-party apps they stand in for. It is drawn from the brand mark `@crewlethq/icons` already carries (`CrewletIcon`), not a second copy, and takes the same `size` and `muted` as every other vendor. `VENDORS` lists it, so the VendorMark story shows it with the others.
+
+**Every vendor mark draws at one weight in its square.** GitLab's press-kit drawing framed its logo in twice its own width, so at 20px it drew 10px beside marks of 20; it is cropped to its logo. Crewlet's mark is framed in the square its own extent fits rather than in the wide brand file's artwork margins, so at 20px it draws 20 by 10 where it drew 17 by 9. The VendorMark story's One weight draws every mark at 20px in a 48px box.
+
+### Layout
+
+These come from a layout audit of the engine dashboard at 1440, 1024 and 390 in both themes; each names what was measured.
+
+**A stat row folds by its own width** (`StatGroup`). It dropped to two columns under a 1024px window, but a row is as wide as its column leaves it: beside the rail and a settings column at 1024 a four-column row was 489px and cut its figures ("Not s…"), and on a phone three tiles stood two and a lone third at double width. The row is a size container on twelve tracks: four a row fold to two under 640px of row, three stack one a row under 480px, and the hairlines follow. The row carries `data-columns` beside `--crewlet-stat-group-cols`. An application that restated the old `width < 1024px` step for a stat row drops it.
+
+**A stat row in a card is flush without being told.** A `StatGroup` that is a `Card`'s content, or a `Card.Body`'s, gives up its own surface, edge and corner, so a card no longer draws a box inside a box (or a third frame inside a padded body). `flush` stays for any other host.
+
+**A disclosure's fact gives way before its title** (`Disclosure`, `Accordion`). The fact (`meta`) held its full width and the title shrank to nothing beside a long one: a log row stopped saying which log it was, and its fact ran under the status badge beside it. The fact now shrinks first, at a hundred to the title's one, ends in an ellipsis, and keeps a floor of one glyph. It is still the toggle's name in full.
+
+**A narrow card's subtitle takes a line of its own** (`Card.Header`). Under 480px of card the head wraps: the title and the card's controls keep the first line, and the subtitle takes the whole of the next and wraps there rather than ending ("Resets today at midnight, the week…"). Only a card whose head has a subtitle becomes a size container. An application that wrapped a subtitle under the title for itself at narrow widths can drop that rule.
+
+**Description lists on one page share a term column** (`DescriptionList`). The term track is `--crewlet-description-list-term`, inherited, so a page sets it once and every list under it starts its values on one line; `termWidth` sets it on one list. The default track, `fit` and the narrow step are unchanged.
+
+**The make row lays out the kinds it is given** (`ArtifactMakeRow`). Five kinds stood in six fixed columns with an empty sixth at the end of the line, and three across on a phone left a hole after the fifth. The line takes a column per kind (`--crewlet-make-row-count`, with `data-count`, both set from `items`), and on a narrow tray a short last row is centred and two or four kinds stand two a row.
+
+**The rail foot stands on the nav's columns** (`AppShell`). A foot row's transparent boundary spends a pixel of its row pad, as it spent one of its block inset, so its mark and words start where the nav's do rather than a pixel right. In the foot, `AccountRow` takes the nav row's pad and glyph-to-word gap and centres its badge over a glyph's width, so the avatar is centred on the glyph column and the name starts on the word line.
+
+**The top bar lines up with the content** (`AppShell`). It stood 16px from each edge over content inset 20px, and the scroller's reserved gutter moved the content's end in further, so with classic scrollbars every page's actions ended 15px past the cards under them. The bar now takes the content's inset on both sides and, at its end, the scroller's gutter, which the shell measures and sets as `--crewlet-app-shell-gutter` on its root (0 with overlay scrollbars).
+
+### Colour
+
+**The neutral outline tag is drawn in the neutral pill's edge** (`Tag`). It took the plain hairline, which on a dark card measured 1.07:1, so "Off" beside a filled "Default" read as a loose word. It takes the strong step the neutral soft pill draws (1.49:1 dark, 1.52:1 light on the card) and keeps its tertiary ink and empty ground, so the two neutral pills differ by their fill alone.
+
+**Every hairline inside a card is easier to see.** `@crewlethq/tokens` holds the plain hairline to dE 5 on the card and the sheet (it held dE 3), and the default dark hairline moves from 1.07:1 to 1.13:1 on the card. A stat row's dividers, a card head's rule, a tile's footer rule and a code block's edge all draw it. See the tokens README.
+
 ## Changes in 0.37.1
 
 ### Sheets

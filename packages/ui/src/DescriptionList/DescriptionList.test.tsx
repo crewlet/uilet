@@ -91,3 +91,26 @@ describe('fit, for a panel of its own width', () => {
     );
   });
 });
+
+test('lists that have to line up share one term column', () => {
+  /*
+   * Four cards of limits on one page each sized the column to their own
+   * longest term, so their values started at four different places. The track
+   * is named by a custom property, inherited, so a page sets it once; a list
+   * can be given it as `termWidth`.
+   */
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'DescriptionList.css'), 'utf8');
+  expect(css).toMatch(
+    /\.crewlet-description-list\s*\{[^}]*grid-template-columns:\s*var\(--crewlet-description-list-term, minmax\(120px, max-content\)\) 1fr;/,
+  );
+  const { container, rerender } = render(<DescriptionList termWidth="12rem" items={[['Requests a minute', '600']]} />);
+  const list = container.querySelector('dl')!;
+  expect(list.style.getPropertyValue('--crewlet-description-list-term')).toBe('12rem');
+  // A caller's own style is kept beside it.
+  rerender(<DescriptionList termWidth="12rem" style={{ marginTop: 4 }} items={[['Requests a minute', '600']]} />);
+  expect(container.querySelector('dl')!.style.marginTop).toBe('4px');
+  expect(container.querySelector('dl')!.style.getPropertyValue('--crewlet-description-list-term')).toBe('12rem');
+  // Without it the list sets nothing, so a page's own value reaches it.
+  rerender(<DescriptionList items={[['Requests a minute', '600']]} />);
+  expect(container.querySelector('dl')!.style.getPropertyValue('--crewlet-description-list-term')).toBe('');
+});

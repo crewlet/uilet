@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 
 /** One pair, as a tuple: the term and what it is. */
@@ -15,6 +15,17 @@ export interface DescriptionListProps extends HTMLAttributes<HTMLDListElement> {
    * space after "Up" and stacks a list the panel had room to lay side by side.
    */
   fit?: boolean | undefined;
+  /**
+   * The term column's width, as a CSS track: `12rem`, or
+   * `minmax(120px, 14rem)`. For lists that have to line up with each other,
+   * stacked cards of settings on one page, where each list sizing the column
+   * to its own longest term starts its values somewhere else. The same track
+   * can be set once for a whole page as `--crewlet-description-list-term`,
+   * which every list under it inherits. Ignored with `fit`, whose column is
+   * its own longest term by definition, and under the narrow step, where a
+   * term stands over its detail.
+   */
+  termWidth?: string | undefined;
   /**
    * The pairs. Given as tuples so a caller can build them from a record
    * without inventing a key for each one; `DescriptionList.Item` children are
@@ -39,14 +50,21 @@ export interface DescriptionListProps extends HTMLAttributes<HTMLDListElement> {
 export function DescriptionList({
   dense = false,
   fit = false,
+  termWidth,
   items,
   className,
+  style,
   children,
   ...rest
 }: DescriptionListProps) {
   return (
     <dl
       {...rest}
+      style={
+        termWidth === undefined
+          ? style
+          : ({ ...style, '--crewlet-description-list-term': termWidth } as CSSProperties)
+      }
       className={cx(
         'crewlet-description-list',
         dense && 'crewlet-description-list--dense',

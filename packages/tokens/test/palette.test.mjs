@@ -272,6 +272,14 @@ describe('the four rungs', () => {
     assert.deepEqual(darkFailures(line, dark.surface.subtle), ['the hairline that finds a card is visible on both sides of it']);
   });
 
+  test('a hairline that only clears the noticing floor is caught', () => {
+    // The dark line as it shipped before CARD_HAIRLINE_DE: dE 3.1 off the
+    // card, 1.07:1, which a layout audit measured as no line at all inside a
+    // card (a stat row's dividers, a tile's footer rule, an outline tag).
+    const [line] = CARD_HAIRLINE;
+    assert.deepEqual(darkFailures(line, '#191b20'), ['the hairline that finds a card is visible on both sides of it']);
+  });
+
   test('a raised chip is measured in every theme state, and one whose edge is its own fill is caught', () => {
     const CHIP_RULE = 'the strong hairline finds a raised chip on every ground';
     const [fill, edge] = RAISED_CHIP;

@@ -363,6 +363,30 @@ describe('Tag colour', () => {
     expect(failures).toEqual([]);
   });
 
+  test('the neutral outline is drawn in the neutral pill edge, and reads as a pill on a card', () => {
+    /*
+     * It took the plain hairline, which on the card it stands on measured
+     * 1.07:1 in dark, so an "Off" beside a filled "Default" read as a loose
+     * word. Its edge is the neutral soft pill's, so the two neutral pills
+     * differ by their fill alone, and that edge is held off the card.
+     */
+    const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const outline = /\.crewlet-tag--neutral\.crewlet-tag--outline\s*\{([^}]*)\}/.exec(bare)?.[1] ?? '';
+    const soft = /\.crewlet-tag--neutral\.crewlet-tag--soft\s*\{([^}]*)\}/.exec(bare)?.[1] ?? '';
+    const edge = /border-color:\s*var\((--[\w-]+)\)/.exec(outline)?.[1] ?? '';
+    expect(edge).toBe(/--crewlet-tag-edge:\s*var\((--[\w-]+)\)/.exec(soft)?.[1]);
+    const failures: string[] = [];
+    for (const [state, values] of Object.entries(states)) {
+      if (state === 'base') continue;
+      const page = parseHex(values.get(token('color-surface-background')) ?? '');
+      if (page === null) throw new Error(`${state} has no opaque page colour`);
+      const card = resolveColour(values, token('color-surface-subtle'), page);
+      const ratio = contrast(flatten(values.get(edge) ?? '', card), card);
+      if (ratio < 1.4) failures.push(`${state}: the neutral outline's edge measures ${ratio.toFixed(2)}:1 on the card`);
+    }
+    expect(failures).toEqual([]);
+  });
+
   test('the target floor is a floor, not a height', () => {
     // A floor rather than a height, so the md step keeps the 28px of a small
     // control; written as a height it would SHRINK an interactive md tag to

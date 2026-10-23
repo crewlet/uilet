@@ -85,3 +85,44 @@ export const All: StoryObj = {
     </div>
   ),
 };
+
+const tile: CSSProperties = {
+  display: 'grid',
+  placeItems: 'center',
+  width: 48,
+  height: 48,
+  borderRadius: 'var(--radius-md)',
+  border: '1px solid var(--color-border-default)',
+  background: 'var(--color-surface-subtle)',
+};
+
+/**
+ * ONE WEIGHT IN A CATALOGUE. Every mark at 20px in the 48px brand box an
+ * integrations tile draws, side by side, so a mark drawing smaller than its
+ * neighbours is seen at once. Every drawing fills its frame: GitLab's
+ * press-kit file framed its logo in twice its own width and drew at half the
+ * size of the others, and Crewlet's brand mark kept the wide file's artwork
+ * margins and drew 17 by 9 pixels. Crewlet's mark is wider than it is tall,
+ * so it fills the slot's width, as Discord's and Microsoft Teams' do.
+ */
+export const OneWeight: StoryObj = {
+  render: () => (
+    <div style={{ padding: 'var(--spacing-5)', display: 'grid', gap: 'var(--spacing-5)' }}>
+      {(['light', 'dark'] as const).map((theme) => (
+        <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
+          <p style={caption}>{theme}, 20px in a 48px box</p>
+          <div style={row}>
+            {VENDORS.map((vendor) => (
+              <span key={vendor} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--spacing-1)' }}>
+                <span style={tile}>
+                  <VendorMark vendor={vendor} size={20} />
+                </span>
+                <span style={caption}>{vendor}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  ),
+};

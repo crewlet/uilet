@@ -115,9 +115,35 @@
   font-variant-ligatures: none;
 }
 
-/* A fact inside the button: quieter than the title it belongs to. */
+/*
+ * A fact inside the button: quieter than the title it belongs to, and the
+ * first thing to give up room when the row runs short.
+ *
+ * IT USED TO TAKE NONE. `flex: none` held a fact at its full width while the
+ * title, which may shrink, was the only thing that could, so a long fact (a
+ * log's replay mode, generation, range and size, beside a status badge in the
+ * actions) took the whole trigger: the title shrank to nothing, so a row no
+ * longer said which log it was, and the fact ran out of the button and under
+ * the badge beside it.
+ *
+ * A HUNDRED TO THE TITLE'S ONE, as a card's subtitle gives way to its title:
+ * two items that may shrink give up space in proportion to their widths, so
+ * at that ratio the fact absorbs effectively all of it, and ends in an
+ * ellipsis, before the title gives up a pixel. The fact is still the button's
+ * name in full; only its drawing is cut.
+ *
+ * NEVER TO NOTHING. The floor is one glyph wide, because a fact is often a
+ * mark (a failed call's glyph beside a tool's name), and a mark that shrank
+ * to nothing would say nothing at all. A long fact keeps an ellipsis there,
+ * which says a fact was cut. Once the fact is at its floor the title shrinks
+ * and ends in its own ellipsis.
+ */
 .crewlet-disclosure__meta {
-  flex: none;
+  flex: 0 100 auto;
+  min-width: 1.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
 }

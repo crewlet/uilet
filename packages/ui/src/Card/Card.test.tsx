@@ -569,6 +569,34 @@ test('a head stays one line, and the subtitle is what gives up its tail', () => 
   expect(px(subtitle, 'flex-shrink')).toBeGreaterThan(px(main, 'flex-shrink') * 10);
 });
 
+test('a narrow card puts its subtitle on a line of its own, and only a card with one is a container', () => {
+  /*
+   * On a phone an Agent seats card cut its subtitle to "Resets today at
+   * midnight, the week…" in 202px of a 361px sentence. Under 480px of card the
+   * subtitle takes the head's whole width on a line of its own and wraps.
+   * Asked of the source, because jsdom lays nothing out and evaluates no
+   * container query.
+   */
+  const css = readFileSync(join(here, 'Card.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const container = /\.crewlet-card:has\(> \.crewlet-card__header > \.crewlet-card__subtitle\)\s*\{([^}]*)\}/.exec(css);
+  expect(container, 'the card whose head has a subtitle is the container').not.toBeNull();
+  expect(container?.[1]).toMatch(/container:\s*crewlet-card\s*\/\s*inline-size;/);
+  // No other card is one: containment takes a card's width from where it
+  // stands, which a card sized by its own contents must not be given.
+  expect(css.match(/container(-type)?:/g)).toHaveLength(1);
+
+  const at = css.indexOf('@container crewlet-card (width < 480px) {');
+  expect(at).toBeGreaterThan(-1);
+  const block = css.slice(at, css.indexOf('\n}\n', at));
+  expect(block).toMatch(/\.crewlet-card__header:has\(> \.crewlet-card__subtitle\)\s*\{\s*flex-wrap:\s*wrap;/);
+  expect(block).toMatch(
+    /\.crewlet-card__header > \.crewlet-card__subtitle\s*\{\s*order:\s*1;\s*flex:\s*1 1 100%;\s*white-space:\s*normal;\s*\}/,
+  );
+  // The name block grows into the first line's room rather than claiming its
+  // own width, so a long title never pushes the card's controls down.
+  expect(block).toMatch(/> \.crewlet-card__header-main\s*\{\s*flex:\s*1 1 0;\s*\}/);
+});
+
 test('a title asked to truncate ENDS, and one that was not is untouched', () => {
   /*
    * THE DEFECT THIS EXISTS FOR. The name block clips so the head stays one

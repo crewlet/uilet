@@ -5,6 +5,9 @@
  * a stop that says why.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
@@ -53,4 +56,29 @@ test('a row of every kind carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test('the tray lays out the kinds it is given, with no empty cell', () => {
+  /*
+   * Offered five kinds (New design hidden), the tray drew them in six fixed
+   * columns with an empty sixth of dotted field at the end of the line, and
+   * three across on a phone with a hole after the fifth. The count reaches
+   * the stylesheet, and the stylesheet spends it.
+   */
+  const five = ARTIFACT_KINDS.slice(0, 5).map((kind) => ({ kind, label: kind, href: `#/artifacts/new/${kind}` }));
+  render(<ArtifactMakeRow aria-label="Start a new artifact" items={five} />);
+  const list = screen.getByRole('list', { name: 'Start a new artifact' });
+  expect(list.getAttribute('data-count')).toBe('5');
+  expect(list.style.getPropertyValue('--crewlet-make-row-count')).toBe('5');
+
+  const here = dirname(fileURLToPath(import.meta.url));
+  const css = readFileSync(join(here, 'ArtifactMakeRow.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  // The line is a column per kind, never a fixed six.
+  const wide = css.slice(css.indexOf('@container (width >= 560px)'));
+  expect(wide).toMatch(/grid-template-columns:\s*repeat\(var\(--crewlet-make-row-count, 6\), minmax\(0, 1fr\)\);/);
+  // The narrow tray centres a short last row, and fills rows of two and four.
+  const narrow = css.slice(css.indexOf('@container (width < 560px)'), css.indexOf('@container (width >= 560px)'));
+  expect(narrow).toMatch(/:nth-child\(3n \+ 1\):nth-last-child\(2\)\s*\{\s*grid-column:\s*2 \/ span 2;/);
+  expect(narrow).toMatch(/:nth-child\(3n \+ 1\):last-child\s*\{\s*grid-column:\s*3 \/ span 2;/);
+  expect(narrow).toMatch(/\[data-count='2'\], \[data-count='4'\]\) > \.crewlet-make-row__cell\s*\{\s*grid-column:\s*span 3;/);
 });

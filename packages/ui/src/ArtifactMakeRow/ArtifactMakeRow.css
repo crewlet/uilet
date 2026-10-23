@@ -8,9 +8,16 @@
  *
  * THE TRAY SIZES ITSELF BY ITS OWN WIDTH, never the window's: it sits in a
  * page column a sidebar narrows, so three steps are container queries on the
- * tray. Under 560px three across in two lines; from 560px the six in one
- * line, each its mark over its name, so a long name is never cut; from 920px
- * the mark beside the name and what the kind is for under it.
+ * tray. Under 560px three across, each its mark over its name; from 560px
+ * every kind in one line, still mark over name, so a long name is never cut;
+ * from 920px the mark beside the name and what the kind is for under it.
+ *
+ * AND BY ITS OWN COUNT. A reader is offered the kinds their company runs, so
+ * a tray holds five as often as six, and a grid fixed at six columns left an
+ * empty sixth of dotted field at the end of the line, and three across left a
+ * hole after the fifth. The line takes one column per kind
+ * (`--crewlet-make-row-count`, set from the items), and the narrow tray fills
+ * its rows by the count (`data-count`): see the narrow step below.
  */
 
 .crewlet-make-row {
@@ -28,7 +35,7 @@
 .crewlet-make-row__list {
   --crewlet-make-row-gap: var(--spacing-1);
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: var(--crewlet-make-row-gap);
   margin: 0;
   padding: var(--spacing-1);
@@ -109,9 +116,40 @@
   line-height: 1.35;
 }
 
+/*
+ * THE NARROW TRAY, on six tracks, each kind two of them: three a row. A last
+ * row that is short is centred under the full one rather than left with a
+ * hole after it, so five kinds stand three and two, the two in the middle.
+ * Two and four kinds stand two a row, which fills every row, and one kind
+ * takes the tray.
+ */
+@container (width < 560px) {
+  .crewlet-make-row__cell {
+    grid-column: span 2;
+  }
+
+  /* One kind short of a full last row: the first of the two moves in a track. */
+  .crewlet-make-row__cell:nth-child(3n + 1):nth-last-child(2) {
+    grid-column: 2 / span 2;
+  }
+
+  /* A last row of one stands in the middle. */
+  .crewlet-make-row__cell:nth-child(3n + 1):last-child {
+    grid-column: 3 / span 2;
+  }
+
+  .crewlet-make-row__list:is([data-count='2'], [data-count='4']) > .crewlet-make-row__cell {
+    grid-column: span 3;
+  }
+
+  .crewlet-make-row__list[data-count='1'] > .crewlet-make-row__cell {
+    grid-column: span 6;
+  }
+}
+
 @container (width >= 560px) {
   .crewlet-make-row__list {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--crewlet-make-row-count, 6), minmax(0, 1fr));
   }
 
   .crewlet-make-row__item {

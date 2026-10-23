@@ -452,6 +452,49 @@
   min-width: 0;
 }
 
+/*
+ * ON A NARROW CARD THE SUBTITLE TAKES A LINE OF ITS OWN, under the title and
+ * the card's controls, and wraps there rather than ending.
+ *
+ * One line is right while the subtitle has room to say something beside the
+ * title. In a card under 480px wide it had none: on a phone an Agent seats
+ * card drew "Resets today at midnight, the week…" in 202px of a 361px
+ * sentence, and the half it cut was the half that said when. On its own line
+ * the subtitle has the head's whole width, and the title and the controls
+ * keep the first.
+ *
+ * THE CARD IS THE CONTAINER, and only a card whose head has a subtitle, since
+ * that is the one card this changes. Inline-size containment takes a card's
+ * width from where it stands, never from its contents, which is how a panel
+ * is laid out anyway; a card that sized itself to its contents (a tile in a
+ * row that does not stretch it) and carried no subtitle is untouched.
+ *
+ * THE NAME BLOCK TAKES THE FIRST LINE'S ROOM rather than its own width. With
+ * the row free to wrap, a title wider than what the controls leave would
+ * otherwise push the controls onto a second line; from a zero basis it grows
+ * into the room they leave and clips there, exactly as the one-line head does.
+ */
+.crewlet-card:has(> .crewlet-card__header > .crewlet-card__subtitle) {
+  container: crewlet-card / inline-size;
+}
+
+@container crewlet-card (width < 480px) {
+  .crewlet-card__header:has(> .crewlet-card__subtitle) {
+    flex-wrap: wrap;
+    row-gap: var(--spacing-1);
+  }
+
+  .crewlet-card__header:has(> .crewlet-card__subtitle) > .crewlet-card__header-main {
+    flex: 1 1 0;
+  }
+
+  .crewlet-card__header > .crewlet-card__subtitle {
+    order: 1;
+    flex: 1 1 100%;
+    white-space: normal;
+  }
+}
+
 .crewlet-card__description {
   margin: 0;
   font-size: var(--font-size-compact);

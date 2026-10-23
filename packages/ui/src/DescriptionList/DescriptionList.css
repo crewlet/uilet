@@ -4,11 +4,18 @@
  * The term track is `minmax(120px, max-content)`: wide enough that short terms
  * line up with each other, and free to grow for a long one rather than
  * wrapping it into two lines beside a one-word value.
+ *
+ * ONE LIST'S TRACK IS ITS OWN, which is wrong for a page of them. Four cards
+ * of limits stacked on one page each sized the column to their own longest
+ * term, so their values started at four different places and the cards did
+ * not read as one table. `--crewlet-description-list-term` names the track
+ * instead, and it is inherited: set once on the page (or passed to each list
+ * as `termWidth`), every list under it shares one column.
  */
 
 .crewlet-description-list {
   display: grid;
-  grid-template-columns: minmax(120px, max-content) 1fr;
+  grid-template-columns: var(--crewlet-description-list-term, minmax(120px, max-content)) 1fr;
   gap: var(--spacing-2) var(--spacing-4);
   margin: 0;
   font-size: var(--font-size-compact);

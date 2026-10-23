@@ -243,6 +243,40 @@ export const ALongTitle: Story = {
 };
 
 /**
+ * A NARROW CARD PUTS ITS SUBTITLE ON A LINE OF ITS OWN. Under 480px of card
+ * the subtitle goes under the title and the card's controls, at the head's
+ * whole width, and wraps there rather than ending: on a phone this card's
+ * subtitle used to be cut to "Resets today at midnight, the week…", and the
+ * half it lost was the half that said when. The wide card keeps the one-line
+ * head, where the subtitle gives up its tail first.
+ */
+export const ANarrowCardsSubtitle: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-4)' }}>
+      {[345, 720].map((width) => (
+        <div key={width} style={{ width }}>
+          <Card as="section">
+            <Card.Header
+              subtitle="Resets today at midnight, the week on Monday and the month on the 1st"
+              actions={
+                <Button size="small" variant="secondary">
+                  Edit
+                </Button>
+              }
+            >
+              <Card.Title>Agent seats</Card.Title>
+            </Card.Header>
+            <Card.Body>
+              <Card.Description>Each seat spends against the budget of its team.</Card.Description>
+            </Card.Body>
+          </Card>
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/**
  * The panel at all three densities, side by side. Every inset, row height and
  * gap in it is a spacing token, so one setting on the root reaches all of
  * them; nothing in the card restates a number.

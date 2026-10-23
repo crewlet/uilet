@@ -19,7 +19,9 @@ import {
   TriangleAlertGlyph,
 } from '@crewlethq/icons/glyphs';
 import {
+  AccountRow,
   AppShell,
+  Avatar,
   BrandLockup,
   Button,
   ButtonLink,
@@ -256,7 +258,9 @@ function Screen({ children }: { children?: ReactNode }) {
  * from the frame on its top, right and bottom, drawn round with the plain
  * hairline and rounded at the sheet's corner. The bar and the one scroller are
  * inside the sheet, so the screen scrolls under the bar and is clipped by the
- * corner.
+ * corner. The bar takes the content's inset on both sides, and the scroller's
+ * gutter at its end, so the Refresh button ends under the search field over it
+ * whether or not the platform draws its scrollbars in the layout.
  */
 export const Wide: Story = {
   render: () => (
@@ -403,6 +407,40 @@ export const Fill: Story = {
       >
         A canvas that fills the height left under the bar.
       </div>
+    </AppShell>
+  ),
+};
+
+/**
+ * EVERY ROW IN THE FOOT STANDS ON THE NAV'S TWO COLUMNS: its mark centred on
+ * the column every nav glyph above it is centred on, and its words starting on
+ * the line every nav word starts on. The engine row's transparent boundary
+ * spends a pixel of its pad rather than adding one, and the account row's
+ * badge is centred over a glyph's width with the nav's own gap after it, so a
+ * badge wider than a glyph still lands where a glyph does. Hold a straight
+ * edge to Home, Settings, the engine row and the reader's name: one line.
+ */
+export const FootRowsOnTheNavColumns: Story = {
+  render: () => (
+    <AppShell
+      sidebar={
+        <Rail
+          foot={
+            <>
+              <EngineRow />
+              <AccountRow
+                avatar={<Avatar name="Lee Park" kind="human" size="sm" ring="brand" decorative />}
+                name="Lee Park"
+                detail="Admin"
+                href="#/account"
+              />
+            </>
+          }
+        />
+      }
+      topbar={<Topbar />}
+    >
+      <Screen />
     </AppShell>
   ),
 };

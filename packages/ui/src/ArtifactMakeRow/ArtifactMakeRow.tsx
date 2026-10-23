@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type CSSProperties } from 'react';
 import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
@@ -32,7 +32,9 @@ export interface ArtifactMakeRowProps {
  * kind's glyph on its own tint, its name and what it is for, the whole item
  * one link. A toolbar for making things rather than a hero: one line high on
  * a wide page, the details dropped before a name is cut, and three across on
- * a phone.
+ * a phone. However many kinds a reader is offered, the tray holds no empty
+ * cell: the line has a column per kind, and on a phone a short last row is
+ * centred, or four kinds stand two by two.
  *
  * THE TRAY IS A WORKBENCH, Crewlet's dotted field under the kinds the way the
  * org chart's canvas sits under its seats, and an item lifts off it as a card
@@ -51,7 +53,19 @@ export function ArtifactMakeRow({
 }: ArtifactMakeRowProps) {
   return (
     <div className={cx('crewlet-make-row', className)}>
-      <ul className="crewlet-make-row__list" aria-label={ariaLabel} aria-labelledby={ariaLabelledBy}>
+      {/*
+        THE COUNT, twice: as the property the wide line takes its columns
+        from, so five kinds stand in five columns rather than in six with an
+        empty sixth, and as an attribute, because the narrow tray chooses how
+        to fill its rows by selector, and a selector cannot read a property.
+      */}
+      <ul
+        className="crewlet-make-row__list"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        data-count={items.length}
+        style={{ '--crewlet-make-row-count': items.length } as CSSProperties}
+      >
         {items.map((item) => (
           <li key={item.kind} className="crewlet-make-row__cell">
             <MakeItem item={item} />

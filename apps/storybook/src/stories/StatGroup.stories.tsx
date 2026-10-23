@@ -67,20 +67,67 @@ export const StillLoading: Story = {
 };
 
 /**
- * Inside another card, `flush`: the card is the row's surface and edge, and
- * only the hairlines between the tiles are the row's own.
+ * Inside a card the card is the row's surface and edge, and only the hairlines
+ * between the tiles are the row's own. A row that is a card's content, or its
+ * body's, is flush by where it stands, with or without `flush`: the second
+ * card here passes nothing and draws no box inside its box, padded body and
+ * all. `flush` is for a host that is not a Card.
  */
 export const InsideACard: Story = {
   render: () => (
-    <Card padding="none">
-      <Card.Header>
-        <Card.Title as="h3">Nodes</Card.Title>
-      </Card.Header>
-      <StatGroup flush columns={3}>
-        <StatCard label="Live" value="3" tone="success" />
-        <StatCard label="Drifted" value="0" />
-        <StatCard label="Stranded seats" value="0" />
-      </StatGroup>
-    </Card>
+    <div style={{ display: 'grid', gap: 'var(--spacing-4)' }}>
+      <Card padding="none">
+        <Card.Header>
+          <Card.Title as="h3">Nodes</Card.Title>
+        </Card.Header>
+        <StatGroup columns={3}>
+          <StatCard label="Live" value="3" tone="success" />
+          <StatCard label="Drifted" value="0" />
+          <StatCard label="Stranded seats" value="0" />
+        </StatGroup>
+      </Card>
+      <Card>
+        <Card.Header>
+          <Card.Title as="h3">Snapshots</Card.Title>
+        </Card.Header>
+        <Card.Body padding="md">
+          <StatGroup columns={4}>
+            <StatCard label="Taken" value="14" />
+            <StatCard label="Size" value="1.6 MB" />
+            <StatCard label="Owner" value="Not set" sub="set retention.backup_owner" />
+            <StatCard label="Oldest" value="9 days" />
+          </StatGroup>
+        </Card.Body>
+      </Card>
+    </div>
+  ),
+};
+
+/**
+ * THE ROW FOLDS BY ITS OWN WIDTH, never the window's. At 489px (a settings
+ * page at a 1024px window, beside the rail and the settings column) four
+ * tiles stand two by two rather than four tiles of 120px with their figures
+ * cut; at 345px (a phone) three tiles stand one a row rather than two and a
+ * lone third at double width. Across a page, the same rows stand on one line.
+ */
+export const FoldsByItsOwnWidth: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)' }}>
+      {[960, 489, 345].map((width) => (
+        <div key={width} style={{ display: 'grid', gap: 'var(--spacing-3)', width }}>
+          <StatGroup columns={4} aria-label={`Four tiles in ${width}px`}>
+            <StatCard label="Taken" value="14" />
+            <StatCard label="Size" value="1.6 MB" />
+            <StatCard label="Owner" value="Not set" sub="set retention.backup_owner" />
+            <StatCard label="Behind on config" value="0" />
+          </StatGroup>
+          <StatGroup columns={3} aria-label={`Three tiles in ${width}px`}>
+            <StatCard label="Schedules" value="6" />
+            <StatCard label="Paused" value="1" tone="warning" />
+            <StatCard label="Next run" value="09:00" sub="tomorrow" />
+          </StatGroup>
+        </div>
+      ))}
+    </div>
   ),
 };

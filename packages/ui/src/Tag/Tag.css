@@ -277,12 +277,22 @@
   --crewlet-tag-line: var(--color-border-strong-hover);
 }
 
-/* The neutral outline is the engine's `.badge.outline`: the hairline step as
-   the boundary, and the tertiary ink, which is a quieter register than the
-   tinted outlines keep. It is the appearance for a value that is not a state
-   at all, so it says less than its neighbours on purpose. */
+/*
+ * The neutral outline: the neutral pill's own boundary with no fill, and the
+ * tertiary ink, which is a quieter register than the tinted outlines keep. It
+ * is the appearance for a value that is not a state at all, so it says less
+ * than its neighbours on purpose, by its ink and its empty ground.
+ *
+ * NOT BY A FAINTER EDGE. It used to take the plain hairline, the line that
+ * finds a card, and on the card it so often stands on that line measured
+ * 1.07:1 in dark: Limits' "Off" beside a filled "Default", an audit row's
+ * machine and open, a tool's "builtin", all read as loose words rather than
+ * as pills. The strong step is the edge the neutral soft pill already draws
+ * (1.49:1 dark, 1.52:1 light on the card), so the two neutral pills differ by
+ * their fill alone and both read as pills.
+ */
 .crewlet-tag--neutral.crewlet-tag--outline {
-  border-color: var(--color-border-default);
+  border-color: var(--color-border-strong);
   --crewlet-tag-ink: var(--color-text-tertiary);
 }
 

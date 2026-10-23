@@ -80,10 +80,10 @@ export const OPAQUE_SURFACES = [
  *   found by its HAIRLINE rather than by its fill: a page of cards each lifted
  *   by dE 3 is a relief map. So the step comes with a second rule, and that is
  *   the one that carries the card: the plain border (CARD_HAIRLINE) has to be
- *   a line a reader can see, dE 3 against the card it bounds and against the
- *   sheet around it. That a card actually DRAWS that border is a component
- *   rule, held by the Card suite in @crewlethq/ui, because a palette cannot see
- *   a stylesheet.
+ *   a line a reader can see, CARD_HAIRLINE_DE against the card it bounds and
+ *   against the sheet around it. That a card actually DRAWS that border is a
+ *   component rule, held by the Card suite in @crewlethq/ui, because a palette
+ *   cannot see a stylesheet.
  * - RAISED OVER THE CARD is a chip, a well or a key cap with no border of its
  *   own, so it is the fill alone that says it is there: dE 3.
  *
@@ -104,6 +104,24 @@ export const RUNG_STEPS = [
  */
 export const CARD_HAIRLINE = ['--color-border-default', '--color-surface-subtle', '--color-surface-background'];
 export const HAIRLINE_DE = 3;
+
+/**
+ * THE FLOOR FOR THE LINE THAT FINDS A CARD, above the hairline floor every
+ * other line keeps.
+ *
+ * dE 3 is the floor at which a reader can tell two colours apart when looking
+ * for the difference. The plain hairline is not looked for: it is the edge of
+ * every card, the rule under every card's head, the divider between every
+ * pair of stat tiles and the outline of every quiet tag, and it has to be seen
+ * at a glance. Held to dE 3 alone, the default dark palette drew it dE 3.1 off
+ * the card, 1.07:1, and a layout audit measured those lines as gone: a tile's
+ * footer rule, a stat row's dividers and an outline tag read as loose text.
+ * Every named theme already drew it at dE 6.6 or more in dark. dE 5 is as
+ * far as the default dark ladder lets it move along lightness while the rail's
+ * current row (raised, RAIL_CURRENT_ROW) keeps HAIRLINE_DE against it, and it
+ * is where the line reads as a line.
+ */
+export const CARD_HAIRLINE_DE = 5;
 
 /**
  * A chip drawn on the raised rung inside the strong hairline, as [fill,
@@ -1306,10 +1324,10 @@ function checkState(state, values, profile, push, theme = { tint: null, contrast
       const measured = deltaE(colour(line), colour(side));
       say(
         'the hairline that finds a card is visible on both sides of it',
-        measured >= HAIRLINE_DE,
+        measured >= CARD_HAIRLINE_DE,
         `${line} on ${side}`,
         measured,
-        `dE ${measured.toFixed(2)} >= ${HAIRLINE_DE}`,
+        `dE ${measured.toFixed(2)} >= ${CARD_HAIRLINE_DE}`,
       );
     }
   }

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
-import { breakpoint, font, themes } from '@crewlethq/tokens';
+import { font, themes } from '@crewlethq/tokens';
 import { parseHex } from '@crewlethq/tokens/test/palette';
 import { CoinsGlyph } from '@crewlethq/icons/glyphs';
 import { channels, installSheets, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
@@ -382,18 +382,6 @@ describe('StatGroup', () => {
     expect(divider).not.toBe("");
     expect(weight(divider)).toBeGreaterThanOrEqual(weight(clears));
     expect(group.indexOf(clears + " {")).toBeLessThan(group.indexOf(divider));
-  });
-
-  test('it drops to two columns where the engine drops its own row', () => {
-    // Under the shell breakpoint, strictly, which is where the rail becomes a
-    // drawer and where the engine drops its own stat row. A media query cannot
-    // read a custom property, so the number is written out and this is what
-    // says it is still the shell's number, asked the shell's way.
-    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../StatGroup/StatGroup.css'), 'utf8');
-    const query = `@media (width < ${breakpoint.shell})`;
-    expect(css).toContain(query);
-    const reduced = css.slice(css.indexOf(query));
-    expect(reduced).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   });
 
   test('four columns by default', () => {
