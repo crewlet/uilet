@@ -171,14 +171,22 @@
 }
 
 /* The same gutter the nav takes, so what the foot says lines up with the rows
-   above it rather than sitting further out. */
+   above it rather than sitting further out.
+
+   THE FOOT IS THE COMPACT STEP. It holds what a reader reaches for rarely (a
+   settings link, the engine's state, who they are), so its rows stand on the
+   small control step (`--crewlet-rail-foot-row`, 26px, never under the 24px
+   target) on a half-step gap and a one-step inset, where the nav above keeps
+   its 30px rows. Only heights change: every row keeps its order, columns,
+   glyphs and words. */
 .crewlet-app-shell__rail-foot {
-  --crewlet-rail-foot-gap: var(--spacing-1);
+  --crewlet-rail-foot-gap: calc(var(--spacing-1) / 2);
+  --crewlet-rail-foot-row: var(--size-control-sm);
   flex: none;
   display: flex;
   flex-direction: column;
   gap: var(--crewlet-rail-foot-gap);
-  padding: var(--spacing-2) var(--size-nav-gutter);
+  padding: var(--spacing-1) var(--size-nav-gutter);
   border-top: 1px solid var(--color-border-default);
 }
 
@@ -277,6 +285,14 @@
 
 .crewlet-app-shell__rail-row--action:not(.crewlet-app-shell__rail-row--block) > .crewlet-app-shell__rail-row-icon {
   min-width: 14px;
+}
+
+/* The foot's own step (see `.crewlet-app-shell__rail-foot`), for its rows and
+   for a navigation dropped into it, whose rows keep the rail's columns. */
+.crewlet-app-shell__rail-foot > .crewlet-app-shell__rail-row--action:not(.crewlet-app-shell__rail-row--block),
+.crewlet-app-shell__rail-foot > .crewlet-btn,
+.crewlet-app-shell__rail-foot .crewlet-nav-item__row {
+  min-height: var(--crewlet-rail-foot-row);
 }
 
 /*
@@ -731,9 +747,16 @@
  * whatever size of badge a caller hands the row, it is centred where a glyph
  * is, and the row takes the nav row's pad and its glyph-to-word gap.
  */
+.crewlet-app-shell__rail-foot .crewlet-account-row {
+  --crewlet-account-row-pad: var(--spacing-0);
+}
+
 .crewlet-app-shell__rail-foot .crewlet-account-row__who {
   --crewlet-hit-area-block-start: calc(var(--crewlet-rail-foot-gap) / 2 + var(--crewlet-account-row-pad));
   gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  /* On the foot's compact step: the two lines of name and detail with half a
+     step above and below them, which still clears the avatar. */
+  padding-block: calc(var(--spacing-1) / 2);
   padding-inline-start: var(--size-nav-row-pad);
 }
 

@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.40.1
+
+**The rail's foot stands on the compact step.** What a reader reaches for rarely (a settings link, a status row, who they are) takes less of the rail's height: the foot's rows are 26px (`--size-control-sm`, through `--crewlet-rail-foot-row`) where they were the nav's 30px, the foot's gap is 2px and its inset 4px where they were 4px and 8px, and the account row spends 2px around its name and detail where it spent 8px. A foot of Settings, an engine row and the account row is 101px tall where it was 133px. Only heights change: every row keeps its order, its columns, its glyphs and its words, the rows above the foot keep their 30px step, and every target still clears 24px, with the targets of neighbouring rows meeting across the gap.
+
 ## Changes in 0.40.0
 
 The engine dashboard's own lists, page parts and navigation pieces, moved into the kit so every application draws them from one place.
