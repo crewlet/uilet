@@ -432,7 +432,11 @@ export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
   divided?: boolean | undefined;
   /** A glyph before the title. Decoration: the title carries the meaning. */
   icon?: ReactNode;
-  /** How many of something the card is about. */
+  /**
+   * How many of something the card is about. A count of zero is not drawn:
+   * the card's own empty state says there is nothing, and a "0" badge beside
+   * the title said it a second time.
+   */
   count?: number | string | undefined;
   /** A second line under the title. It truncates; a title does not. */
   subtitle?: ReactNode;
@@ -479,8 +483,16 @@ const CardHeader = ({
             {icon}
           </span>
         )}
-        {children}
-        {count === undefined ? null : <Count value={count} />}
+        {/*
+          * A TITLE IS A HEADING, whoever wrote it. Plain words given to the
+          * header used to render as a bare text node at the regular weight
+          * with no heading element, beside cards whose `Card.Title` was a
+          * semibold heading: two title treatments on one page, and the plain
+          * ones missing from the document outline. A string or a number is
+          * the title, so it is drawn as one.
+          */}
+        {typeof children === 'string' || typeof children === 'number' ? <CardTitle>{children}</CardTitle> : children}
+        {count === undefined || count === 0 || count === '0' ? null : <Count value={count} />}
       </div>
       {subtitle === undefined ? null : <span className="crewlet-card__subtitle">{subtitle}</span>}
       {actions === undefined ? null : <div className="crewlet-card__header-actions">{actions}</div>}

@@ -788,3 +788,40 @@ test('asChild on a button draws one button, never a button inside a button', () 
   expect(container.querySelectorAll('button')).toHaveLength(1);
   expect(screen.getByRole('button', { name: 'Add' }).classList.contains('is-interactive')).toBe(true);
 });
+
+test('a header given plain words draws them as the card title, a heading at the title weight', () => {
+  render(
+    <>
+      <Card>
+        <Card.Header>Nodes</Card.Header>
+        <Card.Body>body</Card.Body>
+      </Card>
+      <Card>
+        <Card.Header>
+          <Card.Title>Limits</Card.Title>
+        </Card.Header>
+        <Card.Body>body</Card.Body>
+      </Card>
+    </>,
+  );
+  const titles = screen.getAllByRole('heading', { level: 2 });
+  expect(titles.map((title) => title.textContent)).toEqual(['Nodes', 'Limits']);
+  expect(titles.every((title) => title.classList.contains('crewlet-card__title'))).toBe(true);
+});
+
+test('a header draws no count of zero, and every other count', () => {
+  const { container } = render(
+    <>
+      <Card>
+        <Card.Header count={0}>Models</Card.Header>
+      </Card>
+      <Card>
+        <Card.Header count="0">Members</Card.Header>
+      </Card>
+      <Card>
+        <Card.Header count={3}>People</Card.Header>
+      </Card>
+    </>,
+  );
+  expect([...container.querySelectorAll('.crewlet-count')].map((count) => count.textContent)).toEqual(['3']);
+});
