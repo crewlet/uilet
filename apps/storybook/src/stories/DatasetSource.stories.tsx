@@ -126,3 +126,22 @@ export const Stale: Story = {
 export const Loading: Story = {
   args: { status: 'loading', asOf: undefined, rows: undefined },
 };
+
+/**
+ * GROUPED, NO KIND TAG: a picker of sources that all read the engine names
+ * each group with its list's label and leaves `kind` out, rather than a tag
+ * on every row saying the same thing.
+ */
+export const GroupedWithoutKind: Story = {
+  render: () => (
+    <div style={{ maxWidth: 360, display: 'grid', gap: 'var(--spacing-4)' }}>
+      <DatasetSourceList label="Work">
+          <DatasetSource title="Open tasks" definition="Tasks not done, by project" status="live" rows={18} />
+          <DatasetSource title="Done this week" definition="Tasks closed in the last 7 days" status="live" rows={41} />
+      </DatasetSourceList>
+      <DatasetSourceList label="Spend">
+          <DatasetSource title="Tokens by team" definition="Tokens per team, per day" status="live" rows={6} />
+      </DatasetSourceList>
+    </div>
+  ),
+};

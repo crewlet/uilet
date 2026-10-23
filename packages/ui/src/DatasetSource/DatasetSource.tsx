@@ -49,7 +49,13 @@ const LABELS: DatasetSourceLabels = {
 export interface DatasetSourceProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'children' | 'onSelect'> {
   /** The dataset's title, which every figure drawn from it cites. */
   title: string;
-  kind: DatasetSourceKind;
+  /**
+   * Where the dataset reads from, drawn as a tag beside the title. Left out
+   * where every entry of a list reads from one place (a picker of the
+   * engine's own sources, grouped under headings of their own), since the
+   * same tag on every row is a column a reader learns to skip.
+   */
+  kind?: DatasetSourceKind | undefined;
   /** What the dataset reads, in the author's terms: "tracker.items, scope mine". */
   definition: ReactNode;
   /** How it is kept current, in words: "Live", "Every 2 min", "On change". */
@@ -147,10 +153,15 @@ export function DatasetSource({
       <span className="crewlet-dataset-source__head">
         <span id={titleId} className="crewlet-dataset-source__title">
           {title}
-        </span>{' '}
-        <Tag size="xs" appearance="outline" className="crewlet-dataset-source__kind">
-          {text.kinds[kind]}
-        </Tag>
+        </span>
+        {kind === undefined ? null : (
+          <>
+            {' '}
+            <Tag size="xs" appearance="outline" className="crewlet-dataset-source__kind">
+              {text.kinds[kind]}
+            </Tag>
+          </>
+        )}
       </span>{' '}
       <span className="crewlet-dataset-source__definition">{definition}</span>{' '}
       <span className="crewlet-dataset-source__meta">

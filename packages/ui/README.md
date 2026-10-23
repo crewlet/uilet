@@ -226,6 +226,8 @@ These come from a production polish of the engine dashboard's Settings › Limit
 
 **A card head can stack its subtitle at every width** (`Card.Header` `subtitlePlacement="below"`), for a row of cards of different widths whose heads must stand at one height: by default a wide card keeps its subtitle beside the title while a narrow one stacks it, so one row drew heads of 48 and 68px. **A code block that is a card's content is that card's surface** (`CodeBlock`): placed straight in a `Card` with `padding="none"` it gives up its own edge, corner and ground, so there is no box inside a box; in a padded body it stays a well.
 
+**A dataset source can leave out its kind** (`DatasetSource` `kind` is optional): a list whose every entry reads from one place, grouped under list labels of its own, draws no kind tag on every row.
+
 **A catalogue tile's fact-only foot stands as tall as one with a button** (`CatalogTile`), so the rules of a row's feet sit on one line.
 
 **A dialog's title is its `h1`** (`Modal`). It was a paragraph while the body's headings started at level 2, so the outline a screen reader walks had no top; it keeps its register (the text face at the dialog's size), and still names the dialog.

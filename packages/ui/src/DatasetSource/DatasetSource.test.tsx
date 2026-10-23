@@ -207,3 +207,13 @@ test('a list is a named list of items and carries no axe violation', async () =>
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+// A LIST WHOSE EVERY ENTRY READS FROM ONE PLACE DRAWS NO KIND TAG: the same
+// tag on every row is a column a reader learns to skip.
+test('an entry given no kind draws no kind tag', () => {
+  const { container } = render(
+    <DatasetSource title="Open tasks" definition="tracker.items, state open" status="live" rows={4} />,
+  );
+  expect(container.querySelector('.crewlet-dataset-source__kind')).toBeNull();
+  expect(container.querySelector('.crewlet-dataset-source__title')?.textContent).toBe('Open tasks');
+});
