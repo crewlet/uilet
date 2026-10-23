@@ -65,6 +65,7 @@ import {
   Outline,
   RichEditor,
   CatalogTile,
+  DataGrid,
   List,
   ListItem,
   SettingsTable,
@@ -120,6 +121,31 @@ test('a settings table, a catalogue of tiles and a numbered list carry no violat
         <ListItem>Every amount is exact to the cent.</ListItem>
         <ListItem>Ask before deleting anything.</ListItem>
       </List>
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('a data grid, its sortable heads, its row links and its bands carry no violation', async () => {
+  const rows = [
+    { id: 'ENG-1', title: 'Rotate the key' },
+    { id: 'ENG-2', title: 'Write the runbook' },
+  ];
+  const columns = [
+    { key: 'id', header: 'Key', shrink: true, cell: (r: (typeof rows)[number]) => r.id, sortValue: (r: (typeof rows)[number]) => r.id },
+    { key: 'title', header: 'Title', cell: (r: (typeof rows)[number]) => r.title },
+    { key: 'mark', header: '', label: 'Kind', cell: () => <svg aria-hidden="true" /> },
+  ];
+  const { container } = render(
+    <main>
+      <h1>Work</h1>
+      <DataGrid rows={rows} columns={columns} rowKey={(r) => r.id} rowHref={(r) => `#/work/${r.id}`} sort="id" onSortChange={() => {}} />
+      <DataGrid
+        columns={columns}
+        rowKey={(r) => r.id}
+        onRowActivate={() => {}}
+        bands={[{ key: 'a', label: 'Ada', total: 3, rows }]}
+      />
     </main>,
   );
   expect(await violations(container)).toEqual([]);
