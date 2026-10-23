@@ -24,7 +24,7 @@
  * by the palette suite in @crewlethq/tokens, over composites a browser would
  * have to be driven through every state to produce.
  */
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test } from 'vitest';
@@ -69,6 +69,7 @@ import {
   Histogram,
   List,
   PropertyList,
+  Tabs,
   ListItem,
   SettingsTable,
   TileGrid,
@@ -187,6 +188,55 @@ test('a list of properties carries no violation: named sections, a link, a by-li
     </main>,
   );
   expect(await violations(container)).toEqual([]);
+});
+
+test('a folded tab row carries no violation: a tab list and a row of links, each with tabs in More', async () => {
+  // Laid out by hand, as jsdom computes no layout: every tab 100 wide, "More"
+  // 70, and each row 280 wide, so two tabs are drawn and the rest fold.
+  const rect = HTMLElement.prototype.getBoundingClientRect;
+  const client = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+  HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+    const w = this.classList.contains('crewlet-tabs__tab') ? 100 : this.hasAttribute('data-tabs-more') ? 70 : 0;
+    return { width: w, height: 20, top: 0, left: 0, right: w, bottom: 20, x: 0, y: 0 } as DOMRect;
+  };
+  Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.matches('.crewlet-tabs-fold, nav.crewlet-tabs--fold') ? 280 : 0;
+    },
+  });
+  try {
+    const items = ['Overview', 'Work', 'Turns', 'Memory', 'Settings'].map((label) => ({
+      value: label.toLowerCase(),
+      label,
+      ...(label === 'Turns' ? { live: 'running now' } : {}),
+    }));
+    const { container } = render(
+      <main>
+        <h1>SWE</h1>
+        <Tabs overflow="menu" variant="underline" ariaLabel="Seat sections" items={items} value="overview" />
+        <Tabs
+          overflow="menu"
+          variant="underline"
+          ariaLabel="Workspace sections"
+          items={items}
+          value="work"
+          note="Counts are over the last 30 days"
+          renderItem={({ item, className, isActive, children, foldProps }) => (
+            <a href={`#/${item.value}`} className={className} aria-current={isActive ? 'page' : undefined} {...foldProps}>
+              {children}
+            </a>
+          )}
+        />
+      </main>,
+    );
+    await waitFor(() => expect(container.querySelectorAll('.crewlet-tabs__tab.is-folded')).toHaveLength(6));
+    expect(await violations(container)).toEqual([]);
+  } finally {
+    HTMLElement.prototype.getBoundingClientRect = rect;
+    if (client) Object.defineProperty(HTMLElement.prototype, 'clientWidth', client);
+    else delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth;
+  }
 });
 
 test('the buttons, the marks and the hidden text carry no violation', async () => {
