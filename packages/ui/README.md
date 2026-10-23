@@ -204,6 +204,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.38.0
+
+### Icons
+
+**`VendorMark` draws Crewlet's own mark** (`vendor="crewlet"`), for the services built into Crewlet (its tracker, its knowledge base) where a catalogue of integrations lists them beside the third-party apps they stand in for. It is drawn from the brand mark `@crewlethq/icons` already carries (`CrewletIcon`), not a second copy, and takes the same `size` and `muted` as every other vendor. `VENDORS` lists it, so the VendorMark story shows it with the others.
+
 ## Changes in 0.37.1
 
 ### Sheets
