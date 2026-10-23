@@ -220,6 +220,18 @@ These come from a production polish of the engine dashboard's Settings › Limit
 
 **`ListInput` takes `focusOnMount`**, as `TagsInput` does: the focus goes to the new-item box when the list mounts, once, so a form opened to change that one list (an "Edit policies" link) lands where the next item is written. It is taken during mount, so a dialog the list opens in keeps it rather than moving focus to its own first control.
 
+### Fixes
+
+**A card header's plain words are its title** (`Card.Header`). A header given a string or a number drew it as a bare text node at the regular weight with no heading element, beside cards whose `Card.Title` was a semibold heading: two title treatments on one page (Models, People, Nodes and a dozen more beside Limits and Sign-in policy), and the plain ones missing from the document outline. Plain words are now drawn as `Card.Title`. **A count of zero is not drawn**: the card's own empty state already says there is nothing, and "Models 0" said it twice.
+
+**A dialog's title is its `h1`** (`Modal`). It was a paragraph while the body's headings started at level 2, so the outline a screen reader walks had no top; it keeps its register (the text face at the dialog's size), and still names the dialog.
+
+**An object header's eyebrow and fact labels keep the words as written** (`ObjectHeader`, `FactLine`). They were the uppercase, tracked-open micro-caps of a table's column head, so a unit's page read "UNIT" over its name and TYPE, LEAD and SEATS under it, like a form. They are sentence case at the caption step now, as `StatCard`'s label already is.
+
+**A row of stat tiles shares its lines** (`StatGroup`). Each tile in a row is a subgrid over the row's three lines (label, number, sub), so a label that wraps no longer pushes its own figure below the others; a label stands on its number, one gap above it, where another label in the row takes two lines; and a tile's sub wraps in a row rather than ending in an ellipsis, since the row already gives every tile one height. These were the engine dashboard's own rules over the component; an application that restated them drops them.
+
+**The artifact bar takes the shell top bar's inset** (`ArtifactBar`): 20px, 16px under the shell's breakpoint, plus the scroller's gutter at its end, since it stands in that bar's place. At a 12px inset of its own a create page's controls ended past the content under them.
+
 ## Changes in 0.38.0
 
 ### Icons
