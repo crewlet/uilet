@@ -11,6 +11,13 @@ export interface LockedLabelProps {
    * out, nothing is locked and the label is drawn as it is, with no mark.
    */
   reason?: string | undefined;
+  /**
+   * Draws the key. Off where the place stands under a heading that already
+   * carries it (a nav group whose every row is locked): the reason is still
+   * the title and still read after the name, and the key is drawn once, on
+   * the heading, rather than down every row.
+   */
+  mark?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -29,12 +36,12 @@ export interface LockedLabelProps {
  *
  * Nothing but the label where nothing is missing.
  */
-export function LockedLabel({ children, reason, className }: LockedLabelProps) {
+export function LockedLabel({ children, reason, mark = true, className }: LockedLabelProps) {
   if (reason === undefined || reason === '') return <>{children}</>;
   return (
     <span className={cx('crewlet-locked-label', className)} title={reason}>
       {children}
-      <KeyGlyph size="xs" aria-hidden="true" className="crewlet-locked-label__key" />
+      {mark ? <KeyGlyph size="xs" aria-hidden="true" className="crewlet-locked-label__key" /> : null}
       <VisuallyHidden>, {reason}</VisuallyHidden>
     </span>
   );

@@ -426,3 +426,13 @@
     transition: none;
   }
 }
+
+/*
+ * A GROUP THE READER HOLDS NONE OF: the key once, after its label (see
+ * `NavGroup`'s `locked`), and its resting rows in the quiet ink, so a closed
+ * column reads as closed at a glance without a key on every row. A pointed
+ * row and the reader's own still lift to the primary step, as every row does.
+ */
+.crewlet-nav-group--locked .crewlet-nav-item__row:not([aria-current]):not(:hover) {
+  color: var(--color-text-tertiary);
+}

@@ -26,7 +26,7 @@
  * not type-check.
  */
 
-import { useId, useState, type MouseEventHandler, type ReactNode } from 'react';
+import { createContext, useContext, useId, useState, type MouseEventHandler, type ReactNode } from 'react';
 import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { KeyChip } from '../KeyChip/index.js';
@@ -79,9 +79,23 @@ export interface NavGroupProps {
    * first row.
    */
   action?: NavGroupAction | undefined;
+  /**
+   * Every row in the group is closed to this reader, for this reason
+   * ("Needs Admin access"). The key is drawn ONCE, after the group's label,
+   * which names the reason for a screen reader and as its title; the rows
+   * stay links, in the quiet ink, without a key each, so a reader who holds
+   * none of a column's access meets one mark per group rather than a wall of
+   * keys. A row still says its own reason (its `locked`) as its title and
+   * after its name. Only for a NAMED group: a run with no label has no
+   * heading to carry the key, so its rows keep theirs.
+   */
+  locked?: string | undefined;
   className?: string | undefined;
   children?: ReactNode;
 }
+
+/** Whether the group a row stands in carries the lock for all of its rows. */
+const GroupLocked = createContext(false);
 
 /** What a caller is handed when it draws the row's element itself. */
 export interface NavLinkProps {
@@ -212,12 +226,13 @@ export function SidebarNav({ label, className, children }: SidebarNavProps) {
  * `<div>` here still carries the label's own padding, which put sixteen blank
  * pixels at the top of the rail and named a group nothing could read.
  */
-export function NavGroup({ label, action, className, children }: NavGroupProps) {
+export function NavGroup({ label, action, locked, className, children }: NavGroupProps) {
   const id = useId();
   const named = label !== undefined && label !== null && label !== false && label !== '';
+  const groupLocked = named && locked !== undefined && locked !== '';
   return (
     <div
-      className={cx('crewlet-nav-group', className)}
+      className={cx('crewlet-nav-group', groupLocked && 'crewlet-nav-group--locked', className)}
       // A group is only a group to a screen reader when it has a name; an
       // unnamed one would add a level to walk through that says nothing.
       role={named ? 'group' : undefined}
@@ -230,7 +245,7 @@ export function NavGroup({ label, action, className, children }: NavGroupProps) 
         <div className="crewlet-nav-group__head">
           {named ? (
             <span className="crewlet-nav-group__label" id={id}>
-              {label}
+              <LockedLabel reason={groupLocked ? locked : undefined}>{label}</LockedLabel>
             </span>
           ) : null}
           {action ? (
@@ -242,7 +257,7 @@ export function NavGroup({ label, action, className, children }: NavGroupProps) 
           ) : null}
         </div>
       ) : null}
-      {children}
+      <GroupLocked.Provider value={groupLocked}>{children}</GroupLocked.Provider>
     </div>
   );
 }
@@ -304,6 +319,7 @@ export function NavItem({
   className,
 }: NavItemProps) {
   const id = useId();
+  const inLockedGroup = useContext(GroupLocked);
   const [ownExpanded, setOwnExpanded] = useState(defaultExpanded);
   const open = expanded ?? ownExpanded;
   const nested = children !== undefined && children !== null && children !== false;
@@ -328,7 +344,9 @@ export function NavItem({
           label run together into "ENGCore platform". */}
       {lead ? ' ' : null}
       <span className="crewlet-nav-item__label">
-        <LockedLabel reason={locked}>{label}</LockedLabel>
+        <LockedLabel reason={locked} mark={!inLockedGroup}>
+          {label}
+        </LockedLabel>
         {count || badge ? <VisuallyHidden>{spoken([count, badge])}</VisuallyHidden> : null}
       </span>
       {count ? <Figure figure={count} mark={count.mark} className="crewlet-nav-item__count" /> : null}

@@ -22,3 +22,15 @@ test('a locked place keeps its words, draws the key and says why', () => {
   expect(label.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
   expect(screen.getByText(', Needs Admin access').classList.contains('crewlet-visually-hidden')).toBe(true);
 });
+
+test('under a heading that carries the key, a label still says why but draws no key', () => {
+  const { container } = render(
+    <LockedLabel reason="Needs Admin access" mark={false}>
+      Nodes
+    </LockedLabel>,
+  );
+  const label = container.querySelector('.crewlet-locked-label')!;
+  expect(label.getAttribute('title')).toBe('Needs Admin access');
+  expect(label.querySelector('svg')).toBeNull();
+  expect(label.textContent).toBe('Nodes, Needs Admin access');
+});

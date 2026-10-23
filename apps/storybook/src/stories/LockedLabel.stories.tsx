@@ -30,10 +30,15 @@ export const InTheRailAndInTabs: Story = {
     <div style={{ display: 'grid', gap: 'var(--spacing-6)', maxWidth: 520 }}>
       <div style={{ width: 236 }}>
         <SidebarNav label="Settings">
-          <SidebarNav.Group label="Engine">
-            <SidebarNav.Item label="Nodes" icon={<ServerGlyph size="sm" />} href="#/nodes" locked="Needs Admin access" />
+          {/* MIXED: the key on each locked row. */}
+          <SidebarNav.Group label="Runtime">
             <SidebarNav.Item label="Secrets" icon={<KeyGlyph size="sm" />} href="#/secrets" locked="Needs Admin access" />
             <SidebarNav.Item label="Appearance" icon={<CogGlyph size="sm" />} href="#/appearance" current />
+          </SidebarNav.Group>
+          {/* WHOLLY LOCKED: the key once, on the group's label, and the rows quiet. */}
+          <SidebarNav.Group label="Engine" locked="Needs Admin access">
+            <SidebarNav.Item label="Nodes" icon={<ServerGlyph size="sm" />} href="#/nodes" locked="Needs Admin access" />
+            <SidebarNav.Item label="Configuration" icon={<CogGlyph size="sm" />} href="#/config" locked="Needs Admin access" />
           </SidebarNav.Group>
         </SidebarNav>
       </div>
