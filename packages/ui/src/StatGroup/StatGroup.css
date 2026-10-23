@@ -5,11 +5,29 @@
  * tiles appeared and vanished moved every number on the page for a reason that
  * had nothing to do with the numbers, which is exactly what a reader watching
  * a live board is trying not to have happen.
+ *
+ * IT FOLDS BY ITS OWN WIDTH, never the window's. The row used to drop to two
+ * columns under a 1024px viewport, but a row's width is whatever its column
+ * leaves it: beside the rail and a settings column at exactly 1024 a
+ * four-column row was 489px wide, its tiles about 120px each, and its figures
+ * were cut ("Not s…", "1.6 …"), while on a phone a three-column row folded to
+ * two and left its third tile alone on a row of its own. So the row is a size
+ * container, and the tiles take their place from the row's own width.
+ *
+ * TWELVE TRACKS, AND EACH TILE SPANS ITS SHARE. A container query styles what
+ * is inside the container, never the container itself, so the row cannot
+ * change its own column count by its own width. Its tiles can change how many
+ * of its twelve tracks they span, which is the same layout: twelve divides by
+ * every count a row takes (one, two, three and four a row).
+ *
+ * The row's width comes from where it stands, as a block's does: inline-size
+ * containment means its contents never widen it.
  */
 
 .crewlet-stat-group {
+  container: crewlet-stat-group / inline-size;
   display: grid;
-  grid-template-columns: repeat(var(--crewlet-stat-group-cols, 4), minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   /* The flush-panel recipe: the card's surface, its hairline and its 12px
      corner, flat as every card is, and `overflow: hidden`, which is what lets
      the tiles inside sit against the corners without their own hairlines
@@ -20,8 +38,19 @@
   overflow: hidden;
 }
 
-/* Inside another card: the card's surface and edge are the row's. */
-.crewlet-stat-group--flush {
+/*
+ * Inside another card: the card's surface and edge are the row's.
+ *
+ * A ROW STANDING IN A CARD IS FLUSH WHETHER OR NOT ITS CALLER SAID SO. Six
+ * settings pages wrapped a row in a card without `flush`, and each drew the
+ * row's own edge and 12px corner one pixel inside the card's: a box inside a
+ * box, and inside a padded body a third frame. A row that is a card's content,
+ * or its body's, is that card's row; `flush` is for a host that is not a
+ * Card (a widget's frame, a panel of an application's own).
+ */
+.crewlet-stat-group--flush,
+.crewlet-card > .crewlet-stat-group,
+.crewlet-card__body > .crewlet-stat-group {
   background: transparent;
   border: 0;
   border-radius: var(--radius-none);
@@ -47,40 +76,93 @@
 }
 
 /*
- * A hairline between columns, drawn on the tile that follows one.
+ * Each tile spans its share of the twelve tracks: the row's `columns`, set on
+ * it as `--crewlet-stat-group-cols`, a row.
+ */
+.crewlet-stat-group > * {
+  grid-column: span calc(12 / var(--crewlet-stat-group-cols, 4));
+}
+
+/*
+ * The hairlines between tiles: one before every tile that does not start a
+ * row, and one above every tile that is not on the first.
  *
  * NAMED TWICE, ON PURPOSE. The rule above clears the tile's own border and
  * weighs two classes, so a one-class selector here loses to it and the row
  * of numbers runs together with nothing between the columns. The first
- * selector matches whatever a caller puts in the row; the second weighs the
- * same as the rule it has to beat, and sits after it.
+ * selector of each pair matches whatever a caller puts in the row; the second
+ * weighs at least as much as the rule it has to beat, and sits after it.
  */
 .crewlet-stat-group > * + *,
 .crewlet-stat-group > .crewlet-statcard + .crewlet-statcard {
   border-left: 1px solid var(--color-border-default);
 }
 
+.crewlet-stat-group[data-columns='2'] > :nth-child(2n + 1),
+.crewlet-stat-group[data-columns='2'] > .crewlet-statcard:nth-child(2n + 1),
+.crewlet-stat-group[data-columns='3'] > :nth-child(3n + 1),
+.crewlet-stat-group[data-columns='3'] > .crewlet-statcard:nth-child(3n + 1),
+.crewlet-stat-group[data-columns='4'] > :nth-child(4n + 1),
+.crewlet-stat-group[data-columns='4'] > .crewlet-statcard:nth-child(4n + 1) {
+  border-left: 0;
+}
+
+.crewlet-stat-group[data-columns='2'] > :nth-child(n + 3),
+.crewlet-stat-group[data-columns='2'] > .crewlet-statcard:nth-child(n + 3),
+.crewlet-stat-group[data-columns='3'] > :nth-child(n + 4),
+.crewlet-stat-group[data-columns='3'] > .crewlet-statcard:nth-child(n + 4),
+.crewlet-stat-group[data-columns='4'] > :nth-child(n + 5),
+.crewlet-stat-group[data-columns='4'] > .crewlet-statcard:nth-child(n + 5) {
+  border-top: 1px solid var(--color-border-default);
+}
+
 /*
- * Two columns under the shell breakpoint, which is where the engine drops its
- * own stat row, and strictly under it, as the shell switches. The step is
- * 1024px, a 236px rail, the 8px inset and a 780px floor for the sheet, and it
- * is the width at which the shell stops holding the page beside the rail. The
- * rules are written for the general case rather than per column count: the
- * first tile of each pair loses its left hairline, and everything on the
- * second row and below gains a top one.
+ * FOUR A ROW FOLD TO TWO under 640px of row (the phone breakpoint's number):
+ * four tiles of 160px is the narrowest at which a six-character figure and a
+ * two-word label still stand on one line each. Two by two keeps every row
+ * full.
  */
-@media (width < 1024px) {
-  .crewlet-stat-group {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@container crewlet-stat-group (width < 640px) {
+  .crewlet-stat-group[data-columns='4'] > *,
+  .crewlet-stat-group[data-columns='4'] > .crewlet-statcard {
+    grid-column: span 6;
   }
 
-  .crewlet-stat-group > *:nth-child(odd),
-  .crewlet-stat-group > .crewlet-statcard:nth-child(odd) {
+  .crewlet-stat-group[data-columns='4'] > :nth-child(odd),
+  .crewlet-stat-group[data-columns='4'] > .crewlet-statcard:nth-child(odd) {
     border-left: 0;
   }
 
-  .crewlet-stat-group > *:nth-child(n + 3),
-  .crewlet-stat-group > .crewlet-statcard:nth-child(n + 3) {
+  .crewlet-stat-group[data-columns='4'] > :nth-child(even),
+  .crewlet-stat-group[data-columns='4'] > .crewlet-statcard:nth-child(even) {
+    border-left: 1px solid var(--color-border-default);
+  }
+
+  .crewlet-stat-group[data-columns='4'] > :nth-child(n + 3),
+  .crewlet-stat-group[data-columns='4'] > .crewlet-statcard:nth-child(n + 3) {
+    border-top: 1px solid var(--color-border-default);
+  }
+}
+
+/*
+ * THREE A ROW STACK under 480px of row (the small breakpoint's number), at the
+ * same 160px a tile. Folded to two, three tiles stood two and one, the last
+ * alone at double width and a different height, which read as a tile that had
+ * failed to load; one a row leaves no row short.
+ */
+@container crewlet-stat-group (width < 480px) {
+  .crewlet-stat-group[data-columns='3'] > *,
+  .crewlet-stat-group[data-columns='3'] > .crewlet-statcard {
+    grid-column: span 12;
+  }
+
+  .crewlet-stat-group[data-columns='3'] > *,
+  .crewlet-stat-group[data-columns='3'] > .crewlet-statcard + .crewlet-statcard {
+    border-left: 0;
+  }
+
+  .crewlet-stat-group[data-columns='3'] > :nth-child(n + 2),
+  .crewlet-stat-group[data-columns='3'] > .crewlet-statcard:nth-child(n + 2) {
     border-top: 1px solid var(--color-border-default);
   }
 }
