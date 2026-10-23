@@ -29,7 +29,12 @@
      its place, and at a row's height of its own the line under it jumped by
      three pixels between the gallery and the artifact opened from it. */
   height: calc(var(--size-shell-topbar) - 1px);
-  padding: 0 var(--spacing-3);
+  /* THE SHELL TOP BAR'S INSET, the scroller's gutter at its end included: the
+     bar stands in that bar's place, and at a 12px inset of its own a create
+     page's controls ended 19px past the content under them, where every other
+     page's end over it. The same two steps as the top bar, 20px wide and 16px
+     under the shell's breakpoint (below). */
+  padding: 0 calc(var(--spacing-5) + var(--crewlet-app-shell-gutter, 0px)) 0 var(--spacing-5);
   min-width: 0;
 }
 
@@ -411,5 +416,12 @@
   .crewlet-artifact-bar__rename,
   .crewlet-version-chip {
     transition: none;
+  }
+}
+
+/* The shell's breakpoint, where its top bar and content take 16px. */
+@media (width < 1024px) {
+  .crewlet-artifact-bar__row {
+    padding: 0 calc(var(--spacing-4) + var(--crewlet-app-shell-gutter, 0px)) 0 var(--spacing-4);
   }
 }
