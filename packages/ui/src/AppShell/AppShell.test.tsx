@@ -447,9 +447,9 @@ describe('the shell breakpoint', () => {
   });
 
   test('every component that follows the shell switches with it', () => {
-    // A modal sheet going full width, a toolbar folding into its overflow, a
-    // search field dropping its label and a stat row going to two columns all
-    // happen "where the rail becomes a drawer", and each spells the number
+    // A modal sheet going full width, a toolbar folding into its overflow and
+    // a search field dropping its label all happen "where the rail becomes a
+    // drawer", and each spells the number
     // because a media query cannot read a token. Spelt as `max-width` it
     // switches a pixel before the shell does, and at exactly the step the
     // wide shell is drawn with a narrow toolbar in it.
@@ -472,7 +472,6 @@ describe('the shell breakpoint', () => {
       'AppShell/AppShell.css',
       'Modal/Modal.css',
       'SearchTrigger/SearchTrigger.css',
-      'StatGroup/StatGroup.css',
       'Toolbar/Toolbar.css',
     ]);
   });
@@ -546,18 +545,71 @@ describe('the frame and the sheet', () => {
     expect(sheet.contains(rail)).toBe(false);
   });
 
-  test('under the step the content keeps the top bar gutter, so a page lines up with the bar over it', () => {
-    const uninstall = installAtWidth(step - 1, 'light', 'AppShell/AppShell.css');
+  test('the bar takes the content inset on both sides, and the scroller gutter at its end', () => {
+    /*
+     * A page's first line starts under the bar's title and its cards end
+     * under the bar's last control. Wide, the bar stood 16px in over content
+     * inset 20px; and at its end the content also gives up the scroller's
+     * gutter, so with scrollbars drawn in the layout every page's actions
+     * ended 15px past the cards under them. The end inset is the content's
+     * plus the gutter the shell measures.
+     */
+    for (const [width, expected] of [
+      [step - 1, 16],
+      [step, 20],
+    ] as const) {
+      const uninstall = installAtWidth(width, 'light', 'AppShell/AppShell.css');
+      try {
+        const { container, unmount } = render(<Console />);
+        const bar = container.querySelector('.crewlet-app-shell__topbar')!;
+        const content = container.querySelector('.crewlet-app-shell__content')!;
+        expect(px(content, 'padding-left'), `at ${width}`).toBe(expected);
+        expect(px(bar, 'padding-left'), `at ${width}`).toBe(expected);
+        expect(px(content, 'padding-right'), `at ${width}`).toBe(expected);
+        // jsdom reserves no gutter, so the shell measures 0 and the ends agree.
+        expect(px(bar, 'padding-right'), `at ${width}`).toBe(expected);
+        unmount();
+      } finally {
+        uninstall();
+      }
+    }
+  });
+
+  test('the shell measures the scroller gutter for the bar, and it is 0 where nothing is reserved', () => {
+    // The bar's end inset is the content's plus the measured gutter, wide and narrow.
+    const source = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
+    const ends = [...source.matchAll(/\.crewlet-app-shell__topbar\s*\{[^}]*?padding:\s*0 calc\((var\(--spacing-\d\)) \+ var\(--crewlet-app-shell-gutter, 0px\)\) 0 (var\(--spacing-\d\));/g)];
+    expect(ends.map((match) => match[1])).toEqual(['var(--spacing-5)', 'var(--spacing-4)']);
+    for (const match of ends) expect(match[2]).toBe(match[1]);
+
+    const offset = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+    const client = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
+    const scrolls = (element: Element) => element.classList.contains('crewlet-app-shell__main');
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return scrolls(this) ? 1194 : 0;
+      },
+    });
+    Object.defineProperty(Element.prototype, 'clientWidth', {
+      configurable: true,
+      get(this: Element) {
+        return scrolls(this) ? 1183 : 0;
+      },
+    });
     try {
       const { container } = render(<Console />);
-      const bar = container.querySelector('.crewlet-app-shell__topbar')!;
-      const content = container.querySelector('.crewlet-app-shell__content')!;
-      expect(px(content, 'padding-left')).toBe(px(bar, 'padding-left'));
-      expect(px(content, 'padding-right')).toBe(px(bar, 'padding-right'));
-      expect(px(content, 'padding-left')).toBe(16);
+      const root = container.firstElementChild as HTMLElement;
+      // The figures the audit measured at 1440: an 11px classic scrollbar.
+      expect(root.style.getPropertyValue('--crewlet-app-shell-gutter')).toBe('11px');
     } finally {
-      uninstall();
+      if (offset) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', offset);
+      if (client) Object.defineProperty(Element.prototype, 'clientWidth', client);
     }
+    cleanup();
+    // jsdom draws no scrollbar, as a platform with overlay scrollbars does not.
+    const { container } = render(<Console />);
+    expect((container.firstElementChild as HTMLElement).style.getPropertyValue('--crewlet-app-shell-gutter')).toBe('0px');
   });
 
   test('under the step the sheet is the whole window: no inset, no corner, no hairline', () => {
@@ -787,8 +839,29 @@ describe("the rail's foot", () => {
   test('the foot and the nav take the same gutter, and their rows the same pad', () => {
     expect(inset(css, '.crewlet-app-shell__rail-foot')).toBe('var(--size-nav-gutter)');
     expect(inset(nav, '.crewlet-sidebar-nav')).toBe('var(--size-nav-gutter)');
-    expect(inset(css, '.crewlet-app-shell__rail-row')).toBe('var(--size-nav-row-pad)');
+    // The foot's row carries a transparent 1px boundary the nav's does not,
+    // and the boundary spends a pixel of the pad, so the mark and the words
+    // start where the nav's do. Added to the pad, they stood a pixel right.
+    expect(inset(css, '.crewlet-app-shell__rail-row')).toBe('calc(var(--size-nav-row-pad) - 1px)');
+    expect(body(css, '.crewlet-app-shell__rail-row')).toContain('border: 1px solid transparent');
     expect(inset(nav, '.crewlet-nav-item__row')).toBe('var(--size-nav-row-pad)');
+    expect(body(nav, '.crewlet-nav-item__row')).not.toMatch(/border:\s*1px/);
+  });
+
+  test("the account row stands on the nav's glyph column and its words on the nav's word line", () => {
+    /*
+     * On a 4px inset with an 8px gap a 26px avatar stood 2px left of the
+     * glyphs above it and the name 2px right of their words. In the foot the
+     * row takes the nav row's pad and glyph-to-word gap, and the avatar's box
+     * takes a nav glyph's width with the badge centred over it.
+     */
+    const who = body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__who');
+    expect(who).toContain('padding-inline-start: var(--size-nav-row-pad)');
+    expect(who).toContain(`gap: ${/gap:\s*([^;]+);/.exec(body(nav, '.crewlet-nav-item__row'))?.[1] ?? 'missing'}`);
+    const avatar = body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__avatar');
+    expect(avatar).toContain('width: 14px');
+    expect(avatar).toContain('justify-content: center');
+    expect(body(css, `${CONTROL} > .crewlet-app-shell__rail-row-icon`)).toContain('min-width: 14px');
   });
 
   /** The rule that draws a control in the foot: this package's own row, and a control dropped in. */
@@ -824,7 +897,7 @@ describe("the rail's foot", () => {
      * a toolbar's weight. The foot claims a direct child instead.
      */
     const row = body(css, '.crewlet-app-shell__rail-foot > .crewlet-btn');
-    expect(row).toContain('padding: calc(var(--spacing-2) - 1px) var(--size-nav-row-pad)');
+    expect(row).toContain('padding: calc(var(--spacing-2) - 1px) calc(var(--size-nav-row-pad) - 1px)');
     expect(row).toContain('justify-content: flex-start');
     expect(row).toContain('text-align: left');
     // And it is drawn as this package's own control is, by ONE rule naming
