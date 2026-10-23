@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Copyable, DescriptionList, RelativeTime, Tag } from '@crewlethq/ui';
+import { Card, Copyable, DescriptionList, RelativeTime, Tag } from '@crewlethq/ui';
 
 const meta: Meta<typeof DescriptionList> = {
   title: 'UI/DescriptionList',
@@ -65,6 +65,46 @@ export const Fit: Story = {
   render: (args) => (
     <div style={{ width: 236, padding: 'var(--spacing-3)', border: '1px solid var(--color-border-default)' }}>
       <DescriptionList {...args} />
+    </div>
+  ),
+};
+
+/**
+ * LISTS THAT HAVE TO LINE UP SHARE ONE TERM COLUMN. Stacked cards of settings
+ * on one page, each its own list: left alone each sizes the column to its own
+ * longest term, and the values start at a different place in every card. One
+ * track set on the page as `--crewlet-description-list-term` (or passed to
+ * each list as `termWidth`) puts every value on one line down the page.
+ */
+export const OneColumnDownAPage: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-4)', maxWidth: 640, ['--crewlet-description-list-term' as string]: '13rem' }}>
+      <Card>
+        <Card.Header>
+          <Card.Title as="h3">Requests</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <DescriptionList
+            items={[
+              ['Per minute', '600'],
+              ['Burst', '60'],
+            ]}
+          />
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Header>
+          <Card.Title as="h3">Uploads</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <DescriptionList
+            items={[
+              ['Largest file a seat may attach', '25 MB'],
+              ['Files a turn may read', '40'],
+            ]}
+          />
+        </Card.Body>
+      </Card>
     </div>
   ),
 };
