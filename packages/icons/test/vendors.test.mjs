@@ -15,6 +15,7 @@ import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { CrewletIcon, VENDORS, VendorMark } from '../dist/index.js';
+import { extent, markPaths } from '../scripts/mark.mjs';
 import { PACKAGE, attribute, render } from './support.mjs';
 
 describe('the vendor list', () => {
@@ -123,5 +124,111 @@ describe('a vendor mark', () => {
     const ids = [...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
     assert.ok(ids.length > 0);
     for (const id of ids) assert.match(id, /^crewlet-vendor-atlassian/);
+  });
+});
+
+/**
+ * The points a path's commands end on, in user units: enough to tell how much
+ * of its frame a drawing takes, where a bounding box would need every curve
+ * and arc solved. A curve or an arc bulging past its end points is not seen,
+ * so the extent read here is never larger than the drawing.
+ */
+function anchors(d) {
+  const arity = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0 };
+  const points = [];
+  let at = 0;
+  // An arc's two flags are one digit each and may be written run together
+  // ("0 01.4.4"), so they are read a character at a time.
+  const flag = () => {
+    while (/[\s,]/.test(d[at] ?? '')) at += 1;
+    return Number(d[at++]);
+  };
+  const number = () => {
+    const match = /^[\s,]*(-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)/i.exec(d.slice(at));
+    if (!match) throw new Error(`no number at ${at} in ${d.slice(at, at + 12)}`);
+    at += match[0].length;
+    return Number(match[1]);
+  };
+  const more = () => /^[\s,]*[-.\d]/.test(d.slice(at));
+  let command = 'M';
+  let x = 0;
+  let y = 0;
+  let startX = 0;
+  let startY = 0;
+  while (at < d.length) {
+    const letter = /^[\s,]*([A-Za-z])/.exec(d.slice(at));
+    if (letter) {
+      command = letter[1];
+      at += letter[0].length;
+    } else if (!more()) break;
+    const upper = command.toUpperCase();
+    const relative = command !== upper;
+    if (upper === 'Z') {
+      [x, y] = [startX, startY];
+      continue;
+    }
+    const args = Array.from({ length: arity[upper] }, (_, i) => (upper === 'A' && (i === 3 || i === 4) ? flag() : number()));
+    if (upper === 'H') x = relative ? x + args[0] : args[0];
+    else if (upper === 'V') y = relative ? y + args[0] : args[0];
+    else {
+      const [ex, ey] = args.slice(-2);
+      x = relative ? x + ex : ex;
+      y = relative ? y + ey : ey;
+    }
+    if (upper === 'M') {
+      [startX, startY] = [x, y];
+      command = relative ? 'l' : 'L';
+    }
+    points.push([x, y]);
+  }
+  return points;
+}
+
+describe('a vendor mark in its square', () => {
+  it('fills its frame, so the marks in a catalogue stand at one weight', async () => {
+    /*
+     * GitLab's press-kit file framed the logo in a 380 unit square with the
+     * logo 186 units across, and drew at half the size of every mark beside
+     * it (10px in a 20px slot). Every drawing's own end points span at least
+     * four fifths of its frame's longer side, and none falls outside it. Four
+     * fifths rather than the whole, because end points sit inside the curves
+     * between them: Figma's round shapes fill their frame and their end points
+     * span 83 percent of it.
+     */
+    const directory = resolve(PACKAGE, 'svg/vendor');
+    for (const file of (await readdir(directory)).filter((name) => name.endsWith('.svg'))) {
+      const source = await readFile(resolve(directory, file), 'utf8');
+      const [x, y, width, height] = attribute(/<svg\b[^>]*>/.exec(source)[0], 'viewBox').split(/\s+/).map(Number);
+      const points = markPaths(source).flatMap(anchors);
+      const xs = points.map(([px]) => px);
+      const ys = points.map(([, py]) => py);
+      const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+      assert.ok(span / Math.max(width, height) >= 0.8, `${file} draws ${Math.round((span / Math.max(width, height)) * 100)} percent of its frame`);
+      // A fiftieth of the frame: Atlassian's own drawing runs a third of a
+      // unit past its 24 unit frame, which no reader sees.
+      const slack = Math.max(width, height) * 0.02;
+      assert.ok(Math.min(...xs) >= x - slack && Math.max(...xs) <= x + width + slack, `${file} draws outside its frame across`);
+      assert.ok(Math.min(...ys) >= y - slack && Math.max(...ys) <= y + height + slack, `${file} draws outside its frame down`);
+    }
+  });
+
+  it("frames Crewlet's mark in the square its own extent fits, centred", async () => {
+    /*
+     * The wide file keeps artwork margins round the mark, and fitted to a
+     * square slot it drew 17 by 9 pixels where the marks beside it drew 20 by
+     * 20. The vendor mark frames the same paths in the square the mark's own
+     * extent fits, so it draws the slot's full width.
+     */
+    const mark = extent(markPaths(await readFile(resolve(PACKAGE, 'svg/crewlet-icon.svg'), 'utf8')));
+    const [x, y, width, height] = attribute(render(VendorMark, { vendor: 'crewlet' }), 'viewBox').split(/\s+/).map(Number);
+    assert.equal(width, height, 'the frame is square');
+    assert.ok(x <= mark.left && x + width >= mark.right, 'the frame crops the mark across');
+    assert.ok(y <= mark.top && y + height >= mark.bottom, 'the frame crops the mark down');
+    const off = (edge, low, high) => Math.abs(edge + width / 2 - (low + high) / 2);
+    assert.ok(off(x, mark.left, mark.right) <= 2, 'the mark is not centred across');
+    assert.ok(off(y, mark.top, mark.bottom) <= 2, 'the mark is not centred down');
+    assert.ok(width / (mark.right - mark.left) <= 1.01, 'the frame leaves air beside the mark');
+    // Every other vendor keeps its own file's frame.
+    assert.equal(attribute(render(VendorMark, { vendor: 'slack' }), 'viewBox'), '0 0 24 24');
   });
 });

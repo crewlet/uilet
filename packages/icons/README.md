@@ -83,7 +83,7 @@ GitHub's and Notion's marks are monochrome by design and take the current text c
 
 **`crewlet` is Crewlet's own mark**, for the services built into it (its tracker, its knowledge base) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
 
-A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is drawn to fit the square `size` and centred in it, at the aspect ratio the vendor draws.
+A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is drawn to fit the square `size` and centred in it, at the aspect ratio the vendor draws. Every drawing fills its viewBox edge to edge, so the marks in a catalogue stand at one weight: GitLab's is cropped to its logo (its press-kit file framed the logo in twice its own width, and drew at half the size of every mark beside it), and Crewlet's is the brand mark framed in the square its own extent fits rather than in the wide file's artwork margins, so it draws the slot's full width.
 
 The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRADEMARKS.md), which ships in the package. The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram and Microsoft Teams drawings are Simple Icons' renderings, whose path data is CC0 1.0.
 

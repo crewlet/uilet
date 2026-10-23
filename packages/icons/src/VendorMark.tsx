@@ -91,8 +91,27 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   telegram: marks.Telegram,
 };
 
+/**
+ * The frame a drawing takes in the mark's square, where its own file's frame
+ * is not that square's.
+ *
+ * Every other vendor's drawing fills its own viewBox edge to edge, so a mark
+ * is as large as its slot allows and the marks in a catalogue stand at one
+ * weight. Crewlet's drawing is the brand mark, whose wide file
+ * (svg/crewlet-icon.svg, 1467 by 978) leaves room round the mark for the
+ * places it is laid out as artwork: fitted to a square slot it drew 17 by 9
+ * pixels in a 20px slot where every vendor beside it drew 20 by 20. Here it
+ * is framed in the square its own extent fits, centred, so it draws the
+ * slot's full width, as wide a mark as any other vendor's (Microsoft Teams',
+ * Discord's) does. It is the same drawing: only the frame differs.
+ */
+const FRAMES: Partial<Record<Vendor, string>> = {
+  crewlet: '110 -107 1280 1280',
+};
+
 export function VendorMark({ vendor, size, title, muted = false, className, ...rest }: VendorMarkProps) {
   const Drawing = drawings[vendor];
+  const frame = FRAMES[vendor];
   const dimension = cssLength(size);
   /*
    * Named and exposed, or hidden and unfocusable. Never both: aria-hidden wins
@@ -105,5 +124,14 @@ export function VendorMark({ vendor, size, title, muted = false, className, ...r
   const classes = ['crewlet-vendor-mark'];
   if (muted) classes.push('crewlet-vendor-mark--muted');
   if (className !== undefined) classes.push(className);
-  return <Drawing width={dimension} height={dimension} {...semantics} className={classes.join(' ')} {...rest} />;
+  return (
+    <Drawing
+      width={dimension}
+      height={dimension}
+      {...(frame === undefined ? null : { viewBox: frame })}
+      {...semantics}
+      className={classes.join(' ')}
+      {...rest}
+    />
+  );
 }
