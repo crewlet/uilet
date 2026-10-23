@@ -73,3 +73,16 @@ test("a foot's floor is a small control's height of content", () => {
   expect(foot).toMatch(/box-sizing:\s*content-box;/);
   expect(foot).toMatch(/min-height:\s*var\(--size-control-sm\);/);
 });
+
+// THE NAME STANDS ON ONE LINE ACROSS A ROW whether or not a tile has a state:
+// centred on the mark, a name over a pill rose above its stateless neighbour's.
+test("a tile's name starts at the same height with or without a state", () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'CatalogTile.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const head = /\.crewlet-catalog-tile__head \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const title = /\.crewlet-catalog-tile__title \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(head).toMatch(/align-items:\s*flex-start;/);
+  expect(title).toMatch(/justify-content:\s*flex-start;/);
+});
