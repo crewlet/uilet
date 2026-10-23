@@ -1,0 +1,125 @@
+/*
+ * CatalogTile: mark, name and state, one sentence, and a foot with a quiet
+ * fact and one action.
+ *
+ * ONE WELL FOR EVERY MARK. A vendor's mark is drawn in the vendor's colours,
+ * so the box it stands in is the one thing a catalogue can hold constant: the
+ * same size, the same raised ground and the same hairline for every tile,
+ * set up or not. A drained mark on a grey box read as a placeholder image
+ * (a white plate on grey is not a logo), so a tile not yet set up says so by
+ * its ground, never by its mark.
+ */
+
+.crewlet-catalog-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+  padding: var(--spacing-4);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+}
+
+.crewlet-catalog-tile--quiet {
+  background: var(--color-surface-background);
+}
+
+.crewlet-catalog-tile__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+.crewlet-catalog-tile__mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-row-lg);
+  height: var(--size-row-lg);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+/* The name, and under it the state when there is one; centred on the mark
+   either way, so a tile with no state is not a tile with a hole in it. */
+.crewlet-catalog-tile__title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-catalog-tile__name {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-catalog-tile__status {
+  display: inline-flex;
+}
+
+.crewlet-catalog-tile__description {
+  flex: 1;
+  margin: 0;
+  /* Two lines reserved, so a tile saying what it is for and one saying what
+     is owed keep their feet on one line in a row. */
+  min-height: calc(2em * var(--font-line-height-body));
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-body);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-catalog-tile__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-control-sm);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-catalog-tile__meta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-catalog-tile__action {
+  display: inline-flex;
+  flex: none;
+}
+
+/*
+ * ONE TILE A ROW RESERVES NOTHING. The two reserved lines exist to keep the
+ * feet of tiles side by side on one line; a grid folded to one track has no
+ * neighbours to line up with, and on a phone the reserve was a blank line in
+ * every short tile.
+ */
+@container crewlet-tile-grid (width < 40rem) {
+  .crewlet-tile-grid[data-columns='3'] .crewlet-catalog-tile__description {
+    min-height: 0;
+  }
+}
+
+@container crewlet-tile-grid (width < 28rem) {
+  .crewlet-tile-grid .crewlet-catalog-tile__description {
+    min-height: 0;
+  }
+}
