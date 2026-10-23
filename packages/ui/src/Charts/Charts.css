@@ -978,3 +978,121 @@
   transform: translateY(-50%);
   pointer-events: none;
 }
+
+/* ─── Histogram, a log's own time axis ─────────────────────────── */
+
+/*
+ * Time runs left to right on this axis in every writing direction, as it does
+ * on every chart, and the ticks are placed on physical sides to match.
+ */
+.crewlet-histogram {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  direction: ltr;
+}
+
+/* The plot's bottom border is the axis line the ticks hang under. */
+.crewlet-histogram__plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  width: 100%;
+  height: var(--crewlet-histogram-height, 96px);
+  padding: var(--spacing-1) 0;
+  border-bottom: 1px solid var(--color-border-hover);
+}
+
+/* The slot is the control, and the whole of it is the target. */
+.crewlet-histogram__bar {
+  all: unset;
+  flex: 1 1 0;
+  min-width: 2px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+button.crewlet-histogram__bar {
+  cursor: pointer;
+}
+
+/* A slot draws no edge, so its ring stands off it. `all: unset` takes the
+   baseline ring away; this states it again at a weight the reset cannot
+   out-rank. */
+.crewlet-histogram__bar:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/*
+ * A count is data, so it is drawn in the data ramp; the accent is kept for the
+ * bar the reader is pointing at, the selection a click is about to make. The
+ * fill stacks from its foot, so the failed share sits at its bottom. Floors in
+ * pixels: an empty bucket at two, the smallest real count at three.
+ */
+.crewlet-histogram__fill {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  width: 63%;
+  min-width: 2px;
+  max-width: var(--spacing-7);
+  height: var(--crewlet-histogram-fill, 0%);
+  min-height: 3px;
+  background: var(--color-data-1);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-histogram__part {
+  display: block;
+  width: 100%;
+  height: var(--crewlet-histogram-part, 0%);
+  background: var(--color-feedback-danger);
+}
+
+button.crewlet-histogram__bar:hover > .crewlet-histogram__fill,
+button.crewlet-histogram__bar:focus-visible > .crewlet-histogram__fill {
+  background: var(--color-brand-accent);
+}
+
+/* An empty bucket is a visible floor in the tone an axis is ruled in:
+   present, and plainly not a quantity. */
+.crewlet-histogram__bar[data-empty] > .crewlet-histogram__fill {
+  min-height: 2px;
+  background: var(--color-border-strong);
+}
+
+button.crewlet-histogram__bar[data-empty]:hover > .crewlet-histogram__fill,
+button.crewlet-histogram__bar[data-empty]:focus-visible > .crewlet-histogram__fill {
+  background: var(--color-border-strong-hover);
+}
+
+/*
+ * The dates under the bars. Absolutely placed, so a tick sits over the bucket
+ * it names; the row states its own height because absolutely placed children
+ * contribute none.
+ */
+.crewlet-histogram__axis {
+  position: relative;
+  height: calc(var(--font-size-2xs) * var(--font-line-height-normal));
+  margin-top: 2px;
+}
+
+.crewlet-histogram__tick {
+  position: absolute;
+  top: 0;
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-histogram__fill {
+    transition: none;
+  }
+}

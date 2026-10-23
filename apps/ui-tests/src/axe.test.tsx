@@ -66,6 +66,7 @@ import {
   RichEditor,
   CatalogTile,
   DataGrid,
+  Histogram,
   List,
   ListItem,
   SettingsTable,
@@ -146,6 +147,19 @@ test('a data grid, its sortable heads, its row links and its bands carry no viol
         onRowActivate={() => {}}
         bands={[{ key: 'a', label: 'Ada', total: 3, rows }]}
       />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('a histogram, as a picture and as controls, carries no violation', async () => {
+  const bars = [0, 3, 1].map((v, i) => ({ t: Date.UTC(2026, 8, 16 + i), v, part: v > 2 ? 1 : 0 }));
+  const title = (bar: { t: number; v: number }) => `${new Date(bar.t).toISOString().slice(0, 10)}, ${bar.v}`;
+  const { container } = render(
+    <main>
+      <h1>Activity</h1>
+      <Histogram bars={bars} label="A picture" summary="4 turns in this window" formatTitle={title} formatTick={title} />
+      <Histogram bars={bars} label="Controls" summary="4 turns in this window" formatTitle={title} onSelect={() => {}} />
     </main>,
   );
   expect(await violations(container)).toEqual([]);

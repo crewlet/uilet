@@ -142,6 +142,8 @@ test('a ring stands off its element only where the element draws no edge', () =>
       // A row and a frame that draw no border of their own.
       'Charts/Charts.css | .crewlet-bar-list__row--pressable:focus-visible',
       'Charts/Charts.css | .crewlet-chart-frame:focus-visible',
+      // A histogram's slot, which draws no edge: its fill is the mark inside it.
+      'Charts/Charts.css | .crewlet-histogram__bar:focus-visible',
       // A tab is borderless; the pill variant's chips override it (see below).
       'Tabs/Tabs.css | .crewlet-tabs__tab:focus-visible',
       // A list that takes focus when it expands, with no edge of its own.

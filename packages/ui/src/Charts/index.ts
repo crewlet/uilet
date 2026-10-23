@@ -9,6 +9,8 @@ export { StackedBar } from './StackedBar.js';
 export type { StackedBarProps, StackedSegment } from './StackedBar.js';
 export { ActivityStrip } from './ActivityStrip.js';
 export type { ActivityBucket, ActivityStripProps } from './ActivityStrip.js';
+export { Histogram, histogramTicks } from './Histogram.js';
+export type { HistogramBar, HistogramProps } from './Histogram.js';
 export { TimeSeries, Sparkline } from './TimeSeries.js';
 export type { Series, SeriesPoint, SparklineProps, TimeSeriesProps } from './TimeSeries.js';
 export { StackedColumns, niceScale } from './StackedColumns.js';
