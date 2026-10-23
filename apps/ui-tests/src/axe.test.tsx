@@ -68,6 +68,7 @@ import {
   DataGrid,
   Histogram,
   List,
+  PropertyList,
   ListItem,
   SettingsTable,
   TileGrid,
@@ -160,6 +161,29 @@ test('a histogram, as a picture and as controls, carries no violation', async ()
       <h1>Activity</h1>
       <Histogram bars={bars} label="A picture" summary="4 turns in this window" formatTitle={title} formatTick={title} />
       <Histogram bars={bars} label="Controls" summary="4 turns in this window" formatTitle={title} onSelect={() => {}} />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
+test('a list of properties carries no violation: named sections, a link, a by-line and a collapsed section', async () => {
+  const setBy = { actor: 'agent-ceo', ago: '21h ago', turnHref: '#/live/turns/t-1' };
+  const { container } = render(
+    <main>
+      <h1>LEAD-4</h1>
+      <PropertyList
+        groups={[
+          {
+            items: [
+              { label: 'Status', value: 'In progress', setBy },
+              { label: 'Assignee', value: 'ada', href: '#/company/org/seats/ada', setBy },
+              { label: 'Due' },
+            ],
+          },
+          { name: 'Plan', whenAllAbsent: 'Nothing scheduled.', items: [{ label: 'Start' }] },
+          { name: 'Record', items: [{ label: 'GITHUB_TOKEN', value: '${GH}', identifierLabel: true }] },
+        ]}
+      />
     </main>,
   );
   expect(await violations(container)).toEqual([]);

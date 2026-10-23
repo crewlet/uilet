@@ -1,0 +1,96 @@
+/*
+ * An object's properties, in sections, on one grid.
+ *
+ * ONE TERM COLUMN DOWN THE WHOLE LIST. Every section is a description list of
+ * its own, laid out as a SUBGRID of this one, so its terms and details sit on
+ * this grid's two tracks and every section's labels start and end where the
+ * others' do. The term track is the description list's own measure,
+ * `--crewlet-description-list-term`, so a page that sets it once lines a list
+ * of properties up with every key-value card on it. Unset, it is the rail's
+ * own: as wide as the longest label, and never under 92px, which a one-word
+ * label ("Due") would otherwise shrink the column to.
+ *
+ * SIDE BY SIDE AT EVERY WIDTH. A list of properties sits in a rail or a card
+ * of its own width, so the window's width says nothing about the room it has;
+ * the description list's narrow step (term over detail) is cancelled below.
+ */
+
+.crewlet-property-list {
+  display: grid;
+  grid-template-columns: var(--crewlet-description-list-term, minmax(92px, max-content)) minmax(0, 1fr);
+  gap: var(--spacing-2) var(--spacing-3);
+  align-items: baseline;
+  min-width: 0;
+  font-size: var(--font-size-compact);
+}
+
+/* Two classes, so the description list's own track and narrow step (one
+   class, in a media query) give way to the subgrid at every width. */
+.crewlet-property-list > .crewlet-property-list__group {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  gap: inherit;
+  font-size: inherit;
+}
+
+.crewlet-property-list .crewlet-description-list__detail {
+  margin-bottom: 0;
+}
+
+/* THE LABEL IS AN IDENTIFIER (an environment variable's name, a tag's key),
+   set in the mono face; a word stays in the list's own. */
+.crewlet-property-list__identifier {
+  font-family: var(--font-family-mono);
+}
+
+/*
+ * A SECTION'S HEADING, with a hairline above it that separates it from the
+ * section before. The list's FIRST heading has nothing to be separated from,
+ * so it alone loses the hairline; a list that opens with rows of no section
+ * keeps it on its first heading, which has rows above it.
+ */
+.crewlet-property-list__heading {
+  grid-column: 1 / -1;
+  margin-top: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--color-border-default);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-property-list__heading:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.crewlet-property-list--eyebrow .crewlet-property-list__heading {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.crewlet-property-list--sentence .crewlet-property-list__heading {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+/* A SECTION NOBODY HAS FILLED IN, said once across both tracks in the words
+   its caller wrote. It is a sentence a reader has to read, so it takes the
+   tertiary rung, never the muted one (a floor for a mark). */
+.crewlet-property-list__empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* WHO SET IT, under the value rather than beside it: the value is what the
+   reader came for. A line of its own, so a long actor name cannot push the
+   value out of its track. */
+.crewlet-property-list__set-by {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+}
