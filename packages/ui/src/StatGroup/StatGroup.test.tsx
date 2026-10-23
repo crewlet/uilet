@@ -136,7 +136,6 @@ test('every tile in a row takes its lines from the row, one row per line it draw
   expect(rule).toMatch(/display:\s*grid;/);
   expect(rule).toMatch(/grid-template-rows:\s*subgrid;/);
   expect(rule).toMatch(new RegExp(`grid-row:\\s*span ${count};`));
-  // A label sits on its number, and the sub wraps rather than ending short.
+  // A label sits on its number.
   expect(bare).toMatch(/\.crewlet-stat-group > \.crewlet-statcard > \.crewlet-statcard__label \{\s*align-self: end;/);
-  expect(bare).toMatch(/\.crewlet-stat-group > \.crewlet-statcard > \.crewlet-statcard__sub \{\s*white-space: normal;/);
 });

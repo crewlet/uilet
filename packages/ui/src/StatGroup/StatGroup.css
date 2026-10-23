@@ -88,14 +88,9 @@
  * others end at the foot of the label row, one gap above their figure, rather
  * than floating at its top a line away from what they name.
  *
- * AND THE SUB WRAPS. Alone, a tile keeps its sub to one line so tiles laid
- * side by side by a caller stand at one height; in a row the subgrid already
- * gives every tile one height, so the ellipsis only cut the end of every
- * longer sentence ("6 seats idle and waiting for ..." on a phone), and the
- * end is the half that says what the number means.
- *
  * These were the engine dashboard's own rules over this component, held there
- * with a note that the kit should carry them; they are the kit's now.
+ * with a note that the kit should carry them; they are the kit's now, with the
+ * sub's wrap (see StatCard), which the engine applied to every tile.
  */
 .crewlet-stat-group > .crewlet-statcard {
   display: grid;
@@ -105,11 +100,6 @@
 
 .crewlet-stat-group > .crewlet-statcard > .crewlet-statcard__label {
   align-self: end;
-}
-
-.crewlet-stat-group > .crewlet-statcard > .crewlet-statcard__sub {
-  white-space: normal;
-  text-wrap: balance;
 }
 
 /*
