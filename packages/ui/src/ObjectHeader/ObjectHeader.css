@@ -1,5 +1,10 @@
 /*
  * The header of an object: its eyebrow, its head row and its fact line.
+ *
+ * SENTENCE CASE, both the eyebrow and the fact labels, as `StatCard`'s label
+ * is: the uppercase, tracked-open micro-caps are a table's column head, and
+ * over an object's name ("UNIT", then TYPE, LEAD and SEATS under it) they put
+ * a heading on every fact and read as a form rather than a record.
  */
 .crewlet-object-header {
   display: flex;
@@ -18,9 +23,7 @@
   align-items: center;
   gap: var(--spacing-2);
   min-width: 0;
-  font-size: var(--font-size-2xs);
-  letter-spacing: var(--font-letter-spacing-wide);
-  text-transform: uppercase;
+  font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
 
@@ -35,8 +38,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  letter-spacing: normal;
-  text-transform: none;
 }
 
 .crewlet-object-header__id--mono {
@@ -138,9 +139,7 @@
 }
 
 .crewlet-fact-line__label {
-  font-size: var(--font-size-2xs);
-  letter-spacing: var(--font-letter-spacing-wide);
-  text-transform: uppercase;
+  font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
 

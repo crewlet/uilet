@@ -180,3 +180,16 @@ describe('ObjectHeader description', () => {
     expect(container.querySelector('.crewlet-object-header__description')).toBeNull();
   });
 });
+
+// SENTENCE CASE: the micro-caps are a table's column head, and over an
+// object's name ("UNIT", then TYPE, LEAD and SEATS) they read as a form.
+test('the eyebrow and the fact labels keep the words as written', () => {
+  const rule = (selector: string) => {
+    const at = css().indexOf(`${selector} {`);
+    return css().slice(at, css().indexOf('}', at));
+  };
+  for (const selector of ['.crewlet-object-header__eyebrow', '.crewlet-fact-line__label']) {
+    expect(rule(selector)).not.toMatch(/text-transform/);
+    expect(rule(selector)).toMatch(/font-size:\s*var\(--font-size-xs\)/);
+  }
+});
