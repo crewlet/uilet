@@ -32,7 +32,7 @@
       "accentSoft": { "value": "rgba(115, 90, 242, 0.125)", "comment": "The approved 0.108, raised to 0.125: at 0.108 a selected row on the frame sat only dE 2.40 from a hovered one, under the dE 3 that tells the two apart, and 0.125 is the least alpha that clears it on every rung (3.02 on the frame)." }
     },
     "border": {
-      "default": { "value": "#e7e8ec", "comment": "The approved #f5f5f5, darkened dE 3.92: it sat dE 0.84 off the sheet and 1.02 off raised, where a hairline has to clear dE 3 to be seen." },
+      "default": { "value": "#e5e6ea", "comment": "The approved #f5f5f5, darkened dE 4.52: it sat dE 0.84 off the sheet and 1.02 off raised, where the rail's current row needs dE 3, and the sheet is the side where the hairline that finds a card has to clear dE 5 (CARD_HAIRLINE_DE): it measures 5.12 there, and 6.60 (1.22:1) on the card." },
       "hover": { "value": "#c9cfdc" },
       "strong": { "value": "#c9cfdc" },
       "strongHover": { "value": "#acb6cc", "comment": "The default-to-strong step, dE 7.88, taken once more." },

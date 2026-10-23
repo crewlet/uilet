@@ -32,7 +32,7 @@
       "accentSoft": { "value": "rgba(114, 91, 230, 0.16)", "comment": "The approved 0.16, unmoved. A selected row lands dE 5.93 to 8.94 off its rung, against a hover overlay's 5.24 to 7.03, and at least 3.74 from the hovered row itself." }
     },
     "border": {
-      "default": { "value": "#191b20", "comment": "The approved #14151a, lifted dE 2.53: it sat dE 0.99 off the card, under the 3 the hairline that finds a card keeps on both sides of it." },
+      "default": { "value": "#1e2025", "comment": "The approved #14151a, lifted dE 4.67 along lightness: it sat dE 0.99 off the card, under the 5 the hairline that finds a card keeps on both sides of it (CARD_HAIRLINE_DE). At the old floor of 3 it was drawn dE 3.1 off the card, 1.07:1, and a stat row's dividers, a tile's footer rule and an outline tag read as loose text; at 5 it measures 1.13:1 on the card and 1.19:1 on the sheet, and the rail's current row still keeps it dE 3.6 off raised." },
       "hover": { "value": "#2d3448" },
       "strong": { "value": "#2d3448", "comment": "The approved #2b3245, lifted dE 0.85 along lightness: as the edge of a raised chip on an inset well inside a raised surface it measured dE 2.43, under the hairline dE 3 a chip's edge keeps on every ground." },
       "strongHover": { "value": "#424f74", "comment": "The default-to-strong step, dE 10.86, taken once more." },

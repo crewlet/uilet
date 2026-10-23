@@ -105,6 +105,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+  CARD_HAIRLINE,
   deltaE,
   flatten,
   fromOklab,
@@ -162,15 +163,18 @@ const FINISH_CEILING = 60000;
 const HUE_FAMILY = 15;
 
 /**
- * The LADDERS whose order the fit keeps: the four rungs, lowest first, and the
- * text ramp, strongest first. The suite holds each step to a distance and
- * never to a direction (in light, raised is BELOW the card, by design), so
- * left to the objective alone the cheapest palette puts raised under the card.
- * No two steps of one ladder swap lightness from where the design has them;
- * values on different ladders (a muted glyph and a chart's residual mark, say)
- * owe each other nothing.
+ * The LADDERS whose order the fit keeps: the four rungs, lowest first, the
+ * text ramp, strongest first, and the plain hairline with the card and the
+ * sheet it runs between. The suite holds each step to a distance and never to
+ * a direction (in light, raised is BELOW the card, by design), so left to the
+ * objective alone the cheapest palette puts raised under the card, and the
+ * cheapest dark hairline that clears CARD_HAIRLINE_DE is a black line under
+ * the sheet rather than the lighter edge the design draws. No two steps of one
+ * ladder swap lightness from where the design has them; values on different
+ * ladders (a muted glyph and a chart's residual mark, say) owe each other
+ * nothing.
  */
-const LADDERS = [OPAQUE_SURFACES, [...TEXT_STEPS.map(([token]) => token), '--color-text-muted']];
+const LADDERS = [OPAQUE_SURFACES, [...TEXT_STEPS.map(([token]) => token), '--color-text-muted'], CARD_HAIRLINE];
 
 /** The least move, in dE, the finish tries to win back: a hundredth of a step a reader can see. */
 const FINISH_FLOOR = 0.03;

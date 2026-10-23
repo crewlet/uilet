@@ -45,6 +45,15 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+## Changed in 0.38.0: the hairline that finds a card
+
+The plain hairline is the edge of every card and the line inside one: the rule under a card's head, the divider between two stat tiles, a code block's edge and a quiet tag's outline. The palette suite held it to dE 3, the floor for a difference a reader looks for, and the default dark palette drew it dE 3.1 off the card (1.07:1), where a layout audit measured those lines as gone. It is now held to dE 5 on both sides of it, the most the default dark ladder allows while the rail's current row keeps dE 3 against raised. Every named theme already cleared it.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| `--color-border-default` in the default palette is `#1e2025` in dark (from `#191b20`: dE 5.18 on the card, 1.13:1) and `#e5e6ea` in light (from `#e7e8ec`: dE 5.12 on the sheet, 6.60 on the card). | Nothing. | [Surfaces](#surfaces) |
+| In `@crewlethq/tokens/test/palette`, `the hairline that finds a card is visible on both sides of it` measures against the new export `CARD_HAIRLINE_DE` (5). `HAIRLINE_DE` (3) is unchanged and still holds the strong hairline round a raised chip and the line round the rail's current row. | Nothing, unless an application's own palette override draws the plain hairline within dE 5 of its card or sheet. | [The palette suite](#the-palette-suite) |
+
 ## Changed in 0.37.1: focus handed back
 
 The baseline keeps the ring off an element marked `data-crewlet-focus-returned` (by `@crewlethq/ui`'s `returnFocus`) while the root says the last move was a pointer's (`data-crewlet-focus="pointer"`). A trigger focused again when its palette closes matched `:focus-visible` because the palette's field did, so a click and an Escape left it ringed. The outline turns transparent rather than going, so forced colors still paints one.
@@ -283,7 +292,7 @@ Four opaque rungs, lowest first. Every ground a piece of text can land on is one
 Each step is held to what it has to do, in OKLab dE, by the palette suite:
 
 - **The sheet lifts off the frame by dE 3** (3.05 dark, 3.40 light). That lift is the whole layering device. The approved dark sheet, `#0c0e15`, measured 2.96 and was lifted along lightness alone to `#0c0e16`.
-- **A card separates from the sheet by dE 1.5** (2.69 dark, 1.55 light), near-flat on purpose: a card is found by its **hairline**, and a page of cards each lifted by dE 3 is a relief map. So `--color-border-default` is held to dE 3 against both the card and the sheet (3.09 and 5.69 dark, 5.99 and 4.51 light), and `@crewlethq/ui`'s Card suite holds every card variant that stands on this rung to drawing it.
+- **A card separates from the sheet by dE 1.5** (2.69 dark, 1.55 light), near-flat on purpose: a card is found by its **hairline**, and a page of cards each lifted by dE 3 is a relief map. So `--color-border-default` is held to dE 5 (`CARD_HAIRLINE_DE`) against both the card and the sheet (5.18 and 7.82 dark, 6.60 and 5.12 light), and `@crewlethq/ui`'s Card suite holds every card variant that stands on this rung to drawing it.
 - **Raised separates from the card by dE 3** (8.52 dark, 3.00 light), because a well has no border of its own. A chip on raised does carry one: the strong hairline round it is held to dE 3 against every rung and every overlay on one (`RAISED_CHIP`), because on a raised ground its fill draws nothing.
 
 `--color-surface-hover`, `-pressed` and `-inset` stay **translucent**, so a hovered row is right on every rung. The approved palette draws its hover and its sunk well as overlays too (the hover at 0.061 in dark and 0.044 in light), and both ship as drawn. The suite holds the overlays from below, a hovered row dE 3 off every rung and a pressed row dE 3 off a hovered one: the light hover clears the first at exactly its approved alpha (3.04 on the frame), and the pressed overlay is the least alpha that clears the second (0.098 dark, 0.088 light). In light the overlays and the shadows are drawn in the dark frame's near-black. `--color-surface-glass` is the card at 0.90, frosted by `--blur-sm`: the ground of what floats over CONTENT rather than over interface, a canvas's bars and a chart's reading, and the suite holds every text step over 4.5:1 on it with each data hue, the residual and the inverse ground behind it. And `--color-surface-veil`, the ground a dialog sits on, is each root's own **frame** at 0.65: the application recedes into its own ground rather than under a film of its page.
