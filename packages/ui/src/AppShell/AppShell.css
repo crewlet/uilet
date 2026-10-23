@@ -130,6 +130,8 @@
 .crewlet-app-shell__rail-head {
   display: flex;
   align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
   flex: none;
   box-sizing: border-box;
   min-height: calc(var(--size-shell-inset) + var(--crewlet-app-shell-topbar));
@@ -141,6 +143,31 @@
   min-height: 0;
   overflow-y: auto;
   scrollbar-color: var(--color-scrollbar) transparent;
+}
+
+/*
+ * THE HEAD'S FIRST CHILD TAKES ITS WIDTH: a lockup alone on its line, whose
+ * name truncates at the rail's edge rather than wrapping or pushing the head
+ * wider. It was every application's own wrapper and rule.
+ */
+.crewlet-app-shell__rail-head > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/*
+ * THE RAIL'S FIELD ON THE NAV'S COLUMNS. It stands on the nav's gutter, so
+ * its right edge is where every row's background ends; and its glyph stands
+ * on the nav's glyph column: a row's glyph is the gutter and the row's pad
+ * in, the field's is the gutter, its own 1px edge and its pad
+ * (`SearchTrigger`'s two steps and a half), so the inset at its start makes
+ * up the difference from those measures.
+ */
+.crewlet-app-shell__rail-search {
+  padding: 0 var(--size-nav-gutter) var(--spacing-3);
+  padding-inline-start: calc(
+    var(--size-nav-gutter) + var(--size-nav-row-pad) - (var(--spacing-2) + var(--spacing-1) / 2) - 1px
+  );
 }
 
 /* The same gutter the nav takes, so what the foot says lines up with the rows
@@ -488,6 +515,15 @@
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-gutter: stable;
+  /*
+   * A SIZE CONTAINER, so a box inside the screen can be as tall as the view
+   * it scrolls in (`100cqb`): a column that sticks beside the screen
+   * (`SectionFrame`), a record bounded by the window. The scroller's size is
+   * the shell's, never its content's, so containing it costs nothing. A box
+   * inside an inline-size container (a card, a stat row) reaches past it to
+   * this one for the block axis.
+   */
+  container-type: size;
 }
 
 /* No focus rule of its own: `main` takes focus only from the skip link, and a
@@ -505,12 +541,17 @@
 }
 
 /* A screen that draws to the bottom of the window: the scroller stops
-   scrolling and the content column takes the height that is left. It
-   reserves no scrollbar gutter either, since nothing in it scrolls: the
-   reserved strip was a dead band down the screen's end edge. */
+   scrolling and the content column takes the height that is left.
+
+   IT KEEPS THE GUTTER RESERVED, like every other screen. The top bar's end
+   inset counts the scroller's gutter (`--crewlet-app-shell-gutter`, measured
+   by the shell), so a fill screen that reserved none put the bar's controls
+   one gutter further out than on the screen beside it: with classic
+   scrollbars, Add seat moved 11px between an org chart and its roster, two
+   tabs of one page. A strip at the end edge of a full-screen canvas is the
+   smaller cost than a bar that moves under the pointer. */
 .crewlet-app-shell--fill .crewlet-app-shell__main {
   overflow: hidden;
-  scrollbar-gutter: auto;
 }
 
 .crewlet-app-shell--fill .crewlet-app-shell__content {

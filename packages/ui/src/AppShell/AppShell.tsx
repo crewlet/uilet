@@ -362,8 +362,19 @@ function ShellDrawer({
 }
 
 export interface AppShellRailProps {
-  /** The head of the rail, drawn at the top bar's own height. */
+  /**
+   * The head of the rail, drawn at the top bar's own height. Its first child
+   * takes the head's width, so a long name (a company's, in a lockup)
+   * truncates rather than wrapping.
+   */
   header?: ReactNode;
+  /**
+   * The rail's field, first in its scrolling middle: a `SearchTrigger` with
+   * `variant="rail"`. The slot stands it on the nav's own gutter with its
+   * glyph on the nav rows' glyph column, so the field needs no inset of its
+   * application's own.
+   */
+  search?: ReactNode;
   /**
    * The foot: what the engine is doing, the theme and density controls. An
    * `<AppShell.RailRow>` puts a line there on the rail's own insets, so its
@@ -375,11 +386,14 @@ export interface AppShellRailProps {
 }
 
 /** The rail's three regions: a head, a scrolling middle, and a foot. */
-export function AppShellRail({ header, footer, className, children }: AppShellRailProps) {
+export function AppShellRail({ header, search, footer, className, children }: AppShellRailProps) {
   return (
     <div className={cx('crewlet-app-shell__rail-inner', className)}>
       {header ? <div className="crewlet-app-shell__rail-head">{header}</div> : null}
-      <div className="crewlet-app-shell__rail-body">{children}</div>
+      <div className="crewlet-app-shell__rail-body">
+        {search ? <div className="crewlet-app-shell__rail-search">{search}</div> : null}
+        {children}
+      </div>
       {footer ? <div className="crewlet-app-shell__rail-foot">{footer}</div> : null}
     </div>
   );

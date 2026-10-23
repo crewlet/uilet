@@ -1340,3 +1340,64 @@ describe("the rail's foot", () => {
     expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 });
+
+describe('the rail head, its field and the scroller', () => {
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const rule = (selector: string) => {
+    const at = sheet.indexOf(`${selector} {`);
+    return at < 0 ? '' : sheet.slice(at, sheet.indexOf('}', at)).replace(/\s+/g, ' ');
+  };
+
+  // THE FIELD IS THE RAIL'S OWN SLOT, first in its scrolling middle: an
+  // application handed the field over and needs no wrapper or inset of its own.
+  test('the rail draws its field first in its middle, in a slot of its own', () => {
+    const { container } = render(
+      <AppShell
+        sidebar={
+          <AppShell.Rail header={<a href="#/">Acme</a>} search={<button type="button">Ask or jump to</button>}>
+            <nav aria-label="Navigation" />
+          </AppShell.Rail>
+        }
+      >
+        content
+      </AppShell>,
+    );
+    const body = container.querySelector('.crewlet-app-shell__rail-body')!;
+    const slot = body.firstElementChild!;
+    expect(slot.classList.contains('crewlet-app-shell__rail-search')).toBe(true);
+    expect(slot.textContent).toBe('Ask or jump to');
+    expect(body.querySelector('nav')?.previousElementSibling).toBe(slot);
+  });
+
+  test('a rail with no field draws no slot', () => {
+    const { container } = render(<AppShell sidebar={<AppShell.Rail>rows</AppShell.Rail>}>content</AppShell>);
+    expect(container.querySelector('.crewlet-app-shell__rail-search')).toBeNull();
+  });
+
+  // ITS GLYPH ON THE NAV'S GLYPH COLUMN and its edges on the nav's gutter;
+  // the head's first child takes the head's width so a long name truncates.
+  test("the field stands on the nav's columns, and the head's first child takes its width", () => {
+    const search = rule('.crewlet-app-shell__rail-search');
+    expect(search).toContain('padding: 0 var(--size-nav-gutter) var(--spacing-3);');
+    expect(search).toContain(
+      'padding-inline-start: calc( var(--size-nav-gutter) + var(--size-nav-row-pad) - (var(--spacing-2) + var(--spacing-1) / 2) - 1px );',
+    );
+    const head = rule('.crewlet-app-shell__rail-head > :first-child');
+    expect(head).toContain('flex: 1 1 auto;');
+    expect(head).toContain('min-width: 0;');
+  });
+
+  // THE SCROLLER IS A SIZE CONTAINER, so a column beside the screen can be the
+  // view's height; and a fill screen keeps the gutter reserved, so the bar's
+  // end inset (which counts it) does not move between a fill screen and its
+  // neighbour.
+  test('the scroller is a size container, and a fill screen keeps its gutter', () => {
+    const main = rule('.crewlet-app-shell__main');
+    expect(main).toContain('scrollbar-gutter: stable;');
+    expect(main).toContain('container-type: size;');
+    expect(rule('.crewlet-app-shell--fill .crewlet-app-shell__main')).not.toContain('scrollbar-gutter');
+  });
+});
