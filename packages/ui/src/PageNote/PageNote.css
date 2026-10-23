@@ -1,0 +1,12 @@
+/*
+ * PageNote: the screen's one quiet sentence. No word alone on its last line
+ * (`pretty`), which reads as a sentence that stopped rather than one that
+ * ended. No margin of its own: the column it stands in sets the gap.
+ */
+.crewlet-page-note {
+  margin: 0;
+  max-width: var(--size-measure);
+  font-size: var(--font-size-compact);
+  color: var(--color-text-tertiary);
+  text-wrap: pretty;
+}
