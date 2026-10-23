@@ -218,18 +218,21 @@
 }
 
 /*
- * THE RAIL'S FIELD ON THE NAV'S COLUMNS. It stands on the nav's gutter, so
- * its right edge is where every row's background ends; and its glyph stands
- * on the nav's glyph column: a row's glyph is the gutter and the row's pad
- * in, the field's is the gutter, its own 1px edge and its pad
- * (`SearchTrigger`'s two steps and a half), so the inset at its start makes
- * up the difference from those measures.
+ * THE RAIL'S FIELD ON THE NAV'S CONTENT COLUMNS, compact. Its glyph stands on
+ * the nav's glyph column and its shortcut ends where a row's words can end:
+ * a row's content is the gutter and the row's pad in from each edge, the
+ * field's is the slot's inset, its own 1px edge and its pad
+ * (`--crewlet-rail-field-pad`, which the rail variant of `SearchTrigger`
+ * takes), so the inset at each end makes up the difference. Standing on the
+ * rows' content rather than on their backgrounds' edges, the field is
+ * narrower than a row, a field in the rail rather than a bar across it.
+ *
+ * And it is held off the nav by the nav's own top inset alone, one step, so
+ * the field and the rows read as one group with the field first.
  */
 .crewlet-app-shell__rail-search {
-  padding: 0 var(--size-nav-gutter) var(--spacing-3);
-  padding-inline-start: calc(
-    var(--size-nav-gutter) + var(--size-nav-row-pad) - (var(--spacing-2) + var(--spacing-1) / 2) - 1px
-  );
+  --crewlet-rail-field-pad: calc(var(--spacing-1) + var(--spacing-1) / 2);
+  padding: 0 calc(var(--size-nav-gutter) + var(--size-nav-row-pad) - var(--crewlet-rail-field-pad) - 1px);
 }
 
 /* The same gutter the nav takes, so what the foot says lines up with the rows

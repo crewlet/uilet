@@ -111,14 +111,36 @@ test('the rail field is the sheet across the rail, and the toolbar field the car
       </>,
     );
     const rail = screen.getByRole('button', { name: 'Ask or jump to…' });
-    // The design's 34px: the medium control and one scale step, the rail's way
-    // in rather than one more button. And the whole width it is given.
-    expect(px(rail, 'height')).toBe(34);
+    // The rail's compact step: the small control, 26px, over the 24px target.
+    // And the whole width its slot gives it, on the trigger's own pad outside
+    // the rail's slot.
+    expect(px(rail, 'height')).toBe(26);
     expect(getComputedStyle(rail).width).toBe('100%');
+    expect(px(rail, 'padding-left')).toBe(10);
     expect(px(screen.getByRole('button', { name: 'Search ENG' }), 'height')).toBe(30);
   } finally {
     uninstall();
   }
+});
+
+// THE LABEL GIVES WAY BEFORE THE SHORTCUT: in a field narrower than both,
+// the words truncate and the keys keep their width at the field's end.
+test('a narrow field cuts its label before its shortcut', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SearchTrigger.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const rule = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    return at < 0 ? '' : css.slice(at, css.indexOf('}', at)).replace(/\s+/g, ' ');
+  };
+  const label = rule('.crewlet-search-trigger__label');
+  expect(label).toContain('min-width: 0;');
+  expect(label).toContain('text-overflow: ellipsis;');
+  expect(rule('.crewlet-search-trigger__shortcut')).toContain('flex: none;');
+  expect(rule('.crewlet-search-trigger--rail')).toContain(
+    'padding-inline: var(--crewlet-rail-field-pad, calc(var(--spacing-2) + var(--spacing-1) / 2));',
+  );
 });
 
 test('only the toolbar field folds to its glyph under the shell breakpoint', () => {

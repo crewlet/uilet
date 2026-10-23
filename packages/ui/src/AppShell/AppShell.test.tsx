@@ -1545,14 +1545,18 @@ describe('the rail head, its field and the scroller', () => {
     expect(container.querySelector('.crewlet-app-shell__rail-search')).toBeNull();
   });
 
-  // ITS GLYPH ON THE NAV'S GLYPH COLUMN and its edges on the nav's gutter;
-  // the head's first child takes the head's width so a long name truncates.
-  test("the field stands on the nav's columns, and the head's first child takes its width", () => {
+  // ITS GLYPH ON THE NAV'S GLYPH COLUMN and its shortcut on the line a row's
+  // words end on: the slot's inset, the field's edge and its pad add up to a
+  // row's gutter and pad at each end. It is held off the nav by the nav's own
+  // top inset alone. The head's first child takes the head's width so a long
+  // name truncates.
+  test("the field stands on the nav's content columns, and the head's first child takes its width", () => {
     const search = rule('.crewlet-app-shell__rail-search');
-    expect(search).toContain('padding: 0 var(--size-nav-gutter) var(--spacing-3);');
+    expect(search).toContain('--crewlet-rail-field-pad: calc(var(--spacing-1) + var(--spacing-1) / 2);');
     expect(search).toContain(
-      'padding-inline-start: calc( var(--size-nav-gutter) + var(--size-nav-row-pad) - (var(--spacing-2) + var(--spacing-1) / 2) - 1px );',
+      'padding: 0 calc(var(--size-nav-gutter) + var(--size-nav-row-pad) - var(--crewlet-rail-field-pad) - 1px);',
     );
+    expect(search).not.toMatch(/padding-(bottom|block)/);
     const head = rule('.crewlet-app-shell__rail-head > :first-child');
     expect(head).toContain('flex: 1 1 auto;');
     expect(head).toContain('min-width: 0;');
