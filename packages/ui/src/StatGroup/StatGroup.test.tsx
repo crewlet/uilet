@@ -112,3 +112,31 @@ test('folds by its own width, never the window', () => {
   expect(three).toMatch(/\[data-columns='3'\] > \*,[^{]*\{\s*grid-column:\s*span 12;/);
   expect(three).toMatch(/\[data-columns='3'\] > :nth-child\(n \+ 2\)/);
 });
+
+// A ROW OF TILES SHARES ITS LINES: each tile is a subgrid over as many rows as
+// it renders lines, so the span in the stylesheet and the lines StatCard draws
+// have to agree. The count is read off rendered tiles, an absent sub and a
+// hidden label included, rather than restated.
+test('every tile in a row takes its lines from the row, one row per line it draws', () => {
+  const { container } = render(
+    <StatGroup columns={3}>
+      <StatCard label="Live nodes" value={1} sub="holding an unexpired lease" />
+      <StatCard label="Behind on config" value={0} />
+      <StatCard label="Unplaceable" value={0} hideLabel />
+    </StatGroup>,
+  );
+  const tiles = [...container.querySelectorAll('.crewlet-statcard')];
+  const lines = new Set(tiles.map((tile) => tile.children.length));
+  expect([...lines]).toHaveLength(1);
+  const [count] = [...lines];
+  const bare = sheet.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = [...bare.matchAll(/\.crewlet-stat-group > \.crewlet-statcard \{([^}]*)\}/g)]
+    .map((block) => block[1] ?? '')
+    .find((block) => block.includes('subgrid')) ?? '';
+  expect(rule).toMatch(/display:\s*grid;/);
+  expect(rule).toMatch(/grid-template-rows:\s*subgrid;/);
+  expect(rule).toMatch(new RegExp(`grid-row:\\s*span ${count};`));
+  // A label sits on its number, and the sub wraps rather than ending short.
+  expect(bare).toMatch(/\.crewlet-stat-group > \.crewlet-statcard > \.crewlet-statcard__label \{\s*align-self: end;/);
+  expect(bare).toMatch(/\.crewlet-stat-group > \.crewlet-statcard > \.crewlet-statcard__sub \{\s*white-space: normal;/);
+});
