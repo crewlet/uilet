@@ -376,9 +376,17 @@ export interface AppShellRailProps {
    */
   search?: ReactNode;
   /**
-   * The foot: what the engine is doing, the theme and density controls. An
-   * `<AppShell.RailRow>` puts a line there on the rail's own insets, so its
-   * mark lands on the line every nav glyph above it sits on.
+   * A compact status at the end of the head's line, beside the name the head
+   * carries: an `<AppShell.RailStatus>`, the application's own state in a
+   * dot and a count. It takes its own width, so the name keeps the rest and
+   * truncates there, and it stands in the drawer's head the same way.
+   */
+  status?: ReactNode;
+  /**
+   * The foot: what a reader reaches for rarely, such as a settings link and
+   * their own account row. An `<AppShell.RailRow>` puts a line there on the
+   * rail's own insets, so its mark lands on the line every nav glyph above it
+   * sits on. A state the application reports belongs in `status`, compact.
    */
   footer?: ReactNode;
   className?: string | undefined;
@@ -386,10 +394,15 @@ export interface AppShellRailProps {
 }
 
 /** The rail's three regions: a head, a scrolling middle, and a foot. */
-export function AppShellRail({ header, search, footer, className, children }: AppShellRailProps) {
+export function AppShellRail({ header, search, status, footer, className, children }: AppShellRailProps) {
   return (
     <div className={cx('crewlet-app-shell__rail-inner', className)}>
-      {header ? <div className="crewlet-app-shell__rail-head">{header}</div> : null}
+      {header || status ? (
+        <div className="crewlet-app-shell__rail-head">
+          {header}
+          {status ? <div className="crewlet-app-shell__rail-status">{status}</div> : null}
+        </div>
+      ) : null}
       <div className="crewlet-app-shell__rail-body">
         {search ? <div className="crewlet-app-shell__rail-search">{search}</div> : null}
         {children}
@@ -429,6 +442,27 @@ export interface RailRowCount {
    * out, it is the quiet figure a count in the nav is, in the tertiary ink.
    */
   tone?: Extract<Tone, 'neutral' | 'warning'> | undefined;
+}
+
+/** A count as the end of a name: ", 5 alarms". */
+function countWords(count: RailRowCount): string {
+  return `, ${String(count.value)} ${count.label}`;
+}
+
+/** A count as it is drawn: the figure and its mark, hidden from assistive technology, which reads `countWords`. */
+function RailCountFigure({ count }: { count: RailRowCount }) {
+  return (
+    <span
+      className={cx(
+        'crewlet-app-shell__rail-row-count',
+        count.tone === 'warning' && 'crewlet-app-shell__rail-row-count--warning',
+      )}
+      aria-hidden
+    >
+      {count.mark ? <span className="crewlet-app-shell__rail-row-count-mark">{count.mark}</span> : null}
+      {count.value}
+    </span>
+  );
 }
 
 /** What a row in the rail's foot holds, whether or not it is a control. */
@@ -586,7 +620,7 @@ export const AppShellRailRow = forwardRef<HTMLElement, AppShellRailRowProps>(fun
                 box: written after the last word, the comma lands where it
                 belongs and the pause it buys falls between the state and its
                 figure ("Engine serving, 5 alarms"), as a nav row's does. */}
-            {count ? <VisuallyHidden>{`, ${String(count.value)} ${count.label}`}</VisuallyHidden> : null}
+            {count ? <VisuallyHidden>{countWords(count)}</VisuallyHidden> : null}
           </span>
           {block ? (
             <>
@@ -598,16 +632,7 @@ export const AppShellRailRow = forwardRef<HTMLElement, AppShellRailRowProps>(fun
         {count ? (
           <>
             {' '}
-            <span
-              className={cx(
-                'crewlet-app-shell__rail-row-count',
-                count.tone === 'warning' && 'crewlet-app-shell__rail-row-count--warning',
-              )}
-              aria-hidden
-            >
-              {count.mark ? <span className="crewlet-app-shell__rail-row-count-mark">{count.mark}</span> : null}
-              {count.value}
-            </span>
+            <RailCountFigure count={count} />
           </>
         ) : null}
         {trailing ? (
@@ -647,6 +672,123 @@ export const AppShellRailRow = forwardRef<HTMLElement, AppShellRailRowProps>(fun
       onClick={onClick}
     >
       {inside}
+    </button>
+  );
+});
+
+/** What the head's status says, whether or not it is a control. */
+interface RailStatusContent {
+  /** The state's mark: a status dot. The status draws no words, so the mark and the count are what is seen. */
+  icon: ReactNode;
+  /**
+   * The state in words, "Engine serving". Not drawn: it is the status's name,
+   * read by assistive technology and shown as its title, with the count's
+   * words after it ("Engine serving, 1 alarm").
+   */
+  children: string;
+  /** How many of something stands against the state, drawn as a row's count is. */
+  count?: RailRowCount | undefined;
+  /** A mark after the count, for a state a press resolves: the key beside "sign in". */
+  trailing?: ReactNode;
+  className?: string | undefined;
+}
+
+/** A status the head states and nothing presses. */
+export interface StaticRailStatusProps extends RailStatusContent {
+  onClick?: undefined;
+  label?: undefined;
+  'aria-expanded'?: undefined;
+  'aria-haspopup'?: undefined;
+  'aria-controls'?: undefined;
+}
+
+/** A status that opens something: the engine's panel. */
+export interface ActionRailStatusProps extends RailStatusContent {
+  onClick: MouseEventHandler<HTMLButtonElement>;
+  /**
+   * Names the control where the state and its count are not what pressing it
+   * does ("Engine signed out. Sign in"). It replaces that name, and the title.
+   */
+  label?: string | undefined;
+  /** Whether the panel it opens is open, as a `Popover` or a `Menu` trigger passes it. */
+  'aria-expanded'?: boolean | undefined;
+  /** What it opens. */
+  'aria-haspopup'?: AriaAttributes['aria-haspopup'];
+  /** The panel it opens, while it is open. */
+  'aria-controls'?: string | undefined;
+}
+
+export type AppShellRailStatusProps = StaticRailStatusProps | ActionRailStatusProps;
+
+/**
+ * The application's state, compact, at the end of the rail head's line.
+ *
+ * A FOOT ROW'S MEANING IN A DOT AND A COUNT. The state's words are its name
+ * and its title rather than a line of the rail ("Engine serving, 1 alarm"),
+ * so a sighted reader reads the dot and the count, and hovers for the words,
+ * and a screen reader is told what a foot row would have told it. The count
+ * is the row's own (`RailRowCount`), in the same inks.
+ *
+ * IT TAKES A FIXED FLOOR OF WIDTH, a dot and a two-figure count, so the
+ * name beside it truncates at one place whatever the count says: the name
+ * does not lose a character when an alarm is raised. A count wider than the
+ * floor still grows the status rather than being cut.
+ *
+ * A STATUS THAT OPENS A PANEL IS ITS TRIGGER, as the foot's row is: the
+ * element goes to `ref` and the popup attributes reach the button, so a
+ * `Popover` anchors to it and it says whether the panel is open.
+ */
+export const AppShellRailStatus = forwardRef<HTMLElement, AppShellRailStatusProps>(function AppShellRailStatus(
+  {
+    icon,
+    children,
+    count,
+    trailing,
+    onClick,
+    label,
+    className,
+    'aria-expanded': expanded,
+    'aria-haspopup': haspopup,
+    'aria-controls': controls,
+  },
+  ref,
+) {
+  const name = label ?? `${children}${count ? countWords(count) : ''}`;
+  const marks = (
+    <>
+      <span className="crewlet-app-shell__rail-status-icon" aria-hidden>
+        {icon}
+      </span>
+      {count ? <RailCountFigure count={count} /> : null}
+      {trailing ? (
+        <span className="crewlet-app-shell__rail-status-trailing" aria-hidden>
+          {trailing}
+        </span>
+      ) : null}
+    </>
+  );
+  const shape = cx('crewlet-app-shell__rail-status-mark', className);
+  if (onClick === undefined) {
+    return (
+      <span ref={ref as Ref<HTMLSpanElement>} className={shape} title={name}>
+        {marks}
+        <VisuallyHidden>{name}</VisuallyHidden>
+      </span>
+    );
+  }
+  return (
+    <button
+      ref={ref as Ref<HTMLButtonElement>}
+      type="button"
+      className={cx(shape, 'crewlet-app-shell__rail-status-mark--action', HIT_AREA_CLASS)}
+      aria-label={name}
+      title={name}
+      aria-expanded={expanded}
+      aria-haspopup={haspopup}
+      aria-controls={controls}
+      onClick={onClick}
+    >
+      {marks}
     </button>
   );
 });
@@ -713,6 +855,7 @@ export function AppShellTopbar({ title, titleId, actions, className, children, .
 
 AppShell.Rail = AppShellRail;
 AppShell.RailRow = AppShellRailRow;
+AppShell.RailStatus = AppShellRailStatus;
 AppShell.Topbar = AppShellTopbar;
 AppShell.Toggle = AppShellToggle;
 AppShell.AccountRow = AccountRow;
