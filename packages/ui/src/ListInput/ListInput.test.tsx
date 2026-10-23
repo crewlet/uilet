@@ -326,3 +326,21 @@ test('a row rests with one control, and reveals the pair that reorders it on foc
   expect(revealed.some((selector) => selector.includes(':hover'))).toBe(true);
   expect(revealed.some((selector) => selector.includes(':focus-within'))).toBe(true);
 });
+
+test('a list asked to take the focus puts it in the new-item box once, on mount', () => {
+  const { rerender } = render(
+    <ListInput label="Policies" itemName="policy" value={['Ask first.']} onChange={() => {}} focusOnMount />,
+  );
+  const box = screen.getByLabelText('New policy');
+  expect(document.activeElement).toBe(box);
+  // A later render does not take it back from where the reader moved it.
+  const item = screen.getByLabelText('Policy 1 of 1') as HTMLInputElement;
+  item.focus();
+  rerender(<ListInput label="Policies" itemName="policy" value={['Ask first!']} onChange={() => {}} focusOnMount />);
+  expect(document.activeElement).toBe(item);
+});
+
+test('a list not asked leaves the focus where it was', () => {
+  render(<ListInput label="Policies" itemName="policy" value={[]} onChange={() => {}} />);
+  expect(document.activeElement).toBe(document.body);
+});
