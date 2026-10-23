@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import * as Glyphs from '../dist/glyphs.js';
-import { GLYPHS, glyphByName } from '../dist/glyphs-registry.js';
+import { GLYPHS, NamedGlyph, glyphByName, glyphFor } from '../dist/glyphs-registry.js';
 import { FILLABLE, componentName, glyphNames, readGlyphs } from '../scripts/glyphs.mjs';
 import { attribute, render } from './support.mjs';
 
@@ -160,5 +160,20 @@ describe('the filled state', () => {
       assert.equal(attribute(markup, 'filled'), null, name);
       assert.equal(attribute(markup, 'fillable'), null, name);
     }
+  });
+});
+
+describe('a glyph drawn from a name', () => {
+  it('is the glyph registered under that name, drawing what it draws', () => {
+    for (const name of GLYPH_NAMES) {
+      assert.equal(glyphFor(name), glyphByName(name), name);
+      assert.equal(render(NamedGlyph, { name }), render(glyphByName(name), {}), name);
+    }
+  });
+
+  it('passes the props every glyph takes, and never its name, to the drawing', () => {
+    const markup = render(NamedGlyph, { name: 'x', size: 'sm', title: 'Close', className: 'mark' });
+    assert.equal(markup, render(XGlyph, { size: 'sm', title: 'Close', className: 'mark' }));
+    assert.equal(attribute(markup, 'name'), null);
   });
 });
