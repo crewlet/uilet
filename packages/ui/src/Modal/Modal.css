@@ -379,6 +379,11 @@
  */
 .crewlet-modal__title {
   margin: 0;
+  /* The text face at its own tracking, never the display face every heading
+     element takes from the baseline: the title is an h1 for the outline, at
+     the dialog's own register. */
+  font-family: var(--font-family-sans);
+  letter-spacing: var(--font-letter-spacing-normal);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-tight);

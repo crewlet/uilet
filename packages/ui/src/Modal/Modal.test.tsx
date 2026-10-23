@@ -16,7 +16,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test } from 'vitest';
@@ -209,8 +209,8 @@ test("a dialog's head with a subtitle centres its controls on the title's line",
 test("a sheet's title is drawn one step above a dialog's", () => {
   withLengths();
   const [sheetTitle, dialogTitle] = paint(
-    '<p class="crewlet-modal__title crewlet-modal__title--sheet"></p>' +
-      '<p class="crewlet-modal__title"></p>',
+    '<h1 class="crewlet-modal__title crewlet-modal__title--sheet"></h1>' +
+      '<h1 class="crewlet-modal__title"></h1>',
   );
   expect(px(sheetTitle!, 'font-size')).toBe(16);
   expect(px(dialogTitle!, 'font-size')).toBe(14);
@@ -890,4 +890,16 @@ test('no step back is drawn unless one is asked for', () => {
     </Modal>,
   );
   expect(document.querySelector('.crewlet-modal__back')).toBeNull();
+});
+
+// THE TITLE IS THE DIALOG'S h1: its body's headings start at level 2, and a
+// title drawn as a paragraph left that outline with no top.
+test('the title is the dialog\'s top heading, and names it', () => {
+  render(
+    <Modal open title="Connect Slack" onClose={() => {}}>
+      <p>body</p>
+    </Modal>,
+  );
+  const dialog = screen.getByRole('dialog', { name: 'Connect Slack' });
+  expect(within(dialog).getByRole('heading', { level: 1, name: 'Connect Slack' })).toBeTruthy();
 });
