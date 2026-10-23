@@ -11,6 +11,7 @@ import {
   KeyGlyph,
   LayoutDashboardGlyph,
   NetworkGlyph,
+  PaletteGlyph,
   PinGlyph,
   PlusGlyph,
   ServerGlyph,
@@ -27,6 +28,7 @@ import {
   ButtonLink,
   Callout,
   DescriptionList,
+  IconButton,
   Inline,
   Kbd,
   NavGroup,
@@ -443,6 +445,39 @@ export const FootRowsOnTheNavColumns: Story = {
                 name="Lee Park"
                 detail="Admin"
                 href="#/account"
+              />
+            </>
+          }
+        />
+      }
+      topbar={<Topbar />}
+    >
+      <Screen />
+    </AppShell>
+  ),
+};
+
+/**
+ * THE FOOT IS THE COMPACT STEP. What a reader reaches for rarely (Settings,
+ * the engine's state, who they are) stands on the small control step, 26px,
+ * on a 2px gap and a 4px inset, while the nav above keeps its 30px rows. The
+ * account row spends 2px around its two lines. Every row keeps its order, its
+ * columns, its glyphs and its words, and every target still clears 24px.
+ */
+export const CompactFoot: Story = {
+  render: () => (
+    <AppShell
+      sidebar={
+        <Rail
+          foot={
+            <>
+              <EngineRow />
+              <AccountRow
+                avatar={<Avatar name="Lee Park" kind="human" size="sm" ring="brand" decorative />}
+                name="Lee Park"
+                detail="Admin · lee@acme.test"
+                href="#/account"
+                actions={<IconButton label="Preferences" icon={<PaletteGlyph size="sm" />} size="sm" variant="ghost" />}
               />
             </>
           }

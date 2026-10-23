@@ -889,6 +889,32 @@ describe("the rail's foot", () => {
     expect(30 * tightest).toBeGreaterThanOrEqual(24);
   });
 
+  test('the foot is the compact step, and only the foot', () => {
+    // Its rows stand on the small control step, which keeps the 24px floor,
+    // on a half-step gap and a one-step inset.
+    const foot = body(css, '.crewlet-app-shell__rail-foot');
+    expect(foot).toContain('--crewlet-rail-foot-row: var(--size-control-sm)');
+    expect(foot).toContain('--crewlet-rail-foot-gap: calc(var(--spacing-1) / 2)');
+    expect(foot).toMatch(/(?:^|;|\s)padding:\s*var\(--spacing-1\) var\(--size-nav-gutter\)/);
+    const tokens = readFileSync(resolve(here, '../../../tokens/dist/css/tokens.css'), 'utf8');
+    expect(tokens).toMatch(/--size-control-sm:\s*max\(24px,/);
+    // Every row in the foot takes it: this package's row, a control dropped
+    // in, and a navigation's rows.
+    const step = body(css, `.crewlet-app-shell__rail-foot > ${CONTROL}`);
+    expect(step).toBe(body(css, '.crewlet-app-shell__rail-foot .crewlet-nav-item__row'));
+    expect(step).toContain('min-height: var(--crewlet-rail-foot-row)');
+    // The account row spends half a step around its two lines and none around itself.
+    expect(body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row')).toContain(
+      '--crewlet-account-row-pad: var(--spacing-0)',
+    );
+    expect(body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__who')).toContain(
+      'padding-block: calc(var(--spacing-1) / 2)',
+    );
+    // The nav above keeps the rail's own 30px step.
+    expect(body(nav, '.crewlet-nav-item__row')).toContain('min-height: var(--size-nav-row)');
+    expect(body(css, CONTROL)).toContain('min-height: var(--size-nav-row)');
+  });
+
   test('a control dropped into the foot is a row in the rail', () => {
     /*
      * THE SLOT TAKES A CONTROL FROM ANYWHERE. `AppShell.RailRow` is the row
