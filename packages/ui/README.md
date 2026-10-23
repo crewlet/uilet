@@ -52,7 +52,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `TileGrid`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Arranging a page | `ArrangeBoard`, `ArrangeGrid`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
-| Application shell | `AppShell` with `AppShell.Rail`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen`, `useIdle`, `useMediaMatch` |
+| Application shell | `AppShell` with `AppShell.Rail`, `SectionFrame` (with `SectionFrame.Nav` and `SectionFrame.Body`), `LockedLabel`, `AppShell.Topbar`, `AppShell.AccountRow` and `useAppShell`, `AuthLayout`, `SidebarNav` and `NavItem`, `BrandLockup`, `SearchTrigger`, `PageHeader`, `Toolbar`, `Stack`, `Inline`, `Spacer`, `AutoGrid`, `ErrorBoundary`, `useShortcut`, `useFullscreen`, `useIdle`, `useMediaMatch` |
 | Preferences | `ThemeToggle`, `ThemeSwitcher`, `DensitySwitcher`, `ThemeGallery`, `ThemeSwatch`, `useThemePreference`, `useDensityPreference`, `useSystemTheme`, `resolveTheme`, `applyStoredPreferences`, and the framework-free `applyTheme`, `applyPalette`, `applyDensity` with `THEME_PREFERENCES`, `DENSITY_PREFERENCES` and their guards |
 | Artifacts | `SandboxedFrame` (with `SandboxedFramePlaceholder` and `SandboxedFrameNotice`), `LinkInterstitial` and `openExternal`, `VersionTimeline`, `ShareDialog` with the role ladder (`ARTIFACT_ROLES`, `SHAREABLE_ROLES`, `roleAtLeast`), `PrincipalPicker`, `Principal` and `PrincipalAvatar`, `ArtifactCard`, `ArtifactKindGlyph` and `ArtifactPreviewGlyph` (the preview a card draws with no cover, for a cover with nothing to draw), `ArtifactBar` and `ArtifactVersionChip` (an open artifact's one slim bar), `ArtifactPanel` and `ArtifactWorkspace` (the panels it opens beside or over the artifact), `CanvasBoard` (a design's artboards and notes on a `Canvas`, with the visibility budget `liveBoards`), `CanvasToolbar` (a canvas's tool palette, with `toolForKey`), `LayersList` (the list of a canvas's items beside it, marked by the canvas's selection), `CanvasSchematic` (a design's cover, drawn from its boards' frames), `AccessDeniedCard`, `ArtifactIcon` (with `artifactIconGlyph` and `ARTIFACT_ICON_WORDS`), the native gallery covers (`DocCover`, `SheetCover`, `DashboardCover`), `MergeConflicts`, the dashboard pieces (`WidgetFrame`, `DatasetSource` and `DatasetSourceList`), and `FrameProtocol` (the wire between a host page and an embedded artifact, with no React in it), `ArtifactNameCell` and `ArtifactAccessLabel` (with `ArtifactAccessGlyph`) for a list of artifacts |
 | Sheets | `SheetGrid`, the cells on their own (`CheckboxCell`, `TextCell`, `LongTextCell`, `NumberCell`, `SelectCell`, `MultiSelectCell`, `PersonCell`, `StatusCell`, `DateCell`, `UrlCell`, `RatingCell`, and `SheetCell` for any type), `ChangeMark`, and `SheetModel` (every rule a sheet is drawn from, with no React in it: values, parsing, the keyboard model, TSV, the pending edits of D23) |
@@ -203,6 +203,48 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.40.0
+
+The engine dashboard's own lists, page parts and navigation pieces, moved into the kit so every application draws them from one place.
+
+### Lists and pages
+
+**`DataGrid` draws a list as columns.** One track list on the grid, which every row adopts (`subgrid`), so a value always sits under the head that names it. The sort (`sort`, `onSortChange`, as `key` or `-key`) and the column set (`cols`, `onColsChange`, `key,key`, empty for the default set) are controlled, so an application keeps them wherever it keeps state (the engine keeps them in the address). A column gives way rather than starving its neighbours: `shrink` sizes it to its content up to a share of the grid, `floor` keeps the column that is the point of the list readable, and a grid that cannot fit drops columns by their `drop` rank rather than cutting them off, saying which in its foot ("Hidden to fit"). An `optional` column is off until the column set names it. A row links (`rowHref`, an overlay over the row, so a cell's own link or button still takes its own click) or activates (`onRowActivate`); `handleRef` steps and opens rows from an application's own keymap. Bands (`bands`) draw a grouped answer with each group's count, a sticky head sticks at `--crewlet-data-grid-sticky-top`, an empty grid draws `empty` as an `EmptyState`, and a grid inside a `Card` gives up its own edge. Below 640px each row is a labelled card, or one compact line with `phoneRows="compact"`. It is announced as a table, with `aria-sort` on its sortable column heads.
+
+**`ColumnChooser` and `ChooserList`** are the checklist a reader picks what a view shows with. `ColumnChooser` takes a grid's own columns (`columnChoicesOf`) and writes the column set in declaration order; `ChooserList` is the plain checklist under it, for any set of facts a view shows (a card's fields). Both are one group named by their heading.
+
+**`PropertyList` draws an object's facts in sections on one column**: every section's terms in one column (`--crewlet-description-list-term`, which `DescriptionList` reads too, so a page lines a list up with its key-value cards), the four kinds of absent value, a section with nothing filled in said once (`whenAllAbsent`), and one "set by" line under the last of the rows one change set (`setBy`, `change`). `headings` is `eyebrow` or `sentence`.
+
+**`Tabs` take `overflow="menu"`**: what does not fit folds into a More menu (`moreLabel`, `moreMenuLabel`) instead of being cut, a tab with work in flight carries a pulsing mark and says so (`live`), and `note` is a sentence after the tabs that steps aside before any tab folds. Folded tabs stay measured and the arrow keys skip them. Link tabs spread `foldProps` on their link.
+
+**`Histogram` draws where in a window things happened** (in `Charts`): one bar per bucket with its failed part inside the fill, a floor so a bucket with one event is still drawn, a date axis (`formatTick`) and the total said once (`summary`). With `onSelect` each bar is a button that narrows the window.
+
+**`PageNote` is a screen's one quiet sentence** under its title, at the reading measure, with no word alone on its last line and no margin of its own. **`RelatedRow` is the one related place a page points at**: a quiet linked card under the page's content, its glyph and words on the card heads' columns, the whole row the link, in a `nav` named "Related".
+
+**`NamedGlyph` draws a glyph from its name** (`@crewlethq/icons/glyphs/registry`, with `glyphFor`), for a place whose glyph is data, such as a list's empty state or a navigation entry.
+
+### Fixes
+
+**Every catalogue tile's name stands on one line across a row** (`CatalogTile`). A tile without a status tag centred its name against its mark, 13px under its tagged neighbours; the name now starts at the top of the head whatever the tag.
+
+### Navigation
+
+**`LockedLabel` draws a place the reader may not open**: its words with the key after them, the reason (`reason`, "Needs Admin access") as the pointer's title and read after the name, and nothing but the words where nothing is missing. A place is locked, never hidden. `mark={false}` keeps the reason and drops the key, for a place under a heading that already carries it.
+
+**`SidebarNav.Item` takes `locked`, `title` and `onPrefetch`.** `locked` draws the row's words as a `LockedLabel`, and the row stays a link. `title` is the row's hint. `onPrefetch` is called when the pointer reaches the row and when it takes focus, on the kit's anchor and on a router's (`renderLink` is handed `title`, `onPointerEnter` and `onFocus`), so an application needs no wrapper of its own to start fetching where a row leads.
+
+**A wholly locked group draws its key once** (`SidebarNav.Group` `locked`). The key and the reason go on the group's label, and its rows stay links in the quiet ink with no key each, still saying their own reason. A reader holding none of a column's access met a key on every row of it. A mixed group, and a run with no label to carry the key, keep it on each locked row.
+
+**`SectionFrame` draws a workspace's sections as a column beside the screen** (`SectionFrame.Nav`, `SectionFrame.Body`). The column sticks at the view's height while the section scrolls and keeps the wheel at its ends; with `folded` (the application's decision, from its own arithmetic of what a section beside the column needs) it becomes one row naming the section the reader is on ("Settings Section: People"), which unfolds the list, folds again on a pick, and opens on an arrival the caller asks it to (`openOnArrival`). The frame takes the content column's padding back and gives it to the body, which takes the phone's 16px under 640px.
+
+### Application shell
+
+**The rail has a field slot and a head that takes its width** (`AppShell.Rail`). `search` is drawn first in the rail's middle, on the nav's gutter with its glyph on the nav rows' glyph column; the head's first child takes the head's width, so a long name truncates. Both were an application's own wrapper and rule.
+
+**The scroller is a size container** (`.crewlet-app-shell__main`, `container-type: size`), so a box inside a screen can be as tall as the view it scrolls in (`100cqb`), as `SectionFrame`'s column is.
+
+**A fill screen keeps the reserved scrollbar gutter.** The top bar's end inset counts the gutter, so a fill screen that reserved none put the bar's controls a gutter further out than on its neighbour: with classic scrollbars they moved 11px between an org chart and its roster. An application that restated `scrollbar-gutter: auto` for a fill screen drops it.
 
 ## Changes in 0.39.0
 
