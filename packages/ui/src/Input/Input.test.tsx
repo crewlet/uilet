@@ -864,3 +864,14 @@ test('ListInput passes helperOnFocus to its field', () => {
   );
   expect(container.querySelector('.crewlet-list-input')!.className).toContain('crewlet-form-field--helper-on-focus');
 });
+
+test('a hidden label names its field and is hidden as a whole element', () => {
+  render(
+    <FormField label="Mission" hideLabel>
+      {(field) => <Textarea id={field.id} />}
+    </FormField>,
+  );
+  const box = screen.getByRole('textbox', { name: 'Mission' });
+  const label = document.querySelector(`label[for="${box.id}"]`)!;
+  expect(label.classList.contains('crewlet-visually-hidden')).toBe(true);
+});

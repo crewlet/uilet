@@ -53,6 +53,15 @@ export interface FormFieldProps extends Omit<HTMLAttributes<HTMLElement>, 'child
   /** A control rendered beside the label, such as an Add button. */
   labelAction?: ReactNode;
   /**
+   * The label (or the legend) is kept for assistive technology and takes no
+   * room on the page, for a field whose name is already the heading right
+   * above it. Hidden as the WHOLE element, not as the text inside it: a
+   * label holding hidden text still stands a line tall, which is the gap a
+   * reader sees between a card's title and its field. A `labelAction` goes
+   * with it, so a field with a hidden label puts its control elsewhere.
+   */
+  hideLabel?: boolean | undefined;
+  /**
    * A fieldset with a legend rather than a div with a label, for a field
    * whose control is SEVERAL controls: a list of items, a row of radios. A
    * `for` attribute names one element, and a group is not one.
@@ -98,6 +107,7 @@ export const FormField = ({
   error,
   limit,
   labelAction,
+  hideLabel = false,
   as = 'div',
   describedBy,
   htmlFor,
@@ -169,7 +179,7 @@ export const FormField = ({
        */
       <fieldset {...rest} aria-describedby={field.describedBy} className={classes}>
         {label !== undefined ? (
-          <legend className="crewlet-form-field__legend">
+          <legend className={cx('crewlet-form-field__legend', hideLabel && 'crewlet-visually-hidden')}>
             <Label
               as="span"
               required={required}
@@ -195,6 +205,7 @@ export const FormField = ({
           optional={optional}
           requiredNews={requiredNews}
           action={labelAction}
+          className={hideLabel ? 'crewlet-visually-hidden' : undefined}
         >
           {label}
         </Label>
