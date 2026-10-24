@@ -45,6 +45,39 @@ const accent = color.brand.accent;
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
 
+### Contrast at runtime
+
+An interface that has to say whether two colours a person chose read on each other (a brand's text on its ground, a label on a fill) measures them with the same code the palette suite holds every theme to:
+
+```ts
+import { WCAG_CONTRAST, contrast, parseHex } from '@crewlethq/tokens';
+
+const text = parseHex(input.text);    // null unless the value is #rrggbb
+const ground = parseHex(input.ground);
+if (text && ground) {
+  const ratio = contrast(text, ground); // 1 to 21, unrounded, in either order
+  const readable = ratio >= WCAG_CONTRAST.aa;
+}
+```
+
+| Export | What it is |
+| --- | --- |
+| `parseHex(hex)` | A `#rrggbb` value (any case, surrounding white space ignored) as `{ r, g, b }`, or `null` for anything else, the three and eight digit forms included. It never throws, so a half-typed value is a `null` to handle rather than an exception. |
+| `contrast(a, b)` | The WCAG 2 ratio between two opaque colours, from 1 to 21, in either order. Unrounded: compare the raw ratio with a floor, and round only to display it, because a ratio that passes only once rounded does not pass. |
+| `luminance(rgb)` | WCAG relative luminance, from 0 to 1. |
+| `WCAG_CONTRAST` | The floors, frozen: `aa` 4.5 and `aaa` 7 for body text, `aaLarge` 3 and `aaaLarge` 4.5 for large text (24px, or 18.66px bold); `aaLarge` is also the floor for a graphical mark and a control's boundary. |
+| `Rgb` | The type of a colour as channels from 0 to 255. |
+
+The implementation is `src/color.ts`, built to `dist/color.js`. The published palette suite imports it from there and re-exports it, and the token build reads the same source to derive each palette's tints, so there is one copy of the maths.
+
+## Changed in 0.46.0: contrast at runtime
+
+The WCAG contrast maths the palette suite measures with is a runtime export, for an interface that shows whether two colours a person chose read on each other.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| `@crewlethq/tokens` exports `parseHex`, `contrast`, `luminance`, `WCAG_CONTRAST` and the type `Rgb`. They are the implementation `@crewlethq/tokens/test/palette` re-exports (the same functions, not copies), and `contrast` and `parseHex` keep the signatures the suite already declared. | Nothing. Replace a contrast helper of your own with these. | [Contrast at runtime](#contrast-at-runtime) |
+
 ## Changed in 0.38.0: the hairline that finds a card
 
 The plain hairline is the edge of every card and the line inside one: the rule under a card's head, the divider between two stat tiles, a code block's edge and a quiet tag's outline. The palette suite held it to dE 3, the floor for a difference a reader looks for, and the default dark palette drew it dE 3.1 off the card (1.07:1), where a layout audit measured those lines as gone. It is now held to dE 5 on both sides of it, the most the default dark ladder allows while the rail's current row keeps dE 3 against raised. Every named theme already cleared it.
@@ -603,7 +636,7 @@ The marketing root keeps its own state and series values (`tokens/color.json`), 
 
 ## The palette suite
 
-`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), the step between a word and a dimmed one, every ink on its own soft tint, every fill as a mark, each status glyph's ink on its fill, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs, the hairline that finds a card and the strong hairline round a raised chip, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), and the structure of the theme file itself. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
+`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), the step between a word and a dimmed one, every ink on its own soft tint, every fill as a mark, each status glyph's ink on its fill, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs, the hairline that finds a card and the strong hairline round a raised chip, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), and the structure of the theme file itself. The WCAG maths it measures with is the package's own runtime export (see [Contrast at runtime](#contrast-at-runtime)), re-exported from `test/color.mjs`. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
 
 The module is **published**, as `@crewlethq/tokens/test/palette`, so a consumer runs the same rules over the version it installed:
 

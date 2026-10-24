@@ -91,6 +91,7 @@ export interface Rgb {
 }
 
 export function contrast(a: Rgb, b: Rgb): number;
+export function luminance(colour: Rgb): number;
 export function deltaE(a: Rgb, b: Rgb): number;
 export function chroma(colour: Rgb): number;
 export function flatten(value: string, backdrop: Rgb): Rgb;

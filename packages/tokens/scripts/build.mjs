@@ -6,11 +6,13 @@ import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promi
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, relative, resolve, sep } from 'node:path';
-// One implementation of the colour maths, and the build is its second caller:
+// One implementation of the colour maths, and the build is one of its callers:
 // the soft and line steps below are the theme's own fill at a fixed alpha, and
 // a second hex-to-rgba helper here would be the first place a tint could drift
-// from the one the palette suite measures.
-import { parseHex, withAlpha } from '../test/color.mjs';
+// from the one the palette suite measures. It is read from the TypeScript
+// source, which Node strips, because the build runs before tsc has emitted
+// dist/color.js; the palette suite and the package entry read the built copy.
+import { parseHex, withAlpha } from '../src/color.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -911,7 +913,16 @@ async function build() {
   );
   await writeFile(
     resolve(root, 'src/index.ts'),
-    `${await readFile(resolve(root, 'src/index.ts'), 'utf8')}\nexport { themes, themeGroups, themeRegistry, DEFAULT_THEME_ID, isThemeId } from './themes.js';\nexport type { ThemeName, ThemeGroupId, ThemeEntry, ThemeId } from './themes.js';\n`,
+    [
+      await readFile(resolve(root, 'src/index.ts'), 'utf8'),
+      "export { themes, themeGroups, themeRegistry, DEFAULT_THEME_ID, isThemeId } from './themes.js';",
+      "export type { ThemeName, ThemeGroupId, ThemeEntry, ThemeId } from './themes.js';",
+      // The colour maths the palette suite measures with, for an interface
+      // that has to say whether two colours a person chose read on each other.
+      "export { WCAG_CONTRAST, contrast, luminance, parseHex } from './color.js';",
+      "export type { Rgb } from './color.js';",
+      '',
+    ].join('\n'),
   );
 
   console.warn(

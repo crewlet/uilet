@@ -12,7 +12,17 @@
  *
  * It is published as part of `@crewlethq/tokens/test/palette`, so a consumer
  * runs the same maths over the version it installed.
+ *
+ * The colour values and the WCAG ratio are not implemented here: they are the
+ * package's runtime module (`src/color.ts`, built to `dist/color.js`), which
+ * `@crewlethq/tokens` itself exports, and this file re-exports them. An
+ * interface that shows a contrast ratio and the suite that holds a theme to
+ * one therefore compute it with the same code.
  */
+
+import { contrast, linearChannel, luminance, parseHex, parseRgba, withAlpha } from '../dist/color.js';
+
+export { contrast, luminance, parseHex, parseRgba, withAlpha };
 
 /** @typedef {{ r: number, g: number, b: number }} RGB */
 
@@ -102,26 +112,6 @@ export function cascade(sources, matches) {
 // Colour values
 // ---------------------------------------------------------------------------
 
-export function parseHex(hex) {
-  const match = /^#([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!match) return null;
-  const n = parseInt(match[1], 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-}
-
-export function parseRgba(value) {
-  const match = /^rgba?\(([^)]+)\)$/i.exec(value.trim());
-  if (!match) return null;
-  const parts = match[1]
-    .split(/[,/\s]+/)
-    .filter(Boolean)
-    .map(Number);
-  const [r, g, b, a] = parts;
-  if (r === undefined || g === undefined || b === undefined) return null;
-  if ([r, g, b].some(Number.isNaN)) return null;
-  return { rgb: { r, g, b }, a: a === undefined ? 1 : a };
-}
-
 /** Composite a possibly translucent value over an opaque backdrop. */
 export function flatten(value, backdrop) {
   const hex = parseHex(value);
@@ -136,33 +126,6 @@ export function flatten(value, backdrop) {
   };
 }
 
-/** The same colour at a new alpha, as the CSS value the build emits. */
-export function withAlpha(value, alpha) {
-  const rgb = parseHex(value) ?? parseRgba(value)?.rgb;
-  if (!rgb) throw new Error(`cannot re-alpha "${value}"`);
-  return `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, ${alpha})`;
-}
-
-// ---------------------------------------------------------------------------
-// WCAG
-// ---------------------------------------------------------------------------
-
-function channel(v) {
-  const c = v / 255;
-  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-}
-
-export function luminance({ r, g, b }) {
-  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-}
-
-export function contrast(a, b) {
-  const la = luminance(a);
-  const lb = luminance(b);
-  const [hi, lo] = la > lb ? [la, lb] : [lb, la];
-  return (hi + 0.05) / (lo + 0.05);
-}
-
 // ---------------------------------------------------------------------------
 // OKLab. Perceptual distance is what "these two hues are separable" means.
 // RGB distance says magenta and red are far apart and says the same of two
@@ -170,9 +133,9 @@ export function contrast(a, b) {
 // ---------------------------------------------------------------------------
 
 export function toOklab({ r, g, b }) {
-  const lr = channel(r);
-  const lg = channel(g);
-  const lb = channel(b);
+  const lr = linearChannel(r);
+  const lg = linearChannel(g);
+  const lb = linearChannel(b);
   const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
   const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
   const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
@@ -253,9 +216,9 @@ export function nudge(value, direction, ok, step = 0.002) {
 
 /** Simulate protanopia or deuteranopia. Enough to answer "do these collide?". */
 export function simulate(c, kind) {
-  const r = channel(c.r);
-  const g = channel(c.g);
-  const b = channel(c.b);
+  const r = linearChannel(c.r);
+  const g = linearChannel(c.g);
+  const b = linearChannel(c.b);
   const L = 0.31399022 * r + 0.63951294 * g + 0.04649755 * b;
   const M = 0.15537241 * r + 0.75789446 * g + 0.08670142 * b;
   const S = 0.01775239 * r + 0.10944209 * g + 0.87256922 * b;
