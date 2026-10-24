@@ -204,6 +204,18 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.46.0
+
+The pieces for editing a company's principles where they are read: a statement or a list of policies changed in place on its own card, with nothing to go and find in another screen.
+
+**`InlineEditor` is new**: one record edited in place, as a form named by `label`. Its fields come first, then a bar with the `EditingStatus` at its start and Cancel and Save at its end. Mod+Enter saves from any field and Escape cancels, each only once nothing inside has claimed the key and never during an input method's composition. Save is never a dead button: while nothing has changed (`dirty`), while a field refuses its value (`invalid`) and while a save is in flight (`saving`) it stays reachable and says why it does nothing. `error` is said as an alert above the bar, and `notice` holds a `ConflictNote` once the record has moved on. The focus lands at the end of the first field as it opens (`focusOnMount`). It owns no state: the draft, the save, the conflict and the focus once it closes are the caller's.
+
+**`CharacterCount` is new**, with `countCharacters`: how much of a limit a text has used ("120 / 500"), in the warning ink from nine tenths of the way and the danger ink past it, read as one sentence and announced only as it crosses a step. Characters are code points, so an emoji counts once, as Go's `utf8.RuneCountInString` counts it. **`FormField` takes `limit={{ length, max }}`**, which draws the count at the end of the help line, joins it into the field's description and marks a value past it invalid. It is a soft limit: nothing typed or pasted is cut.
+
+**`ListInput` takes four additions, each off unless asked for.** `reorderByDrag` gives each row a grip it is dragged by, through `useReorder`. The grip belongs to the pointer: it is hidden from a screen reader and out of the tab order, since Alt+Up, Alt+Down and the Move buttons already cover reordering from the keyboard. `maxItems` replaces the new-item box with a sentence once the list is full (`fullMessage`). `maxLength` holds each item and the new-item box to a soft limit with a `CharacterCount`. `itemError` says a refusal under the one item it is about and links it to that item. An item's control now sits in a `.crewlet-list-input__field` column with what is said under it.
+
+**`@crewlethq/icons` adds `TelescopeGlyph` and `ScrollTextGlyph`**: the vision's card and the standing policies' card, beside `TargetGlyph` for the mission. `Card.Header` already draws a glyph before its title through `icon`.
+
 ## Changes in 0.45.0
 
 The pieces of the engine's Company › Principles page: a company's mission, vision and policies beside the facts about it.
