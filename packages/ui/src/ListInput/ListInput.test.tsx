@@ -16,6 +16,7 @@ import axe from 'axe-core';
 import { createRef, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Announcer } from '../Announcer/index.js';
+import { InlineEditor } from '../InlineEditor/index.js';
 import { ListInput, withDraft, type ListInputHandle } from './ListInput.js';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 
@@ -619,4 +620,29 @@ test('a removal with an Undo row is said once, by the row, and Dismiss is descri
   expect(announced()).toBe(before);
   const dismiss = screen.getByRole('button', { name: 'Dismiss' });
   expect(document.getElementById(dismiss.getAttribute('aria-describedby')!)?.textContent).toBe('Policy 1 removed.');
+});
+
+test('Mod+Enter in the box or in an item passes through to the editor’s save and adds nothing', () => {
+  const onSave = vi.fn();
+  function Editor() {
+    const [value, setValue] = useState(['One.']);
+    const [draft, setDraft] = useState('');
+    return (
+      <InlineEditor label="Edit the policies" dirty onSave={onSave} onCancel={() => {}} focusOnMount={false}>
+        <ListInput label="Policies" itemName="policy" value={value} onChange={setValue} draft={draft} onDraftChange={setDraft} />
+        <pre data-testid="value">{JSON.stringify(value)}</pre>
+      </InlineEditor>
+    );
+  }
+  render(<Editor />);
+  const box = screen.getByLabelText('New policy');
+  fireEvent.change(box, { target: { value: 'Two.' } });
+  fireEvent.keyDown(box, { key: 'Enter', metaKey: true });
+  fireEvent.keyDown(screen.getByLabelText('Policy 1 of 1'), { key: 'Enter', ctrlKey: true });
+  expect(onSave).toHaveBeenCalledTimes(2);
+  expect(current()).toEqual(['One.']);
+  expect((box as HTMLInputElement).value).toBe('Two.');
+  // Plain Enter still adds.
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(current()).toEqual(['One.', 'Two.']);
 });

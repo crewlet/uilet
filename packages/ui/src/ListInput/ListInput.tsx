@@ -423,9 +423,18 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
     setRemoved(null);
   }
 
-  /** Enter that should act rather than insert: always in one line, without Shift in many. */
+  /**
+   * Enter that should act rather than insert: always in one line, without
+   * Shift in many. NEVER with Ctrl or Command: Mod+Enter is the form's save
+   * (`InlineEditor`'s), so it passes through untouched. Taken here, it added
+   * a policy and stopped the key, and the editor around the list never saved.
+   */
   const acts = (event: KeyboardEvent) =>
-    event.key === 'Enter' && !(multiline && event.shiftKey) && !isComposing(event);
+    event.key === 'Enter' &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !(multiline && event.shiftKey) &&
+    !isComposing(event);
 
   function itemKeys(event: KeyboardEvent, index: number) {
     if (isComposing(event)) return;
