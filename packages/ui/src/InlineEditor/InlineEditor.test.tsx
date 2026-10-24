@@ -8,7 +8,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { FormField, Textarea } from '../Input/index.js';
+import { FormField, Input, Textarea } from '../Input/index.js';
 import { InlineEditor, type InlineEditorProps } from './index.js';
 
 afterEach(cleanup);
@@ -121,4 +121,27 @@ test('passes axe in each state', async () => {
   expect((await axe.run(container)).violations).toEqual([]);
   rerender(<Editor saving error="Refused." />);
   expect((await axe.run(container)).violations).toEqual([]);
+});
+
+test('Enter in a one-line field does not submit, and Mod+Enter there still saves', () => {
+  const onSave = vi.fn();
+  function Title() {
+    const [title, setTitle] = useState('Pricing');
+    return (
+      <InlineEditor label="Rename" dirty={title !== 'Pricing'} onSave={onSave} onCancel={() => {}}>
+        <FormField label="Title">
+          {(field) => <Input id={field.id} value={title} onChange={(event) => setTitle(event.target.value)} />}
+        </FormField>
+      </InlineEditor>
+    );
+  }
+  render(<Title />);
+  const field = screen.getByRole('textbox', { name: 'Title' });
+  fireEvent.change(field, { target: { value: 'Pricing page' } });
+  const enter = fireEvent.keyDown(field, { key: 'Enter' });
+  // Refused: the browser's implicit submission never starts.
+  expect(enter).toBe(false);
+  expect(onSave).not.toHaveBeenCalled();
+  fireEvent.keyDown(field, { key: 'Enter', ctrlKey: true });
+  expect(onSave).toHaveBeenCalledTimes(1);
 });

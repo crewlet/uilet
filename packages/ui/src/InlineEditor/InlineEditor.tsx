@@ -94,11 +94,19 @@ function firstField(root: HTMLElement): HTMLElement | null {
  * the caller's, and so is the button that opened the editor, which is the one
  * place the focus belongs when it closes.
  *
- * THE KEYS. Mod+Enter saves from any field (Enter alone belongs to the field:
- * a newline in a paragraph, the next item in a list) and Escape cancels, each
- * only once nothing inside has claimed the key first (an open menu's Escape
- * closes the menu, not the editor) and never in the middle of an input
- * method's composition.
+ * THE KEYS. Mod+Enter saves from any field and Escape cancels, each only
+ * once nothing inside has claimed the key first (an open menu's Escape closes
+ * the menu, not the editor) and never in the middle of an input method's
+ * composition. Enter alone belongs to the field: a newline in a paragraph,
+ * the next item in a list, and NOTHING in a single-line field. A browser
+ * submits a form on Enter in a one-line input, and here that would save a
+ * record mid-edit from the key a writer presses to finish a word, so the
+ * editor refuses that implicit submission: saving is always the one gesture.
+ *
+ * CANCEL DISCARDS AT ONCE. Escape and Cancel call `onCancel` whatever the
+ * draft holds, because whether a draft is worth a question is the caller's
+ * call. A caller holding a draft worth keeping asks first in `onCancel` while
+ * `dirty` ("Discard your changes to the mission?"), and closes only on yes.
  *
  * SAVE IS NEVER A DEAD BUTTON. While nothing has changed, while a field
  * refuses its value and while a save is in flight it stays reachable and says
@@ -165,10 +173,14 @@ export function InlineEditor({
       if (!saving) onCancel();
       return;
     }
-    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.altKey) {
+    if (event.key !== 'Enter') return;
+    if ((event.metaKey || event.ctrlKey) && !event.altKey) {
       event.preventDefault();
       save();
+      return;
     }
+    // A one-line field's Enter would submit the form: see THE KEYS.
+    if (event.target instanceof HTMLInputElement) event.preventDefault();
   };
 
   return (
