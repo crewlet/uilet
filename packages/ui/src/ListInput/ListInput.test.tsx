@@ -11,9 +11,10 @@
  * component mounts for itself.
  */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, createEvent, fireEvent, render, screen, within } from '@testing-library/react';
+import axe from 'axe-core';
 import { useState } from 'react';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { Announcer } from '../Announcer/index.js';
 import { ListInput } from './ListInput.js';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
@@ -343,4 +344,137 @@ test('a list asked to take the focus puts it in the new-item box once, on mount'
 test('a list not asked leaves the focus where it was', () => {
   render(<ListInput label="Policies" itemName="policy" value={[]} onChange={() => {}} />);
   expect(document.activeElement).toBe(document.body);
+});
+
+// ---- a list with limits, refusals and a grip --------------------------------
+
+function Policies({
+  initial,
+  ...rest
+}: { initial: string[] } & Partial<Omit<Parameters<typeof ListInput>[0], 'value' | 'onChange'>>) {
+  const [value, setValue] = useState(initial);
+  return (
+    <form onSubmit={() => {}}>
+      <Announcer />
+      <ListInput label="Policies" itemName="policy" multiline {...rest} value={value} onChange={setValue} />
+      <pre data-testid="value">{JSON.stringify(value)}</pre>
+    </form>
+  );
+}
+
+test('a full list says so where the box was, and the focus moves to what was just added', () => {
+  render(<Policies initial={['One.']} maxItems={2} />);
+  const box = screen.getByLabelText('New policy');
+  box.focus();
+  fireEvent.change(box, { target: { value: 'Two.' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(current()).toEqual(['One.', 'Two.']);
+  expect(screen.queryByLabelText('New policy')).toBeNull();
+  expect(document.body.textContent).toContain('The list is full at 2. Remove one to add another.');
+  expect(document.activeElement).toBe(screen.getByLabelText('Policy 2 of 2'));
+  expect(announced()).toBe('Added policy 2 of 2. The list is full at 2. Remove one to add another.');
+  // Every item is still the reader's: removing one brings the box back.
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 1 of 2' }));
+  expect(screen.getByLabelText('New policy')).toBeDefined();
+});
+
+test('an item over the length limit keeps its words, says by how much, and is invalid', () => {
+  render(<Policies initial={['Short.']} maxLength={10} />);
+  const item = screen.getByLabelText('Policy 1 of 1');
+  expect(item.getAttribute('aria-invalid')).toBeNull();
+  expect(item.getAttribute('aria-describedby')).toBeNull();
+  fireEvent.change(item, { target: { value: 'Far too long a policy.' } });
+  expect(current()).toEqual(['Far too long a policy.']);
+  expect(item.getAttribute('aria-invalid')).toBe('true');
+  const count = document.getElementById(item.getAttribute('aria-describedby')!);
+  expect(count?.textContent).toContain('12 characters over the limit of 10');
+});
+
+test('the new-item box refuses an item over the limit, and shows its count in the keycap’s place', () => {
+  render(<Policies initial={[]} maxLength={10} />);
+  const box = screen.getByLabelText('New policy');
+  fireEvent.change(box, { target: { value: 'Exactly 10' } });
+  expect(box.closest('.crewlet-textarea-shell')?.textContent).toContain('10 of 10 characters');
+  fireEvent.change(box, { target: { value: 'Eleven char' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(current()).toEqual([]);
+  expect(box.getAttribute('aria-invalid')).toBe('true');
+  expect((screen.getByRole('button', { name: 'Add policy' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+test('a refusal of one item is said under it and describes it', () => {
+  render(
+    <Policies
+      initial={['Fine.', 'Refused.']}
+      itemError={(index) => (index === 1 ? 'This policy repeats policy 1.' : undefined)}
+    />,
+  );
+  expect(screen.getByLabelText('Policy 1 of 2').getAttribute('aria-invalid')).toBeNull();
+  const refused = screen.getByLabelText('Policy 2 of 2');
+  expect(refused.getAttribute('aria-invalid')).toBe('true');
+  expect(document.getElementById(refused.getAttribute('aria-describedby')!)?.textContent).toBe(
+    'This policy repeats policy 1.',
+  );
+});
+
+/** What a drag carries, as far as the reorder hook reads or writes it. */
+function carried() {
+  return { effectAllowed: 'none', dropEffect: 'none', setData: vi.fn(), setDragImage: vi.fn() };
+}
+
+function dragOverAt(el: Element, y: number) {
+  const event = createEvent.dragOver(el, { dataTransfer: carried() });
+  Object.defineProperty(event, 'clientX', { value: 10 });
+  Object.defineProperty(event, 'clientY', { value: y });
+  fireEvent(el, event);
+}
+
+const rows = () =>
+  within(document.querySelector<HTMLElement>('.crewlet-list-input__items')!)
+    .getAllByRole('listitem');
+
+test('a list that drags draws a grip per row, hidden from a screen reader and out of the tab order', () => {
+  const { rerender } = render(<Policies initial={['One.', 'Two.']} />);
+  expect(document.querySelector('.crewlet-list-input__handle')).toBeNull();
+  rerender(<Policies initial={['One.', 'Two.']} reorderByDrag />);
+  const grips = [...document.querySelectorAll<HTMLElement>('.crewlet-list-input__handle')];
+  expect(grips).toHaveLength(2);
+  for (const grip of grips) {
+    expect(grip.getAttribute('aria-hidden')).toBe('true');
+    expect(grip.getAttribute('draggable')).toBe('true');
+    expect(grip.tabIndex).toBe(-1);
+  }
+});
+
+test('a dragged row is dropped where it was carried, the item keeping its element, and it is said', () => {
+  render(<Policies initial={['One.', 'Two.', 'Three.']} reorderByDrag />);
+  const moved = screen.getByLabelText('Policy 1 of 3');
+  const grip = rows()[0]!.querySelector('.crewlet-list-input__handle')!;
+  fireEvent.dragStart(grip, { dataTransfer: carried() });
+  expect(rows()[0]!.getAttribute('data-reorder')).toBe('dragging');
+  // Past the middle of the last row on the way down.
+  const last = rows()[2]!;
+  dragOverAt(last, 10);
+  fireEvent.drop(last, { dataTransfer: carried() });
+  expect(current()).toEqual(['Two.', 'Three.', 'One.']);
+  expect(screen.getByLabelText('Policy 3 of 3')).toBe(moved);
+  expect(announced()).toBe('Moved policy to position 3 of 3');
+});
+
+test('a disabled list draws no grip', () => {
+  render(<Policies initial={['One.']} reorderByDrag disabled />);
+  expect(document.querySelector('.crewlet-list-input__handle')).toBeNull();
+});
+
+test('a list with every addition passes axe, full, over the limit and refused', async () => {
+  const { container } = render(
+    <Policies
+      initial={['One.', 'A policy well past the limit.']}
+      reorderByDrag
+      maxItems={2}
+      maxLength={12}
+      itemError={(index) => (index === 0 ? 'Refused.' : undefined)}
+    />,
+  );
+  expect((await axe.run(container)).violations).toEqual([]);
 });

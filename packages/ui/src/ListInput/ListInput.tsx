@@ -1,15 +1,19 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import {
   ArrowDownGlyph,
   ArrowUpGlyph,
+  GripVerticalGlyph,
   PlusGlyph,
   XGlyph,
 } from '@crewlethq/icons/glyphs';
 import { announce } from '../Announcer/index.js';
+import { CharacterCount, characterCountState, countCharacters } from '../CharacterCount/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { FormField, Input, Textarea } from '../Input/index.js';
 import { Kbd } from '../Kbd/index.js';
 import { isComposing } from '../Layer/index.js';
+import { useReorder } from '../Reorder/index.js';
+import { cx } from '../utils/cx.js';
 
 export interface ListInputProps {
   /** The list's name, such as "Responsibilities". It is the group's legend. */
@@ -41,6 +45,36 @@ export interface ListInputProps {
    * focus to its own first control. Named as `TagsInput`'s is.
    */
   focusOnMount?: boolean | undefined;
+  /**
+   * Each row carries a grip it can be DRAGGED by, as well as Move up and Move
+   * down. Off by default. The grip is a pointer's affordance only, hidden from
+   * a screen reader and out of the tab order, because the keyboard already
+   * has the whole of reordering (Alt+Up and Alt+Down from the item, and the
+   * two buttons) and a third control per row that does the same thing is a
+   * row a keyboard has to Tab through for nothing.
+   */
+  reorderByDrag?: boolean | undefined;
+  /**
+   * The most items the list holds. Once it is full the new-item box gives way
+   * to a sentence saying so (`fullMessage`), the add control does nothing,
+   * and every item stays editable, movable and removable.
+   */
+  maxItems?: number | undefined;
+  /**
+   * The most characters one item holds. A SOFT limit, as `FormField`'s
+   * `limit` is: an item past it keeps what was typed, draws its count in the
+   * danger ink and is marked invalid; the new-item box refuses to add one,
+   * and shows its count from nine tenths of the way.
+   */
+  maxLength?: number | undefined;
+  /**
+   * A refusal of one item, said under it and linked to it, which marks it
+   * invalid: a server's word about policy 3, or a rule only the caller knows.
+   * Called for every item on every render, with its index and its value.
+   */
+  itemError?: ((index: number, value: string) => ReactNode) | undefined;
+  /** What the list says in place of the new-item box once it is full. */
+  fullMessage?: ((max: number) => string) | undefined;
   /** The name of the control beside the legend that appends what the box holds. */
   addLabel?: ((itemName: string) => string) | undefined;
   itemLabel?: ((name: string, position: string) => string) | undefined;
@@ -110,6 +144,11 @@ export function ListInput({
   optional,
   enterHint = true,
   focusOnMount = false,
+  reorderByDrag = false,
+  maxItems,
+  maxLength,
+  itemError,
+  fullMessage = (max) => `The list is full at ${max}. Remove one to add another.`,
   addLabel = (name) => `Add ${name}`,
   itemLabel = (name, position) => `${name} ${position}`,
   newItemLabel = (name) => `New ${name}`,
@@ -173,17 +212,49 @@ export function ListInput({
 
   const name = capitalized(itemName);
   const count = value.length;
+  const listId = useId();
+  const full = maxItems !== undefined && count >= maxItems;
+  const overLimit = (text: string) =>
+    maxLength !== undefined && characterCountState(countCharacters(text), maxLength) === 'over';
+  const draftRefused = draft.trim() === '' || overLimit(draft.trim());
+  const draftCount =
+    maxLength !== undefined && characterCountState(countCharacters(draft.trim()), maxLength) !== 'within';
+
+  /*
+   * DRAGGING REORDERS THE SAME IDS the buttons do, through the kit's one
+   * reorder hook, so a dragged item keeps its element (and its caret) exactly
+   * as a moved one does. Called whether or not dragging is on, as a hook must
+   * be; with it off nothing it returns is spread.
+   */
+  const reorder = useReorder({
+    keys: ids.current,
+    nameOf: () => itemName,
+    onReorder: (nextIds) => {
+      const byId = new Map(ids.current.map((id, at) => [id, value[at]!]));
+      emit(
+        nextIds.map((id) => byId.get(id)!),
+        nextIds,
+      );
+    },
+    labels: { moved: (_, position, total) => movedMessage(itemName, position, total) },
+  });
+  const drags = reorderByDrag && !disabled;
+  const order = drags ? reorder.order : ids.current;
 
   function add() {
     const text = draft.trim();
-    if (!text || disabled) return;
+    if (!text || disabled || full || overLimit(text)) return;
+    const id = mint();
+    const filled = maxItems !== undefined && count + 1 >= maxItems;
     emit(
       [...value, text],
-      [...ids.current, mint()],
-      addedMessage(itemName, `${count + 1} of ${count + 1}`),
+      [...ids.current, id],
+      addedMessage(itemName, `${count + 1} of ${count + 1}`) + (filled ? `. ${fullMessage(maxItems!)}` : ''),
     );
     setDraft('');
-    focusNext.current = { id: '', target: 'add' };
+    // The box goes once the list is full, so the focus goes to what was just
+    // written rather than to a control that is no longer there.
+    focusNext.current = filled ? { id, target: 'input' } : { id: '', target: 'add' };
   }
 
   function move(index: number, by: -1 | 1, target: Target) {
@@ -232,6 +303,8 @@ export function ListInput({
     ref: (el: HTMLInputElement | HTMLTextAreaElement | null) => void;
     placeholder?: string | undefined;
     trailing?: ReactNode;
+    invalid?: boolean;
+    describedBy?: string | undefined;
   }) =>
     /*
      * ONE LINE THAT GROWS, never a fixed block of rows. A list of sentences
@@ -250,6 +323,8 @@ export function ListInput({
         disabled={disabled}
         spellCheck
         trailing={props.trailing}
+        error={props.invalid ?? false}
+        aria-describedby={props.describedBy}
         onChange={(event) => props.onChange(event.target.value)}
         onKeyDown={props.onKeyDown}
         ref={props.ref}
@@ -263,6 +338,8 @@ export function ListInput({
         autoComplete="off"
         spellCheck
         trailing={props.trailing}
+        error={props.invalid ?? false}
+        aria-describedby={props.describedBy}
         onChange={(event) => props.onChange(event.target.value)}
         onKeyDown={props.onKeyDown}
         ref={props.ref}
@@ -290,7 +367,7 @@ export function ListInput({
           variant="soft-brand"
           label={addLabel(itemName)}
           icon={<PlusGlyph />}
-          disabled={disabled || draft.trim() === ''}
+          disabled={disabled || full || draftRefused}
           onClick={add}
         />
       }
@@ -302,101 +379,176 @@ export function ListInput({
        * the question and pushed the box further down the form with every item
        * added.
        */}
-      <div className="crewlet-list-input__add">
-        {control({
-          label: newItemLabel(itemName),
-          value: draft,
-          placeholder,
-          trailing: enterHint ? <Kbd subtle>Enter</Kbd> : undefined,
-          onChange: setDraft,
-          onKeyDown: (event) => {
-            if (!acts(event)) return;
-            event.preventDefault();
-            add();
-          },
-          ref: (el) => {
-            addBox.current = el;
-          },
-        })}
-      </div>
+      {full ? (
+        /*
+         * A FULL LIST SAYS SO WHERE THE BOX WAS, rather than drawing a box
+         * that takes nothing. A disabled box is a control a reader reaches
+         * and cannot use with no word of why; the sentence is the why, and
+         * every item above it still edits, moves and goes.
+         */
+        <p className="crewlet-list-input__full">{fullMessage(maxItems!)}</p>
+      ) : (
+        <div className="crewlet-list-input__add">
+          {control({
+            label: newItemLabel(itemName),
+            value: draft,
+            placeholder,
+            invalid: overLimit(draft.trim()),
+            describedBy: draftCount ? `${listId}-draft-count` : undefined,
+            /*
+             * THE COUNT TAKES THE KEYCAP'S PLACE once the limit is near: both
+             * say what pressing Enter will do, and past the limit the answer
+             * is nothing, which the count says and the keycap would not.
+             */
+            trailing: draftCount ? (
+              <CharacterCount id={`${listId}-draft-count`} length={countCharacters(draft.trim())} max={maxLength!} />
+            ) : enterHint ? (
+              <Kbd subtle>Enter</Kbd>
+            ) : undefined,
+            onChange: setDraft,
+            onKeyDown: (event) => {
+              if (!acts(event)) return;
+              event.preventDefault();
+              add();
+            },
+            ref: (el) => {
+              addBox.current = el;
+            },
+          })}
+        </div>
+      )}
       {count > 0 ? (
-        <ol className="crewlet-list-input__items">
-          {value.map((item, index) => {
-            const key = ids.current[index]!;
-            const position = `${index + 1} of ${count}`;
-            return (
-              <li key={key} className="crewlet-list-input__item">
-                {/*
-                 * THE POSITION, DRAWN. The order is the meaning here, so the
-                 * list says which item is first rather than leaving it to be
-                 * counted. It is decoration to a reader's software: the
-                 * control beside it is already named "Goal 2 of 3".
-                 */}
-                <span className="crewlet-list-input__index" aria-hidden="true">
-                  {index + 1}
-                </span>
-                {control({
-                  label: itemLabel(name, position),
-                  value: item,
-                  onChange: (next) => {
-                    const list = [...value];
-                    list[index] = next;
-                    emit(list, ids.current);
-                  },
-                  onKeyDown: (event) => itemKeys(event, index),
-                  ref: (el) => {
-                    if (el) inputs.current.set(key, el);
-                    else inputs.current.delete(key);
-                  },
-                })}
-                {/*
-                 * REMOVE IS THE ROW'S OWN CONTROL. Move up and Move down are
-                 * drawn only while the row is under the pointer or holds the
-                 * focus, because three controls per row is what turned a list
-                 * of sentences into a grid of buttons, and the console draws
-                 * one. They are never hidden from the keyboard: focus inside
-                 * the row reveals them before Tab can reach them, and the
-                 * pair is on Alt+Up and Alt+Down from the item itself, which
-                 * is the only way to reorder without the pointer anyway.
-                 */}
-                <span className="crewlet-list-input__actions">
-                  <span className="crewlet-list-input__move">
+        <>
+          <ol className="crewlet-list-input__items" {...(drags ? reorder.containerProps : {})}>
+            {order.map((key, shown) => {
+              const index = ids.current.indexOf(key);
+              const item = value[index] ?? '';
+              const position = `${shown + 1} of ${count}`;
+              const length = maxLength === undefined ? 0 : countCharacters(item);
+              const counted = maxLength !== undefined && characterCountState(length, maxLength) !== 'within';
+              const refusal = itemError?.(index, item);
+              const refused = refusal !== undefined && refusal !== null && refusal !== false && refusal !== '';
+              const countId = `${listId}-${key}-count`;
+              const errorId = `${listId}-${key}-error`;
+              const described = [counted ? countId : null, refused ? errorId : null].filter(Boolean).join(' ');
+              /*
+               * The drag's own props, without the name and the description:
+               * the grip is the pointer's alone (see `reorderByDrag`), so it
+               * is named to nobody and takes no Tab.
+               */
+              const { draggable, onDragStart, onDragEnd } = reorder.handleProps(key);
+              return (
+                <li
+                  key={key}
+                  className={cx('crewlet-list-input__item', drags && 'crewlet-list-input__item--draggable')}
+                  {...(drags ? reorder.itemProps(key) : {})}
+                >
+                  {drags ? (
+                    <span
+                      className="crewlet-list-input__handle"
+                      aria-hidden="true"
+                      draggable={draggable}
+                      onDragStart={onDragStart}
+                      onDragEnd={onDragEnd}
+                    >
+                      <GripVerticalGlyph size="sm" />
+                    </span>
+                  ) : null}
+                  {/*
+                   * THE POSITION, DRAWN. The order is the meaning here, so the
+                   * list says which item is first rather than leaving it to be
+                   * counted. It is decoration to a reader's software: the
+                   * control beside it is already named "Goal 2 of 3".
+                   */}
+                  <span className="crewlet-list-input__index" aria-hidden="true">
+                    {shown + 1}
+                  </span>
+                  {/*
+                   * THE FIELD IS ALWAYS WRAPPED, whether or not it has a count
+                   * or a refusal under it: a wrapper that appeared with the
+                   * first refusal would remount the control mid-keystroke and
+                   * drop the caret of the reader who just typed past the
+                   * limit.
+                   */}
+                  <span className="crewlet-list-input__field">
+                    {control({
+                      label: itemLabel(name, position),
+                      value: item,
+                      invalid: refused || (maxLength !== undefined && length > maxLength),
+                      describedBy: described || undefined,
+                      onChange: (next) => {
+                        const list = [...value];
+                        list[index] = next;
+                        emit(list, ids.current);
+                      },
+                      onKeyDown: (event) => itemKeys(event, index),
+                      ref: (el) => {
+                        if (el) inputs.current.set(key, el);
+                        else inputs.current.delete(key);
+                      },
+                    })}
+                    {counted || refused ? (
+                      <span className="crewlet-list-input__note">
+                        {refused ? (
+                          <span id={errorId} className="crewlet-list-input__error">
+                            {refusal}
+                          </span>
+                        ) : (
+                          <span />
+                        )}
+                        {counted ? <CharacterCount id={countId} length={length} max={maxLength!} /> : null}
+                      </span>
+                    ) : null}
+                  </span>
+                  {/*
+                   * REMOVE IS THE ROW'S OWN CONTROL. Move up and Move down are
+                   * drawn only while the row is under the pointer or holds the
+                   * focus, because three controls per row is what turned a list
+                   * of sentences into a grid of buttons, and the console draws
+                   * one. They are never hidden from the keyboard: focus inside
+                   * the row reveals them before Tab can reach them, and the
+                   * pair is on Alt+Up and Alt+Down from the item itself, which
+                   * is the only way to reorder without the pointer anyway.
+                   */}
+                  <span className="crewlet-list-input__actions">
+                    <span className="crewlet-list-input__move">
+                      <IconButton
+                        size="sm"
+                        label={moveUpLabel(itemName, position)}
+                        icon={<ArrowUpGlyph />}
+                        disabled={disabled || index === 0}
+                        onClick={() => move(index, -1, 'up')}
+                        ref={(el) => {
+                          if (el) ups.current.set(key, el);
+                          else ups.current.delete(key);
+                        }}
+                      />
+                      <IconButton
+                        size="sm"
+                        label={moveDownLabel(itemName, position)}
+                        icon={<ArrowDownGlyph />}
+                        disabled={disabled || index === count - 1}
+                        onClick={() => move(index, 1, 'down')}
+                        ref={(el) => {
+                          if (el) downs.current.set(key, el);
+                          else downs.current.delete(key);
+                        }}
+                      />
+                    </span>
                     <IconButton
                       size="sm"
-                      label={moveUpLabel(itemName, position)}
-                      icon={<ArrowUpGlyph />}
-                      disabled={disabled || index === 0}
-                      onClick={() => move(index, -1, 'up')}
-                      ref={(el) => {
-                        if (el) ups.current.set(key, el);
-                        else ups.current.delete(key);
-                      }}
-                    />
-                    <IconButton
-                      size="sm"
-                      label={moveDownLabel(itemName, position)}
-                      icon={<ArrowDownGlyph />}
-                      disabled={disabled || index === count - 1}
-                      onClick={() => move(index, 1, 'down')}
-                      ref={(el) => {
-                        if (el) downs.current.set(key, el);
-                        else downs.current.delete(key);
-                      }}
+                      variant="ghost-danger"
+                      label={removeLabel(itemName, position)}
+                      icon={<XGlyph />}
+                      disabled={disabled}
+                      onClick={() => remove(index)}
                     />
                   </span>
-                  <IconButton
-                    size="sm"
-                    variant="ghost-danger"
-                    label={removeLabel(itemName, position)}
-                    icon={<XGlyph />}
-                    disabled={disabled}
-                    onClick={() => remove(index)}
-                  />
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+                </li>
+              );
+            })}
+          </ol>
+        </>
       ) : null}
     </FormField>
   );
