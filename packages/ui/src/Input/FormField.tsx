@@ -1,6 +1,16 @@
 import { useId, type HTMLAttributes, type ReactNode } from 'react';
 import { Label } from './Label.js';
+import { CharacterCount, characterCountState, type CharacterCountLabels } from '../CharacterCount/index.js';
 import { cx } from '../utils/cx.js';
+
+/** A field's length limit, and how much of it the value uses. */
+export interface FormFieldLimit {
+  /** How many characters the value holds. `countCharacters` counts them as a reader would. */
+  length: number;
+  /** The most it may hold. */
+  max: number;
+  labels?: Partial<CharacterCountLabels> | undefined;
+}
 
 /** What a field's control needs to know about the row it sits in. */
 export interface FormFieldRender {
@@ -32,6 +42,14 @@ export interface FormFieldProps extends Omit<HTMLAttributes<HTMLElement>, 'child
   helperOnFocus?: boolean | undefined;
   /** Why the last value was refused. */
   error?: ReactNode;
+  /**
+   * A length limit: the count is drawn at the end of the help line ("120 /
+   * 500"), joined into the description after the help and before the error,
+   * and a value past it marks the field invalid. A SOFT limit, never a
+   * `maxLength`: what was typed or pasted stays, and the count says by how
+   * much it is over. See `CharacterCount`.
+   */
+  limit?: FormFieldLimit | undefined;
   /** A control rendered beside the label, such as an Add button. */
   labelAction?: ReactNode;
   /**
@@ -78,6 +96,7 @@ export const FormField = ({
   helper,
   helperOnFocus = false,
   error,
+  limit,
   labelAction,
   as = 'div',
   describedBy,
@@ -90,23 +109,42 @@ export const FormField = ({
   const id = htmlFor ?? autoId;
   const helperId = helper ? `${id}-helper` : undefined;
   const errorId = error ? `${id}-error` : undefined;
+  const countId = limit ? `${id}-count` : undefined;
+  const over = limit !== undefined && characterCountState(limit.length, limit.max) === 'over';
   const extra = describedBy === undefined ? [] : typeof describedBy === 'string' ? [describedBy] : [...describedBy];
-  const described = [...extra, helperId, errorId].filter(Boolean).join(' ');
+  const described = [...extra, helperId, countId, errorId].filter(Boolean).join(' ');
+  const invalid = Boolean(error) || over;
   const field: FormFieldRender = {
     id,
     describedBy: described || undefined,
-    invalid: Boolean(error),
+    invalid,
     required,
   };
+
+  const help = helper ? (
+    <div id={helperId} className="crewlet-form-field__helper">
+      {helper}
+    </div>
+  ) : null;
 
   const body = (
     <>
       {typeof children === 'function' ? children(field) : children}
-      {helper ? (
-        <div id={helperId} className="crewlet-form-field__helper">
-          {helper}
+      {/*
+        * THE COUNT SHARES THE HELP LINE, at its end, rather than taking a line
+        * of its own under it: the two are both about what the value may be,
+        * and a field with a sentence, a count and an error on three lines is
+        * a field whose control is the smallest thing in it. Without a limit
+        * the help line is exactly what it always was.
+        */}
+      {limit ? (
+        <div className="crewlet-form-field__meta">
+          {help ?? <span className="crewlet-form-field__meta-spacer" />}
+          <CharacterCount id={countId} length={limit.length} max={limit.max} labels={limit.labels} />
         </div>
-      ) : null}
+      ) : (
+        help
+      )}
       {error ? (
         <div id={errorId} className="crewlet-form-field__error" role="alert">
           {error}
@@ -117,7 +155,7 @@ export const FormField = ({
 
   const classes = cx(
     'crewlet-form-field',
-    Boolean(error) && 'is-error',
+    invalid && 'is-error',
     helperOnFocus && helper ? 'crewlet-form-field--helper-on-focus' : null,
     className,
   );

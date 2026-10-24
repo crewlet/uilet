@@ -1,4 +1,5 @@
 import { cx } from '../utils/cx.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /** Every string the status draws. */
 export interface EditingStatusLabels {
@@ -43,6 +44,12 @@ export function EditingStatus({ dirty, saving = false, labels, className }: Edit
     >
       <span className="crewlet-editing-status__dot" aria-hidden="true" />
       <span className="crewlet-editing-status__label">{text.editing}</span>
+      {/*
+        * A SEPARATOR FOR THE EAR. The dot between the two words is drawn by
+        * the stylesheet, which a live region does not read, so the region
+        * said "EditingUnsaved changes" as one word.
+        */}
+      {state && <VisuallyHidden>, </VisuallyHidden>}
       {state && <span className="crewlet-editing-status__state">{state}</span>}
     </span>
   );

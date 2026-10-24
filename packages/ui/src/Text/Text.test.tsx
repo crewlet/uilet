@@ -83,3 +83,16 @@ test('the inherit register sets nothing of its own, so a mono run keeps its sent
   expect(rule).toMatch(/font-size:\s*inherit/);
   expect(rule).toMatch(/color:\s*inherit/);
 });
+
+test('a passage keeps its author’s lines and breaks a long word, at the body’s size', () => {
+  // Read off the stylesheet, since jsdom does not apply it: the whole point
+  // of the register is the four declarations a reader of a mission needs.
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Text.css'), 'utf8');
+  const rule = /\.crewlet-text--passage \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(rule).toContain('font-size: var(--font-size-sm)');
+  expect(rule).toContain('line-height: var(--font-line-height-relaxed)');
+  expect(rule).toContain('white-space: pre-wrap');
+  expect(rule).toContain('overflow-wrap: anywhere');
+  const { container } = render(<Text variant="passage">One.{'\n'}Two.</Text>);
+  expect(container.firstElementChild?.className).toContain('crewlet-text--passage');
+});

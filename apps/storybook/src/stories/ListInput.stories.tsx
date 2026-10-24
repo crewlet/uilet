@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Announcer, ListInput } from '@crewlethq/ui';
+import { Announcer, Button, ListInput, withDraft } from '@crewlethq/ui';
 
 const meta: Meta<typeof ListInput> = {
   title: 'UI/ListInput',
@@ -78,6 +78,103 @@ export const WithError: Story = {
             error="A responsibility cannot be empty."
           />
         </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/**
+ * A company's standing policies as the Principles page edits them: one line
+ * each, wrapped so a long one reads whole; each row dragged by its grip as
+ * well as moved by Alt+Arrow and the buttons; a limit on how many there are
+ * and how long each may be; a refusal said under the one item it is about;
+ * and the legend hidden, as under the card's own title, with the add
+ * control beside the box.
+ */
+export const Policies: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState([
+        'Every amount is exact to the cent. Round only when a person reads it.',
+        'Ask before deleting anything a customer wrote.',
+        'Never move money without a second agent checking the amount and the recipient.',
+      ]);
+      return (
+        <div style={{ width: 640 }}>
+          <Announcer />
+          <ListInput
+            reorderByDrag
+            hideLabel
+            maxItems={5}
+            maxLength={120}
+            label="Standing policies"
+            itemName="policy"
+            value={value}
+            onChange={setValue}
+            placeholder="Add a policy"
+            itemError={(_, text) =>
+              value.filter((other) => other.trim() === text.trim()).length > 1 ? 'This policy is listed twice.' : undefined
+            }
+          />
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/**
+ * Removing a policy leaves its place with Undo, and the focus on Undo, until
+ * the list next changes. The legend is hidden, as inside a card whose title
+ * already names the list.
+ */
+export const UndoARemoval: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState(['Ask first.', 'Every amount is exact to the cent.', 'Name the source.']);
+      return (
+        <div style={{ width: 560 }}>
+          <Announcer />
+          <ListInput multiline undoRemove hideLabel label="Standing policies" itemName="policy" value={value} onChange={setValue} />
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/**
+ * A typed policy survives Save: the owner holds the new-item box's text
+ * (`draft`), counts it as unsaved, and saves it with `withDraft`, so text
+ * typed and not yet added is never dropped.
+ */
+export const ATypedPolicySurvivesSave: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState(['Ask first.']);
+      const [draft, setDraft] = useState('Name the source of every figure.');
+      const [saved, setSaved] = useState<string[] | null>(null);
+      return (
+        <form
+          style={{ width: 560, display: 'grid', gap: 12 }}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const next = withDraft(value, draft);
+            setValue(next);
+            setDraft('');
+            setSaved(next);
+          }}
+        >
+          <Announcer />
+          <ListInput multiline label="Standing policies" itemName="policy" value={value} onChange={setValue} draft={draft} onDraftChange={setDraft} />
+          <div>
+            <Button type="submit" size="small">
+              Save
+            </Button>
+          </div>
+          {saved ? <output>Saved {saved.length} policies.</output> : null}
+        </form>
       );
     }
     return <Demo />;

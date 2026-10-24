@@ -121,7 +121,7 @@ export const Folds: Story = {
  */
 export const Compact: Story = {
   render: () => (
-    <div style={{ maxWidth: 900 }}>
+    <div style={{ maxWidth: 1040 }}>
       <Section
         title={
           <>
@@ -170,6 +170,58 @@ export const Compact: Story = {
           />
         </TileGrid>
       </Section>
+    </div>
+  ),
+};
+
+/**
+ * The same four at a laptop's content width (845px, a 1024px window beside
+ * the rail): two tracks would be 415px, narrower than a compact header's
+ * one line, so the grid folds to one track and every name stands whole.
+ */
+export const CompactFolds: Story = {
+  render: () => (
+    <div style={{ width: 845 }}>
+      <TileGrid as="ul" columns={2}>
+        <CatalogTile
+          as="li"
+          density="compact"
+          mark={<ProductMark product="works" size={20} />}
+          title="Crewlet Works"
+          status={<Tag size="sm" variant="success">In use</Tag>}
+          description="Projects, tasks, your inbox and My work."
+          action={<ButtonLink variant="secondary" size="small" href="#works">Open</ButtonLink>}
+        />
+        <CatalogTile
+          as="li"
+          density="compact"
+          mark={<ProductMark product="knowledge" size={20} />}
+          title="Crewlet Knowledge"
+          status={<Tag size="sm" variant="success">In use</Tag>}
+          description="Spaces and pages, agent skills and diaries."
+          action={<ButtonLink variant="secondary" size="small" href="#knowledge">Open</ButtonLink>}
+        />
+        <CatalogTile
+          as="li"
+          density="compact"
+          mark={<VendorMark vendor="datadog" size={20} />}
+          title="Datadog"
+          status={<StatusDot tone="success">Connected</StatusDot>}
+          description="Monitors alert the seats their tags name, with a company-wide fallback."
+          meta="Last delivery 4m ago"
+          action={<ButtonLink variant="secondary" size="small" href="#datadog">Open</ButtonLink>}
+        />
+        <CatalogTile
+          as="li"
+          density="compact"
+          mark={<VendorMark vendor="gitlab" size={20} />}
+          title="GitLab"
+          status={<StatusDot tone="warning">Needs attention</StatusDot>}
+          description="Merge requests and code, a token per agent."
+          meta="1 of 2 agents ready"
+          action={<ButtonLink variant="secondary" size="small" href="#gitlab">Replace key</ButtonLink>}
+        />
+      </TileGrid>
     </div>
   ),
 };

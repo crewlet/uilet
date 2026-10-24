@@ -120,3 +120,17 @@ test('a compact tile is still an article named by its heading, its mark hidden',
   expect(tile.querySelector('.crewlet-catalog-tile__mark')!.getAttribute('aria-hidden')).toBe('true');
   expect(tile.querySelector('.crewlet-catalog-tile__description')).toBeNull();
 });
+
+// THE NAME IS NEVER CUT: a compact header short of room wraps its state and
+// its fact under the name, rather than ellipsising the name to "C…".
+test('a compact tile never cuts its name, and wraps the rest of the line instead', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'CatalogTile.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const name = /\.crewlet-catalog-tile--compact \.crewlet-catalog-tile__name \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const title = /\.crewlet-catalog-tile--compact \.crewlet-catalog-tile__title \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(name).toMatch(/flex:\s*0 0 auto;/);
+  expect(name).not.toMatch(/text-overflow|white-space:\s*nowrap|overflow:\s*hidden/);
+  expect(title).toMatch(/flex-wrap:\s*wrap;/);
+});

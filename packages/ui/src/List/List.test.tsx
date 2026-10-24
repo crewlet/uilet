@@ -6,6 +6,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { List, ListItem } from './index.js';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
 
@@ -143,4 +144,64 @@ test('a list is divided unless it is asked not to be', () => {
   );
   expect(plain.querySelector('.crewlet-list')?.className).toContain('crewlet-list--plain');
   expect(plain.querySelector('.crewlet-list')?.className).not.toContain('crewlet-list--divided');
+});
+
+test('a compact numbered list sets its rows a small step apart in the body’s size, and comfortable is unchanged', () => {
+  const remove = installSheets('List/List.css');
+  try {
+    const { container } = render(
+      <>
+        <List variant="numbered-divided" aria-label="Comfortable">
+          <ListItem>Every amount is exact to the cent.</ListItem>
+        </List>
+        <List variant="numbered-divided" density="compact" aria-label="Compact">
+          <ListItem>Every amount is exact to the cent.</ListItem>
+        </List>
+      </>,
+    );
+    const [comfortable, compact] = [...container.querySelectorAll<HTMLElement>('.crewlet-list__row')];
+    expect(container.querySelector('[aria-label="Comfortable"]')?.className).not.toContain('crewlet-list--compact');
+    expect(px(comfortable!, 'padding-top')).toBe(12);
+    // The logical property as written: jsdom keeps it rather than expanding
+    // it onto the physical sides.
+    expect(px(compact!, 'padding-block')).toBe(8);
+    expect(px(compact!, 'padding-left')).toBe(16);
+    expect(px(compact!, 'font-size')).toBe(14);
+  } finally {
+    remove();
+  }
+});
+
+test('a list asked for a measure holds its words to it, and the row still spans the list', () => {
+  const remove = installSheets('List/List.css');
+  try {
+    const { container } = render(
+      <>
+        <List variant="numbered-divided" aria-label="Unbounded">
+          <ListItem>Every amount is exact to the cent.</ListItem>
+        </List>
+        <List variant="numbered-divided" measure="normal" aria-label="Normal">
+          <ListItem>Every amount is exact to the cent.</ListItem>
+        </List>
+        <List variant="numbered-divided" density="compact" measure="wide" aria-label="Wide">
+          <ListItem>Every amount is exact to the cent.</ListItem>
+        </List>
+      </>,
+    );
+    const words = (name: string) =>
+      container.querySelector<HTMLElement>(`[aria-label="${name}"] .crewlet-list__content`)!;
+    expect(['', 'none']).toContain(getComputedStyle(words('Unbounded')).getPropertyValue('max-inline-size'));
+    // The helper resolves the length tokens: 68ch and 80ch at its 7px character.
+    const normal = px(words('Normal'), 'max-inline-size');
+    const wide = px(words('Wide'), 'max-inline-size');
+    expect(normal).toBeGreaterThan(0);
+    expect(wide).toBeGreaterThan(normal);
+    expect(['', 'none']).toContain(
+      getComputedStyle(container.querySelector<HTMLElement>('[aria-label="Wide"] .crewlet-list__row')!).getPropertyValue(
+        'max-inline-size',
+      ),
+    );
+  } finally {
+    remove();
+  }
 });

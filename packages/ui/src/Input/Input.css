@@ -561,6 +561,25 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * THE HELP LINE WITH A COUNT AT ITS END (`limit`). The help wraps in the room
+ * the count leaves, and the count keeps its width and its line: it is the
+ * figure a writer glances at, so it does not move as the sentence beside it
+ * wraps.
+ */
+.crewlet-form-field__meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+
+.crewlet-form-field__meta > .crewlet-form-field__helper,
+.crewlet-form-field__meta-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
 /* SHOWN ONLY WHILE THE FIELD HAS FOCUS (`helperOnFocus`): a dense form reads as
    labels and values at rest, and the sentence appears under the field the
    reader is in. Still described, so a screen reader hears it on entry. */

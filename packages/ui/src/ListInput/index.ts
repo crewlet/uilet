@@ -1,4 +1,4 @@
 import './ListInput.css';
 
-export { ListInput } from './ListInput.js';
-export type { ListInputProps } from './ListInput.js';
+export { ListInput, withDraft } from './ListInput.js';
+export type { ListInputHandle, ListInputProps } from './ListInput.js';

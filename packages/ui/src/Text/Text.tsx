@@ -9,6 +9,14 @@ import { cx } from '../utils/cx.js';
 export type TextVariant =
   /** Body copy, 14px. The default, and the only one that needs no thought. */
   | 'body'
+  /**
+   * Words somebody wrote to be read whole, at the body's size: a mission on
+   * its card, a policy, a comment. The relaxed leading, the author's own line
+   * breaks kept, balanced last lines, and a long word or address broken
+   * rather than pushed past the column. Body copy reflows what it is given;
+   * a passage keeps it as it was written.
+   */
+  | 'passage'
   /** A value inside a dense row or table cell, 13px. */
   | 'cell'
   /** Metadata under or beside a value, 12px, on the tertiary step. */

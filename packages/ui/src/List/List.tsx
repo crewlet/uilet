@@ -56,6 +56,21 @@ export interface ListProps extends HTMLAttributes<HTMLElement> {
    * row measures itself against the same track list.
    */
   template?: string | undefined;
+  /**
+   * How much room a row takes. `comfortable` (the default) is the list as it
+   * always was. `compact` sets the rows a small step apart in the body's size
+   * at its normal leading, for a card that has to hold a long list on one
+   * screen: eight standing policies of two lines each, on a page that also
+   * shows the mission and the vision above them.
+   */
+  density?: 'comfortable' | 'compact' | undefined;
+  /**
+   * Holds each row's words to a reading measure while the row itself, and the
+   * rule under it, still spans the list: `normal` is prose's (68ch), `wide`
+   * is a list of statements read one at a time (80ch), a company's policies.
+   * Unset, the words take the row's width, as a feed's do.
+   */
+  measure?: 'normal' | 'wide' | undefined;
 }
 
 /**
@@ -68,14 +83,30 @@ export interface ListProps extends HTMLAttributes<HTMLElement> {
  * means nothing. What a feed does want is alignment, which `template` gives it
  * without the promise.
  */
-export function List({ variant = 'divided', template, className, style, children, ...rest }: ListProps) {
+export function List({
+  variant = 'divided',
+  template,
+  density = 'comfortable',
+  measure,
+  className,
+  style,
+  children,
+  ...rest
+}: ListProps) {
   const Tag = variant === 'numbered' || variant === 'numbered-divided' ? 'ol' : 'ul';
   const templated = template !== undefined;
   return (
     <ListContext.Provider value={{ variant, templated }}>
       <Tag
         {...rest}
-        className={cx('crewlet-list', `crewlet-list--${variant}`, templated && 'crewlet-list--templated', className)}
+        className={cx(
+          'crewlet-list',
+          `crewlet-list--${variant}`,
+          templated && 'crewlet-list--templated',
+          density === 'compact' && 'crewlet-list--compact',
+          measure && `crewlet-list--measure-${measure}`,
+          className,
+        )}
         style={templated ? ({ ...style, '--crewlet-list-template': template } as CSSProperties) : style}
       >
         {children}

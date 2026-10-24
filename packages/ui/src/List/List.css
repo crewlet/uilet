@@ -166,6 +166,37 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * COMPACT: a row a small step tall, in the body's size at its normal leading,
+ * so a list of statements that each run to two lines still stands on one
+ * screen. Only the rhythm changes; the number column, the rule between rows
+ * and the inset a card gives them stay where they were.
+ */
+.crewlet-list--compact .crewlet-list__row {
+  min-height: 0;
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-list--compact.crewlet-list--numbered-divided .crewlet-list__row {
+  padding-block: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-normal);
+  text-wrap: pretty;
+}
+
+/*
+ * THE WORDS AT A READING MEASURE (`measure`), while the row and its rule
+ * still span the list. In a card the width of the page a policy otherwise
+ * runs to some 150 characters a line. A maximum, never a width.
+ */
+.crewlet-list--measure-normal .crewlet-list__content {
+  max-inline-size: var(--size-measure);
+}
+
+.crewlet-list--measure-wide .crewlet-list__content {
+  max-inline-size: var(--size-measure-wide);
+}
+
 /* ---- States ------------------------------------------------------------ */
 
 /*

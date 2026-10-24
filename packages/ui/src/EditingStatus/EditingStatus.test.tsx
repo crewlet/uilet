@@ -9,13 +9,13 @@ test('says editing, and adds unsaved changes once something differs', () => {
   const status = screen.getByRole('status');
   expect(status.textContent).toBe('Editing');
   rerender(<EditingStatus dirty />);
-  expect(status.textContent).toBe('EditingUnsaved changes');
+  expect(status.textContent).toBe('Editing, Unsaved changes');
   expect(status.className).toContain('crewlet-editing-status--dirty');
   rerender(<EditingStatus dirty saving />);
-  expect(status.textContent).toBe('EditingSaving');
+  expect(status.textContent).toBe('Editing, Saving');
 });
 
 test('takes its words from the caller', () => {
   render(<EditingStatus dirty labels={{ editing: 'Drafting', unsaved: 'Not published' }} />);
-  expect(screen.getByRole('status').textContent).toBe('DraftingNot published');
+  expect(screen.getByRole('status').textContent).toBe('Drafting, Not published');
 });
