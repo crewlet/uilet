@@ -1,0 +1,68 @@
+/*
+ * A colour a person chooses: the swatch that opens the platform's picker,
+ * beside the hex field. The swatch's fill is the one value that is not a
+ * token, and it arrives through `--crewlet-color-field-value` only after it
+ * has passed `#rrggbb`.
+ */
+.crewlet-color-field__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/*
+ * THE SWATCH IS THE PICKER: the platform's colour input lies over the chip,
+ * transparent, so a press anywhere on the chip opens it and the chip is what
+ * the reader sees, the same in every browser. Its edge is its own, so a
+ * colour that matches the page is still a chip.
+ */
+.crewlet-color-field__swatch {
+  /* The hatch of no colour, as a colour swatch draws it. */
+  --crewlet-color-field-hatch: repeating-linear-gradient(
+    -45deg,
+    var(--color-border-hatch) 0 1px,
+    transparent 1px var(--spacing-2)
+  );
+
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  box-sizing: border-box;
+  border-radius: var(--radius-md);
+  background: var(--crewlet-color-field-value, var(--color-surface-inset));
+  box-shadow: inset 0 0 0 1px var(--color-border-field);
+}
+
+.crewlet-color-field__swatch.is-empty {
+  background: var(--crewlet-color-field-hatch);
+}
+
+.crewlet-color-field__swatch.is-disabled {
+  opacity: 0.6;
+}
+
+.crewlet-color-field__picker {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.crewlet-color-field__picker:disabled {
+  cursor: not-allowed;
+}
+
+/* THE RING IS THE CHIP'S: the input under it is transparent, so the ring a
+   keyboard needs is drawn on what the reader sees. */
+.crewlet-color-field__swatch:has(.crewlet-color-field__picker:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+}

@@ -13,6 +13,10 @@
  *   4. the density steps under `data-density`;
  *   5. the self-hosted Geist faces, then the document baseline.
  *
+ * The build appends the brand layer (`brand.css`) after them, once it has
+ * moved every declaration of a token the layer restyles aside to its theme
+ * name (`scripts/brand.mjs`), and then the stylesheet of the sheet.
+ *
  * Nothing here contacts a third-party host: the fonts are copied beside this
  * file at build time and referenced relative to it.
  */

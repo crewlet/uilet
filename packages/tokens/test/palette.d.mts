@@ -91,6 +91,7 @@ export interface Rgb {
 }
 
 export function contrast(a: Rgb, b: Rgb): number;
+export function luminance(colour: Rgb): number;
 export function deltaE(a: Rgb, b: Rgb): number;
 export function chroma(colour: Rgb): number;
 export function flatten(value: string, backdrop: Rgb): Rgb;
@@ -210,3 +211,12 @@ export const PRESENCE_HUES: readonly string[];
 
 /** The ink of the name on a presence flag, held to 4.5:1 on every presence hue. */
 export const PRESENCE_FLAG_TEXT: string;
+
+/** Every artifact kind, the six node-hue kinds in the order the tokens declare them, then `brand`, whose hue is its own. */
+export const ARTIFACT_KINDS: readonly string[];
+/** Each kind's hue, by custom-property name (`--color-artifact-kind-<kind>`), in ARTIFACT_KINDS order. */
+export const ARTIFACT_KIND_HUES: readonly string[];
+/** The alpha a kind's fill is its hue at. */
+export const ARTIFACT_KIND_FILL_ALPHA: number;
+/** How far apart, in OKLab dE under normal vision, any two kind hues sit. */
+export const ARTIFACT_KIND_DE: number;

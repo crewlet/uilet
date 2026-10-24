@@ -126,6 +126,24 @@
   font-size: var(--font-size-compact);
 }
 
+/*
+ * THE BARE BOX (`hideLabel`): no words beside it, so the row's floor and its
+ * gap go, and the box is centred on a square the pointer floor allows. The
+ * label is still its name, said rather than printed.
+ */
+.crewlet-checkbox--bare {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: var(--size-target-min);
+  min-height: var(--size-target-min);
+}
+
+.crewlet-checkbox--bare .crewlet-checkbox__control {
+  margin: 0;
+}
+
 .crewlet-checkbox.is-disabled,
 .crewlet-checkbox.is-disabled .crewlet-checkbox__control {
   cursor: not-allowed;

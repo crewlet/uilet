@@ -104,6 +104,15 @@
   overflow: visible;
 }
 
+/* A read-only title's words: the block that takes the ellipsis, which the
+   flex heading around it cannot. */
+.crewlet-artifact-bar__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .crewlet-artifact-bar__rename {
   min-width: 0;
   max-width: 100%;

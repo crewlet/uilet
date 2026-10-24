@@ -141,6 +141,50 @@ test('bottom pins a dialog to the bottom edge, full width, as a phone sheet', ()
   expect(rule).toContain('border-radius: var(--radius-xl) var(--radius-xl) 0 0');
 });
 
+test('phoneSheet presents a dialog as a full-height sheet on a phone, and nothing changes above the breakpoint', () => {
+  const { rerender } = render(
+    <Modal open onClose={() => {}} phoneSheet title="Move 3 artifacts">
+      <p>Anything.</p>
+    </Modal>,
+  );
+  expect(veil().classList.contains('crewlet-modal-overlay--phone-sheet')).toBe(true);
+  // It keeps its placement for every width above the phone's.
+  expect(veil().classList.contains('crewlet-modal-overlay--top')).toBe(true);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Modal.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const phone = /@media \(width < 640px\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+  const frame = /\.crewlet-modal-overlay--phone-sheet > \.crewlet-modal--dialog\s*\{([^}]*)\}/.exec(phone)?.[1] ?? '';
+  expect(frame).toContain('height: 100%');
+  expect(frame).toContain('max-height: none');
+  expect(frame).toContain('border-radius: 0');
+  expect(frame).toMatch(/padding-bottom: env\(safe-area-inset-bottom/);
+  // Every rule naming the phone sheet sits inside the phone breakpoint, or is its reduced-motion stop.
+  const outside = css.replace(/@media \(width < 640px\) \{[\s\S]*?\n\}/, '').replace(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\n\}/, '');
+  expect(outside).not.toMatch(/phone-sheet/);
+
+  // A prompt stays a prompt, and a side sheet is already full width on a phone.
+  rerender(
+    <Modal open onClose={() => {}} phoneSheet shape="prompt" title="Discard changes?">
+      <p>Anything.</p>
+    </Modal>,
+  );
+  expect(veil().classList.contains('crewlet-modal-overlay--phone-sheet')).toBe(false);
+  rerender(
+    <Modal open onClose={() => {}} phoneSheet variant="sheet" title="Edit seat">
+      <p>Anything.</p>
+    </Modal>,
+  );
+  expect(veil().classList.contains('crewlet-modal-overlay--phone-sheet')).toBe(false);
+});
+
+test('a dialog that does not ask for the phone sheet keeps its shape on a phone', () => {
+  render(
+    <Modal open onClose={() => {}} title="Rename">
+      <p>Anything.</p>
+    </Modal>,
+  );
+  expect(veil().classList.contains('crewlet-modal-overlay--phone-sheet')).toBe(false);
+});
+
 test("only a sheet's head takes the sheet's own band, and only a sheet's title", () => {
   render(
     <>

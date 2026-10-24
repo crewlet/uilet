@@ -79,3 +79,85 @@
   color: var(--color-text-tertiary);
   cursor: not-allowed;
 }
+
+/* ---- inline (`inline`): the list is the surface's body ------------------
+   Always on screen, in the flow under the field, at ONE HEIGHT: the box is
+   `rows` one-line rows tall (`--crewlet-combobox-rows`, set by the component)
+   whatever the filter leaves in it, so nothing under it moves as somebody
+   types, and it scrolls past that. It sits on the surface's own ground inside
+   a hairline, because it is part of the surface rather than a panel over it. */
+.crewlet-combobox--inline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.crewlet-combobox__list {
+  /* ONE ROW IS ONE ROW STEP, exactly: a row's own height is held to it
+     below, so a label that draws a glyph beside its words is no taller than
+     one that does not, and `rows` rows fill the box to the pixel. */
+  --crewlet-combobox-row: var(--size-row-md);
+  --crewlet-listbox-gap: 1px;
+
+  height: calc(
+    var(--crewlet-combobox-rows) * var(--crewlet-combobox-row) + (var(--crewlet-combobox-rows) - 1) * var(--crewlet-listbox-gap) +
+      var(--spacing-1) * 2 + 2px
+  );
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+
+.crewlet-combobox__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--crewlet-listbox-gap);
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.crewlet-combobox__list.is-mono .crewlet-combobox__label {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-combobox__options .crewlet-listbox__option {
+  height: var(--crewlet-combobox-row);
+  min-height: 0;
+  padding-block: 0;
+  border-radius: var(--radius-xs);
+}
+
+/* The row the arrows or the pointer are on, in the hover tint, as the popup
+   draws it. Scoped to the list for the same reason as the panel's. */
+.crewlet-combobox__options .crewlet-listbox__option.is-highlight,
+.crewlet-combobox__options .crewlet-listbox__option:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/*
+ * THE CHOSEN ROW (`chosen`), as every chosen option in the package is drawn:
+ * the selected fill, never the accent, with a tick in the accent's ink so the
+ * choice never rests on the tint. It keeps its fill under the arrows too.
+ */
+.crewlet-combobox__options .crewlet-listbox__option[aria-selected='true'] {
+  background: var(--color-surface-selected);
+  color: var(--color-text-primary);
+}
+
+.crewlet-combobox__check {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-combobox__options .crewlet-listbox__option.is-disabled {
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}

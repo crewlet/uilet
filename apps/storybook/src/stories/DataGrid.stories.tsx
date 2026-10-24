@@ -161,3 +161,36 @@ function Facts() {
 
 /** The plain checklist the column chooser is drawn with, for any set of facts a view shows. */
 export const AChooserList: Story = { render: () => <Facts /> };
+
+/**
+ * ROWS PICKED FOR A BULK ACTION (`selection`): a box before the first column
+ * on every row, and one in the head over every row drawn, mixed while some
+ * are picked. Shift with a box sets every row between it and the box pressed
+ * before it. A row the reader cannot act on has a disabled box. A picked row
+ * takes the selected fill; the current row keeps its own mark.
+ */
+export const Selection: Story = {
+  render: function Render() {
+    const [selected, setSelected] = useState<ReadonlySet<string>>(new Set(['ENG-9']));
+    return (
+      <div style={{ display: 'grid', gap: 'var(--spacing-3)', maxWidth: 960 }}>
+        <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>{selected.size} selected</span>
+        <DataGrid
+          rows={TASKS}
+          columns={COLUMNS}
+          rowKey={(t: Task) => t.key}
+          rowHref={(t: Task) => `#/work/${t.key}`}
+          isSelected={(t: Task) => t.key === 'ENG-15'}
+          selection={{
+            selected,
+            onChange: setSelected,
+            rowLabel: (t: Task) => `Select ${t.key}`,
+            isSelectable: (t: Task) => t.status !== 'Done',
+          }}
+          phoneRows="compact"
+          aria-label="Tasks"
+        />
+      </div>
+    );
+  },
+};

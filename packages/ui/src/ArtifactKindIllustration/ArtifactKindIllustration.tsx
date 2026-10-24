@@ -7,13 +7,14 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 /**
  * A kind of artifact, pictured: a simple geometric drawing of what the kind
  * is (a page of prose, a slide, a phone screen, a board of bars, a window of
- * code, a grid of cells) in the kind's own hue.
+ * code, a grid of cells, a brand kit's mark over its swatches) in the kind's
+ * own hue.
  *
  * ONE HUE PER KIND, FROM THE TOKENS. Every mark is drawn in
  * `--color-artifact-kind-<kind>` at one of four fixed weights (the body, its
  * lines, a soft block and the one solid accent), so a theme repaints every
- * drawing by repainting the node hue the kind aliases, and nothing here holds
- * a colour of its own.
+ * drawing by repainting the kind's hue (a node hue, or brand's own), and
+ * nothing here holds a colour of its own.
  *
  * DECORATION. The drawing is hidden from assistive technology: the kind's
  * name beside it is what is read.
@@ -117,6 +118,19 @@ const DRAWINGS: Readonly<Record<ArtifactKind, ReactNode>> = {
       <rect className="l" x="108" y="73" width="22" height="4" rx="2" />
       <rect className="l" x="30" y="87" width="20" height="4" rx="2" />
       <rect className="l" x="68" y="87" width="14" height="4" rx="2" />
+    </>
+  ),
+  brand: (
+    <>
+      <rect className="b" x="30" y="16" width="100" height="88" rx="8" />
+      <circle className="m" cx="48" cy="36" r="8" />
+      <rect className="l" x="62" y="30" width="36" height="5" rx="2.5" />
+      <rect className="l" x="62" y="39" width="24" height="4" rx="2" />
+      <rect className="m" x="40" y="54" width="24" height="24" rx="5" />
+      <rect className="s" x="68" y="54" width="24" height="24" rx="5" />
+      <rect className="l" x="96" y="54" width="24" height="24" rx="5" />
+      <rect className="l" x="40" y="88" width="42" height="4" rx="2" />
+      <rect className="l" x="86" y="88" width="22" height="4" rx="2" />
     </>
   ),
 };

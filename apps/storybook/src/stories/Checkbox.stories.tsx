@@ -97,3 +97,15 @@ export const Compact: Story = {
     </div>
   ),
 };
+
+/**
+ * THE BARE BOX (`hideLabel`): no words beside it, centred on a target the
+ * pointer floor allows, for a card or a row that already shows what it picks.
+ * The label is still the box's name, said and not drawn.
+ */
+export const Bare: Story = {
+  render: function Render() {
+    const [on, setOn] = useState(false);
+    return <Checkbox hideLabel label="Select Vendor scorecard" checked={on} onCheckedChange={setOn} />;
+  },
+};

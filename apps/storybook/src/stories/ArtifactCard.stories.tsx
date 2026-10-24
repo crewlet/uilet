@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ARTIFACT_KINDS, ArtifactCard, ArtifactCardSkeleton, ArtifactKindGround, AutoGrid, DashboardCover, Document, LivePreview, Menu, useLivePreview } from '@crewlethq/ui';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CopyGlyph, EllipsisGlyph, PencilGlyph, PinGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof ArtifactCard> = {
@@ -224,4 +224,55 @@ export const Skeleton: Story = {
       <ArtifactCardSkeleton />
     </div>
   ),
+};
+
+/**
+ * PICKED FOR A BULK ACTION: a selectable card carries a box in the preview's
+ * top corner, shown on hover and focus and always once it is picked. With the
+ * gallery choosing (`selecting`), every box shows and a press anywhere on a
+ * card ticks it rather than opening it; the More menu stays a menu.
+ */
+export const Selectable: Story = {
+  render: function Render() {
+    const [picked, setPicked] = useState<ReadonlySet<string>>(new Set(['2']));
+    const [selecting, setSelecting] = useState(false);
+    const pick = (id: string, on: boolean) => {
+      const next = new Set(picked);
+      if (on) next.add(id);
+      else next.delete(id);
+      setPicked(next);
+    };
+    const cards = [
+      { id: '1', title: 'Incident runbook', kind: 'doc' as const },
+      { id: '2', title: 'Vendor scorecard', kind: 'sheet' as const },
+      { id: '3', title: 'Pricing explorer', kind: 'html' as const },
+    ];
+    return (
+      <div style={{ display: 'grid', gap: 16, maxWidth: 900 }}>
+        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center', fontSize: 'var(--font-size-sm)' }}>
+          <input type="checkbox" checked={selecting} onChange={(event) => setSelecting(event.target.checked)} />
+          The gallery is choosing
+        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '24px 20px' }}>
+          {cards.map((card) => (
+            <ArtifactCard
+              key={card.id}
+              title={card.title}
+              kind={card.kind}
+              href={`#/artifacts/${card.id}`}
+              owner={MAYA}
+              updatedAt={NOW - 3_600_000}
+              access="company"
+              now={NOW}
+              selectable
+              selecting={selecting || picked.size > 0}
+              selected={picked.has(card.id)}
+              onSelectedChange={(on) => pick(card.id, on)}
+              actions={<More title={card.title} />}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  },
 };

@@ -1,0 +1,96 @@
+/*
+ * A face, shown: its role and name in the interface's own type, then "Aa" and
+ * a line set in the face itself (`--crewlet-type-specimen-family`, which
+ * always ends in the package's sans).
+ */
+.crewlet-type-specimen {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'glyphs caption'
+    'sample sample';
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-4);
+  min-width: 0;
+  margin: 0;
+}
+
+.crewlet-type-specimen__caption {
+  grid-area: caption;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-type-specimen__label {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.crewlet-type-specimen__family {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-type-specimen__detail {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-type-specimen__glyphs {
+  grid-area: glyphs;
+  color: var(--color-text-primary);
+  font-family: var(--crewlet-type-specimen-family);
+  font-size: var(--font-size-4xl);
+  line-height: 1;
+}
+
+.crewlet-type-specimen__sample {
+  grid-area: sample;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-family: var(--crewlet-type-specimen-family);
+  font-size: var(--font-size-md);
+  line-height: var(--font-line-height-snug);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-type-specimen--regular :is(.crewlet-type-specimen__glyphs, .crewlet-type-specimen__sample) {
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-type-specimen--medium :is(.crewlet-type-specimen__glyphs, .crewlet-type-specimen__sample) {
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-type-specimen--semibold :is(.crewlet-type-specimen__glyphs, .crewlet-type-specimen__sample) {
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-type-specimen--bold :is(.crewlet-type-specimen__glyphs, .crewlet-type-specimen__sample) {
+  font-weight: var(--font-weight-bold);
+}
+
+/* ---- sm: a select option's lead, the letters smaller and the line gone ---- */
+
+.crewlet-type-specimen--sm {
+  grid-template-areas: 'glyphs caption';
+  gap: var(--spacing-3);
+}
+
+.crewlet-type-specimen--sm .crewlet-type-specimen__glyphs {
+  font-size: var(--font-size-2xl);
+}
+
+.crewlet-type-specimen--sm .crewlet-type-specimen__sample {
+  display: none;
+}

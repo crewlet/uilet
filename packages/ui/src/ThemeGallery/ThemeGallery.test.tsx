@@ -150,6 +150,43 @@ test('a caller-drawn preview takes the swatch\'s place, hidden as decoration, wi
   expect(onValueChange).toHaveBeenCalledWith('grove');
 });
 
+test('draws a tag only for a theme that sets its tone, and says every tag once in the name', () => {
+  const themes: ThemeGalleryTheme[] = [
+    { id: 'brand', name: 'FairSplit', tag: 'Your company brand', tagTone: 'brand', group: 'deck' },
+    { id: 'ink', name: 'Ink', tag: 'Navy and paper', tagTone: 'quiet', group: 'deck' },
+    { id: 'grove', name: 'Grove', tag: 'Deep green', group: 'deck' },
+    { id: 'paper', name: 'Paper', group: 'deck' },
+  ];
+  render(<ThemeGallery label="Deck theme" value="brand" onValueChange={() => {}} themes={themes} groups={[]} renderPreview={() => null} />);
+  // `brand`: the accent's pill, visible.
+  const brand = card('FairSplit, Your company brand');
+  expect(brand.querySelector('.crewlet-theme-gallery__tag--brand .crewlet-tag')?.textContent).toBe('Your company brand');
+  // `quiet`: a caption under the name, with the whole of it on hover.
+  const ink = card('Ink, Navy and paper');
+  const quiet = ink.querySelector('.crewlet-theme-gallery__tag');
+  expect(quiet?.textContent).toBe('Navy and paper');
+  expect(quiet?.getAttribute('title')).toBe('Navy and paper');
+  const name = ink.querySelector('.crewlet-theme-gallery__name')!;
+  expect(name.compareDocumentPosition(quiet!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  // A tag with no tone is said with the name and drawn nowhere.
+  const grove = card('Grove, Deep green');
+  expect(grove.querySelector('.crewlet-theme-gallery__tag')).toBeNull();
+  expect(grove.textContent).not.toContain('Deep green');
+  // No tag: the card is its name alone.
+  const paper = card('Paper');
+  expect(paper.getAttribute('aria-label')).toBe('Paper');
+  expect(paper.querySelector('.crewlet-theme-gallery__tag')).toBeNull();
+});
+
+test("the product's theme picker draws no tag: every registry theme is said with its tag and shows its name alone", () => {
+  render(<ThemeGallery value="crewlet" onValueChange={() => {}} />);
+  expect(document.querySelector('.crewlet-theme-gallery__tag')).toBeNull();
+  for (const theme of themeRegistry) {
+    const drawn = card(`${theme.name}, ${theme.tag}`);
+    expect(drawn.textContent, theme.id).not.toContain(theme.tag);
+  }
+});
+
 test('the gallery carries no accessibility violation', async () => {
   const { container } = render(
     <main>

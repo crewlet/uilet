@@ -272,9 +272,80 @@
   }
 }
 
+/*
+ * PICKED, as every chosen option in the package is drawn: the selected edge
+ * over the selected fill, laid as an image over the card's own ground so the
+ * card keeps it. Never the accent, which is the focus ring's hue.
+ */
+.crewlet-artifact-card--card.is-selected {
+  border-color: var(--color-border-selected);
+  background-image: linear-gradient(var(--color-surface-selected), var(--color-surface-selected));
+}
+
+/*
+ * THE SELECTION BOX STANDS ON THE PREVIEW'S FOOT, opposite the kind's badge
+ * and drawn as its twin: half over the picture and half over the card, on a
+ * raised square in the badge's own size, hairline and shadow. A cover's own
+ * title starts at its top corner, and a box over that corner hid its first
+ * words; the foot's far corner is where a cover has the least to say.
+ *
+ * Its anchor has the preview's shape (the card's width at 16:9) and takes no
+ * pointer, so the box is placed against the preview's foot at any width
+ * without being nested in the link the preview belongs to. Hidden until the
+ * card is hovered or holds focus, and always there once the card is picked,
+ * while the gallery is choosing, and on a screen with no hover.
+ */
+.crewlet-artifact-card__select-anchor {
+  position: absolute;
+  inset: 0 0 auto 0;
+  aspect-ratio: 16 / 9;
+  pointer-events: none;
+}
+
+.crewlet-artifact-card__select {
+  position: absolute;
+  right: var(--spacing-4);
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-background);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(50%);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-artifact-card--card:hover .crewlet-artifact-card__select,
+.crewlet-artifact-card--card:focus-within .crewlet-artifact-card__select,
+.crewlet-artifact-card--card.is-selected .crewlet-artifact-card__select,
+.crewlet-artifact-card--selecting .crewlet-artifact-card__select {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .crewlet-artifact-card__select {
+    opacity: 1;
+  }
+}
+
+/* WHILE CHOOSING, THE BODY PICKS: the pointer says so, and a Shift-press
+   for a range selects no text on the way. */
+.crewlet-artifact-card--selecting .crewlet-artifact-card__link {
+  cursor: pointer;
+  user-select: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crewlet-artifact-card--card,
-  .crewlet-artifact-card__actions {
+  .crewlet-artifact-card__actions,
+  .crewlet-artifact-card__select {
     transition: none;
   }
 }

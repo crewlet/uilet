@@ -5,9 +5,13 @@
  * beside the link rather than inside it.
  */
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, expect, test } from 'vitest';
+import { useState } from 'react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { ARTIFACT_KINDS, ArtifactCard, ArtifactCardSkeleton, ArtifactPreviewGlyph } from './index.js';
 
 afterEach(cleanup);
@@ -107,7 +111,7 @@ test('gives every kind its own drawing, badge and word when no preview is given'
   }
   expect(drawings.size).toBe(ARTIFACT_KINDS.length);
   expect(badges.size).toBe(ARTIFACT_KINDS.length);
-  expect(words).toEqual(['HTML', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
+  expect(words).toEqual(['HTML', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet', 'Brand']);
 });
 
 test('a host whose cover has nothing to draw stands in the same drawing the card would', () => {
@@ -178,4 +182,99 @@ test('carries no axe violation, as a card and compact', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+describe('selection', () => {
+  function Picking({ selecting = false, onPick }: { selecting?: boolean; onPick?: (on: boolean, range: boolean) => void }) {
+    const [selected, setSelected] = useState(false);
+    return (
+      <ArtifactCard
+        title="Vendor scorecard"
+        kind="sheet"
+        href="#/artifacts/7b0c"
+        updatedAt={NOW}
+        now={NOW}
+        selectable
+        selecting={selecting}
+        selected={selected}
+        onSelectedChange={(on, { range }) => {
+          setSelected(on);
+          onPick?.(on, range);
+        }}
+        actions={<button type="button">More for Vendor scorecard</button>}
+      />
+    );
+  }
+
+  test('a selectable card carries a named box beside its link, described by the facts', () => {
+    render(<Picking />);
+    const link = screen.getByRole('link', { name: 'Vendor scorecard' });
+    const box = screen.getByRole('checkbox', { name: 'Select Vendor scorecard' });
+    expect(link.contains(box)).toBe(false);
+    expect(link.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(box.getAttribute('aria-describedby')).toBe(link.getAttribute('aria-describedby'));
+  });
+
+  test("stands the box on the preview's foot, opposite the badge, where a cover's title is not", () => {
+    const { container } = render(<Picking />);
+    const box = screen.getByRole('checkbox', { name: 'Select Vendor scorecard' });
+    expect(box.closest('.crewlet-artifact-card__select-anchor')).not.toBeNull();
+    // Read as the browser reads the stylesheet: jsdom lays nothing out.
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ArtifactCard.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = (selector: string) => new RegExp(`${selector.replace(/[.]/g, '\\.')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    expect(rule('.crewlet-artifact-card__select-anchor')).toMatch(/aspect-ratio:\s*16 \/ 9/);
+    expect(rule('.crewlet-artifact-card__preview')).toMatch(/aspect-ratio:\s*16 \/ 9/);
+    const select = rule('.crewlet-artifact-card__select');
+    expect(select).toMatch(/bottom:\s*0/);
+    expect(select).toMatch(/right:/);
+    expect(select).not.toMatch(/(^|[;\s])(top|left):/);
+    expect(container.querySelector('.crewlet-artifact-card__select-anchor')?.parentElement?.classList.contains('crewlet-artifact-card--card')).toBe(true);
+  });
+
+  test('ticking the box reports it and draws the card picked', () => {
+    const onPick = vi.fn();
+    const { container } = render(<Picking onPick={onPick} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Vendor scorecard' }));
+    expect(onPick).toHaveBeenCalledWith(true, false);
+    expect(container.querySelector('.crewlet-artifact-card--card.is-selected')).not.toBeNull();
+    expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(true);
+  });
+
+  test('Shift with the box asks the host for a range', () => {
+    const onPick = vi.fn();
+    render(<Picking onPick={onPick} />);
+    fireEvent.click(screen.getByRole('checkbox'), { shiftKey: true });
+    expect(onPick).toHaveBeenCalledWith(true, true);
+  });
+
+  test('while the gallery is choosing, the body picks rather than opens, and the More menu stays', () => {
+    const onPick = vi.fn();
+    render(<Picking selecting onPick={onPick} />);
+    expect(screen.queryByRole('link')).toBeNull();
+    fireEvent.click(screen.getByText('Vendor scorecard'));
+    expect(onPick).toHaveBeenCalledWith(true, false);
+    expect(screen.getByRole('button', { name: 'More for Vendor scorecard' })).toBeDefined();
+  });
+
+  test('a card that is not selectable draws no box, even while the gallery is choosing', () => {
+    render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} selecting />);
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Runbook' })).toBeDefined();
+  });
+
+  test('carries no axe violation, picking and choosing', async () => {
+    const { container } = render(
+      <main>
+        <h1>Artifacts</h1>
+        <Picking />
+        <Picking selecting />
+      </main>,
+    );
+    const result = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
 });

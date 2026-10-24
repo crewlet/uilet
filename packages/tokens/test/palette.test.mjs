@@ -17,6 +17,9 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
   ACTION_STEPS,
+  ARTIFACT_KIND_DE,
+  ARTIFACT_KIND_HUES,
+  ARTIFACT_KINDS,
   CARD_HAIRLINE,
   DATA,
   DATA_ADJACENT_DE,
@@ -450,6 +453,37 @@ describe('the state and chart hues', () => {
       white.map((check) => check.subject),
       ['--color-text-inverse on --color-feedback-info', '--color-text-inverse on --color-feedback-warning'],
     );
+  });
+
+  test('every artifact kind is measured in every theme state, and a hue too near another kind is caught', () => {
+    // Seven kinds, in the order the tokens declare them. Brand is the one
+    // kind whose hue is not a node hue, so a palette that dropped it, or a
+    // rule that stopped following the six aliases to their node hue, would
+    // leave a kind's colour unmeasured.
+    const KIND_MARK_RULE = 'an artifact kind hue clears 3:1 as a mark';
+    const KIND_INK_RULE = "an artifact kind's ink clears 4.5:1 on its own fill and on every rung";
+    const KIND_APART_RULE = 'artifact kind hues stay apart';
+    assert.deepEqual(ARTIFACT_KINDS, ['doc', 'slides', 'design', 'dashboard', 'html', 'sheet', 'brand']);
+    for (const state of THEME_STATES) {
+      for (const name of ARTIFACT_KIND_HUES) {
+        for (const [rule, subject] of [[KIND_MARK_RULE, name], [KIND_INK_RULE, `${name}-ink`]]) {
+          const measured = checks.filter((check) => check.state === state && check.rule === rule && check.subject === subject);
+          assert.equal(measured.length, 1, `${state}: ${rule}: ${subject}`);
+          assert.ok(measured[0].ok, `${state}: ${describeFailure(measured[0])}`);
+        }
+      }
+      const pairs = checks.filter((check) => check.state === state && check.rule === KIND_APART_RULE);
+      assert.equal(pairs.length, (ARTIFACT_KINDS.length * (ARTIFACT_KINDS.length - 1)) / 2, state);
+    }
+    // A brand drawn in design's purple clears every floor but the distance
+    // between kinds, which is what keeps a brand kit from reading as a design.
+    for (const palette of ['dark', 'light']) {
+      const failing = checksAfter(palette, '--color-artifact-kind-brand', typed[palette].color.node.purple);
+      assert.deepEqual(failing.map((check) => `${check.rule}: ${check.subject}`), [`${KIND_APART_RULE}: --color-artifact-kind-design vs --color-artifact-kind-brand`], palette);
+      assert.ok(failing[0].value < ARTIFACT_KIND_DE, palette);
+    }
+    // And an ink that disappears into its own fill is caught by the ink rule alone.
+    assert.deepEqual(failuresAfter('light', '--color-artifact-kind-brand-ink', '#d9c2d6'), [KIND_INK_RULE]);
   });
 
   test('the chart ramp is four series, in every theme state and in the typed export', () => {

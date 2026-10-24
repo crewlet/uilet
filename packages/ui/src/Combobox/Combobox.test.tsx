@@ -6,10 +6,13 @@
  * dismissing a completion nobody wanted closed the editor with it.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { Modal } from '../Modal/index.js';
 import { Combobox } from './Combobox.js';
 
@@ -169,4 +172,160 @@ test('an open completion list carries no violation', async () => {
   fireEvent.keyDown(box(), { key: 'ArrowDown' });
   expect(screen.getByRole('listbox', { name: 'Secrets' })).toBeTruthy();
   expect(await auditPage()).toEqual([]);
+});
+
+describe('inline', () => {
+  const FOLDERS = [
+    { value: 'top', label: 'Top level' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'q4', label: 'Marketing › Q4 review', hint: 'Current' },
+    { value: 'press', label: 'Marketing › Q4 review › Press kit' },
+    { value: 'more', label: 'Keep typing to narrow them', disabled: true },
+    { value: 'board', label: 'Board' },
+  ];
+
+  function Picker({ chosen: initial, onCommit }: { chosen?: string; onCommit?: (value: string) => void }) {
+    const [value, setValue] = useState('');
+    const [chosen, setChosen] = useState<string | undefined>(initial);
+    const offered = FOLDERS.filter((folder) => folder.label.toLowerCase().includes(value.toLowerCase()));
+    return (
+      <Combobox
+        inline
+        rows={5}
+        label="Folders"
+        aria-label="Find a folder"
+        value={value}
+        onValueChange={setValue}
+        options={offered}
+        chosen={chosen}
+        onCommit={(option) => {
+          setChosen(option.value);
+          onCommit?.(option.value);
+        }}
+        emptyMessage="No folder matches"
+      />
+    );
+  }
+
+  const field = () => screen.getByRole('combobox', { name: 'Find a folder' });
+  const active = () => document.getElementById(field().getAttribute('aria-activedescendant') ?? '')?.textContent ?? '';
+
+  test('the list is on screen without focus, an inline listbox the field controls', () => {
+    render(<Picker />);
+    const list = screen.getByRole('listbox', { name: 'Folders' });
+    expect(field().getAttribute('aria-controls')).toBe(list.id);
+    expect(field().getAttribute('aria-expanded')).toBe('true');
+    expect(field().getAttribute('aria-autocomplete')).toBe('list');
+    expect(screen.getAllByRole('option')).toHaveLength(FOLDERS.length);
+    // In the flow beside the field, not a panel over the page or a portal.
+    expect(list.closest('.crewlet-combobox--inline')?.contains(field())).toBe(true);
+    expect(document.querySelector('.crewlet-combobox__panel')).toBeNull();
+  });
+
+  test('losing focus closes nothing, so the surface under the pointer stays where it was', () => {
+    render(<Picker />);
+    field().focus();
+    fireEvent.blur(field());
+    expect(screen.getByRole('listbox', { name: 'Folders' })).toBeDefined();
+  });
+
+  test('the field filters, and the highlight lands on the first match each time', () => {
+    render(<Picker />);
+    fireEvent.change(field(), { target: { value: 'q4' } });
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Marketing › Q4 reviewCurrent',
+      'Marketing › Q4 review › Press kit',
+    ]);
+    expect(active()).toBe('Marketing › Q4 reviewCurrent');
+  });
+
+  test('the arrows step over a disabled row, and Enter takes the highlighted one', () => {
+    const onCommit = vi.fn();
+    render(<Picker onCommit={onCommit} />);
+    expect(active()).toBe('Top level');
+    for (let i = 0; i < 4; i += 1) fireEvent.keyDown(field(), { key: 'ArrowDown' });
+    expect(active()).toBe('Board');
+    fireEvent.keyDown(field(), { key: 'ArrowUp' });
+    expect(active()).toBe('Marketing › Q4 review › Press kit');
+    const enter = fireEvent.keyDown(field(), { key: 'Enter' });
+    expect(enter).toBe(false);
+    expect(onCommit).toHaveBeenCalledWith('press');
+  });
+
+  test('Home and End reach the ends while the field is empty, and are the caret\'s once it holds text', () => {
+    render(<Picker />);
+    expect(fireEvent.keyDown(field(), { key: 'End' })).toBe(false);
+    expect(active()).toBe('Board');
+    fireEvent.keyDown(field(), { key: 'Home' });
+    expect(active()).toBe('Top level');
+    fireEvent.change(field(), { target: { value: 'mar' } });
+    // Not prevented: the caret moves, and the highlight stays on the first match.
+    expect(fireEvent.keyDown(field(), { key: 'End' })).toBe(true);
+    expect(active()).toBe('Marketing');
+  });
+
+  test('marks the chosen option as selected, with a tick, and starts the highlight on it', () => {
+    render(<Picker chosen="q4" />);
+    const chosen = screen.getByRole('option', { selected: true });
+    expect(chosen.textContent).toContain('Q4 review');
+    expect(chosen.querySelector('.crewlet-combobox__check svg')).not.toBeNull();
+    expect(active()).toContain('Q4 review');
+    expect(screen.getAllByRole('option', { selected: true })).toHaveLength(1);
+  });
+
+  test('a press takes a row and keeps focus in the field', () => {
+    const onCommit = vi.fn();
+    render(<Picker onCommit={onCommit} />);
+    field().focus();
+    const down = fireEvent.mouseDown(screen.getByRole('option', { name: 'Board' }));
+    expect(down).toBe(false);
+    expect(onCommit).toHaveBeenCalledWith('board');
+    expect(document.activeElement).toBe(field());
+  });
+
+  test('keeps its height when the filter leaves nothing, and says so in its own row', () => {
+    const { container } = render(<Picker />);
+    const box = container.querySelector<HTMLElement>('.crewlet-combobox__list')!;
+    expect(box.style.getPropertyValue('--crewlet-combobox-rows')).toBe('5');
+    fireEvent.change(field(), { target: { value: 'zzz' } });
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(field().getAttribute('aria-expanded')).toBe('false');
+    expect(field().hasAttribute('aria-activedescendant')).toBe(false);
+    expect(screen.getByRole('status').textContent).toBe('No folder matches');
+    // The same box, still standing at its rows' height.
+    expect(container.querySelector('.crewlet-combobox__list')).toBe(box);
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Combobox.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = /\.crewlet-combobox__list\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/height:\s*calc\(\s*var\(--crewlet-combobox-rows\)/);
+    expect(rule).not.toMatch(/max-height/);
+  });
+
+  test('Escape is never its own: it reaches the dialog the picker sits in', () => {
+    const onClose = vi.fn();
+    render(
+      <Modal open onClose={onClose} title="Move 3 artifacts">
+        <Picker />
+      </Modal>,
+    );
+    field().focus();
+    fireEvent.keyDown(field(), { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  test('carries no violation inside its dialog, listing and empty', async () => {
+    render(
+      <Modal open onClose={() => {}} title="Move 3 artifacts">
+        <Picker chosen="q4" />
+      </Modal>,
+    );
+    const run = () =>
+      axe.run(document.body, {
+        runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+        rules: { 'color-contrast': { enabled: false } },
+        resultTypes: ['violations'],
+      });
+    expect((await run()).violations.map((violation) => violation.id)).toEqual([]);
+    fireEvent.change(field(), { target: { value: 'zzz' } });
+    expect((await run()).violations.map((violation) => violation.id)).toEqual([]);
+  });
 });

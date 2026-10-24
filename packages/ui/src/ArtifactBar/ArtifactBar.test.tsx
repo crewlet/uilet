@@ -4,6 +4,9 @@
  * version chip that says when history is on show.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -227,6 +230,28 @@ test('an empty title is refused before it is sent', async () => {
 test('a reader who may not rename reads the title as text', () => {
   render(<ArtifactBar title="Notes" kind="doc" kindLabel="Doc" />);
   expect(within(screen.getByRole('heading', { level: 1 })).queryByRole('button')).toBeNull();
+});
+
+test('a long read-only title is cut with an ellipsis in a block of its own, and offered whole on hover', () => {
+  const long = 'New slide deck for the quarterly board review of the payments platform';
+  render(<ArtifactBar title={long} kind="slides" kindLabel="Slides" />);
+  const heading = screen.getByRole('heading', { level: 1, name: long });
+  expect(heading.getAttribute('title')).toBe(long);
+  const words = heading.querySelector('.crewlet-artifact-bar__text');
+  expect(words?.textContent).toBe(long);
+  // The heading is a flex row, where an ellipsis cuts nothing; the block takes it.
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ArtifactBar.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = /\.crewlet-artifact-bar__text\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  for (const declaration of [/min-width:\s*0/, /overflow:\s*hidden/, /text-overflow:\s*ellipsis/, /white-space:\s*nowrap/]) {
+    expect(rule).toMatch(declaration);
+  }
+});
+
+test('a renamable title stays its button, which cuts its own words', () => {
+  render(<ArtifactBar title="Notes" kind="doc" kindLabel="Doc" onRename={() => undefined} />);
+  const heading = screen.getByRole('heading', { level: 1 });
+  expect(within(heading).getByRole('button')).toBeDefined();
+  expect(heading.querySelector('.crewlet-artifact-bar__text')).toBeNull();
 });
 
 test('renaming can be started from elsewhere, such as a Rename row', () => {

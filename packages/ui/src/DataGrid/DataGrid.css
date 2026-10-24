@@ -195,6 +195,21 @@ button.crewlet-data-grid__row-link {
   background: var(--color-brand-accent-soft);
 }
 
+/*
+ * PICKED FOR A BULK ACTION (`selection`), as every chosen option is drawn:
+ * the selected fill, never the accent. One fill, so the hover overlay does not
+ * stack on it, and its box says it as well.
+ */
+.crewlet-data-grid__row--picked,
+.crewlet-data-grid__row--picked:hover {
+  background: var(--color-surface-selected);
+}
+
+/* The selection box, centred in its track and standing above the row's link. */
+.crewlet-data-grid__select {
+  display: inline-flex;
+}
+
 .crewlet-data-grid__row--cursor {
   box-shadow: inset 2px 0 0 var(--color-brand-accent);
 }

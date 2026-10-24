@@ -125,6 +125,19 @@ export interface ModalProps extends FrameAttributes {
   variant?: ModalVariant | undefined;
   shape?: ModalShape | undefined;
   placement?: ModalPlacement | undefined;
+  /**
+   * On a phone (strictly under the phone breakpoint), the dialog takes the
+   * whole window as a full-height sheet: no inset and no corners, the head
+   * and the foot standing still while the body scrolls between them, and the
+   * foot clear of the home indicator. For a dialog whose body is a long list
+   * a thumb works through, such as a folder picker, where a dialog inset from
+   * every edge leaves a few rows of it on the screen at a time.
+   *
+   * OPT-IN, so every other dialog keeps its shape on a phone. It reshapes the
+   * framed dialog only: a prompt is one sentence and stays a prompt, and a
+   * side sheet is already the full width there.
+   */
+  phoneSheet?: boolean | undefined;
   role?: ModalRole | undefined;
   /**
    * False while a request is in flight: Escape, the veil and the close
@@ -252,6 +265,7 @@ function ModalFrame({
   variant = 'dialog',
   shape = 'framed',
   placement,
+  phoneSheet = false,
   role = 'dialog',
   dismissable = true,
   closeOnBackdrop = true,
@@ -282,6 +296,7 @@ function ModalFrame({
   const banded = !prompt;
   const sheet = variant === 'sheet';
   const place = placement ?? (prompt ? 'center' : 'top');
+  const phone = phoneSheet && variant === 'dialog' && !prompt;
   const frame = useRef<HTMLElement | null>(null);
   const body = useRef<HTMLDivElement | null>(null);
   const foot = useRef<HTMLDivElement | null>(null);
@@ -435,6 +450,7 @@ function ModalFrame({
         'crewlet-modal-overlay',
         `crewlet-modal-overlay--${variant}`,
         `crewlet-modal-overlay--${place}`,
+        phone && 'crewlet-modal-overlay--phone-sheet',
         backdrop === 'clear' && 'crewlet-modal-overlay--clear',
         // Fixed against the window, absolute inside a LayerHost: a fullscreen
         // container paints only its own subtree, so a surface drawn there

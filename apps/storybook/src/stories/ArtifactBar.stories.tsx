@@ -232,6 +232,21 @@ export const EditingADocNarrow: Story = {
 };
 
 /**
+ * A LONG READ-ONLY TITLE ON A PHONE (390): cut with an ellipsis, never
+ * clipped mid-word, with the whole title on hover.
+ */
+export const ReadOnlyLongTitleOnAPhone: Story = {
+  args: { ...ReadOnly.args, title: 'New slide deck for the quarterly board review of the payments platform', kind: 'slides', kindLabel: 'Slides' },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 390 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+/**
  * A create page's bar on a phone (390): the status is cut to an ellipsis
  * rather than drawn over the title, and the primary action takes its short
  * word ("Create" for "Create and ask SRE Lead"), keeping the full one as its

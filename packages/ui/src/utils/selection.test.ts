@@ -47,6 +47,12 @@ const CHOSEN: ReadonlyArray<
   ['LayersList/LayersList.css', ".crewlet-layers-list__item[aria-current='true']", null, 'background'],
   // Laid over the card's own surface, so the fill is an image.
   ['Card/Card.css', '.crewlet-card.is-selected', 'border', 'image'],
+  // A gallery card picked for a bulk action, over its own ground in the same way.
+  ['ArtifactCard/ArtifactCard.css', '.crewlet-artifact-card--card.is-selected', 'border', 'image'],
+  // The option an inline combobox has chosen: the fill, with a tick beside it.
+  ['Combobox/Combobox.css', ".crewlet-combobox__options .crewlet-listbox__option[aria-selected='true']", null, 'background'],
+  // A list row picked for a bulk action: the fill alone, and no hover stacked on it.
+  ['DataGrid/DataGrid.css', '.crewlet-data-grid__row--picked, .crewlet-data-grid__row--picked:hover', null, 'background'],
 ];
 
 test('every chosen option is drawn in the selected edge and fill, never the accent', () => {

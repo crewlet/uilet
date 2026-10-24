@@ -1,0 +1,159 @@
+/*
+ * One of a brand's logos on the ground it is made for. The ground and the ink
+ * of its guide are the only values here that are not tokens: they arrive
+ * through `--crewlet-logo-slot-ground` (the brand's own `#rrggbb`, or a
+ * palette's sheet read from the tokens package) and `--crewlet-logo-slot-ink`
+ * (whichever palette's text reads better on that ground).
+ */
+.crewlet-logo-slot {
+  /* Every stage is one height, so three slots side by side line up whatever
+     their logos' shapes. */
+  --crewlet-logo-slot-height: calc(var(--size-row-lg) * 3);
+  --crewlet-logo-slot-padding: var(--spacing-5);
+  --crewlet-logo-slot-clear: var(--spacing-3);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-logo-slot__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-logo-slot__words {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-logo-slot__label {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-logo-slot__description {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-logo-slot__download {
+  display: inline-flex;
+  flex: none;
+}
+
+/*
+ * THE STAGE: the logo's own ground, at one height, inside the page's hairline
+ * so a ground that matches the page is still a stage. An empty one draws its
+ * edge dashed, a place waiting to be filled.
+ */
+.crewlet-logo-slot__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--crewlet-logo-slot-height);
+  box-sizing: border-box;
+  padding: var(--crewlet-logo-slot-padding);
+  overflow: hidden;
+  border: 1px solid var(--color-border-hover);
+  border-radius: var(--radius-lg);
+  background: var(--crewlet-logo-slot-ground);
+  color: var(--crewlet-logo-slot-ink);
+}
+
+.crewlet-logo-slot__stage.is-empty {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+}
+
+/*
+ * THE SPACE THE LOGO KEEPS: padding round it at the clear space, and with the
+ * guide on, a dashed line at that edge in the ground's ink, half strength so
+ * it reads as a guide and never as part of the logo.
+ */
+.crewlet-logo-slot__space {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--crewlet-logo-slot-clear);
+}
+
+.crewlet-logo-slot__space.has-guide::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px dashed var(--crewlet-logo-slot-ink);
+  border-radius: var(--radius-xs);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.crewlet-logo-slot__image {
+  display: block;
+  max-width: 100%;
+  max-height: calc(var(--crewlet-logo-slot-height) - 2 * var(--crewlet-logo-slot-padding) - 2 * var(--crewlet-logo-slot-clear));
+  object-fit: contain;
+}
+
+/* WHERE A LOGO WOULD GO, at the shape it would take: a wordmark's band or a
+   mark's square, with the image glyph in the ground's ink. */
+.crewlet-logo-slot__placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--size-row-lg) * 3);
+  height: var(--size-row-lg);
+  opacity: 0.7;
+}
+
+.crewlet-logo-slot__stage--square .crewlet-logo-slot__placeholder {
+  width: var(--size-row-lg);
+}
+
+.crewlet-logo-slot__stage.is-uploading .crewlet-logo-slot__space {
+  opacity: 0.5;
+}
+
+.crewlet-logo-slot__empty {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+/* A REFUSAL, in the danger ink with its glyph, so it never rests on the hue. */
+.crewlet-logo-slot__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  margin: 0;
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+}
+
+.crewlet-logo-slot__error > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.crewlet-logo-slot__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-logo-slot__hint {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}

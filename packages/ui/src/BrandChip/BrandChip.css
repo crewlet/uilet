@@ -1,0 +1,81 @@
+/*
+ * The company's brand as a small link: the mark, the name, a chevron. A quiet
+ * chip at a small control's height, inside the default hairline, that steps
+ * its hairline up under the pointer and moves nothing.
+ */
+.crewlet-brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--size-control-sm);
+  box-sizing: border-box;
+  padding: 2px var(--spacing-2) 2px 2px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-out),
+    color var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-brand-chip:hover {
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.crewlet-brand-chip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* THE MARK ON ITS OWN PLATE, so a mark drawn for a light ground still reads
+   on a dark theme: the brand's square logo at the chip's inner height. */
+.crewlet-brand-chip__mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--size-control-sm) - 6px);
+  height: calc(var(--size-control-sm) - 6px);
+  overflow: hidden;
+  border-radius: var(--radius-circle);
+  background: var(--color-surface-inset);
+  box-shadow: inset 0 0 0 1px var(--color-border-default);
+}
+
+.crewlet-brand-chip__mark--glyph {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-brand-chip__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.crewlet-brand-chip__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-brand-chip__chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-brand-chip {
+    transition: none;
+  }
+}

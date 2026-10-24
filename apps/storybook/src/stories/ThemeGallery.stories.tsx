@@ -85,3 +85,43 @@ export const CallerDrawnPreview: Story = {
     );
   },
 };
+
+/**
+ * THE COMPANY'S OWN THEME AMONG THE PRODUCT'S: the slides create page's
+ * picker, the brand's theme first with its tag drawn as the accent's pill
+ * (`tagTone: 'brand'`). A tag is drawn only where a theme sets its tone
+ * (`quiet` draws a caption, as on Nightshade here); every other tag is said
+ * with the name and nothing is drawn, as the product's own theme picker lists
+ * its themes. The card's name carries the tag once.
+ */
+export const WithCompanyBrand: Story = {
+  render: function Render() {
+    const decks = [
+      { id: 'brand', name: 'FairSplit', tag: 'Your company brand', tagTone: 'brand' as const, group: 'deck', ground: '#0d1a14', ink: '#eaf6f0', accent: '#3ccb9c' },
+      { id: 'nightshade', name: 'Nightshade', tag: 'Periwinkle on blue-black', tagTone: 'quiet' as const, group: 'deck', ground: '#0d0f16', ink: '#e8ebf4', accent: '#9584ff' },
+      { id: 'paper', name: 'Paper', tag: 'White, quiet and exact', group: 'deck', ground: '#f2f2ee', ink: '#111111', accent: '#2450e6' },
+    ];
+    const [value, setValue] = useState('brand');
+    return (
+      <div style={{ maxWidth: 420 }}>
+        <ThemeGallery
+          label="Deck theme"
+          value={value}
+          onValueChange={setValue}
+          themes={decks}
+          groups={[]}
+          columns={2}
+          renderPreview={(theme) => {
+            const deck = decks.find((d) => d.id === theme.id)!;
+            return (
+              <span style={{ display: 'grid', gap: 6, aspectRatio: '16 / 9', padding: 12, background: deck.ground, color: deck.ink, fontSize: 11, alignContent: 'center' }}>
+                <span style={{ width: 16, height: 2, background: deck.accent }} />
+                Quarterly plan
+              </span>
+            );
+          }}
+        />
+      </div>
+    );
+  },
+};

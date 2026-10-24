@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRef } from 'react';
+import { createRef, useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
@@ -297,4 +297,85 @@ test('a chooser list is one group named by its heading, and a box says which ite
   expect(group.querySelectorAll('input[type="checkbox"]')).toHaveLength(2);
   fireEvent.click(screen.getByRole('checkbox', { name: 'Owner' }));
   expect(onToggle).toHaveBeenLastCalledWith('owner');
+});
+
+describe('the selection column', () => {
+  function Picking({ initial = [], isSelectable }: { initial?: string[]; isSelectable?: (row: Row) => boolean }) {
+    const [selected, setSelected] = useState<ReadonlySet<string>>(new Set(initial));
+    return (
+      <>
+        <output data-testid="picked">{[...selected].sort().join(',')}</output>
+        <DataGrid
+          rows={ROWS}
+          columns={COLUMNS}
+          rowKey={(r) => r.id}
+          rowHref={(r) => `#/x/${r.id}`}
+          selection={{ selected, onChange: setSelected, rowLabel: (r) => `Select ${r.name}`, isSelectable }}
+        />
+      </>
+    );
+  }
+  const picked = () => screen.getByTestId('picked').textContent;
+  const box = (name: string) => screen.getByRole('checkbox', { name }) as HTMLInputElement;
+
+  test('draws a named box before the first column on every row, above the row link', () => {
+    const { container } = render(<Picking />);
+    for (const row of container.querySelectorAll('.crewlet-data-grid__row')) {
+      const first = row.querySelector('.crewlet-data-grid__cell');
+      expect(first?.querySelector('[data-above-row] input[type="checkbox"]')).not.toBeNull();
+    }
+    expect(box('Select Bravo')).toBeDefined();
+    expect(box('Select every row')).toBeDefined();
+  });
+
+  test('ticks one row, tints it as picked, and leaves the row link alone', () => {
+    const { container } = render(<Picking />);
+    fireEvent.click(box('Select Alpha'));
+    expect(picked()).toBe('b');
+    const row = box('Select Alpha').closest('.crewlet-data-grid__row');
+    expect(row?.classList.contains('crewlet-data-grid__row--picked')).toBe(true);
+    expect(container.querySelectorAll('.crewlet-data-grid__row--picked')).toHaveLength(1);
+  });
+
+  test('the head box is mixed while some rows are picked, and picks or clears every row drawn', () => {
+    render(<Picking initial={['a', 'elsewhere']} />);
+    const all = box('Select every row');
+    expect(all.indeterminate).toBe(true);
+    expect(all.checked).toBe(false);
+    fireEvent.click(all);
+    expect(picked()).toBe('a,b,c,elsewhere');
+    expect(box('Select every row').checked).toBe(true);
+    expect(box('Select every row').indeterminate).toBe(false);
+    fireEvent.click(box('Select every row'));
+    // A pick the host keeps for a row it is not drawing is left alone.
+    expect(picked()).toBe('elsewhere');
+  });
+
+  test('Shift with a box sets every row between it and the last box pressed, in drawn order', () => {
+    render(<Picking />);
+    fireEvent.click(box('Select Bravo'));
+    fireEvent.click(box('Select Charlie'), { shiftKey: true });
+    expect(picked()).toBe('a,b,c');
+    // A range is set to the pressed box's state, never toggled row by row.
+    fireEvent.click(box('Select Alpha'));
+    expect(picked()).toBe('a,c');
+    fireEvent.click(box('Select Charlie'), { shiftKey: true });
+    expect(picked()).toBe('a');
+  });
+
+  test('a row that cannot be picked has a disabled box, and a range or the head box skips it', () => {
+    render(<Picking isSelectable={(r) => r.id !== 'b'} />);
+    expect(box('Select Alpha').disabled).toBe(true);
+    fireEvent.click(box('Select Bravo'));
+    fireEvent.click(box('Select Charlie'), { shiftKey: true });
+    expect(picked()).toBe('a,c');
+    expect(box('Select every row').checked).toBe(true);
+  });
+
+  test('the selection column is the grid\'s own: never in the column chooser, never given way', () => {
+    expect(columnChoicesOf(COLUMNS).map((c) => c.key)).not.toContain('crewlet-select');
+    const { container } = render(<Picking />);
+    const heads = container.querySelectorAll('.crewlet-data-grid__head > [role="columnheader"]');
+    expect(heads).toHaveLength(COLUMNS.length + 1);
+  });
 });

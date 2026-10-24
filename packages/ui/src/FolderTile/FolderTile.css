@@ -1,0 +1,231 @@
+/*
+ * A folder in a gallery: a short tile on Card (no preview), the folder glyph
+ * on a neutral tint over the name and one quiet line, and a More menu in the
+ * top corner outside the link. `row` is the full width, 44px row a phone
+ * takes, and a tile becomes one under the phone breakpoint.
+ *
+ * ON TOP OF CARD, so every rule that changes Card's own layout carries Card's
+ * class too: the two sheets meet at equal weight and the bundle orders them by
+ * file name, which puts Card's after this one.
+ */
+
+/*
+ * THE ARTIFACT CARD'S CORNER, so a folder tile and the cards below it read as
+ * one gallery, and Card's own hover step (the hairline darkens, nothing
+ * lifts). The chosen state is Card's (`selected`): the selected edge over the
+ * selected fill.
+ */
+.crewlet-card.crewlet-folder-tile {
+  /*
+   * THE TWO SHAPES ARE ONE LAYOUT AT TWO SIZES, so the row (and a tile under
+   * the phone breakpoint) restates these and nothing else.
+   */
+  --crewlet-folder-tile-radius: var(--radius-xl);
+  --crewlet-folder-tile-gap: var(--spacing-3);
+  --crewlet-folder-tile-pad-block: var(--spacing-4);
+  --crewlet-folder-tile-pad-inline: var(--spacing-4);
+  --crewlet-folder-tile-floor: auto;
+  --crewlet-folder-tile-glyph: 40px;
+  --crewlet-folder-tile-glyph-radius: var(--radius-md);
+  --crewlet-folder-tile-name: var(--font-size-md);
+  --crewlet-folder-tile-facts: var(--font-size-sm);
+  --crewlet-folder-tile-actions-inset: var(--spacing-3);
+  /*
+   * A TILE STACKS: the glyph on top with the More menu level with it in the
+   * other corner, then the name and the facts the full width of the tile,
+   * where a gallery four across has room for "Everyone · 12 artifacts · 2
+   * folders". A row is one line of glyph and words with the menu centred on
+   * it, and only the row gives the menu room.
+   */
+  --crewlet-folder-tile-direction: column;
+  --crewlet-folder-tile-align: flex-start;
+  --crewlet-folder-tile-actions-top: calc(
+    var(--crewlet-folder-tile-pad-block) + (var(--crewlet-folder-tile-glyph) - var(--size-control-sm)) / 2
+  );
+  --crewlet-folder-tile-actions-shift: 0;
+  --crewlet-folder-tile-reserve-link: 0px;
+
+  flex-direction: row;
+  align-items: stretch;
+  min-width: 0;
+  border-radius: var(--crewlet-folder-tile-radius);
+}
+
+/* ---- the row: a phone's, full width at 44px ---- */
+
+.crewlet-card.crewlet-folder-tile--row {
+  --crewlet-folder-tile-radius: var(--radius-lg);
+  --crewlet-folder-tile-gap: var(--spacing-2);
+  --crewlet-folder-tile-pad-block: var(--spacing-1);
+  --crewlet-folder-tile-pad-inline: var(--spacing-3);
+  --crewlet-folder-tile-floor: var(--size-control-lg);
+  --crewlet-folder-tile-glyph: 28px;
+  --crewlet-folder-tile-glyph-radius: var(--radius-sm);
+  --crewlet-folder-tile-name: var(--font-size-sm);
+  --crewlet-folder-tile-facts: var(--font-size-xs);
+  --crewlet-folder-tile-actions-inset: var(--spacing-2);
+  --crewlet-folder-tile-direction: row;
+  --crewlet-folder-tile-align: center;
+  --crewlet-folder-tile-actions-top: 50%;
+  --crewlet-folder-tile-actions-shift: -50%;
+  --crewlet-folder-tile-reserve-link: calc(var(--size-control-sm) + var(--spacing-1));
+}
+
+/* UNDER THE PHONE BREAKPOINT A TILE IS THE ROW, strictly under, as the
+   package switches there everywhere else. */
+@media (width < 640px) {
+  .crewlet-card.crewlet-folder-tile--tile {
+    --crewlet-folder-tile-radius: var(--radius-lg);
+    --crewlet-folder-tile-gap: var(--spacing-2);
+    --crewlet-folder-tile-pad-block: var(--spacing-1);
+    --crewlet-folder-tile-pad-inline: var(--spacing-3);
+    --crewlet-folder-tile-floor: var(--size-control-lg);
+    --crewlet-folder-tile-glyph: 28px;
+    --crewlet-folder-tile-glyph-radius: var(--radius-sm);
+    --crewlet-folder-tile-name: var(--font-size-sm);
+    --crewlet-folder-tile-facts: var(--font-size-xs);
+    --crewlet-folder-tile-actions-inset: var(--spacing-2);
+    --crewlet-folder-tile-direction: row;
+    --crewlet-folder-tile-align: center;
+    --crewlet-folder-tile-actions-top: 50%;
+    --crewlet-folder-tile-actions-shift: -50%;
+    --crewlet-folder-tile-reserve-link: calc(var(--size-control-sm) + var(--spacing-1));
+  }
+}
+
+/*
+ * SOMETHING HELD OVER IT WOULD LAND IN IT: the accent edge over the accent's
+ * soft fill, the same pair a file drop target takes while files are over it,
+ * so "let go here" reads one way across the package.
+ */
+.crewlet-card.crewlet-folder-tile.is-drop-target {
+  border-color: var(--color-brand-accent);
+  background-color: var(--color-brand-accent-soft);
+}
+
+.crewlet-card.crewlet-folder-tile:has(.crewlet-folder-tile__link:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* THE LINK IS THE TILE: it fills it, and the ring is drawn on the tile. */
+.crewlet-folder-tile__link,
+.crewlet-folder-tile__link:hover {
+  text-decoration: none;
+}
+
+.crewlet-folder-tile__link {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: var(--crewlet-folder-tile-direction);
+  align-items: var(--crewlet-folder-tile-align);
+  gap: var(--crewlet-folder-tile-gap);
+  min-width: 0;
+  min-height: var(--crewlet-folder-tile-floor);
+  padding: var(--crewlet-folder-tile-pad-block) var(--crewlet-folder-tile-pad-inline);
+  border-radius: inherit;
+  color: inherit;
+  outline: none;
+}
+
+/* Room for the More menu on a row, where it sits beside the words. */
+.crewlet-folder-tile--with-actions .crewlet-folder-tile__link {
+  padding-inline-end: calc(var(--crewlet-folder-tile-pad-inline) + var(--crewlet-folder-tile-reserve-link));
+}
+
+/* A NEUTRAL TINT, never a kind's: a folder is not a kind. */
+.crewlet-folder-tile__glyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--crewlet-folder-tile-glyph);
+  height: var(--crewlet-folder-tile-glyph);
+  box-sizing: border-box;
+  border-radius: var(--crewlet-folder-tile-glyph-radius);
+  background: var(--color-surface-inset);
+  box-shadow: inset 0 0 0 1px var(--color-border-default);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-folder-tile__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.crewlet-folder-tile__name {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--crewlet-folder-tile-name);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * THE FACTS WRAP, NEVER CUT. "Everyone" and "Nothing you can open yet" are
+ * both things a reader has to read, and four tiles across a laptop's page do
+ * not have room for them on one line: the count moves under who can see the
+ * folder rather than losing its end to an ellipsis. The two are told apart by
+ * the visibility glyph and the gap between them, not by a separator, so a
+ * line that breaks never opens on a stray dot.
+ */
+.crewlet-folder-tile__facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--spacing-3);
+  min-width: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--crewlet-folder-tile-facts);
+  line-height: 1.35;
+}
+
+.crewlet-folder-tile__visibility {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.crewlet-folder-tile__contents {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * THE TILE'S OWN CONTROLS, at its trailing edge and outside the link: hidden
+ * until the tile is hovered or holds focus, so a gallery rests as names, and
+ * always there on a screen with no hover or while their menu is open.
+ */
+.crewlet-folder-tile__actions {
+  position: absolute;
+  top: var(--crewlet-folder-tile-actions-top);
+  right: var(--crewlet-folder-tile-actions-inset);
+  display: inline-flex;
+  gap: var(--spacing-1);
+  transform: translateY(var(--crewlet-folder-tile-actions-shift));
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-folder-tile:hover .crewlet-folder-tile__actions,
+.crewlet-folder-tile:focus-within .crewlet-folder-tile__actions,
+.crewlet-folder-tile__actions:has([aria-expanded='true']) {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .crewlet-folder-tile__actions {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-folder-tile__actions {
+    transition: none;
+  }
+}

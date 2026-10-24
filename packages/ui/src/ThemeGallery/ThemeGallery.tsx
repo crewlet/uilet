@@ -4,14 +4,26 @@ import { CheckGlyph } from '@crewlethq/icons/glyphs';
 import { useHighlightRest } from '../Listbox/index.js';
 import { tabStop, useRoving } from '../Tabs/roving.js';
 import { ThemeSwatch, type ThemeSwatchPair } from '../ThemeSwatch/index.js';
+import { Tag } from '../Tag/index.js';
 import { cx } from '../utils/cx.js';
 
 /** A theme as the gallery offers it: the fields of a `themeRegistry` entry it reads. */
 export interface ThemeGalleryTheme<T extends string = string> {
   id: T;
   name: string;
-  /** A few words on what sets it apart, said with its name. */
-  tag: string;
+  /**
+   * A few words on what sets it apart, said with its name. Drawn only when
+   * the theme also sets `tagTone`; left out, the card is its name alone.
+   */
+  tag?: string | undefined;
+  /**
+   * Draws the tag on the card as well as saying it: `quiet` as a caption
+   * under the name, `brand` as the accent's pill, for the company's own theme
+   * among the product's ("Your company brand"). Left out, the tag is said
+   * with the name and nothing is drawn, which is how the product's own theme
+   * picker lists its themes.
+   */
+  tagTone?: 'quiet' | 'brand' | undefined;
   /** The id of the group it is listed under. */
   group: string;
   /** Its two palettes, drawn as the card's thumbnail unless `renderPreview` draws one. */
@@ -150,7 +162,9 @@ export function ThemeGallery<T extends string = ThemeId>({
                       type="button"
                       role="radio"
                       aria-checked={chosen}
-                      aria-label={`${theme.name}, ${theme.tag}`}
+                      // ONE NAME, said once: the label carries the tag, so the
+                      // words drawn under the name are not read a second time.
+                      aria-label={theme.tag ? `${theme.name}, ${theme.tag}` : theme.name}
                       aria-describedby={section.group ? headingId : undefined}
                       tabIndex={at === stop ? 0 : -1}
                       disabled={disabled}
@@ -173,6 +187,19 @@ export function ThemeGallery<T extends string = ThemeId>({
                             tinted edge and fill, which are calm on purpose. */}
                         {chosen ? <CheckGlyph size="xs" className="crewlet-theme-gallery__check" aria-hidden="true" /> : null}
                       </span>
+                      {theme.tag && theme.tagTone ? (
+                        theme.tagTone === 'brand' ? (
+                          <span className="crewlet-theme-gallery__tag crewlet-theme-gallery__tag--brand">
+                            <Tag size="xs" variant="brand">
+                              {theme.tag}
+                            </Tag>
+                          </span>
+                        ) : (
+                          <span className="crewlet-theme-gallery__tag" title={theme.tag}>
+                            {theme.tag}
+                          </span>
+                        )
+                      ) : null}
                     </button>
                   );
                 })}

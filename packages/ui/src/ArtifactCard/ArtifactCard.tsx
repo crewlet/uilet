@@ -5,6 +5,7 @@ import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index
 import { ArtifactKindGround } from '../ArtifactKindIllustration/index.js';
 import { AvatarStack, type AvatarStackMember } from '../Avatar/index.js';
 import { Card } from '../Card/index.js';
+import { Checkbox } from '../Checkbox/index.js';
 import { PrincipalAvatar, type Principal } from '../Principal/index.js';
 import { RelativeTime, type TimeValue } from '../RelativeTime/index.js';
 import { Skeleton } from '../Skeleton/index.js';
@@ -37,10 +38,12 @@ export interface ArtifactCardLabels {
   access: Record<ArtifactAccess, string>;
   /** Who made it, after the time: "by Maya". */
   by: (name: string) => string;
+  /** The selection box's name: "Select Vendor scorecard". */
+  select: (title: string) => string;
 }
 
 const LABELS: ArtifactCardLabels = {
-  kinds: { html: 'HTML', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet' },
+  kinds: { html: 'HTML', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet', brand: 'Brand' },
   pinned: 'Pinned',
   version: (version) => `v${version}`,
   changes: (count) => (count === 1 ? '1 change since you looked' : `${count} changes since you looked`),
@@ -48,7 +51,18 @@ const LABELS: ArtifactCardLabels = {
   updated: 'Edited',
   by: (name) => `by ${name}`,
   access: { private: 'Private', shared: 'Shared', company: 'Shared with the company' },
+  select: (title) => `Select ${title}`,
 };
+
+/** How a pick was made, for a host that keeps the selection across a gallery. */
+export interface ArtifactCardSelectionChange {
+  /**
+   * The reader held Shift: they are asking for every card between the one
+   * they picked last and this one. The card cannot see its neighbours, so the
+   * host that holds the selection draws the range.
+   */
+  range: boolean;
+}
 
 export interface ArtifactCardProps {
   title: string;
@@ -86,6 +100,24 @@ export interface ArtifactCardProps {
    * The `card` size only.
    */
   actions?: ReactNode;
+  /**
+   * The card can be picked for a bulk action: a box on the preview's foot,
+   * opposite the kind's badge, shown on hover, while focus is inside the card,
+   * on a screen with no hover, and always once the card is picked or the
+   * gallery is choosing (`selecting`). The `card` size only.
+   */
+  selectable?: boolean | undefined;
+  /** It is picked: its box is ticked, and the card takes the selected edge and fill. */
+  selected?: boolean | undefined;
+  /**
+   * The gallery is choosing (its Select toggle is on, or something is picked):
+   * every box shows, and the card's body PICKS rather than opens, a label for
+   * its box rather than a link, so a press anywhere on the card ticks it and a
+   * reader is never sent away mid-selection. The More menu stays a menu.
+   */
+  selecting?: boolean | undefined;
+  /** The box was ticked or cleared, with whether the reader asked for a range. */
+  onSelectedChange?: ((selected: boolean, change: ArtifactCardSelectionChange) => void) | undefined;
   /** It is in the trash: the preview is drawn faded. */
   trashed?: boolean | undefined;
   /** `compact` is a row for a narrow rail or a phone, with no preview. */
@@ -130,6 +162,10 @@ export function ArtifactCard({
   project,
   access,
   actions,
+  selectable = false,
+  selected = false,
+  selecting = false,
+  onSelectedChange,
   trashed = false,
   size = 'card',
   className,
@@ -144,6 +180,7 @@ export function ArtifactCard({
   };
   const titleId = useId();
   const factsId = useId();
+  const boxId = useId();
   const present = presence && presence.length > 0 ? presence : null;
   // THE OWNER IS ALREADY ON THE LINE, so a change they made reads "Edited 4m
   // ago" beside their name rather than the name twice.
@@ -215,52 +252,100 @@ export function ArtifactCard({
     );
   }
 
-  return (
-    <div className={cx('crewlet-artifact-card', 'crewlet-artifact-card--card', trashed && 'crewlet-artifact-card--trashed', className)}>
-      <a href={href} className="crewlet-artifact-card__link" aria-labelledby={titleId} aria-describedby={factsId}>
-        <span className="crewlet-artifact-card__preview" aria-hidden>
-          {preview ?? <ArtifactPreviewGlyph kind={kind} />}
+  const picking = selectable && selecting;
+  const bodyContent = (
+    <>
+      <span className="crewlet-artifact-card__preview" aria-hidden>
+        {preview ?? <ArtifactPreviewGlyph kind={kind} />}
+      </span>
+      <span className="crewlet-artifact-card__body">
+        <span className={cx('crewlet-artifact-card__badge', `crewlet-kind--${kind}`)} aria-hidden>
+          <ArtifactKindGlyph kind={kind} size="sm" />
         </span>
-        <span className="crewlet-artifact-card__body">
-          <span className={cx('crewlet-artifact-card__badge', `crewlet-kind--${kind}`)} aria-hidden>
-            <ArtifactKindGlyph kind={kind} size="sm" />
+        <span className="crewlet-artifact-card__title-row">
+          <span id={titleId} className="crewlet-artifact-card__title" title={title}>
+            {title}
           </span>
-          <span className="crewlet-artifact-card__title-row">
-            <span id={titleId} className="crewlet-artifact-card__title" title={title}>
-              {title}
+          {pinned ? (
+            <span className="crewlet-artifact-card__pin" title={text.pinned} aria-hidden>
+              <PinGlyph size="sm" />
             </span>
-            {pinned ? (
-              <span className="crewlet-artifact-card__pin" title={text.pinned} aria-hidden>
-                <PinGlyph size="sm" />
+          ) : null}
+        </span>
+        <span id={factsId} className="crewlet-artifact-card__facts">
+          {/* THE KIND AND THE PIN ARE SAID, not drawn: the badge and the pin
+              glyph are pictures of them. */}
+          <VisuallyHidden>
+            {text.kinds[kind]}
+            {pinned ? `, ${text.pinned}` : ''}
+          </VisuallyHidden>
+          <span className="crewlet-artifact-card__line crewlet-artifact-card__meta">
+            {access ? (
+              <span className="crewlet-artifact-card__access" title={text.access[access]}>
+                <ArtifactAccessGlyph access={access} />
+                <VisuallyHidden>{text.access[access]}</VisuallyHidden>
               </span>
             ) : null}
+            {owner ? (
+              <span className="crewlet-artifact-card__owner">
+                <PrincipalAvatar principal={owner} size="xs" />
+                <span className="crewlet-artifact-card__owner-name">{owner.name}</span>
+              </span>
+            ) : null}
+            {edited}
           </span>
-          <span id={factsId} className="crewlet-artifact-card__facts">
-            {/* THE KIND AND THE PIN ARE SAID, not drawn: the badge and the pin
-                glyph are pictures of them. */}
-            <VisuallyHidden>
-              {text.kinds[kind]}
-              {pinned ? `, ${text.pinned}` : ''}
-            </VisuallyHidden>
-            <span className="crewlet-artifact-card__line crewlet-artifact-card__meta">
-              {access ? (
-                <span className="crewlet-artifact-card__access" title={text.access[access]}>
-                  <ArtifactAccessGlyph access={access} />
-                  <VisuallyHidden>{text.access[access]}</VisuallyHidden>
-                </span>
-              ) : null}
-              {owner ? (
-                <span className="crewlet-artifact-card__owner">
-                  <PrincipalAvatar principal={owner} size="xs" />
-                  <span className="crewlet-artifact-card__owner-name">{owner.name}</span>
-                </span>
-              ) : null}
-              {edited}
-            </span>
-            {extra}
+          {extra}
+        </span>
+      </span>
+    </>
+  );
+
+  return (
+    <div
+      className={cx(
+        'crewlet-artifact-card',
+        'crewlet-artifact-card--card',
+        trashed && 'crewlet-artifact-card--trashed',
+        selectable && selected && 'is-selected',
+        picking && 'crewlet-artifact-card--selecting',
+        className,
+      )}
+    >
+      {picking ? (
+        // WHILE CHOOSING, THE BODY IS THE BOX'S LABEL: one press anywhere
+        // ticks it. It is not a stop of its own; the box is, named for the
+        // card, so a keyboard meets one control per card.
+        <label htmlFor={boxId} className="crewlet-artifact-card__link">
+          {bodyContent}
+        </label>
+      ) : (
+        <a href={href} className="crewlet-artifact-card__link" aria-labelledby={titleId} aria-describedby={factsId}>
+          {bodyContent}
+        </a>
+      )}
+      {selectable ? (
+        // THE BOX STANDS ON THE PREVIEW'S FOOT, not over its top: a cover's
+        // own title starts at its top corner, and a box there hid its first
+        // words. The anchor has the preview's shape, so the box sits on the
+        // seam opposite the kind's badge whatever the card's width.
+        <span className="crewlet-artifact-card__select-anchor">
+          <span className="crewlet-artifact-card__select">
+            <Checkbox
+              id={boxId}
+              hideLabel
+              label={text.select(title)}
+              checked={selected}
+              aria-describedby={factsId}
+              // THE BOX'S OWN CLICK CARRIES THE MODIFIERS, a press on the
+              // card's body included: a label hands its press to its box as a
+              // click with the same keys held.
+              onChange={(event) =>
+                onSelectedChange?.(event.target.checked, { range: (event.nativeEvent as Partial<MouseEvent>).shiftKey === true })
+              }
+            />
           </span>
         </span>
-      </a>
+      ) : null}
       {actions ? <span className="crewlet-artifact-card__actions">{actions}</span> : null}
     </div>
   );
