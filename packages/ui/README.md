@@ -242,6 +242,10 @@ The pieces of a company's brand and of the folders artifacts are filed in.
 
 **`BrandChip` is new**: the company's brand as a small link, its mark, its name and a chevron, with the brand glyph standing in before a brand exists ("Set up your brand").
 
+**`BrandSample` is new**: a company's brand, drawn, for the preview beside Company › Brand, a brand kit's own view and its gallery cover. `kind="doc"` is a doc's opening (the logo on its ground, a heading in the heading face, an accent rule, a sentence with a drawn link and a quiet byline); `kind="slide"` is a title slide (the mark, an accent bar in the primary and the secondary, a two-line heading and a footer with the company's name). It is drawn in its own `mode`, not the page's, so a light and a dark sample sit side by side, and it paints only its own box through `--crewlet-brand-sample-*` properties on its root. Each role it is not given, or given as anything but `#rrggbb`, takes the product's value for that mode; text on a dark ground is the product's, as the artifact kit draws it. `headingFamily` and `bodyFamily` are drawn only when they read as family names, before the package's display face and sans. It keeps a 16:9 frame and sets every length against its own width, so the same drawing reads as a cover and as an aside; `--crewlet-brand-sample-radius` sets its corner. It is an image to assistive technology, named by what it shows.
+
+**`TypeSpecimen` refuses a `fontFamily` that is not a list of family names** and draws the face by its name instead, through the same family grammar `BrandSample` uses.
+
 Every colour a person chose reaches a stylesheet through one custom property per part, and only after it has passed `#rrggbb`.
 
 ## Changes in 0.46.0
