@@ -1,0 +1,61 @@
+/*
+ * What is picked and what can be done to it: the count, the bulk actions and
+ * Clear, on the raised rung inside the strong hairline so it reads as a bar
+ * laid over the list rather than a row of it.
+ *
+ * ON TOP OF TOOLBAR, so the rules that change Toolbar's own layout carry
+ * Toolbar's class too: the bundle orders the two sheets by file name.
+ */
+.crewlet-toolbar.crewlet-selection-bar {
+  position: sticky;
+  top: var(--crewlet-selection-bar-top, var(--spacing-0));
+  z-index: var(--z-index-sticky);
+  flex-wrap: nowrap;
+  gap: var(--spacing-3);
+  min-height: var(--size-row-lg);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) var(--spacing-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.crewlet-selection-bar__count {
+  flex: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.crewlet-selection-bar__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-selection-bar__spacer {
+  flex: 1 1 auto;
+}
+
+/*
+ * DOCKED TO THE FOOT ON A PHONE, strictly under the phone breakpoint: over the
+ * list at the bottom edge, inside the safe area, where a thumb reaches it and
+ * the picks it acts on stay in view above it.
+ */
+@media (width < 640px) {
+  .crewlet-toolbar.crewlet-selection-bar {
+    position: fixed;
+    top: auto;
+    right: var(--spacing-3);
+    bottom: calc(var(--spacing-3) + env(safe-area-inset-bottom, var(--spacing-0)));
+    left: var(--spacing-3);
+    z-index: var(--z-index-overlay);
+    gap: var(--spacing-2);
+    padding-inline-start: var(--spacing-3);
+    box-shadow: var(--shadow-lg);
+  }
+}
