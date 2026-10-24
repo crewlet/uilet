@@ -180,3 +180,28 @@ export const ATypedPolicySurvivesSave: Story = {
     return <Demo />;
   },
 };
+
+/**
+ * The same list in a phone's card (340px): under 28rem of the list's own
+ * width each row gives its words the row, and its buttons stand on a line
+ * under them, so a policy wraps at the card's width rather than at twenty
+ * characters.
+ */
+export const PoliciesOnAPhone: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState([
+        'Every amount is exact to the cent. Round only when a person reads it.',
+        'Ask before deleting anything a customer wrote.',
+        'Never move money without a second agent checking the amount and the recipient.',
+      ]);
+      return (
+        <div style={{ width: 340 }}>
+          <Announcer />
+          <ListInput reorderByDrag hideLabel undoRemove label="Standing policies" itemName="policy" value={value} onChange={setValue} />
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
