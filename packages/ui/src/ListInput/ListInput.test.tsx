@@ -646,3 +646,35 @@ test('Mod+Enter in the box or in an item passes through to the editor’s save a
   fireEvent.keyDown(box, { key: 'Enter' });
   expect(current()).toEqual(['One.', 'Two.']);
 });
+
+test('a one-line list wraps each item to be read, and takes no line break by any road', () => {
+  render(<Policies initial={['A long policy that would scroll sideways in a one-line input.']} multiline={false} />);
+  const item = screen.getByLabelText('Policy 1 of 1') as HTMLTextAreaElement;
+  expect(item.tagName).toBe('TEXTAREA');
+  expect(item.getAttribute('aria-multiline')).toBe('false');
+  fireEvent.change(item, { target: { value: 'Ask first.\nAlways.' } });
+  expect(current()).toEqual(['Ask first. Always.']);
+  const box = screen.getByLabelText('New policy') as HTMLTextAreaElement;
+  fireEvent.change(box, { target: { value: 'Name\nthe source.' } });
+  expect(box.value).toBe('Name the source.');
+  // Shift+Enter adds, as Enter does: there is no line to break.
+  fireEvent.keyDown(box, { key: 'Enter', shiftKey: true });
+  expect(current()).toEqual(['Ask first. Always.', 'Name the source.']);
+});
+
+test('a multi-line list keeps Shift+Enter as a line break', () => {
+  render(<Policies initial={[]} />);
+  const box = screen.getByLabelText('New policy') as HTMLTextAreaElement;
+  expect(box.getAttribute('aria-multiline')).toBeNull();
+  expect(fireEvent.keyDown(box, { key: 'Enter', shiftKey: true })).toBe(true);
+});
+
+test('with a hidden legend the add control stands beside the box, not alone above it', () => {
+  const { unmount } = render(<Policies initial={[]} />);
+  expect(screen.getByRole('button', { name: 'Add policy' }).closest('legend')).not.toBeNull();
+  unmount();
+  render(<Policies initial={[]} hideLabel />);
+  const add = screen.getByRole('button', { name: 'Add policy' });
+  expect(add.closest('legend')).toBeNull();
+  expect(add.closest('.crewlet-list-input__add')).toBe(screen.getByLabelText('New policy').closest('.crewlet-list-input__add'));
+});

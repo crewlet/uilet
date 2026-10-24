@@ -85,10 +85,12 @@ export const WithError: Story = {
 };
 
 /**
- * A company's standing policies as the Principles page edits them: each row
- * dragged by its grip as well as moved by Alt+Arrow and the buttons, a limit
- * on how many there are and how long each may be, and a refusal said under
- * the one item it is about.
+ * A company's standing policies as the Principles page edits them: one line
+ * each, wrapped so a long one reads whole; each row dragged by its grip as
+ * well as moved by Alt+Arrow and the buttons; a limit on how many there are
+ * and how long each may be; a refusal said under the one item it is about;
+ * and the legend hidden, as under the card's own title, with the add
+ * control beside the box.
  */
 export const Policies: Story = {
   render: () => {
@@ -102,8 +104,8 @@ export const Policies: Story = {
         <div style={{ width: 640 }}>
           <Announcer />
           <ListInput
-            multiline
             reorderByDrag
+            hideLabel
             maxItems={5}
             maxLength={120}
             label="Standing policies"

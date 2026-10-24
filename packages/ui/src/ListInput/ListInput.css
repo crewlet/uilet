@@ -13,6 +13,7 @@
 .crewlet-list-input__add {
   display: flex;
   align-items: flex-start;
+  gap: var(--spacing-2);
 }
 
 .crewlet-list-input__add > * {
@@ -252,4 +253,11 @@
   .crewlet-list-input__handle {
     transition: none;
   }
+}
+
+/* With a hidden legend the add control stands at the end of the box's row. */
+.crewlet-list-input__add-control {
+  display: inline-flex;
+  flex: none;
+  align-self: center;
 }

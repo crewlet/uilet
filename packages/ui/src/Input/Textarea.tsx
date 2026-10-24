@@ -3,9 +3,13 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  type ChangeEvent,
+  type KeyboardEvent,
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react';
+import { announce } from '../Announcer/index.js';
+import { isComposing } from '../Layer/stack.js';
 import { cx } from '../utils/cx.js';
 import { useFocusModality } from '../utils/focusModality.js';
 
@@ -22,10 +26,41 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
    * hinting that Enter adds the value. It does not take the pointer.
    */
   trailing?: ReactNode;
+  /**
+   * A value of ONE LINE that wraps so it can be read whole: a mission, a
+   * policy, a title with a long tail. A one-line `Input` scrolls a long value
+   * sideways, so a 160-character mission shows only its last words while it
+   * is being edited; this field wraps it instead, and still holds one line.
+   * Enter inserts no line break (the key stays the surrounding form's or
+   * list's to act on), and a line break pasted or dropped in is folded into
+   * a space, and said so (`foldedMessage`), since the value is then not
+   * quite what was pasted. `aria-multiline` is false, so it is announced as
+   * the one-line field it is. Pair it with `autoResize` and `rows={1}`.
+   */
+  singleLine?: boolean;
+  /** Said through the page's `Announcer` when a `singleLine` field folds line breaks it was given. */
+  foldedMessage?: string;
+}
+
+/** A value with its line breaks, and the space around each, folded into one space. */
+export function foldLineBreaks(text: string): string {
+  return text.replace(/[ \t]*(?:\r\n|\r|\n)+[ \t]*/g, ' ');
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { error = false, autoResize = false, trailing, className = '', value, disabled, ...rest },
+  {
+    error = false,
+    autoResize = false,
+    trailing,
+    singleLine = false,
+    foldedMessage = 'Line breaks were replaced with spaces: this field holds one line.',
+    className = '',
+    value,
+    disabled,
+    onChange,
+    onKeyDown,
+    ...rest
+  },
   ref,
 ) {
   useFocusModality();
@@ -83,6 +118,38 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
     };
   }, [autoResize, value]);
 
+  /*
+   * ONE LINE, ENFORCED WHERE THE TEXT ARRIVES. The caller's handler runs
+   * first, so a list that turns Enter into "add" or "next" still does; only
+   * a plain or Shift+Enter nobody claimed is kept from writing a newline, and
+   * Ctrl or Command with Enter passes through untouched to a form's save. An
+   * input method's Enter is its own.
+   */
+  const keys = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    onKeyDown?.(event);
+    if (!singleLine || event.defaultPrevented || event.key !== 'Enter') return;
+    if (event.ctrlKey || event.metaKey || isComposing(event)) return;
+    event.preventDefault();
+  };
+  /*
+   * A pasted or dropped line break never reaches the caller: it is folded
+   * into a space before `onChange` is called, with the caret kept where the
+   * writer left it, and the fold is SAID, so the writer knows the field
+   * holds something other than what they pasted. Folded rather than
+   * refused, because the break carries no meaning a one-line value can keep,
+   * and a refusal would throw away the whole paste for it.
+   */
+  const change = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const el = event.target;
+    if (singleLine && /[\r\n]/.test(el.value)) {
+      const caret = foldLineBreaks(el.value.slice(0, el.selectionStart ?? el.value.length)).length;
+      el.value = foldLineBreaks(el.value);
+      el.setSelectionRange(caret, caret);
+      announce(foldedMessage);
+    }
+    onChange?.(event);
+  };
+
   const control = (
     <textarea
       ref={localRef}
@@ -96,7 +163,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
       value={value}
       disabled={disabled}
       aria-invalid={error || undefined}
+      aria-multiline={singleLine ? false : undefined}
       {...rest}
+      onChange={change}
+      onKeyDown={keys}
     />
   );
 

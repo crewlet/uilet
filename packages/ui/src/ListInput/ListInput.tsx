@@ -20,7 +20,7 @@ import { announce } from '../Announcer/index.js';
 import { Button } from '../Button/index.js';
 import { CharacterCount, characterCountState, countCharacters } from '../CharacterCount/index.js';
 import { IconButton } from '../IconButton/index.js';
-import { FormField, Input, Textarea } from '../Input/index.js';
+import { FormField, Textarea } from '../Input/index.js';
 import { Kbd } from '../Kbd/index.js';
 import { isComposing } from '../Layer/index.js';
 import { useReorder } from '../Reorder/index.js';
@@ -76,7 +76,11 @@ export interface ListInputProps {
    * "Standing policies"). The add control stays where it is.
    */
   hideLabel?: boolean | undefined;
-  /** Items are paragraphs: Shift+Enter makes a newline. */
+  /**
+   * Items are paragraphs: Shift+Enter makes a newline. Without it each item
+   * is ONE line, which still wraps so a long one can be read while it is
+   * edited, and takes no line break however it arrives.
+   */
   multiline?: boolean | undefined;
   /** Where the values come from, or what shape they take. */
   helper?: ReactNode | undefined;
@@ -467,39 +471,46 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
      * item made three of them 256px where the console draws 111, and the
      * second row was empty in every one of them. `autoResize` starts at one
      * line and takes as many as the sentence needs.
+     *
+     * AND A ONE-LINE ITEM WRAPS TOO. A one-line input scrolled a long
+     * policy sideways, so while it was edited only its tail could be read.
+     * Without `multiline` the field is a `singleLine` textarea: it wraps to
+     * be read whole and still holds one line, with no newline typed, pasted
+     * or dropped in.
      */
-    multiline ? (
-      <Textarea
-        rows={1}
-        autoResize
-        aria-label={props.label}
-        value={props.value}
-        placeholder={props.placeholder}
-        disabled={disabled}
-        spellCheck
-        trailing={props.trailing}
-        error={props.invalid ?? false}
-        aria-describedby={props.describedBy}
-        onChange={(event) => props.onChange(event.target.value)}
-        onKeyDown={props.onKeyDown}
-        ref={props.ref}
-      />
-    ) : (
-      <Input
-        aria-label={props.label}
-        value={props.value}
-        placeholder={props.placeholder}
-        disabled={disabled}
-        autoComplete="off"
-        spellCheck
-        trailing={props.trailing}
-        error={props.invalid ?? false}
-        aria-describedby={props.describedBy}
-        onChange={(event) => props.onChange(event.target.value)}
-        onKeyDown={props.onKeyDown}
-        ref={props.ref}
-      />
-    );
+    <Textarea
+      rows={1}
+      autoResize
+      singleLine={!multiline}
+      aria-label={props.label}
+      value={props.value}
+      placeholder={props.placeholder}
+      disabled={disabled}
+      spellCheck
+      trailing={props.trailing}
+      error={props.invalid ?? false}
+      aria-describedby={props.describedBy}
+      onChange={(event) => props.onChange(event.target.value)}
+      onKeyDown={props.onKeyDown}
+      ref={props.ref}
+    />;
+
+  /*
+   * THE ADD CONTROL SITS BESIDE THE LEGEND, which is where the console puts
+   * it and where the eye is when the list is empty. It appends what the box
+   * below holds and gives the box the focus back, so pressing it twice adds
+   * twice without a journey between.
+   */
+  const addControl = (
+    <IconButton
+      size="sm"
+      variant="soft-brand"
+      label={addLabel(itemName)}
+      icon={<PlusGlyph />}
+      disabled={disabled || full || draftRefused}
+      onClick={add}
+    />
+  );
 
   return (
     <FormField
@@ -511,21 +522,11 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
       error={error}
       className="crewlet-list-input"
       /*
-       * THE ADD CONTROL SITS BESIDE THE LEGEND, which is where the console
-       * puts it and where the eye is when the list is empty. It appends what
-       * the box below holds and gives the box the focus back, so pressing it
-       * twice adds twice without a journey between.
+       * Beside a HIDDEN legend there is nothing for it to sit beside, and a
+       * lone "+" above the box read as a control that belonged to nothing, so
+       * it moves to the end of the box's own row.
        */
-      labelAction={
-        <IconButton
-          size="sm"
-          variant="soft-brand"
-          label={addLabel(itemName)}
-          icon={<PlusGlyph />}
-          disabled={disabled || full || draftRefused}
-          onClick={add}
-        />
-      }
+      labelAction={hideLabel ? undefined : addControl}
     >
       {/*
        * THE BOX FIRST, THE LIST UNDER IT, as the console draws it and as the
@@ -570,6 +571,7 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
               addBox.current = el;
             },
           })}
+          {hideLabel ? <span className="crewlet-list-input__add-control">{addControl}</span> : null}
         </div>
       )}
       {count > 0 || removed !== null ? (
