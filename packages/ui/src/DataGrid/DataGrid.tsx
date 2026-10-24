@@ -14,6 +14,7 @@ import {
 import { breakpoint } from '@crewlethq/tokens';
 import { ChevronDownGlyph, ChevronUpGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
+import { Checkbox } from '../Checkbox/index.js';
 import { EmptyState } from '../EmptyState/index.js';
 import { useMediaMatch } from '../MediaMatch/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -197,6 +198,21 @@ export interface DataGridBand<T> {
   footer?: ReactNode;
 }
 
+/**
+ * Rows a reader picks for a bulk action, by their `rowKey`: a column of boxes
+ * before the first, with a box over them in the head.
+ */
+export interface DataGridSelection<T> {
+  /** The keys of the rows picked. Controlled, and kept across pages and sorts by the host. */
+  selected: ReadonlySet<string>;
+  /** The keys as they should be now. */
+  onChange: (selected: ReadonlySet<string>) => void;
+  /** A row's box, said: "Select Q3 plan". The row's own words are its name, so this says what ticking it does. */
+  rowLabel: (row: T) => string;
+  /** A row that cannot be picked (the reader may not act on it): its box is drawn and disabled. */
+  isSelectable?: ((row: T) => boolean) | undefined;
+}
+
 /** The words a grid says, for an application that says them otherwise. */
 export interface DataGridLabels {
   /** "Hidden to fit: Due and Updated". */
@@ -205,6 +221,8 @@ export interface DataGridLabels {
   showEveryColumn: string;
   /** Joins the last two names of a list: "Due and Updated". */
   and: string;
+  /** The head's box, over every row the grid draws. */
+  selectAll: string;
 }
 
 const LABELS: DataGridLabels = {
@@ -212,7 +230,11 @@ const LABELS: DataGridLabels = {
   loadMore: 'Load more',
   showEveryColumn: 'Show every column',
   and: 'and',
+  selectAll: 'Select every row',
 };
+
+/** The selection column's key: not a key a caller's column takes, and never in a column set. */
+const SELECT_COLUMN = 'crewlet-select';
 
 /**
  * What an application drives a grid's cursor with. The grid binds no keys of
@@ -239,6 +261,17 @@ export interface DataGridProps<T> {
   rowHref?: ((row: T) => string) | undefined;
   /** The row the reader is on (the object a page or a side panel shows): tinted and announced as current. */
   isSelected?: ((row: T) => boolean) | undefined;
+  /**
+   * Rows picked for a bulk action: a box on every row before the first
+   * column, and one in the head over every row drawn (ticked, clear, or mixed
+   * when some are). Shift with a box picks or clears every row between it and
+   * the box pressed before it, in the order the grid draws them.
+   *
+   * NOT `isSelected`, which is the one row the reader is ON. A picked row is
+   * tinted in the selected fill and its box says it; the current row keeps
+   * its own mark.
+   */
+  selection?: DataGridSelection<T> | undefined;
   isFailed?: ((row: T) => boolean) | undefined;
   /**
    * The sort as `key` or `-key` (descending), empty for the rows' own order.
@@ -387,8 +420,10 @@ function overflowing(wrap: HTMLElement): boolean {
  * cap AND cutting a value short. The quieter way a grid fails to fit: rather
  * than overrun, it shrinks a status pill to a letter while the columns that
  * could have gone stay. Read over the head and the first screen of rows.
+ * `leading` is how many of the grid's own columns (the selection column) are
+ * drawn before the caller's.
  */
-function squeezed<T>(wrap: HTMLElement, visible: readonly DataGridColumn<T>[]): boolean {
+function squeezed<T>(wrap: HTMLElement, visible: readonly DataGridColumn<T>[], leading = 0): boolean {
   const heads = wrap.querySelector(':scope > .crewlet-data-grid__head')?.children;
   if (!heads) return false;
   const cap = wrap.clientWidth * SHRINK_SHARE - 1;
@@ -399,10 +434,10 @@ function squeezed<T>(wrap: HTMLElement, visible: readonly DataGridColumn<T>[]): 
   for (let i = 0; i < visible.length; i++) {
     const column = visible[i]!;
     if (!column.shrink || column.width) continue;
-    const head = heads[i];
+    const head = heads[i + leading];
     if (!head || head.getBoundingClientRect().width >= cap) continue;
     for (const row of rows) {
-      const cell = row.querySelectorAll(':scope > .crewlet-data-grid__cell')[i];
+      const cell = row.querySelectorAll(':scope > .crewlet-data-grid__cell')[i + leading];
       if (cell && cutShort(cell)) return true;
     }
   }
@@ -467,6 +502,7 @@ export function DataGrid<T>({
   onRowActivate,
   rowHref,
   isSelected,
+  selection,
   isFailed,
   sort: sortRaw = '',
   onSortChange,
@@ -544,6 +580,84 @@ export function DataGrid<T>({
     return sortRows(rows ?? []);
   }, [bands, rows, sortRows]);
 
+  // THE SELECTION. The anchor is the row whose box was pressed last, by key, so
+  // a Shift-press after a re-sort still ranges from the row the reader means.
+  const anchor = useRef<string | null>(null);
+  const pickable = useMemo(
+    () => (selection ? flat.filter((row) => selection.isSelectable?.(row) ?? true) : []),
+    [flat, selection],
+  );
+  const pickedCount = selection ? pickable.filter((row) => selection.selected.has(rowKey(row))).length : 0;
+  const allPicked = pickable.length > 0 && pickedCount === pickable.length;
+
+  const pick = (row: T, on: boolean, range: boolean): void => {
+    if (!selection) return;
+    const key = rowKey(row);
+    const next = new Set(selection.selected);
+    const to = flat.findIndex((r) => rowKey(r) === key);
+    const from = range && anchor.current !== null ? flat.findIndex((r) => rowKey(r) === anchor.current) : -1;
+    // A RANGE IS SET TO THE STATE OF THE BOX PRESSED, never toggled row by
+    // row: a range across picked and clear rows comes out all one way.
+    const span = from >= 0 && to >= 0 ? flat.slice(Math.min(from, to), Math.max(from, to) + 1) : [row];
+    for (const r of span) {
+      if (selection.isSelectable?.(r) === false) continue;
+      if (on) next.add(rowKey(r));
+      else next.delete(rowKey(r));
+    }
+    anchor.current = key;
+    selection.onChange(next);
+  };
+
+  // THE HEAD'S BOX acts on the rows DRAWN, and leaves alone the picks the host
+  // keeps for rows it is not drawing (another page, a filter since applied).
+  const pickAll = (): void => {
+    if (!selection) return;
+    const next = new Set(selection.selected);
+    for (const row of pickable) {
+      if (allPicked) next.delete(rowKey(row));
+      else next.add(rowKey(row));
+    }
+    anchor.current = null;
+    selection.onChange(next);
+  };
+
+  const selectColumn: DataGridColumn<T> | null = selection
+    ? {
+        key: SELECT_COLUMN,
+        header: (
+          <Checkbox
+            hideLabel
+            label={text.selectAll}
+            checked={allPicked}
+            indeterminate={pickedCount > 0 && !allPicked}
+            disabled={pickable.length === 0}
+            onChange={pickAll}
+          />
+        ),
+        cell: (row) => (
+          // ABOVE THE ROW'S LINK, so the press lands on the box.
+          <span className="crewlet-data-grid__select" data-above-row>
+            <Checkbox
+              hideLabel
+              label={selection.rowLabel(row)}
+              checked={selection.selected.has(rowKey(row))}
+              disabled={selection.isSelectable?.(row) === false}
+              onChange={(event) => pick(row, event.target.checked, (event.nativeEvent as Partial<MouseEvent>).shiftKey === true)}
+            />
+          </span>
+        ),
+        action: true,
+        phoneLead: true,
+        width: 'calc(var(--size-target-min) + var(--spacing-3) * 2)',
+      }
+    : null;
+  // WHAT IS DRAWN: the selection column, then the columns that fit. The fit
+  // and the column set never see it; it is the grid's own and never gives way.
+  const drawnColumns = selectColumn ? [selectColumn, ...visibleColumns] : visibleColumns;
+  // How many drawn columns come before the caller's: the squeeze check reads
+  // the caller's columns at their drawn positions.
+  const leading = drawnColumns.length - visibleColumns.length;
+
   // A resize the grid reports is a new width, which re-runs the fit. Without
   // the observer the grid keeps the fit of its first width.
   const [boxWidth, setBoxWidth] = useState(0);
@@ -562,11 +676,11 @@ export function DataGrid<T>({
     const next = fitGridColumns({
       fit: fit.set === shownKeys ? fit : { ...NO_FIT, set: shownKeys },
       width: el.clientWidth,
-      overflows: overflowing(el) || squeezed(el, visibleColumns),
+      overflows: overflowing(el) || squeezed(el, visibleColumns, leading),
       visible: visibleColumns,
     });
     if (next !== null) setFit(next);
-  }, [wrap, phone, fit, shownKeys, visibleColumns, flat, boxWidth]);
+  }, [wrap, phone, fit, shownKeys, visibleColumns, leading, flat, boxWidth]);
 
   useImperativeHandle(
     handleRef,
@@ -595,7 +709,7 @@ export function DataGrid<T>({
     else onSortChange(column.key);
   }
 
-  const template = visibleColumns
+  const template = drawnColumns
     .map((c) => c.width ?? (c.shrink ? `fit-content(${SHRINK_CAP})` : `minmax(${c.floor ?? 0}, 1fr)`))
     .join(' ');
 
@@ -625,6 +739,7 @@ export function DataGrid<T>({
     // is not. A cell with no value has no child nodes, so the card drops its
     // line (`:empty`), and an action column's cell names itself.
     const marked = Boolean(isSelected?.(row));
+    const picked = Boolean(selection?.selected.has(rowKey(row)));
     const rowId = `${gridId}-row-${at}`;
     // THE ROW'S OWN WAY IN IS AN OVERLAY in its first cell, stretched over the
     // whole row (the row is its containing block): a real link where the row
@@ -654,7 +769,7 @@ export function DataGrid<T>({
     // head is gone: from the head where it is a word and from `label` where it
     // is not. A cell with no value has no child nodes, so the card drops its
     // line (`:empty`), and an action column's cell names itself.
-    const inner = visibleColumns.map((column, i) => (
+    const inner = drawnColumns.map((column, i) => (
       <span
         key={column.key}
         role="cell"
@@ -679,6 +794,7 @@ export function DataGrid<T>({
         className={cx(
           'crewlet-data-grid__row',
           marked && 'crewlet-data-grid__row--selected',
+          picked && 'crewlet-data-grid__row--picked',
           isFailed?.(row) && 'crewlet-data-grid__row--failed',
           cursor === at && 'crewlet-data-grid__row--cursor',
         )}
@@ -698,7 +814,7 @@ export function DataGrid<T>({
       // cell each across every column, and its own box is layout alone.
       <div key={band.key} className="crewlet-data-grid__band" role="none">
         <div className="crewlet-data-grid__band-head" role="row">
-          <span className="crewlet-data-grid__band-cell" role="rowheader" aria-colspan={visibleColumns.length}>
+          <span className="crewlet-data-grid__band-cell" role="rowheader" aria-colspan={drawnColumns.length}>
             {band.mark}
             <span className="crewlet-data-grid__truncate">{band.label}</span>
             {/* THE SOURCE'S COUNT AND THE LOADED COUNT, apart: 12 over 12 of
@@ -711,7 +827,7 @@ export function DataGrid<T>({
         {band.bands ? band.bands.map((sub) => renderBand(sub)) : sortRows(band.rows).map(renderRow)}
         {band.footer && (
           <div className="crewlet-data-grid__band-foot" role="row">
-            <span className="crewlet-data-grid__band-cell" role="cell" aria-colspan={visibleColumns.length}>
+            <span className="crewlet-data-grid__band-cell" role="cell" aria-colspan={drawnColumns.length}>
               {band.footer}
             </span>
           </div>
@@ -733,7 +849,7 @@ export function DataGrid<T>({
       onPointerDown={onPointerDown}
     >
       <div className="crewlet-data-grid__head" role="row">
-        {visibleColumns.map((column) => {
+        {drawnColumns.map((column) => {
           const sorted = sort?.key === column.key;
           const sortable = Boolean(column.sortValue && onSortChange);
           const headClass = cx(

@@ -272,9 +272,58 @@
   }
 }
 
+/*
+ * PICKED, as every chosen option in the package is drawn: the selected edge
+ * over the selected fill, laid as an image over the card's own ground so the
+ * card keeps it. Never the accent, which is the focus ring's hue.
+ */
+.crewlet-artifact-card--card.is-selected {
+  border-color: var(--color-border-selected);
+  background-image: linear-gradient(var(--color-surface-selected), var(--color-surface-selected));
+}
+
+/*
+ * THE SELECTION BOX, over the preview's other top corner and outside the
+ * link, on a raised chip so it reads over any preview. Hidden until the card
+ * is hovered or holds focus, and always there once the card is picked, while
+ * the gallery is choosing, and on a screen with no hover.
+ */
+.crewlet-artifact-card__select {
+  position: absolute;
+  top: var(--spacing-3);
+  left: var(--spacing-3);
+  display: inline-flex;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-background);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-artifact-card--card:hover .crewlet-artifact-card__select,
+.crewlet-artifact-card--card:focus-within .crewlet-artifact-card__select,
+.crewlet-artifact-card--card.is-selected .crewlet-artifact-card__select,
+.crewlet-artifact-card--selecting .crewlet-artifact-card__select {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .crewlet-artifact-card__select {
+    opacity: 1;
+  }
+}
+
+/* WHILE CHOOSING, THE BODY PICKS: the pointer says so, and a Shift-press
+   for a range selects no text on the way. */
+.crewlet-artifact-card--selecting .crewlet-artifact-card__link {
+  cursor: pointer;
+  user-select: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crewlet-artifact-card--card,
-  .crewlet-artifact-card__actions {
+  .crewlet-artifact-card__actions,
+  .crewlet-artifact-card__select {
     transition: none;
   }
 }

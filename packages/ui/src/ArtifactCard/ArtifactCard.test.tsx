@@ -5,9 +5,10 @@
  * beside the link rather than inside it.
  */
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, expect, test } from 'vitest';
+import { useState } from 'react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { ARTIFACT_KINDS, ArtifactCard, ArtifactCardSkeleton, ArtifactPreviewGlyph } from './index.js';
 
 afterEach(cleanup);
@@ -178,4 +179,83 @@ test('carries no axe violation, as a card and compact', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+describe('selection', () => {
+  function Picking({ selecting = false, onPick }: { selecting?: boolean; onPick?: (on: boolean, range: boolean) => void }) {
+    const [selected, setSelected] = useState(false);
+    return (
+      <ArtifactCard
+        title="Vendor scorecard"
+        kind="sheet"
+        href="#/artifacts/7b0c"
+        updatedAt={NOW}
+        now={NOW}
+        selectable
+        selecting={selecting}
+        selected={selected}
+        onSelectedChange={(on, { range }) => {
+          setSelected(on);
+          onPick?.(on, range);
+        }}
+        actions={<button type="button">More for Vendor scorecard</button>}
+      />
+    );
+  }
+
+  test('a selectable card carries a named box beside its link, described by the facts', () => {
+    render(<Picking />);
+    const link = screen.getByRole('link', { name: 'Vendor scorecard' });
+    const box = screen.getByRole('checkbox', { name: 'Select Vendor scorecard' });
+    expect(link.contains(box)).toBe(false);
+    expect(link.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(box.getAttribute('aria-describedby')).toBe(link.getAttribute('aria-describedby'));
+  });
+
+  test('ticking the box reports it and draws the card picked', () => {
+    const onPick = vi.fn();
+    const { container } = render(<Picking onPick={onPick} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Vendor scorecard' }));
+    expect(onPick).toHaveBeenCalledWith(true, false);
+    expect(container.querySelector('.crewlet-artifact-card--card.is-selected')).not.toBeNull();
+    expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(true);
+  });
+
+  test('Shift with the box asks the host for a range', () => {
+    const onPick = vi.fn();
+    render(<Picking onPick={onPick} />);
+    fireEvent.click(screen.getByRole('checkbox'), { shiftKey: true });
+    expect(onPick).toHaveBeenCalledWith(true, true);
+  });
+
+  test('while the gallery is choosing, the body picks rather than opens, and the More menu stays', () => {
+    const onPick = vi.fn();
+    render(<Picking selecting onPick={onPick} />);
+    expect(screen.queryByRole('link')).toBeNull();
+    fireEvent.click(screen.getByText('Vendor scorecard'));
+    expect(onPick).toHaveBeenCalledWith(true, false);
+    expect(screen.getByRole('button', { name: 'More for Vendor scorecard' })).toBeDefined();
+  });
+
+  test('a card that is not selectable draws no box, even while the gallery is choosing', () => {
+    render(<ArtifactCard title="Runbook" kind="doc" href="#/a" updatedAt={NOW} now={NOW} selecting />);
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Runbook' })).toBeDefined();
+  });
+
+  test('carries no axe violation, picking and choosing', async () => {
+    const { container } = render(
+      <main>
+        <h1>Artifacts</h1>
+        <Picking />
+        <Picking selecting />
+      </main>,
+    );
+    const result = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
+  });
 });

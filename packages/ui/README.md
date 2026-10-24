@@ -218,6 +218,32 @@ The pieces of a company's brand and of the folders artifacts are filed in.
 
 **`@crewlethq/artifact-kit` reads a company's brand from `--brand-*` input slots.** The kit's own tokens (`--color-brand-accent` and its hover, press, ink, soft fills and deep stop, the selected edge, the label on the accent, the quiet link, the glow, the grounds, the body text and the faces) read `--brand-primary`, `--brand-primary-on-dark`, `--brand-secondary`, `--brand-text`, `--brand-light-ground`, `--brand-dark-ground`, `--brand-font-heading` and `--brand-font-body`, mixing the family from one colour with `color-mix()` in each mode, so a page already written with kit tokens follows the brand. With no slot set every token is the theme's own value, under every theme. The `crewlet-logo` class draws the brand's logo from `--brand-logo-primary`, `--brand-logo-on-dark` or `--brand-logo-mark` (`data-variant`), at its ratio, choosing the on-dark logo in dark mode where there is one and drawing nothing where there is none. An engine-generated brand stylesheet defines only `--brand-*` custom properties and `@font-face` rules. See the kit README.
 
+**`FolderTile` is new**: a folder in a gallery, shorter than an artifact's card and with no preview, the `folder` glyph on a neutral tint, the name on one line (the whole of it on hover), who can see it (`visibility`, an `ArtifactAccessLabel` with the folder's word) and what the reader can open inside (`contents`), with a More menu (`actions`) beside its link. The whole tile is one link. A folder holding nothing the reader can open says "Nothing you can open yet", never "Empty". `size="row"` is the full width, 44px row a phone takes, and a tile takes that shape by itself under the phone breakpoint. `selected` and `dropTarget` draw the chosen and the drop target states; dragging is the host's to drive. `describeFolderContents` is the one phrasing of the count ("12 artifacts · 2 folders").
+
+**`ArtifactNameCell` takes `kind="folder"`**: a folder's row in the list, the folder glyph on a neutral tint and the word "Folder" over what is inside (`detail`, from `describeFolderContents`).
+
+**`SelectionBar` is new**: what is picked and what can be done to all of it, the count ("3 selected"), the bulk actions as children and Clear, one toolbar in the tab order. It sticks under the top of the scroller (`--crewlet-selection-bar-top`) and docks at the foot of the screen under the phone breakpoint. The count is said politely through the shell's `Announcer` as it changes, and clearing the last pick says so. Nothing is drawn at zero, and `returnFocusRef` is where focus goes once Clear takes the bar away.
+
+**`ArtifactCard` takes `selectable`, `selected`, `selecting` and `onSelectedChange`**: a box in the preview's top corner, shown on hover, on focus, on a screen with no hover and always once the card is picked, with the selected edge and fill on a picked card. While the gallery is choosing (`selecting`) every box shows and a press anywhere on the card ticks it rather than opening it. `onSelectedChange` says whether Shift was held (`range`), so the host that keeps the selection draws the range.
+
+**`DataGrid` takes `selection`**: a box before the first column on every row and one in the head over every row drawn, mixed while some are picked, keyed by `rowKey` and controlled. Shift with a box sets every row between it and the box pressed before it, in drawn order. `isSelectable` disables the box of a row the reader cannot act on. A picked row takes the selected fill, apart from `isSelected`, the row the reader is on. The column is the grid's own: it is never in a column set and never gives way.
+
+**`Checkbox` takes `hideLabel`**: the box alone on a target the pointer floor allows, its label said and not drawn, for a card or a row that already shows what the box picks.
+
+**`LogoSlot` is new**: one of a brand's logos on the ground it is made for, the brand's own ground colour or the product's sheet for that mode, whatever mode the page is in, with a dashed clear-space guide inked in whichever palette's text reads on that ground. Editable, it takes one file through a `FilePickButton` or a drop on the slot (`FileDrop`), offers Replace and Remove, spins while `uploading`, and draws and announces the engine's refusal (`error`). A reader gets a `download` slot beside its name.
+
+**`ColorField` is new**: a colour a person chooses, a hex field beside a swatch that is the platform's colour picker. It reports a colour only once it reads as `#` and six hex digits, lowercased, and refuses anything else when the reader leaves the field, with a sentence saying what right looks like.
+
+**`ColorSwatch` is new**: one colour of a brand, a chip of it with its own edge, its role, its value and a copy control that says whether the value landed. A role with no colour is the hatch of none.
+
+**`ContrastBadge` is new**: whether one colour reads on another, a sample of the pair, the ratio said as "4.49 to 1", and the level in words and a glyph (AAA, AA, AA large text, Fails). It measures with `@crewlethq/tokens`' `contrast()` and its `WCAG_CONTRAST` floors, compares the ratio unrounded and prints it cut down, so it never claims a floor a pair misses. `scale="large"` holds large text and marks to their own floors. `contrastRatio`, `contrastLevel` and `formatContrastRatio` are exported for a dialog that lists pairs.
+
+**`TypeSpecimen` is new**: a face shown in itself, its label ("Heading") and name in the interface's type, then "Aa" and a line set in the face, always falling back to the package's sans.
+
+**`BrandChip` is new**: the company's brand as a small link, its mark, its name and a chevron, with the brand glyph standing in before a brand exists ("Set up your brand").
+
+Every colour a person chose reaches a stylesheet through one custom property per part, and only after it has passed `#rrggbb`.
+
 ## Changes in 0.45.0
 
 The pieces of the engine's Company › Principles page: a company's mission, vision and policies beside the facts about it.
