@@ -101,10 +101,10 @@ export interface ArtifactCardProps {
    */
   actions?: ReactNode;
   /**
-   * The card can be picked for a bulk action: a box in the preview's top
-   * corner, shown on hover, while focus is inside the card, on a screen with
-   * no hover, and always once the card is picked or the gallery is choosing
-   * (`selecting`). The `card` size only.
+   * The card can be picked for a bulk action: a box on the preview's foot,
+   * opposite the kind's badge, shown on hover, while focus is inside the card,
+   * on a screen with no hover, and always once the card is picked or the
+   * gallery is choosing (`selecting`). The `card` size only.
    */
   selectable?: boolean | undefined;
   /** It is picked: its box is ticked, and the card takes the selected edge and fill. */
@@ -324,20 +324,26 @@ export function ArtifactCard({
         </a>
       )}
       {selectable ? (
-        <span className="crewlet-artifact-card__select">
-          <Checkbox
-            id={boxId}
-            hideLabel
-            label={text.select(title)}
-            checked={selected}
-            aria-describedby={factsId}
-            // THE BOX'S OWN CLICK CARRIES THE MODIFIERS, a press on the
-            // card's body included: a label hands its press to its box as a
-            // click with the same keys held.
-            onChange={(event) =>
-              onSelectedChange?.(event.target.checked, { range: (event.nativeEvent as Partial<MouseEvent>).shiftKey === true })
-            }
-          />
+        // THE BOX STANDS ON THE PREVIEW'S FOOT, not over its top: a cover's
+        // own title starts at its top corner, and a box there hid its first
+        // words. The anchor has the preview's shape, so the box sits on the
+        // seam opposite the kind's badge whatever the card's width.
+        <span className="crewlet-artifact-card__select-anchor">
+          <span className="crewlet-artifact-card__select">
+            <Checkbox
+              id={boxId}
+              hideLabel
+              label={text.select(title)}
+              checked={selected}
+              aria-describedby={factsId}
+              // THE BOX'S OWN CLICK CARRIES THE MODIFIERS, a press on the
+              // card's body included: a label hands its press to its box as a
+              // click with the same keys held.
+              onChange={(event) =>
+                onSelectedChange?.(event.target.checked, { range: (event.nativeEvent as Partial<MouseEvent>).shiftKey === true })
+              }
+            />
+          </span>
         </span>
       ) : null}
       {actions ? <span className="crewlet-artifact-card__actions">{actions}</span> : null}

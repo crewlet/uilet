@@ -5,6 +5,9 @@
  * beside the link rather than inside it.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
@@ -210,6 +213,22 @@ describe('selection', () => {
     expect(link.contains(box)).toBe(false);
     expect(link.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(box.getAttribute('aria-describedby')).toBe(link.getAttribute('aria-describedby'));
+  });
+
+  test("stands the box on the preview's foot, opposite the badge, where a cover's title is not", () => {
+    const { container } = render(<Picking />);
+    const box = screen.getByRole('checkbox', { name: 'Select Vendor scorecard' });
+    expect(box.closest('.crewlet-artifact-card__select-anchor')).not.toBeNull();
+    // Read as the browser reads the stylesheet: jsdom lays nothing out.
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ArtifactCard.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = (selector: string) => new RegExp(`${selector.replace(/[.]/g, '\\.')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    expect(rule('.crewlet-artifact-card__select-anchor')).toMatch(/aspect-ratio:\s*16 \/ 9/);
+    expect(rule('.crewlet-artifact-card__preview')).toMatch(/aspect-ratio:\s*16 \/ 9/);
+    const select = rule('.crewlet-artifact-card__select');
+    expect(select).toMatch(/bottom:\s*0/);
+    expect(select).toMatch(/right:/);
+    expect(select).not.toMatch(/(^|[;\s])(top|left):/);
+    expect(container.querySelector('.crewlet-artifact-card__select-anchor')?.parentElement?.classList.contains('crewlet-artifact-card--card')).toBe(true);
   });
 
   test('ticking the box reports it and draws the card picked', () => {
