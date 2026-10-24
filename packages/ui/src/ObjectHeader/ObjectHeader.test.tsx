@@ -193,3 +193,16 @@ test('the eyebrow and the fact labels keep the words as written', () => {
     expect(rule(selector)).toMatch(/font-size:\s*var\(--font-size-xs\)/);
   }
 });
+
+test('draws a mark on its own plate beside the header, and only when given one', () => {
+  const { container, rerender } = render(<ObjectHeader kind="Integration" title="Slack" />);
+  expect(container.querySelector('.crewlet-object-header__mark')).toBeNull();
+  expect(container.querySelector('.crewlet-object-header--marked')).toBeNull();
+  rerender(<ObjectHeader kind="Integration" title="Slack" mark={<svg data-testid="mark" />} description="Each agent posts as its own bot." />);
+  const plate = container.querySelector('.crewlet-object-header__mark')!;
+  expect(plate.getAttribute('aria-hidden')).toBe('true');
+  expect(plate.querySelector('[data-testid="mark"]')).toBeTruthy();
+  const body = container.querySelector('.crewlet-object-header__body')!;
+  expect(body.querySelector('h2')!.textContent).toBe('Slack');
+  expect(body.textContent).toContain('Each agent posts as its own bot.');
+});

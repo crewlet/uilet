@@ -1,0 +1,126 @@
+/*
+ * DirectoryList: named groups of links, each line a mark, a label and a state,
+ * and one foot that holds the bottom (DirectoryList.tsx).
+ *
+ * NO FRAME OF ITS OWN. The list draws on the column it is placed in, its lines
+ * on the hover and selected grounds alone, so it never makes a box inside a
+ * box; the foot's hairline is the one rule it draws.
+ */
+
+.crewlet-directory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  font-family: var(--font-family-sans);
+}
+
+/* The groups take the room and scroll on their own, so the foot stays put. */
+.crewlet-directory__groups {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.crewlet-directory__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-directory__heading {
+  margin: 0;
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-directory__items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-directory__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-row-md);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.crewlet-directory__item:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-directory__item--selected,
+.crewlet-directory__item--selected:hover {
+  background: var(--color-surface-selected);
+}
+
+.crewlet-directory__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.crewlet-directory__mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-row-sm);
+  height: var(--size-row-sm);
+}
+
+.crewlet-directory__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-directory__label {
+  overflow: hidden;
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-directory__hint {
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-directory__status {
+  display: inline-flex;
+  flex: none;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* The foot: one small step under the groups, at the bottom of the column. */
+.crewlet-directory__foot {
+  flex: none;
+  min-width: 0;
+  padding: var(--spacing-2) var(--spacing-2) 0;
+  border-top: 1px solid var(--color-border-default);
+}

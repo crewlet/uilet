@@ -175,6 +175,12 @@ export interface ObjectHeaderProps {
   kind: ReactNode;
   /** A glyph beside the kind. A component, not a name. */
   icon?: ReactNode;
+  /**
+   * The object's own mark, drawn large on a plate beside everything else: a
+   * vendor's or a product's mark on an integration's page. Decorative, since
+   * the title names the object; a header without one keeps its one column.
+   */
+  mark?: ReactNode;
   /** The key, handle or id, in the mono face. */
   identifier?: ReactNode;
   /**
@@ -224,6 +230,7 @@ export interface ObjectHeaderProps {
 export function ObjectHeader({
   kind,
   icon,
+  mark,
   identifier,
   within,
   title,
@@ -234,8 +241,8 @@ export function ObjectHeader({
   size = 'page',
   className,
 }: ObjectHeaderProps) {
-  return (
-    <header className={cx('crewlet-object-header', `crewlet-object-header--${size}`, className)}>
+  const body = (
+    <>
       <div className="crewlet-object-header__eyebrow">
         {icon ? (
           <span className="crewlet-object-header__icon" aria-hidden="true">
@@ -255,6 +262,27 @@ export function ObjectHeader({
       </div>
       {description ? <p className="crewlet-object-header__description">{description}</p> : null}
       {facts ? <FactLine facts={facts} /> : null}
+    </>
+  );
+  return (
+    <header
+      className={cx(
+        'crewlet-object-header',
+        `crewlet-object-header--${size}`,
+        mark ? 'crewlet-object-header--marked' : null,
+        className,
+      )}
+    >
+      {mark ? (
+        <>
+          <span className="crewlet-object-header__mark" aria-hidden="true">
+            {mark}
+          </span>
+          <div className="crewlet-object-header__body">{body}</div>
+        </>
+      ) : (
+        body
+      )}
     </header>
   );
 }

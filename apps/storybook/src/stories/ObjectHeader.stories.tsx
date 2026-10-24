@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { UserGlyph } from '@crewlethq/icons/glyphs';
+import { PlugGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
+import { VendorMark } from '@crewlethq/icons';
 import { ArtifactIcon, Button, ObjectHeader, Tag } from '@crewlethq/ui';
 
 const meta: Meta<typeof ObjectHeader> = {
@@ -88,5 +89,26 @@ export const WithDescription: Story = {
     identifier: undefined,
     title: 'Pipeline health',
     description: 'Where every open deal stands this week, and who holds the next step.',
+  },
+};
+
+/**
+ * WITH A MARK: the object's own mark on a plate beside the header, for an
+ * integration's page. The facts line under it carries what the engine counts.
+ */
+export const WithMark: Story = {
+  args: {
+    kind: 'Integration',
+    icon: <PlugGlyph size="xs" />,
+    identifier: 'slack',
+    mark: <VendorMark vendor="slack" size={36} />,
+    title: 'Slack',
+    status: <Tag variant="success">Connected</Tag>,
+    description: 'Each agent posts as its own bot.',
+    facts: [
+      { label: 'Agents ready', value: '2 of 2' },
+      { label: 'Delivered', value: '279' },
+      { label: 'Last checked', value: '4m ago' },
+    ],
   },
 };

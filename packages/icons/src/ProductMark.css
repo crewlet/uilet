@@ -1,0 +1,41 @@
+/*
+ * A product mark draws the brand's own violet, so it reads the same in both
+ * themes: the brand mark's colours are its identity, as a vendor's are.
+ *
+ * SOON IS HOLLOW, NOT GREY. The body keeps a faint violet tint, and its keyline
+ * and face are drawn in the violet itself, so a product that has not shipped
+ * is still unmistakably Crewlet's and never reads as a disconnected app.
+ */
+
+.crewlet-product-mark {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+}
+
+.crewlet-product-mark--soon [data-part='body'] {
+  fill-opacity: 0.16;
+}
+
+.crewlet-product-mark--soon [data-part='shade'] {
+  fill-opacity: 0.32;
+}
+
+.crewlet-product-mark--soon [data-part='detail'] {
+  fill: #7c56ff;
+}
+
+.crewlet-product-mark--soon [data-part='dim'] {
+  fill: #7c56ff;
+  fill-opacity: 0.4;
+}
+
+.crewlet-product-mark--soon [data-part='eye'] {
+  fill: #ffffff;
+}
+
+@media (forced-colors: active) {
+  .crewlet-product-mark--soon {
+    opacity: 0.5;
+  }
+}

@@ -5,6 +5,8 @@ export type { CrewletFigureProps, CrewletMotion } from './CrewletFigure.js';
 export * from './characters.js';
 export { VendorMark, VENDORS } from './VendorMark.js';
 export type { Vendor, VendorMarkProps } from './VendorMark.js';
+export { ProductMark, PRODUCTS } from './ProductMark.js';
+export type { Product, ProductMarkProps } from './ProductMark.js';
 // Every illustration under its own name, plus ICON_NAMES and IconName.
 //
 // Named exports, and NO `Icons` namespace. A namespace re-export compiles to a

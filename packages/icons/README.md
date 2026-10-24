@@ -89,6 +89,24 @@ The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRA
 
 `VENDORS` lists every mark the package carries.
 
+## Product marks
+
+```tsx
+import { ProductMark } from '@crewlethq/icons';
+
+<ProductMark product="works" size={24} />
+<ProductMark product="chat" size={24} soon />
+```
+
+| Prop | Type | Default | Purpose |
+| ---- | ---- | ------- | ------- |
+| `product` | `Product`: `'works' \| 'knowledge' \| 'chat'` | required | Which of Crewlet's own products. |
+| `size` | as `Glyph` | `'1em'` | How big it draws. |
+| `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
+| `soon` | boolean | `false` | Draws a product that has not shipped hollow: a faint violet body under a violet keyline and face. Never grey, which is how a vendor mark says "not connected". |
+
+The three services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. All three stand on one tile, the crewmate head's octagon with its 45 degree chamfers on the 48 grid, in the brand violet (`#7c56ff`) with a deeper lower facet (`#5c24ff`), inset two units so its weight sits beside a vendor mark's. One white figure on each tells them apart, drawn on the 6 unit grid so its edges land on whole pixels at 16, 24 and 48: **Works** (projects and tasks) is a task list, one task ticked and one open; **Knowledge** (spaces and pages) is an open book with its lines of text; **Chat** (talking with agents) is the crewmate's two eyes in a speech bubble. The sources are `svg/product/*.svg`, exported as `@crewlethq/icons/svg/product/*.svg`. `PRODUCTS` lists them.
+
 ## Signature illustrations
 
 ```tsx
