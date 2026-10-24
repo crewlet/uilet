@@ -42,9 +42,20 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   foldedMessage?: string;
 }
 
+/*
+ * EVERY CHARACTER THE ENGINE CALLS A LINE BREAK, which is more than \r and
+ * \n: the vertical tab, the form feed, NEL (U+0085) and the Unicode line and
+ * paragraph separators (U+2028, U+2029), as the engine's charter rule and its
+ * shared vectors spell it. Text copied from a PDF or some editors carries
+ * U+2028; folded as \n alone, it survived into a one-line field, drew as a
+ * break and was then refused on save.
+ */
+const LINE_BREAK = /[\r\n\v\f\u0085\u2028\u2029]/;
+const LINE_BREAKS = /[ \t]*(?:\r\n|[\r\n\v\f\u0085\u2028\u2029])+[ \t]*/g;
+
 /** A value with its line breaks, and the space around each, folded into one space. */
 export function foldLineBreaks(text: string): string {
-  return text.replace(/[ \t]*(?:\r\n|\r|\n)+[ \t]*/g, ' ');
+  return text.replace(LINE_BREAKS, ' ');
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
@@ -141,7 +152,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
    */
   const change = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const el = event.target;
-    if (singleLine && /[\r\n]/.test(el.value)) {
+    if (singleLine && LINE_BREAK.test(el.value)) {
       const caret = foldLineBreaks(el.value.slice(0, el.selectionStart ?? el.value.length)).length;
       el.value = foldLineBreaks(el.value);
       el.setSelectionRange(caret, caret);

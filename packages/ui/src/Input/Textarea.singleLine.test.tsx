@@ -43,6 +43,10 @@ test('line breaks and the space around them fold into one space', () => {
   expect(foldLineBreaks('one\ntwo')).toBe('one two');
   expect(foldLineBreaks('one  \r\n\r\n  two\rthree')).toBe('one two three');
   expect(foldLineBreaks('no break')).toBe('no break');
+  // Every break the engine refuses, each on its own, so dropping one fails.
+  for (const br of ['\n', '\r', '\v', '\f', '\u0085', '\u2028', '\u2029']) {
+    expect(foldLineBreaks(`one${br}two`), JSON.stringify(br)).toBe('one two');
+  }
 });
 
 test('it is announced as a one-line field, and is a textarea so it wraps', () => {
@@ -71,6 +75,15 @@ test('a pasted line break reaches the owner as a space, with the caret kept', ()
   expect(el.selectionStart).toBe(12);
   // Not silently: the writer is told the paste was changed.
   expect(screen.getByRole('status').textContent).toBe('Line breaks were replaced with spaces: this field holds one line.');
+});
+
+test('a pasted Unicode line or paragraph separator, or NEL, is folded too', () => {
+  const onChange = vi.fn();
+  render(<Mission onChange={onChange} />);
+  for (const br of ['\u2028', '\u2029', '\u0085', '\v', '\f']) {
+    fireEvent.change(box(), { target: { value: `Fair${br}shares.` } });
+    expect(onChange, JSON.stringify(br)).toHaveBeenLastCalledWith('Fair shares.');
+  }
 });
 
 test('a change with no line break says nothing', () => {
