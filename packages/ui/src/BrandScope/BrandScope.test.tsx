@@ -53,6 +53,17 @@ test('sets a family list that reads as names, ending in the page face, and refus
   expect(brandScopeInputs({}, 'x; color: red', 'url(evil.woff2)')).toEqual({});
 });
 
+test("hands on the engine's face lists as they arrive: a kit face, a system stack, an uploaded face", () => {
+  // Verbatim from the engine (brandformat FaceFamilies, the dashboard's BRAND_FACE_FAMILIES).
+  const geist = 'Geist, -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji';
+  const systemSans = 'system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Noto Sans, Helvetica Neue, Arial, sans-serif';
+  const uploaded = `"crewlet-brand-heading-1k2j3", ${systemSans}`;
+  expect(brandScopeInputs({}, uploaded, geist)).toEqual({
+    '--brand-font-heading': `${uploaded}, var(--font-family-display)`,
+    '--brand-font-body': `${geist}, var(--font-family-sans)`,
+  });
+});
+
 test('draws one box inside an outer element that carries the inputs, and hands the box its attributes', () => {
   render(
     <BrandScope colors={BRAND} className="doc" aria-label="Launch plan" role="region" data-testid="box">
