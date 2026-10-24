@@ -184,6 +184,19 @@
   text-wrap: pretty;
 }
 
+/*
+ * THE WORDS AT A READING MEASURE (`measure`), while the row and its rule
+ * still span the list. In a card the width of the page a policy otherwise
+ * runs to some 150 characters a line. A maximum, never a width.
+ */
+.crewlet-list--measure-normal .crewlet-list__content {
+  max-inline-size: var(--size-measure);
+}
+
+.crewlet-list--measure-wide .crewlet-list__content {
+  max-inline-size: var(--size-measure-wide);
+}
+
 /* ---- States ------------------------------------------------------------ */
 
 /*

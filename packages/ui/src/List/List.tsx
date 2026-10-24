@@ -64,6 +64,13 @@ export interface ListProps extends HTMLAttributes<HTMLElement> {
    * shows the mission and the vision above them.
    */
   density?: 'comfortable' | 'compact' | undefined;
+  /**
+   * Holds each row's words to a reading measure while the row itself, and the
+   * rule under it, still spans the list: `normal` is prose's (68ch), `wide`
+   * is a list of statements read one at a time (80ch), a company's policies.
+   * Unset, the words take the row's width, as a feed's do.
+   */
+  measure?: 'normal' | 'wide' | undefined;
 }
 
 /**
@@ -80,6 +87,7 @@ export function List({
   variant = 'divided',
   template,
   density = 'comfortable',
+  measure,
   className,
   style,
   children,
@@ -96,6 +104,7 @@ export function List({
           `crewlet-list--${variant}`,
           templated && 'crewlet-list--templated',
           density === 'compact' && 'crewlet-list--compact',
+          measure && `crewlet-list--measure-${measure}`,
           className,
         )}
         style={templated ? ({ ...style, '--crewlet-list-template': template } as CSSProperties) : style}

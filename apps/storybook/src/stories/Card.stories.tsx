@@ -431,7 +431,7 @@ export const Principles: Story = {
         <Card.Header icon={<ScrollTextGlyph />} count={3}>
           <Card.Title>Standing policies</Card.Title>
         </Card.Header>
-        <List variant="numbered-divided" density="compact" aria-label="Standing policies">
+        <List variant="numbered-divided" density="compact" measure="wide" aria-label="Standing policies">
           <ListItem>Every amount is exact to the cent. Round only when a person reads it.</ListItem>
           <ListItem>Ask before deleting anything a customer wrote.</ListItem>
           <ListItem>Never move money without a second agent checking the amount and the recipient.</ListItem>
