@@ -1,7 +1,5 @@
-import type { CSSProperties } from 'react';
-import { themes } from '@crewlethq/tokens';
+import { BrandScope, type BrandColors } from '../BrandScope/index.js';
 import { cx } from '../utils/cx.js';
-import { fontStack } from '../utils/fontFamily.js';
 import { normalizeHex } from '../utils/hexColour.js';
 
 /** What the sample draws: the opening of a doc, or a title slide. */
@@ -11,18 +9,11 @@ export type BrandSampleKind = 'doc' | 'slide';
 export type BrandSampleMode = 'light' | 'dark';
 
 /**
- * A brand's colours by role, as the engine stores them. Each is `#rrggbb`;
- * one that is absent, or is not one, takes the product's own value for the
- * sample's mode.
+ * A brand's colours by role, as the engine stores them: BrandScope's own. Each
+ * is `#rrggbb`; one that is absent, or is not one, takes the product's value
+ * for the sample's mode.
  */
-export interface BrandSampleColors {
-  primary?: string | undefined;
-  primary_on_dark?: string | undefined;
-  secondary?: string | undefined;
-  text?: string | undefined;
-  light_ground?: string | undefined;
-  dark_ground?: string | undefined;
-}
+export type BrandSampleColors = BrandColors;
 
 export interface BrandSampleLabels {
   /** The doc's heading. */
@@ -76,63 +67,6 @@ export interface BrandSampleProps {
   labels?: Partial<BrandSampleLabels> | undefined;
 }
 
-/** What every role resolves to in one mode, before the brand's own values are laid over it. */
-interface Palette {
-  ground: string;
-  text: string;
-  muted: string;
-  accent: string;
-}
-
-/*
- * THE PRODUCT'S OWN VALUES FOR EACH MODE, read from the tokens package rather
- * than from the page: the sample's mode is its own, so a light sample on a
- * dark page is drawn in the light palette.
- */
-const PRODUCT: Readonly<Record<BrandSampleMode, Palette>> = {
-  light: {
-    ground: themes.light.color.surface.background,
-    text: themes.light.color.text.primary,
-    muted: themes.light.color.text.tertiary,
-    accent: themes.light.color.brand.accent,
-  },
-  dark: {
-    ground: themes.dark.color.surface.background,
-    text: themes.dark.color.text.primary,
-    muted: themes.dark.color.text.tertiary,
-    accent: themes.dark.color.brand.accent,
-  },
-};
-
-/**
- * The sample's colours in its mode: each brand role that reads as `#rrggbb`,
- * the product's value where it does not.
- *
- * TEXT ON A DARK GROUND IS THE PRODUCT'S, as the artifact kit draws it: a
- * brand's text colour is chosen for its light ground, and on a dark one the
- * theme's own text is what reads.
- */
-function resolvePalette(mode: BrandSampleMode, colors: BrandSampleColors): Palette & { secondary: string | null } {
-  const product = PRODUCT[mode];
-  const primary = normalizeHex(colors.primary);
-  if (mode === 'dark') {
-    return {
-      ground: normalizeHex(colors.dark_ground) ?? product.ground,
-      text: product.text,
-      muted: product.muted,
-      accent: normalizeHex(colors.primary_on_dark) ?? primary ?? product.accent,
-      secondary: normalizeHex(colors.secondary),
-    };
-  }
-  return {
-    ground: normalizeHex(colors.light_ground) ?? product.ground,
-    text: normalizeHex(colors.text) ?? product.text,
-    muted: product.muted,
-    accent: primary ?? product.accent,
-    secondary: normalizeHex(colors.secondary),
-  };
-}
-
 /**
  * A company's brand, drawn: the opening of a doc or a title slide in its
  * colours, its type and its logo. The preview beside Company › Brand, a brand
@@ -142,9 +76,13 @@ function resolvePalette(mode: BrandSampleMode, colors: BrandSampleColors): Palet
  * shows ("A doc in the Acme brand, light mode"); the words inside are sample
  * copy, and its link is drawn, never followed.
  *
- * IT PAINTS ONLY ITSELF. Every colour and face is a custom property on the
- * sample's own root, never on the page's, so two samples in two modes sit
- * side by side, and the mode is the `mode` prop rather than the page's theme.
+ * DRAWN THROUGH THE BRAND MAPPING ITSELF. The sample is a BrandScope pinned to
+ * its `mode`: its ground, text, accent and faces are the public tokens as the
+ * mapping the artifact kit draws every page with sets them, so the preview
+ * shows what an artifact will look like rather than a second reading of the
+ * rules. The sample is its mode whatever mode the page is in (a role the
+ * brand lacks, and every token that is not a brand role, takes the default
+ * theme's value for the mode), so two samples in two modes sit side by side.
  * A colour reaches a style only once it has passed `#rrggbb`, and a family
  * list only once it reads as family names; anything else is the product's.
  *
@@ -166,24 +104,20 @@ export function BrandSample({
   labels,
 }: BrandSampleProps) {
   const text = { ...LABELS, ...labels };
-  const palette = resolvePalette(mode, colors);
   const modeLogo = (mode === 'dark' ? logoOnDark || logo : logo) || null;
-  const style = {
-    '--crewlet-brand-sample-ground': palette.ground,
-    '--crewlet-brand-sample-text': palette.text,
-    '--crewlet-brand-sample-muted': palette.muted,
-    '--crewlet-brand-sample-accent': palette.accent,
-    '--crewlet-brand-sample-secondary': palette.secondary ?? palette.accent,
-    '--crewlet-brand-sample-heading-family': fontStack(headingFamily, 'var(--font-family-display)'),
-    '--crewlet-brand-sample-body-family': fontStack(bodyFamily, 'var(--font-family-sans)'),
-  } as CSSProperties;
+  // Whether the brand has a second colour at all, for the bar's second
+  // segment; the colour it is drawn in is the mapping's.
+  const secondary = normalizeHex(colors.secondary) !== null;
 
   return (
-    <div
+    <BrandScope
+      colors={colors}
+      headingFamily={headingFamily}
+      bodyFamily={bodyFamily}
+      mode={mode}
       role="img"
       aria-label={text.label(name, kind, mode)}
       className={cx('crewlet-brand-sample', `crewlet-brand-sample--${kind}`, `crewlet-brand-sample--${mode}`, className)}
-      style={style}
     >
       {kind === 'doc' ? (
         <div className="crewlet-brand-sample__page">
@@ -217,12 +151,12 @@ export function BrandSample({
           </span>
           <span className="crewlet-brand-sample__bar">
             <span className="crewlet-brand-sample__bar-primary" />
-            {palette.secondary ? <span className="crewlet-brand-sample__bar-secondary" /> : null}
+            {secondary ? <span className="crewlet-brand-sample__bar-secondary" /> : null}
           </span>
           <span className="crewlet-brand-sample__heading crewlet-brand-sample__heading--slide">{text.slideHeading}</span>
           <span className="crewlet-brand-sample__footer">{`${name} · ${text.slideFooter}`}</span>
         </div>
       )}
-    </div>
+    </BrandScope>
   );
 }

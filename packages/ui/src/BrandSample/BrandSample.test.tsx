@@ -1,13 +1,12 @@
 /**
- * A brand sample is a named picture that paints only its own box: each brand
- * colour reaches a style only once it reads as `#rrggbb`, each family list
- * only once it reads as family names, and every role it lacks takes the
- * product's value for the sample's own mode, never the page's.
+ * A brand sample is a named picture drawn through a BrandScope pinned to its
+ * own mode: each brand colour reaches the mapping only once it reads as
+ * `#rrggbb`, each family list only once it reads as family names, and a role
+ * it lacks sets nothing, so the mapping takes the theme's value for the mode.
  */
 
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { themes } from '@crewlethq/tokens';
 import { afterEach, expect, test } from 'vitest';
 import { BrandSample, type BrandSampleColors } from './index.js';
 
@@ -26,8 +25,13 @@ function root(): HTMLElement {
   return screen.getByRole('img');
 }
 
-function painted(name: string): string {
-  return root().style.getPropertyValue(`--crewlet-brand-sample-${name}`);
+/** The scope around the sample: it carries the brand's inputs and the pinned mode. */
+function scope(): HTMLElement {
+  return root().parentElement as HTMLElement;
+}
+
+function input(name: string): string {
+  return scope().style.getPropertyValue(`--brand-${name}`);
 }
 
 test('is a picture named by what it shows, with its words and its link drawn rather than read or followed', () => {
@@ -38,37 +42,33 @@ test('is a picture named by what it shows, with its words and its link drawn rat
   expect(root().querySelector('a, button, input, [tabindex]')).toBeNull();
 });
 
-test('in light mode draws the brand text on the brand light ground with the primary accent, lowercased', () => {
+test('is drawn through a BrandScope pinned to its own mode, whatever the page is in', () => {
+  const { rerender } = render(<BrandSample kind="doc" mode="light" name="Acme" colors={BRAND} />);
+  expect(scope().classList.contains('crewlet-brand-scope')).toBe(true);
+  expect(root().classList.contains('crewlet-brand-scope__layer')).toBe(true);
+  expect(scope().getAttribute('data-mode')).toBe('light');
+  rerender(<BrandSample kind="slide" mode="dark" name="Acme" colors={BRAND} />);
+  expect(scope().getAttribute('data-mode')).toBe('dark');
+});
+
+test("hands the mapping the brand's colours as its inputs, lowercased", () => {
   render(<BrandSample kind="doc" mode="light" name="Acme" colors={BRAND} />);
-  expect(painted('ground')).toBe('#fbfaff');
-  expect(painted('text')).toBe('#16131f');
-  expect(painted('accent')).toBe('#5b3df5');
-  expect(painted('secondary')).toBe('#0e9f8a');
-  expect(painted('muted')).toBe(themes.light.color.text.tertiary);
+  expect(input('primary')).toBe('#5b3df5');
+  expect(input('primary-on-dark')).toBe('#9d8bff');
+  expect(input('secondary')).toBe('#0e9f8a');
+  expect(input('text')).toBe('#16131f');
+  expect(input('light-ground')).toBe('#fbfaff');
+  expect(input('dark-ground')).toBe('#120a2b');
 });
 
-test("in dark mode draws the product's dark text on the brand dark ground with the primary for dark grounds", () => {
-  render(<BrandSample kind="slide" mode="dark" name="Acme" colors={BRAND} />);
-  expect(painted('ground')).toBe('#120a2b');
-  expect(painted('text')).toBe(themes.dark.color.text.primary);
-  expect(painted('accent')).toBe('#9d8bff');
-  expect(painted('muted')).toBe(themes.dark.color.text.tertiary);
-});
-
-test('the primary stands in for a dark ground when the brand has no colour of its own for one', () => {
-  render(<BrandSample kind="slide" mode="dark" name="Acme" colors={{ primary: '#5b3df5' }} />);
-  expect(painted('accent')).toBe('#5b3df5');
-});
-
-test("every role the brand lacks takes the product's value for the sample's mode", () => {
-  const { rerender } = render(<BrandSample kind="doc" mode="light" name="Acme" colors={{}} />);
-  expect(painted('ground')).toBe(themes.light.color.surface.background);
-  expect(painted('text')).toBe(themes.light.color.text.primary);
-  expect(painted('accent')).toBe(themes.light.color.brand.accent);
-  expect(painted('secondary')).toBe(themes.light.color.brand.accent);
-  rerender(<BrandSample kind="doc" mode="dark" name="Acme" colors={{}} />);
-  expect(painted('ground')).toBe(themes.dark.color.surface.background);
-  expect(painted('accent')).toBe(themes.dark.color.brand.accent);
+test("sets no input for a role the brand lacks, so the mapping takes the theme's value for the mode", () => {
+  render(<BrandSample kind="doc" mode="dark" name="Acme" colors={{ primary: '#5b3df5' }} />);
+  expect(input('primary')).toBe('#5b3df5');
+  for (const name of ['primary-on-dark', 'secondary', 'text', 'light-ground', 'dark-ground', 'font-heading', 'font-body']) {
+    expect(input(name), name).toBe('');
+  }
+  // The second segment of the accent bar is drawn only for a brand with a second colour.
+  expect(document.querySelector('.crewlet-brand-sample__bar-secondary')).toBeNull();
 });
 
 test('a colour that is not #rrggbb never reaches a style', () => {
@@ -80,21 +80,20 @@ test('a colour that is not #rrggbb never reaches a style', () => {
       colors={{ primary: 'red; background: url(https://example.com/x)', light_ground: '#fff', text: ['var(', '--', 'evil)'].join('') }}
     />,
   );
-  const style = root().getAttribute('style') ?? '';
+  const style = `${scope().getAttribute('style') ?? ''} ${root().getAttribute('style') ?? ''}`;
   expect(style).not.toMatch(/url|red|evil|#fff[^0-9a-f]/);
-  expect(painted('accent')).toBe(themes.light.color.brand.accent);
-  expect(painted('ground')).toBe(themes.light.color.surface.background);
+  expect(input('primary')).toBe('');
 });
 
-test('a family list that reads as names is drawn before the package face; anything else is the package face', () => {
+test('a family list that reads as names is handed on before the package face; anything else is not handed on', () => {
   const { rerender } = render(
     <BrandSample kind="doc" mode="light" name="Acme" colors={BRAND} headingFamily="'Acme Display', Georgia" bodyFamily="Inter" />,
   );
-  expect(painted('heading-family')).toBe("'Acme Display', Georgia, var(--font-family-display)");
-  expect(painted('body-family')).toBe('Inter, var(--font-family-sans)');
+  expect(input('font-heading')).toBe("'Acme Display', Georgia, var(--font-family-display)");
+  expect(input('font-body')).toBe('Inter, var(--font-family-sans)');
   rerender(<BrandSample kind="doc" mode="light" name="Acme" colors={BRAND} headingFamily="x; color: red" bodyFamily="url(evil.woff2)" />);
-  expect(painted('heading-family')).toBe('var(--font-family-display)');
-  expect(painted('body-family')).toBe('var(--font-family-sans)');
+  expect(input('font-heading')).toBe('');
+  expect(input('font-body')).toBe('');
 });
 
 test("the doc carries the mode's logo, or the company's name where there is none", () => {

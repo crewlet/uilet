@@ -3,12 +3,10 @@
  * that sets every length against its own width, so one drawing reads at a
  * gallery cover's size and at a preview's.
  *
- * Its colours and faces are the only values here that are not tokens, and
- * they arrive through custom properties the component sets on its own root
- * (`--crewlet-brand-sample-*`), each a `#rrggbb` that passed the brand gate or
- * the product's value for the sample's mode, and each family list one that
- * read as family names before the package's own face. Nothing is set on the
- * page's root, so two samples in two modes sit side by side.
+ * It paints with the public tokens, which the sample's BrandScope (pinned to
+ * the sample's mode) sets from the brand through the artifact kit's own
+ * mapping: the ground, the text, the accent, the highlight and the two faces,
+ * and the quiet line in the tertiary text of the sample's pinned mode.
  */
 .crewlet-brand-sample {
   /* The frame's corner. A host drawing the sample edge to edge in a cover
@@ -23,12 +21,12 @@
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: var(--crewlet-brand-sample-radius);
-  background: var(--crewlet-brand-sample-ground);
+  background: var(--color-surface-background);
   /* AN EDGE OF ITS OWN, inside the frame, so a ground that matches the page
      is still a frame. */
   box-shadow: inset 0 0 0 1px var(--color-border-hover);
-  color: var(--crewlet-brand-sample-text);
-  font-family: var(--crewlet-brand-sample-body-family);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
   line-height: var(--font-line-height-snug);
   user-select: none;
 }
@@ -69,7 +67,7 @@
 /* WHERE THERE IS NO LOGO, the company's name in the heading face. */
 .crewlet-brand-sample__wordmark {
   overflow: hidden;
-  font-family: var(--crewlet-brand-sample-heading-family);
+  font-family: var(--font-family-display);
   font-size: 3.4cqi;
   font-weight: var(--font-weight-semibold);
   text-overflow: ellipsis;
@@ -79,7 +77,7 @@
 .crewlet-brand-sample__heading {
   max-width: 100%;
   overflow: hidden;
-  font-family: var(--crewlet-brand-sample-heading-family);
+  font-family: var(--font-family-display);
   font-size: 6cqi;
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-tight);
@@ -94,7 +92,7 @@
   width: 12cqi;
   height: 0.8cqi;
   border-radius: var(--radius-pill);
-  background: var(--crewlet-brand-sample-accent);
+  background: var(--color-brand-accent);
 }
 
 .crewlet-brand-sample__body {
@@ -105,7 +103,7 @@
 
 /* A LINK, DRAWN: the accent ink and its underline, and nothing to follow. */
 .crewlet-brand-sample__link {
-  color: var(--crewlet-brand-sample-accent);
+  color: var(--color-brand-accent);
   text-decoration: underline;
   text-decoration-thickness: 0.2cqi;
   text-underline-offset: 0.5cqi;
@@ -113,7 +111,7 @@
 
 .crewlet-brand-sample__byline {
   margin-top: auto;
-  color: var(--crewlet-brand-sample-muted);
+  color: var(--color-text-tertiary);
   font-size: 2.2cqi;
 }
 
@@ -156,12 +154,12 @@
 
 .crewlet-brand-sample__bar-primary {
   width: 12cqi;
-  background: var(--crewlet-brand-sample-accent);
+  background: var(--color-brand-accent);
 }
 
 .crewlet-brand-sample__bar-secondary {
   width: 4cqi;
-  background: var(--crewlet-brand-sample-secondary);
+  background: var(--color-brand-highlight);
 }
 
 /* TWO LINES AT MOST, set large: a title slide's heading. */
@@ -178,7 +176,7 @@
 .crewlet-brand-sample__footer {
   margin-top: 3cqi;
   overflow: hidden;
-  color: var(--crewlet-brand-sample-muted);
+  color: var(--color-text-tertiary);
   font-size: 2cqi;
   letter-spacing: var(--font-letter-spacing-wide);
   text-overflow: ellipsis;
