@@ -50,3 +50,33 @@
     --crewlet-tile-grid-tracks: 1;
   }
 }
+
+/*
+ * COMPACT TILES FOLD WIDER. A compact `CatalogTile` puts its mark, name,
+ * state, fact and action on ONE line, which needs about 30rem; the folds above
+ * are sized for a comfortable tile, whose parts stack. Measured at a 1024px
+ * window, two compact tiles on 415px tracks cut the name to its first letter.
+ * So a grid holding a compact tile folds where a track would be narrower than
+ * 30rem, counting the gaps: two tracks need 61rem, three 92rem (folding
+ * straight to one, as three always do), and four 123rem before they go to
+ * two. Declared here, on the grid, because the grid chooses the track count
+ * and the tile cannot.
+ */
+@container crewlet-tile-grid (width < 123rem) {
+  .crewlet-tile-grid[data-columns='4']:has(.crewlet-catalog-tile--compact) > .crewlet-tile-grid__track {
+    --crewlet-tile-grid-tracks: 2;
+  }
+}
+
+@container crewlet-tile-grid (width < 92rem) {
+  .crewlet-tile-grid[data-columns='3']:has(.crewlet-catalog-tile--compact) > .crewlet-tile-grid__track {
+    --crewlet-tile-grid-tracks: 1;
+  }
+}
+
+@container crewlet-tile-grid (width < 61rem) {
+  /* As specific as the two rules above and after them, so it wins at every count. */
+  .crewlet-tile-grid[data-columns]:has(.crewlet-catalog-tile--compact) > .crewlet-tile-grid__track {
+    --crewlet-tile-grid-tracks: 1;
+  }
+}

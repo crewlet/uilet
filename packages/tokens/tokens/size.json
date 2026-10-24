@@ -26,6 +26,7 @@
     "targetMin": { "value": "24px", "comment": "The smallest a hit target may ever stand, and the same floor size.control.sm and size.row.sm carry. It is a token because a component that DERIVES a height from a control step (a chip in a well stands shorter than the control beside it) has to clamp the result itself: max(var(--size-target-min), calc(...)) holds at every density, where the step's own floor no longer can once it has been subtracted from." },
     "measure": { "value": "68ch", "comment": "Prose and forms get a measure. Tables and charts deliberately do not: they are the one content that genuinely wants the whole viewport." },
     "measureNarrow": { "value": "48ch" },
+    "measureWide": { "value": "80ch", "comment": "The measure for a list of statements read one at a time, such as a company's standing policies: each row is a sentence or two in the body's size, read and cited by number, so it takes a little more than prose's measure before a long one wraps, and still stops well short of the 150 characters a line a full-width card gives it at 1440." },
     "contentMax": { "value": "1600px" },
     "focusRingInsetOffset": {
       "value": "-2px",

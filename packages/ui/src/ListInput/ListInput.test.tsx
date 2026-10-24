@@ -11,11 +11,13 @@
  * component mounts for itself.
  */
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { useState } from 'react';
-import { afterEach, expect, test } from 'vitest';
+import { cleanup, createEvent, fireEvent, render, screen, within } from '@testing-library/react';
+import axe from 'axe-core';
+import { createRef, useState } from 'react';
+import { afterEach, expect, test, vi } from 'vitest';
 import { Announcer } from '../Announcer/index.js';
-import { ListInput } from './ListInput.js';
+import { InlineEditor } from '../InlineEditor/index.js';
+import { ListInput, withDraft, type ListInputHandle } from './ListInput.js';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
@@ -343,4 +345,336 @@ test('a list asked to take the focus puts it in the new-item box once, on mount'
 test('a list not asked leaves the focus where it was', () => {
   render(<ListInput label="Policies" itemName="policy" value={[]} onChange={() => {}} />);
   expect(document.activeElement).toBe(document.body);
+});
+
+// ---- a list with limits, refusals and a grip --------------------------------
+
+function Policies({
+  initial,
+  ...rest
+}: { initial: string[] } & Partial<Omit<Parameters<typeof ListInput>[0], 'value' | 'onChange'>>) {
+  const [value, setValue] = useState(initial);
+  return (
+    <form onSubmit={() => {}}>
+      <Announcer />
+      <ListInput label="Policies" itemName="policy" multiline {...rest} value={value} onChange={setValue} />
+      <pre data-testid="value">{JSON.stringify(value)}</pre>
+    </form>
+  );
+}
+
+test('a full list says so where the box was, and the focus moves to what was just added', () => {
+  render(<Policies initial={['One.']} maxItems={2} />);
+  const box = screen.getByLabelText('New policy');
+  box.focus();
+  fireEvent.change(box, { target: { value: 'Two.' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(current()).toEqual(['One.', 'Two.']);
+  expect(screen.queryByLabelText('New policy')).toBeNull();
+  expect(document.body.textContent).toContain('The list is full at 2. Remove one to add another.');
+  expect(document.activeElement).toBe(screen.getByLabelText('Policy 2 of 2'));
+  expect(announced()).toBe('Added policy 2 of 2. The list is full at 2. Remove one to add another.');
+  // Every item is still the reader's: removing one brings the box back.
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 1 of 2' }));
+  expect(screen.getByLabelText('New policy')).toBeDefined();
+});
+
+test('an item over the length limit keeps its words, says by how much, and is invalid', () => {
+  render(<Policies initial={['Short.']} maxLength={10} />);
+  const item = screen.getByLabelText('Policy 1 of 1');
+  expect(item.getAttribute('aria-invalid')).toBeNull();
+  expect(item.getAttribute('aria-describedby')).toBeNull();
+  fireEvent.change(item, { target: { value: 'Far too long a policy.' } });
+  expect(current()).toEqual(['Far too long a policy.']);
+  expect(item.getAttribute('aria-invalid')).toBe('true');
+  const count = document.getElementById(item.getAttribute('aria-describedby')!);
+  expect(count?.textContent).toContain('12 characters over the limit of 10');
+});
+
+test('the new-item box refuses an item over the limit, and shows its count in the keycap’s place', () => {
+  render(<Policies initial={[]} maxLength={10} />);
+  const box = screen.getByLabelText('New policy');
+  fireEvent.change(box, { target: { value: 'Exactly 10' } });
+  expect(box.closest('.crewlet-textarea-shell')?.textContent).toContain('10 of 10 characters');
+  fireEvent.change(box, { target: { value: 'Eleven char' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(current()).toEqual([]);
+  expect(box.getAttribute('aria-invalid')).toBe('true');
+  expect((screen.getByRole('button', { name: 'Add policy' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+test('a refusal of one item is said under it and describes it', () => {
+  render(
+    <Policies
+      initial={['Fine.', 'Refused.']}
+      itemError={(index) => (index === 1 ? 'This policy repeats policy 1.' : undefined)}
+    />,
+  );
+  expect(screen.getByLabelText('Policy 1 of 2').getAttribute('aria-invalid')).toBeNull();
+  const refused = screen.getByLabelText('Policy 2 of 2');
+  expect(refused.getAttribute('aria-invalid')).toBe('true');
+  expect(document.getElementById(refused.getAttribute('aria-describedby')!)?.textContent).toBe(
+    'This policy repeats policy 1.',
+  );
+});
+
+/** What a drag carries, as far as the reorder hook reads or writes it. */
+function carried() {
+  return { effectAllowed: 'none', dropEffect: 'none', setData: vi.fn(), setDragImage: vi.fn() };
+}
+
+function dragOverAt(el: Element, y: number) {
+  const event = createEvent.dragOver(el, { dataTransfer: carried() });
+  Object.defineProperty(event, 'clientX', { value: 10 });
+  Object.defineProperty(event, 'clientY', { value: y });
+  fireEvent(el, event);
+}
+
+const rows = () =>
+  within(document.querySelector<HTMLElement>('.crewlet-list-input__items')!)
+    .getAllByRole('listitem');
+
+test('a list that drags draws a grip per row, hidden from a screen reader and out of the tab order', () => {
+  const { rerender } = render(<Policies initial={['One.', 'Two.']} />);
+  expect(document.querySelector('.crewlet-list-input__handle')).toBeNull();
+  rerender(<Policies initial={['One.', 'Two.']} reorderByDrag />);
+  const grips = [...document.querySelectorAll<HTMLElement>('.crewlet-list-input__handle')];
+  expect(grips).toHaveLength(2);
+  for (const grip of grips) {
+    expect(grip.getAttribute('aria-hidden')).toBe('true');
+    expect(grip.getAttribute('draggable')).toBe('true');
+    expect(grip.tabIndex).toBe(-1);
+  }
+});
+
+test('a dragged row is dropped where it was carried, the item keeping its element, and it is said', () => {
+  render(<Policies initial={['One.', 'Two.', 'Three.']} reorderByDrag />);
+  const moved = screen.getByLabelText('Policy 1 of 3');
+  const grip = rows()[0]!.querySelector('.crewlet-list-input__handle')!;
+  fireEvent.dragStart(grip, { dataTransfer: carried() });
+  expect(rows()[0]!.getAttribute('data-reorder')).toBe('dragging');
+  // Past the middle of the last row on the way down.
+  const last = rows()[2]!;
+  dragOverAt(last, 10);
+  fireEvent.drop(last, { dataTransfer: carried() });
+  expect(current()).toEqual(['Two.', 'Three.', 'One.']);
+  expect(screen.getByLabelText('Policy 3 of 3')).toBe(moved);
+  expect(announced()).toBe('Moved policy to position 3 of 3');
+});
+
+test('a disabled list draws no grip', () => {
+  render(<Policies initial={['One.']} reorderByDrag disabled />);
+  expect(document.querySelector('.crewlet-list-input__handle')).toBeNull();
+});
+
+test('a list with every addition passes axe, full, over the limit and refused', async () => {
+  const { container } = render(
+    <Policies
+      initial={['One.', 'A policy well past the limit.']}
+      reorderByDrag
+      maxItems={2}
+      maxLength={12}
+      itemError={(index) => (index === 0 ? 'Refused.' : undefined)}
+    />,
+  );
+  expect((await axe.run(container)).violations).toEqual([]);
+});
+
+// ---- the draft, undo, a hidden legend, a focus handle, a byte limit ----------
+
+/** A form that saves the list the way the Principles editor does: with `withDraft`. */
+function SavedPolicies({ onSave }: { onSave: (saved: string[]) => void }) {
+  const [value, setValue] = useState(['One.']);
+  const [draft, setDraft] = useState('');
+  const dirty = draft.trim() !== '' || value.length !== 1;
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave(withDraft(value, draft));
+      }}
+    >
+      <Announcer />
+      <ListInput label="Policies" itemName="policy" value={value} onChange={setValue} draft={draft} onDraftChange={setDraft} />
+      <span data-testid="dirty">{String(dirty)}</span>
+      <button type="submit">Save</button>
+    </form>
+  );
+}
+
+test('a policy typed and not added is the owner’s to see and to save, never dropped', () => {
+  const onSave = vi.fn();
+  render(<SavedPolicies onSave={onSave} />);
+  fireEvent.change(screen.getByLabelText('New policy'), { target: { value: '  Ask first.  ' } });
+  // The owner holds the box's text, so its unsaved-changes check sees it.
+  expect(screen.getByTestId('dirty').textContent).toBe('true');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(onSave).toHaveBeenCalledWith(['One.', 'Ask first.']);
+});
+
+test('the owner’s draft is the box’s text, and an add clears it through the owner', () => {
+  const onDraftChange = vi.fn();
+  const { rerender } = render(
+    <ListInput label="Policies" itemName="policy" value={[]} onChange={() => {}} draft="Held" onDraftChange={onDraftChange} />,
+  );
+  const box = screen.getByLabelText('New policy') as HTMLInputElement;
+  expect(box.value).toBe('Held');
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(onDraftChange).toHaveBeenLastCalledWith('');
+  rerender(<ListInput label="Policies" itemName="policy" value={['Held']} onChange={() => {}} draft="" onDraftChange={onDraftChange} />);
+  expect(box.value).toBe('');
+});
+
+test('withDraft appends the trimmed draft, and nothing for an empty one', () => {
+  expect(withDraft(['a'], ' b ')).toEqual(['a', 'b']);
+  expect(withDraft(['a'], '   ')).toEqual(['a']);
+  expect(withDraft(['a'], undefined)).toEqual(['a']);
+});
+
+test('a removal leaves a row with Undo where it was, and Undo puts it back with the focus in it', () => {
+  render(<Policies initial={['One.', 'Two.', 'Three.']} undoRemove />);
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 2 of 3' }));
+  expect(current()).toEqual(['One.', 'Three.']);
+  const undo = screen.getByRole('button', { name: 'Undo' });
+  expect(document.activeElement).toBe(undo);
+  // In the item's own place in the order, and it says which.
+  const rows = [...document.querySelectorAll('.crewlet-list-input__items > li')];
+  expect(rows[1]?.className).toContain('crewlet-list-input__removed');
+  expect(document.getElementById(undo.getAttribute('aria-describedby')!)?.textContent).toBe('Policy 2 removed.');
+  fireEvent.click(undo);
+  expect(current()).toEqual(['One.', 'Two.', 'Three.']);
+  const two = screen.getByLabelText('Policy 2 of 3') as HTMLTextAreaElement;
+  expect(two.value).toBe('Two.');
+  expect(document.activeElement).toBe(two);
+  expect(announced()).toBe('Restored policy 2 of 3');
+  expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+});
+
+test('the undo row goes with the next change to the list, and Dismiss takes it down', () => {
+  render(<Policies initial={['One.', 'Two.', 'Three.']} undoRemove />);
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 1 of 3' }));
+  fireEvent.change(screen.getByLabelText('Policy 1 of 2'), { target: { value: 'Two!' } });
+  expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 2 of 2' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+  expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+  expect(document.activeElement).toBe(screen.getByLabelText('Policy 1 of 1'));
+});
+
+test('removing the last item with undo keeps the list drawn for its row', () => {
+  render(<Policies initial={['Only.']} undoRemove />);
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 1 of 1' }));
+  expect(screen.getByRole('button', { name: 'Undo' })).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+  expect(current()).toEqual(['Only.']);
+});
+
+test('a hidden legend still names the group', () => {
+  render(<Policies initial={['One.']} hideLabel />);
+  const group = screen.getByRole('group', { name: 'Policies' });
+  expect(group.querySelector('legend .crewlet-visually-hidden, legend [class*="visually-hidden"]')).not.toBeNull();
+});
+
+test('the handle focuses an item at the end of its words, and the new-item box', () => {
+  const handle = createRef<ListInputHandle>();
+  render(<ListInput ref={handle} label="Policies" itemName="policy" value={['One.', 'Two.']} onChange={() => {}} />);
+  handle.current!.focusItem(1);
+  const two = screen.getByLabelText('Policy 2 of 2') as HTMLInputElement;
+  expect(document.activeElement).toBe(two);
+  expect(two.selectionStart).toBe(4);
+  handle.current!.focusNew();
+  expect(document.activeElement).toBe(screen.getByLabelText('New policy'));
+  handle.current!.focusItem(9);
+  expect(document.activeElement).toBe(screen.getByLabelText('New policy'));
+});
+
+test('an item is counted in characters on its trimmed text, so an emoji is one and the spaces none', () => {
+  // "Go 🙂" is four characters and five UTF-16 units; the spaces around it are trimmed off.
+  render(<Policies initial={['  Go 🙂  ']} maxLength={4} />);
+  const item = screen.getByLabelText('Policy 1 of 1');
+  expect(item.getAttribute('aria-invalid')).toBeNull();
+  fireEvent.change(item, { target: { value: '  Go 🙂!  ' } });
+  expect(item.getAttribute('aria-invalid')).toBe('true');
+  expect(document.getElementById(item.getAttribute('aria-describedby')!)?.textContent).toContain(
+    '1 character over the limit of 4',
+  );
+});
+
+test('the new-item box counts an emoji once, and refuses a draft past the limit', () => {
+  render(<Policies initial={[]} maxLength={4} />);
+  const box = screen.getByLabelText('New policy');
+  fireEvent.change(box, { target: { value: 'Go 🙂' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(current()).toEqual(['Go 🙂']);
+  fireEvent.change(screen.getByLabelText('New policy'), { target: { value: 'Go 🙂🙂' } });
+  fireEvent.keyDown(screen.getByLabelText('New policy'), { key: 'Enter' });
+  expect(current()).toEqual(['Go 🙂']);
+});
+
+test('a removal with an Undo row is said once, by the row, and Dismiss is described by it too', () => {
+  render(<Policies initial={['One.', 'Two.']} undoRemove />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add policy' }));
+  const before = announced();
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 1 of 2' }));
+  // Nothing new in the live region: the focused Undo carries the sentence.
+  expect(announced()).toBe(before);
+  const dismiss = screen.getByRole('button', { name: 'Dismiss' });
+  expect(document.getElementById(dismiss.getAttribute('aria-describedby')!)?.textContent).toBe('Policy 1 removed.');
+});
+
+test('Mod+Enter in the box or in an item passes through to the editor’s save and adds nothing', () => {
+  const onSave = vi.fn();
+  function Editor() {
+    const [value, setValue] = useState(['One.']);
+    const [draft, setDraft] = useState('');
+    return (
+      <InlineEditor label="Edit the policies" dirty onSave={onSave} onCancel={() => {}} focusOnMount={false}>
+        <ListInput label="Policies" itemName="policy" value={value} onChange={setValue} draft={draft} onDraftChange={setDraft} />
+        <pre data-testid="value">{JSON.stringify(value)}</pre>
+      </InlineEditor>
+    );
+  }
+  render(<Editor />);
+  const box = screen.getByLabelText('New policy');
+  fireEvent.change(box, { target: { value: 'Two.' } });
+  fireEvent.keyDown(box, { key: 'Enter', metaKey: true });
+  fireEvent.keyDown(screen.getByLabelText('Policy 1 of 1'), { key: 'Enter', ctrlKey: true });
+  expect(onSave).toHaveBeenCalledTimes(2);
+  expect(current()).toEqual(['One.']);
+  expect((box as HTMLInputElement).value).toBe('Two.');
+  // Plain Enter still adds.
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(current()).toEqual(['One.', 'Two.']);
+});
+
+test('a one-line list wraps each item to be read, and takes no line break by any road', () => {
+  render(<Policies initial={['A long policy that would scroll sideways in a one-line input.']} multiline={false} />);
+  const item = screen.getByLabelText('Policy 1 of 1') as HTMLTextAreaElement;
+  expect(item.tagName).toBe('TEXTAREA');
+  expect(item.getAttribute('aria-multiline')).toBe('false');
+  fireEvent.change(item, { target: { value: 'Ask first.\nAlways.' } });
+  expect(current()).toEqual(['Ask first. Always.']);
+  const box = screen.getByLabelText('New policy') as HTMLTextAreaElement;
+  fireEvent.change(box, { target: { value: 'Name\nthe source.' } });
+  expect(box.value).toBe('Name the source.');
+  // Shift+Enter adds, as Enter does: there is no line to break.
+  fireEvent.keyDown(box, { key: 'Enter', shiftKey: true });
+  expect(current()).toEqual(['Ask first. Always.', 'Name the source.']);
+});
+
+test('a multi-line list keeps Shift+Enter as a line break', () => {
+  render(<Policies initial={[]} />);
+  const box = screen.getByLabelText('New policy') as HTMLTextAreaElement;
+  expect(box.getAttribute('aria-multiline')).toBeNull();
+  expect(fireEvent.keyDown(box, { key: 'Enter', shiftKey: true })).toBe(true);
+});
+
+test('with a hidden legend the add control stands beside the box, not alone above it', () => {
+  const { unmount } = render(<Policies initial={[]} />);
+  expect(screen.getByRole('button', { name: 'Add policy' }).closest('legend')).not.toBeNull();
+  unmount();
+  render(<Policies initial={[]} hideLabel />);
+  const add = screen.getByRole('button', { name: 'Add policy' });
+  expect(add.closest('legend')).toBeNull();
+  expect(add.closest('.crewlet-list-input__add')).toBe(screen.getByLabelText('New policy').closest('.crewlet-list-input__add'));
 });

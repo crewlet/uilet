@@ -22,6 +22,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **The formatting bar of `MarkdownEditor`** in `@crewlethq/ui`: `heading-2` and `heading-3` for the two heading levels a page's outline lists, `bold`, `italic`, `list-ordered` for a numbered list beside `list`, and `list-checks` for a checklist. Each is a control a writer recognises by its drawing, so the bar draws all of them as glyphs rather than spelling some as letters ("H2", "B") beside the glyphs of the rest.
 - **The rich editor's blocks and formatting** in `@crewlethq/ui` (`RichEditor`): `heading-1` beside the two heading levels already here, `type` for a plain paragraph, `strikethrough`, `text-quote` for a quote, `square-code` for a code block, `unlink` for removing a link, and `text-align-start`, `text-align-center` and `text-align-end` for a table column's alignment. The slash menu and the selection toolbar draw every block and format as a glyph a writer recognises, as the `MarkdownEditor` bar does.
 - **`mouse-pointer-2`**, the pointer a collaborator's `LiveCursor` in `@crewlethq/ui` is drawn with, beside its name flag, on a board or a page that shares cursors.
+- **A company's principles**, each statement's card heading with its own glyph: `telescope` for the vision (where the company is looking), and `scroll-text` for the standing policies (the written rules every agent is given), beside `target`, already here, for the mission.
 - **A company's brand and the folders artifacts are filed in**: `swatch-book` for the `brand` artifact kind (`ArtifactKindGlyph`) and the Company › Brand page, `blend` for a brand's colours, `badge-check` for an artifact drawn in the company's current brand, and `folder-open` for a folder with nothing in it, or nothing the reader can open, beside the `folder` a folder is otherwise drawn with.
 
 ## Provenance
@@ -178,6 +179,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `rotate-ccw-clock` | `RotateCcwClockGlyph` | `package/icons/rotate-ccw-clock.svg` |
 | `rotate-cw` | `RotateCwGlyph` | `package/icons/rotate-cw.svg` |
 | `save` | `SaveGlyph` | `package/icons/save.svg` |
+| `scroll-text` | `ScrollTextGlyph` | `package/icons/scroll-text.svg` |
 | `search` | `SearchGlyph` | `package/icons/search.svg` |
 | `send` | `SendGlyph` | `package/icons/send.svg` |
 | `separator-horizontal` | `SeparatorHorizontalGlyph` | `package/icons/separator-horizontal.svg` |
@@ -201,6 +203,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `table` | `TableGlyph` | `package/icons/table.svg` |
 | `tablet` | `TabletGlyph` | `package/icons/tablet.svg` |
 | `target` | `TargetGlyph` | `package/icons/target.svg` |
+| `telescope` | `TelescopeGlyph` | `package/icons/telescope.svg` |
 | `text-align-center` | `TextAlignCenterGlyph` | `package/icons/text-align-center.svg` |
 | `text-align-end` | `TextAlignEndGlyph` | `package/icons/text-align-end.svg` |
 | `text-align-start` | `TextAlignStartGlyph` | `package/icons/text-align-start.svg` |

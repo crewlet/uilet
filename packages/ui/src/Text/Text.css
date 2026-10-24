@@ -66,6 +66,15 @@
   color: var(--color-text-primary);
 }
 
+.crewlet-text--passage {
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-relaxed);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
 .crewlet-text--cell {
   font-size: var(--font-size-compact);
   line-height: var(--font-line-height-snug);

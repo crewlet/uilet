@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import {
   Button,
+  countCharacters,
   FormField,
   FormRow,
   FormSection,
@@ -170,4 +171,39 @@ export const HelperOnFocus: Story = {
       </FormField>
     </div>
   ),
+};
+
+/**
+ * A one-line value that wraps to be read whole (`Textarea singleLine`): a
+ * mission of 160 characters reads in full while it is edited, where a
+ * one-line input would show only its tail. Enter writes no line break, and a
+ * pasted one becomes a space.
+ */
+export const OneLineThatWraps: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState(
+        'Make splitting shared expenses so easy and so fair that nobody in a household, a trip or a team ever has to chase a friend for money again.',
+      );
+      return (
+        <div style={{ width: 420 }}>
+          <FormField label="Mission" helper="One line." limit={{ length: countCharacters(value), max: 1024 }}>
+            {(field) => (
+              <Textarea
+                id={field.id}
+                aria-describedby={field.describedBy}
+                error={field.invalid}
+                singleLine
+                autoResize
+                rows={1}
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+              />
+            )}
+          </FormField>
+        </div>
+      );
+    }
+    return <Demo />;
+  },
 };
