@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.48.2
+
+**A `TreeCanvas` card's actions strip with nothing drawn in it is not drawn.** A card may offer the pointer no control (a company's root, which nobody edits from the chart) and still hold the menu the ContextMenu key opens, marked `data-keyboard-only` and drawn nowhere. Revealed on hover, focus or selection, that strip painted the column's rule beside the name with nothing beside it (`appearance="node"`) or a patch of the strip's ground (`card`). A strip whose every child is keyboard-only, or that has none, now draws neither, in both appearances. It keeps its box, so the keyboard's menu still opens from it, and a node keeps the column's room, so the names on a rank still line up.
+
 ## Changes in 0.48.1
 
 **The account row in a rail's foot gives its chevron's room to the name.** In `AppShell.Rail`'s foot, `AccountRow` no longer draws its trailing chevron (the link's arrow or the menu's up-and-down mark), and the words take the 16px it and the step before it held. The medium badge's column cost the words 10px in 0.48.0, so the name and the detail kept 99px; they now keep 116px, more than the 109px they had beside the smaller badge. The chevron was already hidden from assistive technology, so nothing a screen reader hears changes: the link's name and the menu button's `aria-haspopup` still say what a press does, and the hover fill and the current lift still say the row is pressable. Measured in a 236px rail with Settings and Preferences beside the link: the row is 44px, the badge 32px, and the badge's ring stands 2.5px inside the row's edge, as it did around the 26px badge. Outside a rail's foot the row keeps its chevron.

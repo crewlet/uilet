@@ -1070,6 +1070,24 @@
   content: none;
 }
 
+/*
+ * A STRIP WITH NOTHING DRAWN IN IT IS NOT DRAWN. A node may offer the pointer
+ * no control at all (a company's root, which nobody edits from the chart) and
+ * still hold the keyboard's menu anchor, which is drawn nowhere. Revealed on
+ * hover, focus or selection, that strip painted the column's rule beside the
+ * name with nothing beside it (`node`), or a patch of the strip's ground
+ * (`card`). So a strip whose every child is keyboard-only, or that has none,
+ * keeps its box (the anchor still places its menu from it, and the name keeps
+ * the column's room so a rank still lines up) and draws neither.
+ */
+.crewlet-tree-canvas__actions:not(:has(> :not([data-keyboard-only]))) {
+  background: none;
+}
+
+.crewlet-tree-canvas__actions:not(:has(> :not([data-keyboard-only])))::before {
+  content: none;
+}
+
 /* ---------------------------------------------------------------------------
  * A NODE BEING COMPOSED: the ghost, and the form drawn inside it.
  *
