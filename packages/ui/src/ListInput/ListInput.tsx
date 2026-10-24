@@ -25,7 +25,6 @@ import { Kbd } from '../Kbd/index.js';
 import { isComposing } from '../Layer/index.js';
 import { useReorder } from '../Reorder/index.js';
 import { cx } from '../utils/cx.js';
-import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /**
  * The list a form would save: `value` with the new-item box's text appended,
@@ -515,7 +514,8 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
   return (
     <FormField
       as="fieldset"
-      label={hideLabel ? <VisuallyHidden>{label}</VisuallyHidden> : label}
+      label={label}
+      hideLabel={hideLabel}
       optional={optional}
       helper={helper}
       helperOnFocus={helperOnFocus}

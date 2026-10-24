@@ -1,4 +1,7 @@
 import './Input.css';
+// FormField's hideLabel draws the label with the visually hidden class, so
+// the folder entry carries its rule too.
+import '../VisuallyHidden/VisuallyHidden.css';
 
 export { Input, InputAffix } from './Input.js';
 export type { InputAffixProps, InputAppearance, InputProps, InputSize, InputWidth } from './Input.js';

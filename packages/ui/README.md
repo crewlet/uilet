@@ -204,6 +204,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.47.0
+
+**A hidden label takes no room.** `FormField` takes `hideLabel`, which hides the label or the legend as a whole element for everything but assistive technology, and `ListInput`'s `hideLabel` uses it: the legend had held hidden text and still stood a line tall, so a list under a card's title stood 21px lower than the fields beside it.
+
+**A narrow `ListInput` gives its words the row.** Under 28rem of the list's own width a row wraps: its number and its field share the first line and its buttons stand at the end of a second, under the words. At a 390px phone the grip, the number and the three buttons had taken half of each row, so a policy wrapped at about twenty characters a line.
+
 ## Changes in 0.46.0
 
 The pieces for editing a company's principles where they are read: a statement or a list of policies changed in place on its own card, with nothing to go and find in another screen.

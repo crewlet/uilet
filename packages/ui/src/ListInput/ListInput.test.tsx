@@ -13,6 +13,9 @@
 
 import { cleanup, createEvent, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createRef, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Announcer } from '../Announcer/index.js';
@@ -569,10 +572,32 @@ test('removing the last item with undo keeps the list drawn for its row', () => 
   expect(current()).toEqual(['Only.']);
 });
 
-test('a hidden legend still names the group', () => {
-  render(<Policies initial={['One.']} hideLabel />);
-  const group = screen.getByRole('group', { name: 'Policies' });
-  expect(group.querySelector('legend .crewlet-visually-hidden, legend [class*="visually-hidden"]')).not.toBeNull();
+test('a hidden legend still names the group, and takes no line of its own', () => {
+  const remove = installSheets('VisuallyHidden/VisuallyHidden.css');
+  try {
+    render(<Policies initial={['One.']} hideLabel />);
+    const group = screen.getByRole('group', { name: 'Policies' });
+    // The LEGEND is what is hidden, not just the words inside it: a legend
+    // holding hidden text still stood a line tall above the box.
+    const legend = group.querySelector('legend')!;
+    expect(legend.classList.contains('crewlet-visually-hidden')).toBe(true);
+    expect(getComputedStyle(legend).position).toBe('absolute');
+    expect(px(legend, 'height')).toBe(1);
+  } finally {
+    remove();
+  }
+});
+
+test('under 28rem of its own width a row gives its words the row, its buttons a line under them', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ListInput.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  expect(css).toMatch(/\.crewlet-list-input__items \{[^}]*container:\s*crewlet-list-input \/ inline-size;/);
+  const narrow = /@container crewlet-list-input \(width < 28rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+  expect(narrow).toMatch(/\.crewlet-list-input__item \{\s*flex-wrap:\s*wrap;/);
+  expect(narrow).toMatch(/\.crewlet-list-input__item > \.crewlet-list-input__field \{\s*flex-basis:\s*calc\(100% - /);
+  expect(narrow).toMatch(/\.crewlet-list-input__item > \.crewlet-list-input__actions \{\s*margin-inline-start:\s*auto;/);
 });
 
 test('the handle focuses an item at the end of its words, and the new-item box', () => {
