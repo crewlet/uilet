@@ -13,10 +13,10 @@
 
 import { cleanup, createEvent, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
-import { useState } from 'react';
+import { createRef, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { Announcer } from '../Announcer/index.js';
-import { ListInput } from './ListInput.js';
+import { ListInput, withDraft, type ListInputHandle } from './ListInput.js';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
@@ -477,4 +477,146 @@ test('a list with every addition passes axe, full, over the limit and refused', 
     />,
   );
   expect((await axe.run(container)).violations).toEqual([]);
+});
+
+// ---- the draft, undo, a hidden legend, a focus handle, a byte limit ----------
+
+/** A form that saves the list the way the Principles editor does: with `withDraft`. */
+function SavedPolicies({ onSave }: { onSave: (saved: string[]) => void }) {
+  const [value, setValue] = useState(['One.']);
+  const [draft, setDraft] = useState('');
+  const dirty = draft.trim() !== '' || value.length !== 1;
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave(withDraft(value, draft));
+      }}
+    >
+      <Announcer />
+      <ListInput label="Policies" itemName="policy" value={value} onChange={setValue} draft={draft} onDraftChange={setDraft} />
+      <span data-testid="dirty">{String(dirty)}</span>
+      <button type="submit">Save</button>
+    </form>
+  );
+}
+
+test('a policy typed and not added is the owner’s to see and to save, never dropped', () => {
+  const onSave = vi.fn();
+  render(<SavedPolicies onSave={onSave} />);
+  fireEvent.change(screen.getByLabelText('New policy'), { target: { value: '  Ask first.  ' } });
+  // The owner holds the box's text, so its unsaved-changes check sees it.
+  expect(screen.getByTestId('dirty').textContent).toBe('true');
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(onSave).toHaveBeenCalledWith(['One.', 'Ask first.']);
+});
+
+test('the owner’s draft is the box’s text, and an add clears it through the owner', () => {
+  const onDraftChange = vi.fn();
+  const { rerender } = render(
+    <ListInput label="Policies" itemName="policy" value={[]} onChange={() => {}} draft="Held" onDraftChange={onDraftChange} />,
+  );
+  const box = screen.getByLabelText('New policy') as HTMLInputElement;
+  expect(box.value).toBe('Held');
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(onDraftChange).toHaveBeenLastCalledWith('');
+  rerender(<ListInput label="Policies" itemName="policy" value={['Held']} onChange={() => {}} draft="" onDraftChange={onDraftChange} />);
+  expect(box.value).toBe('');
+});
+
+test('withDraft appends the trimmed draft, and nothing for an empty one', () => {
+  expect(withDraft(['a'], ' b ')).toEqual(['a', 'b']);
+  expect(withDraft(['a'], '   ')).toEqual(['a']);
+  expect(withDraft(['a'], undefined)).toEqual(['a']);
+});
+
+test('a removal leaves a row with Undo where it was, and Undo puts it back with the focus in it', () => {
+  render(<Policies initial={['One.', 'Two.', 'Three.']} undoRemove />);
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 2 of 3' }));
+  expect(current()).toEqual(['One.', 'Three.']);
+  const undo = screen.getByRole('button', { name: 'Undo' });
+  expect(document.activeElement).toBe(undo);
+  // In the item's own place in the order, and it says which.
+  const rows = [...document.querySelectorAll('.crewlet-list-input__items > li')];
+  expect(rows[1]?.className).toContain('crewlet-list-input__removed');
+  expect(document.getElementById(undo.getAttribute('aria-describedby')!)?.textContent).toBe('Policy 2 removed.');
+  fireEvent.click(undo);
+  expect(current()).toEqual(['One.', 'Two.', 'Three.']);
+  const two = screen.getByLabelText('Policy 2 of 3') as HTMLTextAreaElement;
+  expect(two.value).toBe('Two.');
+  expect(document.activeElement).toBe(two);
+  expect(announced()).toBe('Restored policy 2 of 3');
+  expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+});
+
+test('the undo row goes with the next change to the list, and Dismiss takes it down', () => {
+  render(<Policies initial={['One.', 'Two.', 'Three.']} undoRemove />);
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 1 of 3' }));
+  fireEvent.change(screen.getByLabelText('Policy 1 of 2'), { target: { value: 'Two!' } });
+  expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 2 of 2' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+  expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+  expect(document.activeElement).toBe(screen.getByLabelText('Policy 1 of 1'));
+});
+
+test('removing the last item with undo keeps the list drawn for its row', () => {
+  render(<Policies initial={['Only.']} undoRemove />);
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 1 of 1' }));
+  expect(screen.getByRole('button', { name: 'Undo' })).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+  expect(current()).toEqual(['Only.']);
+});
+
+test('a hidden legend still names the group', () => {
+  render(<Policies initial={['One.']} hideLabel />);
+  const group = screen.getByRole('group', { name: 'Policies' });
+  expect(group.querySelector('legend .crewlet-visually-hidden, legend [class*="visually-hidden"]')).not.toBeNull();
+});
+
+test('the handle focuses an item at the end of its words, and the new-item box', () => {
+  const handle = createRef<ListInputHandle>();
+  render(<ListInput ref={handle} label="Policies" itemName="policy" value={['One.', 'Two.']} onChange={() => {}} />);
+  handle.current!.focusItem(1);
+  const two = screen.getByLabelText('Policy 2 of 2') as HTMLInputElement;
+  expect(document.activeElement).toBe(two);
+  expect(two.selectionStart).toBe(4);
+  handle.current!.focusNew();
+  expect(document.activeElement).toBe(screen.getByLabelText('New policy'));
+  handle.current!.focusItem(9);
+  expect(document.activeElement).toBe(screen.getByLabelText('New policy'));
+});
+
+test('an item is counted in characters on its trimmed text, so an emoji is one and the spaces none', () => {
+  // "Go 🙂" is four characters and five UTF-16 units; the spaces around it are trimmed off.
+  render(<Policies initial={['  Go 🙂  ']} maxLength={4} />);
+  const item = screen.getByLabelText('Policy 1 of 1');
+  expect(item.getAttribute('aria-invalid')).toBeNull();
+  fireEvent.change(item, { target: { value: '  Go 🙂!  ' } });
+  expect(item.getAttribute('aria-invalid')).toBe('true');
+  expect(document.getElementById(item.getAttribute('aria-describedby')!)?.textContent).toContain(
+    '1 character over the limit of 4',
+  );
+});
+
+test('the new-item box counts an emoji once, and refuses a draft past the limit', () => {
+  render(<Policies initial={[]} maxLength={4} />);
+  const box = screen.getByLabelText('New policy');
+  fireEvent.change(box, { target: { value: 'Go 🙂' } });
+  fireEvent.keyDown(box, { key: 'Enter' });
+  expect(current()).toEqual(['Go 🙂']);
+  fireEvent.change(screen.getByLabelText('New policy'), { target: { value: 'Go 🙂🙂' } });
+  fireEvent.keyDown(screen.getByLabelText('New policy'), { key: 'Enter' });
+  expect(current()).toEqual(['Go 🙂']);
+});
+
+test('a removal with an Undo row is said once, by the row, and Dismiss is described by it too', () => {
+  render(<Policies initial={['One.', 'Two.']} undoRemove />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add policy' }));
+  const before = announced();
+  fireEvent.click(screen.getByRole('button', { name: 'Remove policy 1 of 2' }));
+  // Nothing new in the live region: the focused Undo carries the sentence.
+  expect(announced()).toBe(before);
+  const dismiss = screen.getByRole('button', { name: 'Dismiss' });
+  expect(document.getElementById(dismiss.getAttribute('aria-describedby')!)?.textContent).toBe('Policy 1 removed.');
 });

@@ -1,4 +1,14 @@
-import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  forwardRef,
+  useId,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import {
   ArrowDownGlyph,
   ArrowUpGlyph,
@@ -7,6 +17,7 @@ import {
   XGlyph,
 } from '@crewlethq/icons/glyphs';
 import { announce } from '../Announcer/index.js';
+import { Button } from '../Button/index.js';
 import { CharacterCount, characterCountState, countCharacters } from '../CharacterCount/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { FormField, Input, Textarea } from '../Input/index.js';
@@ -14,6 +25,34 @@ import { Kbd } from '../Kbd/index.js';
 import { isComposing } from '../Layer/index.js';
 import { useReorder } from '../Reorder/index.js';
 import { cx } from '../utils/cx.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
+
+/**
+ * The list a form would save: `value` with the new-item box's text appended,
+ * trimmed, when there is any.
+ *
+ * WHY A FORM NEEDS IT. Text typed into the new-item box is not an item until
+ * Enter adds it, and a writer who types a policy and presses the form's Save
+ * expects it saved, not silently dropped. An owner that holds the box's text
+ * (`draft` and `onDraftChange`) counts it as unsaved and saves it with this,
+ * so the rule is written once rather than by each form.
+ */
+export function withDraft(value: readonly string[], draft: string | undefined): string[] {
+  const text = (draft ?? '').trim();
+  return text === '' ? [...value] : [...value, text];
+}
+
+/** What a caller can ask the list to do from outside it. */
+export interface ListInputHandle {
+  /**
+   * Puts the focus in the item at `index` (in `value`'s order), with the caret
+   * at its end: the first item a failed save refused, or the one a conflict
+   * kept. Does nothing for an index the list does not hold.
+   */
+  focusItem: (index: number) => void;
+  /** Puts the focus in the new-item box, when the list is not full. */
+  focusNew: () => void;
+}
 
 export interface ListInputProps {
   /** The list's name, such as "Responsibilities". It is the group's legend. */
@@ -22,6 +61,21 @@ export interface ListInputProps {
   itemName: string;
   value: readonly string[];
   onChange: (next: string[]) => void;
+  /**
+   * The text in the new-item box, held by the owner. Left out, the list holds
+   * it itself. Hold it wherever a form saves the list: text typed and not yet
+   * added is part of what the writer means to save, so the owner counts it
+   * as a change and saves it (`withDraft`) rather than dropping it.
+   */
+  draft?: string | undefined;
+  /** Every change to the new-item box's text, an add clearing it included. */
+  onDraftChange?: ((next: string) => void) | undefined;
+  /**
+   * The legend is kept for assistive technology and drawn for nobody, for a
+   * list whose name is already the heading right above it (a card titled
+   * "Standing policies"). The add control stays where it is.
+   */
+  hideLabel?: boolean | undefined;
   /** Items are paragraphs: Shift+Enter makes a newline. */
   multiline?: boolean | undefined;
   /** Where the values come from, or what shape they take. */
@@ -61,12 +115,21 @@ export interface ListInputProps {
    */
   maxItems?: number | undefined;
   /**
-   * The most characters one item holds. A SOFT limit, as `FormField`'s
+   * The most characters one item holds, counted on its TRIMMED text as a
+   * server judging the saved list does, and as code points (see
+   * `countCharacters`). A SOFT limit, as `FormField`'s
    * `limit` is: an item past it keeps what was typed, draws its count in the
    * danger ink and is marked invalid; the new-item box refuses to add one,
    * and shows its count from nine tenths of the way.
    */
   maxLength?: number | undefined;
+  /**
+   * Removing an item leaves a row where it was, saying so, with Undo (which
+   * puts it back where it was, with the focus in it) and Dismiss. The focus
+   * goes to Undo. The row goes on the list's next change or on Dismiss, so an
+   * Undo never restores an item into a list that has moved on.
+   */
+  undoRemove?: boolean | undefined;
   /**
    * A refusal of one item, said under it and linked to it, which marks it
    * invalid: a server's word about policy 3, or a rule only the caller knows.
@@ -85,6 +148,11 @@ export interface ListInputProps {
   addedMessage?: ((itemName: string, position: string) => string) | undefined;
   removedMessage?: ((itemName: string, position: string) => string) | undefined;
   movedMessage?: ((itemName: string, position: number, count: number) => string) | undefined;
+  /** The row a removed item leaves (`undoRemove`): "Policy 3 removed." */
+  removedNotice?: ((name: string, position: number) => string) | undefined;
+  undoLabel?: string | undefined;
+  dismissLabel?: string | undefined;
+  restoredMessage?: ((itemName: string, position: string) => string) | undefined;
 }
 
 let minted = 0;
@@ -93,7 +161,7 @@ const mint = () => `item-${(minted += 1)}`;
 const capitalized = (text: string): string =>
   text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
-type Target = 'input' | 'up' | 'down' | 'add';
+type Target = 'input' | 'up' | 'down' | 'add' | 'undo';
 
 /**
  * An ordered list of strings, edited in place.
@@ -130,11 +198,14 @@ type Target = 'input' | 'up' | 'down' | 'add';
  *
  * Ported from the engine dashboard's `ui/ListField.tsx`.
  */
-export function ListInput({
+export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function ListInput({
   label,
   itemName,
   value,
   onChange,
+  draft: ownedDraft,
+  onDraftChange,
+  hideLabel = false,
   multiline = false,
   helper,
   helperOnFocus,
@@ -147,6 +218,7 @@ export function ListInput({
   reorderByDrag = false,
   maxItems,
   maxLength,
+  undoRemove = false,
   itemError,
   fullMessage = (max) => `The list is full at ${max}. Remove one to add another.`,
   addLabel = (name) => `Add ${name}`,
@@ -158,8 +230,26 @@ export function ListInput({
   addedMessage = (name, position) => `Added ${name} ${position}`,
   removedMessage = (name, position) => `Removed ${name} ${position}`,
   movedMessage = (name, position, count) => `Moved ${name} to position ${position} of ${count}`,
-}: ListInputProps) {
-  const [draft, setDraft] = useState('');
+  removedNotice = (name, position) => `${name} ${position} removed.`,
+  undoLabel = 'Undo',
+  dismissLabel = 'Dismiss',
+  restoredMessage = (name, position) => `Restored ${name} ${position}`,
+}: ListInputProps, ref) {
+  /*
+   * THE NEW-ITEM BOX'S TEXT, the owner's when it holds it. Held here alone it
+   * was invisible to the form around the list, so a policy typed and not yet
+   * added was dropped by Save without a word and missed by every "unsaved
+   * changes" check.
+   */
+  const [heldDraft, setHeldDraft] = useState('');
+  const draft = ownedDraft ?? heldDraft;
+  const setDraft = (next: string) => {
+    if (ownedDraft === undefined) setHeldDraft(next);
+    onDraftChange?.(next);
+  };
+
+  /** An item just removed, while it can still be put back (`undoRemove`). */
+  const [removed, setRemoved] = useState<{ id: string; text: string; index: number } | null>(null);
 
   /*
    * IDENTITY PER ITEM, kept beside the strings. Two identical sentences are
@@ -172,13 +262,30 @@ export function ListInput({
   const emitted = useRef<readonly string[] | null>(null);
   if (value !== emitted.current && value.length !== ids.current.length) {
     ids.current = value.map(mint);
+    // The list was replaced from outside: an Undo would put an item back
+    // into a list it was never removed from.
+    if (removed !== null) setRemoved(null);
   }
 
   const inputs = useRef(new Map<string, HTMLInputElement | HTMLTextAreaElement>());
   const ups = useRef(new Map<string, HTMLButtonElement>());
   const downs = useRef(new Map<string, HTMLButtonElement>());
   const addBox = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const undoButton = useRef<HTMLButtonElement | null>(null);
   const focusNext = useRef<{ id: string; target: Target } | null>(null);
+
+  const focusField = (el: HTMLInputElement | HTMLTextAreaElement | undefined | null) => {
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  };
+  useImperativeHandle(ref, () => ({
+    focusItem: (index) => {
+      const id = ids.current[index];
+      if (id !== undefined) focusField(inputs.current.get(id));
+    },
+    focusNew: () => addBox.current?.focus(),
+  }));
 
   // ONCE, ON MOUNT: a list that grabbed the focus on every render would take
   // it back from the item the reader moved to.
@@ -195,6 +302,10 @@ export function ListInput({
       addBox.current?.focus();
       return;
     }
+    if (want.target === 'undo') {
+      undoButton.current?.focus();
+      return;
+    }
     const up = ups.current.get(want.id);
     const down = downs.current.get(want.id);
     const box = inputs.current.get(want.id);
@@ -203,9 +314,15 @@ export function ListInput({
     order.find((el) => el && !(el as HTMLButtonElement).disabled)?.focus();
   });
 
-  function emit(next: string[], nextIds: string[], said?: string) {
+  /**
+   * Every change to the list goes through here, and every change but the one
+   * that leaves it takes the removed row down: "the next change" is any of
+   * them, an edit of another item's words included.
+   */
+  function emit(next: string[], nextIds: string[], said?: string, leaving: typeof removed = null) {
     ids.current = nextIds;
     emitted.current = next;
+    setRemoved(leaving);
     onChange(next);
     if (said) announce(said);
   }
@@ -214,11 +331,12 @@ export function ListInput({
   const count = value.length;
   const listId = useId();
   const full = maxItems !== undefined && count >= maxItems;
+  /** How long a text is against the limit: TRIMMED, as the saved list will hold it. */
+  const measured = (text: string) => countCharacters(text.trim());
   const overLimit = (text: string) =>
-    maxLength !== undefined && characterCountState(countCharacters(text), maxLength) === 'over';
-  const draftRefused = draft.trim() === '' || overLimit(draft.trim());
-  const draftCount =
-    maxLength !== undefined && characterCountState(countCharacters(draft.trim()), maxLength) !== 'within';
+    maxLength !== undefined && characterCountState(measured(text), maxLength) === 'over';
+  const draftRefused = draft.trim() === '' || overLimit(draft);
+  const draftCount = maxLength !== undefined && characterCountState(measured(draft), maxLength) !== 'within';
 
   /*
    * DRAGGING REORDERS THE SAME IDS the buttons do, through the kit's one
@@ -268,13 +386,41 @@ export function ListInput({
     emit(next, nextIds, movedMessage(itemName, to + 1, count));
   }
 
+  /** The item that took `index`'s place, else the one before, else the new-item box. */
+  const neighbourOf = (nextIds: readonly string[], index: number): { id: string; target: Target } => {
+    const neighbour = nextIds[index] ?? nextIds[index - 1];
+    return neighbour ? { id: neighbour, target: 'input' } : { id: '', target: 'add' };
+  };
+
   function remove(index: number) {
     if (disabled) return;
     const next = value.filter((_, at) => at !== index);
     const nextIds = ids.current.filter((_, at) => at !== index);
-    const neighbour = nextIds[index] ?? nextIds[index - 1];
-    focusNext.current = neighbour ? { id: neighbour, target: 'input' } : { id: '', target: 'add' };
-    emit(next, nextIds, removedMessage(itemName, `${index + 1} of ${count}`));
+    const leaving = undoRemove ? { id: ids.current[index]!, text: value[index]!, index } : null;
+    focusNext.current = leaving ? { id: '', target: 'undo' } : neighbourOf(nextIds, index);
+    /*
+     * SAID ONCE. With an Undo row the focus lands on Undo, which is described
+     * by the row's own sentence, so announcing the removal as well said it
+     * twice in a row.
+     */
+    emit(next, nextIds, leaving ? undefined : removedMessage(itemName, `${index + 1} of ${count}`), leaving);
+  }
+
+  function restore() {
+    if (!removed || disabled) return;
+    const at = Math.min(removed.index, count);
+    const next = [...value];
+    const nextIds = [...ids.current];
+    next.splice(at, 0, removed.text);
+    nextIds.splice(at, 0, removed.id);
+    focusNext.current = { id: removed.id, target: 'input' };
+    emit(next, nextIds, restoredMessage(itemName, `${at + 1} of ${count + 1}`));
+  }
+
+  function dismiss() {
+    if (!removed) return;
+    focusNext.current = neighbourOf(ids.current, removed.index);
+    setRemoved(null);
   }
 
   /** Enter that should act rather than insert: always in one line, without Shift in many. */
@@ -349,7 +495,7 @@ export function ListInput({
   return (
     <FormField
       as="fieldset"
-      label={label}
+      label={hideLabel ? <VisuallyHidden>{label}</VisuallyHidden> : label}
       optional={optional}
       helper={helper}
       helperOnFocus={helperOnFocus}
@@ -401,7 +547,7 @@ export function ListInput({
              * is nothing, which the count says and the keycap would not.
              */
             trailing: draftCount ? (
-              <CharacterCount id={`${listId}-draft-count`} length={countCharacters(draft.trim())} max={maxLength!} />
+              <CharacterCount id={`${listId}-draft-count`} length={measured(draft)} max={maxLength!} />
             ) : enterHint ? (
               <Kbd subtle>Enter</Kbd>
             ) : undefined,
@@ -417,14 +563,19 @@ export function ListInput({
           })}
         </div>
       )}
-      {count > 0 ? (
-        <>
-          <ol className="crewlet-list-input__items" {...(drags ? reorder.containerProps : {})}>
-            {order.map((key, shown) => {
+      {count > 0 || removed !== null ? (
+        <ol className="crewlet-list-input__items" {...(drags ? reorder.containerProps : {})}>
+          {withRemoved(
+            order.map((key) => {
+              /*
+               * ONE SOURCE FOR THE ROW: its position, its labels and its Move
+               * buttons all read the item's place in `value`. A drag's preview
+               * moves the row and leaves its number with it until the drop.
+               */
               const index = ids.current.indexOf(key);
               const item = value[index] ?? '';
-              const position = `${shown + 1} of ${count}`;
-              const length = maxLength === undefined ? 0 : countCharacters(item);
+              const position = `${index + 1} of ${count}`;
+              const length = maxLength === undefined ? 0 : measured(item);
               const counted = maxLength !== undefined && characterCountState(length, maxLength) !== 'within';
               const refusal = itemError?.(index, item);
               const refused = refusal !== undefined && refusal !== null && refusal !== false && refusal !== '';
@@ -461,7 +612,7 @@ export function ListInput({
                    * control beside it is already named "Goal 2 of 3".
                    */}
                   <span className="crewlet-list-input__index" aria-hidden="true">
-                    {shown + 1}
+                    {index + 1}
                   </span>
                   {/*
                    * THE FIELD IS ALWAYS WRAPPED, whether or not it has a count
@@ -474,7 +625,7 @@ export function ListInput({
                     {control({
                       label: itemLabel(name, position),
                       value: item,
-                      invalid: refused || (maxLength !== undefined && length > maxLength),
+                      invalid: refused || overLimit(item),
                       describedBy: described || undefined,
                       onChange: (next) => {
                         const list = [...value];
@@ -546,10 +697,48 @@ export function ListInput({
                   </span>
                 </li>
               );
-            })}
-          </ol>
-        </>
+            }),
+          )}
+        </ol>
       ) : null}
     </FormField>
   );
-}
+
+  /**
+   * The rows, with the removed item's row where it was. It is a row of the
+   * list rather than a toast elsewhere, because "removed" is a fact about
+   * that place in the order, and Undo puts the item back there.
+   */
+  function withRemoved(rows: ReactElement[]): ReactElement[] {
+    if (removed === null) return rows;
+    const noticeId = `${listId}-removed`;
+    const row = (
+      <li key={`removed-${removed.id}`} className="crewlet-list-input__removed">
+        <span id={noticeId} className="crewlet-list-input__removed-text">
+          {removedNotice(name, removed.index + 1)}
+        </span>
+        <span className="crewlet-list-input__actions">
+          <Button
+            ref={undoButton}
+            size="small"
+            variant="ghost"
+            aria-describedby={noticeId}
+            disabled={disabled}
+            onClick={restore}
+          >
+            {undoLabel}
+          </Button>
+          <IconButton
+            size="sm"
+            label={dismissLabel}
+            icon={<XGlyph />}
+            aria-describedby={noticeId}
+            onClick={dismiss}
+          />
+        </span>
+      </li>
+    );
+    const at = Math.min(removed.index, rows.length);
+    return [...rows.slice(0, at), row, ...rows.slice(at)];
+  }
+});

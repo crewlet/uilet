@@ -104,6 +104,34 @@
   color: var(--color-feedback-danger-ink);
 }
 
+/*
+ * THE ROW A REMOVED ITEM LEAVES (`undoRemove`): the item's own place in the
+ * order, at a row's height and on the row's rule, saying what happened in the
+ * quiet ink with Undo beside it, so the list does not close up over the place
+ * an Undo would put it back.
+ */
+.crewlet-list-input__removed {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-block-end-width: 1px;
+  border-block-end-style: solid;
+  border-block-end-color: var(--color-border-default);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-list-input__removed:last-child {
+  border-block-end-style: none;
+}
+
+.crewlet-list-input__removed-text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-compact);
+  color: var(--color-text-secondary);
+}
+
 /* Where the new-item box was, once the list holds all it may. */
 .crewlet-list-input__full {
   margin: 0;

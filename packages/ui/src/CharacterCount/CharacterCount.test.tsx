@@ -112,3 +112,15 @@ test('a field with no limit draws its help line exactly as before', () => {
   expect(container.querySelector('.crewlet-form-field__meta')).toBeNull();
   expect(container.querySelector('.crewlet-character-count')).toBeNull();
 });
+
+test('a field limited in characters counts an emoji once, where .length counts two', () => {
+  // Four characters, five UTF-16 units: at a limit of four it is within.
+  const text = 'Go 🙂';
+  expect(text.length).toBe(5);
+  render(
+    <FormField label="Mission" limit={{ length: countCharacters(text), max: 4 }}>
+      {(f) => <Textarea id={f.id} aria-describedby={f.describedBy} error={f.invalid} value={text} readOnly />}
+    </FormField>,
+  );
+  expect(screen.getByRole('textbox').getAttribute('aria-invalid')).toBeNull();
+});

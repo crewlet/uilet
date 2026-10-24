@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Announcer, ListInput } from '@crewlethq/ui';
+import { Announcer, Button, ListInput, withDraft } from '@crewlethq/ui';
 
 const meta: Meta<typeof ListInput> = {
   title: 'UI/ListInput',
@@ -116,6 +116,63 @@ export const Policies: Story = {
             }
           />
         </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/**
+ * Removing a policy leaves its place with Undo, and the focus on Undo, until
+ * the list next changes. The legend is hidden, as inside a card whose title
+ * already names the list.
+ */
+export const UndoARemoval: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState(['Ask first.', 'Every amount is exact to the cent.', 'Name the source.']);
+      return (
+        <div style={{ width: 560 }}>
+          <Announcer />
+          <ListInput multiline undoRemove hideLabel label="Standing policies" itemName="policy" value={value} onChange={setValue} />
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/**
+ * A typed policy survives Save: the owner holds the new-item box's text
+ * (`draft`), counts it as unsaved, and saves it with `withDraft`, so text
+ * typed and not yet added is never dropped.
+ */
+export const ATypedPolicySurvivesSave: Story = {
+  render: () => {
+    function Demo() {
+      const [value, setValue] = useState(['Ask first.']);
+      const [draft, setDraft] = useState('Name the source of every figure.');
+      const [saved, setSaved] = useState<string[] | null>(null);
+      return (
+        <form
+          style={{ width: 560, display: 'grid', gap: 12 }}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const next = withDraft(value, draft);
+            setValue(next);
+            setDraft('');
+            setSaved(next);
+          }}
+        >
+          <Announcer />
+          <ListInput multiline label="Standing policies" itemName="policy" value={value} onChange={setValue} draft={draft} onDraftChange={setDraft} />
+          <div>
+            <Button type="submit" size="small">
+              Save
+            </Button>
+          </div>
+          {saved ? <output>Saved {saved.length} policies.</output> : null}
+        </form>
       );
     }
     return <Demo />;
