@@ -474,9 +474,13 @@ function BarTitle({
   }, [editing]);
 
   if (onRename === undefined) {
+    // THE WORDS IN A BLOCK OF THEIR OWN: the heading is a flex row, and an
+    // ellipsis on a flex container cuts nothing, so a long title was clipped
+    // mid-word with no sign it went on. The block takes the ellipsis; the
+    // heading keeps the whole title on hover.
     return (
       <Heading id={id} className="crewlet-artifact-bar__title" title={title}>
-        {title}
+        <span className="crewlet-artifact-bar__text">{title}</span>
       </Heading>
     );
   }
