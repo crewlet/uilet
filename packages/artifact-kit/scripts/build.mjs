@@ -1,8 +1,10 @@
 // Builds the artifact kit into dist/:
 //
 //   dist/kit.css      the tokens, every theme, the density steps, the fonts
-//                     and the base stylesheet, then the stylesheet of every
-//                     component the sheet draws, in one file
+//                     and the base stylesheet, the brand layer that restyles
+//                     them from a company's `--brand-*` inputs, then the
+//                     stylesheet of every component the sheet draws, in one
+//                     file
 //   dist/content.css  the opt-in content stylesheet: the design system's look
 //                     for the plain HTML a page writes itself, linked after
 //                     kit.css by a page that wants it
@@ -29,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { build } from 'esbuild';
 import { BUDGETS } from './budgets.mjs';
+import { brandSlots, moveThemeValues } from './brand.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
@@ -51,6 +54,24 @@ await build({
   legalComments: 'none',
   logLevel: 'warning',
 });
+
+// The brand layer, appended to the tokens. Every declaration of a token it
+// restyles is first moved aside to `--crewlet-theme-<name>` in the token
+// stylesheets (scripts/brand.mjs), so the layer is the one place a public
+// token is declared and its fallback is the theme's own value.
+const brandSource = await readFile(join(root, 'src', 'brand.css'), 'utf8');
+const brand = await build({
+  absWorkingDir: root,
+  entryPoints: { brand: 'src/brand.css' },
+  bundle: true,
+  outdir: dist,
+  minify: true,
+  write: false,
+  legalComments: 'none',
+  logLevel: 'warning',
+});
+const tokensCss = await readFile(join(dist, 'kit.css'), 'utf8');
+await writeFile(join(dist, 'kit.css'), `${moveThemeValues(tokensCss, brandSlots(brandSource))}\n${brand.outputFiles[0].text}`);
 
 // The content stylesheet, a file of its own so a page opts in by linking it
 // and a page published before it existed paints as it did. Its source nests

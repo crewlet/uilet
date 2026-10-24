@@ -1,0 +1,177 @@
+/*
+ * The brand layer: a company's brand, given as a handful of input slots,
+ * restyles every page written with the kit's tokens, in both modes and under
+ * every named theme, without the page changing a line.
+ *
+ * THE INPUTS ARE `--brand-*` CUSTOM PROPERTIES, and only those. The engine
+ * generates them into a brand stylesheet of its own (custom properties on
+ * `:root` and `@font-face` rules, nothing else) and links it beside this one;
+ * a page may also set them itself. None is required:
+ *
+ *   --brand-primary            the brand's main colour, #rrggbb
+ *   --brand-primary-on-dark    the main colour on a dark ground, if it differs
+ *   --brand-secondary          a second colour, for highlights and gradients
+ *   --brand-text               body text on the light ground
+ *   --brand-light-ground       the page's ground in light mode
+ *   --brand-dark-ground        the page's ground in dark mode
+ *   --brand-font-heading       a font-family list for headings
+ *   --brand-font-body          a font-family list for everything else
+ *   --brand-logo-primary       url() of the logo for a light ground
+ *   --brand-logo-on-dark       url() of the logo for a dark ground
+ *   --brand-logo-mark          url() of the mark alone
+ *   --brand-logo-<v>-ratio     each logo's width over its height, a number
+ *
+ * THE PUBLIC TOKENS KEEP THEIR NAMES. A page that already paints with
+ * `var(--color-brand-accent)` or `var(--font-family-display)` follows the
+ * brand. Each is declared here, once, as the brand's value or, where its
+ * input is not set, the theme's own value, which the build moves to
+ * `--crewlet-theme-<name>` in every block of the token stylesheets bundled
+ * above this one (the tokens are the theme's; this layer is the only place a
+ * public name is declared). A custom property cannot fall back to its own
+ * earlier value, which is why the theme's values take a second name.
+ *
+ * WITH NO INPUT SET, NOTHING CHANGES. Every derived value below is a private
+ * `--crewlet-brand-*` that names an input with no fallback, so with the input
+ * unset it is invalid at computed-value time, and the public token falls
+ * back to the theme's value exactly as the theme declared it: the same
+ * accent, the same authored hover and press, the same faces.
+ *
+ * ONE INPUT, THE WHOLE FAMILY. With `--brand-primary` set, the hover, press,
+ * ink, soft fills, selected edge, deep stop and glow are mixed from it with
+ * `color-mix()` in each mode, and the label on it is whichever of black and
+ * white clears more contrast on it. The focus ring stays the theme's: its 3:1
+ * floor is measured for every theme, and a mix of an arbitrary colour cannot
+ * be. `--color-brand-accent-rgb` stays the theme's too, because a channel
+ * triple cannot be derived in CSS; a page tints with
+ * `color-mix(in srgb, var(--color-brand-accent) 20%, transparent)` instead.
+ */
+
+/* Dark, the bare root's mode, as the theme contract has it. */
+:root {
+  --crewlet-brand-accent: var(--brand-primary-on-dark, var(--brand-primary));
+  --crewlet-brand-ink: color-mix(in oklab, var(--crewlet-brand-accent) 55%, white);
+  --crewlet-brand-soft: color-mix(in srgb, var(--crewlet-brand-accent) 16%, transparent);
+  --crewlet-brand-ground: var(--brand-dark-ground);
+
+  /* Every mode, from the mode's own accent above or below. */
+  --crewlet-brand-hover: color-mix(in oklab, var(--crewlet-brand-accent) 90%, black);
+  --crewlet-brand-active: color-mix(in oklab, var(--crewlet-brand-accent) 80%, black);
+  --crewlet-brand-deep: color-mix(in oklab, var(--crewlet-brand-accent) 70%, black);
+  --crewlet-brand-soft-strong: color-mix(in srgb, var(--crewlet-brand-accent) 32%, transparent);
+  --crewlet-brand-selected: color-mix(in srgb, var(--crewlet-brand-accent) 60%, transparent);
+  --crewlet-brand-glow: 0 4px 24px color-mix(in srgb, var(--crewlet-brand-accent) 30%, transparent);
+  --crewlet-brand-link: color-mix(in oklab, var(--crewlet-brand-ink) 65%, var(--color-text-secondary));
+  /* White or black, whichever clears more on the accent: each channel is the
+     WCAG luminance's distance from 0.179 (where the two clear the same),
+     scaled until it saturates to 1 or 0. */
+  --crewlet-brand-on-accent: color(
+    from var(--crewlet-brand-accent) srgb-linear calc((0.179 - (0.2126 * r + 0.7152 * g + 0.0722 * b)) * 100000)
+      calc((0.179 - (0.2126 * r + 0.7152 * g + 0.0722 * b)) * 100000) calc((0.179 - (0.2126 * r + 0.7152 * g + 0.0722 * b)) * 100000)
+  );
+  --crewlet-brand-gradient: linear-gradient(
+    90deg,
+    var(--brand-primary) 0%,
+    var(--brand-secondary, color-mix(in oklab, var(--brand-primary) 70%, black)) 100%
+  );
+
+  /* The public tokens: the brand's value, or the theme's. */
+  --color-brand-accent: var(--crewlet-brand-accent, var(--crewlet-theme-color-brand-accent));
+  --color-brand-accent-hover: var(--crewlet-brand-hover, var(--crewlet-theme-color-brand-accent-hover));
+  --color-brand-accent-active: var(--crewlet-brand-active, var(--crewlet-theme-color-brand-accent-active));
+  --color-brand-accent-ink: var(--crewlet-brand-ink, var(--crewlet-theme-color-brand-accent-ink));
+  --color-brand-accent-soft: var(--crewlet-brand-soft, var(--crewlet-theme-color-brand-accent-soft));
+  --color-brand-accent-soft-strong: var(--crewlet-brand-soft-strong, var(--crewlet-theme-color-brand-accent-soft-strong));
+  --color-brand-accent-deep: var(--crewlet-brand-deep, var(--crewlet-theme-color-brand-accent-deep));
+  --color-brand-mark: var(--brand-primary, var(--crewlet-theme-color-brand-mark));
+  --color-brand-highlight: var(--brand-secondary, var(--crewlet-theme-color-brand-highlight));
+  --color-brand-gradient: var(--crewlet-brand-gradient, var(--crewlet-theme-color-brand-gradient));
+  --color-border-selected: var(--crewlet-brand-selected, var(--crewlet-theme-color-border-selected));
+  --color-text-on-accent: var(--crewlet-brand-on-accent, var(--crewlet-theme-color-text-on-accent));
+  --color-text-link-quiet: var(--crewlet-brand-link, var(--crewlet-theme-color-text-link-quiet));
+  --color-text-primary: var(--crewlet-brand-text, var(--crewlet-theme-color-text-primary));
+  --color-surface-frame: var(--crewlet-brand-ground, var(--crewlet-theme-color-surface-frame));
+  --color-surface-background: var(--crewlet-brand-ground, var(--crewlet-theme-color-surface-background));
+  --shadow-glow: var(--crewlet-brand-glow, var(--crewlet-theme-shadow-glow));
+  --font-family-sans: var(--brand-font-body, var(--crewlet-theme-font-family-sans));
+  --font-family-display: var(--brand-font-heading, var(--crewlet-theme-font-family-display));
+}
+
+/* Light, by the system's setting and by an explicit choice: the same two
+   blocks the theme contract writes, so a reader who pinned dark keeps it. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --crewlet-brand-accent: var(--brand-primary);
+    --crewlet-brand-ink: color-mix(in oklab, var(--crewlet-brand-accent) 70%, black);
+    --crewlet-brand-soft: color-mix(in srgb, var(--crewlet-brand-accent) 12.5%, transparent);
+    --crewlet-brand-ground: var(--brand-light-ground);
+    --crewlet-brand-text: var(--brand-text);
+  }
+}
+
+:root[data-theme="light"] {
+  --crewlet-brand-accent: var(--brand-primary);
+  --crewlet-brand-ink: color-mix(in oklab, var(--crewlet-brand-accent) 70%, black);
+  --crewlet-brand-soft: color-mix(in srgb, var(--crewlet-brand-accent) 12.5%, transparent);
+  --crewlet-brand-ground: var(--brand-light-ground);
+  --crewlet-brand-text: var(--brand-text);
+}
+
+/*
+ * THE LOGO, drawn from the brand's own files so a page never writes a URL:
+ *
+ *   <span class="crewlet-logo" role="img" aria-label="Acme"></span>
+ *   <span class="crewlet-logo" data-variant="mark" role="img" aria-label="Acme"></span>
+ *
+ * `primary` (the default) draws the logo for a light ground in light mode and
+ * the brand's on-dark logo in dark mode where it has one; `on-dark` draws the
+ * on-dark logo whatever the mode, for a dark band on a light page; `mark`
+ * draws the mark alone. Its height is `--crewlet-logo-size` (2rem), or a
+ * `data-size` step for a page whose policy keeps style attributes out; its
+ * width follows the logo's ratio. With no logo for its variant, it draws
+ * nothing and takes no room: the size is computed through the ratio, which
+ * is unset with it.
+ */
+.crewlet-logo {
+  --crewlet-logo-src: var(--brand-logo-on-dark, var(--brand-logo-primary));
+  --crewlet-logo-ratio: var(--brand-logo-on-dark-ratio, var(--brand-logo-primary-ratio));
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  block-size: calc(var(--crewlet-logo-size, 2rem) + 0px * var(--crewlet-logo-ratio));
+  inline-size: calc(var(--crewlet-logo-size, 2rem) * var(--crewlet-logo-ratio));
+  background: var(--crewlet-logo-src) center / contain no-repeat;
+}
+
+@media (prefers-color-scheme: light) {
+  :where(:root:not([data-theme="dark"])) .crewlet-logo {
+    --crewlet-logo-src: var(--brand-logo-primary);
+    --crewlet-logo-ratio: var(--brand-logo-primary-ratio);
+  }
+}
+
+:where(:root[data-theme="light"]) .crewlet-logo {
+  --crewlet-logo-src: var(--brand-logo-primary);
+  --crewlet-logo-ratio: var(--brand-logo-primary-ratio);
+}
+
+.crewlet-logo[data-variant='on-dark'] {
+  --crewlet-logo-src: var(--brand-logo-on-dark);
+  --crewlet-logo-ratio: var(--brand-logo-on-dark-ratio);
+}
+
+.crewlet-logo[data-variant='mark'] {
+  --crewlet-logo-src: var(--brand-logo-mark);
+  --crewlet-logo-ratio: var(--brand-logo-mark-ratio);
+}
+
+.crewlet-logo[data-size='sm'] {
+  --crewlet-logo-size: 1.5rem;
+}
+
+.crewlet-logo[data-size='lg'] {
+  --crewlet-logo-size: 3rem;
+}
+
+.crewlet-logo[data-size='xl'] {
+  --crewlet-logo-size: 4rem;
+}

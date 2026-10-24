@@ -43,6 +43,58 @@ It is opt in and it is scoped, so it never fights anything else on the page:
 
 Link it after `kit.css`: each of its rules wins over the baseline's rule for the same element by coming later at the same weight.
 
+## A company's brand
+
+A company's brand restyles every page written with the kit's tokens: the accent and everything mixed from it, the grounds, the body text, the faces and the logo. The brand is given as **input slots**, `--brand-*` custom properties, and the kit's own tokens read them, so a page that already writes `var(--color-brand-accent)` or `var(--font-family-display)` follows the brand without changing a line. With no input set, every token is exactly the theme's own value, in both modes and under every named theme, so a page that links the kit and no brand paints as it always has. A page pinned to an earlier kit reads no slot at all.
+
+The engine generates the company's adopted brand into a stylesheet of its own and links it beside the kit. That stylesheet defines **only `--brand-*` custom properties (on `:root`) and `@font-face` rules**, nothing else: no selector other than `:root`, no other property, so it cannot restyle anything the kit does not choose to read from it, and it can load before or after `kit.css`. A page may also set the slots itself.
+
+| Slot | Value | What reads it |
+| ---- | ----- | ------------- |
+| `--brand-primary` | `#rrggbb` | The accent in light mode, and in dark mode where `--brand-primary-on-dark` is not set; `--color-brand-mark`. |
+| `--brand-primary-on-dark` | `#rrggbb` | The accent in dark mode. |
+| `--brand-secondary` | `#rrggbb` | `--color-brand-highlight`, and the second stop of `--color-brand-gradient`. |
+| `--brand-text` | `#rrggbb` | `--color-text-primary` in light mode. Dark mode keeps the theme's text. |
+| `--brand-light-ground` | `#rrggbb` | `--color-surface-frame` and `--color-surface-background` in light mode. |
+| `--brand-dark-ground` | `#rrggbb` | The same two in dark mode. |
+| `--brand-font-heading` | a `font-family` list | `--font-family-display`. Left out, headings take the body face. |
+| `--brand-font-body` | a `font-family` list | `--font-family-sans`. |
+| `--brand-logo-primary`, `--brand-logo-on-dark`, `--brand-logo-mark` | `url(...)`, root-relative or absolute | The `crewlet-logo` class. |
+| `--brand-logo-primary-ratio`, `--brand-logo-on-dark-ratio`, `--brand-logo-mark-ratio` | a number, the logo's width over its height | The `crewlet-logo` class. |
+
+**One input restyles the whole family, in both modes.** From the accent of each mode the kit mixes, with `color-mix()`:
+
+| Token | Mixed from the mode's accent |
+| ----- | ---------------------------- |
+| `--color-brand-accent-hover`, `-active` | 90% and 80% toward black in OKLab, a step and two steps darker |
+| `--color-brand-accent-ink` | the accent as text: 55% toward white in dark mode, 70% toward black in light mode |
+| `--color-brand-accent-soft` | the accent at 16% in dark mode and 12.5% in light mode, over whatever it lands on |
+| `--color-brand-accent-soft-strong`, `--color-border-selected` | the accent at 32% and 60% |
+| `--color-brand-accent-deep` | 70% toward black, the gradient's deep stop |
+| `--color-text-link-quiet` | the ink, 65% toward the secondary text |
+| `--shadow-glow` | the accent at 30%, as the glow's light |
+| `--color-text-on-accent` | black or white, whichever clears more contrast on the accent, worked out from the accent's WCAG luminance |
+
+Two tokens stay the theme's on purpose. **The focus ring** (`--color-focus`) is measured at 3:1 for every theme, and a mix of an arbitrary colour cannot be, so a keyboard reader keeps a ring they can see. **`--color-brand-accent-rgb`** is a channel triple, which CSS cannot derive from a colour; tint with `color-mix(in srgb, var(--color-brand-accent) 20%, transparent)` instead of `rgba(var(--color-brand-accent-rgb), 0.2)`, and the tint follows the brand. Each derived value is a `--crewlet-brand-*` step that names its input with no fallback, so with the input unset the step is invalid and the token falls back to the theme's value; the theme's values are kept under `--crewlet-theme-<token>`, which the build moves them to so the brand layer is the one place a public token is declared. The colour mixes need `color-mix()` and, for the label on the accent, relative colour syntax (current Chrome, Edge, Firefox and Safari).
+
+The kit checks no contrast of its own: whether the brand's text reads on its light ground, and its accent on its grounds, is the engine's to check when an administrator adopts the brand.
+
+### The logo
+
+The `crewlet-logo` class draws the brand's logo from the slots, so a page never writes a URL and its logo follows the next adopted brand:
+
+```html
+<span class="crewlet-logo" role="img" aria-label="Acme"></span>
+<span class="crewlet-logo" data-variant="mark" data-size="sm" role="img" aria-label="Acme"></span>
+```
+
+| Attribute | Meaning |
+| --------- | ------- |
+| `data-variant` | `primary` (the default): the logo for a light ground in light mode, and the on-dark logo in dark mode where the brand has one. `on-dark`: the on-dark logo whatever the mode, for a dark band on a light page. `mark`: the mark alone. |
+| `data-size` | `sm` (1.5rem), the default 2rem, `lg` (3rem) or `xl` (4rem) tall. A page's own class may set `--crewlet-logo-size` to any length instead. |
+
+The width follows the logo's ratio. Where the brand has no logo for the variant it draws nothing and takes no room. Give it `role="img"` and the company's name as `aria-label`, as above. It carries a `crewlet-` class, so `content.css` leaves it to the kit.
+
 ## The sheet
 
 A page draws an editable sheet over one of its datastore collections with `<crewlet-sheet>`, its columns declared with `<crewlet-column>`:
@@ -119,7 +171,7 @@ A write resolves with the engine's verdict (`applied`, `pending`, `conflict`, `i
 
 | File | Content |
 | ---- | ------- |
-| `kit.css` | The canonical variables, the dark and light palettes of the default theme, every named theme under `data-palette`, the density steps under `data-density`, the self-hosted Geist and Geist Mono faces and the document baseline, then the stylesheet of the sheet, its cells and the presence marks, in one file. |
+| `kit.css` | The canonical variables, the dark and light palettes of the default theme, every named theme under `data-palette`, the density steps under `data-density`, the self-hosted Geist and Geist Mono faces and the document baseline, the brand layer that reads the `--brand-*` slots ([above](#a-companys-brand)) and the `crewlet-logo` class, then the stylesheet of the sheet, its cells and the presence marks, in one file. |
 | `content.css` | The opt-in content stylesheet: the design system's look for the plain HTML a page writes itself, linked after `kit.css`. See [Plain HTML content](#plain-html-content). |
 | `fonts/` | The four Geist faces `kit.css` references, with `OFL.txt`. |
 | `theme.js` | The theme bootstrap, under 2 KB gzipped. |
