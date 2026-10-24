@@ -22,6 +22,8 @@
 }
 
 .crewlet-list-input__items {
+  /* The rows lay themselves out by the list's own width (see NARROW below). */
+  container: crewlet-list-input / inline-size;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -260,4 +262,31 @@
   display: inline-flex;
   flex: none;
   align-self: center;
+}
+
+/*
+ * NARROW: THE WORDS GET THE ROW. Under 28rem a row's grip, number and three
+ * buttons took half of it, so at a 390px phone each policy wrapped at some
+ * twenty characters a line and eight of them stood 1500px tall. There the
+ * row wraps: the number and the field share the first line, and the buttons
+ * stand at the end of a second, under the words. By the list's own width,
+ * not the window's, so a narrow column on a wide screen is narrow too.
+ */
+@container crewlet-list-input (width < 28rem) {
+  .crewlet-list-input__item {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+
+  .crewlet-list-input__item > .crewlet-list-input__field {
+    flex-basis: calc(100% - var(--spacing-4) - var(--spacing-2));
+  }
+
+  .crewlet-list-input__item--draggable > .crewlet-list-input__field {
+    flex-basis: calc(100% - var(--spacing-4) * 2 - var(--spacing-2) * 2);
+  }
+
+  .crewlet-list-input__item > .crewlet-list-input__actions {
+    margin-inline-start: auto;
+  }
 }
