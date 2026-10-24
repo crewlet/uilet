@@ -50,7 +50,7 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  cursor: var(--crewlet-canvas-cursor-hand, grab);
+  cursor: grab;
   /* Until it is tapped, one finger belongs to the page's vertical scroll. */
   touch-action: pan-y;
 }
@@ -69,27 +69,29 @@
 }
 
 /*
- * THE POINTER SAYS WHAT A PRESS WILL DO. The drawings are the component's
- * (`CURSORS`, written on the root), each falling back to its keyword. A pan in
- * progress shows the closed hand whatever the tool, and it is set on the whole
- * canvas rather than the field, so a drag that crosses a board or a note keeps
- * the hand it started with.
+ * THE POINTER SAYS WHAT A PRESS WILL DO, in the operating system's own
+ * pointers: the open hand a reader knows from every map and design tool, the
+ * arrow, the crosshair and the text beam. A drawing of the kit's own beside
+ * them would be the one pointer on the screen that looks unlike the rest. A
+ * pan in progress shows the closed hand whatever the tool, and it is set on
+ * the whole canvas rather than the field, so a drag that crosses a board or a
+ * note keeps the hand it started with.
  */
 .crewlet-canvas[data-cursor='pointer'] .crewlet-canvas__viewport {
-  cursor: var(--crewlet-canvas-cursor-pointer, default);
+  cursor: default;
 }
 
 .crewlet-canvas[data-cursor='crosshair'] .crewlet-canvas__viewport {
-  cursor: var(--crewlet-canvas-cursor-crosshair, crosshair);
+  cursor: crosshair;
 }
 
 .crewlet-canvas[data-cursor='text'] .crewlet-canvas__viewport {
-  cursor: var(--crewlet-canvas-cursor-text, text);
+  cursor: text;
 }
 
 .crewlet-canvas[data-panning='true'] .crewlet-canvas__viewport,
 .crewlet-canvas[data-panning='true'] .crewlet-canvas__viewport * {
-  cursor: var(--crewlet-canvas-cursor-grabbing, grabbing);
+  cursor: grabbing;
   user-select: none;
 }
 

@@ -464,13 +464,13 @@ export const Fill: Story = {
 };
 
 /**
- * EVERY ROW IN THE FOOT STANDS ON THE NAV'S TWO COLUMNS: its mark centred on
- * the column every nav glyph above it is centred on, and its words starting on
- * the line every nav word starts on. The engine row's transparent boundary
- * spends a pixel of its pad rather than adding one, and the account row's
- * badge is centred over a glyph's width with the nav's own gap after it, so a
- * badge wider than a glyph still lands where a glyph does. Hold a straight
- * edge to Home, Settings, the engine row and the reader's name: one line.
+ * EVERY COMPACT ROW IN THE FOOT STANDS ON THE NAV'S TWO COLUMNS: its mark
+ * centred on the column every nav glyph above it is centred on, and its words
+ * starting on the line every nav word starts on. The engine row's transparent
+ * boundary spends a pixel of its pad rather than adding one. Hold a straight
+ * edge to Home, Settings and the engine row: one line. The account row is the
+ * one tall row: a medium badge in a 44px row, inset by the 6px it has above
+ * and below it, with the name a step after it.
  */
 export const FootRowsOnTheNavColumns: Story = {
   render: () => (
@@ -481,7 +481,7 @@ export const FootRowsOnTheNavColumns: Story = {
             <>
               <EngineRow />
               <AccountRow
-                avatar={<Avatar name="Lee Park" kind="human" size="sm" ring="brand" decorative />}
+                avatar={<Avatar name="Lee Park" kind="human" size="md" ring="brand" decorative />}
                 name="Lee Park"
                 detail="Admin"
                 href="#/account"
@@ -514,7 +514,7 @@ export const EngineStatusInTheHead: Story = {
           status={<EngineStatus />}
           foot={
             <AccountRow
-              avatar={<Avatar name="Lee Park" kind="human" size="sm" ring="brand" decorative />}
+              avatar={<Avatar name="Lee Park" kind="human" size="md" ring="brand" decorative />}
               name="Lee Park"
               detail="Admin · via API token review"
               href="#/account"
@@ -553,9 +553,10 @@ export const EngineStatusHealthy: Story = {
 
 /**
  * THE FOOT IS THE COMPACT STEP. What a reader reaches for rarely (Settings,
- * the engine's state, who they are) stands on the small control step, 26px,
- * on a 2px gap and a 4px inset, while the nav above keeps its 30px rows. The
- * account row spends 2px around its two lines. Every row keeps its order, its
+ * the engine's state) stands on the small control step, 26px, on a 2px gap
+ * and a 4px inset, while the nav above keeps its 30px rows. Who is signed in
+ * is the exception: the account row stands 44px tall around a 32px badge,
+ * with the name in the nav's word size. Every row keeps its order, its
  * columns, its glyphs and its words, and every target still clears 24px.
  */
 export const CompactFoot: Story = {
@@ -567,7 +568,7 @@ export const CompactFoot: Story = {
             <>
               <EngineRow />
               <AccountRow
-                avatar={<Avatar name="Lee Park" kind="human" size="sm" ring="brand" decorative />}
+                avatar={<Avatar name="Lee Park" kind="human" size="md" ring="brand" decorative />}
                 name="Lee Park"
                 detail="Admin · lee@acme.test"
                 href="#/account"

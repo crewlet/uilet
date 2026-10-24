@@ -239,11 +239,11 @@
    above it rather than sitting further out.
 
    THE FOOT IS THE COMPACT STEP. It holds what a reader reaches for rarely (a
-   settings link, the engine's state, who they are), so its rows stand on the
-   small control step (`--crewlet-rail-foot-row`, 26px, never under the 24px
-   target) on a half-step gap and a one-step inset, where the nav above keeps
-   its 30px rows. Only heights change: every row keeps its order, columns,
-   glyphs and words. */
+   settings link, the engine's state), so its rows stand on the small control
+   step (`--crewlet-rail-foot-row`, 26px, never under the 24px target) on a
+   half-step gap and a one-step inset, where the nav above keeps its 30px
+   rows. The account row is the one exception (see below). Only heights
+   change: every row keeps its order, columns, glyphs and words. */
 .crewlet-app-shell__rail-foot {
   --crewlet-rail-foot-gap: calc(var(--spacing-1) / 2);
   --crewlet-rail-foot-row: var(--size-control-sm);
@@ -805,13 +805,18 @@
  * In the rail's foot, the account row reaches up across its own padding to
  * half the foot's gap, to meet the row above (HitArea.css).
  *
- * AND IT STANDS ON THE NAV'S COLUMNS: the avatar centred on the column every
- * nav glyph is centred on, and the name starting on the line every nav word
- * starts on. On a 4px inset with an 8px gap a 26px avatar stood 2px left of
- * the glyphs above it and the name 2px right of their words. The avatar's box
- * takes a nav glyph's width (`sm`, 14px) and the badge is centred over it, so
- * whatever size of badge a caller hands the row, it is centred where a glyph
- * is, and the row takes the nav row's pad and its glyph-to-word gap.
+ * IT IS THE ONE TALL ROW IN THE FOOT. Who is signed in is the row a reader
+ * looks for, so it stands on the large control step (`--size-control-lg`,
+ * 44px) around a medium badge (`size="md"`, 32px), where the rows above it
+ * keep the compact step. The badge stands in a column of its own width
+ * (`--crewlet-account-row-badge`), centred in it, so a smaller badge a caller
+ * hands the row lands where a medium one would, and the column is inset from
+ * the row's edge by the 6px the badge has above and below it in the 44px row.
+ * A 32px badge cannot stand on the nav's 14px glyph column: centred there, its
+ * ring (1.5px, 2px out) would cross the row's own edge.
+ *
+ * The name takes the body's size (`--font-size-compact`, the nav's words) and
+ * both lines take the body's leading, a step a 36px row had no room for.
  */
 /*
  * AND THE WORDS TAKE THE ROOM: the name and the detail are what the row is
@@ -822,27 +827,31 @@
  */
 .crewlet-app-shell__rail-foot .crewlet-account-row {
   --crewlet-account-row-pad: var(--spacing-0);
+  --crewlet-account-row-badge: 32px;
   gap: calc(var(--spacing-1) / 2);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__who {
   --crewlet-hit-area-block-start: calc(var(--crewlet-rail-foot-gap) / 2 + var(--crewlet-account-row-pad));
   gap: 0;
-  /* On the foot's compact step: the two lines of name and detail with half a
-     step above and below them, which still clears the avatar. */
-  padding-block: calc(var(--spacing-1) / 2);
-  padding-inline: var(--size-nav-row-pad) calc(var(--spacing-1) / 2);
+  min-height: var(--size-control-lg);
+  padding-block: var(--spacing-1);
+  padding-inline: calc(var(--spacing-1) + var(--spacing-1) / 2) calc(var(--spacing-1) / 2);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__avatar {
   justify-content: center;
-  width: 14px;
-  /* The nav's glyph-to-word gap, so the name starts on the nav's word line. */
-  margin-inline-end: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  width: var(--crewlet-account-row-badge);
+  margin-inline-end: var(--spacing-2);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__text {
   margin-inline-end: var(--spacing-1);
+  line-height: var(--font-line-height-body);
+}
+
+.crewlet-app-shell__rail-foot .crewlet-account-row__name {
+  font-size: var(--font-size-compact);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__actions {

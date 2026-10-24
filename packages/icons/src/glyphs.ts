@@ -13,7 +13,5 @@
  */
 
 export * from './generated/glyphs/index.js';
-export { CURSORS } from './generated/cursors.js';
-export type { CursorName } from './generated/cursors.js';
 export { GLYPH_SIZES, GLYPH_STROKE, cssLength } from './Glyph.js';
 export type { FillableGlyphProps, GlyphProps, GlyphSize, GlyphSizeStep } from './Glyph.js';
