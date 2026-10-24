@@ -34,6 +34,11 @@ test('takes a family list of its own, and keeps a name with quotes one quoted na
   expect(familyOf(container)).toBe('"Acme Sans", var(--font-family-sans)');
 });
 
+test('a family list that is not names is refused, and the face is drawn by its name', () => {
+  const { container } = render(<TypeSpecimen family="Acme Sans" label="Body" fontFamily="x; color: red" />);
+  expect(familyOf(container)).toBe('"Acme Sans", var(--font-family-sans)');
+});
+
 test('the large letters are decoration, and the line is the host\'s or the default', () => {
   const { container, rerender } = render(<TypeSpecimen family="Geist" label="Body" />);
   expect(container.querySelector('.crewlet-type-specimen__glyphs')?.getAttribute('aria-hidden')).toBe('true');

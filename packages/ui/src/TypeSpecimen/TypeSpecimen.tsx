@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
+import { fontStack, safeFontFamily } from '../utils/fontFamily.js';
 
 export interface TypeSpecimenLabels {
   /** The large letters the face is shown in. */
@@ -26,8 +27,9 @@ export interface TypeSpecimenProps {
   /**
    * The CSS family list to draw it in, when it is not the face's name alone:
    * a system stack, or the family an uploaded face was declared under. Left
-   * out, the name is drawn in quotes before the package's own sans, so a face
-   * this page has not loaded falls back to a face it has.
+   * out, or not a list of family names, the name is drawn in quotes before the
+   * package's own sans, so a face this page has not loaded falls back to a
+   * face it has.
    */
   fontFamily?: string | undefined;
   /** The line the face is read in. */
@@ -41,9 +43,9 @@ export interface TypeSpecimenProps {
   labels?: Partial<TypeSpecimenLabels> | undefined;
 }
 
-/** A face's name as a CSS family, quotes and back slashes taken out so it stays one quoted name. */
+/** A face's name as a CSS family, quotes, back slashes and line breaks taken out so it stays one quoted name. */
 function quotedFamily(family: string): string {
-  return `"${family.replace(/["\\]/g, '').trim()}"`;
+  return `"${family.replace(/["\\\r\n]/g, '').trim()}"`;
 }
 
 /**
@@ -72,7 +74,7 @@ export function TypeSpecimen({
   labels,
 }: TypeSpecimenProps) {
   const text = { ...LABELS, ...labels };
-  const stack = `${fontFamily?.trim() || quotedFamily(family)}, var(--font-family-sans)`;
+  const stack = fontStack(safeFontFamily(fontFamily) ?? quotedFamily(family), 'var(--font-family-sans)');
   return (
     <figure
       className={cx('crewlet-type-specimen', `crewlet-type-specimen--${size}`, `crewlet-type-specimen--${weight}`, className)}
