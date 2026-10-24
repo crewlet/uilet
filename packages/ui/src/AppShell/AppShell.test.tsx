@@ -852,17 +852,33 @@ describe("the rail's foot", () => {
   test('the account row is the one tall row in the foot, around a medium badge', () => {
     /*
      * At 36px with a 26px badge the reader's own row was the smallest thing in
-     * the rail to read. In the foot it stands on the large control step around
-     * a column a medium badge (32px) wide, inset by the 6px the badge has above
-     * and below it, so a ring drawn 2px outside the badge stays inside the row.
+     * the rail to read. In the foot it stands half a spacing step under the
+     * large control step (42px) around a column a medium badge (32px) wide, inset
+     * 6px from the row's start, so a ring drawn 2px outside the badge stays
+     * inside the row. At 44px it read as cramped against the foot's edges, so
+     * it gave up half a step and the room around it grew: one step above and
+     * below, where it had none.
      */
     const row = body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row');
     expect(row).toContain('--crewlet-account-row-badge: 32px');
+    expect(row).toContain('--crewlet-account-row-height: calc(var(--size-control-lg) - var(--spacing-1) / 2)');
+    // And no lower: the badge's ring, read off its own rule, must stand at
+    // least 1.5px clear of the row's fill. At 40px it stood half a pixel
+    // clear, which reads as the ring touching the fill.
+    const ring = body(readFileSync(resolve(here, '../Avatar/Avatar.css'), 'utf8'), '.crewlet-avatar--ring-brand');
+    const px = (property: string) => Number(new RegExp(`${property}:\\s*([\\d.]+)px`).exec(ring)?.[1]);
+    const rowHeight = 44 - 4 / 2;
+    expect((rowHeight - (32 + 2 * (px('outline-offset') + px('outline-width')))) / 2).toBeGreaterThanOrEqual(1.5);
+    expect(row).toContain('--crewlet-account-row-pad: var(--spacing-1)');
     const who = body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__who');
-    expect(who).toContain('min-height: var(--size-control-lg)');
+    expect(who).toContain('min-height: var(--crewlet-account-row-height)');
+    // Half a step above and below the two lines, so the row stands at its
+    // height rather than at the lines' (34.78px) plus a whole step each side.
+    expect(who).toContain('padding-block: calc(var(--spacing-1) / 2)');
     expect(who).toContain('padding-inline: calc(var(--spacing-1) + var(--spacing-1) / 2) calc(var(--spacing-1) / 2)');
     const tokens = readFileSync(resolve(here, '../../../tokens/dist/css/tokens.css'), 'utf8');
     expect(tokens).toMatch(/--size-control-lg:\s*calc\(44px \* var\(--density, 1\)\)/);
+    expect(tokens).toMatch(/--spacing-1:\s*calc\(4px \* var\(--density, 1\)\)/);
     // The badge column is the medium step's own width, and the badge is
     // centred in it, so a smaller badge lands where a medium one would.
     const avatars = readFileSync(resolve(here, '../Avatar/Avatar.css'), 'utf8');
@@ -885,6 +901,12 @@ describe("the rail's foot", () => {
     expect(body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__actions')).toContain(
       'gap: calc(var(--spacing-1) / 2)',
     );
+    // The controls beside it stand as tall as the row, so their fill meets the
+    // row's top and bottom, and keep the small step's width and glyph, so the
+    // words keep their column.
+    const control = body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__actions .crewlet-icon-btn');
+    expect(control).toContain('height: var(--crewlet-account-row-height)');
+    expect(control).not.toMatch(/(?:^|[\s;])width:/);
     expect(body(css, `${CONTROL} > .crewlet-app-shell__rail-row-icon`)).toContain('min-width: 14px');
   });
 
@@ -926,12 +948,13 @@ describe("the rail's foot", () => {
     const step = body(css, `.crewlet-app-shell__rail-foot > ${CONTROL}`);
     expect(step).toBe(body(css, '.crewlet-app-shell__rail-foot .crewlet-nav-item__row'));
     expect(step).toContain('min-height: var(--crewlet-rail-foot-row)');
-    // The account row spends a step around its two lines and none around itself.
+    // The account row spends a step around itself and half a step around its
+    // two lines, so the foot breathes above and below a slimmer row.
     expect(body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row')).toContain(
-      '--crewlet-account-row-pad: var(--spacing-0)',
+      '--crewlet-account-row-pad: var(--spacing-1)',
     );
     expect(body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__who')).toContain(
-      'padding-block: var(--spacing-1)',
+      'padding-block: calc(var(--spacing-1) / 2)',
     );
     // The nav above keeps the rail's own 30px step.
     expect(body(nav, '.crewlet-nav-item__row')).toContain('min-height: var(--size-nav-row)');
