@@ -214,6 +214,8 @@ The pieces for editing a company's principles where they are read: a statement o
 
 **`ListInput` takes four additions, each off unless asked for.** `reorderByDrag` gives each row a grip it is dragged by, through `useReorder`. The grip belongs to the pointer: it is hidden from a screen reader and out of the tab order, since Alt+Up, Alt+Down and the Move buttons already cover reordering from the keyboard. `maxItems` replaces the new-item box with a sentence once the list is full (`fullMessage`). `maxLength` holds each item and the new-item box to a soft limit with a `CharacterCount`. `itemError` says a refusal under the one item it is about and links it to that item. An item's control now sits in a `.crewlet-list-input__field` column with what is said under it.
 
+**`Text` takes `variant="passage"`**: words somebody wrote to be read whole (a mission on its card, a policy, a comment), at the body's size with the relaxed leading, the author's line breaks kept and a long word broken rather than overflowing. **`List` takes `density="compact"`**: rows a small step apart, and on `numbered-divided` in the body's size at its normal leading, so a card holds eight two-line policies on one screen. `comfortable`, the default, is unchanged.
+
 **`@crewlethq/icons` adds `TelescopeGlyph` and `ScrollTextGlyph`**: the vision's card and the standing policies' card, beside `TargetGlyph` for the mission. `Card.Header` already draws a glyph before its title through `icon`.
 
 ## Changes in 0.45.0

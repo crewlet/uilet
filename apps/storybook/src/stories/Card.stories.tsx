@@ -1,7 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button, Card, DescriptionList, IconButton, List, ListItem, RelativeTime, Tag, Text } from '@crewlethq/ui';
 import { density } from '@crewlethq/tokens';
-import { EllipsisVerticalGlyph, SquareTerminalGlyph } from '@crewlethq/icons/glyphs';
+import {
+  EllipsisVerticalGlyph,
+  ScrollTextGlyph,
+  SquareTerminalGlyph,
+  TargetGlyph,
+  TelescopeGlyph,
+} from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Card> = {
   title: 'UI/Card',
@@ -386,6 +392,50 @@ export const SubtitleBelow: Story = {
           <Card.Title>Workers</Card.Title>
         </Card.Header>
         <Card.Body>Side card</Card.Body>
+      </Card>
+    </div>
+  ),
+};
+
+/**
+ * A company's principles as cards: the mission and the vision side by side,
+ * each a passage under a heading with its own glyph, and the standing
+ * policies as one compact numbered list below them.
+ */
+export const Principles: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 16, maxWidth: 960 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+        <Card as="section">
+          <Card.Header divided={false} icon={<TargetGlyph />}>
+            <Card.Title>Mission</Card.Title>
+          </Card.Header>
+          <Card.Body>
+            <Text as="p" variant="passage">
+              Make splitting shared expenses so easy that nobody ever has to chase a friend for money again.
+            </Text>
+          </Card.Body>
+        </Card>
+        <Card as="section">
+          <Card.Header divided={false} icon={<TelescopeGlyph />}>
+            <Card.Title>Vision</Card.Title>
+          </Card.Header>
+          <Card.Body>
+            <Text as="p" variant="passage">
+              {'Every shared cost, settled the moment it happens.\nNo spreadsheets, no reminders, no awkward messages.'}
+            </Text>
+          </Card.Body>
+        </Card>
+      </div>
+      <Card as="section" padding="none">
+        <Card.Header icon={<ScrollTextGlyph />} count={3}>
+          <Card.Title>Standing policies</Card.Title>
+        </Card.Header>
+        <List variant="numbered-divided" density="compact" aria-label="Standing policies">
+          <ListItem>Every amount is exact to the cent. Round only when a person reads it.</ListItem>
+          <ListItem>Ask before deleting anything a customer wrote.</ListItem>
+          <ListItem>Never move money without a second agent checking the amount and the recipient.</ListItem>
+        </List>
       </Card>
     </div>
   ),
