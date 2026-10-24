@@ -204,6 +204,16 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.44.0
+
+The pieces of the engine's Company › Integrations home, a summary of what a company has in use beside the directory of everything it could.
+
+**`DirectoryList` lines stand at the rail's row step**: each line is exactly `--size-nav-row` (30px) in the rail's compact type, its mark at the glyph step (16px, `md`), its `hint` inline after the label in the quiet ink, giving way before the label in a narrow column, and its state held inside the row, so no line stands taller than the rest. Groups stand one small step (`--spacing-3`) apart.
+
+**`CatalogTile` takes `density="compact"`**, a summary's tile at about half the height: the mark, the name, its state, its fact (`meta`) and the one action on the header line, and the sentence on one line under it, cut to fit with the whole of it in its title. The default, `comfortable`, is unchanged.
+
+**`Section` takes `spacing="tight"`**: one small step (`--spacing-2`) between a heading and what it introduces, titled or not. A heading may carry the kit's `Count` of what is under it (`title={<>In use <Count value={4} /></>}`).
+
 ## Changes in 0.43.0
 
 The parts of the engine's Company › Integrations page, a directory of everything a company works in beside the detail of the one chosen.
