@@ -103,6 +103,26 @@
 }
 
 /*
+ * THE TAG, under the name: what sets the theme apart, on the tertiary step
+ * and a step smaller, cut to one line with the whole of it on hover. The
+ * company's own theme draws it as the accent's pill instead, so a reader
+ * picking a deck's theme finds their brand among the product's at a glance.
+ */
+.crewlet-theme-gallery__tag {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-theme-gallery__tag--brand {
+  display: flex;
+  min-width: 0;
+}
+
+/*
  * FORCED COLORS keeps the border and drops the accent, so the chosen card
  * would look like every other; the system's own selected colour says it.
  */

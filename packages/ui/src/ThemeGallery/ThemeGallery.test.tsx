@@ -150,6 +150,29 @@ test('a caller-drawn preview takes the swatch\'s place, hidden as decoration, wi
   expect(onValueChange).toHaveBeenCalledWith('grove');
 });
 
+test('draws a theme\'s tag under its name, says it once in the name, and draws nothing for a theme without one', () => {
+  const themes: ThemeGalleryTheme[] = [
+    { id: 'brand', name: 'FairSplit', tag: 'Your company brand', tagTone: 'brand', group: 'deck' },
+    { id: 'ink', name: 'Ink', tag: 'Navy and paper', group: 'deck' },
+    { id: 'paper', name: 'Paper', group: 'deck' },
+  ];
+  render(<ThemeGallery label="Deck theme" value="brand" onValueChange={() => {}} themes={themes} groups={[]} renderPreview={() => null} />);
+  const brand = card('FairSplit, Your company brand');
+  // The company's own theme: its tag as the accent's pill, visible.
+  expect(brand.querySelector('.crewlet-theme-gallery__tag--brand .crewlet-tag')?.textContent).toBe('Your company brand');
+  // A quiet tag under the name, with the whole of it on hover.
+  const ink = card('Ink, Navy and paper');
+  const quiet = ink.querySelector('.crewlet-theme-gallery__tag');
+  expect(quiet?.textContent).toBe('Navy and paper');
+  expect(quiet?.getAttribute('title')).toBe('Navy and paper');
+  const name = ink.querySelector('.crewlet-theme-gallery__name')!;
+  expect(name.compareDocumentPosition(quiet!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  // No tag: the card is its name alone, with no empty line under it.
+  const paper = card('Paper');
+  expect(paper.getAttribute('aria-label')).toBe('Paper');
+  expect(paper.querySelector('.crewlet-theme-gallery__tag')).toBeNull();
+});
+
 test('the gallery carries no accessibility violation', async () => {
   const { container } = render(
     <main>
