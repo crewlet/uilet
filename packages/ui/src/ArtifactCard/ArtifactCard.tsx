@@ -40,7 +40,7 @@ export interface ArtifactCardLabels {
 }
 
 const LABELS: ArtifactCardLabels = {
-  kinds: { html: 'HTML', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet' },
+  kinds: { html: 'HTML', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet', brand: 'Brand' },
   pinned: 'Pinned',
   version: (version) => `v${version}`,
   changes: (count) => (count === 1 ? '1 change since you looked' : `${count} changes since you looked`),

@@ -9,7 +9,7 @@ export interface ArtifactNameCellLabels {
 }
 
 const LABELS: ArtifactNameCellLabels = {
-  kinds: { html: 'HTML', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet' },
+  kinds: { html: 'HTML', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet', brand: 'Brand' },
   pinned: 'Pinned',
 };
 

@@ -4,6 +4,7 @@ import {
   LayoutDashboardGlyph,
   PaletteGlyph,
   PresentationGlyph,
+  SwatchBookGlyph,
   TableGlyph,
   type GlyphSize,
 } from '@crewlethq/icons/glyphs';
@@ -18,11 +19,15 @@ import {
  * opened.
  */
 
-/** What an artifact is, as the engine names it (`artifacts.Kind`), which decides how it is drawn. */
-export type ArtifactKind = 'html' | 'doc' | 'slides' | 'design' | 'dashboard' | 'sheet';
+/**
+ * What an artifact is, as the engine names it (`artifacts.Kind`), which
+ * decides how it is drawn. `brand` is a company's brand kit: its logos,
+ * colours, type and voice.
+ */
+export type ArtifactKind = 'html' | 'doc' | 'slides' | 'design' | 'dashboard' | 'sheet' | 'brand';
 
 /** Every kind, in the engine's order (`artifacts.Kinds`). */
-export const ARTIFACT_KINDS = ['html', 'doc', 'slides', 'design', 'dashboard', 'sheet'] as const satisfies readonly ArtifactKind[];
+export const ARTIFACT_KINDS = ['html', 'doc', 'slides', 'design', 'dashboard', 'sheet', 'brand'] as const satisfies readonly ArtifactKind[];
 
 const KIND_GLYPHS: Readonly<Record<ArtifactKind, typeof FileCodeGlyph>> = {
   html: FileCodeGlyph,
@@ -31,6 +36,7 @@ const KIND_GLYPHS: Readonly<Record<ArtifactKind, typeof FileCodeGlyph>> = {
   design: PaletteGlyph,
   dashboard: LayoutDashboardGlyph,
   sheet: TableGlyph,
+  brand: SwatchBookGlyph,
 };
 
 /** The glyph a kind is drawn with, wherever a kind is drawn, at a glyph size step or in px. */

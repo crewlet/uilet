@@ -107,7 +107,7 @@ test('gives every kind its own drawing, badge and word when no preview is given'
   }
   expect(drawings.size).toBe(ARTIFACT_KINDS.length);
   expect(badges.size).toBe(ARTIFACT_KINDS.length);
-  expect(words).toEqual(['HTML', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet']);
+  expect(words).toEqual(['HTML', 'Doc', 'Slides', 'Design', 'Dashboard', 'Sheet', 'Brand']);
 });
 
 test('a host whose cover has nothing to draw stands in the same drawing the card would', () => {
