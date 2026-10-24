@@ -880,7 +880,8 @@ describe("the rail's foot", () => {
     // Every gap after the name stays small, so the words keep the room the
     // controls leave.
     expect(who).toContain('gap: 0');
-    expect(text).toContain('margin-inline-end: var(--spacing-1)');
+    expect(text).not.toContain('margin-inline-end');
+    expect(body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__go')).toContain('display: none');
     expect(body(css, '.crewlet-app-shell__rail-foot .crewlet-account-row__actions')).toContain(
       'gap: calc(var(--spacing-1) / 2)',
     );
