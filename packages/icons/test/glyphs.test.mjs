@@ -38,6 +38,15 @@ describe('the glyph exports', () => {
     assert.ok(GLYPH_NAMES.length >= 100, `only ${GLYPH_NAMES.length} glyphs are exported`);
   });
 
+  it('are drawings and the helpers that draw them, and nothing else', () => {
+    // The entry used to carry CURSORS, pointer cursors drawn from these
+    // glyphs. A canvas now shows the operating system's own pointers, so a
+    // drawn pointer has no reader here, and an export beside the glyphs is a
+    // decision to be made in this list rather than one that slips in.
+    const helpers = Object.keys(Glyphs).filter((name) => !name.endsWith('Glyph'));
+    assert.deepEqual(helpers.sort(), ['FILLABLE', 'GLYPH_NAMES', 'GLYPH_SIZES', 'GLYPH_STROKE', 'cssLength']);
+  });
+
   it('answer to their own name, drawing what the file draws', () => {
     for (const [name, elements] of glyphs) {
       const Component = Glyphs[componentName(name)];
