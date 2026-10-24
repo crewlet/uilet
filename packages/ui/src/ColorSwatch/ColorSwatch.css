@@ -1,0 +1,83 @@
+/*
+ * One colour of a brand: a chip of it over its role and its value. The chip's
+ * fill is the one value that is not a token, and it arrives through
+ * `--crewlet-color-swatch-value` only after it has passed `#rrggbb`. Every
+ * other colour here is a token.
+ */
+.crewlet-color-swatch {
+  /* The hatch of no colour, as one value: the same lines an arranged page's
+     ground draws, so "nothing here" reads one way across the package. */
+  --crewlet-color-swatch-hatch: repeating-linear-gradient(
+    -45deg,
+    var(--color-border-hatch) 0 1px,
+    transparent 1px var(--spacing-2)
+  );
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/* THE CHIP HAS AN EDGE OF ITS OWN, so a colour that matches the page is
+   still a chip rather than a gap. */
+.crewlet-color-swatch__chip {
+  display: block;
+  width: 100%;
+  height: var(--size-row-lg);
+  box-sizing: border-box;
+  border-radius: var(--radius-md);
+  background: var(--crewlet-color-swatch-value, var(--color-surface-inset));
+  box-shadow: inset 0 0 0 1px var(--color-border-hover);
+}
+
+.crewlet-color-swatch__chip.is-empty {
+  background: var(--crewlet-color-swatch-hatch);
+}
+
+.crewlet-color-swatch__words {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-color-swatch__name {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-color-swatch__description {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-color-swatch__value--plain {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-color-swatch__empty {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+/* ---- sm: a chip beside the words, for a dense list ---- */
+
+.crewlet-color-swatch--sm {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-color-swatch--sm .crewlet-color-swatch__chip {
+  flex: none;
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  border-radius: var(--radius-sm);
+}

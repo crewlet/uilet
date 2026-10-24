@@ -6,6 +6,7 @@ Single source of truth for the Crewlet design tokens: color, spacing, size, typo
 - `dist/css/themes.css` (the dark and light palettes of the default theme)
 - `dist/css/themes/<id>.css` and `dist/css/themes/all.css` (the named themes, each under its own `data-palette` attribute)
 - `dist/css/density.css`, `dist/css/base.css`, `dist/css/breakpoint.css`
+- `dist/css/brand.css` and `dist/css/brand-scope.css` (the brand mapping, on the document root and on a scope of its own)
 - `dist/index.js` + `dist/index.d.ts` (typed JS object for runtime use)
 
 ## Use it from a consumer app
@@ -44,6 +45,42 @@ const accent = color.brand.accent;
 
 CSS variables follow Style Dictionary's `--{group}-{path}` convention,
 for example `var(--color-brand-accent)` or `var(--spacing-4)`.
+
+### Contrast at runtime
+
+An interface that has to say whether two colours a person chose read on each other (a brand's text on its ground, a label on a fill) measures them with the same code the palette suite holds every theme to:
+
+```ts
+import { WCAG_CONTRAST, contrast, parseHex } from '@crewlethq/tokens';
+
+const text = parseHex(input.text);    // null unless the value is #rrggbb
+const ground = parseHex(input.ground);
+if (text && ground) {
+  const ratio = contrast(text, ground); // 1 to 21, unrounded, in either order
+  const readable = ratio >= WCAG_CONTRAST.aa;
+}
+```
+
+| Export | What it is |
+| --- | --- |
+| `parseHex(hex)` | A `#rrggbb` value (any case, surrounding white space ignored) as `{ r, g, b }`, or `null` for anything else, the three and eight digit forms included. It never throws, so a half-typed value is a `null` to handle rather than an exception. |
+| `contrast(a, b)` | The WCAG 2 ratio between two opaque colours, from 1 to 21, in either order. Unrounded: compare the raw ratio with a floor, and round only to display it, because a ratio that passes only once rounded does not pass. |
+| `luminance(rgb)` | WCAG relative luminance, from 0 to 1. |
+| `WCAG_CONTRAST` | The floors, frozen: `aa` 4.5 and `aaa` 7 for body text, `aaLarge` 3 and `aaaLarge` 4.5 for large text (24px, or 18.66px bold); `aaLarge` is also the floor for a graphical mark and a control's boundary. |
+| `Rgb` | The type of a colour as channels from 0 to 255. |
+
+The implementation is `src/color.ts`, built to `dist/color.js`. The published palette suite imports it from there and re-exports it, and the token build reads the same source to derive each palette's tints, so there is one copy of the maths.
+
+## Changed in 0.48.0: contrast at runtime, the brand kind and the brand mapping
+
+The WCAG contrast maths the palette suite measures with is a runtime export, for an interface that shows whether two colours a person chose read on each other. A company's brand kit is a kind of artifact of its own, with a hue of its own. And the brand mapping (how a company's `--brand-*` inputs restyle the public tokens) lives here, as one source for the artifact kit and for an application's branded regions.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| `@crewlethq/tokens` exports `parseHex`, `contrast`, `luminance`, `WCAG_CONTRAST` and the type `Rgb`. They are the implementation `@crewlethq/tokens/test/palette` re-exports (the same functions, not copies), and `contrast` and `parseHex` keep the signatures the suite already declared. | Nothing. Replace a contrast helper of your own with these. | [Contrast at runtime](#contrast-at-runtime) |
+| `css/brand` and `css/brand-scope` are new. Both are built from one source, `stylesheets/brand.css`: `css/brand` is the mapping on the document root (the layer `@crewlethq/artifact-kit` bundles into kit.css), and `css/brand-scope` is the same mapping on `.crewlet-brand-scope__layer`, with the page's own value of every token it drives captured on `.crewlet-brand-scope` one element up and a `data-mode` that pins a mode to the default theme's values for it (the stylesheet of `@crewlethq/ui`'s BrandScope). The build accepts the mapping under its three root selectors only, so a rule reaches both or neither. `brandSlots`, `brandThemeName`, `parseBrandLayer`, `brandScopeCss`, `BRAND_THEME_PREFIX`, `BRAND_SCOPE_CLASS` and `BRAND_SCOPE_LAYER_CLASS` are exported. | Nothing. Import `css/brand-scope` beside `@crewlethq/ui/styles.css` if you load the components through that bundle alone. | `stylesheets/brand.css` |
+| `--color-artifact-kind-brand` with its `-ink`, `-fill` and `-line` steps: `#cc7bd1` in dark and `#8f3884` in light, an orchid apart from design's purple and HTML's rose. It is the one kind with a hue of its own, declared by every theme beside its node hues; the six node hues are unchanged and still six. | Nothing. | [Artifact kinds](#artifact-kinds) |
+| In `@crewlethq/tokens/test/palette`, the rules `an artifact kind hue clears 3:1 as a mark`, `an artifact kind's ink clears 4.5:1 on its own fill and on every rung` and `artifact kind hues stay apart` are new, with the exports `ARTIFACT_KINDS`, `ARTIFACT_KIND_HUES`, `ARTIFACT_KIND_FILL_ALPHA` and `ARTIFACT_KIND_DE` (8). Every kind already cleared them in every theme. | Nothing, unless an application's own palette override repaints a kind's hue or a node hue within dE 8 of another kind's. | [The palette suite](#the-palette-suite) |
 
 ## Changed in 0.38.0: the hairline that finds a card
 
@@ -498,6 +535,22 @@ A collaborator's presence colour is the one narrow exception to "colour carries 
 
 The palette suite holds the flag's name at 4.5:1 on each of the six hues, and each hue at 3:1 as a mark on every rung, in every palette of every theme. The high-contrast theme keeps the same 4.5: the hue is the collaborator's identity rather than a palette's step, and the name is also said in words wherever presence is listed.
 
+### Artifact kinds
+
+Each kind of artifact is drawn in a hue of its own wherever its kind is pictured (a "Start a new artifact" tile, a card's ground, the kind's glyph in a bar or a list), always beside the kind's name, so the hue is identity and never state. `--color-artifact-kind-<kind>` carries the hue, and `-ink`, `-fill` and `-line` the glyph drawn on it, its tint and its boundary.
+
+| Kind | Hue | Dark | Light |
+| --- | --- | --- | --- |
+| `doc` | `--color-node-blue` | `#5b7fc7` | `#4062a7` |
+| `slides` | `--color-node-amber` | `#c89866` | `#865a28` |
+| `design` | `--color-node-purple` | `#8e6ed4` | `#7150b3` |
+| `dashboard` | `--color-node-cyan` | `#5ca8be` | `#166b80` |
+| `html` | `--color-node-rose` | `#c8757f` | `#984a55` |
+| `sheet` | `--color-node-green` | `#62a578` | `#2c7046` |
+| `brand` | its own | `#cc7bd1` | `#8f3884` |
+
+The first six are aliases of the six node hues, so every theme repaints them with no value of its own. `brand`, a company's brand kit, came after every node hue was taken, so every theme declares it beside its node hues (ink `#dabcdb` in dark and `#74246a` in light), and the build derives its fill and line from it at the node alphas. The palette suite holds every kind's hue at 3:1 as a mark on every rung, its ink at 4.5:1 on its own fill and on every rung, and every pair of kind hues dE 8 apart under normal vision, in every palette of every theme.
+
 ### The accent
 
 The accent is a violet, and it is **per palette**:
@@ -603,7 +656,7 @@ The marketing root keeps its own state and series values (`tokens/color.json`), 
 
 ## The palette suite
 
-`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), the step between a word and a dimmed one, every ink on its own soft tint, every fill as a mark, each status glyph's ink on its fill, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs, the hairline that finds a card and the strong hairline round a raised chip, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), and the structure of the theme file itself. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
+`test/palette.mjs` holds the rule table and the colour maths, and `test/palette.test.mjs` runs it over `dist/css` in import order, in every theme state: the base marketing root (`base`), the dark root (`dark`), light by media query (`light (media query)`) and light by attribute (`light (attribute)`), which are the keys `paletteStates()` returns. It measures every text step on every surface it can land on (the four opaque rungs in `OPAQUE_SURFACES`, and the translucent overlays composited over each of them), the step between a word and a dimmed one, every ink on its own soft tint, every fill as a mark, each status glyph's ink on its fill, the primary action's three fills under its label and the steps between them, the destructive action's fill and its hover under the same label, the focus ring, the control boundary, the rail's current row, the steps between the rungs, the hairline that finds a card and the strong hairline round a raised chip, whether a hovered and a pressed row can be seen, the hue separations under normal, protan and deuteranopic vision (the states from each other, the chart series from their neighbours and from the danger red, and every hue from the accent), each artifact kind's hue as a mark, its ink on its own fill and the kind hues apart from each other, and the structure of the theme file itself. The WCAG maths it measures with is the package's own runtime export (see [Contrast at runtime](#contrast-at-runtime)), re-exported from `test/color.mjs`. A component suite that measures a colour of its own measures it on `OPAQUE_SURFACES` too, rather than on a list of surface names it keeps itself.
 
 The module is **published**, as `@crewlethq/tokens/test/palette`, so a consumer runs the same rules over the version it installed:
 

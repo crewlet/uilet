@@ -1,0 +1,80 @@
+/*
+ * The brand layer's own part: the logo class.
+ *
+ * THE MAPPING IS NOT HERE. A company's brand restyles the kit's tokens through
+ * the mapping in @crewlethq/tokens (stylesheets/brand.css, published as
+ * `@crewlethq/tokens/css/brand`), the one source the application's
+ * BrandScope is built from too, so a page and a branded region of the
+ * dashboard follow one set of rules. The kit's build bundles that mapping on
+ * the document root, moves the theme's value of every token it declares
+ * aside to `--crewlet-theme-<name>` (scripts/brand.mjs), and appends this
+ * file after it.
+ *
+ * The inputs this file reads are the logo slots, beside the mapping's colour
+ * and face inputs:
+ *
+ *   --brand-logo-primary       url() of the logo for a light ground
+ *   --brand-logo-on-dark       url() of the logo for a dark ground
+ *   --brand-logo-mark          url() of the mark alone
+ *   --brand-logo-<v>-ratio     each logo's width over its height, a number
+ */
+
+/*
+ * THE LOGO, drawn from the brand's own files so a page never writes a URL:
+ *
+ *   <span class="crewlet-logo" role="img" aria-label="Acme"></span>
+ *   <span class="crewlet-logo" data-variant="mark" role="img" aria-label="Acme"></span>
+ *
+ * `primary` (the default) draws the logo for a light ground in light mode and
+ * the brand's on-dark logo in dark mode where it has one; `on-dark` draws the
+ * on-dark logo whatever the mode, for a dark band on a light page; `mark`
+ * draws the mark alone. Its height is `--crewlet-logo-size` (2rem), or a
+ * `data-size` step for a page whose policy keeps style attributes out; its
+ * width follows the logo's ratio. With no logo for its variant, it draws
+ * nothing and takes no room: the size is computed through the ratio, which
+ * is unset with it.
+ */
+.crewlet-logo {
+  --crewlet-logo-src: var(--brand-logo-on-dark, var(--brand-logo-primary));
+  --crewlet-logo-ratio: var(--brand-logo-on-dark-ratio, var(--brand-logo-primary-ratio));
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  block-size: calc(var(--crewlet-logo-size, 2rem) + 0px * var(--crewlet-logo-ratio));
+  inline-size: calc(var(--crewlet-logo-size, 2rem) * var(--crewlet-logo-ratio));
+  background: var(--crewlet-logo-src) center / contain no-repeat;
+}
+
+@media (prefers-color-scheme: light) {
+  :where(:root:not([data-theme="dark"])) .crewlet-logo {
+    --crewlet-logo-src: var(--brand-logo-primary);
+    --crewlet-logo-ratio: var(--brand-logo-primary-ratio);
+  }
+}
+
+:where(:root[data-theme="light"]) .crewlet-logo {
+  --crewlet-logo-src: var(--brand-logo-primary);
+  --crewlet-logo-ratio: var(--brand-logo-primary-ratio);
+}
+
+.crewlet-logo[data-variant='on-dark'] {
+  --crewlet-logo-src: var(--brand-logo-on-dark);
+  --crewlet-logo-ratio: var(--brand-logo-on-dark-ratio);
+}
+
+.crewlet-logo[data-variant='mark'] {
+  --crewlet-logo-src: var(--brand-logo-mark);
+  --crewlet-logo-ratio: var(--brand-logo-mark-ratio);
+}
+
+.crewlet-logo[data-size='sm'] {
+  --crewlet-logo-size: 1.5rem;
+}
+
+.crewlet-logo[data-size='lg'] {
+  --crewlet-logo-size: 3rem;
+}
+
+.crewlet-logo[data-size='xl'] {
+  --crewlet-logo-size: 4rem;
+}

@@ -147,3 +147,14 @@ test('a small checkbox sets its label at the compact step, and a default one at 
     uninstall();
   }
 });
+
+test('a bare box is still named by its label, which is said and not drawn', () => {
+  const onCheckedChange = vi.fn();
+  const { container } = render(<Checkbox hideLabel label="Select Vendor scorecard" checked={false} onCheckedChange={onCheckedChange} />);
+  const box = screen.getByRole('checkbox', { name: 'Select Vendor scorecard' });
+  expect(container.querySelector('label')?.classList.contains('crewlet-checkbox--bare')).toBe(true);
+  expect(container.querySelector('.crewlet-checkbox__text')).toBeNull();
+  expect(document.getElementById(box.getAttribute('aria-labelledby') ?? '')?.classList.contains('crewlet-visually-hidden')).toBe(true);
+  fireEvent.click(box);
+  expect(onCheckedChange).toHaveBeenCalledWith(true);
+});

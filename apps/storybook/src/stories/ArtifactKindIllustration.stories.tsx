@@ -16,12 +16,15 @@ export default meta;
 type Story = StoryObj<typeof ArtifactKindIllustration>;
 
 const WORDS = { doc: 'Docs', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', html: 'HTML', sheet: 'Sheet' } as const;
+// The kinds a person starts from the gallery. A brand kit is not one of them:
+// a company's brand is set up on a page of its own.
 const ORDER = ['doc', 'slides', 'design', 'dashboard', 'html', 'sheet'] as const;
 
 /**
  * Every kind's drawing on its tinted ground: a page of prose, a slide, a phone
- * screen, a board of bars, a window of code and a grid of cells, each in the
- * kind's own token (`--color-artifact-kind-*`). Switch the theme to see each
+ * screen, a board of bars, a window of code, a grid of cells and a brand kit's
+ * mark over its swatches, each in the kind's own token
+ * (`--color-artifact-kind-*`). Switch the theme to see each
  * repainted; nothing here holds a colour of its own.
  */
 export const Grounds: Story = {

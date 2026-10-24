@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { cx } from '../utils/cx.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
   /**
@@ -34,6 +35,14 @@ export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement
    * which is why it is a prop here rather than something a caller can spell.
    */
   indeterminate?: boolean;
+  /**
+   * The label is SAID AND NOT DRAWN: the box alone, on a target the pointer
+   * floor allows. For a box whose surroundings already show what it picks (a
+   * card's title, a row of a list), where printing "Select Q3 plan" beside it
+   * would only repeat the row. The label is still the box's name, so it still
+   * says what the box picks.
+   */
+  hideLabel?: boolean | undefined;
   /** The new state, for a caller that does not want to read it off an event. */
   onCheckedChange?: (checked: boolean) => void;
 }
@@ -67,6 +76,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
     framed = false,
     size = 'md',
     indeterminate = false,
+    hideLabel = false,
     onCheckedChange,
     onChange,
     className = '',
@@ -110,6 +120,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
         tone === 'danger' && 'crewlet-checkbox--danger',
         framed && 'crewlet-checkbox--framed',
         size === 'sm' && 'crewlet-checkbox--sm',
+        hideLabel && 'crewlet-checkbox--bare',
         disabled && 'is-disabled',
         className,
       )}
@@ -128,16 +139,20 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
         }}
         {...rest}
       />
-      <span className="crewlet-checkbox__text">
-        <span className="crewlet-checkbox__label" id={labelId}>
-          {label}
-        </span>
-        {description ? (
-          <span className="crewlet-checkbox__description" id={descriptionId}>
-            {description}
+      {hideLabel ? (
+        <VisuallyHidden id={labelId}>{label}</VisuallyHidden>
+      ) : (
+        <span className="crewlet-checkbox__text">
+          <span className="crewlet-checkbox__label" id={labelId}>
+            {label}
           </span>
-        ) : null}
-      </span>
+          {description ? (
+            <span className="crewlet-checkbox__description" id={descriptionId}>
+              {description}
+            </span>
+          ) : null}
+        </span>
+      )}
     </label>
   );
 });

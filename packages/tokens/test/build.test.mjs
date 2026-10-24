@@ -15,7 +15,8 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { cascade, fromOklab, hex, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
-import { SOFT_ALPHA, paletteStates } from './palette.mjs';
+import * as palette from './palette.mjs';
+import { ARTIFACT_KIND_FILL_ALPHA, SOFT_ALPHA, paletteStates } from './palette.mjs';
 import * as exported from '../dist/index.js';
 import { DEFAULT_THEME_ID, breakpoint, font, isThemeId, size, spacing, themeGroups, themeRegistry, themes } from '../dist/index.js';
 
@@ -187,9 +188,28 @@ describe('the display, body, sheet, shell, breakpoint and breath tokens', () => 
     // make the next token added look untyped.
     const leaves = (tree) =>
       Object.values(tree).reduce((count, value) => count + (value !== null && typeof value === 'object' ? leaves(value) : 1), 0);
-    // The palettes and the theme registry are re-exported from themes.js
-    // rather than declared in index.d.ts, so the reader does not see them.
-    const reExported = new Set(['themes', 'themeGroups', 'themeRegistry', 'DEFAULT_THEME_ID', 'isThemeId']);
+    // The palettes and the theme registry are re-exported from themes.js, the
+    // colour maths from color.js and the brand mapping's contract from
+    // brand.js, rather than declared in index.d.ts, so the reader does not see
+    // them.
+    const reExported = new Set([
+      'themes',
+      'themeGroups',
+      'themeRegistry',
+      'DEFAULT_THEME_ID',
+      'isThemeId',
+      'WCAG_CONTRAST',
+      'contrast',
+      'luminance',
+      'parseHex',
+      'BRAND_SCOPE_CLASS',
+      'BRAND_SCOPE_LAYER_CLASS',
+      'BRAND_THEME_PREFIX',
+      'brandScopeCss',
+      'brandSlots',
+      'brandThemeName',
+      'parseBrandLayer',
+    ]);
     const expected = Object.entries(exported)
       .filter(([name]) => !reExported.has(name))
       .reduce((count, [, tree]) => count + leaves(tree), 0);
@@ -260,6 +280,25 @@ describe('the derived tints', () => {
         assert.equal(values.get(`--color-feedback-${family}-line`), withAlpha(fill, 0.3), `${state} ${family} line`);
       }
     }
+  });
+
+  test("the brand kind's fill and line are its own hue at the node alphas, in every palette", () => {
+    // Brand is the one artifact kind whose hue is not an alias of a node hue,
+    // so its steps are derived by the build rather than aliased, at the
+    // alphas a node hue's are, and the palette suite recomputes the fill at
+    // the same alpha.
+    const hues = new Set();
+    for (const [state, values] of everyState()) {
+      const hue = values.get('--color-artifact-kind-brand');
+      assert.ok(parseHex(hue), `${state} brand is ${hue}, not an opaque colour`);
+      hues.add(hue);
+      assert.equal(values.get('--color-artifact-kind-brand-fill'), withAlpha(hue, ARTIFACT_KIND_FILL_ALPHA), `${state} brand fill`);
+      assert.equal(values.get('--color-artifact-kind-brand-fill'), withAlpha(hue, 0.12), `${state} brand fill at the node fill alpha`);
+      assert.equal(values.get('--color-artifact-kind-brand-line'), withAlpha(hue, 0.38), `${state} brand line at the node line alpha`);
+      assert.ok(parseHex(values.get('--color-artifact-kind-brand-ink')), `${state} brand ink`);
+    }
+    // One value per mode: the hue is the kind's identity, not a palette's step.
+    assert.equal(hues.size, 2, [...hues].join(', '));
   });
 
   test("the accent's companions are the accent, in every palette", () => {
@@ -533,6 +572,43 @@ describe('the named themes', () => {
     for (const value of ['', 'all', 'Crewlet', ' crewlet', 'constructor', '__proto__', 'toString', null, undefined, 1, {}, ['crewlet']]) {
       assert.equal(isThemeId(value), false, JSON.stringify(value) ?? String(value));
     }
+  });
+});
+
+describe('the colour maths at runtime', () => {
+  test('the package exports the implementation the palette suite measures with', () => {
+    // One implementation: the published entry and the published suite hand a
+    // caller the same functions, so the ratio an interface shows is the ratio
+    // a theme is held to.
+    for (const name of ['contrast', 'luminance', 'parseHex']) {
+      assert.equal(typeof exported[name], 'function', name);
+      assert.equal(exported[name], palette[name], `${name} is the suite's own`);
+    }
+  });
+
+  test('contrast is the WCAG 2 ratio, in either order', () => {
+    const black = exported.parseHex('#000000');
+    const white = exported.parseHex('#ffffff');
+    assert.equal(exported.contrast(black, white), 21);
+    assert.equal(exported.contrast(white, black), 21);
+    assert.equal(exported.contrast(white, white), 1);
+    // #767676 is the lightest grey that clears 4.5:1 on white; #777777 is not.
+    assert.ok(exported.contrast(exported.parseHex('#767676'), white) >= exported.WCAG_CONTRAST.aa);
+    assert.ok(exported.contrast(exported.parseHex('#777777'), white) < exported.WCAG_CONTRAST.aa);
+    assert.equal(exported.luminance(white), 1);
+    assert.equal(exported.luminance(black), 0);
+  });
+
+  test('parseHex reads #rrggbb and nothing else, and never throws', () => {
+    assert.deepEqual(exported.parseHex(' #AbCdEf '), { r: 171, g: 205, b: 239 });
+    for (const value of ['', '#fff', '#ffffffff', 'fff000', 'red', 'rgb(0, 0, 0)', '#gggggg', '#12345']) {
+      assert.equal(exported.parseHex(value), null, JSON.stringify(value));
+    }
+  });
+
+  test('the WCAG floors are the standard ones, and frozen', () => {
+    assert.deepEqual({ ...exported.WCAG_CONTRAST }, { aa: 4.5, aaLarge: 3, aaa: 7, aaaLarge: 4.5 });
+    assert.ok(Object.isFrozen(exported.WCAG_CONTRAST));
   });
 });
 

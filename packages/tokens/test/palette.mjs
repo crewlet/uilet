@@ -346,6 +346,33 @@ export const PRESENCE_HUES = ['purple', 'cyan', 'green', 'amber', 'rose', 'blue'
 export const PRESENCE_FLAG_TEXT = '--color-presence-flag-text';
 
 // ---------------------------------------------------------------------------
+// Artifact kinds
+// ---------------------------------------------------------------------------
+
+/**
+ * The hue each kind of artifact is drawn in (`--color-artifact-kind-<kind>`),
+ * with its `-ink` step: the illustration on a "Start a new artifact" tile and
+ * a card's ground are drawn in the hue, and the kind's glyph in the ink, on
+ * the kind's own fill (a Make row's tile, a list's name cell) or straight on
+ * the page (an artifact's bar, a card's badge).
+ *
+ * Six kinds are aliases of the six node hues; `brand` has a hue of its own,
+ * because every node hue was already a kind. A kind's hue is identity and
+ * never state (its name is always drawn beside it), so the hues are held
+ * apart under normal vision only, at ARTIFACT_KIND_DE: the nearest pair the
+ * six node hues already make is dE 8.2, and a seventh hue has to keep that
+ * distance from every one of them. The hue clears 3:1 as a mark on every
+ * rung, and the ink 4.5:1 on its own fill and on every rung, the floor every
+ * other ink step keeps.
+ */
+export const ARTIFACT_KINDS = ['doc', 'slides', 'design', 'dashboard', 'html', 'sheet', 'brand'];
+export const ARTIFACT_KIND_HUES = ARTIFACT_KINDS.map((kind) => `--color-artifact-kind-${kind}`);
+/** The alpha a kind's fill is its hue at: the build's node fill alpha. */
+export const ARTIFACT_KIND_FILL_ALPHA = 0.12;
+/** How far apart, in OKLab dE under normal vision, any two kind hues sit. */
+export const ARTIFACT_KIND_DE = 8;
+
+// ---------------------------------------------------------------------------
 // The rail
 // ---------------------------------------------------------------------------
 
@@ -815,6 +842,21 @@ function surfacesOf(values) {
   return { ground, opaque, all };
 }
 
+/**
+ * The token a `var()` alias finally names in one state, or the name itself
+ * when its value is not an alias. A token such as an artifact kind's hue is
+ * emitted as `var(--color-node-blue)`, which resolve() alone cannot measure.
+ */
+function dereference(values, name) {
+  let current = name;
+  for (let hops = 0; hops < 8; hops += 1) {
+    const match = /^var\((--[a-z0-9-]+)\)$/i.exec((values.get(current) ?? '').trim());
+    if (!match) return current;
+    current = match[1];
+  }
+  throw new Error(`token ${name} is an alias chain more than 8 deep`);
+}
+
 function resolve(values, name, ground) {
   const raw = values.get(name);
   if (raw === undefined) throw new Error(`token ${name} has no value`);
@@ -934,6 +976,41 @@ function checkState(state, values, profile, push, theme = { tint: null, contrast
     for (const name of PRESENCE_HUES) {
       const mark = worst(colour(name), opaque);
       say('a presence hue clears 3:1 as a mark', mark.ratio >= 3, name, mark.ratio, `${mark.ratio.toFixed(2)}:1 (worst on ${mark.name})`);
+    }
+  }
+
+  // ARTIFACT KINDS. See ARTIFACT_KIND_HUES. Six of the hues are aliases of a
+  // node hue, so each is followed to the value it names in this state. The
+  // fill is recomputed from the hue rather than read from its token, so a
+  // hand-edited fill that no longer belongs to its hue fails.
+  {
+    const kinds = ARTIFACT_KIND_HUES.map((name) => [name, colour(dereference(values, name))]);
+    for (const [name, hueRgb] of kinds) {
+      const mark = worst(hueRgb, opaque);
+      say('an artifact kind hue clears 3:1 as a mark', mark.ratio >= 3, name, mark.ratio, `${mark.ratio.toFixed(2)}:1 (worst on ${mark.name})`);
+      const { r, g, b } = hueRgb;
+      const fills = opaque.map(([rung, rgb]) => [
+        `${name} fill on ${rung}`,
+        flatten(`rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${ARTIFACT_KIND_FILL_ALPHA})`, rgb),
+      ]);
+      const ink = worst(colour(dereference(values, `${name}-ink`)), [...fills, ...opaque]);
+      say(
+        "an artifact kind's ink clears 4.5:1 on its own fill and on every rung",
+        ink.ratio >= 4.5,
+        `${name}-ink`,
+        ink.ratio,
+        `${ink.ratio.toFixed(2)}:1 (worst on ${ink.name})`,
+      );
+    }
+    if (profile === 'full') {
+      for (let i = 0; i < kinds.length; i += 1) {
+        for (let j = i + 1; j < kinds.length; j += 1) {
+          const [a, aRgb] = kinds[i];
+          const [b, bRgb] = kinds[j];
+          const dE = deltaE(aRgb, bRgb);
+          say('artifact kind hues stay apart', dE >= ARTIFACT_KIND_DE, `${a} vs ${b}`, dE, `dE ${dE.toFixed(1)} >= ${ARTIFACT_KIND_DE}`);
+        }
+      }
     }
   }
 

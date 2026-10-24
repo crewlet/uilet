@@ -6,11 +6,17 @@ import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promi
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, relative, resolve, sep } from 'node:path';
-// One implementation of the colour maths, and the build is its second caller:
+// One implementation of the colour maths, and the build is one of its callers:
 // the soft and line steps below are the theme's own fill at a fixed alpha, and
 // a second hex-to-rgba helper here would be the first place a tint could drift
-// from the one the palette suite measures.
-import { parseHex, withAlpha } from '../test/color.mjs';
+// from the one the palette suite measures. It is read from the TypeScript
+// source, which Node strips, because the build runs before tsc has emitted
+// dist/color.js; the palette suite and the package entry read the built copy.
+import { parseHex, withAlpha } from '../src/color.ts';
+// The brand mapping's one source is stylesheets/brand.css; the scope's
+// stylesheet is written from it by the same module the artifact kit reads the
+// mapping's public tokens through, so the two cannot disagree about it.
+import { brandScopeCss } from '../src/brand.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -54,6 +60,13 @@ const NODE_FILL_ALPHA = 0.12;
 const NODE_LINE_ALPHA = 0.38;
 const NODE_HALO_ALPHA = 0.16;
 const NODE_HUES = ['purple', 'cyan', 'green', 'amber', 'rose', 'blue'];
+
+// The artifact kinds whose hue is their own rather than an alias of a node
+// hue. Every node hue already draws a kind, so a kind added after the six
+// carries its own value in each palette, and its Fill and Line steps are
+// derived here at the node alphas, so they follow it as a node hue's follow
+// the node hue.
+const OWN_KIND_HUES = ['brand'];
 
 // The accent's two companions, on the same principle, and per palette because
 // the accent is: `accentRgb` is the accent as an r, g, b triple, for a
@@ -127,6 +140,13 @@ function deriveTints(tokens, where, { contrast = 'standard' } = {}) {
     tokens.color.node[`${name}Fill`] = { value: withAlpha(fill('node', name), NODE_FILL_ALPHA) };
     tokens.color.node[`${name}Line`] = { value: withAlpha(fill('node', name), NODE_LINE_ALPHA) };
     tokens.color.node[`${name}Halo`] = { value: withAlpha(fill('node', name), NODE_HALO_ALPHA) };
+  }
+  for (const name of OWN_KIND_HUES) {
+    const kind = tokens.color.artifact?.kind;
+    const hue = kind?.[name]?.value;
+    if (hue === undefined) throw new Error(`${where}: color.artifact.kind.${name} is missing, and its fill and line are derived from it`);
+    kind[`${name}Fill`] = { value: withAlpha(hue, NODE_FILL_ALPHA) };
+    kind[`${name}Line`] = { value: withAlpha(hue, NODE_LINE_ALPHA) };
   }
   const accent = parseHex(fill('brand', 'accent'));
   if (accent === null) throw new Error(`${where}: color.brand.accent is "${fill('brand', 'accent')}"; the accent is authored as #rrggbb, and its companions are derived from it`);
@@ -382,6 +402,19 @@ async function themeValues(tokens) {
  * because a themed slot whose name did not match the base slot would repaint
  * nothing and fail no build. The palette suite asserts the match as well.
  */
+/** Declarations as themeDeclarations writes them, one per line, as a Map from name to value. */
+function declaredIn(lines) {
+  return new Map(
+    lines
+      .split('\n')
+      .filter((line) => line.includes(':'))
+      .map((line) => {
+        const colon = line.indexOf(':');
+        return [line.slice(0, colon).trim(), line.slice(colon + 1).trim().replace(/;$/, '')];
+      }),
+  );
+}
+
 async function themeDeclarations(tokens, indent) {
   const sd = new StyleDictionary(
     {
@@ -844,6 +877,16 @@ async function build() {
   // stylesheets/ where it can be read and reviewed as CSS, and is copied into
   // the published dist/css/ beside the generated files.
   await copyFile(resolve(stylesheetsDir, 'base.css'), resolve(cssDir, 'base.css'));
+  // The brand mapping, on the document root as its source writes it (the
+  // artifact kit's layer), and moved onto a scope of its own for an
+  // application that brands one region (@crewlethq/ui's BrandScope). A scope
+  // that pins its mode takes the default theme's values for that mode.
+  const brandSource = await readFile(resolve(stylesheetsDir, 'brand.css'), 'utf8');
+  await copyFile(resolve(stylesheetsDir, 'brand.css'), resolve(cssDir, 'brand.css'));
+  await writeFile(
+    resolve(cssDir, 'brand-scope.css'),
+    brandScopeCss(brandSource, { light: declaredIn(await themeDeclarations(light, '')), dark: declaredIn(await themeDeclarations(dark, '')) }),
+  );
   await writeFile(resolve(cssDir, 'fonts.css'), `${fontFacesHeader}\n${await fontFaceRules()}\n`);
   await writeFile(resolve(cssDir, 'material-symbols.css'), materialSymbols);
 
@@ -911,11 +954,24 @@ async function build() {
   );
   await writeFile(
     resolve(root, 'src/index.ts'),
-    `${await readFile(resolve(root, 'src/index.ts'), 'utf8')}\nexport { themes, themeGroups, themeRegistry, DEFAULT_THEME_ID, isThemeId } from './themes.js';\nexport type { ThemeName, ThemeGroupId, ThemeEntry, ThemeId } from './themes.js';\n`,
+    [
+      await readFile(resolve(root, 'src/index.ts'), 'utf8'),
+      "export { themes, themeGroups, themeRegistry, DEFAULT_THEME_ID, isThemeId } from './themes.js';",
+      "export type { ThemeName, ThemeGroupId, ThemeEntry, ThemeId } from './themes.js';",
+      // The colour maths the palette suite measures with, for an interface
+      // that has to say whether two colours a person chose read on each other.
+      "export { WCAG_CONTRAST, contrast, luminance, parseHex } from './color.js';",
+      "export type { Rgb } from './color.js';",
+      // The brand mapping's contract: its public tokens and the names their
+      // theme values take, for the artifact kit's build and the suites.
+      "export { BRAND_SCOPE_CLASS, BRAND_SCOPE_LAYER_CLASS, BRAND_THEME_PREFIX, brandScopeCss, brandSlots, brandThemeName, parseBrandLayer } from './brand.js';",
+      "export type { BrandLayer, BrandModeValues } from './brand.js';",
+      '',
+    ].join('\n'),
   );
 
   console.warn(
-    `[tokens] built CSS, the default light and dark palettes and ${palettes.length - 1} named themes, density, breakpoints, the document baseline, legacy aliases, font faces, the Material Symbols loader, and the TS module`,
+    `[tokens] built CSS, the default light and dark palettes and ${palettes.length - 1} named themes, density, breakpoints, the document baseline, the brand mapping and its scope, legacy aliases, font faces, the Material Symbols loader, and the TS module`,
   );
 }
 
