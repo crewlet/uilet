@@ -556,7 +556,8 @@ export const EngineStatusHealthy: Story = {
  * the engine's state) stands on the small control step, 26px, on a 2px gap
  * and a 4px inset, while the nav above keeps its 30px rows. Who is signed in
  * is the exception: the account row stands 44px tall around a 32px badge,
- * with the name in the nav's word size. Every row keeps its order, its
+ * with the name in the nav's word size, and gives the chevron it draws
+ * elsewhere to the name. Every row keeps its order, its
  * columns, its glyphs and its words, and every target still clears 24px.
  */
 export const CompactFoot: Story = {

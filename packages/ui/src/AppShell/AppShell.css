@@ -820,10 +820,14 @@
  */
 /*
  * AND THE WORDS TAKE THE ROOM: the name and the detail are what the row is
- * for, so every gap after the name is the half step and the menu's chevron
- * stands one step off the words at least, at the link's end. The controls
- * beside the link (Settings, Preferences) are half a step apart and half a
- * step off the link, so a reader's name keeps the width two controls leave.
+ * for. The badge's column costs the words 10px over the 14px glyph column, so
+ * the link's trailing chevron is not drawn here: it is decoration (hidden from
+ * assistive technology, which hears the link or `aria-haspopup`), the row's
+ * hover fill and current lift still say it is pressable, and its 16px are what
+ * keep the name at least as wide as it was beside the smaller badge. Every gap
+ * after the name is the half step, and the controls beside the link
+ * (Settings, Preferences) are half a step apart and half a step off it.
+ * Outside a rail's foot the row keeps its chevron.
  */
 .crewlet-app-shell__rail-foot .crewlet-account-row {
   --crewlet-account-row-pad: var(--spacing-0);
@@ -846,8 +850,11 @@
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__text {
-  margin-inline-end: var(--spacing-1);
   line-height: var(--font-line-height-body);
+}
+
+.crewlet-app-shell__rail-foot .crewlet-account-row__go {
+  display: none;
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__name {

@@ -67,9 +67,17 @@
   flex-wrap: wrap;
 }
 
+/*
+ * THE SENTENCE TAKES THE WIDE MEASURE, as ObjectHeader's does (keep the two in
+ * step). It answers "what is this screen for" in one statement read once,
+ * which is what --size-measure-wide is for: at prose's 68ch (586px at the
+ * compact size) a 100-character sentence wrapped onto a second line beside a
+ * header row over 800px wide. Narrow screens are unchanged, since the
+ * header's own width binds first.
+ */
 .crewlet-page-header__description {
   margin: 0;
-  max-width: var(--size-measure);
+  max-width: var(--size-measure-wide);
   font-family: var(--font-family-sans);
   /* A sentence that answers "what is this screen for", read once. It is not
      body copy, and at the body step it competed with the table under it. */
