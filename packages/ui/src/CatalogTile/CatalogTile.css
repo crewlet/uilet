@@ -156,20 +156,25 @@
   height: var(--size-row-sm);
 }
 
+/*
+ * THE NAME IS NEVER CUT. It is what the tile is: "C…" names nothing. Where
+ * the line is short of room the state and the fact wrap under the name rather
+ * than squeezing it, and a name longer than the whole line wraps at a word.
+ * The grid folds a compact tile's tracks before it comes to that (see
+ * TileGrid.css), so the wrap is the fallback and not the layout.
+ */
 .crewlet-catalog-tile--compact .crewlet-catalog-tile__title {
   flex: 1 1 auto;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: 0 var(--spacing-2);
   padding-top: 0;
 }
 
 .crewlet-catalog-tile--compact .crewlet-catalog-tile__name {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 
 .crewlet-catalog-tile--compact .crewlet-catalog-tile__status {
@@ -177,7 +182,8 @@
 }
 
 .crewlet-catalog-tile--compact .crewlet-catalog-tile__meta {
-  flex: 0 1 auto;
+  flex: none;
+  max-width: 100%;
 }
 
 .crewlet-catalog-tile--compact .crewlet-catalog-tile__description {
