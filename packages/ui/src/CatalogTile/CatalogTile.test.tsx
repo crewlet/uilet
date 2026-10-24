@@ -86,3 +86,37 @@ test("a tile's name starts at the same height with or without a state", () => {
   expect(head).toMatch(/align-items:\s*flex-start;/);
   expect(title).toMatch(/justify-content:\s*flex-start;/);
 });
+
+// ONE HEADER LINE AND NO FOOT: the fact and the action ride the name's line,
+// and the sentence keeps its whole text in its title when it is cut.
+test('a compact tile puts the fact and the action on the header line, with no foot', () => {
+  const { container } = render(
+    <CatalogTile
+      density="compact"
+      mark={<span />}
+      title="Datadog"
+      status={<span>Connected</span>}
+      description="Alerts reach seats by tag."
+      meta="2 of 3 agents ready"
+      action={<button type="button">Open</button>}
+    />,
+  );
+  const head = container.querySelector('.crewlet-catalog-tile__head') as HTMLElement;
+  expect(head.querySelector('.crewlet-catalog-tile__meta')?.textContent).toBe('2 of 3 agents ready');
+  expect(head.querySelector('button')?.textContent).toBe('Open');
+  expect(container.querySelector('.crewlet-catalog-tile__foot')).toBeNull();
+  expect(container.querySelector('.crewlet-catalog-tile__description')?.getAttribute('title')).toBe(
+    'Alerts reach seats by tag.',
+  );
+  expect(container.firstElementChild?.className).toContain('crewlet-catalog-tile--compact');
+});
+
+// THE SAME NAME AND THE SAME OUTLINE AT EITHER DENSITY: compact changes the
+// layout, never what a screen reader is told the tile is.
+test('a compact tile is still an article named by its heading, its mark hidden', () => {
+  render(<CatalogTile density="compact" mark={<svg />} title="Crewlet Works" status={<span>In use</span>} />);
+  const tile = screen.getByRole('article', { name: 'Crewlet Works' });
+  expect(screen.getByRole('heading', { level: 2, name: 'Crewlet Works' })).toBeTruthy();
+  expect(tile.querySelector('.crewlet-catalog-tile__mark')!.getAttribute('aria-hidden')).toBe('true');
+  expect(tile.querySelector('.crewlet-catalog-tile__description')).toBeNull();
+});

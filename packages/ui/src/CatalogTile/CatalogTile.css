@@ -133,3 +133,58 @@
     min-height: 0;
   }
 }
+
+/*
+ * COMPACT: a summary's tile, about half the comfortable one's height. One
+ * header line holds the mark (the row step's well, 28px), the name, its state
+ * and its fact, and the action at the end; the sentence is one line under it,
+ * aligned to the name, cut to fit. No reserve and no foot, because a summary
+ * has no row of feet to line up.
+ */
+.crewlet-catalog-tile--compact {
+  gap: var(--spacing-1);
+  padding: var(--spacing-3);
+}
+
+.crewlet-catalog-tile--compact .crewlet-catalog-tile__head {
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-catalog-tile--compact .crewlet-catalog-tile__mark {
+  width: var(--size-row-sm);
+  height: var(--size-row-sm);
+}
+
+.crewlet-catalog-tile--compact .crewlet-catalog-tile__title {
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding-top: 0;
+}
+
+.crewlet-catalog-tile--compact .crewlet-catalog-tile__name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-catalog-tile--compact .crewlet-catalog-tile__status {
+  flex: none;
+}
+
+.crewlet-catalog-tile--compact .crewlet-catalog-tile__meta {
+  flex: 0 1 auto;
+}
+
+.crewlet-catalog-tile--compact .crewlet-catalog-tile__description {
+  flex: none;
+  min-height: 0;
+  padding-left: calc(var(--size-row-sm) + var(--spacing-2));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

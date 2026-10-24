@@ -22,7 +22,9 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: var(--spacing-5);
+  /* One small step between groups, so a heading reads as the head of the lines
+     under it rather than a band between two runs of them. */
+  gap: var(--spacing-3);
   min-height: 0;
   overflow-y: auto;
 }
@@ -53,16 +55,24 @@
   list-style: none;
 }
 
+/*
+ * THE RAIL'S ROW STEP, 30px (--size-nav-row): a directory is navigation beside
+ * the page as the rail is beside the app, so its lines stand at the rail's
+ * height and in its compact type. Everything a line says fits that one line:
+ * a mark the size of the rail's glyph box, the hint inline after the label,
+ * and the state compact at the end.
+ */
 .crewlet-directory__item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--spacing-2);
-  min-height: var(--size-row-md);
-  padding: var(--spacing-1) var(--spacing-2);
+  height: var(--size-nav-row);
+  padding: 0 var(--spacing-2);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-tight);
   text-decoration: none;
 }
 
@@ -80,22 +90,28 @@
   outline-offset: 1px;
 }
 
+/* The box takes its mark, as the rail's glyph box does: a mark at the glyph's
+   own step (16px, `md`) sits in the row with room to spare. */
 .crewlet-directory__mark {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: var(--size-row-sm);
-  height: var(--size-row-sm);
 }
 
+/* ONE LINE: the label, then the hint after it in the quiet ink. The hint gives
+   way first, so a narrow column cuts "Atlassian" before it cuts "Confluence". */
 .crewlet-directory__text {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  gap: var(--spacing-1);
   min-width: 0;
 }
 
 .crewlet-directory__label {
+  flex: 0 0 auto;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   font-weight: var(--font-weight-medium);
   text-overflow: ellipsis;
@@ -103,6 +119,8 @@
 }
 
 .crewlet-directory__hint {
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
@@ -110,10 +128,15 @@
   white-space: nowrap;
 }
 
+/* THE STATE IS COMPACT: a pill or a dot and its word in the small step, held
+   inside the row so a state never makes one line taller than the rest. */
 .crewlet-directory__status {
   display: inline-flex;
   flex: none;
+  align-items: center;
+  max-height: calc(var(--size-nav-row) - var(--spacing-2));
   font-size: var(--font-size-xs);
+  line-height: 1;
   color: var(--color-text-secondary);
 }
 

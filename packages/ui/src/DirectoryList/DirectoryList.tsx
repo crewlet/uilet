@@ -7,10 +7,13 @@ export interface DirectoryItem {
   key: string;
   /** Where the line goes: the item's own page. */
   href: string;
-  /** The item's mark: a vendor's, a product's. Decorative, since the label names it. */
+  /**
+   * The item's mark: a vendor's, a product's, at the glyph step (16px, `md`).
+   * Decorative, since the label names it.
+   */
   mark?: ReactNode;
   label: ReactNode;
-  /** A quieter line under the label: the app a product belongs to. */
+  /** A quieter word after the label, on its line: the app a product belongs to. */
   hint?: ReactNode;
   /** The item's state where it has one: a status dot and word, or a pill. */
   status?: ReactNode;
@@ -48,8 +51,10 @@ export interface DirectoryListProps {
  * A NAVIGATION LANDMARK of lists under headings, so a screen reader can jump
  * group to group and is told how many lines each holds. The chosen line is
  * `aria-current="page"` and drawn on the selected ground. A line carries its
- * mark, its label (and a quieter hint under it) and its state where it has
- * one; a line with no state says nothing rather than "none".
+ * mark, its label (and a quieter hint after it) and its state where it has
+ * one; a line with no state says nothing rather than "none". A LINE STANDS
+ * AT THE RAIL'S ROW STEP (30px), in the rail's compact type, because a
+ * directory is navigation beside the page as the rail is beside the app.
  *
  * IT FILLS THE HEIGHT IT IS GIVEN. The groups take the room and scroll on
  * their own when they outgrow it, and the foot holds the bottom, one small
