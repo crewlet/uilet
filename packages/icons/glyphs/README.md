@@ -22,6 +22,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **The formatting bar of `MarkdownEditor`** in `@crewlethq/ui`: `heading-2` and `heading-3` for the two heading levels a page's outline lists, `bold`, `italic`, `list-ordered` for a numbered list beside `list`, and `list-checks` for a checklist. Each is a control a writer recognises by its drawing, so the bar draws all of them as glyphs rather than spelling some as letters ("H2", "B") beside the glyphs of the rest.
 - **The rich editor's blocks and formatting** in `@crewlethq/ui` (`RichEditor`): `heading-1` beside the two heading levels already here, `type` for a plain paragraph, `strikethrough`, `text-quote` for a quote, `square-code` for a code block, `unlink` for removing a link, and `text-align-start`, `text-align-center` and `text-align-end` for a table column's alignment. The slash menu and the selection toolbar draw every block and format as a glyph a writer recognises, as the `MarkdownEditor` bar does.
 - **`mouse-pointer-2`**, the pointer a collaborator's `LiveCursor` in `@crewlethq/ui` is drawn with, beside its name flag, on a board or a page that shares cursors.
+- **A company's brand and the folders artifacts are filed in**: `swatch-book` for the `brand` artifact kind (`ArtifactKindGlyph`) and the Company › Brand page, `blend` for a brand's colours, `badge-check` for an artifact drawn in the company's current brand, and `folder-open` for a folder with nothing in it, or nothing the reader can open, beside the `folder` a folder is otherwise drawn with.
 
 ## Provenance
 
@@ -59,9 +60,11 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `arrow-up` | `ArrowUpGlyph` | `package/icons/arrow-up.svg` |
 | `arrow-up-down` | `ArrowUpDownGlyph` | `package/icons/arrow-up-down.svg` |
 | `arrow-up-right` | `ArrowUpRightGlyph` | `package/icons/arrow-up-right.svg` |
+| `badge-check` | `BadgeCheckGlyph` | `package/icons/badge-check.svg` |
 | `badge-percent` | `BadgePercentGlyph` | `package/icons/badge-percent.svg` |
 | `ban` | `BanGlyph` | `package/icons/ban.svg` |
 | `bell` | `BellGlyph` | `package/icons/bell.svg` |
+| `blend` | `BlendGlyph` | `package/icons/blend.svg` |
 | `bold` | `BoldGlyph` | `package/icons/bold.svg` |
 | `book-open` | `BookOpenGlyph` | `package/icons/book-open.svg` |
 | `bot` | `BotGlyph` | `package/icons/bot.svg` |
@@ -111,6 +114,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `folder` | `FolderGlyph` | `package/icons/folder.svg` |
 | `folder-input` | `FolderInputGlyph` | `package/icons/folder-input.svg` |
 | `folder-kanban` | `FolderKanbanGlyph` | `package/icons/folder-kanban.svg` |
+| `folder-open` | `FolderOpenGlyph` | `package/icons/folder-open.svg` |
 | `folder-plus` | `FolderPlusGlyph` | `package/icons/folder-plus.svg` |
 | `frame` | `FrameGlyph` | `package/icons/frame.svg` |
 | `fullscreen` | `FullscreenGlyph` | `package/icons/fullscreen.svg` |
@@ -193,6 +197,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `sticky-note` | `StickyNoteGlyph` | `package/icons/sticky-note.svg` |
 | `strikethrough` | `StrikethroughGlyph` | `package/icons/strikethrough.svg` |
 | `sun` | `SunGlyph` | `package/icons/sun.svg` |
+| `swatch-book` | `SwatchBookGlyph` | `package/icons/swatch-book.svg` |
 | `table` | `TableGlyph` | `package/icons/table.svg` |
 | `tablet` | `TabletGlyph` | `package/icons/tablet.svg` |
 | `target` | `TargetGlyph` | `package/icons/target.svg` |
