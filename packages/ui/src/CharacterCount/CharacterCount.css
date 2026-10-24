@@ -1,0 +1,29 @@
+/*
+ * The count of a limited field (CharacterCount.tsx): the help line's own small
+ * step, in its quiet ink until the limit is close.
+ */
+
+.crewlet-character-count {
+  flex: none;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  /* Figures of one width, so the count does not shift as a digit changes. */
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.crewlet-character-count__of {
+  margin-inline: 0.15em;
+}
+
+.crewlet-character-count--near {
+  color: var(--color-feedback-warning-ink);
+}
+
+/* Past the limit the count is the refusal's ink and weight, so the number
+   that says what to fix is the loudest thing on the line. */
+.crewlet-character-count--over {
+  color: var(--color-feedback-danger-ink);
+  font-weight: var(--font-weight-medium);
+}

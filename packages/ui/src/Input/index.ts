@@ -10,7 +10,7 @@ export { Label } from './Label.js';
 export type { LabelProps } from './Label.js';
 
 export { FormField } from './FormField.js';
-export type { FormFieldProps, FormFieldRender } from './FormField.js';
+export type { FormFieldLimit, FormFieldProps, FormFieldRender } from './FormField.js';
 
 export { FormRow } from './FormRow.js';
 export type { FormRowProps } from './FormRow.js';
