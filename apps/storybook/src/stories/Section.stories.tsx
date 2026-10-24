@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, Card, Container, Eyebrow, Section, Text } from '@crewlethq/ui';
+import { Button, Card, Container, Count, Eyebrow, Section, Text } from '@crewlethq/ui';
 
 const meta: Meta<typeof Section> = {
   title: 'UI/Section',
   component: Section,
   argTypes: {
-    spacing: { control: 'inline-radio', options: ['none', 'compact', 'sm', 'md', 'lg'] },
+    spacing: { control: 'inline-radio', options: ['none', 'tight', 'compact', 'sm', 'md', 'lg'] },
   },
 };
 
@@ -39,6 +39,35 @@ export const AConsoleBand: Story = {
         </Card.Body>
       </Card>
     </Section>
+  ),
+};
+
+/**
+ * TIGHT: one small step between each heading and what it names, for a summary
+ * whose sections stand as close as a list's group headings do. A heading may
+ * carry the kit's `Count` of what is under it.
+ */
+export const Tight: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)', maxWidth: 640 }}>
+      <Section spacing="tight" title="Needs a look">
+        <Text variant="caption">The key Crewlet holds for GitLab expires in 3 days.</Text>
+      </Section>
+      <Section
+        spacing="tight"
+        title={
+          <>
+            In use <Count value={2} />
+          </>
+        }
+      >
+        <Card>
+          <Card.Body>
+            <Text variant="caption">Crewlet Works and Crewlet Knowledge.</Text>
+          </Card.Body>
+        </Card>
+      </Section>
+    </div>
   ),
 };
 

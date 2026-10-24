@@ -88,6 +88,32 @@ test('the band title and its sentence read at the page register', () => {
   expect(rule('description')).toMatch(/font-size:\s*var\(--font-size-xs\)/);
 });
 
+// TIGHT IS ONE SMALL STEP between a heading and what it names, titled or not:
+// the titled column's own gap comes later in the sheet, so without a rule of
+// its own a titled tight band would take the compact band's step.
+test('a tight section keeps its one small step with a title', () => {
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Section.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const tight = /\.crewlet-section--tight\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const titled = /\.crewlet-section--tight\.crewlet-section--titled\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(tight).toMatch(/gap:\s*var\(--spacing-2\)/);
+  expect(tight).toMatch(/padding-block:\s*0/);
+  expect(titled).toMatch(/gap:\s*var\(--spacing-2\)/);
+  expect(css.indexOf('.crewlet-section--tight.crewlet-section--titled')).toBeGreaterThan(
+    css.indexOf('.crewlet-section--titled {'),
+  );
+  render(
+    <Section spacing="tight" title="In use" data-testid="tight">
+      cards
+    </Section>,
+  );
+  const band = screen.getByTestId('tight');
+  expect(band.className).toContain('crewlet-section--tight');
+  expect(screen.getByRole('region', { name: 'In use' })).toBe(band);
+});
+
 test('a section with no spacing named is the console band', () => {
   // The marketing band was the default, so every named section on a console
   // screen spent 80px above and 80px below itself and a screen of three of

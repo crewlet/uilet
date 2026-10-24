@@ -17,6 +17,12 @@ export type SectionSpacing =
    * marketing band between each pair of panels puts one panel per viewport.
    */
   | 'compact'
+  /**
+   * The console band at its tightest: one small step between the heading and
+   * what it introduces, for a summary whose sections stand close, as a list's
+   * group headings do.
+   */
+  | 'tight'
   /** A marketing band. State one: a page of them is a deliberate page. */
   | 'sm'
   | 'md'
