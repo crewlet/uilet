@@ -1,4 +1,4 @@
-import { PinGlyph } from '@crewlethq/icons/glyphs';
+import { FolderGlyph, PinGlyph } from '@crewlethq/icons/glyphs';
 import { ArtifactKindGlyph, type ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -6,15 +6,30 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 export interface ArtifactNameCellLabels {
   kinds: Record<ArtifactKind, string>;
   pinned: string;
+  /** The word under a folder's name, where an artifact's says its kind. */
+  folder: string;
 }
 
 const LABELS: ArtifactNameCellLabels = {
   kinds: { html: 'HTML', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet' },
   pinned: 'Pinned',
+  folder: 'Folder',
 };
 
+/**
+ * What a list's name cell names: an artifact of a kind, or a folder, which a
+ * folder's page lists first in the same grid as the artifacts it holds.
+ */
+export type ArtifactNameKind = ArtifactKind | 'folder';
+
 export interface ArtifactNameCellProps {
-  kind: ArtifactKind;
+  /**
+   * The artifact's kind, or `folder` for a folder's row: the folder glyph on
+   * a neutral tint (a folder is not a kind, so it takes no kind's colour) and
+   * the word "Folder", with what is inside as its `detail`
+   * (`describeFolderContents`).
+   */
+  kind: ArtifactNameKind;
   title: string;
   /**
    * What it is about, in a line under the title after the kind's word: the
@@ -47,12 +62,16 @@ export interface ArtifactNameCellProps {
  */
 export function ArtifactNameCell({ kind, title, detail, pinned = false, trashed = false, className, labels }: ArtifactNameCellProps) {
   const text = { ...LABELS, ...labels, kinds: { ...LABELS.kinds, ...labels?.kinds } };
-  const kindWord = text.kinds[kind];
+  const folder = kind === 'folder';
+  const kindWord = folder ? text.folder : text.kinds[kind];
   const about = detail?.trim();
   return (
     <span className={cx('crewlet-artifact-name', trashed && 'crewlet-artifact-name--trashed', className)}>
-      <span className={cx('crewlet-artifact-name__mark', `crewlet-kind--${kind}`)} aria-hidden="true">
-        <ArtifactKindGlyph kind={kind} size="sm" />
+      <span
+        className={cx('crewlet-artifact-name__mark', folder ? 'crewlet-artifact-name__mark--folder' : `crewlet-kind--${kind}`)}
+        aria-hidden="true"
+      >
+        {folder ? <FolderGlyph size="sm" /> : <ArtifactKindGlyph kind={kind} size="sm" />}
       </span>
       <span className="crewlet-artifact-name__words">
         <span className="crewlet-artifact-name__title-row">
