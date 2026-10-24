@@ -19,8 +19,8 @@
  * there, selected, and hands back the Move tool. One that can create notes
  * adds Text (`T`) and Sticky (`S`): a click on the field places one there,
  * opens it for typing, and hands back the Move tool. The pointer is always
- * the tool's (the Canvas cursors), and a pan in progress is always the closed
- * hand.
+ * the tool's (the operating system's own, through the Canvas), and a pan in
+ * progress is always the closed hand.
  *
  * A PAGE INSIDE A BOARD NEVER TAKES THE CANVAS'S POINTER BY SURPRISE. A live
  * board is covered by a shield that pans the canvas like the field around it;

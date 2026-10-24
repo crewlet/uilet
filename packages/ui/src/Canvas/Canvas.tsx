@@ -94,7 +94,7 @@ import {
   type Ref,
   type TransitionEvent as ReactTransitionEvent,
 } from 'react';
-import { CURSORS, FullscreenGlyph, ZoomInGlyph, ZoomOutGlyph } from '@crewlethq/icons/glyphs';
+import { FullscreenGlyph, ZoomInGlyph, ZoomOutGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { ShortcutTip } from './ShortcutTip.js';
@@ -198,6 +198,10 @@ export interface CanvasHandle {
  * wants. A surface with tools names the one its tool means: `pointer` for
  * selecting, `crosshair` for placing a thing, `text` for placing text. A pan
  * in progress always shows the closed hand, whatever the tool.
+ *
+ * Each is the operating system's own pointer (`grab`, `default`, `crosshair`,
+ * `text`, and `grabbing` for a pan), the hand a reader already knows from
+ * every map and design tool, rather than a drawing of the kit's own.
  */
 export type CanvasCursor = 'hand' | 'pointer' | 'crosshair' | 'text';
 
@@ -885,7 +889,7 @@ export function Canvas({
     <div
       className={cx('crewlet-canvas', className)}
       ref={root}
-      style={ground === 'grid' ? { ...CURSOR_PROPERTIES, ...gridProperties(view) } : CURSOR_PROPERTIES}
+      style={ground === 'grid' ? gridProperties(view) : undefined}
       data-cursor={cursor}
       data-dimmed={dimmed}
       data-ground={ground}
@@ -1019,13 +1023,6 @@ export function Canvas({
 }
 
 /**
- * Every pointer cursor, as custom properties on the canvas's root: the field
- * reads the one its [CanvasCursor] names, and content inside the canvas (a
- * board's shield, a resize handle's neighbours) reads the same drawings
- * rather than the browser's own, so one pointer family runs across the whole
- * surface. Each falls back to its keyword where it is read.
- */
-/**
  * WHERE A `grid` GROUND'S DOTS FALL for a view: their pitch on screen as a
  * multiple of the dotted step, and the screen point one of them sits on.
  *
@@ -1040,14 +1037,6 @@ export function gridOf(view: CanvasView): { scale: number; x: number; y: number 
   const k = view.k > 0 && Number.isFinite(view.k) ? view.k : 1;
   return { scale: k * 2 ** -Math.floor(Math.log2(k)), x: view.x, y: view.y };
 }
-
-const CURSOR_PROPERTIES = {
-  '--crewlet-canvas-cursor-pointer': CURSORS.pointer,
-  '--crewlet-canvas-cursor-hand': CURSORS.hand,
-  '--crewlet-canvas-cursor-grabbing': CURSORS.grabbing,
-  '--crewlet-canvas-cursor-crosshair': CURSORS.crosshair,
-  '--crewlet-canvas-cursor-text': CURSORS.text,
-} as CSSProperties;
 
 /** A `grid` ground's pitch and offset, as the custom properties its rule reads. */
 function gridProperties(view: CanvasView): CSSProperties {
