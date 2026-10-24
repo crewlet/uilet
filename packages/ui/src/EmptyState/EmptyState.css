@@ -71,3 +71,37 @@
 .crewlet-empty-state__action {
   margin-top: var(--spacing-2);
 }
+
+/*
+ * INLINE: one left-aligned row on a dashed hairline, the sentence beside its
+ * action. The dash says "nothing here yet" without a glyph, and the box keeps
+ * the place the content will take, so the page does not move when it is
+ * filled. Narrow, the action wraps under the words.
+ */
+.crewlet-empty-state--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--spacing-2) var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-md);
+  text-align: start;
+}
+
+.crewlet-empty-state__text {
+  display: flex;
+  flex: 1 1 16rem;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-empty-state--inline .crewlet-empty-state__description {
+  max-width: var(--size-measure);
+}
+
+.crewlet-empty-state--inline .crewlet-empty-state__action {
+  flex: none;
+  margin-top: 0;
+}

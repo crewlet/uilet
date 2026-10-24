@@ -1,0 +1,45 @@
+/*
+ * AsideLayout: a main column with an aside beside it from 56rem of its own
+ * width, and after it below that (AsideLayout.tsx).
+ */
+
+.crewlet-aside-layout {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.crewlet-aside-layout__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-7);
+}
+
+/* EACH COLUMN IS A STACK one step apart, so the blocks in it stand apart
+   evenly without each carrying a margin of its own. */
+.crewlet-aside-layout__main,
+.crewlet-aside-layout__aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  min-width: 0;
+}
+
+/* FOLLOWING THE MAIN COLUMN, the aside is set off by one hairline, so its
+   facts read as about the page rather than as more of it. */
+.crewlet-aside-layout__aside {
+  padding-top: var(--spacing-6);
+  border-top: 1px solid var(--color-border-default);
+}
+
+@container (min-width: 56rem) {
+  .crewlet-aside-layout__columns {
+    grid-template-columns: minmax(0, 1fr) var(--crewlet-aside-layout-aside, 18rem);
+    gap: var(--spacing-8);
+  }
+
+  .crewlet-aside-layout__aside {
+    padding-top: 0;
+    border-top: 0;
+  }
+}

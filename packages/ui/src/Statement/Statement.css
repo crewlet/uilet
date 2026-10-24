@@ -1,0 +1,53 @@
+/*
+ * Statement: a label over the words a page exists to say (Statement.tsx).
+ *
+ * THE LABEL IS THE MICRO REGISTER and the words are a step over the body, at
+ * the reading measure, so the statement outweighs everything around it and a
+ * line of it is one an eye can follow back.
+ */
+
+.crewlet-statement {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  min-width: 0;
+}
+
+.crewlet-statement__label {
+  margin: 0;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  line-height: var(--font-line-height-snug);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/* THE AUTHOR'S OWN LINE BREAKS are kept, and no word stands alone on the last
+   line. A long word (an address, a product name) breaks rather than widening
+   the column. */
+.crewlet-statement__text {
+  margin: 0;
+  max-width: var(--size-measure);
+  font-size: var(--font-size-lg);
+  line-height: var(--font-line-height-relaxed);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+/* A BLOCK under the label is drawn as given: its own register, the column's
+   width. */
+.crewlet-statement__body {
+  min-width: 0;
+}
+
+/* ON A PHONE the words step down to the body's own step over it, so a
+   mission is a paragraph rather than a poster. */
+@media (width < 640px) {
+  .crewlet-statement__text {
+    font-size: var(--font-size-md);
+  }
+}
