@@ -113,6 +113,32 @@
 }
 
 /*
+ * THE PHONE SHEET (`phoneSheet`), strictly under the phone breakpoint as the
+ * package switches there everywhere else: the dialog takes the whole window,
+ * with no inset and no corners, so a long list in its body has the screen's
+ * height to scroll in between a head and a foot that stay put. It rises from
+ * the bottom edge as the bottom sheet does, and its foot stays clear of the
+ * home indicator. Above the breakpoint nothing here applies, and the dialog
+ * keeps its placement.
+ */
+@media (width < 640px) {
+  .crewlet-modal-overlay--dialog.crewlet-modal-overlay--phone-sheet {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .crewlet-modal-overlay--phone-sheet > .crewlet-modal--dialog {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: none;
+    border-radius: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: crewlet-modal-lift var(--motion-duration-moderate) var(--motion-easing-emphasized);
+  }
+}
+
+/*
  * The sheet's veil fades over the same span the sheet itself travels, so the
  * two are one movement rather than a ground that lands and a panel that
  * follows it. A dialog's veil keeps the shorter base step: a dialog rises
@@ -582,6 +608,10 @@
   }
 
   .crewlet-modal-overlay--bottom > .crewlet-modal--dialog {
+    animation: none;
+  }
+
+  .crewlet-modal-overlay--phone-sheet > .crewlet-modal--dialog {
     animation: none;
   }
 }

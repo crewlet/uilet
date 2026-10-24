@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, ConfirmModal, Checkbox, FormField, Input, Modal } from '@crewlethq/ui';
-import { PencilGlyph } from '@crewlethq/icons/glyphs';
+import { Button, ChoiceList, ConfirmModal, Checkbox, FormField, Input, Modal } from '@crewlethq/ui';
+import { FolderInputGlyph, PencilGlyph, SearchGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * UI / Modal.
@@ -254,6 +254,70 @@ export const AutoFocusField: Story = {
 };
 
 /** The side sheet: pinned to the inline end, full height, full width when narrow. */
+const FOLDERS = [
+  { value: 'top', label: 'Top level' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'q4', label: 'Marketing › Q4 review', tag: 'Current' },
+  { value: 'press', label: 'Marketing › Q4 review › Press kit' },
+  { value: 'board', label: 'Board' },
+  { value: 'reports', label: 'Reports' },
+  { value: 'weekly', label: 'Reports › Weekly' },
+  { value: 'research', label: 'Research' },
+  { value: 'interviews', label: 'Research › Interviews' },
+  { value: 'drafts', label: 'Drafts' },
+] as const;
+
+/**
+ * THE PHONE SHEET (`phoneSheet`): the Move to… dialog, whose body is a list
+ * of folders a thumb works through. Above the phone breakpoint it is the
+ * usual dialog; under it (the Mobile viewport) it takes the whole window, the
+ * head and the foot standing still while the list scrolls between them. Every
+ * dialog that does not ask for it keeps its shape on a phone.
+ */
+export const PhoneSheet: Story = {
+  render: function PhoneSheetStory() {
+    const [open, setOpen] = useState(false);
+    const [folder, setFolder] = useState<string | null>('q4');
+    const [query, setQuery] = useState('');
+    const shown = FOLDERS.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()));
+    return (
+      <>
+        <Button leadingIcon={<FolderInputGlyph size="sm" />} onClick={() => setOpen(true)}>
+          Move to…
+        </Button>
+        <Modal
+          open={open}
+          onClose={() => setOpen(false)}
+          phoneSheet
+          size="md"
+          title="Move 3 artifacts"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => setOpen(false)}>Move here</Button>
+            </>
+          }
+        >
+          <Input
+            aria-label="Find a folder"
+            placeholder="Find a folder"
+            leading={<SearchGlyph size="sm" />}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onClear={() => setQuery('')}
+          />
+          <ChoiceList label="Folder" options={shown} value={folder} onChange={setFolder} />
+          <p style={{ margin: 0, color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)' }}>
+            Moving never changes who can open them.
+          </p>
+        </Modal>
+      </>
+    );
+  },
+};
+
 export const Sheet: Story = {
   render: function SheetStory() {
     const [open, setOpen] = useState(false);
