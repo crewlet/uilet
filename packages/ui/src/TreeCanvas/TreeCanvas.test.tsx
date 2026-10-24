@@ -2428,3 +2428,55 @@ describe('the ghost in the stylesheet', () => {
     uninstall();
   });
 });
+
+describe('a strip with nothing drawn in it', () => {
+  /*
+   * A node may offer the pointer no control (a company's root) and still hold
+   * the keyboard's menu anchor, which is drawn nowhere. Revealed, that strip
+   * painted the column's rule beside the name with nothing beside it, or a
+   * patch of the strip's ground. It keeps its box and draws neither.
+   */
+  function strip(appearance: 'card' | 'node', drawn: boolean) {
+    const { container } = render(
+      <div className={`crewlet-tree-canvas crewlet-tree-canvas--${appearance}`}>
+        <div className="crewlet-tree-canvas__card">
+          <div className="crewlet-tree-canvas__actions" data-menu-open="true">
+            <span data-keyboard-only="true">
+              <button type="button">Actions for Nimbus</button>
+            </span>
+            {drawn && <button type="button">Edit Nimbus</button>}
+          </div>
+        </div>
+      </div>,
+    );
+    return container.querySelector('.crewlet-tree-canvas__actions')!;
+  }
+
+  test('draws no ground in a card, and keeps it where a control is drawn', () => {
+    const uninstall = installThemed('light', 'TreeCanvas/TreeCanvas.css');
+    try {
+      const empty = getComputedStyle(strip('card', false));
+      expect(empty.backgroundColor === '' || empty.backgroundColor === 'rgba(0, 0, 0, 0)').toBe(true);
+      // It is still revealed and still a box the menu is placed from.
+      expect(empty.opacity).toBe('1');
+      expect(empty.position).toBe('absolute');
+      cleanup();
+      expect(getComputedStyle(strip('card', true)).backgroundColor).not.toMatch(/^(|rgba\(0, 0, 0, 0\))$/);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test("draws no column rule on a node, by the same selector as the ground's", () => {
+    // jsdom measures a pseudo-element through a stand-in CHILD, and
+    // `:has(> :not([data-keyboard-only]))` matches that child itself, so the
+    // rule is read from the sheet: the same condition as the ground above,
+    // cancelling the node's column rule after it in source order.
+    const sheet = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'TreeCanvas.css'), 'utf8');
+    const empty = '.crewlet-tree-canvas__actions:not(:has(> :not([data-keyboard-only])))';
+    const cancel = sheet.indexOf(`${empty}::before {\n  content: none;\n}`);
+    expect(cancel).toBeGreaterThan(-1);
+    expect(cancel).toBeGreaterThan(sheet.indexOf('.crewlet-tree-canvas--node .crewlet-tree-canvas__actions::before {'));
+    expect(sheet).toContain(`${empty} {\n  background: none;\n}`);
+  });
+});

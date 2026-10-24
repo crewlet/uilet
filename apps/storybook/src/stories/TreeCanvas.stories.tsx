@@ -367,20 +367,39 @@ function NodeCard({ id, card }: { id: string; card: TreeCardContext }) {
         </OrgNodeDisclosure>
       )}
       <div {...card.actions(id)}>
-        <Menu
-          label={`Actions for ${entity.name}`}
-          icon={<PencilGlyph />}
-          items={[{ key: 'edit', label: 'Edit', onSelect: () => {} }]}
-          triggerTabIndex={-1}
-        />
-        <Menu
-          label={`Delete ${entity.name}`}
-          icon={<TrashGlyph />}
-          items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => {} }]}
-          triggerTabIndex={-1}
-          open={card.menuOpen(id)}
-          onOpenChange={(value) => card.setMenuOpen(id, value)}
-        />
+        {entity.kind === 'company' ? (
+          /* THE COMPANY OFFERS THE POINTER NOTHING: nobody edits or deletes it
+             from the chart. Its strip holds only the menu the ContextMenu key
+             opens, drawn nowhere, so hovering or selecting it draws no column
+             and no rule beside its name. */
+          <span data-keyboard-only="true">
+            <Menu
+              label={`Actions for ${entity.name}`}
+              icon={<PencilGlyph />}
+              items={[{ key: 'copy', label: 'Copy name', onSelect: () => {} }]}
+              triggerTabIndex={-1}
+              open={card.menuOpen(id)}
+              onOpenChange={(value) => card.setMenuOpen(id, value)}
+            />
+          </span>
+        ) : (
+          <>
+            <Menu
+              label={`Actions for ${entity.name}`}
+              icon={<PencilGlyph />}
+              items={[{ key: 'edit', label: 'Edit', onSelect: () => {} }]}
+              triggerTabIndex={-1}
+            />
+            <Menu
+              label={`Delete ${entity.name}`}
+              icon={<TrashGlyph />}
+              items={[{ key: 'delete', label: 'Delete', danger: true, onSelect: () => {} }]}
+              triggerTabIndex={-1}
+              open={card.menuOpen(id)}
+              onOpenChange={(value) => card.setMenuOpen(id, value)}
+            />
+          </>
+        )}
       </div>
       {entity.kind === 'unit' && (
         <div aria-hidden="true" {...card.press(id)}>
