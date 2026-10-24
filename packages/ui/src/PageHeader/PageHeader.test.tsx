@@ -9,6 +9,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
+import { ObjectHeader } from '../ObjectHeader/index.js';
 import { HeadingLevelProvider } from '../utils/index.js';
 import { PageHeader } from './index.js';
 
@@ -75,4 +77,36 @@ test('the screen title keeps the page leading', () => {
   );
   const title = /\.crewlet-page-header__title\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(title).toMatch(/line-height:\s*var\(--font-line-height-normal\)/);
+});
+
+test("a header's sentence takes the wide measure, in PageHeader and ObjectHeader alike", () => {
+  // One statement read once, not prose: at prose's 68ch a 100-character
+  // caption wrapped onto a second line beside a header row over 800px wide.
+  // The two headers' sentences are one decision, so they are held together.
+  const uninstall = installSheets('PageHeader/PageHeader.css', 'ObjectHeader/ObjectHeader.css');
+  try {
+    const { container } = render(
+      <>
+        <PageHeader title="Integrations" description="The tools your agents work with." />
+        <ObjectHeader kind="Integration" title="Slack" description="Where the company talks." />
+      </>,
+    );
+    // jsdom resolves `ch` against the element's own size, so each sentence is
+    // compared with a probe at the same size set to each measure's token.
+    const size = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../tokens/tokens/size.json'), 'utf8')).size;
+    const resolved = (element: Element, measure: string) => {
+      const probe = document.createElement('div');
+      probe.style.fontSize = getComputedStyle(element).fontSize;
+      probe.style.maxWidth = measure;
+      element.parentElement!.append(probe);
+      return getComputedStyle(probe).maxWidth;
+    };
+    for (const selector of ['.crewlet-page-header__description', '.crewlet-object-header__description']) {
+      const sentence = container.querySelector(selector)!;
+      expect(getComputedStyle(sentence).maxWidth).toBe(resolved(sentence, size.measureWide.value));
+      expect(getComputedStyle(sentence).maxWidth).not.toBe(resolved(sentence, size.measure.value));
+    }
+  } finally {
+    uninstall();
+  }
 });

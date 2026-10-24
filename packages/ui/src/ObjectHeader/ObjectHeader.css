@@ -122,14 +122,20 @@
 }
 
 /* The author's own sentence about the object: under the title, quieter than
-   it, and never more than two lines however long the sentence is. */
+   it, and never more than two lines however long the sentence is.
+
+   AT THE WIDE MEASURE, as PageHeader's sentence is (keep the two in step). It
+   is one statement read once, not prose, which is what --size-measure-wide is
+   for: at prose's 68ch (586px at this size) a 100-character caption wrapped
+   onto a second line beside a header row over 800px wide. Narrow screens are
+   unchanged, since the header's own width binds first. */
 .crewlet-object-header__description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-  max-width: var(--size-measure);
+  max-width: var(--size-measure-wide);
   margin: 0;
   font-size: var(--font-size-compact);
   line-height: var(--font-line-height-normal);
