@@ -204,7 +204,7 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.48.0
+## Changes in 0.49.0
 
 The pieces of a company's brand and of the folders artifacts are filed in.
 
@@ -251,6 +251,31 @@ The pieces of a company's brand and of the folders artifacts are filed in.
 **`TypeSpecimen` refuses a `fontFamily` that is not a list of family names** and draws the face by its name instead, through the same family grammar `BrandSample` uses.
 
 Every colour a person chose reaches a stylesheet through one custom property per part, and only after it has passed `#rrggbb`.
+
+## Changes in 0.48.3
+
+**The account row in a rail's foot is slimmer, its controls stand as tall as it, and the foot gives it room.** In `AppShell.Rail`'s foot, `AccountRow` stands at 42px, half a spacing step under the large control step (`calc(var(--size-control-lg) - var(--spacing-1) / 2)`, exposed as `--crewlet-account-row-height`), where it stood 44px, with half a step above and below its two lines where it had a whole one. The room around it grows instead: the row is held one step off the foot's edge above and below (`--crewlet-account-row-pad`, from none), so the block reads less cramped while the row itself is slimmer. It stops at 42px because the medium badge's ring (1.5px, 2px outside the 32px badge) takes 39px, and 42px keeps it 1.5px clear of the row's hover fill. The controls beside the link (Settings, Preferences, or any `IconButton` or `IconButtonLink` in `actions`) take the row's height and keep their own width and glyph, so their hover fill meets the row's top and bottom where a 26px square floated in its middle. Measured in a 236px rail with Settings and Preferences beside the link: the row is 42px (from 44px), each control 26px by 42px (from 26px by 26px) with its 12px glyph centred, the name and the detail keep 116px, there is 8px between the row and the foot's edge above and below (from 4px), the foot holding the account row alone is 59px (from 53px), and the ring stands 1.5px inside the row's edge (from 2.5px). Every target stays over 24px at every density. Outside a rail's foot the row and its controls are unchanged.
+
+## Changes in 0.48.2
+
+**A `TreeCanvas` card's actions strip with nothing drawn in it is not drawn.** A card may offer the pointer no control (a company's root, which nobody edits from the chart) and still hold the menu the ContextMenu key opens, marked `data-keyboard-only` and drawn nowhere. Revealed on hover, focus or selection, that strip painted the column's rule beside the name with nothing beside it (`appearance="node"`) or a patch of the strip's ground (`card`). A strip whose every child is keyboard-only, or that has none, now draws neither, in both appearances. It keeps its box, so the keyboard's menu still opens from it, and a node keeps the column's room, so the names on a rank still line up.
+
+## Changes in 0.48.1
+
+**The account row in a rail's foot gives its chevron's room to the name.** In `AppShell.Rail`'s foot, `AccountRow` no longer draws its trailing chevron (the link's arrow or the menu's up-and-down mark), and the words take the 16px it and the step before it held. The medium badge's column cost the words 10px in 0.48.0, so the name and the detail kept 99px; they now keep 116px, more than the 109px they had beside the smaller badge. The chevron was already hidden from assistive technology, so nothing a screen reader hears changes: the link's name and the menu button's `aria-haspopup` still say what a press does, and the hover fill and the current lift still say the row is pressable. Measured in a 236px rail with Settings and Preferences beside the link: the row is 44px, the badge 32px, and the badge's ring stands 2.5px inside the row's edge, as it did around the 26px badge. Outside a rail's foot the row keeps its chevron.
+
+**A header's sentence takes the wide measure.** `PageHeader`'s description and `ObjectHeader`'s are held to `--size-measure-wide` (80ch) where they were held to prose's `--size-measure` (68ch). Each is one statement read once rather than prose, and at 68ch (586px at the compact size) a 100-character sentence such as Company › Integrations' wrapped onto a second line beside a header row over 800px wide. Narrow screens are unchanged, since the header's own width binds first, and `ObjectHeader` still clamps its description to two lines.
+
+## Changes in 0.48.0
+
+**A canvas shows the operating system's own pointers.** `Canvas` paints the native `grab` hand on its field (and `grabbing` while a pan is in progress), and `default`, `crosshair` and `text` for the other values of `cursor`, so a chart pans under the hand a reader knows from every map and design tool, and no drawn pointer stands beside native ones. `cursor` and its four values are unchanged, and so is `CanvasBoard`'s pointer per tool.
+
+| What changed | What a consumer does |
+| --- | --- |
+| `CURSORS` and `CursorName` are gone from `@crewlethq/icons/glyphs`. | Use the CSS keywords (`grab`, `grabbing`, `default`, `crosshair`, `text`). Every glyph stays, `HandGlyph` and `HandGrabGlyph` included. |
+| `Canvas` no longer writes `--crewlet-canvas-cursor-pointer`, `-hand`, `-grabbing`, `-crosshair` or `-text` on its root, and nothing reads them. | A rule that read one inside a canvas names the keyword instead. |
+
+**The account row is the one tall row in a rail's foot.** In `AppShell.Rail`'s foot, `AccountRow` stands on the large control step (`--size-control-lg`, 44px) where it stood 36px, around a column a medium badge wide (32px), and its name takes the nav's word size (13px, from 12px) with both lines on the body's leading. Pass the badge `size="md"` there (a smaller badge is centred in the same column). The badge is inset by the 6px it has above and below it rather than centred on the nav's 14px glyph column, where its ring would cross the row's edge, so the name now starts a step after the badge rather than on the nav's word line. Measured in a 236px rail with Settings and Preferences beside the link: the row is 44px (from 36.2px), the foot of an engine row and the account row 81px (from 73.2px), and the name and the detail keep 99px (from 109px). The rows above it keep the compact 26px step, and the Settings and Preferences controls, the truncation and the targets meeting across the gap are unchanged.
 
 ## Changes in 0.47.0
 

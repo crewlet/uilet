@@ -229,3 +229,36 @@ export const WithoutControls: Story = {
     );
   },
 };
+
+/**
+ * The pointers: the operating system's own, never a drawing of the kit's.
+ *
+ * Hover each field. `hand` (the default) is the open grab hand every map and
+ * design tool shows, `pointer` the arrow, `crosshair` and `text` the platform's
+ * own, and a drag on any of them shows the closed hand while it pans.
+ */
+export const Pointers: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(16rem, 1fr))',
+        gap: 'var(--spacing-4)',
+        padding: 'var(--spacing-4)',
+      }}
+    >
+      {(['hand', 'pointer', 'crosshair', 'text'] as const).map((cursor) => (
+        <div key={cursor}>
+          <div style={{ height: '14rem' }}>
+            <Canvas label={`Organization chart, ${cursor} pointer`} content={CONTENT} cursor={cursor} controls={false}>
+              <Chart />
+            </Canvas>
+          </div>
+          <p style={{ fontSize: 'var(--font-size-2xs)', color: 'var(--color-text-tertiary)' }}>
+            <code>cursor=&quot;{cursor}&quot;</code>
+          </p>
+        </div>
+      ))}
+    </div>
+  ),
+};

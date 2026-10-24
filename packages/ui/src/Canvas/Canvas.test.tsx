@@ -20,7 +20,7 @@ import { createPortal } from 'react-dom';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { LAYER_REPOSITION_EVENT, useLayerContainer } from '../Layer/index.js';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
-import { Canvas, gridOf, type CanvasHandle } from './Canvas.js';
+import { Canvas, gridOf, type CanvasCursor, type CanvasHandle } from './Canvas.js';
 
 /** The stylesheet's own source, for the rules jsdom cannot resolve a value in. */
 const SHEET = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Canvas.css'), 'utf8');
@@ -1033,7 +1033,7 @@ test('the actual size control is drawn only where it is asked for, and every zoo
   expect(fit.getAttribute('title')).toBe('');
 });
 
-function CursorHarness({ cursor }: { cursor?: 'hand' | 'crosshair' }) {
+function CursorHarness({ cursor }: { cursor?: CanvasCursor }) {
   return (
     <Canvas label="Organization chart" content={SMALL} cursor={cursor}>
       <div />
@@ -1041,31 +1041,42 @@ function CursorHarness({ cursor }: { cursor?: 'hand' | 'crosshair' }) {
   );
 }
 
-test('the pointer is the one the canvas names, from one family of drawn cursors', () => {
-  const { container, rerender } = render(<CursorHarness />);
-  const root = container.querySelector('.crewlet-canvas') as HTMLElement;
-  expect(root.getAttribute('data-cursor')).toBe('hand');
-  for (const property of [
-    '--crewlet-canvas-cursor-pointer',
-    '--crewlet-canvas-cursor-hand',
-    '--crewlet-canvas-cursor-grabbing',
-    '--crewlet-canvas-cursor-crosshair',
-    '--crewlet-canvas-cursor-text',
-  ]) {
-    expect(root.style.getPropertyValue(property)).toMatch(/^url\("data:image\/svg\+xml,/);
+test("the pointer is the operating system's own, the one the canvas names", () => {
+  /*
+   * The canvas painted drawn Lucide cursors, so its open hand was a hand
+   * nobody had seen on any other surface. It shows the platform's own
+   * pointers now: the grab hand every map and design tool shows, and the
+   * arrow, crosshair and text beam beside it, so no drawn pointer stands
+   * among native ones.
+   */
+  const uninstall = installSheets('Canvas/Canvas.css');
+  try {
+    const { container, rerender } = render(<CursorHarness />);
+    const root = () => container.querySelector('.crewlet-canvas') as HTMLElement;
+    const pointer = () => getComputedStyle(container.querySelector('.crewlet-canvas__viewport')!).cursor;
+    expect(root().getAttribute('data-cursor')).toBe('hand');
+    expect(pointer()).toBe('grab');
+    // Nothing on the root carries a drawing for the stylesheet to read.
+    expect(root().getAttribute('style') ?? '').not.toMatch(/cursor/);
+    const keywords: [CanvasCursor, string][] = [
+      ['pointer', 'default'],
+      ['crosshair', 'crosshair'],
+      ['text', 'text'],
+      ['hand', 'grab'],
+    ];
+    for (const [cursor, keyword] of keywords) {
+      rerender(<CursorHarness cursor={cursor} />);
+      expect(root().getAttribute('data-cursor')).toBe(cursor);
+      expect(pointer()).toBe(keyword);
+      // A pan in progress is the closed hand, whatever the tool.
+      root().setAttribute('data-panning', 'true');
+      expect(pointer()).toBe('grabbing');
+      root().removeAttribute('data-panning');
+    }
+  } finally {
+    uninstall();
   }
-  rerender(<CursorHarness cursor="crosshair" />);
-  expect(container.querySelector('.crewlet-canvas')!.getAttribute('data-cursor')).toBe('crosshair');
-  // Every cursor the stylesheet reads falls back to the browser's own.
-  for (const read of [
-    'var(--crewlet-canvas-cursor-pointer, default)',
-    'var(--crewlet-canvas-cursor-hand, grab)',
-    'var(--crewlet-canvas-cursor-grabbing, grabbing)',
-    'var(--crewlet-canvas-cursor-crosshair, crosshair)',
-    'var(--crewlet-canvas-cursor-text, text)',
-  ]) {
-    expect(SHEET).toContain(read);
-  }
+  expect(SHEET).not.toMatch(/url\(|--crewlet-canvas-cursor/);
 });
 
 test('a canvas of pages fits below the chart floor when it names one', () => {

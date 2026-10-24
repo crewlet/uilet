@@ -16,7 +16,10 @@ export interface AccountRowMenu {
 }
 
 export interface AccountRowProps {
-  /** The reader's badge, drawn decorative: the name beside it says who it is. */
+  /**
+   * The reader's badge, drawn decorative: the name beside it says who it is.
+   * In a rail's foot the row is sized for a medium one (`size="md"`, 32px).
+   */
   avatar: ReactNode;
   /** Who the reader is. */
   name: ReactNode;

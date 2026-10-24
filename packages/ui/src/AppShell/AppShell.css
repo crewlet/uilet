@@ -239,11 +239,11 @@
    above it rather than sitting further out.
 
    THE FOOT IS THE COMPACT STEP. It holds what a reader reaches for rarely (a
-   settings link, the engine's state, who they are), so its rows stand on the
-   small control step (`--crewlet-rail-foot-row`, 26px, never under the 24px
-   target) on a half-step gap and a one-step inset, where the nav above keeps
-   its 30px rows. Only heights change: every row keeps its order, columns,
-   glyphs and words. */
+   settings link, the engine's state), so its rows stand on the small control
+   step (`--crewlet-rail-foot-row`, 26px, never under the 24px target) on a
+   half-step gap and a one-step inset, where the nav above keeps its 30px
+   rows. The account row is the one exception (see below). Only heights
+   change: every row keeps its order, columns, glyphs and words. */
 .crewlet-app-shell__rail-foot {
   --crewlet-rail-foot-gap: calc(var(--spacing-1) / 2);
   --crewlet-rail-foot-row: var(--size-control-sm);
@@ -805,48 +805,83 @@
  * In the rail's foot, the account row reaches up across its own padding to
  * half the foot's gap, to meet the row above (HitArea.css).
  *
- * AND IT STANDS ON THE NAV'S COLUMNS: the avatar centred on the column every
- * nav glyph is centred on, and the name starting on the line every nav word
- * starts on. On a 4px inset with an 8px gap a 26px avatar stood 2px left of
- * the glyphs above it and the name 2px right of their words. The avatar's box
- * takes a nav glyph's width (`sm`, 14px) and the badge is centred over it, so
- * whatever size of badge a caller hands the row, it is centred where a glyph
- * is, and the row takes the nav row's pad and its glyph-to-word gap.
+ * IT IS THE ONE TALL ROW IN THE FOOT. Who is signed in is the row a reader
+ * looks for, so it stands half a spacing step under the large control step
+ * (`--crewlet-account-row-height`, 42px) around a medium badge (`size="md"`,
+ * 32px), where the rows above it keep the compact step. At 44px it read as
+ * cramped against the foot's edges, so it gives up the half step and the
+ * space around it grows instead (`--crewlet-account-row-pad`, one step above
+ * and below, where it was none): the row is slimmer and the foot breathes
+ * more. It goes no lower than 42px because the badge's ring (1.5px, 2px out)
+ * takes 39px of it, and 42 keeps the ring 1.5px clear of the row's hover fill
+ * where 40 would leave half a pixel, which reads as the ring touching it. The
+ * badge stands in a column of its own width (`--crewlet-account-row-badge`),
+ * centred in it, so a smaller badge a caller hands the row lands where a
+ * medium one would, and the column is inset 6px from the row's start, so the
+ * badge's ring clears the row's edge on that side too. A 32px badge cannot
+ * stand on the nav's 14px glyph column: centred there, its ring (1.5px, 2px
+ * out) would cross the row's own edge.
+ *
+ * The name takes the body's size (`--font-size-compact`, the nav's words) and
+ * both lines take the body's leading, a step a 36px row had no room for.
  */
 /*
  * AND THE WORDS TAKE THE ROOM: the name and the detail are what the row is
- * for, so every gap after the name is the half step and the menu's chevron
- * stands one step off the words at least, at the link's end. The controls
- * beside the link (Settings, Preferences) are half a step apart and half a
- * step off the link, so a reader's name keeps the width two controls leave.
+ * for. The badge's column costs the words 10px over the 14px glyph column, so
+ * the link's trailing chevron is not drawn here: it is decoration (hidden from
+ * assistive technology, which hears the link or `aria-haspopup`), the row's
+ * hover fill and current lift still say it is pressable, and its 16px are what
+ * keep the name at least as wide as it was beside the smaller badge. Every gap
+ * after the name is the half step, and the controls beside the link
+ * (Settings, Preferences) are half a step apart and half a step off it.
+ * Outside a rail's foot the row keeps its chevron.
+ *
+ * THE CONTROLS STAND AS TALL AS THE ROW. Beside a 42px row, the small step's
+ * 26px squares floated in the middle of it as two smaller boxes, and their
+ * hover fill ended short of the row's on both sides. They take the row's
+ * height (`--crewlet-account-row-height`) and keep the small step's width and
+ * glyph, so the fill lines up with the row's top and bottom and the words
+ * keep every pixel of their column.
  */
 .crewlet-app-shell__rail-foot .crewlet-account-row {
-  --crewlet-account-row-pad: var(--spacing-0);
+  --crewlet-account-row-pad: var(--spacing-1);
+  --crewlet-account-row-height: calc(var(--size-control-lg) - var(--spacing-1) / 2);
+  --crewlet-account-row-badge: 32px;
   gap: calc(var(--spacing-1) / 2);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__who {
   --crewlet-hit-area-block-start: calc(var(--crewlet-rail-foot-gap) / 2 + var(--crewlet-account-row-pad));
   gap: 0;
-  /* On the foot's compact step: the two lines of name and detail with half a
-     step above and below them, which still clears the avatar. */
+  min-height: var(--crewlet-account-row-height);
   padding-block: calc(var(--spacing-1) / 2);
-  padding-inline: var(--size-nav-row-pad) calc(var(--spacing-1) / 2);
+  padding-inline: calc(var(--spacing-1) + var(--spacing-1) / 2) calc(var(--spacing-1) / 2);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__avatar {
   justify-content: center;
-  width: 14px;
-  /* The nav's glyph-to-word gap, so the name starts on the nav's word line. */
-  margin-inline-end: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  width: var(--crewlet-account-row-badge);
+  margin-inline-end: var(--spacing-2);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__text {
-  margin-inline-end: var(--spacing-1);
+  line-height: var(--font-line-height-body);
+}
+
+.crewlet-app-shell__rail-foot .crewlet-account-row__go {
+  display: none;
+}
+
+.crewlet-app-shell__rail-foot .crewlet-account-row__name {
+  font-size: var(--font-size-compact);
 }
 
 .crewlet-app-shell__rail-foot .crewlet-account-row__actions {
   gap: calc(var(--spacing-1) / 2);
+}
+
+.crewlet-app-shell__rail-foot .crewlet-account-row__actions .crewlet-icon-btn {
+  height: var(--crewlet-account-row-height);
 }
 
 /* The row as the reader's menu button: a button drawn as the link is. */

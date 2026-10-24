@@ -71,7 +71,7 @@ if (text && ground) {
 
 The implementation is `src/color.ts`, built to `dist/color.js`. The published palette suite imports it from there and re-exports it, and the token build reads the same source to derive each palette's tints, so there is one copy of the maths.
 
-## Changed in 0.48.0: contrast at runtime, the brand kind and the brand mapping
+## Changed in 0.49.0: contrast at runtime, the brand kind and the brand mapping
 
 The WCAG contrast maths the palette suite measures with is a runtime export, for an interface that shows whether two colours a person chose read on each other. A company's brand kit is a kind of artifact of its own, with a hue of its own. And the brand mapping (how a company's `--brand-*` inputs restyle the public tokens) lives here, as one source for the artifact kit and for an application's branded regions.
 

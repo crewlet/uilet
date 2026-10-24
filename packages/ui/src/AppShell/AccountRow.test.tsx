@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { Avatar } from '../Avatar/index.js';
 import { AccountRow, AppShell } from './index.js';
 
@@ -39,8 +40,53 @@ describe('AccountRow', () => {
       )?.[1] ?? '';
     expect(current).toMatch(/background:\s*var\(--color-surface-elevated\)/);
     expect(current).toMatch(/outline:\s*1px solid var\(--color-border-default\)/);
-    const go = /\.crewlet-account-row__go\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    const go = /(?:^|\})\s*\.crewlet-account-row__go\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
     expect(go).toMatch(/color:\s*var\(--color-text-tertiary\)/);
+  });
+
+  test("draws its chevron everywhere but a rail's foot, where the words take its room", () => {
+    /*
+     * In the foot the row stands around a 32px badge, whose column costs the
+     * words 10px over the nav's 14px glyph column. The chevron's 16px (its
+     * glyph and the step before it) pay for that, so the name keeps at least
+     * the 109px it had beside the smaller badge. The chevron is decoration
+     * either way: the link's name or the button's aria-haspopup says what a
+     * press does, and both stay.
+     */
+    const uninstall = installSheets('AppShell/AppShell.css');
+    try {
+      const menu = { items: [{ key: 'out', label: 'Sign out', onSelect: () => {} }] };
+      const { container } = render(
+        <>
+          <div data-testid="alone">
+            <AccountRow avatar={badge} name="Lee Park" href="#/account" />
+          </div>
+          <AppShell.Rail
+            footer={
+              <>
+                <AccountRow avatar={badge} name="Lee Park" href="#/account" />
+                <AccountRow avatar={badge} name="Lee Park" menu={menu} />
+              </>
+            }
+          >
+            <div />
+          </AppShell.Rail>
+        </>,
+      );
+      const display = (el: Element) => getComputedStyle(el).display;
+      const alone = screen.getByTestId('alone').querySelector('.crewlet-account-row__go')!;
+      expect(display(alone)).not.toBe('none');
+      const inFoot = container.querySelectorAll('.crewlet-app-shell__rail-foot .crewlet-account-row__go');
+      expect(inFoot).toHaveLength(2);
+      for (const go of inFoot) expect(display(go)).toBe('none');
+      // What a press does is still said, and the words give back no margin
+      // for a chevron that is not drawn.
+      expect(container.querySelector('.crewlet-app-shell__rail-foot button.crewlet-account-row__who')?.getAttribute('aria-haspopup')).toBe('menu');
+      const text = container.querySelector('.crewlet-app-shell__rail-foot .crewlet-account-row__text')!;
+      expect(['', '0', '0px']).toContain(getComputedStyle(text).marginInlineEnd);
+    } finally {
+      uninstall();
+    }
   });
 
   test('without a target it states who is signed in and is no link', () => {
