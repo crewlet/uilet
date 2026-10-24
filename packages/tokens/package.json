@@ -26,6 +26,8 @@
     },
     "./css": "./dist/css/tokens.css",
     "./css/base": "./dist/css/base.css",
+    "./css/brand": "./dist/css/brand.css",
+    "./css/brand-scope": "./dist/css/brand-scope.css",
     "./css/breakpoint": "./dist/css/breakpoint.css",
     "./css/density": "./dist/css/density.css",
     "./css/fonts": "./dist/css/fonts.css",

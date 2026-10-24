@@ -188,10 +188,28 @@ describe('the display, body, sheet, shell, breakpoint and breath tokens', () => 
     // make the next token added look untyped.
     const leaves = (tree) =>
       Object.values(tree).reduce((count, value) => count + (value !== null && typeof value === 'object' ? leaves(value) : 1), 0);
-    // The palettes and the theme registry are re-exported from themes.js, and
-    // the colour maths from color.js, rather than declared in index.d.ts, so
-    // the reader does not see them.
-    const reExported = new Set(['themes', 'themeGroups', 'themeRegistry', 'DEFAULT_THEME_ID', 'isThemeId', 'WCAG_CONTRAST', 'contrast', 'luminance', 'parseHex']);
+    // The palettes and the theme registry are re-exported from themes.js, the
+    // colour maths from color.js and the brand mapping's contract from
+    // brand.js, rather than declared in index.d.ts, so the reader does not see
+    // them.
+    const reExported = new Set([
+      'themes',
+      'themeGroups',
+      'themeRegistry',
+      'DEFAULT_THEME_ID',
+      'isThemeId',
+      'WCAG_CONTRAST',
+      'contrast',
+      'luminance',
+      'parseHex',
+      'BRAND_SCOPE_CLASS',
+      'BRAND_SCOPE_LAYER_CLASS',
+      'BRAND_THEME_PREFIX',
+      'brandScopeCss',
+      'brandSlots',
+      'brandThemeName',
+      'parseBrandLayer',
+    ]);
     const expected = Object.entries(exported)
       .filter(([name]) => !reExported.has(name))
       .reduce((count, [, tree]) => count + leaves(tree), 0);

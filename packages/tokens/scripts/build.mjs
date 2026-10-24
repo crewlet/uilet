@@ -13,6 +13,10 @@ import { dirname, relative, resolve, sep } from 'node:path';
 // source, which Node strips, because the build runs before tsc has emitted
 // dist/color.js; the palette suite and the package entry read the built copy.
 import { parseHex, withAlpha } from '../src/color.ts';
+// The brand mapping's one source is stylesheets/brand.css; the scope's
+// stylesheet is written from it by the same module the artifact kit reads the
+// mapping's public tokens through, so the two cannot disagree about it.
+import { brandScopeCss } from '../src/brand.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -398,6 +402,19 @@ async function themeValues(tokens) {
  * because a themed slot whose name did not match the base slot would repaint
  * nothing and fail no build. The palette suite asserts the match as well.
  */
+/** Declarations as themeDeclarations writes them, one per line, as a Map from name to value. */
+function declaredIn(lines) {
+  return new Map(
+    lines
+      .split('\n')
+      .filter((line) => line.includes(':'))
+      .map((line) => {
+        const colon = line.indexOf(':');
+        return [line.slice(0, colon).trim(), line.slice(colon + 1).trim().replace(/;$/, '')];
+      }),
+  );
+}
+
 async function themeDeclarations(tokens, indent) {
   const sd = new StyleDictionary(
     {
@@ -860,6 +877,16 @@ async function build() {
   // stylesheets/ where it can be read and reviewed as CSS, and is copied into
   // the published dist/css/ beside the generated files.
   await copyFile(resolve(stylesheetsDir, 'base.css'), resolve(cssDir, 'base.css'));
+  // The brand mapping, on the document root as its source writes it (the
+  // artifact kit's layer), and moved onto a scope of its own for an
+  // application that brands one region (@crewlethq/ui's BrandScope). A scope
+  // that pins its mode takes the default theme's values for that mode.
+  const brandSource = await readFile(resolve(stylesheetsDir, 'brand.css'), 'utf8');
+  await copyFile(resolve(stylesheetsDir, 'brand.css'), resolve(cssDir, 'brand.css'));
+  await writeFile(
+    resolve(cssDir, 'brand-scope.css'),
+    brandScopeCss(brandSource, { light: declaredIn(await themeDeclarations(light, '')), dark: declaredIn(await themeDeclarations(dark, '')) }),
+  );
   await writeFile(resolve(cssDir, 'fonts.css'), `${fontFacesHeader}\n${await fontFaceRules()}\n`);
   await writeFile(resolve(cssDir, 'material-symbols.css'), materialSymbols);
 
@@ -935,12 +962,16 @@ async function build() {
       // that has to say whether two colours a person chose read on each other.
       "export { WCAG_CONTRAST, contrast, luminance, parseHex } from './color.js';",
       "export type { Rgb } from './color.js';",
+      // The brand mapping's contract: its public tokens and the names their
+      // theme values take, for the artifact kit's build and the suites.
+      "export { BRAND_SCOPE_CLASS, BRAND_SCOPE_LAYER_CLASS, BRAND_THEME_PREFIX, brandScopeCss, brandSlots, brandThemeName, parseBrandLayer } from './brand.js';",
+      "export type { BrandLayer, BrandModeValues } from './brand.js';",
       '',
     ].join('\n'),
   );
 
   console.warn(
-    `[tokens] built CSS, the default light and dark palettes and ${palettes.length - 1} named themes, density, breakpoints, the document baseline, legacy aliases, font faces, the Material Symbols loader, and the TS module`,
+    `[tokens] built CSS, the default light and dark palettes and ${palettes.length - 1} named themes, density, breakpoints, the document baseline, the brand mapping and its scope, legacy aliases, font faces, the Material Symbols loader, and the TS module`,
   );
 }
 

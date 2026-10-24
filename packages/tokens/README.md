@@ -6,6 +6,7 @@ Single source of truth for the Crewlet design tokens: color, spacing, size, typo
 - `dist/css/themes.css` (the dark and light palettes of the default theme)
 - `dist/css/themes/<id>.css` and `dist/css/themes/all.css` (the named themes, each under its own `data-palette` attribute)
 - `dist/css/density.css`, `dist/css/base.css`, `dist/css/breakpoint.css`
+- `dist/css/brand.css` and `dist/css/brand-scope.css` (the brand mapping, on the document root and on a scope of its own)
 - `dist/index.js` + `dist/index.d.ts` (typed JS object for runtime use)
 
 ## Use it from a consumer app
@@ -70,13 +71,14 @@ if (text && ground) {
 
 The implementation is `src/color.ts`, built to `dist/color.js`. The published palette suite imports it from there and re-exports it, and the token build reads the same source to derive each palette's tints, so there is one copy of the maths.
 
-## Changed in 0.47.0: contrast at runtime, and the brand kind
+## Changed in 0.47.0: contrast at runtime, the brand kind and the brand mapping
 
-The WCAG contrast maths the palette suite measures with is a runtime export, for an interface that shows whether two colours a person chose read on each other. A company's brand kit is a kind of artifact of its own, with a hue of its own.
+The WCAG contrast maths the palette suite measures with is a runtime export, for an interface that shows whether two colours a person chose read on each other. A company's brand kit is a kind of artifact of its own, with a hue of its own. And the brand mapping (how a company's `--brand-*` inputs restyle the public tokens) lives here, as one source for the artifact kit and for an application's branded regions.
 
 | What changed | What to change | Details |
 | --- | --- | --- |
 | `@crewlethq/tokens` exports `parseHex`, `contrast`, `luminance`, `WCAG_CONTRAST` and the type `Rgb`. They are the implementation `@crewlethq/tokens/test/palette` re-exports (the same functions, not copies), and `contrast` and `parseHex` keep the signatures the suite already declared. | Nothing. Replace a contrast helper of your own with these. | [Contrast at runtime](#contrast-at-runtime) |
+| `css/brand` and `css/brand-scope` are new. Both are built from one source, `stylesheets/brand.css`: `css/brand` is the mapping on the document root (the layer `@crewlethq/artifact-kit` bundles into kit.css), and `css/brand-scope` is the same mapping on `.crewlet-brand-scope__layer`, with the page's own value of every token it drives captured on `.crewlet-brand-scope` one element up and a `data-mode` that pins a mode to the default theme's values for it (the stylesheet of `@crewlethq/ui`'s BrandScope). The build accepts the mapping under its three root selectors only, so a rule reaches both or neither. `brandSlots`, `brandThemeName`, `parseBrandLayer`, `brandScopeCss`, `BRAND_THEME_PREFIX`, `BRAND_SCOPE_CLASS` and `BRAND_SCOPE_LAYER_CLASS` are exported. | Nothing. Import `css/brand-scope` beside `@crewlethq/ui/styles.css` if you load the components through that bundle alone. | `stylesheets/brand.css` |
 | `--color-artifact-kind-brand` with its `-ink`, `-fill` and `-line` steps: `#cc7bd1` in dark and `#8f3884` in light, an orchid apart from design's purple and HTML's rose. It is the one kind with a hue of its own, declared by every theme beside its node hues; the six node hues are unchanged and still six. | Nothing. | [Artifact kinds](#artifact-kinds) |
 | In `@crewlethq/tokens/test/palette`, the rules `an artifact kind hue clears 3:1 as a mark`, `an artifact kind's ink clears 4.5:1 on its own fill and on every rung` and `artifact kind hues stay apart` are new, with the exports `ARTIFACT_KINDS`, `ARTIFACT_KIND_HUES`, `ARTIFACT_KIND_FILL_ALPHA` and `ARTIFACT_KIND_DE` (8). Every kind already cleared them in every theme. | Nothing, unless an application's own palette override repaints a kind's hue or a node hue within dE 8 of another kind's. | [The palette suite](#the-palette-suite) |
 
