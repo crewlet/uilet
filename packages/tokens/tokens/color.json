@@ -121,7 +121,9 @@
         "sheet": { "value": "{color.node.green}" },
         "sheetInk": { "value": "{color.node.greenInk}" },
         "sheetFill": { "value": "{color.node.greenFill}" },
-        "sheetLine": { "value": "{color.node.greenLine}" }
+        "sheetLine": { "value": "{color.node.greenLine}" },
+        "brand": { "value": "#cc7bd1", "comment": "A company's brand kit, the one kind with a hue of its own: the six node hues each already draw a kind, so brand takes an orchid that sits apart from design's purple and HTML's rose (the palette suite holds every pair of kind hues to dE 8 under normal vision). Every theme declares it, light and dark, beside its node hues; its Fill and Line steps are derived from it at the node alphas, so they follow it exactly as a node hue's do." },
+        "brandInk": { "value": "#dabcdb" }
       }
     },
     "changeMark": { "value": "{color.brand.accentSoftStrong}", "comment": "The corner mark on a cell or an element that changed since the reader last looked. An alias of the accent's strong soft step, so the meaning has a name of its own and follows the accent in every palette; the mark is always paired with a tooltip that says who changed it and what it was." },

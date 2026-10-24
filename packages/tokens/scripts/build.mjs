@@ -57,6 +57,13 @@ const NODE_LINE_ALPHA = 0.38;
 const NODE_HALO_ALPHA = 0.16;
 const NODE_HUES = ['purple', 'cyan', 'green', 'amber', 'rose', 'blue'];
 
+// The artifact kinds whose hue is their own rather than an alias of a node
+// hue. Every node hue already draws a kind, so a kind added after the six
+// carries its own value in each palette, and its Fill and Line steps are
+// derived here at the node alphas, so they follow it as a node hue's follow
+// the node hue.
+const OWN_KIND_HUES = ['brand'];
+
 // The accent's two companions, on the same principle, and per palette because
 // the accent is: `accentRgb` is the accent as an r, g, b triple, for a
 // stylesheet composing a translucent tint of its own, and `accentSoftStrong`
@@ -129,6 +136,13 @@ function deriveTints(tokens, where, { contrast = 'standard' } = {}) {
     tokens.color.node[`${name}Fill`] = { value: withAlpha(fill('node', name), NODE_FILL_ALPHA) };
     tokens.color.node[`${name}Line`] = { value: withAlpha(fill('node', name), NODE_LINE_ALPHA) };
     tokens.color.node[`${name}Halo`] = { value: withAlpha(fill('node', name), NODE_HALO_ALPHA) };
+  }
+  for (const name of OWN_KIND_HUES) {
+    const kind = tokens.color.artifact?.kind;
+    const hue = kind?.[name]?.value;
+    if (hue === undefined) throw new Error(`${where}: color.artifact.kind.${name} is missing, and its fill and line are derived from it`);
+    kind[`${name}Fill`] = { value: withAlpha(hue, NODE_FILL_ALPHA) };
+    kind[`${name}Line`] = { value: withAlpha(hue, NODE_LINE_ALPHA) };
   }
   const accent = parseHex(fill('brand', 'accent'));
   if (accent === null) throw new Error(`${where}: color.brand.accent is "${fill('brand', 'accent')}"; the accent is authored as #rrggbb, and its companions are derived from it`);

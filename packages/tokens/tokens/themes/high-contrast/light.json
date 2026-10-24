@@ -206,6 +206,16 @@
         "value": "#ffffff"
       }
     },
+    "artifact": {
+      "kind": {
+        "brand": {
+          "value": "#8f3884"
+        },
+        "brandInk": {
+          "value": "#74246a"
+        }
+      }
+    },
     "scrollbar": {
       "value": "rgba(7, 8, 13, 0.2)"
     },
