@@ -18,6 +18,56 @@
   padding: var(--spacing-3) 0 var(--spacing-2);
 }
 
+/*
+ * A MARKED HEADER: the object's own mark on a plate, the catalogue tile's well
+ * at one and a half rows, beside the column the rest of the header keeps. The
+ * plate is the one box in the header, so the mark reads as the object's face
+ * rather than as one more glyph in the eyebrow.
+ */
+.crewlet-object-header--marked {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+}
+
+.crewlet-object-header__mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--size-row-lg) * 1.5);
+  height: calc(var(--size-row-lg) * 1.5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-default);
+}
+
+.crewlet-object-header--peek .crewlet-object-header__mark {
+  width: var(--size-row-lg);
+  height: var(--size-row-lg);
+  border-radius: var(--radius-md);
+}
+
+.crewlet-object-header__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+@media (width < 640px) {
+  .crewlet-object-header--marked {
+    gap: var(--spacing-3);
+  }
+
+  .crewlet-object-header--marked .crewlet-object-header__mark {
+    width: var(--size-row-lg);
+    height: var(--size-row-lg);
+    border-radius: var(--radius-md);
+  }
+}
+
 .crewlet-object-header__eyebrow {
   display: flex;
   align-items: center;
