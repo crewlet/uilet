@@ -104,6 +104,10 @@ export interface FolderTileProps {
  * artifact never look alike and the kind's badge keeps its meaning. The tint
  * is neutral for the same reason: a folder is not a kind.
  *
+ * THE FACTS ARE NEVER CUT. Who can see the folder and what is inside wrap
+ * onto a second line where the tile is narrow; only the name, which carries
+ * its whole self on hover, is cut to one line.
+ *
  * THE WHOLE TILE IS ONE LINK, named by the folder's name alone and described
  * by the rest, so a reader moving by link hears "Q3 launch" and then, if they
  * wait, "Folder, Everyone, 12 artifacts · 2 folders". The More menu sits
@@ -160,7 +164,7 @@ export function FolderTile({
             </VisuallyHidden>
             {visibility ? <span className="crewlet-folder-tile__visibility">{visibility}</span> : null}
             {contents ? (
-              <span className="crewlet-folder-tile__contents" title={describeFolderContents(contents, text)}>
+              <span className="crewlet-folder-tile__contents">
                 {visibility ? <VisuallyHidden>, </VisuallyHidden> : null}
                 {describeFolderContents(contents, text)}
               </span>

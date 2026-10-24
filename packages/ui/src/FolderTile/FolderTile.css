@@ -166,22 +166,23 @@
   white-space: nowrap;
 }
 
+/*
+ * THE FACTS WRAP, NEVER CUT. "Everyone" and "Nothing you can open yet" are
+ * both things a reader has to read, and four tiles across a laptop's page do
+ * not have room for them on one line: the count moves under who can see the
+ * folder rather than losing its end to an ellipsis. The two are told apart by
+ * the visibility glyph and the gap between them, not by a separator, so a
+ * line that breaks never opens on a stray dot.
+ */
 .crewlet-folder-tile__facts {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: 2px var(--spacing-3);
   min-width: 0;
-  overflow: hidden;
   color: var(--color-text-tertiary);
   font-size: var(--crewlet-folder-tile-facts);
   line-height: 1.35;
-  white-space: nowrap;
-}
-
-/* THE TWO FACTS ARE A RUN, opened by a quiet dot, as an artifact card's are. */
-.crewlet-folder-tile__visibility + .crewlet-folder-tile__contents::before {
-  content: '·';
-  margin-inline-end: var(--spacing-2);
 }
 
 .crewlet-folder-tile__visibility {
@@ -192,8 +193,7 @@
 
 .crewlet-folder-tile__contents {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 /*

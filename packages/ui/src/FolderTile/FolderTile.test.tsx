@@ -4,6 +4,9 @@
  * beside the link rather than inside it.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
@@ -53,6 +56,19 @@ test('draws its actions beside its link, where a keyboard reaches them after it'
   const more = screen.getByRole('button', { name: 'More for Q3 launch' });
   expect(link.contains(more)).toBe(false);
   expect(link.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('wraps who can see the folder and what is inside rather than cutting either short', () => {
+  // A stylesheet rule, read as the browser reads it: jsdom lays nothing out,
+  // and the regression this holds was an ellipsis at four tiles across.
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'FolderTile.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (selector: string) => new RegExp(`${selector.replace(/[.]/g, '\\.')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+  expect(rule('.crewlet-folder-tile__facts')).toMatch(/flex-wrap:\s*wrap/);
+  for (const selector of ['.crewlet-folder-tile__facts', '.crewlet-folder-tile__contents', '.crewlet-folder-tile__visibility']) {
+    expect(rule(selector), selector).not.toMatch(/text-overflow|white-space:\s*nowrap|overflow:\s*hidden/);
+  }
+  // No separator that a broken line would open on.
+  expect(css).not.toMatch(/__contents::before/);
 });
 
 test('offers the whole name to a pointer, since the tile cuts it to one line', () => {
