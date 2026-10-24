@@ -204,6 +204,17 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.48.0
+
+**A canvas shows the operating system's own pointers.** `Canvas` paints the native `grab` hand on its field (and `grabbing` while a pan is in progress), and `default`, `crosshair` and `text` for the other values of `cursor`, so a chart pans under the hand a reader knows from every map and design tool, and no drawn pointer stands beside native ones. `cursor` and its four values are unchanged, and so is `CanvasBoard`'s pointer per tool.
+
+| What changed | What a consumer does |
+| --- | --- |
+| `CURSORS` and `CursorName` are gone from `@crewlethq/icons/glyphs`. | Use the CSS keywords (`grab`, `grabbing`, `default`, `crosshair`, `text`). Every glyph stays, `HandGlyph` and `HandGrabGlyph` included. |
+| `Canvas` no longer writes `--crewlet-canvas-cursor-pointer`, `-hand`, `-grabbing`, `-crosshair` or `-text` on its root, and nothing reads them. | A rule that read one inside a canvas names the keyword instead. |
+
+**The account row is the one tall row in a rail's foot.** In `AppShell.Rail`'s foot, `AccountRow` stands on the large control step (`--size-control-lg`, 44px) where it stood 36px, around a column a medium badge wide (32px), and its name takes the nav's word size (13px, from 12px) with both lines on the body's leading. Pass the badge `size="md"` there (a smaller badge is centred in the same column). The badge is inset by the 6px it has above and below it rather than centred on the nav's 14px glyph column, where its ring would cross the row's edge, so the name now starts a step after the badge rather than on the nav's word line. Measured in a 236px rail with Settings and Preferences beside the link: the row is 44px (from 36.2px), the foot of an engine row and the account row 81px (from 73.2px), and the name and the detail keep 99px (from 109px). The rows above it keep the compact 26px step, and the Settings and Preferences controls, the truncation and the targets meeting across the gap are unchanged.
+
 ## Changes in 0.47.0
 
 **A hidden label takes no room.** `FormField` takes `hideLabel`, which hides the label or the legend as a whole element for everything but assistive technology, and `ListInput`'s `hideLabel` uses it: the legend had held hidden text and still stood a line tall, so a list under a card's title stood 21px lower than the fields beside it.
