@@ -79,6 +79,8 @@ Two tokens stay the theme's on purpose. **The focus ring** (`--color-focus`) is 
 
 The kit checks no contrast of its own: whether the brand's text reads on its light ground, and its accent on its grounds, is the engine's to check when an administrator adopts the brand.
 
+The mapping is not the kit's alone. Its one source is `@crewlethq/tokens`' `stylesheets/brand.css`, published as `@crewlethq/tokens/css/brand`, which the kit's build bundles into kit.css after moving the theme's values aside; the same source, with its selectors moved onto a scope, is `@crewlethq/tokens/css/brand-scope`, which `@crewlethq/ui`'s BrandScope uses to brand a doc or a board inside the dashboard. A page in the kit and a branded region of the dashboard are drawn by the same rules, and the kit's suite holds the two to declaring the same steps in each mode. The kit's own part of the layer is the logo class (`src/brand.css`).
+
 ### The logo
 
 The `crewlet-logo` class draws the brand's logo from the slots, so a page never writes a URL and its logo follows the next adopted brand:

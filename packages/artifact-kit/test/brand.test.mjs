@@ -1,8 +1,11 @@
-// The brand layer (src/brand.css), held to its two promises: with no
-// `--brand-*` input set, every token it declares is exactly the theme's own
+// The brand layer (the token package's mapping, `@crewlethq/tokens/css/brand`,
+// then the kit's logo class in src/brand.css), held to its two promises: with
+// no `--brand-*` input set, every token it declares is exactly the theme's own
 // value, in every state of every theme; and with inputs set, one input
 // restyles its whole family in both modes, and the logo draws from the
-// brand's own files or not at all.
+// brand's own files or not at all. And held to being one mapping: the kit
+// carries the token package's source verbatim, and the application's scope
+// (`@crewlethq/tokens/css/brand-scope`) declares the same steps in each mode.
 //
 // The cascade is the palette suite's own (`paletteStates`), over the token
 // stylesheets with their brand-driven declarations moved aside exactly as the
@@ -18,15 +21,17 @@ import { describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_THEME_ID, themeRegistry } from '@crewlethq/tokens';
 import { paletteStates, parseBlocks } from '@crewlethq/tokens/test/palette';
-import { THEME_PREFIX, brandSlots, moveThemeValues, renameSlots, themeName } from '../scripts/brand.mjs';
+import { THEME_PREFIX, brandSlots, compactLayer, moveThemeValues, renameSlots, themeName } from '../scripts/brand.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const tokenSheet = (specifier) => readFileSync(fileURLToPath(import.meta.resolve(specifier)), 'utf8');
-const brandCss = readFileSync(join(root, 'src', 'brand.css'), 'utf8');
+const logoCss = readFileSync(join(root, 'src', 'brand.css'), 'utf8');
 const kitCss = readFileSync(join(root, 'dist', 'kit.css'), 'utf8');
-const SLOTS = brandSlots(brandCss);
 const LIGHT_STATES = ['light (media query)', 'light (attribute)'];
 
+const brandCss = tokenSheet('@crewlethq/tokens/css/brand');
+const scopeCss = tokenSheet('@crewlethq/tokens/css/brand-scope');
+const SLOTS = brandSlots(brandCss);
 const tokensCss = tokenSheet('@crewlethq/tokens/css');
 const themesCss = `${tokenSheet('@crewlethq/tokens/css/themes')}\n${tokenSheet('@crewlethq/tokens/css/themes/all')}`;
 
@@ -76,7 +81,8 @@ function splitVar(text, open) {
 /**
  * A custom property's value on the element whose declarations `values` are,
  * with every var() substituted, or null where it is invalid at computed-value
- * time (a var() with no value and no fallback, or a cycle).
+ * time (a var() with no value and no fallback, a cycle, or a property declared
+ * `initial`, the guaranteed-invalid value).
  */
 function resolveValue(values, text, seen = new Set()) {
   let out = '';
@@ -87,7 +93,9 @@ function resolveValue(values, text, seen = new Set()) {
     out += text.slice(index, at);
     const { end, name, fallback } = splitVar(text, at + 3);
     let substituted = null;
-    if (values.has(name) && !seen.has(name)) substituted = resolveValue(values, values.get(name), new Set([...seen, name]));
+    if (values.has(name) && !seen.has(name) && values.get(name).trim() !== 'initial') {
+      substituted = resolveValue(values, values.get(name), new Set([...seen, name]));
+    }
     if (substituted === null && fallback !== null) substituted = resolveValue(values, fallback, seen);
     if (substituted === null) return null;
     out += substituted;
@@ -95,7 +103,8 @@ function resolveValue(values, text, seen = new Set()) {
   }
 }
 
-const valueOf = (values, name) => (values.has(name) ? resolveValue(values, values.get(name), new Set([name])) : null);
+const valueOf = (values, name) =>
+  values.has(name) && values.get(name).trim() !== 'initial' ? resolveValue(values, values.get(name), new Set([name])) : null;
 
 describe('the slots', () => {
   test('are the public tokens the layer declares, and every one is moved aside in the built kit', () => {
@@ -129,9 +138,15 @@ describe('the slots', () => {
   });
 
   test('the inputs are read and never declared: a page or the engine sets them', () => {
-    const declared = [...brandCss.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(?:^|[{;\s])(--brand-[a-z0-9-]+)\s*:/g)].map((match) => match[1]);
-    assert.deepEqual(declared, []);
-    assert.doesNotMatch(brandCss.replace(/\/\*[\s\S]*?\*\//g, ''), /url\(/, 'the layer names no file: every logo is an input');
+    for (const css of [brandCss, logoCss]) {
+      const declared = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(?:^|[{;\s])(--brand-[a-z0-9-]+)\s*:/g)].map((match) => match[1]);
+      assert.deepEqual(declared, []);
+      assert.doesNotMatch(css.replace(/\/\*[\s\S]*?\*\//g, ''), /url\(/, 'the layer names no file: every logo is an input');
+    }
+  });
+
+  test('the kit carries the token package\'s mapping exactly as its source writes it', () => {
+    assert.ok(kitCss.includes(compactLayer(brandCss)), 'kit.css carries @crewlethq/tokens/css/brand, every declaration verbatim');
   });
 
   test('moving a theme value renames declarations only, and refuses a slot the stylesheet never declares', () => {
@@ -248,8 +263,38 @@ function rulesOf(css) {
   return rules;
 }
 
+describe('one mapping, for the kit and the scope', () => {
+  /** The declarations of every block in `css` under `selector` (and `atRule`) that names a brand step, merged in order. */
+  function steps(css, selector, atRule = null) {
+    const merged = new Map();
+    for (const block of parseBlocks(css)) {
+      if (block.selector.replace(/['"]/g, '') !== selector.replace(/['"]/g, '') || block.atRule !== atRule) continue;
+      if (![...block.declarations.keys()].some((name) => name.startsWith('--crewlet-brand-'))) continue;
+      for (const [name, value] of block.declarations) merged.set(name, value);
+    }
+    return merged;
+  }
+  const LAYER = '.crewlet-brand-scope__layer';
+  const LIGHT_QUERY = '@media (prefers-color-scheme: light)';
+
+  test('the scope declares the same steps and the same public tokens as the kit\'s root layer, in each mode', () => {
+    const kitDark = steps(kitCss, ':root');
+    const kitLight = steps(kitCss, ':root[data-theme="light"]');
+    assert.ok(kitDark.has('--color-brand-accent') && kitDark.has('--crewlet-brand-hover'), 'the kit declares the mapping on its root');
+    assert.deepEqual(steps(scopeCss, LAYER), kitDark);
+    assert.deepEqual(steps(scopeCss, `:root[data-theme="light"] ${LAYER}`), kitLight);
+    assert.deepEqual(steps(scopeCss, `:root:not([data-theme="dark"]) ${LAYER}`, LIGHT_QUERY), steps(kitCss, ':root:not([data-theme="dark"])', LIGHT_QUERY));
+    assert.deepEqual(kitLight, steps(kitCss, ':root:not([data-theme="dark"])', LIGHT_QUERY));
+  });
+
+  test('the scope falls back to the page\'s own value of every public token the kit moves aside', () => {
+    const capture = new Map(parseBlocks(scopeCss).filter((block) => block.selector === '.crewlet-brand-scope').flatMap((block) => [...block.declarations]));
+    assert.deepEqual([...capture.keys()].sort(), SLOTS.map(themeName).sort());
+  });
+});
+
 describe('the logo', () => {
-  const blocks = rulesOf(brandCss).filter((block) => block.selector.includes('.crewlet-logo'));
+  const blocks = rulesOf(logoCss).filter((block) => block.selector.includes('.crewlet-logo'));
   /** The declarations that reach a logo of one variant in one mode, in cascade order. */
   function logo({ variant = null, mode = 'dark', size = null } = {}) {
     const ruleApplies = (selector) => {

@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { build } from 'esbuild';
 import { BUDGETS } from './budgets.mjs';
-import { brandSlots, moveThemeValues } from './brand.mjs';
+import { brandSlots, compactLayer, moveThemeValues } from './brand.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
@@ -55,12 +55,15 @@ await build({
   logLevel: 'warning',
 });
 
-// The brand layer, appended to the tokens. Every declaration of a token it
-// restyles is first moved aside to `--crewlet-theme-<name>` in the token
-// stylesheets (scripts/brand.mjs), so the layer is the one place a public
-// token is declared and its fallback is the theme's own value.
-const brandSource = await readFile(join(root, 'src', 'brand.css'), 'utf8');
-const brand = await build({
+// The brand layer, appended to the tokens: the token package's mapping on the
+// document root (`@crewlethq/tokens/css/brand`, the one source the scope's
+// stylesheet is built from too), then the kit's own logo class. Every
+// declaration of a token the mapping restyles is first moved aside to
+// `--crewlet-theme-<name>` in the token stylesheets (scripts/brand.mjs), so
+// the layer is the one place a public token is declared and its fallback is
+// the theme's own value.
+const brandLayer = readFileSync(fileURLToPath(import.meta.resolve('@crewlethq/tokens/css/brand')), 'utf8');
+const logo = await build({
   absWorkingDir: root,
   entryPoints: { brand: 'src/brand.css' },
   bundle: true,
@@ -71,7 +74,10 @@ const brand = await build({
   logLevel: 'warning',
 });
 const tokensCss = await readFile(join(dist, 'kit.css'), 'utf8');
-await writeFile(join(dist, 'kit.css'), `${moveThemeValues(tokensCss, brandSlots(brandSource))}\n${brand.outputFiles[0].text}`);
+await writeFile(
+  join(dist, 'kit.css'),
+  `${moveThemeValues(tokensCss, brandSlots(brandLayer))}\n${compactLayer(brandLayer)}\n${logo.outputFiles[0].text}`,
+);
 
 // The content stylesheet, a file of its own so a page opts in by linking it
 // and a page published before it existed paints as it did. Its source nests

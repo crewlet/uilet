@@ -1,16 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useState } from 'react';
-// The token stylesheets and the kit's brand layer as text, composed below
-// exactly as the kit build composes kit.css: the brand-driven declarations
-// moved aside to their theme names, then the layer.
+// The token stylesheets, the brand mapping and the kit's logo class as text,
+// composed below exactly as the kit build composes kit.css: the brand-driven
+// declarations moved aside to their theme names, then the mapping, then the
+// logo class.
 import tokensCss from '@crewlethq/tokens/css?raw';
 import themesCss from '@crewlethq/tokens/css/themes?raw';
 import allThemesCss from '@crewlethq/tokens/css/themes/all?raw';
 import baseCss from '@crewlethq/tokens/css/base?raw';
-import brandCss from '../../../../packages/artifact-kit/src/brand.css?raw';
+import brandCss from '@crewlethq/tokens/css/brand?raw';
+import logoCss from '../../../../packages/artifact-kit/src/brand.css?raw';
 import { brandSlots, moveThemeValues } from '../../../../packages/artifact-kit/scripts/brand.mjs';
 
-const KIT_CSS = `${moveThemeValues(`${tokensCss}\n${themesCss}\n${allThemesCss}`, brandSlots(brandCss))}\n${brandCss}\n${baseCss}`;
+const KIT_CSS = `${moveThemeValues(`${tokensCss}\n${themesCss}\n${allThemesCss}`, brandSlots(brandCss))}\n${brandCss}\n${logoCss}\n${baseCss}`;
 
 /** A logo drawn for the story: a word on a plate, as an SVG data URL. */
 const logo = (plate: string, ink: string, width: number) =>
