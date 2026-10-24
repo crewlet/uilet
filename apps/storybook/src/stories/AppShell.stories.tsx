@@ -469,8 +469,11 @@ export const Fill: Story = {
  * starting on the line every nav word starts on. The engine row's transparent
  * boundary spends a pixel of its pad rather than adding one. Hold a straight
  * edge to Home, Settings and the engine row: one line. The account row is the
- * one tall row: a medium badge in a 44px row, inset by the 6px it has above
- * and below it, with the name a step after it.
+ * one tall row: a medium badge in a 42px row, inset 6px from the row's start,
+ * with the name a step after it and a step of room above and below the row.
+ * The Settings and Preferences controls beside it stand as tall as the row,
+ * so their hover fill meets its top and bottom, and keep the small step's
+ * width and glyph.
  */
 export const FootRowsOnTheNavColumns: Story = {
   render: () => (
@@ -485,6 +488,18 @@ export const FootRowsOnTheNavColumns: Story = {
                 name="Lee Park"
                 detail="Admin"
                 href="#/account"
+                actions={
+                  <>
+                    <IconButtonLink
+                      label="Settings"
+                      href="#/settings"
+                      icon={<SlidersVerticalGlyph size="sm" />}
+                      size="sm"
+                      variant="ghost"
+                    />
+                    <IconButton label="Preferences" icon={<PaletteGlyph size="sm" />} size="sm" variant="ghost" />
+                  </>
+                }
               />
             </>
           }
@@ -516,7 +531,7 @@ export const EngineStatusInTheHead: Story = {
             <AccountRow
               avatar={<Avatar name="Lee Park" kind="human" size="md" ring="brand" decorative />}
               name="Lee Park"
-              detail="Admin · via API token review"
+              detail="Admin · via API token"
               href="#/account"
               // SETTINGS AS ITS GLYPH beside Preferences: a link, current on a
               // Settings page, and the foot is the reader's row alone.
