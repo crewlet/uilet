@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, ButtonLink, CatalogTile, Section, Tag, TileGrid } from '@crewlethq/ui';
+import { Button, ButtonLink, CatalogTile, Count, Section, StatusDot, Tag, TileGrid } from '@crewlethq/ui';
+import { ProductMark } from '@crewlethq/icons';
 import { VendorMark } from '@crewlethq/icons';
 
 const meta: Meta<typeof CatalogTile> = {
@@ -13,7 +14,7 @@ type Story = StoryObj<typeof CatalogTile>;
 /**
  * A catalogue in two sections on ONE grid: the built-in services over the
  * third-party apps, both `TileGrid columns={3}`, so every tile edge lines up
- * between them. A state is drawn only where it carries meaning (On,
+ * between them. A state is drawn only where it carries meaning (In use,
  * Connected, Needs attention, Coming soon); a tile not set up carries none,
  * sits on the quieter ground and keeps its mark in full colour.
  */
@@ -25,7 +26,7 @@ export const ACatalogue: Story = {
           <CatalogTile
             mark={<VendorMark vendor="crewlet" size="lg" />}
             title="Crewlet Works"
-            status={<Tag size="sm" variant="success">On</Tag>}
+            status={<Tag size="sm" variant="success">In use</Tag>}
             description="Projects, tasks, your inbox and My work."
             meta="1 project"
             action={<ButtonLink variant="secondary" size="small" href="#/work">Open Work</ButtonLink>}
@@ -33,7 +34,7 @@ export const ACatalogue: Story = {
           <CatalogTile
             mark={<VendorMark vendor="crewlet" size="lg" />}
             title="Crewlet Knowledge"
-            status={<Tag size="sm" variant="success">On</Tag>}
+            status={<Tag size="sm" variant="success">In use</Tag>}
             description="Spaces and pages, agent skills and diaries."
             meta="3 spaces"
             action={<ButtonLink variant="secondary" size="small" href="#/knowledge">Open Knowledge</ButtonLink>}
@@ -107,6 +108,68 @@ export const Folds: Story = {
           </TileGrid>
         </div>
       ))}
+    </div>
+  ),
+};
+
+/**
+ * COMPACT: a summary of what is already in use, about half the comfortable
+ * tile's height. The mark, the name, its state, its fact and the one action
+ * share the header line, and the sentence is one line under it, cut to fit
+ * with the whole of it in its title. Two to a row under a heading and its
+ * count, as the engine's Integrations home draws them.
+ */
+export const Compact: Story = {
+  render: () => (
+    <div style={{ maxWidth: 900 }}>
+      <Section
+        title={
+          <>
+            In use <Count value={4} />
+          </>
+        }
+      >
+        <TileGrid as="ul" columns={2}>
+          <CatalogTile
+            as="li"
+            density="compact"
+            mark={<ProductMark product="works" size={20} />}
+            title="Crewlet Works"
+            status={<Tag size="sm" variant="success">In use</Tag>}
+            description="Projects, tasks, your inbox and My work."
+            action={<ButtonLink variant="secondary" size="small" href="#works">Open</ButtonLink>}
+          />
+          <CatalogTile
+            as="li"
+            density="compact"
+            mark={<ProductMark product="knowledge" size={20} />}
+            title="Crewlet Knowledge"
+            status={<Tag size="sm" variant="success">In use</Tag>}
+            description="Spaces and pages, agent skills and diaries."
+            action={<ButtonLink variant="secondary" size="small" href="#knowledge">Open</ButtonLink>}
+          />
+          <CatalogTile
+            as="li"
+            density="compact"
+            mark={<VendorMark vendor="datadog" size={20} />}
+            title="Datadog"
+            status={<StatusDot tone="success">Connected</StatusDot>}
+            description="Monitors alert the seats their tags name, with a company-wide fallback."
+            meta="Last delivery 4m ago"
+            action={<ButtonLink variant="secondary" size="small" href="#datadog">Open</ButtonLink>}
+          />
+          <CatalogTile
+            as="li"
+            density="compact"
+            mark={<VendorMark vendor="gitlab" size={20} />}
+            title="GitLab"
+            status={<StatusDot tone="warning">Needs attention</StatusDot>}
+            description="Merge requests and code, a token per agent."
+            meta="1 of 2 agents ready"
+            action={<ButtonLink variant="secondary" size="small" href="#gitlab">Replace key</ButtonLink>}
+          />
+        </TileGrid>
+      </Section>
     </div>
   ),
 };

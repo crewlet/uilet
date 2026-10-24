@@ -4,6 +4,16 @@ import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/heading
 
 export type CatalogTileElement = 'article' | 'li' | 'div';
 
+/**
+ * How much room a tile takes. `comfortable` (the default) is the catalogue's
+ * tile: a mark well, a name with its state under it, a reserved two-line
+ * sentence and a ruled foot. `compact` is a summary's: one header line (the
+ * mark, the name, its state and the fact, then the action at its end) over
+ * one line of sentence, about half the height, for a page that lists what is
+ * already in use rather than offers a choice.
+ */
+export type CatalogTileDensity = 'comfortable' | 'compact';
+
 export interface CatalogTileProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   /** The element the tile is: an `li` in a `TileGrid as="ul"`. */
   as?: CatalogTileElement | undefined;
@@ -36,6 +46,8 @@ export interface CatalogTileProps extends Omit<HTMLAttributes<HTMLElement>, 'tit
    * strength, because a tile not yet set up is the one a reader came to set up.
    */
   quiet?: boolean | undefined;
+  /** How much room the tile takes; see [CatalogTileDensity]. */
+  density?: CatalogTileDensity | undefined;
 }
 
 /**
@@ -58,6 +70,7 @@ export function CatalogTile({
   meta,
   action,
   quiet = false,
+  density = 'comfortable',
   className,
   ...rest
 }: CatalogTileProps) {
@@ -65,6 +78,48 @@ export function CatalogTile({
   const Heading = headingTag(headingLevel ?? level);
   const titleId = useId();
   const foot = meta !== undefined || action !== undefined;
+  if (density === 'compact') {
+    // ONE HEADER LINE, AND NO FOOT: the fact and the action ride the line the
+    // name is on, so a summary of what is in use reads down one edge of names
+    // rather than a column of ruled feet. The sentence gets one line, cut to
+    // fit with the whole of it in its title, since a summary is scanned.
+    return (
+      <Element
+        aria-labelledby={Element === 'article' ? titleId : undefined}
+        {...rest}
+        className={cx(
+          'crewlet-catalog-tile',
+          'crewlet-catalog-tile--compact',
+          quiet && 'crewlet-catalog-tile--quiet',
+          className,
+        )}
+      >
+        <div className="crewlet-catalog-tile__head">
+          <span className="crewlet-catalog-tile__mark" aria-hidden="true">
+            {mark}
+          </span>
+          <span className="crewlet-catalog-tile__title">
+            <Heading id={titleId} className="crewlet-catalog-tile__name">
+              {title}
+            </Heading>
+            {status === undefined || status === null ? null : (
+              <span className="crewlet-catalog-tile__status">{status}</span>
+            )}
+            {meta === undefined || meta === null ? null : <span className="crewlet-catalog-tile__meta">{meta}</span>}
+          </span>
+          {action === undefined ? null : <span className="crewlet-catalog-tile__action">{action}</span>}
+        </div>
+        {description === undefined ? null : (
+          <p
+            className="crewlet-catalog-tile__description"
+            title={typeof description === 'string' ? description : undefined}
+          >
+            {description}
+          </p>
+        )}
+      </Element>
+    );
+  }
   return (
     <Element
       aria-labelledby={Element === 'article' ? titleId : undefined}
