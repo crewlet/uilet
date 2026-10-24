@@ -3,7 +3,14 @@ import { InboxGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/headingLevel.js';
 
-export type EmptyStateSize = 'default' | 'compact';
+/**
+ * `default` is a screen's, `compact` a panel's, both centred under a glyph.
+ * `inline` is a field's or a section's: one left-aligned row on a dashed
+ * hairline, the sentence beside its one action and no glyph, for a part of a
+ * page that is empty while the rest of it is not (a mission nobody has
+ * written, a list with nothing in it yet).
+ */
+export type EmptyStateSize = 'default' | 'compact' | 'inline';
 
 export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   /** A glyph, drawn large and quiet. Replaced by `illustration` when both are given. */
@@ -21,7 +28,7 @@ export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, 't
   description: ReactNode;
   /** What would fill it, as a control: "Create the first seat", "Connect Slack". */
   action?: ReactNode;
-  /** `compact` is for an empty state inside a panel rather than a screen. */
+  /** How much room it takes; see [EmptyStateSize]. */
   size?: EmptyStateSize | undefined;
   /**
    * The heading level of the title. Taken from where the component finds
@@ -56,6 +63,19 @@ export function EmptyState({
   const level = headingLevel ?? contextLevel;
   const Heading = level === 'none' ? 'div' : headingTag(level);
 
+  if (size === 'inline') {
+    // NO GLYPH, AND THE WORDS BESIDE THE ACTION: an empty part of a page that
+    // is otherwise full is a gap with a way to fill it, not a moment.
+    return (
+      <div {...rest} className={cx('crewlet-empty-state', 'crewlet-empty-state--inline', className)}>
+        <div className="crewlet-empty-state__text">
+          <Heading className="crewlet-empty-state__title">{title}</Heading>
+          <p className="crewlet-empty-state__description">{description}</p>
+        </div>
+        {action ? <div className="crewlet-empty-state__action">{action}</div> : null}
+      </div>
+    );
+  }
   return (
     <div {...rest} className={cx('crewlet-empty-state', `crewlet-empty-state--${size}`, className)}>
       <span className="crewlet-empty-state__mark" aria-hidden>

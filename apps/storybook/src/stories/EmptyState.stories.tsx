@@ -76,3 +76,31 @@ export const Compact: Story = {
 export const NoHeading: Story = {
   args: { headingLevel: 'none' },
 };
+
+/**
+ * INLINE: a part of a page that is empty while the rest of it is not. One
+ * left-aligned row on a dashed hairline, the sentence beside its one action,
+ * and no glyph. In a narrow column the action wraps under the words.
+ */
+export const Inline: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)', maxWidth: 720 }}>
+      <EmptyState
+        size="inline"
+        headingLevel="none"
+        title="No vision yet"
+        description="Where the company is heading helps agents choose between two good options."
+        action={<Button size="small" variant="secondary">Add a vision</Button>}
+      />
+      <div style={{ maxWidth: 320 }}>
+        <EmptyState
+          size="inline"
+          headingLevel="none"
+          title="No policies yet"
+          description="The rules every agent follows, such as how to handle money or when to ask first."
+          action={<Button size="small" variant="secondary">Add a policy</Button>}
+        />
+      </div>
+    </div>
+  ),
+};

@@ -112,3 +112,33 @@ test('the title keeps the page leading', () => {
   const title = /\.crewlet-empty-state__title\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(title).toMatch(/line-height:\s*var\(--font-line-height-normal\)/);
 });
+
+// INLINE IS A ROW, NOT A MOMENT: no glyph, the words left-aligned beside the
+// one action, on a dashed hairline that keeps the content's place.
+test('an inline empty state draws no glyph and sets its words beside its action', async () => {
+  const { container } = render(
+    <EmptyState
+      size="inline"
+      headingLevel="none"
+      title="No mission yet"
+      description="One sentence on what the company is for."
+      action={<Button size="small">Add a mission</Button>}
+    />,
+  );
+  const box = container.firstElementChild as HTMLElement;
+  expect(box.className).toContain('crewlet-empty-state--inline');
+  expect(box.querySelector('.crewlet-empty-state__mark')).toBeNull();
+  const text = box.querySelector('.crewlet-empty-state__text') as HTMLElement;
+  expect(text.textContent).toBe('No mission yetOne sentence on what the company is for.');
+  expect(box.lastElementChild?.className).toBe('crewlet-empty-state__action');
+  expect(screen.getByRole('button', { name: 'Add a mission' })).toBeTruthy();
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'EmptyState.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const inline = /\.crewlet-empty-state--inline \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(inline).toMatch(/border:\s*1px dashed var\(--color-border-default\);/);
+  expect(inline).toMatch(/text-align:\s*start;/);
+  const result = await axe.run(container);
+  expect(result.violations).toEqual([]);
+});
