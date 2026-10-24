@@ -103,10 +103,11 @@
 }
 
 /*
- * THE TAG, under the name: what sets the theme apart, on the tertiary step
- * and a step smaller, cut to one line with the whole of it on hover. The
- * company's own theme draws it as the accent's pill instead, so a reader
- * picking a deck's theme finds their brand among the product's at a glance.
+ * THE TAG, DRAWN WHERE A THEME ASKS (`tagTone`), under the name: `quiet` on
+ * the tertiary step and a step smaller, cut to one line with the whole of it
+ * on hover, and `brand` as the accent's pill, so a reader picking a deck's
+ * theme finds their brand among the product's at a glance. A theme that sets
+ * no tone has its tag said with its name and nothing drawn.
  */
 .crewlet-theme-gallery__tag {
   overflow: hidden;

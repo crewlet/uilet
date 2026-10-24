@@ -12,13 +12,16 @@ export interface ThemeGalleryTheme<T extends string = string> {
   id: T;
   name: string;
   /**
-   * A few words on what sets it apart, drawn under its name and said with it.
-   * Left out, the card is its name alone.
+   * A few words on what sets it apart, said with its name. Drawn only when
+   * the theme also sets `tagTone`; left out, the card is its name alone.
    */
   tag?: string | undefined;
   /**
-   * `brand` draws the tag as the accent's pill rather than a quiet line: the
-   * company's own theme among the product's ("Your company brand").
+   * Draws the tag on the card as well as saying it: `quiet` as a caption
+   * under the name, `brand` as the accent's pill, for the company's own theme
+   * among the product's ("Your company brand"). Left out, the tag is said
+   * with the name and nothing is drawn, which is how the product's own theme
+   * picker lists its themes.
    */
   tagTone?: 'quiet' | 'brand' | undefined;
   /** The id of the group it is listed under. */
@@ -184,7 +187,7 @@ export function ThemeGallery<T extends string = ThemeId>({
                             tinted edge and fill, which are calm on purpose. */}
                         {chosen ? <CheckGlyph size="xs" className="crewlet-theme-gallery__check" aria-hidden="true" /> : null}
                       </span>
-                      {theme.tag ? (
+                      {theme.tag && theme.tagTone ? (
                         theme.tagTone === 'brand' ? (
                           <span className="crewlet-theme-gallery__tag crewlet-theme-gallery__tag--brand">
                             <Tag size="xs" variant="brand">
