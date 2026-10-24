@@ -15,7 +15,11 @@
 //      name quietly renders `x` forever.
 //   2. Every other name belongs to a component and is namespaced --crewlet-*,
 //      both where it is read and where it is declared, so a component never
-//      claims a name an application stylesheet may already use.
+//      claims a name an application stylesheet may already use. The one
+//      exception is the brand mapping's inputs (`--brand-primary` and the
+//      rest), which a component may DECLARE because @crewlethq/tokens'
+//      css/brand reads them by those names: exactly the inputs that sheet
+//      reads, and no other `--brand-*` name.
 //   3. A --crewlet-* name read without a fallback must be declared somewhere
 //      in the scanned source.
 //   4. No glyph is drawn as a Material Symbols ligature. A component that
@@ -97,8 +101,20 @@ function tokenNames() {
   return names;
 }
 
+/**
+ * The brand mapping's inputs: every `--brand-*` name @crewlethq/tokens'
+ * css/brand reads. A component that brands a region (BrandScope) sets them,
+ * and nothing else outside its namespace.
+ */
+function brandInputs() {
+  const require = createRequire(import.meta.url);
+  const text = withoutComments(readFileSync(require.resolve('@crewlethq/tokens/css/brand'), 'utf8'), true);
+  return new Set([...text.matchAll(REFERENCE)].map((match) => match[1]).filter((name) => name.startsWith('--brand-')));
+}
+
 export async function findings(roots, base = packageRoot) {
   const tokens = tokenNames();
+  const inputs = brandInputs();
   const files = readSources(roots, base);
   const declared = new Set();
   const references = [];
@@ -111,7 +127,7 @@ export async function findings(roots, base = packageRoot) {
     for (const match of text.matchAll(isStylesheet ? CSS_DECLARATION : SCRIPT_DECLARATION)) {
       const name = match[1];
       declared.add(name);
-      if (!name.startsWith(COMPONENT_PREFIX)) {
+      if (!name.startsWith(COMPONENT_PREFIX) && !inputs.has(name)) {
         problems.push(
           `${where(match.index)}: declares ${name}; a component declares only ${COMPONENT_PREFIX}* names (token values belong in @crewlethq/tokens)`,
         );

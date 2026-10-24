@@ -11,3 +11,11 @@
  * and there is nothing to import from it.
  */
 declare module '*.css';
+
+/*
+ * And the token package's stylesheets, imported by the name its exports map
+ * gives them (`@crewlethq/tokens/css/brand-scope`), which carries no `.css`
+ * for the pattern above to match: BrandScope's mapping is built there, from
+ * the one source the artifact kit's brand layer is built from.
+ */
+declare module '@crewlethq/tokens/css/*';

@@ -1,0 +1,29 @@
+/*
+ * A region in a company's brand. The mapping itself (the captured page values
+ * on `.crewlet-brand-scope`, the brand's steps and public tokens on
+ * `.crewlet-brand-scope__layer`) is @crewlethq/tokens' css/brand-scope,
+ * imported beside this file and built from the one source the artifact kit's
+ * brand layer is built from. This file is only the two elements' own shape.
+ */
+
+/* The outer element carries the inputs and the capture, and draws no box. */
+.crewlet-brand-scope {
+  display: contents;
+}
+
+/* THE BOX, with the body text and face of the brand, so plain text inside it
+   follows the brand without a rule of its own. It paints no ground. */
+.crewlet-brand-scope__layer {
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+}
+
+/* A PINNED MODE is that mode for the platform's own drawing too: a native
+   control or a scrollbar inside a light preview on a dark page is light. */
+.crewlet-brand-scope[data-mode='light'] > .crewlet-brand-scope__layer {
+  color-scheme: light;
+}
+
+.crewlet-brand-scope[data-mode='dark'] > .crewlet-brand-scope__layer {
+  color-scheme: dark;
+}
