@@ -204,6 +204,20 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.46.0
+
+The pieces of a company's brand and of the folders artifacts are filed in.
+
+**`@crewlethq/icons` adds four glyphs**: `swatch-book` (`SwatchBookGlyph`) for a company's brand, `blend` (`BlendGlyph`) for its colours, `badge-check` (`BadgeCheckGlyph`) for an artifact drawn in the current brand, and `folder-open` (`FolderOpenGlyph`) for a folder with nothing in it, or nothing the reader can open. Each is vendored from the pinned `lucide-static`; see the icons package's `glyphs/README.md`.
+
+**`ArtifactKind` takes `brand`**, a company's brand kit. `ARTIFACT_KINDS` lists it last, in the engine's order; `ArtifactKindGlyph` draws it with `swatch-book`; `crewlet-kind--brand` tints it in the kind's own orchid (`--color-artifact-kind-brand`, below); `ArtifactKindIllustration` and `ArtifactKindGround` draw a mark over a row of swatches; and `ArtifactCard` and `ArtifactNameCell` label it "Brand". What to change: a `Record<ArtifactKind, ...>` of your own, and a full `kinds` label set passed to either component, needs a `brand` key.
+
+**`@crewlethq/tokens` adds `--color-artifact-kind-brand`** with its `-ink`, `-fill` and `-line` steps: `#cc7bd1` in dark and `#8f3884` in light, an orchid apart from design's purple and HTML's rose. The six node hues each already draw a kind, so brand is the one kind with a hue of its own, declared by every theme; the palette suite now measures every kind's hue as a mark, its ink on its own fill, and every pair of kind hues dE 8 apart. See the tokens README.
+
+**`@crewlethq/tokens` exports the WCAG contrast maths at runtime**: `parseHex` (a `#rrggbb` value as channels, or `null`), `contrast` (the ratio between two colours, 1 to 21, unrounded), `luminance`, the frozen floors `WCAG_CONTRAST` (`aa` 4.5, `aaLarge` 3, `aaa` 7, `aaaLarge` 4.5) and the `Rgb` type. They are the functions the palette suite measures with, not copies, for an interface that shows whether two colours a person chose read on each other.
+
+**`@crewlethq/artifact-kit` reads a company's brand from `--brand-*` input slots.** The kit's own tokens (`--color-brand-accent` and its hover, press, ink, soft fills and deep stop, the selected edge, the label on the accent, the quiet link, the glow, the grounds, the body text and the faces) read `--brand-primary`, `--brand-primary-on-dark`, `--brand-secondary`, `--brand-text`, `--brand-light-ground`, `--brand-dark-ground`, `--brand-font-heading` and `--brand-font-body`, mixing the family from one colour with `color-mix()` in each mode, so a page already written with kit tokens follows the brand. With no slot set every token is the theme's own value, under every theme. The `crewlet-logo` class draws the brand's logo from `--brand-logo-primary`, `--brand-logo-on-dark` or `--brand-logo-mark` (`data-variant`), at its ratio, choosing the on-dark logo in dark mode where there is one and drawing nothing where there is none. An engine-generated brand stylesheet defines only `--brand-*` custom properties and `@font-face` rules. See the kit README.
+
 ## Changes in 0.45.0
 
 The pieces of the engine's Company › Principles page: a company's mission, vision and policies beside the facts about it.
