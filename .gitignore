@@ -34,3 +34,4 @@ packages/ui/src/generated
 .ds-sync/
 ds-bundle/
 packages/tokens/src/themes.ts
+packages/tokens/src/palettes.ts
