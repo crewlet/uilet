@@ -64,15 +64,33 @@ function subscribe(listener: () => void): () => void {
  * Pass the value DOWN rather than calling this again deeper: two components
  * reading their own clock is the disagreement it exists to prevent.
  */
+/** The clock's resolution: it ticks once a second, so readings within a second are one instant. */
+const TICK = 1000;
+
+/*
+ * THE INSTANT, FRESH EVEN WHEN NOBODY HAS BEEN READING IT. The interval runs
+ * only while a reader is subscribed, so between readers `now` is whatever it
+ * was when the last one left, or when the module loaded: a relative time
+ * mounted after a quiet minute rendered that minute stale until the first
+ * tick, and "2m ago" read "1m ago". While the clock is idle a reading more
+ * than a tick old is replaced first. Within a tick it stays the same value,
+ * which is what `useSyncExternalStore` needs from a snapshot read twice in
+ * one render; while the interval runs, the interval alone moves it, so every
+ * reader still agrees.
+ */
+function read(): number {
+  if (!timer) {
+    const current = Date.now();
+    if (Math.abs(current - now) >= TICK) now = current;
+  }
+  return now;
+}
+
 export function useNow(): number {
-  return useSyncExternalStore(
-    subscribe,
-    () => now,
-    () => now,
-  );
+  return useSyncExternalStore(subscribe, read, read);
 }
 
 /** The current instant without subscribing, for an event handler or an effect. */
 export function currentNow(): number {
-  return now;
+  return read();
 }

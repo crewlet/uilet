@@ -269,6 +269,8 @@ The parts the engine dashboard's assistant drawer is built from, each generic en
 
 **`ArtifactNameCell` takes words for some kinds only**: `ArtifactNameCellLabels.kinds` is now `Partial<Record<ArtifactKind, string>>`, merged over the kit's own words, so an application that words only the kinds it knows (one built before `brand`) compiles, and a kind it does not word reads in the kit's own word.
 
+**The shared clock reads the time now after sitting idle.** `useNow` and `currentNow` (and so `RelativeTime` and `EditingStatus`'s "Saved 2m ago") read an instant the interval moves only while a reader is subscribed, so a reader mounted after a quiet spell rendered the time the last reader left, until the first tick: a save two minutes old read "1m ago". While the clock is idle, a reading more than a second old is now replaced before it is used.
+
 **`@crewlethq/icons` adds `square-pen`, `square` and `circle-stop`** (`SquarePenGlyph`, `SquareGlyph`, which may be drawn filled, and `CircleStopGlyph`), vendored from the pinned `lucide-static`. Lucide publishes `history` as a retired alias of `rotate-ccw-clock`, which the package already carries, so a conversations list takes `RotateCcwClockGlyph`.
 
 **`ProductMark` takes `product="assistant"`**: Orbit, the crewmate octagon opened into four chamfered blades turning around one core, on the family's tile and lower facet. No eyes and no visor, because the assistant acts as the signed-in person and is drawn as a capability rather than a crew member. Its blades and core are separate detail paths, so a working state can turn the blades and hold the core still.

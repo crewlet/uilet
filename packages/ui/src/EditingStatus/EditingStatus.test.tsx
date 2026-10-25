@@ -1,14 +1,24 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { installSheets, pseudoElement } from '../../../../apps/ui-tests/src/cascade.js';
 import { EditingStatus } from './EditingStatus.js';
+
+/*
+ * A FIXED INSTANT, so a relative time reads the same on every run.
+ * Only `Date` is faked: the shared clock's interval stays real.
+ */
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-24T12:00:00Z'));
+});
 
 let uninstall: (() => void) | undefined;
 afterEach(() => {
   uninstall?.();
   uninstall = undefined;
   cleanup();
+  vi.useRealTimers();
 });
 
 /** The whole status's text, as copied or read by a script: never a stray comma or a word twice. */
