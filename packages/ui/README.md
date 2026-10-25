@@ -207,6 +207,8 @@ places:
 
 ## Changes in 0.57.0
 
+**`AppShell` takes `asideModal`**, so an `overlay` aside can leave the page live beside it. `true`, the default, keeps the 0.56.0 overlay: a modal dialog behind a veil with Tab held inside. `false` draws the overlay with no veil, no trap and nothing made inert: it is a complementary region named by `asideLabel`, focus moves into it when it opens, Escape from inside it calls `onAsideClose` (unless a control inside answered the key, or a menu or dialog on the layer stack owns it), and focus goes back to what opened it if it was still inside when it closed. A column is never modal and a `sheet` always is, whatever the prop says. The aside carries `data-modal`.
+
 **`ProposalCard` takes `failureOutcome`** (`unchanged` or `unknown`; `ProposalFailureOutcome`, `PROPOSAL_FAILURE_OUTCOMES`), so a failed card says "Nothing changed." only when it is true. `unchanged`, the default, keeps the 0.56.0 drawing: the Tag "Not applied" and the engine's sentence followed by "Nothing changed.". `unknown` is a change sent without an answer, which may have landed: the Tag reads "Not confirmed" (`labels.notConfirmed`) and the strip is the `failure` sentence alone, or `labels.unknownNotice` ("Could not confirm whether this was applied. It may have landed.") without one. A failed card carries `data-outcome`. A consumer that drew an unknown outcome as `failed` passes `failureOutcome="unknown"`; nothing else changes.
 
 ## Changes in 0.56.0

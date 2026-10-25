@@ -161,6 +161,83 @@ test('as an overlay Tab stays inside', () => {
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'First' }));
 });
 
+function LooseOpener({ inside = <button type="button">Inside</button> }: { inside?: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <AppShell
+      aside={open ? inside : null}
+      asideShape="overlay"
+      asideModal={false}
+      asideLabel="Crewlet Assistant"
+      onAsideClose={() => setOpen(false)}
+    >
+      <button type="button" onClick={() => setOpen(true)}>
+        Ask
+      </button>
+      <button type="button">Elsewhere</button>
+    </AppShell>
+  );
+}
+
+test('as a non-modal overlay it is a named complementary region with no veil, no trap and no grip', () => {
+  render(<LooseOpener />);
+  fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  const region = screen.getByRole('complementary', { name: 'Crewlet Assistant' });
+  expect(region.getAttribute('data-shape')).toBe('overlay');
+  expect(region.getAttribute('data-modal')).toBe('false');
+  expect(region.hasAttribute('aria-modal')).toBe(false);
+  expect(document.querySelector('.crewlet-app-shell__aside-veil')).toBeNull();
+  expect(screen.queryByRole('separator')).toBeNull();
+  // Tab from the last control inside is the browser's own: nothing pulls it back.
+  const inside = screen.getByRole('button', { name: 'Inside' });
+  inside.focus();
+  const tab = fireEvent.keyDown(inside, { key: 'Tab' });
+  expect(tab).toBe(true);
+  // The page beside it stays live.
+  const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+  elsewhere.focus();
+  expect(document.activeElement).toBe(elsewhere);
+  expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
+});
+
+test('as a non-modal overlay focus moves in, Escape from inside closes it, and focus goes back to what opened it', () => {
+  render(<LooseOpener />);
+  const ask = screen.getByRole('button', { name: 'Ask' });
+  ask.focus();
+  fireEvent.click(ask);
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Inside' }));
+  fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+  expect(screen.queryByRole('complementary', { name: 'Crewlet Assistant' })).toBeNull();
+  expect(document.activeElement).toBe(ask);
+});
+
+test('as a non-modal overlay Escape from the page is the page\'s, and a reader on the page is not pulled back on close', () => {
+  render(<LooseOpener />);
+  const ask = screen.getByRole('button', { name: 'Ask' });
+  ask.focus();
+  fireEvent.click(ask);
+  const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+  elsewhere.focus();
+  fireEvent.keyDown(elsewhere, { key: 'Escape' });
+  expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
+  // An Escape a control inside answered itself is not a close.
+  const inside = screen.getByRole('button', { name: 'Inside' });
+  inside.addEventListener('keydown', (event) => event.preventDefault(), { once: true });
+  fireEvent.keyDown(inside, { key: 'Escape' });
+  expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
+});
+
+test('a sheet is modal whatever asideModal says', () => {
+  render(
+    <AppShell aside={<button type="button">Inside</button>} asideShape="sheet" asideModal={false} asideLabel="Crewlet Assistant">
+      <button type="button">Page</button>
+    </AppShell>,
+  );
+  expect(screen.getByRole('dialog', { name: 'Crewlet Assistant' }).getAttribute('aria-modal')).toBe('true');
+  expect(document.querySelector('.crewlet-app-shell__aside-veil')).not.toBeNull();
+});
+
 test('a change of shape keeps the panel mounted, so what the reader had in it survives', () => {
   function Field() {
     const [value, setValue] = useState('');
@@ -245,6 +322,14 @@ test('carries no violation as a column and as an overlay', async () => {
   expect(await run()).toEqual([]);
   await act(async () => {
     rerender(<Shell shape="overlay" />);
+  });
+  expect(await run()).toEqual([]);
+  await act(async () => {
+    rerender(
+      <AppShell aside={<button type="button">Inside</button>} asideShape="overlay" asideModal={false} asideLabel="Crewlet Assistant">
+        <button type="button">Page</button>
+      </AppShell>,
+    );
   });
   expect(await run()).toEqual([]);
 });

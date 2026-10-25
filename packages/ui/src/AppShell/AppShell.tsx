@@ -45,7 +45,8 @@
  * gutter are all the sheet's, and the sheet keeps them. Where the window
  * cannot hold the page and the panel side by side the panel is an overlay
  * over the page's end, and on a phone it is the whole window; both are
- * modal surfaces on the shared layer stack. WHICH SHAPE is the host's
+ * modal surfaces on the shared layer stack, unless the host asks for an
+ * overlay that leaves the page live beside it (`asideModal={false}`). WHICH SHAPE is the host's
  * decision (`asideShape`), never a media query's: the width that leaves the
  * page its floor depends on what else the frame holds and on the density,
  * which only the application knows.
@@ -75,9 +76,10 @@ import {
 import { breakpoint } from '@crewlethq/tokens';
 import { ChevronUpGlyph, MenuGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
-import { focusables, useModalLayer } from '../Layer/index.js';
+import { focusables, isComposing, layerCount, useModalLayer } from '../Layer/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
+import { returnFocus } from '../utils/focusModality.js';
 import type { Tone } from '../utils/tone.js';
 import { useMediaMatch } from '../MediaMatch/index.js';
 import { AccountRow } from './AccountRow.js';
@@ -202,7 +204,16 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   asideLabel?: string | undefined;
   /** Which shape the aside takes; the host decides it. */
   asideShape?: AppShellAsideShape | undefined;
-  /** Closes the aside: Escape and a press on the veil, as an overlay or a sheet. */
+  /**
+   * Whether the aside is modal as an `overlay`: true (the default) draws it
+   * as a dialog behind a veil, with Tab held inside; false leaves the page
+   * live beside it, a complementary region with no veil and no trap that
+   * Escape from inside still closes, handing focus back to what opened it.
+   * A column is never modal and a sheet, which covers the whole window,
+   * always is.
+   */
+  asideModal?: boolean | undefined;
+  /** Closes the aside: Escape and, behind a veil, a press on the veil, as an overlay or a sheet. */
   onAsideClose?: (() => void) | undefined;
   /** Gives the aside a grip in the seam beside it while it is a column. */
   asideResize?: AppShellAsideResize | undefined;
@@ -237,6 +248,7 @@ export function AppShell({
   asideReserve,
   asideLabel,
   asideShape = 'column',
+  asideModal = true,
   onAsideClose,
   asideResize,
   peek,
@@ -453,6 +465,7 @@ export function AppShell({
         {hasAside ? (
           <ShellAside
             shape={asideShape}
+            modal={asideShape === 'sheet' || (asideShape === 'overlay' && asideModal)}
             label={asideLabel}
             width={asideWidth}
             resize={asideResize}
@@ -468,6 +481,8 @@ export function AppShell({
 
 interface ShellAsideProps {
   shape: AppShellAsideShape;
+  /** A dialog behind a veil on the layer stack, rather than a complementary region. */
+  modal: boolean;
   label: string | undefined;
   width: number;
   resize: AppShellAsideResize | undefined;
@@ -477,7 +492,8 @@ interface ShellAsideProps {
 
 /**
  * The aside's track: a complementary region as a column, a modal dialog as an
- * overlay or a sheet.
+ * overlay or a sheet, and a complementary region again as a non-modal
+ * overlay, which lies over the page without taking it away.
  *
  * ONE ELEMENT IN EVERY SHAPE, with its role switched rather than its tag, so
  * a window resized across the column threshold does not remount the panel
@@ -489,10 +505,10 @@ interface ShellAsideProps {
  * the page's sheet and this one, which is the seam it sizes. Only as a
  * column: an overlay or a sheet has no page beside it to give way.
  */
-function ShellAside({ shape, label, width, resize, onClose, children }: ShellAsideProps) {
+function ShellAside({ shape, modal, label, width, resize, onClose, children }: ShellAsideProps) {
   const region = useRef<HTMLDivElement | null>(null);
   const surfaceId = useId();
-  const modal = shape !== 'column';
+  useLooseOverlay(region, shape === 'overlay' && !modal, onClose);
   // The modal's place in the layer band, reported back by the surface that
   // registered it, so the aside paints one step above its own veil.
   const [z, setZ] = useState<number | null>(null);
@@ -506,11 +522,13 @@ function ShellAside({ shape, label, width, resize, onClose, children }: ShellAsi
         aria-modal={modal || undefined}
         aria-label={label}
         // A dialog the layer stack can always focus, even before its content
-        // has a control: focus never stays behind the veil.
-        tabIndex={modal ? -1 : undefined}
+        // has a control: focus never stays behind the veil. An overlay that
+        // is not modal is focused the same way when it opens.
+        tabIndex={modal || shape === 'overlay' ? -1 : undefined}
+        data-modal={modal ? 'true' : 'false'}
         style={modal && z !== null ? { zIndex: z + 1 } : undefined}
       >
-        {!modal && resize ? (
+        {shape === 'column' && resize ? (
           <ResizeHandle
             label={resize.label}
             value={width}
@@ -535,6 +553,71 @@ function ShellAside({ shape, label, width, resize, onClose, children }: ShellAsi
       {modal ? <AsideVeil region={region} onClose={onClose} onZIndex={setZ} /> : null}
     </AsideContext.Provider>
   );
+}
+
+/**
+ * What a NON-MODAL overlay keeps of a modal's manners without holding the
+ * page: focus moves in when it opens and goes back to what opened it when it
+ * closes, and Escape from inside closes it. Nothing is trapped, nothing is
+ * veiled, and the page beside it takes presses and Tab as before.
+ *
+ * NOT ON THE LAYER STACK, because the stack's entries own every Escape and
+ * Tab in the document, and this surface owns neither outside itself. It
+ * gives way to the stack instead: while any surface is on it (a menu opened
+ * inside the panel, a dialog it opened), Escape is that surface's.
+ *
+ * WHERE FOCUS CAME FROM is read during the aside's FIRST render, before
+ * anything inside it takes focus with `autoFocus`, and handed back only if
+ * focus is still inside the panel when it closes: a reader who has moved on
+ * to the page is not pulled back. A change of shape is not a close: the
+ * panel stays mounted, and so does focus.
+ */
+function useLooseOverlay(
+  region: { current: HTMLElement | null },
+  active: boolean,
+  onClose: (() => void) | undefined,
+): void {
+  const [opener] = useState<Element | null>(() => (typeof document === 'undefined' ? null : document.activeElement));
+  const loose = useRef(active);
+  loose.current = active;
+  const close = useRef(onClose);
+  close.current = onClose;
+
+  // On the aside's open only, and only as a loose overlay: a column takes no
+  // focus, and a modal overlay's layer moves it in itself.
+  useEffect(() => {
+    const panel = region.current;
+    if (!loose.current || !panel || panel.contains(document.activeElement)) return;
+    (focusables(panel)[0] ?? panel).focus();
+  }, [region]);
+
+  // A LAYOUT cleanup, so it runs while the panel is still in the document and
+  // can still tell whether focus was inside it.
+  useLayoutEffect(() => {
+    const panel = region.current;
+    return () => {
+      if (!loose.current || !panel?.contains(document.activeElement)) return;
+      if (opener instanceof HTMLElement && opener.isConnected && opener !== document.body) returnFocus(opener);
+    };
+  }, [region, opener]);
+
+  // HEARD AT THE DOCUMENT, AFTER EVERYTHING INSIDE, as `SidePanel` hears it:
+  // a control that answers Escape itself prevents the default, and a press
+  // from outside the panel's own element is not this surface's.
+  useEffect(() => {
+    const panel = region.current;
+    if (!active || !panel) return undefined;
+    const doc = panel.ownerDocument;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || isComposing(event)) return;
+      if (!(event.target instanceof Node) || !panel.contains(event.target)) return;
+      if (layerCount() > 0 || !close.current) return;
+      event.preventDefault();
+      close.current();
+    };
+    doc.addEventListener('keydown', onKeyDown);
+    return () => doc.removeEventListener('keydown', onKeyDown);
+  }, [active, region]);
 }
 
 /**
