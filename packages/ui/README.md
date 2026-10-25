@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.54.0
+
+**A `LogoSlotGroup`'s action rows start at the top of their shared row.** Where one slot's actions wrap onto two lines (Replace and Remove in a narrow column), the row is as tall as they are, and the other slots' single buttons stood centred in it, half a line below the first button beside them. Every slot's first button now stands on one line.
+
 ## Changes in 0.53.0
 
 **`LogoSlotGroup` fits three slots in a form's column, with no gap above an action row.** The columns are as many as fit at 9rem (they were 14rem), so three slots stand in one row in a 480px column, a setup step's, and the group stacks them one under another below 30rem of its own width. The group's rows no longer carry a grid gap, which a subgrid's rows drew too: a row no slot uses (no notes under any stage) took two gaps between the stage and the action row, and now takes none. Lines of slots on a narrow page are set off by each slot's end margin.
