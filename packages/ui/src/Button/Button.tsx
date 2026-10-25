@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 import { ExternalLinkGlyph } from '@crewlethq/icons/glyphs';
+import { Spinner } from '../Spinner/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -91,7 +92,7 @@ function Inner({
   return (
     <>
       {loading ? (
-        <span className="crewlet-btn__spinner" aria-hidden />
+        <Spinner className="crewlet-btn__spinner" />
       ) : leadingIcon ? (
         <span className="crewlet-btn__icon">{leadingIcon}</span>
       ) : null}
