@@ -204,6 +204,20 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.54.0
+
+The folder tile, made production grade.
+
+**A folder tile's facts are one run.** Who can see the folder and what is inside are now separated by the gallery card's quiet dot ("Everyone · 12 artifacts · 2 folders"), in the facts' one tertiary ink. Where the tile is narrow the run breaks before the count, which moves as one; a count too long even for its own line breaks only after a dot. No line opens on a dot. `folderContentsParts` is new: the count as its parts, which `describeFolderContents` joins.
+
+**The glyph follows the shape.** The folder glyph is drawn at the shape's size: 20px in a 40px tint on a tile, 16px in a 32px tint on a row. A tile that takes the row's shape under the phone breakpoint draws the row's glyph, where it used to keep the tile's 20px glyph in a 28px tint.
+
+**A row's visibility is its glyph.** On a row, and a tile on a phone, who can see the folder is drawn as its glyph alone, as a gallery card draws an artifact's access, so every row keeps one line of facts. The word stays in the tile's description and in the label's title.
+
+**Hover and states match the gallery card.** Under the pointer the hairline darkens and the card's hairline shadow settles, at the card's quick step, and the glyph's tint steps up with it. A chosen tile keeps its selected edge and a drop target its accent edge under the pointer, where Card's hover used to replace both. A drop target's glyph takes the accent.
+
+Hosts that lay folder tiles above artifact cards should use the cards' column count and column step, so each tile's edges line up with the card below it.
+
 ## Changes in 0.51.0
 
 Polish of the setup wizard pieces, and the parts the brand setup asked for.

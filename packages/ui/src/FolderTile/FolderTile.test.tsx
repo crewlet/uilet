@@ -12,7 +12,7 @@ import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
 import { ArtifactAccessLabel } from '../ArtifactAccess/index.js';
 import { ArtifactNameCell } from '../ArtifactNameCell/index.js';
-import { FolderTile, describeFolderContents } from './index.js';
+import { FolderTile, describeFolderContents, folderContentsParts } from './index.js';
 
 afterEach(cleanup);
 
@@ -58,17 +58,60 @@ test('draws its actions beside its link, where a keyboard reaches them after it'
   expect(link.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
-test('wraps who can see the folder and what is inside rather than cutting either short', () => {
+test('sets its facts as one run that wraps between facts, never cutting one short or opening a line on a dot', () => {
   // A stylesheet rule, read as the browser reads it: jsdom lays nothing out,
-  // and the regression this holds was an ellipsis at four tiles across.
+  // and the regressions this holds were an ellipsis at four tiles across and
+  // a separator a broken line opened on.
   const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'FolderTile.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const rule = (selector: string) => new RegExp(`${selector.replace(/[.]/g, '\\.')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
-  expect(rule('.crewlet-folder-tile__facts')).toMatch(/flex-wrap:\s*wrap/);
-  for (const selector of ['.crewlet-folder-tile__facts', '.crewlet-folder-tile__contents', '.crewlet-folder-tile__visibility']) {
+  expect(rule('.crewlet-folder-tile__run')).toMatch(/flex-wrap:\s*wrap/);
+  for (const selector of ['.crewlet-folder-tile__facts', '.crewlet-folder-tile__run', '.crewlet-folder-tile__fact']) {
     expect(rule(selector), selector).not.toMatch(/text-overflow|white-space:\s*nowrap|overflow:\s*hidden/);
   }
-  // No separator that a broken line would open on.
-  expect(css).not.toMatch(/__contents::before/);
+  // Each fact opens with its dot in the separator's width, the run starts
+  // that width before the facts' edge, and the facts clip only sideways.
+  const separator = 'var(--crewlet-folder-tile-separator)';
+  expect(rule('.crewlet-folder-tile__fact')).toContain(`padding-inline-start: ${separator}`);
+  expect(rule('.crewlet-folder-tile__run')).toContain(`margin-inline-start: calc(-1 * ${separator})`);
+  expect(rule('.crewlet-folder-tile__facts')).toMatch(/overflow-x:\s*clip/);
+  // The dot is drawn, not read: its alternative text is empty.
+  expect(css).toMatch(/\.crewlet-folder-tile__fact::before,\s*\.crewlet-folder-tile__count-dot::before\s*\{[^}]*content:\s*'·'\s*\/\s*''/);
+});
+
+test('draws who can see the folder and the count as two facts, the count holding together', () => {
+  const { container } = render(
+    <FolderTile
+      name="Marketing"
+      href="#/f"
+      visibility={<ArtifactAccessLabel access="company" label="Everyone" />}
+      contents={{ artifacts: 3, folders: 2 }}
+    />,
+  );
+  const facts = [...container.querySelectorAll('.crewlet-folder-tile__fact')];
+  expect(facts.map((fact) => fact.className.replace('crewlet-folder-tile__fact ', ''))).toEqual([
+    'crewlet-folder-tile__visibility',
+    'crewlet-folder-tile__contents',
+  ]);
+  // Inside the count each part is one piece carrying the dot after it, so the
+  // only break is after a dot, never before one.
+  const parts = [...facts[1]!.querySelectorAll('.crewlet-folder-tile__count-part')];
+  expect(parts.map((part) => part.firstChild?.textContent)).toEqual(['3 artifacts', '2 folders']);
+  expect(parts[0]?.lastElementChild?.className).toBe('crewlet-folder-tile__count-dot');
+  expect(parts[1]?.querySelector('.crewlet-folder-tile__count-dot')).toBeNull();
+  expect(factsOf(screen.getByRole('link', { name: 'Marketing' }))).toBe('Folder, Everyone, 3 artifacts · 2 folders');
+});
+
+test('a subfolder, which says nothing of who sees it, opens its run on the count', () => {
+  const { container } = render(<FolderTile name="Press" href="#/f" contents={{ artifacts: 0, folders: 0 }} />);
+  expect([...container.querySelectorAll('.crewlet-folder-tile__fact')].map((fact) => fact.textContent)).toEqual(['Nothing you can open yet']);
+  expect(factsOf(screen.getByRole('link', { name: 'Press' }))).toBe('Folder, Nothing you can open yet');
+});
+
+test('the count is one phrasing in parts and as a line', () => {
+  expect(folderContentsParts({ artifacts: 12, folders: 2 })).toEqual(['12 artifacts', '2 folders']);
+  expect(folderContentsParts({ artifacts: 0, folders: 0 })).toEqual(['Nothing you can open yet']);
+  expect(folderContentsParts({ artifacts: 1, folders: 0 }, { artifacts: (n) => `${n} item` })).toEqual(['1 item']);
+  expect(describeFolderContents({ artifacts: 12, folders: 2 })).toBe(folderContentsParts({ artifacts: 12, folders: 2 }).join(' · '));
 });
 
 test('offers the whole name to a pointer, since the tile cuts it to one line', () => {
@@ -177,4 +220,49 @@ test('a row, and a tile on a phone, keep the card’s two steps, closer together
     expect(declared(body, '--crewlet-folder-tile-facts'), shape).toBeUndefined();
     expect(declared(body, '--crewlet-folder-tile-words-gap'), shape).toBe('2px');
   }
+});
+
+test('draws one glyph, sized by the shape, so a tile on a phone draws the row’s glyph', () => {
+  const folder = sheet('FolderTile/FolderTile.css');
+  const phone = folder.slice(folder.indexOf('@media (width < 640px)'));
+  const tile = block(folder, '.crewlet-card.crewlet-folder-tile');
+  const glyph = block(folder, '.crewlet-folder-tile__glyph > svg');
+  expect(declared(glyph, 'width')).toBe('var(--crewlet-folder-tile-glyph-icon)');
+  expect(declared(glyph, 'height')).toBe('var(--crewlet-folder-tile-glyph-icon)');
+  // The glyph is half its tint in every shape.
+  const half = (body: string) => [declared(body, '--crewlet-folder-tile-glyph'), declared(body, '--crewlet-folder-tile-glyph-icon')];
+  expect(half(tile)).toEqual(['40px', '20px']);
+  for (const body of [block(folder, '.crewlet-card.crewlet-folder-tile--row'), block(phone, '.crewlet-card.crewlet-folder-tile--tile')]) {
+    expect(half(body)).toEqual(['32px', '16px']);
+  }
+  const { container } = render(<FolderTile name="Press" href="#/f" />);
+  expect(container.querySelectorAll('.crewlet-folder-tile__glyph svg')).toHaveLength(1);
+});
+
+test('answers the pointer as a gallery card does, and its states outlast the pointer', () => {
+  const folder = sheet('FolderTile/FolderTile.css');
+  const card = sheet('ArtifactCard/ArtifactCard.css');
+  const cardHover = block(card, '.crewlet-artifact-card--card:hover');
+  const tileHover = block(folder, '.crewlet-card.crewlet-folder-tile:hover');
+  expect(declared(tileHover, 'box-shadow')).toBe(declared(cardHover, 'box-shadow'));
+  // The card's quick step, not Card's slower one.
+  const step = block(folder, '.crewlet-card.crewlet-folder-tile.is-interactive');
+  expect(declared(step, 'transition')).toBe(declared(block(card, '.crewlet-artifact-card--card'), 'transition'));
+  // Card's hover darkens the hairline after this sheet, so each state names
+  // its edge under the pointer too.
+  expect(folder).toMatch(/\.crewlet-card\.crewlet-folder-tile\.is-selected:hover\s*\{\s*border-color:\s*var\(--color-border-selected\)/);
+  expect(folder).toMatch(/\.crewlet-card\.crewlet-folder-tile\.is-drop-target:hover\s*\{\s*border-color:\s*var\(--color-brand-accent\)/);
+});
+
+test('a row draws who can see the folder as its glyph, and still says the word', () => {
+  const folder = sheet('FolderTile/FolderTile.css');
+  const phone = folder.slice(folder.indexOf('@media (width < 640px)'));
+  const hidden = ['absolute', '1px', 'inset(50%)'];
+  const word = (body: string) =>
+    ['position', 'size', 'clip'].map((part) => declared(body, `--crewlet-folder-tile-word-${part}`));
+  expect(word(block(folder, '.crewlet-card.crewlet-folder-tile'))).toEqual(['static', 'auto', 'none']);
+  expect(word(block(folder, '.crewlet-card.crewlet-folder-tile--row'))).toEqual(hidden);
+  expect(word(block(phone, '.crewlet-card.crewlet-folder-tile--tile'))).toEqual(hidden);
+  render(<FolderTile name="Press" href="#/f" size="row" visibility={<ArtifactAccessLabel access="company" label="Everyone" />} contents={{ artifacts: 2, folders: 0 }} />);
+  expect(factsOf(screen.getByRole('link', { name: 'Press' }))).toBe('Folder, Everyone, 2 artifacts');
 });

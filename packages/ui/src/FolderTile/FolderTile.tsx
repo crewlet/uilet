@@ -30,20 +30,26 @@ const CONTENTS: FolderContentsLabels = {
 };
 
 /**
- * The line a folder's tile and its list row say about what is inside: "12
- * artifacts · 2 folders", one part alone when the other is none, and "Nothing
- * you can open yet" for neither.
+ * What a folder's tile and its list row say about what is inside, as its
+ * parts: "12 artifacts" and "2 folders", one part alone when the other is
+ * none, and "Nothing you can open yet" for neither.
  *
  * ONE PHRASING, EXPORTED, so the grid's tile and the list's name cell
- * (`ArtifactNameCell kind="folder"`, whose `detail` takes this) never say the
- * same count two ways.
+ * (`ArtifactNameCell kind="folder"`, whose `detail` takes
+ * `describeFolderContents`) never say the same count two ways. The tile draws
+ * the parts with its own separator between them.
  */
-export function describeFolderContents(contents: FolderContents, labels?: Partial<FolderContentsLabels>): string {
+export function folderContentsParts(contents: FolderContents, labels?: Partial<FolderContentsLabels>): string[] {
   const text = { ...CONTENTS, ...labels };
   const parts: string[] = [];
   if (contents.artifacts > 0) parts.push(text.artifacts(contents.artifacts));
   if (contents.folders > 0) parts.push(text.folders(contents.folders));
-  return parts.length > 0 ? parts.join(' · ') : text.nothing;
+  return parts.length > 0 ? parts : [text.nothing];
+}
+
+/** The same parts as one line: "12 artifacts · 2 folders". */
+export function describeFolderContents(contents: FolderContents, labels?: Partial<FolderContentsLabels>): string {
+  return folderContentsParts(contents, labels).join(' · ');
 }
 
 export type FolderTileSize = 'tile' | 'row';
@@ -88,8 +94,8 @@ export interface FolderTileProps {
   dropTarget?: boolean | undefined;
   /**
    * `tile` is a gallery's (a grid of them, a few across); `row` is the full
-   * width, 44px row a phone takes. A tile takes the row's shape on its own
-   * under the phone breakpoint.
+   * width row a phone takes, at least 44px tall. A tile takes the row's shape
+   * on its own under the phone breakpoint.
    */
   size?: FolderTileSize | undefined;
   className?: string | undefined;
@@ -97,16 +103,20 @@ export interface FolderTileProps {
 }
 
 /**
- * A folder in a gallery: the folder glyph on a neutral tint, the name on one
- * line, who can see it and what is inside, and a More menu.
+ * A folder in a gallery: the folder glyph on a neutral tint with the More
+ * menu level with it, the name on one line, and one quiet run of facts (who
+ * can see it, then what is inside).
  *
  * SHORTER THAN AN ARTIFACT'S CARD AND WITH NO PREVIEW, so a folder and an
  * artifact never look alike and the kind's badge keeps its meaning. The tint
- * is neutral for the same reason: a folder is not a kind.
+ * is neutral for the same reason: a folder is not a kind. Everything else is
+ * the card's: its inset, its corner, its type steps and its hover.
  *
- * THE FACTS ARE NEVER CUT. Who can see the folder and what is inside wrap
- * onto a second line where the tile is narrow; only the name, which carries
- * its whole self on hover, is cut to one line.
+ * THE FACTS ARE ONE RUN, NEVER CUT. Each fact after the first is opened by
+ * the card's quiet dot. Where the tile is narrow the run breaks between who
+ * can see the folder and what is inside, the count holding together, and a
+ * line that breaks never opens on a dot. Only the name, which carries its
+ * whole self on hover, is cut to one line.
  *
  * THE WHOLE TILE IS ONE LINK, named by the folder's name alone and described
  * by the rest, so a reader moving by link hears "Q3 launch" and then, if they
@@ -147,8 +157,10 @@ export function FolderTile({
       )}
     >
       <a href={href} className="crewlet-folder-tile__link" aria-labelledby={nameId} aria-describedby={factsId}>
+        {/* ONE GLYPH, SIZED BY THE SHAPE in the stylesheet, so a tile that
+            takes the row's shape on a phone draws the row's glyph too. */}
         <span className="crewlet-folder-tile__glyph" aria-hidden="true">
-          <FolderGlyph size={size === 'row' ? 'md' : 'lg'} />
+          <FolderGlyph size="lg" />
         </span>
         <span className="crewlet-folder-tile__body">
           <span id={nameId} className="crewlet-folder-tile__name" title={name}>
@@ -156,17 +168,37 @@ export function FolderTile({
           </span>
           <span id={factsId} className="crewlet-folder-tile__facts">
             {/* THE KIND AND THE PICK ARE SAID, not drawn: the glyph and the
-                chosen edge are pictures of them. */}
+                chosen edge are pictures of them. The dots between the facts
+                are drawn, so the words a reader hears carry their own
+                separators. */}
             <VisuallyHidden>
               {text.folder}
               {selected ? `, ${text.selected}` : ''}
               {visibility || contents ? ', ' : ''}
             </VisuallyHidden>
-            {visibility ? <span className="crewlet-folder-tile__visibility">{visibility}</span> : null}
-            {contents ? (
-              <span className="crewlet-folder-tile__contents">
-                {visibility ? <VisuallyHidden>, </VisuallyHidden> : null}
-                {describeFolderContents(contents, text)}
+            {visibility || contents ? (
+              <span className="crewlet-folder-tile__run">
+                {visibility ? <span className="crewlet-folder-tile__fact crewlet-folder-tile__visibility">{visibility}</span> : null}
+                {contents ? (
+                  <span className="crewlet-folder-tile__fact crewlet-folder-tile__contents">
+                    {visibility ? <VisuallyHidden>, </VisuallyHidden> : null}
+                    {/* THE COUNT HOLDS TOGETHER: each part is one piece
+                        that carries the dot after it, so the count breaks
+                        only after a dot, never before one or inside "312
+                        folders", and a part wraps within itself only when
+                        it alone is wider than the tile. */}
+                    {folderContentsParts(contents, text).map((part, index, parts) => (
+                      <span key={part} className="crewlet-folder-tile__count-part">
+                        {part}
+                        {index < parts.length - 1 ? (
+                          <span className="crewlet-folder-tile__count-dot">
+                            <VisuallyHidden> · </VisuallyHidden>
+                          </span>
+                        ) : null}
+                      </span>
+                    ))}
+                  </span>
+                ) : null}
               </span>
             ) : null}
           </span>
