@@ -257,7 +257,7 @@
   }
 }
 
-/* With a hidden legend the add control stands at the end of the box's row. */
+/* The Add button ends the box's row: the field and its Add read as one control. */
 .crewlet-list-input__add-control {
   display: inline-flex;
   flex: none;

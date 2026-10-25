@@ -13,7 +13,6 @@ import {
   ArrowDownGlyph,
   ArrowUpGlyph,
   GripVerticalGlyph,
-  PlusGlyph,
   XGlyph,
 } from '@crewlethq/icons/glyphs';
 import { announce } from '../Announcer/index.js';
@@ -141,8 +140,10 @@ export interface ListInputProps {
   itemError?: ((index: number, value: string) => ReactNode) | undefined;
   /** What the list says in place of the new-item box once it is full. */
   fullMessage?: ((max: number) => string) | undefined;
-  /** The name of the control beside the legend that appends what the box holds. */
+  /** The name of the button at the end of the box's row that appends what the box holds: "Add policy". */
   addLabel?: ((itemName: string) => string) | undefined;
+  /** The word that button shows, which its name begins with: "Add". */
+  addText?: string | undefined;
   itemLabel?: ((name: string, position: string) => string) | undefined;
   newItemLabel?: ((itemName: string) => string) | undefined;
   moveUpLabel?: ((itemName: string, position: string) => string) | undefined;
@@ -225,6 +226,7 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
   itemError,
   fullMessage = (max) => `The list is full at ${max}. Remove one to add another.`,
   addLabel = (name) => `Add ${name}`,
+  addText = 'Add',
   itemLabel = (name, position) => `${name} ${position}`,
   newItemLabel = (name) => `New ${name}`,
   moveUpLabel = (name, position) => `Move ${name} ${position} up`,
@@ -495,20 +497,25 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
     />;
 
   /*
-   * THE ADD CONTROL SITS BESIDE THE LEGEND, which is where the console puts
-   * it and where the eye is when the list is empty. It appends what the box
-   * below holds and gives the box the focus back, so pressing it twice adds
-   * twice without a journey between.
+   * THE ADD BUTTON ENDS THE BOX'S ROW, the one way in beside Enter: the field
+   * and its Add read as one control, as a reader expects of a box that takes
+   * an item. A "+" beside the legend read as a control floating by the label,
+   * belonging to nothing, and two ways in to one list is one too many. It
+   * shows the word ("Add") and is named for what it adds ("Add policy"), the
+   * name beginning with the word a voice user says. It appends what the box
+   * holds and gives the box the focus back, so pressing it twice adds twice
+   * without a journey between.
    */
   const addControl = (
-    <IconButton
-      size="sm"
-      variant="soft-brand"
-      label={addLabel(itemName)}
-      icon={<PlusGlyph />}
+    <Button
+      size="small"
+      variant="secondary"
+      aria-label={addLabel(itemName)}
       disabled={disabled || full || draftRefused}
       onClick={add}
-    />
+    >
+      {addText}
+    </Button>
   );
 
   return (
@@ -521,12 +528,6 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
       helperOnFocus={helperOnFocus}
       error={error}
       className="crewlet-list-input"
-      /*
-       * Beside a HIDDEN legend there is nothing for it to sit beside, and a
-       * lone "+" above the box read as a control that belonged to nothing, so
-       * it moves to the end of the box's own row.
-       */
-      labelAction={hideLabel ? undefined : addControl}
     >
       {/*
        * THE BOX FIRST, THE LIST UNDER IT, as the console draws it and as the
@@ -571,7 +572,7 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
               addBox.current = el;
             },
           })}
-          {hideLabel ? <span className="crewlet-list-input__add-control">{addControl}</span> : null}
+          <span className="crewlet-list-input__add-control">{addControl}</span>
         </div>
       )}
       {count > 0 || removed !== null ? (
