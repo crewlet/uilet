@@ -240,12 +240,8 @@ export function Stepper({
               </>
             ) : null}
             <span className="crewlet-stepper__label">{step.label}</span>
-            {note !== null && !vertical ? (
-              <>
-                {', '}
-                <VisuallyHidden>{note}</VisuallyHidden>
-              </>
-            ) : null}
+            {/* Said and not shown: a pill has no room for the words. */}
+            {note !== null && !vertical ? <VisuallyHidden>{`, ${note}`}</VisuallyHidden> : null}
           </>
         );
 

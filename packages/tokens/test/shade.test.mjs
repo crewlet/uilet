@@ -1,5 +1,5 @@
 // nearestContrastShade: the one implementation behind every "Use #007f7f
-// (4.52:1)" suggestion. Held to its contract: the answer clears the floor as
+// (4.51:1)" suggestion. Held to its contract: the answer clears the floor as
 // rounded, keeps the colour's hue, moves lightness no further than it has to,
 // and is null when no shade of the colour can clear the floor.
 

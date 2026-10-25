@@ -77,7 +77,7 @@ When a pair falls short, offer the nearest shade rather than a verdict alone. It
 ```ts
 import { WCAG_CONTRAST, contrast, nearestContrastShade, parseHex } from '@crewlethq/tokens';
 
-nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aa);      // '#007f7f', 4.52:1
+nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aa);      // '#007f7f', 4.51:1
 nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aaLarge); // '#00a0a0', 3.00:1
 ```
 

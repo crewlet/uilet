@@ -308,7 +308,15 @@
   color: var(--color-text-secondary);
 }
 
+/*
+ * THE CURRENT ROW is lifted as the rail's current row is (SidebarNav): the
+ * elevated rung inside a one-pixel hairline drawn as an outline, so forced
+ * colors keeps it, and it does not move the row by a pixel.
+ */
 .crewlet-stepper__step--current > .crewlet-stepper__row {
+  outline: 1px solid var(--color-border-default);
+  outline-offset: -1px;
+  background: var(--color-surface-elevated);
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
 }
