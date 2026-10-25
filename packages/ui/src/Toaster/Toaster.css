@@ -14,35 +14,45 @@
  * reduced motion gets no wash and still gets the toast taken away.
  */
 .crewlet-toaster {
+  /*
+   * THE HOST'S INSET: room on the stack's own side and edge that something
+   * else occupies, such as a panel beside the page or a phone sheet's foot.
+   * Set by `inset` on the Toaster (or by the host on these two properties)
+   * and added to the window inset below, so the stack stands beside the
+   * panel rather than over it. Zero by default.
+   */
+  --crewlet-toaster-inset-inline: 0px;
+  --crewlet-toaster-inset-block: 0px;
+
   position: fixed;
   z-index: var(--z-index-toast);
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
-  width: min(380px, calc(100vw - 2 * var(--spacing-6)));
+  width: min(380px, calc(100vw - 2 * var(--spacing-6) - var(--crewlet-toaster-inset-inline)));
   /* The stack itself takes no presses, so the screen under it stays live
      while nothing is up; each toast takes them back for its own strip. */
   pointer-events: none;
 }
 
 .crewlet-toaster--bottom-right {
-  bottom: var(--spacing-6);
-  right: var(--spacing-6);
+  bottom: calc(var(--spacing-6) + var(--crewlet-toaster-inset-block));
+  right: calc(var(--spacing-6) + var(--crewlet-toaster-inset-inline));
 }
 
 .crewlet-toaster--top-right {
-  top: var(--spacing-6);
-  right: var(--spacing-6);
+  top: calc(var(--spacing-6) + var(--crewlet-toaster-inset-block));
+  right: calc(var(--spacing-6) + var(--crewlet-toaster-inset-inline));
 }
 
 .crewlet-toaster--bottom-left {
-  bottom: var(--spacing-6);
-  left: var(--spacing-6);
+  bottom: calc(var(--spacing-6) + var(--crewlet-toaster-inset-block));
+  left: calc(var(--spacing-6) + var(--crewlet-toaster-inset-inline));
 }
 
 .crewlet-toaster--top-left {
-  top: var(--spacing-6);
-  left: var(--spacing-6);
+  top: calc(var(--spacing-6) + var(--crewlet-toaster-inset-block));
+  left: calc(var(--spacing-6) + var(--crewlet-toaster-inset-inline));
 }
 
 .crewlet-toast {
@@ -280,12 +290,23 @@
 
   .crewlet-toaster--bottom-right,
   .crewlet-toaster--bottom-left {
-    bottom: var(--spacing-3);
+    bottom: calc(var(--spacing-3) + var(--crewlet-toaster-inset-block));
   }
 
   .crewlet-toaster--top-right,
   .crewlet-toaster--top-left {
-    top: var(--spacing-3);
+    top: calc(var(--spacing-3) + var(--crewlet-toaster-inset-block));
+  }
+
+  /* Across the width, the host's inline inset still keeps its own side clear. */
+  .crewlet-toaster--bottom-right,
+  .crewlet-toaster--top-right {
+    right: calc(var(--spacing-3) + var(--crewlet-toaster-inset-inline));
+  }
+
+  .crewlet-toaster--bottom-left,
+  .crewlet-toaster--top-left {
+    left: calc(var(--spacing-3) + var(--crewlet-toaster-inset-inline));
   }
 }
 
