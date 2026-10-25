@@ -17,3 +17,13 @@
   font-size: var(--font-size-compact);
   text-align: end;
 }
+
+/* WHY THE LAST DECISION WAS REFUSED, on a line of its own above the
+   decision and at its end, as the held primary's reason is: the refusal
+   strip's own inline drawing, which wraps rather than widening the row. */
+.crewlet-proposal-card__refusal {
+  display: flex;
+  flex: 1 1 100%;
+  justify-content: flex-end;
+  text-align: end;
+}

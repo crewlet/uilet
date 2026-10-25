@@ -81,9 +81,11 @@ test('a server write says Saving and Saved; a create heads its list "What will b
 
 test('step-up: "Needs sign-in" on the Tag, the strip says nothing changed yet, and Confirm it is you approves', () => {
   const onApprove = vi.fn();
-  render(card('stepup', { onApprove }));
+  const { container } = render(card('stepup', { onApprove }));
   expect(screen.getByRole('region', { name: 'Filter this list Needs sign-in' })).toBeTruthy();
-  expect(screen.getByRole('status').textContent).toBe('This approval asks you to sign in again. Nothing changed yet.');
+  expect(container.querySelector('.crewlet-receipt-strip')!.textContent).toBe(
+    'This approval asks you to sign in again. Nothing changed yet.',
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Confirm it’s you' }));
   expect(onApprove).toHaveBeenCalledTimes(1);
 });
@@ -131,6 +133,65 @@ test('a failure hint is its own line after the sentence and "Nothing changed.", 
   expect(screen.getByRole('alert').textContent).toBe('Nothing changed.');
   rerender(card('pending', { failure: 'Refused.', failureHint: hint }));
   expect(screen.queryByText(hint)).toBeNull();
+});
+
+test('an unknown outcome never says "Nothing changed.": the Tag reads "Not confirmed" and the strip is the sentence alone', () => {
+  const onRetry = vi.fn();
+  const hint = 'Check the artifact before you try again.';
+  const { rerender, container } = render(
+    card('failed', { failureOutcome: 'unknown', failure: 'The engine did not answer in time.', failureHint: hint, onRetry }),
+  );
+  expect(screen.getByRole('region', { name: 'Filter this list Not confirmed' })).toBeTruthy();
+  const alert = screen.getByRole('alert');
+  expect(alert.querySelector('.crewlet-refusal-strip__sentence')!.textContent).toBe('The engine did not answer in time.');
+  expect(alert.querySelector('.crewlet-refusal-strip__hint')!.textContent).toBe(hint);
+  expect(alert.textContent).not.toContain('Nothing changed.');
+  expect(container.querySelector('[data-outcome="unknown"]')).not.toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  expect(onRetry).toHaveBeenCalledTimes(1);
+  // Without a sentence of the caller's, the card's own words, still without the reassurance.
+  rerender(card('failed', { failureOutcome: 'unknown' }));
+  expect(screen.getByRole('alert').textContent).toBe('Could not confirm whether this was applied. It may have landed.');
+  // The default outcome is unchanged, so current consumers keep their words.
+  rerender(card('failed', { failure: 'Refused.' }));
+  expect(screen.getByRole('region', { name: 'Filter this list Not applied' })).toBeTruthy();
+  expect(screen.getByRole('alert').textContent).toBe('Refused. Nothing changed.');
+  expect(container.querySelector('[data-outcome="unchanged"]')).not.toBeNull();
+  // Ignored outside the failed state.
+  rerender(card('pending', { failureOutcome: 'unknown' }));
+  expect(container.querySelector('[data-outcome]')).toBeNull();
+  expect(screen.getByRole('region', { name: 'Filter this list Needs your approval' })).toBeTruthy();
+});
+
+test('a refused decision is drawn above the decision in a polite live region the foot keeps, and only while deciding', () => {
+  const refusal = { sentence: 'This approval needs a fresh sign-in.', hint: 'Confirm it is you, then approve again.' };
+  const { rerender, container } = render(card('pending'));
+  // The region is there, empty and hidden, before any refusal arrives.
+  const region = container.querySelector<HTMLElement>('.crewlet-proposal-card__refusal')!;
+  expect(region.getAttribute('role')).toBe('status');
+  expect(region.textContent).toBe('');
+  expect(region.classList.contains('crewlet-visually-hidden')).toBe(true);
+  // Through the applying an approval passes on its way back, the same element.
+  rerender(card('applying'));
+  expect(container.querySelector('.crewlet-proposal-card__refusal')).toBe(region);
+  rerender(card('stepup', { decisionRefusal: refusal }));
+  expect(container.querySelector('.crewlet-proposal-card__refusal')).toBe(region);
+  expect(region.classList.contains('crewlet-visually-hidden')).toBe(false);
+  expect(region.querySelector('.crewlet-refusal-strip__sentence')!.textContent).toBe(refusal.sentence);
+  expect(region.querySelector('.crewlet-refusal-strip__hint')!.textContent).toBe(refusal.hint);
+  // Polite: the strip inside is not an alert of its own.
+  expect(screen.queryByRole('alert')).toBeNull();
+  // Above the decision, and the card stays decidable.
+  const actions = container.querySelector('.crewlet-status-card__actions')!;
+  expect(actions.firstElementChild).toBe(region);
+  expect(screen.getByRole('button', { name: 'Confirm it’s you' })).toBeTruthy();
+  // Cleared by the consumer.
+  rerender(card('pending'));
+  expect(region.textContent).toBe('');
+  // Ignored once the card has settled, where the strip says what happened.
+  rerender(card('failed', { decisionRefusal: refusal, failure: 'Refused.' }));
+  expect(container.querySelector('.crewlet-proposal-card__refusal')).toBeNull();
+  expect(screen.queryByText(refusal.sentence)).toBeNull();
 });
 
 test('a blocked approval holds the primary soft disabled with its reason, shown and said, and never approves', () => {
@@ -191,6 +252,7 @@ test('every state carries no axe violation', async () => {
           failure: 'You no longer have access to share this artifact.',
           failureHint: 'Ask an admin to give you access.',
           approveBlocked: 'This screen cannot apply these filters.',
+          decisionRefusal: { sentence: 'This approval needs a fresh sign-in.', hint: 'Confirm it is you.' },
         })}
       </main>,
     );

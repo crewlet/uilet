@@ -14,6 +14,8 @@ import { createContext, useContext } from 'react';
  *   region; the page reflows narrower and stays reachable with Tab.
  * - `overlay`: over the page's end edge, behind a veil, a modal dialog: Tab
  *   stays in it, Escape and a press on the veil close it, focus returns.
+ *   With `asideModal={false}` it has no veil and no trap: a complementary
+ *   region the page stays live beside, which Escape from inside closes.
  * - `sheet`: the whole window, for a phone; modal in the same way.
  */
 export type AppShellAsideShape = 'column' | 'overlay' | 'sheet';

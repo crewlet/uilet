@@ -129,11 +129,13 @@ function Frame({
   shape,
   open: startOpen = true,
   resizable = true,
+  modal,
   peek,
   children,
 }: {
   shape: AppShellAsideShape | 'auto';
   open?: boolean;
+  modal?: boolean;
   resizable?: boolean;
   peek?: (asideColumn: boolean) => Pick<AppShellProps, 'peek' | 'peekShape'>;
   children?: ReactNode;
@@ -158,6 +160,7 @@ function Frame({
       }
       aside={open ? <Assistant onClose={() => setOpen(false)} /> : null}
       asideShape={asideShape}
+      asideModal={modal}
       asideWidth={width}
       asideReserve={640}
       asideLabel="Crewlet Assistant"
@@ -199,6 +202,16 @@ export const Column: Story = {
  */
 export const Overlay: Story = {
   render: () => <Frame shape="overlay" />,
+};
+
+/**
+ * A NON-MODAL OVERLAY (`asideModal={false}`): the same panel over the page's
+ * end edge, with no veil and no trap, so the page beside it stays live. It is
+ * a complementary region; Escape from inside it closes it and focus returns
+ * to Ask, while Tab and presses on the page are the page's own.
+ */
+export const OverlayNonModal: Story = {
+  render: () => <Frame shape="overlay" modal={false} />,
 };
 
 /** A SHEET: the whole window on a phone, modal in the same way. */

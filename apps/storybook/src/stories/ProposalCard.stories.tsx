@@ -131,6 +131,32 @@ export const NotAppliedWithHint: Story = {
 };
 
 /**
+ * NOT CONFIRMED: the approved change was sent but no answer came back, so it
+ * may have landed. The Tag reads "Not confirmed" and the strip never adds
+ * "Nothing changed.". Try again resends it under the same operation key.
+ */
+export const NotConfirmed: Story = {
+  args: { ...share, state: 'failed', failureOutcome: 'unknown', failure: undefined, onRetry: () => {} },
+};
+
+/**
+ * DECISION REFUSED: the approval came back refused (a fresh sign-in is
+ * needed), but the proposal still stands. The engine's sentence and its hint
+ * sit above the decision, announced politely from a live region the foot
+ * keeps, and the card can be decided again.
+ */
+export const DecisionRefused: Story = {
+  args: {
+    ...share,
+    state: 'stepup',
+    decisionRefusal: {
+      sentence: 'This approval needs a fresh sign-in.',
+      hint: 'Confirm it’s you, then the change is applied.',
+    },
+  },
+};
+
+/**
  * APPROVAL BLOCKED: the screen refuses the prepared change, so the primary is
  * held soft disabled with the reason, shown above the decision and said as its
  * description. Decline stays available.
