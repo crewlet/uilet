@@ -1,0 +1,80 @@
+/*
+ * A deep run on the product's StatusCard: the goal with its mark, the limits
+ * as compact meters on a two-column grid that folds to one, the latest
+ * activity as mono lines in an inset well, then the steps. Only the body's
+ * own parts are said here; the card, its head, its tag and its strip are
+ * StatusCard's.
+ */
+.crewlet-deep-work-card .crewlet-status-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+/* The goal: the mark on the first line, the words wrapping beside it. */
+.crewlet-deep-work-card__goal {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-2);
+}
+
+.crewlet-deep-work-card__goal-mark {
+  height: calc(var(--font-size-compact) * var(--font-line-height-normal));
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-deep-work-card__goal-text {
+  margin: 0;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* THE LIMITS SIDE BY SIDE where the card has room, one under another in a
+   narrow drawer, so no legend is cut to fit. */
+.crewlet-deep-work-card__measures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--spacing-2) var(--spacing-4);
+}
+
+/* THE LATEST ACTIVITY: one line each, never wrapped into a paragraph, cut
+   with an ellipsis rather than widening the card; the whole line is its
+   title for a pointer and its text for a screen reader. */
+.crewlet-deep-work-card__activity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+  margin: 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-inset);
+  list-style: none;
+}
+
+.crewlet-deep-work-card__line {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The newest line is what the run is doing now, in the primary ink. */
+.crewlet-deep-work-card__line:last-child {
+  color: var(--color-text-primary);
+}
+
+.crewlet-deep-work-card__line code {
+  font: inherit;
+}
+
+.crewlet-deep-work-card__steps {
+  min-width: 0;
+}
