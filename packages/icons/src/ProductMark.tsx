@@ -46,8 +46,9 @@ const drawings: Record<Product, ComponentType<SVGProps<SVGSVGElement>>> = {
  * four turning blades around one core (Assistant). The Assistant has no face:
  * it acts as the person who asks and has no identity of its own, so it is
  * drawn as a capability of Crewlet rather than as one more member of a crew.
- * Its blades and core are separate detail paths, so a working state can turn
- * the blades and hold the core still.
+ * Its blades and core are separate detail paths, and the blades carry
+ * `data-motion="turn"`, so a working state (`ThinkingIndicator` in
+ * `@crewlethq/ui`) can turn them and hold the core still.
  *
  * Sized like a glyph and drawn edge to edge in its square, so it stands at the
  * weight of the vendor marks a catalogue sets beside it.
