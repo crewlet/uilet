@@ -78,8 +78,9 @@ export interface RunChipProps extends Omit<HTMLAttributes<HTMLDivElement>, 'titl
  * warning ink, failed in the danger ink, everything else in the secondary
  * ink. Colour is never alone: the words say the state, and the mark draws it.
  *
- * ITS NAME IS ITS WORDS, "Working, 3 s": the visible separator is hidden from
- * assistive technology and a comma said in its place. The step list it opens
+ * ITS NAME IS ITS WORDS, "Working, 3 s": the visible separator is drawn by
+ * the style sheet, so it is neither read nor copied, and a hidden comma is
+ * said and copied in its place. The step list it opens
  * is a region named by the chip.
  */
 export function RunChip({
@@ -132,16 +133,7 @@ export function RunChip({
             {meta === undefined ? null : <VisuallyHidden>,</VisuallyHidden>}
           </>
         }
-        meta={
-          meta === undefined ? undefined : (
-            <>
-              <span className="crewlet-run-chip__separator" aria-hidden="true">
-                {'· '}
-              </span>
-              {meta}
-            </>
-          )
-        }
+        meta={meta === undefined ? undefined : <span className="crewlet-run-chip__meta">{meta}</span>}
         headingLevel="none"
         triggerId={`${rid}-trigger`}
         panelId={`${rid}-panel`}

@@ -4,6 +4,8 @@
  * settles, words with a reserved chevron slot while there is nothing to open,
  * and the state's tone in the title's ink.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
@@ -17,7 +19,7 @@ const tokenColour = (palette: ReadonlyMap<string, string>, name: string) => chan
 
 const steps = <StepList label="Steps" steps={[{ id: 'read', label: 'Read token spend by agent', state: 'running' }]} />;
 
-test('is named by its words, the separator hidden and a comma said in its place', () => {
+test('is named and copied by its words, the separator drawn and a comma said in its place', () => {
   const { container } = render(
     <RunChip state="done" title="Done in 5s" meta="2 steps">
       {steps}
@@ -25,8 +27,12 @@ test('is named by its words, the separator hidden and a comma said in its place'
   );
   const trigger = screen.getByRole('button', { name: 'Done in 5s, 2 steps' });
   expect(trigger.getAttribute('aria-expanded')).toBe('false');
-  expect(container.querySelector('.crewlet-run-chip__separator')!.getAttribute('aria-hidden')).toBe('true');
-  expect(trigger.textContent).toContain('· 2 steps');
+  // THE DOT IS THE STYLE SHEET'S, so a copy of the chip carries the comma
+  // alone ("Waiting for your approval, · 2 steps" was the defect).
+  expect(trigger.textContent).toBe('Done in 5s, 2 steps');
+  expect(container.querySelector('.crewlet-run-chip__meta')!.textContent).toBe('2 steps');
+  const css = readFileSync(join(import.meta.dirname, 'RunChip.css'), 'utf8');
+  expect(css).toMatch(/\.crewlet-run-chip__meta::before\s*\{[^}]*content: '\\00b7' \/ '';/);
 });
 
 test('opens while the request works and closes itself when it settles', () => {
