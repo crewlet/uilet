@@ -21,7 +21,7 @@ const CHART =
     '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="160" viewBox="0 0 320 160"><rect width="320" height="160" fill-opacity="0.08"/><rect x="30" y="60" width="40" height="80" fill-opacity="0.45"/><rect x="100" y="30" width="40" height="110" fill-opacity="0.45"/><rect x="170" y="90" width="40" height="50" fill-opacity="0.45"/><rect x="240" y="50" width="40" height="90" fill-opacity="0.45"/></svg>',
   );
 
-const download = (name: string, body: string) => <DownloadButton filename={name} text={body} />;
+const download = (name: string, body: string) => <DownloadButton filename={name} text={body} aria-label={`Download ${name}`} />;
 
 /** A run's delivered files, in the card a conversation draws them in. */
 export const Delivered: Story = {

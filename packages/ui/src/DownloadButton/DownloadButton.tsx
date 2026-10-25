@@ -54,6 +54,12 @@ export interface DownloadButtonBaseProps {
   variant?: ButtonVariant | undefined;
   title?: string | undefined;
   /**
+   * The control's name where several stand side by side, such as one per
+   * file in a list: "Download report.csv". It must contain the visible label,
+   * so a reader who says the label to a voice control still finds it.
+   */
+  'aria-label'?: string | undefined;
+  /**
    * Nothing to offer yet, such as an export of an empty table. Give a `title`
    * that says why, so the control is never a dead button with no reason.
    */
@@ -95,6 +101,7 @@ export function DownloadButton({
   size = 'small',
   variant = 'ghost',
   title,
+  'aria-label': ariaLabel,
   disabled,
   resetMs,
   failedResetMs = null,
@@ -136,6 +143,7 @@ export function DownloadButton({
         loading={fetching}
         disabled={disabled}
         title={state === 'failed' ? failedMessage : title}
+        aria-label={ariaLabel}
       >
         {state === 'started' ? startedLabel : state === 'failed' ? failedLabel : label}
       </Button>
