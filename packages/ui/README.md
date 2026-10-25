@@ -429,7 +429,7 @@ The parts of the engine's Company › Integrations page, a directory of everythi
 
 **`ObjectHeader` takes a `mark`**: the object's own mark, drawn on a plate the catalogue tile's well at one and a half rows, beside the column the rest of the header keeps (a row at `size="peek"` and on a phone). A header without one is unchanged.
 
-**`@crewlethq/icons` adds `ProductMark`**, the marks of the services built into Crewlet (`works`, `knowledge`, `chat`) beside `VendorMark`, with `soon` for a product that has not shipped, drawn hollow rather than grey. See the icons README.
+**`@crewlethq/icons` adds `ProductMark`**, the marks of the services built into Crewlet (`worklet`, `doclet`, `chat`) beside `VendorMark`, with `soon` for a product that has not shipped, drawn hollow rather than grey. See the icons README.
 
 ## Changes in 0.42.0
 
@@ -531,7 +531,7 @@ These come from a production polish of the engine dashboard's Settings › Limit
 
 ### Icons
 
-**`VendorMark` draws Crewlet's own mark** (`vendor="crewlet"`), for the services built into Crewlet (its tracker, its knowledge base) where a catalogue of integrations lists them beside the third-party apps they stand in for. It is drawn from the brand mark `@crewlethq/icons` already carries (`CrewletIcon`), not a second copy, and takes the same `size` and `muted` as every other vendor. `VENDORS` lists it, so the VendorMark story shows it with the others.
+**`VendorMark` draws Crewlet's own mark** (`vendor="crewlet"`), for the services built into Crewlet (Worklet, Doclet) where a catalogue of integrations lists them beside the third-party apps they stand in for. It is drawn from the brand mark `@crewlethq/icons` already carries (`CrewletIcon`), not a second copy, and takes the same `size` and `muted` as every other vendor. `VENDORS` lists it, so the VendorMark story shows it with the others.
 
 **Every vendor mark draws at one weight in its square.** GitLab's press-kit drawing framed its logo in twice its own width, so at 20px it drew 10px beside marks of 20; it is cropped to its logo. Crewlet's mark is framed in the square its own extent fits rather than in the wide brand file's artwork margins, so at 20px it draws 20 by 10 where it drew 17 by 9. The VendorMark story's One weight draws every mark at 20px in a 48px box.
 
@@ -763,7 +763,7 @@ Beyond what is named above (a `DocumentTitleField` handler or ref typed for a te
 
 **`AccessDeniedCard` draws as an artifact's other blocked state**: on the page, in no box, at a reading width, with the default empty state's 24px glyph, as a trashed artifact does. It was a bordered card with a 32px glyph.
 
-**`ArtifactCard` reads its facts as one run, and its change time first.** A line's facts are one run, each after the first opened by a quiet dot ("Sheet · OPS · v12"), and the change reads time first and changer after (`labels.by`, "Updated 4m ago by Maya"); leave `owner` out where the reader owns it, and `updatedBy` where it is the owner already named, whose change then reads "Updated 4m ago" beside their name. The title, cut to one line, is offered whole on hover, and a compact card is a row in every bundle, where `Card`'s column layout used to win. The `html` kind's default label is "HTML", not "Page", which is Knowledge's word; the kind id is unchanged.
+**`ArtifactCard` reads its facts as one run, and its change time first.** A line's facts are one run, each after the first opened by a quiet dot ("Sheet · OPS · v12"), and the change reads time first and changer after (`labels.by`, "Updated 4m ago by Maya"); leave `owner` out where the reader owns it, and `updatedBy` where it is the owner already named, whose change then reads "Updated 4m ago" beside their name. The title, cut to one line, is offered whole on hover, and a compact card is a row in every bundle, where `Card`'s column layout used to win. The `html` kind's default label is "HTML", not "Page", which is Doclet's word; the kind id is unchanged.
 
 **`DashboardCover` draws its figures as rows**, so each label has the card's width; three side by side cut every label to its first word. **`ArtifactPreviewGlyph`** is the preview a card draws with no cover, for a host whose cover has nothing to draw yet or at all: a cover element that rendered nothing left an empty box, since the card cannot tell it from a picture.
 

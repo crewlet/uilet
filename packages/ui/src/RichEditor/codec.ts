@@ -4,7 +4,7 @@
  *
  * # A save with no edit changes nothing, by construction
  *
- * Storage is Markdown, and the bytes are the record: a Knowledge page is
+ * Storage is Markdown, and the bytes are the record: a Doclet page is
  * merged line by line against somebody else's save, and a doc's version is a
  * patch of the lines that moved. An editor that wrote every body back in its
  * own canonical spelling would turn opening a page and pressing Save into a
