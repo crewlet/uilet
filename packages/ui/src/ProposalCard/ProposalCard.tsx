@@ -131,6 +131,22 @@ export interface ProposalCardProps extends Omit<HTMLAttributes<HTMLElement>, 'ti
   receipt?: ReactNode;
   /** Why it was not applied, for a failed card, in the engine's own sentence. "Nothing changed." follows it. */
   failure?: ReactNode;
+  /**
+   * What the person can do next about a failure, on its own quieter line
+   * after the failure sentence and "Nothing changed.": the route's next step,
+   * such as "Ask an admin to give you access." Drawn only with `failure`.
+   */
+  failureHint?: ReactNode;
+  /**
+   * Why the primary action cannot be taken now, while the card waits on the
+   * person (`pending`) or on a fresh sign-in (`stepup`): a page action whose
+   * screen refuses the prepared change, say. The primary is held soft
+   * disabled, as Decline is held while applying, so it keeps its focus and
+   * its pointer events, says it is unavailable, and is described by this
+   * sentence, which the foot also shows above the buttons. Ignored in every
+   * other state. Decline stays available.
+   */
+  approveBlocked?: string | undefined;
   /** Replaces the default sentence of a step-up, declined, expired or stale card. */
   notice?: ReactNode;
   labels?: Partial<ProposalCardLabels> | undefined;
@@ -210,6 +226,8 @@ export function ProposalCard({
   onRetry,
   receipt,
   failure,
+  failureHint,
+  approveBlocked,
   notice,
   labels: overrides,
   changeLabels,
@@ -220,9 +238,20 @@ export function ProposalCard({
   const labels = overrides ? { ...PROPOSAL_CARD_LABELS, ...overrides } : PROPOSAL_CARD_LABELS;
   const settled = SETTLED.has(state);
 
+  // HELD ONLY WHILE THE PERSON COULD STILL APPROVE: applying already holds
+  // the primary with its spinner, and a settled card has no primary at all.
+  const blocked = (state === 'pending' || state === 'stepup') && approveBlocked ? approveBlocked : undefined;
+
   const decision =
     state === 'pending' || state === 'stepup' || state === 'applying' ? (
       <>
+        {/* SHOWN, NOT READ TWICE: the primary carries the same sentence as
+            its description, so this copy is for the eye only. */}
+        {blocked === undefined ? null : (
+          <p className="crewlet-proposal-card__blocked" aria-hidden="true">
+            {blocked}
+          </p>
+        )}
         <Button
           variant="secondary"
           onClick={onDecline}
@@ -230,7 +259,7 @@ export function ProposalCard({
         >
           {labels.decline}
         </Button>
-        <Button variant="primary" loading={state === 'applying'} onClick={onApprove}>
+        <Button variant="primary" loading={state === 'applying'} disabledReason={blocked} onClick={onApprove}>
           {state === 'stepup' ? labels.confirmIdentity : approveLabel}
         </Button>
       </>
@@ -263,7 +292,12 @@ export function ProposalCard({
         {notice ?? labels.staleNotice}
       </ReceiptStrip>
     ) : state === 'failed' ? (
-      <RefusalStrip placement="foot" onRetry={onRetry} labels={{ retry: labels.tryAgain }}>
+      <RefusalStrip
+        placement="foot"
+        hint={failure === undefined ? undefined : failureHint}
+        onRetry={onRetry}
+        labels={{ retry: labels.tryAgain }}
+      >
         {failure === undefined ? labels.nothingChanged : <>{failure} {labels.nothingChanged}</>}
       </RefusalStrip>
     ) : undefined;

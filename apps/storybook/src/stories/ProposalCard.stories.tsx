@@ -124,6 +124,25 @@ export const Stale: Story = {
   args: { ...filter, state: 'stale', notice: 'The list changed after this was prepared, so it was not applied. Nothing changed.' },
 };
 export const NotApplied: Story = { args: { ...share, state: 'failed' } };
+
+/** NOT APPLIED, WITH THE NEXT STEP: the route's hint on its own quieter line after "Nothing changed.". */
+export const NotAppliedWithHint: Story = {
+  args: { ...share, state: 'failed', failureHint: 'Ask an owner of the artifact to share it, or to give you edit access.' },
+};
+
+/**
+ * APPROVAL BLOCKED: the screen refuses the prepared change, so the primary is
+ * held soft disabled with the reason, shown above the decision and said as its
+ * description. Decline stays available.
+ */
+export const ApprovalBlocked: Story = {
+  args: { ...filter, state: 'pending', approveBlocked: 'This list cannot filter by Unit, so these filters cannot be applied here.' },
+};
+
+/** The same hold at a step-up: Confirm it's you is held too. */
+export const ApprovalBlockedAtStepUp: Story = {
+  args: { ...share, state: 'stepup', approveBlocked: 'Sharing with the whole company is turned off for this artifact.' },
+};
 export const LongTextPending: Story = { args: { ...edit, state: 'pending' } };
 
 /** On a 390px phone sheet: the subtitle under the title, pairs wrapping, the decision as two blocks. */

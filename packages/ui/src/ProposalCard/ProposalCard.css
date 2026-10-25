@@ -6,3 +6,14 @@
 .crewlet-proposal-card__note {
   color: var(--color-text-secondary);
 }
+
+/* WHY THE PRIMARY IS HELD, on a line of its own above the decision and at
+   its end, in the foot's quiet register, so it wraps rather than pushing the
+   buttons apart. */
+.crewlet-proposal-card__blocked {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+  text-align: end;
+}
