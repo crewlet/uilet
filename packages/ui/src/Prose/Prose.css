@@ -61,7 +61,23 @@
   transition: color var(--motion-duration-slow) var(--motion-easing-default);
 }
 
-.crewlet-prose--streaming::after {
+/*
+ * THE CARET ENDS THE LAST LINE OF TEXT, never a line of its own. On a block
+ * that holds rendered Markdown, the block's own ::after came after its last
+ * paragraph or list, so the caret stood alone on a new line; and on a reply
+ * with no words yet it stood alone at the start. So: no caret on an empty
+ * block, none on the block itself when its children are blocks, and the caret
+ * after the last child instead when that child is a paragraph or a heading,
+ * whose last line it then ends. A list, a table or code last draws none: a
+ * caret after its final row reads as a stray mark, not as the end of a line.
+ */
+.crewlet-prose--streaming:empty::after,
+.crewlet-prose--streaming:has(> :is(p, div, ul, ol, pre, table, blockquote, h1, h2, h3, h4, h5, h6))::after {
+  content: none;
+}
+
+.crewlet-prose--streaming::after,
+.crewlet-prose--streaming > :is(p, h1, h2, h3, h4, h5, h6):last-child::after {
   content: '';
   display: inline-block;
   width: 2px;
@@ -93,7 +109,8 @@
     transition: none;
   }
 
-  .crewlet-prose--streaming::after {
+  .crewlet-prose--streaming::after,
+  .crewlet-prose--streaming > :is(p, h1, h2, h3, h4, h5, h6):last-child::after {
     animation: none;
   }
 }

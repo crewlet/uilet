@@ -8,8 +8,11 @@ export interface ProseProps extends HTMLAttributes<HTMLElement> {
   as?: ElementType | undefined;
   tone?: ProseTone | undefined;
   /**
-   * The text is still arriving. It draws a caret after the last character, and
-   * the caret holds still under a reduced-motion preference.
+   * The text is still arriving. It draws a caret at the end of the last line
+   * of text (after the last paragraph or heading of rendered Markdown, and
+   * none on an empty block), and the caret holds still under a reduced-motion
+   * preference. A chat answer draws `ThinkingIndicator` after its prose
+   * instead, which never sits inside the words.
    */
   streaming?: boolean | undefined;
   /**
