@@ -1,24 +1,59 @@
-import { forwardRef, type KeyboardEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useId, type KeyboardEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { Kbd } from '../Kbd/index.js';
 import { Textarea } from '../Input/index.js';
+import { isComposing } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /** The share of `maxLength` at which the counter appears. */
 export const COMPOSER_COUNTER_AT = 0.8;
+
+/**
+ * Which key sends. `mod-enter` (Command+Enter, Control+Enter elsewhere) is for
+ * a brief or a reply that is often several lines, where Enter writes a line;
+ * `enter` is for a question, which is one line far more often than not, as
+ * every chat surface sends it: Enter sends and Shift+Enter writes a line.
+ */
+export type ComposerSubmitKey = 'mod-enter' | 'enter';
 
 export interface ComposerProps
   extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange' | 'onSubmit' | 'children'> {
   value: string;
   onChange: (value: string) => void;
   /**
-   * Called on Command+Enter (Control+Enter elsewhere). With it, the footer
-   * carries the shortcut's hint.
+   * Called on the send key (`submitOn`). Never while the composer is
+   * disabled, and never on an Enter that ends an input method's composition.
    */
   onSubmit?: (() => void) | undefined;
+  /** Which key sends. `mod-enter` by default; see `ComposerSubmitKey`. */
+  submitOn?: ComposerSubmitKey | undefined;
   /** Names the field for a screen reader, since it carries no visible label. */
   label: string;
   /** The footer's controls, at its end: Cancel and Submit. */
   actions?: ReactNode;
+  /**
+   * A control on the field's own row, at its end: the send button of a chat
+   * composer (`SendButton`). With one, the field starts at one line and grows
+   * to six before it scrolls, and the control stays on the last line.
+   */
+  trailing?: ReactNode;
+  /**
+   * What travels with the message, drawn above the field inside the
+   * composer's edge: a row of `Tag`s, such as the page a question is asked
+   * about. It is a group named by `attachmentsLabel`, before the field in
+   * reading order, so a reader meets what is attached before what they type.
+   */
+  attachments?: ReactNode;
+  /** Names the attachments group. "Attached to this message" by default. */
+  attachmentsLabel?: string | undefined;
+  /**
+   * The composer cannot send right now, and why, in a few words ("Offline",
+   * "You can ask again in 30 seconds"). The whole composer takes the disabled
+   * field's look, the reason stands as the placeholder (so it keeps one line)
+   * and describes the field, and a draft already in it stays. Implies
+   * `disabled`.
+   */
+  disabledReason?: string | undefined;
   className?: string | undefined;
 }
 
@@ -30,42 +65,94 @@ export interface ComposerProps
  * THE FOOTER IS DRAWN ONLY WITH SOMETHING IN IT. With no shortcut, counter or
  * actions there is no strip at all, and one holding only the shortcut's hint
  * goes on a phone, where the hint is not drawn, rather than stand there empty.
+ * A composer that sends on Enter draws no hint: Enter is what every chat field
+ * already does, and the send button beside the field says the rest.
  *
  * THE COUNTER IS DRAWN ONLY NEAR THE LIMIT, from [COMPOSER_COUNTER_AT] of
  * `maxLength`: a count under every short reply is noise, and a field that
  * stops taking text with no warning reads as a broken keyboard.
+ *
+ * THE BOX OWNS THE ONE FOCUS RING, by pointer and by keyboard; the field
+ * inside never draws its own, so a click in the field never shows two rings.
  */
 export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function Composer(
-  { value, onChange, onSubmit, label, actions, maxLength, className, rows = 3, onKeyDown, ...rest },
+  {
+    value,
+    onChange,
+    onSubmit,
+    submitOn = 'mod-enter',
+    label,
+    actions,
+    trailing,
+    attachments,
+    attachmentsLabel = 'Attached to this message',
+    disabledReason,
+    disabled: disabledProp,
+    placeholder,
+    maxLength,
+    className,
+    rows,
+    onKeyDown,
+    'aria-describedby': describedBy,
+    ...rest
+  },
   ref,
 ) {
+  const reasonId = useId();
+  const disabled = Boolean(disabledProp) || disabledReason !== undefined;
+  const inline = present(trailing);
   const near = maxLength !== undefined && value.length >= maxLength * COMPOSER_COUNTER_AT;
-  const hasActions = actions !== undefined && actions !== null && actions !== false;
+  const hasActions = present(actions);
+  const hint = onSubmit !== undefined && submitOn === 'mod-enter';
+
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     onKeyDown?.(event);
-    if (event.defaultPrevented || !onSubmit) return;
-    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-      event.preventDefault();
-      onSubmit();
-    }
+    if (event.defaultPrevented || !onSubmit || disabled || event.key !== 'Enter') return;
+    // An input method's Enter picks a word; it never sends what is half typed.
+    if (isComposing(event)) return;
+    const mod = event.metaKey || event.ctrlKey;
+    const sends = submitOn === 'enter' ? !event.shiftKey || mod : mod;
+    if (!sends) return;
+    event.preventDefault();
+    onSubmit();
   };
+
   return (
-    <div className={cx('crewlet-composer', className)}>
-      <Textarea
-        ref={ref}
-        className="crewlet-composer__field"
-        aria-label={label}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={keyDown}
-        maxLength={maxLength}
-        rows={rows}
-        autoResize
-        {...rest}
-      />
-      {onSubmit || near || hasActions ? (
+    <div
+      className={cx(
+        'crewlet-composer',
+        inline && 'crewlet-composer--inline',
+        disabled && 'is-disabled',
+        className,
+      )}
+    >
+      {present(attachments) ? (
+        <div role="group" aria-label={attachmentsLabel} className="crewlet-composer__attachments">
+          {attachments}
+        </div>
+      ) : null}
+      <div className="crewlet-composer__row">
+        <Textarea
+          ref={ref}
+          className="crewlet-composer__field"
+          aria-label={label}
+          aria-describedby={disabledReason === undefined ? describedBy : cx(describedBy, reasonId)}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={keyDown}
+          maxLength={maxLength}
+          rows={rows ?? (inline ? 1 : 3)}
+          disabled={disabled}
+          placeholder={disabledReason ?? placeholder}
+          autoResize
+          {...rest}
+        />
+        {inline ? <div className="crewlet-composer__trailing">{trailing}</div> : null}
+      </div>
+      {disabledReason === undefined ? null : <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden>}
+      {hint || near || hasActions ? (
         <div className="crewlet-composer__footer" data-hint-only={(!near && !hasActions) || undefined}>
-          {onSubmit ? (
+          {hint ? (
             <span className="crewlet-composer__hint">
               <Kbd keys={['Mod', 'Enter']} subtle /> to send
             </span>
@@ -82,3 +169,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     </div>
   );
 });
+
+function present(node: ReactNode): boolean {
+  return node !== undefined && node !== null && node !== false;
+}
