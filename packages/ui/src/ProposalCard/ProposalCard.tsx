@@ -1,0 +1,295 @@
+import type { HTMLAttributes, ReactNode } from 'react';
+import { BanGlyph, CircleAlertGlyph, CircleCheckGlyph, ClockGlyph, LockGlyph, RefreshCwGlyph } from '@crewlethq/icons/glyphs';
+import { Button } from '../Button/index.js';
+import { ChangeList, type ChangeListLabels, type ChangeListRow } from '../ChangeList/index.js';
+import type { DiffListLabels } from '../DiffList/index.js';
+import { ReceiptStrip, RefusalStrip } from '../ReceiptStrip/index.js';
+import { Spinner } from '../Spinner/index.js';
+import { StatusCard, type StatusCardStatus } from '../StatusCard/index.js';
+import { cx } from '../utils/cx.js';
+
+/**
+ * Where a proposed change stands: `pending` (waiting on the person),
+ * `stepup` (the approval needs a fresh sign-in), `applying` (approved and
+ * being carried out), `applied`, `declined`, `expired`, `stale` (what it
+ * would change moved after it was prepared) and `failed` (refused or not
+ * carried out when approved).
+ */
+export type ProposalState = 'pending' | 'stepup' | 'applying' | 'applied' | 'declined' | 'expired' | 'stale' | 'failed';
+
+export const PROPOSAL_STATES = [
+  'pending',
+  'stepup',
+  'applying',
+  'applied',
+  'declined',
+  'expired',
+  'stale',
+  'failed',
+] as const satisfies readonly ProposalState[];
+
+/**
+ * Where the change lands: on the page the person is looking at (a filter on
+ * a list), which is applied, or in the company's records, which is saved.
+ * It decides the words of the busy and done states: "Applying" and "Applied",
+ * or "Saving" and "Saved".
+ */
+export type ProposalScope = 'page' | 'server';
+
+/** What the change does to a record: change fields of one, or create one. */
+export type ProposalKind = 'change' | 'create';
+
+export interface ProposalCardLabels {
+  needsApproval: string;
+  needsSignIn: string;
+  applying: string;
+  saving: string;
+  applied: string;
+  saved: string;
+  declined: string;
+  expired: string;
+  stale: string;
+  notApplied: string;
+  decline: string;
+  confirmIdentity: string;
+  prepareAgain: string;
+  tryAgain: string;
+  whatWillChange: string;
+  whatWillBeCreated: string;
+  whatChanged: string;
+  whatWasCreated: string;
+  whatWasProposed: string;
+  stepUpNotice: string;
+  declinedNotice: string;
+  expiredNotice: string;
+  staleNotice: string;
+  nothingChanged: string;
+  /** Why Decline is held while the approved change is carried out. */
+  busy: string;
+}
+
+export const PROPOSAL_CARD_LABELS: ProposalCardLabels = {
+  needsApproval: 'Needs your approval',
+  needsSignIn: 'Needs sign-in',
+  applying: 'Applying',
+  saving: 'Saving',
+  applied: 'Applied',
+  saved: 'Saved',
+  declined: 'Declined',
+  expired: 'Expired',
+  stale: 'Needs a fresh look',
+  notApplied: 'Not applied',
+  decline: 'Decline',
+  confirmIdentity: 'Confirm it’s you',
+  prepareAgain: 'Prepare it again',
+  tryAgain: 'Try again',
+  whatWillChange: 'What will change',
+  whatWillBeCreated: 'What will be created',
+  whatChanged: 'What changed',
+  whatWasCreated: 'What was created',
+  whatWasProposed: 'What was proposed',
+  stepUpNotice: 'This approval asks you to sign in again. Nothing changed yet.',
+  declinedNotice: 'You declined this. Nothing changed.',
+  expiredNotice: 'This proposal expired. Nothing changed.',
+  staleNotice: 'What this would change moved after it was prepared, so it was not applied. Nothing changed.',
+  nothingChanged: 'Nothing changed.',
+  busy: 'The approved change is being carried out',
+};
+
+export interface ProposalCardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
+  /** The action itself, in sentence case: "Filter this list", "Create task", "Share artifact". */
+  title: string;
+  /** Where the change applies, as the card's subtitle: "This list only", "Saved for the company". */
+  subtitle?: ReactNode;
+  state: ProposalState;
+  /** `server` (the default) or `page`; see `ProposalScope`. */
+  scope?: ProposalScope | undefined;
+  /** `change` (the default) or `create`, which heads the list "What will be created". */
+  kind?: ProposalKind | undefined;
+  /** What the change does, in one sentence, above the list. */
+  summary?: ReactNode;
+  /** The change, field by field (`ChangeList`). The scope is the subtitle, never a row. */
+  changes: readonly ChangeListRow[];
+  /** Replaces the list's heading, which otherwise follows `kind` and `state`. */
+  changesHeading?: ReactNode;
+  /** The consequence, in one sentence, under the list. */
+  note?: ReactNode;
+  /** The primary action, named for its effect: "Apply to this list", "Create task". Never a bare "OK". */
+  approveLabel: string;
+  /**
+   * Called by the primary action. In `stepup` the primary is "Confirm it's
+   * you" and calls this too: the host opens its sign-in check and approves
+   * again with the fresh session.
+   */
+  onApprove: () => void;
+  onDecline: () => void;
+  /** Offers "Prepare it again" on an expired or stale card. */
+  onPrepareAgain?: (() => void) | undefined;
+  /** Offers "Try again" on a failed card, where the refusal's class may succeed on a retry. */
+  onRetry?: (() => void) | undefined;
+  /** What was done, for an applied card: "Created ENG-156 · assigned to Agent SWE". */
+  receipt?: ReactNode;
+  /** Why it was not applied, for a failed card, in the engine's own sentence. "Nothing changed." follows it. */
+  failure?: ReactNode;
+  /** Replaces the default sentence of a step-up, declined, expired or stale card. */
+  notice?: ReactNode;
+  labels?: Partial<ProposalCardLabels> | undefined;
+  /** Words for the change list. */
+  changeLabels?: Partial<ChangeListLabels> | undefined;
+  /** Words for the `DiffList` behind "Show the whole change". */
+  diffLabels?: Partial<DiffListLabels> | undefined;
+}
+
+const SETTLED: ReadonlySet<ProposalState> = new Set(['applied', 'declined', 'expired', 'stale', 'failed']);
+
+function statusOf(state: ProposalState, scope: ProposalScope, labels: ProposalCardLabels): StatusCardStatus {
+  switch (state) {
+    case 'pending':
+      return { label: labels.needsApproval, tone: 'warning', icon: <ClockGlyph size="xs" /> };
+    case 'stepup':
+      return { label: labels.needsSignIn, tone: 'warning', icon: <LockGlyph size="xs" /> };
+    case 'applying':
+      return { label: scope === 'page' ? labels.applying : labels.saving, tone: 'neutral', icon: <Spinner size="xs" /> };
+    case 'applied':
+      return { label: scope === 'page' ? labels.applied : labels.saved, tone: 'success', icon: <CircleCheckGlyph size="xs" /> };
+    case 'declined':
+      return { label: labels.declined, tone: 'neutral', icon: <BanGlyph size="xs" /> };
+    case 'expired':
+      return { label: labels.expired, tone: 'neutral', icon: <ClockGlyph size="xs" /> };
+    case 'stale':
+      return { label: labels.stale, tone: 'neutral', icon: <ClockGlyph size="xs" /> };
+    case 'failed':
+      return { label: labels.notApplied, tone: 'danger', icon: <CircleAlertGlyph size="xs" /> };
+  }
+}
+
+function headingOf(state: ProposalState, kind: ProposalKind, labels: ProposalCardLabels): string {
+  if (state === 'applied') return kind === 'create' ? labels.whatWasCreated : labels.whatChanged;
+  if (SETTLED.has(state)) return labels.whatWasProposed;
+  return kind === 'create' ? labels.whatWillBeCreated : labels.whatWillChange;
+}
+
+/**
+ * A change prepared for the person to approve, and what became of it: one
+ * card from the moment it is proposed until it is applied, declined, expires
+ * or is refused.
+ *
+ * THE HEAD IS THE ACTION, THE TAG IS THE STATE. "Create task" with "Needs
+ * your approval", then "Saving", then "Saved". The body is a summary, the
+ * change as before and after pairs (`ChangeList`) and a one-sentence
+ * consequence; the foot is the decision, or a strip that says what happened.
+ *
+ * APPROVAL IS ALWAYS AN EXPLICIT PRESS. Nothing here takes focus when the
+ * card arrives and Enter in a composer never reaches it, so a person typing
+ * cannot approve by accident. While the approved change is carried out the
+ * primary keeps its label with the spinner in its leading slot (a button whose
+ * text becomes "Saving" has stopped saying what it does), soft disabled so
+ * focus stays on it, and Decline is held with its reason.
+ *
+ * SETTLED, THE BODY STEPS BACK. Applied, declined, expired, stale and failed
+ * cards draw their body in the secondary ink so the strip reads first, and
+ * the before and after pairs stay, so the record of what changed is there.
+ *
+ * Every sentence a refusal shows is the caller's (the engine's), never the
+ * card's own words about why.
+ */
+export function ProposalCard({
+  title,
+  subtitle,
+  state,
+  scope = 'server',
+  kind = 'change',
+  summary,
+  changes,
+  changesHeading,
+  note,
+  approveLabel,
+  onApprove,
+  onDecline,
+  onPrepareAgain,
+  onRetry,
+  receipt,
+  failure,
+  notice,
+  labels: overrides,
+  changeLabels,
+  diffLabels,
+  className,
+  ...rest
+}: ProposalCardProps) {
+  const labels = overrides ? { ...PROPOSAL_CARD_LABELS, ...overrides } : PROPOSAL_CARD_LABELS;
+  const settled = SETTLED.has(state);
+
+  const decision =
+    state === 'pending' || state === 'stepup' || state === 'applying' ? (
+      <>
+        <Button
+          variant="secondary"
+          onClick={onDecline}
+          disabledReason={state === 'applying' ? labels.busy : undefined}
+        >
+          {labels.decline}
+        </Button>
+        <Button variant="primary" loading={state === 'applying'} onClick={onApprove}>
+          {state === 'stepup' ? labels.confirmIdentity : approveLabel}
+        </Button>
+      </>
+    ) : undefined;
+
+  const again =
+    (state === 'expired' || state === 'stale') && onPrepareAgain ? (
+      <Button variant="secondary" size="small" leadingIcon={<RefreshCwGlyph />} onClick={onPrepareAgain}>
+        {labels.prepareAgain}
+      </Button>
+    ) : undefined;
+
+  const strip =
+    state === 'stepup' ? (
+      <ReceiptStrip tone="neutral" icon={<LockGlyph size="md" />}>
+        {notice ?? labels.stepUpNotice}
+      </ReceiptStrip>
+    ) : state === 'applied' && receipt !== undefined ? (
+      <ReceiptStrip tone="success">{receipt}</ReceiptStrip>
+    ) : state === 'declined' ? (
+      <ReceiptStrip tone="neutral" icon={<BanGlyph size="md" />}>
+        {notice ?? labels.declinedNotice}
+      </ReceiptStrip>
+    ) : state === 'expired' ? (
+      <ReceiptStrip tone="neutral" icon={<ClockGlyph size="md" />}>
+        {notice ?? labels.expiredNotice}
+      </ReceiptStrip>
+    ) : state === 'stale' ? (
+      <ReceiptStrip tone="neutral" icon={<ClockGlyph size="md" />}>
+        {notice ?? labels.staleNotice}
+      </ReceiptStrip>
+    ) : state === 'failed' ? (
+      <RefusalStrip placement="foot" onRetry={onRetry} labels={{ retry: labels.tryAgain }}>
+        {failure === undefined ? labels.nothingChanged : <>{failure} {labels.nothingChanged}</>}
+      </RefusalStrip>
+    ) : undefined;
+
+  return (
+    <StatusCard
+      {...rest}
+      title={title}
+      subtitle={subtitle}
+      status={statusOf(state, scope, labels)}
+      settled={settled}
+      strip={strip}
+      actions={decision ?? again}
+      actionsAlign={decision ? 'end' : 'start'}
+      className={cx('crewlet-proposal-card', `crewlet-proposal-card--${state}`, className)}
+      data-state={state}
+    >
+      {summary === undefined || summary === null ? null : <p className="crewlet-proposal-card__summary">{summary}</p>}
+      <ChangeList
+        rows={changes}
+        heading={changesHeading ?? headingOf(state, kind, labels)}
+        settled={settled}
+        labels={changeLabels}
+        diffLabels={diffLabels}
+      />
+      {note === undefined || note === null ? null : <p className="crewlet-proposal-card__note">{note}</p>}
+    </StatusCard>
+  );
+}
