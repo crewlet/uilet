@@ -82,3 +82,24 @@ export const LongWords: Story = {
   },
   decorators: [(Story) => <div style={{ maxWidth: 640 }}>{Story()}</div>],
 };
+
+/**
+ * LONG TITLES in a 358px assistant panel: the first column wraps a long name
+ * between words, so the whole of it is read, and the status and the
+ * assignee beside it keep their line where there is room.
+ */
+export const LongTitles: Story = {
+  args: {
+    title: 'Tasks',
+    window: 'Open in FairSplit',
+    headers: ['Title', 'Status', 'Assignee'],
+    rows: [
+      ['Write the MVP plan and the first sprint for FairSplit', 'To do', 'pm'],
+      ['Record an expense with an even split, exact to the cent', 'To do', 'engineer'],
+      ['Support a second currency on a shared group', 'To do', 'engineer'],
+      ['Settle-up algorithm for uneven splits', 'In progress', 'engineer'],
+      ['Daily stand-up', 'To do', 'pm'],
+    ],
+  },
+  decorators: [(Story) => <div style={{ maxWidth: 358 }}>{Story()}</div>],
+};

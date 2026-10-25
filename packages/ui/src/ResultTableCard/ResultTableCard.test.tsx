@@ -55,8 +55,40 @@ test('a text cell breaks between words, never inside one, and a figure never wra
     expect(getComputedStyle(role!).overflowWrap).toBe('break-word');
     expect(getComputedStyle(tokens!).whiteSpace).toBe('nowrap');
     expect(getComputedStyle(date!).whiteSpace).toBe('nowrap');
-    // The first column still ends a long name in an ellipsis on one line.
-    expect(getComputedStyle(first!).whiteSpace).toBe('nowrap');
+    // The first column's name breaks between words as the role does.
+    expect(getComputedStyle(first!).overflowWrap).toBe('break-word');
+  } finally {
+    uninstall();
+  }
+});
+
+test('the first column wraps a long name between words rather than cutting it', () => {
+  // A name cut with an ellipsis could not be read in full: a result's row is
+  // not a link and its cell has no title. In a 358px panel "Write the MVP
+  // plan" read "Write the MVP ...".
+  const uninstall = installSheets('Table/Table.css', 'ResultTableCard/ResultTableCard.css');
+  try {
+    const { container } = render(
+      <ResultTableCard
+        title="Tasks"
+        headers={['Title', 'Status', 'Assignee', 'Due']}
+        rows={[['Write the MVP plan and the first sprint for FairSplit', 'To do', 'pm', 'Oct 31, 2026']]}
+        align={['start', 'start', 'start', 'end']}
+      />,
+    );
+    const [name, status, , due] = [...container.querySelectorAll<HTMLElement>('tbody tr:first-child > *')];
+    const style = getComputedStyle(name!);
+    expect(style.whiteSpace).not.toBe('nowrap');
+    expect(style.textOverflow).not.toBe('ellipsis');
+    expect(style.overflow).not.toBe('hidden');
+    expect(style.overflowWrap).toBe('break-word');
+    // No width of its own, so the auto layout shares the room by content and
+    // the columns beside it are not squeezed to their longest word.
+    expect(style.width).toBe('auto');
+    expect(style.maxWidth).not.toBe('0px');
+    expect(getComputedStyle(status!).whiteSpace).not.toBe('nowrap');
+    // A date stays on one line.
+    expect(getComputedStyle(due!).whiteSpace).toBe('nowrap');
   } finally {
     uninstall();
   }

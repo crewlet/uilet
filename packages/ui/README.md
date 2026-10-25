@@ -205,6 +205,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.57.2
+
+**`ResultTableCard`'s first column wraps rather than cutting a long name.** It ended a long name in an ellipsis on one line, and a result's row is not a link and its cell has no title, so in a 358px assistant panel "Write the MVP plan and the first sprint" read "Write the MVP ..." with no way to read the rest. The first column now wraps between words like every other text cell and takes no width of its own, so the automatic layout shares the room by content: the name takes the most, and a short column beside it keeps its line where there is room. Figures and dates (`end` columns) still stay on one line. A host that gave the cell its own tooltip because the name was cut can drop it.
+
 ## Changes in 0.57.1
 
 **`ResultTableCard` keeps words whole.** Its text cells inherited Table's `overflow-wrap: anywhere`, which under the card's automatic layout let a column shrink to one letter, so "Product Manager" wrapped letter by letter beside columns with room to spare. Its cells now break between words (`overflow-wrap: break-word`); figures and dates (`end` columns) stay on one line, and the first column still ends a long name in an ellipsis.
