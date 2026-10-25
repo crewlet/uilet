@@ -65,9 +65,10 @@ export interface SetupWizardProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   /** What stands at the start of the footer row, apart from the step's actions: Exit. */
   footerStart?: ReactNode;
   /**
-   * The content takes the whole width beside the rail rather than one 640px
-   * column, for a step that lays out columns of its own (a review of every
-   * step beside a preview). Meant for a step with no `aside`.
+   * The content takes the content's and the aside's columns together (1000px
+   * at most) rather than one 640px column, for a step that lays out columns
+   * of its own (a review of every step beside a preview). Its footer ends
+   * where every other step's does. Meant for a step with no `aside`.
    */
   wide?: boolean | undefined;
   labels?: Partial<SetupWizardLabels> | undefined;
@@ -88,17 +89,22 @@ const PHONE = `(width < ${breakpoint.phone})`;
  * most 640px. The aside is a complementary landmark named by `asideLabel`,
  * held in view beside the content. The footer holds the step's actions at the
  * end of its row (and `footerStart`, the way out, at its start) at the bottom
- * of the view, above the device's safe area. A step that lays out columns of
- * its own takes the whole width beside the rail with `wide`.
+ * of the view, above the device's safe area, and at the end of a scroll rests
+ * on the scroller's bottom edge rather than above the shell's room under the
+ * content (`--crewlet-app-shell-content-end`). A step that lays out columns
+ * of its own takes the content's and the aside's columns with `wide`.
  *
  * THREE SHAPES. On a wide page the rail, the content and the aside stand side
- * by side (240px, the content, 320px). Where the wizard has under 70rem of its
- * own width, which is a 1024px window beside the application's rail, the aside
- * moves under the content and the rail stays: a container query, because the
- * room is the page's and not the window's, as in `AsideLayout`. Under the
+ * by side (240px, the content up to 640px, 320px), the aside right beside the
+ * content however wide the window, and the header and the footer ending where
+ * the parts do. Where the wizard has under 70rem of its own width, which is a
+ * 1024px window beside the application's rail, the aside moves under the
+ * content and the rail stays: a container query, because the room is the
+ * page's and not the window's, as in `AsideLayout`. Under the
  * phone breakpoint the rail becomes a row of steps above the content, under a
- * line that says "Step 3 of 6 · Colours", and the aside folds into a
- * disclosure, so the fields come first. Which element a phone draws is decided
+ * line that says "Step 3 of 6 · Colours", the aside folds into a
+ * disclosure, so the fields come first, and the footer's actions share two
+ * rows with the last of them, the primary, the whole width. Which element a phone draws is decided
  * in `useMediaMatch`, the one subscription for that question; how it is laid
  * out is decided in the stylesheet, at the same breakpoint token.
  *

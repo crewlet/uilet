@@ -191,15 +191,35 @@ describe('the three shapes', () => {
     uninstall = installAtWidth(1024, 'light', 'SetupWizard/SetupWizard.css');
     const { container } = render(<Wizard />);
     const frame = getComputedStyle(container.querySelector('.crewlet-setup-wizard__frame')!);
-    expect(frame.gridTemplateColumns).toBe('240px minmax(0, 1fr)');
+    // The content's track is its column, never the window: 640px at the most.
+    expect(frame.gridTemplateColumns).toBe('240px minmax(0, 640px)');
     expect(frame.gridTemplateAreas.replace(/\s+/g, ' ')).toBe(`'head head' 'rail content' 'rail aside' 'foot foot'`);
     expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__rail')!).position).toBe('sticky');
-    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__content')!).maxWidth).toBe('640px');
     // The room is the page's, not the window's: a container query on its own width.
     expect(/\.crewlet-setup-wizard \{([^}]*)\}/.exec(css)?.[1]).toMatch(/container-type:\s*inline-size;/);
-    const wide = /@container \(min-width: 70rem\) \{\s*\.crewlet-setup-wizard__frame \{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(wide).toMatch(/grid-template-columns:\s*240px minmax\(0, 1fr\) 320px;/);
+    const wide =
+      /@container \(min-width: 70rem\) \{\s*\.crewlet-setup-wizard \.crewlet-setup-wizard__frame \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    // Every track has a measure, so the aside stands beside the content however wide the window.
+    expect(wide.replace(/\s+/g, ' ')).toMatch(
+      /grid-template-columns: var\(--crewlet-setup-wizard-rail\) minmax\(0, var\(--crewlet-setup-wizard-column\)\) var\(--crewlet-setup-wizard-aside\);/,
+    );
+    expect(wide).not.toMatch(/1fr\)/);
     expect(wide).toMatch(/'rail content aside'/);
+  });
+
+  test('with no aside there is no row held for one, so no second gap stands above the footer', () => {
+    uninstall = installAtWidth(1024, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard aside={undefined} asideLabel={undefined} />);
+    const frame = getComputedStyle(container.querySelector('.crewlet-setup-wizard__frame')!);
+    expect(frame.gridTemplateAreas.replace(/\s+/g, ' ')).toBe(`'head head' 'rail content' 'foot foot'`);
+    expect(frame.gridTemplateRows).toBe('auto 1fr auto');
+    cleanup();
+    uninstall();
+    uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
+    asPhone();
+    const phone = render(<Wizard aside={undefined} asideLabel={undefined} />);
+    const narrow = getComputedStyle(phone.container.querySelector('.crewlet-setup-wizard__frame')!);
+    expect(narrow.gridTemplateAreas.replace(/\s+/g, ' ')).toBe(`'head' 'rail' 'content' 'foot'`);
   });
 
   test('one column on a phone, the rail scrolling with the page', () => {
@@ -222,6 +242,23 @@ describe('the three shapes', () => {
     }
     expect(/\.crewlet-setup-wizard__footer \{([^}]*)\}/.exec(css)?.[1]).toMatch(/env\(safe-area-inset-bottom/);
   });
+
+  test('the footer takes back the shell’s room under the content, so it ends the screen', () => {
+    // The shell keeps its end room in one custom property and pads the content with it.
+    const shell = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../AppShell/AppShell.css'), 'utf8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const content = /\.crewlet-app-shell__content \{([^}]*)\}/.exec(shell)?.[1] ?? '';
+    expect(content).toMatch(/--crewlet-app-shell-content-end:\s*var\(--spacing-10\);/);
+    expect(content).toMatch(/padding-bottom:\s*var\(--crewlet-app-shell-content-end\);/);
+    // The footer gives exactly that room back, and nothing outside a shell.
+    const footer = /\.crewlet-setup-wizard__footer \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(footer).toMatch(/margin-bottom:\s*calc\(-1 \* var\(--crewlet-app-shell-content-end, 0px\)\);/);
+    uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard />);
+    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__footer')!).marginBottom).toMatch(/^(0px|calc\(-1 \* 0px\))$/);
+  });
 });
 
 describe('the footer and a wide step', () => {
@@ -239,6 +276,39 @@ describe('the footer and a wide step', () => {
     expect([...footer.querySelectorAll('button')].map((button) => button.textContent)).toEqual(['Exit', 'Back', 'Continue']);
   });
 
+  test('on a phone the actions share two rows, the primary the whole width on the last', () => {
+    uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
+    asPhone();
+    const { container } = render(
+      <Wizard
+        actions={undefined}
+        footerStart={<button type="button">Exit</button>}
+        footer={
+          <>
+            <button type="button">Back</button>
+            <button type="button">Save as draft</button>
+            <button type="button">Adopt</button>
+          </>
+        }
+      />,
+    );
+    const footer = container.querySelector('.crewlet-setup-wizard__footer')!;
+    expect(getComputedStyle(footer).flexWrap).toBe('wrap');
+    for (const group of footer.children) expect(getComputedStyle(group).display).toBe('contents');
+    const [back, save, adopt] = [...footer.querySelectorAll('.crewlet-setup-wizard__footer-end > button')];
+    expect(getComputedStyle(back!).marginInlineStart).toBe('auto');
+    expect(getComputedStyle(save!).flex).not.toMatch(/100%/);
+    expect(getComputedStyle(adopt!).flexBasis).toBe('100%');
+    // Wide, each group keeps its own row of buttons.
+    cleanup();
+    uninstall();
+    vi.restoreAllMocks();
+    uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
+    const wide = render(<Wizard actions={undefined} footerStart={<button type="button">Exit</button>} />);
+    const end = wide.container.querySelector('.crewlet-setup-wizard__footer-end')!;
+    expect(getComputedStyle(end).display).toBe('flex');
+  });
+
   test('without footerStart the actions still stand at the end', () => {
     uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
     const { container } = render(<Wizard />);
@@ -247,21 +317,28 @@ describe('the footer and a wide step', () => {
     expect(getComputedStyle(footer.firstElementChild!).marginInlineStart).toBe('auto');
   });
 
-  test('a wide step takes the whole width beside the rail, and no aside holds no column', () => {
+  test('a wide step takes the content’s and the aside’s columns together, and no aside holds no column', () => {
     uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
     const { container } = render(<Wizard wide aside={undefined} asideLabel={undefined} />);
     const root = container.querySelector('.crewlet-setup-wizard')!;
     expect(root.classList.contains('crewlet-setup-wizard--wide')).toBe(true);
     expect(root.classList.contains('crewlet-setup-wizard--no-aside')).toBe(true);
-    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__content')!).maxWidth).toBe('none');
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SetupWizard.css'), 'utf8').replace(
       /\/\*[\s\S]*?\*\//g,
       '',
     );
+    // The wide measure is the column, the gap and the aside: its footer ends where every step's does.
+    const own = /\.crewlet-setup-wizard \{([^}]*)\}/.exec(css)?.[1]?.replace(/\s+/g, ' ') ?? '';
+    expect(own).toMatch(
+      /--crewlet-setup-wizard-wide: calc\( var\(--crewlet-setup-wizard-column\) \+ var\(--crewlet-setup-wizard-gap\) \+ var\(--crewlet-setup-wizard-aside\) \);/,
+    );
+    const inQuery = /@container \(min-width: 70rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+    const noAside = /\.crewlet-setup-wizard--no-aside \.crewlet-setup-wizard__frame \{([^}]*)\}/.exec(inQuery)?.[1] ?? '';
+    expect(noAside).toMatch(/grid-template-columns:\s*var\(--crewlet-setup-wizard-rail\) minmax\(0, var\(--crewlet-setup-wizard-column\)\);/);
+    expect(noAside).not.toMatch(/aside/);
     const wideNoAside =
-      /@container \(min-width: 70rem\) \{[\s\S]*?\.crewlet-setup-wizard--no-aside \.crewlet-setup-wizard__frame \{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(wideNoAside).toMatch(/grid-template-columns:\s*240px minmax\(0, 1fr\);/);
-    expect(wideNoAside).not.toMatch(/aside/);
+      /\.crewlet-setup-wizard--wide\.crewlet-setup-wizard--no-aside \.crewlet-setup-wizard__frame \{([^}]*)\}/.exec(inQuery)?.[1] ?? '';
+    expect(wideNoAside).toMatch(/grid-template-columns:\s*var\(--crewlet-setup-wizard-rail\) minmax\(0, var\(--crewlet-setup-wizard-wide\)\);/);
   });
 });
 

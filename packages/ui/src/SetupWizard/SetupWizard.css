@@ -7,25 +7,56 @@
  * from 70rem of the wizard's own width, the aside (320px). Under 70rem the
  * aside takes the row under the content and the rail runs down beside both.
  * Under the phone breakpoint every part is one column, in reading order.
+ *
+ * THE TRACKS ARE THE MEASURE, NOT THE WINDOW. The content's track is at most
+ * its column, so on a window wider than the parts the aside stands right
+ * beside the content and the header and the footer end where the parts do.
+ * A track of 1fr with the content held to 640px inside it left the preview
+ * stranded at the window's far edge with a void between, and Continue a
+ * window's width from the fields it continues. A wide step (`wide`) takes
+ * the content and the aside's columns together, so its footer ends where
+ * every other step's does.
  */
 
 .crewlet-setup-wizard {
+  --crewlet-setup-wizard-rail: 240px;
+  --crewlet-setup-wizard-column: 640px;
+  --crewlet-setup-wizard-aside: 320px;
+  --crewlet-setup-wizard-gap: var(--spacing-8);
+  --crewlet-setup-wizard-wide: calc(
+    var(--crewlet-setup-wizard-column) + var(--crewlet-setup-wizard-gap) + var(--crewlet-setup-wizard-aside)
+  );
+
   container-type: inline-size;
   min-width: 0;
 }
 
 .crewlet-setup-wizard__frame {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: var(--crewlet-setup-wizard-rail) minmax(0, var(--crewlet-setup-wizard-column));
   grid-template-areas:
     'head head'
     'rail content'
     'rail aside'
     'foot foot';
   grid-template-rows: auto auto 1fr auto;
-  column-gap: var(--spacing-8);
+  column-gap: var(--crewlet-setup-wizard-gap);
   row-gap: var(--spacing-6);
   min-width: 0;
+}
+
+/* With no aside there is no row for one, and no second gap above the footer. */
+.crewlet-setup-wizard--no-aside .crewlet-setup-wizard__frame {
+  grid-template-areas:
+    'head head'
+    'rail content'
+    'foot foot';
+  grid-template-rows: auto 1fr auto;
+}
+
+/* A WIDE STEP lays out columns of its own across the content's and the aside's columns together. */
+.crewlet-setup-wizard--wide .crewlet-setup-wizard__frame {
+  grid-template-columns: var(--crewlet-setup-wizard-rail) minmax(0, var(--crewlet-setup-wizard-wide));
 }
 
 .crewlet-setup-wizard__head {
@@ -59,7 +90,6 @@
   grid-area: content;
   box-sizing: border-box;
   width: 100%;
-  max-width: 640px;
   min-width: 0;
 }
 
@@ -102,7 +132,6 @@
   gap: var(--spacing-4);
   grid-area: aside;
   box-sizing: border-box;
-  max-width: 640px;
   min-width: 0;
   padding-top: var(--spacing-6);
   border-top: 1px solid var(--color-border-default);
@@ -112,6 +141,14 @@
  * THE FOOTER holds the step's actions at the bottom of the view while the
  * content scrolls under it, on the sheet's own ground with a hairline above,
  * and clears the device's safe area where it has one.
+ *
+ * IT ENDS THE SCREEN. Inside an `AppShell` the content column keeps room
+ * under its last line (`--crewlet-app-shell-content-end`, 64px wide), and a
+ * docked bar is that last line: the footer takes the room back, so at the end
+ * of a scroll it rests on the scroller's bottom edge, where it stood while
+ * scrolling, rather than rising 64px with a strip of empty sheet under it.
+ * Outside a shell there is no room to take back and the margin is zero. The
+ * wizard is the screen's last element for the same reason.
  */
 .crewlet-setup-wizard__footer {
   position: sticky;
@@ -122,6 +159,7 @@
   align-items: center;
   gap: var(--spacing-2);
   grid-area: foot;
+  margin-bottom: calc(-1 * var(--crewlet-app-shell-content-end, 0px));
   padding: var(--spacing-3) 0 calc(var(--spacing-3) + env(safe-area-inset-bottom, var(--spacing-0)));
   border-top: 1px solid var(--color-border-default);
   background: var(--color-surface-background);
@@ -140,15 +178,16 @@
   margin-inline-start: auto;
 }
 
-/* A WIDE STEP lays out columns of its own across the whole width beside the rail. */
-.crewlet-setup-wizard--wide .crewlet-setup-wizard__content {
-  max-width: none;
-}
-
-/* BESIDE THE CONTENT, from 70rem of the wizard's own width: the aside holds in view. */
+/*
+ * BESIDE THE CONTENT, from 70rem of the wizard's own width: the aside holds in
+ * view. Written at the specificity of the wide and no-aside rules above, and
+ * after them, so the three shapes are decided by source order alone.
+ */
 @container (min-width: 70rem) {
-  .crewlet-setup-wizard__frame {
-    grid-template-columns: 240px minmax(0, 1fr) 320px;
+  .crewlet-setup-wizard .crewlet-setup-wizard__frame {
+    grid-template-columns:
+      var(--crewlet-setup-wizard-rail) minmax(0, var(--crewlet-setup-wizard-column))
+      var(--crewlet-setup-wizard-aside);
     grid-template-areas:
       'head head head'
       'rail content aside'
@@ -156,13 +195,17 @@
     grid-template-rows: auto 1fr auto;
   }
 
-  /* With no aside, nothing is held for one: the content takes its column too. */
+  /* With no aside, nothing is held for one. */
   .crewlet-setup-wizard--no-aside .crewlet-setup-wizard__frame {
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: var(--crewlet-setup-wizard-rail) minmax(0, var(--crewlet-setup-wizard-column));
     grid-template-areas:
       'head head'
       'rail content'
       'foot foot';
+  }
+
+  .crewlet-setup-wizard--wide.crewlet-setup-wizard--no-aside .crewlet-setup-wizard__frame {
+    grid-template-columns: var(--crewlet-setup-wizard-rail) minmax(0, var(--crewlet-setup-wizard-wide));
   }
 
   .crewlet-setup-wizard__aside {
@@ -180,7 +223,7 @@
  * position line, and scrolls away with the page rather than covering it.
  */
 @media (width < 640px) {
-  .crewlet-setup-wizard__frame {
+  .crewlet-setup-wizard .crewlet-setup-wizard__frame {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       'head'
@@ -190,6 +233,14 @@
       'foot';
     grid-template-rows: auto;
     row-gap: var(--spacing-5);
+  }
+
+  .crewlet-setup-wizard--no-aside .crewlet-setup-wizard__frame {
+    grid-template-areas:
+      'head'
+      'rail'
+      'content'
+      'foot';
   }
 
   .crewlet-setup-wizard__rail {
@@ -207,6 +258,26 @@
   .crewlet-setup-wizard__preview .crewlet-setup-wizard__aside {
     padding-top: 0;
     border-top: 0;
+  }
+
+  /*
+   * THE ACTIONS SHARE TWO ROWS: the way out and the step's other actions on
+   * the first, the step's last action, its primary, the whole width on the
+   * second, under the thumb. The two groups give their buttons to the
+   * footer's own row, so three short buttons no longer take three lines of a
+   * footer held over the content.
+   */
+  .crewlet-setup-wizard__footer-start,
+  .crewlet-setup-wizard__footer-end {
+    display: contents;
+  }
+
+  .crewlet-setup-wizard__footer-end > :first-child {
+    margin-inline-start: auto;
+  }
+
+  .crewlet-setup-wizard__footer-end > :last-child {
+    flex: 1 1 100%;
   }
 }
 

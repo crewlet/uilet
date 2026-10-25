@@ -204,6 +204,18 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.56.0
+
+The setup wizard's review step and footer, laid out for a decision.
+
+**`ReviewList` is new**: a setup's parts reviewed before it is finished, as rows of one bordered box. Each `ReviewList.Item` carries the part's glyph on a tile (`icon`), its name as a heading one level under where the list sits (`title`), its state as a pill (`status`, a `label` and a `tone` of `success`, `neutral`, `warning` or `danger`), the way back to it at the end of the row (`action`), and the values it holds under the name (`children`). What keeps a part from being finished is said under its values as an alert (`error`), once a finish was tried. Rows share the box's hairline, so a tall row of logos never leaves holes beside a one-line name as a grid of cards does; under 28rem of the list's own width the values take the whole row.
+
+**`SetupWizard`'s tracks are its measure, not the window.** The content's track is at most its 640px column, so on a wide window the aside stands right beside the content and the header and the footer end where the parts do, rather than the preview standing at the window's far edge with a void between. A `wide` step takes the content's and the aside's columns together (1000px at most), so its footer ends where every other step's does. A wizard with no `aside` holds no row for one under 70rem, and no second gap above the footer. The tracks are `--crewlet-setup-wizard-rail`, `-column`, `-aside` and `-gap` on the root. What to change: the content no longer carries `max-width: 640px` of its own (the track holds it).
+
+**`SetupWizard`'s footer ends the screen.** Inside an `AppShell` the footer takes back the shell's room under the content, so at the end of a scroll it rests on the scroller's bottom edge, where it stood while scrolling, with no strip of empty sheet under it. The wizard is meant to be the screen's last element. On a phone the actions share two rows: the way out and the step's other actions on the first, and the step's last action (its primary) the whole width on the second.
+
+**`AppShell` names the room under its content**: `--crewlet-app-shell-content-end` (64px, 48px under the shell breakpoint, 20px on a `fill` screen) pads the content column's end, and a bar docked to the bottom of the scroller takes it back with a negative margin of the same length. The drawn padding is unchanged.
+
 ## Changes in 0.55.0
 
 The folder tile, made production grade.
