@@ -103,3 +103,12 @@ export const LongTitles: Story = {
   },
   decorators: [(Story) => <div style={{ maxWidth: 358 }}>{Story()}</div>],
 };
+
+/** Folded to one line beside an answer: the title, how many rows, the downloads and the link. */
+export const Folded: Story = { args: { ...spend, collapsible: true, summary: '6 rows' } };
+
+/** Folded on a 360px drawer: the utilities go under the title rather than cutting it. */
+export const FoldedNarrow: Story = {
+  decorators: [(Story) => <div style={{ maxWidth: 360 }}>{Story()}</div>],
+  args: { ...spend, collapsible: true, summary: '6 rows' },
+};

@@ -50,3 +50,16 @@ export const Tasks: Story = {
     ],
   },
 };
+
+/** A titled list folds as its card does: the title opens it and the summary counts the rows. */
+export const Folded: Story = {
+  args: {
+    title: 'Who can approve spend',
+    collapsible: true,
+    summary: '2 people',
+    items: [
+      { id: 'jane', name: 'Jane Founder', fact: 'Owner', avatar: <Avatar name="Jane Founder" size="sm" />, action: open('#/people/jane', 'Profile') },
+      { id: 'sam', name: 'Sam Rivera', fact: 'Admin', avatar: <Avatar name="Sam Rivera" size="sm" />, action: open('#/people/sam', 'Profile') },
+    ],
+  },
+};

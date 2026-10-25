@@ -85,3 +85,26 @@ export const NarrowDecision: Story = {
     </StatusCard>
   ),
 };
+
+/**
+ * A result folded to its head, as a supporting read stands beside an answer:
+ * the title opens it, the summary says how much it holds, and the foot's
+ * utilities stand at the end of the head until it opens.
+ */
+export const Folded: Story = {
+  render: () => (
+    <StatusCard
+      title="Company principles"
+      collapsible
+      summary="Mission, vision, 6 policies"
+      actionsAlign="start"
+      actions={
+        <Button variant="ghost" size="small">
+          Principles
+        </Button>
+      }
+    >
+      <p>Build a good relationship with every customer.</p>
+    </StatusCard>
+  ),
+};

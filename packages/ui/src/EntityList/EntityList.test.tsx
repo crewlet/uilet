@@ -52,3 +52,16 @@ test('carries no axe violation', async () => {
   });
   expect(result.violations).toEqual([]);
 });
+
+test('a titled list folds as its card, and a bare list takes no fold props onto its element', () => {
+  const { container, rerender } = render(
+    <EntityList title="Who can approve spend" collapsible summary="2 people" items={[{ id: 'jane', name: 'Jane Founder' }]} />,
+  );
+  const toggle = screen.getByRole('button', { name: 'Who can approve spend, 2 people' });
+  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  expect(container.querySelector('.crewlet-status-card__body')!.hasAttribute('hidden')).toBe(true);
+  rerender(<EntityList label="Approvers" collapsible summary="2 people" items={[{ id: 'jane', name: 'Jane Founder' }]} />);
+  expect(screen.queryByRole('button')).toBeNull();
+  expect(container.firstElementChild!.getAttribute('summary')).toBeNull();
+  expect(container.firstElementChild!.getAttribute('collapsible')).toBeNull();
+});

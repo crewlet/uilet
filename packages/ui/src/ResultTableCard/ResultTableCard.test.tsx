@@ -153,3 +153,29 @@ test('carries no axe violation', async () => {
   });
   expect(result.violations).toEqual([]);
 });
+
+test('folded, a result keeps its downloads and its link at the end of its head', () => {
+  const { container } = render(
+    <ResultTableCard
+      title="Tasks"
+      collapsible
+      summary="2 rows"
+      headers={['Task', 'Status']}
+      rows={[
+        ['Fix the sign-in test', 'Blocked'],
+        ['Ship the drawer', 'Done'],
+      ]}
+      downloads={[{ label: 'CSV', filename: 'tasks.csv', file: () => Promise.resolve(new Blob([''])) }]}
+      link={<a href="#/tasks">Open in Tasks</a>}
+    />,
+  );
+  const toggle = screen.getByRole('button', { name: 'Tasks, 2 rows' });
+  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  const head = container.querySelector('.crewlet-card__header-actions')!;
+  expect(within(head as HTMLElement).getByRole('button', { name: /CSV/ })).toBeTruthy();
+  expect(within(head as HTMLElement).getByRole('link', { name: 'Open in Tasks' })).toBeTruthy();
+  expect(container.querySelector('table')!.closest('[hidden]')).not.toBeNull();
+  fireEvent.click(toggle);
+  expect(container.querySelector('table')!.closest('[hidden]')).toBeNull();
+  expect(container.querySelector('.crewlet-card__header-actions')).toBeNull();
+});
