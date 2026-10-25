@@ -62,3 +62,23 @@ export const Narrow: Story = {
   args: spend,
   decorators: [(Story) => <div style={{ maxWidth: 320 }}>{Story()}</div>],
 };
+
+/**
+ * LONG MULTI-WORD VALUES in a 640px assistant panel: a text column breaks
+ * between words and keeps each word whole, and the figures and the dates
+ * stay on one line.
+ */
+export const LongWords: Story = {
+  args: {
+    title: 'Seats by role',
+    window: 'As of today',
+    headers: ['Agent', 'Role', 'Team', 'Tokens', 'Last run'],
+    rows: [
+      ['Agent PM', 'Product Manager', 'Growth and Retention', '2,960,000', 'Oct 24, 2026, 9:41 PM'],
+      ['Agent SWE', 'Senior Software Engineer', 'Platform Infrastructure', '860,000', 'Oct 24, 2026, 8:02 PM'],
+      ['Agent CTO', 'Chief Technology Officer', 'Leadership', '412,000', 'Oct 23, 2026, 6:15 PM'],
+    ],
+    align: ['start', 'start', 'start', 'end', 'end'],
+  },
+  decorators: [(Story) => <div style={{ maxWidth: 640 }}>{Story()}</div>],
+};

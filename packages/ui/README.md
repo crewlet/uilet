@@ -205,6 +205,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.57.1
+
+**`ResultTableCard` keeps words whole.** Its text cells inherited Table's `overflow-wrap: anywhere`, which under the card's automatic layout let a column shrink to one letter, so "Product Manager" wrapped letter by letter beside columns with room to spare. Its cells now break between words (`overflow-wrap: break-word`); figures and dates (`end` columns) stay on one line, and the first column still ends a long name in an ellipsis.
+
 ## Changes in 0.57.0
 
 **`AppShell` takes `asideModal`**, so an `overlay` aside can leave the page live beside it. `true`, the default, keeps the 0.56.0 overlay: a modal dialog behind a veil with Tab held inside. `false` draws the overlay with no veil, no trap and nothing made inert: it is a complementary region named by `asideLabel`, focus moves into it when it opens, Escape from inside it calls `onAsideClose` (unless a control inside answered the key, or a menu or dialog on the layer stack owns it), and focus goes back to what opened it if it was still inside when it closed. A column is never modal and a `sheet` always is, whatever the prop says. The aside carries `data-modal`.

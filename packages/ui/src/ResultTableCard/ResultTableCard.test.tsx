@@ -7,6 +7,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { ButtonLink } from '../Button/index.js';
 import { ResultTableCard } from './index.js';
 
@@ -36,6 +37,29 @@ test('is a section with a table named by its title, figures at the end and a tot
   expect(within(table).getByRole('rowheader', { name: 'Total' })).toBeTruthy();
   expect(container.querySelector('.crewlet-table--flush')).not.toBeNull();
   expect(container.querySelector('.crewlet-card__subtitle')!.textContent).toBe('This week, from Monday');
+});
+
+test('a text cell breaks between words, never inside one, and a figure never wraps', () => {
+  const uninstall = installSheets('Table/Table.css', 'ResultTableCard/ResultTableCard.css');
+  try {
+    const { container } = render(
+      <ResultTableCard
+        title="Seats by role"
+        headers={['Agent', 'Role', 'Tokens', 'Last run']}
+        rows={[['Agent PM', 'Product Manager, Growth and Retention', '2,960,000', 'Oct 24, 2026, 9:41 PM']]}
+        align={['start', 'start', 'end', 'end']}
+      />,
+    );
+    const [first, role, tokens, date] = [...container.querySelectorAll<HTMLElement>('tbody tr:first-child > *')];
+    // Not Table's own `anywhere`, which let an auto layout shrink a column to one letter.
+    expect(getComputedStyle(role!).overflowWrap).toBe('break-word');
+    expect(getComputedStyle(tokens!).whiteSpace).toBe('nowrap');
+    expect(getComputedStyle(date!).whiteSpace).toBe('nowrap');
+    // The first column still ends a long name in an ellipsis on one line.
+    expect(getComputedStyle(first!).whiteSpace).toBe('nowrap');
+  } finally {
+    uninstall();
+  }
 });
 
 test('the foot starts with the downloads, each fetched on its press, and ends with the link', () => {
