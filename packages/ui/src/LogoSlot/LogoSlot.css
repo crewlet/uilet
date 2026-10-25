@@ -170,21 +170,37 @@
  * subgrid spanning the group's four rows: its name and description, its
  * stage, what is said under it, and its actions. A row holds the tallest of
  * its parts across the slots, so every stage, note and action row starts on
- * one line. The steps between the parts are margins rather than the grid's
- * gap, so a row no slot uses (no notes anywhere) takes no room at all.
+ * one line.
+ *
+ * NO GRID GAP ANYWHERE IN THE ROWS. A gap between the group's rows is drawn
+ * between a subgrid's rows too, so an empty row (no notes in any slot) still
+ * stood two gaps tall between the stage and the actions. Every step is a
+ * margin on the part that follows it instead, and a row nobody uses takes no
+ * room at all; a line of slots is set off from the next (on a narrow page)
+ * by the slot's own end margin.
+ *
+ * THREE ACROSS IN A FORM'S COLUMN. The columns are as many as fit at 9rem,
+ * so three slots stand in one row in a 480px column (a setup step's), and
+ * the group's own width under 30rem stacks them one under another.
  */
 .crewlet-logo-slot-group {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-3);
   min-width: 0;
 }
 
 .crewlet-logo-slot-group__slots {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
   column-gap: var(--spacing-5);
-  row-gap: var(--spacing-6);
+  row-gap: 0;
+}
+
+@container (width < 30rem) {
+  .crewlet-logo-slot-group__slots {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .crewlet-logo-slot-group__slots > .crewlet-logo-slot {
@@ -193,6 +209,7 @@
   grid-template-rows: subgrid;
   row-gap: 0;
   align-content: start;
+  margin-block-end: var(--spacing-5);
 }
 
 .crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__head {

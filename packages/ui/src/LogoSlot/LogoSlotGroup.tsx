@@ -40,8 +40,9 @@ export interface LogoSlotGroupProps extends Omit<HTMLAttributes<HTMLDivElement>,
  * slot, so it is drawn once under the row (`hint`) and each picker is
  * described by it, rather than repeated three times.
  *
- * THE COLUMNS FOLLOW THE ROOM: as many as fit at 14rem each, then one under
- * another on a phone, each still aligned within itself.
+ * THE COLUMNS FOLLOW THE ROOM: as many as fit at 9rem each, so three stand
+ * in one row in a 480px form column, and one under another where the group
+ * has under 30rem, each still aligned within itself.
  */
 export function LogoSlotGroup({ children, label, hint, className, ...rest }: LogoSlotGroupProps) {
   const id = useId();
