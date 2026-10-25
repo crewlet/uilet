@@ -6,7 +6,9 @@
       "base": { "value": "150ms", "comment": "Default UI transition." },
       "moderate": { "value": "200ms", "comment": "Nav hover, topbar background changes." },
       "slow": { "value": "300ms", "comment": "Modal enter, drawer slide." },
-      "breath": { "value": "2200ms", "comment": "The PERIOD of a mark saying that work is still happening: one full round, out and back. 0.45 cycles a second, the approved design's 2.2s, slow enough to read as breathing rather than as an alert and far under the three flashes a second that are a seizure risk. A PERIOD rather than a transition: nothing uses it to move a surface from one place to another." }
+      "breath": { "value": "2200ms", "comment": "The PERIOD of a mark saying that work is still happening: one full round, out and back. 0.45 cycles a second, the approved design's 2.2s, slow enough to read as breathing rather than as an alert and far under the three flashes a second that are a seizure risk. A PERIOD rather than a transition: nothing uses it to move a surface from one place to another." },
+      "turn": { "value": "1000ms", "comment": "The PERIOD of one full rotation of the working ring (Spinner), linear. One turn a second reads as steady work rather than as urgency: the ring turned once per slow step (300ms), more than three turns a second, and read as frantic. A PERIOD rather than a transition." },
+      "sweep": { "value": "1500ms", "comment": "The PERIOD of the working ring's arc lengthening and shortening, out and back. Deliberately not a multiple of the turn, so the arc's longest reach lands at a different angle each round and the motion never reads as a loop. A PERIOD rather than a transition." }
     },
     "easing": {
       "default": { "value": "ease" },

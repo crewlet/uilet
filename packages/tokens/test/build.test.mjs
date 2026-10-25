@@ -179,6 +179,8 @@ describe('the display, body, sheet, shell, breakpoint and breath tokens', () => 
     ['breakpoint.shell', '1024px', '1024px'],
     ['breakpoint.phone', '640px', '640px'],
     ['motion.duration.breath', '2200ms', '2200ms'],
+    ['motion.duration.turn', '1000ms', '1000ms'],
+    ['motion.duration.sweep', '1500ms', '1500ms'],
   ];
   const property = (path) => `--${path.split('.').map((part) => part.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()).join('-')}`;
 
@@ -236,6 +238,20 @@ describe('the display, body, sheet, shell, breakpoint and breath tokens', () => 
     for (const fixed of ['--size-shell-rail', '--size-shell-topbar']) {
       assert.equal(resolvePx(tokens.get(fixed), 0.82), resolvePx(tokens.get(fixed), 1.16), fixed);
     }
+  });
+
+  test('the working ring turns at a calm pace, and its arc breathes out of step with the turn', () => {
+    // The ring turned once per slow step (300ms), more than three turns a
+    // second, which read as alarm rather than as work. A turn of 0.9 to 1.1s
+    // and a sweep of 1.4 to 1.6s is the pace mature systems settle on, and a
+    // sweep that is a whole multiple of the turn would bring the arc's longest
+    // reach back to the same angle every round.
+    const ms = (path) => Number(/^(\d+)ms$/.exec(path.split('.').reduce((node, key) => node?.[key], exported))?.[1]);
+    const turn = ms('motion.duration.turn');
+    const sweep = ms('motion.duration.sweep');
+    assert.ok(turn >= 900 && turn <= 1100, `turn is ${turn}ms`);
+    assert.ok(sweep >= 1400 && sweep <= 1600, `sweep is ${sweep}ms`);
+    assert.notEqual(sweep % turn, 0, 'the sweep is not a whole number of turns');
   });
 });
 

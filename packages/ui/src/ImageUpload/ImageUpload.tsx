@@ -6,6 +6,7 @@ import {
   type MouseEvent,
 } from 'react';
 import { Avatar, avatarCorner, type AvatarKind } from '../Avatar/index.js';
+import { Spinner } from '../Spinner/index.js';
 import { CameraGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 
 // Omit the DOM "onSelect" event handler so it does not clash with the
@@ -135,7 +136,7 @@ export const ImageUpload = ({
         {!readOnly ? (
           <span className="crewlet-image-upload__overlay" aria-hidden>
             {uploading ? (
-              <span className="crewlet-image-upload__spinner" />
+              <Spinner className="crewlet-image-upload__spinner" />
             ) : (
               <>
                 <CameraGlyph size="lg" />
