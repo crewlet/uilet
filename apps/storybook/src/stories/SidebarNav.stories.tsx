@@ -99,7 +99,7 @@ export const Sections: Story = {
           action={{ label: 'New project', icon: <PlusGlyph size="sm" />, onClick: () => {} }}
         >
           <NavItem
-            href="#/work/eng"
+            href="#/worklet/eng"
             label="Core platform"
             lead="ENG"
             current={at === 'eng'}
@@ -107,7 +107,7 @@ export const Sections: Story = {
             count={{ value: 23, label: 'open' }}
           />
           <NavItem
-            href="#/work/prod"
+            href="#/worklet/prod"
             label="Product"
             lead="PROD"
             current={at === 'prod'}
@@ -222,7 +222,7 @@ export const EveryRowState: Story = {
             />
             <NavItem href="#/inbox" label="Inbox" icon={<InboxGlyph size="sm" />} badge={{ value: 3, label: 'need a person' }} />
             <NavItem href="#/people" label="People" icon={<UsersGlyph size="sm" />} count={{ value: 4, label: 'live' }} />
-            <NavItem href="#/work/eng" label="Core platform" lead="ENG" count={{ value: 23, label: 'open' }} />
+            <NavItem href="#/worklet/eng" label="Core platform" lead="ENG" count={{ value: 23, label: 'open' }} />
             <NavItem href="#/runs" label="Coding runs" icon={<SquareTerminalGlyph size="sm" />} />
             <NavGroup
               label="Operations"

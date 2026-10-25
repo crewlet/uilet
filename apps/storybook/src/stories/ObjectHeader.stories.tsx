@@ -24,7 +24,7 @@ const meta: Meta<typeof ObjectHeader> = {
     ),
     facts: [
       { label: 'Seat', value: 'Operations lead', href: '#/agents/ops' },
-      { label: 'Access', value: 'Tracker, Knowledge' },
+      { label: 'Access', value: 'Worklet, Doclet' },
       {
         label: 'Stage',
         value: 'Active',

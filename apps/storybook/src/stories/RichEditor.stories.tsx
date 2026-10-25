@@ -56,7 +56,7 @@ export function settle(balances: Map<string, number>): Payment[] {
 
 ---
 
-Read [the design notes](https://example.com/notes) or the [runbook](#/knowledge/pages/runbook).
+Read [the design notes](https://example.com/notes) or the [runbook](#/doclet/pages/runbook).
 `;
 
 function Editing({ initial, commands, disabled }: { initial: string; commands?: RichEditorCommand[]; disabled?: boolean }) {
@@ -95,7 +95,7 @@ const LINK_A_PAGE: RichEditorCommand = {
   panel: (api) => (
     <div style={{ display: 'grid', gap: 8 }}>
       {['Runbook', 'Onboarding', 'Release process'].map((title) => (
-        <Button key={title} variant="ghost" size="small" onClick={() => api.insertLink(title, `#/knowledge/pages/${title.toLowerCase().replace(/\s+/g, '-')}`)}>
+        <Button key={title} variant="ghost" size="small" onClick={() => api.insertLink(title, `#/doclet/pages/${title.toLowerCase().replace(/\s+/g, '-')}`)}>
           {title}
         </Button>
       ))}

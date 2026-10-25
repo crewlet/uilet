@@ -267,7 +267,7 @@ export const CappedAndExplained: Story = {
             ]}
           />
           <p id="archived-why" style={{ margin: 0 }}>
-            Archived items need the Tracker role.
+            Archived items need the Worklet role.
           </p>
         </div>
       );

@@ -38,7 +38,7 @@ export const Quiet: Story = {
   render: () => (
     <Text as="p" variant="caption">
       <strong>Crewlet-PM</strong> asks for your approval on{' '}
-      <Link href="#/work/FAIR-3" variant="quiet" size="inherit">
+      <Link href="#/worklet/FAIR-3" variant="quiet" size="inherit">
         FAIR-3 Ledger and settlement
       </Link>
     </Text>

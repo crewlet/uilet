@@ -11,8 +11,8 @@ export default meta;
 type Story = StoryObj<typeof CheckboxGroup>;
 
 const APPS = [
-  { key: 'tracker', label: 'Tracker', description: 'Work items, inboxes and My work.' },
-  { key: 'knowledge', label: 'Knowledge', description: 'The knowledge base and diaries.' },
+  { key: 'worklet', label: 'Worklet', description: 'Work items, inboxes and My work.' },
+  { key: 'doclet', label: 'Doclet', description: 'The knowledge base and diaries.' },
   { key: 'spend', label: 'Spend', description: 'Budgets and what each agent spent.' },
 ];
 
@@ -24,7 +24,7 @@ const APPS = [
  */
 export const AccessPicker: Story = {
   render: function Render() {
-    const [value, setValue] = useState<string[]>(['tracker']);
+    const [value, setValue] = useState<string[]>(['worklet']);
     const admin = value.includes('admin');
     const toggle = (key: string, on: boolean) =>
       setValue((prior) => (on ? [...prior, key] : prior.filter((item) => item !== key)));

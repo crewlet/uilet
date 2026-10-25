@@ -38,7 +38,7 @@ const SCREENS = [
   { name: 'Activity', hint: 'the event log' },
   { name: 'Seats', hint: 'who is running' },
   { name: 'Tools', hint: 'what a seat can call' },
-  { name: 'Knowledge', hint: 'the shared base' },
+  { name: 'Doclet', hint: 'the shared base' },
 ];
 
 const SEATS = [
@@ -100,7 +100,7 @@ function Demo({ empty = false }: { empty?: boolean }) {
             icon: <FileTextGlyph size="sm" />,
             label: `Knowledge base for ${term}`,
             hint: 'live search',
-            onSelect: () => setChosen('Knowledge'),
+            onSelect: () => setChosen('Doclet'),
           },
         ]
       : [];

@@ -68,7 +68,7 @@ function Row({ item, open, onOpen }: { item: Item; open: string; onOpen: (key: s
       onClick={() => onOpen(item.key)}
       aside={
         item.task ? (
-          <Link href={`#/work/${item.task.split(' ')[0]}`} variant="quiet" size="inherit">
+          <Link href={`#/worklet/${item.task.split(' ')[0]}`} variant="quiet" size="inherit">
             {item.task}
           </Link>
         ) : undefined
@@ -144,7 +144,7 @@ export const LongWords: Story = {
             actionable
             onClick={() => {}}
             aside={
-              <Link href="#/work/FAIR-42" variant="quiet" size="inherit">
+              <Link href="#/worklet/FAIR-42" variant="quiet" size="inherit">
                 FAIR-42 settlement/strategies/exact-search-with-transfer-minimisation
               </Link>
             }

@@ -5,7 +5,7 @@ import { FolderGlyph } from '@crewlethq/icons/glyphs';
 const meta: Meta<typeof PinTile> = {
   title: 'UI/PinTile',
   component: PinTile,
-  args: { title: 'FairSplit MVP', href: '#/work/FAIR', kind: 'Project', meta: '1 done · 2 active · 4 to do', figure: '14%' },
+  args: { title: 'FairSplit MVP', href: '#/worklet/FAIR', kind: 'Project', meta: '1 done · 2 active · 4 to do', figure: '14%' },
 };
 
 export default meta;

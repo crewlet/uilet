@@ -102,7 +102,7 @@ function Demo({ projects = FAIRSPLIT, state = 'ready', held = false, truncated =
     keyChip: p.key,
     meta: p.open,
     accessibleLabel: `${p.name}, ${p.key}, ${p.open} open`,
-    href: `#/work/${p.key}`,
+    href: `#/worklet/${p.key}`,
     current: p.key === current,
     onSelect: () => setCurrent(p.key),
   });
@@ -150,7 +150,7 @@ function Demo({ projects = FAIRSPLIT, state = 'ready', held = false, truncated =
           icon: <LayersGlyph size="md" />,
           meta: total,
           accessibleLabel: `All projects, ${total} open`,
-          href: '#/work',
+          href: '#/worklet',
           current: current === 'all',
           onSelect: () => setCurrent('all'),
         }
@@ -158,7 +158,7 @@ function Demo({ projects = FAIRSPLIT, state = 'ready', held = false, truncated =
 
   const footer: SwitcherOption[] = [
     ...(state === 'ready' && projects.length > 0
-      ? [{ id: 'browse', label: 'Browse all projects', icon: <Columns3Glyph size="md" />, href: '#/work' }]
+      ? [{ id: 'browse', label: 'Browse all projects', icon: <Columns3Glyph size="md" />, href: '#/worklet' }]
       : []),
     {
       id: 'new',
@@ -208,7 +208,7 @@ function Demo({ projects = FAIRSPLIT, state = 'ready', held = false, truncated =
         <div style={{ display: 'flex', alignItems: 'center', minHeight: 52, maxWidth: 720 }}>
           <Breadcrumb
             crumbs={[
-              { label: 'Work', href: '#/work', icon: <SquareKanbanGlyph size="sm" /> },
+              { label: 'Worklet', href: '#/worklet', icon: <SquareKanbanGlyph size="sm" /> },
               { label: scope?.name ?? 'All projects' },
             ]}
             current={switcher}
@@ -268,7 +268,7 @@ export const Held: Story = {
 export const ArchivedSubject: Story = {
   render: () => (
     <Breadcrumb
-      crumbs={[{ label: 'Work', href: '#/work', icon: <SquareKanbanGlyph size="sm" /> }, { label: 'Legacy importer' }]}
+      crumbs={[{ label: 'Worklet', href: '#/worklet', icon: <SquareKanbanGlyph size="sm" /> }, { label: 'Legacy importer' }]}
       current={
         <Switcher
           label="Switch project"
