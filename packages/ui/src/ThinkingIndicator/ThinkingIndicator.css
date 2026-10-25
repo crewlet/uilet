@@ -1,0 +1,122 @@
+/*
+ * The assistant at work: the Assistant's mark, its blades turning, and a line
+ * of status under a shimmer. See ThinkingIndicator.tsx for why it replaces a
+ * caret and how it is announced.
+ */
+
+/*
+ * ONE LINE OF PROSE TALL, at every state: the mark alone, the mark with a
+ * status line, and the line changing from one step to the next all keep the
+ * same height, so the thread never moves while the assistant works.
+ */
+.crewlet-thinking {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  min-height: calc(var(--font-size-compact) * var(--font-line-height-relaxed));
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-relaxed);
+}
+
+/*
+ * THE BLADES TURN A QUARTER, THEN REST. The figure is four blades around a
+ * core, the same after a quarter turn, so each round ends where the next
+ * begins and the loop never shows a seam. One round is the breath period
+ * (2.2s): the turn takes its first half on the in-out ease and the second
+ * half is still, which reads as steady thought rather than as a spinner. The
+ * core holds still, as the mark's own description promises.
+ */
+.crewlet-thinking__mark [data-motion='turn'] {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: crewlet-thinking-turn var(--motion-duration-breath) var(--motion-easing-in-out) infinite;
+}
+
+@keyframes crewlet-thinking-turn {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  50%,
+  100% {
+    transform: rotate(90deg);
+  }
+}
+
+/*
+ * THE SHIMMER IS A LIGHTER BAND CROSSING THE WORDS, the band Skeleton sweeps
+ * across a placeholder, set in ink rather than in surface: the words are the
+ * secondary ink at rest, so they read at every point of the sweep, and the
+ * band is the primary ink. The gradient is clipped to the glyphs and is three
+ * times the line's width, so the band crosses it rather than standing in it.
+ */
+.crewlet-thinking__status {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: crewlet-thinking-enter var(--motion-duration-moderate) var(--motion-easing-out);
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .crewlet-thinking__status {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-text-secondary) 0%,
+      var(--color-text-secondary) 40%,
+      var(--color-text-primary) 50%,
+      var(--color-text-secondary) 60%,
+      var(--color-text-secondary) 100%
+    );
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation:
+      crewlet-thinking-enter var(--motion-duration-moderate) var(--motion-easing-out),
+      crewlet-thinking-shimmer var(--motion-duration-breath) linear infinite;
+  }
+}
+
+@keyframes crewlet-thinking-shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+
+  to {
+    background-position: 0 50%;
+  }
+}
+
+@keyframes crewlet-thinking-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-thinking__mark [data-motion='turn'] {
+    animation: none;
+  }
+
+  .crewlet-thinking__status {
+    background-image: none;
+    color: var(--color-text-secondary);
+    animation: none;
+  }
+}
+
+/* The system's own ink: a gradient clipped to text is dropped there. */
+@media (forced-colors: active) {
+  .crewlet-thinking__status {
+    background-image: none;
+    color: CanvasText;
+  }
+}
