@@ -1,0 +1,33 @@
+/*
+ * A mark with an indicator at its top end corner. The anchor is as large as
+ * the mark, so the corner is the mark's; the indicator's centre stands on it.
+ */
+.crewlet-indicator-anchor {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+/*
+ * The indicator's box is the dot's own size (the line height is zero, so an
+ * inline dot adds no strut), centred on the corner by translating half of
+ * itself out, and ringed in the ground's colour so it parts from the mark.
+ */
+.crewlet-indicator-anchor__indicator {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  display: inline-flex;
+  line-height: 0;
+  border-radius: var(--radius-circle);
+  box-shadow: 0 0 0 2px var(--crewlet-indicator-ring, var(--color-surface-background));
+  transform: translate(50%, -50%);
+  pointer-events: none;
+}
+
+[dir='rtl'] .crewlet-indicator-anchor__indicator {
+  transform: translate(-50%, -50%);
+}

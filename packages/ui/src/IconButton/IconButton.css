@@ -121,17 +121,20 @@
  */
 .crewlet-icon-btn--secondary {
   background: var(--color-surface-subtle);
+  --crewlet-indicator-ring: var(--color-surface-subtle);
   border-color: var(--color-border-strong);
   color: var(--color-text-primary);
 }
 
 .crewlet-icon-btn--secondary:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-elevated);
+  --crewlet-indicator-ring: var(--color-surface-elevated);
   border-color: var(--color-border-strong-hover);
 }
 
 .crewlet-icon-btn--secondary:active:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-pressed);
+  --crewlet-indicator-ring: var(--color-surface-pressed);
 }
 
 /* ghost: transparent, neutral ink, a mild tint on hover. */
@@ -207,6 +210,7 @@ a.crewlet-icon-btn {
 /* A toggle that is on, drawn from the state a screen reader is already told. */
 .crewlet-icon-btn[aria-pressed='true'] {
   background: var(--color-brand-accent-soft);
+  --crewlet-indicator-ring: var(--color-brand-accent-soft);
   color: var(--color-brand-accent-ink);
 }
 

@@ -208,17 +208,20 @@
  */
 .crewlet-btn--secondary {
   background: var(--color-surface-subtle);
+  --crewlet-indicator-ring: var(--color-surface-subtle);
   color: var(--color-text-primary);
   border-color: var(--color-border-strong);
 }
 
 .crewlet-btn--secondary:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-elevated);
+  --crewlet-indicator-ring: var(--color-surface-elevated);
   border-color: var(--color-border-strong-hover);
 }
 
 .crewlet-btn--secondary:active:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-pressed);
+  --crewlet-indicator-ring: var(--color-surface-pressed);
 }
 
 /* Outline: the branded secondary. Its ink is the accent's text step, never
@@ -286,6 +289,7 @@
    about, so the two cannot disagree. */
 .crewlet-btn[aria-pressed='true'] {
   background: var(--color-brand-accent-soft);
+  --crewlet-indicator-ring: var(--color-brand-accent-soft);
   color: var(--color-brand-accent-ink);
   border-color: var(--color-brand-accent-soft-strong);
 }
