@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { CheckGlyph } from '@crewlethq/icons/glyphs';
+import { CheckGlyph, TriangleAlertGlyph } from '@crewlethq/icons/glyphs';
 import { StatusDot } from '../StatusDot/index.js';
 import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
@@ -18,6 +18,18 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
  */
 export type StepperTone = Exclude<Tone, 'neutral'>;
 
+/**
+ * Where one step stands. `done`, `current` and `upcoming` are what a step's
+ * position against `current` already says; `optional` is a step that may be
+ * skipped and has not been completed, drawn quietly with the word "Optional";
+ * `attention` is a step with something to look at again (a low-contrast pair,
+ * a refused file), drawn with a warning glyph and the words "Needs attention".
+ */
+export type StepperStatus = 'done' | 'current' | 'upcoming' | 'optional' | 'attention';
+
+/** How the steps are laid out: a row of pills, or a column of rows with a mark each. */
+export type StepperOrientation = 'horizontal' | 'vertical';
+
 /** One step of the sequence. */
 export interface StepperStep {
   /** What tells two steps apart, unique within the stepper: `execute`, `review`. */
@@ -27,16 +39,27 @@ export interface StepperStep {
    * round 7 of 25", "Context 0.8s".
    */
   label: ReactNode;
+  /**
+   * Where the step stands, when its position does not say it all. Left out,
+   * a step before `current` is `done` and one after it is `upcoming`. The
+   * current step is always drawn current: `attention` or `optional` on it adds
+   * the warning glyph or the word "Optional" to it, and `current` on any other
+   * step is refused, since only `current` names the step under way.
+   */
+  status?: StepperStatus | undefined;
+  /** A line under the label, in the vertical orientation only: "Name and tagline". */
+  description?: ReactNode;
 }
 
-export interface StepperProps extends Omit<HTMLAttributes<HTMLOListElement>, 'children'> {
+export interface StepperProps extends Omit<HTMLAttributes<HTMLOListElement>, 'children' | 'onSelect'> {
   /** Every step, in order. */
   steps: readonly StepperStep[];
   /**
    * The step under way, by its id. Every step before it is done and every
-   * step after it is still to come. `null` once EVERY step is done, which is
-   * how a finished run is drawn: a turn's history in a task's timeline reads
-   * "Execute ✓ — Review ✓" with nothing current.
+   * step after it is still to come, unless a step's `status` says otherwise.
+   * `null` once EVERY step is done, which is how a finished run is drawn: a
+   * turn's history in a task's timeline reads "Execute ✓, Review ✓" with
+   * nothing current.
    */
   current: string | null;
   /**
@@ -54,32 +77,58 @@ export interface StepperProps extends Omit<HTMLAttributes<HTMLOListElement>, 'ch
    * motion preference.
    */
   pulse?: boolean | undefined;
+  /** A row of pills (the default), or a column of rows, as a setup wizard's rail draws it. */
+  orientation?: StepperOrientation | undefined;
+  /**
+   * Called with a step's id when a reader picks it. Given, every VISITED step
+   * (the current one, every step before it, and every step up to `reached`)
+   * is a button; a step not visited yet stays words, reachable only by
+   * whatever moves the sequence on, never a disabled button that is a tab stop
+   * with nothing behind it.
+   */
+  onSelect?: ((id: string) => void) | undefined;
+  /**
+   * The furthest step a reader has visited, by its id, for a sequence they
+   * can walk back through and forward again: on step 2 after reaching step 5,
+   * steps 3 to 5 are still buttons. `current` by default.
+   */
+  reached?: string | undefined;
   /**
    * Said before a finished step's words, where the check glyph stands for a
    * reader who sees it: "Done Context".
    */
   doneLabel?: string | undefined;
+  /** Said after an optional step's words, and shown under them in the vertical orientation. "Optional" by default. */
+  optionalLabel?: string | undefined;
+  /** Said after the words of a step that needs attention, and shown under them vertically. "Needs attention" by default. */
+  attentionLabel?: string | undefined;
 }
 
-type StepState = 'done' | 'current' | 'later';
-
 /**
- * Where a sequence has got to: the phases of a turn, the stages of a run.
+ * Where a sequence has got to: the phases of a turn, the stages of a run, the
+ * steps of a setup a person walks themselves.
  *
  * AN ORDERED LIST, because the order IS the information: a step's position
  * says whether it is behind the current one or ahead of it, and a list says
  * how many there are before a reader has heard any of them. The step under
  * way carries `aria-current="step"`, the one value ARIA gives this exact
  * meaning, and it is on exactly one step while the sequence is running and on
- * none once it has finished.
+ * none once it has finished. When the steps are buttons it is on the button,
+ * which is what a reader focuses and so what tells them.
  *
- * THREE STATES, EACH DRAWN TWO WAYS, so colour is never the only carrier. A
+ * EVERY STATE IS DRAWN TWO WAYS, so colour is never the only carrier. A
  * finished step is the secondary ink with a check, and says "Done" before its
  * words to a screen reader, where the check stands for a reader who sees it.
  * The current step is its tone's soft tint under the tone's ink with the
- * tone's dot, and is `aria-current`. A step still to come is the tertiary ink
- * and nothing else. The hairline round the chips, and the short rule between
- * two of them, are the design's quiet furniture.
+ * tone's dot. A step still to come is the tertiary ink and nothing else; an
+ * optional one says "Optional", and one that needs attention carries the
+ * warning glyph on the warning tint and says "Needs attention".
+ *
+ * TWO ORIENTATIONS. The row is the approved design's pills joined by a short
+ * rule. The column is a setup wizard's rail: a 20px mark per step (the check,
+ * the dot, the warning glyph or the step's number) on a hairline that joins
+ * them, the label beside it, and a description and the status words under
+ * the label.
  *
  * THE TONE IS DRAWN, NEVER SPOKEN: a reader hears which step is current, not
  * that it is in the warning hue. A current step whose state is anything but
@@ -91,7 +140,12 @@ export function Stepper({
   label,
   tone = 'info',
   pulse = false,
+  orientation = 'horizontal',
+  onSelect,
+  reached,
   doneLabel = 'Done',
+  optionalLabel = 'Optional',
+  attentionLabel = 'Needs attention',
   className,
   ...rest
 }: StepperProps) {
@@ -100,6 +154,7 @@ export function Stepper({
     if (seen.has(step.id)) throw new RangeError(`Stepper step ids must be unique; "${step.id}" is used twice`);
     seen.add(step.id);
   }
+  const ids = () => steps.map((step) => `"${step.id}"`).join(', ');
   const at = current === null ? steps.length : steps.findIndex((step) => step.id === current);
   if (at < 0) {
     // A current step that is not one of the steps has no honest picture: drawn
@@ -107,12 +162,26 @@ export function Stepper({
     // everything finished it says one that is running has ended. Refused by
     // name, as `AvatarStack` refuses a `max` it cannot draw.
     throw new RangeError(
-      `Stepper current must be the id of one of its steps, or null once every step is done; "${current}" is not one of ${steps.map((step) => `"${step.id}"`).join(', ')}`,
+      `Stepper current must be the id of one of its steps, or null once every step is done; "${current}" is not one of ${ids()}`,
     );
+  }
+  const furthest = reached === undefined ? at : steps.findIndex((step) => step.id === reached);
+  if (furthest < 0) throw new RangeError(`Stepper reached must be the id of one of its steps; "${reached}" is not one of ${ids()}`);
+  for (const [index, step] of steps.entries()) {
+    if (step.status === 'current' && index !== at) {
+      throw new RangeError(`Stepper step "${step.id}" says it is current, but current is ${current === null ? 'null' : `"${current}"`}`);
+    }
   }
   if (steps.length === 0) return null;
 
-  const stateOf = (index: number): StepState => (index < at ? 'done' : index === at ? 'current' : 'later');
+  const visitedTo = Math.max(at, furthest);
+  const vertical = orientation === 'vertical';
+
+  const drawnOf = (step: StepperStep, index: number): StepperStatus => {
+    if (index === at) return 'current';
+    if (step.status !== undefined && step.status !== 'current') return step.status;
+    return index < at ? 'done' : 'upcoming';
+  };
 
   return (
     /*
@@ -127,33 +196,98 @@ export function Stepper({
     <ol
       {...rest}
       role="list"
-      className={cx('crewlet-stepper', `crewlet-stepper--${tone}`, className)}
+      className={cx(
+        'crewlet-stepper',
+        `crewlet-stepper--${tone}`,
+        vertical && 'crewlet-stepper--vertical',
+        onSelect && 'crewlet-stepper--selectable',
+        className,
+      )}
       aria-label={label}
     >
       {steps.map((step, index) => {
-        const state = stateOf(index);
+        const drawn = drawnOf(step, index);
+        const isCurrent = drawn === 'current';
+        const attention = drawn === 'attention' || (isCurrent && step.status === 'attention');
+        const optional = drawn === 'optional' || (isCurrent && step.status === 'optional');
+        const note = attention ? attentionLabel : optional ? optionalLabel : null;
+        const selectable = onSelect !== undefined && index <= visitedTo;
+
+        const mark =
+          drawn === 'done' ? (
+            <CheckGlyph size="xs" className="crewlet-stepper__check" />
+          ) : attention ? (
+            <TriangleAlertGlyph size="xs" className="crewlet-stepper__warning" />
+          ) : isCurrent ? (
+            <StatusDot tone={tone} pulse={pulse} className="crewlet-stepper__dot" />
+          ) : vertical ? (
+            <span className="crewlet-stepper__number" aria-hidden="true">
+              {index + 1}
+            </span>
+          ) : null;
+
+        const words = (
+          <>
+            {drawn === 'done' ? (
+              <>
+                <VisuallyHidden>{doneLabel}</VisuallyHidden>
+                {/*
+                  A TEXT NODE between the two, as `ListItem` draws one: an
+                  accessible name is its parts run together, and whitespace
+                  inside the hidden span is trimmed off it, so without this the
+                  step reads "DoneContext".
+                */}{' '}
+              </>
+            ) : null}
+            <span className="crewlet-stepper__label">{step.label}</span>
+            {note !== null && !vertical ? (
+              <>
+                {', '}
+                <VisuallyHidden>{note}</VisuallyHidden>
+              </>
+            ) : null}
+          </>
+        );
+
+        const content = vertical ? (
+          <>
+            <span className="crewlet-stepper__mark">{mark}</span>
+            <span className="crewlet-stepper__text">
+              <span className="crewlet-stepper__title">{words}</span>
+              {step.description ? <span className="crewlet-stepper__description">{step.description}</span> : null}
+              {note !== null ? <span className="crewlet-stepper__note">{note}</span> : null}
+            </span>
+          </>
+        ) : (
+          <>
+            {mark}
+            {words}
+          </>
+        );
+
+        const surface = vertical ? 'crewlet-stepper__row' : 'crewlet-stepper__chip';
         return (
           <li
             key={step.id}
-            className={cx('crewlet-stepper__step', `crewlet-stepper__step--${state}`)}
-            aria-current={state === 'current' ? 'step' : undefined}
+            className={cx(
+              'crewlet-stepper__step',
+              `crewlet-stepper__step--${drawn}`,
+              attention && drawn !== 'attention' && 'crewlet-stepper__step--attention',
+            )}
+            aria-current={isCurrent && !selectable ? 'step' : undefined}
           >
-            <span className="crewlet-stepper__chip">
-              {state === 'done' ? (
-                <>
-                  <CheckGlyph size="xs" className="crewlet-stepper__check" />
-                  <VisuallyHidden>{doneLabel}</VisuallyHidden>
-                  {/*
-                    A TEXT NODE between the two, as `ListItem` draws one: an
-                    accessible name is its parts run together, and whitespace
-                    inside the hidden span is trimmed off it, so without this the
-                    step reads "DoneContext".
-                  */}{' '}
-                </>
-              ) : null}
-              {state === 'current' ? <StatusDot tone={tone} pulse={pulse} className="crewlet-stepper__dot" /> : null}
-              <span className="crewlet-stepper__label">{step.label}</span>
-            </span>
+            {selectable ? (
+              <button
+                type="button"
+                className={cx(surface, 'crewlet-stepper__target')}
+                aria-current={isCurrent ? 'step' : undefined}
+                onClick={() => onSelect(step.id)}
+              >
+                {content}
+              </button>
+            ) : (
+              <span className={surface}>{content}</span>
+            )}
           </li>
         );
       })}
