@@ -23,6 +23,15 @@ export const Unsaved: Story = { args: { dirty: true } };
 
 export const Saving: Story = { args: { dirty: true, saving: true } };
 
+/**
+ * A DRAFT THAT KEEPS ITSELF, as a setup wizard's does: with `savedAt`, a
+ * status with nothing unsaved says how long ago the last save landed. The
+ * time is shown and not announced; a screen reader hears "Saved".
+ */
+export const SavedDraft: Story = {
+  args: { dirty: false, savedAt: Date.now() - 2 * 60_000, labels: { editing: 'Draft' } },
+};
+
 /** In a page bar, where it belongs. */
 export const InABar: Story = {
   render: () => (
