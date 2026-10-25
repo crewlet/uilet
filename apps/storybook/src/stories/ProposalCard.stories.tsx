@@ -177,11 +177,12 @@ export const Narrow: Story = {
   decorators: [(Story) => <div style={{ maxWidth: 320 }}>{Story()}</div>],
 };
 
-function Walkthrough() {
+function Walkthrough({ receipt = true }: { receipt?: boolean }) {
   const [state, setState] = useState<ProposalState>('pending');
   return (
     <ProposalCard
       {...create}
+      {...(receipt ? null : { receipt: undefined })}
       state={state}
       onApprove={() => {
         setState('applying');
@@ -192,5 +193,12 @@ function Walkthrough() {
   );
 }
 
-/** Approve or decline to walk the card through its states. */
+/**
+ * Approve or decline to walk the card through its states. From the keyboard
+ * (Tab to a button, then Enter), focus stays in the card when it settles: it
+ * lands on the strip that says what happened, with the focus ring.
+ */
 export const Interactive: Story = { render: () => <Walkthrough /> };
+
+/** The same walk, with no receipt: focus lands on the card itself when it is saved. */
+export const InteractiveWithoutReceipt: Story = { render: () => <Walkthrough receipt={false} /> };

@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, type HTMLAttributes, type ReactNode } from 'react';
 import { BanGlyph, CircleAlertGlyph, CircleCheckGlyph, ClockGlyph, LockGlyph, RefreshCwGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { ChangeList, type ChangeListLabels, type ChangeListRow } from '../ChangeList/index.js';
@@ -7,8 +7,6 @@ import { ReceiptStrip, RefusalStrip } from '../ReceiptStrip/index.js';
 import { Spinner } from '../Spinner/index.js';
 import { StatusCard, type StatusCardStatus } from '../StatusCard/index.js';
 import { cx } from '../utils/cx.js';
-// The empty live region below borrows the shared visually hidden class.
-import '../VisuallyHidden/index.js';
 
 /**
  * Where a proposed change stands: `pending` (waiting on the person),
@@ -269,6 +267,12 @@ function headingOf(state: ProposalState, kind: ProposalKind, labels: ProposalCar
  * Every sentence a refusal shows is the caller's (the engine's), never the
  * card's own words about why.
  *
+ * FOCUS IS NEVER DROPPED. The decision's buttons leave when the card
+ * settles, and a reader who pressed one from the keyboard would be left on
+ * the page body. Focus moves to what replaced them: the strip that says what
+ * happened, or the card itself when there is none. Only when focus was in
+ * the card as it settled: a reader who has moved on is not pulled back.
+ *
  * "NOTHING CHANGED." ONLY WHEN IT IS TRUE. A failure whose outcome nobody
  * could confirm (`failureOutcome="unknown"`) may have landed, so the card
  * says "Not confirmed" and never adds the reassurance.
@@ -303,6 +307,31 @@ export function ProposalCard({
 }: ProposalCardProps) {
   const labels = overrides ? { ...PROPOSAL_CARD_LABELS, ...overrides } : PROPOSAL_CARD_LABELS;
   const settled = SETTLED.has(state);
+  const uid = useId();
+  const cardId = rest.id ?? `${uid}-card`;
+  const stripId = `${uid}-strip`;
+
+  // WHETHER FOCUS WAS IN THE CARD AS IT SETTLED, read during the render that
+  // settles it: by the time any effect runs the focused button has been
+  // removed and focus has already fallen to the body.
+  const previous = useRef(state);
+  const regain = useRef(false);
+  if (previous.current !== state) {
+    if (settled && !SETTLED.has(previous.current) && typeof document !== 'undefined') {
+      regain.current = document.getElementById(cardId)?.contains(document.activeElement) ?? false;
+    }
+    previous.current = state;
+  }
+  useLayoutEffect(() => {
+    if (!regain.current) return;
+    regain.current = false;
+    const holder = document.activeElement;
+    // Something still holds focus (a control that stayed): leave it there.
+    if (holder && holder !== document.body) return;
+    (document.getElementById(stripId) ?? document.getElementById(cardId))?.focus({ preventScroll: true });
+  }, [state, stripId, cardId]);
+  // What focus can be moved to once the card has settled, and nothing a Tab stops at.
+  const landing = settled ? { id: stripId, tabIndex: -1 } : {};
 
   // WHILE THE PERSON COULD STILL DECIDE: applying already holds the primary
   // with its spinner, and a settled card has no primary at all, so a held
@@ -362,21 +391,24 @@ export function ProposalCard({
         {notice ?? labels.stepUpNotice}
       </ReceiptStrip>
     ) : state === 'applied' && receipt !== undefined ? (
-      <ReceiptStrip tone="success">{receipt}</ReceiptStrip>
+      <ReceiptStrip {...landing} tone="success">
+        {receipt}
+      </ReceiptStrip>
     ) : state === 'declined' ? (
-      <ReceiptStrip tone="neutral" icon={<BanGlyph size="md" />}>
+      <ReceiptStrip {...landing} tone="neutral" icon={<BanGlyph size="md" />}>
         {notice ?? labels.declinedNotice}
       </ReceiptStrip>
     ) : state === 'expired' ? (
-      <ReceiptStrip tone="neutral" icon={<ClockGlyph size="md" />}>
+      <ReceiptStrip {...landing} tone="neutral" icon={<ClockGlyph size="md" />}>
         {notice ?? labels.expiredNotice}
       </ReceiptStrip>
     ) : state === 'stale' ? (
-      <ReceiptStrip tone="neutral" icon={<ClockGlyph size="md" />}>
+      <ReceiptStrip {...landing} tone="neutral" icon={<ClockGlyph size="md" />}>
         {notice ?? labels.staleNotice}
       </ReceiptStrip>
     ) : state === 'failed' ? (
       <RefusalStrip
+        {...landing}
         placement="foot"
         hint={failure === undefined ? undefined : failureHint}
         onRetry={onRetry}
@@ -393,6 +425,9 @@ export function ProposalCard({
   return (
     <StatusCard
       {...rest}
+      id={cardId}
+      // The card itself takes focus when it settled with no strip to land on.
+      tabIndex={settled ? -1 : rest.tabIndex}
       title={title}
       subtitle={subtitle}
       status={statusOf(state, scope, failureOutcome, labels)}

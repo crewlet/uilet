@@ -27,3 +27,18 @@
   justify-content: flex-end;
   text-align: end;
 }
+
+/* WHERE FOCUS LANDS WHEN THE CARD SETTLES (the strip, or the card when it
+   has none): the token ring for a reader on the keyboard, inset so the
+   card's corner does not clip it, and nothing for a pointer (transparent
+   rather than none, so forced colours still draw one). */
+.crewlet-proposal-card:focus,
+.crewlet-proposal-card .crewlet-receipt-strip:focus {
+  outline: 2px solid transparent;
+}
+
+.crewlet-proposal-card:focus-visible,
+.crewlet-proposal-card .crewlet-receipt-strip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}

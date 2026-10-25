@@ -9,6 +9,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * WORDS STAY WHOLE. Table breaks a cell anywhere, which suits its fixed
+ * layout, but under this card's auto layout it lets a column shrink to one
+ * letter, so "Product Manager" stacked letter by letter beside columns with
+ * room to spare. Breaking at words keeps a column as wide as its longest
+ * word, and a word wider than the card still breaks rather than overflow.
+ */
+.crewlet-result-table-card__table td {
+  overflow-wrap: break-word;
+}
+
 .crewlet-result-table-card__table td:first-child {
   width: 100%;
   max-width: 0;

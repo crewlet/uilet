@@ -194,6 +194,55 @@ test('a refused decision is drawn above the decision in a polite live region the
   expect(screen.queryByText(refusal.sentence)).toBeNull();
 });
 
+test('a keyboard approve that settles the card keeps focus in it, on the strip that says what happened', () => {
+  const { rerender } = render(card('pending', { receipt: 'Applied to Work › Tasks' }));
+  const approve = screen.getByRole('button', { name: 'Apply to this list' });
+  approve.focus();
+  fireEvent.keyDown(approve, { key: 'Enter' });
+  fireEvent.click(approve);
+  rerender(card('applying', { receipt: 'Applied to Work › Tasks' }));
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Apply to this list' }));
+  rerender(card('applied', { receipt: 'Applied to Work › Tasks' }));
+  const region = screen.getByRole('region', { name: 'Filter this list Applied' });
+  const strip = screen.getByRole('status');
+  expect(document.activeElement).toBe(strip);
+  expect(region.contains(document.activeElement)).toBe(true);
+  // Reachable by script, never a stop for Tab.
+  expect(strip.getAttribute('tabindex')).toBe('-1');
+});
+
+test('a keyboard decline lands on the declined strip, and a card with no strip takes focus itself', () => {
+  const { rerender } = render(card('pending'));
+  screen.getByRole('button', { name: 'Decline' }).focus();
+  rerender(card('declined'));
+  expect(document.activeElement).toBe(screen.getByRole('status'));
+  cleanup();
+  const second = render(card('pending'));
+  screen.getByRole('button', { name: 'Apply to this list' }).focus();
+  second.rerender(card('applied'));
+  const region = screen.getByRole('region', { name: 'Filter this list Applied' });
+  expect(document.activeElement).toBe(region);
+  expect(region.getAttribute('tabindex')).toBe('-1');
+});
+
+test('a card that settles while the reader is elsewhere leaves focus where it is', () => {
+  const { rerender } = render(
+    <>
+      <button type="button">Elsewhere</button>
+      {card('pending', { receipt: 'Applied to Work › Tasks' })}
+    </>,
+  );
+  const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+  elsewhere.focus();
+  rerender(
+    <>
+      <button type="button">Elsewhere</button>
+      {card('applied', { receipt: 'Applied to Work › Tasks' })}
+    </>,
+  );
+  expect(document.activeElement).toBe(elsewhere);
+});
+
 test('a blocked approval holds the primary soft disabled with its reason, shown and said, and never approves', () => {
   const reason = 'This screen cannot apply these filters.';
   const onApprove = vi.fn();
