@@ -81,7 +81,7 @@ import { VendorMark } from '@crewlethq/icons';
 
 GitHub's and Notion's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: both publish one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
 
-**`crewlet` is Crewlet's own mark**, for the services built into it (its tracker, its knowledge base) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
+**`crewlet` is Crewlet's own mark**, for the services built into it (Worklet, Doclet) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
 
 A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is drawn to fit the square `size` and centred in it, at the aspect ratio the vendor draws. Every drawing fills its viewBox edge to edge, so the marks in a catalogue stand at one weight: GitLab's is cropped to its logo (its press-kit file framed the logo in twice its own width, and drew at half the size of every mark beside it), and Crewlet's is the brand mark framed in the square its own extent fits rather than in the wide file's artwork margins, so it draws the slot's full width.
 
@@ -94,18 +94,18 @@ The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRA
 ```tsx
 import { ProductMark } from '@crewlethq/icons';
 
-<ProductMark product="works" size={24} />
+<ProductMark product="worklet" size={24} />
 <ProductMark product="chat" size={24} soon />
 ```
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `product` | `Product`: `'works' \| 'knowledge' \| 'chat'` | required | Which of Crewlet's own products. |
+| `product` | `Product`: `'worklet' \| 'doclet' \| 'chat'` | required | Which of Crewlet's own products. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `soon` | boolean | `false` | Draws a product that has not shipped hollow: a faint violet body under a violet keyline and face. Never grey, which is how a vendor mark says "not connected". |
 
-The three services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. All three stand on one tile, the crewmate head's octagon with its 45 degree chamfers on the 48 grid, in the brand violet (`#7c56ff`) with a deeper lower facet (`#5c24ff`), inset two units so its weight sits beside a vendor mark's. One white figure on each tells them apart, drawn on the 6 unit grid so its edges land on whole pixels at 16, 24 and 48: **Works** (projects and tasks) is a task list, one task ticked and one open; **Knowledge** (spaces and pages) is an open book with its lines of text; **Chat** (talking with agents) is the crewmate's two eyes in a speech bubble. The sources are `svg/product/*.svg`, exported as `@crewlethq/icons/svg/product/*.svg`. `PRODUCTS` lists them.
+The three services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. All three stand on one tile, the crewmate head's octagon with its 45 degree chamfers on the 48 grid, in the brand violet (`#7c56ff`) with a deeper lower facet (`#5c24ff`), inset two units so its weight sits beside a vendor mark's. One white figure on each tells them apart, drawn on the 6 unit grid so its edges land on whole pixels at 16, 24 and 48: **Worklet** (projects and tasks) is a task list, one task ticked and one open; **Doclet** (spaces and pages) is an open book with its lines of text; **Chat** (talking with agents) is the crewmate's two eyes in a speech bubble. The sources are `svg/product/*.svg`, exported as `@crewlethq/icons/svg/product/*.svg`. `PRODUCTS` lists them.
 
 ## Signature illustrations
 

@@ -53,7 +53,7 @@ function Sorted({ phoneRows }: { phoneRows?: 'labelled' | 'compact' }) {
         rows={TASKS}
         columns={COLUMNS}
         rowKey={(t: Task) => t.key}
-        rowHref={(t: Task) => `#/work/${t.key}`}
+        rowHref={(t: Task) => `#/worklet/${t.key}`}
         isSelected={(t: Task) => t.key === 'ENG-15'}
         sort={sort}
         onSortChange={setSort}
@@ -179,7 +179,7 @@ export const Selection: Story = {
           rows={TASKS}
           columns={COLUMNS}
           rowKey={(t: Task) => t.key}
-          rowHref={(t: Task) => `#/work/${t.key}`}
+          rowHref={(t: Task) => `#/worklet/${t.key}`}
           isSelected={(t: Task) => t.key === 'ENG-15'}
           selection={{
             selected,

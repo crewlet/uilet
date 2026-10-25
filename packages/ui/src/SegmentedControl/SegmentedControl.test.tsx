@@ -137,7 +137,7 @@ test('a disabled option that says why stays focusable and in the arrows path, an
           { value: 'all', label: 'All' },
         ]}
       />
-      <p id="why">Archived needs the Tracker role.</p>
+      <p id="why">Archived needs the Worklet role.</p>
     </>,
   );
   const archived = screen.getByRole('radio', { name: /Archived/ });

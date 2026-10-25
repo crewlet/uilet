@@ -24,7 +24,7 @@ function Column({ onOpen = () => {} }: { onOpen?: (key: string) => void }) {
           actionable
           selected
           onClick={() => onOpen('ask-1')}
-          aside={<a href="#/work/FAIR-3">FAIR-3 Ledger and settlement</a>}
+          aside={<a href="#/worklet/FAIR-3">FAIR-3 Ledger and settlement</a>}
         >
           Which settlement should the ledger use?
         </InboxRow>

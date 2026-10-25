@@ -29,11 +29,13 @@ describe('a product mark', () => {
   });
 
   it('is decoration until it is named', () => {
-    const plain = render(ProductMark, { product: 'works' });
+    const plain = render(ProductMark, { product: 'worklet' });
     assert.equal(attribute(plain, 'aria-hidden'), 'true');
-    const named = render(ProductMark, { product: 'works', title: 'Crewlet Works' });
-    assert.equal(attribute(named, 'role'), 'img');
-    assert.equal(attribute(named, 'aria-label'), 'Crewlet Works');
+    for (const [product, title] of [['worklet', 'Worklet'], ['doclet', 'Doclet']]) {
+      const named = render(ProductMark, { product, title });
+      assert.equal(attribute(named, 'role'), 'img', product);
+      assert.equal(attribute(named, 'aria-label'), title, product);
+    }
   });
 
   it('carries the soon state as a class, and every drawing has the parts it reads', () => {

@@ -62,7 +62,7 @@ function Editing({ initial, footer }: { initial: string; footer?: boolean }) {
       placeholder="Write in markdown. Link a page by its address so the link survives a rename."
       renderPreview={preview}
       actions={(editor) => (
-        <Button size="small" variant="ghost" disabled={editor.mode !== 'write'} onClick={() => editor.insert('[Split modes](#/knowledge/pages/split-modes)')}>
+        <Button size="small" variant="ghost" disabled={editor.mode !== 'write'} onClick={() => editor.insert('[Split modes](#/doclet/pages/split-modes)')}>
           Link a page
         </Button>
       )}

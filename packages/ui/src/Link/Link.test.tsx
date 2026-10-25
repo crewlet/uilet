@@ -56,7 +56,7 @@ test('a quiet link takes its own register and the size of the words around it', 
   render(
     <p>
       Asks on{' '}
-      <Link href="#/work/FAIR-3" variant="quiet" size="inherit">
+      <Link href="#/worklet/FAIR-3" variant="quiet" size="inherit">
         FAIR-3
       </Link>
     </p>,

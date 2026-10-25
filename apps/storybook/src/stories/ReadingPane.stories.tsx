@@ -30,7 +30,7 @@ export default meta;
 type Story = StoryObj<typeof ReadingPane>;
 
 const task = (
-  <Link href="#/work/FAIR-3" variant="quiet" size="inherit">
+  <Link href="#/worklet/FAIR-3" variant="quiet" size="inherit">
     FAIR-3 Ledger and settlement
   </Link>
 );
@@ -53,7 +53,7 @@ function Question() {
           </>
         }
         footer={
-          <Link href="#/knowledge/settlement" variant="quiet" size="caption">
+          <Link href="#/doclet/settlement" variant="quiet" size="caption">
             Settlement notes
           </Link>
         }

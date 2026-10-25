@@ -17,7 +17,7 @@ const GROUPS: DirectoryGroup[] = [
     key: 'work',
     label: 'Work tracking',
     items: [
-      { key: 'works', href: '#works', mark: <ProductMark product="works" size="md" />, label: 'Crewlet Works', status: <Tag size="sm" variant="success">In use</Tag> },
+      { key: 'worklet', href: '#worklet', mark: <ProductMark product="worklet" size="md" />, label: 'Worklet', hint: 'Crewlet', status: <Tag size="sm" variant="success">In use</Tag> },
       { key: 'jira', href: '#jira', mark: <VendorMark vendor="atlassian" size="md" />, label: 'Jira', hint: 'Atlassian' },
     ],
   },
@@ -25,7 +25,7 @@ const GROUPS: DirectoryGroup[] = [
     key: 'docs',
     label: 'Docs and knowledge',
     items: [
-      { key: 'knowledge', href: '#knowledge', mark: <ProductMark product="knowledge" size="md" />, label: 'Crewlet Knowledge', status: <Tag size="sm" variant="neutral" appearance="outline">Not in use</Tag> },
+      { key: 'doclet', href: '#doclet', mark: <ProductMark product="doclet" size="md" />, label: 'Doclet', hint: 'Crewlet', status: <Tag size="sm" variant="neutral" appearance="outline">Not in use</Tag> },
       { key: 'confluence', href: '#confluence', mark: <VendorMark vendor="atlassian" size="md" />, label: 'Confluence', hint: 'Atlassian', status: <StatusDot tone="warning">Needs attention</StatusDot> },
     ],
   },

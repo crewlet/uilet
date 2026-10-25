@@ -133,7 +133,7 @@ test('the rows of every list take the reach', () => {
       render(
         <SidebarNav label="Sections">
           <NavGroup label="Workspace">
-            <NavItem href="#/work" label="Work" />
+            <NavItem href="#/worklet" label="Worklet" />
             <NavItem href="#/agents" label="Agents" />
             <NavItem label="Projects">
               <NavItem href="#/p/one" label="One" />

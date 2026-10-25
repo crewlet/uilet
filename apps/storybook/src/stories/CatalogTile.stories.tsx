@@ -25,19 +25,19 @@ export const ACatalogue: Story = {
         <TileGrid columns={3}>
           <CatalogTile
             mark={<VendorMark vendor="crewlet" size="lg" />}
-            title="Crewlet Works"
+            title="Worklet"
             status={<Tag size="sm" variant="success">In use</Tag>}
             description="Projects, tasks, your inbox and My work."
             meta="1 project"
-            action={<ButtonLink variant="secondary" size="small" href="#/work">Open Work</ButtonLink>}
+            action={<ButtonLink variant="secondary" size="small" href="#/worklet">Open Worklet</ButtonLink>}
           />
           <CatalogTile
             mark={<VendorMark vendor="crewlet" size="lg" />}
-            title="Crewlet Knowledge"
+            title="Doclet"
             status={<Tag size="sm" variant="success">In use</Tag>}
             description="Spaces and pages, agent skills and diaries."
             meta="3 spaces"
-            action={<ButtonLink variant="secondary" size="small" href="#/knowledge">Open Knowledge</ButtonLink>}
+            action={<ButtonLink variant="secondary" size="small" href="#/doclet">Open Doclet</ButtonLink>}
           />
           <CatalogTile
             quiet
@@ -133,20 +133,20 @@ export const Compact: Story = {
           <CatalogTile
             as="li"
             density="compact"
-            mark={<ProductMark product="works" size={20} />}
-            title="Crewlet Works"
+            mark={<ProductMark product="worklet" size={20} />}
+            title="Worklet"
             status={<Tag size="sm" variant="success">In use</Tag>}
             description="Projects, tasks, your inbox and My work."
-            action={<ButtonLink variant="secondary" size="small" href="#works">Open</ButtonLink>}
+            action={<ButtonLink variant="secondary" size="small" href="#worklet">Open</ButtonLink>}
           />
           <CatalogTile
             as="li"
             density="compact"
-            mark={<ProductMark product="knowledge" size={20} />}
-            title="Crewlet Knowledge"
+            mark={<ProductMark product="doclet" size={20} />}
+            title="Doclet"
             status={<Tag size="sm" variant="success">In use</Tag>}
             description="Spaces and pages, agent skills and diaries."
-            action={<ButtonLink variant="secondary" size="small" href="#knowledge">Open</ButtonLink>}
+            action={<ButtonLink variant="secondary" size="small" href="#doclet">Open</ButtonLink>}
           />
           <CatalogTile
             as="li"
@@ -186,20 +186,20 @@ export const CompactFolds: Story = {
         <CatalogTile
           as="li"
           density="compact"
-          mark={<ProductMark product="works" size={20} />}
-          title="Crewlet Works"
+          mark={<ProductMark product="worklet" size={20} />}
+          title="Worklet"
           status={<Tag size="sm" variant="success">In use</Tag>}
           description="Projects, tasks, your inbox and My work."
-          action={<ButtonLink variant="secondary" size="small" href="#works">Open</ButtonLink>}
+          action={<ButtonLink variant="secondary" size="small" href="#worklet">Open</ButtonLink>}
         />
         <CatalogTile
           as="li"
           density="compact"
-          mark={<ProductMark product="knowledge" size={20} />}
-          title="Crewlet Knowledge"
+          mark={<ProductMark product="doclet" size={20} />}
+          title="Doclet"
           status={<Tag size="sm" variant="success">In use</Tag>}
           description="Spaces and pages, agent skills and diaries."
-          action={<ButtonLink variant="secondary" size="small" href="#knowledge">Open</ButtonLink>}
+          action={<ButtonLink variant="secondary" size="small" href="#doclet">Open</ButtonLink>}
         />
         <CatalogTile
           as="li"

@@ -102,7 +102,7 @@ test('a group is a fieldset named by its legend, and each box keeps its own name
   render(
     <CheckboxGroup legend="Access" helper="What this person can open.">
       <Checkbox label="Admin" checked={false} onChange={() => {}} />
-      <Checkbox label="Tracker" checked onChange={() => {}} />
+      <Checkbox label="Worklet" checked onChange={() => {}} />
     </CheckboxGroup>,
   );
   const group = screen.getByRole('group', { name: 'Access' });
@@ -111,7 +111,7 @@ test('a group is a fieldset named by its legend, and each box keeps its own name
   const described = group.getAttribute('aria-describedby') ?? '';
   expect(document.getElementById(described)?.textContent).toBe('What this person can open.');
   expect(screen.getByRole('checkbox', { name: 'Admin' }).getAttribute('aria-describedby')).toBeNull();
-  expect(screen.getByRole('checkbox', { name: 'Tracker' })).toHaveProperty('checked', true);
+  expect(screen.getByRole('checkbox', { name: 'Worklet' })).toHaveProperty('checked', true);
 });
 
 test('a group with nothing to offer says so rather than drawing an empty fieldset', () => {

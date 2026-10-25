@@ -28,7 +28,7 @@ function Item() {
         leading={<span aria-hidden="true">PM</span>}
         note="you follow this task"
       >
-        <strong>Crewlet-PM</strong> asks for your approval on <a href="#/work/FAIR-3">FAIR-3</a>
+        <strong>Crewlet-PM</strong> asks for your approval on <a href="#/worklet/FAIR-3">FAIR-3</a>
       </ReadingPaneByline>
       <ReadingPaneTitle>Which settlement should the ledger use?</ReadingPaneTitle>
       <ReadingPaneLead>
@@ -40,7 +40,7 @@ function Item() {
             Crewlet-PM recommends <strong>Exact search</strong>
           </>
         }
-        footer={<a href="#/knowledge/p-1">Settlement notes</a>}
+        footer={<a href="#/doclet/p-1">Settlement notes</a>}
       >
         <p>It needs the fewest transfers.</p>
       </ReadingPaneReasoning>

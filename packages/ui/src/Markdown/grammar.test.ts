@@ -37,8 +37,8 @@ describe('a link', () => {
   });
 
   test('may carry an escaped bracket in its label', () => {
-    expect(inline('[a \\] b](#/knowledge/pages/1)')[0]).toEqual(
-      expect.objectContaining({ label: 'a \\] b', href: '#/knowledge/pages/1' }),
+    expect(inline('[a \\] b](#/doclet/pages/1)')[0]).toEqual(
+      expect.objectContaining({ label: 'a \\] b', href: '#/doclet/pages/1' }),
     );
   });
 
@@ -50,7 +50,7 @@ describe('a link', () => {
 
   test('is followed only on an allowed scheme', () => {
     expect(safeHref('https://example.com')).toBe('https://example.com');
-    expect(safeHref('#/work/ENG-1')).toBe('#/work/ENG-1');
+    expect(safeHref('#/worklet/ENG-1')).toBe('#/worklet/ENG-1');
     expect(safeHref('javascript:alert(1)')).toBeNull();
     expect(safeHref('java\tscript:alert(1)')).toBeNull();
   });

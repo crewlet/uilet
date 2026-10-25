@@ -41,7 +41,7 @@ export const Default: Story = {
 export const AProject: Story = {
   args: {
     crumbs: [
-      { label: 'Work', href: '#work', icon: <SquareKanbanGlyph size="sm" /> },
+      { label: 'Worklet', href: '#worklet', icon: <SquareKanbanGlyph size="sm" /> },
       { label: 'Product and Engineering', keyChip: 'FAIR', href: '#fair' },
       { label: 'FAIR-12', mono: true },
     ],
@@ -51,7 +51,7 @@ export const AProject: Story = {
 /** An ancestor with nothing to press, such as a workspace on its own landing page. */
 export const AnAncestorWithNoPage: Story = {
   args: {
-    crumbs: [{ label: 'Work', icon: <SquareKanbanGlyph size="sm" /> }, { label: 'All projects' }],
+    crumbs: [{ label: 'Worklet', icon: <SquareKanbanGlyph size="sm" /> }, { label: 'All projects' }],
   },
 };
 
@@ -60,7 +60,7 @@ function SwitcherInTrail() {
   const [query, setQuery] = useState('');
   return (
     <Breadcrumb
-      crumbs={[{ label: 'Work', href: '#work', icon: <SquareKanbanGlyph size="sm" /> }, { label: 'Product and Engineering' }]}
+      crumbs={[{ label: 'Worklet', href: '#worklet', icon: <SquareKanbanGlyph size="sm" /> }, { label: 'Product and Engineering' }]}
       current={
         <Switcher
           label="Switch project"

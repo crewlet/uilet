@@ -149,7 +149,7 @@ describe('ObjectHeader', () => {
           actions={<button type="button">Suspend</button>}
           facts={[
             { label: 'Seat', value: 'Operations lead', href: '#/agents/ops', setBy: SET },
-            { label: 'Access', value: 'Tracker, Knowledge' },
+            { label: 'Access', value: 'Worklet, Doclet' },
           ]}
         />
       </main>,

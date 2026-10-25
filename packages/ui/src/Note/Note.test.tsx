@@ -71,7 +71,7 @@ test('passes axe', async () => {
   const { container } = render(
     <Note tone="cyan">
       <p>
-        Read the <a href="#/knowledge">runbook</a> first.
+        Read the <a href="#/doclet">runbook</a> first.
       </p>
     </Note>,
   );

@@ -1,7 +1,7 @@
 /**
  * The editor's Markdown round trip, as plain functions: what a load and a
  * save with no edit write, and the spelling a changed block is written in.
- * An application holds its own bodies to them (a Knowledge page's fixtures, a
+ * An application holds its own bodies to them (a Doclet page's fixtures, a
  * doc's), so a body the editor would rewrite is found by a test rather than
  * by somebody's diff.
  *

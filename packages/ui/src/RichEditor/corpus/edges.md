@@ -2,7 +2,7 @@ Text before any heading, with snake_case_names and a literal \*star\* and a \# h
 
 Raw <b>tags</b> and an & ampersand stay text, as do <script>alert(1)</script> and [refused](javascript:alert(1)).
 
-A [link with \] bracket](#/knowledge/pages/42) and a [paren link](https://en.wikipedia.org/wiki/Markdown_(disambiguation)).
+A [link with \] bracket](#/doclet/pages/42) and a [paren link](https://en.wikipedia.org/wiki/Markdown_(disambiguation)).
 
 Title over a rule
 ---

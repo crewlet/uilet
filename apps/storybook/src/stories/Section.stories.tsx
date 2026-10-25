@@ -63,7 +63,7 @@ export const Tight: Story = {
       >
         <Card>
           <Card.Body>
-            <Text variant="caption">Crewlet Works and Crewlet Knowledge.</Text>
+            <Text variant="caption">Worklet and Doclet.</Text>
           </Card.Body>
         </Card>
       </Section>

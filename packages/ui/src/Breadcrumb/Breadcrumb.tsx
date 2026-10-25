@@ -139,7 +139,7 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
               </a>
             ) : (
               // AN ANCESTOR WITH NO PAGE OF ITS OWN, or one the reader is
-              // already on ("Work" on Work's landing): its words in the
+              // already on ("Worklet" on Worklet's landing): its words in the
               // ancestors' quiet ink, with nothing to press.
               <span className={cx('crewlet-breadcrumb__crumb', face)}>{words}</span>
             )}

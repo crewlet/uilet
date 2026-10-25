@@ -96,10 +96,10 @@ export const Lists: StoryObj = {
         <div style={{ width: 260, background: 'var(--color-surface-subtle)' }}>
           <SidebarNav label="Sections">
             <NavGroup label="Workspace">
-              <NavItem href="#work" label="Work" />
+              <NavItem href="#worklet" label="Worklet" />
               <NavItem href="#agents" label="Agents" />
               <NavItem href="#live" label="Live" />
-              <NavItem href="#knowledge" label="Knowledge" />
+              <NavItem href="#doclet" label="Doclet" />
             </NavGroup>
           </SidebarNav>
         </div>

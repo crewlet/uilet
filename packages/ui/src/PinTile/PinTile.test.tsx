@@ -18,11 +18,11 @@ afterEach(cleanup);
 const sheet = () => readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'PinTile.css'), 'utf8');
 
 test('is one link, named by its title', () => {
-  const { container } = render(<PinTile title="FairSplit MVP" href="#/work/FAIR" />);
+  const { container } = render(<PinTile title="FairSplit MVP" href="#/worklet/FAIR" />);
   const links = container.querySelectorAll('a');
   expect(links).toHaveLength(1);
   const link = screen.getByRole('link', { name: 'FairSplit MVP' });
-  expect(link.getAttribute('href')).toBe('#/work/FAIR');
+  expect(link.getAttribute('href')).toBe('#/worklet/FAIR');
 });
 
 test('the link’s target is the whole tile, and the buttons sit above it', () => {
@@ -61,10 +61,10 @@ test('draws no meta line, state or figure it was not given, and a zero figure st
 
 test('unpins from a button named for what it unpins, drawn only when it can', () => {
   const onUnpin = vi.fn();
-  const { rerender } = render(<PinTile title="FairSplit MVP" href="#/work/FAIR" onUnpin={onUnpin} />);
+  const { rerender } = render(<PinTile title="FairSplit MVP" href="#/worklet/FAIR" onUnpin={onUnpin} />);
   fireEvent.click(screen.getByRole('button', { name: 'Unpin FairSplit MVP' }));
   expect(onUnpin).toHaveBeenCalledTimes(1);
-  rerender(<PinTile title="FairSplit MVP" href="#/work/FAIR" />);
+  rerender(<PinTile title="FairSplit MVP" href="#/worklet/FAIR" />);
   expect(screen.queryByRole('button', { name: 'Unpin FairSplit MVP' })).toBeNull();
 });
 
@@ -77,11 +77,11 @@ test('moves by a handle only when it is given one, named by the handle', () => {
     onDragEnd: vi.fn(),
     onKeyDown: vi.fn(),
   };
-  const { rerender } = render(<PinTile title="FairSplit MVP" href="#/work/FAIR" handle={handle} />);
+  const { rerender } = render(<PinTile title="FairSplit MVP" href="#/worklet/FAIR" handle={handle} />);
   const grip = screen.getByRole('button', { name: 'Move FairSplit MVP' });
   fireEvent.keyDown(grip, { key: 'ArrowDown' });
   expect(handle.onKeyDown).toHaveBeenCalledTimes(1);
-  rerender(<PinTile title="FairSplit MVP" href="#/work/FAIR" />);
+  rerender(<PinTile title="FairSplit MVP" href="#/worklet/FAIR" />);
   expect(screen.queryByRole('button', { name: 'Move FairSplit MVP' })).toBeNull();
 });
 
@@ -91,7 +91,7 @@ test('passes axe', async () => {
       <p id="hint">Drag to move, or press the arrow keys.</p>
       <PinTile
         title="FairSplit MVP"
-        href="#/work/FAIR"
+        href="#/worklet/FAIR"
         kind="Project"
         meta="6 open"
         figure="14%"

@@ -111,7 +111,7 @@ const URL_NOISE = /[\u0000- ]/g;
  * Whether a href may be followed at all, and in what form: `http:`, `https:`,
  * `mailto:` and an application's own `#/` routes. Anything else is null.
  *
- * In-app routes (`#/work/ENG-1`) are allowed because they are how a page
+ * In-app routes (`#/worklet/ENG-1`) are allowed because they are how a page
  * points at the company's own objects and they cannot leave the application.
  * Everything else must carry an allowed scheme, including, deliberately, a
  * bare `/path` or `guide.html`, which would resolve against whatever origin

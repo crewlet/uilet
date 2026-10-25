@@ -246,7 +246,7 @@ function Rail({
           <NavItem href="#/mine" label="My work" icon={<CircleCheckGlyph size="sm" />} count={{ value: 3, label: 'open' }} />
         </NavGroup>
         <NavGroup label="Workspace">
-          <NavItem href="#/work" label="Work" icon={<SquareKanbanGlyph size="sm" />} />
+          <NavItem href="#/worklet" label="Worklet" icon={<SquareKanbanGlyph size="sm" />} />
           <NavItem
             href="#/agents"
             label="Agents"
@@ -254,13 +254,13 @@ function Rail({
             count={{ value: 4, label: 'working', mark: <StatusDot tone="info" pulse /> }}
           />
           <NavItem href="#/live" label="Live" icon={<ActivityGlyph size="sm" />} />
-          <NavItem href="#/knowledge" label="Knowledge" icon={<BookOpenGlyph size="sm" />} />
+          <NavItem href="#/doclet" label="Doclet" icon={<BookOpenGlyph size="sm" />} />
           <NavItem href="#/spend" label="Spend" icon={<CoinsGlyph size="sm" />} />
         </NavGroup>
         <NavGroup label="Projects" action={{ label: 'New project', icon: <PlusGlyph size="sm" />, onClick: () => {} }}>
-          <NavItem href="#/work/eng" label="Core platform" lead="ENG" count={{ value: 23, label: 'open' }} />
-          <NavItem href="#/work/prod" label="Product" lead="PROD" count={{ value: 11, label: 'open' }} />
-          <NavItem href="#/work/lead" label="Leadership" lead="LEAD" count={{ value: 4, label: 'open' }} />
+          <NavItem href="#/worklet/eng" label="Core platform" lead="ENG" count={{ value: 23, label: 'open' }} />
+          <NavItem href="#/worklet/prod" label="Product" lead="PROD" count={{ value: 11, label: 'open' }} />
+          <NavItem href="#/worklet/lead" label="Leadership" lead="LEAD" count={{ value: 4, label: 'open' }} />
         </NavGroup>
         <NavGroup label="Pinned">
           <NavItem href="#/views/blocked" label="Blocked, org-wide" icon={<PinGlyph size="sm" />} count={{ value: 2, label: 'open' }} />
