@@ -2,7 +2,7 @@
 
 A paragraph with **strong**, __strong by underscores__, *emphasis*, _emphasis by
 underscores_, ~~struck~~, `inline code`, a [link](https://example.com/docs "The docs"),
-an [in-app link](#/knowledge/pages/7c1e), an autolink <https://example.com>, and a
+an [in-app link](#/doclet/pages/7c1e), an autolink <https://example.com>, and a
 picture ![a chart](images/chart.png "Quarterly").
 
 A badge that links somewhere, [![build](images/build.svg)](https://example.com/ci), beside

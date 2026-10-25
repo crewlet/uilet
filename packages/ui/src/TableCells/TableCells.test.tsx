@@ -48,9 +48,9 @@ test("a figure is spelled by the host's formatter, with its suffix", () => {
 });
 
 test('an identifier prints its short form and keeps its whole value on the title, as a link when given one', () => {
-  render(<TableKeyCell value="work:task:0b4c6f0e-1111" text="work:task:0b4c" href="#/work/0b4c" />);
+  render(<TableKeyCell value="work:task:0b4c6f0e-1111" text="work:task:0b4c" href="#/worklet/0b4c" />);
   const link = screen.getByRole('link', { name: 'work:task:0b4c' });
-  expect(link.getAttribute('href')).toBe('#/work/0b4c');
+  expect(link.getAttribute('href')).toBe('#/worklet/0b4c');
   expect(link.getAttribute('title')).toBe('work:task:0b4c6f0e-1111');
 });
 

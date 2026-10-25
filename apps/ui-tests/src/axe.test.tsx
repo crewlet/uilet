@@ -142,8 +142,8 @@ test('a data grid, its sortable heads, its row links and its bands carry no viol
   ];
   const { container } = render(
     <main>
-      <h1>Work</h1>
-      <DataGrid rows={rows} columns={columns} rowKey={(r) => r.id} rowHref={(r) => `#/work/${r.id}`} sort="id" onSortChange={() => {}} />
+      <h1>Worklet</h1>
+      <DataGrid rows={rows} columns={columns} rowKey={(r) => r.id} rowHref={(r) => `#/worklet/${r.id}`} sort="id" onSortChange={() => {}} />
       <DataGrid
         columns={columns}
         rowKey={(r) => r.id}

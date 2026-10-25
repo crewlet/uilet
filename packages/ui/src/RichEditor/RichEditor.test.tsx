@@ -242,7 +242,7 @@ describe('the slash menu', () => {
       label: 'Link to a page',
       keywords: ['page'],
       panel: (api) => (
-        <button type="button" onClick={() => api.insertLink('Runbook', '#/knowledge/pages/42')}>
+        <button type="button" onClick={() => api.insertLink('Runbook', '#/doclet/pages/42')}>
           Runbook
         </button>
       ),
@@ -251,7 +251,7 @@ describe('the slash menu', () => {
     type(view, '/page');
     press(view, 'Enter');
     act(() => screen.getByRole('button', { name: 'Runbook' }).click());
-    expect(last()).toBe('[Runbook](#/knowledge/pages/42)');
+    expect(last()).toBe('[Runbook](#/doclet/pages/42)');
   });
 });
 

@@ -41,15 +41,15 @@ test('ancestors lead back out and the page is the heading, with no link to itsel
 });
 
 test('an ancestor with no page of its own is words, not a link', () => {
-  render(<Breadcrumb crumbs={[{ label: 'Work', icon: <svg /> }, { label: 'All projects' }]} />);
+  render(<Breadcrumb crumbs={[{ label: 'Worklet', icon: <svg /> }, { label: 'All projects' }]} />);
   expect(screen.queryByRole('link')).toBeNull();
-  expect(trail().querySelector('span.crewlet-breadcrumb__crumb')?.textContent).toBe('Work');
+  expect(trail().querySelector('span.crewlet-breadcrumb__crumb')?.textContent).toBe('Worklet');
 });
 
 test("a project's crumb carries its key as a chip before its name, and an identifier is mono", () => {
   render(
     <Breadcrumb
-      crumbs={[{ label: 'Work', href: '#/work' }, { label: 'Product and Engineering', keyChip: 'FAIR', href: '#/work/FAIR' }, { label: 'FAIR-12', mono: true }]}
+      crumbs={[{ label: 'Worklet', href: '#/worklet' }, { label: 'Product and Engineering', keyChip: 'FAIR', href: '#/worklet/FAIR' }, { label: 'FAIR-12', mono: true }]}
     />,
   );
   const project = screen.getByRole('link', { name: 'FAIR Product and Engineering' });
@@ -60,7 +60,7 @@ test("a project's crumb carries its key as a chip before its name, and an identi
 test("a control drawn as the heading's words keeps the heading and the trail", () => {
   render(
     <Breadcrumb
-      crumbs={[{ label: 'Work', href: '#/work' }, { label: 'Product and Engineering' }]}
+      crumbs={[{ label: 'Worklet', href: '#/worklet' }, { label: 'Product and Engineering' }]}
       current={
         <button type="button" aria-haspopup="dialog" aria-expanded={false}>
           FAIR Product and Engineering
@@ -183,7 +183,7 @@ test('on a phone an ancestor with a glyph keeps its word out of sight, not out o
 test('passes axe, with a control as the heading', async () => {
   const { container } = render(
     <Breadcrumb
-      crumbs={[{ label: 'Work', href: '#/work', icon: <svg /> }, { label: 'Product and Engineering' }]}
+      crumbs={[{ label: 'Worklet', href: '#/worklet', icon: <svg /> }, { label: 'Product and Engineering' }]}
       current={
         <button type="button" aria-haspopup="dialog" aria-expanded={false}>
           FAIR Product and Engineering
@@ -198,7 +198,7 @@ test('passes axe, with a control as the heading', async () => {
 test('a heading whose subject changes keeps its element, so the control in it keeps focus', () => {
   const trail = (label: string) => (
     <Breadcrumb
-      crumbs={[{ label: 'Work', href: '#/work' }, { label }]}
+      crumbs={[{ label: 'Worklet', href: '#/worklet' }, { label }]}
       current={
         <button type="button" aria-haspopup="dialog" aria-expanded={false}>
           {label}

@@ -118,9 +118,9 @@ describe('a table', () => {
 });
 
 test('an insert replaces the selection and leaves the caret after it', () => {
-  const edit = insertMarkdown('see this', { start: 4, end: 8 }, '[Split modes](#/knowledge/pages/p1)');
+  const edit = insertMarkdown('see this', { start: 4, end: 8 }, '[Split modes](#/doclet/pages/p1)');
   expect(drawn(edit.value, edit.selection.start, edit.selection.end)).toBe(
-    'see [Split modes](#/knowledge/pages/p1)|',
+    'see [Split modes](#/doclet/pages/p1)|',
   );
 });
 

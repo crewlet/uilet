@@ -32,7 +32,7 @@ function projectRows(query: string, current: string, onSelect: (key: string) => 
     keyChip: p.key,
     meta: p.open,
     accessibleLabel: `${p.name}, ${p.key}, ${p.open} open`,
-    href: `#/work/${p.key}`,
+    href: `#/worklet/${p.key}`,
     current: p.key === current,
     onSelect: () => onSelect(p.key),
   }));
@@ -62,10 +62,10 @@ function Harness({
         onQueryChange={setQuery}
         placeholder="Find a project"
         listLabel="Projects"
-        pinned={{ id: 'all', label: 'All projects', meta: 6, href: '#/work', onSelect: () => onSelect('all') }}
+        pinned={{ id: 'all', label: 'All projects', meta: 6, href: '#/worklet', onSelect: () => onSelect('all') }}
         groups={groups}
         footer={[
-          { id: 'browse', label: 'Browse all projects', href: '#/work' },
+          { id: 'browse', label: 'Browse all projects', href: '#/worklet' },
           { id: 'new', label: 'New project…', held, onSelect: () => onSelect('new') },
         ]}
         announcement={query ? `${rows.length} projects` : undefined}
@@ -202,12 +202,12 @@ describe('the panel', () => {
       await waitFor(() => expect(document.activeElement).toBe(field()));
       const split = screen.getByRole('option', { name: 'Split engine, SPLIT, 4 open' });
       expect(split.tagName).toBe('A');
-      expect(split.getAttribute('href')).toBe('#/work/SPLIT');
+      expect(split.getAttribute('href')).toBe('#/worklet/SPLIT');
       expect(split.getAttribute('tabindex')).toBe('-1');
       fireEvent.keyDown(field(), { key: 'ArrowDown' });
       fireEvent.keyDown(field(), { key: 'ArrowDown' });
       fireEvent.keyDown(field(), { key: 'Enter', metaKey: true });
-      expect(opened).toHaveBeenCalledWith('#/work/SPLIT', '_blank', 'noopener');
+      expect(opened).toHaveBeenCalledWith('#/worklet/SPLIT', '_blank', 'noopener');
       expect(onSelect).not.toHaveBeenCalled();
       expect(screen.getByRole('dialog')).toBeTruthy();
     } finally {
@@ -259,7 +259,7 @@ describe('the panel', () => {
   });
 
   test('Tab closes it and carries on past the button; Shift+Tab comes back to the button', async () => {
-    render(<Harness after={<a href="#/work/FAIR?lens=about">About</a>} />);
+    render(<Harness after={<a href="#/worklet/FAIR?lens=about">About</a>} />);
     openPanel();
     await waitFor(() => expect(document.activeElement).toBe(field()));
     fireEvent.keyDown(field(), { key: 'Tab' });

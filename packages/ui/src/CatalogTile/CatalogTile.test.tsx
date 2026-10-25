@@ -114,9 +114,9 @@ test('a compact tile puts the fact and the action on the header line, with no fo
 // THE SAME NAME AND THE SAME OUTLINE AT EITHER DENSITY: compact changes the
 // layout, never what a screen reader is told the tile is.
 test('a compact tile is still an article named by its heading, its mark hidden', () => {
-  render(<CatalogTile density="compact" mark={<svg />} title="Crewlet Works" status={<span>In use</span>} />);
-  const tile = screen.getByRole('article', { name: 'Crewlet Works' });
-  expect(screen.getByRole('heading', { level: 2, name: 'Crewlet Works' })).toBeTruthy();
+  render(<CatalogTile density="compact" mark={<svg />} title="Worklet" status={<span>In use</span>} />);
+  const tile = screen.getByRole('article', { name: 'Worklet' });
+  expect(screen.getByRole('heading', { level: 2, name: 'Worklet' })).toBeTruthy();
   expect(tile.querySelector('.crewlet-catalog-tile__mark')!.getAttribute('aria-hidden')).toBe('true');
   expect(tile.querySelector('.crewlet-catalog-tile__description')).toBeNull();
 });

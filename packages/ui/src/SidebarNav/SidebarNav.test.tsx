@@ -215,7 +215,7 @@ describe("a row's lead", () => {
   test("is a project's key, drawn as a chip and read as the start of the name", () => {
     render(
       <SidebarNav label="Projects">
-        <NavItem href="#/work/eng" label="Core platform" lead="ENG" count={{ value: 23, label: 'open' }} />
+        <NavItem href="#/worklet/eng" label="Core platform" lead="ENG" count={{ value: 23, label: 'open' }} />
       </SidebarNav>,
     );
     // A space the layout ignores keeps the key and the name two words, so a
@@ -235,7 +235,7 @@ describe("a row's lead", () => {
   test('an empty key draws no chip and adds no space', () => {
     render(
       <SidebarNav label="Projects">
-        <NavItem href="#/work/x" label="Unfiled" lead="" />
+        <NavItem href="#/worklet/x" label="Unfiled" lead="" />
       </SidebarNav>,
     );
     const row = screen.getByRole('link', { name: 'Unfiled' });
@@ -250,7 +250,7 @@ describe("a group's heading control", () => {
       <SidebarNav label="Sections">
         <NavItem href="#/" label="Home" current />
         <NavGroup label="Projects" action={{ label: 'New project', icon: <svg data-glyph="plus" />, onClick: onAdd }}>
-          <NavItem href="#/work/eng" label="Core platform" lead="ENG" />
+          <NavItem href="#/worklet/eng" label="Core platform" lead="ENG" />
         </NavGroup>
       </SidebarNav>
     );
@@ -698,8 +698,8 @@ describe('the rail geometry', () => {
     return (
       <SidebarNav label="Sections">
         <NavGroup label="Projects" action={{ label: 'New project', icon: <svg />, onClick: () => {} }}>
-          <NavItem href="#/work/eng" label="Core platform" lead="ENG" />
-          <NavItem href="#/work/prod" label="Product" lead="PROD" current />
+          <NavItem href="#/worklet/eng" label="Core platform" lead="ENG" />
+          <NavItem href="#/worklet/prod" label="Product" lead="PROD" current />
         </NavGroup>
       </SidebarNav>
     );
@@ -807,7 +807,7 @@ test('a wholly locked group draws its key once, on its label, and its rows none'
       </SidebarNav.Group>
       <SidebarNav.Group label="Spend">
         <SidebarNav.Item label="Token spend" href="#/spend" />
-        <SidebarNav.Item label="Expensive tasks" href="#/tasks" locked="Needs Tracker access" />
+        <SidebarNav.Item label="Expensive tasks" href="#/tasks" locked="Needs Worklet access" />
       </SidebarNav.Group>
       <SidebarNav.Group locked="Needs Admin access">
         <SidebarNav.Item label="Secrets" href="#/secrets" locked="Needs Admin access" />
