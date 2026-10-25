@@ -62,8 +62,14 @@ test('each slot is a subgrid of four rows: name and description, stage, notes, a
   const slot = rule('.crewlet-logo-slot-group__slots > .crewlet-logo-slot');
   expect(slot).toMatch(/grid-row: span 4;/);
   expect(slot).toMatch(/grid-template-rows: subgrid;/);
-  // Margins, not the gap, so a row no slot uses takes no room.
+  // Margins, not the gap, so a row no slot uses takes no room: no gap on the
+  // slot's rows, and none on the group's, which a subgrid's rows would draw.
   expect(slot).toMatch(/row-gap: 0;/);
+  const slots = rule('.crewlet-logo-slot-group__slots');
+  expect(slots).toMatch(/row-gap: 0;/);
+  // Three across in a 480px column: 3 x 9rem and two 20px gaps is 472px.
+  expect(slots).toMatch(/grid-template-columns: repeat\(auto-fit, minmax\(min\(9rem, 100%\), 1fr\)\);/);
+  expect(css).toMatch(/@container \(width < 30rem\) \{\s*\.crewlet-logo-slot-group__slots \{\s*grid-template-columns: minmax\(0, 1fr\);/);
   expect(rule('.crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__head')).toMatch(/grid-row: 1;/);
   expect(rule('.crewlet-logo-slot-group__slots > .crewlet-logo-slot > :is(.crewlet-logo-slot__stage, .crewlet-file-drop)')).toMatch(/grid-row: 2;/);
   expect(rule('.crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__notes')).toMatch(/grid-row: 3;/);

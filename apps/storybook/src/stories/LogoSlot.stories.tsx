@@ -174,3 +174,24 @@ export const Small: Story = {
     </div>
   ),
 };
+
+/**
+ * IN A SETUP STEP'S COLUMN: three slots in one row at 503px, the width the
+ * brand setup's content column has at 1440, with no note under any of them,
+ * so the action rows sit a step under the stages rather than two gaps.
+ */
+export const InAFormColumn: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 40 }}>
+      {[480, 503, 640].map((width) => (
+        <div key={width} style={{ width }}>
+          <LogoSlotGroup label={`Logos at ${width}px`} hint="SVG up to 512 KB. PNG or WebP up to 2 MB and 4096 px.">
+            <LogoSlot editable label="Primary logo" description="Doc headers, light slides and pages." ground="light" src={wordmark} alt="Crewlet logo" onFile={() => {}} onRemove={() => {}} />
+            <LogoSlot editable label="For dark grounds" description="Dark slides and dark mode." ground="dark" groundColor="#120a2b" alt="Crewlet logo on dark" onFile={() => {}} />
+            <LogoSlot editable label="Mark" description="Chips, slide corners and the brand chip." ground="light" shape="square" alt="Crewlet mark" onFile={() => {}} />
+          </LogoSlotGroup>
+        </div>
+      ))}
+    </div>
+  ),
+};
