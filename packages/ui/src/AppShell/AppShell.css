@@ -26,6 +26,25 @@
 .crewlet-app-shell {
   --crewlet-app-shell-rail: var(--size-shell-rail);
   --crewlet-app-shell-topbar: var(--size-shell-topbar);
+  /* What stands on the frame to the sheet's left: the rail's column, or
+     nothing where there is no rail or the rail is a drawer. The aside's cap
+     below subtracts it, so it is one name for both. */
+  --crewlet-app-shell-beside: var(--crewlet-app-shell-rail);
+  /* THE ASIDE'S TRACK, while it is a column: the panel's width and the inset
+     it is held off the window's edge by, capped so the sheet keeps the
+     host's floor (`--crewlet-app-shell-aside-reserve`, the page's sheet with
+     its own inset and hairlines). The host publishes both widths on this
+     element; with no reserve the panel takes the width it was given. */
+  --crewlet-app-shell-aside-track: calc(
+    min(
+      var(--crewlet-app-shell-aside),
+      max(
+        0px,
+        100% - var(--crewlet-app-shell-beside) - var(--crewlet-app-shell-aside-reserve, 0px) - var(--size-shell-inset)
+      )
+    ) +
+      var(--size-shell-inset)
+  );
   /* Where the drawer's veil sits while it is open. The shell replaces it with
      the surface's own place in the layer band; this default only has to clear
      the page chrome for the moment before that lands. */
@@ -56,8 +75,20 @@
  * beaten the narrow block's one.
  */
 .crewlet-app-shell--no-rail {
+  --crewlet-app-shell-beside: 0px;
   grid-template-columns: minmax(0, 1fr);
   padding-left: var(--size-shell-inset);
+}
+
+/* THE ASIDE AS A COLUMN: a third track, mirroring the rail. The page's sheet
+   keeps its column and is only narrower, so nothing under the bar moves but
+   its end edge. */
+.crewlet-app-shell[data-aside='column'] {
+  grid-template-columns: var(--crewlet-app-shell-rail) minmax(0, 1fr) var(--crewlet-app-shell-aside-track);
+}
+
+.crewlet-app-shell--no-rail[data-aside='column'] {
+  grid-template-columns: minmax(0, 1fr) var(--crewlet-app-shell-aside-track);
 }
 
 /* The skip link, drawn only while it holds focus, over everything. */
@@ -590,8 +621,22 @@
  * and a short one does not shift every element sideways by the scrollbar's
  * width, which reads as the page jumping on each move.
  */
-.crewlet-app-shell__main {
+/*
+ * THE BODY: the row under the bar that the scroller and a peek column share.
+ * It takes the sheet's remaining height, and the scroller takes the row's
+ * remaining width, so a sheet with no peek draws exactly as it did before the
+ * row existed.
+ */
+.crewlet-app-shell__body {
+  display: flex;
   flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.crewlet-app-shell__main {
+  flex: 1 1 0%;
+  min-width: 0;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -690,9 +735,129 @@
   background: var(--color-surface-scrim);
 }
 
+/*
+ * THE ASIDE: a second sheet on the frame, to the right of the page's, the
+ * same ground, hairline and corner, held off the window's top, right and
+ * bottom by the inset. The seam between the two sheets is the page sheet's
+ * own end inset, and the grip stands in it (`ResizeHandle`, outside the
+ * sheet that clips). The sheet clips what it holds to its corner, so the
+ * panel inside runs square to its edges.
+ */
+.crewlet-app-shell__aside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  grid-column: -2 / -1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  margin: var(--size-shell-inset) var(--size-shell-inset) var(--size-shell-inset) 0;
+}
+
+/* The grip stands in the seam and over the sheet's hairline, which is the
+   edge it moves. */
+.crewlet-app-shell__aside > .crewlet-resize-handle--left {
+  left: calc((var(--crewlet-resize-handle-width) + 1px) * -1);
+  width: calc(var(--crewlet-resize-handle-width) + 1px);
+}
+
+.crewlet-app-shell__aside-sheet {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sheet);
+  background: var(--color-surface-background);
+  overflow: hidden;
+}
+
+/* A dialog takes focus on itself only as the stack's last resort, so its
+   own ring would draw round the whole panel; its content draws the focus.
+   Transparent rather than none, so forced colours still draw one. */
+.crewlet-app-shell__aside:focus {
+  outline: 2px solid transparent;
+}
+
+/*
+ * THE OVERLAY: over the page's end edge, lifted off it, behind a veil. It
+ * keeps the column's corner and inset, so the panel is the same sheet in
+ * both shapes and only its ground changes, and it never takes the whole
+ * window: a strip of the page stays in view to say what it is over.
+ */
+.crewlet-app-shell__aside[data-shape='overlay'] {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-index-overlay);
+  width: min(var(--crewlet-app-shell-aside), calc(100vw - var(--spacing-10) - var(--size-shell-inset) * 2));
+}
+
+.crewlet-app-shell__aside[data-shape='overlay'] > .crewlet-app-shell__aside-sheet {
+  box-shadow: var(--shadow-xl);
+}
+
+/* THE SHEET: the whole window on a phone, its inset, corner and hairline
+   collapsed to nothing, as the page's sheet is under the shell step. */
+.crewlet-app-shell__aside[data-shape='sheet'] {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-overlay);
+  margin: 0;
+}
+
+.crewlet-app-shell__aside[data-shape='sheet'] > .crewlet-app-shell__aside-sheet {
+  border-width: 0;
+  border-radius: 0;
+}
+
+/* What a modal aside sits on: the dialog's ground, the application faded
+   back into its own frame, rather than the rail drawer's darker scrim. */
+.crewlet-app-shell__aside-veil {
+  background: var(--color-surface-veil);
+}
+
+/*
+ * AN ENTRANCE, never an exit: the panel arrives from the edge it stands on,
+ * and leaves at once when it is closed, so a close is never a wait. The page
+ * beside a column reflows at once, because a grid track that appears has no
+ * width to start from.
+ */
+@keyframes crewlet-app-shell-aside-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--spacing-4));
+  }
+}
+
+@keyframes crewlet-app-shell-aside-slide {
+  from {
+    transform: translateX(calc(100% + var(--size-shell-inset)));
+  }
+}
+
+.crewlet-app-shell__aside[data-shape='column'] > .crewlet-app-shell__aside-sheet {
+  animation: crewlet-app-shell-aside-in var(--motion-duration-slow) var(--motion-easing-emphasized);
+}
+
+.crewlet-app-shell__aside[data-shape='overlay'],
+.crewlet-app-shell__aside[data-shape='sheet'] {
+  animation: crewlet-app-shell-aside-slide var(--motion-duration-slow) var(--motion-easing-emphasized);
+}
+
 @media (width < 1024px) {
   .crewlet-app-shell {
+    --crewlet-app-shell-beside: 0px;
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The host decides the aside's shape, so a column it asks for under the
+     step is still a column; the rail is a drawer here and takes no track. */
+  .crewlet-app-shell[data-aside='column'],
+  .crewlet-app-shell--no-rail[data-aside='column'] {
+    grid-template-columns: minmax(0, 1fr) var(--crewlet-app-shell-aside-track);
   }
 
   .crewlet-app-shell--no-rail {
@@ -784,6 +949,12 @@
   .crewlet-app-shell__rail-foot > .crewlet-btn,
   .crewlet-app-shell__rail-status-mark--action {
     transition: none;
+  }
+
+  .crewlet-app-shell__aside[data-shape='column'] > .crewlet-app-shell__aside-sheet,
+  .crewlet-app-shell__aside[data-shape='overlay'],
+  .crewlet-app-shell__aside[data-shape='sheet'] {
+    animation: none;
   }
 }
 

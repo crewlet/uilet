@@ -36,6 +36,24 @@
  * layout it belongs to ends. Hidden rather than merely moved off screen, too,
  * because a rail translated out of view keeps every link in the tab order and
  * a keyboard reader walks through a dozen stops nobody can see.
+ *
+ * THE ASIDE MIRRORS THE RAIL. A panel the whole frame keeps open beside every
+ * screen (the assistant) is a third track of the shell's grid, a second sheet
+ * on the frame to the right of the page's, so opening it PUSHES the page
+ * narrower rather than covering it. Nothing about the page changes but its
+ * width: the bar, the sticky headers, the one scroller and the measured
+ * gutter are all the sheet's, and the sheet keeps them. Where the window
+ * cannot hold the page and the panel side by side the panel is an overlay
+ * over the page's end, and on a phone it is the whole window; both are
+ * modal surfaces on the shared layer stack. WHICH SHAPE is the host's
+ * decision (`asideShape`), never a media query's: the width that leaves the
+ * page its floor depends on what else the frame holds and on the density,
+ * which only the application knows.
+ *
+ * AND THE PEEK IS A COLUMN OF THE SHEET. A detail panel opened from a list
+ * (`peek`) stands beside the scroller inside the sheet, under the bar, so the
+ * section the reader is on still reads across the top. It is a column where
+ * the host says there is room and a drawer over the page where there is not.
  */
 
 import {
@@ -64,6 +82,30 @@ import type { Tone } from '../utils/tone.js';
 import { useMediaMatch } from '../MediaMatch/index.js';
 import { AccountRow } from './AccountRow.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { ResizeHandle } from './ResizeHandle.js';
+import { AsideContext, PeekContext, type AppShellAsideShape, type AppShellPeekShape } from './regions.js';
+
+export { useAppShellAside, useAppShellPeek } from './regions.js';
+export type { AppShellAsideShape, AppShellPeekShape, AppShellRegionValue } from './regions.js';
+
+/** The aside's resting width, in px, where the host names none. */
+export const APP_SHELL_ASIDE_WIDTH = 420;
+
+/** How the reader resizes the aside while it is a column. */
+export interface AppShellAsideResize {
+  /** The narrowest the aside may be, in px. */
+  min: number;
+  /** The widest, in px, already capped by the host so the page keeps its floor. */
+  max: number;
+  /** The resting width a reset returns to. */
+  defaultValue?: number | undefined;
+  /** Every change while it happens. */
+  onChange: (width: number) => void;
+  /** Where a gesture ends: the moment to keep the width. */
+  onCommit?: ((width: number) => void) | undefined;
+  /** Names the grip: "Resize the assistant panel". */
+  label: string;
+}
 
 /**
  * Where the rail stops being a column beside the page and becomes a drawer:
@@ -142,6 +184,40 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   toggleLabel?: string | undefined;
   /** The link that precedes everything, for a keyboard reader. */
   skipLabel?: string | undefined;
+  /**
+   * A panel the frame keeps beside every screen: the assistant. Nothing (or
+   * null) means no aside and no track. Normally a `SidePanel`, which leaves
+   * the landmark, the width and the grip to the shell here.
+   */
+  aside?: ReactNode;
+  /** The aside's width while it is a column or an overlay, in px. */
+  asideWidth?: number | undefined;
+  /**
+   * The page's floor beside an aside column, in px: the column's track is
+   * capped at what leaves the sheet this wide, so a width dragged on a wide
+   * window never takes a narrower window's page away.
+   */
+  asideReserve?: number | undefined;
+  /** Names the complementary region and, as an overlay or a sheet, the dialog. */
+  asideLabel?: string | undefined;
+  /** Which shape the aside takes; the host decides it. */
+  asideShape?: AppShellAsideShape | undefined;
+  /** Closes the aside: Escape and a press on the veil, as an overlay or a sheet. */
+  onAsideClose?: (() => void) | undefined;
+  /** Gives the aside a grip in the seam beside it while it is a column. */
+  asideResize?: AppShellAsideResize | undefined;
+  /**
+   * A detail panel beside the scroller, inside the sheet and under the bar:
+   * a peek opened from a list. Normally a `PeekRail`.
+   */
+  peek?: ReactNode;
+  /**
+   * Whether the peek is a column of the sheet or a drawer over the page; the
+   * host decides it. The peek sizes itself (`PeekRail` takes its width and
+   * the page's floor), because a column of the sheet is the peek's own box
+   * rather than a track of the frame.
+   */
+  peekShape?: AppShellPeekShape | undefined;
   children?: ReactNode;
 }
 
@@ -156,11 +232,22 @@ export function AppShell({
   navigationKey,
   toggleLabel = 'Sections',
   skipLabel = 'Skip to content',
+  aside,
+  asideWidth = APP_SHELL_ASIDE_WIDTH,
+  asideReserve,
+  asideLabel,
+  asideShape = 'column',
+  onAsideClose,
+  asideResize,
+  peek,
+  peekShape = 'column',
   className,
   style,
   children,
   ...rest
 }: AppShellProps) {
+  const hasAside = aside !== undefined && aside !== null && aside !== false;
+  const hasPeek = peek !== undefined && peek !== null && peek !== false;
   const generatedId = useId();
   const railId = `${generatedId}-rail`;
   const main = mainId ?? `${generatedId}-main`;
@@ -249,10 +336,31 @@ export function AppShell({
           !shell.hasRail && 'crewlet-app-shell--no-rail',
           className,
         )}
+        /*
+         * THE SHAPES ARE ATTRIBUTES, one value each, so there is no width at
+         * which the aside is both a column and an overlay, or the peek both a
+         * column and a drawer: the stylesheet switches on the value the host
+         * decided rather than on a media query that would have to be kept
+         * tiling with the host's arithmetic.
+         */
+        data-aside={hasAside ? asideShape : undefined}
+        data-peek={hasPeek ? peekShape : undefined}
         style={{
           ...style,
           ['--crewlet-app-shell-gutter' as string]: `${gutter}px`,
           ...(drawerZ === null ? null : { ['--crewlet-app-shell-drawer-z' as string]: String(drawerZ) }),
+          // The aside's width is published on the ROOT, because two things
+          // read it from opposite sides: the grid track that sizes the column
+          // is declared here, and the overlay that sizes itself is a
+          // descendant. A custom property inherits downward only.
+          ...(hasAside
+            ? {
+                ['--crewlet-app-shell-aside' as string]: `${asideWidth}px`,
+                ...(asideReserve === undefined
+                  ? null
+                  : { ['--crewlet-app-shell-aside-reserve' as string]: `${asideReserve}px` }),
+              }
+            : null),
         }}
       >
         {/*
@@ -294,13 +402,146 @@ export function AppShell({
         <div className="crewlet-app-shell__sheet">
           {topbar}
           {banner ? <div className="crewlet-app-shell__banner">{banner}</div> : null}
-          <main id={main} ref={setMain} className="crewlet-app-shell__main" tabIndex={-1}>
-            <div className="crewlet-app-shell__content">{children}</div>
-          </main>
+          {/*
+           * THE BODY IS ALWAYS THERE, peek or none. It is the row the
+           * scroller and a peek column share, and it is never added or taken
+           * away with the peek: a wrapper that came and went would remount
+           * `main`, and with it the whole screen and its scroll position,
+           * every time a row was peeked.
+           */}
+          <div className="crewlet-app-shell__body">
+            <main id={main} ref={setMain} className="crewlet-app-shell__main" tabIndex={-1}>
+              <div className="crewlet-app-shell__content">{children}</div>
+            </main>
+            {hasPeek ? <PeekContext.Provider value={{ shape: peekShape }}>{peek}</PeekContext.Provider> : null}
+          </div>
           {footer}
         </div>
+        {hasAside ? (
+          <ShellAside
+            shape={asideShape}
+            label={asideLabel}
+            width={asideWidth}
+            resize={asideResize}
+            onClose={onAsideClose}
+          >
+            {aside}
+          </ShellAside>
+        ) : null}
       </div>
     </AppShellContext.Provider>
+  );
+}
+
+interface ShellAsideProps {
+  shape: AppShellAsideShape;
+  label: string | undefined;
+  width: number;
+  resize: AppShellAsideResize | undefined;
+  onClose: (() => void) | undefined;
+  children: ReactNode;
+}
+
+/**
+ * The aside's track: a complementary region as a column, a modal dialog as an
+ * overlay or a sheet.
+ *
+ * ONE ELEMENT IN EVERY SHAPE, with its role switched rather than its tag, so
+ * a window resized across the column threshold does not remount the panel
+ * and lose what the reader had in it (a half-typed message, a scrolled
+ * thread). A `div` with a role rather than an `aside`, because an `aside` may
+ * not be a dialog.
+ *
+ * THE GRIP STANDS OUTSIDE THE SHEET THAT CLIPS, in the frame's inset between
+ * the page's sheet and this one, which is the seam it sizes. Only as a
+ * column: an overlay or a sheet has no page beside it to give way.
+ */
+function ShellAside({ shape, label, width, resize, onClose, children }: ShellAsideProps) {
+  const region = useRef<HTMLDivElement | null>(null);
+  const surfaceId = useId();
+  const modal = shape !== 'column';
+  // The modal's place in the layer band, reported back by the surface that
+  // registered it, so the aside paints one step above its own veil.
+  const [z, setZ] = useState<number | null>(null);
+  return (
+    <AsideContext.Provider value={{ shape }}>
+      <div
+        ref={region}
+        className="crewlet-app-shell__aside"
+        data-shape={shape}
+        role={modal ? 'dialog' : 'complementary'}
+        aria-modal={modal || undefined}
+        aria-label={label}
+        // A dialog the layer stack can always focus, even before its content
+        // has a control: focus never stays behind the veil.
+        tabIndex={modal ? -1 : undefined}
+        style={modal && z !== null ? { zIndex: z + 1 } : undefined}
+      >
+        {!modal && resize ? (
+          <ResizeHandle
+            label={resize.label}
+            value={width}
+            min={resize.min}
+            max={resize.max}
+            defaultValue={resize.defaultValue}
+            onValueChange={resize.onChange}
+            onValueCommit={resize.onCommit}
+            controls={surfaceId}
+            edge="left"
+          />
+        ) : null}
+        <div id={surfaceId} className="crewlet-app-shell__aside-sheet">
+          {children}
+        </div>
+      </div>
+      {/*
+       * AFTER the region, so the region's ref is attached by the time the
+       * veil's layout effect hands it to the layer stack: on the commit that
+       * opens both, an earlier sibling's effects run before a later one's ref.
+       */}
+      {modal ? <AsideVeil region={region} onClose={onClose} onZIndex={setZ} /> : null}
+    </AsideContext.Provider>
+  );
+}
+
+/**
+ * The veil behind an overlay or a sheet aside, and its place on the layer
+ * stack: Escape, the Tab trap, a press on the veil, focus moved in and handed
+ * back. Mounted only while the aside is modal, which is what registers it.
+ * Not portalled, for the reason the rail drawer's veil is not: the panel it
+ * belongs to is the shell's own element and cannot be moved.
+ */
+function AsideVeil({
+  region,
+  onClose,
+  onZIndex,
+}: {
+  region: { current: HTMLElement | null };
+  onClose: (() => void) | undefined;
+  onZIndex: (zIndex: number | null) => void;
+}) {
+  const layer = useModalLayer({
+    onClose: () => onClose?.(),
+    // A modal that nothing can close keeps Escape and its veil from doing
+    // anything rather than pretending to: the host gave no way to close it.
+    dismissable: onClose !== undefined,
+  });
+  const { panelRef, zIndex } = layer;
+  useEffect(() => {
+    onZIndex(zIndex);
+    return () => onZIndex(null);
+  }, [onZIndex, zIndex]);
+  useLayoutEffect(() => {
+    panelRef(region.current);
+    return () => panelRef(null);
+  }, [panelRef, region]);
+  return (
+    <div
+      className="crewlet-app-shell__veil crewlet-app-shell__aside-veil"
+      ref={layer.veilRef}
+      role="presentation"
+      style={{ zIndex }}
+    />
   );
 }
 
@@ -859,3 +1100,4 @@ AppShell.RailStatus = AppShellRailStatus;
 AppShell.Topbar = AppShellTopbar;
 AppShell.Toggle = AppShellToggle;
 AppShell.AccountRow = AccountRow;
+AppShell.ResizeHandle = ResizeHandle;
