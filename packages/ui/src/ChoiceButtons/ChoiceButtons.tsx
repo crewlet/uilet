@@ -7,7 +7,18 @@ export interface ChoiceButtonOption {
   label: ReactNode;
   /** A line under the label: what choosing it means. */
   detail?: ReactNode;
+  /**
+   * A small picture before the words, decorative (the label names the
+   * option): a `ColorChip` on a suggested colour.
+   */
+  media?: ReactNode;
 }
+
+/**
+ * `md` is the Inbox's answer, as tall as a touch target, in a column. `sm` is
+ * the same option, compact, in a row that wraps: suggestions beside a field.
+ */
+export type ChoiceButtonsSize = 'md' | 'sm';
 
 export interface ChoiceButtonsProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
   /** Names the group: "Answers". */
@@ -19,6 +30,16 @@ export interface ChoiceButtonsProps extends Omit<HTMLAttributes<HTMLDivElement>,
   recommendedLabel?: string | undefined;
   /** Sends one option. */
   onChoose: (value: string) => void;
+  /** `md` (the Inbox's answer) by default, or `sm`, compact and in a wrapping row. */
+  size?: ChoiceButtonsSize | undefined;
+  /**
+   * The option already applied, for options that stay on screen after a
+   * press (a suggestion that updated a field). Given, every option is a
+   * toggle button that says whether it is the one applied, and that one is
+   * drawn chosen: the selected edge and fill, never the accent. `null` when
+   * none is; left out, the options send and say nothing of a choice.
+   */
+  chosen?: string | null | undefined;
   /**
    * The option being sent. It is announced as busy, and every option holds
    * still until the answer lands, so a second press cannot send a second
@@ -53,6 +74,8 @@ export function ChoiceButtons({
   onChoose,
   pending,
   disabledReason,
+  size = 'md',
+  chosen,
   className,
   ...rest
 }: ChoiceButtonsProps) {
@@ -63,14 +86,25 @@ export function ChoiceButtons({
   const inert = busy || disabledReason !== undefined;
 
   return (
-    <div {...rest} role="group" aria-label={label} className={cx('crewlet-choice-buttons', className)}>
+    <div
+      {...rest}
+      role="group"
+      aria-label={label}
+      className={cx('crewlet-choice-buttons', size === 'sm' && 'crewlet-choice-buttons--sm', className)}
+    >
       {ordered.map((option) => {
         const isRecommended = option === first;
+        const isChosen = chosen !== undefined && chosen !== null && option.value === chosen;
         return (
           <button
             key={option.value}
             type="button"
-            className={cx('crewlet-choice-buttons__option', isRecommended && 'crewlet-choice-buttons__option--recommended')}
+            className={cx(
+              'crewlet-choice-buttons__option',
+              isRecommended && 'crewlet-choice-buttons__option--recommended',
+              isChosen && 'is-chosen',
+            )}
+            aria-pressed={chosen === undefined ? undefined : isChosen}
             aria-disabled={inert || undefined}
             aria-busy={pending === option.value || undefined}
             aria-describedby={disabledReason === undefined ? undefined : reasonId}
@@ -82,6 +116,11 @@ export function ChoiceButtons({
               onChoose(option.value);
             }}
           >
+            {option.media === undefined || option.media === null ? null : (
+              <span className="crewlet-choice-buttons__media" aria-hidden="true">
+                {option.media}
+              </span>
+            )}
             <span className="crewlet-choice-buttons__text">
               <span className="crewlet-choice-buttons__label">{option.label}</span>
               {option.detail === undefined ? null : (

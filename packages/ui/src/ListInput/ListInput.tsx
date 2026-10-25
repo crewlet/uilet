@@ -140,6 +140,8 @@ export interface ListInputProps {
   itemError?: ((index: number, value: string) => ReactNode) | undefined;
   /** What the list says in place of the new-item box once it is full. */
   fullMessage?: ((max: number) => string) | undefined;
+  /** How many items the list holds of the most it may, at the end of the help line: "3 of 5". Drawn only with `maxItems`. */
+  tallyLabel?: ((count: number, max: number) => string) | undefined;
   /** The name of the button at the end of the box's row that appends what the box holds: "Add policy". */
   addLabel?: ((itemName: string) => string) | undefined;
   /** The word that button shows, which its name begins with: "Add". */
@@ -224,7 +226,8 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
   maxLength,
   undoRemove = false,
   itemError,
-  fullMessage = (max) => `The list is full at ${max}. Remove one to add another.`,
+  fullMessage = () => "That's the most. Remove one to add another.",
+  tallyLabel = (count, max) => `${count} of ${max}`,
   addLabel = (name) => `Add ${name}`,
   addText = 'Add',
   itemLabel = (name, position) => `${name} ${position}`,
@@ -508,7 +511,7 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
    */
   const addControl = (
     <Button
-      size="small"
+      size="medium"
       variant="secondary"
       aria-label={addLabel(itemName)}
       disabled={disabled || full || draftRefused}
@@ -527,6 +530,7 @@ export const ListInput = forwardRef<ListInputHandle, ListInputProps>(function Li
       helper={helper}
       helperOnFocus={helperOnFocus}
       error={error}
+      tally={maxItems === undefined ? undefined : tallyLabel(count, maxItems)}
       className="crewlet-list-input"
     >
       {/*

@@ -7,12 +7,20 @@ import { FileDrop, FilePickButton, type PickedFile } from '../FileDrop/index.js'
 import { cx } from '../utils/cx.js';
 import { normalizeHex } from '../utils/hexColour.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
+import { useLogoSlotGroup } from './LogoSlotGroup.js';
 
 /** The ground a logo is drawn on: the light one it is usually made for, or a dark one. */
 export type LogoSlotGround = 'light' | 'dark';
 
 /** A wide logo (a wordmark, a lockup) or a square mark. */
 export type LogoSlotShape = 'wide' | 'square';
+
+/**
+ * `md` is the slot a logo is chosen in. `sm` is a thumbnail of it, for a
+ * summary that shows what is set (a review of the brand): a third of the
+ * stage's height with a tighter inset and smaller words, best read-only.
+ */
+export type LogoSlotSize = 'md' | 'sm';
 
 export interface LogoSlotLabels {
   /** The picker's label while the slot is empty. */
@@ -84,6 +92,8 @@ export interface LogoSlotProps {
    */
   groundColor?: string | undefined;
   shape?: LogoSlotShape | undefined;
+  /** `md` (the default), or `sm`, a thumbnail for a summary. */
+  size?: LogoSlotSize | undefined;
   /**
    * The logo, as an address the host has already validated (the engine's file
    * route, through the dashboard's checked blob path). Empty, the slot shows
@@ -141,6 +151,7 @@ export function LogoSlot({
   ground,
   groundColor,
   shape = 'wide',
+  size = 'md',
   src,
   alt,
   guide = true,
@@ -156,6 +167,8 @@ export function LogoSlot({
   labels,
 }: LogoSlotProps) {
   const text = { ...LABELS, ...labels };
+  // In a group the caption is the group's, written once under the row.
+  const group = useLogoSlotGroup();
   const labelId = useId();
   const descriptionId = useId();
   const groundValue = normalizeHex(groundColor) ?? DEFAULT_GROUNDS[ground];
@@ -194,7 +207,7 @@ export function LogoSlot({
       aria-labelledby={labelId}
       aria-describedby={description ? descriptionId : undefined}
       aria-busy={uploading || undefined}
-      className={cx('crewlet-logo-slot', className)}
+      className={cx('crewlet-logo-slot', size === 'sm' && 'crewlet-logo-slot--sm', className)}
     >
       <div className="crewlet-logo-slot__head">
         <span className="crewlet-logo-slot__words">
@@ -216,14 +229,19 @@ export function LogoSlot({
       ) : (
         stage
       )}
-      {!filled && (!editable || emptyNote) ? (
-        <p className="crewlet-logo-slot__empty">{emptyNote ?? text.empty}</p>
-      ) : null}
-      {error ? (
-        <p className="crewlet-logo-slot__error" role="alert">
-          <CircleAlertGlyph size="sm" aria-hidden="true" />
-          <span>{error}</span>
-        </p>
+      {/* What is said under the stage, in one place, so a group can give it one row. */}
+      {(!filled && (!editable || emptyNote)) || error ? (
+        <div className="crewlet-logo-slot__notes">
+          {!filled && (!editable || emptyNote) ? (
+            <p className="crewlet-logo-slot__empty">{emptyNote ?? text.empty}</p>
+          ) : null}
+          {error ? (
+            <p className="crewlet-logo-slot__error" role="alert">
+              <CircleAlertGlyph size="sm" aria-hidden="true" />
+              <span>{error}</span>
+            </p>
+          ) : null}
+        </div>
       ) : null}
       {editable ? (
         <div className="crewlet-logo-slot__foot">
@@ -234,7 +252,7 @@ export function LogoSlot({
             accept={accept}
             multiple={false}
             loading={uploading}
-            aria-describedby={labelId}
+            aria-describedby={[labelId, group?.hintId].filter(Boolean).join(' ')}
             onFiles={take}
           >
             {filled ? text.replace : text.choose}
@@ -251,7 +269,7 @@ export function LogoSlot({
               {text.remove}
             </Button>
           ) : null}
-          <span className="crewlet-logo-slot__hint">{text.hint}</span>
+          {group ? null : <span className="crewlet-logo-slot__hint">{text.hint}</span>}
         </div>
       ) : null}
       {/* SAID AS IT STARTS: the spinner on the picker is a picture of it. */}

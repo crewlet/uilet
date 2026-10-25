@@ -50,6 +50,12 @@ export interface FormFieldProps extends Omit<HTMLAttributes<HTMLElement>, 'child
    * much it is over. See `CharacterCount`.
    */
   limit?: FormFieldLimit | undefined;
+  /**
+   * A count that is not a length, drawn where a length count would be (at the
+   * end of the help line) and joined into the description the same way: how
+   * many items a list holds of the most it may, "3 of 5".
+   */
+  tally?: ReactNode;
   /** A control rendered beside the label, such as an Add button. */
   labelAction?: ReactNode;
   /**
@@ -106,6 +112,7 @@ export const FormField = ({
   helperOnFocus = false,
   error,
   limit,
+  tally,
   labelAction,
   hideLabel = false,
   as = 'div',
@@ -120,9 +127,11 @@ export const FormField = ({
   const helperId = helper ? `${id}-helper` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const countId = limit ? `${id}-count` : undefined;
+  const hasTally = tally !== undefined && tally !== null && tally !== false;
+  const tallyId = hasTally ? `${id}-tally` : undefined;
   const over = limit !== undefined && characterCountState(limit.length, limit.max) === 'over';
   const extra = describedBy === undefined ? [] : typeof describedBy === 'string' ? [describedBy] : [...describedBy];
-  const described = [...extra, helperId, countId, errorId].filter(Boolean).join(' ');
+  const described = [...extra, helperId, tallyId, countId, errorId].filter(Boolean).join(' ');
   const invalid = Boolean(error) || over;
   const field: FormFieldRender = {
     id,
@@ -147,10 +156,15 @@ export const FormField = ({
         * a field whose control is the smallest thing in it. Without a limit
         * the help line is exactly what it always was.
         */}
-      {limit ? (
+      {limit || hasTally ? (
         <div className="crewlet-form-field__meta">
           {help ?? <span className="crewlet-form-field__meta-spacer" />}
-          <CharacterCount id={countId} length={limit.length} max={limit.max} labels={limit.labels} />
+          {hasTally ? (
+            <span id={tallyId} className="crewlet-form-field__tally">
+              {tally}
+            </span>
+          ) : null}
+          {limit ? <CharacterCount id={countId} length={limit.length} max={limit.max} labels={limit.labels} /> : null}
         </div>
       ) : (
         help

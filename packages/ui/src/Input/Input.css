@@ -580,6 +580,15 @@
   min-width: 0;
 }
 
+/* A count that is not a length ("3 of 5"), in the help line's own quiet ink. */
+.crewlet-form-field__tally {
+  flex: none;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--font-line-height-normal);
+}
+
 /* SHOWN ONLY WHILE THE FIELD HAS FOCUS (`helperOnFocus`): a dense form reads as
    labels and values at rest, and the sentence appears under the field the
    reader is in. Still described, so a screen reader hears it on entry. */

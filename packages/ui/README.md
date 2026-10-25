@@ -204,6 +204,20 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.52.0
+
+A second polish of the brand setup pieces.
+
+**`LogoSlotGroup` is new**: logo slots side by side, aligned row by row. Each slot is a subgrid of one set of rows, so the names and descriptions, the stages, the notes under them and the action rows each start on one line across the slots whatever their copy; a row no slot uses takes no room. What may be brought is written once under the row (`hint`) and describes every slot's picker, and a slot inside a group draws no caption of its own. The columns are as many as fit at 14rem, then one under another on a phone. A slot's empty note and refusal now share one element (`.crewlet-logo-slot__notes`).
+
+**`LogoSlot` takes `size="sm"`**: a thumbnail for a summary of what is set, at half the stage's height with a tighter inset and smaller words, best read-only.
+
+**`ChoiceButtons` takes `size="sm"`, per-option `media` and `chosen`.** The Inbox's one-press answer option, compact (the small control height, the compact and micro type steps) in a row that wraps, for suggestions beside a field. `media` is a decorative picture before the words (a `ColorChip` on a suggested colour). `chosen` keeps an applied option marked in the selected edge and fill, with every option a toggle button (`aria-pressed`) saying whether it is the one applied; left out, the options send and say nothing of a choice, as in the Inbox. Hover, press and focus are the Inbox's own.
+
+**`ListInput` counts its items, matches its Add to the field and aligns its rows.** With `maxItems` the help line ends in a plain count (`tallyLabel`, "3 of 5"), joined into the group's description, and a full list says "That's the most. Remove one to add another." (`fullMessage`'s new default). The Add button stands at the field's medium height on the box's first line. A row's number sits on the text's first line at its line height, so the two share a baseline however long the item; the row's gap is a step and a half; and an edited item keeps an inset for its ring that a margin takes back, so the words never move when it is focused. What to change: a test that reads the old "The list is full at N" sentence.
+
+**`FormField` takes `tally`**: a count that is not a length, drawn at the end of the help line where a length count would be and joined into the description the same way.
+
 ## Changes in 0.51.0
 
 Polish of the setup wizard pieces, and the parts the brand setup asked for.

@@ -205,3 +205,26 @@ export const PoliciesOnAPhone: Story = {
     return <Demo />;
   },
 };
+
+/**
+ * AT THE MOST IT MAY HOLD. With `maxItems` the help line ends in how many the
+ * list holds of it ("5 of 5"), and once full the box gives way to one plain
+ * sentence: "That's the most. Remove one to add another." Two lists stacked
+ * full width, as the brand's voice is written.
+ */
+export const AtTheMost: Story = {
+  render: () => {
+    function Demo() {
+      const [like, setLike] = useState(['Plain words.', 'Short sentences.', 'Say what changed.', 'Lead with the answer.', 'Name the owner.']);
+      const [avoid, setAvoid] = useState(['Jargon.']);
+      return (
+        <div style={{ display: 'grid', gap: 24, maxWidth: 640 }}>
+          <Announcer />
+          <ListInput label="Write like this" itemName="line" optional maxItems={5} value={like} onChange={setLike} helper="Short lines agents copy the tone of." />
+          <ListInput label="Avoid" itemName="line" optional maxItems={5} value={avoid} onChange={setAvoid} placeholder="Add a line to avoid" />
+        </div>
+      );
+    }
+    return <Demo />;
+  },
+};
