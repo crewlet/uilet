@@ -1,0 +1,228 @@
+/*
+ * A side panel and the frame that lays it beside the content or over it
+ * (`SidePanel`, `SidePanelFrame`, and their artifact presets).
+ *
+ * The frame is a row: the content, then at most one panel. The content
+ * scrolls itself, so a panel beside it stays in view however far it is read;
+ * the panel's own body scrolls under its head.
+ *
+ * ONE HAIRLINE between the two, the panel's start edge, and none at the
+ * frame's own edges: whatever holds the frame already draws those.
+ */
+
+.crewlet-side-panel-frame {
+  container: crewlet-side-panel-frame / inline-size;
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.crewlet-side-panel-frame__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* EXPANDED, the panel is the frame; the content stays mounted behind it, so
+   a page's state survives the look at its data. */
+.crewlet-side-panel-frame[data-panel='expanded'] > .crewlet-side-panel-frame__body {
+  display: none;
+}
+
+/*
+ * THE PANEL. Its width is one variable (`--crewlet-side-panel-width`), which
+ * the `width` prop sets on the element itself, and its head stands at the page
+ * bar's height (`--crewlet-side-panel-head-height`), so beside the shell's bar
+ * the two lines meet. Positioned, so the grip on its start edge has a box to
+ * stand against.
+ */
+.crewlet-side-panel {
+  --crewlet-side-panel-width: 26.25rem;
+  --crewlet-side-panel-head-height: var(--size-shell-topbar);
+  --crewlet-side-panel-inset: var(--spacing-4);
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--crewlet-side-panel-width);
+  min-height: 0;
+  border-left: 1px solid var(--color-border-default);
+  background: var(--color-surface-background);
+}
+
+/* IN THE SHELL'S ASIDE the panel fills the aside's sheet, which draws the
+   edge, the corner and the ground, and whose track is the width. */
+.crewlet-side-panel--fill {
+  flex: 1 1 auto;
+  width: auto;
+  border-left: 0;
+  background: transparent;
+}
+
+.crewlet-side-panel[data-expanded] {
+  flex: 1 1 auto;
+  width: auto;
+  border-left: 0;
+}
+
+/* The grip straddles the panel's hairline, which is the edge it moves. */
+.crewlet-side-panel > .crewlet-resize-handle--left {
+  left: calc(var(--crewlet-resize-handle-width) / -2);
+}
+
+/*
+ * THE HEAD: the mark, the title, and the actions at the end. The title keeps
+ * what the actions leave it and truncates, so the actions never wrap. Its
+ * start inset is the body's, so the mark stands on the line the body's
+ * content starts on.
+ */
+.crewlet-side-panel__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-2);
+  height: var(--crewlet-side-panel-head-height);
+  padding: 0 var(--spacing-2) 0 var(--spacing-4);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-side-panel__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-side-panel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-snug);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* THE HEADING TAKES FOCUS WITHOUT A RING. It is focused so a screen reader
+   announces what opened, and it is not a control: a ring round a title reads
+   as something to press. Transparent rather than none, so forced colours,
+   which draw every outline in the system colour, still show where focus is. */
+.crewlet-side-panel__title--quiet:focus-visible {
+  outline: 2px solid transparent;
+}
+
+/* Named for assistive technology only, where the mark beside it says it. */
+.crewlet-side-panel__title--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.crewlet-side-panel__actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-left: auto;
+}
+
+/* THE BODY'S INSET IS PUBLISHED (--crewlet-side-panel-inset) for content
+   that sticks to its scrollport: a sticky edge stops at the padding, so a
+   foot with `bottom: 0` would leave a band under it that the content
+   scrolled through; such a foot offsets itself by the inset to sit on the
+   edge. */
+.crewlet-side-panel__body {
+  /* THE PANEL'S OWN MEASURE, so what it holds folds to the panel's width
+     rather than the window's; and its sections head at the panel title's
+     step, a level under it and never louder than it. */
+  container: crewlet-side-panel / inline-size;
+  --crewlet-section-title-size: var(--font-size-sm);
+
+  /* A COLUMN, so content that should fit the panel rather than scroll it
+     can: a child that sets `min-height: 0` shrinks to the room the body has,
+     and every other child keeps its content's height and scrolls the body. */
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--crewlet-side-panel-inset);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* THE FOOT holds the panel's own commit, outside the scrolling body, so it
+   stays in reach at every scroll. Its inset is the body's. */
+.crewlet-side-panel__foot {
+  flex: none;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-surface-background);
+}
+
+/* ── shapes the host decides ─────────────────────────────────────────── */
+
+/* A COLUMN keeps the content its floor: a width dragged in a wide frame is
+   capped at what leaves the content `--crewlet-side-panel-reserve` wide. */
+.crewlet-side-panel-frame[data-shape='column'] > .crewlet-side-panel:not([data-expanded]) {
+  width: min(var(--crewlet-side-panel-width), max(0px, 100% - var(--crewlet-side-panel-reserve, 0px)));
+}
+
+/* A DRAWER slides over the content's end edge, raised off it, rather than
+   squeezing the content under a useful width. */
+.crewlet-side-panel-frame[data-shape='drawer'] > .crewlet-side-panel:not([data-expanded]) {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: var(--z-index-overlay);
+  width: min(var(--crewlet-side-panel-width), 100%);
+  /* THE DRAWER'S LIFT, the shell's own rail drawer's: a smaller step left
+     the panel's start edge reading as a cut through the content rather than
+     a sheet over it. */
+  box-shadow: var(--shadow-xl);
+}
+
+/* A SHEET is the frame until it is closed. */
+.crewlet-side-panel-frame[data-shape='sheet'] > .crewlet-side-panel {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-index-overlay);
+  width: auto;
+  border-left: 0;
+}
+
+/* ── shapes the frame measures (no `shape`) ─────────────────────────── */
+
+/* NOT ROOM FOR TWO COLUMNS: the drawer, as above. */
+@container crewlet-side-panel-frame (width < 960px) {
+  .crewlet-side-panel-frame[data-shape='auto'] > .crewlet-side-panel {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    z-index: var(--z-index-overlay);
+    width: min(var(--crewlet-side-panel-width), 100%);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .crewlet-side-panel-frame[data-shape='auto'] > .crewlet-side-panel[data-expanded] {
+    inset-inline-start: 0;
+    width: auto;
+    box-shadow: none;
+  }
+}
+
+/* A PHONE: the panel is the frame until it is closed. */
+@container crewlet-side-panel-frame (width < 640px) {
+  .crewlet-side-panel-frame[data-shape='auto'] > .crewlet-side-panel {
+    inset-inline-start: 0;
+    width: auto;
+    border-left: 0;
+    box-shadow: none;
+  }
+}

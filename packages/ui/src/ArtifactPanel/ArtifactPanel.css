@@ -1,159 +1,43 @@
 /*
- * The workspace is a row: the artifact's body, then at most one panel. The
- * body scrolls itself, so a panel beside it stays in view however far the
- * artifact is read; the panel's own body scrolls under its head.
+ * The artifact's presets of the side panel and its frame (`ArtifactPanel`,
+ * `ArtifactWorkspace`). SidePanel.css draws them; what is here is only what
+ * the artifact sets differently, and the names it has always published.
  *
- * ONE HAIRLINE between the two, the panel's start edge, and none at the
- * workspace's own edges: whatever frames the workspace already draws those.
+ * Every rule names BOTH classes, so it outranks the side panel's own rule of
+ * one class whichever of the two stylesheets a bundle puts first.
  */
 
-.crewlet-artifact-workspace {
-  container: crewlet-artifact-workspace / inline-size;
-  position: relative;
-  display: flex;
-  min-width: 0;
-  min-height: 0;
+/* The workspace answers to its own container name as well as the frame's,
+   so a page's `@container crewlet-artifact-workspace` query keeps matching. */
+.crewlet-side-panel-frame.crewlet-artifact-workspace {
+  container-name: crewlet-side-panel-frame crewlet-artifact-workspace;
 }
 
-.crewlet-artifact-workspace__body {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  overflow: auto;
-}
-
-/* EXPANDED, the panel is the workspace; the body stays mounted behind it. */
-.crewlet-artifact-workspace[data-panel='expanded'] > .crewlet-artifact-workspace__body {
-  display: none;
-}
-
-.crewlet-artifact-panel {
+.crewlet-side-panel.crewlet-artifact-panel {
   /* THE TEXT WIDTH, every panel of facts, a list or a form: three widths for
      those moved the artifact's edge 80px between Details and History. */
   --crewlet-artifact-panel-width: 22.5rem;
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  width: var(--crewlet-artifact-panel-width);
-  min-height: 0;
-  border-left: 1px solid var(--color-border-default);
-  background: var(--color-surface-background);
+  --crewlet-side-panel-width: var(--crewlet-artifact-panel-width);
+  /* The head on the row step, under the artifact's own bar. */
+  --crewlet-side-panel-head-height: var(--size-row-lg);
 }
 
-.crewlet-artifact-panel--lg {
+.crewlet-side-panel.crewlet-artifact-panel--lg {
   --crewlet-artifact-panel-width: 36rem;
 }
 
-.crewlet-artifact-panel[data-expanded] {
-  flex: 1 1 auto;
-  width: auto;
-  border-left: 0;
-}
-
-.crewlet-artifact-panel__head {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: var(--spacing-2);
-  height: var(--size-row-lg);
-  padding: 0 var(--spacing-2) 0 var(--spacing-4);
-  border-bottom: 1px solid var(--color-border-default);
-}
-
-.crewlet-artifact-panel__icon {
-  display: inline-flex;
-  flex: none;
-  color: var(--color-text-tertiary);
-}
-
-.crewlet-artifact-panel__title {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--font-line-height-snug);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.crewlet-artifact-panel__title:focus-visible {
+/* The heading rings when the keyboard reaches it, as it always has here. */
+.crewlet-side-panel__title.crewlet-artifact-panel__title:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);
   border-radius: var(--radius-sm);
 }
 
-.crewlet-artifact-panel__actions {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: var(--spacing-1);
-}
-
-/* THE BODY'S INSET IS PUBLISHED (--crewlet-artifact-panel-inset) for content
-   that sticks to its scrollport: a sticky edge stops at the padding, so a
-   foot with `bottom: 0` left a band under it that the content scrolled
-   through; such a foot offsets itself by the inset to sit on the edge. */
-.crewlet-artifact-panel__body {
-  /* THE PANEL'S OWN MEASURE, so what it holds folds to the panel's width
-     rather than the window's; and its sections head at the panel title's
-     step, a level under it and never louder than it. */
-  container: crewlet-artifact-panel / inline-size;
-  --crewlet-section-title-size: var(--font-size-sm);
+/* THE BODY'S INSET IS PUBLISHED under its own name too
+   (--crewlet-artifact-panel-inset), which a sticky foot offsets itself by,
+   and the body answers to its own container name. */
+.crewlet-side-panel__body.crewlet-artifact-panel__body {
+  container-name: crewlet-side-panel crewlet-artifact-panel;
   --crewlet-artifact-panel-inset: var(--spacing-4);
-
-  /* A COLUMN, so content that should fit the panel rather than scroll it
-     can: a child that sets `min-height: 0` shrinks to the room the body has
-     (a sheet's rows, whose grid then scrolls itself), and every other child
-     keeps its content's height and scrolls the body as before. */
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: var(--crewlet-artifact-panel-inset);
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-
-/* THE FOOT holds the panel's own commit, outside the scrolling body, so it
-   stays in reach at every scroll. Its inset is the body's. */
-.crewlet-artifact-panel__foot {
-  flex: none;
-  padding: var(--spacing-3) var(--spacing-4);
-  border-top: 1px solid var(--color-border-default);
-  background: var(--color-surface-background);
-}
-
-/* NOT ROOM FOR TWO COLUMNS: the panel slides over the artifact's end edge,
-   raised off it, rather than squeezing the artifact under a useful width. */
-@container crewlet-artifact-workspace (width < 960px) {
-  .crewlet-artifact-panel {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-end: 0;
-    z-index: var(--z-index-overlay);
-    width: min(var(--crewlet-artifact-panel-width), 100%);
-    /* THE DRAWER'S LIFT, the shell's own rail drawer's: the large step falls
-       below a box and left the panel's start edge reading as a cut through
-       the artifact rather than a sheet over it. */
-    box-shadow: var(--shadow-xl);
-  }
-
-  .crewlet-artifact-panel[data-expanded] {
-    inset-inline-start: 0;
-    width: auto;
-    box-shadow: none;
-  }
-}
-
-/* A PHONE: the panel is the screen until it is closed. */
-@container crewlet-artifact-workspace (width < 640px) {
-  .crewlet-artifact-panel {
-    inset-inline-start: 0;
-    width: auto;
-    border-left: 0;
-    box-shadow: none;
-  }
+  --crewlet-side-panel-inset: var(--crewlet-artifact-panel-inset);
 }
