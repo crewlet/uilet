@@ -1,0 +1,71 @@
+/*
+ * One message: the bubble on its writer's side, and what it carried and its
+ * quiet foot under it, on the same side, a spacing step below.
+ */
+.crewlet-message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+  max-width: 85%;
+}
+
+.crewlet-message--self {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.crewlet-message--other {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.crewlet-message__bubble {
+  max-width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* The reader's own: the raised ground, no edge, the tail at the end corner. */
+.crewlet-message--self .crewlet-message__bubble {
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg);
+  background: var(--color-surface-elevated);
+}
+
+/* Anybody else's: the card ground inside a hairline, the tail at the start corner. */
+.crewlet-message--other .crewlet-message__bubble {
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-message__attachment,
+.crewlet-message__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-message--enter {
+  animation: crewlet-message-enter var(--motion-duration-moderate) var(--motion-easing-out);
+}
+
+@keyframes crewlet-message-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-1));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-message--enter {
+    animation: none;
+  }
+}
