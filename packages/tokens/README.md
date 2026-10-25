@@ -83,6 +83,10 @@ nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aaLarge); // '#00a0a0',
 
 Show the ratio of the value it returns, measured with `contrast`, rather than the floor it was asked for.
 
+## Changed in 0.58.0: the working ring's own pace
+
+`--motion-duration-turn` (1000ms, `motion.duration.turn`) and `--motion-duration-sweep` (1500ms, `motion.duration.sweep`) are new. They are PERIODS, like `--motion-duration-breath`: one full rotation of a working ring, and one round of its arc lengthening and shortening. `@crewlethq/ui`'s `Spinner` turned once per `--motion-duration-slow` (300ms), a transition step, which is more than three turns a second. Nothing to change: no token is renamed or removed, and a stylesheet of your own that spins a mark reads `--motion-duration-turn` rather than a transition step.
+
 ## Changed in 0.50.0: the nearest shade that clears a floor
 
 | What changed | What to change | Details |
@@ -518,6 +522,8 @@ No token is renamed or removed here; values moved to the approved design, and se
 | `--motion-duration-moderate` | 200ms | A rail row's hover, a bar's background |
 | `--motion-duration-slow` | 300ms | A dialog entering, a drawer sliding |
 | `--motion-duration-breath` | 2200ms | The PERIOD of a mark saying work is still happening: one full round, out and back, 0.45 cycles a second. Not a transition. A pulsing `StatusDot` breathes one round of it |
+| `--motion-duration-turn` | 1000ms | The PERIOD of one full rotation of a working ring (`Spinner`), linear. Not a transition |
+| `--motion-duration-sweep` | 1500ms | The PERIOD of a working ring's arc lengthening and shortening, out and back. Not a whole number of turns, so the arc's longest reach lands somewhere new each round. Not a transition |
 
 A component that moves stops every motion it starts in the same stylesheet, naming the rule's selector again, after it, inside `@media (prefers-reduced-motion: reduce)`, which is what `crewlet-css-check` in `@crewlethq/ui` holds it to; and `@crewlethq/tokens/css/base` collapses motion for the whole document under `prefers-reduced-motion: reduce`.
 
