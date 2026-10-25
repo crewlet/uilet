@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CheckGlyph, CircleAlertGlyph, SaveGlyph } from '@crewlethq/icons/glyphs';
 import { Button, type ButtonSize, type ButtonVariant } from '../Button/index.js';
 import { safeFilename, useDownload, type DownloadState } from '../utils/useDownload.js';
@@ -10,13 +10,32 @@ function downloadGlyph(state: DownloadState): ReactNode {
   return <SaveGlyph size="sm" />;
 }
 
-export interface DownloadButtonProps {
-  /** The text, or a thunk that produces it, resolved on the press. See [CopyButtonProps.text]. */
-  text: string | (() => string);
+/**
+ * What the file is: text the page already holds (or a thunk producing it),
+ * or a file fetched on the press, such as an export the server builds.
+ */
+export type DownloadButtonSource =
+  | {
+      /** The text, or a thunk that produces it, resolved on the press. See [CopyButtonProps.text]. */
+      text: string | (() => string);
+      file?: undefined;
+      /** The type the file is offered as. Defaults to plain text in UTF-8. */
+      mime?: string | undefined;
+    }
+  | {
+      text?: undefined;
+      /**
+       * Fetches the file on the press. The button keeps its label with the
+       * spinner while it waits, and a fetch that rejects reads as a failed
+       * download. The type is the blob's own.
+       */
+      file: () => Promise<Blob>;
+      mime?: undefined;
+    };
+
+export interface DownloadButtonBaseProps {
   /** The name to offer it under. Sanitised by [safeFilename]. */
   filename: string;
-  /** The type the file is offered as. Defaults to plain text in UTF-8. */
-  mime?: string | undefined;
   /** The label at rest. */
   label?: string | undefined;
   /**
@@ -46,6 +65,8 @@ export interface DownloadButtonProps {
   className?: string | undefined;
 }
 
+export type DownloadButtonProps = DownloadButtonBaseProps & DownloadButtonSource;
+
 /**
  * Hand text to the reader as a file, and SAY WHETHER IT LANDED.
  *
@@ -63,6 +84,7 @@ export interface DownloadButtonProps {
  */
 export function DownloadButton({
   text,
+  file,
   filename,
   mime,
   label = 'Download',
@@ -78,11 +100,29 @@ export function DownloadButton({
   failedResetMs = null,
   className,
 }: DownloadButtonProps) {
-  const { state, attempt, download } = useDownload({ resetMs, failedResetMs });
+  const { state, attempt, download, downloadFile } = useDownload({ resetMs, failedResetMs });
   const name = useMemo(() => safeFilename(filename), [filename]);
+  const [fetching, setFetching] = useState(false);
+  const live = useRef(true);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
   const onClick = useCallback(() => {
+    if (file) {
+      // One fetch at a time: a second press while the first is in flight would
+      // fetch the same export twice and offer two files.
+      if (fetching) return;
+      setFetching(true);
+      void downloadFile(file, filename).finally(() => {
+        if (live.current) setFetching(false);
+      });
+      return;
+    }
     void download(text, filename, mime);
-  }, [download, text, filename, mime]);
+  }, [download, downloadFile, fetching, file, text, filename, mime]);
   const said =
     state === 'started' ? (startedMessage ?? `download started: ${name}`) : state === 'failed' ? failedMessage : '';
 
@@ -93,6 +133,7 @@ export function DownloadButton({
         variant={variant}
         leadingIcon={downloadGlyph(state)}
         onClick={onClick}
+        loading={fetching}
         disabled={disabled}
         title={state === 'failed' ? failedMessage : title}
       >
