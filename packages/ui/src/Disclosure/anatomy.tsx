@@ -28,6 +28,19 @@ export interface DisclosureAnatomyProps {
    */
   actions?: ReactNode;
   disabled?: boolean | undefined;
+  /**
+   * A mark after the chevron and before the title: the state of what the
+   * section holds (a request's spinner, its check). Decoration; the title
+   * says the state in words.
+   */
+  icon?: ReactNode;
+  /**
+   * There is nothing to open yet (a request with no steps so far). The bar is
+   * drawn as words rather than a button, with the chevron's slot kept and
+   * left unpainted, so nothing shifts when the section gains content and the
+   * trigger becomes a button. `true` by default.
+   */
+  expandable?: boolean | undefined;
   headingLevel: DisclosureHeadingLevel;
   triggerId: string;
   panelId: string;
@@ -55,24 +68,25 @@ export function DisclosureAnatomy({
   mono = false,
   actions,
   disabled = false,
+  icon,
+  expandable = true,
   headingLevel,
   triggerId,
   panelId,
   triggerClassName,
   onKeyDown,
 }: DisclosureAnatomyProps) {
-  const trigger = (
-    <button
-      type="button"
-      id={triggerId}
-      className={cx('crewlet-disclosure__trigger', triggerClassName)}
-      aria-expanded={open}
-      aria-controls={panelId}
-      disabled={disabled}
-      onClick={onToggle}
-      onKeyDown={onKeyDown}
-    >
-      <ChevronDownGlyph className="crewlet-disclosure__chevron" size="sm" />
+  const content = (
+    <>
+      <ChevronDownGlyph
+        className={cx('crewlet-disclosure__chevron', !expandable && 'crewlet-disclosure__chevron--reserved')}
+        size="sm"
+      />
+      {icon === undefined ? null : (
+        <span className="crewlet-disclosure__icon" aria-hidden="true">
+          {icon}
+        </span>
+      )}
       <span className={cx('crewlet-disclosure__title', mono && 'crewlet-disclosure__title--mono')}>{title}</span>
       {/*
         THE SPACES ARE TEXT NODES. The fact and the count are inside the
@@ -84,7 +98,26 @@ export function DisclosureAnatomy({
       */}
       {meta === undefined ? null : <> <span className="crewlet-disclosure__meta">{meta}</span></>}
       {count === undefined ? null : <> <Count value={count} /></>}
+    </>
+  );
+
+  const trigger = expandable ? (
+    <button
+      type="button"
+      id={triggerId}
+      className={cx('crewlet-disclosure__trigger', triggerClassName)}
+      aria-expanded={open}
+      aria-controls={panelId}
+      disabled={disabled}
+      onClick={onToggle}
+      onKeyDown={onKeyDown}
+    >
+      {content}
     </button>
+  ) : (
+    <span id={triggerId} className={cx('crewlet-disclosure__trigger', 'crewlet-disclosure__trigger--static', triggerClassName)}>
+      {content}
+    </span>
   );
 
   const Heading = headingLevel === 'none' ? null : headingTag(headingLevel);

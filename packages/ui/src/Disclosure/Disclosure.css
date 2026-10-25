@@ -103,6 +103,32 @@
   transform: rotate(0deg);
 }
 
+/*
+ * NOTHING TO OPEN YET: the bar is words rather than a button, and the
+ * chevron keeps its slot unpainted, so the mark after it does not move when
+ * the section gains content and the chevron appears.
+ */
+.crewlet-disclosure__chevron--reserved {
+  visibility: hidden;
+}
+
+.crewlet-disclosure__trigger--static {
+  cursor: default;
+}
+
+/* Words, so nothing answers the pointer. */
+.crewlet-disclosure__trigger--static:hover {
+  background: none;
+  color: var(--color-text-secondary);
+}
+
+/* The section's state mark, between the chevron and the title. */
+.crewlet-disclosure__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
 .crewlet-disclosure__title {
   min-width: 0;
   overflow: hidden;
