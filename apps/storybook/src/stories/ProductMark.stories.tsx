@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ProductMark, PRODUCTS, VendorMark, type Product } from '@crewlethq/icons';
 
-const NAMES: Record<Product, string> = { works: 'Crewlet Works', knowledge: 'Crewlet Knowledge', chat: 'Crewlet Chat' };
+const NAMES: Record<Product, string> = { worklet: 'Worklet', doclet: 'Doclet', chat: 'Crewlet Chat' };
 const SIZES = [16, 20, 24, 48] as const;
 
 const meta: Meta<typeof ProductMark> = {
   title: 'Icons/ProductMark',
   component: ProductMark,
-  args: { product: 'works', size: 48 },
+  args: { product: 'worklet', size: 48 },
   argTypes: { product: { control: 'inline-radio', options: [...PRODUCTS] }, soon: { control: 'boolean' } },
 };
 

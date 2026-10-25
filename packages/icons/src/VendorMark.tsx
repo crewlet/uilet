@@ -22,9 +22,9 @@
  * spill past the tilted edges, and painting the surface behind it would put a
  * vendor's colour on a card.
  *
- * CREWLET ITSELF IS ONE OF THEM, for the services built into it (its own
- * tracker, its knowledge base) that a catalogue lists beside the third-party
- * apps they stand in for. Its drawing is the brand mark the package already
+ * CREWLET ITSELF IS ONE OF THEM, for the services built into it (Worklet,
+ * Doclet) that a catalogue lists beside the third-party apps they stand in
+ * for. Its drawing is the brand mark the package already
  * carries (svg/crewlet-icon.svg, compiled as CrewletIcon), never a second
  * copy, so the mark on a catalogue tile is the mark everywhere else, and it
  * takes the same size and the same muted state as every vendor beside it.
