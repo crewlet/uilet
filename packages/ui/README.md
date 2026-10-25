@@ -209,6 +209,10 @@ places:
 
 **`ResultTableCard` keeps words whole.** Its text cells inherited Table's `overflow-wrap: anywhere`, which under the card's automatic layout let a column shrink to one letter, so "Product Manager" wrapped letter by letter beside columns with room to spare. Its cells now break between words (`overflow-wrap: break-word`); figures and dates (`end` columns) stay on one line, and the first column still ends a long name in an ellipsis.
 
+**`ProposalCard` keeps focus when it settles.** Approving or declining from the keyboard removed the focused button and left focus on the page body. When focus is in the card as it settles, it now moves to the strip that says what happened (the receipt, the declined, expired or stale notice, or the failure), or to the card itself when there is no strip. Both take focus by script only (`tabindex="-1"`) and draw the token focus ring for a keyboard reader. A reader whose focus has moved elsewhere is not pulled back. The card's own `id`, when given, is kept.
+
+**`@crewlethq/ui/ProposalCard` carries the visually hidden style it uses.** The foot's empty live region (0.57.0) borrowed the shared visually hidden class through a bare module import, which the build drops because the package marks only stylesheets as side effects. A consumer that imported the folder alone, without `styles.css`, drew the empty region as a blank line. The folder now imports the stylesheet itself.
+
 ## Changes in 0.57.0
 
 **`AppShell` takes `asideModal`**, so an `overlay` aside can leave the page live beside it. `true`, the default, keeps the 0.56.0 overlay: a modal dialog behind a veil with Tab held inside. `false` draws the overlay with no veil, no trap and nothing made inert: it is a complementary region named by `asideLabel`, focus moves into it when it opens, Escape from inside it calls `onAsideClose` (unless a control inside answered the key, or a menu or dialog on the layer stack owns it), and focus goes back to what opened it if it was still inside when it closed. A column is never modal and a `sheet` always is, whatever the prop says. The aside carries `data-modal`.
