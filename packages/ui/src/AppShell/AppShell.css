@@ -611,13 +611,25 @@
    programmatic focus does not match :focus-visible, so neither the browser nor
    the document baseline draws a ring around the whole screen. */
 
+/*
+ * THE CONTENT'S END is room under the last line, so it never reads flush
+ * against the window's edge. It is a custom property,
+ * `--crewlet-app-shell-content-end`, because a screen that ends in a bar
+ * docked to the bottom of the scroller (a setup's footer) IS that edge: the
+ * bar takes the room back with a negative margin of the same length, and
+ * sits on the scroller's bottom at the end of a scroll exactly where it stood
+ * while scrolling, rather than riding the room's height above it.
+ */
 .crewlet-app-shell__content {
+  --crewlet-app-shell-content-end: var(--spacing-10);
+
   display: flex;
   flex-direction: column;
   gap: var(--spacing-5);
   max-width: var(--size-content-max);
   margin: 0 auto;
-  padding: var(--spacing-5) var(--spacing-5) var(--spacing-10);
+  padding: var(--spacing-5) var(--spacing-5);
+  padding-bottom: var(--crewlet-app-shell-content-end);
   min-width: 0;
 }
 
@@ -636,8 +648,9 @@
 }
 
 .crewlet-app-shell--fill .crewlet-app-shell__content {
+  --crewlet-app-shell-content-end: var(--spacing-5);
+
   height: 100%;
-  padding-bottom: var(--spacing-5);
 }
 
 /* Hidden by default, revealed by the breakpoint below: the wide layout has the
@@ -756,7 +769,10 @@
   }
 
   .crewlet-app-shell__content {
-    padding: var(--spacing-4) var(--spacing-4) var(--spacing-9);
+    --crewlet-app-shell-content-end: var(--spacing-9);
+
+    padding: var(--spacing-4) var(--spacing-4);
+    padding-bottom: var(--crewlet-app-shell-content-end);
   }
 }
 
