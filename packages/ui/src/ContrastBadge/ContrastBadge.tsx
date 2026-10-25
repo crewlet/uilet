@@ -93,6 +93,39 @@ export type ContrastBadgeLabelsInput = Partial<Omit<ContrastBadgeLabels, 'levels
   levels?: Partial<Record<ContrastBadgeLevel, string>> | undefined;
 };
 
+export interface ContrastLevelTagProps {
+  /** The level drawn. */
+  level: ContrastBadgeLevel;
+  /** Its word: "AA", "Low". */
+  children: string;
+}
+
+/**
+ * A contrast level as the badge draws it: its word in its tone with its
+ * glyph (a check for AA and AAA, the warning triangle for large text only and
+ * Low, the alert circle for Fails). The one drawing of a level, so the badge
+ * and the explanation of the levels (`ContrastHelp`) never disagree.
+ */
+export function ContrastLevelTag({ level, children }: ContrastLevelTagProps) {
+  return (
+    <Tag
+      size="xs"
+      variant={TONE[level]}
+      leadingIcon={
+        level === 'fail' ? (
+          <CircleAlertGlyph size="xs" />
+        ) : level === 'aa-large' || level === 'low' ? (
+          <TriangleAlertGlyph size="xs" />
+        ) : (
+          <CircleCheckGlyph size="xs" />
+        )
+      }
+    >
+      {children}
+    </Tag>
+  );
+}
+
 export interface ContrastBadgeProps {
   /** The colour read: text, a logo, an accent. `#rrggbb`. */
   foreground: string;
@@ -165,21 +198,7 @@ export function ContrastBadge({
             <span aria-hidden="true">{`${printed}:1`}</span>
             <VisuallyHidden>{text.ratio(printed)}</VisuallyHidden>
           </span>
-          <Tag
-            size="xs"
-            variant={TONE[level]}
-            leadingIcon={
-              level === 'fail' ? (
-                <CircleAlertGlyph size="xs" />
-              ) : level === 'aa-large' || level === 'low' ? (
-                <TriangleAlertGlyph size="xs" />
-              ) : (
-                <CircleCheckGlyph size="xs" />
-              )
-            }
-          >
-            {text.levels[level]}
-          </Tag>
+          <ContrastLevelTag level={level}>{text.levels[level]}</ContrastLevelTag>
         </>
       ) : (
         <span className="crewlet-contrast-badge__unmeasured">{text.unmeasured}</span>
