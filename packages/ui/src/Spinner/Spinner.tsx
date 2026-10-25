@@ -15,8 +15,12 @@ export interface SpinnerProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chi
 }
 
 /**
- * Work under way, drawn as the package's one ring: a 2px ring in the current
- * ink with its right quarter open, turning once per slow motion step.
+ * Work under way, drawn as the package's one ring: a 2px arc in the current
+ * ink that turns once a second (`--motion-duration-turn`) while its length
+ * breathes between a quarter and three quarters of the ring on a slower cycle
+ * (`--motion-duration-sweep`). It used to turn once per slow transition step
+ * (300ms), more than three turns a second, which read as alarm rather than as
+ * steady work.
  *
  * ONE RING FOR THE WHOLE PACKAGE. A button's pending state, a request's state
  * column and a status tag all draw this element, so a screen that shows three

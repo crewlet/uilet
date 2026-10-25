@@ -2,17 +2,59 @@
  * The package's one ring. See Spinner.tsx for why it is inline-block, why it
  * stays open when it stops, and why its ink is the current colour.
  */
+
+/*
+ * THE ARC'S LENGTH, registered so it can be animated. An unregistered custom
+ * property animates in a single step at the halfway point, which would make
+ * the arc jump rather than breathe. Its initial value is the arc at rest: three
+ * quarters of the ring, the right quarter open.
+ */
+@property --crewlet-spinner-arc {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 270deg;
+}
+
+/*
+ * The ring is a full 2px border cut to an arc by a mask, so the stroke is the
+ * same 2px at every size and the arc's length can move while the ring turns.
+ * The arc is centred on the left (270deg), so it grows and shrinks at both ends
+ * at once and the open quarter at rest sits on the right. Each end is feathered
+ * over a few degrees, so it reads as a soft cap rather than a hard cut. A mask
+ * reads only alpha, so its black is opacity rather than a colour.
+ */
 .crewlet-spinner {
+  --crewlet-spinner-from: calc(270deg - var(--crewlet-spinner-arc) / 2);
   display: inline-block;
   box-sizing: border-box;
   flex: none;
   width: 1em;
   height: 1em;
   border: 2px solid currentColor;
-  border-right-color: transparent;
   border-radius: var(--radius-circle);
   opacity: 0.7;
-  animation: crewlet-spinner-turn var(--motion-duration-slow) linear infinite;
+  -webkit-mask-image: conic-gradient(
+    from var(--crewlet-spinner-from),
+    transparent 0deg,
+    #000 6deg,
+    #000 calc(var(--crewlet-spinner-arc) - 6deg),
+    transparent var(--crewlet-spinner-arc)
+  );
+  mask-image: conic-gradient(
+    from var(--crewlet-spinner-from),
+    transparent 0deg,
+    #000 6deg,
+    #000 calc(var(--crewlet-spinner-arc) - 6deg),
+    transparent var(--crewlet-spinner-arc)
+  );
+  /*
+   * Two motions, one definition for every ring in the package: one steady turn
+   * a second, and the arc breathing between a quarter and three quarters of the
+   * ring on a slower cycle, so the ends ease apart and together while it turns.
+   */
+  animation:
+    crewlet-spinner-turn var(--motion-duration-turn) linear infinite,
+    crewlet-spinner-sweep var(--motion-duration-sweep) var(--motion-easing-in-out) infinite;
 }
 
 /* The glyph scale of @crewlethq/icons: xs 12px, sm 14px, md 16px. */
@@ -37,8 +79,20 @@
   }
 }
 
+@keyframes crewlet-spinner-sweep {
+  0%,
+  100% {
+    --crewlet-spinner-arc: 90deg;
+  }
+
+  50% {
+    --crewlet-spinner-arc: 270deg;
+  }
+}
+
 /* It stops, and keeps its open quarter: a closed ring reads as an empty status
-   circle, the open one still reads as pending. */
+   circle, the open one still reads as pending. With both motions off, the arc
+   takes its registered initial value, three quarters of the ring. */
 @media (prefers-reduced-motion: reduce) {
   .crewlet-spinner {
     animation: none;

@@ -55,10 +55,13 @@ describe('ImageUpload', () => {
     expect(rule).toMatch(/height:\s*24px/);
   });
 
-  test('the spinner stops under reduced motion', () => {
-    const at = css().indexOf('@media (prefers-reduced-motion: reduce)');
-    expect(at).toBeGreaterThan(-1);
-    expect(css().slice(at)).toContain('crewlet-image-upload__spinner');
+  test("the spinner is the package's one ring, which stops under reduced motion itself", () => {
+    // It drew a ring of its own on its own keyframes. It now draws Spinner,
+    // whose stop Spinner's suite holds, so this sheet starts no motion for it.
+    const { container } = render(<ImageUpload name="Acme" onSelect={() => {}} uploading />);
+    const ring = container.querySelector('.crewlet-image-upload__spinner')!;
+    expect(ring.classList.contains('crewlet-spinner')).toBe(true);
+    expect(css()).not.toMatch(/@keyframes/);
   });
 
   test('the overlay that IS the affordance is drawn at full strength', () => {

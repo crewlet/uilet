@@ -205,6 +205,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.58.0
+
+**`Spinner` turns at a calm pace, and its arc breathes.** It turned once per `--motion-duration-slow` (300ms), a transition step, so every running mark (a pending `Button`, `RunChip` while it thinks or works, a running step in `StepList`, `StepStateMark`) spun more than three times a second and read as alarm rather than as work. It now turns once a second (`--motion-duration-turn`, linear) while its arc eases between a quarter and three quarters of the ring on a slower cycle (`--motion-duration-sweep`, 1.5s), with soft ends. The stroke is still one 2px border in the current ink at every size (`em`, `xs`, `sm`, `md`); the arc is cut by a mask, so no side of the border is transparent any more. Under reduced motion it stops as before and keeps its open quarter. The arc's length is a registered custom property (`@property --crewlet-spinner-arc`); a browser without `@property` support steps between the two lengths rather than easing.
+
+**`ImageUpload` draws the package's one ring.** Its uploading state drew a ring of its own on its own keyframes, at a different pace from every other ring. It now draws `Spinner` (still `.crewlet-image-upload__spinner`, sized to the control, in the overlay's on-scrim ink), so it turns and stops with the rest. The ring no longer draws a faint track behind its arc.
+
 ## Changes in 0.57.2
 
 **`ResultTableCard`'s first column wraps rather than cutting a long name.** It ended a long name in an ellipsis on one line, and a result's row is not a link and its cell has no title, so in a 358px assistant panel "Write the MVP plan and the first sprint" read "Write the MVP ..." with no way to read the rest. The first column now wraps between words like every other text cell and takes no width of its own, so the automatic layout shares the room by content: the name takes the most, and a short column beside it keeps its line where there is room. Figures and dates (`end` columns) still stay on one line. A host that gave the cell its own tooltip because the name was cut can drop it.

@@ -134,19 +134,14 @@
   font-weight: var(--font-weight-medium);
 }
 
+/*
+ * The package's one ring (Spinner), sized to the control. It takes the
+ * overlay's on-scrim ink as its current colour, and its turn, its arc and its
+ * reduced-motion stop are Spinner.css's: this rule sets only the em it is
+ * measured in.
+ */
 .crewlet-image-upload__spinner {
-  width: calc(var(--crewlet-image-upload-size) * 0.3);
-  height: calc(var(--crewlet-image-upload-size) * 0.3);
-  border-radius: var(--radius-circle);
-  border: 2px solid var(--color-surface-scrim);
-  border-top-color: var(--color-text-on-scrim);
-  animation: crewlet-image-upload-spin calc(var(--motion-duration-slow) * 2.5) linear infinite;
-}
-
-@keyframes crewlet-image-upload-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  font-size: calc(var(--crewlet-image-upload-size) * 0.3);
 }
 
 /*
@@ -198,17 +193,14 @@
 }
 
 /*
- * The ring holds still. The trigger already carries aria-busy, and the control
- * is disabled while the upload is out, so nothing about the state is carried
- * by the motion alone.
+ * The overlay and the remove target hold still. The ring is Spinner's, which
+ * stops itself. The trigger already carries aria-busy, and the control is
+ * disabled while the upload is out, so nothing about the state is carried by
+ * the motion alone.
  */
 @media (prefers-reduced-motion: reduce) {
   .crewlet-image-upload__overlay,
   .crewlet-image-upload__remove {
     transition: none;
-  }
-
-  .crewlet-image-upload__spinner {
-    animation: none;
   }
 }
