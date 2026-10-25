@@ -1,0 +1,13 @@
+/*
+ * ValueField: a labelled value with the control its kind needs.
+ *
+ * The row is FormField's and every control is the package's own; what is
+ * drawn here is the mark a label may carry, such as a third party's logo,
+ * set on the label's line ahead of its words.
+ */
+
+.crewlet-value-field__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
