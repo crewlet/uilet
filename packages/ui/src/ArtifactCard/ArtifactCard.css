@@ -215,6 +215,9 @@
 
 .crewlet-artifact-card--card .crewlet-artifact-card__facts {
   font-size: var(--font-size-sm);
+  /* The title's line height, so a card's words and a folder tile's beside it
+     keep one rhythm. */
+  line-height: 1.35;
 }
 
 .crewlet-artifact-card__meta {

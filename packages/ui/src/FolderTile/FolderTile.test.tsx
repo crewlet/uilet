@@ -123,3 +123,58 @@ test('carries no axe violation, as a tile and a row', async () => {
   });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
 });
+
+/*
+ * THE TYPE IS READ FROM THE STYLESHEETS, not the cascade: the tile's sizes
+ * are custom properties each shape restates, which jsdom does not resolve, so
+ * the declarations themselves are compared, shape by shape, with the card's
+ * and the name cell's.
+ */
+const sheet = (path: string) =>
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', path), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const block = (css: string, selector: string) => {
+  const at = css.indexOf(`${selector} {`);
+  if (at < 0) throw new Error(`no rule for ${selector}`);
+  return css.slice(at, css.indexOf('}', at));
+};
+const declared = (body: string, property: string) => new RegExp(`(?:^|[;{\\s])${property}:\\s*([^;]+);`).exec(body)?.[1]?.trim();
+
+test('a tile’s words are set as a gallery card’s beside it: title, facts, one line height and the step between', () => {
+  const folder = sheet('FolderTile/FolderTile.css');
+  const card = sheet('ArtifactCard/ArtifactCard.css');
+  const tile = block(folder, '.crewlet-card.crewlet-folder-tile');
+  const name = block(folder, '.crewlet-folder-tile__name');
+  const facts = block(folder, '.crewlet-folder-tile__facts');
+  const title = block(card, '.crewlet-artifact-card--card .crewlet-artifact-card__title');
+  const cardFacts = block(card, '.crewlet-artifact-card--card .crewlet-artifact-card__facts');
+  const cardBody = block(card, '.crewlet-artifact-card--card .crewlet-artifact-card__body');
+  // The values themselves, so a rule both sides lost cannot pass as equal.
+  expect([declared(title, 'font-size'), declared(cardFacts, 'font-size'), declared(title, 'line-height'), declared(cardBody, 'gap')]).toEqual([
+    'var(--font-size-md)',
+    'var(--font-size-sm)',
+    '1.35',
+    'var(--spacing-1)',
+  ]);
+  expect(declared(tile, '--crewlet-folder-tile-name')).toBe(declared(title, 'font-size'));
+  expect(declared(name, 'font-weight')).toBe(declared(title, 'font-weight'));
+  expect(declared(name, 'line-height')).toBe(declared(title, 'line-height'));
+  expect(declared(tile, '--crewlet-folder-tile-facts')).toBe(declared(cardFacts, 'font-size'));
+  // One line height for the words, the card's facts included.
+  expect(declared(facts, 'line-height')).toBe(declared(name, 'line-height'));
+  expect(declared(cardFacts, 'line-height')).toBe(declared(title, 'line-height'));
+  expect(declared(tile, '--crewlet-folder-tile-words-gap')).toBe(declared(cardBody, 'gap'));
+});
+
+test('a row, and a tile on a phone, keep the card’s two steps, closer together', () => {
+  const folder = sheet('FolderTile/FolderTile.css');
+  const phone = folder.slice(folder.indexOf('@media (width < 640px)'));
+  for (const [shape, body] of [
+    ['row', block(folder, '.crewlet-card.crewlet-folder-tile--row')],
+    ['phone', block(phone, '.crewlet-card.crewlet-folder-tile--tile')],
+  ] as const) {
+    // The sizes are the tile's own, never restated smaller.
+    expect(declared(body, '--crewlet-folder-tile-name'), shape).toBeUndefined();
+    expect(declared(body, '--crewlet-folder-tile-facts'), shape).toBeUndefined();
+    expect(declared(body, '--crewlet-folder-tile-words-gap'), shape).toBe('2px');
+  }
+});

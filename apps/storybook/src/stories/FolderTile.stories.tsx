@@ -1,5 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ArtifactAccessLabel, ArtifactNameCell, DataGrid, FolderTile, Menu, describeFolderContents, type DataGridColumn } from '@crewlethq/ui';
+import {
+  ArtifactAccessLabel,
+  ArtifactCard,
+  ArtifactNameCell,
+  DataGrid,
+  FolderTile,
+  Menu,
+  describeFolderContents,
+  type DataGridColumn,
+} from '@crewlethq/ui';
 import { EllipsisGlyph, FolderInputGlyph, PencilGlyph, TrashGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof FolderTile> = {
@@ -121,6 +130,26 @@ export const InTheList: Story = {
   render: () => (
     <div style={{ maxWidth: 720 }}>
       <DataGrid rows={ENTRIES} columns={LIST} rowKey={(e: Entry) => e.id} rowHref={(e: Entry) => `#/${e.id}`} aria-label="Q3 launch" />
+    </div>
+  ),
+};
+
+const NOW = Date.UTC(2026, 9, 24, 12, 0, 0);
+
+/**
+ * IN STEP WITH THE CARDS BESIDE THEM: a folder page draws its folders above
+ * its artifacts, so a folder's name is set as a card's title (the card title
+ * step and weight) and its two facts as a card's facts (the card meta step),
+ * on one line height. The grid follows the page: four across, three at a
+ * 1024 page, and one column of rows on a phone.
+ */
+export const BesideArtifacts: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, maxWidth: 1140 }}>
+      <FolderTile name="Marketing" href="#/f/1" visibility={EVERYONE} contents={{ artifacts: 12, folders: 2 }} actions={<More name="Marketing" />} />
+      <FolderTile name="Drafts" href="#/f/3" visibility={ONLY_YOU} contents={{ artifacts: 2, folders: 0 }} actions={<More name="Drafts" />} />
+      <ArtifactCard title="Vendor scorecard" kind="sheet" href="#/a/1" updatedAt={NOW - 4 * 60_000} updatedBy="Maya" project="OPS" now={NOW} />
+      <ArtifactCard title="Incident runbook" kind="doc" href="#/a/3" updatedAt={NOW - 86_400_000} now={NOW} />
     </div>
   ),
 };
