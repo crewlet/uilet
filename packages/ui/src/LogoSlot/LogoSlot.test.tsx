@@ -10,6 +10,10 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { themes } from '@crewlethq/tokens';
 import { afterEach, expect, test, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { LogoSlot } from './index.js';
 
 afterEach(cleanup);
@@ -90,6 +94,27 @@ test("a reader's download is drawn beside the name once there is a logo to downl
   expect(screen.queryByRole('button', { name: 'Download' })).toBeNull();
   rerender(<LogoSlot label="Primary" ground="light" alt="Acme logo" src="blob:logo" download={<button type="button">Download</button>} />);
   expect(screen.getByRole('button', { name: 'Download' })).toBeDefined();
+});
+
+test('small is a thumbnail: one modifier class, a shorter stage and smaller words', () => {
+  const uninstall = installSheets('LogoSlot/LogoSlot.css');
+  try {
+    const { container, rerender } = render(<LogoSlot label="Primary" ground="light" src="/logo.svg" alt="Acme logo" />);
+    rerender(<LogoSlot size="sm" label="Primary" ground="light" src="/logo.svg" alt="Acme logo" />);
+    const root = container.querySelector('.crewlet-logo-slot')!;
+    expect(root.className).toBe('crewlet-logo-slot crewlet-logo-slot--sm');
+    // The stage's height is the slot's custom property, restated by the modifier.
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'LogoSlot.css'), 'utf8');
+    const small = css.slice(css.indexOf('.crewlet-logo-slot--sm {'));
+    expect(small).toMatch(/--crewlet-logo-slot-height: calc\(var\(--size-row-lg\) \* 1\.5\);/);
+    expect(css).toMatch(/--crewlet-logo-slot-height: calc\(var\(--size-row-lg\) \* 3\);/);
+    expect(getComputedStyle(container.querySelector('.crewlet-logo-slot__label')!).fontSize).toBe('12px');
+    // Still a named group with the logo as an image.
+    expect(screen.getByRole('group', { name: 'Primary' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Acme logo' })).toBeTruthy();
+  } finally {
+    uninstall();
+  }
 });
 
 test('carries no axe violation, read and edited', async () => {

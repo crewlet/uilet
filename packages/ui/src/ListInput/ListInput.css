@@ -61,7 +61,9 @@
 .crewlet-list-input__item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  /* A step and the control's own inset: the ring an edited item draws stands
+     a step clear of its number. */
+  gap: var(--spacing-3);
   padding: var(--spacing-1) var(--spacing-3);
   border-block-end-width: 1px;
   border-block-end-style: solid;
@@ -169,11 +171,28 @@
 .crewlet-list-input__item .crewlet-input__control,
 .crewlet-list-input__item .crewlet-textarea {
   padding-block: var(--spacing-1);
-  padding-inline: 0;
+  /*
+   * EDITING NEVER MOVES THE WORDS. The control keeps an inset of its own, so
+   * the boundary that hover and focus draw stands clear of the text rather
+   * than touching its first letter, and a negative margin of the same step
+   * takes it back, so the words sit exactly where they sat at rest and the
+   * caret lands on them without a jump.
+   */
+  padding-inline: var(--spacing-2);
+  margin-inline: calc(var(--spacing-2) * -1);
 }
 
 .crewlet-list-input__index {
   flex: none;
+  /*
+   * ON THE TEXT'S FIRST LINE, never centred on a wrapped item: it starts where
+   * the words start (the control's edge and its block inset below the row's
+   * own padding) and takes their line's height, so the number and the words
+   * share a baseline however many lines the item runs to.
+   */
+  align-self: flex-start;
+  padding-block-start: calc(1px + var(--spacing-1));
+  line-height: calc(var(--font-size-compact) * var(--font-line-height-normal));
   min-width: var(--spacing-4);
   text-align: center;
   font-size: var(--font-size-xs);
@@ -257,11 +276,16 @@
   }
 }
 
-/* The Add button ends the box's row: the field and its Add read as one control. */
+/*
+ * The Add button ends the box's row: the field and its Add read as one
+ * control. It is the field's height (the medium control step a one-line box
+ * stands at) and sits on the box's first line, so the two share one line and
+ * the button stays put as a long item grows the box under it.
+ */
 .crewlet-list-input__add-control {
   display: inline-flex;
   flex: none;
-  align-self: center;
+  align-self: flex-start;
 }
 
 /*
@@ -279,11 +303,11 @@
   }
 
   .crewlet-list-input__item > .crewlet-list-input__field {
-    flex-basis: calc(100% - var(--spacing-4) - var(--spacing-2));
+    flex-basis: calc(100% - var(--spacing-4) - var(--spacing-3));
   }
 
   .crewlet-list-input__item--draggable > .crewlet-list-input__field {
-    flex-basis: calc(100% - var(--spacing-4) * 2 - var(--spacing-2) * 2);
+    flex-basis: calc(100% - var(--spacing-4) * 2 - var(--spacing-3) * 2);
   }
 
   .crewlet-list-input__item > .crewlet-list-input__actions {
