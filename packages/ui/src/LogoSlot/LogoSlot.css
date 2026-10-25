@@ -226,8 +226,17 @@
   margin-block-start: var(--spacing-2);
 }
 
+/*
+ * THE ACTION ROWS START AT THE TOP OF THEIR SHARED ROW. The row is as tall as
+ * the tallest slot's actions (a slot whose Replace and Remove wrap onto two
+ * lines), and a row stretched to it and centred put a neighbour's single
+ * button half a line lower than the first button beside it. Held to the start,
+ * every slot's first button stands on one line.
+ */
 .crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__foot {
   grid-row: 4;
+  align-self: start;
+  align-content: flex-start;
   margin-block-start: var(--spacing-2);
 }
 

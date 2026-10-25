@@ -1,8 +1,8 @@
 /*
  * A folder in a gallery: a short tile on Card (no preview), the folder glyph
- * on a neutral tint over the name and one quiet line, and a More menu in the
- * top corner outside the link. `row` is the full width, 44px row a phone
- * takes, and a tile becomes one under the phone breakpoint.
+ * on a neutral tint over the name and one quiet run of facts, and a More menu
+ * level with the glyph, outside the link. `row` is the full width row a phone
+ * takes (44px at least), and a tile becomes one under the phone breakpoint.
  *
  * ON TOP OF CARD, so every rule that changes Card's own layout carries Card's
  * class too: the two sheets meet at equal weight and the bundle orders them by
@@ -10,10 +10,11 @@
  */
 
 /*
- * THE ARTIFACT CARD'S CORNER, so a folder tile and the cards below it read as
- * one gallery, and Card's own hover step (the hairline darkens, nothing
- * lifts). The chosen state is Card's (`selected`): the selected edge over the
- * selected fill.
+ * THE ARTIFACT CARD'S CORNER AND HOVER, so a folder tile and the cards below
+ * it read as one gallery: under the pointer the hairline darkens and a
+ * hairline shadow settles under the tile, quickly and with the standard ease,
+ * exactly as a card's does. Nothing lifts or moves. The chosen state is
+ * Card's (`selected`): the selected edge over the selected fill.
  */
 .crewlet-card.crewlet-folder-tile {
   /*
@@ -26,6 +27,7 @@
   --crewlet-folder-tile-pad-inline: var(--spacing-4);
   --crewlet-folder-tile-floor: auto;
   --crewlet-folder-tile-glyph: 40px;
+  --crewlet-folder-tile-glyph-icon: 20px;
   --crewlet-folder-tile-glyph-radius: var(--radius-md);
   /*
    * THE WORDS ARE SET AS THE CARDS BESIDE THEM: a tile's name at a gallery
@@ -54,13 +56,36 @@
   --crewlet-folder-tile-actions-shift: 0;
   --crewlet-folder-tile-reserve-link: 0px;
 
+  /*
+   * THE CARD'S SEPARATOR between two facts, a quiet dot with a step of air on
+   * each side: the width each fact after the first opens with.
+   */
+  --crewlet-folder-tile-separator: var(--spacing-5);
+  /* Who can see it is a glyph and its word; the row keeps the glyph alone. */
+  --crewlet-folder-tile-word-position: static;
+  --crewlet-folder-tile-word-size: auto;
+  --crewlet-folder-tile-word-clip: none;
+
   flex-direction: row;
   align-items: stretch;
   min-width: 0;
   border-radius: var(--crewlet-folder-tile-radius);
 }
 
-/* ---- the row: a phone's, full width at 44px ---- */
+/* The card's quick step, over Card's slower interactive one. */
+.crewlet-card.crewlet-folder-tile.is-interactive {
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-out),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-card.crewlet-folder-tile:hover {
+  box-shadow: var(--shadow-xs);
+}
+
+/* ---- the row: a phone's, full width and 44px at least ----
+   The glyph and its tint keep the tile's proportion (the glyph half the
+   tint), at the list name cell's 32px tint. */
 
 .crewlet-card.crewlet-folder-tile--row {
   --crewlet-folder-tile-radius: var(--radius-lg);
@@ -68,8 +93,9 @@
   --crewlet-folder-tile-pad-block: var(--spacing-1);
   --crewlet-folder-tile-pad-inline: var(--spacing-3);
   --crewlet-folder-tile-floor: var(--size-control-lg);
-  --crewlet-folder-tile-glyph: 28px;
-  --crewlet-folder-tile-glyph-radius: var(--radius-sm);
+  --crewlet-folder-tile-glyph: 32px;
+  --crewlet-folder-tile-glyph-icon: 16px;
+  --crewlet-folder-tile-glyph-radius: var(--radius-md);
   --crewlet-folder-tile-words-gap: 2px;
   --crewlet-folder-tile-actions-inset: var(--spacing-2);
   --crewlet-folder-tile-direction: row;
@@ -77,6 +103,9 @@
   --crewlet-folder-tile-actions-top: 50%;
   --crewlet-folder-tile-actions-shift: -50%;
   --crewlet-folder-tile-reserve-link: calc(var(--size-control-sm) + var(--spacing-1));
+  --crewlet-folder-tile-word-position: absolute;
+  --crewlet-folder-tile-word-size: 1px;
+  --crewlet-folder-tile-word-clip: inset(50%);
 }
 
 /* UNDER THE PHONE BREAKPOINT A TILE IS THE ROW, strictly under, as the
@@ -88,8 +117,9 @@
     --crewlet-folder-tile-pad-block: var(--spacing-1);
     --crewlet-folder-tile-pad-inline: var(--spacing-3);
     --crewlet-folder-tile-floor: var(--size-control-lg);
-    --crewlet-folder-tile-glyph: 28px;
-    --crewlet-folder-tile-glyph-radius: var(--radius-sm);
+    --crewlet-folder-tile-glyph: 32px;
+    --crewlet-folder-tile-glyph-icon: 16px;
+    --crewlet-folder-tile-glyph-radius: var(--radius-md);
     --crewlet-folder-tile-words-gap: 2px;
     --crewlet-folder-tile-actions-inset: var(--spacing-2);
     --crewlet-folder-tile-direction: row;
@@ -97,17 +127,39 @@
     --crewlet-folder-tile-actions-top: 50%;
     --crewlet-folder-tile-actions-shift: -50%;
     --crewlet-folder-tile-reserve-link: calc(var(--size-control-sm) + var(--spacing-1));
+    --crewlet-folder-tile-word-position: absolute;
+    --crewlet-folder-tile-word-size: 1px;
+    --crewlet-folder-tile-word-clip: inset(50%);
   }
+}
+
+/*
+ * THE STATES OUTLAST THE POINTER. Card's hover step darkens the hairline at
+ * the same weight as a state's edge, and Card's sheet comes after this one, so
+ * each state restates its edge under the pointer too: a chosen tile keeps the
+ * selected edge, and a drop target, which is under the pointer by definition,
+ * keeps its accent.
+ */
+.crewlet-card.crewlet-folder-tile.is-selected,
+.crewlet-card.crewlet-folder-tile.is-selected:hover {
+  border-color: var(--color-border-selected);
 }
 
 /*
  * SOMETHING HELD OVER IT WOULD LAND IN IT: the accent edge over the accent's
  * soft fill, the same pair a file drop target takes while files are over it,
- * so "let go here" reads one way across the package.
+ * so "let go here" reads one way across the package. The glyph's tint takes
+ * the accent's hairline and ink, so the folder itself says it is open to it.
  */
-.crewlet-card.crewlet-folder-tile.is-drop-target {
+.crewlet-card.crewlet-folder-tile.is-drop-target,
+.crewlet-card.crewlet-folder-tile.is-drop-target:hover {
   border-color: var(--color-brand-accent);
   background-color: var(--color-brand-accent-soft);
+}
+
+.crewlet-folder-tile.is-drop-target .crewlet-folder-tile__glyph {
+  box-shadow: inset 0 0 0 1px var(--color-brand-accent);
+  color: var(--color-brand-accent-ink);
 }
 
 .crewlet-card.crewlet-folder-tile:has(.crewlet-folder-tile__link:focus-visible) {
@@ -140,7 +192,11 @@
   padding-inline-end: calc(var(--crewlet-folder-tile-pad-inline) + var(--crewlet-folder-tile-reserve-link));
 }
 
-/* A NEUTRAL TINT, never a kind's: a folder is not a kind. */
+/*
+ * A NEUTRAL TINT, never a kind's: a folder is not a kind. Its hairline steps
+ * up with the tile's under the pointer, as a folder's mark does on a list
+ * row, so the one drawn thing on the tile answers too.
+ */
 .crewlet-folder-tile__glyph {
   display: inline-flex;
   flex: none;
@@ -153,6 +209,17 @@
   background: var(--color-surface-inset);
   box-shadow: inset 0 0 0 1px var(--color-border-default);
   color: var(--color-text-secondary);
+  transition: box-shadow var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+.crewlet-folder-tile:hover .crewlet-folder-tile__glyph {
+  box-shadow: inset 0 0 0 1px var(--color-border-hover);
+}
+
+/* The glyph is drawn at the shape's size, whatever size the markup asks. */
+.crewlet-folder-tile__glyph > svg {
+  width: var(--crewlet-folder-tile-glyph-icon);
+  height: var(--crewlet-folder-tile-glyph-icon);
 }
 
 .crewlet-folder-tile__body {
@@ -174,33 +241,103 @@
 }
 
 /*
- * THE FACTS WRAP, NEVER CUT. "Everyone" and "Nothing you can open yet" are
- * both things a reader has to read, and four tiles across a laptop's page do
- * not have room for them on one line: the count moves under who can see the
- * folder rather than losing its end to an ellipsis. The two are told apart by
- * the visibility glyph and the gap between them, not by a separator, so a
- * line that breaks never opens on a stray dot.
+ * THE FACTS ARE ONE RUN, WRAPPED AND NEVER CUT. "Everyone · 12 artifacts · 2
+ * folders" is the card's run: each fact after the first opens with the card's
+ * quiet dot. Four tiles across a laptop's page have no room for "Only you ·
+ * Nothing you can open yet" on one line, so the run breaks between who can
+ * see the folder and what is inside rather than losing its end to an
+ * ellipsis, and the count moves as one.
+ *
+ * A LINE NEVER OPENS ON A DOT. Every fact carries its dot in the separator's
+ * width before it, and the run is drawn that width to the left of the facts'
+ * own edge, which clips the overhang: the first fact of every line, the very
+ * first and any the run broke onto a new line, lays its dot in the clipped
+ * strip. The clip is horizontal only, so nothing above or below is cut.
+ *
+ * ONE QUIET INK for the run: who can see the folder takes the facts' tertiary
+ * step rather than the access label's stronger word, so the line reads as one
+ * calm caption beside the name, as a card's facts do.
  */
 .crewlet-folder-tile__facts {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px var(--spacing-3);
+  display: block;
   min-width: 0;
+  overflow-x: clip;
   color: var(--color-text-tertiary);
   font-size: var(--crewlet-folder-tile-facts);
   line-height: 1.35;
 }
 
+.crewlet-folder-tile__run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 2px;
+  min-width: 0;
+  margin-inline-start: calc(-1 * var(--crewlet-folder-tile-separator));
+}
+
+.crewlet-folder-tile__fact {
+  position: relative;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  padding-inline-start: var(--crewlet-folder-tile-separator);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-folder-tile__fact::before {
+  position: absolute;
+  inset-inline-start: 0;
+  width: var(--crewlet-folder-tile-separator);
+  text-align: center;
+}
+
+.crewlet-folder-tile__fact::before,
+.crewlet-folder-tile__count-dot::before {
+  content: '·';
+  content: '·' / '';
+}
+
+/*
+ * INSIDE THE COUNT the same dot in the same width, carried at the end of the
+ * part before it. Each part is one piece on the line, so "3 artifacts · 3
+ * folders" moves to its own line as one fact, a count too long even for that
+ * breaks only after a dot, and a part wraps within itself only when it alone
+ * is wider than the tile.
+ */
+.crewlet-folder-tile__count-part {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.crewlet-folder-tile__count-dot {
+  display: inline;
+  padding-inline: calc((var(--crewlet-folder-tile-separator) - 0.3em) / 2);
+}
+
 .crewlet-folder-tile__visibility {
-  display: inline-flex;
-  flex: none;
+  display: flex;
   align-items: center;
 }
 
-.crewlet-folder-tile__contents {
-  min-width: 0;
-  overflow-wrap: anywhere;
+.crewlet-folder-tile__visibility > .crewlet-artifact-access {
+  color: inherit;
+}
+
+/*
+ * ON A ROW, WHO CAN SEE IT IS ITS GLYPH, as a gallery card's facts draw an
+ * artifact's access: a phone's row has room for one line of facts, and "Only
+ * you · Nothing you can open yet" beside a glyph and a menu broke onto a
+ * second, leaving rows of two heights. The word is still there, hidden from
+ * the eye only (the package's visually hidden recipe, switched by the shape),
+ * so the tile's description keeps saying "Everyone", and the label's title
+ * names it under the pointer.
+ */
+.crewlet-folder-tile__visibility .crewlet-artifact-access__word {
+  position: var(--crewlet-folder-tile-word-position);
+  width: var(--crewlet-folder-tile-word-size);
+  height: var(--crewlet-folder-tile-word-size);
+  clip-path: var(--crewlet-folder-tile-word-clip);
 }
 
 /*
@@ -232,6 +369,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .crewlet-card.crewlet-folder-tile.is-interactive,
+  .crewlet-folder-tile__glyph,
   .crewlet-folder-tile__actions {
     transition: none;
   }
