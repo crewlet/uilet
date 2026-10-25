@@ -1,0 +1,90 @@
+/*
+ * The peek (`PeekRail`): a rail beside the list it was opened from, on the
+ * subtle ground, with a bar at the page bar's height and a scrolling body.
+ *
+ * Its shape is an attribute with one value (`data-shape`), decided by the
+ * host, so there is no width at which it is both a column and a drawer, or
+ * neither. Its width is one variable (`--crewlet-peek-rail-width`), written
+ * on the rail by the component, so the column and the drawer read the same
+ * value and cannot disagree about how wide it is.
+ */
+
+.crewlet-peek-rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--color-surface-subtle);
+  border-left: 1px solid var(--color-border-hover);
+}
+
+/*
+ * A COLUMN beside the scroller: the reader's width, capped at what leaves the
+ * list its floor (`--crewlet-peek-rail-reserve`, the gutter, the padding, any
+ * section column and the list). At the threshold the host decided the column
+ * at, the cap is exactly the resting width, so the column never opens
+ * narrower than the width it was decided at.
+ */
+.crewlet-peek-rail[data-shape='column'] {
+  flex: none;
+  width: min(var(--crewlet-peek-rail-width), max(0px, 100% - var(--crewlet-peek-rail-reserve, 0px)));
+}
+
+/* The grip straddles the rail's hairline, a little narrower than the frame's
+   seam, since it stands over one line rather than in a gap. */
+.crewlet-peek-rail > .crewlet-resize-handle--left {
+  --crewlet-resize-handle-width: calc(var(--spacing-1) + var(--spacing-1) / 2);
+  left: calc(var(--crewlet-resize-handle-width) / -2);
+}
+
+/* The bar stands at the page bar's height, so the two lines meet. */
+.crewlet-peek-rail__bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: var(--size-shell-topbar);
+  padding: 0 var(--spacing-2);
+  border-bottom: 1px solid var(--color-border-hover);
+}
+
+.crewlet-peek-rail__spacer {
+  flex: 1 1 auto;
+}
+
+/* THE PEEK'S OWN SCROLLER, and a SIZE container for the reason the shell's
+   `main` is one: a record inside a peek is bounded by what the peek shows
+   (`100cqb`), and with no size container between it and the root `cqb`
+   falls back to the viewport, which counts the peek's bar as view. Its
+   height is the flex column's, never its content's, so containing it costs
+   nothing. */
+.crewlet-peek-rail__body {
+  container: crewlet-peek-rail / size;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--spacing-4) var(--spacing-6);
+}
+
+/*
+ * THE DRAWER: below the host's threshold the rail slides over the page
+ * behind a veil, and a fixed box takes no room, so the page stays one column
+ * under it. No grip: there is no list beside it to give way.
+ */
+.crewlet-peek-rail[data-shape='drawer'] {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-index-overlay);
+  width: min(var(--crewlet-peek-rail-width), 92vw);
+  box-shadow: var(--shadow-md);
+}
+
+.crewlet-peek-rail__veil {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-index-overlay) - 1);
+  background: var(--color-surface-veil);
+}
