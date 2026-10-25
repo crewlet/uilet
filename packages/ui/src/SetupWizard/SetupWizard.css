@@ -120,12 +120,29 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--spacing-2);
   grid-area: foot;
   padding: var(--spacing-3) 0 calc(var(--spacing-3) + env(safe-area-inset-bottom, var(--spacing-0)));
   border-top: 1px solid var(--color-border-default);
   background: var(--color-surface-background);
+}
+
+/* The way out at the start of the row, the step's actions at its end. */
+.crewlet-setup-wizard__footer-start,
+.crewlet-setup-wizard__footer-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-setup-wizard__footer-end {
+  margin-inline-start: auto;
+}
+
+/* A WIDE STEP lays out columns of its own across the whole width beside the rail. */
+.crewlet-setup-wizard--wide .crewlet-setup-wizard__content {
+  max-width: none;
 }
 
 /* BESIDE THE CONTENT, from 70rem of the wizard's own width: the aside holds in view. */
@@ -137,6 +154,15 @@
       'rail content aside'
       'foot foot foot';
     grid-template-rows: auto 1fr auto;
+  }
+
+  /* With no aside, nothing is held for one: the content takes its column too. */
+  .crewlet-setup-wizard--no-aside .crewlet-setup-wizard__frame {
+    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-areas:
+      'head head'
+      'rail content'
+      'foot foot';
   }
 
   .crewlet-setup-wizard__aside {

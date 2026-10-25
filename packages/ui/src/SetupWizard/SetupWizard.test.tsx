@@ -224,6 +224,47 @@ describe('the three shapes', () => {
   });
 });
 
+describe('the footer and a wide step', () => {
+  test('the way out stands at the start of the footer row and the step’s actions at its end', () => {
+    uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard actions={undefined} footerStart={<button type="button">Exit</button>} />);
+    const footer = container.querySelector('.crewlet-setup-wizard__footer')!;
+    const [start, end] = [...footer.children];
+    expect(start!.className).toBe('crewlet-setup-wizard__footer-start');
+    expect(start!.textContent).toBe('Exit');
+    expect(end!.className).toBe('crewlet-setup-wizard__footer-end');
+    expect(end!.textContent).toBe('BackContinue');
+    expect(getComputedStyle(end!).marginInlineStart).toBe('auto');
+    // Tab order follows: Exit, then Back and Continue.
+    expect([...footer.querySelectorAll('button')].map((button) => button.textContent)).toEqual(['Exit', 'Back', 'Continue']);
+  });
+
+  test('without footerStart the actions still stand at the end', () => {
+    uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard />);
+    const footer = container.querySelector('.crewlet-setup-wizard__footer')!;
+    expect(footer.children).toHaveLength(1);
+    expect(getComputedStyle(footer.firstElementChild!).marginInlineStart).toBe('auto');
+  });
+
+  test('a wide step takes the whole width beside the rail, and no aside holds no column', () => {
+    uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard wide aside={undefined} asideLabel={undefined} />);
+    const root = container.querySelector('.crewlet-setup-wizard')!;
+    expect(root.classList.contains('crewlet-setup-wizard--wide')).toBe(true);
+    expect(root.classList.contains('crewlet-setup-wizard--no-aside')).toBe(true);
+    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__content')!).maxWidth).toBe('none');
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'SetupWizard.css'), 'utf8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const wideNoAside =
+      /@container \(min-width: 70rem\) \{[\s\S]*?\.crewlet-setup-wizard--no-aside \.crewlet-setup-wizard__frame \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(wideNoAside).toMatch(/grid-template-columns:\s*240px minmax\(0, 1fr\);/);
+    expect(wideNoAside).not.toMatch(/aside/);
+  });
+});
+
 test('carries no axe violation, wide and on a phone', async () => {
   for (const phone of [false, true]) {
     cleanup();
