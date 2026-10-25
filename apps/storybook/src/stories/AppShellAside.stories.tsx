@@ -86,10 +86,7 @@ function TaskList({ onPeek }: { onPeek?: (key: string) => void }) {
             onClick={onPeek ? () => onPeek(task.key) : undefined}
             style={{ justifyContent: 'flex-start' }}
           >
-            <Text variant="caption" mono>
-              {task.key}
-            </Text>{' '}
-            {task.title}
+            {`${task.key}  ${task.title}`}
           </Button>
         ))}
       </Stack>

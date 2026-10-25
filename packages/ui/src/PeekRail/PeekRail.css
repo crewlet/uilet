@@ -72,10 +72,15 @@
  * behind a veil, and a fixed box takes no room, so the page stays one column
  * under it. No grip: there is no list beside it to give way.
  */
+/*
+ * Beside an aside column the drawer and its veil stop at the page sheet's
+ * edge (`--crewlet-app-shell-aside-occupied`, measured by the shell), so the
+ * peek stands over the page, next to the aside, rather than over the aside.
+ */
 .crewlet-peek-rail[data-shape='drawer'] {
   position: fixed;
   top: 0;
-  right: 0;
+  right: var(--crewlet-app-shell-aside-occupied, 0px);
   bottom: 0;
   z-index: var(--z-index-overlay);
   width: min(var(--crewlet-peek-rail-width), 92vw);
@@ -84,7 +89,7 @@
 
 .crewlet-peek-rail__veil {
   position: fixed;
-  inset: 0;
+  inset: 0 var(--crewlet-app-shell-aside-occupied, 0px) 0 0;
   z-index: calc(var(--z-index-overlay) - 1);
   background: var(--color-surface-veil);
 }

@@ -312,6 +312,37 @@ export function AppShell({
     return () => observer.disconnect();
   }, [scroller]);
 
+  /*
+   * WHAT THE ASIDE COLUMN TAKES FROM THE WINDOW'S RIGHT, measured, so a peek
+   * drawn as a drawer covers the PAGE beside the aside rather than the aside
+   * itself: the reader opened the assistant to talk about the page, and a
+   * peek it opened stands over the page, next to it. It is the distance from
+   * the page sheet's right edge to the shell's, which CSS cannot read because
+   * the aside's track is capped by arithmetic on the shell's own width. It is
+   * published only while the aside is a column, as
+   * `--crewlet-app-shell-aside-occupied`.
+   */
+  const root = useRef<HTMLDivElement | null>(null);
+  const sheet = useRef<HTMLDivElement | null>(null);
+  const asideColumn = hasAside && asideShape === 'column';
+  const [occupied, setOccupied] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const frame = root.current;
+    const page = sheet.current;
+    if (!asideColumn || !frame || !page) {
+      setOccupied(null);
+      return undefined;
+    }
+    const measure = () =>
+      setOccupied(Math.max(0, Math.round(frame.getBoundingClientRect().right - page.getBoundingClientRect().right)));
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(page);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [asideColumn]);
+
   const shell: AppShellContextValue = {
     narrow,
     drawerOpen,
@@ -328,6 +359,7 @@ export function AppShell({
     <AppShellContext.Provider value={shell}>
       <div
         {...rest}
+        ref={root}
         className={cx(
           'crewlet-app-shell',
           fill && 'crewlet-app-shell--fill',
@@ -361,6 +393,7 @@ export function AppShell({
                   : { ['--crewlet-app-shell-aside-reserve' as string]: `${asideReserve}px` }),
               }
             : null),
+          ...(occupied === null ? null : { ['--crewlet-app-shell-aside-occupied' as string]: `${occupied}px` }),
         }}
       >
         {/*
@@ -399,7 +432,7 @@ export function AppShell({
             {sidebar}
           </aside>
         ) : null}
-        <div className="crewlet-app-shell__sheet">
+        <div ref={sheet} className="crewlet-app-shell__sheet">
           {topbar}
           {banner ? <div className="crewlet-app-shell__banner">{banner}</div> : null}
           {/*

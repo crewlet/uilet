@@ -186,6 +186,16 @@ test('opening and closing the aside or the peek never remounts the scroller', ()
   expect(screen.getByRole('main')).toBe(main);
 });
 
+test('what an aside column takes from the right is published for a peek drawer, and only as a column', () => {
+  const { rerender } = render(<Shell shape="column" />);
+  // jsdom lays nothing out, so the measure is 0; what is claimed is that it reaches the root.
+  expect(root().style.getPropertyValue('--crewlet-app-shell-aside-occupied')).toBe('0px');
+  rerender(<Shell shape="overlay" />);
+  expect(root().style.getPropertyValue('--crewlet-app-shell-aside-occupied')).toBe('');
+  rerender(<Shell />);
+  expect(root().style.getPropertyValue('--crewlet-app-shell-aside-occupied')).toBe('');
+});
+
 test('the peek stands beside the scroller under the bar, and is told its shape', () => {
   function Probe() {
     return <div data-testid="peek">{useAppShellPeek()?.shape}</div>;
