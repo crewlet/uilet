@@ -77,7 +77,16 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/*
+ * THE ACTIONS ARE A ROW one step apart, wrapping when there is no room, so a
+ * callout with two (Continue setting up, Review and adopt) never draws them
+ * touching, whatever the host wraps them in.
+ */
 .crewlet-callout__action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
   grid-column: 3;
   grid-row: 1;
   align-self: center;

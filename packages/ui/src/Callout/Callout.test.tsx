@@ -14,10 +14,16 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test } from 'vitest';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { Button } from '../Button/index.js';
 import { Callout } from './index.js';
 
-afterEach(cleanup);
+let uninstall: (() => void) | undefined;
+afterEach(() => {
+  uninstall?.();
+  uninstall = undefined;
+  cleanup();
+});
 
 /** The stylesheet, read where a claim about the drawing has to be checked. */
 const calloutCss = () => readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Callout.css'), 'utf8');
@@ -127,6 +133,32 @@ describe('Callout', () => {
     );
     const action = screen.getByRole('button', { name: 'Reconnect' });
     expect(action.closest('.crewlet-callout__content')).toBeNull();
+  });
+
+  test('several actions stand one step apart in a row that wraps', () => {
+    uninstall = installSheets('Callout/Callout.css');
+    const { container } = render(
+      <Callout
+        variant="info"
+        title="A newer draft"
+        action={
+          <>
+            <Button size="small">Continue setting up</Button>
+            <Button size="small" variant="secondary">
+              Review and adopt
+            </Button>
+          </>
+        }
+      >
+        Pick up where you left off.
+      </Callout>,
+    );
+    const slot = container.querySelector('.crewlet-callout__action')!;
+    expect(slot.querySelectorAll('button')).toHaveLength(2);
+    const style = getComputedStyle(slot);
+    expect(style.display).toBe('flex');
+    expect(style.flexWrap).toBe('wrap');
+    expect(px(slot, 'gap')).toBe(8);
   });
 
   test('a narrow callout puts its action under the text, in the text\'s column, and a wide one beside it', () => {

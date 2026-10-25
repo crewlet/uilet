@@ -1,27 +1,23 @@
-import { formatRelative, useNow, type TimeValue } from '../RelativeTime/index.js';
+import { formatRelative, toISO, useNow, type TimeValue } from '../RelativeTime/index.js';
 import { cx } from '../utils/cx.js';
-import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 /** Every string the status draws. */
 export interface EditingStatusLabels {
   editing: string;
   unsaved: string;
   saving: string;
-  /** Shown once the last save landed, with how long ago: "Saved 2 min ago". */
-  saved: (ago: string) => string;
   /**
-   * Said in its place: the time is shown and not announced, so a screen
-   * reader hears "Saved" when the save lands rather than every minute after.
+   * The state once the last save landed, followed by how long ago: "Saved",
+   * drawn "Saved 2m ago". The word is announced; the time is not.
    */
-  savedSpoken: string;
+  saved: string;
 }
 
 const LABELS: EditingStatusLabels = {
   editing: 'Editing',
   unsaved: 'Unsaved changes',
   saving: 'Saving',
-  saved: (ago) => `Saved ${ago}`,
-  savedSpoken: 'Saved',
+  saved: 'Saved',
 };
 
 export interface EditingStatusProps {
@@ -51,46 +47,46 @@ export interface EditingStatusProps {
  */
 export function EditingStatus({ dirty, saving = false, savedAt, labels, className }: EditingStatusProps) {
   const text = { ...LABELS, ...labels };
-  const state = saving ? (
-    text.saving
-  ) : dirty ? (
-    text.unsaved
-  ) : savedAt !== undefined && savedAt !== null ? (
-    <SavedAgo at={savedAt} labels={text} />
-  ) : null;
+  const showSaved = !saving && !dirty && savedAt !== undefined && savedAt !== null && toISO(savedAt) !== null;
+  const state = saving ? text.saving : dirty ? text.unsaved : showSaved ? text.saved : null;
   return (
-    <span
-      role="status"
-      aria-live="polite"
-      className={cx('crewlet-editing-status', dirty && 'crewlet-editing-status--dirty', className)}
-    >
+    <span className={cx('crewlet-editing-status', dirty && 'crewlet-editing-status--dirty', className)}>
       <span className="crewlet-editing-status__dot" aria-hidden="true" />
-      <span className="crewlet-editing-status__label">{text.editing}</span>
-      {/*
-        * A SEPARATOR FOR THE EAR. The dot between the two words is drawn by
-        * the stylesheet, which a live region does not read, so the region
-        * said "EditingUnsaved changes" as one word.
+      <span className="crewlet-editing-status__text">
+        {/*
+          THE LIVE REGION HOLDS THE WORDS AND NOTHING THAT TICKS: the label and
+          the state, a space between them for the ear (the dot between them is
+          the stylesheet's, which nobody reads), so "Draft Saved" is said once
+          when the save lands. How long ago follows it outside the region, so
+          the minute turning over is shown and never announced.
         */}
-      {state && <VisuallyHidden>, </VisuallyHidden>}
-      {state && <span className="crewlet-editing-status__state">{state}</span>}
+        <span role="status" aria-live="polite" className="crewlet-editing-status__live">
+          <span className="crewlet-editing-status__label">{text.editing}</span>
+          {state ? ' ' : null}
+          {state ? <span className="crewlet-editing-status__state">{state}</span> : null}
+        </span>
+        {showSaved ? (
+          <>
+            {' '}
+            <SavedAgo at={savedAt} />
+          </>
+        ) : null}
+      </span>
     </span>
   );
 }
 
 /**
- * How long ago the last save landed, on the shared clock. A component of its
- * own so only a status that shows a time subscribes to the clock. The time is
- * hidden from the live region and "Saved" is said instead, so the minute
- * ticking over is never announced.
+ * How long ago the last save landed, on the shared clock: a component of its
+ * own so only a status that shows a time subscribes to the clock.
  */
-function SavedAgo({ at, labels }: { at: TimeValue; labels: EditingStatusLabels }) {
+function SavedAgo({ at }: { at: TimeValue }) {
   const now = useNow();
   const ago = formatRelative(at, now);
   if (ago === null) return null;
   return (
-    <>
-      <span aria-hidden="true">{labels.saved(ago)}</span>
-      <VisuallyHidden>{labels.savedSpoken}</VisuallyHidden>
-    </>
+    <time className="crewlet-editing-status__ago" dateTime={toISO(at) ?? undefined}>
+      {ago}
+    </time>
   );
 }
