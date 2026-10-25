@@ -205,6 +205,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.57.0
+
+**`ProposalCard` takes `failureOutcome`** (`unchanged` or `unknown`; `ProposalFailureOutcome`, `PROPOSAL_FAILURE_OUTCOMES`), so a failed card says "Nothing changed." only when it is true. `unchanged`, the default, keeps the 0.56.0 drawing: the Tag "Not applied" and the engine's sentence followed by "Nothing changed.". `unknown` is a change sent without an answer, which may have landed: the Tag reads "Not confirmed" (`labels.notConfirmed`) and the strip is the `failure` sentence alone, or `labels.unknownNotice` ("Could not confirm whether this was applied. It may have landed.") without one. A failed card carries `data-outcome`. A consumer that drew an unknown outcome as `failed` passes `failureOutcome="unknown"`; nothing else changes.
+
 ## Changes in 0.56.0
 
 ### The frame and its panels

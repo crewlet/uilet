@@ -131,6 +131,15 @@ export const NotAppliedWithHint: Story = {
 };
 
 /**
+ * NOT CONFIRMED: the approved change was sent but no answer came back, so it
+ * may have landed. The Tag reads "Not confirmed" and the strip never adds
+ * "Nothing changed.". Try again resends it under the same operation key.
+ */
+export const NotConfirmed: Story = {
+  args: { ...share, state: 'failed', failureOutcome: 'unknown', failure: undefined, onRetry: () => {} },
+};
+
+/**
  * APPROVAL BLOCKED: the screen refuses the prepared change, so the primary is
  * held soft disabled with the reason, shown above the decision and said as its
  * description. Decline stays available.

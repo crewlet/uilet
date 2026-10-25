@@ -133,6 +133,34 @@ test('a failure hint is its own line after the sentence and "Nothing changed.", 
   expect(screen.queryByText(hint)).toBeNull();
 });
 
+test('an unknown outcome never says "Nothing changed.": the Tag reads "Not confirmed" and the strip is the sentence alone', () => {
+  const onRetry = vi.fn();
+  const hint = 'Check the artifact before you try again.';
+  const { rerender, container } = render(
+    card('failed', { failureOutcome: 'unknown', failure: 'The engine did not answer in time.', failureHint: hint, onRetry }),
+  );
+  expect(screen.getByRole('region', { name: 'Filter this list Not confirmed' })).toBeTruthy();
+  const alert = screen.getByRole('alert');
+  expect(alert.querySelector('.crewlet-refusal-strip__sentence')!.textContent).toBe('The engine did not answer in time.');
+  expect(alert.querySelector('.crewlet-refusal-strip__hint')!.textContent).toBe(hint);
+  expect(alert.textContent).not.toContain('Nothing changed.');
+  expect(container.querySelector('[data-outcome="unknown"]')).not.toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  expect(onRetry).toHaveBeenCalledTimes(1);
+  // Without a sentence of the caller's, the card's own words, still without the reassurance.
+  rerender(card('failed', { failureOutcome: 'unknown' }));
+  expect(screen.getByRole('alert').textContent).toBe('Could not confirm whether this was applied. It may have landed.');
+  // The default outcome is unchanged, so current consumers keep their words.
+  rerender(card('failed', { failure: 'Refused.' }));
+  expect(screen.getByRole('region', { name: 'Filter this list Not applied' })).toBeTruthy();
+  expect(screen.getByRole('alert').textContent).toBe('Refused. Nothing changed.');
+  expect(container.querySelector('[data-outcome="unchanged"]')).not.toBeNull();
+  // Ignored outside the failed state.
+  rerender(card('pending', { failureOutcome: 'unknown' }));
+  expect(container.querySelector('[data-outcome]')).toBeNull();
+  expect(screen.getByRole('region', { name: 'Filter this list Needs your approval' })).toBeTruthy();
+});
+
 test('a blocked approval holds the primary soft disabled with its reason, shown and said, and never approves', () => {
   const reason = 'This screen cannot apply these filters.';
   const onApprove = vi.fn();
