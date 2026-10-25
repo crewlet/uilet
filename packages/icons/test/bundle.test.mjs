@@ -115,3 +115,58 @@ describe('a build that looks a glyph up by name', () => {
     assert.deepEqual(missing, []);
   });
 });
+
+/*
+ * THE PRODUCT MARKS' OWN ENTRY. An application draws the Assistant's mark in
+ * its first paint (the Ask button), so the entry it imports from must reach
+ * the four marks and the glyph frame and nothing else. Held two ways: the
+ * entry's own import graph, which no bundler setting can widen, never reaches
+ * the root or another component's stylesheet; and a consumer's build of it
+ * carries no vendor mark, no Crewlet figure and no glyph.
+ */
+describe('a build that imports a product mark from its own entry', () => {
+  /** Every file a dist module reaches through its static imports, itself included. */
+  async function graphOf(file) {
+    const seen = new Set();
+    const visit = async (name) => {
+      if (seen.has(name)) return;
+      seen.add(name);
+      const source = await readFile(resolve(PACKAGE, 'dist', name), 'utf8');
+      if (!name.endsWith('.js')) return;
+      for (const [, spec] of source.matchAll(/(?:^|\n)\s*(?:import|export)\b[^'"]*['"](\.\/[^'"]+)['"]/g)) {
+        await visit(spec.slice(2));
+      }
+    };
+    await visit(file);
+    return [...seen];
+  }
+
+  it('never reaches the root or another component through its imports', async () => {
+    const graph = await graphOf('product-mark.js');
+    assert.ok(!graph.includes('index.js'), `the entry reaches the root: ${graph.join(', ')}`);
+    const sheets = graph.filter((name) => name.endsWith('.css'));
+    assert.deepEqual(
+      sheets.map((name) => name.replace(/-[A-Z0-9]+\.css$/, '.css')),
+      ['ProductMark.css'],
+    );
+  });
+
+  it('carries the marks and nothing else the root draws', async () => {
+    const output = await bundle("import { ProductMark } from './dist/product-mark.js';\nconsole.log(ProductMark);\n");
+    assert.ok(output.includes('crewlet-product-mark'), 'the product mark is missing from the bundle');
+    assert.ok(!output.includes('crewlet-vendor-mark'), 'a vendor mark is in a bundle that only asked for a product mark');
+    assert.ok(!output.includes('crewlet-figure'), 'the Crewlet figure is in a bundle that only asked for a product mark');
+    const drawn = [...glyphs].filter(([, elements]) => carries(output, elements)).map(([name]) => name);
+    assert.deepEqual(drawn, []);
+    // The four marks, their frame and the JSX calls.
+    assert.ok(output.length < 4 * 1024, `the product mark bundles to ${output.length} bytes`);
+  });
+
+  it('exports what the root exports for the marks, the same functions', async () => {
+    const entry = await import('../dist/product-mark.js');
+    const root = await import('../dist/index.js');
+    assert.deepEqual(Object.keys(entry).sort(), ['PRODUCTS', 'ProductMark']);
+    assert.equal(entry.ProductMark, root.ProductMark);
+    assert.equal(entry.PRODUCTS, root.PRODUCTS);
+  });
+});

@@ -12,6 +12,7 @@ All three are React components compiled from SVG files that ship in the package.
 | Signature illustrations | `@crewlethq/icons` | `<AgentReading />`, `<Icon name="AgentReading" />` |
 | The Crewlet character | `@crewlethq/icons` | `<CrewletFigure motion="wave" />` |
 | The thirty agent characters | `@crewlethq/icons/characters` | `<CrewletCharacter character="hexlet" />` |
+| Product marks | `@crewlethq/icons/product-mark` (also the root) | `<ProductMark product="assistant" />` |
 
 ## Glyphs
 
@@ -92,12 +93,14 @@ The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRA
 ## Product marks
 
 ```tsx
-import { ProductMark } from '@crewlethq/icons';
+import { ProductMark } from '@crewlethq/icons/product-mark';
 
 <ProductMark product="worklet" size={24} />
 <ProductMark product="chat" size={24} soon />
 <ProductMark product="assistant" size={20} />
 ```
+
+`@crewlethq/icons/product-mark` is the marks' own entry, with `ProductMark`, `PRODUCTS` and their types and nothing else: its import graph reaches the four drawings, the glyph frame and `ProductMark.css`, never the root with its illustrations, vendor marks and their stylesheets, so a first paint that draws one mark (an Ask button) pays for that alone whatever its bundler does with the root's side effects. The root still exports the same functions; `test/bundle.test.mjs` holds the entry's graph and what a build of it carries.
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |

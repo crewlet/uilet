@@ -279,6 +279,8 @@ The parts the engine dashboard's assistant drawer is built from, each generic en
 
 **`ProductMark` takes `product="assistant"`**: Orbit, the crewmate octagon opened into four chamfered blades turning around one core, on the family's tile and lower facet. No eyes and no visor, because the assistant acts as the signed-in person and is drawn as a capability rather than a crew member. Its blades and core are separate detail paths, so a working state can turn the blades and hold the core still.
 
+**`@crewlethq/icons/product-mark` is new**: `ProductMark` and `PRODUCTS` on an entry of their own, whose import graph never reaches the root's illustrations, vendor marks or their stylesheets, so an Ask button in a first paint carries the marks alone. The root exports the same functions.
+
 ## Changes in 0.54.0
 
 The setup wizard's review step and footer, laid out for a decision.

@@ -1,12 +1,14 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig((options) => ({
-  // Four entries, because they are four different weights. The root carries
+  // Five entries, because they are five different weights. The root carries
   // the illustrations and the marks; ./glyphs carries the Lucide drawings a
   // bundler takes one at a time; ./glyphs/registry carries the lookup that needs all
   // of them, so that nothing pays for it by accident; ./characters carries the
-  // Crewlet characters alone, for a consumer that draws agents and nothing else.
-  entry: ['src/index.ts', 'src/glyphs.ts', 'src/glyphs-registry.ts', 'src/characters.ts'],
+  // Crewlet characters alone, for a consumer that draws agents and nothing else;
+  // ./product-mark carries the four product marks alone, for a first paint that
+  // draws one of them.
+  entry: ['src/index.ts', 'src/glyphs.ts', 'src/glyphs-registry.ts', 'src/characters.ts', 'src/product-mark.ts'],
   format: ['esm'],
   dts: {
     /*
