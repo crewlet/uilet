@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { StatusCard } from '../StatusCard/index.js';
+import { StatusCard, type StatusCardFoldProps } from '../StatusCard/index.js';
 import { cx } from '../utils/cx.js';
 
 /** One person, seat or record in the list. */
@@ -20,7 +20,11 @@ export interface EntityListItem {
   action?: ReactNode;
 }
 
-export interface EntityListProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
+/**
+ * A titled list folds as the card it is drawn in (`StatusCard`'s fold); a
+ * list with no title has no head to fold to, and the props do nothing.
+ */
+export interface EntityListProps extends Omit<HTMLAttributes<HTMLElement>, 'title'>, StatusCardFoldProps {
   items: readonly EntityListItem[];
   /** Names the list for a screen reader, when no title names it. */
   label?: string | undefined;
@@ -39,7 +43,18 @@ export interface EntityListProps extends Omit<HTMLAttributes<HTMLElement>, 'titl
  * names line up with the title above them. Inside a card (`title`) the card
  * is the only edge.
  */
-export function EntityList({ items, label, title, className, ...rest }: EntityListProps) {
+export function EntityList({
+  items,
+  label,
+  title,
+  collapsible,
+  summary,
+  open,
+  defaultOpen,
+  onOpenChange,
+  className,
+  ...rest
+}: EntityListProps) {
   const list = (
     // The role is restated for WebKit, which drops it from a list with no markers.
     // eslint-disable-next-line jsx-a11y/no-redundant-roles
@@ -72,7 +87,16 @@ export function EntityList({ items, label, title, className, ...rest }: EntityLi
     );
   }
   return (
-    <StatusCard {...rest} title={title} bodyPadding="none" className={cx('crewlet-entity-list', 'crewlet-entity-list--card', className)}>
+    <StatusCard
+      {...rest}
+      title={title}
+      collapsible={collapsible}
+      summary={summary}
+      open={open}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
+      bodyPadding="none"
+      className={cx('crewlet-entity-list', 'crewlet-entity-list--card', className)}>
       {list}
     </StatusCard>
   );

@@ -4,8 +4,14 @@
  * The clip rectangle rather than `display: none` or `visibility: hidden`:
  * those two remove the text from the accessibility tree as well as from the
  * page. One pixel rather than zero, because a zero-sized element is skipped by
- * some screen readers. `white-space: nowrap` stops a long sentence wrapping
- * inside that pixel and being read a word at a time.
+ * some screen readers.
+ *
+ * `white-space: pre` for two reasons. It stops a long sentence wrapping inside
+ * that pixel and being read a word at a time. And it keeps the spaces at the
+ * text's edges: the element is positioned, so it lays out as a block of its
+ * own, and a block drops the collapsible spaces that start or end its line.
+ * "removed " came out as "removed", and the label ran into the word after it
+ * in what a screen reader said and in what a copy carried.
  */
 
 .crewlet-visually-hidden {
@@ -17,5 +23,5 @@
   border: 0;
   overflow: hidden;
   clip-path: inset(50%);
-  white-space: nowrap;
+  white-space: pre;
 }

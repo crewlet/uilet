@@ -21,7 +21,14 @@
   font-variant-numeric: tabular-nums;
 }
 
-.crewlet-run-chip__separator {
+/*
+ * The separator is drawn, not typed: generated content with no alternative
+ * text, so neither a screen reader nor a copy picks it up beside the comma
+ * the title already says.
+ */
+.crewlet-run-chip__meta::before {
+  content: '\00b7' / '';
+  margin-inline-end: var(--spacing-1);
   color: var(--color-text-tertiary);
 }
 

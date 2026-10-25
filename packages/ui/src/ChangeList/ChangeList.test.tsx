@@ -58,8 +58,8 @@ test('a pair is said in words, and added and removed values say so', () => {
 test('a word diff marks each run, and opens the whole change as a DiffList', () => {
   const { container } = render(<ChangeList rows={ROWS} />);
   const words = container.querySelector('.crewlet-change-list__words')!;
-  expect(words.querySelector('del')!.textContent).toBe('removed one hour');
-  expect(words.querySelector('ins')!.textContent).toBe('added 30 minutes');
+  expect(words.querySelector('del')!.textContent).toBe('removed: one hour; ');
+  expect(words.querySelector('ins')!.textContent).toBe('added: 30 minutes');
   const toggle = screen.getByRole('button', { name: 'Show the whole change' });
   expect(toggle.getAttribute('aria-expanded')).toBe('false');
   fireEvent.click(toggle);
@@ -103,4 +103,28 @@ test('carries no axe violation, closed and with the whole change open', async ()
   expect((await run()).violations).toEqual([]);
   fireEvent.click(screen.getByRole('button', { name: 'Show the whole change' }));
   expect((await run()).violations).toEqual([]);
+});
+
+test('two changed runs that touch are said apart, with nothing added to the drawing', () => {
+  const { container } = render(
+    <ChangeList
+      rows={[
+        {
+          kind: 'text',
+          label: 'Mission',
+          words: [
+            { op: '=', text: 'Build a good ' },
+            { op: '-', text: 'relationship. test' },
+            { op: '+', text: 'relationship.' },
+          ],
+        },
+      ]}
+    />,
+  );
+  const words = container.querySelector('.crewlet-change-list__words')!;
+  expect(words.textContent).toBe('Build a good removed: relationship. test; added: relationship.');
+  // Every word the reader hears and does not see is in a hidden span, so the
+  // visible runs are the words alone.
+  const hidden = [...words.querySelectorAll('.crewlet-visually-hidden')].map((node) => node.textContent);
+  expect(hidden).toEqual(['removed: ', '; ', 'added: ']);
 });

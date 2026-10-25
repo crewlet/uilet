@@ -60,3 +60,112 @@
     flex: 1 1 0;
   }
 }
+
+/*
+ * A RESULT FOLDED TO ITS HEAD. The title is the button that opens it, with
+ * the one chevron every disclosure here draws, turned the same way. The head
+ * may wrap: on a narrow card the utilities a folded card keeps go under the
+ * title rather than cutting it to nothing.
+ */
+.crewlet-status-card--folded > .crewlet-card__header {
+  flex-wrap: wrap;
+  row-gap: var(--spacing-1);
+}
+
+/* `hidden` has to win over the body's own `display: flex`. */
+.crewlet-status-card__body[hidden] {
+  display: none;
+}
+
+.crewlet-status-card__fold-title {
+  min-width: 0;
+}
+
+/*
+ * The button keeps the title's type and pulls its padding into the gutter, so
+ * the chevron sits on the card's text edge. NEUTRAL on hover, as every
+ * disclosure trigger is.
+ */
+.crewlet-status-card__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  max-width: calc(100% + var(--spacing-2));
+  min-height: var(--size-row-sm);
+  margin-inline-start: calc(var(--spacing-2) * -1);
+  padding: var(--spacing-1) var(--spacing-2);
+  border: none;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-status-card__toggle:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-status-card__toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-status-card__chevron {
+  flex: none;
+  color: var(--color-text-tertiary);
+  transform: rotate(-90deg);
+  transition: transform var(--motion-duration-base) var(--motion-easing-out);
+}
+
+.crewlet-status-card__toggle[aria-expanded='true'] .crewlet-status-card__chevron {
+  transform: rotate(0deg);
+}
+
+/* The title keeps its words and the summary gives up its tail first. */
+.crewlet-status-card__toggle-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * The dot is drawn, not written: generated content with no alternative text,
+ * so it is neither read nor copied, and the hidden comma before the summary
+ * is what both say instead.
+ */
+.crewlet-status-card__summary {
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-status-card__summary::before {
+  content: '\00b7' / '';
+  margin-inline-end: var(--spacing-1);
+}
+
+/* A folded card's utilities, at the end of its head, one small gap apart. */
+.crewlet-status-card__head-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-status-card__toggle,
+  .crewlet-status-card__chevron {
+    transition: none;
+  }
+}

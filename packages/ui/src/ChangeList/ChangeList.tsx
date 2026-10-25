@@ -78,10 +78,12 @@ export interface ChangeListLabels {
   removed: string;
   /** The small tag on a field new to an existing record. */
   isNew: string;
-  /** Said before each added run of a word diff. */
+  /** Said before each added run of a word diff, with its own punctuation: "added:". */
   addedWords: string;
-  /** Said before each removed run of a word diff. */
+  /** Said before each removed run of a word diff, with its own punctuation: "removed:". */
   removedWords: string;
+  /** Said between two changed runs that touch, so neither reads into the other: ";". */
+  betweenChanges: string;
   /** The disclosure that opens the whole change. */
   showWhole: string;
 }
@@ -92,8 +94,9 @@ export const CHANGE_LIST_LABELS: ChangeListLabels = {
   added: 'Added:',
   removed: 'Removed:',
   isNew: 'New',
-  addedWords: 'added',
-  removedWords: 'removed',
+  addedWords: 'added:',
+  removedWords: 'removed:',
+  betweenChanges: ';',
   showWhole: 'Show the whole change',
 };
 
@@ -154,20 +157,21 @@ function WordDiff({ row, labels }: { row: ChangeListTextRow; labels: ChangeListL
   return (
     <p className="crewlet-change-list__words">
       {row.words.map((part, index) => {
-        if (part.op === '+') {
+        if (part.op === '+' || part.op === '-') {
+          const Mark = part.op === '+' ? 'ins' : 'del';
+          // TWO CHANGED RUNS THAT TOUCH are drawn apart by their tints and
+          // said apart by a separator nobody sees, so "relationship. test"
+          // removed and "relationship." added never read as one word.
+          const touches = row.words[index + 1] !== undefined && row.words[index + 1]!.op !== '=';
           return (
-            <ins key={index} className="crewlet-change-list__inserted">
-              <VisuallyHidden>{`${labels.addedWords} `}</VisuallyHidden>
+            <Mark
+              key={index}
+              className={part.op === '+' ? 'crewlet-change-list__inserted' : 'crewlet-change-list__deleted'}
+            >
+              <VisuallyHidden>{`${part.op === '+' ? labels.addedWords : labels.removedWords} `}</VisuallyHidden>
               {part.text}
-            </ins>
-          );
-        }
-        if (part.op === '-') {
-          return (
-            <del key={index} className="crewlet-change-list__deleted">
-              <VisuallyHidden>{`${labels.removedWords} `}</VisuallyHidden>
-              {part.text}
-            </del>
+              {touches ? <VisuallyHidden>{`${labels.betweenChanges} `}</VisuallyHidden> : null}
+            </Mark>
           );
         }
         const place = index < firstChange ? 'first' : index > lastChange ? 'last' : 'middle';

@@ -1,6 +1,6 @@
 import { useState, type HTMLAttributes, type ReactNode } from 'react';
 import { DownloadButton } from '../DownloadButton/index.js';
-import { StatusCard } from '../StatusCard/index.js';
+import { StatusCard, type StatusCardFoldProps } from '../StatusCard/index.js';
 import { Table, type TableColumnAlign } from '../Table/index.js';
 import { cx } from '../utils/cx.js';
 
@@ -29,7 +29,7 @@ export const RESULT_TABLE_MAX_ROWS = 20;
 /** How many rows a long result shows until the reader asks for all of them. */
 export const RESULT_TABLE_COLLAPSED_ROWS = 10;
 
-export interface ResultTableCardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
+export interface ResultTableCardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'>, StatusCardFoldProps {
   /** What the rows are: "Token spend by agent". Also the table's caption, said and not shown twice. */
   title: string;
   /** The window or scope the rows cover, under the title: "This week, from Monday". */
@@ -73,6 +73,9 @@ export interface ResultTableCardProps extends Omit<HTMLAttributes<HTMLElement>, 
  *
  * A LONG RESULT IS SHORTENED, never paged: over `maxRows` rows, the first
  * `collapsedRows` and "Show all 48", which shows the rest in place.
+ *
+ * A RESULT BESIDE AN ANSWER CAN FOLD (`collapsible`) to one line: its title,
+ * a summary ("7 rows") and its downloads and link at the end of the head.
  */
 export function ResultTableCard({
   title,
