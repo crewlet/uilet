@@ -985,7 +985,7 @@ async function build() {
       "export type { ThemeGroupId, ThemeEntry, ThemeId } from './themes.js';",
       // The colour maths the palette suite measures with, for an interface
       // that has to say whether two colours a person chose read on each other.
-      "export { WCAG_CONTRAST, contrast, luminance, parseHex } from './color.js';",
+      "export { WCAG_CONTRAST, contrast, luminance, nearestContrastShade, parseHex } from './color.js';",
       "export type { Rgb } from './color.js';",
       // The brand mapping's contract: its public tokens and the names their
       // theme values take, for the artifact kit's build and the suites.

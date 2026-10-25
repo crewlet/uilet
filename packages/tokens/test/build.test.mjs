@@ -201,6 +201,7 @@ describe('the display, body, sheet, shell, breakpoint and breath tokens', () => 
       'WCAG_CONTRAST',
       'contrast',
       'luminance',
+      'nearestContrastShade',
       'parseHex',
       'BRAND_SCOPE_CLASS',
       'BRAND_SCOPE_LAYER_CLASS',
