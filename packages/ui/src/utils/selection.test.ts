@@ -44,6 +44,8 @@ const CHOSEN: ReadonlyArray<
   ['DatasetSource/DatasetSource.css', '.crewlet-dataset-source--selected', 'border', null],
   ['DatasetSource/DatasetSource.css', '.crewlet-dataset-source--selected .crewlet-dataset-source__summary', null, 'background'],
   ['ChoiceList/ChoiceList.css', '.crewlet-choice-list__row.is-checked', null, 'background'],
+  // A suggestion applied stays on screen, chosen; held under the pointer too.
+  ['ChoiceButtons/ChoiceButtons.css', '.crewlet-choice-buttons__option.is-chosen, .crewlet-choice-buttons__option.is-chosen:hover', 'border', 'background'],
   ['LayersList/LayersList.css', ".crewlet-layers-list__item[aria-current='true']", null, 'background'],
   // Laid over the card's own surface, so the fill is an image.
   ['Card/Card.css', '.crewlet-card.is-selected', 'border', 'image'],

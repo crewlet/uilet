@@ -124,6 +124,13 @@
   opacity: 0.5;
 }
 
+.crewlet-logo-slot__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
 .crewlet-logo-slot__empty {
   margin: 0;
   color: var(--color-text-tertiary);
@@ -156,4 +163,112 @@
 .crewlet-logo-slot__hint {
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
+}
+
+/*
+ * A GROUP OF SLOTS, aligned row by row (LogoSlotGroup.tsx). Each slot is a
+ * subgrid spanning the group's four rows: its name and description, its
+ * stage, what is said under it, and its actions. A row holds the tallest of
+ * its parts across the slots, so every stage, note and action row starts on
+ * one line.
+ *
+ * NO GRID GAP ANYWHERE IN THE ROWS. A gap between the group's rows is drawn
+ * between a subgrid's rows too, so an empty row (no notes in any slot) still
+ * stood two gaps tall between the stage and the actions. Every step is a
+ * margin on the part that follows it instead, and a row nobody uses takes no
+ * room at all; a line of slots is set off from the next (on a narrow page)
+ * by the slot's own end margin.
+ *
+ * THREE ACROSS IN A FORM'S COLUMN. The columns are as many as fit at 9rem,
+ * so three slots stand in one row in a 480px column (a setup step's), and
+ * the group's own width under 30rem stacks them one under another.
+ */
+.crewlet-logo-slot-group {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-logo-slot-group__slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+  column-gap: var(--spacing-5);
+  row-gap: 0;
+}
+
+@container (width < 30rem) {
+  .crewlet-logo-slot-group__slots {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.crewlet-logo-slot-group__slots > .crewlet-logo-slot {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  align-content: start;
+  margin-block-end: var(--spacing-5);
+}
+
+.crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__head {
+  grid-row: 1;
+  margin-block-end: var(--spacing-2);
+}
+
+.crewlet-logo-slot-group__slots > .crewlet-logo-slot > :is(.crewlet-logo-slot__stage, .crewlet-file-drop) {
+  grid-row: 2;
+}
+
+.crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__notes {
+  grid-row: 3;
+  margin-block-start: var(--spacing-2);
+}
+
+.crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__foot {
+  grid-row: 4;
+  margin-block-start: var(--spacing-2);
+}
+
+.crewlet-logo-slot-group__hint {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+}
+
+/*
+ * SMALL: a thumbnail of the slot for a summary of what is set. The stage
+ * keeps its ground, its edge and the space the logo keeps, at half the height
+ * with a tighter inset, and the words step down to the summary's sizes.
+ */
+.crewlet-logo-slot--sm {
+  --crewlet-logo-slot-height: calc(var(--size-row-lg) * 1.5);
+  --crewlet-logo-slot-padding: var(--spacing-2);
+  --crewlet-logo-slot-clear: var(--spacing-1);
+
+  gap: var(--spacing-1);
+}
+
+.crewlet-logo-slot--sm .crewlet-logo-slot__label {
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-logo-slot--sm .crewlet-logo-slot__description,
+.crewlet-logo-slot--sm .crewlet-logo-slot__empty {
+  font-size: var(--font-size-2xs);
+}
+
+.crewlet-logo-slot--sm .crewlet-logo-slot__stage {
+  border-radius: var(--radius-md);
+}
+
+.crewlet-logo-slot--sm .crewlet-logo-slot__placeholder {
+  width: calc(var(--size-row-lg) * 1.5);
+  height: var(--size-row-sm);
+}
+
+.crewlet-logo-slot--sm .crewlet-logo-slot__stage--square .crewlet-logo-slot__placeholder {
+  width: var(--size-row-sm);
 }
