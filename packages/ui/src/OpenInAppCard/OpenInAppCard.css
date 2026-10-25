@@ -1,0 +1,24 @@
+/* The place: its tile, then its name over where it lives. */
+.crewlet-open-in-app-card__place {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+.crewlet-open-in-app-card__words {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-open-in-app-card__title {
+  overflow-wrap: anywhere;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.crewlet-open-in-app-card__path {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
