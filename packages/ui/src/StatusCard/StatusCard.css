@@ -23,6 +23,11 @@
   color: var(--color-text-secondary);
 }
 
+/* The strip fills its flush footer edge to edge. */
+.crewlet-status-card__strip {
+  display: block;
+}
+
 /*
  * THE FOOT'S ONE RULE. A decision ends the row; utilities start it, with a
  * ghost button at either end pulled out by its padding and edge so its glyph

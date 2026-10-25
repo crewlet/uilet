@@ -8,6 +8,7 @@ import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
 import { installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import { Button } from '../Button/index.js';
+import { ReceiptStrip } from '../ReceiptStrip/index.js';
 import { StatusCard } from './index.js';
 
 afterEach(cleanup);
@@ -79,4 +80,15 @@ test('carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations).toEqual([]);
+});
+
+test('the strip reaches the card edges, in a footer with no inset rather than a padded body', () => {
+  const { container } = render(
+    <StatusCard title="Filter this list" strip={<ReceiptStrip>Applied to Work › Tasks</ReceiptStrip>}>
+      <p>Show only blocked tasks.</p>
+    </StatusCard>,
+  );
+  const strip = container.querySelector('.crewlet-receipt-strip')!;
+  expect(strip.parentElement!.className).toContain('crewlet-card__footer--p-none');
+  expect(container.querySelectorAll('.crewlet-card__body').length).toBe(1);
 });

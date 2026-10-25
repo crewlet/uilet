@@ -106,7 +106,16 @@ export function StatusCard({
           {children}
         </Card.Body>
       )}
-      {strip}
+      {/*
+        IN A FOOTER WITH NO INSET, because a card built from its slots pads
+        anything beside them in a body of its own: the strip has to reach the
+        card's edges, and it draws its own hairline.
+      */}
+      {strip === undefined || strip === null || strip === false ? null : (
+        <Card.Footer padding="none" className="crewlet-status-card__strip">
+          {strip}
+        </Card.Footer>
+      )}
       {actions === undefined || actions === null || actions === false ? null : (
         <Card.Footer className={cx('crewlet-status-card__actions', `crewlet-status-card__actions--${actionsAlign}`)}>
           {actions}
