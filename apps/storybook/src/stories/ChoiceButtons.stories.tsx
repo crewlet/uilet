@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { ChoiceButtons } from '@crewlethq/ui';
+import { ChoiceButtons, ColorChip } from '@crewlethq/ui';
 
 /**
  * One answer sent with one press. The recommended option comes first, filled
@@ -73,4 +73,32 @@ export const AsTiles: Story = {
       />
     </div>
   ),
+};
+
+/**
+ * SMALL, WITH A PICTURE AND A CHOICE: the same option, compact, in a row that
+ * wraps, as the brand setup offers shades for a low-contrast colour. Each
+ * leads with a `ColorChip`, and `chosen` keeps the applied one marked (the
+ * selected edge and fill) with every option a toggle button saying whether it
+ * is the one applied. Hover, press and focus are the Inbox's own.
+ */
+export const SmallSuggestions: Story = {
+  render: function Render() {
+    const [chosen, setChosen] = useState<string | null>(null);
+    return (
+      <div style={{ maxWidth: 520 }}>
+        <ChoiceButtons
+          label="Suggestions for Primary"
+          size="sm"
+          chosen={chosen}
+          onChoose={setChosen}
+          options={[
+            { value: '#00a0a0', label: '#00a0a0', detail: '3:1, meets the minimum', media: <ColorChip value="#00a0a0" /> },
+            { value: '#007f7f', label: '#007f7f', detail: '4.5:1, best for text links', media: <ColorChip value="#007f7f" /> },
+            { value: 'dark', label: 'Use on dark grounds', detail: 'Keep #00baba, use it on dark grounds' },
+          ]}
+        />
+      </div>
+    );
+  },
 };

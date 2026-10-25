@@ -56,6 +56,17 @@
 }
 
 /*
+ * THE OPTION APPLIED is drawn as every chosen option in the package is: the
+ * selected edge over the soft selected fill, calm beside the focus ring, and
+ * held under the pointer so a hover never makes it look unchosen.
+ */
+.crewlet-choice-buttons__option.is-chosen,
+.crewlet-choice-buttons__option.is-chosen:hover {
+  border-color: var(--color-border-selected);
+  background: var(--color-surface-selected);
+}
+
+/*
  * The plain option draws the strong hairline, so its ring is drawn over that
  * edge rather than a gap away from it, which would read as a second outline.
  */
@@ -128,6 +139,55 @@
   font-weight: var(--font-weight-medium);
   letter-spacing: var(--font-letter-spacing-wide);
   text-transform: uppercase;
+}
+
+/* The picture before the words, centred on the label's line. */
+.crewlet-choice-buttons__media {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  align-self: center;
+}
+
+/* Before the words, not at the far end with the recommended mark. */
+.crewlet-choice-buttons__option:has(.crewlet-choice-buttons__media) {
+  justify-content: flex-start;
+}
+
+.crewlet-choice-buttons__option:has(.crewlet-choice-buttons__media) .crewlet-choice-buttons__note {
+  margin-inline-start: auto;
+}
+
+/*
+ * SMALL: the same option, compact, in a row that wraps. A step and a half
+ * inside, the field's small height, the label at the compact step and its
+ * detail at the micro step, so three suggestions sit under a field without
+ * outweighing it. Every state (hover, press, focus, chosen) is the Inbox's.
+ */
+.crewlet-choice-buttons--sm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.crewlet-choice-buttons--sm .crewlet-choice-buttons__option {
+  gap: var(--spacing-2);
+  min-height: var(--size-control-sm);
+  padding: var(--spacing-1) calc(var(--spacing-2) + var(--spacing-1) / 2);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-tight);
+}
+
+.crewlet-choice-buttons--sm .crewlet-choice-buttons__option:has(.crewlet-choice-buttons__detail) {
+  align-items: center;
+}
+
+.crewlet-choice-buttons--sm .crewlet-choice-buttons__text {
+  gap: 1px;
+}
+
+.crewlet-choice-buttons--sm .crewlet-choice-buttons__detail {
+  font-size: var(--font-size-2xs);
 }
 
 @media (prefers-reduced-motion: reduce) {
