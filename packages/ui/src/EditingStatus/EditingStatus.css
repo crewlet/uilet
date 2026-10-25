@@ -26,20 +26,32 @@
   background: var(--color-brand-accent);
 }
 
+/*
+ * THE WORDS RUN AS TEXT, not as flex items, so the space between the label
+ * and the state (which the ear needs) and the space before the time are real
+ * spaces, and the row is cut with an ellipsis rather than squeezed.
+ */
+.crewlet-editing-status__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .crewlet-editing-status__label {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
 }
 
-.crewlet-editing-status__state {
-  overflow: hidden;
+.crewlet-editing-status__state,
+.crewlet-editing-status__ago {
   color: var(--color-text-tertiary);
-  text-overflow: ellipsis;
 }
 
+/* The dot between the label and the state: drawn, never read. The space
+   before it in the text gives it the step on its left. */
 .crewlet-editing-status__state::before {
   content: '\00b7';
-  margin-right: var(--spacing-2);
+  margin-inline: var(--spacing-1) var(--spacing-2);
 }
 
 /*
@@ -53,7 +65,8 @@
  * "Editing" folds too, and Cancel and Save beside the dot say an edit is open.
  */
 @media (width < 480px) {
-  .crewlet-editing-status__state {
+  .crewlet-editing-status__state,
+  .crewlet-editing-status__ago {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -64,7 +77,8 @@
 }
 
 @container crewlet-artifact-bar (width < 900px) {
-  .crewlet-editing-status__state {
+  .crewlet-editing-status__state,
+  .crewlet-editing-status__ago {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -76,7 +90,8 @@
 
 @container crewlet-artifact-bar (width < 640px) {
   .crewlet-editing-status__label,
-  .crewlet-editing-status__state {
+  .crewlet-editing-status__state,
+  .crewlet-editing-status__ago {
     position: absolute;
     width: 1px;
     height: 1px;

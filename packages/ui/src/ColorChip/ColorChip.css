@@ -1,0 +1,46 @@
+/*
+ * A colour as a small chip (ColorChip.tsx). Its fill is the one value that is
+ * not a token, and it arrives through `--crewlet-color-chip-value` only after
+ * it has passed `#rrggbb`.
+ */
+.crewlet-color-chip {
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--spacing-3);
+  height: var(--spacing-3);
+  background: var(--crewlet-color-chip-value, var(--color-surface-inset));
+  /* An edge of its own, so a colour that matches its ground is still a chip. */
+  box-shadow: inset 0 0 0 1px var(--color-border-hover);
+  vertical-align: middle;
+}
+
+.crewlet-color-chip--sm {
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+}
+
+.crewlet-color-chip--round {
+  border-radius: var(--radius-circle);
+}
+
+.crewlet-color-chip--square {
+  border-radius: var(--radius-xs);
+}
+
+/* The hatch of no colour, as every swatch in the package draws it. */
+.crewlet-color-chip.is-empty {
+  background: repeating-linear-gradient(-45deg, var(--color-border-hatch) 0 1px, transparent 1px var(--spacing-1));
+}
+
+/*
+ * FORCED COLORS drops backgrounds, which is all a chip is, so the mode keeps
+ * this one: the colour is the information, and the edge is drawn in the
+ * system's text colour so the chip still has a boundary.
+ */
+@media (forced-colors: active) {
+  .crewlet-color-chip {
+    forced-color-adjust: none;
+    box-shadow: inset 0 0 0 1px CanvasText;
+  }
+}

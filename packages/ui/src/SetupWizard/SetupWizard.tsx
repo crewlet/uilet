@@ -60,8 +60,16 @@ export interface SetupWizardProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   aside?: ReactNode;
   /** What the aside is, for its complementary landmark: "Preview of your draft". Required with `aside`. */
   asideLabel?: string | undefined;
-  /** The step's actions, held at the bottom of the view: Back, Skip for now, Continue. */
+  /** The step's actions, at the end of the footer row and held at the bottom of the view: Back, Skip for now, Continue. */
   footer: ReactNode;
+  /** What stands at the start of the footer row, apart from the step's actions: Exit. */
+  footerStart?: ReactNode;
+  /**
+   * The content takes the whole width beside the rail rather than one 640px
+   * column, for a step that lays out columns of its own (a review of every
+   * step beside a preview). Meant for a step with no `aside`.
+   */
+  wide?: boolean | undefined;
   labels?: Partial<SetupWizardLabels> | undefined;
 }
 
@@ -79,7 +87,9 @@ const PHONE = `(width < ${breakpoint.phone})`;
  * heading, with a lead sentence and the step's fields in one column of at
  * most 640px. The aside is a complementary landmark named by `asideLabel`,
  * held in view beside the content. The footer holds the step's actions at the
- * bottom of the view, above the device's safe area.
+ * end of its row (and `footerStart`, the way out, at its start) at the bottom
+ * of the view, above the device's safe area. A step that lays out columns of
+ * its own takes the whole width beside the rail with `wide`.
  *
  * THREE SHAPES. On a wide page the rail, the content and the aside stand side
  * by side (240px, the content, 320px). Where the wizard has under 70rem of its
@@ -113,6 +123,8 @@ export function SetupWizard({
   aside,
   asideLabel,
   footer,
+  footerStart,
+  wide = false,
   labels,
   className,
   ...rest
@@ -160,7 +172,15 @@ export function SetupWizard({
     );
 
   return (
-    <div {...rest} className={cx('crewlet-setup-wizard', className)}>
+    <div
+      {...rest}
+      className={cx(
+        'crewlet-setup-wizard',
+        asideBlock === null && 'crewlet-setup-wizard--no-aside',
+        wide && 'crewlet-setup-wizard--wide',
+        className,
+      )}
+    >
       <div className="crewlet-setup-wizard__frame">
         <div className="crewlet-setup-wizard__head">
           {trail ? <div className="crewlet-setup-wizard__trail">{trail}</div> : null}
@@ -209,7 +229,10 @@ export function SetupWizard({
           asideBlock
         )}
 
-        <footer className="crewlet-setup-wizard__footer">{footer}</footer>
+        <footer className="crewlet-setup-wizard__footer">
+          {footerStart ? <div className="crewlet-setup-wizard__footer-start">{footerStart}</div> : null}
+          <div className="crewlet-setup-wizard__footer-end">{footer}</div>
+        </footer>
       </div>
     </div>
   );

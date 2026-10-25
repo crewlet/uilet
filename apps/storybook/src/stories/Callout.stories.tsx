@@ -63,6 +63,23 @@ export const WithAnAction: Story = {
   },
 };
 
+/** TWO ACTIONS stand one step apart in a row, and wrap under each other where there is no room. */
+export const WithTwoActions: Story = {
+  args: {
+    variant: 'info',
+    title: 'A newer draft of your brand',
+    children: 'Pick up where you left off, or review it and adopt it.',
+    action: (
+      <>
+        <Button size="small">Continue setting up</Button>
+        <Button size="small" variant="secondary">
+          Review and adopt
+        </Button>
+      </>
+    ),
+  },
+};
+
 /**
  * NARROWER THAN 28REM, THE ACTION MOVES UNDER THE TEXT, at the start of the
  * text's column, so the sentence keeps the callout's whole measure. A phone's

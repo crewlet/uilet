@@ -271,15 +271,18 @@ test('an item is one growing line, never a block of empty rows', () => {
  * list above it put the answer before the question and pushed the box further
  * down the form with every item added.
  */
-test('the new-item box comes before the list, and the add control beside the legend', () => {
+test('the new-item box comes before the list, and its Add button ends the box’s row', () => {
   render(<Goals initial={['Ship', 'Measure']} />);
   const box = screen.getByLabelText('New goal');
   const card = document.querySelector('.crewlet-list-input__items')!;
   expect(box.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
   const add = screen.getByRole('button', { name: 'Add goal' });
-  const legend = document.querySelector('legend')!;
-  expect(legend.contains(add)).toBe(true);
+  // One way in beside Enter, at the end of the field's own row, showing the
+  // word its name begins with; nothing floats beside the legend.
+  expect(document.querySelector('legend')!.querySelector('button')).toBeNull();
+  expect(add.closest('.crewlet-list-input__add')).toBe(box.closest('.crewlet-list-input__add'));
+  expect(add.textContent).toBe('Add');
   // And it is the same door as Enter: what the box holds is appended.
   fireEvent.change(box, { target: { value: 'Learn' } });
   fireEvent.click(add);
@@ -694,9 +697,10 @@ test('a multi-line list keeps Shift+Enter as a line break', () => {
   expect(fireEvent.keyDown(box, { key: 'Enter', shiftKey: true })).toBe(true);
 });
 
-test('with a hidden legend the add control stands beside the box, not alone above it', () => {
+test('with the legend shown or hidden the Add button stands at the end of the box’s row', () => {
   const { unmount } = render(<Policies initial={[]} />);
-  expect(screen.getByRole('button', { name: 'Add policy' }).closest('legend')).not.toBeNull();
+  expect(screen.getByRole('button', { name: 'Add policy' }).closest('legend')).toBeNull();
+  expect(screen.getAllByRole('button', { name: /^Add/ })).toHaveLength(1);
   unmount();
   render(<Policies initial={[]} hideLabel />);
   const add = screen.getByRole('button', { name: 'Add policy' });

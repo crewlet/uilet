@@ -57,3 +57,22 @@ export const States: Story = {
     </div>
   ),
 };
+
+/**
+ * WHAT IT READS. The `#` is drawn in the field, so a person types the six
+ * digits alone. Paste or type `#00baba`, `00baba`, `#0bb` or
+ * `rgb(0, 186, 186)` (commas or spaces) and leave the field: each is stored
+ * as lowercase `#rrggbb` and shown as its six digits. Anything else is
+ * refused with one sentence.
+ */
+export const AcceptedForms: Story = {
+  render: function Render() {
+    const [value, setValue] = useState('');
+    return (
+      <div style={{ display: 'grid', gap: 8, width: 320 }}>
+        <ColorField label="Primary" helper="Try rgb(0, 186, 186) or #0bb" optional value={value} onChange={setValue} />
+        <output style={{ fontFamily: 'var(--font-family-mono)' }}>{value || 'Nothing stored'}</output>
+      </div>
+    );
+  },
+};

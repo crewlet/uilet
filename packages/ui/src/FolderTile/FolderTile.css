@@ -27,8 +27,17 @@
   --crewlet-folder-tile-floor: auto;
   --crewlet-folder-tile-glyph: 40px;
   --crewlet-folder-tile-glyph-radius: var(--radius-md);
+  /*
+   * THE WORDS ARE SET AS THE CARDS BESIDE THEM: a tile's name at a gallery
+   * card's title step and weight, its facts at the card's facts step, one
+   * line height for both and the card's step between them. The row (and a
+   * tile on a phone, which is the row) keeps the same two steps, since the
+   * cards it stands above keep theirs there too, with a tighter step between
+   * the lines so it stays one compact row.
+   */
   --crewlet-folder-tile-name: var(--font-size-md);
   --crewlet-folder-tile-facts: var(--font-size-sm);
+  --crewlet-folder-tile-words-gap: var(--spacing-1);
   --crewlet-folder-tile-actions-inset: var(--spacing-3);
   /*
    * A TILE STACKS: the glyph on top with the More menu level with it in the
@@ -61,8 +70,7 @@
   --crewlet-folder-tile-floor: var(--size-control-lg);
   --crewlet-folder-tile-glyph: 28px;
   --crewlet-folder-tile-glyph-radius: var(--radius-sm);
-  --crewlet-folder-tile-name: var(--font-size-sm);
-  --crewlet-folder-tile-facts: var(--font-size-xs);
+  --crewlet-folder-tile-words-gap: 2px;
   --crewlet-folder-tile-actions-inset: var(--spacing-2);
   --crewlet-folder-tile-direction: row;
   --crewlet-folder-tile-align: center;
@@ -82,8 +90,7 @@
     --crewlet-folder-tile-floor: var(--size-control-lg);
     --crewlet-folder-tile-glyph: 28px;
     --crewlet-folder-tile-glyph-radius: var(--radius-sm);
-    --crewlet-folder-tile-name: var(--font-size-sm);
-    --crewlet-folder-tile-facts: var(--font-size-xs);
+    --crewlet-folder-tile-words-gap: 2px;
     --crewlet-folder-tile-actions-inset: var(--spacing-2);
     --crewlet-folder-tile-direction: row;
     --crewlet-folder-tile-align: center;
@@ -151,7 +158,7 @@
 .crewlet-folder-tile__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--crewlet-folder-tile-words-gap);
   min-width: 0;
   max-width: 100%;
 }

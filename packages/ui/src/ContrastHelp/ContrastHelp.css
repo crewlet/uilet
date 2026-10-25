@@ -1,0 +1,43 @@
+/*
+ * ContrastHelp: what the contrast levels mean, in a short panel opened from an
+ * info button (ContrastHelp.tsx).
+ */
+.crewlet-contrast-help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-contrast-help__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-contrast-help__intro {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* Each level's word as the badge draws it, beside what it means. */
+.crewlet-contrast-help__levels {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--spacing-2) var(--spacing-3);
+  margin: 0;
+}
+
+.crewlet-contrast-help__levels dt,
+.crewlet-contrast-help__levels dd {
+  margin: 0;
+}
+
+.crewlet-contrast-help__levels dd {
+  color: var(--color-text-secondary);
+}

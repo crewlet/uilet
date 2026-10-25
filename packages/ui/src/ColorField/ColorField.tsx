@@ -1,7 +1,7 @@
 import { useId, useState, type CSSProperties, type ReactNode } from 'react';
-import { FormField, Input } from '../Input/index.js';
+import { FormField, Input, InputAffix } from '../Input/index.js';
 import { cx } from '../utils/cx.js';
-import { normalizeHex } from '../utils/hexColour.js';
+import { normalizeHex, parseColourInput } from '../utils/hexColour.js';
 
 export interface ColorFieldLabels {
   /** Why a typed value was refused, with what right looks like. */
@@ -11,18 +11,30 @@ export interface ColorFieldLabels {
   /** Names the colour picker beside the field: "Pick the Primary colour". */
   picker: (label: string) => string;
   /**
-   * What the empty field shows: the shape a value takes, never a colour, which
-   * an empty field would seem to hold.
+   * What the empty field shows after its `#`: the shape a value takes, never
+   * a colour, which an empty field would seem to hold.
    */
   placeholder: string;
+  /** Said for the `#` drawn at the start of the field, which is not part of what is typed. */
+  prefix: string;
 }
 
 const LABELS: ColorFieldLabels = {
-  invalid: 'Enter the colour as # and six hex digits, such as #5b3df5.',
+  invalid: 'Enter six hex digits, such as 5b3df5, or rgb(91, 61, 245).',
   missing: 'Choose a colour.',
   picker: (label) => `Pick the ${label} colour`,
-  placeholder: '#rrggbb',
+  placeholder: 'rrggbb',
+  prefix: 'Hex colour, after #',
 };
+
+/** What the field shows for a stored colour: its six digits, after the drawn `#`. */
+const digits = (colour: string) => colour.replace(/^#/, '');
+
+/** A typed value as the field holds it: a leading `#` is the drawn one's, so it is dropped. */
+const typedText = (value: string) => value.replace(/^\s*#/, '');
+
+/** Six hex digits, the one form reported while the reader is still typing. */
+const SIX_DIGITS = /^[0-9a-f]{6}$/i;
 
 /** What the native picker opens on when the field holds no colour yet: its own default, black. */
 const PICKER_START = '#000000';
@@ -64,12 +76,18 @@ export interface ColorFieldProps {
  * A colour a person chooses: a hex field, a swatch that opens the platform's
  * colour picker, and the reason a value was refused.
  *
- * THE VALUE IS `#` AND SIX HEX DIGITS, and nothing else is ever reported: the
- * field holds what is being typed, and a value reaches `onChange` only once it
- * reads as a colour, lowercased, the one spelling the engine stores. A value
- * that does not read is refused when the reader leaves the field (Enter or
- * Tab), never while they are still typing it, with a sentence saying what
- * right looks like.
+ * THE `#` IS THE FIELD'S, drawn at its start, so a person types the six hex
+ * digits alone; a pasted `#rrggbb` loses its own `#` to it. When the reader
+ * leaves the field (Enter or Tab) what they wrote is read as a colour:
+ * `rrggbb`, the three digit shorthand, or `rgb(r, g, b)` (commas or spaces),
+ * each normalised to the one spelling the engine stores, lowercase
+ * `#rrggbb`. Anything else is refused then, never while they are still
+ * typing, with a sentence saying what right looks like.
+ *
+ * ONLY A COLOUR IS EVER REPORTED. Six hex digits reach `onChange` as they are
+ * typed, so a preview follows the field; the shorthand and `rgb()` reach it
+ * when the reader leaves, since `abc` on its way to `abcdef` is not the colour
+ * they mean. An optional field emptied reports `''`.
  *
  * THE SWATCH IS THE PICKER. It is the platform's own colour input, drawn as
  * the chip of the colour the field holds and named for it, so it is a real,
@@ -94,7 +112,7 @@ export function ColorField({
   const autoId = useId();
   const fieldId = id ?? autoId;
   const committed = normalizeHex(value) ?? '';
-  const [draft, setDraft] = useState(committed);
+  const [draft, setDraft] = useState(digits(committed));
   const [seen, setSeen] = useState(committed);
   const [left, setLeft] = useState(false);
 
@@ -106,30 +124,35 @@ export function ColorField({
    */
   if (committed !== seen) {
     setSeen(committed);
-    if ((normalizeHex(draft) ?? '') !== committed) {
-      setDraft(committed);
+    if ((parseColourInput(draft) ?? '') !== committed) {
+      setDraft(digits(committed));
       setLeft(false);
     }
   }
 
   const typed = draft.trim();
-  const reads = normalizeHex(typed);
+  const reads = parseColourInput(typed);
   const refusal =
     typed === '' ? (required ? text.missing : null) : reads === null ? text.invalid : null;
   const shown = error ?? (left ? refusal : null);
   const swatch = reads ?? (typed === '' ? null : committed || null);
+  // A functional notation stands on its own: the drawn `#` would read as part of it.
+  const functional = /^rgb/i.test(typed);
+  const prefixId = `${fieldId}-prefix`;
 
   const take = (next: string) => {
-    setDraft(next);
-    const colour = normalizeHex(next);
-    if (colour !== null) onChange(colour);
-    else if (next.trim() === '' && !required) onChange('');
+    const held = typedText(next);
+    setDraft(held);
+    if (SIX_DIGITS.test(held.trim())) onChange(normalizeHex(`#${held.trim()}`)!);
+    else if (held.trim() === '' && !required) onChange('');
   };
 
   const settle = () => {
     setLeft(true);
-    // A value that reads is shown in the spelling it was stored in.
-    if (reads !== null && reads !== draft) setDraft(reads);
+    if (reads === null) return;
+    // A value that reads is stored, and shown in the spelling it was stored in.
+    if (reads !== committed) onChange(reads);
+    if (digits(reads) !== draft) setDraft(digits(reads));
   };
 
   return (
@@ -167,13 +190,14 @@ export function ColorField({
             width="sm"
             value={draft}
             placeholder={text.placeholder}
-            maxLength={9}
+            leading={functional ? undefined : <InputAffix text="#" id={prefixId} sentence={text.prefix} />}
+            maxLength={24}
             spellCheck={false}
             autoComplete="off"
             autoCapitalize="off"
             disabled={disabled}
             error={Boolean(shown)}
-            aria-describedby={field.describedBy}
+            aria-describedby={[functional ? null : prefixId, field.describedBy].filter(Boolean).join(' ') || undefined}
             aria-required={required || undefined}
             onChange={(event) => take(event.target.value)}
             onBlur={settle}
