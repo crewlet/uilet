@@ -575,6 +575,28 @@ describe('the named themes', () => {
   });
 });
 
+describe('the palettes and the theme registry', () => {
+  const module = (name) => readFileSync(fileURLToPath(new URL(`../dist/${name}`, import.meta.url)), 'utf8');
+
+  test('are modules apart, so a consumer of the registry never carries the palette values', async () => {
+    // A bundler keeps or drops a module's values by what is imported from it
+    // and splits code by module. With the palettes in the registry's module,
+    // an application that read only the registry at boot (a theme
+    // preference) carried every palette value in its entry as soon as a
+    // later screen imported `themes`.
+    const registry = module('themes.js');
+    assert.doesNotMatch(registry, /from\s+['"]\.\/palettes\.js['"]/, 'the registry module neither imports nor re-exports the palettes');
+    assert.doesNotMatch(registry, /\blinkQuiet\b/, 'the registry module holds no palette value');
+    assert.doesNotMatch(registry, /export\s+const\s+themes\b/);
+    const palettes = await import('../dist/palettes.js');
+    assert.equal(exported.themes, palettes.themes, 'the entry hands out the palettes module\'s own object');
+    assert.deepEqual(Object.keys(palettes), ['themes']);
+    const entry = module('index.js');
+    assert.match(entry, /export \{ themes \} from '\.\/palettes\.js';/);
+    assert.match(entry, /export \{ themeGroups, themeRegistry, DEFAULT_THEME_ID, isThemeId \} from '\.\/themes\.js';/);
+  });
+});
+
 describe('the colour maths at runtime', () => {
   test('the package exports the implementation the palette suite measures with', () => {
     // One implementation: the published entry and the published suite hand a
