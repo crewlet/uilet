@@ -92,3 +92,56 @@
   font-size: var(--font-size-compact);
   color: var(--color-text-tertiary);
 }
+
+/*
+ * STACKED: each path over its value, both wrapping, so a value is read rather
+ * than cut by the 200px path track. `auto` is the same drawing under 480px of
+ * the list's own width, which a window query cannot know: a list in a 420px
+ * drawer on a wide screen is as narrow as one on a phone.
+ */
+.crewlet-diff-list--auto {
+  container: crewlet-diff-list / inline-size;
+}
+
+.crewlet-diff-list--stacked .crewlet-diff-list__row {
+  grid-template-columns: auto minmax(0, 1fr);
+  row-gap: 0;
+}
+
+.crewlet-diff-list--stacked .crewlet-diff-list__value {
+  grid-column: 2;
+}
+
+.crewlet-diff-list--stacked .crewlet-diff-list__path,
+.crewlet-diff-list--stacked .crewlet-diff-list__value,
+.crewlet-diff-list--stacked .crewlet-diff-list__from,
+.crewlet-diff-list--stacked .crewlet-diff-list__to {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-diff-list--stacked .crewlet-diff-list__value {
+  flex-wrap: wrap;
+}
+
+@container crewlet-diff-list (width < 480px) {
+  .crewlet-diff-list--auto .crewlet-diff-list__row {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .crewlet-diff-list--auto .crewlet-diff-list__value {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  .crewlet-diff-list--auto .crewlet-diff-list__path,
+  .crewlet-diff-list--auto .crewlet-diff-list__value,
+  .crewlet-diff-list--auto .crewlet-diff-list__from,
+  .crewlet-diff-list--auto .crewlet-diff-list__to {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
