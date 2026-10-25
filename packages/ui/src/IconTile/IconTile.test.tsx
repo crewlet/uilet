@@ -35,3 +35,19 @@ test('carries its hue and size as modifiers', () => {
   expect(tile.classList.contains('crewlet-icon-tile--rose')).toBe(true);
   expect(tile.classList.contains('crewlet-icon-tile--lg')).toBe(true);
 });
+
+test('a neutral tile is a place rather than a kind: no hue, and a hue wins over the tone', () => {
+  const { container, rerender } = render(
+    <IconTile tone="neutral">
+      <svg />
+    </IconTile>,
+  );
+  expect(container.firstElementChild!.className).toContain('crewlet-icon-tile--neutral');
+  rerender(
+    <IconTile tone="neutral" hue="rose">
+      <svg />
+    </IconTile>,
+  );
+  expect(container.firstElementChild!.className).toContain('crewlet-icon-tile--rose');
+  expect(container.firstElementChild!.className).not.toContain('crewlet-icon-tile--neutral');
+});
