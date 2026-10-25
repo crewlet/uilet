@@ -26,10 +26,32 @@ export interface TableActionButton {
   onClick: () => void;
 }
 
+/** Which edge a column's cells stand against: `start` for words, `end` for figures. */
+export type TableColumnAlign = 'start' | 'end';
+
 export interface TableProps {
   headers: ReactNode[];
   /** One array per row, in the header's own order. Cells may be any node. */
   data: ReactNode[][];
+  /**
+   * Each column's edge, in the header's order: `end` for a column of figures,
+   * so the numbers and their heading line up on the right. Left out, every
+   * column starts.
+   */
+  align?: readonly TableColumnAlign[] | undefined;
+  /**
+   * A last row that sums the rows above it ("Total", "7,840,000", "100%"),
+   * fenced from them by a rule and set at medium weight. Its first cell heads
+   * the row, so a screen reader hears "Total" with each figure in it.
+   */
+  footer?: readonly ReactNode[] | undefined;
+  /**
+   * Draws the table's own frame (the edge, the corner and the panel ground).
+   * `false` for a table that fills a card, which already has an edge: a card
+   * never holds a second bordered box. Its outer cells then take the card's
+   * own inset.
+   */
+  framed?: boolean | undefined;
   /**
    * What the table is about, rendered as its `<caption>`.
    *
@@ -40,7 +62,7 @@ export interface TableProps {
   caption?: ReactNode;
   captionHidden?: boolean;
   emptyMessage?: ReactNode;
-  actionButton?: TableActionButton;
+  actionButton?: TableActionButton | undefined;
   /**
    * How tall the rows may get before they scroll, as a CSS length.
    *
@@ -61,11 +83,15 @@ export const Table = ({
   emptyMessage = 'No data available',
   actionButton,
   maxHeight,
+  align,
+  footer,
+  framed = true,
   className = '',
 }: TableProps) => {
   const columnCount = Math.max(1, headers.length);
+  const edge = (index: number) => (align?.[index] === 'end' ? 'crewlet-table__cell--end' : undefined);
   return (
-    <div className={cx('crewlet-table', className)}>
+    <div className={cx('crewlet-table', !framed && 'crewlet-table--flush', className)}>
       {/*
         * The scroller, as a safety net rather than a reading mode: the table
         * lays out fixed and wraps anywhere, so its columns share the width
@@ -97,7 +123,7 @@ export const Table = ({
               {headers.map((header, index) => (
                 // The index is the key because a header is a position: the
                 // columns of one table do not reorder between renders.
-                <th key={index} scope="col">{header}</th>
+                <th key={index} scope="col" className={edge(index)}>{header}</th>
               ))}
             </tr>
           </thead>
@@ -106,7 +132,7 @@ export const Table = ({
               data.map((row, rowIndex) => (
                 <tr key={rowIndex} className="crewlet-table__row">
                   {row.map((cell, cellIndex) => (
-                    <td key={cellIndex}>{cell}</td>
+                    <td key={cellIndex} className={edge(cellIndex)}>{cell}</td>
                   ))}
                 </tr>
               ))
@@ -118,6 +144,19 @@ export const Table = ({
               </tr>
             )}
           </tbody>
+          {footer && footer.length > 0 ? (
+            <tfoot>
+              <tr className="crewlet-table__footer">
+                {footer.map((cell, index) =>
+                  index === 0 ? (
+                    <th key={index} scope="row" className={edge(index)}>{cell}</th>
+                  ) : (
+                    <td key={index} className={edge(index)}>{cell}</td>
+                  ),
+                )}
+              </tr>
+            </tfoot>
+          ) : null}
         </table>
       </div>
 

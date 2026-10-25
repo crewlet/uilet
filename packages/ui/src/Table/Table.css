@@ -118,6 +118,55 @@
  * a control.
  */
 
+/* A column of figures stands against the end, its heading over its numbers. */
+.crewlet-table__table .crewlet-table__cell--end {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * THE TOTAL ROW, fenced from the rows it sums by the same hairline and set at
+ * medium weight. Its first cell heads the row, so it is a th and is reset to
+ * the body's register rather than the header's micro-label.
+ */
+.crewlet-table__table tfoot th,
+.crewlet-table__table tfoot td {
+  position: static;
+  height: var(--size-row-md);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-top: 1px solid var(--color-border-default);
+  border-bottom: none;
+  background: none;
+  font-size: inherit;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+/*
+ * IN A CARD, the card is the frame: no edge, corner or ground of the table's
+ * own, and the outer cells take the card's 16px inset so every row lines up
+ * with the card's title.
+ */
+.crewlet-table--flush {
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.crewlet-table--flush .crewlet-table__table th:first-child,
+.crewlet-table--flush .crewlet-table__table td:first-child {
+  padding-left: var(--spacing-4);
+}
+
+.crewlet-table--flush .crewlet-table__table th:last-child,
+.crewlet-table--flush .crewlet-table__table td:last-child {
+  padding-right: var(--spacing-4);
+}
+
 .crewlet-table__empty {
   padding: var(--spacing-7) var(--spacing-3);
   text-align: center;

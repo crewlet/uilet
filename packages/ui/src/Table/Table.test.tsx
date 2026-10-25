@@ -109,3 +109,21 @@ test('a cell may be a node, not only a string', () => {
   );
   expect(screen.getByRole('link', { name: 'planner' })).toBeTruthy();
 });
+
+test('a total row heads itself, a figure column stands at the end, and a flush table draws no frame', () => {
+  const { container } = render(
+    <Table
+      headers={['Agent', 'Tokens']}
+      data={[['Agent SWE', '2,960,000']]}
+      align={['start', 'end']}
+      footer={['Total', '7,840,000']}
+      framed={false}
+    />,
+  );
+  expect(container.querySelector('.crewlet-table--flush')).not.toBeNull();
+  const total = container.querySelector('tfoot tr')!;
+  expect(total.querySelector('th')!.getAttribute('scope')).toBe('row');
+  expect(total.querySelector('th')!.textContent).toBe('Total');
+  expect(container.querySelectorAll('.crewlet-table__cell--end').length).toBe(3);
+  expect(container.querySelector('th.crewlet-table__cell--end')!.textContent).toBe('Tokens');
+});
