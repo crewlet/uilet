@@ -204,6 +204,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.49.1
+
+**`@crewlethq/tokens` keeps its palettes and its theme registry in modules of their own.** The `themes` object (both palettes, every value) was generated into the same module as `themeRegistry`, `themeGroups`, `DEFAULT_THEME_ID` and `isThemeId`, and a bundler keeps a module whole in the chunk that first needs it: an application that reads the registry at boot (a theme preference) carried every palette value in its entry as soon as any later screen imported `themes` (since 0.47.0, `LogoSlot`), about 8 KB raw and 2 KB gzipped on every first paint of the engine dashboard. `themes` now comes from a module of its own (`dist/palettes.js`), so a consumer of the registry never carries it and the palettes land in the chunk that uses them. The package's exports are unchanged: `import { themes, themeRegistry } from '@crewlethq/tokens'` works as before.
+
 ## Changes in 0.49.0
 
 The pieces of a company's brand and of the folders artifacts are filed in.
