@@ -87,7 +87,7 @@ describe('where the sequence has got to', () => {
   });
 
   test('a finished sequence has every step done and none current', () => {
-    // The task timeline's finished turn: "Execute ✓ — Review ✓", nothing current.
+    // The task timeline's finished turn: "Execute ✓, Review ✓", nothing current.
     const { container } = render(<Stepper label="Turn 1" steps={TURN.slice(1, 3)} current={null} />);
     expect(steps(container).map(stateOf)).toEqual(['done', 'done']);
     expect(container.querySelectorAll('[aria-current]')).toHaveLength(0);
