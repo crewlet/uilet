@@ -9,6 +9,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import { Disclosure } from './index.js';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
 
@@ -186,4 +187,18 @@ test('a long fact gives up its room before the title does, and never all of it',
     </Disclosure>,
   );
   expect(screen.getByRole('button').textContent).toContain(fact);
+});
+
+test('a closed panel is not drawn, whatever display the open one takes', () => {
+  const uninstall = installThemed('light', 'Disclosure/Disclosure.css');
+  const { container } = render(
+    <Disclosure title="Tool call">
+      <p>Arguments</p>
+    </Disclosure>,
+  );
+  const panel = container.querySelector('.crewlet-disclosure__panel')!;
+  expect(getComputedStyle(panel).display).toBe('none');
+  fireEvent.click(screen.getByRole('button', { name: 'Tool call' }));
+  expect(getComputedStyle(panel).display).toBe('flex');
+  uninstall();
 });

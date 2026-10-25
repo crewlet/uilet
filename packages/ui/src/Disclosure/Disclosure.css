@@ -189,6 +189,16 @@
   color: var(--color-text-secondary);
 }
 
+/*
+ * CLOSED IS HIDDEN. The panel closes with the `hidden` attribute, and the
+ * browser's own `[hidden] { display: none }` is a user agent rule that any
+ * author `display` outranks: the flex above drew every closed panel open,
+ * under a trigger that said it was collapsed.
+ */
+.crewlet-disclosure__panel[hidden] {
+  display: none;
+}
+
 /* ---- Sizes and variants ------------------------------------------------ */
 
 /*
