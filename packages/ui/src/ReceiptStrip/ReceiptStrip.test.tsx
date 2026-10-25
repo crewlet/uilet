@@ -75,3 +75,21 @@ test('carries no axe violation', async () => {
   });
   expect(result.violations).toEqual([]);
 });
+
+test('announce={false} leaves the announcement to the host: no role of its own, inline or at the foot', () => {
+  const { rerender } = render(<RefusalStrip announce={false}>It is not there any more.</RefusalStrip>);
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(screen.getByText('It is not there any more.')).toBeTruthy();
+  rerender(
+    <RefusalStrip announce={false} placement="foot">
+      It is not there any more.
+    </RefusalStrip>,
+  );
+  expect(screen.queryByRole('alert')).toBeNull();
+  rerender(
+    <ReceiptStrip tone="success" announce={false}>
+      Saved.
+    </ReceiptStrip>,
+  );
+  expect(screen.queryByRole('status')).toBeNull();
+});

@@ -211,6 +211,10 @@ places:
 
 **`ProposalCard` takes `failureOutcome`** (`unchanged` or `unknown`; `ProposalFailureOutcome`, `PROPOSAL_FAILURE_OUTCOMES`), so a failed card says "Nothing changed." only when it is true. `unchanged`, the default, keeps the 0.56.0 drawing: the Tag "Not applied" and the engine's sentence followed by "Nothing changed.". `unknown` is a change sent without an answer, which may have landed: the Tag reads "Not confirmed" (`labels.notConfirmed`) and the strip is the `failure` sentence alone, or `labels.unknownNotice` ("Could not confirm whether this was applied. It may have landed.") without one. A failed card carries `data-outcome`. A consumer that drew an unknown outcome as `failed` passes `failureOutcome="unknown"`; nothing else changes.
 
+**`ProposalCard` takes `decisionRefusal`** (`{ sentence, hint? }`; `ProposalDecisionRefusal`): why the person's last decision was refused while the card still waits on one, such as an approval that needs a fresh sign-in or that met a moved record, so the card stays `pending` or `stepup`. It is drawn above the decision as the inline `RefusalStrip`, and announced politely from a live region the foot keeps from the moment it holds a decision, through `applying`, so words that arrive later are heard. The consumer clears it. It is ignored once the card has settled. In `pending` and `stepup` the foot therefore holds one more `status` region, empty and visually hidden until a refusal arrives; a test that read the step-up notice with `getByRole('status')` should read it from the strip.
+
+**`ReceiptStrip` and `RefusalStrip` take `announce`** (true by default). False drops the strip's own `alert` or `status` role, for a host that keeps the live region around it.
+
 ## Changes in 0.56.0
 
 ### The frame and its panels

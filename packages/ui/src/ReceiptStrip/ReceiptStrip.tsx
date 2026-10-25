@@ -19,6 +19,13 @@ export interface ReceiptStripProps extends Omit<HTMLAttributes<HTMLDivElement>, 
   children: ReactNode;
   /** Controls at the strip's end, such as Try again. */
   actions?: ReactNode;
+  /**
+   * Whether the strip is its own live region (true, the default: an alert
+   * for `danger`, a status otherwise). False leaves the announcement to a
+   * live region the host already keeps around it, which is the reliable way
+   * to announce words that arrive after the page did.
+   */
+  announce?: boolean | undefined;
 }
 
 const ICONS: Record<ReceiptStripTone, ReactNode> = {
@@ -41,11 +48,19 @@ const ICONS: Record<ReceiptStripTone, ReactNode> = {
  * one tone a reader must not miss; every other tone is a polite status.
  * Colour is never alone: the mark and the words say the outcome.
  */
-export function ReceiptStrip({ tone = 'success', icon, children, actions, className, ...rest }: ReceiptStripProps) {
+export function ReceiptStrip({
+  tone = 'success',
+  icon,
+  children,
+  actions,
+  announce = true,
+  className,
+  ...rest
+}: ReceiptStripProps) {
   return (
     <div
       {...rest}
-      role={tone === 'danger' ? 'alert' : 'status'}
+      role={announce ? (tone === 'danger' ? 'alert' : 'status') : undefined}
       className={cx('crewlet-receipt-strip', `crewlet-receipt-strip--${tone}`, className)}
     >
       <span className="crewlet-receipt-strip__icon" aria-hidden="true">
@@ -82,6 +97,11 @@ export interface RefusalStripProps extends Omit<HTMLAttributes<HTMLElement>, 'ro
   onDismiss?: (() => void) | undefined;
   /** `inline` (the default) under a control; `foot` as a card's foot strip. */
   placement?: RefusalStripPlacement | undefined;
+  /**
+   * Whether the strip is its own alert (true, the default). False leaves the
+   * announcement to a live region the host keeps around it.
+   */
+  announce?: boolean | undefined;
   labels?: Partial<RefusalStripLabels> | undefined;
 }
 
@@ -105,6 +125,7 @@ export function RefusalStrip({
   retrying = false,
   onDismiss,
   placement = 'inline',
+  announce = true,
   labels: overrides,
   className,
   ...rest
@@ -133,13 +154,13 @@ export function RefusalStrip({
   );
   if (placement === 'foot') {
     return (
-      <ReceiptStrip {...rest} tone="danger" actions={actions} className={cx('crewlet-refusal-strip--foot', className)}>
+      <ReceiptStrip {...rest} tone="danger" announce={announce} actions={actions} className={cx('crewlet-refusal-strip--foot', className)}>
         {words}
       </ReceiptStrip>
     );
   }
   return (
-    <span {...rest} role="alert" className={cx('crewlet-refusal-strip', className)}>
+    <span {...rest} role={announce ? 'alert' : undefined} className={cx('crewlet-refusal-strip', className)}>
       {words}
       {actions}
     </span>

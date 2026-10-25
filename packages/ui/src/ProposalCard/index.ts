@@ -4,6 +4,7 @@ export { PROPOSAL_CARD_LABELS, PROPOSAL_FAILURE_OUTCOMES, PROPOSAL_STATES, Propo
 export type {
   ProposalCardLabels,
   ProposalCardProps,
+  ProposalDecisionRefusal,
   ProposalFailureOutcome,
   ProposalKind,
   ProposalScope,
