@@ -195,3 +195,21 @@ export const InAFormColumn: Story = {
     </div>
   ),
 };
+
+/**
+ * ACTIONS THAT WRAP BESIDE ACTIONS THAT DO NOT: in a narrow column the
+ * primary slot's Replace and Remove take two lines, and the other slots'
+ * single "Choose a file" stands level with Replace, at the top of the shared
+ * row, not centred half a line lower.
+ */
+export const WrappingActions: Story = {
+  render: () => (
+    <div style={{ width: 480 }}>
+      <LogoSlotGroup label="Logos" hint="SVG up to 512 KB. PNG or WebP up to 2 MB and 4096 px.">
+        <LogoSlot editable label="Primary logo" description="Doc headers, light slides and pages." ground="light" src={wordmark} alt="Crewlet logo" onFile={() => {}} onRemove={() => {}} />
+        <LogoSlot editable label="For dark grounds" description="Dark slides and dark mode." ground="dark" groundColor="#120a2b" alt="Crewlet logo on dark" onFile={() => {}} />
+        <LogoSlot editable label="Mark" description="Chips, slide corners and the brand chip." ground="light" shape="square" alt="Crewlet mark" onFile={() => {}} />
+      </LogoSlotGroup>
+    </div>
+  ),
+};

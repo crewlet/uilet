@@ -73,7 +73,13 @@ test('each slot is a subgrid of four rows: name and description, stage, notes, a
   expect(rule('.crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__head')).toMatch(/grid-row: 1;/);
   expect(rule('.crewlet-logo-slot-group__slots > .crewlet-logo-slot > :is(.crewlet-logo-slot__stage, .crewlet-file-drop)')).toMatch(/grid-row: 2;/);
   expect(rule('.crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__notes')).toMatch(/grid-row: 3;/);
-  expect(rule('.crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__foot')).toMatch(/grid-row: 4;/);
+  const foot = rule('.crewlet-logo-slot-group__slots > .crewlet-logo-slot > .crewlet-logo-slot__foot');
+  expect(foot).toMatch(/grid-row: 4;/);
+  // Held to the top of the shared row, so a slot whose two actions wrap never
+  // pushes a neighbour's single button half a line down: every first button
+  // stands on one line.
+  expect(foot).toMatch(/align-self: start;/);
+  expect(foot).toMatch(/align-content: flex-start;/);
 });
 
 test('a slot on its own keeps its caption', () => {
