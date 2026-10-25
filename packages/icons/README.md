@@ -96,16 +96,17 @@ import { ProductMark } from '@crewlethq/icons';
 
 <ProductMark product="worklet" size={24} />
 <ProductMark product="chat" size={24} soon />
+<ProductMark product="assistant" size={20} />
 ```
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `product` | `Product`: `'worklet' \| 'doclet' \| 'chat'` | required | Which of Crewlet's own products. |
+| `product` | `Product`: `'worklet' \| 'doclet' \| 'chat' \| 'assistant'` | required | Which of Crewlet's own products. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `soon` | boolean | `false` | Draws a product that has not shipped hollow: a faint violet body under a violet keyline and face. Never grey, which is how a vendor mark says "not connected". |
 
-The three services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. All three stand on one tile, the crewmate head's octagon with its 45 degree chamfers on the 48 grid, in the brand violet (`#7c56ff`) with a deeper lower facet (`#5c24ff`), inset two units so its weight sits beside a vendor mark's. One white figure on each tells them apart, drawn on the 6 unit grid so its edges land on whole pixels at 16, 24 and 48: **Worklet** (projects and tasks) is a task list, one task ticked and one open; **Doclet** (spaces and pages) is an open book with its lines of text; **Chat** (talking with agents) is the crewmate's two eyes in a speech bubble. The sources are `svg/product/*.svg`, exported as `@crewlethq/icons/svg/product/*.svg`. `PRODUCTS` lists them.
+The four services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. All four stand on one tile, the crewmate head's octagon with its 45 degree chamfers on the 48 grid, in the brand violet (`#7c56ff`) with a deeper lower facet (`#5c24ff`), inset two units so its weight sits beside a vendor mark's. One white figure on each tells them apart, drawn on the 6 unit grid so its edges land on whole pixels at 16, 24 and 48: **Worklet** (projects and tasks) is a task list, one task ticked and one open; **Doclet** (spaces and pages) is an open book with its lines of text; **Chat** (talking with agents) is the crewmate's two eyes in a speech bubble; **Assistant** (asking Crewlet itself, acting as the signed-in person) is **Orbit**, the octagon opened into four chamfered blades turning around one core. Orbit has no eyes and no visor on purpose: every agent character carries a visor and Chat carries eyes, and the assistant has no identity of its own, so it is drawn as a capability of Crewlet rather than as a member of the crew. Its blades and its core are separate `detail` paths, so a working state can turn the blades a quarter at a time and hold the core still. The sources are `svg/product/*.svg`, exported as `@crewlethq/icons/svg/product/*.svg`. `PRODUCTS` lists them.
 
 ## Signature illustrations
 
