@@ -9,6 +9,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useRef, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { ArtifactPanel, ArtifactWorkspace } from '../ArtifactPanel/index.js';
 import { SidePanel, SidePanelFrame, type SidePanelShape } from './index.js';
 
@@ -119,6 +120,33 @@ test('a hidden title still names the panel', () => {
   const heading = screen.getByRole('heading', { name: 'Crewlet Assistant' });
   expect(heading.classList.contains('crewlet-side-panel__title--hidden')).toBe(true);
   expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
+});
+
+test('flush drops the body inset and publishes it as zero inside the body only', () => {
+  const uninstall = installSheets('SidePanel/SidePanel.css');
+  try {
+    const panelOf = (flush?: boolean) => (
+      <SidePanel title="Crewlet Assistant" flush={flush} onClose={() => {}} footer={<input aria-label="Message" />}>
+        <p>Thread</p>
+      </SidePanel>
+    );
+    const { rerender } = render(panelOf());
+    const panel = screen.getByRole('complementary', { name: 'Crewlet Assistant' });
+    const body = panel.querySelector<HTMLElement>('.crewlet-side-panel__body')!;
+    const inset = (el: Element) => getComputedStyle(el).getPropertyValue('--crewlet-side-panel-inset').trim();
+    const resting = inset(panel);
+    expect(resting).not.toBe('0px');
+    expect(inset(body)).toBe(resting);
+    expect(body.classList.contains('crewlet-side-panel__body--flush')).toBe(false);
+
+    rerender(panelOf(true));
+    expect(body.classList.contains('crewlet-side-panel__body--flush')).toBe(true);
+    expect(inset(body)).toBe('0px');
+    // Outside the body the panel keeps its inset: the head and foot are unchanged.
+    expect(inset(panel)).toBe(resting);
+  } finally {
+    uninstall();
+  }
 });
 
 test('as a column it carries a grip with its width, and the frame publishes the content floor', () => {

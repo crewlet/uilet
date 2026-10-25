@@ -157,6 +157,13 @@
   overscroll-behavior: contain;
 }
 
+/* FLUSH, the body draws no inset of its own: what it holds owns its edges
+   (a chat thread that scrolls and insets itself). The published inset reads 0
+   inside it, so anything that offsets itself by the inset follows. */
+.crewlet-side-panel__body--flush {
+  --crewlet-side-panel-inset: 0px;
+}
+
 /* THE FOOT holds the panel's own commit, outside the scrolling body, so it
    stays in reach at every scroll. Its inset is the body's. */
 .crewlet-side-panel__foot {

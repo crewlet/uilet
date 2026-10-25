@@ -45,6 +45,15 @@ export interface SidePanelProps {
    */
   footer?: ReactNode;
   /**
+   * Drops the body's inset, for content that owns its own edges: a
+   * `ChatThread`, which scrolls itself and insets its own items, so its
+   * scrollbar stands on the panel's edge and the inset is not drawn twice; or
+   * a table whose rules meet the panel's sides. `--crewlet-side-panel-inset`
+   * reads 0 inside the body, so a sticky foot that offsets itself by the
+   * inset still sits on the edge.
+   */
+  flush?: boolean | undefined;
+  /**
    * The width, in px, in a `SidePanelFrame`. In the shell's aside the shell's
    * track sizes the panel (`AppShell` `asideWidth`), and this is ignored.
    */
@@ -105,6 +114,7 @@ export function SidePanel({
   onClose,
   actions,
   footer,
+  flush,
   width,
   minWidth = SIDE_PANEL_MIN_WIDTH,
   maxWidth = SIDE_PANEL_MAX_WIDTH,
@@ -128,6 +138,7 @@ export function SidePanel({
       resizeLabel={words.resize(title)}
       actions={actions}
       footer={footer}
+      flush={flush}
       width={width ?? (resizable ? defaultWidth : undefined)}
       minWidth={minWidth}
       maxWidth={maxWidth}

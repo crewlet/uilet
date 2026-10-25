@@ -3,7 +3,10 @@ import { useRef, useState } from 'react';
 import { BotGlyph, PencilGlyph, RotateCcwClockGlyph } from '@crewlethq/icons/glyphs';
 import {
   Button,
+  ChatThread,
   IconButton,
+  MessageBubble,
+  Prose,
   SegmentedControl,
   SIDE_PANEL_MAX_WIDTH,
   SIDE_PANEL_MIN_WIDTH,
@@ -49,7 +52,31 @@ function Content({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-function Demo({ shape, focusComposer = false }: { shape?: SidePanelShape; focusComposer?: boolean }) {
+/** A conversation for the flush body: the thread scrolls and insets itself. */
+function Thread() {
+  return (
+    <ChatThread label="Conversation">
+      {ROWS.slice(0, 6).flatMap((row, index) => [
+        <MessageBubble key={`q${index}`} from="self">
+          What does this say? ({index + 1})
+        </MessageBubble>,
+        <Prose key={`a${index}`} measure="narrow">
+          <p>{row}.</p>
+        </Prose>,
+      ])}
+    </ChatThread>
+  );
+}
+
+function Demo({
+  shape,
+  focusComposer = false,
+  thread = false,
+}: {
+  shape?: SidePanelShape;
+  focusComposer?: boolean;
+  thread?: boolean;
+}) {
   const [open, setOpen] = useState(true);
   const stored = useStoredWidth({ key: 'crewlet.storybook.side-panel.width', min: SIDE_PANEL_MIN_WIDTH, max: SIDE_PANEL_MAX_WIDTH });
   const composer = useRef<HTMLTextAreaElement>(null);
@@ -70,6 +97,7 @@ function Demo({ shape, focusComposer = false }: { shape?: SidePanelShape; focusC
               onWidthChange={stored.setWidth}
               onWidthCommit={stored.commitWidth}
               initialFocus={focusComposer ? composer : 'heading'}
+              flush={thread}
               actions={
                 <>
                   <IconButton size="sm" variant="ghost" label="New conversation" icon={<PencilGlyph size="sm" />} />
@@ -78,14 +106,18 @@ function Demo({ shape, focusComposer = false }: { shape?: SidePanelShape; focusC
               }
               footer={<Textarea ref={composer} aria-label="Message" rows={2} placeholder="Ask about this page" />}
             >
-              <Stack gap={3}>
-                <Text>The head stands at the page bar's height. The body scrolls under it, and the foot stays in reach.</Text>
-                {ROWS.slice(0, 12).map((row) => (
-                  <Text key={row} variant="caption">
-                    {row}
-                  </Text>
-                ))}
-              </Stack>
+              {thread ? (
+                <Thread />
+              ) : (
+                <Stack gap={3}>
+                  <Text>The head stands at the page bar's height. The body scrolls under it, and the foot stays in reach.</Text>
+                  {ROWS.slice(0, 12).map((row) => (
+                    <Text key={row} variant="caption">
+                      {row}
+                    </Text>
+                  ))}
+                </Stack>
+              )}
             </SidePanel>
           ) : null
         }
@@ -120,6 +152,13 @@ export const MeasuredByTheFrame: Story = { render: () => <Demo /> };
 
 /** FOCUS TO THE COMPOSER on open, where the panel exists to be typed into. */
 export const FocusToTheComposer: Story = { render: () => <Demo shape="column" focusComposer /> };
+
+/**
+ * FLUSH, FOR CONTENT THAT OWNS ITS EDGES: the body draws no inset, so a
+ * `ChatThread`, which scrolls and insets itself, keeps one inset rather than
+ * two and its scrollbar stands on the panel's edge.
+ */
+export const FlushBodyForAThread: Story = { render: () => <Demo shape="column" thread /> };
 
 /** Every shape from one control. */
 export const Shapes: Story = {

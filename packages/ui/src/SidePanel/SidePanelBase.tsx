@@ -54,6 +54,8 @@ export interface SidePanelBaseProps {
   closeLabel: string;
   actions?: ReactNode;
   footer?: ReactNode;
+  /** Whether the body drops its inset, for content that draws its own. */
+  flush?: boolean | undefined;
   initialFocus?: SidePanelInitialFocus | undefined;
   /** Whether the heading draws the focus ring when it holds focus. */
   ringHeading?: boolean | undefined;
@@ -88,6 +90,7 @@ export function SidePanelBase({
   closeLabel,
   actions,
   footer,
+  flush = false,
   initialFocus = 'heading',
   ringHeading = false,
   hideTitle = false,
@@ -230,7 +233,7 @@ export function SidePanelBase({
           </span>
         </div>
         {/* THE PANEL'S TITLE IS ITS LEVEL TWO, so a section inside it heads at three. */}
-        <div className={part('body', alias)}>
+        <div className={cx(part('body', alias), flush && 'crewlet-side-panel__body--flush')}>
           <HeadingLevelProvider level={3}>{children}</HeadingLevelProvider>
         </div>
         {footer ? <div className={part('foot', alias)}>{footer}</div> : null}
