@@ -123,6 +123,16 @@ export interface ArtifactBarProps {
   tools?: readonly ArtifactBarTool[] | undefined;
   /** The More menu's own rows. The tools that fold on a narrow bar are added above them. */
   menu?: readonly MenuEntry[] | undefined;
+  /**
+   * After everything, More included: a control the host ends every page head
+   * with, such as an assistant's Ask button, so an open artifact's own bar
+   * keeps it where every other page's bar does. It is the host's own element
+   * and is never folded into More, so it stays in reach at every width; a
+   * control that should draw smaller on a phone does so itself. It stands a
+   * step further from the bar's own tools than they stand from each other,
+   * never wraps, and the title gives way to it.
+   */
+  end?: ReactNode;
   /** `header` stands as the page's banner; `div` sits inside a host's own. */
   as?: 'header' | 'div' | undefined;
   /** The title's heading level: 1 where the bar is the page's own head. */
@@ -141,7 +151,8 @@ export interface ArtifactBarProps {
  * artifact is (its glyph and its title, renamed in place by whoever may), the
  * version on show, then the kind's own views in the middle, and at the end
  * who else is here, the kind's tools, the panels every artifact has, Share
- * and More. Everything past the title opens on demand: a panel, a menu or a
+ * and More, and last the host's own control (`end`), as `start` is first.
+ * Everything past the title opens on demand: a panel, a menu or a
  * dialog, never a second row of chrome.
  *
  * IT FOLDS BY ITS OWN WIDTH, a container query rather than the window's, since
@@ -170,6 +181,7 @@ export function ArtifactBar({
   kindTools = [],
   tools = [],
   menu = [],
+  end,
   as = 'header',
   headingLevel = 1,
   pending = false,
@@ -299,6 +311,7 @@ export function ArtifactBar({
               />
             </span>
           ) : null}
+          {end ? <span className="crewlet-artifact-bar__trail">{end}</span> : null}
         </div>
       </div>
     </Root>
