@@ -254,7 +254,14 @@ test('the list is one bordered card whose rows are divided, not a stack of boxes
   // The logical properties as written: jsdom keeps the shorthand it is given
   // rather than expanding it onto the physical sides.
   expect(px(box, 'padding-block')).toBe(4);
-  expect(px(box, 'padding-inline')).toBe(0);
+  // EDITING NEVER MOVES THE WORDS: an inset for the ring, taken back by a
+  // margin of the same step, so the text sits where it sat at rest.
+  expect(px(box, 'padding-inline')).toBe(8);
+  expect(px(box, 'margin-inline')).toBe(-8);
+  // The number on the text's first line, at the words' line height.
+  const index = rows[0]!.querySelector('.crewlet-list-input__index')!;
+  expect(getComputedStyle(index).alignSelf).toBe('flex-start');
+  expect(px(index, 'padding-block-start')).toBe(5);
 });
 
 test('an item is one growing line, never a block of empty rows', () => {
@@ -377,12 +384,29 @@ test('a full list says so where the box was, and the focus moves to what was jus
   fireEvent.keyDown(box, { key: 'Enter' });
   expect(current()).toEqual(['One.', 'Two.']);
   expect(screen.queryByLabelText('New policy')).toBeNull();
-  expect(document.body.textContent).toContain('The list is full at 2. Remove one to add another.');
+  expect(document.body.textContent).toContain("That's the most. Remove one to add another.");
   expect(document.activeElement).toBe(screen.getByLabelText('Policy 2 of 2'));
-  expect(announced()).toBe('Added policy 2 of 2. The list is full at 2. Remove one to add another.');
+  expect(announced()).toBe("Added policy 2 of 2. That's the most. Remove one to add another.");
   // Every item is still the reader's: removing one brings the box back.
   fireEvent.click(screen.getByRole('button', { name: 'Remove policy 1 of 2' }));
   expect(screen.getByLabelText('New policy')).toBeDefined();
+});
+
+test('with a most, the help line ends in how many it holds of it, and the group is described by it', () => {
+  const { rerender } = render(<Policies initial={['One.', 'Two.', 'Three.']} maxItems={5} helper="Short lines." />);
+  const tally = document.querySelector('.crewlet-form-field__tally')!;
+  expect(tally.textContent).toBe('3 of 5');
+  const group = screen.getByRole('group', { name: /Policies/ });
+  expect((group.getAttribute('aria-describedby') ?? '').split(' ')).toContain(tally.id);
+  rerender(<Policies initial={['One.']} />);
+  // Without a most there is nothing to count against.
+  expect(document.querySelectorAll('.crewlet-form-field__tally')).toHaveLength(0);
+});
+
+test('the count reads 5 of 5 at the most, and its words are the caller’s', () => {
+  render(<Policies initial={['1', '2', '3', '4', '5']} maxItems={5} tallyLabel={(count, max) => `${count} von ${max}`} />);
+  expect(document.querySelector('.crewlet-form-field__tally')!.textContent).toBe('5 von 5');
+  expect(document.body.textContent).toContain("That's the most. Remove one to add another.");
 });
 
 test('an item over the length limit keeps its words, says by how much, and is invalid', () => {
