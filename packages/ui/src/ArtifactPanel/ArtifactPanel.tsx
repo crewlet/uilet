@@ -1,7 +1,6 @@
-import { useEffect, useId, useLayoutEffect, useRef, type ReactNode, type Ref } from 'react';
-import { MaximizeGlyph, MinimizeGlyph, XGlyph } from '@crewlethq/icons/glyphs';
-import { IconButton } from '../IconButton/index.js';
-import { HeadingLevelProvider } from '../utils/headingLevel.js';
+import type { ReactNode, Ref } from 'react';
+import { SidePanelFrameBase } from '../SidePanel/SidePanel.js';
+import { SidePanelBase } from '../SidePanel/SidePanelBase.js';
 import { cx } from '../utils/cx.js';
 
 /**
@@ -60,21 +59,12 @@ export interface ArtifactPanelProps {
  * A panel at the artifact's side: its details, its history, its data, who is
  * here, its settings. One at a time, opened from the bar's controls.
  *
- * A COMPLEMENTARY REGION, NOT A DIALOG. The artifact beside it stays live and
- * reachable, so the panel is an `aside` named by its heading and never traps
- * focus; the reader moves between the two with Tab as between any two parts
- * of a page.
- *
- * FOCUS IS STILL MANAGED, because a panel opened from a control that is then
- * pressed again, or closed from inside, would otherwise leave focus on nothing.
- * Opening moves focus to the heading, so a screen reader announces what
- * opened; closing with focus inside hands it back to whatever held it before
- * (the bar's control, as a rule), and leaves it alone otherwise.
- *
- * ESCAPE CLOSES IT from anywhere inside, a field included, unless something
- * inside answered the press first: a menu or a dialog opened from the panel is
- * portalled out of it, and the press that closes one of them never reaches
- * this.
+ * A PRESET OF `SidePanel`, which carries the region, the focus contract and
+ * Escape (see there). What is the artifact's own: two resting widths, the
+ * expanded view, the control that toggles it, the head on the row step, and
+ * a heading that rings when the keyboard reaches it. It keeps the class names
+ * it has always published (`crewlet-artifact-panel__body` and the rest), so a
+ * stylesheet written against them keeps matching.
  */
 export function ArtifactPanel({
   title,
@@ -91,85 +81,25 @@ export function ArtifactPanel({
   children,
 }: ArtifactPanelProps) {
   const words = { ...ARTIFACT_PANEL_LABELS, ...labels };
-  const titleId = useId();
-  const root = useRef<HTMLElement>(null);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const before = useRef<Element | null>(null);
-  const focusing = useRef(focusOnOpen);
-
-  // A LAYOUT EFFECT, both ways: the heading is focused before the paint, and
-  // the cleanup runs while the panel is still in the document, which is the
-  // only moment it can still tell whether focus was inside it.
-  useLayoutEffect(() => {
-    const panel = root.current;
-    before.current = document.activeElement;
-    if (focusing.current) heading.current?.focus({ preventScroll: true });
-    return () => {
-      const back = before.current;
-      if (panel?.contains(document.activeElement) && back instanceof HTMLElement && back.isConnected) {
-        back.focus({ preventScroll: true });
-      }
-    };
-  }, []);
-
-  // HEARD AT THE DOCUMENT, AFTER EVERYTHING INSIDE: a control in the panel
-  // that answers Escape itself (a field that clears, a picker that closes)
-  // prevents the default, and only a press nobody answered closes the panel.
-  // A press from a surface portalled out of the panel is that surface's, so
-  // only one from inside the panel's own element counts. The handler is read
-  // through a ref, so a new `onClose` each render does not re-register it.
-  const close = useRef(onClose);
-  close.current = onClose;
-  useEffect(() => {
-    const panel = root.current;
-    if (!panel) return undefined;
-    const doc = panel.ownerDocument;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing) return;
-      if (!(event.target instanceof Node) || !panel.contains(event.target)) return;
-      event.preventDefault();
-      close.current();
-    };
-    doc.addEventListener('keydown', onKeyDown);
-    return () => doc.removeEventListener('keydown', onKeyDown);
-  }, []);
-
   return (
-    <aside
-      ref={root as Ref<HTMLElement>}
-      className={cx('crewlet-artifact-panel', `crewlet-artifact-panel--${size}`, className)}
-      aria-labelledby={titleId}
-      data-expanded={expanded || undefined}
+    <SidePanelBase
+      alias="crewlet-artifact-panel"
+      title={title}
+      icon={icon}
+      onClose={onClose}
+      closeLabel={words.close(title)}
+      actions={actions}
+      footer={footer}
+      initialFocus={focusOnOpen ? 'heading' : 'none'}
+      ringHeading
+      expanded={expanded}
+      onExpandedChange={onExpandedChange}
+      expandLabel={words.expand}
+      collapseLabel={words.collapse}
+      className={cx(`crewlet-artifact-panel--${size}`, className)}
     >
-      <div className="crewlet-artifact-panel__head">
-        {icon ? (
-          <span className="crewlet-artifact-panel__icon" aria-hidden>
-            {icon}
-          </span>
-        ) : null}
-        <h2 ref={heading} id={titleId} className="crewlet-artifact-panel__title" tabIndex={-1}>
-          {title}
-        </h2>
-        <span className="crewlet-artifact-panel__actions">
-          {actions}
-          {onExpandedChange ? (
-            <IconButton
-              label={expanded ? words.collapse : words.expand}
-              icon={expanded ? <MinimizeGlyph size="sm" /> : <MaximizeGlyph size="sm" />}
-              size="sm"
-              variant="ghost"
-              onClick={() => onExpandedChange(!expanded)}
-            />
-          ) : null}
-          <IconButton label={words.close(title)} icon={<XGlyph size="sm" />} size="sm" variant="ghost" onClick={onClose} />
-        </span>
-      </div>
-      {/* THE PANEL'S TITLE IS ITS LEVEL TWO, so a section inside it heads at three. */}
-      <div className="crewlet-artifact-panel__body">
-        <HeadingLevelProvider level={3}>{children}</HeadingLevelProvider>
-      </div>
-      {footer ? <div className="crewlet-artifact-panel__foot">{footer}</div> : null}
-    </aside>
+      {children}
+    </SidePanelBase>
   );
 }
 
@@ -198,30 +128,10 @@ export interface ArtifactWorkspaceProps {
  * artifact's end edge; on a phone it covers the artifact whole. An expanded
  * panel takes the workspace at every width, with the artifact kept mounted
  * behind it so a page's state survives the look at its data.
+ *
+ * A PRESET OF `SidePanelFrame` with no `shape`, which is the frame measuring
+ * itself, under the names it has always published.
  */
-export function ArtifactWorkspace({
-  panel,
-  expanded = false,
-  bodyRef,
-  bodyClassName,
-  bodyLabel,
-  className,
-  children,
-}: ArtifactWorkspaceProps) {
-  return (
-    <div
-      className={cx('crewlet-artifact-workspace', className)}
-      data-panel={panel ? (expanded ? 'expanded' : 'open') : undefined}
-    >
-      <div
-        ref={bodyRef}
-        className={cx('crewlet-artifact-workspace__body', bodyClassName)}
-        role={bodyLabel ? 'region' : undefined}
-        aria-label={bodyLabel}
-      >
-        {children}
-      </div>
-      {panel}
-    </div>
-  );
+export function ArtifactWorkspace(props: ArtifactWorkspaceProps) {
+  return <SidePanelFrameBase {...props} alias="crewlet-artifact-workspace" />;
 }

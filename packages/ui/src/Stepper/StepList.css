@@ -1,0 +1,119 @@
+/*
+ * A request's steps: a well on the inset ground, an ordered list of steps
+ * each on a three-track grid (the 16px state column, the words, the
+ * duration), every track aligned to the label's first line.
+ */
+
+/*
+ * A STATE'S MARK, shared with the run chip: a 16px box, the mark centred in
+ * it at the glyph's 14px, inked by state. The box's height is the line it
+ * stands on (`--crewlet-step-mark-line`), so it sits on that line's middle.
+ */
+.crewlet-step-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--font-size-md);
+  height: var(--crewlet-step-mark-line, var(--font-size-md));
+}
+
+.crewlet-step-mark--running {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-step-mark--done {
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-step-mark--failed {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-step-mark--waiting {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-step-mark--refused,
+.crewlet-step-mark--stopped {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-step-list {
+  --crewlet-step-list-line: calc(var(--font-size-compact) * var(--font-line-height-normal));
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-inset);
+}
+
+.crewlet-step-list__summary {
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-step-list__steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-step-list__step {
+  --crewlet-step-mark-line: var(--crewlet-step-list-line);
+
+  display: grid;
+  grid-template-columns: var(--font-size-md) minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-compact);
+  line-height: var(--crewlet-step-list-line);
+  color: var(--color-text-primary);
+}
+
+.crewlet-step-list__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-step-list__label {
+  overflow-wrap: anywhere;
+}
+
+/*
+ * WHAT THE STEP ASKED FOR, in the mono face. Each piece between separators is
+ * one inline block, so a line breaks only between pieces (at a space, or
+ * after `/`, `?` or `&`) and a piece wraps inside itself only when it alone
+ * is wider than the line.
+ */
+.crewlet-step-list__detail {
+  display: block;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-snug);
+  font-variant-ligatures: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-step-list__piece {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.crewlet-step-list__duration {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
+  line-height: var(--crewlet-step-list-line);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}

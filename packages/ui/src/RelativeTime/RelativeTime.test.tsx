@@ -92,6 +92,19 @@ describe('the clock', () => {
     expect(screen.getByTestId('pair').textContent).toBe('agreed');
   });
 
+  test('a reader arriving after the clock sat idle reads the time now, not when the last reader left', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-24T12:00:00Z'));
+    currentNow();
+    // A quiet minute with no reader: no interval runs to move the clock.
+    vi.setSystemTime(new Date('2026-10-24T12:01:00Z'));
+    function Reader() {
+      return <span data-testid="now">{useNow()}</span>;
+    }
+    render(<Reader />);
+    expect(Number(screen.getByTestId('now').textContent)).toBe(Date.parse('2026-10-24T12:01:00Z'));
+  });
+
   test('the last reader leaving stops the interval', () => {
     vi.useFakeTimers();
     function Reader() {

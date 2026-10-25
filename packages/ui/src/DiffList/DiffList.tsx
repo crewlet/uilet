@@ -31,12 +31,22 @@ export const DIFF_LIST_LABELS: DiffListLabels = {
   to: 'to',
 };
 
+/**
+ * How a row stands. `columns` (the default) puts the path in a 200px track
+ * beside its value, each cut with an ellipsis; `stacked` stands each path
+ * over its value and wraps both, so a value is read rather than cut; `auto`
+ * is `columns` until the list itself is narrower than 480px (a phone sheet, a
+ * narrow card), and `stacked` under that.
+ */
+export type DiffListLayout = 'columns' | 'stacked' | 'auto';
+
 export interface DiffListProps {
   rows: DiffRow[];
+  layout?: DiffListLayout | undefined;
   /** What an empty diff says. Two identical documents are a fact, not a gap. */
   emptyMessage?: ReactNode;
-  labels?: Partial<DiffListLabels>;
-  className?: string;
+  labels?: Partial<DiffListLabels> | undefined;
+  className?: string | undefined;
 }
 
 const GLYPHS = {
@@ -64,7 +74,7 @@ const GLYPHS = {
  * configuration document, where an aligned column of characters is the whole
  * point and a proportional face makes two nearly-identical values look alike.
  */
-export function DiffList({ rows, emptyMessage, labels: overrides, className }: DiffListProps) {
+export function DiffList({ rows, emptyMessage, layout = 'columns', labels: overrides, className }: DiffListProps) {
   const labels: DiffListLabels = overrides ? { ...DIFF_LIST_LABELS, ...overrides } : DIFF_LIST_LABELS;
 
   if (rows.length === 0 && emptyMessage != null) {
@@ -76,7 +86,7 @@ export function DiffList({ rows, emptyMessage, labels: overrides, className }: D
     // list role with them, so "12 differences" would never be read. The
     // redundant-role rule is silenced for that reason, not obeyed.
     // eslint-disable-next-line jsx-a11y/no-redundant-roles
-    <ul role="list" className={cx('crewlet-diff-list', className)}>
+    <ul role="list" className={cx('crewlet-diff-list', layout !== 'columns' && `crewlet-diff-list--${layout}`, className)}>
       {rows.map((row, index) => {
         const Glyph = GLYPHS[row.kind];
         return (

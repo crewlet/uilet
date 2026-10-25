@@ -1,0 +1,8 @@
+/* The first sentence carries the weight; "Nothing changed." closes in the secondary ink. */
+.crewlet-refusal-card__heading {
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-refusal-card__nothing {
+  color: var(--color-text-secondary);
+}

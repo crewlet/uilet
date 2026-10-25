@@ -13,6 +13,12 @@ export interface Download {
    * text may be a thunk, resolved on the press.
    */
   download: (text: string | (() => string), filename: string, mime?: string) => Promise<boolean>;
+  /**
+   * Offers a file the caller fetches on the press (an export the server
+   * builds), and answers whether the browser took it. A fetch that rejects is
+   * a refusal, never an uncaught error: the control says the download failed.
+   */
+  downloadFile: (file: () => Promise<Blob>, filename: string) => Promise<boolean>;
 }
 
 /** The type a download is offered under when the caller names none. */
@@ -35,8 +41,19 @@ export function useDownload(options: OutcomeOptions = {}): Download {
       run(() => downloadText(typeof text === 'function' ? text() : text, filename, mime).started),
     [run],
   );
+  const downloadFile = useCallback(
+    (file: () => Promise<Blob>, filename: string) =>
+      run(async () => {
+        try {
+          return downloadBlob(await file(), filename).started;
+        } catch {
+          return false;
+        }
+      }),
+    [run],
+  );
   const state: DownloadState = outcome.state === 'done' ? 'started' : outcome.state;
-  return { state, attempt: outcome.attempt, download };
+  return { state, attempt: outcome.attempt, download, downloadFile };
 }
 
 /**

@@ -307,45 +307,22 @@
 }
 
 /*
- * Pending. The spinner takes the leading icon's place, so a button that has
- * one neither moves nor changes width mid-action, and the label stays exactly
- * as it was: a button whose text becomes "Saving" has stopped saying what it
- * does.
+ * Pending. The spinner (the package's one ring, `Spinner`) takes the leading
+ * icon's place, so a button that has one neither moves nor changes width
+ * mid-action, and the label stays exactly as it was: a button whose text
+ * becomes "Saving" has stopped saying what it does. The ring's drawing, its
+ * turn and its reduced-motion stop are Spinner.css's.
+ *
+ * A disabled button already reads as unavailable; a loading one should still
+ * read as this button, mid-action.
  */
-.crewlet-btn__spinner {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: var(--radius-circle);
-  opacity: 0.7;
-  animation: crewlet-btn-spin var(--motion-duration-slow) linear infinite;
-  flex: none;
-}
-
-@keyframes crewlet-btn-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* A disabled button already reads as unavailable; a loading one should still
-   read as this button, mid-action. */
 .crewlet-btn--loading {
   cursor: progress;
 }
 
-/*
- * A spinner that cannot spin should not pretend to, and a colour change that
- * cannot fade is still a colour change. The ring reads as pending either way.
- */
+/* A colour change that cannot fade is still a colour change. */
 @media (prefers-reduced-motion: reduce) {
   .crewlet-btn {
     transition: none;
-  }
-
-  .crewlet-btn__spinner {
-    animation: none;
   }
 }

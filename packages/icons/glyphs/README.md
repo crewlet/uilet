@@ -24,6 +24,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **`mouse-pointer-2`**, the pointer a collaborator's `LiveCursor` in `@crewlethq/ui` is drawn with, beside its name flag, on a board or a page that shares cursors.
 - **A company's principles**, each statement's card heading with its own glyph: `telescope` for the vision (where the company is looking), and `scroll-text` for the standing policies (the written rules every agent is given), beside `target`, already here, for the mission.
 - **A company's brand and the folders artifacts are filed in**: `swatch-book` for the `brand` artifact kind (`ArtifactKindGlyph`) and the Company › Brand page, `blend` for a brand's colours, `badge-check` for an artifact drawn in the company's current brand, and `folder-open` for a folder with nothing in it, or nothing the reader can open, beside the `folder` a folder is otherwise drawn with.
+- **The assistant drawer** in the engine dashboard: `square-pen` for New conversation in its head (the conversations themselves keep `rotate-ccw-clock`, already here, because Lucide retired `history` as an alias of it), `square` drawn filled for the Stop a running request turns the send button into, and `circle-stop` for a request or one of its steps that the person stopped.
 
 ## Provenance
 
@@ -90,6 +91,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `circle-alert` | `CircleAlertGlyph` | `package/icons/circle-alert.svg` |
 | `circle-check` | `CircleCheckGlyph` | `package/icons/circle-check.svg` |
 | `circle-question-mark` | `CircleQuestionMarkGlyph` | `package/icons/circle-question-mark.svg` |
+| `circle-stop` | `CircleStopGlyph` | `package/icons/circle-stop.svg` |
 | `clock` | `ClockGlyph` | `package/icons/clock.svg` |
 | `code` | `CodeGlyph` | `package/icons/code.svg` |
 | `cog` | `CogGlyph` | `package/icons/cog.svg` |
@@ -192,8 +194,10 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `sliders-vertical` | `SlidersVerticalGlyph` | `package/icons/sliders-vertical.svg` |
 | `smartphone` | `SmartphoneGlyph` | `package/icons/smartphone.svg` |
 | `split` | `SplitGlyph` | `package/icons/split.svg` |
+| `square` | `SquareGlyph` | `package/icons/square.svg` |
 | `square-code` | `SquareCodeGlyph` | `package/icons/square-code.svg` |
 | `square-kanban` | `SquareKanbanGlyph` | `package/icons/square-kanban.svg` |
+| `square-pen` | `SquarePenGlyph` | `package/icons/square-pen.svg` |
 | `square-terminal` | `SquareTerminalGlyph` | `package/icons/square-terminal.svg` |
 | `star` | `StarGlyph` | `package/icons/star.svg` |
 | `sticky-note` | `StickyNoteGlyph` | `package/icons/sticky-note.svg` |

@@ -15,6 +15,7 @@ import {
   UsersGlyph,
   XGlyph,
 } from '@crewlethq/icons/glyphs';
+import { ProductMark } from '@crewlethq/icons';
 import {
   ArtifactBar,
   ArtifactPanel,
@@ -22,6 +23,7 @@ import {
   ArtifactWorkspace,
   Button,
   EditingStatus,
+  IconButton,
   PresenceStack,
   Section,
   type ArtifactBarTool,
@@ -271,6 +273,42 @@ export const CreatingOnAPhone: Story = {
         onSelect: () => {},
       },
     ],
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 390 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+/**
+ * THE HOST'S OWN CONTROL AT THE END (`end`): the Ask button every page bar
+ * ends with, placed by the host after More on an open artifact's own bar,
+ * a step past the bar's tools. It is never folded into More.
+ */
+export const WithAHostControlAtTheEnd: Story = {
+  args: {
+    ...ReadOnly.args,
+    end: (
+      <Button variant="secondary" shape="pill" size="medium" leadingIcon={<ProductMark product="assistant" size="sm" />}>
+        Ask
+      </Button>
+    ),
+  },
+};
+
+/**
+ * THE SAME ON A PHONE (390): the bar's tools fold into More and the host's
+ * control stays in the row, drawn as the host draws it there (an icon
+ * button), while the title gives way.
+ */
+export const WithAHostControlOnAPhone: Story = {
+  args: {
+    ...ReadOnly.args,
+    title: 'New slide deck for the quarterly board review of the payments platform',
+    end: <IconButton variant="secondary" size="md" label="Ask the assistant" icon={<ProductMark product="assistant" size="sm" />} />,
   },
   decorators: [
     (Story) => (

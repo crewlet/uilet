@@ -95,6 +95,24 @@
 }
 
 /*
+ * primary: the accent square, the primary Button's fill, hover and press with
+ * no room for a label. One per surface, for the control that is the decision
+ * there (a composer's Send); every other icon-only control stays a ghost.
+ */
+.crewlet-icon-btn--primary {
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+}
+
+.crewlet-icon-btn--primary:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-brand-accent-hover);
+}
+
+.crewlet-icon-btn--primary:active:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-brand-accent-active);
+}
+
+/*
  * secondary: the bordered square. The same surface, boundary and states as a
  * secondary Button, for an icon-only control that has to read as a control
  * with nothing around it to say so: a step in a toolbar, a month's back and
@@ -114,27 +132,6 @@
 
 .crewlet-icon-btn--secondary:active:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-surface-pressed);
-}
-
-/*
- * THE PLACE THE READER IS ON (`IconButtonLink current`): the selected
- * treatment a nav row draws, the lifted ground inside the default hairline,
- * drawn on the square's own transparent boundary so nothing moves. With an
- * edge to draw, its ring covers the edge, as the bordered squares' does.
- */
-a.crewlet-icon-btn {
-  text-decoration: none;
-}
-
-.crewlet-icon-btn--current,
-.crewlet-icon-btn--current:hover {
-  background: var(--color-surface-elevated);
-  border-color: var(--color-border-default);
-  color: var(--color-text-primary);
-}
-
-.crewlet-icon-btn--current:focus-visible {
-  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 /* ghost: transparent, neutral ink, a mild tint on hover. */
@@ -179,6 +176,32 @@ a.crewlet-icon-btn {
 .crewlet-icon-btn--soft-brand:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--color-brand-accent-soft-strong);
   border-color: var(--color-brand-accent);
+}
+
+/*
+ * THE PLACE THE READER IS ON (`IconButtonLink current`): the selected
+ * treatment a nav row draws, the lifted ground inside the default hairline,
+ * drawn on the square's own transparent boundary so nothing moves. With an
+ * edge to draw, its ring covers the edge, as the bordered squares' does.
+ *
+ * AFTER EVERY VARIANT, on purpose. The two tie on specificity, so the later
+ * rule wins: written above the variants, a ghost square's secondary ink (and
+ * a ghost-brand's tertiary one) followed it and won, and the place the reader
+ * was on was drawn in the ink of every other square in the row.
+ */
+a.crewlet-icon-btn {
+  text-decoration: none;
+}
+
+.crewlet-icon-btn--current,
+.crewlet-icon-btn--current:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+.crewlet-icon-btn--current:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 /* A toggle that is on, drawn from the state a screen reader is already told. */

@@ -36,6 +36,10 @@
       "types": "./dist/characters.d.ts",
       "import": "./dist/characters.js"
     },
+    "./product-mark": {
+      "types": "./dist/product-mark.d.ts",
+      "import": "./dist/product-mark.js"
+    },
     "./favicon/*": "./favicon/*",
     "./glyphs/*": "./glyphs/*",
     "./svg/*": "./svg/*"

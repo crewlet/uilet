@@ -1,0 +1,58 @@
+/*
+ * A conversation as it grows: the scroller, the items a spacing step and a
+ * half apart on the panel's 16px inset, and the Jump to latest pill floating
+ * over its foot.
+ */
+.crewlet-chat-thread {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/*
+ * THE BROWSER'S SCROLL ANCHORING IS OFF: it pins the content above the
+ * reader's view, which fights a last child that keeps growing as an answer
+ * streams in. ChatThread.tsx anchors to the end itself.
+ */
+.crewlet-chat-thread__scroller {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
+}
+
+/* A ring inside the region, which an edge-to-edge scroller would otherwise clip. */
+.crewlet-chat-thread__scroller:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-chat-thread__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+  padding: var(--spacing-4);
+}
+
+.crewlet-chat-thread__items > * {
+  flex: none;
+}
+
+/* The pill, centred a step above the thread's foot. */
+.crewlet-chat-thread__jump {
+  position: absolute;
+  bottom: var(--spacing-3);
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-pill);
+}
+
+.crewlet-chat-thread__fresh {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}

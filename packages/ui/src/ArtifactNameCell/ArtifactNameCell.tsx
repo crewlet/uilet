@@ -4,14 +4,31 @@ import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 export interface ArtifactNameCellLabels {
-  kinds: Record<ArtifactKind, string>;
+  /**
+   * The word under an artifact's name, per kind. PARTIAL, and merged over the
+   * kit's own words, so a consumer that words only the kinds it knows (an
+   * application built before a kind was added) still compiles, and a kind it
+   * does not word reads in the kit's own word rather than nothing.
+   */
+  kinds: Partial<Record<ArtifactKind, string>>;
   pinned: string;
   /** The word under a folder's name, where an artifact's says its kind. */
   folder: string;
 }
 
+/** The kit's own word for every kind, which a consumer's `labels.kinds` is merged over. */
+const KIND_WORDS: Record<ArtifactKind, string> = {
+  html: 'HTML',
+  doc: 'Doc',
+  slides: 'Slides',
+  design: 'Design',
+  dashboard: 'Dashboard',
+  sheet: 'Sheet',
+  brand: 'Brand',
+};
+
 const LABELS: ArtifactNameCellLabels = {
-  kinds: { html: 'HTML', doc: 'Doc', slides: 'Slides', design: 'Design', dashboard: 'Dashboard', sheet: 'Sheet', brand: 'Brand' },
+  kinds: KIND_WORDS,
   pinned: 'Pinned',
   folder: 'Folder',
 };
@@ -61,9 +78,10 @@ export interface ArtifactNameCellProps {
  * is printed beside it.
  */
 export function ArtifactNameCell({ kind, title, detail, pinned = false, trashed = false, className, labels }: ArtifactNameCellProps) {
-  const text = { ...LABELS, ...labels, kinds: { ...LABELS.kinds, ...labels?.kinds } };
+  const text = { ...LABELS, ...labels };
+  const kinds: Record<ArtifactKind, string> = { ...KIND_WORDS, ...labels?.kinds };
   const folder = kind === 'folder';
-  const kindWord = folder ? text.folder : text.kinds[kind];
+  const kindWord = folder ? text.folder : kinds[kind];
   const about = detail?.trim();
   return (
     <span className={cx('crewlet-artifact-name', trashed && 'crewlet-artifact-name--trashed', className)}>

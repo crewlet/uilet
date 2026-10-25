@@ -48,3 +48,22 @@ export const NothingToExport: Story = {
     title: 'Nothing on screen to export',
   },
 };
+
+/**
+ * A file fetched on the press, such as an export the server builds: the label
+ * stays with the spinner while it waits (two seconds here), then the browser
+ * takes the file.
+ */
+export const FetchedOnThePress: Story = {
+  render: () => (
+    <DownloadButton
+      label="CSV"
+      filename="token-spend-this-week.csv"
+      file={() =>
+        new Promise<Blob>((resolve) =>
+          setTimeout(() => resolve(new Blob(['agent,tokens\nAgent SWE,2960000\n'], { type: 'text/csv' })), 2000),
+        )
+      }
+    />
+  ),
+};

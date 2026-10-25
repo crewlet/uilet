@@ -10,7 +10,7 @@
  * width the presence stack goes (the People control still counts who is
  * here), then the labelled tools' words, and under a phone's two panes the
  * views, the unlabelled tools and the kind's glyph fold away, the first two
- * into More.
+ * into More. The host's own control at the end (`end`) never folds.
  */
 
 .crewlet-artifact-bar {
@@ -271,6 +271,19 @@
   display: none;
 }
 
+/* THE HOST'S OWN CONTROL ENDS THE ROW (`end`), such as the Ask button every
+   page bar ends with: a step further from the bar's own tools than they
+   stand from each other, so it reads as the frame's rather than the
+   artifact's. It never folds and never wraps; the title gives way to it. */
+.crewlet-artifact-bar__trail {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-inline-start: var(--spacing-1);
+  white-space: nowrap;
+}
+
 /* A rule between two groups of tools: the kind's, then every artifact's. */
 .crewlet-artifact-bar__rule {
   width: 1px;
@@ -355,6 +368,11 @@
 
   .crewlet-artifact-bar__end > * {
     flex: none;
+  }
+
+  /* The phone's row is tight, and so is the host's control beside More. */
+  .crewlet-artifact-bar__end > .crewlet-artifact-bar__trail {
+    margin-inline-start: 0;
   }
 
   .crewlet-artifact-bar__end > .crewlet-artifact-bar__status {

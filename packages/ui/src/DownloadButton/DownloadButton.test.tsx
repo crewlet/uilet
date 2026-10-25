@@ -307,3 +307,31 @@ describe('DownloadButton', () => {
     expect(name.endsWith('.json')).toBe(true);
   });
 });
+
+test('a file fetched on the press keeps the label with the spinner while it waits, then hands the blob over', async () => {
+  let resolve!: (blob: Blob) => void;
+  const file = vi.fn(() => new Promise<Blob>((done) => (resolve = done)));
+  const created = vi.spyOn(URL, 'createObjectURL').mockImplementation(() => 'blob:export');
+  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+  render(<DownloadButton label="CSV" filename="token-spend.csv" file={file} />);
+  const button = screen.getByRole('button', { name: 'CSV' });
+  fireEvent.click(button);
+  expect(file).toHaveBeenCalledTimes(1);
+  expect(button.getAttribute('aria-busy')).toBe('true');
+  // A second press while it waits fetches nothing more.
+  fireEvent.click(button);
+  expect(file).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    resolve(new Blob(['agent,tokens'], { type: 'text/csv' }));
+  });
+  expect(created).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('button').getAttribute('aria-busy')).toBeNull();
+});
+
+test('a file that cannot be fetched reads as a failed download, never an uncaught error', async () => {
+  render(<DownloadButton label="XLSX" filename="token-spend.xlsx" file={() => Promise.reject(new Error('offline'))} />);
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'XLSX' }));
+  });
+  expect(screen.getByRole('button').textContent).toBe('Download failed');
+});

@@ -1,2 +1,2 @@
 export { DownloadButton } from './DownloadButton.js';
-export type { DownloadButtonProps } from './DownloadButton.js';
+export type { DownloadButtonBaseProps, DownloadButtonProps, DownloadButtonSource } from './DownloadButton.js';

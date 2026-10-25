@@ -7,17 +7,34 @@
  * border to the accent AND lay a 2px soft halo outside it: two highlights for
  * one state, and the loudest edge on a page whose field was focused on load.
  */
+/*
+ * THE FIELD'S EDGE, as every text field draws it: `--color-border-field`, the
+ * step measured to 3:1 against the ground, stepping up to the control boundary
+ * under the pointer. It drew `--color-border-strong`, which is 1.46:1, so the
+ * box a person types in was the faintest edge on the panel.
+ */
 .crewlet-composer {
+  /* The edge's width, named because the nested send button's corner is
+     derived from it (see .crewlet-composer__trailing). */
+  --crewlet-composer-edge: 1px;
+
   display: grid;
   overflow: hidden;
-  border: 1px solid var(--color-border-strong);
+  border: var(--crewlet-composer-edge) solid var(--color-border-field);
   border-radius: var(--radius-md);
   background: var(--color-surface-background);
   transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-.crewlet-composer:hover {
-  border-color: var(--color-border-strong-hover);
+.crewlet-composer:not(.is-disabled):hover {
+  border-color: var(--color-border-control);
+}
+
+/* The field and, in a chat composer, its send button on one row. */
+.crewlet-composer__row {
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
 }
 
 /* Keyed on the FIELD, not :focus-within: the footer holds the send action,
@@ -33,6 +50,8 @@
 }
 
 .crewlet-composer .crewlet-composer__field {
+  flex: 1;
+  min-width: 0;
   min-height: 68px;
   max-height: 220px;
   padding: var(--spacing-2) var(--spacing-3);
@@ -48,6 +67,80 @@
    the field at rest, at a weight the textarea's focus rule cannot outrank. */
 .crewlet-composer .crewlet-composer__field.crewlet-textarea {
   outline: none;
+}
+
+/*
+ * A CHAT COMPOSER: the field and its send button share one row. The field
+ * starts as one line exactly as tall as the button and its inset (so the
+ * line sits centred beside it), grows to six lines and then scrolls, and the
+ * button stays on the last line.
+ */
+.crewlet-composer--inline .crewlet-composer__field {
+  --crewlet-composer-line: calc(var(--font-line-height-normal) * var(--font-size-compact));
+  --crewlet-composer-row: calc(var(--size-control-md) + var(--spacing-2));
+
+  min-height: var(--crewlet-composer-row);
+  max-height: 140px;
+  padding-block: max(0px, calc((var(--crewlet-composer-row) - var(--crewlet-composer-line)) / 2));
+}
+
+/*
+ * A PLACEHOLDER NEVER GROWS THE FIELD. It is one line of example or one word
+ * of reason ("Offline"); wrapped to a second line it made the composer jump
+ * taller the moment the connection dropped.
+ */
+.crewlet-composer--inline .crewlet-composer__field::placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * THE SEND BUTTON NESTS IN THE BOX'S CORNER: inset by one spacing step, its
+ * radius is the box's less that inset and the box's own edge, so the two
+ * corners run parallel rather than a square sitting in a rounded box.
+ */
+.crewlet-composer__trailing {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+}
+
+.crewlet-composer__trailing .crewlet-icon-btn {
+  border-radius: calc(var(--radius-md) - var(--spacing-1) - var(--crewlet-composer-edge));
+}
+
+/*
+ * WHAT TRAVELS WITH THE MESSAGE, above the field inside the box's edge: a row
+ * of tags that wraps, on the field's own inset so a tag starts where the text
+ * does.
+ */
+.crewlet-composer__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: var(--spacing-2) var(--spacing-3) 0;
+}
+
+/*
+ * DISABLED, AS A FIELD IS: the whole box at the disabled field's 0.6 and the
+ * not-allowed cursor, so it no longer reads as somewhere to type. Faded once:
+ * the field and a disabled send button inside it keep their own opacity at 1,
+ * or the box's fade and theirs would multiply into a control nobody can read.
+ */
+.crewlet-composer.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.crewlet-composer.is-disabled .crewlet-composer__field.is-disabled,
+.crewlet-composer.is-disabled .crewlet-composer__trailing :disabled,
+.crewlet-composer.is-disabled .crewlet-composer__trailing [aria-disabled='true'] {
+  opacity: 1;
 }
 
 /* Past its cap the field scrolls rather than pushing the page. */

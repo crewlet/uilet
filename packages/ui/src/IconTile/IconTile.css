@@ -22,6 +22,9 @@
 .crewlet-icon-tile--sm { --crewlet-icon-tile-size: var(--size-row-sm); }
 .crewlet-icon-tile--lg { --crewlet-icon-tile-size: var(--size-row-lg); border-radius: var(--radius-lg); }
 
+/* A place or a record rather than a kind: the raised ground, the secondary ink. */
+.crewlet-icon-tile--neutral { --crewlet-icon-tile-fill: var(--color-surface-elevated); --crewlet-icon-tile-ink: var(--color-text-secondary); }
+
 .crewlet-icon-tile--purple { --crewlet-icon-tile-fill: var(--color-node-purple-fill); --crewlet-icon-tile-ink: var(--color-node-purple-ink); }
 .crewlet-icon-tile--cyan { --crewlet-icon-tile-fill: var(--color-node-cyan-fill); --crewlet-icon-tile-ink: var(--color-node-cyan-ink); }
 .crewlet-icon-tile--green { --crewlet-icon-tile-fill: var(--color-node-green-fill); --crewlet-icon-tile-ink: var(--color-node-green-ink); }

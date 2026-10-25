@@ -45,8 +45,11 @@ export const GLYPHS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..',
  * `mouse-pointer-2` is a collaborator's live cursor, which is a solid pointer
  * in their presence hue: an outlined arrow over a page's content reads as one
  * more line of the content rather than as somebody's hand on it.
+ * `square` is the Stop a running request turns its send button into: a solid
+ * square is the one drawing every media control and chat surface says "stop"
+ * with, and an outlined one beside a bordered button reads as an empty box.
  */
-export const FILLABLE = ['star', 'mouse-pointer-2'];
+export const FILLABLE = ['star', 'mouse-pointer-2', 'square'];
 
 /*
  * The one root every vendored file has, attribute for attribute. The `class`

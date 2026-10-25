@@ -24,7 +24,7 @@ import axe from 'axe-core';
 import { useEffect, useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { LayerHost } from '../Layer/index.js';
-import { ToastProvider, Toaster, useToast, type ToastApi } from './index.js';
+import { ToastProvider, Toaster, toasterInsetStyle, useToast, type ToastApi } from './index.js';
 
 afterEach(() => {
   cleanup();
@@ -433,5 +433,43 @@ describe('ToastProvider', () => {
     raise((toast) => toast.ok('Saved the seat.'));
     raise((toast) => toast.ok('Saved the schedule.'));
     expect(onScreen()).toEqual(['The budget was refused.', 'Saved the schedule.']);
+  });
+});
+
+describe('the inset a host keeps clear', () => {
+  const inline = (el: Element) => (el as HTMLElement).style.getPropertyValue('--crewlet-toaster-inset-inline');
+  const block = (el: Element) => (el as HTMLElement).style.getPropertyValue('--crewlet-toaster-inset-block');
+
+  test('is nothing by default, so the stack stands where it always did', () => {
+    render(<Toaster toasts={[]} onDismiss={() => {}} />);
+    expect(document.querySelector('.crewlet-toaster')!.getAttribute('style')).toBeNull();
+    expect(toasterInsetStyle(undefined)).toBeUndefined();
+    expect(toasterInsetStyle({ inline: 0, block: 0 })).toBeUndefined();
+  });
+
+  test('sets the side and the edge from the provider, and follows a change while toasts are up', () => {
+    const { rerender } = render(<ToastProvider inset={{ inline: 428 }}>{null}</ToastProvider>);
+    const stack = document.querySelector('.crewlet-toaster')!;
+    expect(inline(stack)).toBe('428px');
+    expect(block(stack)).toBe('0px');
+    rerender(<ToastProvider inset={{ block: 96 }}>{null}</ToastProvider>);
+    expect(inline(stack)).toBe('0px');
+    expect(block(stack)).toBe('96px');
+  });
+
+  test('reads anything but a finite number of zero or more as zero', () => {
+    expect(toasterInsetStyle({ inline: Number.NaN, block: -20 })).toBeUndefined();
+    expect(toasterInsetStyle({ inline: Number.POSITIVE_INFINITY, block: 12 })).toEqual({
+      '--crewlet-toaster-inset-inline': '0px',
+      '--crewlet-toaster-inset-block': '12px',
+    });
+  });
+
+  test('the stylesheet adds it to the window inset on the anchored side and edge, desk and phone', () => {
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Toaster.css'), 'utf8');
+    expect(css).toContain('right: calc(var(--spacing-6) + var(--crewlet-toaster-inset-inline));');
+    expect(css).toContain('bottom: calc(var(--spacing-6) + var(--crewlet-toaster-inset-block));');
+    expect(css).toContain('bottom: calc(var(--spacing-3) + var(--crewlet-toaster-inset-block));');
+    expect(css).toContain('width: min(380px, calc(100vw - 2 * var(--spacing-6) - var(--crewlet-toaster-inset-inline)));');
   });
 });

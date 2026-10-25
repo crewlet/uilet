@@ -110,3 +110,19 @@ export const Bounded: Story = {
     ]),
   },
 };
+
+/** Figures stand at the end with their heading over them, and a total row closes the rows it sums. */
+export const WithATotalRow: Story = {
+  args: {
+    caption: 'Token spend by agent',
+    captionHidden: true,
+    headers: ['Agent', 'Tokens', 'Share'],
+    data: [
+      ['Agent SWE', '2,960,000', '38%'],
+      ['Agent CTO', '860,000', '11%'],
+      ['Agent PM', '630,000', '8%'],
+    ],
+    align: ['start', 'end', 'end'],
+    footer: ['Total', '7,840,000', '100%'],
+  },
+};

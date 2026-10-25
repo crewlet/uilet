@@ -15,6 +15,11 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 export type IconButtonSize = 'sm' | 'md' | 'lg';
 export type IconButtonVariant =
+  /**
+   * The accent square: a primary Button with no room for a label, for the one
+   * icon-only control that IS the decision on its surface (a composer's Send).
+   */
+  | 'primary'
   /** The bordered square: a secondary Button with no room for a label. */
   | 'secondary'
   /** Transparent, neutral ink, a surface tint on hover. */

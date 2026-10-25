@@ -1,0 +1,59 @@
+/*
+ * The grip between a panel and the page beside it (`ResizeHandle`).
+ *
+ * DRAWN AS NOTHING AT REST. It stands in a seam that is already drawn (the
+ * frame's inset between two sheets, a panel's hairline), so a handle of its
+ * own would be a second line beside one. It washes in the soft accent under
+ * the pointer, under keyboard focus and for the whole of a drag.
+ *
+ * ITS DRAWN WIDTH IS THE SEAM'S (`--crewlet-resize-handle-width`, the frame's
+ * inset), and its target is the 24px floor whatever that width is: the
+ * hit area reaches half the difference out on each side, so a seam of 8px
+ * is still a target a finger can find.
+ *
+ * Placed by whoever holds it: the shell's aside and a side panel put it on
+ * their own start edge. Absolute, so it takes no room in the layout it sizes.
+ */
+.crewlet-resize-handle {
+  --crewlet-resize-handle-width: var(--size-shell-inset);
+  --crewlet-hit-area-inline: max(0px, calc((var(--size-target-min) - var(--crewlet-resize-handle-width)) / 2));
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: var(--z-index-raised);
+  width: var(--crewlet-resize-handle-width);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  cursor: col-resize;
+  /* A touch drags the edge rather than scrolling the page under it. */
+  touch-action: none;
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* On a panel's left edge it stands outside the panel, in the seam before it. */
+.crewlet-resize-handle--left {
+  left: calc(var(--crewlet-resize-handle-width) * -1);
+}
+
+.crewlet-resize-handle--right {
+  right: calc(var(--crewlet-resize-handle-width) * -1);
+}
+
+.crewlet-resize-handle:hover,
+.crewlet-resize-handle:focus-visible,
+.crewlet-resize-handle[data-dragging] {
+  background: var(--color-brand-accent-soft);
+}
+
+/* Inside its own box: it draws no edge, and the seam it stands in is the
+   two neighbours' edges, which a ring set outward would run over. */
+.crewlet-resize-handle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-resize-handle {
+    transition: none;
+  }
+}

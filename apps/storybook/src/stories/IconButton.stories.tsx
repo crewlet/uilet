@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { IconButton, IconButtonLink } from '@crewlethq/ui';
 import {
+  ArrowUpGlyph,
   CopyGlyph,
   GripVerticalGlyph,
   PlusGlyph,
@@ -23,7 +24,7 @@ const meta: Meta<typeof IconButton> = {
     size: { control: 'inline-radio', options: ['sm', 'md', 'lg'] },
     variant: {
       control: 'inline-radio',
-      options: ['secondary', 'ghost', 'ghost-brand', 'ghost-danger', 'soft-brand'],
+      options: ['primary', 'secondary', 'ghost', 'ghost-brand', 'ghost-danger', 'soft-brand'],
     },
     disabled: { control: 'boolean' },
   },
@@ -31,6 +32,15 @@ const meta: Meta<typeof IconButton> = {
 
 export default meta;
 type Story = StoryObj<typeof IconButton>;
+
+/**
+ * The accent square: a primary Button with no room for a label. One per
+ * surface, for the control that is the decision there, such as a composer's
+ * Send.
+ */
+export const Primary: Story = {
+  args: { variant: 'primary', icon: <ArrowUpGlyph />, label: 'Send' },
+};
 
 /**
  * The bordered square: a secondary Button with no room for a label. It is
@@ -88,6 +98,8 @@ export const Sizes: Story = {
 export const AllVariants: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      <IconButton variant="primary" label="Primary" icon={<ArrowUpGlyph />} />
+      <IconButton variant="secondary" label="Secondary" icon={<SettingsGlyph />} />
       <IconButton variant="soft-brand" label="Soft brand" icon={<PlusGlyph />} />
       <IconButton variant="ghost" label="Ghost" icon={<SettingsGlyph />} />
       <IconButton variant="ghost-brand" label="Ghost brand" icon={<CopyGlyph />} />
@@ -109,5 +121,15 @@ export const ALink: Story = {
 export const ALinkToTheCurrentPage: Story = {
   render: () => (
     <IconButtonLink label="Settings" href="#/settings" icon={<SlidersVerticalGlyph size="sm" />} size="sm" current />
+  ),
+};
+
+/** A ghost square on the page it leads to keeps the current place's primary ink, not the ghost's secondary one. */
+export const AGhostLinkToTheCurrentPage: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <IconButtonLink label="Home" href="#/" icon={<SettingsGlyph size="sm" />} size="sm" />
+      <IconButtonLink label="Settings" href="#/settings" icon={<SlidersVerticalGlyph size="sm" />} size="sm" current />
+    </div>
   ),
 };

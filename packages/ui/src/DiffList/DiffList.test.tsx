@@ -5,6 +5,7 @@
 
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
+import { installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import { DiffList } from './index.js';
 
 afterEach(cleanup);
@@ -92,4 +93,20 @@ test('an added or removed value is wrapped, so it can ellipse like a changed one
   );
   expect(screen.getByText('A very long new value indeed').className).toContain('crewlet-diff-list__to');
   expect(screen.getByText('A very long old value indeed').className).toContain('crewlet-diff-list__from');
+});
+
+test('stands each path over its value in the stacked layout, and only under 480px of its own width in auto', () => {
+  const rows = [{ kind: 'changed' as const, path: 'roles.planner.model', from: 'sonnet', to: 'opus' }];
+  const { container, rerender } = render(<DiffList rows={rows} />);
+  expect(container.querySelector('.crewlet-diff-list')!.className).toBe('crewlet-diff-list');
+  const uninstall = installThemed('light', 'DiffList/DiffList.css');
+  const row = () => container.querySelector('.crewlet-diff-list__row')!;
+  expect(getComputedStyle(row()).gridTemplateColumns).toBe('auto minmax(0, 200px) minmax(0, 1fr)');
+  rerender(<DiffList rows={rows} layout="stacked" />);
+  expect(container.querySelector('.crewlet-diff-list--stacked')).not.toBeNull();
+  expect(getComputedStyle(row()).gridTemplateColumns).toBe('auto minmax(0, 1fr)');
+  expect(getComputedStyle(container.querySelector('.crewlet-diff-list__to')!).whiteSpace).toBe('normal');
+  uninstall();
+  rerender(<DiffList rows={rows} layout="auto" />);
+  expect(container.querySelector('.crewlet-diff-list--auto')).not.toBeNull();
 });

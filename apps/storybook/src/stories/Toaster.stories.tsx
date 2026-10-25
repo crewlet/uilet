@@ -142,3 +142,66 @@ export const WithAProvider: Story = {
     </ToastProvider>
   ),
 };
+
+const PANEL = 420;
+
+function BesideAPanel() {
+  const [open, setOpen] = useState(true);
+  return (
+    <ToastProvider inset={{ inline: open ? PANEL : 0 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Writer />
+        <Button variant="secondary" onClick={() => setOpen(!open)}>
+          {open ? 'Close the panel' : 'Open the panel'}
+        </Button>
+      </div>
+      {open ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: PANEL,
+            background: 'var(--color-surface-subtle)',
+            borderLeft: '1px solid var(--color-border-default)',
+          }}
+        />
+      ) : null}
+    </ToastProvider>
+  );
+}
+
+/**
+ * Beside a right panel: the host sets `inset.inline` to the width the panel
+ * occupies, so the stack stands at the bottom right of the page beside it
+ * rather than over the panel's composer. Close the panel and toasts move back
+ * to the window's corner, even while one is up.
+ */
+export const BesideARightPanel: Story = { render: () => <BesideAPanel /> };
+
+/**
+ * Above a phone sheet's foot: `inset.block` is the height of the sheet's foot
+ * (its composer and disclaimer), so a toast never covers the composer. View it
+ * under 480px wide, where the stack spans the width.
+ */
+export const AboveAPhoneSheetFoot: Story = {
+  render: () => (
+    <ToastProvider inset={{ block: 112 }}>
+      <Writer />
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 112,
+          background: 'var(--color-surface-subtle)',
+          borderTop: '1px solid var(--color-border-default)',
+        }}
+      />
+    </ToastProvider>
+  ),
+};

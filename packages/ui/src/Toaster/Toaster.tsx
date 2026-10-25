@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -52,12 +53,42 @@ export interface Toast<TVariant extends string = string> {
   renderBody?: (ctx: { onDismiss: () => void; toast: Toast<TVariant> }) => ReactNode;
 }
 
+/**
+ * Room the stack keeps clear on its own side and edge, in pixels, ADDED to the
+ * window inset it already keeps (24px, 12px on a phone). `inline` is the side
+ * it is anchored to (the right for a `-right` position), `block` the edge (the
+ * bottom for a `bottom-` position). A host sets `inline` to the width a panel
+ * beside the page occupies, so a toast stands beside the panel rather than
+ * over it, and `block` to the height of a phone sheet's foot, so it stands
+ * above the composer. A value that is not a finite number of zero or more is
+ * read as zero.
+ */
+export interface ToasterInset {
+  inline?: number | undefined;
+  block?: number | undefined;
+}
+
+/** The inset as the two custom properties the stylesheet reads, or nothing when there is none. */
+export function toasterInsetStyle(inset: ToasterInset | undefined): CSSProperties | undefined {
+  if (!inset) return undefined;
+  const px = (value: number | undefined) => (typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0);
+  const inline = px(inset.inline);
+  const block = px(inset.block);
+  if (inline === 0 && block === 0) return undefined;
+  return {
+    '--crewlet-toaster-inset-inline': `${inline}px`,
+    '--crewlet-toaster-inset-block': `${block}px`,
+  } as CSSProperties;
+}
+
 export interface ToasterProps<TVariant extends string = string> {
   toasts: Toast<TVariant>[];
   onDismiss: (id: string | number) => void;
   /** Render an action with an `href` through a router-aware link. */
   renderAction?: ((action: ToastAction, ctx: { onDismiss: () => void }) => ReactNode) | undefined;
   position?: 'bottom-right' | 'top-right' | 'bottom-left' | 'top-left' | undefined;
+  /** Room to keep clear beside or under the stack; see `ToasterInset`. None by default. */
+  inset?: ToasterInset | undefined;
   /** Names the polite region for a reader browsing landmarks. */
   politeLabel?: string | undefined;
   /** Names the assertive region. */
@@ -319,6 +350,7 @@ export function Toaster<TVariant extends string = string>({
   onDismiss,
   renderAction,
   position = 'bottom-right',
+  inset,
   politeLabel = 'Notifications',
   assertiveLabel = 'Alerts',
   dismissLabel = 'Dismiss notification',
@@ -379,7 +411,7 @@ export function Toaster<TVariant extends string = string>({
      * they watch a region for changes, and a region's first appearance is not
      * one.
      */
-    <div className={cx('crewlet-toaster', `crewlet-toaster--${position}`, className)}>
+    <div className={cx('crewlet-toaster', `crewlet-toaster--${position}`, className)} style={toasterInsetStyle(inset)}>
       {toasts.map((toast) => (
         <ToastItem<TVariant>
           key={toast.id}
@@ -457,6 +489,12 @@ export interface ToastProviderProps {
   position?: ToasterProps['position'];
   renderAction?: ToasterProps['renderAction'];
   /**
+   * Room the stack keeps clear, such as the width of a panel beside the page
+   * or the height of a phone sheet's foot. It may change while toasts are up;
+   * they move with it. See `ToasterInset`.
+   */
+  inset?: ToasterInset | undefined;
+  /**
    * How many to keep on screen. When one more arrives, the oldest toast that
    * would have gone by itself goes. A sticky one never does, so while every
    * toast held is sticky the stack holds more than this, until the reader
@@ -505,7 +543,7 @@ function admit(held: readonly Toast[], toast: Toast, max: number): Toast[] {
  * That surface mounts a provider of its own inside its `LayerHost`, and
  * `useToast` inside it finds the nearest one.
  */
-export function ToastProvider({ children, position = 'bottom-right', renderAction, max = 4 }: ToastProviderProps) {
+export function ToastProvider({ children, position = 'bottom-right', inset, renderAction, max = 4 }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const next = useRef(1);
 
@@ -540,7 +578,7 @@ export function ToastProvider({ children, position = 'bottom-right', renderActio
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <Toaster toasts={toasts} onDismiss={dismiss} position={position} renderAction={renderAction} />
+      <Toaster toasts={toasts} onDismiss={dismiss} position={position} inset={inset} renderAction={renderAction} />
     </ToastContext.Provider>
   );
 }

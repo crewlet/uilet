@@ -1,0 +1,151 @@
+/*
+ * What a change will do, as a before and after on PropertyList's grid: one
+ * label column (as wide as the longest label, never under 92px) and one value
+ * column, rows a spacing step apart with no rules, and the tones of DiffList.
+ */
+.crewlet-change-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/* The eyebrow register: a heading a reader passes over to reach the rows. */
+.crewlet-change-list__heading {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-change-list__rows {
+  display: grid;
+  grid-template-columns: var(--crewlet-description-list-term, minmax(92px, max-content)) minmax(0, 1fr);
+  gap: var(--spacing-2) var(--spacing-3);
+  align-items: baseline;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-change-list__row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.crewlet-change-list__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-change-list__value {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* Long text takes the row's whole width under its label. */
+.crewlet-change-list__row--text > .crewlet-change-list__value {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.crewlet-change-list__fact {
+  font-weight: var(--font-weight-medium);
+}
+
+/*
+ * A PAIR WRAPS AS A UNIT: the old value, then the arrow and the new value
+ * together, which drop under the old value on a narrow card rather than
+ * splitting the arrow from what it points at.
+ */
+.crewlet-change-list__pair {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  max-width: 100%;
+}
+
+.crewlet-change-list__next {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-change-list__arrow {
+  flex: none;
+  align-self: center;
+  color: var(--color-text-tertiary);
+}
+
+/* The old value: struck through in the tertiary ink. */
+.crewlet-change-list__from {
+  color: var(--color-text-tertiary);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* The new value: the primary ink at medium weight, on the added tint. */
+.crewlet-change-list__to,
+.crewlet-change-list__inserted {
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-feedback-success-soft);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* A value taken away: struck through on the removed tint, in its ink. */
+.crewlet-change-list__removed {
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-xs);
+  background: var(--color-feedback-danger-soft);
+  color: var(--color-feedback-danger-ink);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* A word diff: one compact paragraph, removed words struck in the danger ink. */
+.crewlet-change-list__words {
+  margin: 0;
+  line-height: var(--font-line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-change-list__deleted {
+  color: var(--color-feedback-danger-ink);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* The disclosure's padding hangs into the gutter, so its chevron sits on the text edge. */
+.crewlet-change-list__whole {
+  margin-inline-start: calc(var(--spacing-2) * -1);
+}
+
+.crewlet-change-list__note {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+}
+
+/* Settled: the values step back; the tints stay, so the record is still there. */
+.crewlet-change-list--settled .crewlet-change-list__fact,
+.crewlet-change-list--settled .crewlet-change-list__to,
+.crewlet-change-list--settled .crewlet-change-list__inserted,
+.crewlet-change-list--settled .crewlet-change-list__value {
+  color: var(--color-text-secondary);
+}

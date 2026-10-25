@@ -54,3 +54,19 @@ export const LongValues: Story = {
     ],
   },
 };
+
+/*
+ * Stacked: each path over its value, both wrapping, so a value is read rather
+ * than cut. `layout="auto"` draws this only under 480px of the list's own
+ * width, as in a 420px drawer or on a phone; this frame is 320px wide.
+ */
+export const NarrowAuto: Story = {
+  args: { ...LongValues.args, layout: 'auto' },
+  decorators: [(Story) => <div style={{ maxWidth: 320 }}>{Story()}</div>],
+};
+
+/* The same rows given room: `auto` keeps the columns from 480px of list width. */
+export const WideAuto: Story = {
+  args: { ...LongValues.args, layout: 'auto' },
+  decorators: [(Story) => <div style={{ maxWidth: 640 }}>{Story()}</div>],
+};

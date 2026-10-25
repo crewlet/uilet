@@ -1,0 +1,40 @@
+/*
+ * A result in a card. The card, its head and its foot are StatusCard's and
+ * the table is Table's, drawn flush; what a result adds is the column model:
+ * the first column takes the room the figures leave and ends a long name in
+ * an ellipsis, and the figures never wrap.
+ */
+.crewlet-result-table-card__table .crewlet-table__table {
+  table-layout: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-result-table-card__table td:first-child {
+  width: 100%;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.crewlet-result-table-card__table .crewlet-table__cell--end {
+  white-space: nowrap;
+}
+
+/*
+ * THE DOWNLOADS ARE SPANS AROUND A BUTTON (the status region beside each is
+ * a sibling of its button), so the foot's ghost outdent is stated for them
+ * here: the first one's padding and edge are pulled out so its glyph sits on
+ * the card's text edge.
+ */
+.crewlet-result-table-card .crewlet-status-card__actions > .crewlet-result-table-card__download:first-child {
+  margin-inline-start: calc(-1 * (var(--spacing-2) + 1px));
+}
+
+/* The link stands at the foot's far end, its own padding pulled out to the edge. */
+.crewlet-result-table-card__link {
+  display: inline-flex;
+  margin-inline-start: auto;
+  margin-inline-end: calc(-1 * (var(--spacing-2) + 1px));
+}

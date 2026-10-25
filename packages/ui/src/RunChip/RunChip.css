@@ -1,0 +1,43 @@
+/*
+ * A request's state on the disclosure trigger. Only what differs from the
+ * disclosure is said here: the trigger is as wide as its words (not the whole
+ * row), its padding hangs into the gutter so the chevron sits on the text
+ * edge, its figures are tabular so a ticking time does not shake the row, and
+ * the title takes the state's tone.
+ */
+.crewlet-run-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-run-chip .crewlet-run-chip__trigger {
+  flex: none;
+  width: auto;
+  max-width: calc(100% + var(--spacing-2));
+  margin-inline-start: calc(var(--spacing-2) * -1);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-run-chip__separator {
+  color: var(--color-text-tertiary);
+}
+
+/* The state's tone, in the title's ink, at rest and under the pointer. */
+.crewlet-run-chip--waiting .crewlet-run-chip__trigger,
+.crewlet-run-chip--waiting .crewlet-run-chip__trigger:hover {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-run-chip--failed .crewlet-run-chip__trigger,
+.crewlet-run-chip--failed .crewlet-run-chip__trigger:hover {
+  color: var(--color-feedback-danger-ink);
+}
+
+/* The steps it opens fill the thread's width under it. */
+.crewlet-run-chip__panel {
+  align-self: stretch;
+  min-width: 0;
+}

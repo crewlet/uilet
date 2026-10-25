@@ -1,0 +1,62 @@
+/*
+ * A record with a state. The card, its head, its body and its foot are
+ * Card's; only what a status card adds is said here.
+ */
+
+/* The body holds a sentence, a list and a note, one gap apart. */
+.crewlet-status-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+}
+
+.crewlet-status-card__body > p {
+  margin: 0;
+}
+
+/* Settled: the body steps back so the strip at the foot reads first. */
+.crewlet-status-card--settled .crewlet-status-card__body {
+  color: var(--color-text-secondary);
+}
+
+/* The strip fills its flush footer edge to edge. */
+.crewlet-status-card__strip {
+  display: block;
+}
+
+/*
+ * THE FOOT'S ONE RULE. A decision ends the row; utilities start it, with a
+ * ghost button at either end pulled out by its padding and edge so its glyph
+ * sits on the card's text edge.
+ */
+.crewlet-status-card__actions {
+  flex-wrap: wrap;
+  container: crewlet-status-card-actions / inline-size;
+}
+
+.crewlet-status-card__actions--end {
+  justify-content: flex-end;
+}
+
+.crewlet-status-card__actions--start {
+  justify-content: flex-start;
+}
+
+.crewlet-status-card__actions--start > .crewlet-btn--ghost.crewlet-btn--small:first-child {
+  margin-inline-start: calc(-1 * (var(--spacing-2) + 1px));
+}
+
+.crewlet-status-card__actions--start > .crewlet-btn--ghost.crewlet-btn--small:last-child {
+  margin-inline-end: calc(-1 * (var(--spacing-2) + 1px));
+}
+
+/* A decision on a narrow card (a phone sheet): its buttons share the row as blocks. */
+@container crewlet-status-card-actions (width < 328px) {
+  .crewlet-status-card__actions--end > .crewlet-btn {
+    flex: 1 1 0;
+  }
+}

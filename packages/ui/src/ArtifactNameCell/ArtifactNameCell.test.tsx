@@ -7,7 +7,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
 import { ARTIFACT_KINDS } from '../ArtifactKindGlyph/index.js';
-import { ArtifactNameCell } from './index.js';
+import { ArtifactNameCell, type ArtifactNameCellLabels } from './index.js';
 
 afterEach(cleanup);
 
@@ -60,4 +60,15 @@ test('a list of every kind carries no axe violation', async () => {
   );
   const result = await axe.run(container);
   expect(result.violations).toEqual([]);
+});
+
+test('a consumer may word only the kinds it knows; every other kind keeps the kit word', () => {
+  // A subset, as an application built before `brand` existed passes it.
+  const kinds = { doc: 'Document', sheet: 'Spreadsheet' } satisfies ArtifactNameCellLabels['kinds'];
+  const { rerender, container } = render(<ArtifactNameCell kind="doc" title="Q4 pricing brief" labels={{ kinds }} />);
+  expect(container.textContent).toContain('Document');
+  rerender(<ArtifactNameCell kind="brand" title="Nimbus brand" labels={{ kinds }} />);
+  expect(container.textContent).toContain('Brand');
+  rerender(<ArtifactNameCell kind="slides" title="Board deck" labels={{ kinds, folder: 'Map' }} />);
+  expect(container.textContent).toContain('Slides');
 });

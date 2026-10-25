@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { IconTile } from '@crewlethq/ui';
-import { ChartPieGlyph, GaugeGlyph, RadioGlyph } from '@crewlethq/icons/glyphs';
+import { ChartPieGlyph, GaugeGlyph, ListChecksGlyph, RadioGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * A glyph on a tinted square, what a choice in a catalog is told apart by
@@ -42,5 +42,14 @@ export const Sizes: Story = {
         <ChartPieGlyph size="md" />
       </IconTile>
     </div>
+  ),
+};
+
+/** A place or a record rather than a kind: the raised ground in the secondary ink, as an Open in app card draws a task. */
+export const Neutral: Story = {
+  render: () => (
+    <IconTile tone="neutral" size="sm">
+      <ListChecksGlyph size="sm" />
+    </IconTile>
   ),
 };

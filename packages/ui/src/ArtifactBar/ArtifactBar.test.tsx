@@ -169,6 +169,44 @@ test('the wide More holds the menu alone', () => {
   expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map((el) => el.textContent)).toEqual(['Copy link']);
 });
 
+test("the host's end control comes last, after More, once, and never folds", () => {
+  const onAsk = vi.fn();
+  const { container } = render(
+    <LayerHost>
+      <ArtifactBar
+        title="Notes"
+        kind="doc"
+        kindLabel="Doc"
+        tools={tools()}
+        menu={[{ key: 'copy', label: 'Copy link', onSelect: vi.fn() }]}
+        end={
+          <button type="button" onClick={onAsk}>
+            Ask
+          </button>
+        }
+      />
+    </LayerHost>,
+  );
+  const ends = screen.getAllByRole('button', { name: 'Ask' });
+  expect(ends).toHaveLength(1);
+  const ask = ends[0]!;
+  const trail = ask.parentElement!;
+  expect(trail.classList.contains('crewlet-artifact-bar__trail')).toBe(true);
+  // The last thing in the bar's end, after both arrangements of More.
+  const end = container.querySelector('.crewlet-artifact-bar__end')!;
+  expect(end.lastElementChild).toBe(trail);
+  expect(trail.previousElementSibling!.classList.contains('crewlet-artifact-bar__narrow')).toBe(true);
+  // Drawn in neither arrangement, so no width hides it.
+  expect(ask.closest('.crewlet-artifact-bar__wide, .crewlet-artifact-bar__narrow')).toBeNull();
+  fireEvent.click(ask);
+  expect(onAsk).toHaveBeenCalledTimes(1);
+});
+
+test('with no end control the bar draws no slot for one', () => {
+  const { container } = render(<ArtifactBar title="Notes" kind="doc" kindLabel="Doc" tools={tools()} />);
+  expect(container.querySelector('.crewlet-artifact-bar__trail')).toBeNull();
+});
+
 test('pressing the title renames it in place; Enter takes the new title', async () => {
   const onRename = vi.fn(async () => undefined);
   render(<ArtifactBar title="Notes" kind="doc" kindLabel="Doc" onRename={onRename} />);
@@ -350,5 +388,22 @@ test('the bar takes the shell top bar inset on both sides, at both steps', () =>
     } finally {
       uninstall();
     }
+  }
+});
+
+test("the host's end control keeps its size and its one line, a step past the bar's own tools", () => {
+  const uninstall = installAtWidth(Number.parseFloat(breakpoint.shell), 'light', 'ArtifactBar/ArtifactBar.css');
+  try {
+    const { container } = render(
+      <ArtifactBar title="Q3 plan" kind="doc" kindLabel="Doc" tools={tools()} end={<button type="button">Ask</button>} />,
+    );
+    const trail = container.querySelector('.crewlet-artifact-bar__trail')!;
+    const style = getComputedStyle(trail);
+    expect(style.display).toBe('inline-flex');
+    expect(style.flexShrink).toBe('0');
+    expect(style.whiteSpace).toBe('nowrap');
+    expect(px(trail, 'margin-inline-start')).toBe(4);
+  } finally {
+    uninstall();
   }
 });
