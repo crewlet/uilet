@@ -11,6 +11,7 @@ import { useRef, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { ArtifactPanel, ArtifactWorkspace } from '../ArtifactPanel/index.js';
+import { ChatThread } from '../ChatThread/index.js';
 import { SidePanel, SidePanelFrame, type SidePanelShape } from './index.js';
 
 afterEach(cleanup);
@@ -145,6 +146,60 @@ test('flush drops the body inset and publishes it as zero inside the body only',
     // Outside the body the panel keeps its inset: the head and foot are unchanged.
     expect(inset(panel)).toBe(resting);
   } finally {
+    uninstall();
+  }
+});
+
+test('a flush body is not a scroll container, so focusing deep in a tall thread leaves it at the top', () => {
+  // jsdom computes no layout and scrolls nothing on focus, so both are stated
+  // here as the browser does them: the thread's content is taller than its
+  // view, the body around it reports the overflow a stray descendant once
+  // gave it (4752px around a 557px thread), and a focus scrolls every scroll
+  // container between the element and the page to bring it into view. A
+  // scroll container is a box whose overflow is not `visible` or `clip`.
+  const uninstall = installSheets('SidePanel/SidePanel.css', 'ChatThread/ChatThread.css');
+  const focus = HTMLElement.prototype.focus;
+  const scrollsOnFocus = (el: Element) =>
+    ['overflow', 'overflowX', 'overflowY'].some((key) => {
+      const value = getComputedStyle(el)[key as 'overflow'];
+      return value === 'auto' || value === 'scroll' || value === 'hidden';
+    });
+  const spy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (this: HTMLElement, options) {
+    focus.call(this, options);
+    if (options?.preventScroll) return;
+    for (let el = this.parentElement; el; el = el.parentElement) {
+      if (scrollsOnFocus(el) && el.scrollHeight > el.clientHeight) el.scrollTop = el.scrollHeight - el.clientHeight;
+    }
+  });
+  try {
+    render(
+      <SidePanel title="Crewlet Assistant" flush onClose={() => {}} footer={<input aria-label="Message" />}>
+        <ChatThread label="Conversation">
+          {Array.from({ length: 30 }, (_, index) => (
+            <p key={index}>Message {index + 1}</p>
+          ))}
+          <button type="button">Approve</button>
+        </ChatThread>
+      </SidePanel>,
+    );
+    const panel = screen.getByRole('complementary', { name: 'Crewlet Assistant' });
+    const body = panel.querySelector<HTMLElement>('.crewlet-side-panel__body')!;
+    const log = screen.getByRole('log');
+    const sized = (el: HTMLElement, client: number, scroll: number) => {
+      Object.defineProperty(el, 'clientHeight', { configurable: true, value: client });
+      Object.defineProperty(el, 'scrollHeight', { configurable: true, value: scroll });
+    };
+    sized(body, 557, 4752);
+    sized(log, 557, 4200);
+    log.scrollTop = 0;
+
+    expect(getComputedStyle(body).overflow).toBe('clip');
+    screen.getByRole('button', { name: 'Approve' }).focus();
+    expect(body.scrollTop).toBe(0);
+    // The thread, which owns the scrolling, is what brought it into view.
+    expect(log.scrollTop).toBe(4200 - 557);
+  } finally {
+    spy.mockRestore();
     uninstall();
   }
 });

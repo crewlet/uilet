@@ -15,8 +15,19 @@
  * THE BROWSER'S SCROLL ANCHORING IS OFF: it pins the content above the
  * reader's view, which fights a last child that keeps growing as an answer
  * streams in. ChatThread.tsx anchors to the end itself.
+ *
+ * THE SCROLLER IS THE CONTAINING BLOCK for everything positioned inside it.
+ * It was not, so an absolutely positioned descendant with no positioned
+ * ancestor of its own (a visually hidden phrase inside a tag, "Sent with")
+ * was placed against the thread instead: outside the scroller's clip, at its
+ * spot in the whole conversation, thousands of pixels below the view. That
+ * made whatever held the thread overflowable (a flush side panel's body read
+ * a scroll height of 4752px around a 557px thread), and a focus could scroll
+ * it, lifting the thread off the panel's foot over a blank band. Positioned
+ * here, such a descendant scrolls and clips with the conversation.
  */
 .crewlet-chat-thread__scroller {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;

@@ -8,7 +8,9 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import axe from 'axe-core';
 import { createRef } from 'react';
 import { afterEach, expect, test } from 'vitest';
-import { installThemed } from '../../../../apps/ui-tests/src/cascade.js';
+import { installSheets, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
+import { Tag } from '../Tag/index.js';
+import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { ChatThread, type ChatThreadHandle } from './index.js';
 
 afterEach(cleanup);
@@ -98,6 +100,34 @@ test('turns the browser scroll anchoring off, and rings inside the region', () =
   const log = screen.getByRole('log');
   expect(getComputedStyle(log).overflowAnchor).toBe('none');
   uninstall();
+});
+
+test('is the containing block for what is positioned inside it, so nothing escapes its clip', () => {
+  // A visually hidden phrase in a tag has no positioned ancestor of its own.
+  // Placed against the thread rather than the scroller, it stood at its spot
+  // in the whole conversation, outside the scroller's clip, and made the
+  // panel body around the thread scrollable.
+  const uninstall = installSheets('ChatThread/ChatThread.css', 'Tag/Tag.css', 'VisuallyHidden/VisuallyHidden.css');
+  try {
+    render(
+      <ChatThread label="Conversation">
+        {items(3)}
+        <Tag size="xs" appearance="outline">
+          <VisuallyHidden>Sent with </VisuallyHidden>
+          Knowledge
+        </Tag>
+      </ChatThread>,
+    );
+    const log = screen.getByRole('log');
+    const hidden = screen.getByText('Sent with');
+    expect(getComputedStyle(hidden).position).toBe('absolute');
+    let block = hidden.parentElement;
+    while (block && getComputedStyle(block).position === 'static') block = block.parentElement;
+    expect(block).not.toBeNull();
+    expect(log.contains(block)).toBe(true);
+  } finally {
+    uninstall();
+  }
 });
 
 test('carries no axe violation, following and detached', async () => {
