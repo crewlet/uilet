@@ -1,0 +1,55 @@
+/* One row per person, seat or record, divided by hairlines, on the card's 16px inset. */
+.crewlet-entity-list__rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-entity-list__row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-width: 0;
+  min-height: var(--size-row-lg);
+  padding: var(--spacing-2) var(--spacing-4);
+}
+
+.crewlet-entity-list__row + .crewlet-entity-list__row {
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-entity-list__avatar {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-entity-list__words {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-entity-list__name {
+  overflow: hidden;
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-entity-list__fact {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* The row's own link, its ghost padding pulled out to the card's text edge. */
+.crewlet-entity-list__action {
+  display: inline-flex;
+  flex: none;
+  margin-inline-end: calc(-1 * (var(--spacing-2) + 1px));
+}

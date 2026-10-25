@@ -1,0 +1,102 @@
+/*
+ * A suggestion, in the list row's grammar: the medium row height, a spacing
+ * step by a step and a half, the hover tint, and the inset focus ring that a
+ * row inside a clipped card can still show.
+ */
+.crewlet-suggestion-list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-suggestion-list--divided {
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-suggestion-list--divided > .crewlet-suggestion-list__item + .crewlet-suggestion-list__item {
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-suggestion-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  width: 100%;
+  min-width: 0;
+  min-height: var(--size-row-md);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-suggestion-list--divided .crewlet-suggestion-row {
+  border-radius: 0;
+}
+
+.crewlet-suggestion-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-suggestion-row:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-suggestion-row:disabled {
+  cursor: not-allowed;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-suggestion-row:disabled:hover {
+  background: none;
+}
+
+.crewlet-suggestion-row__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-suggestion-row__icon .crewlet-glyph {
+  width: var(--font-size-sm);
+  height: var(--font-size-sm);
+}
+
+.crewlet-suggestion-row__words {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-suggestion-row__detail {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-suggestion-row__trail {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-inline-start: auto;
+  color: var(--color-text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-suggestion-row {
+    transition: none;
+  }
+}
