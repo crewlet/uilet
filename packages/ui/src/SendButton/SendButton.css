@@ -1,0 +1,173 @@
+/*
+ * A chat composer's Send, which becomes Stop. See SendButton.tsx for what each
+ * state says. The surfaces, edges and hover and press inks are IconButton's
+ * primary and secondary squares; this sheet adds the glyph cross fade, the
+ * quiet held state, the press and the running arc.
+ */
+
+/*
+ * THE ARC'S ANGLE, registered so it can turn. An unregistered custom property
+ * animates in one step at the halfway point, which would make the arc jump
+ * between two places rather than travel.
+ */
+@property --crewlet-send-button-arc {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.crewlet-send-button {
+  position: relative;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default),
+    transform var(--motion-duration-instant) var(--motion-easing-out);
+}
+
+/* A press sinks the square a little, so the pointer feels it land. */
+.crewlet-send-button:active:not([aria-disabled='true']) {
+  transform: scale(0.94);
+}
+
+/*
+ * BOTH GLYPHS IN ONE CELL. The one in use stands at full size; the other is
+ * faded and scaled to half, and the two trade places on the base step with
+ * the entering surface's ease, so Send turning into Stop reads as one control
+ * changing its mind rather than as two buttons swapping.
+ */
+.crewlet-send-button__glyphs {
+  display: grid;
+  place-items: center;
+}
+
+.crewlet-send-button__glyph {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--motion-duration-base) var(--motion-easing-default),
+    transform var(--motion-duration-base) var(--motion-easing-emphasized);
+}
+
+.crewlet-send-button--send .crewlet-send-button__glyph--stop,
+.crewlet-send-button--stop .crewlet-send-button__glyph--send {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+/*
+ * THE STOP SQUARE IS SMALLER THAN THE ARROW: a filled block at the arrow's
+ * 14px was the heaviest mark on the panel. At the 12px step its square is
+ * nine pixels, crisp on the pixel grid and the weight of the arrow's stroke.
+ */
+.crewlet-send-button.crewlet-icon-btn--md .crewlet-send-button__glyph--stop {
+  width: var(--font-size-xs);
+  height: var(--font-size-xs);
+}
+
+/*
+ * HELD, AT FULL OPACITY, with the glyph in the tertiary ink. A faded accent
+ * block read as a muddy, broken button on the dark ground, and the composer's
+ * own fade multiplied it further. Send held is the accent's soft tint, so it
+ * is still the purple control that lights up the moment there is something
+ * to send; Stop held (a stop already under way) is the neutral hover overlay,
+ * since nothing about it is waiting to light up.
+ */
+.crewlet-send-button.crewlet-icon-btn[aria-disabled='true'] {
+  opacity: 1;
+  border-color: transparent;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-send-button--send.crewlet-icon-btn[aria-disabled='true'] {
+  background: var(--color-brand-accent-soft);
+}
+
+.crewlet-send-button--stop.crewlet-icon-btn[aria-disabled='true'] {
+  background: var(--color-surface-hover);
+}
+
+/*
+ * THE RUNNING ARC: a band of the accent travelling round Stop's edge, over its
+ * own 1px border, with a tail that fades behind it. The band is a conic
+ * gradient cut to a 2px ring by a mask (a mask reads only alpha, so its black
+ * is opacity rather than a colour), so it follows the rounded corner exactly.
+ * One round is the working ring's sweep period, and it fades in on the
+ * moderate step as Stop arrives.
+ */
+.crewlet-send-button--stop::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--crewlet-send-button-arc),
+    transparent 0turn,
+    transparent 0.55turn,
+    var(--color-brand-accent) 1turn
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  /* Paint, never a target. */
+  pointer-events: none;
+  animation:
+    crewlet-send-button-arc var(--motion-duration-sweep) linear infinite,
+    crewlet-send-button-arc-in var(--motion-duration-moderate) var(--motion-easing-out);
+}
+
+/* A stop already under way has nothing left to show running. */
+.crewlet-send-button--stop[aria-disabled='true']::before {
+  display: none;
+}
+
+@keyframes crewlet-send-button-arc {
+  to {
+    --crewlet-send-button-arc: 360deg;
+  }
+}
+
+@keyframes crewlet-send-button-arc-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * UNDER REDUCED MOTION nothing travels or scales: the glyphs change in place,
+ * and the arc becomes the whole edge in the accent, still and still saying
+ * that something runs.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-send-button {
+    transition: none;
+  }
+
+  .crewlet-send-button:active:not([aria-disabled='true']) {
+    transform: none;
+  }
+
+  .crewlet-send-button__glyph {
+    transition: none;
+  }
+
+  .crewlet-send-button--stop::before {
+    background: var(--color-brand-accent);
+    animation: none;
+  }
+}
+
+/* The system draws its own edge; a masked gradient is not repainted there. */
+@media (forced-colors: active) {
+  .crewlet-send-button--stop::before {
+    display: none;
+  }
+}
