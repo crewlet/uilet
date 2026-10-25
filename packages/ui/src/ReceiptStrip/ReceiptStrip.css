@@ -1,0 +1,93 @@
+/*
+ * A card's foot strip: the card's hairline above it, a tint under the words,
+ * the mark on the first line. The tints are the soft step of the tone under
+ * its ink step, the pairing the palette suite measures; the quiet strip is
+ * the inset ground under the secondary ink.
+ */
+.crewlet-receipt-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-top: 1px solid var(--color-border-default);
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+}
+
+.crewlet-receipt-strip--success {
+  background: var(--color-feedback-success-soft);
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-receipt-strip--neutral {
+  background: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-receipt-strip--info {
+  background: var(--color-feedback-info-soft);
+  color: var(--color-feedback-info-ink);
+}
+
+.crewlet-receipt-strip--warning {
+  background: var(--color-feedback-warning-soft);
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-receipt-strip--danger {
+  background: var(--color-feedback-danger-soft);
+  color: var(--color-feedback-danger-ink);
+}
+
+/* The 16px mark, centred on the first line of the words beside it. */
+.crewlet-receipt-strip__icon {
+  display: inline-flex;
+  align-items: center;
+  height: calc(var(--font-size-compact) * var(--font-line-height-normal));
+}
+
+.crewlet-receipt-strip__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The actions keep the strip's ink, so a ghost button reads as part of it. */
+.crewlet-receipt-strip__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-block: calc(var(--spacing-1) * -1);
+}
+
+.crewlet-receipt-strip__actions .crewlet-btn--ghost {
+  color: inherit;
+}
+
+/*
+ * THE INLINE REFUSAL, under the control that caused it: the sentence in the
+ * danger ink, the hint in the secondary ink, the actions beside them, wrapping
+ * onto a second line rather than widening the row.
+ */
+.crewlet-refusal-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+  max-width: 40rem;
+  font-size: var(--font-size-compact);
+  color: var(--color-feedback-danger-ink);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-refusal-strip__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-refusal-strip--foot .crewlet-refusal-strip__hint {
+  color: inherit;
+}
