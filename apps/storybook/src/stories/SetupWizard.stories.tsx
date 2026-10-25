@@ -10,6 +10,7 @@ import {
   FormField,
   Input,
   LogoSlot,
+  ReviewList,
   SegmentedControl,
   SetupWizard,
   Textarea,
@@ -320,27 +321,40 @@ function Page({
           alignItems: "start",
         }}
       >
-        <dl
-          style={{
-            display: "grid",
-            gridTemplateColumns: "max-content 1fr",
-            gap: "8px 16px",
-            margin: 0,
-          }}
-        >
-          <dt>Name</dt>
-          <dd style={{ margin: 0 }}>{name}</dd>
-          <dt>Logos</dt>
-          <dd style={{ margin: 0 }}>Missing: the primary logo</dd>
-          <dt>Colours</dt>
-          <dd style={{ margin: 0 }}>
-            {primaryLow
-              ? "Primary is low on light grounds"
-              : "Every pair clears its floor"}
-          </dd>
-          <dt>Typography</dt>
-          <dd style={{ margin: 0 }}>Uses Crewlet’s default</dd>
-        </dl>
+        <ReviewList label="Brand summary">
+          <ReviewList.Item
+            title="Identity"
+            status={{ label: "Complete", tone: "success" }}
+            action={<Button size="small" variant="ghost" aria-label="Edit Identity" onClick={() => go("identity")}>Edit</Button>}
+          >
+            {name}
+          </ReviewList.Item>
+          <ReviewList.Item
+            title="Logos"
+            status={{ label: "Missing required", tone: "danger" }}
+            action={<Button size="small" variant="ghost" aria-label="Edit Logos" onClick={() => go("logos")}>Edit</Button>}
+          >
+            No primary logo yet.
+          </ReviewList.Item>
+          <ReviewList.Item
+            title="Colours"
+            status={
+              primaryLow
+                ? { label: "Needs attention", tone: "warning" }
+                : { label: "Complete", tone: "success" }
+            }
+            action={<Button size="small" variant="ghost" aria-label="Edit Colours" onClick={() => go("colours")}>Edit</Button>}
+          >
+            {primaryLow ? "Primary is low on light grounds." : "Every pair clears its floor."}
+          </ReviewList.Item>
+          <ReviewList.Item
+            title="Typography"
+            status={{ label: "Uses defaults", tone: "neutral" }}
+            action={<Button size="small" variant="ghost" aria-label="Edit Typography" onClick={() => go("typography")}>Edit</Button>}
+          >
+            Geist for headings and body.
+          </ReviewList.Item>
+        </ReviewList>
         <div style={{ display: "grid", gap: 12 }}>{preview}</div>
       </div>
     ),

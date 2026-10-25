@@ -1,0 +1,116 @@
+/*
+ * ReviewList: a setup's parts in one bordered box, a row each, before the
+ * setup is finished (ReviewList.tsx).
+ *
+ * A ROW IS A GRID OF THREE COLUMNS: the glyph's tile, the part (its title and
+ * state over its values), and the action. The values sit under the title, at
+ * its start, and reach the row's end under the action, so a row of logos or
+ * swatches has the whole width and the titles still run down one line.
+ */
+.crewlet-review-list {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-subtle);
+  list-style: none;
+}
+
+.crewlet-review-list__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon head action'
+    '.    body body'
+    '.    error error';
+  align-items: center;
+  column-gap: var(--spacing-3);
+  min-width: 0;
+  padding: var(--spacing-4) var(--spacing-5);
+}
+
+.crewlet-review-list__item + .crewlet-review-list__item {
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-review-list__icon {
+  grid-area: icon;
+}
+
+.crewlet-review-list__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+  grid-area: head;
+  min-width: 0;
+}
+
+.crewlet-review-list__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+}
+
+.crewlet-review-list__action {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  grid-area: action;
+}
+
+.crewlet-review-list__body {
+  grid-area: body;
+  min-width: 0;
+  margin-top: var(--spacing-3);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-body);
+}
+
+/* WHAT HOLDS THE FINISH, in the danger ink with its glyph, so it never rests on the hue alone. */
+.crewlet-review-list__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  grid-area: error;
+  margin: var(--spacing-2) 0 0;
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+}
+
+.crewlet-review-list__error > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* WITHOUT A GLYPH the part starts at the row's start, with no empty column before it. */
+.crewlet-review-list__item--plain {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head action'
+    'body body'
+    'error error';
+}
+
+/* A NARROW LIST gives the values the whole row: an indent of a tile and a gap is a fifth of a phone. */
+@container (width < 28rem) {
+  .crewlet-review-list__item {
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+
+  .crewlet-review-list__item:not(.crewlet-review-list__item--plain) {
+    grid-template-areas:
+      'icon head action'
+      'body body body'
+      'error error error';
+  }
+}
