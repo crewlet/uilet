@@ -351,6 +351,13 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
     );
   }
 
+  // A PASSWORD FIELD TAKES NO ROLE AT REST. HTML allows no ARIA role on
+  // `type="password"`, so a masked field is a plain password field until it
+  // has a list to offer, and a combobox only while that list is open: the
+  // reader is told about the list exactly when there is one, and a closed
+  // field stays what the platform says it is.
+  const announcesRole = rest.type !== 'password' || lists;
+
   return (
     <div className={cx('crewlet-combobox', containerClassName)} ref={listbox.anchorRef}>
       <Input
@@ -359,9 +366,9 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
         id={fieldId}
         className={className}
         value={value}
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded={lists}
+        role={announcesRole ? 'combobox' : undefined}
+        aria-autocomplete={announcesRole ? 'list' : undefined}
+        aria-expanded={announcesRole ? lists : undefined}
         aria-controls={lists ? listbox.listId : undefined}
         aria-activedescendant={lists && offered.length > 0 ? listbox.optionId(listbox.active) : undefined}
         autoComplete="off"
