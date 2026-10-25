@@ -1,3 +1,4 @@
+import { formatRelative, useNow, type TimeValue } from '../RelativeTime/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -6,12 +7,21 @@ export interface EditingStatusLabels {
   editing: string;
   unsaved: string;
   saving: string;
+  /** Shown once the last save landed, with how long ago: "Saved 2 min ago". */
+  saved: (ago: string) => string;
+  /**
+   * Said in its place: the time is shown and not announced, so a screen
+   * reader hears "Saved" when the save lands rather than every minute after.
+   */
+  savedSpoken: string;
 }
 
 const LABELS: EditingStatusLabels = {
   editing: 'Editing',
   unsaved: 'Unsaved changes',
   saving: 'Saving',
+  saved: (ago) => `Saved ${ago}`,
+  savedSpoken: 'Saved',
 };
 
 export interface EditingStatusProps {
@@ -19,6 +29,12 @@ export interface EditingStatusProps {
   dirty: boolean;
   /** Whether a save is in flight. */
   saving?: boolean | undefined;
+  /**
+   * When the last save landed. Given, a status with nothing unsaved and no
+   * save in flight says how long ago: a draft that keeps itself, as a setup
+   * wizard's does ("Draft · Saved 2 min ago" with `labels.editing` "Draft").
+   */
+  savedAt?: TimeValue;
   labels?: Partial<EditingStatusLabels> | undefined;
   className?: string | undefined;
 }
@@ -33,9 +49,15 @@ export interface EditingStatusProps {
  * from saved to unsaved without being interrupted. On a narrow bar the words
  * fold away and the dot stays, named by the same words.
  */
-export function EditingStatus({ dirty, saving = false, labels, className }: EditingStatusProps) {
+export function EditingStatus({ dirty, saving = false, savedAt, labels, className }: EditingStatusProps) {
   const text = { ...LABELS, ...labels };
-  const state = saving ? text.saving : dirty ? text.unsaved : null;
+  const state = saving ? (
+    text.saving
+  ) : dirty ? (
+    text.unsaved
+  ) : savedAt !== undefined && savedAt !== null ? (
+    <SavedAgo at={savedAt} labels={text} />
+  ) : null;
   return (
     <span
       role="status"
@@ -52,5 +74,23 @@ export function EditingStatus({ dirty, saving = false, labels, className }: Edit
       {state && <VisuallyHidden>, </VisuallyHidden>}
       {state && <span className="crewlet-editing-status__state">{state}</span>}
     </span>
+  );
+}
+
+/**
+ * How long ago the last save landed, on the shared clock. A component of its
+ * own so only a status that shows a time subscribes to the clock. The time is
+ * hidden from the live region and "Saved" is said instead, so the minute
+ * ticking over is never announced.
+ */
+function SavedAgo({ at, labels }: { at: TimeValue; labels: EditingStatusLabels }) {
+  const now = useNow();
+  const ago = formatRelative(at, now);
+  if (ago === null) return null;
+  return (
+    <>
+      <span aria-hidden="true">{labels.saved(ago)}</span>
+      <VisuallyHidden>{labels.savedSpoken}</VisuallyHidden>
+    </>
   );
 }

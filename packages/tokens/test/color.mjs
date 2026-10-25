@@ -13,16 +13,30 @@
  * It is published as part of `@crewlethq/tokens/test/palette`, so a consumer
  * runs the same maths over the version it installed.
  *
- * The colour values and the WCAG ratio are not implemented here: they are the
- * package's runtime module (`src/color.ts`, built to `dist/color.js`), which
- * `@crewlethq/tokens` itself exports, and this file re-exports them. An
- * interface that shows a contrast ratio and the suite that holds a theme to
- * one therefore compute it with the same code.
+ * The colour values, the WCAG ratio and the OKLab conversions are not
+ * implemented here: they are the package's runtime module (`src/color.ts`,
+ * built to `dist/color.js`), which `@crewlethq/tokens` itself exports, and
+ * this file re-exports them. An interface that shows a contrast ratio, or
+ * suggests the nearest shade that clears one, and the suite that holds a theme
+ * to one therefore compute it with the same code.
  */
 
-import { contrast, linearChannel, luminance, parseHex, parseRgba, withAlpha } from '../dist/color.js';
+import {
+  contrast,
+  formatHex,
+  fromLinear,
+  fromOklab,
+  linearChannel,
+  luminance,
+  oklabToLinear,
+  parseHex,
+  parseRgba,
+  toOklab,
+  withAlpha,
+} from '../dist/color.js';
 
-export { contrast, luminance, parseHex, parseRgba, withAlpha };
+export { contrast, fromOklab, luminance, oklabToLinear, parseHex, parseRgba, toOklab, withAlpha };
+export { formatHex as hex };
 
 /** @typedef {{ r: number, g: number, b: number }} RGB */
 
@@ -132,20 +146,6 @@ export function flatten(value, backdrop) {
 // greens a reader cannot tell apart at 11px.
 // ---------------------------------------------------------------------------
 
-export function toOklab({ r, g, b }) {
-  const lr = linearChannel(r);
-  const lg = linearChannel(g);
-  const lb = linearChannel(b);
-  const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
-  const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
-  const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
-  return {
-    L: 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
-    a: 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
-    b: 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
-  };
-}
-
 /** Perceptual distance, scaled to roughly CIE dE units so floors read familiar. */
 export function deltaE(x, y) {
   const a = toOklab(x);
@@ -164,38 +164,6 @@ export function chroma(c) {
   return Math.hypot(a, b) * 100;
 }
 
-function fromLinear(v) {
-  const c = v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1 / 2.4) - 0.055;
-  return Math.min(255, Math.max(0, c * 255));
-}
-
-/**
- * OKLab to LINEAR sRGB, unclipped. A channel under 0 or over 1 says the
- * colour is outside what a screen can show, which fromOklab hides by clipping
- * each channel on its own, and clipping one channel turns the hue: a search
- * that walks chroma has to know where the gamut ends rather than be handed a
- * different colour from the one it asked for.
- */
-export function oklabToLinear({ L, a, b }) {
-  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
-  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
-  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
-  return {
-    r: 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-    g: -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-    b: -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
-  };
-}
-
-/** OKLab to sRGB, clipped. Used to search for the nearest passing value. */
-export function fromOklab(lab) {
-  const { r, g, b } = oklabToLinear(lab);
-  return { r: Math.round(fromLinear(r)), g: Math.round(fromLinear(g)), b: Math.round(fromLinear(b)) };
-}
-
-export const hex = ({ r, g, b }) =>
-  `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
-
 /**
  * Move a colour along OKLab lightness only, keeping hue and chroma, until
  * `ok` holds. A failing token moves MINIMALLY and inside its own hue family;
@@ -205,7 +173,7 @@ export function nudge(value, direction, ok, step = 0.002) {
   const lab = toOklab(parseHex(value));
   for (let i = 0; i <= 500; i += 1) {
     const candidate = fromOklab({ L: lab.L + direction * step * i, a: lab.a, b: lab.b });
-    if (ok(candidate)) return { value: hex(candidate), dL: +(direction * step * i * 100).toFixed(1) };
+    if (ok(candidate)) return { value: formatHex(candidate), dL: +(direction * step * i * 100).toFixed(1) };
   }
   return null;
 }

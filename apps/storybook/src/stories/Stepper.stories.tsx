@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Card, Stepper, type StepperStep } from '@crewlethq/ui';
 
@@ -23,6 +24,7 @@ const meta: Meta<typeof Stepper> = {
     current: { control: 'inline-radio', options: [...TURN.map((step) => step.id), null] },
     tone: { control: 'inline-radio', options: ['info', 'warning', 'danger', 'success', 'brand'] },
     pulse: { control: 'boolean' },
+    orientation: { control: 'inline-radio', options: ['horizontal', 'vertical'] },
   },
   /* On a card, which is where the design draws every step row. */
   render: (args) => (
@@ -100,4 +102,88 @@ export const Tones: Story = {
  */
 export const Starting: Story = {
   args: { current: 'context', pulse: false },
+};
+
+/** The brand setup wizard's six steps, part way through. */
+const SETUP: StepperStep[] = [
+  { id: 'identity', label: 'Identity', description: 'Name and tagline' },
+  { id: 'logos', label: 'Logos', description: 'Light, dark and mark', status: 'attention' },
+  { id: 'colours', label: 'Colours', description: 'Primary, text and grounds' },
+  { id: 'typography', label: 'Typography', description: 'Heading and body', status: 'optional' },
+  { id: 'voice', label: 'Voice', description: 'How agents write', status: 'optional' },
+  { id: 'review', label: 'Review', description: 'Check and adopt' },
+];
+
+/**
+ * STATUSES. A step's position says done or still to come; a `status` says
+ * the rest. An optional step reads "Optional", and one with something to look
+ * at again (a low-contrast pair, a refused file) carries the warning glyph and
+ * says "Needs attention". In a row the words are said rather than shown, since
+ * a pill has no room for them.
+ */
+export const Statuses: Story = {
+  args: { label: 'Setup progress', steps: SETUP, current: 'colours', tone: 'brand', pulse: false },
+};
+
+/**
+ * THE COLUMN, a setup wizard's rail: a mark per step on a hairline that joins
+ * them, the label beside it, and the description and the status words under
+ * it. A step still to come shows its number.
+ */
+export const Vertical: Story = {
+  args: { label: 'Setup steps', steps: SETUP, current: 'colours', tone: 'brand', pulse: false, orientation: 'vertical' },
+  render: (args) => (
+    <Card style={{ maxWidth: 260 }}>
+      <Card.Body>
+        <Stepper {...args} />
+      </Card.Body>
+    </Card>
+  ),
+};
+
+/**
+ * A RAIL OF BUTTONS. With `onSelect`, every visited step is a button: the
+ * current one, every step before it, and every step up to `reached`, so a
+ * person who walked back to Logos can go forward to Voice again. A step not
+ * reached yet stays words, reachable only by Continue. The current step's
+ * button carries `aria-current="step"`.
+ */
+export const Selectable: Story = {
+  render: function Render() {
+    const [current, setCurrent] = useState('colours');
+    return (
+      <Card style={{ maxWidth: 260 }}>
+        <Card.Body>
+          <nav aria-label="Setup steps">
+            <Stepper
+              label="Setup steps"
+              steps={SETUP}
+              current={current}
+              reached="voice"
+              tone="brand"
+              orientation="vertical"
+              onSelect={setCurrent}
+            />
+          </nav>
+        </Card.Body>
+      </Card>
+    );
+  },
+};
+
+/**
+ * THE SAME STEPS AS A ROW OF BUTTONS, as the wizard draws them on a phone,
+ * where the rail has no room beside the content.
+ */
+export const SelectableRow: Story = {
+  render: function Render() {
+    const [current, setCurrent] = useState('colours');
+    return (
+      <Card style={{ maxWidth: 390 }}>
+        <Card.Body>
+          <Stepper label="Setup steps" steps={SETUP} current={current} reached="voice" tone="brand" onSelect={setCurrent} />
+        </Card.Body>
+      </Card>
+    );
+  },
 };

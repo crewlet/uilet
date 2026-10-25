@@ -1,0 +1,197 @@
+/*
+ * SetupWizard: a setup walked step by step on a page of its own
+ * (SetupWizard.tsx).
+ *
+ * THE GRID. The header across the top, the footer across the bottom, and
+ * between them the rail (240px), the content (one column, at most 640px) and,
+ * from 70rem of the wizard's own width, the aside (320px). Under 70rem the
+ * aside takes the row under the content and the rail runs down beside both.
+ * Under the phone breakpoint every part is one column, in reading order.
+ */
+
+.crewlet-setup-wizard {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.crewlet-setup-wizard__frame {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-areas:
+    'head head'
+    'rail content'
+    'rail aside'
+    'foot foot';
+  grid-template-rows: auto auto 1fr auto;
+  column-gap: var(--spacing-8);
+  row-gap: var(--spacing-6);
+  min-width: 0;
+}
+
+.crewlet-setup-wizard__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  grid-area: head;
+  min-width: 0;
+}
+
+.crewlet-setup-wizard__status {
+  display: inline-flex;
+  align-items: center;
+}
+
+/*
+ * THE RAIL stays in view while the content scrolls past it, as a column of
+ * the steps a reader can go back to.
+ */
+.crewlet-setup-wizard__rail {
+  position: sticky;
+  top: var(--spacing-5);
+  align-self: start;
+  grid-area: rail;
+  min-width: 0;
+}
+
+.crewlet-setup-wizard__content {
+  display: flex;
+  flex-direction: column;
+  grid-area: content;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 640px;
+  min-width: 0;
+}
+
+.crewlet-setup-wizard__heading {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+}
+
+/*
+ * The heading takes focus when the step changes. It keeps the browser's own
+ * focus treatment: after a press nothing is drawn, and after a key the ring
+ * shows where the reader now is.
+ */
+
+.crewlet-setup-wizard__lead {
+  margin: var(--spacing-2) 0 0;
+  max-width: var(--size-measure);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-body);
+}
+
+.crewlet-setup-wizard__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-6);
+  min-width: 0;
+}
+
+/* UNDER THE CONTENT, the aside is set off by one hairline, as AsideLayout's is. */
+.crewlet-setup-wizard__aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  grid-area: aside;
+  box-sizing: border-box;
+  max-width: 640px;
+  min-width: 0;
+  padding-top: var(--spacing-6);
+  border-top: 1px solid var(--color-border-default);
+}
+
+/*
+ * THE FOOTER holds the step's actions at the bottom of the view while the
+ * content scrolls under it, on the sheet's own ground with a hairline above,
+ * and clears the device's safe area where it has one.
+ */
+.crewlet-setup-wizard__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-index-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  grid-area: foot;
+  padding: var(--spacing-3) 0 calc(var(--spacing-3) + env(safe-area-inset-bottom, var(--spacing-0)));
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-surface-background);
+}
+
+/* BESIDE THE CONTENT, from 70rem of the wizard's own width: the aside holds in view. */
+@container (min-width: 70rem) {
+  .crewlet-setup-wizard__frame {
+    grid-template-columns: 240px minmax(0, 1fr) 320px;
+    grid-template-areas:
+      'head head head'
+      'rail content aside'
+      'foot foot foot';
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .crewlet-setup-wizard__aside {
+    position: sticky;
+    top: var(--spacing-5);
+    align-self: start;
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+/*
+ * ON A PHONE, one column in reading order: where the reader is, the step, the
+ * folded preview, and the actions. The rail is a row of steps under the
+ * position line, and scrolls away with the page rather than covering it.
+ */
+@media (width < 640px) {
+  .crewlet-setup-wizard__frame {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'head'
+      'rail'
+      'content'
+      'aside'
+      'foot';
+    grid-template-rows: auto;
+    row-gap: var(--spacing-5);
+  }
+
+  .crewlet-setup-wizard__rail {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .crewlet-setup-wizard__preview {
+    grid-area: aside;
+    min-width: 0;
+  }
+
+  .crewlet-setup-wizard__preview .crewlet-setup-wizard__aside {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.crewlet-setup-wizard__position {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-setup-wizard__position-step {
+  color: var(--color-text-primary);
+}

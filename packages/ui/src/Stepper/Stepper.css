@@ -87,39 +87,63 @@
 }
 
 /*
- * THE CURRENT STEP, in its tone. The hairline goes transparent rather than
- * away, so the pill keeps its box and the row does not move by a pixel as the
- * current step advances along it, and so forced-colors mode, which draws a
- * transparent border in the system's own colour, still outlines it.
+ * THE CURRENT STEP, in its tone: the pill in a row, the mark in a column. The
+ * hairline goes transparent rather than away, so the pill keeps its box and
+ * the row does not move by a pixel as the current step advances along it, and
+ * so forced-colors mode, which draws a transparent border in the system's own
+ * colour, still outlines it.
  */
-.crewlet-stepper--info .crewlet-stepper__step--current > .crewlet-stepper__chip {
+.crewlet-stepper--info .crewlet-stepper__step--current > .crewlet-stepper__chip,
+.crewlet-stepper--info .crewlet-stepper__step--current .crewlet-stepper__mark {
   border-color: transparent;
   background: var(--color-feedback-info-soft);
   color: var(--color-feedback-info-ink);
 }
 
-.crewlet-stepper--success .crewlet-stepper__step--current > .crewlet-stepper__chip {
+.crewlet-stepper--success .crewlet-stepper__step--current > .crewlet-stepper__chip,
+.crewlet-stepper--success .crewlet-stepper__step--current .crewlet-stepper__mark {
   border-color: transparent;
   background: var(--color-feedback-success-soft);
   color: var(--color-feedback-success-ink);
 }
 
-.crewlet-stepper--warning .crewlet-stepper__step--current > .crewlet-stepper__chip {
+.crewlet-stepper--warning .crewlet-stepper__step--current > .crewlet-stepper__chip,
+.crewlet-stepper--warning .crewlet-stepper__step--current .crewlet-stepper__mark {
   border-color: transparent;
   background: var(--color-feedback-warning-soft);
   color: var(--color-feedback-warning-ink);
 }
 
-.crewlet-stepper--danger .crewlet-stepper__step--current > .crewlet-stepper__chip {
+.crewlet-stepper--danger .crewlet-stepper__step--current > .crewlet-stepper__chip,
+.crewlet-stepper--danger .crewlet-stepper__step--current .crewlet-stepper__mark {
   border-color: transparent;
   background: var(--color-feedback-danger-soft);
   color: var(--color-feedback-danger-ink);
 }
 
-.crewlet-stepper--brand .crewlet-stepper__step--current > .crewlet-stepper__chip {
+.crewlet-stepper--brand .crewlet-stepper__step--current > .crewlet-stepper__chip,
+.crewlet-stepper--brand .crewlet-stepper__step--current .crewlet-stepper__mark {
   border-color: transparent;
   background: var(--color-brand-accent-soft);
   color: var(--color-brand-accent-ink);
+}
+
+/*
+ * A STEP THAT NEEDS ATTENTION is the warning tint under the warning ink, the
+ * pair the palette suite holds to 4.5:1 over every rung, with the warning
+ * glyph: the pill of a step that is not current, and the mark of any step in
+ * a column. A CURRENT pill keeps its tone, so the row still says which step
+ * the reader is on, and carries the glyph in that tone's ink.
+ */
+.crewlet-stepper .crewlet-stepper__step--attention:not(.crewlet-stepper__step--current) > .crewlet-stepper__chip,
+.crewlet-stepper .crewlet-stepper__step--attention .crewlet-stepper__mark {
+  border-color: transparent;
+  background: var(--color-feedback-warning-soft);
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-stepper__warning {
+  flex: none;
 }
 
 /*
@@ -154,8 +178,157 @@
  * emulated). Opting out also keeps shadows, so the pulsing dot's halo, which
  * is the tone's soft tint and no system colour, is held still inside it.
  */
+/*
+ * A STEP THAT CAN BE PICKED is a button with no look of its own: the pill or
+ * the row it carries draws it, and a hover lays the kit's hover overlay over
+ * a step at rest. The current step keeps its tint under the pointer, since a
+ * tone rule weighs more than the hover. The ring sits inside the step's own
+ * box, over the pill's hairline rather than a second line beside it.
+ */
+.crewlet-stepper__target {
+  appearance: none;
+  margin: 0;
+  background: transparent;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.crewlet-stepper__chip.crewlet-stepper__target {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+}
+
+.crewlet-stepper__target:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-stepper__target:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
+ * THE COLUMN, a setup wizard's rail. Each step is a row: a 20px mark (the
+ * check, the dot, the warning glyph, or the step's number for one still to
+ * come) and beside it the label, with the description and the status words
+ * under it. A hairline in the strong hairline's colour joins one mark to the
+ * next, 4px clear of each, drawn by the step it leaves so nothing trails the
+ * last. The mark is the pills' 20px, following the density as they do, and
+ * the label's line is the mark's height so the two stand level. The row's words follow the same three inks as the pills: the current
+ * step primary and medium, a finished one secondary, the rest tertiary.
+ */
+.crewlet-stepper--vertical {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+}
+
+.crewlet-stepper--vertical .crewlet-stepper__step {
+  position: relative;
+  display: block;
+}
+
+.crewlet-stepper--vertical .crewlet-stepper__step + .crewlet-stepper__step::before {
+  content: none;
+}
+
+.crewlet-stepper--vertical .crewlet-stepper__step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--spacing-2) + 20px * var(--density, 1) + 4px);
+  bottom: calc(4px - var(--spacing-2));
+  left: calc(var(--spacing-2) + 10px * var(--density, 1));
+  width: 1px;
+  background: var(--color-border-strong);
+  pointer-events: none;
+}
+
+.crewlet-stepper__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-stepper__mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: calc(20px * var(--density, 1));
+  height: calc(20px * var(--density, 1));
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.crewlet-stepper__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-stepper__title {
+  line-height: calc(20px * var(--density, 1));
+  overflow-wrap: anywhere;
+}
+
+.crewlet-stepper__row .crewlet-stepper__label {
+  overflow: visible;
+}
+
+.crewlet-stepper__description,
+.crewlet-stepper__note {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-stepper__step--attention .crewlet-stepper__note {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-stepper__step--done > .crewlet-stepper__row {
+  color: var(--color-text-secondary);
+}
+
+/*
+ * THE CURRENT ROW is lifted as the rail's current row is (SidebarNav): the
+ * elevated rung inside a one-pixel hairline drawn as an outline, so forced
+ * colors keeps it, and it does not move the row by a pixel.
+ */
+.crewlet-stepper__step--current > .crewlet-stepper__row {
+  outline: 1px solid var(--color-border-default);
+  outline-offset: -1px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-stepper__step--current .crewlet-stepper__description,
+.crewlet-stepper__step--current .crewlet-stepper__note {
+  font-weight: var(--font-weight-regular);
+}
+
 @media (forced-colors: active) {
-  .crewlet-stepper .crewlet-stepper__step--current > .crewlet-stepper__chip {
+  .crewlet-stepper .crewlet-stepper__step--current > .crewlet-stepper__chip,
+  .crewlet-stepper .crewlet-stepper__step--current .crewlet-stepper__mark {
     forced-color-adjust: none;
     border-color: Highlight;
     background: Highlight;
@@ -170,7 +343,13 @@
     animation: none;
   }
 
-  .crewlet-stepper__step + .crewlet-stepper__step::before {
+  .crewlet-stepper__step + .crewlet-stepper__step::before,
+  .crewlet-stepper--vertical .crewlet-stepper__step:not(:last-child)::after {
     background: GrayText;
+  }
+
+  .crewlet-stepper__target:hover {
+    outline: 1px solid Highlight;
+    outline-offset: var(--size-focus-ring-inset-offset);
   }
 }

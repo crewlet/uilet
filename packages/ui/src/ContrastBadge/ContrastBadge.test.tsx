@@ -61,6 +61,35 @@ test('large text and marks are held to their own floors', () => {
   expect(document.querySelector('.crewlet-contrast-badge--aaa')).not.toBeNull();
 });
 
+test('an advisory pair under its AA floor reads "Low" in the warning tone, never "Fails"', () => {
+  // #00baba on #f6f7fb is 2.33:1: under every floor for body text.
+  const { rerender } = render(<ContrastBadge foreground="#00baba" background="#f6f7fb" advisory />);
+  const badge = () => document.querySelector('.crewlet-contrast-badge')!;
+  expect(badge().classList.contains('crewlet-contrast-badge--low')).toBe(true);
+  expect(badge().textContent).toContain('Low');
+  expect(badge().textContent).not.toContain('Fails');
+  expect(badge().querySelector('.crewlet-tag')!.className).toContain('warning');
+  expect(badge().querySelector('.crewlet-tag svg')).not.toBeNull();
+  // Between 3:1 and 4.5:1 body text is under its floor too: "Low", not "AA large text".
+  rerender(<ContrastBadge foreground="#00a0a0" background="#f6f7fb" advisory />);
+  expect(badge().classList.contains('crewlet-contrast-badge--low')).toBe(true);
+  // As a mark, 3:1 is the floor, so the same pair passes.
+  rerender(<ContrastBadge foreground="#00a0a0" background="#f6f7fb" advisory scale="large" />);
+  expect(badge().classList.contains('crewlet-contrast-badge--aa')).toBe(true);
+  // A pair that clears its floor reads its level whether advisory or not.
+  rerender(<ContrastBadge foreground="#007f7f" background="#f6f7fb" advisory />);
+  expect(badge().classList.contains('crewlet-contrast-badge--aa')).toBe(true);
+  // Without it, the same low pair blocks: "Fails" in the danger tone.
+  rerender(<ContrastBadge foreground="#00baba" background="#f6f7fb" />);
+  expect(badge().classList.contains('crewlet-contrast-badge--fail')).toBe(true);
+  expect(badge().querySelector('.crewlet-tag')!.className).toContain('danger');
+});
+
+test('the advisory word is the caller’s, and one level word can be replaced alone', () => {
+  render(<ContrastBadge foreground="#00baba" background="#f6f7fb" advisory labels={{ levels: { low: 'Low contrast, allowed' } }} />);
+  expect(document.querySelector('.crewlet-contrast-badge')!.textContent).toContain('Low contrast, allowed');
+});
+
 test('a pair that cannot be measured says so and puts nothing into a style', () => {
   render(<ContrastBadge foreground="red; background: url(x)" background="#ffffff" />);
   expect(screen.getByText('Not measured')).toBeDefined();

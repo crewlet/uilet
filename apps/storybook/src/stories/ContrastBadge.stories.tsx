@@ -28,3 +28,20 @@ export const Levels: Story = {
     </div>
   ),
 };
+
+/**
+ * BLOCKING AND ADVISORY. The blocking pair (a brand's text on its light
+ * ground) keeps "Fails" in the danger tone. An `advisory` pair is one a person
+ * is told about and may keep: under its AA floor it reads "Low" in the warning
+ * tone, and once it clears the floor it reads its level like any other.
+ */
+export const Advisory: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 8 }}>
+      <ContrastBadge label="Text on light ground" foreground="#8a8a8a" background="#f6f7fb" />
+      <ContrastBadge label="Primary on light ground" foreground="#00baba" background="#f6f7fb" advisory />
+      <ContrastBadge label="Primary on light ground, as a mark" foreground="#00a0a0" background="#f6f7fb" advisory scale="large" />
+      <ContrastBadge label="Suggested primary on light ground" foreground="#007f7f" background="#f6f7fb" advisory />
+    </div>
+  ),
+};

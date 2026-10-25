@@ -21,6 +21,12 @@ export type ContrastScale = 'body' | 'large';
 export type ContrastLevel = 'aaa' | 'aa' | 'aa-large' | 'fail';
 
 /**
+ * What the badge draws: a level, or `low`, which an ADVISORY badge draws for
+ * a pair under its scale's AA floor in place of `aa-large` or `fail`.
+ */
+export type ContrastBadgeLevel = ContrastLevel | 'low';
+
+/**
  * The level a measured ratio reaches, on the floors `@crewlethq/tokens`
  * exports. The ratio is compared UNROUNDED: a pair that passes only once
  * rounded does not pass.
@@ -58,7 +64,7 @@ export function formatContrastRatio(ratio: number): string {
 }
 
 export interface ContrastBadgeLabels {
-  levels: Record<ContrastLevel, string>;
+  levels: Record<ContrastBadgeLevel, string>;
   /** Said for a pair that cannot be measured (a colour not set yet). */
   unmeasured: string;
   /** The ratio, said in words: "4.49 to 1". */
@@ -68,13 +74,24 @@ export interface ContrastBadgeLabels {
 }
 
 const LABELS: ContrastBadgeLabels = {
-  levels: { aaa: 'AAA', aa: 'AA', 'aa-large': 'AA large text', fail: 'Fails' },
+  levels: { aaa: 'AAA', aa: 'AA', 'aa-large': 'AA large text', fail: 'Fails', low: 'Low' },
   unmeasured: 'Not measured',
   ratio: (ratio) => `${ratio} to 1`,
   sample: 'Aa',
 };
 
-const TONE: Record<ContrastLevel, Tone> = { aaa: 'success', aa: 'success', 'aa-large': 'warning', fail: 'danger' };
+const TONE: Record<ContrastBadgeLevel, Tone> = {
+  aaa: 'success',
+  aa: 'success',
+  'aa-large': 'warning',
+  fail: 'danger',
+  low: 'warning',
+};
+
+/** The words a caller may replace: any of them, and any of the level words. */
+export type ContrastBadgeLabelsInput = Partial<Omit<ContrastBadgeLabels, 'levels'>> & {
+  levels?: Partial<Record<ContrastBadgeLevel, string>> | undefined;
+};
 
 export interface ContrastBadgeProps {
   /** The colour read: text, a logo, an accent. `#rrggbb`. */
@@ -85,8 +102,16 @@ export interface ContrastBadgeProps {
   label?: string | undefined;
   /** What it is read as: body text (the default), or large text and marks. */
   scale?: ContrastScale | undefined;
+  /**
+   * The pair is a warning and never a block: under its scale's AA floor it
+   * reads "Low" in the warning tone, rather than "AA large text" or "Fails"
+   * in the danger tone. For a pair a person is told about and allowed to
+   * keep, such as a brand's primary on its light ground; a pair that blocks
+   * (a brand's text on its light ground) leaves it off and keeps "Fails".
+   */
+  advisory?: boolean | undefined;
   className?: string | undefined;
-  labels?: Partial<ContrastBadgeLabels> | undefined;
+  labels?: ContrastBadgeLabelsInput | undefined;
 }
 
 /**
@@ -98,16 +123,31 @@ export interface ContrastBadgeProps {
  * every theme to, and the floors from its `WCAG_CONTRAST`, so the badge an
  * administrator reads and the gate a theme passes never disagree.
  *
+ * BLOCKING OR ADVISORY. By default a pair under every floor "Fails" in the
+ * danger tone. An `advisory` pair is one a person may keep: under its AA
+ * floor it reads "Low" in the warning tone with the warning glyph, so a
+ * screen of pairs tells the one that blocks from the ones that only warn.
+ *
  * THE LEVEL IS A WORD AND A GLYPH, never the tint alone, and the ratio is
  * said as "4.49 to 1" rather than read out as punctuation. The sample is
  * decoration: it shows the pair, and the words say how it measures.
  */
-export function ContrastBadge({ foreground, background, label, scale = 'body', className, labels }: ContrastBadgeProps) {
+export function ContrastBadge({
+  foreground,
+  background,
+  label,
+  scale = 'body',
+  advisory = false,
+  className,
+  labels,
+}: ContrastBadgeProps) {
   const text = { ...LABELS, ...labels, levels: { ...LABELS.levels, ...labels?.levels } };
   const ink = normalizeHex(foreground);
   const ground = normalizeHex(background);
   const ratio = ink && ground ? contrastRatio(ink, ground) : null;
-  const level = ratio === null ? null : contrastLevel(ratio, scale);
+  const measured = ratio === null ? null : contrastLevel(ratio, scale);
+  const level: ContrastBadgeLevel | null =
+    advisory && (measured === 'fail' || measured === 'aa-large') ? 'low' : measured;
   const printed = ratio === null ? null : formatContrastRatio(ratio);
   const sample =
     ink && ground
@@ -131,7 +171,7 @@ export function ContrastBadge({ foreground, background, label, scale = 'body', c
             leadingIcon={
               level === 'fail' ? (
                 <CircleAlertGlyph size="xs" />
-              ) : level === 'aa-large' ? (
+              ) : level === 'aa-large' || level === 'low' ? (
                 <TriangleAlertGlyph size="xs" />
               ) : (
                 <CircleCheckGlyph size="xs" />

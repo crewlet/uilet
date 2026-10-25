@@ -12,7 +12,8 @@
 
 import { cleanup, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, describe, expect, test } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { contrast, flatten, OPAQUE_SURFACES, parseHex, TEXT_STEPS } from '@crewlethq/tokens/test/palette';
 import {
   channels,
@@ -62,7 +63,7 @@ function steps(container: HTMLElement): HTMLElement[] {
 }
 
 function stateOf(step: HTMLElement): string {
-  const found = /crewlet-stepper__step--(done|current|later)/.exec(step.className)?.[1];
+  const found = /crewlet-stepper__step--(done|current|upcoming|optional|attention)/.exec(step.className)?.[1];
   if (found === undefined) throw new Error(`a step carries no state: "${step.className}"`);
   return found;
 }
@@ -82,11 +83,11 @@ describe('where the sequence has got to', () => {
 
   test('every step before the current one is done and every step after it is still to come', () => {
     const { container } = render(<Stepper label="Turn progress" steps={TURN} current="execute" />);
-    expect(steps(container).map(stateOf)).toEqual(['done', 'current', 'later', 'later']);
+    expect(steps(container).map(stateOf)).toEqual(['done', 'current', 'upcoming', 'upcoming']);
   });
 
   test('a finished sequence has every step done and none current', () => {
-    // The task timeline's finished turn: "Execute ✓ — Review ✓", nothing current.
+    // The task timeline's finished turn: "Execute ✓, Review ✓", nothing current.
     const { container } = render(<Stepper label="Turn 1" steps={TURN.slice(1, 3)} current={null} />);
     expect(steps(container).map(stateOf)).toEqual(['done', 'done']);
     expect(container.querySelectorAll('[aria-current]')).toHaveLength(0);
@@ -353,6 +354,219 @@ describe('what each step is drawn in', () => {
     const { container } = render(<Stepper label="Turn progress" steps={TURN} current="execute" pulse />);
     const halo = pseudoElement(container.querySelector('.crewlet-stepper__dot')!, 'after');
     expect(getComputedStyle(halo).animation).toContain('crewlet-status-dot-pulse');
+  });
+});
+
+/** The brand setup wizard's six steps, part way through: on Colours, with a low pair standing. */
+const SETUP: StepperStep[] = [
+  { id: 'identity', label: 'Identity', description: 'Name and tagline' },
+  { id: 'logos', label: 'Logos', status: 'attention' },
+  { id: 'colours', label: 'Colours' },
+  { id: 'typography', label: 'Typography', status: 'optional' },
+  { id: 'voice', label: 'Voice', status: 'optional' },
+  { id: 'review', label: 'Review' },
+];
+
+describe('statuses', () => {
+  test('a step’s status draws it, and a step without one follows its position', () => {
+    const { container } = render(<Stepper label="Setup steps" steps={SETUP} current="colours" />);
+    expect(steps(container).map(stateOf)).toEqual(['done', 'attention', 'current', 'optional', 'optional', 'upcoming']);
+  });
+
+  test('the current step stays current with a status, and carries the warning glyph when it needs attention', () => {
+    const marked = SETUP.map((step) => (step.id === 'colours' ? { ...step, status: 'attention' as const } : step));
+    const { container } = render(<Stepper label="Setup steps" steps={marked} current="colours" />);
+    const current = steps(container)[2]!;
+    expect(current.getAttribute('aria-current')).toBe('step');
+    expect(current.classList.contains('crewlet-stepper__step--current')).toBe(true);
+    expect(current.classList.contains('crewlet-stepper__step--attention')).toBe(true);
+    expect(current.querySelector('.crewlet-stepper__warning')).not.toBeNull();
+    expect(current.querySelector('.crewlet-stepper__dot')).toBeNull();
+    expect(current.textContent).toBe('Colours, Needs attention');
+  });
+
+  test('in a row the status words are said after the label, since the pill has no room to show them', () => {
+    const { container } = render(<Stepper label="Setup steps" steps={SETUP} current="colours" />);
+    const [, logos, , typography] = steps(container);
+    expect(logos!.textContent).toBe('Logos, Needs attention');
+    expect(logos!.querySelector('.crewlet-stepper__warning')!.getAttribute('aria-hidden')).toBe('true');
+    expect(typography!.textContent).toBe('Typography, Optional');
+    // A row draws no description: the pill carries the label alone.
+    expect(steps(container)[0]!.textContent).toBe('Done Identity');
+  });
+
+  test('the words are the caller’s to translate', () => {
+    const { container } = render(
+      <Stepper
+        label="Schritte"
+        steps={SETUP}
+        current="colours"
+        optionalLabel="Optional, kann übersprungen werden"
+        attentionLabel="Bitte prüfen"
+      />,
+    );
+    expect(steps(container)[1]!.textContent).toBe('Logos, Bitte prüfen');
+    expect(steps(container)[3]!.textContent).toBe('Typography, Optional, kann übersprungen werden');
+  });
+
+  test('refuses "current" on a step that is not current, and a reached step that is none of its steps', () => {
+    const wrong = SETUP.map((step) => (step.id === 'voice' ? { ...step, status: 'current' as const } : step));
+    expect(() => render(<Stepper label="Setup steps" steps={wrong} current="colours" />)).toThrow(
+      /"voice" says it is current, but current is "colours"/,
+    );
+    expect(() =>
+      render(<Stepper label="Setup steps" steps={SETUP} current="colours" reached="launch" onSelect={() => {}} />),
+    ).toThrow(/reached must be the id of one of its steps; "launch"/);
+  });
+});
+
+describe('the column', () => {
+  test('draws a mark, the label, the description and the status words for each step', () => {
+    const { container } = render(<Stepper label="Setup steps" steps={SETUP} current="colours" orientation="vertical" />);
+    expect(container.querySelector('ol')!.classList.contains('crewlet-stepper--vertical')).toBe(true);
+    const [identity, logos, colours, typography, , review] = steps(container);
+    expect(identity!.querySelector('.crewlet-stepper__description')!.textContent).toBe('Name and tagline');
+    expect(identity!.querySelector('.crewlet-stepper__mark .crewlet-stepper__check')).not.toBeNull();
+    expect(logos!.querySelector('.crewlet-stepper__note')!.textContent).toBe('Needs attention');
+    expect(logos!.querySelector('.crewlet-stepper__mark .crewlet-stepper__warning')).not.toBeNull();
+    expect(colours!.querySelector('.crewlet-stepper__mark .crewlet-stepper__dot')).not.toBeNull();
+    expect(typography!.querySelector('.crewlet-stepper__note')!.textContent).toBe('Optional');
+    // A step still to come shows its number, which the list position already
+    // says to a screen reader.
+    const number = review!.querySelector('.crewlet-stepper__number')!;
+    expect(number.textContent).toBe('6');
+    expect(number.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  test('the marks are 20px pills on a hairline the step it leaves draws, so nothing trails the last', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      uninstall?.();
+      uninstall = installThemed(theme, 'Stepper/Stepper.css');
+      cleanup();
+      const palette = themeColours(theme);
+      const { container } = render(<Stepper label="Setup steps" steps={SETUP} current="colours" orientation="vertical" />);
+      const all = steps(container);
+      for (const step of all) {
+        // The row's pill rule never draws in a column.
+        expect(getComputedStyle(pseudoElement(step, 'before')).content, theme).not.toBe('""');
+      }
+      for (const step of all.slice(0, -1)) {
+        const rule = getComputedStyle(pseudoElement(step, 'after'));
+        expect(rule.content, theme).toBe('""');
+        expect(rule.width, theme).toBe('1px');
+        expect(channels(rule.backgroundColor), theme).toEqual(parseHex(palette.get(token('color-border-strong')) ?? ''));
+      }
+      expect(getComputedStyle(pseudoElement(all.at(-1)!, 'after')).content, theme).not.toBe('""');
+    }
+    // The geometry, with the density resolved.
+    uninstall?.();
+    uninstall = installSheets('Stepper/Stepper.css');
+    cleanup();
+    const { container } = render(<Stepper label="Setup steps" steps={SETUP} current="colours" orientation="vertical" />);
+    for (const step of steps(container)) {
+      const mark = step.querySelector('.crewlet-stepper__mark')!;
+      expect(px(mark, 'width'), stateOf(step)).toBe(20);
+      expect(px(mark, 'height'), stateOf(step)).toBe(20);
+      expect(getComputedStyle(mark).borderRadius, stateOf(step)).toBe('999px');
+      expect(getComputedStyle(step.querySelector('.crewlet-stepper__title')!).lineHeight, stateOf(step)).toBe('20px');
+    }
+  });
+
+  test('the current mark is its tone’s pair, a mark needing attention the warning pair, and the words follow the three inks', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      uninstall?.();
+      uninstall = installThemed(theme, 'StatusDot/StatusDot.css', 'Stepper/Stepper.css');
+      cleanup();
+      const palette = themeColours(theme);
+      const { container } = render(
+        <Stepper label="Setup steps" steps={SETUP} current="colours" orientation="vertical" tone="brand" />,
+      );
+      const [identity, logos, colours, , , review] = steps(container);
+      const mark = (step: HTMLElement) => getComputedStyle(step.querySelector('.crewlet-stepper__mark')!);
+      const row = (step: HTMLElement) => getComputedStyle(step.querySelector('.crewlet-stepper__row')!);
+      const hex = (name: string) => parseHex(palette.get(token(name)) ?? '');
+      expect(mark(colours!).backgroundColor, theme).toBe(normalised(palette.get(token('color-brand-accent-soft')) ?? ''));
+      expect(channels(mark(colours!).color), theme).toEqual(hex('color-brand-accent-ink'));
+      expect(mark(logos!).backgroundColor, theme).toBe(normalised(palette.get(token('color-feedback-warning-soft')) ?? ''));
+      expect(channels(mark(logos!).color), theme).toEqual(hex('color-feedback-warning-ink'));
+      expect(channels(row(colours!).color), theme).toEqual(hex('color-text-primary'));
+      expect(channels(row(identity!).color), theme).toEqual(hex('color-text-secondary'));
+      expect(channels(row(review!).color), theme).toEqual(hex('color-text-tertiary'));
+    }
+  });
+});
+
+describe('picking a step', () => {
+  test('visited steps are buttons, and a step not reached yet stays words', () => {
+    render(<Stepper label="Setup steps" steps={SETUP} current="colours" orientation="vertical" onSelect={() => {}} />);
+    expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'Done IdentityName and tagline',
+      'LogosNeeds attention',
+      'Colours',
+    ]);
+  });
+
+  test('every step up to the furthest reached stays a button after walking back', () => {
+    render(
+      <Stepper label="Setup steps" steps={SETUP} current="logos" reached="voice" orientation="vertical" onSelect={() => {}} />,
+    );
+    expect(screen.getAllByRole('button')).toHaveLength(5);
+    expect(screen.queryByRole('button', { name: /Review/ })).toBeNull();
+  });
+
+  test('the current step’s button carries aria-current, and the item it stands in does not', () => {
+    const { container } = render(<Stepper label="Setup steps" steps={SETUP} current="colours" onSelect={() => {}} />);
+    const current = container.querySelectorAll('[aria-current]');
+    expect(current).toHaveLength(1);
+    expect(current[0]!.tagName).toBe('BUTTON');
+    expect(current[0]!.getAttribute('aria-current')).toBe('step');
+    expect(current[0]!.getAttribute('type')).toBe('button');
+  });
+
+  test('a press, Enter or Space picks the step by its id', async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(<Stepper label="Setup steps" steps={SETUP} current="colours" orientation="vertical" onSelect={onSelect} />);
+    await user.click(screen.getByRole('button', { name: /Identity/ }));
+    expect(onSelect).toHaveBeenLastCalledWith('identity');
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Logos/ }));
+    await user.keyboard('{Enter}');
+    expect(onSelect).toHaveBeenLastCalledWith('logos');
+    await user.tab();
+    await user.keyboard(' ');
+    expect(onSelect).toHaveBeenLastCalledWith('colours');
+    // The next tab leaves the stepper: no stop on a step not reached.
+    await user.tab();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  test('in a row a picked pill keeps the design’s geometry, and every step rings inside its own box', () => {
+    uninstall = installSheets('Stepper/Stepper.css');
+    const { container } = render(<Stepper label="Setup steps" steps={SETUP} current="colours" onSelect={() => {}} />);
+    for (const button of container.querySelectorAll<HTMLElement>('.crewlet-stepper__target')) {
+      expect(button.classList.contains('crewlet-stepper__chip')).toBe(true);
+      expect(px(button, 'height')).toBe(20);
+      expect(getComputedStyle(button).fontSize).toBe('11px');
+    }
+  });
+
+  test('carries no axe violation as a rail of buttons and as a row of them', async () => {
+    const { container } = render(
+      <main>
+        <h1>Set up your brand</h1>
+        <nav aria-label="Setup steps">
+          <Stepper label="Setup steps" steps={SETUP} current="colours" orientation="vertical" onSelect={() => {}} />
+        </nav>
+        <Stepper label="Setup progress" steps={SETUP} current="colours" reached="voice" onSelect={() => {}} />
+      </main>,
+    );
+    const result = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
   });
 });
 

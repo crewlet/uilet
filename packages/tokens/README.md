@@ -67,9 +67,27 @@ if (text && ground) {
 | `contrast(a, b)` | The WCAG 2 ratio between two opaque colours, from 1 to 21, in either order. Unrounded: compare the raw ratio with a floor, and round only to display it, because a ratio that passes only once rounded does not pass. |
 | `luminance(rgb)` | WCAG relative luminance, from 0 to 1. |
 | `WCAG_CONTRAST` | The floors, frozen: `aa` 4.5 and `aaa` 7 for body text, `aaLarge` 3 and `aaaLarge` 4.5 for large text (24px, or 18.66px bold); `aaLarge` is also the floor for a graphical mark and a control's boundary. |
+| `nearestContrastShade(hex, ground, min)` | The colour nearest `hex` that clears `min` against `ground`, as lowercase `#rrggbb`, or `null` when no shade of it can (or either value is not `#rrggbb`). Only its OKLab lightness moves, in both directions, and the nearer passing shade wins; its hue is kept, and its chroma gives way only where a screen cannot show it. A colour that already clears the floor comes back unchanged. The floor is held on the rounded value it returns. |
 | `Rgb` | The type of a colour as channels from 0 to 255. |
 
-The implementation is `src/color.ts`, built to `dist/color.js`. The published palette suite imports it from there and re-exports it, and the token build reads the same source to derive each palette's tints, so there is one copy of the maths.
+The implementation is `src/color.ts`, built to `dist/color.js`. The published palette suite imports it from there and re-exports it (the OKLab conversions included), and the token build reads the same source to derive each palette's tints, so there is one copy of the maths.
+
+When a pair falls short, offer the nearest shade rather than a verdict alone. It keeps the colour a person chose, so accepting it is a correction rather than a repaint:
+
+```ts
+import { WCAG_CONTRAST, contrast, nearestContrastShade, parseHex } from '@crewlethq/tokens';
+
+nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aa);      // '#007f7f', 4.51:1
+nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aaLarge); // '#00a0a0', 3.00:1
+```
+
+Show the ratio of the value it returns, measured with `contrast`, rather than the floor it was asked for.
+
+## Changed in 0.50.0: the nearest shade that clears a floor
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| `@crewlethq/tokens` exports `nearestContrastShade(hex, ground, min)`, the colour nearest `hex` (same hue, lightness moved) that clears `min` against `ground`, or `null`. In `@crewlethq/tokens/test/palette`, `toOklab`, `oklabToLinear`, `fromOklab` and `hex` are now the runtime module's functions, re-exported, with the same signatures and results. | Nothing. Replace a suggestion helper of your own with it. | [Contrast at runtime](#contrast-at-runtime) |
 
 ## Changed in 0.49.0: contrast at runtime, the brand kind and the brand mapping
 
