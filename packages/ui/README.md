@@ -204,6 +204,26 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.51.0
+
+Polish of the setup wizard pieces, and the parts the brand setup asked for.
+
+**`ColorField` draws its `#` and reads more than six digits.** The `#` is drawn at the start of the field, so a person types the six hex digits alone, and a pasted `#rrggbb` loses its own `#` to it. When the reader leaves the field (Enter or Tab), `rrggbb`, the three digit shorthand and `rgb(r, g, b)` or `rgb(r g b)` are normalised to lowercase `#rrggbb`; anything else is refused with one sentence. Six digits are still reported as they are typed, and `onChange` still receives only a colour, or `''` for an emptied optional field. What to change: a test that reads the text field's value reads the six digits without the `#`. The default `labels.invalid` and `labels.placeholder` changed, and `labels.prefix` is new.
+
+**`ContrastHelp` is new**: a small info button beside a contrast heading that opens a short panel saying what AA, AAA and Low or Fails mean, each drawn as `ContrastBadge` draws it. It is a `Popover` the button toggles, so it opens by touch and from the keyboard, and closes on Escape with focus handed back. Place it beside the heading, not inside it. `ContrastLevelTag` is the one drawing of a level, shared by the badge and the panel.
+
+**`ColorChip` is new**: a colour as a small decorative chip (12px `xs` or 16px `sm`, round or square) with an edge of its own and the hatch of no colour, for the mark on a button that applies a suggested colour.
+
+**`SetupWizard` takes `footerStart` and `wide`.** `footerStart` stands at the start of the footer row (the way out), with `footer`, the step's actions, held at its end. `wide` lets a step that lays out columns of its own take the whole width beside the rail. A wizard with no `aside` no longer holds an empty 320px column from 70rem.
+
+**`Callout`'s actions stand one step apart.** The action slot is a wrapping row with the kit's step between, so two actions never draw touching.
+
+**`EditingStatus` reads cleanly.** Its text is "Draft Saved 24s ago", drawn "Draft · Saved 24s ago": no hidden comma and no second "Saved". The live region holds only the label and the state, and the time follows it in a `time` element outside the region, so it is shown and never announced. What to change: `labels.saved` is now the word alone (`'Saved'`), and `labels.savedSpoken` is gone. A test that reads `getByRole('status')` reads the label and the state only.
+
+**`ListInput` ends its new-item row with an Add button.** The add control no longer floats beside the legend as a `+` square: it is a text button at the end of the box's own row, with or without a shown legend, beside Enter. It shows `addText` ("Add") and is named by `addLabel` ("Add policy").
+
+**Folder tiles are set on the artifact card's type scale.** A `FolderTile`'s name and facts take a gallery card's title and facts steps at every width, on one 1.35 line height with the card's step between; a row, and a tile on a phone, no longer drop to smaller steps beside cards that keep theirs. `ArtifactCard`'s gallery facts take the title's line height. `ArtifactNameCell` is unchanged: a folder's row in the list is set as every artifact's row there.
+
 ## Changes in 0.50.0
 
 The pieces of a setup a person walks step by step, first used by the brand setup.
