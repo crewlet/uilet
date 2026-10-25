@@ -54,7 +54,7 @@ export interface SidePanelBaseProps {
   closeLabel: string;
   actions?: ReactNode;
   footer?: ReactNode;
-  /** Whether the body drops its inset, for content that draws its own. */
+  /** Whether the body drops its inset and its scrolling, for content that owns both. */
   flush?: boolean | undefined;
   initialFocus?: SidePanelInitialFocus | undefined;
   /** Whether the heading draws the focus ring when it holds focus. */

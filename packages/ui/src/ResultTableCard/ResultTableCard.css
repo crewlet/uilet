@@ -1,8 +1,7 @@
 /*
  * A result in a card. The card, its head and its foot are StatusCard's and
  * the table is Table's, drawn flush; what a result adds is the column model:
- * the first column takes the room the figures leave and ends a long name in
- * an ellipsis, and the figures never wrap.
+ * a text column wraps between words, and the figures never wrap.
  */
 .crewlet-result-table-card__table .crewlet-table__table {
   table-layout: auto;
@@ -15,18 +14,18 @@
  * letter, so "Product Manager" stacked letter by letter beside columns with
  * room to spare. Breaking at words keeps a column as wide as its longest
  * word, and a word wider than the card still breaks rather than overflow.
+ *
+ * THE NAME WRAPS TOO. The first column used to end a long name in an
+ * ellipsis on one line, and a result's row is not a link and its cell has no
+ * title, so in a 358px panel "Write the MVP plan" read "Write the MVP ..."
+ * with no way to reach the rest. It takes no width of its own: the auto
+ * layout gives each column the room its words ask for, so the name, the
+ * longest text, takes the most and wraps between words, and a short column
+ * beside it keeps its line where there is room. A `width: 100%` on it would
+ * squeeze every other text column to its longest word.
  */
 .crewlet-result-table-card__table td {
   overflow-wrap: break-word;
-}
-
-.crewlet-result-table-card__table td:first-child {
-  width: 100%;
-  max-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow-wrap: normal;
 }
 
 .crewlet-result-table-card__table .crewlet-table__cell--end {

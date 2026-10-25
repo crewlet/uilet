@@ -205,6 +205,14 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.57.2
+
+**`ResultTableCard`'s first column wraps rather than cutting a long name.** It ended a long name in an ellipsis on one line, and a result's row is not a link and its cell has no title, so in a 358px assistant panel "Write the MVP plan and the first sprint" read "Write the MVP ..." with no way to read the rest. The first column now wraps between words like every other text cell and takes no width of its own, so the automatic layout shares the room by content: the name takes the most, and a short column beside it keeps its line where there is room. Figures and dates (`end` columns) still stay on one line. A host that gave the cell its own tooltip because the name was cut can drop it.
+
+**`ChatThread`'s scroller is the containing block for what is positioned inside it.** An absolutely positioned descendant with no positioned ancestor of its own, such as a `VisuallyHidden` phrase inside a `Tag` ("Sent with"), was placed against the thread instead of its scroller: outside the scroller's clip, at its spot in the whole conversation. That gave whatever held the thread overflow to scroll (a flush `SidePanel` body read a scroll height of 4752px around a 557px thread), and a focus inside could scroll it, lifting the thread off the panel's foot over a blank band that no wheel or Jump to latest brought back. Such a descendant now scrolls and clips with the conversation.
+
+**A flush `SidePanel` body does not scroll** (`flush`). It clips (`overflow: clip`) where it scrolled, so a focus, `scrollIntoView` or a script inside it cannot move it: what it holds owns its scrolling, as `ChatThread` does. `overflow: hidden` would not do, since a hidden box is still a scroll container that a focus can scroll. Content in a flush body that may be taller than the panel scrolls itself (`min-height: 0` in the body's column) or does not take `flush`.
+
 ## Changes in 0.57.1
 
 **`ResultTableCard` keeps words whole.** Its text cells inherited Table's `overflow-wrap: anywhere`, which under the card's automatic layout let a column shrink to one letter, so "Product Manager" wrapped letter by letter beside columns with room to spare. Its cells now break between words (`overflow-wrap: break-word`); figures and dates (`end` columns) stay on one line, and the first column still ends a long name in an ellipsis.

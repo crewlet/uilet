@@ -157,11 +157,19 @@
   overscroll-behavior: contain;
 }
 
-/* FLUSH, the body draws no inset of its own: what it holds owns its edges
-   (a chat thread that scrolls and insets itself). The published inset reads 0
-   inside it, so anything that offsets itself by the inset follows. */
+/* FLUSH, the body draws no inset of its own and does not scroll: what it
+   holds owns its edges and its scrolling (a chat thread that scrolls and
+   insets itself, shrunk to the body by `min-height: 0`). The published inset
+   reads 0 inside it, so anything that offsets itself by the inset follows.
+
+   CLIPPED, NOT SCROLLABLE. `overflow: hidden` would still be a scroll
+   container, which a focus, `scrollIntoView` or a script can scroll; a flush
+   body that was scrolled 238px lifted its thread off the panel's foot and
+   left a blank band no wheel could reach. `clip` is not a scroll container,
+   so nothing moves it. */
 .crewlet-side-panel__body--flush {
   --crewlet-side-panel-inset: 0px;
+  overflow: clip;
 }
 
 /* THE FOOT holds the panel's own commit, outside the scrolling body, so it

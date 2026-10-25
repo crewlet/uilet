@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
-import { BotGlyph, PencilGlyph, RotateCcwClockGlyph } from '@crewlethq/icons/glyphs';
+import { BotGlyph, LayoutDashboardGlyph, PencilGlyph, RotateCcwClockGlyph } from '@crewlethq/icons/glyphs';
 import {
   Button,
   ChatThread,
@@ -14,8 +14,10 @@ import {
   SidePanel,
   SidePanelFrame,
   Stack,
+  Tag,
   Text,
   Textarea,
+  VisuallyHidden,
   useStoredWidth,
   type SidePanelShape,
 } from '@crewlethq/ui';
@@ -52,18 +54,40 @@ function Content({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-/** A conversation for the flush body: the thread scrolls and insets itself. */
-function Thread() {
+/**
+ * A conversation for the flush body: the thread scrolls and insets itself.
+ * With `sentWith`, each question carries the page it was sent with, a tag
+ * whose first words are visually hidden, and the thread ends on a control
+ * to focus.
+ */
+function Thread({ sentWith = false }: { sentWith?: boolean }) {
   return (
     <ChatThread label="Conversation">
-      {ROWS.slice(0, 6).flatMap((row, index) => [
+      {ROWS.slice(0, sentWith ? 12 : 6).flatMap((row, index) => [
         <MessageBubble key={`q${index}`} from="self">
           What does this say? ({index + 1})
         </MessageBubble>,
+        ...(sentWith
+          ? [
+              <div key={`s${index}`} style={{ alignSelf: 'flex-end' }}>
+                <Tag size="xs" appearance="outline" leadingIcon={<LayoutDashboardGlyph size="xs" />}>
+                  <VisuallyHidden>Sent with </VisuallyHidden>
+                  Knowledge
+                </Tag>
+              </div>,
+            ]
+          : []),
         <Prose key={`a${index}`} measure="narrow">
           <p>{row}.</p>
         </Prose>,
       ])}
+      {sentWith ? (
+        <div>
+          <Button variant="primary" size="small">
+            Approve
+          </Button>
+        </div>
+      ) : null}
     </ChatThread>
   );
 }
@@ -72,10 +96,12 @@ function Demo({
   shape,
   focusComposer = false,
   thread = false,
+  sentWith = false,
 }: {
   shape?: SidePanelShape;
   focusComposer?: boolean;
   thread?: boolean;
+  sentWith?: boolean;
 }) {
   const [open, setOpen] = useState(true);
   const stored = useStoredWidth({ key: 'crewlet.storybook.side-panel.width', min: SIDE_PANEL_MIN_WIDTH, max: SIDE_PANEL_MAX_WIDTH });
@@ -107,7 +133,7 @@ function Demo({
               footer={<Textarea ref={composer} aria-label="Message" rows={2} placeholder="Ask about this page" />}
             >
               {thread ? (
-                <Thread />
+                <Thread sentWith={sentWith} />
               ) : (
                 <Stack gap={3}>
                   <Text>The head stands at the page bar's height. The body scrolls under it, and the foot stays in reach.</Text>
@@ -159,6 +185,15 @@ export const FocusToTheComposer: Story = { render: () => <Demo shape="column" fo
  * two and its scrollbar stands on the panel's edge.
  */
 export const FlushBodyForAThread: Story = { render: () => <Demo shape="column" thread /> };
+
+/**
+ * A TALL THREAD WHOSE QUESTIONS CARRY A TAG with visually hidden words, the
+ * shape that once left the flush body scrollable: the hidden words escaped
+ * the thread's clip and gave the body thousands of pixels to scroll. Tab to
+ * Approve at the end, or scroll the thread: the thread moves, and the body
+ * stays where it is, on the composer's hairline with no blank band under it.
+ */
+export const FlushBodyStaysPut: Story = { render: () => <Demo shape="column" thread sentWith /> };
 
 /** Every shape from one control. */
 export const Shapes: Story = {

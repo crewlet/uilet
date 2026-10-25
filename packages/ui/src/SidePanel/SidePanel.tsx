@@ -45,12 +45,13 @@ export interface SidePanelProps {
    */
   footer?: ReactNode;
   /**
-   * Drops the body's inset, for content that owns its own edges: a
+   * Drops the body's inset and its scrolling, for content that owns both: a
    * `ChatThread`, which scrolls itself and insets its own items, so its
-   * scrollbar stands on the panel's edge and the inset is not drawn twice; or
-   * a table whose rules meet the panel's sides. `--crewlet-side-panel-inset`
-   * reads 0 inside the body, so a sticky foot that offsets itself by the
-   * inset still sits on the edge.
+   * scrollbar stands on the panel's edge and the inset is not drawn twice.
+   * The body clips (`overflow: clip`) rather than scrolls, so a focus or a
+   * script inside cannot move it; content that may be taller than the panel
+   * scrolls itself (`min-height: 0` in the body's column, as `ChatThread`
+   * does). `--crewlet-side-panel-inset` reads 0 inside the body.
    */
   flush?: boolean | undefined;
   /**

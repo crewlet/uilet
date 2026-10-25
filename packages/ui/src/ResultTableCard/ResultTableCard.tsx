@@ -62,9 +62,10 @@ export interface ResultTableCardProps extends Omit<HTMLAttributes<HTMLElement>, 
  * the page the rows come from.
  *
  * THE CARD IS THE FRAME. The table draws no edge of its own and its outer
- * cells take the card's inset, so every row lines up with the title. The
- * first column takes the room the figures leave and ends a long name in an
- * ellipsis; a host that cuts names gives the cell its own tooltip.
+ * cells take the card's inset, so every row lines up with the title. A text
+ * cell, the first column's name included, wraps between words, so the whole
+ * of it is read at any width; figures and dates (`end` columns) stay on one
+ * line.
  *
  * A FOOT OF UTILITIES, so it starts on the card's text edge: the downloads
  * first (their ghost padding pulled out so the first glyph sits on that edge)
