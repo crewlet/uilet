@@ -567,6 +567,14 @@
     padding: var(--spacing-1);
   }
 
+  /* A LIST BOX'S ROWS START WHERE EVERY FIELD'S VALUE DOES. The box keeps the
+     small inset a picked row's fill reaches to, and each row takes the rest
+     of the field's inset: on the browser's own 2px a row's words stood 6px
+     left of the value in every field above and below. */
+  &:is(select):where([multiple], [size]:not([size='1'])) > &:is(option) {
+    padding-inline: calc(var(--spacing-3) - var(--spacing-1));
+  }
+
   /* A box, a dot, a slider and a bar take the accent and keep the browser's
      own drawing, which the theme's colour scheme already paints. */
   &:is(input):where([type='checkbox'], [type='radio']) {

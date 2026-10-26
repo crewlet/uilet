@@ -57,7 +57,7 @@ const PAGE_CSS = `
   .row { display: flex; flex-wrap: wrap; gap: var(--spacing-3); align-items: center; margin-block-start: var(--spacing-4); }
   .primary { padding: var(--spacing-2) var(--spacing-4); border-radius: var(--radius-md); background: var(--color-brand-accent); color: var(--color-text-on-accent); }
   .primary:hover { background: var(--color-brand-accent-hover); }
-  .chip { padding: var(--spacing-1) var(--spacing-3); border-radius: var(--radius-full); background: var(--color-brand-accent-soft); color: var(--color-brand-accent-ink); border: 1px solid var(--color-border-selected); }
+  .chip { padding: var(--spacing-1) var(--spacing-3); border-radius: var(--radius-pill); background: var(--color-brand-accent-soft); color: var(--color-brand-accent-ink); border: 1px solid var(--color-border-selected); }
   .card { padding: var(--spacing-4); border-radius: var(--radius-lg); background: var(--color-surface-subtle); border: 1px solid var(--color-border-default); }
   .band { padding: var(--spacing-4); border-radius: var(--radius-lg); background: var(--brand-dark-ground, var(--color-surface-scrim)); }
 `;
@@ -71,6 +71,14 @@ const PAGE_BODY = `
     <span class="chip">Selected</span>
     <span class="crewlet-logo" data-variant="mark" data-size="sm" role="img" aria-label="Acme"></span>
   </div>
+`;
+
+/**
+ * The dark band and the logo drawn for it, on a page whose brand has that
+ * logo. Without one the logo draws nothing, and the band stood empty as a
+ * grey block under the row.
+ */
+const DARK_BAND = `
   <div class="row"><div class="band"><span class="crewlet-logo" data-variant="on-dark" role="img" aria-label="Acme"></span></div></div>
 `;
 
@@ -97,7 +105,7 @@ function useAppearance() {
 function BrandedPage({ brand }: { brand: BrandName }) {
   const { theme, palette } = useAppearance();
   const attributes = `${theme ? ` data-theme="${theme}"` : ''}${palette ? ` data-palette="${palette}"` : ''}`;
-  const page = `<!doctype html><html lang="en"${attributes}><head><meta charset="utf-8"><style>${KIT_CSS}\n${BRANDS[brand]}\n${PAGE_CSS}</style></head><body>${PAGE_BODY}</body></html>`;
+  const page = `<!doctype html><html lang="en"${attributes}><head><meta charset="utf-8"><style>${KIT_CSS}\n${BRANDS[brand]}\n${PAGE_CSS}</style></head><body>${PAGE_BODY}${BRANDS[brand].includes('--brand-logo-on-dark:') ? DARK_BAND : ''}</body></html>`;
   return <iframe title={`An artifact page in the ${brand} brand`} srcDoc={page} style={{ width: '100%', height: 380, border: 0, borderRadius: 12 }} />;
 }
 

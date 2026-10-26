@@ -51,8 +51,12 @@
   padding: var(--spacing-3);
 }
 
+/* THE TILE CENTRES ON THE TITLE'S LINE. The tile is a control step tall and
+   the title one line, so with both at the row's top the tile's middle stood
+   3px under the title's. The body is lowered by half of what the tile is
+   taller than a line, and the tile keeps its corner inset. */
 .crewlet-artifact-card--compact .crewlet-artifact-card__body {
-  padding: 0;
+  padding: max(0px, calc((var(--size-control-md) - 1lh) / 2)) 0 0;
 }
 
 .crewlet-artifact-card__title-row {
@@ -80,24 +84,50 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
+  /* Clips the strip each line lays its first dot in (below). Horizontal
+     only, so nothing above or below a line is cut. */
+  overflow-x: clip;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
 }
 
+/*
+ * THE FACTS OF ONE LINE ARE A RUN, "Sheet · OPS · v12", each opened by a
+ * quiet dot, so two short words never read as one phrase.
+ *
+ * A LINE NEVER OPENS ON A DOT, as a folder tile's never does (FolderTile.css).
+ * A dot typed before every fact but the first opened each line the run broke
+ * onto with one: "· 14 changes since you looked" under "2 here now". Every
+ * fact carries its dot in the separator's width before it instead, and the run
+ * is drawn that width to the left of the facts' own edge, which clips the
+ * overhang, so the first fact of every line lays its dot in the clipped strip.
+ * The separator is a step of air each side of the dot, the gap and margin the
+ * typed dot stood between.
+ */
 .crewlet-artifact-card__line {
+  --crewlet-artifact-card-separator: var(--spacing-5);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-1) var(--spacing-2);
+  row-gap: var(--spacing-1);
   min-width: 0;
+  margin-inline-start: calc(-1 * var(--crewlet-artifact-card-separator));
 }
 
-/* THE FACTS OF ONE LINE ARE A RUN, "Sheet · OPS · v12", each after the first
-   opened by a quiet dot, so two short words never read as one phrase. */
-.crewlet-artifact-card__line > * + *::before {
+/* Words for assistive technology alone are not facts on the line. */
+.crewlet-artifact-card__line > :not(.crewlet-visually-hidden) {
+  position: relative;
+  padding-inline-start: var(--crewlet-artifact-card-separator);
+}
+
+.crewlet-artifact-card__line > :not(.crewlet-visually-hidden)::before {
   content: '·';
-  margin-inline-end: var(--spacing-2);
+  content: '·' / '';
+  position: absolute;
+  inset-inline-start: 0;
+  width: var(--crewlet-artifact-card-separator);
   color: var(--color-text-tertiary);
+  text-align: center;
 }
 
 .crewlet-artifact-card__owner,
@@ -106,6 +136,13 @@
   align-items: center;
   gap: var(--spacing-1);
   min-width: 0;
+}
+
+/* THE STACK'S CUT-OUT IN THE CARD'S OWN GROUND, which both sizes paint. Left
+   at the sheet's colour (the stack's default), every badge wore a band of a
+   darker grey on the card. */
+.crewlet-artifact-card__presence > .crewlet-avatar-stack {
+  --crewlet-avatar-stack-ground: var(--color-surface-subtle);
 }
 
 .crewlet-artifact-card__changes {
@@ -127,6 +164,9 @@
  * the preview inside it never moves.
  */
 .crewlet-artifact-card--card {
+  /* THE BADGE'S SQUARE, which the selection box opposite it is drawn in too,
+     and half of which both stand over the preview's foot by. */
+  --crewlet-artifact-card-badge: 32px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -160,6 +200,10 @@
 }
 
 .crewlet-artifact-card__preview {
+  /* How far the badge and the box stand up into the preview from its foot,
+     for a cover whose content runs to its foot (DashboardCover.css) to keep
+     clear of. */
+  --crewlet-artifact-cover-foot: calc(var(--crewlet-artifact-card-badge) / 2);
   position: relative;
   display: flex;
   aspect-ratio: 16 / 9;
@@ -187,7 +231,9 @@
 /*
  * THE KIND'S BADGE STANDS ON THE PREVIEW'S FOOT, half over the picture and
  * half over the card, the glyph in the kind's ink: what the artifact is, read
- * before its title, in the one place every card has it.
+ * before its title, in the one place every card has it. Exactly half, as the
+ * selection box opposite it stands: risen 2px past half, the badge stood 2px
+ * higher than its twin on the same seam.
  */
 .crewlet-artifact-card__badge {
   position: relative;
@@ -196,9 +242,9 @@
   align-items: center;
   justify-content: center;
   align-self: flex-start;
-  width: 32px;
-  height: 32px;
-  margin-top: -18px;
+  width: var(--crewlet-artifact-card-badge);
+  height: var(--crewlet-artifact-card-badge);
+  margin-top: calc(var(--crewlet-artifact-card-badge) / -2);
   margin-bottom: var(--spacing-2);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
@@ -312,8 +358,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: var(--crewlet-artifact-card-badge);
+  height: var(--crewlet-artifact-card-badge);
   box-sizing: border-box;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);

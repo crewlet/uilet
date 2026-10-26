@@ -7,6 +7,12 @@
 .crewlet-artifact-access {
   display: inline-flex;
   align-items: center;
+  /* TOP-ALIGNED ON ITS LINE, as a table cell's entity is (TableCells.css). On
+     the baseline the label took its glyph's, which has no text and stands on
+     its bottom edge, so in a list's Access column the word rode 1.4px over
+     the cell's middle and the owner's name beside it. A box one line tall,
+     set at the line's top, fills the line. */
+  vertical-align: top;
   gap: calc(var(--spacing-1) * 1.5);
   min-width: 0;
   max-width: 100%;

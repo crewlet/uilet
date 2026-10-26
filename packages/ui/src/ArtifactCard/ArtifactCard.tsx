@@ -361,13 +361,19 @@ export function ArtifactCard({
 export function ArtifactCardSkeleton({ className }: { className?: string | undefined }) {
   return (
     <div className={cx('crewlet-artifact-card', 'crewlet-artifact-card--card', 'crewlet-artifact-card--skeleton', className)} aria-hidden>
+      {/* NO MARGIN OF THE BOX'S OWN over the picture: its default 32px top
+          margin left a band of bare ground there. */}
       <span className="crewlet-artifact-card__preview">
-        <Skeleton variant="box" width="100%" height="100%" borderRadius={0} />
+        <Skeleton variant="box" width="100%" height="100%" borderRadius={0} marginTop={0} />
       </span>
       <span className="crewlet-artifact-card__body">
         <span className="crewlet-artifact-card__badge" />
-        <Skeleton variant="box" width="62%" height={18} borderRadius="var(--radius-sm)" />
-        <Skeleton variant="box" width="38%" height={12} borderRadius="var(--radius-sm)" marginTop={6} />
+        {/* EACH BAR CENTRED IN THE LINE IT STANDS IN FOR, the title's (16px
+            at 1.35) and the facts' (the owner's 20px badge), so the card that
+            arrives takes the placeholder's height. The box's default 32px top
+            margin stood the title's bar 32px under a card's title. */}
+        <Skeleton variant="box" width="62%" height={18} borderRadius="var(--radius-sm)" marginTop={2} marginBottom={2} />
+        <Skeleton variant="box" width="38%" height={12} borderRadius="var(--radius-sm)" marginTop={4} marginBottom={4} />
       </span>
     </div>
   );

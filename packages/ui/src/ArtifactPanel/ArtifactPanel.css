@@ -26,7 +26,21 @@
   --crewlet-artifact-panel-width: 36rem;
 }
 
-/* The heading rings when the keyboard reaches it, as it always has here. */
+/*
+ * THE HEADING RINGS WHEN THE KEYBOARD REACHES IT, as it always has here,
+ * inside its own box and round the words alone. The box had no inset of its
+ * own, so the ring crossed the title's first letter and its descenders, and it
+ * grew to the actions, so a one-word title was ringed across the whole head.
+ * It takes a step of inset now, given back by an equal margin so the words
+ * stand where they did, and the width of its words: the actions keep the end
+ * (`margin-left: auto`), and a long title still shrinks and is cut.
+ */
+.crewlet-side-panel__title.crewlet-artifact-panel__title {
+  flex: 0 1 auto;
+  margin: calc(-1 * var(--spacing-1));
+  padding: var(--spacing-1);
+}
+
 .crewlet-side-panel__title.crewlet-artifact-panel__title:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);

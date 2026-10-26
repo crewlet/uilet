@@ -5,9 +5,16 @@
  * the shared .crewlet-artifact-cover in ArtifactCover.css.
  */
 
+/*
+ * ONE STEP OF AIR ROUND THE FIGURES AND BETWEEN THEM, which also keeps a
+ * figure's corner concentric with the card's: the preview's 16px corner less
+ * this inset is the 8px corner a figure takes. At a 12px inset the figures'
+ * corners stood 2px wide of the card's curve.
+ */
 .crewlet-dashboard-cover {
+  --crewlet-dashboard-cover-inset: var(--spacing-2);
   height: 100%;
-  padding: var(--spacing-3);
+  padding: var(--crewlet-dashboard-cover-inset);
   color: var(--color-text-tertiary);
 }
 
@@ -57,29 +64,6 @@
   max-width: 50%;
   overflow: hidden;
   color: var(--color-text-primary);
-  font-size: var(--font-size-lg);
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--font-line-height-tight);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.crewlet-dashboard-cover__source {
-  overflow: hidden;
-  font-size: var(--font-size-xs);
-  line-height: var(--font-line-height-snug);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.crewlet-dashboard-cover__label {
-  color: var(--color-text-secondary);
-}
-
-.crewlet-dashboard-cover__value {
-  overflow: hidden;
-  color: var(--color-text-primary);
   font-size: var(--font-size-xl);
   font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-semibold);
@@ -99,6 +83,19 @@
   grid-auto-rows: minmax(0, 1fr);
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--spacing-2);
+}
+
+/*
+ * CLEAR OF THE CARD'S BADGE. In a gallery card the kind's badge, and the
+ * selection box opposite it, stand up into the preview from its foot
+ * (`--crewlet-artifact-cover-foot`, set by ArtifactCard), and the figures and
+ * the schematic fill the cover down to its foot, so the badge was drawn over
+ * the corner of the last row. Their bottom inset is measured from the badge's
+ * top edge instead; on its own the cover keeps one inset all round.
+ */
+.crewlet-dashboard-cover--stats,
+.crewlet-dashboard-cover--layout {
+  padding-bottom: calc(var(--crewlet-dashboard-cover-inset) + var(--crewlet-artifact-cover-foot, 0px));
 }
 
 .crewlet-dashboard-cover__block {
