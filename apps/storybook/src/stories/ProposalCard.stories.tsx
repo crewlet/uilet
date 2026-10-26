@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { ProposalCard, type ChangeListRow, type ProposalCardProps, type ProposalState } from '@crewlethq/ui';
+import { CodeBlock, ProposalCard, type ChangeListRow, type ProposalCardProps, type ProposalState } from '@crewlethq/ui';
+import { themeScope } from '../themeScope';
 
 /**
  * A change prepared for the person to approve, and what became of it. The
@@ -109,6 +110,28 @@ const edit: Omit<ProposalCardProps, 'state'> = {
   onDecline: () => {},
 };
 
+const removeSeat: Omit<ProposalCardProps, 'state'> = {
+  title: 'Remove seat QA Engineer',
+  subtitle: 'Saved for the company',
+  tone: 'danger',
+  summary: 'Remove the QA Engineer seat from the Core unit. Its open tasks go back to the unit lead.',
+  changes: [
+    { kind: 'fact', label: 'Unit', value: 'Core' },
+    { kind: 'removed', label: 'Seat', from: 'QA Engineer' },
+  ],
+  note: 'You can bring the seat back from the configuration history.',
+  approveLabel: 'Remove seat',
+  receipt: 'Removed the QA Engineer seat from Core',
+  onApprove: () => {},
+  onDecline: () => {},
+};
+
+const removeConfirmation = { label: 'I understand the QA Engineer seat stops working in Core' };
+
+const removeDetails = (
+  <CodeBlock language="http" code={'PUT /config/units/core\n\n{ "roles": ["lead", "swe", "pm"] }'} />
+);
+
 export const PageLocalPending: Story = { args: { ...filter, state: 'pending' } };
 export const ServerPending: Story = { args: { ...create, state: 'pending' } };
 export const StepUp: Story = { args: { ...share, state: 'stepup' } };
@@ -202,3 +225,60 @@ export const Interactive: Story = { render: () => <Walkthrough /> };
 
 /** The same walk, with no receipt: focus lands on the card itself when it is saved. */
 export const InteractiveWithoutReceipt: Story = { render: () => <Walkthrough receipt={false} /> };
+
+/**
+ * DANGER: a change that removes something. The danger rail runs down the
+ * leading edge, the title is in the danger ink and the primary is the danger
+ * button; the Tag still says the state.
+ */
+export const Danger: Story = { args: { ...removeSeat, state: 'pending' } };
+
+/** The same card once declined: a settled card steps back, with no danger tone. */
+export const DangerDeclined: Story = { args: { ...removeSeat, state: 'declined' } };
+
+/**
+ * WITH A CONFIRMATION: the primary is held, described by why, until the box
+ * above the decision is ticked. Tick it to arm Remove seat.
+ */
+export const WithConfirmation: Story = {
+  args: { ...removeSeat, state: 'pending', confirmation: removeConfirmation },
+};
+
+/** WITH DETAILS: the precise request, folded under "Technical details" and collapsed by default. */
+export const WithDetails: Story = { args: { ...create, state: 'pending', details: removeDetails } };
+
+/** EVERYTHING TOGETHER: the danger tone, a confirmation and the technical details. */
+export const DangerCombined: Story = {
+  args: { ...removeSeat, state: 'pending', confirmation: removeConfirmation, details: removeDetails },
+};
+
+/**
+ * THE COMBINED CARD IN BOTH PALETTES, light over dark at the card's own
+ * width, each panel painted by `themeScope` (the theme layer paints on the
+ * root alone, so a data-theme on a panel would paint nothing).
+ */
+export const DangerCombinedBothThemes: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)' }}>
+      {(['light', 'dark'] as const).map((theme) => (
+        <div
+          key={theme}
+          style={{
+            ...themeScope(theme),
+            background: 'var(--color-surface-background)',
+            color: 'var(--color-text-primary)',
+            padding: 'var(--spacing-5)',
+            borderRadius: 'var(--radius-lg)',
+          }}
+        >
+          <ProposalCard
+            {...removeSeat}
+            state="pending"
+            confirmation={removeConfirmation}
+            details={removeDetails}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+};
