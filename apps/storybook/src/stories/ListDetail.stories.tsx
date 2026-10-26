@@ -52,5 +52,20 @@ const meta: Meta<typeof ListDetail> = {
 export default meta;
 type Story = StoryObj<typeof ListDetail>;
 
-/** A list beside the chosen item's detail. Below 640px only the pane `showing` names is drawn. */
+/** A list beside the chosen item's detail. Below 640px of its own width only the pane `showing` names is drawn. */
 export const Basic: Story = {};
+
+/**
+ * In a column 443px wide, on any window: what a screen is left beside an
+ * aside the reader dragged wide. It folds by its own width, so the detail
+ * takes the column rather than drawing 130px beside the list.
+ */
+export const NarrowColumn: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ width: 443 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};

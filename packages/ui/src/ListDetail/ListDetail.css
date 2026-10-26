@@ -1,6 +1,15 @@
 /*
  * ListDetail: a list beside the detail of what is chosen in it, each scrolling
- * on its own in the height it is given, one pane on a phone (ListDetail.tsx).
+ * on its own in the height it is given, one pane where it is narrow
+ * (ListDetail.tsx).
+ *
+ * IT FOLDS BY ITS OWN WIDTH, NOT THE WINDOW'S. The root is an inline-size
+ * container and the panes are its child, so the fold answers how wide THIS
+ * list and detail are: beside an aside the reader opened (the assistant) a
+ * 1375px window can leave the screen 443px, and a fold that asked the window
+ * drew the detail 130px wide beside a 17rem list. The phone rule below is the
+ * one decision that stays the window's: on a phone the page scrolls as a
+ * whole rather than each pane on its own.
  */
 
 /* THE HAIRLINE STANDS MIDWAY between the two panes: the list's inset before it
@@ -9,11 +18,20 @@
 .crewlet-list-detail {
   --crewlet-list-detail-gutter: var(--spacing-7);
 
+  container: crewlet-list-detail / inline-size;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.crewlet-list-detail__panes {
   display: grid;
   flex: 1 1 auto;
   grid-template-columns: var(--crewlet-list-detail-list, 17rem) minmax(0, 1fr);
   gap: var(--crewlet-list-detail-gutter);
-  height: 100%;
   min-width: 0;
   min-height: 0;
 }
@@ -36,23 +54,34 @@
   overflow-y: auto;
 }
 
-@media (width < 640px) {
-  .crewlet-list-detail {
+/* ONE PANE UNDER 640px OF ITS OWN WIDTH: the list and a reading detail do not
+   both fit, so the pane `showing` names takes the whole width and keeps its
+   own scroller, which is what lets it sit in a screen that fills the window. */
+@container crewlet-list-detail (width < 640px) {
+  .crewlet-list-detail__panes {
     grid-template-columns: minmax(0, 1fr);
-    height: auto;
   }
 
   .crewlet-list-detail__list {
     padding-right: 0;
     border-right: 0;
-  }
-
-  .crewlet-list-detail__detail {
-    overflow: visible;
+    overflow-y: auto;
   }
 
   .crewlet-list-detail--showing-list .crewlet-list-detail__detail,
   .crewlet-list-detail--showing-detail .crewlet-list-detail__list {
     display: none;
+  }
+}
+
+/* ON A PHONE THE PAGE SCROLLS AS A WHOLE, as tall as its content. */
+@media (width < 640px) {
+  .crewlet-list-detail {
+    height: auto;
+  }
+
+  .crewlet-list-detail__list,
+  .crewlet-list-detail__detail {
+    overflow: visible;
   }
 }
