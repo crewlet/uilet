@@ -228,29 +228,36 @@
  * A state down the leading edge. Drawn as a pseudo element rather than a
  * border or an inset shadow, so it composes with the elevated shadow and a
  * chosen card's edge instead of replacing whichever one was declared last.
+ *
+ * THE RAIL FOLLOWS THE CORNER. It was a 3px strip given the card's 12px
+ * corner, which a box 3px wide cannot draw: the radius scaled down to 3px and
+ * the strip's ends stood square inside the curve, past the card's own rounded
+ * outline at the top and the bottom. It is the leading border of a box the
+ * size of the card's inside instead, at the card's own corner as the elevated
+ * rim is, so the colour runs on into the curve and thins out along it. The
+ * box covers the card, so it takes no pointer.
  */
 .crewlet-card--rail-info::before,
 .crewlet-card--rail-warning::before,
 .crewlet-card--rail-danger::before {
   content: '';
   position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
-  width: 3px;
-  border-start-start-radius: var(--radius-lg);
-  border-end-start-radius: var(--radius-lg);
+  inset: 0;
+  border-inline-start: 3px solid;
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 .crewlet-card--rail-info::before {
-  background: var(--color-feedback-info);
+  border-inline-start-color: var(--color-feedback-info);
 }
 
 .crewlet-card--rail-warning::before {
-  background: var(--color-feedback-warning);
+  border-inline-start-color: var(--color-feedback-warning);
 }
 
 .crewlet-card--rail-danger::before {
-  background: var(--color-feedback-danger);
+  border-inline-start-color: var(--color-feedback-danger);
 }
 
 /* ---- Slots ------------------------------------------------------------- */
@@ -258,9 +265,9 @@
 /*
  * The panel head: ONE LINE, at the card's own inset, with the rule under it
  * reaching both edges. `--size-row-lg` is the floor, so a row of nothing but a
- * title stands as tall as the rows on every other card; a control taller than
- * what is left of it after the inset raises the row, which is what a head with
- * a button in it draws.
+ * title stands as tall as the rows on every other card. A head's own small
+ * control stands inside that floor (see the action slots below); a control
+ * taller than the small step raises the row by what it adds past it.
  */
 .crewlet-card__header {
   display: flex;
@@ -277,6 +284,21 @@
  */
 .crewlet-card__header--plain {
   border-bottom: none;
+}
+
+/*
+ * THE BODY UNDER IT STARTS WHERE THE HEAD'S INSET ENDS. With the rule gone,
+ * the head's bottom inset and the body's top inset stood one over the other:
+ * 29.5px between a title and the sentence that finishes it, twice the 13.5px
+ * over the title, so the title floated free of what it names. The head's
+ * inset is the one gap left, which is what the engine dashboard's own blocks
+ * under a plain head already draw (no top inset of their own).
+ *
+ * The one rule that outweighs a step on purpose: two classes, so it wins on
+ * weight rather than on where the bundle puts it.
+ */
+.crewlet-card__header--plain + .crewlet-card__body {
+  padding-block-start: 0;
 }
 
 /*
@@ -331,6 +353,57 @@
 
 .crewlet-card__header-chrome:empty {
   display: none;
+}
+
+/*
+ * A SMALL CONTROL REACHES INTO THE INSET rather than raising the row. The
+ * small step (26px) is taller than what the floor leaves after the inset and
+ * the rule (23px), so a head with an Edit button or a pager in it stood at
+ * 51px and the same head without one at 48px: cards side by side carried
+ * heads 3px apart, and an edit-in-place card moved its whole body when the
+ * button left the row. The slots give back exactly that excess as a negative
+ * margin, split over both sides so the control stays centred, which is the
+ * difference between the small step and the room inside the floor. The rule
+ * is counted on every head, so a plain head (no rule) keeps a pixel spare and
+ * still stands at the floor. A taller control still raises the row by what it
+ * adds past the small step. `min()` keeps the pull at zero in any density
+ * where the small step already fits.
+ */
+.crewlet-card__header-actions,
+.crewlet-card__header-chrome {
+  margin-block: min(
+    0px,
+    calc((var(--size-row-lg) - 2 * var(--spacing-3) - 1px - var(--size-control-sm)) / 2)
+  );
+}
+
+/*
+ * A GHOST SQUARE THAT ENDS THE HEAD ENDS IT ON THE CARD'S TEXT EDGE. By its
+ * box, a small kebab drew its glyph 7px inside the line the rows, the foot and
+ * the title's own start keep, while a dialog's close, a side panel's controls
+ * and a card foot's ghost all stand on that line. It is pulled out by the
+ * glyph's own inset in its square, which IconButton.css publishes per step,
+ * the pull Modal.css gives its close. Only a ghost, which draws no edge, and
+ * only the last control on the row: a panel's pager and cog after it (the
+ * chrome, when filled) keep the row's gap.
+ */
+.crewlet-card__header-actions:is(:last-child, :has(+ .crewlet-card__header-chrome:empty))
+  > :is(.crewlet-icon-btn--ghost, .crewlet-icon-btn--ghost-danger):last-child,
+.crewlet-card__header-actions:is(:last-child, :has(+ .crewlet-card__header-chrome:empty))
+  > .crewlet-menu-anchor:last-child
+  > :is(.crewlet-icon-btn--ghost, .crewlet-icon-btn--ghost-danger) {
+  margin-inline-end: calc(-1 * var(--crewlet-icon-btn-glyph-inset, 0px));
+}
+
+/* A small ghost button with words (an edit-in-place card's Edit) ends the
+   head on that line too, pulled out by its padding and edge, as a card foot's
+   ghost is (StatusCard.css). By its box its word stood 9px inside. */
+.crewlet-card__header-actions:is(:last-child, :has(+ .crewlet-card__header-chrome:empty))
+  > .crewlet-btn--ghost.crewlet-btn--small:last-child,
+.crewlet-card__header-actions:is(:last-child, :has(+ .crewlet-card__header-chrome:empty))
+  > .crewlet-menu-anchor:last-child
+  > .crewlet-btn--ghost.crewlet-btn--small {
+  margin-inline-end: calc(-1 * (var(--spacing-2) + 1px));
 }
 
 /*
@@ -403,6 +476,13 @@
    * to give up. Which is what the subtitle does first; see below.
    */
   white-space: nowrap;
+  /*
+   * CUT AT ITS OWN EDGE, not the name block's. A title shrunk below its words
+   * still painted them past its box, and a count beside it was drawn over the
+   * overflow: "Developer" and "12" printed on top of each other. Clipped here,
+   * the words stop where the title's box does and the count keeps its gap.
+   */
+  overflow: hidden;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-normal);
@@ -413,9 +493,9 @@
 /*
  * A TITLE THAT ENDS RATHER THAN STOPS, where a caller has asked for it.
  *
- * The name block clips, which is what keeps the head one line, so a title
- * wider than the row is cut at the header's edge — mid-word, with nothing to
- * say a word was lost. `text-overflow` is the rule that says it, and it
+ * The title clips, which is what keeps the head one line, so a title wider
+ * than the row is cut at its own edge, mid-word, with nothing to say a word
+ * was lost. `text-overflow` is the rule that says it, and it
  * applies to a BLOCK container only: on the flex title above it does nothing
  * at all, and the text it would act on is an anonymous flex item that no
  * selector here can reach. So the modifier makes the title a block. Its
@@ -423,12 +503,12 @@
  * with a gap between them, which is the whole of what a caller opts into, and
  * why this is a modifier rather than the base rule.
  *
- * `white-space: nowrap` is already the title's own, and `min-width: 0` is what
- * lets the block shrink below its content inside the name block; both stand.
+ * `white-space: nowrap` and `overflow: hidden` are already the title's own, and
+ * `min-width: 0` is what lets the block shrink below its content inside the
+ * name block; all three stand.
  */
 .crewlet-card__title--truncate {
   display: block;
-  overflow: hidden;
   text-overflow: ellipsis;
 }
 

@@ -75,6 +75,14 @@
   height: calc(var(--font-size-sm) * var(--font-line-height-snug));
 }
 
+/* A ghost square that ends the head stands its glyph on the frame's text
+   edge, the line the title starts on, pulled out by the glyph's inset as a
+   card head's last ghost is (Card.css). By its box it stood 7px inside. */
+.crewlet-widget-frame__actions > :is(.crewlet-icon-btn--ghost, .crewlet-icon-btn--ghost-danger):last-child,
+.crewlet-widget-frame__actions > .crewlet-menu-anchor:last-child > :is(.crewlet-icon-btn--ghost, .crewlet-icon-btn--ghost-danger) {
+  margin-inline-end: calc(-1 * var(--crewlet-icon-btn-glyph-inset, 0px));
+}
+
 .crewlet-widget-frame__body {
   flex: 1;
   min-width: 0;
@@ -139,10 +147,14 @@
   line-height: var(--font-line-height-normal);
 }
 
+/* The glyph stands on the sentence's first line as the title row's controls
+   stand on the title's: a box one line tall with the glyph centred in it. A
+   2px nudge left the 14px glyph 1.5px over the middle of the 21px line. */
 .crewlet-widget-frame__blocked-glyph {
   display: inline-flex;
   flex: none;
-  padding-top: 2px;
+  align-items: center;
+  height: calc(1em * var(--font-line-height-normal));
   color: var(--color-text-tertiary);
 }
 

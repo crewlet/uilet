@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button, Card, DescriptionList, IconButton, List, ListItem, RelativeTime, Tag, Text } from '@crewlethq/ui';
 import { density } from '@crewlethq/tokens';
@@ -172,10 +173,26 @@ export const AFlushPanel: Story = {
       </Card.Header>
       <Card.Body padding="none">
         <List>
-          <ListItem href="#/runs/1" trailing={<RelativeTime value={new Date(Date.now() - 120_000).toISOString()} />}>
+          {/* RelativeTime takes the register round it, so the time is set in
+              the caption step, as the List stories set theirs. */}
+          <ListItem
+            href="#/runs/1"
+            trailing={
+              <Text variant="caption">
+                <RelativeTime value={new Date(Date.now() - 120_000).toISOString()} />
+              </Text>
+            }
+          >
             <Text variant="cell">Backend Lead, e2b</Text>
           </ListItem>
-          <ListItem href="#/runs/2" trailing={<RelativeTime value={new Date(Date.now() - 900_000).toISOString()} />}>
+          <ListItem
+            href="#/runs/2"
+            trailing={
+              <Text variant="caption">
+                <RelativeTime value={new Date(Date.now() - 900_000).toISOString()} />
+              </Text>
+            }
+          >
             <Text variant="cell">Platform Engineer, host</Text>
           </ListItem>
         </List>
@@ -212,12 +229,13 @@ export const ContentWithNoBody: Story = {
 
 /**
  * A NAME TOO LONG FOR THE ROW. The head is one line and the name block clips,
- * so the subtitle beside it gives up its tail first — and once there is no
+ * so the subtitle beside it gives up its tail first, and once there is no
  * tail left to trade, the title itself runs out of room.
  *
- * Left alone it is CUT at the header's edge, mid-word: `text-overflow` acts on
- * a block container only, and the title is flex. `truncate` makes it a block
- * so the line ends in an ellipsis instead. It is opt-in, because a title with
+ * Left alone it is CUT at its own edge, mid-word, short of the count beside
+ * it: `text-overflow` acts on a block container only, and the title is flex.
+ * `truncate` makes it a block so the line ends in an ellipsis instead. It is
+ * opt-in, because a title with
  * its own children inside it lays them out as one line of inline content
  * rather than as centred flex items with a gap; a glyph belongs in the
  * header's own `icon` slot, which is outside the title either way.
@@ -283,21 +301,53 @@ export const ANarrowCardsSubtitle: Story = {
 };
 
 /**
+ * ONE DENSITY, SCOPED TO ONE PANEL, for a story that draws all three side by
+ * side.
+ *
+ * WHY A --density ON A PANEL IS NOT ENOUGH. The token layer declares every
+ * spacing and size step on the root as `calc(Npx * var(--density, 1))`, and a
+ * custom property is computed where it is declared: every step under the
+ * panel already holds the root's number, so a --density set there reaches
+ * nothing, and this story drew the normal card three times under three
+ * headings. The panel re-declares each step the root writes in terms of
+ * --density, read from the loaded stylesheets rather than copied out of them,
+ * so each one resolves against the panel's own setting.
+ */
+function densityScope(step: keyof typeof density): CSSProperties {
+  const scope: Record<string, string> = { '--density': density[step] };
+  const read = (rules: CSSRuleList) => {
+    for (const rule of Array.from(rules)) {
+      if (rule instanceof CSSStyleRule && rule.selectorText === ':root') {
+        for (const name of Array.from(rule.style)) {
+          const value = rule.style.getPropertyValue(name).trim();
+          if (name.startsWith('--') && value.includes('var(--density')) scope[name] = value;
+        }
+      } else if (rule instanceof CSSGroupingRule) {
+        read(rule.cssRules);
+      }
+    }
+  };
+  for (const sheet of Array.from(document.styleSheets)) {
+    // A stylesheet from another origin keeps its rules to itself.
+    try {
+      read(sheet.cssRules);
+    } catch {
+      continue;
+    }
+  }
+  return scope as CSSProperties;
+}
+
+/**
  * The panel at all three densities, side by side. Every inset, row height and
- * gap in it is a spacing token, so one setting on the root reaches all of
- * them; nothing in the card restates a number.
+ * gap in it is a spacing token, so one setting reaches all of them; nothing in
+ * the card restates a number.
  */
 export const EveryDensity: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 'var(--spacing-4)', alignItems: 'flex-start' }}>
       {(['compact', 'normal', 'comfortable'] as const).map((step) => (
-        /*
-         * --density is what the token layer's own density.css sets from
-         * data-density on the ROOT, so three densities on one page set the
-         * variable directly and read its value from the tokens rather than
-         * copying three numbers out of them.
-         */
-        <div key={step} style={{ flex: '1 1 0', minWidth: 0, ['--density' as string]: density[step] }}>
+        <div key={step} style={{ flex: '1 1 0', minWidth: 0, ...densityScope(step) }}>
           <Text variant="label" as="div" style={{ marginBottom: 'var(--spacing-2)' }}>
             {step}
           </Text>
@@ -400,14 +450,16 @@ export const SubtitleBelow: Story = {
 /**
  * A company's principles as cards: the mission and the vision side by side,
  * each a passage under a heading with its own glyph, and the standing
- * policies as one compact numbered list below them.
+ * policies as one compact numbered list below them. The head glyphs are
+ * sized `sm`, the step every other card head here draws: unsized, a glyph
+ * takes the text round it, which is the page's 16px in Storybook.
  */
 export const Principles: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 16, maxWidth: 960 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
         <Card as="section">
-          <Card.Header divided={false} icon={<TargetGlyph />}>
+          <Card.Header divided={false} icon={<TargetGlyph size="sm" />}>
             <Card.Title>Mission</Card.Title>
           </Card.Header>
           <Card.Body>
@@ -417,7 +469,7 @@ export const Principles: Story = {
           </Card.Body>
         </Card>
         <Card as="section">
-          <Card.Header divided={false} icon={<TelescopeGlyph />}>
+          <Card.Header divided={false} icon={<TelescopeGlyph size="sm" />}>
             <Card.Title>Vision</Card.Title>
           </Card.Header>
           <Card.Body>
@@ -428,7 +480,7 @@ export const Principles: Story = {
         </Card>
       </div>
       <Card as="section" padding="none">
-        <Card.Header icon={<ScrollTextGlyph />} count={3}>
+        <Card.Header icon={<ScrollTextGlyph size="sm" />} count={3}>
           <Card.Title>Standing policies</Card.Title>
         </Card.Header>
         <List variant="numbered-divided" density="compact" measure="wide" aria-label="Standing policies">
