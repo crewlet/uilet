@@ -74,6 +74,25 @@ function Sorted({ phoneRows }: { phoneRows?: 'labelled' | 'compact' }) {
  */
 export const Sortable: Story = { render: () => <Sorted /> };
 
+/**
+ * A grid that cannot fit even after its give-way columns have gone, in a
+ * 360px column on any window (a screen beside a wide aside): it stacks into
+ * the card rows a phone draws rather than cutting its values short. Widen the
+ * column past the width it stacked at and its columns come back.
+ */
+export const StacksWhenNothingFits: Story = {
+  render: () => (
+    <div style={{ width: 360, resize: 'horizontal', overflow: 'auto', paddingBottom: 'var(--spacing-2)' }}>
+      <DataGrid
+        rows={TASKS}
+        columns={COLUMNS.map((c) => ({ ...c, drop: undefined, optional: false }))}
+        rowKey={(t: Task) => t.key}
+        rowHref={(t: Task) => `#/worklet/${t.key}`}
+      />
+    </div>
+  ),
+};
+
 /** On a phone, the compact row: the key and title on the first line, the marks under it. */
 export const CompactOnAPhone: Story = {
   render: () => <Sorted phoneRows="compact" />,

@@ -467,7 +467,7 @@ button.crewlet-data-grid__row-link {
   }
 }
 
-/* ---- A ROW IS A CARD ON A PHONE -----------------------------------------
+/* ---- A ROW IS A CARD ON A PHONE, OR WHERE COLUMNS DO NOT FIT -----------------------------------------
    A GRID IS COLUMNS, AND A PHONE DOES NOT HAVE THEM: the grid clips (for its
    sticky head), so the columns past the edge were cut off with nothing to
    scroll to, and a sideways scroller resolves every flexible track to zero. So
@@ -477,111 +477,114 @@ button.crewlet-data-grid__row-link {
    (`:empty`), and a cell that draws a marked absence has content and stays.
    The sort is in the application's state, so a sorted list still arrives
    sorted. */
-@media (width < 640px) {
-  .crewlet-data-grid {
-    /* No ghost control is pulled out here (see above): every line of a card
-       starts at the grid's edge, and a compact row's marks run on one line,
-       where the hover ground swallowed the gap before it. */
-    --crewlet-data-grid-control-outdent: 0px;
+/* Card rows are the grid's own decision (`data-stacked`, DataGrid.tsx): set
+   on a phone, and wherever the grid's own width cannot hold its columns once
+   every give-way column has gone. `:where()` keeps each rule's weight what it
+   was when this block was a media query, so a rule written against the card
+   shape still wins where it did. */
+.crewlet-data-grid:where([data-stacked]) {
+  /* No ghost control is pulled out here (see above): every line of a card
+     starts at the grid's edge, and a compact row's marks run on one line,
+     where the hover ground swallowed the gap before it. */
+  --crewlet-data-grid-control-outdent: 0px;
 
-    display: block;
-  }
+  display: block;
+}
 
-  .crewlet-data-grid__head {
-    display: none;
-  }
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__head {
+  display: none;
+}
 
-  .crewlet-data-grid__body,
-  .crewlet-data-grid__band {
-    display: block;
-  }
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__body,
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__band {
+  display: block;
+}
 
-  .crewlet-data-grid__row {
-    display: block;
-    padding: var(--spacing-2) var(--crewlet-data-grid-edge);
-    min-height: 0;
-  }
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__row {
+  display: block;
+  padding: var(--spacing-2) var(--crewlet-data-grid-edge);
+  min-height: 0;
+}
 
-  /* A FIXED BASIS lines the names up without a track, and the name wraps
-     inside it rather than pushing its value past every other card line. */
-  .crewlet-data-grid__cell {
-    display: flex;
-    align-items: baseline;
-    gap: var(--spacing-3);
-    padding: 1px 0;
-    min-width: 0;
-  }
+/* A FIXED BASIS lines the names up without a track, and the name wraps
+   inside it rather than pushing its value past every other card line. */
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-3);
+  padding: 1px 0;
+  min-width: 0;
+}
 
-  .crewlet-data-grid__cell:empty {
-    display: none;
-  }
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell:empty {
+  display: none;
+}
 
-  .crewlet-data-grid__cell[data-label]::before {
-    content: attr(data-label);
-    flex: 0 0 7rem;
-    overflow-wrap: anywhere;
-    font-size: var(--font-size-2xs);
-    text-transform: uppercase;
-    letter-spacing: var(--font-letter-spacing-wide);
-    color: var(--color-text-tertiary);
-  }
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell[data-label]::before {
+  content: attr(data-label);
+  flex: 0 0 7rem;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--font-letter-spacing-wide);
+  color: var(--color-text-tertiary);
+}
 
-  /* `shrink` and `right` are column shapes, and there are no columns here. */
-  .crewlet-data-grid__cell--shrink,
-  .crewlet-data-grid__cell--right {
-    white-space: normal;
-    justify-content: flex-start;
-  }
+/* `shrink` and `right` are column shapes, and there are no columns here. */
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell--shrink,
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell--right {
+  white-space: normal;
+  justify-content: flex-start;
+}
 
-  .crewlet-data-grid__cell .crewlet-data-grid__truncate {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    overflow-wrap: anywhere;
-  }
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell .crewlet-data-grid__truncate {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
 
-  /* ---- THE COMPACT ROW (`phoneRows="compact"`) ---------------------------
-     TWO LINES, NO LABELS: what the row is, then its marks. One flex run that
-     breaks once: the lead cells first, a zero-height full-width `::after`
-     between them and the rest, then every other cell in column order. */
-  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--spacing-1) var(--spacing-2);
-  }
+/* ---- THE COMPACT ROW (`phoneRows="compact"`) ---------------------------
+   TWO LINES, NO LABELS: what the row is, then its marks. One flex run that
+   breaks once: the lead cells first, a zero-height full-width `::after`
+   between them and the rest, then every other cell in column order. */
+.crewlet-data-grid[data-phone-rows='compact']:where([data-stacked]) .crewlet-data-grid__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+}
 
-  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__row::after {
-    content: '';
-    order: 1;
-    flex-basis: 100%;
-    height: 0;
-  }
+.crewlet-data-grid[data-phone-rows='compact']:where([data-stacked]) .crewlet-data-grid__row::after {
+  content: '';
+  order: 1;
+  flex-basis: 100%;
+  height: 0;
+}
 
-  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__cell {
-    order: 2;
-    padding: 0;
-    align-items: center;
-    gap: var(--spacing-1);
-  }
+.crewlet-data-grid[data-phone-rows='compact']:where([data-stacked]) .crewlet-data-grid__cell {
+  order: 2;
+  padding: 0;
+  align-items: center;
+  gap: var(--spacing-1);
+}
 
-  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__cell[data-lead] {
-    order: 0;
-  }
+.crewlet-data-grid[data-phone-rows='compact']:where([data-stacked]) .crewlet-data-grid__cell[data-lead] {
+  order: 0;
+}
 
-  /* The title takes the rest of the first line, beside the key. */
-  .crewlet-data-grid[data-phone-rows='compact']
-    .crewlet-data-grid__cell[data-lead]:not(.crewlet-data-grid__cell--shrink) {
-    flex: 1 1 0;
-    min-width: 0;
-    font-weight: var(--font-weight-medium);
-  }
+/* The title takes the rest of the first line, beside the key. */
+.crewlet-data-grid[data-phone-rows='compact']
+  .crewlet-data-grid__cell[data-lead]:not(.crewlet-data-grid__cell--shrink) {
+  flex: 1 1 0;
+  min-width: 0;
+  font-weight: var(--font-weight-medium);
+}
 
-  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__cell[data-label]::before {
-    content: none;
-  }
+.crewlet-data-grid[data-phone-rows='compact']:where([data-stacked]) .crewlet-data-grid__cell[data-label]::before {
+  content: none;
+}
 
-  .crewlet-data-grid[data-phone-rows='compact'] .crewlet-data-grid__cell[data-phone-omit] {
-    display: none;
-  }
+.crewlet-data-grid[data-phone-rows='compact']:where([data-stacked]) .crewlet-data-grid__cell[data-phone-omit] {
+  display: none;
 }

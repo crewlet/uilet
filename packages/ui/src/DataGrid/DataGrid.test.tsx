@@ -20,6 +20,7 @@ import {
   type DataGridColumn,
   type DataGridHandle,
 } from './index.js';
+import { squeezed } from './DataGrid.js';
 
 afterEach(cleanup);
 
@@ -210,6 +211,68 @@ describe('the fit', () => {
     expect(fitGridColumns({ fit, width: 600, overflows: true, visible })).toEqual({ ...fit, width: 600, dropped: ['c'] });
     // A column with no place in the order never goes, so nothing changes.
     expect(fitGridColumns({ fit, width: 600, overflows: true, visible: [{ key: 'a' }] })).toBeNull();
+  });
+
+  test('stacks into card rows when nothing is left to drop and the values still do not fit', () => {
+    const fit = { set: 'a,b', width: 800, dropped: ['b'] as string[] };
+    expect(fitGridColumns({ fit, width: 500, overflows: true, stack: true, visible: [{ key: 'a' }] })).toEqual({
+      set: 'a,b',
+      width: 500,
+      dropped: ['b'],
+      stacked: true,
+    });
+    // A give-way column still goes first.
+    expect(
+      fitGridColumns({ fit, width: 500, overflows: true, stack: true, visible: [{ key: 'a' }, { key: 'c', drop: 1 }] }),
+    ).toEqual({ set: 'a,b', width: 500, dropped: ['b', 'c'] });
+    // A head alone cut short drops a column but never turns the grid into cards.
+    expect(fitGridColumns({ fit, width: 500, overflows: true, stack: false, visible: [{ key: 'a' }] })?.stacked).toBeFalsy();
+  });
+
+  test('a stacked grid stays cards until it grows past the width it stacked at', () => {
+    const fit = { set: 'a', width: 500, dropped: [] as string[], stacked: true };
+    expect(fitGridColumns({ fit, width: 480, overflows: false, visible: [{ key: 'a' }] })).toBeNull();
+    expect(fitGridColumns({ fit, width: 520, overflows: false, visible: [{ key: 'a' }] })).toEqual({
+      set: 'a',
+      width: 520,
+      dropped: [],
+    });
+  });
+
+  test('a head cut short is a squeeze, told apart from a value cut short', () => {
+    const { container } = render(
+      <DataGrid
+        rows={[{ id: 'a', name: 'Bravo', tokens: 10 }]}
+        columns={[
+          { key: 'name', header: 'Name', cell: (r: Row) => r.name },
+          { key: 'tokens', header: 'Tokens', shrink: true, cell: (r: Row) => r.tokens ?? '' },
+        ]}
+        rowKey={(r) => r.id}
+      />,
+    );
+    const wrap = container.querySelector<HTMLElement>('.crewlet-data-grid')!;
+    Object.defineProperty(wrap, 'clientWidth', { configurable: true, value: 400 });
+    const head = wrap.querySelectorAll<HTMLElement>('.crewlet-data-grid__th')[1]!;
+    head.getBoundingClientRect = () => ({ width: 24 }) as DOMRect;
+    const box = (el: HTMLElement, client: number, scroll: number) => {
+      Object.defineProperty(el, 'clientWidth', { configurable: true, value: client });
+      Object.defineProperty(el, 'scrollWidth', { configurable: true, value: scroll });
+    };
+    const cell = wrap.querySelectorAll<HTMLElement>('.crewlet-data-grid__row .crewlet-data-grid__cell')[1]!;
+    box(cell, 24, 20);
+    box(head.querySelector<HTMLElement>('.crewlet-data-grid__truncate')!, 12, 44);
+    const visible = [
+      { key: 'name', header: 'Name', cell: () => null },
+      { key: 'tokens', header: 'Tokens', shrink: true, cell: () => null },
+    ];
+    expect(squeezed(wrap, visible)).toBe('heads');
+    box(cell, 24, 40);
+    expect(squeezed(wrap, visible)).toBe('values');
+  });
+
+  test('card rows are the grid\'s own decision, never a window media query', () => {
+    expect(sheet()).not.toMatch(/@media \(width < 640px\)/);
+    expect(sheet()).toMatch(/\.crewlet-data-grid:where\(\[data-stacked\]\)\s*\{[^}]*display: block/);
   });
 
   test('gives every column another chance once the grid grows, and leaves a fit that stands', () => {
