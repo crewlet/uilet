@@ -8,7 +8,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
-import { ChangeList, shortenUnchanged, type ChangeListRow } from './index.js';
+import { ChangeList, ChangeListItems, shortenUnchanged, type ChangeListRow } from './index.js';
 
 afterEach(cleanup);
 
@@ -127,4 +127,50 @@ test('two changed runs that touch are said apart, with nothing added to the draw
   // visible runs are the words alone.
   const hidden = [...words.querySelectorAll('.crewlet-visually-hidden')].map((node) => node.textContent);
   expect(hidden).toEqual(['removed: ', '; ', 'added: ']);
+});
+
+// A LIST OR PARAGRAPHS ARE DRAWN AS THEMSELVES, never joined into one run-on
+// line inside a highlight: a block value takes the row's width under its
+// label, its tint is the block, and a list is a list. Mutation: draw a block
+// row's value inline, or join ChangeListItems' items.
+test('a block value is drawn across the row, a list as a list, and said like a line', async () => {
+  const { container } = render(
+    <main>
+      <ChangeList
+        heading="What will change"
+        rows={[
+          {
+            kind: 'added',
+            label: 'Responsibilities',
+            block: true,
+            isNew: true,
+            to: <ChangeListItems items={['Review the tests', 'Approve or send back']} />,
+          },
+          { kind: 'changed', label: 'Guidelines', block: true, from: 'One rule', to: <ChangeListItems items={['One rule', 'Two rules']} /> },
+          { kind: 'removed', label: 'Avoid', block: true, from: 'Line one\nLine two' },
+          { kind: 'fact', label: 'Page', block: true, value: 'First paragraph\n\nSecond paragraph' },
+        ]}
+      />
+    </main>,
+  );
+  const rows = [...container.querySelectorAll('.crewlet-change-list__row')];
+  expect(rows.every((row) => row.classList.contains('crewlet-change-list__row--block'))).toBe(true);
+  const added = rows[0]!.querySelector('ins.crewlet-change-list__block')!;
+  expect([...added.querySelectorAll('li')].map((li) => li.textContent)).toEqual(['Review the tests', 'Approve or send back']);
+  expect(rows[0]!.querySelector('.crewlet-change-list__value')!.textContent).toBe('NewAdded: Review the testsApprove or send back');
+  expect(rows[1]!.querySelector('.crewlet-change-list__value')!.textContent).toBe('Changed from One ruleto One ruleTwo rules');
+  expect(rows[2]!.querySelector('del.crewlet-change-list__block')!.textContent).toBe('Removed: Line one\nLine two');
+  expect(rows[3]!.querySelector('.crewlet-change-list__block--plain')!.textContent).toBe('First paragraph\n\nSecond paragraph');
+  const result = await axe.run(container, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations).toEqual([]);
+});
+
+test('a line value stays inline, whatever it holds', () => {
+  const { container } = render(<ChangeList rows={[{ kind: 'added', label: 'Title', to: 'Fix the test' }]} />);
+  expect(container.querySelector('.crewlet-change-list__row--block')).toBeNull();
+  expect(container.querySelector('.crewlet-change-list__block')).toBeNull();
 });

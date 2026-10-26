@@ -19,21 +19,31 @@ interface RowBase {
   note?: ReactNode;
 }
 
+/**
+ * A value that is more than a line: a list (`ChangeListItems`), a page of
+ * text, a preview. It takes the row's whole width under its label, and its
+ * tint is a block rather than a highlight, because a list or paragraphs drawn
+ * inside a highlighted run of words read as one run-on line.
+ */
+interface BlockValue {
+  block?: boolean | undefined;
+}
+
 /** A fact that does not change, such as the page being edited. */
-export interface ChangeListFactRow extends RowBase {
+export interface ChangeListFactRow extends RowBase, BlockValue {
   kind: 'fact';
   value: ReactNode;
 }
 
 /** A value that changes from one thing to another. */
-export interface ChangeListChangedRow extends RowBase {
+export interface ChangeListChangedRow extends RowBase, BlockValue {
   kind: 'changed';
   from: ReactNode;
   to: ReactNode;
 }
 
 /** A value set where there was none. */
-export interface ChangeListAddedRow extends RowBase {
+export interface ChangeListAddedRow extends RowBase, BlockValue {
   kind: 'added';
   to: ReactNode;
   /**
@@ -45,7 +55,7 @@ export interface ChangeListAddedRow extends RowBase {
 }
 
 /** A value taken away. */
-export interface ChangeListRemovedRow extends RowBase {
+export interface ChangeListRemovedRow extends RowBase, BlockValue {
   kind: 'removed';
   from: ReactNode;
 }
@@ -181,7 +191,65 @@ function WordDiff({ row, labels }: { row: ChangeListTextRow; labels: ChangeListL
   );
 }
 
+/**
+ * A list value, one item a line: what a block row holds for a field that is a
+ * list (a seat's responsibilities, a voice's rules), rather than its items
+ * joined into one line.
+ */
+export function ChangeListItems({ items }: { items: readonly ReactNode[] }) {
+  return (
+    <ul className="crewlet-change-list__items">
+      {items.map((item, index) => (
+        <li key={index}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+
+/** A block value: the same words and tints as a line's, stacked across the row. */
+function BlockValue({ row, labels }: { row: Exclude<ChangeListRow, ChangeListTextRow>; labels: ChangeListLabels }) {
+  switch (row.kind) {
+    case 'fact':
+      return <div className="crewlet-change-list__fact crewlet-change-list__block crewlet-change-list__block--plain">{row.value}</div>;
+    case 'changed':
+      return (
+        <>
+          <del className="crewlet-change-list__from crewlet-change-list__block">
+            <VisuallyHidden>{`${labels.changedFrom} `}</VisuallyHidden>
+            {row.from}
+          </del>
+          <ins className="crewlet-change-list__to crewlet-change-list__block">
+            <VisuallyHidden>{`${labels.to} `}</VisuallyHidden>
+            {row.to}
+          </ins>
+        </>
+      );
+    case 'added':
+      return (
+        <>
+          {row.isNew ? (
+            <Tag size="xs" variant="success">
+              {labels.isNew}
+            </Tag>
+          ) : null}
+          <ins className="crewlet-change-list__to crewlet-change-list__block">
+            <VisuallyHidden>{`${labels.added} `}</VisuallyHidden>
+            {row.to}
+          </ins>
+        </>
+      );
+    case 'removed':
+      return (
+        <del className="crewlet-change-list__removed crewlet-change-list__block">
+          <VisuallyHidden>{`${labels.removed} `}</VisuallyHidden>
+          {row.from}
+        </del>
+      );
+  }
+}
+
 function Value({ row, labels }: { row: Exclude<ChangeListRow, ChangeListTextRow>; labels: ChangeListLabels }) {
+  if (row.block) return <BlockValue row={row} labels={labels} />;
   switch (row.kind) {
     case 'fact':
       return <span className="crewlet-change-list__fact">{row.value}</span>;
@@ -258,7 +326,11 @@ export function ChangeList({ rows, heading, settled = false, labels: overrides, 
             // field (removed and added) are not impossible, so the position
             // completes the key.
             key={`${index}:${row.label}`}
-            className={cx('crewlet-change-list__row', `crewlet-change-list__row--${row.kind}`)}
+            className={cx(
+              'crewlet-change-list__row',
+              `crewlet-change-list__row--${row.kind}`,
+              row.kind !== 'text' && row.block && 'crewlet-change-list__row--block',
+            )}
           >
             <dt className="crewlet-change-list__label">{row.label}</dt>
             <dd className="crewlet-change-list__value">
