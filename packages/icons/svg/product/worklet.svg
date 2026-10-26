@@ -1,9 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
   <path data-part="body" fill="#7c56ff" d="M11 2h26l9 9v26l-9 9H11l-9-9V11z"/>
-  <path data-part="shade" fill="#5c24ff" d="M2 33v4l9 9h26l9-9v-4l-9 9H11z"/>
-  <path data-part="detail" fill="#ffffff" d="M11 12h10v10H11z"/>
-  <path data-part="eye" fill="#7c56ff" d="m13.4 16.6 1.7-1.7 1.9 1.9 3.4-3.4 1.7 1.7-5.1 5.1z"/>
-  <path data-part="detail" fill="#ffffff" d="M24 14h13v6H24z"/>
-  <path data-part="dim" fill="#c9b8ff" d="M11 26h10v10H11z"/>
-  <path data-part="detail" fill="#ffffff" d="M24 28h9v6h-9z"/>
+  <path data-part="shade" fill="#6a3cff" d="M2 33v4l9 9h26l9-9v-4l-9 9H11z"/>
+  <path data-part="keyline" fill="none" d="M11 2h26l9 9v26l-9 9H11l-9-9V11zM12.24 5 5 12.24v23.52L12.24 43h23.52L43 35.76V12.24L35.76 5z"/>
+  <path data-part="detail" fill="#ffffff" fill-rule="evenodd" d="M20 12 24 16 32 8 36 12 24 24 16 16zM14 28h8l2 2v8l-2 2h-8l-2-2v-8zM16 32v4h4v-4zM28 32h10v4H28z"/>
 </svg>

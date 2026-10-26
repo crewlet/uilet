@@ -96,20 +96,91 @@ The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRA
 import { ProductMark } from '@crewlethq/icons/product-mark';
 
 <ProductMark product="worklet" size={24} />
-<ProductMark product="chat" size={24} soon />
-<ProductMark product="assistant" size={20} />
+<ProductMark product="chat" size="md" soon />
+<ProductMark product="assistant" size="sm" title="AI Assistant" />
 ```
 
-`@crewlethq/icons/product-mark` is the marks' own entry, with `ProductMark`, `PRODUCTS` and their types and nothing else: its import graph reaches the four drawings, the glyph frame and `ProductMark.css`, never the root with its illustrations, vendor marks and their stylesheets, so a first paint that draws one mark (an Ask button) pays for that alone whatever its bundler does with the root's side effects. The root still exports the same functions; `test/bundle.test.mjs` holds the entry's graph and what a build of it carries.
+`@crewlethq/icons/product-mark` is the marks' own entry, with `ProductMark`, `PRODUCTS` and their types and nothing else: its import graph reaches the drawings, the glyph frame and `ProductMark.css`, never the root with its illustrations, vendor marks and their stylesheets, so a first paint that draws one mark (an Ask button) pays for that alone whatever its bundler does with the root's side effects. The root still exports the same functions; `test/bundle.test.mjs` holds the entry's graph and what a build of it carries (about 6 KB for all eight drawings).
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
 | `product` | `Product`: `'worklet' \| 'doclet' \| 'chat' \| 'assistant'` | required | Which of Crewlet's own products. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
+| `drawing` | `ProductMarkDrawing`: `'auto' \| 'small' \| 'master'` | `'auto'` | Which drawing to mount. `auto` mounts the 16 pixel grid drawing below 24 px and the master from 24 px up (see [Two drawings](#two-drawings)). |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
-| `soon` | boolean | `false` | Draws a product that has not shipped hollow: a faint violet body under a violet keyline and face. Never grey, which is how a vendor mark says "not connected". |
+| `soon` | boolean | `false` | Draws a product that has not shipped hollow: a faint violet body under a violet keyline and figure. Never grey, which is how a vendor mark says "not connected". |
 
-The four services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. All four stand on one tile, the crewmate head's octagon with its 45 degree chamfers on the 48 grid, in the brand violet (`#7c56ff`) with a deeper lower facet (`#5c24ff`), inset two units so its weight sits beside a vendor mark's. One white figure on each tells them apart, drawn on the 6 unit grid so its edges land on whole pixels at 16, 24 and 48: **Worklet** (projects and tasks) is a task list, one task ticked and one open; **Doclet** (spaces and pages) is an open book with its lines of text; **Chat** (talking with agents) is the crewmate's two eyes in a speech bubble; **Assistant** (asking Crewlet itself, acting as the signed-in person) is **Orbit**, the octagon opened into four chamfered blades turning around one core. Orbit has no eyes and no visor on purpose: every agent character carries a visor and Chat carries eyes, and the assistant has no identity of its own, so it is drawn as a capability of Crewlet rather than as a member of the crew. Its blades and its core are separate `detail` paths, so a working state can turn the blades a quarter at a time and hold the core still. The sources are `svg/product/*.svg`, exported as `@crewlethq/icons/svg/product/*.svg`. `PRODUCTS` lists them.
+The four services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. `PRODUCTS` lists them. Pair the Assistant's mark with its words ("Ask" on a button, "AI Assistant" in navigation and catalogues), because a sparkle alone is also read as "new" or "favourite"; for the same reason, Crewlet's own "new" and "soon" cues never use a four point star.
+
+| Product | Figure |
+| ------- | ------ |
+| `worklet` (projects and tasks) | A large tick for the finished task over one open row: a hollow chamfered box and its line for the task still to do. Done is solid and heavy, open is hollow and light. |
+| `doclet` (spaces and pages) | A page whose corner is folded by the brand's own 45 degree chamfer, with a heading block and two lines of text. |
+| `chat` (talking with agents) | A chamfered speech bubble whose one horizontal window is the crewmate's visor, cut through to the tile. The family's one crew reference, with no eyes and no face. |
+| `assistant` (asking Crewlet itself, as the signed-in person) | A four point concave spark with a small companion spark on the 45 degree axis that points into the octagon's upper right chamfer. No face: the assistant has no identity of its own, so it is a capability of Crewlet rather than a crew member. |
+
+### Construction
+
+All four stand on one tile: the crewmate head's octagon on the 48 unit grid, inset 2 units, with 9 unit chamfers at 45 degrees, so its weight sits beside a vendor mark's. A lower facet gives it the brand mark's depth. One white figure tells them apart, every straight edge orthogonal or a true 45 degree diagonal and every curve a circular arc, so no size shows a staircase. Interior detail is always a knockout through to the tile, never a second tone. Each file is a handful of paths, each tagged with the part it plays:
+
+| `data-part` | What it is | In |
+| ----------- | ---------- | -- |
+| `body` | The octagon tile. | every drawing |
+| `shade` | The lower facet. | the master and the app tile |
+| `keyline` | The soon ring, hidden (`fill="none"`) until the soon rule paints it. | the master and the 16 pixel grid drawing |
+| `detail` | The white figure. | every drawing |
+| `ground` | The full bleed square behind the tile. | the app tile |
+
+### Colours
+
+| Colour | Hex | Where |
+| ------ | --- | ----- |
+| Brand violet | `#7c56ff` | The tile (`body`), and the keyline and figure when soon. 4.23:1 on the light ground, 4.25:1 on the dark one. |
+| Deep violet | `#6a3cff` | The lower facet (`shade`), and the app tile's ground. Decorative: 1.25:1 against the tile, so it never carries the silhouette. |
+| Deepest violet | `#5c24ff` | The app tile's facet alone, one step deeper so it still reads against the tile's ground. |
+| White | `#ffffff` | The figure. 4.53:1 on the tile. |
+
+Nothing else: no gradient and no other hue, in any file. The marks keep these colours in both themes, as the brand mark does, because they are its identity. `test/products.test.mjs` holds every file to them.
+
+### Two drawings
+
+Each product has two drawings. The master, `svg/product/<product>.svg` on `0 0 48 48`, serves 24 px and up, where every orthogonal edge lands on a whole pixel. The 16 pixel grid drawing, `svg/product/small/<product>.svg` on `0 0 16 16`, serves 16 to 20 px: the tile goes full bleed with no facet (the master's 2 unit inset would be a blurred two thirds of a pixel), and each figure is redrawn on whole pixels with walls and counters of at least one pixel. It also serves 32 px at 2x. At 20 px it is drawn at 1.25x, slightly soft by design.
+
+`drawing="auto"` reads `size`: a step from `xs` to `lg`, a number, or a length in `px` below 24 mounts the 16 pixel grid drawing, and anything from 24 up mounts the master. A size in another unit (the default `1em`, a `rem`) cannot be measured while rendering, so it takes the master; pass `drawing="small"` where such a mark sits in a line of body text, and `drawing="master"` to keep the master at any size.
+
+### Soon
+
+`soon` is derived from the drawing that is mounted, at either size, with no second file. `ProductMark.css` drops the body to an 8 percent tint, hides the facet, and paints the hidden keyline (3 units on the master, one whole pixel on the 16 grid) and the figure in the brand violet. The keyline's inner contour winds against its outer one, so it stays hollow under either fill rule. A part that would come within a pixel of the keyline on the 16 grid declares `data-soon="tuck"` and is drawn at 0.9 about its own centre (only the Assistant's main spark). The state is a class, `crewlet-product-mark--soon`, so a strict `style-src` never refuses it.
+
+**Under forced colours** (Windows high contrast) a mark draws its one colour form in the reader's system colours: the tile and facet in `CanvasText` with the figure knocked out to `Canvas`, which keeps every figure readable on any palette. Soon keeps its hollow keyline and figure in `CanvasText`, at half strength.
+
+### Motion
+
+The marks never move by themselves. The Assistant's main spark carries `data-motion="turn"` and its companion `data-motion="twinkle"`, in both drawings, so a working state can move them; `ThinkingIndicator` in `@crewlethq/ui` owns that motion. Over one period of `--motion-duration-spark` (1.6s), the spark makes a quarter turn about its own centre, tucking to 0.8 through the middle of the turn so its tip passes the companion with clear violet between them, while the companion dips to 0.7 and half strength; both rest for the other half of the period. Under `prefers-reduced-motion: reduce` both animations stop and the mark holds a still working pose (the spark at 0.8, the companion at 0.7 and half strength). Any other host that moves these parts pivots them with `transform-box: fill-box; transform-origin: center`, keeps rotate and scale in one transform, and stops them under reduced motion.
+
+### App tiles
+
+A 180 px app tile ships for each product, as a raw file rather than a component, for an `apple-touch-icon`, a web manifest or a catalogue:
+
+```ts
+import workletTile from '@crewlethq/icons/svg/product/app-tile/worklet.svg';
+```
+
+```html
+<link rel="apple-touch-icon" href="/worklet-180.png" />
+```
+
+All four share one frame on `0 0 180 180`: a full bleed `#6a3cff` ground, the octagon redrawn for 180 px in `#7c56ff` with its lower facet in `#5c24ff`, and the master's figure at 80 percent baked into absolute coordinates. Every figure sits inside the 72 px maskable safe zone, so a manifest may list a PNG exported from it as `any maskable`; a rounded or circle mask crops the octagon's corners, which is expected. Raster pipelines export the PNG from this file, and favicons from the 16 pixel grid drawing (16 px, and 32 px at 2x). A change to a figure is baked into its app tile too.
+
+### Raw files
+
+| File | Use |
+| ---- | --- |
+| `@crewlethq/icons/svg/product/<product>.svg` | The master, `0 0 48 48`. |
+| `@crewlethq/icons/svg/product/small/<product>.svg` | The 16 pixel grid drawing, `0 0 16 16`. |
+| `@crewlethq/icons/svg/product/app-tile/<product>.svg` | The app tile, `0 0 180 180`. |
+
+The marks' sources are these files: `npm run build` compiles the master and the 16 pixel grid drawing of each product into `ProductMark`, and refuses a product that has one without the other.
 
 ## Signature illustrations
 
