@@ -1,6 +1,7 @@
 /**
- * The assistant at work: the Assistant's mark with turning blades, a status
- * line under a shimmer, and one announcement however often the line changes.
+ * The assistant at work: the Assistant's mark with its spark turning and its
+ * companion twinkling, a status line under a shimmer, and one announcement
+ * however often the line changes.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -15,12 +16,50 @@ afterEach(cleanup);
 const here = dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(join(here, 'ThinkingIndicator.css'), 'utf8');
 
-test('draws the Assistant mark, hidden, with the blades the stylesheet turns', () => {
+/** The body of the first rule whose selector is exactly `selector`, outside any at-rule. */
+const ruleBody = (source: string, selector: string) => {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(source)?.[1] ?? '';
+};
+
+/** One keyframes block, as text. */
+const keyframes = (name: string) => new RegExp(`@keyframes ${name}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(css)?.[1] ?? '';
+
+test('draws the Assistant mark, hidden, on the 16 pixel grid, with the two parts the stylesheet moves', () => {
   const { container } = render(<ThinkingIndicator status="Thinking" />);
   const mark = container.querySelector('svg.crewlet-product-mark--assistant')!;
   expect(mark.getAttribute('aria-hidden')).toBe('true');
+  expect(mark.getAttribute('viewBox')).toBe('0 0 16 16');
   expect(mark.querySelectorAll('[data-motion="turn"]')).toHaveLength(1);
-  expect(css).toMatch(/\.crewlet-thinking__mark \[data-motion='turn'\]\s*\{[^}]*animation:/);
+  expect(mark.querySelectorAll('[data-motion="twinkle"]')).toHaveLength(1);
+});
+
+test('turns the spark and twinkles its companion on one timeline, each about its own centre', () => {
+  const pivot = ruleBody(css, ".crewlet-thinking__mark [data-motion='turn'],\n.crewlet-thinking__mark [data-motion='twinkle']");
+  expect(pivot).toMatch(/transform-box: fill-box;/);
+  expect(pivot).toMatch(/transform-origin: center;/);
+  expect(css).toMatch(
+    /\.crewlet-thinking__mark \[data-motion='turn'\]\s*\{\s*animation: crewlet-thinking-turn var\(--motion-duration-spark\) linear infinite;/,
+  );
+  expect(css).toMatch(
+    /\.crewlet-thinking__mark \[data-motion='twinkle'\]\s*\{\s*animation: crewlet-thinking-twinkle var\(--motion-duration-spark\) linear infinite;/,
+  );
+});
+
+test('tucks the spark through the middle of its quarter turn, in one transform', () => {
+  // The design's stops and the three pieces of its one eased curve. A tip at
+  // full size sweeps through the companion between 26.6 and 63.4 degrees, so
+  // the scale must already be 0.8 by 15.37 degrees and hold it to 74.63.
+  const turn = keyframes('crewlet-thinking-turn');
+  expect(turn).toMatch(/0%,\s*20% \{\s*transform: rotate\(0deg\) scale\(1\);\s*animation-timing-function: cubic-bezier\(0\.4878, 0, 0\.7883, 0\.4041\);/);
+  expect(turn).toMatch(/37\.5% \{\s*transform: rotate\(15\.37deg\) scale\(0\.8\);\s*animation-timing-function: cubic-bezier\(0\.4462, 0\.2792, 0\.5538, 0\.7208\);/);
+  expect(turn).toMatch(/52\.5% \{\s*transform: rotate\(74\.63deg\) scale\(0\.8\);\s*animation-timing-function: cubic-bezier\(0\.2117, 0\.5959, 0\.5122, 1\);/);
+  expect(turn).toMatch(/70%,\s*100% \{\s*transform: rotate\(90deg\) scale\(1\);/);
+  // Rotate and scale never animate as separate properties that could drift.
+  expect(turn).not.toMatch(/(^|\s)(rotate|scale):/);
+  const twinkle = keyframes('crewlet-thinking-twinkle');
+  expect(twinkle).toMatch(/45% \{\s*transform: scale\(0\.7\);\s*opacity: 0\.5;/);
+  expect(twinkle).toMatch(/70%,\s*100% \{\s*transform: scale\(1\);\s*opacity: 1;/);
 });
 
 test('says the status beside the mark, and nothing beside it without one', () => {
@@ -49,9 +88,14 @@ test('takes its spoken words from label', () => {
   expect(screen.getByRole('status').textContent).toBe('Working on your question');
 });
 
-test('stops every motion under a reduced-motion preference', () => {
+test('holds a still working pose under a reduced-motion preference, and stops every motion', () => {
   const reduced = /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
-  expect(reduced).toMatch(/\.crewlet-thinking__mark \[data-motion='turn'\]\s*\{\s*animation: none;/);
+  expect(reduced).toMatch(/\.crewlet-thinking__mark \[data-motion='turn'\]\s*\{\s*animation: none;\s*transform: scale\(0\.8\);\s*\}/);
+  expect(reduced).toMatch(
+    /\.crewlet-thinking__mark \[data-motion='twinkle'\]\s*\{\s*animation: none;\s*transform: scale\(0\.7\);\s*opacity: 0\.5;\s*\}/,
+  );
+  // The pose is swapped in at once: nothing in the stylesheet eases into it.
+  expect(css).not.toMatch(/transition(-[a-z]+)?\s*:/);
   expect(reduced).toMatch(/\.crewlet-thinking__status\s*\{[^}]*animation: none;/);
   expect(reduced).toMatch(/\.crewlet-thinking__status\s*\{[^}]*background-image: none;/);
 });

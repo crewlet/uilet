@@ -205,6 +205,14 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.67.0
+
+**The product marks are redrawn as one family** (`@crewlethq/icons`). Each stands on the Crewlet octagon in the brand violet with a deeper lower facet (`#6a3cff`, was `#5c24ff`) and one white figure: Worklet a tick over one open task, Doclet a page with a chamfer fold, Chat a speech bubble with the crewmate's visor, and the Assistant two sparks. The `dim` and `eye` parts are gone, and every drawing carries a hidden `keyline` part that the soon state paints. Nothing to change unless a stylesheet of your own reads those parts.
+
+**`ProductMark` mounts a 16 pixel grid drawing below 24 px** and takes `drawing` (`ProductMarkDrawing`: `auto`, `small` or `master`). `auto` reads `size`; a size it cannot measure in px (the default `1em`) keeps the master, so pass `drawing="small"` for a mark set in a line of body text. Soon is now derived from either drawing, and under forced colours a mark draws its one colour form in the system colours.
+
+**`ThinkingIndicator` moves the new Assistant mark.** Its main spark makes a quarter turn about its own centre, tucking to 0.8 through the middle of the turn, while its companion twinkles, over `--motion-duration-spark` (1.6s, new in `@crewlethq/tokens`). Under reduced motion it holds a still working pose (the spark tucked, the companion dimmed) rather than the idle mark.
+
 ## Changes in 0.65.0
 
 **`ProposalCard` takes `tone`, `confirmation` and `details`.** `tone="danger"` (`ProposalTone`, `PROPOSAL_TONES`) marks a change that removes or discards something: while the card waits on the person or carries the change out, Card's danger rail runs down its leading edge, the title is set in the danger ink (AA in both palettes) and the primary is the danger button. A settled card steps back with no tone, and the Tag keeps saying the state. `confirmation` (`{ label }`, `ProposalConfirmation`) draws a `Checkbox` above the decision: the primary is held soft disabled, described by `labels.confirmationNeeded` ("Check the confirmation above first"), until it is ticked. The tick clears when the card settles or is handed another proposal in place (another `title` or `approveLabel`), and `approveBlocked` still outranks it. `details` is the precise request behind the change, in a compact `Disclosure` titled `labels.details` ("Technical details"), collapsed by default and mounted only once opened, at the foot of the body above the note.
