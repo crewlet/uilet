@@ -23,7 +23,16 @@ type Story = StoryObj<typeof Spinner>;
 export const Basic: Story = {};
 
 const ROW = { display: 'flex', gap: 24, alignItems: 'center', color: 'var(--color-text-secondary)' } as const;
-const CAPTION = { display: 'grid', justifyItems: 'center', gap: 8, fontSize: 'var(--font-size-xs)' } as const;
+/* Each ring is centred in a row as tall as the largest step, so the captions
+   under the four sizes share one baseline rather than stepping down with them. */
+const CAPTION = {
+  display: 'grid',
+  gridTemplateRows: 'var(--font-size-md) auto',
+  justifyItems: 'center',
+  alignItems: 'center',
+  gap: 8,
+  fontSize: 'var(--font-size-xs)',
+} as const;
 const SIZES = ['xs', 'sm', 'md', 'em'] as const;
 
 /**

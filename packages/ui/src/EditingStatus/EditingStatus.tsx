@@ -1,4 +1,5 @@
 import { formatRelative, toISO, useNow, type TimeValue } from '../RelativeTime/index.js';
+import { StatusDot } from '../StatusDot/index.js';
 import { cx } from '../utils/cx.js';
 
 /** Every string the status draws. */
@@ -51,7 +52,8 @@ export function EditingStatus({ dirty, saving = false, savedAt, labels, classNam
   const state = saving ? text.saving : dirty ? text.unsaved : showSaved ? text.saved : null;
   return (
     <span className={cx('crewlet-editing-status', dirty && 'crewlet-editing-status--dirty', className)}>
-      <span className="crewlet-editing-status__dot" aria-hidden="true" />
+      {/* The kit's own dot, quiet at rest and the accent once anything is unsaved (see the stylesheet). */}
+      <StatusDot tone={dirty ? 'brand' : 'neutral'} className="crewlet-editing-status__dot" />
       <span className="crewlet-editing-status__text">
         {/*
           THE LIVE REGION HOLDS THE WORDS AND NOTHING THAT TICKS: the label and
