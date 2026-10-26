@@ -1,0 +1,16 @@
+/*
+ * A file attached to a message: a Tag whose leading mark is the file's
+ * thumbnail, at the glyph's own box so the pill keeps its height, with the
+ * name cut short rather than widening the composer's row.
+ */
+.crewlet-attachment-chip {
+  max-width: 14rem;
+}
+
+.crewlet-attachment-chip__thumb {
+  display: block;
+  width: var(--font-size-md);
+  height: var(--font-size-md);
+  border-radius: var(--radius-xs);
+  object-fit: cover;
+}

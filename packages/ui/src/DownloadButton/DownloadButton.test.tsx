@@ -335,3 +335,14 @@ test('a file that cannot be fetched reads as a failed download, never an uncaugh
   });
   expect(screen.getByRole('button').textContent).toBe('Download failed');
 });
+
+test('one of several takes a name of its own that keeps its visible label', () => {
+  render(
+    <>
+      <DownloadButton filename="a.csv" text="a" aria-label="Download a.csv" />
+      <DownloadButton filename="b.csv" text="b" aria-label="Download b.csv" />
+    </>,
+  );
+  expect(screen.getByRole('button', { name: 'Download a.csv' }).textContent).toContain('Download');
+  expect(screen.getByRole('button', { name: 'Download b.csv' })).toBeTruthy();
+});

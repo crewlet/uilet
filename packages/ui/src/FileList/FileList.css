@@ -1,0 +1,89 @@
+/*
+ * Files handed to the reader: one row each on a three-track grid (the mark,
+ * the name over its type and size, the action), rows split by the hairline,
+ * and an image's preview under its row on the inset ground.
+ */
+.crewlet-file-list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-file-list__file {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+  padding-block: var(--spacing-2);
+}
+
+.crewlet-file-list__file + .crewlet-file-list__file {
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-file-list__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* The mark on a small tile, the size of the two lines beside it. */
+.crewlet-file-list__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-inset);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-file-list__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-file-list__name {
+  overflow: hidden;
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-file-list__meta {
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-file-list__action {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* THE PREVIEW IS CONTAINED, never cropped: a chart or a screenshot is read
+   whole, on the inset ground, no taller than a dozen lines. */
+.crewlet-file-list__preview {
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-inset);
+}
+
+.crewlet-file-list__preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 12rem;
+  object-fit: contain;
+}
