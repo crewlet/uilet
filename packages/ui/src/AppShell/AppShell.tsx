@@ -86,6 +86,7 @@ import { AccountRow } from './AccountRow.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { ResizeHandle } from './ResizeHandle.js';
 import { AsideContext, PeekContext, type AppShellAsideShape, type AppShellPeekShape } from './regions.js';
+import { ScreenWidthContext, contentInlineSize, createScreenWidthStore } from './screenWidth.js';
 
 export { useAppShellAside, useAppShellPeek } from './regions.js';
 export type { AppShellAsideShape, AppShellPeekShape, AppShellRegionValue } from './regions.js';
@@ -355,6 +356,29 @@ export function AppShell({
     return () => observer.disconnect();
   }, [asideColumn]);
 
+  /*
+   * THE SCREEN'S WIDTH, measured on the content column and published for the
+   * decisions a stylesheet cannot make (`useScreenBelow`, screenWidth.ts). It
+   * is the content box, the width a container query on the column reads, so
+   * a screen's JavaScript and its stylesheet fold at the same pixel. Measured
+   * in a layout effect, so the first paint already has it.
+   */
+  const content = useRef<HTMLDivElement | null>(null);
+  const [screenWidth] = useState(createScreenWidthStore);
+  useLayoutEffect(() => {
+    const column = content.current;
+    if (!column) return undefined;
+    const measure = () => screenWidth.set(contentInlineSize(column));
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(column);
+    return () => {
+      observer.disconnect();
+      screenWidth.set(null);
+    };
+  }, [screenWidth]);
+
   const shell: AppShellContextValue = {
     narrow,
     drawerOpen,
@@ -456,7 +480,9 @@ export function AppShell({
            */}
           <div className="crewlet-app-shell__body">
             <main id={main} ref={setMain} className="crewlet-app-shell__main" tabIndex={-1}>
-              <div className="crewlet-app-shell__content">{children}</div>
+              <div ref={content} className="crewlet-app-shell__content">
+                <ScreenWidthContext.Provider value={screenWidth}>{children}</ScreenWidthContext.Provider>
+              </div>
             </main>
             {hasPeek ? <PeekContext.Provider value={{ shape: peekShape }}>{peek}</PeekContext.Provider> : null}
           </div>
