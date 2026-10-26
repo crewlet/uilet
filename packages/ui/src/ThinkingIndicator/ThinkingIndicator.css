@@ -1,5 +1,5 @@
 /*
- * The assistant at work: the Assistant's mark, its blades turning, and a line
+ * The assistant at work: the Assistant's mark, its spark turning, and a line
  * of status under a shimmer. See ThinkingIndicator.tsx for why it replaces a
  * caret and how it is announced.
  */
@@ -21,27 +21,83 @@
 }
 
 /*
- * THE BLADES TURN A QUARTER, THEN REST. The figure is four blades around a
- * core, the same after a quarter turn, so each round ends where the next
- * begins and the loop never shows a seam. One round is the breath period
- * (2.2s): the turn takes its first half on the in-out ease and the second
- * half is still, which reads as steady thought rather than as a spinner. The
- * core holds still, as the mark's own description promises.
+ * THE SPARK TURNS A QUARTER, THEN RESTS. The Assistant's main spark
+ * (data-motion="turn") makes a quarter turn about its own centre while its
+ * companion (data-motion="twinkle") dims and shrinks, both on one timeline of
+ * --motion-duration-spark (1.6s). The gesture runs from 20% to 70% of the
+ * period and every part is at rest in the idle pose for the other half, so
+ * the loop never jumps: the spark is four-fold symmetric, so its 90 degree
+ * pose is its 0 degree pose. Both parts pivot on their own fill box, which is
+ * the spark's centre, so the same rules move the 16 pixel grid drawing and
+ * the 48 unit master.
+ *
+ * THE TURN TUCKS. A full-size spark sweeps its tip through the companion
+ * between 26.6 and 63.4 degrees. The spark therefore pulls in to 0.8 over the
+ * first 15.37 degrees, holds 0.8 through the fast middle of the turn and opens
+ * back to 1 over the last 15.37 degrees, which keeps clear violet between the
+ * two at every frame. Rotate and scale are one transform, so the two can never
+ * drift apart. The three timing functions are the design's one eased quarter
+ * turn, cubic-bezier(0.65, 0, 0.35, 1) over the gesture, split at the 37.5%
+ * and 52.5% stops, so the angle follows that curve exactly.
+ *
+ * THE COMPANION TWINKLES. Its trough sits at 45%, the instant the main spark
+ * passes 45 degrees, and it shares the turn's gesture window.
  */
+.crewlet-thinking__mark [data-motion='turn'],
+.crewlet-thinking__mark [data-motion='twinkle'] {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 .crewlet-thinking__mark [data-motion='turn'] {
-  transform-box: view-box;
-  transform-origin: 50% 50%;
-  animation: crewlet-thinking-turn var(--motion-duration-breath) var(--motion-easing-in-out) infinite;
+  animation: crewlet-thinking-turn var(--motion-duration-spark) linear infinite;
+}
+
+.crewlet-thinking__mark [data-motion='twinkle'] {
+  animation: crewlet-thinking-twinkle var(--motion-duration-spark) linear infinite;
 }
 
 @keyframes crewlet-thinking-turn {
-  0% {
-    transform: rotate(0deg);
+  0%,
+  20% {
+    transform: rotate(0deg) scale(1);
+    animation-timing-function: cubic-bezier(0.4878, 0, 0.7883, 0.4041);
   }
 
-  50%,
+  37.5% {
+    transform: rotate(15.37deg) scale(0.8);
+    animation-timing-function: cubic-bezier(0.4462, 0.2792, 0.5538, 0.7208);
+  }
+
+  52.5% {
+    transform: rotate(74.63deg) scale(0.8);
+    animation-timing-function: cubic-bezier(0.2117, 0.5959, 0.5122, 1);
+  }
+
+  70%,
   100% {
-    transform: rotate(90deg);
+    transform: rotate(90deg) scale(1);
+  }
+}
+
+@keyframes crewlet-thinking-twinkle {
+  0%,
+  20% {
+    transform: scale(1);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+
+  45% {
+    transform: scale(0.7);
+    opacity: 0.5;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+
+  70%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
@@ -101,9 +157,24 @@
   }
 }
 
+/*
+ * UNDER REDUCED MOTION THE MARK HOLDS A WORKING POSE. Both animations stop,
+ * and the mark shows the gesture's tuck and the twinkle's trough held still
+ * on the tile's axes: the main spark at 0.8 and the companion at 0.7 and half
+ * strength. It differs from the idle mark without moving, and the 16 pixel
+ * grid drawing keeps its pixel centred tips, so it stays crisp at 16 and
+ * 20 px. The pose is swapped in at once, never with a transition.
+ */
 @media (prefers-reduced-motion: reduce) {
   .crewlet-thinking__mark [data-motion='turn'] {
     animation: none;
+    transform: scale(0.8);
+  }
+
+  .crewlet-thinking__mark [data-motion='twinkle'] {
+    animation: none;
+    transform: scale(0.7);
+    opacity: 0.5;
   }
 
   .crewlet-thinking__status {

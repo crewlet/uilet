@@ -1,10 +1,6 @@
 /*
  * A product mark draws the brand's own violet, so it reads the same in both
  * themes: the brand mark's colours are its identity, as a vendor's are.
- *
- * SOON IS HOLLOW, NOT GREY. The body keeps a faint violet tint, and its keyline
- * and face are drawn in the violet itself, so a product that has not shipped
- * is still unmistakably Crewlet's and never reads as a disconnected app.
  */
 
 .crewlet-product-mark {
@@ -13,29 +9,73 @@
   vertical-align: middle;
 }
 
+/*
+ * SOON IS HOLLOW, NOT GREY. Every drawing, the 48 unit master and the 16 pixel
+ * grid alike, carries its own soon keyline as a hidden part
+ * (data-part="keyline", fill="none"), so the soon state is derived from the
+ * drawing ProductMark mounts, with no second file. The keyline's inner contour
+ * winds against its outer one, so it stays hollow under either fill rule.
+ */
+.crewlet-product-mark--soon {
+  --crewlet-product-mark-soon-ink: #7c56ff;
+}
+
+/* A faint tint of the violet: it carries no contrast of its own. */
 .crewlet-product-mark--soon [data-part='body'] {
-  fill-opacity: 0.16;
+  fill-opacity: 0.08;
 }
 
+/* The lower facet is dropped: depth belongs to the shipped mark. */
 .crewlet-product-mark--soon [data-part='shade'] {
-  fill-opacity: 0.32;
+  display: none;
 }
 
+/* The keyline (3 units on the master, 1 px on the 16 grid) draws the silhouette. */
+.crewlet-product-mark--soon [data-part='keyline'] {
+  fill: var(--crewlet-product-mark-soon-ink);
+}
+
+/* The figure keeps its shape and takes the violet. */
 .crewlet-product-mark--soon [data-part='detail'] {
-  fill: #7c56ff;
+  fill: var(--crewlet-product-mark-soon-ink);
 }
 
-.crewlet-product-mark--soon [data-part='dim'] {
-  fill: #7c56ff;
-  fill-opacity: 0.4;
+/*
+ * A part that would come within 1 px of the keyline on the 16 grid declares
+ * data-soon="tuck" and is drawn one step smaller about its own centre (today
+ * only the Assistant's main spark: tip radius 5 to 4.5, tips on whole pixel
+ * edges).
+ */
+.crewlet-product-mark--soon [data-soon='tuck'] {
+  transform: scale(0.9);
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.crewlet-product-mark--soon [data-part='eye'] {
-  fill: #ffffff;
-}
-
+/*
+ * FORCED COLOURS DRAW THE MONO MARK. The system's palette replaces the
+ * violet, so the mark is drawn the way its one colour drawing is: the tile in
+ * the system's text colour with the figure knocked out to the ground, which
+ * keeps every figure readable on any palette the reader chose. The mark sets
+ * its own system colours, so the browser is told not to adjust them again.
+ * Soon keeps its hollow shape in the text colour, at half strength.
+ */
 @media (forced-colors: active) {
+  .crewlet-product-mark {
+    forced-color-adjust: none;
+  }
+
+  .crewlet-product-mark [data-part='body'],
+  .crewlet-product-mark [data-part='shade'] {
+    fill: CanvasText;
+  }
+
+  .crewlet-product-mark:not(.crewlet-product-mark--soon) [data-part='detail'] {
+    fill: Canvas;
+  }
+
   .crewlet-product-mark--soon {
+    --crewlet-product-mark-soon-ink: CanvasText;
     opacity: 0.5;
   }
 }

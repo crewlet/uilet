@@ -3,4 +3,4 @@
 // here without resolving the root, which carries every illustration and
 // vendor mark in the package.
 export { PRODUCTS, ProductMark } from './ProductMark.js';
-export type { Product, ProductMarkProps } from './ProductMark.js';
+export type { Product, ProductMarkDrawing, ProductMarkProps } from './ProductMark.js';

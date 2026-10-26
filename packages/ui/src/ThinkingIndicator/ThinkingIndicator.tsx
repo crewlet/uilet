@@ -20,9 +20,11 @@ export interface ThinkingIndicatorProps extends Omit<HTMLAttributes<HTMLDivEleme
 
 /**
  * The assistant at work, drawn where its answer will be: the Assistant's mark
- * with its four blades turning a quarter at a time around a still core, and,
- * while nothing of the answer is on screen yet, a line saying what it is doing
- * under a slow shimmer.
+ * with its main spark making a quarter turn while its companion twinkles, then
+ * resting, and, while nothing of the answer is on screen yet, a line saying
+ * what it is doing under a slow shimmer. The mark is drawn at 16 px, so it is
+ * the 16 pixel grid drawing, and the motion is this component's stylesheet:
+ * the mark carries only its `data-motion` parts.
  *
  * IN PLACE OF A CARET. A blinking bar after streamed text lands wherever the
  * last block ends, on a line of its own under a list or at the start of an
@@ -35,9 +37,10 @@ export interface ThinkingIndicatorProps extends Omit<HTMLAttributes<HTMLDivEleme
  * changes with every step, is hidden from assistive technology, where the
  * steps are read from their own list.
  *
- * UNDER REDUCED MOTION the blades hold still and the line is drawn in the
- * secondary ink without the shimmer: the mark and the words still say that
- * work is under way.
+ * UNDER REDUCED MOTION the mark holds a still working pose (the main spark
+ * tucked, the companion dimmed) and the line is drawn in the secondary ink
+ * without the shimmer: the mark and the words still say that work is under
+ * way.
  */
 export function ThinkingIndicator({ status, label = 'Thinking', className, ...rest }: ThinkingIndicatorProps) {
   return (
