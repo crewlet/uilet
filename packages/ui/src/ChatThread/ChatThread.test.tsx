@@ -72,6 +72,59 @@ test('counts what arrived since the reader scrolled away, and Jump to latest ret
   expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
 });
 
+// A JUMP HOLDS UNTIL IT LANDS: the positions a smooth scroll passes through
+// are not the reader leaving, and an answer that grows meanwhile is followed.
+// Mutation: read each intermediate position as the reader's, and the pill
+// comes back mid-jump and the growth is not followed.
+test('a smooth jump to the latest is not undone by the positions it passes through', () => {
+  const { rerender } = render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
+  const log = screen.getByRole('log');
+  layout(log, 1000);
+  log.scrollTop = 0;
+  fireEvent.scroll(log);
+  // The browser animates; the test moves the position by hand.
+  log.scrollTo = () => {};
+  fireEvent.click(screen.getByRole('button', { name: 'Jump to latest' }));
+  log.scrollTop = 300;
+  fireEvent.scroll(log);
+  expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
+  layout(log, 1400);
+  rerender(<ChatThread label="Conversation">{items(4)}</ChatThread>);
+  expect(log.scrollTop).toBe(1000);
+});
+
+test("the reader's own scroll ends a jump at once", () => {
+  render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
+  const log = screen.getByRole('log');
+  layout(log, 1000);
+  log.scrollTop = 0;
+  fireEvent.scroll(log);
+  log.scrollTo = () => {};
+  fireEvent.click(screen.getByRole('button', { name: 'Jump to latest' }));
+  fireEvent.wheel(log);
+  log.scrollTop = 100;
+  fireEvent.scroll(log);
+  expect(screen.getByRole('button', { name: 'Jump to latest' })).toBeTruthy();
+});
+
+// THE PILL COVERS NOTHING: it sits in the thread's column under the log rather
+// than floating over its last lines. Mutation: position it over the scroller.
+test('the pill sits under the log, never over what is being read', () => {
+  const uninstall = installThemed('light', 'ChatThread/ChatThread.css');
+  try {
+    render(<ChatThread label="Conversation">{items(3)}</ChatThread>);
+    const log = screen.getByRole('log');
+    layout(log, 1000);
+    log.scrollTop = 0;
+    fireEvent.scroll(log);
+    const pill = screen.getByRole('button', { name: 'Jump to latest' }).parentElement!;
+    expect(getComputedStyle(pill).position).not.toBe('absolute');
+    expect(pill.previousElementSibling).toBe(log);
+  } finally {
+    uninstall();
+  }
+});
+
 test('reveals a decision whole when it fits, and its head at the top when it does not', () => {
   const handle = createRef<ChatThreadHandle>();
   render(

@@ -56,6 +56,22 @@ export const ShortThread: Story = {
   render: () => <ChatThread label="Conversation">{[0, 1].flatMap(exchange)}</ChatThread>,
 };
 
+/**
+ * Scroll up while the answer keeps growing, then press Jump to latest: the
+ * jump lands at the end it finds when it gets there, and the pill sits under
+ * the log, covering nothing.
+ */
+export const JumpWhileGrowing: Story = {
+  render: function Growing() {
+    const [count, setCount] = useState(6);
+    useEffect(() => {
+      const timer = setInterval(() => setCount((n) => (n < 40 ? n + 1 : n)), 400);
+      return () => clearInterval(timer);
+    }, []);
+    return <ChatThread label="Conversation">{Array.from({ length: count }, (_, i) => i).flatMap(exchange)}</ChatThread>;
+  },
+};
+
 /** Scroll up: the thread stays put and the pill appears. */
 export const LongThread: Story = {
   render: () => <ChatThread label="Conversation">{Array.from({ length: 8 }, (_, index) => exchange(index)).flat()}</ChatThread>,
