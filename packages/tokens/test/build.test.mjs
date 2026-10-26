@@ -181,6 +181,7 @@ describe('the display, body, sheet, shell, breakpoint and breath tokens', () => 
     ['motion.duration.breath', '2200ms', '2200ms'],
     ['motion.duration.turn', '1000ms', '1000ms'],
     ['motion.duration.sweep', '1500ms', '1500ms'],
+    ['motion.duration.spark', '1600ms', '1600ms'],
   ];
   const property = (path) => `--${path.split('.').map((part) => part.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()).join('-')}`;
 
