@@ -4,9 +4,11 @@ import { ChatThread, MessageBubble, Prose, Stack, ThinkingIndicator } from '@cre
 
 /**
  * The assistant at work, drawn where its answer will be: the Assistant's mark
- * with its blades turning a quarter at a time, and, before the answer's first
- * words, a line saying what it is doing under a slow shimmer. It replaces a
- * caret after streamed text, which landed on a line of its own.
+ * with its main spark making a quarter turn while its companion twinkles, and,
+ * before the answer's first words, a line saying what it is doing under a slow
+ * shimmer. Under a reduced-motion preference the mark holds a still working
+ * pose instead (the spark tucked, the companion dimmed). It replaces a caret
+ * after streamed text, which landed on a line of its own.
  */
 const meta: Meta<typeof ThinkingIndicator> = {
   title: 'UI/ThinkingIndicator',
