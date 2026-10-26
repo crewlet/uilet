@@ -58,7 +58,16 @@ const COLUMNS: TreeGridColumn[] = [
   { key: 'handle', header: 'Handle', width: 'minmax(0, 1.5fr)' },
   { key: 'lead', header: 'Lead or reports to', width: 'minmax(0, 2fr)' },
   { key: 'problems', header: 'Problems', width: 'minmax(0, 1fr)' },
-  { key: 'actions', header: 'Actions', headerHidden: true, width: 'var(--size-control-md)' },
+  // The control and the cell's padding on either side. A track the size of
+  // the control alone left the menu button 4px past the frame, and the grid
+  // scrolled sideways by 3px at every width. A fixed length, not `auto`: each
+  // row is a grid of its own, so `auto` would size this track row by row.
+  {
+    key: 'actions',
+    header: 'Actions',
+    headerHidden: true,
+    width: 'calc(var(--size-control-sm) + var(--spacing-2) * 2)',
+  },
 ];
 
 function rowsOf(withAddRows: boolean): TreeInput[] {

@@ -17,6 +17,11 @@
  */
 
 .crewlet-data-grid {
+  /* The inset at the grid's two outer edges: its first and last column's, and
+     that of every band that spans it (a band's head and foot, the foot). The
+     cells' own step on a grid standing alone; the card's own in a card. */
+  --crewlet-data-grid-edge: var(--spacing-3);
+
   display: grid;
   min-width: 0;
   border: 1px solid var(--color-border-hover);
@@ -30,10 +35,16 @@
  * or not): the card is the frame, so the grid draws none of its own and one
  * rule parts it from the card's head. Under the card's header, the header's
  * own rule is that one.
+ *
+ * AND ITS OUTER CELLS TAKE THE CARD'S INSET, as Table's do: a card has one
+ * left edge and its header sets it (Card.css). At the cells' own step every
+ * row stood 4px outside the card's title.
  */
 .crewlet-data-grid[data-flush],
 .crewlet-card > .crewlet-data-grid,
 .crewlet-card__body > .crewlet-data-grid {
+  --crewlet-data-grid-edge: var(--spacing-4);
+
   border: 0;
   border-top: 1px solid var(--color-border-default);
   border-radius: var(--radius-none);
@@ -79,6 +90,37 @@
 }
 
 /*
+ * A cell's inline inset: the cells' own step between two columns, and the
+ * grid's edge (above) on the outer side of its first and last column.
+ */
+.crewlet-data-grid__th,
+.crewlet-data-grid__cell {
+  --crewlet-data-grid-cell-start: var(--spacing-3);
+  --crewlet-data-grid-cell-end: var(--spacing-3);
+}
+
+.crewlet-data-grid__th:first-child,
+.crewlet-data-grid__cell:first-child {
+  --crewlet-data-grid-cell-start: var(--crewlet-data-grid-edge);
+}
+
+.crewlet-data-grid__th:last-child,
+.crewlet-data-grid__cell:last-child {
+  --crewlet-data-grid-cell-end: var(--crewlet-data-grid-edge);
+}
+
+/*
+ * EXCEPT THE SELECTION BOX, which keeps the cells' own step: its 16px box sits
+ * 4px inside its 24px target, so at 12px the box itself already stands on a
+ * card's 16px line. The edge would have put it 4px past the card's title, and
+ * past the 48px track its column is drawn in.
+ */
+.crewlet-data-grid__th:first-child:has(.crewlet-checkbox),
+.crewlet-data-grid__cell:first-child:has(> .crewlet-data-grid__select) {
+  --crewlet-data-grid-cell-start: var(--spacing-3);
+}
+
+/*
  * THE LIST TABLE'S HEAD: the micro-label register every table takes, 11/500
  * uppercase. A sortable head is a button with its chrome reset; the reset
  * takes the focus ring with it, so the ring is restated below.
@@ -87,7 +129,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
-  padding: var(--spacing-2) var(--spacing-3);
+  padding-block: var(--spacing-2);
+  padding-inline: var(--crewlet-data-grid-cell-start) var(--crewlet-data-grid-cell-end);
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
@@ -102,6 +145,21 @@
   cursor: default;
 }
 
+/*
+ * THE SELECTION COLUMN'S HEAD holds a 24px box rather than a label, and at
+ * the head's own step it stood the head 41.5px tall over 36px rows. It takes
+ * the cells' step, so the head keeps the row floor with or without the box;
+ * and the box sits on the top of its line rather than on its baseline, which
+ * added half a pixel under it.
+ */
+.crewlet-data-grid__th:has(.crewlet-checkbox) {
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-data-grid__th .crewlet-checkbox {
+  vertical-align: top;
+}
+
 /* A sortable head's control fills the head: the whole cell is the target. */
 .crewlet-data-grid__sort {
   all: unset;
@@ -110,8 +168,11 @@
   gap: var(--spacing-1);
   flex: 1 1 auto;
   min-width: 0;
-  margin: calc(-1 * var(--spacing-2)) calc(-1 * var(--spacing-3));
-  padding: var(--spacing-2) var(--spacing-3);
+  /* Its head's own padding, taken back and given again, edge included. */
+  margin-block: calc(-1 * var(--spacing-2));
+  margin-inline: calc(-1 * var(--crewlet-data-grid-cell-start)) calc(-1 * var(--crewlet-data-grid-cell-end));
+  padding-block: var(--spacing-2);
+  padding-inline: var(--crewlet-data-grid-cell-start) var(--crewlet-data-grid-cell-end);
   cursor: pointer;
 }
 
@@ -221,12 +282,36 @@ button.crewlet-data-grid__row-link {
 }
 
 .crewlet-data-grid__cell {
-  padding: var(--spacing-1) var(--spacing-3);
+  padding-block: var(--spacing-1);
+  padding-inline: var(--crewlet-data-grid-cell-start) var(--crewlet-data-grid-cell-end);
   font-size: var(--font-size-compact);
   min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+}
+
+/*
+ * A GHOST CONTROL STARTS ON THE COLUMN'S TEXT EDGE. A small ghost button that
+ * opens a cell ("Open ENG-12", a choice made in place through a menu) drew its
+ * word one padding and one edge (9px) inside the line its column starts on.
+ * Its padding and edge are taken back, as a card's foot does (StatusCard.css):
+ * the word sits on the line and only the hover's ground reaches past it, into
+ * the step between two columns. A column of figures ends its controls on the
+ * far edge, so it is left alone.
+ *
+ * NEVER AT THE GRID'S OWN EDGE: its first column, and every line of a phone's
+ * card (below). A grid standing alone has only its 12px edge there, and with
+ * the 9px taken back, the 4px the control's focus ring stands off it ran past
+ * the grid's clip: the ring lost a pixel and the hover ground stood 3px from
+ * the frame.
+ */
+.crewlet-data-grid__cell:not(:first-child, .crewlet-data-grid__cell--right)
+  > .crewlet-btn--ghost.crewlet-btn--small:first-child,
+.crewlet-data-grid__cell:not(:first-child, .crewlet-data-grid__cell--right)
+  > .crewlet-menu-anchor:first-child
+  > .crewlet-btn--ghost.crewlet-btn--small {
+  margin-inline-start: var(--crewlet-data-grid-control-outdent, calc(-1 * (var(--spacing-2) + 1px)));
 }
 
 /*
@@ -269,7 +354,7 @@ button.crewlet-data-grid__row-link {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-3);
+  padding: var(--spacing-2) var(--crewlet-data-grid-edge);
   background: var(--color-surface-elevated);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
@@ -284,7 +369,7 @@ button.crewlet-data-grid__row-link {
 /* A SECOND AXIS IS A BAND INSIDE A BAND, inset and quieter, so it does not
    read as its parent's sibling; and it draws no rule above itself. */
 .crewlet-data-grid__band .crewlet-data-grid__band > .crewlet-data-grid__band-head {
-  padding-left: calc(var(--spacing-3) + var(--spacing-4));
+  padding-left: calc(var(--crewlet-data-grid-edge) + var(--spacing-4));
   background: var(--color-surface-subtle);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-tertiary);
@@ -302,7 +387,7 @@ button.crewlet-data-grid__row-link {
 }
 
 .crewlet-data-grid__band-foot {
-  padding: var(--spacing-1) var(--spacing-3);
+  padding: var(--spacing-1) var(--crewlet-data-grid-edge);
   font-size: var(--font-size-2xs);
   color: var(--color-text-tertiary);
   background: var(--color-surface-elevated);
@@ -320,7 +405,7 @@ button.crewlet-data-grid__row-link {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-3);
+  padding: var(--spacing-2) var(--crewlet-data-grid-edge);
   border-top: 1px solid var(--color-border-hover);
   background: var(--color-surface-elevated);
   font-size: var(--font-size-xs);
@@ -339,7 +424,7 @@ button.crewlet-data-grid__row-link {
   all: unset;
   /* After the reset, which takes `grid-column` too. */
   grid-column: 1 / -1;
-  padding: var(--spacing-1) var(--spacing-3);
+  padding: var(--spacing-1) var(--crewlet-data-grid-edge);
   font-size: var(--font-size-2xs);
   color: var(--color-brand-accent-ink);
   cursor: pointer;
@@ -394,6 +479,11 @@ button.crewlet-data-grid__row-link {
    sorted. */
 @media (width < 640px) {
   .crewlet-data-grid {
+    /* No ghost control is pulled out here (see above): every line of a card
+       starts at the grid's edge, and a compact row's marks run on one line,
+       where the hover ground swallowed the gap before it. */
+    --crewlet-data-grid-control-outdent: 0px;
+
     display: block;
   }
 
@@ -408,7 +498,7 @@ button.crewlet-data-grid__row-link {
 
   .crewlet-data-grid__row {
     display: block;
-    padding: var(--spacing-2) var(--spacing-3);
+    padding: var(--spacing-2) var(--crewlet-data-grid-edge);
     min-height: 0;
   }
 

@@ -211,7 +211,9 @@ export function DataViewToolbar<TRow>({
           type="search"
           inputSize="sm"
           containerClassName="crewlet-data-view-toolbar__search"
-          leading={<SearchGlyph size="sm" />}
+          // The small step's glyph (12px), the one the small buttons beside
+          // the field draw, so the row's marks are one size.
+          leading={<SearchGlyph size="xs" />}
           aria-label={searchDef.label || labels.search}
           placeholder={searchDef.placeholder ?? labels.searchPlaceholder}
           value={values[searchDef.name] === undefined || values[searchDef.name] === null ? '' : String(values[searchDef.name])}

@@ -309,6 +309,10 @@
  * turns red under the pointer reads as a row of dangerous things.
  */
 .crewlet-filter-axis-chip__remove {
+  /* AS TALL AS THE PILL'S INSIDE, as the trigger beside it is. At the small
+     control's own height it stood 2px past the pill's inner edge, cut off at
+     the bottom, and its cross sat 1px under the chip's middle. */
+  height: auto;
   border-radius: 0;
   border-left: 1px solid var(--color-brand-accent-soft-strong);
   color: var(--color-brand-accent-ink);

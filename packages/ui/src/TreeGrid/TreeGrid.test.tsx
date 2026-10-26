@@ -723,7 +723,9 @@ describe('a grid that opens one level at a time', () => {
 });
 
 test('inside a flush card the grid draws no frame of its own', () => {
-  const inCard = declarations().find(([selector]) => selector === '.crewlet-card--flush .crewlet-tree-grid__grid')?.[1] ?? '';
+  // The frame is the scroller's (it stays put while the rows scroll), so the
+  // flush card takes it off the scroller.
+  const inCard = declarations().find(([selector]) => selector === '.crewlet-card--flush .crewlet-tree-grid__scroller')?.[1] ?? '';
   expect(inCard).toMatch(/border:\s*none/);
   expect(inCard).toMatch(/border-radius:\s*0/);
   expect(inCard).toMatch(/background:\s*none/);
