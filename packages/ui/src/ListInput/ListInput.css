@@ -21,6 +21,15 @@
   min-width: 0;
 }
 
+/*
+ * THE LIST STANDS A STEP FURTHER FROM THE BOX than the field's one step
+ * between its lines: those are lines of text, these are two drawn boundaries,
+ * and at one step the box's edge and the card's read as one doubled rule.
+ */
+.crewlet-list-input__add + .crewlet-list-input__items {
+  margin-top: var(--spacing-1);
+}
+
 .crewlet-list-input__items {
   /* The rows lay themselves out by the list's own width (see NARROW below). */
   container: crewlet-list-input / inline-size;
@@ -50,6 +59,13 @@
    * content.
    */
   overflow: hidden;
+  /*
+   * The band ONE LINE of an item's control stands in: its two border pixels,
+   * its block inset (see the item's control below) and one line. The marks
+   * beside the words centre in it, and the row a removed item leaves stands
+   * on it.
+   */
+  --crewlet-list-input-line-band: calc(2px + var(--spacing-1) * 2 + var(--font-size-compact) * var(--font-line-height-normal));
 }
 
 /*
@@ -209,6 +225,29 @@
 }
 
 /*
+ * THE ROW'S MARKS SIT ON ITS FIRST LINE, as its number does. Centred on the
+ * row, a wrapped item's grip and buttons stood half a line under the words
+ * they act on (10.5px below the first line's middle on a two-line policy),
+ * level with nothing. Each centres in the band one line of the control
+ * takes, which is where a one-line row centred them, so that row does not
+ * move.
+ */
+.crewlet-list-input__item > .crewlet-list-input__handle,
+.crewlet-list-input__item > .crewlet-list-input__actions {
+  align-self: flex-start;
+  min-block-size: var(--crewlet-list-input-line-band);
+}
+
+/*
+ * THE ROW A REMOVED ITEM LEAVES STANDS AT A ROW'S HEIGHT, as it says above:
+ * on its buttons alone it stood 35px against an item's 39, so removing an
+ * item and undoing it moved every row under it by four pixels each way.
+ */
+.crewlet-list-input__removed > .crewlet-list-input__actions {
+  min-block-size: var(--crewlet-list-input-line-band);
+}
+
+/*
  * MOVE UP AND MOVE DOWN ARE THE ROW'S SECOND THOUGHT. Three controls on every
  * row is what made this list a grid of buttons; the console draws one. They
  * are revealed by the pointer and by the focus, never removed: an invisible
@@ -310,7 +349,10 @@
     flex-basis: calc(100% - var(--spacing-4) * 2 - var(--spacing-3) * 2);
   }
 
+  /* On a line of their own the buttons have no first line to sit on, so they
+     stand at their own height. */
   .crewlet-list-input__item > .crewlet-list-input__actions {
     margin-inline-start: auto;
+    min-block-size: auto;
   }
 }

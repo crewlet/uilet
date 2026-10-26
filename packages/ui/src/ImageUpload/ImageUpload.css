@@ -170,6 +170,19 @@
   transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+/*
+ * ON A PERSON'S CIRCLE THE BADGE SITS ON THE EDGE, where the circle crosses
+ * its own diagonal: (1 - 1/sqrt(2)) / 2 of the size, 0.1464, in from each
+ * side, less half the 24px badge. The six pixels out above are the agent
+ * tile's, whose squircle corner reaches that far; a circle turns away sooner,
+ * and at the default 80px the badge's middle stood 8px off the picture, so
+ * the badge floated beside it rather than being pinned to it.
+ */
+.crewlet-image-upload--human .crewlet-image-upload__remove {
+  top: calc(var(--crewlet-image-upload-size) * 0.1464 - 12px);
+  right: calc(var(--crewlet-image-upload-size) * 0.1464 - 12px);
+}
+
 .crewlet-image-upload:hover .crewlet-image-upload__remove,
 .crewlet-image-upload__remove:focus-visible {
   opacity: 1;

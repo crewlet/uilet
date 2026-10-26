@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { FileDrop, FilePickButton, type PickedFile } from "@crewlethq/ui";
+import { FileDrop, FilePickButton, Textarea, type PickedFile } from "@crewlethq/ui";
 
 /**
  * Where files are dropped: a target of its own with its pickers, or a region
@@ -74,12 +74,9 @@ function RegionDemo() {
         hint="An .html file, or a folder holding index.html"
         onFiles={setFiles}
       >
-        <textarea
-          aria-label="Source"
-          rows={8}
-          style={{ width: "100%" }}
-          defaultValue="<!doctype html>"
-        />
+        {/* The package's own field, so the region is shown over a real
+            editor rather than a native box with its text against the edge. */}
+        <Textarea aria-label="Source" rows={8} defaultValue="<!doctype html>" />
       </FileDrop>
       <Picked files={files} />
     </div>

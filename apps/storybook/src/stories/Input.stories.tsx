@@ -9,8 +9,8 @@ import {
   Input,
   InputAffix,
   Kbd,
-  Label,
   ReadOnlyField,
+  Text,
   Textarea,
 } from '@crewlethq/ui';
 import { SearchGlyph } from '@crewlethq/icons/glyphs';
@@ -72,7 +72,9 @@ export const Widths: Story = {
 export const Slots: Story = {
   render: () => (
     <div style={column}>
-      <Input type="search" leading={<SearchGlyph />} placeholder="Search seats" aria-label="Search seats" />
+      {/* The glyph at sm (14px), the step a Select, a SearchTrigger and a
+          medium IconButton draw theirs at. Unsized it took the page's 16px. */}
+      <Input type="search" leading={<SearchGlyph size="sm" />} placeholder="Search seats" aria-label="Search seats" />
       <Input trailing={<Kbd subtle>Enter</Kbd>} placeholder="Add a responsibility" aria-label="Add" />
       <FormField label="Site" helper="Where the engine reaches your instance." describedBy="story-affix">
         {(field) => (
@@ -146,7 +148,11 @@ export const Sections: Story = {
           </FormSection>
           <FormSection title="Schedule" hint="When the seat wakes up on its own." divided>
             <FormField as="fieldset" label="Windows" helper="Every window is in the company's time zone.">
-              <Label as="span">Nothing scheduled yet.</Label>
+              {/* An absent value in the value's own size and the quiet ink, not
+                  in the label register, where it read as a second label. */}
+              <Text variant="cell" tone="tertiary">
+                Nothing scheduled yet.
+              </Text>
             </FormField>
           </FormSection>
         </div>
