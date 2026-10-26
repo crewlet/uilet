@@ -190,6 +190,110 @@ describe('the source files', () => {
   });
 });
 
+/** How many numbers each path command takes. */
+const ARGUMENTS = { M: 2, L: 2, H: 1, V: 1, A: 7, Z: 0 };
+
+/**
+ * A path's vertices in absolute coordinates, one per command, with H and V
+ * read as L and a run of pairs after M read as L, as SVG does. An arc keeps
+ * its radii and flags, so two figures compare arc for arc.
+ */
+function vertices(d) {
+  const tokens = d.match(/[MLHVAZ]|-?(?:\d+\.?\d*|\.\d+)/gi);
+  const out = [];
+  let x = 0;
+  let y = 0;
+  let startX = 0;
+  let startY = 0;
+  let command = '';
+  for (let i = 0; i < tokens.length; ) {
+    if (/^[a-z]$/i.test(tokens[i])) command = tokens[i++];
+    else if (command === 'M') command = 'L';
+    else if (command === 'm') command = 'l';
+    const upper = command.toUpperCase();
+    const relative = command !== upper;
+    const n = tokens.slice(i, i + ARGUMENTS[upper]).map(Number);
+    i += ARGUMENTS[upper];
+    if (upper === 'Z') {
+      [x, y] = [startX, startY];
+      out.push({ command: 'Z' });
+    } else if (upper === 'A') {
+      [x, y] = relative ? [x + n[5], y + n[6]] : [n[5], n[6]];
+      out.push({ command: 'A', x, y, rx: n[0], ry: n[1], flags: n.slice(2, 5).join() });
+    } else {
+      if (upper === 'M' || upper === 'L') [x, y] = relative ? [x + n[0], y + n[1]] : [n[0], n[1]];
+      if (upper === 'H') x = relative ? x + n[0] : n[0];
+      if (upper === 'V') y = relative ? y + n[0] : n[0];
+      if (upper === 'M') [startX, startY] = [x, y];
+      out.push({ command: upper === 'M' ? 'M' : 'L', x, y });
+    }
+  }
+  return out;
+}
+
+/*
+ * THE APP TILE BAKES THE MASTER'S FIGURE. Its figure is the master's, scaled
+ * by 3 about the origin and moved by 18 units, in absolute coordinates; the
+ * README promises that a change to a figure reaches its app tile too, and
+ * this is what holds it. Every figure's arcs bow inward, so its vertices bound
+ * it, and every vertex sits inside the maskable safe zone, a circle of
+ * 72 px about the tile's centre.
+ */
+describe('the app tile', () => {
+  const TILE_SCALE = 3;
+  const TILE_OFFSET = 18;
+  const SAFE_RADIUS = 72;
+  const close = (a, b) => Math.abs(a - b) < 0.01;
+
+  it('draws the master figure, scaled into the tile', async () => {
+    for (const product of PRODUCTS) {
+      const master = paths(await source('master', product)).filter((path) => path['data-part'] === 'detail');
+      const tile = paths(await source('tile', product)).filter((path) => path['data-part'] === 'detail');
+      assert.equal(tile.length, master.length, product);
+      master.forEach((part, index) => {
+        const label = `${product} detail ${index}`;
+        assert.equal(tile[index]['data-motion'], part['data-motion'], label);
+        assert.equal(tile[index]['fill-rule'], part['fill-rule'], label);
+        const expected = vertices(part.d);
+        const actual = vertices(tile[index].d);
+        assert.equal(actual.length, expected.length, label);
+        expected.forEach((vertex, at) => {
+          const found = actual[at];
+          assert.equal(found.command, vertex.command, `${label}, vertex ${at}`);
+          if (vertex.command === 'Z') return;
+          const where = `${label}, vertex ${at}: ${found.x},${found.y}`;
+          assert.ok(close(found.x, vertex.x * TILE_SCALE + TILE_OFFSET), where);
+          assert.ok(close(found.y, vertex.y * TILE_SCALE + TILE_OFFSET), where);
+          if (vertex.command === 'A') {
+            assert.ok(close(found.rx, vertex.rx * TILE_SCALE) && close(found.ry, vertex.ry * TILE_SCALE), where);
+            assert.equal(found.flags, vertex.flags, where);
+          }
+        });
+      });
+    }
+  });
+
+  it('keeps every figure inside the maskable safe zone', async () => {
+    for (const product of PRODUCTS) {
+      for (const path of paths(await source('tile', product)).filter((part) => part['data-part'] === 'detail')) {
+        for (const vertex of vertices(path.d).filter((point) => point.command !== 'Z')) {
+          assert.ok(Math.hypot(vertex.x - 90, vertex.y - 90) <= SAFE_RADIUS, `${product}: ${vertex.x},${vertex.y}`);
+        }
+      }
+    }
+  });
+
+  it('shares one frame across the four products', async () => {
+    const frame = async (product) =>
+      paths(await source('tile', product))
+        .filter((path) => path['data-part'] !== 'detail')
+        .map((path) => `${path['data-part']} ${path.fill} ${path.d}`);
+    const [first, ...others] = PRODUCTS;
+    const expected = await frame(first);
+    for (const product of others) assert.deepEqual(await frame(product), expected, product);
+  });
+});
+
 describe('the product mark stylesheet', () => {
   const read = () => readFile(resolve(PACKAGE, 'src/ProductMark.css'), 'utf8');
 

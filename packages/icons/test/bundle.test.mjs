@@ -120,10 +120,10 @@ describe('a build that looks a glyph up by name', () => {
  * THE PRODUCT MARKS' OWN ENTRY. An application draws the Assistant's mark in
  * its first paint (the Ask button), so the entry it imports from must reach
  * the four marks (both drawings of each) and the glyph frame and nothing
- * else. Held two ways: the
- * entry's own import graph, which no bundler setting can widen, never reaches
- * the root or another component's stylesheet; and a consumer's build of it
- * carries no vendor mark, no Crewlet figure and no glyph.
+ * else. Held two ways: the entry's own import graph, which no bundler setting
+ * can widen, never reaches the root or another component's stylesheet; and a
+ * consumer's build of it carries no vendor mark, no Crewlet figure and no
+ * glyph.
  */
 describe('a build that imports a product mark from its own entry', () => {
   /** Every file a dist module reaches through its static imports, itself included. */
