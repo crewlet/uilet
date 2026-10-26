@@ -130,8 +130,6 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'Link/Link.css | .crewlet-link:focus-visible',
       // A link in rendered prose, which is text with an underline and no box.
       'Document/Document.css | .crewlet-document a:focus-visible',
-      // A directory's line, a link drawn on the hover and selected grounds alone, with no edge.
-      'DirectoryList/DirectoryList.css | .crewlet-directory__item:focus-visible',
       'BrandLockup/BrandLockup.css | .crewlet-brand__home:focus-visible',
       'EntityChip/EntityChip.css | .crewlet-entity-chip--link:focus-visible',
       'DataTable/DataTable.css | .crewlet-data-table__clear-filters:focus-visible',
