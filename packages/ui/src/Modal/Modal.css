@@ -303,6 +303,16 @@
  * belonging to the pair rather than to the first line of it.
  */
 .crewlet-modal__header {
+  /*
+   * How far an icon button's glyph stands in from the edge of its square (the
+   * medium square draws its glyph at --font-size-sm, see IconButton.css). The
+   * step back and the close control are pulled out by exactly this, so their
+   * glyphs stand on the head's inline edges at every density. It relies on the
+   * head's own inline padding: a head narrowed below this inset plus the focus
+   * ring's 4px reach stands the control against the frame, which clips the ring.
+   */
+  --crewlet-modal-glyph-inset: calc((var(--size-control-md) - var(--font-size-sm)) / 2);
+
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
@@ -438,16 +448,23 @@
   color: var(--color-text-secondary);
 }
 
+/*
+ * Pulled out on its inline end by the glyph's own inset, as the step back is
+ * on its start, so the X stands on the line the body's fields and the foot's
+ * last button end on. Pulled by a single 4px step, it stood 4px inside that
+ * line in every dialog and every sheet.
+ */
 .crewlet-modal__close {
   flex-shrink: 0;
   margin: calc(var(--spacing-1) * -1);
+  margin-inline-end: calc(var(--crewlet-modal-glyph-inset) * -1);
 }
 
 /* The step back leads the head, its glyph on the title's inline start, as
    the close control's sits on the head's end. */
 .crewlet-modal__back {
   flex-shrink: 0;
-  margin-inline-start: calc(var(--spacing-2) * -1);
+  margin-inline-start: calc(var(--crewlet-modal-glyph-inset) * -1);
   margin-block: calc(var(--spacing-1) * -1);
 }
 

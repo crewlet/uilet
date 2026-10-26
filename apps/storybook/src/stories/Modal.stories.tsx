@@ -290,6 +290,7 @@ export const PhoneSheet: Story = {
           onClose={() => setOpen(false)}
           phoneSheet
           size="md"
+          stackBody
           title="Move 3 artifacts"
           footer={
             <>

@@ -140,10 +140,14 @@
 }
 
 /* Under the phone breakpoint the row's controls go under the name, so a
-   role select and a remove control never squeeze the name to an ellipsis. */
+   role select and a remove control never squeeze the name to an ellipsis.
+   They are held off the lines above and below them by a gap of their own:
+   with none, a select's edge sat flush on the name's detail line and the
+   agent's note sat flush under the select. */
 @media (width < 640px) {
   .crewlet-share-dialog__row {
     grid-template-columns: auto minmax(0, 1fr);
+    row-gap: var(--spacing-2);
   }
 
   .crewlet-share-dialog__controls {

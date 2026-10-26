@@ -222,7 +222,8 @@ export function ShareDialog({
       footerStart={
         link ? (
           <span className="crewlet-share-dialog__link">
-            <CopyButton text={link} label={text.copyLink} copiedLabel={text.linkCopied} copiedMessage={text.linkCopied} size="small" variant="outline" />
+            {/* At the foot's own button step, so it stands as tall as Done on the same row. */}
+            <CopyButton text={link} label={text.copyLink} copiedLabel={text.linkCopied} copiedMessage={text.linkCopied} size="medium" variant="outline" />
             <span className="crewlet-share-dialog__link-note">{text.linkNote}</span>
           </span>
         ) : undefined
@@ -245,7 +246,10 @@ export function ShareDialog({
             onChange={(value) => setAddRole(value as ShareableRole)}
             ariaLabel={text.addRole}
             size="md"
-            width="auto"
+            // On a phone the add row stacks (ShareDialog.css), and the role
+            // takes the field's full width under it rather than a toolbar
+            // picker's 220px cap.
+            width={phone ? 'full' : 'auto'}
             align="right"
           />
         </div>

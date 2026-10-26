@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button, Kbd, Menu, type MenuEntry } from '@crewlethq/ui';
-import { FolderInputGlyph, PencilGlyph, TrashGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
+import { FolderInputGlyph, PencilGlyph, RotateCcwGlyph, TrashGlyph, UserGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Menu> = {
   title: 'UI/Menu',
@@ -93,7 +93,11 @@ export const MixedRows: Story = {
       {
         key: 'roll',
         label: 'Roll back',
-        description: 'Returns every node to the revision before this one',
+        // Short enough to stay one line under the panel's 320px ceiling at
+        // every density, now that the row carries a glyph column.
+        description: 'Returns every node to the previous revision',
+        // A glyph like its neighbours', so its label starts where theirs do.
+        icon: <RotateCcwGlyph />,
         onSelect: () => {},
       },
       { kind: 'separator', key: 'sep' },
