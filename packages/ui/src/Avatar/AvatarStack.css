@@ -36,6 +36,26 @@
   box-shadow: 0 0 0 2px var(--crewlet-avatar-stack-ground);
 }
 
+/*
+ * A BADGE IN FRONT HIDES THE ONE BEHIND IT. A hue's plate is a tint, 12% of
+ * the hue over whatever the badge stands on, and in a stack that is partly
+ * the badge before it: its outline, its ring and its face showed through
+ * every overlap. So a stacked plate is laid over the stack's own ground, the
+ * colour it reads on beside the stack, and the cut-out holds under the badge
+ * as well as round it.
+ *
+ * Only a plate that publishes `--crewlet-avatar-plate` (a hue's, Avatar.css)
+ * is repainted: without one this declaration is invalid where it is computed,
+ * and the badge keeps the opaque ground its own rule gave it. A member, or the
+ * badge a member wraps (`PresenceStack` wraps each one in its button).
+ */
+.crewlet-avatar-stack > .crewlet-avatar-stack__member,
+.crewlet-avatar-stack > .crewlet-avatar-stack__member > .crewlet-avatar {
+  background-image:
+    linear-gradient(var(--crewlet-avatar-plate), var(--crewlet-avatar-plate)),
+    linear-gradient(var(--crewlet-avatar-stack-ground), var(--crewlet-avatar-stack-ground));
+}
+
 /* The design's 6px, a little under a third of its 22px badge: enough that the
    stack is one mark, little enough that every monogram stays readable. */
 .crewlet-avatar-stack > .crewlet-avatar-stack__member + .crewlet-avatar-stack__member {
@@ -66,7 +86,9 @@
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
-  line-height: var(--font-line-height-tight);
+  /* The face's own line, as the badge beside it sets it (Avatar.css): any
+     leading split unevenly and drew the count 0.9px over the middle. */
+  line-height: normal;
   white-space: nowrap;
   user-select: none;
 }

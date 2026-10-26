@@ -40,6 +40,10 @@ const tile: CSSProperties = {
   margin: 0,
   display: "grid",
   justifyItems: "center",
+  /* Packed at the top: a row's tiles stretch to its tallest, and a tile whose
+     description takes one line instead of two spread the spare height round
+     its character and name, so neither lined up with its neighbours'. */
+  alignContent: "start",
   gap: "var(--spacing-2)",
   padding: "var(--spacing-3)",
   border: "1px solid var(--color-border-default)",

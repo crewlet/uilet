@@ -127,12 +127,19 @@ const ENTITIES: Record<string, Entity> = {
   },
 };
 
+/*
+ * THE ACTIONS TRACK IS THE TABLE'S OWN FIXED ONE, never `auto`: every row is
+ * a grid of its own, so an auto track was as wide as that row's controls (none
+ * in the heading, the add and the strip on a unit, the strip alone on a seat)
+ * and each kind of row started its Handle, Lead and Problems columns somewhere
+ * else, none of them under its heading.
+ */
 const COLUMNS: TreeGridColumn[] = [
   { key: 'name', header: 'Name', width: 'minmax(0, 3fr)' },
   { key: 'handle', header: 'Handle', width: 'minmax(0, 2fr)' },
   { key: 'lead', header: 'Lead or reports to', width: 'minmax(0, 2fr)' },
   { key: 'problems', header: 'Problems', width: 'minmax(0, 1fr)' },
-  { key: 'actions', header: 'Actions', headerHidden: true, width: 'auto' },
+  { key: 'actions', header: 'Actions', headerHidden: true, width: 'var(--crewlet-org-table-actions)' },
 ];
 
 function forest(): TreeInput[] {

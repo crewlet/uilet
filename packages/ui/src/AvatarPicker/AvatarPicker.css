@@ -37,6 +37,20 @@ button.crewlet-avatar-picker:hover .crewlet-avatar-picker__pip {
   color: var(--color-text-primary);
 }
 
+/*
+ * THE PANEL HOLDS THE WHOLE PICKER. The popover's own caps, 380 by 360, are
+ * sized for a panel of words; this one is six tiles and six hue chips across
+ * and five rows of tiles down, and inside those caps the sixth hue wrapped
+ * onto a line of its own and the panel scrolled 25px to reach it. It takes the
+ * room its content asks for, held inside the viewport, and only a viewport
+ * smaller than the picker wraps or scrolls it. Two classes, so it outweighs
+ * the popover's one-class rule whichever order the stylesheets bundle in.
+ */
+.crewlet-popover.crewlet-avatar-picker__panel {
+  max-width: calc(100vw - var(--spacing-4) * 2);
+  max-height: calc(100dvh - var(--spacing-4) * 2);
+}
+
 .crewlet-avatar-picker__body {
   display: grid;
   gap: var(--spacing-2);

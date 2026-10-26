@@ -62,7 +62,7 @@ function rule(sheet: string, selector: string): string {
 
 const COLUMNS: TreeGridColumn[] = [
   { key: 'name', header: 'Name' },
-  { key: 'actions', header: 'Actions', headerHidden: true, width: 'auto' },
+  { key: 'actions', header: 'Actions', headerHidden: true, width: 'var(--crewlet-org-table-actions)' },
 ];
 
 const ROWS: readonly TreeInput[] = [

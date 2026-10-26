@@ -36,7 +36,10 @@ export const Idle: Story = {
 /** Rings nested one inside another, inset further each time, never doubling an edge. */
 export const Stacked: Story = {
   render: () => (
-    <PresenceRing hue="rose" style={{ ...box, padding: 4 }}>
+    // The outer corner is the inner box's plus the padding and hairline
+    // between them, so the two boxes (and the rings drawn in them) run
+    // concentric rather than the inner corners bulging toward the outer ring.
+    <PresenceRing hue="rose" style={{ ...box, padding: 4, borderRadius: 'calc(var(--radius-sm) + 5px)' }}>
       <PresenceRing hue="green" inset={3} style={box}>
         Two collaborators
       </PresenceRing>

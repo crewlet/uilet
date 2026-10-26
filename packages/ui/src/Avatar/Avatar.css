@@ -41,11 +41,25 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-wide);
-  /* The document's own leading rather than a tight step of the badge's own.
-     The box is a fixed square that centres whatever line it holds, so the ink
-     lands in the same place either way; what the tight step bought was one
-     more number in a component that already sets four. */
-  line-height: var(--font-line-height-body);
+  /* The tracking the last letter carries after it, given back before the
+     first, so the initials centre on their ink rather than on a run with
+     extra room at its end: without it they stood up to 0.75px left of the
+     middle. Text alone takes it; a glyph or a character face is untouched. */
+  text-indent: var(--font-letter-spacing-wide);
+  /*
+   * THE FONT'S OWN LINE, the `normal` keyword (not the `--font-line-height-
+   * normal` token, which is 1.5): a line box exactly as tall as the face's
+   * ascent and descent, with no leading to share out.
+   *
+   * ANY LEADING LANDED THE INITIALS HIGH. The box centres the line, but the
+   * browser gives the leading above the text a whole pixel less than the
+   * leading below it whenever it does not split evenly, so under the body's
+   * 1.45 (and the tight 1.2 before it) the caps were drawn 0.9px over the
+   * middle at 20 and 26px, 1.25px at 32 and 1.1px at 64, measured on the ink.
+   * Geist's ascent and descent straddle its cap height, so with no leading
+   * the caps are centred to within a quarter of a pixel at every step.
+   */
+  line-height: normal;
   text-transform: uppercase;
   user-select: none;
   box-sizing: border-box;
@@ -58,9 +72,17 @@
  * the scale can answer for an arbitrary box; everything else it takes from the
  * rules below exactly as a step does.
  */
+/*
+ * THE SMALLEST STEP IS UNDER THE TYPE RAMP. The ramp's smallest step (11px)
+ * set two wide capitals ("MO", "WM") about 18px wide, the whole of the 20px
+ * circle's content box, so they ran into its outline. 0.45 of the box is 9px,
+ * the face a numeric `size={20}` already computes (0.36 of the box, floored at
+ * 9px, in the component), so the step and its numeric twin draw one badge and
+ * two initials clear the ring by a pixel or more.
+ */
 .crewlet-avatar--xs {
   --crewlet-avatar-size: 20px;
-  font-size: var(--font-size-2xs);
+  font-size: calc(var(--crewlet-avatar-size) * 0.45);
 }
 
 .crewlet-avatar--sm {
@@ -195,39 +217,48 @@
 }
 
 /* The plate an agent's hue is drawn on: the hue's fill, its line round the
-   badge and the hue itself as the character's ink. */
+   badge and the hue itself as the character's ink. The fill is published as
+   `--crewlet-avatar-plate` and painted from it, because it is a TINT (12% of
+   the hue over whatever the badge stands on), and a stack has to lay it over
+   its own ground rather than over the badge behind it (AvatarStack.css). */
 .crewlet-avatar--hue-purple {
-  background: var(--color-node-purple-fill);
+  --crewlet-avatar-plate: var(--color-node-purple-fill);
+  background: var(--crewlet-avatar-plate);
   border-color: var(--color-node-purple-line);
   color: var(--color-node-purple);
 }
 
 .crewlet-avatar--hue-cyan {
-  background: var(--color-node-cyan-fill);
+  --crewlet-avatar-plate: var(--color-node-cyan-fill);
+  background: var(--crewlet-avatar-plate);
   border-color: var(--color-node-cyan-line);
   color: var(--color-node-cyan);
 }
 
 .crewlet-avatar--hue-green {
-  background: var(--color-node-green-fill);
+  --crewlet-avatar-plate: var(--color-node-green-fill);
+  background: var(--crewlet-avatar-plate);
   border-color: var(--color-node-green-line);
   color: var(--color-node-green);
 }
 
 .crewlet-avatar--hue-amber {
-  background: var(--color-node-amber-fill);
+  --crewlet-avatar-plate: var(--color-node-amber-fill);
+  background: var(--crewlet-avatar-plate);
   border-color: var(--color-node-amber-line);
   color: var(--color-node-amber);
 }
 
 .crewlet-avatar--hue-rose {
-  background: var(--color-node-rose-fill);
+  --crewlet-avatar-plate: var(--color-node-rose-fill);
+  background: var(--crewlet-avatar-plate);
   border-color: var(--color-node-rose-line);
   color: var(--color-node-rose);
 }
 
 .crewlet-avatar--hue-blue {
-  background: var(--color-node-blue-fill);
+  --crewlet-avatar-plate: var(--color-node-blue-fill);
+  background: var(--crewlet-avatar-plate);
   border-color: var(--color-node-blue-line);
   color: var(--color-node-blue);
 }

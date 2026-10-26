@@ -1,7 +1,8 @@
 /*
  * Who is here (PresenceStack.tsx), on the avatar stack's own geometry: the
- * overlap and the counted chip are the stack's. What this adds is the ring in
- * each present collaborator's hue, outside the cut-out, and the idle fade.
+ * overlap and the counted chip are the stack's, the overlap stepped out by
+ * the ring's reach. What this adds is the ring in each present collaborator's
+ * hue, outside the cut-out, and the idle fade.
  */
 
 /* HOW FAR THE RING REACHES past each badge: the cut-out, then the hue. The
@@ -38,7 +39,12 @@ button.crewlet-presence-stack__member {
   cursor: pointer;
 }
 
+/* THE FOCUSED BADGE STANDS IN FRONT, so its focus ring is drawn whole: every
+   badge is drawn over the one before it, and the next one covered the far
+   side of the ring drawn round this one. */
 button.crewlet-presence-stack__member:focus-visible {
+  position: relative;
+  z-index: var(--z-index-raised);
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);
 }
@@ -47,16 +53,51 @@ button.crewlet-presence-stack__member:focus-visible {
   box-shadow: 0 0 0 var(--crewlet-presence-stack-cutout) var(--crewlet-avatar-stack-ground);
 }
 
-/* The hue ring sits outside the cut-out, so it reads as a ring round the
-   badge rather than a stroke on it. */
+/*
+ * The hue ring sits outside the cut-out, so it reads as a ring round the
+ * badge rather than a stroke on it.
+ *
+ * AND IT IS CUT OUT OF THE BADGE BEHIND IT, by a second band of the ground
+ * outside the hue, as a plain badge is cut out of its neighbour by its own.
+ * Without it the next badge's ring was drawn straight across the face before
+ * it, through the initials, which is the blot the stack's cut-out is there to
+ * prevent.
+ */
 .crewlet-presence-stack .crewlet-presence-stack__badge--present {
   box-shadow:
     0 0 0 var(--crewlet-presence-stack-cutout) var(--crewlet-avatar-stack-ground),
-    0 0 0 var(--crewlet-presence-stack-reach) var(--crewlet-presence-hue);
+    0 0 0 var(--crewlet-presence-stack-reach) var(--crewlet-presence-hue),
+    0 0 0 calc(var(--crewlet-presence-stack-reach) + var(--crewlet-presence-stack-cutout))
+      var(--crewlet-avatar-stack-ground);
+}
+
+/*
+ * THE STEP GROWS BY THE RING'S REACH, so a badge hides as much of the one
+ * behind it as a plain stack's badge does: the stack's own 6px overlap and
+ * 2px cut-out (AvatarStack.css), 8px of a 26px face. At the plain stack's
+ * step a ringed badge hid 10px, and with its outer cut-out it would hide 12,
+ * which left "MO" an M. The stack's overlap stands and each member stands
+ * the next off by the reach, so the pitch is even whether a badge wears a
+ * ring, has gone idle or is the count, and the last member adds no room.
+ */
+.crewlet-presence-stack > .crewlet-avatar-stack__member:has(+ .crewlet-avatar-stack__member) {
+  margin-inline-end: var(--crewlet-presence-stack-reach);
 }
 
 .crewlet-presence-stack .crewlet-presence-stack__badge--idle {
   opacity: 0.5;
+}
+
+/*
+ * A FADED BADGE STILL HIDES THE ONE BEHIND IT. The fade is an opacity, which
+ * takes the badge's plate and cut-out with it, so the ring of the badge before
+ * an idle one showed through its face at half strength. Its wrapper lays the
+ * ground under it, the cut-out's width included, so the badge fades toward the
+ * ground the stack stands on, exactly as it does standing alone.
+ */
+.crewlet-presence-stack > .crewlet-presence-stack__member:has(> .crewlet-presence-stack__badge--idle) {
+  background: var(--crewlet-avatar-stack-ground);
+  box-shadow: 0 0 0 var(--crewlet-presence-stack-cutout) var(--crewlet-avatar-stack-ground);
 }
 
 @media (forced-colors: active) {

@@ -33,7 +33,9 @@ export const Search: Story = {
       [query],
     );
     return (
-      <div style={{ maxWidth: 420, minHeight: 360 }}>
+      // A gap between the field and the line under it, which otherwise sat
+      // 2px under the field's edge as though it were the field's own hint.
+      <div style={{ display: 'grid', alignContent: 'start', gap: 'var(--spacing-2)', maxWidth: 420, minHeight: 360 }}>
         <PrincipalPicker
           query={query}
           onQueryChange={setQuery}

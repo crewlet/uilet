@@ -161,7 +161,7 @@ describe('what a stack draws', () => {
     // A badge shows its box less the next badge's overlap and its cut-out.
     // Two mono initials are 2 x 0.6em plus the badge's 0.04em tracking each,
     // centred. The design draws 22px badges with 9px initials and 0.02em
-    // tracking; this kit's type floor is 11px, which is why the step is not
+    // tracking; this kit sets 11px from sm up, which is why the step is not
     // the design's nearest.
     const tokens = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../../tokens/dist/css/tokens.css'), 'utf8');
     const rem = (name: string) => Number(new RegExp(`--font-size-${name}:\\s*([\\d.]+)rem`).exec(tokens)?.[1] ?? 'NaN') * 16;
@@ -172,8 +172,9 @@ describe('what a stack draws', () => {
     };
     const design = shown(22, 9, 0.02);
     expect(shown(AVATAR_SIZES.sm, rem('2xs'), 0.04)).toBeGreaterThanOrEqual(design);
-    // And the step under it does not, which is what makes sm the default.
-    expect(shown(AVATAR_SIZES.xs, rem('2xs'), 0.04)).toBeLessThan(design);
+    // And the step under it does not, even at its own smaller face (0.45 of
+    // its box, Avatar.css), which is what makes sm the default.
+    expect(shown(AVATAR_SIZES.xs, AVATAR_SIZES.xs * 0.45, 0.04)).toBeLessThan(design);
   });
 
   test('each badge overlaps the one before it by 6px, cut out by a 2px ring of the ground', () => {
