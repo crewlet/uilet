@@ -238,8 +238,10 @@ describe('the drawing', () => {
     const section = choices()[0]!;
     expect(px(section, 'width')).toBe(24);
     expect(px(section, 'height')).toBe(24);
-    // Grown past the pill, top and bottom: (16 - 24) / 2.
-    expect(px(section, 'margin-top')).toBe(-4);
+    // Grown past the inside of the pill, top and bottom: the 16 less its 1px
+    // edge at either end, (14 - 24) / 2. Measured from the outer 16 it ran
+    // 2px past the inner bottom edge and sat a pixel under the pill's centre.
+    expect(px(section, 'margin-top')).toBe(-5);
   });
 
   /*
@@ -261,11 +263,11 @@ describe('the drawing', () => {
     expect(px(mark().querySelector('svg')!, 'width')).toBe(18);
     expect(px(container.querySelector('.crewlet-add-pill__sections')!, 'height')).toBe(18);
     // A choice is the pointer-target floor across and the control step tall,
-    // grown past the 18px pill top and bottom: (18 - 26) / 2.
+    // grown past the inside of the 18px pill top and bottom: (16 - 26) / 2.
     const choice = choices()[0]!;
     expect(px(choice, 'width')).toBe(24);
     expect(px(choice, 'height')).toBe(26);
-    expect(px(choice, 'margin-top')).toBe(-4);
+    expect(px(choice, 'margin-top')).toBe(-5);
     // The mark stays: in a row it is a toggle beside the choices, not the
     // thing they grew out of.
     expect(getComputedStyle(mark()).opacity).not.toBe('0');
@@ -321,10 +323,12 @@ describe('the drawing', () => {
     const section = choices()[0]!;
     const style = getComputedStyle(section);
     expect(px(section, 'height')).toBe(24);
-    // The overhang, top and bottom: (24 - 16) / 2.
-    expect(px(section, 'padding-top')).toBe(4);
-    expect(px(section, 'padding-bottom')).toBe(4);
-    // So the painted box is the pill's own 16, and the ground is held to it.
+    // The overhang, top and bottom: (24 - 14) / 2, the pill's 16 less its
+    // 1px edge at either end.
+    expect(px(section, 'padding-top')).toBe(5);
+    expect(px(section, 'padding-bottom')).toBe(5);
+    // So the painted box is the inside of the pill, between its two edges,
+    // and the ground is held to it.
     expect(style.backgroundClip).toBe('content-box');
   });
 
@@ -337,9 +341,9 @@ describe('the drawing', () => {
     );
     fireEvent.click(mark());
     const choice = choices()[0]!;
-    // The overhang, top and bottom: (26 - 18) / 2.
-    expect(px(choice, 'padding-top')).toBe(4);
-    expect(px(choice, 'padding-bottom')).toBe(4);
+    // The overhang, top and bottom: (26 - 16) / 2, inside the pill's edges.
+    expect(px(choice, 'padding-top')).toBe(5);
+    expect(px(choice, 'padding-bottom')).toBe(5);
     expect(getComputedStyle(choice).backgroundClip).toBe('content-box');
   });
 

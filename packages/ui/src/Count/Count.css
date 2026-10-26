@@ -16,5 +16,10 @@
   font-weight: var(--font-weight-medium);
   /* A count that ticks up must not shift the heading beside it. */
   font-variant-numeric: tabular-nums;
-  line-height: var(--font-line-height-normal);
+  /* The body leading rounded to a whole pixel, the line Kbd, KeyChip and the
+     Copyable chip take. The 1.5 leading drew an 18.5px pill beside those 18px
+     pills, and Chromium floors the share of a fractional leading above the
+     text, so the figures stood high in it. A whole 16px line splits evenly
+     and the pill lands on 18px with its figures on its middle. */
+  line-height: round(nearest, calc(var(--font-line-height-body) * 1em), 1px);
 }

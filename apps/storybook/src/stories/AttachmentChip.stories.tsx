@@ -24,7 +24,9 @@ const THUMB =
 /** Every state: ready with a thumbnail, uploading, refused, and sent (no remove). */
 export const EveryState: Story = {
   render: () => (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+    // Centred on the row, as a composer's attachments row stands them: a sent
+    // chip has no remove control and is 2px shorter than the chips that act.
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
       <AttachmentChip name="screenshot.png" preview={THUMB} onRemove={() => {}} />
       <AttachmentChip name="dashboard.webp" preview={THUMB} state="uploading" onRemove={() => {}} />
       <AttachmentChip name="too-large.png" state="failed" onRemove={() => {}} />

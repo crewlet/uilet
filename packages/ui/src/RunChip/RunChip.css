@@ -48,3 +48,19 @@
   align-self: stretch;
   min-width: 0;
 }
+
+/*
+ * ONE COLUMN FOR THE MARKS AND ONE FOR THE WORDS, the chip's and its steps'.
+ * The steps' well starts on the text edge, where the chevron stands, so its
+ * leading inset is the chevron's 14px slot and the gap after it: at the
+ * well's own 12px the steps' marks stood 6px to the left of the chip's mark
+ * they share a column with. And the chip's mark keeps the steps' 8px from
+ * its words, so the title stands over the labels rather than 4px short.
+ */
+.crewlet-run-chip__panel > .crewlet-step-list {
+  padding-inline-start: calc(var(--font-size-sm) + var(--spacing-1));
+}
+
+.crewlet-run-chip__trigger .crewlet-disclosure__icon {
+  margin-inline-end: var(--spacing-1);
+}

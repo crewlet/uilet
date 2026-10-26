@@ -180,6 +180,9 @@
  */
 .crewlet-add-pill__sections {
   display: flex;
+  /* The drawn height INCLUDES the 1px boundary, which is what the overhang
+     on each section below is measured against. */
+  box-sizing: border-box;
   height: var(--spacing-4);
   background-color: var(--color-surface-background);
   background-image: linear-gradient(var(--color-surface-subtle), var(--color-surface-subtle));
@@ -270,6 +273,13 @@
  * supposed to read as one pill splitting into three. The rounding follows the
  * content box for the same reason, so the outer choices keep the pill's own
  * ends rather than the target's.
+ *
+ * THE OVERHANG IS MEASURED FROM INSIDE THE PILL'S BOUNDARY, the 2px of its
+ * 1px edge at the top and the bottom taken off the drawn height. A section
+ * stands in the pill's content box, so measured from the outer 16px it
+ * started at the inner top edge and ran 2px past the inner bottom one: the
+ * hovered tint covered the bottom edge and stood a pixel proud of the pill,
+ * and every mark sat a pixel under the dividers between them.
  */
 .crewlet-add-pill__section {
   display: inline-flex;
@@ -278,9 +288,9 @@
   justify-content: center;
   width: var(--size-target-min);
   height: var(--size-target-min);
-  margin: calc((var(--spacing-4) - var(--size-target-min)) / 2) 0;
-  /* The overhang, as padding: the content box is then the pill's own height. */
-  padding: calc((var(--size-target-min) - var(--spacing-4)) / 2) 0;
+  margin: calc((var(--spacing-4) - 2px - var(--size-target-min)) / 2) 0;
+  /* The overhang, as padding: the content box is then the pill's own inside. */
+  padding: calc((var(--size-target-min) - var(--spacing-4) + 2px) / 2) 0;
   color: var(--color-node-green);
   /*
    * NOT THE `background` SHORTHAND. It resets `background-clip` along with
@@ -307,8 +317,8 @@
    edges. Its width is the pointer-target floor every choice keeps. */
 .crewlet-add-pill[data-size='md'] .crewlet-add-pill__section {
   height: var(--size-control-sm);
-  margin: calc((var(--spacing-4) + var(--spacing-1) / 2 - var(--size-control-sm)) / 2) 0;
-  padding: calc((var(--size-control-sm) - var(--spacing-4) - var(--spacing-1) / 2) / 2) 0;
+  margin: calc((var(--spacing-4) + var(--spacing-1) / 2 - 2px - var(--size-control-sm)) / 2) 0;
+  padding: calc((var(--size-control-sm) - var(--spacing-4) - var(--spacing-1) / 2 + 2px) / 2) 0;
 }
 
 /*

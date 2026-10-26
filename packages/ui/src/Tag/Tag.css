@@ -67,6 +67,12 @@
   /* A tag is an atomic token: its label never breaks across lines inside the
      pill. A constrained layout truncates it with an ellipsis instead. */
   white-space: nowrap;
+  /* The pill hugs its label wherever it lands. As a flex or grid item an
+     inline-flex box is blockified and stretched across the cross axis, so a
+     tag dropped into a column (a card's raw children, a stacked list) drew
+     a bar the width of the column with its word at one end. The max width
+     still truncates it in a column narrower than its label. */
+  width: fit-content;
   max-width: 100%;
   vertical-align: middle;
   box-sizing: border-box;
@@ -442,7 +448,13 @@
   transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-.crewlet-tag__remove:hover {
+/* Under focus as under the pointer. The quiet step is the whole control's
+   opacity, so it faded the focus ring drawn on the control as well: the
+   keyboard's ring on the remove stood at 70% while every other ring in the
+   row, the overflow control's and an actionable tag's, is the full focus
+   colour. The add pill's choices brighten on focus for the same reason. */
+.crewlet-tag__remove:hover,
+.crewlet-tag__remove:focus-visible {
   opacity: 1;
 }
 

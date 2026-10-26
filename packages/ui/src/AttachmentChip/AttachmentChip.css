@@ -4,13 +4,30 @@
  * name cut short rather than widening the composer's row.
  */
 .crewlet-attachment-chip {
+  /* The md glyph's 16px at the normal density, and SCALED WITH THE DENSITY
+     as the pill's own height is. Held at 16px, it filled the 18px pill of a
+     sent chip at the compact density edge to edge, the picture touching the
+     border at the top and the bottom. */
+  --crewlet-attachment-chip-mark: var(--spacing-4);
   max-width: 14rem;
+}
+
+/*
+ * EVERY STATE'S MARK STANDS IN THE THUMBNAIL'S BOX. The spinner, the alert
+ * and the fallback image glyph are 12px and the thumbnail 16px, so the name
+ * moved 4px to the right, and the chip grew by as much, at the moment an
+ * upload finished and the spinner gave way to the picture. A smaller mark is
+ * centred in the same box instead.
+ */
+.crewlet-attachment-chip .crewlet-tag__icon {
+  justify-content: center;
+  width: var(--crewlet-attachment-chip-mark);
 }
 
 .crewlet-attachment-chip__thumb {
   display: block;
-  width: var(--font-size-md);
-  height: var(--font-size-md);
+  width: var(--crewlet-attachment-chip-mark);
+  height: var(--crewlet-attachment-chip-mark);
   border-radius: var(--radius-xs);
   object-fit: cover;
 }
