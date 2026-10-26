@@ -86,13 +86,16 @@
   align-self: flex-start;
 }
 
+/* The dashed edge is an OUTLINE, as a framed slide's edge is, so the empty
+   side's edge lines up with the slide beside it and the slides above and below
+   it: as a border it was drawn inside the box, one pixel in on every side. */
 .crewlet-slide-compare__missing {
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 9;
   margin: 0;
-  border: 1px dashed var(--color-border-strong);
+  outline: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-sm);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);

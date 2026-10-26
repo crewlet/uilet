@@ -25,12 +25,15 @@
 }
 
 .crewlet-slide-grid__card {
+  /* The slide's own corner, so the focus ring round the card (below) follows
+     the slide's edge at the top rather than squaring off round it. */
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
   width: 100%;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -56,11 +59,25 @@
   font-weight: var(--font-weight-semibold);
 }
 
-/* ONE RING, round the whole card (its slide and its caption), on the inset
-   offset so it does not stand off the slide's own edge as a second line. */
+/* ONE RING, round the whole card (its slide and its caption), over the slide's
+   own edge rather than standing off it as a second line.
+
+   FLUSH OUTSIDE THE CARD, NOT ON THE INSET OFFSET. Inset, the ring was drawn
+   inside the slide's box, and the stage is positioned, so it painted over
+   every pixel of the ring it overlapped: what showed was a three-sided
+   bracket round the caption, cutting 2px into the caption's number. Flush
+   outside (offset 0) the ring lies on the slide's own 1px edge, which is
+   drawn just outside the stage's box, and the stage's edge takes the focus
+   colour while the card has focus, so the pixel it paints over the ring is
+   the ring's own colour (a host recolours the stage's outline rather than
+   adding a second line, as SlideStage.css asks). */
 .crewlet-slide-grid__card:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: var(--size-focus-ring-inset-offset);
+  outline-offset: 0;
+}
+
+.crewlet-slide-grid__card:focus-visible .crewlet-slide-stage {
+  outline-color: var(--color-focus);
 }
 
 .crewlet-slide-grid__card[data-hidden='true'] .crewlet-slide-stage {

@@ -244,8 +244,14 @@ function Chart({ note }: { note?: string }) {
           note ? (
             <p
               style={{
+                /* In the corner the chart leaves empty, at the inset the
+                   canvas's own control bar keeps, and as wide as what it says:
+                   a banner across the top covered the root card's top edge
+                   wherever the chart was fitted to the view. */
                 position: 'absolute',
-                inset: 'var(--spacing-2) var(--spacing-2) auto',
+                top: 'var(--spacing-3)',
+                left: 'var(--spacing-3)',
+                maxWidth: 'calc(100% - 2 * var(--spacing-3))',
                 margin: 0,
                 padding: 'var(--spacing-1) var(--spacing-2)',
                 fontSize: 'var(--font-size-2xs)',

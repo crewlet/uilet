@@ -27,12 +27,23 @@
 }
 
 /* OVER A PROJECTED SLIDE: a pill in the projection's own fixed colours, so it
-   reads over black bars and over a slide of any colour, in every theme. */
+   reads over black bars and over a slide of any colour, in every theme.
+
+   CONCENTRIC WITH ITS ENDS: one inset all round, and round controls, so the
+   first and last controls sit centred in the pill's caps and what they draw
+   under the pointer and on focus is a circle the same distance from the edge
+   all the way round. Inset 8px across and 4px down, the end controls sat 4px
+   off the caps' centres, and their 8px-cornered squares pressed into the
+   curve at the corners. */
 .crewlet-slide-nav--projection {
-  padding: var(--spacing-1) var(--spacing-2);
+  padding: var(--spacing-1);
   border-radius: var(--radius-pill);
   background: var(--color-projection-ground);
   color: var(--color-projection-ink);
+}
+
+.crewlet-slide-nav--projection .crewlet-icon-btn {
+  border-radius: var(--radius-pill);
 }
 
 .crewlet-slide-nav--projection .crewlet-slide-nav__position {
