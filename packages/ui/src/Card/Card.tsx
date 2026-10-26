@@ -358,12 +358,22 @@ const CardRoot = ({
     [slots.header, chromeNode, claimChrome, releaseChrome],
   );
 
-  const context: CardContextValue = {
-    titleLevel: level,
-    titleId,
-    registerTitle: () => setHasTitle(true),
-    hostChrome,
-  };
+  /*
+   * A TITLE REGISTERS ONCE, on mount. `Card.Title` registers in an effect
+   * keyed on this function, so the function and the context carrying it keep
+   * their identity across renders. A fresh one per render re-ran that effect
+   * on every render of the card, and each run set state on the card again:
+   * React cannot always drop a same-value update on a fiber its parent has
+   * just re-rendered, so every titled card scheduled a render of its own after
+   * each of its parent's. Under a parent that re-renders on every keystroke (a
+   * chat thread beneath its composer) those renders counted towards React's
+   * nested-update limit until a keystroke was thrown away (error #185).
+   */
+  const registerTitle = useCallback(() => setHasTitle(true), []);
+  const context = useMemo<CardContextValue>(
+    () => ({ titleLevel: level, titleId, registerTitle, hostChrome }),
+    [level, titleId, registerTitle, hostChrome],
+  );
 
   /*
    * The card's own title is its heading; everything INSIDE the card is one

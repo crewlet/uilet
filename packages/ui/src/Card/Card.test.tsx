@@ -7,7 +7,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
+import { createPortal, flushSync } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { afterEach, expect, test } from 'vitest';
 import { Card, useCardHeaderSlot } from './index.js';
 import { themes } from '@crewlethq/tokens';
@@ -118,6 +120,45 @@ test('a sectioning card is named by its own title', () => {
   // A screen reader listing a page's regions finds this one by its heading
   // rather than as an unnamed "region".
   expect(screen.getByRole('region', { name: 'Coding runs' })).toBeDefined();
+});
+
+test('a titled card under a parent re-rendered by event after event never reaches the update limit', () => {
+  // A title registered on every render set state on the card each time, and
+  // React could not drop the repeat on a fiber its parent had just
+  // re-rendered. Under a parent re-rendered by keystroke after keystroke (a
+  // chat thread beneath its composer) each one left an update pending, React
+  // counted them towards its nested-update limit, and threw a keystroke away
+  // (error #185). Sync renders back to back, outside `act`, are what queued
+  // keystrokes are: `act` would drain each one and hide the chain.
+  const environment = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean | undefined };
+  const wasActEnvironment = environment.IS_REACT_ACT_ENVIRONMENT;
+  environment.IS_REACT_ACT_ENVIRONMENT = false;
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  let setPass: (pass: number) => void = () => {};
+  function Thread() {
+    const [pass, set] = useState(0);
+    setPass = set;
+    return (
+      <Card as="section">
+        <Card.Header>
+          <Card.Title>Coding runs</Card.Title>
+        </Card.Header>
+        <Card.Body>{`pass ${pass}`}</Card.Body>
+      </Card>
+    );
+  }
+  try {
+    flushSync(() => root.render(<Thread />));
+    for (let pass = 1; pass <= 120; pass += 1) flushSync(() => setPass(pass));
+    expect(container.querySelector('section')?.textContent).toContain('pass 120');
+    expect(container.querySelector('section')?.getAttribute('aria-labelledby')).toBeTruthy();
+  } finally {
+    flushSync(() => root.unmount());
+    container.remove();
+    environment.IS_REACT_ACT_ENVIRONMENT = wasActEnvironment;
+  }
 });
 
 test('a sectioning card with no title points at nothing, rather than at a missing id', () => {
