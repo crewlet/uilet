@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Announcer, ArrangeBoard, ArrangeFrame, ArrangeGroup, Button, Card, Note, useReorderLists } from '@crewlethq/ui';
+import {
+  Announcer,
+  ArrangeBoard,
+  ArrangeFrame,
+  ArrangeGrid,
+  ArrangeGroup,
+  Button,
+  Card,
+  Note,
+  useReorderLists,
+} from '@crewlethq/ui';
 
 const meta: Meta<typeof ArrangeFrame> = {
   title: 'UI/ArrangeFrame',
@@ -88,16 +98,12 @@ function Board() {
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <Announcer />
-      <Button variant="secondary" onClick={() => setEditing(!editing)}>
+      <Button variant="secondary" style={{ justifySelf: 'start' }} onClick={() => setEditing(!editing)}>
         {editing ? 'Done' : 'Edit'}
       </Button>
+      {/* The page's grid is the board's own, so its lanes are the columns a block snaps to. */}
       <ArrangeBoard editing={editing}>
-        <div
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: 20 }}
-          {...reorder.listProps('page')}
-        >
-          {(reorder.lists.page ?? []).map(frame)}
-        </div>
+        <ArrangeGrid {...reorder.listProps('page')}>{(reorder.lists.page ?? []).map(frame)}</ArrangeGrid>
       </ArrangeBoard>
     </div>
   );

@@ -14,7 +14,7 @@ function Page() {
   const [editing, setEditing] = useState(true);
   return (
     <div style={{ display: 'grid', gap: 16, padding: 16 }}>
-      <Button variant="secondary" onClick={() => setEditing(!editing)}>
+      <Button variant="secondary" style={{ justifySelf: 'start' }} onClick={() => setEditing(!editing)}>
         {editing ? 'Done' : 'Edit'}
       </Button>
       <ArrangeBoard editing={editing} columns={12}>

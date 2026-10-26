@@ -25,8 +25,6 @@ const meta: Meta<typeof Canvas> = {
 export default meta;
 type Story = StoryObj<typeof Canvas>;
 
-const CONTENT = { x: 0, y: 0, width: 1400, height: 760 };
-
 const CARDS = [
   { id: 'a', name: 'Chief Executive', x: 560, y: 0 },
   { id: 'b', name: 'Engineering', x: 160, y: 200 },
@@ -38,6 +36,24 @@ const CARDS = [
   { id: 'h', name: 'Developer Experience', x: 400, y: 600 },
 ];
 
+/** A card's width, set below, and the height its two lines and padding come to. */
+const CARD_WIDTH = 240;
+const CARD_HEIGHT = 62;
+
+/*
+ * THE CONTENT IS THE CARDS' OWN EXTENT. A fit centres the rectangle it is
+ * given, and the 1400 by 760 one this declared reached 200px past the last
+ * card and 98px under it, so every fitted chart stood in the frame's top
+ * left: 118px from its left edge against 262px from its right, and 24px from
+ * its top against 95px from its foot.
+ */
+const CONTENT = {
+  x: 0,
+  y: 0,
+  width: Math.max(...CARDS.map((card) => card.x)) + CARD_WIDTH,
+  height: Math.max(...CARDS.map((card) => card.y)) + CARD_HEIGHT,
+};
+
 /*
  * A card ON the canvas. The canvas paints the page's own ground, so a card
  * takes the panel surface and stands off it; painted the step above the panel
@@ -46,7 +62,7 @@ const CARDS = [
  */
 const CARD: CSSProperties = {
   position: 'absolute',
-  width: 240,
+  width: CARD_WIDTH,
   padding: 'var(--spacing-3)',
   background: 'var(--color-surface-subtle)',
   border: '1px solid var(--color-border-default)',
