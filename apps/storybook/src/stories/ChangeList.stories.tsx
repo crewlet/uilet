@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ChangeList, type ChangeListRow } from '@crewlethq/ui';
+import { ChangeList, ChangeListItems, ColorChip, Inline, type ChangeListRow } from '@crewlethq/ui';
 
 /**
  * What a change will do, field by field, as a before and after (decision
@@ -90,3 +90,53 @@ export const Narrow: Story = {
 
 /** Settled: the values step back to the secondary ink, and every pair stays. */
 export const Settled: Story = { args: { heading: 'What changed', rows: changed, settled: true } };
+
+/**
+ * Values that are more than a line: a list drawn as a list, and text that
+ * keeps its line breaks, each across the row under its label with its tint as
+ * a block. A colour stays inline, its chip beside the hex the reader hears.
+ */
+const blocks: ChangeListRow[] = [
+  { kind: 'fact', label: 'Seat', value: 'QA Engineer' },
+  {
+    kind: 'added',
+    label: 'Responsibilities',
+    block: true,
+    isNew: true,
+    to: (
+      <ChangeListItems
+        items={[
+          'Review the tests of every pull request before merge',
+          'Approve them, or send them back with specific feedback',
+          'Raise missing acceptance criteria on the work item',
+        ]}
+      />
+    ),
+  },
+  {
+    kind: 'changed',
+    label: 'Write like this',
+    block: true,
+    from: <ChangeListItems items={['Short sentences']} />,
+    to: <ChangeListItems items={['Short sentences', 'Name the person, never the role']} />,
+  },
+  { kind: 'added', label: 'Summary', block: true, to: 'Settling up takes seconds.\nThe math is exact to the cent.' },
+  {
+    kind: 'changed',
+    label: 'Dark ground colour',
+    from: (
+      <Inline as="span" gap={1} align="center">
+        <ColorChip value="#090019" size="sm" />
+        #090019
+      </Inline>
+    ),
+    to: (
+      <Inline as="span" gap={1} align="center">
+        <ColorChip value="#14102b" size="sm" />
+        #14102b
+      </Inline>
+    ),
+  },
+];
+
+export const BlockValues: Story = { args: { heading: 'What will change', rows: blocks } };
