@@ -851,6 +851,16 @@ export interface DataTableProps<TRow = DataTableRow> {
   labels?: Partial<DataTableLabels>;
 }
 
+const COLUMN_LABEL_INFIX = '-col-';
+
+/**
+ * A column key as it appears in its header label's id. Whitespace is taken
+ * out: `aria-labelledby` is a SPACE-SEPARATED list of ids, so a column keyed
+ * "created at" would point the cell at two ids that do not exist and leave the
+ * header with no name at all.
+ */
+const columnLabelKey = (columnKey: string): string => columnKey.replace(/\s+/g, '_');
+
 export const DataTable = <TRow,>({
   data = [],
   columns = {},
@@ -1314,6 +1324,21 @@ export const DataTable = <TRow,>({
   const [fitRequests, setFitRequests] = useState<number>(0);
   const requestFit = useCallback(() => setFitRequests((n) => n + 1), []);
   /*
+   * WHETHER ANY ROW RUNS UNDER THE PINNED ACTIONS. The actions column is
+   * transparent so it takes the row's own tone, which is right for as long as
+   * nothing passes behind it. A table wider than its box (a phone, a column a
+   * reader dragged wider, a header that will not shrink past its own name)
+   * slides its cells under the kebab, and through a transparent cell the two
+   * read as one smear. The rail says so, and the stylesheet gives the column
+   * the pinned pane's ground for exactly as long as it does.
+   */
+  const [railOverflows, setRailOverflows] = useState(false);
+  const syncRailOverflow = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setRailOverflows(el.scrollWidth - el.clientWidth > 1);
+  }, []);
+  /*
    * WHAT THE EMPTY ROW ACTUALLY SAYS, read back off the row itself.
    *
    * `emptyMessage` is a node, and every list screen in the engine passes one:
@@ -1487,7 +1512,20 @@ export const DataTable = <TRow,>({
 
     let chromeWidth = 0;
     if (expandable) chromeWidth += 32;
-    if (hasChromeColumn) chromeWidth += isCompact ? 48 : (columnWidths.__actions ?? 60);
+    if (hasChromeColumn) {
+      /*
+       * THE ACTIONS COLUMN, READ OFF ITS CELL like the gutter below. The
+       * stylesheet sizes it to the control it holds plus the cell's insets,
+       * and both move with the density; a flat 48 was right at none of them
+       * and the comfortable one draws 64, so the row would land over its box.
+       * Rounded UP, for the reason the box is floored above: a fraction of a
+       * pixel handed to the columns is a fraction of a pixel of overflow. A
+       * layout that measures nothing falls back to the figure it used.
+       */
+      const actions = isCompact ? el.querySelector('.crewlet-data-table__th--actions') : null;
+      const drawn = actions ? Math.ceil(actions.getBoundingClientRect().width) : 0;
+      chromeWidth += isCompact ? (drawn > 0 ? drawn : 48) : (columnWidths.__actions ?? 60);
+    }
     chromeWidth += visibleStickyKeys.reduce(
       (sum, key) => sum + (columnWidths[key] ?? minColumnWidth),
       0,
@@ -1560,9 +1598,66 @@ export const DataTable = <TRow,>({
      * is found or nothing is left to take. Growing needs one pass: there is
      * no ceiling to stop at.
      */
+    /*
+     * NOR PAST ITS OWN NAME. The table's floor is one number for every
+     * column, and a column name is not one length: at 80px "Email" lost its
+     * last letter and "Last seen" read "LAS…" beside its sort mark, and on a
+     * phone every column stood at that floor with its values broken
+     * mid-number under it while the rail had room to scroll. A column now
+     * gives up room down to what its header draws (the name at its natural
+     * width, plus the insets, the sort mark and the gap between them), READ
+     * OFF THE HEADER rather than estimated, so it holds at every density and
+     * typeface. Past that the table scrolls sideways, which is what the rail
+     * is for. A layout that measures nothing, which is every test runner,
+     * answers zero and leaves the table's own floor in charge.
+     */
+    const px = (value: string): number => Number.parseFloat(value) || 0;
+    // Keyed by the column part of each label's id (the first infix, since a
+    // useId value never contains it), so the effect reads no
+    // per-render function and its dependencies stay what it reacts to.
+    const labelSpans = new Map(
+      Array.from(el.querySelectorAll<HTMLElement>('thead th span[id]'), (span) => [
+        span.id.slice(span.id.indexOf(COLUMN_LABEL_INFIX) + COLUMN_LABEL_INFIX.length),
+        span,
+      ] as const),
+    );
+    const headerFloor = (key: string): number => {
+      const label = labelSpans.get(columnLabelKey(key));
+      const row = label?.parentElement;
+      const th = label?.closest('th');
+      if (!label || !row || !th) return 0;
+      const range = label.ownerDocument.createRange();
+      if (typeof range.getBoundingClientRect !== 'function') return 0;
+      range.selectNodeContents(label);
+      // The name's laid-out width, which an ellipsis clips but does not change.
+      const name = range.getBoundingClientRect().width;
+      if (name <= 0) return 0;
+      const rowStyle = getComputedStyle(row);
+      // What shares the header's row with the name: the sort mark. The resize
+      // handle hangs off the cell's edge and takes no room in it.
+      const beside = Array.from(row.children).filter(
+        (child) => child !== label && getComputedStyle(child).position !== 'absolute',
+      );
+      let need = name + px(rowStyle.paddingLeft) + px(rowStyle.paddingRight);
+      beside.forEach((child) => {
+        need += child.getBoundingClientRect().width + px(rowStyle.columnGap);
+      });
+      if (row !== th) {
+        const cellStyle = getComputedStyle(th);
+        need += px(cellStyle.paddingLeft) + px(cellStyle.paddingRight);
+      }
+      return Math.ceil(need);
+    };
+    const floors = new Map(
+      visibleDataKeys.map((key) => [
+        key,
+        Math.max(minColumnWidth, columns[key]?.minWidth ?? 0, headerFloor(key)),
+      ] as const),
+    );
+
     const next = { ...columnWidths };
     const widthOf = (key: string): number => next[key] ?? minColumnWidth;
-    const floorOf = (key: string): number => Math.max(minColumnWidth, columns[key]?.minWidth ?? 0);
+    const floorOf = (key: string): number => floors.get(key) ?? minColumnWidth;
     visibleDataKeys.forEach((key) => {
       next[key] = widthOf(key);
     });
@@ -1624,14 +1719,15 @@ export const DataTable = <TRow,>({
     if (!el) return;
     let lastWidth = el.clientWidth;
     /*
-     * FEATURE-CHECKED, as every other observer in this package is — Tabs,
-     * CodeBlock and Canvas all guard, and this one did not. It is absent in
+     * FEATURE-CHECKED, as every other observer in this package is (Tabs,
+     * CodeBlock and Canvas all guard), and this one did not. It is absent in
      * older embedded browsers, where an unguarded construction throws inside
      * an effect and takes the whole table down; the one-off measurement the
      * fit pass already did still stands without it.
      */
     if (typeof ResizeObserver !== 'function') return;
     const observer = new ResizeObserver(() => {
+      syncRailOverflow();
       const w = el.clientWidth;
       if (w > 0 && w !== lastWidth) {
         lastWidth = w;
@@ -1639,8 +1735,16 @@ export const DataTable = <TRow,>({
       }
     });
     observer.observe(el);
+    /*
+     * The table too, for the rail's overflow alone: the row's width also
+     * moves with things no render here hears about (a web font arriving, a
+     * rowless table laid out by its content). Its changes never re-arm the
+     * fit, because the width check above reads the scroller, not the table.
+     */
+    const table = el.querySelector('table');
+    if (table) observer.observe(table);
     return () => observer.disconnect();
-  }, [requestFit]);
+  }, [requestFit, syncRailOverflow]);
 
   // Save the operator's own choices, when there is somewhere to save them.
   useEffect(() => {
@@ -2012,11 +2116,7 @@ export const DataTable = <TRow,>({
    * moved through. Pointing the cell at the label span is what holds the name
    * to the one thing that is the column's name, whatever else the cell grows.
    */
-  const columnLabelId = (columnKey: string) =>
-    // Whitespace out of the key: `aria-labelledby` is a SPACE-SEPARATED list
-    // of ids, so a column keyed "created at" would point the cell at two ids
-    // that do not exist and leave the header with no name at all.
-    `${instanceId}-col-${columnKey.replace(/\s+/g, '_')}`;
+  const columnLabelId = (columnKey: string) => `${instanceId}${COLUMN_LABEL_INFIX}${columnLabelKey(columnKey)}`;
 
   // Table settings handlers. They mutate draft state only.
   const handleToggleColumn = (columnKey: string) => {
@@ -2483,13 +2583,16 @@ export const DataTable = <TRow,>({
        * with nothing in it leaves the cells under it unassociated, so a
        * screen reader moving across a row reaches the kebab and is told only
        * that it is in the last column of something.
+       *
+       * AND NO WIDTH HERE. The stylesheet sizes this column to the control its
+       * cells hold; a stated pixel is what the fixed layout carried out, and
+       * it left the kebab no room inside its own cell.
        */
       return (
         <th
           key="__actions"
           scope="col"
           className="crewlet-data-table__th--chrome crewlet-data-table__th--actions"
-          style={{ width: 1 }}
         >
           <VisuallyHidden>{labels.actions}</VisuallyHidden>
         </th>
@@ -2587,6 +2690,9 @@ export const DataTable = <TRow,>({
    */
   const bodyHoldsRows = (loading && displayedData.length === 0)
     || (!error && displayedData.length > 0);
+  // The row's width moves with the column widths, which columns are on, and
+  // (on a rowless table, laid out by content) with what the body holds.
+  useLayoutEffect(syncRailOverflow, [syncRailOverflow, columnWidths, fittedColumnKeys, bodyHoldsRows, displayedData.length]);
   const visibleColumnKeys = columnOrder.filter(isColumnVisible);
   /* The column a row's own marks hang off: its first visible, unpinned one. */
   const firstVisibleKey = columnOrder.find(
@@ -2957,6 +3063,7 @@ export const DataTable = <TRow,>({
           )
             ? 'crewlet-data-table__rail--frozen'
             : undefined,
+          railOverflows ? 'crewlet-data-table__rail--overflows' : undefined,
         ].filter(Boolean).join(' ')}
         style={isCompact ? ({
           '--crewlet-data-table-sticky-pane-width': `${columnOrder

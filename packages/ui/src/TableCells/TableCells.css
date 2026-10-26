@@ -33,12 +33,21 @@
   white-space: nowrap;
 }
 
+/*
+ * TOP-ALIGNED ON THE CELL'S LINE, so the word inside sits where a bare word in
+ * the next cell does. On the baseline, the row took the baseline of the badge
+ * or the icon, which has no text and so stands on its bottom edge: an
+ * entity's name and an icon's label rode 1.1px above every other value in
+ * the row. A box at least one line tall, set at the line's top, fills the
+ * line, and the cell's own `vertical-align` centres that line on the row.
+ */
 .crewlet-table-cell__entity,
 .crewlet-link.crewlet-table-cell__entity,
 .crewlet-table-cell__status,
 .crewlet-table-cell__text {
   display: inline-flex;
   align-items: center;
+  vertical-align: top;
   gap: var(--spacing-2);
   min-width: 0;
   max-width: 100%;

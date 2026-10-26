@@ -298,7 +298,7 @@ export const SectionWithIcon: Story = {
         density="comfortable"
         paginated={false}
         storageKey="story-section-with-icon"
-        icon="group"
+        icon={<UsersGlyph size="md" />}
         title="Members"
         description="Everyone who can access this workspace, with the role that decides what they can change."
         rowKey="id"
@@ -1019,7 +1019,21 @@ function ConletFixture() {
   const [outcome, setOutcome] = useState('');
 
   return (
-    <div style={{ display: 'grid', gap: 'var(--spacing-8)', padding: 'var(--spacing-5)' }}>
+    /*
+     * ONE COLUMN AS WIDE AS THE PAGE. An auto track is as wide as its widest
+     * item's content, and the first table states 1308px of columns, so the
+     * track grew past the viewport and the whole page scrolled sideways. In a
+     * track that cannot outgrow its box, each table fits itself to the width
+     * it is given, as it does on the screen this fixture stands in for.
+     */
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr)',
+        gap: 'var(--spacing-8)',
+        padding: 'var(--spacing-5)',
+      }}
+    >
       <section>
         <FixtureCaption>
           1. Toolbar slot, pagination, settings, expand-all, one sortable header, an empty row.

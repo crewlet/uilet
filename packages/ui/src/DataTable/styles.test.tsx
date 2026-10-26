@@ -385,7 +385,7 @@ test('every sideways scroller this package draws contains its overscroll', () =>
      * COMMENTS BLANKED FIRST, and the selector is read from what is left. A
      * rule that EXPLAINS why it no longer scrolls sideways names the
      * declaration in prose, and a scan reading the prose reports the
-     * explanation as the offence — with the whole comment as the "selector",
+     * explanation as the offence, with the whole comment as the "selector",
      * which is also how it announces itself.
      */
     const text = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
