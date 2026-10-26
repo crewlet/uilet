@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
 import { BanGlyph, ClockGlyph, LockGlyph } from '@crewlethq/icons/glyphs';
-import { Button, Card, ReceiptStrip, RefusalStrip } from '@crewlethq/ui';
+import { Button, ReceiptStrip, RefusalStrip, StatusCard } from '@crewlethq/ui';
 
 /**
  * What happened, at a card's foot: the card's hairline above it, a tint under
@@ -18,15 +18,18 @@ const meta: Meta<typeof ReceiptStrip> = {
 export default meta;
 type Story = StoryObj<typeof ReceiptStrip>;
 
+/*
+ * THE STRIP IS THE CARD'S FOOT, so it is handed to the card as its `strip`,
+ * which draws it in a footer with no inset of its own. A card built from its
+ * slots pads anything given beside them in a body, which drew the strip as a
+ * tinted box 16px inside the card's edges: the second box in a card the strip
+ * exists to avoid.
+ */
 function OnACard({ children }: { children: ReactNode }) {
   return (
-    <Card>
-      <Card.Header>Filter this list</Card.Header>
-      <Card.Body>
-        <p style={{ margin: 0 }}>Show only blocked tasks in Core.</p>
-      </Card.Body>
-      {children}
-    </Card>
+    <StatusCard title="Filter this list" strip={children}>
+      <p style={{ margin: 0 }}>Show only blocked tasks in Core.</p>
+    </StatusCard>
   );
 }
 

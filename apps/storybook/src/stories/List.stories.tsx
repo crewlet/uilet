@@ -15,23 +15,25 @@ type Story = StoryObj<typeof List>;
 
 const AGO = () => new Date(Date.now() - 4 * 60 * 1000).toISOString();
 
+/** Every time in the feed's last column at the caption step, so the column reads as one. */
+const ago = () => (
+  <Text variant="caption">
+    <RelativeTime value={AGO()} />
+  </Text>
+);
+
 /** A feed. Every row is a link, so every row can be opened in a tab. */
 export const AFeed: Story = {
   render: (args) => (
     <div style={{ maxWidth: 520 }}>
       <List {...args} template="auto 1fr auto">
-        <ListItem href="#/turns/t-1" leading={<StatusDot tone="success" />} trailing={<RelativeTime value={AGO()} />}>
+        <ListItem href="#/turns/t-1" leading={<StatusDot tone="success" />} trailing={ago()}>
           <Text variant="cell">Chief Executive answered a brief</Text>
         </ListItem>
         <ListItem href="#/turns/t-2" leading={<StatusDot tone="info" pulse />} trailing={<Text variant="caption">now</Text>}>
           <Text variant="cell">Backend Lead is running a coding job</Text>
         </ListItem>
-        <ListItem
-          href="#/turns/t-3"
-          tone="danger"
-          leading={<StatusDot tone="danger" />}
-          trailing={<RelativeTime value={AGO()} />}
-        >
+        <ListItem href="#/turns/t-3" tone="danger" leading={<StatusDot tone="danger" />} trailing={ago()}>
           <Text variant="cell">publish_event was refused</Text>
         </ListItem>
       </List>

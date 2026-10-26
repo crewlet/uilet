@@ -26,6 +26,20 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * A GLYPH STANDS ON THE NAME'S LINE when a fact runs under the name: centred
+ * on the row it sat between the two, 7px under the name it marks. Its box is
+ * one line of the name (the name's step, at the leading both inherit), with
+ * the glyph centred in it. An avatar, about the two lines' height, stays
+ * centred on them, and a row of one line centres everything as before.
+ */
+.crewlet-entity-list__row:has(.crewlet-entity-list__fact) > .crewlet-entity-list__avatar:has(> svg) {
+  align-self: flex-start;
+  align-items: center;
+  height: 1lh;
+  font-size: var(--font-size-compact);
+}
+
 .crewlet-entity-list__words {
   display: flex;
   flex: 1;

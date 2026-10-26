@@ -35,8 +35,11 @@
 
 /*
  * The current entry's mark is held on every entry in the resting ink, as the
- * document outline's is, so nothing moves when the pick does. The radius is
- * the control step's on the end the mark does not take.
+ * document outline's is, so nothing moves when the pick does. The fill takes
+ * the control step's radius on every corner, as a directory line's does: the
+ * edge is drawn only in forced colours (below), so squaring its corners
+ * everywhere cut the selected and hover fills square on one side and round on
+ * the other, beside no mark at all.
  */
 .crewlet-layers-list__item {
   display: block;
@@ -47,10 +50,7 @@
   padding: var(--spacing-1) var(--spacing-2);
   border: none;
   border-inline-start: 2px solid transparent;
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
-  border-start-end-radius: var(--radius-md);
-  border-end-end-radius: var(--radius-md);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-secondary);
   font-family: var(--font-family-sans);
@@ -82,7 +82,17 @@
   color: var(--color-text-primary);
 }
 
+/*
+ * Forced colours draw every entry's held edge in the system's text colour, so
+ * there the edge is a rail down the list and the corners it runs along are
+ * square, as a rail's are; rounded, each entry's edge curled into a bracket.
+ */
 @media (forced-colors: active) {
+  .crewlet-layers-list__item {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+
   .crewlet-layers-list__item[aria-current='true'] {
     border-inline-start-color: Highlight;
   }

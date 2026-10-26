@@ -38,9 +38,21 @@ button.crewlet-finding-list__row:focus-visible {
   outline-offset: -2px;
 }
 
+/*
+ * The glyph is centred on the row's first line, in a box that line's height:
+ * the message's line, or the location's when one stands over the message. A
+ * fixed 2px nudge put it 1px under the location's line and 1.5px over the
+ * message's.
+ */
 .crewlet-finding-list__glyph {
   display: inline-flex;
-  padding-top: 2px;
+  align-items: center;
+  height: calc(var(--font-size-sm) * var(--font-line-height-normal));
+}
+
+.crewlet-finding-list__row:has(.crewlet-finding-list__location) > .crewlet-finding-list__glyph {
+  font-size: var(--font-size-2xs);
+  height: 1lh;
 }
 
 .crewlet-finding-list__glyph.is-danger {

@@ -41,7 +41,7 @@
   padding: 0 var(--spacing-2);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--font-letter-spacing-wide);
   text-transform: uppercase;
   color: var(--color-text-tertiary);
 }
@@ -85,9 +85,14 @@
   background: var(--color-surface-selected);
 }
 
+/*
+ * The ring is drawn INSIDE the line, as every list row's is: the groups
+ * scroll on their own, and a ring standing a pixel off the line was cut at
+ * both of its sides by that scroller, leaving two arcs over and under it.
+ */
 .crewlet-directory__item:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 /* The box takes its mark, as the rail's glyph box does: a mark at the glyph's
