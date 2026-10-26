@@ -3,15 +3,33 @@
  * Tag the state, the decision is an explicit press that never takes focus on
  * its own, the busy primary keeps its label, the list heading follows the
  * state, each settled state says what happened at the foot, and a refusal is
- * the engine's sentence followed by "Nothing changed.".
+ * the engine's sentence followed by "Nothing changed.". A destructive change
+ * carries the danger tone and can wait on a deliberate confirmation, the
+ * precise request is folded away, and a primary that has just appeared takes
+ * no pointer for a moment.
  */
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
+import { contrast } from '@crewlethq/tokens/test/palette';
+import { channels, installSheets, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import type { ChangeListRow } from '../ChangeList/index.js';
-import { PROPOSAL_STATES, ProposalCard, type ProposalCardProps, type ProposalState } from './index.js';
+import {
+  PROPOSAL_CARD_LABELS,
+  PROPOSAL_STATES,
+  ProposalCard,
+  type ProposalCardProps,
+  type ProposalState,
+} from './index.js';
 
-afterEach(cleanup);
+let uninstall: (() => void) | undefined;
+afterEach(() => {
+  uninstall?.();
+  uninstall = undefined;
+  vi.useRealTimers();
+  cleanup();
+});
 
 const CHANGES: ChangeListRow[] = [
   { kind: 'changed', label: 'Status', from: 'Any open status', to: 'Blocked' },
@@ -302,6 +320,246 @@ test('every state carries no axe violation', async () => {
           failureHint: 'Ask an admin to give you access.',
           approveBlocked: 'This screen cannot apply these filters.',
           decisionRefusal: { sentence: 'This approval needs a fresh sign-in.', hint: 'Confirm it is you.' },
+        })}
+      </main>,
+    );
+    const result = await axe.run(container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations, state).toEqual([]);
+    unmount();
+  }
+});
+
+const REMOVE: Partial<ProposalCardProps> = {
+  title: 'Remove seat QA Engineer',
+  subtitle: 'Saved for the company',
+  scope: 'server',
+  summary: 'Remove the QA Engineer seat from the Core unit.',
+  changes: [{ kind: 'removed', label: 'Seat', from: 'QA Engineer' }],
+  note: 'You can bring it back from the configuration history.',
+  approveLabel: 'Remove seat',
+  tone: 'danger',
+};
+const CONFIRM = { label: 'I understand the QA Engineer seat stops working' };
+
+function describedBy(element: HTMLElement): (string | null | undefined)[] {
+  return (element.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map((id) => document.getElementById(id)?.textContent);
+}
+
+test('danger: the rail and the danger primary while the decision is open, and none of it once settled', () => {
+  const { rerender, container } = render(card('pending', REMOVE));
+  const region = screen.getByRole('region', { name: 'Remove seat QA Engineer Needs your approval' });
+  expect(region.getAttribute('data-tone')).toBe('danger');
+  expect(region.classList.contains('crewlet-card--rail-danger')).toBe(true);
+  const primary = screen.getByRole('button', { name: 'Remove seat' });
+  expect(primary.classList.contains('crewlet-btn--danger')).toBe(true);
+  expect(primary.classList.contains('crewlet-btn--primary')).toBe(false);
+  // The Tag still says the state, in its own tone.
+  expect(container.querySelector('.crewlet-tag--danger')).toBeNull();
+  rerender(card('applying', REMOVE));
+  expect(screen.getByRole('button', { name: 'Remove seat' }).classList.contains('crewlet-btn--danger')).toBe(true);
+  rerender(card('declined', REMOVE));
+  expect(container.querySelector('[data-tone]')).toBeNull();
+  expect(container.querySelector('.crewlet-card--rail-danger')).toBeNull();
+  // The default tone draws no rail and the ordinary primary.
+  rerender(card('pending'));
+  expect(container.querySelector('.crewlet-card--rail-danger')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Apply to this list' }).classList.contains('crewlet-btn--primary')).toBe(true);
+});
+
+test('danger: the title is set in the danger ink, at AA on the card in both palettes', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    uninstall = installThemed(theme, 'Card/Card.css', 'ProposalCard/ProposalCard.css');
+    const { container, unmount } = render(card('pending', REMOVE));
+    const title = container.querySelector<HTMLElement>('.crewlet-card__title')!;
+    const ground = container.querySelector<HTMLElement>('.crewlet-card')!;
+    const ink = getComputedStyle(title).color;
+    const ratio = contrast(channels(ink), channels(getComputedStyle(ground).backgroundColor));
+    expect(ratio, `${theme}: ${ink}`).toBeGreaterThanOrEqual(4.5);
+    // The plain card's title is the primary ink, so the rule above is what moved it.
+    const plain = render(card('pending'));
+    expect(getComputedStyle(plain.container.querySelector('.crewlet-card__title')!).color).not.toBe(ink);
+    plain.unmount();
+    unmount();
+    uninstall();
+    uninstall = undefined;
+  }
+});
+
+test('a confirmation holds the primary, described by why, until it is ticked, and never approves before', () => {
+  const onApprove = vi.fn();
+  const onDecline = vi.fn();
+  const { container } = render(card('pending', { ...REMOVE, confirmation: CONFIRM, onApprove, onDecline }));
+  const box = screen.getByRole('checkbox', { name: CONFIRM.label });
+  expect((box as HTMLInputElement).checked).toBe(false);
+  const primary = screen.getByRole('button', { name: 'Remove seat' });
+  expect(primary.getAttribute('aria-disabled')).toBe('true');
+  expect(primary.hasAttribute('disabled')).toBe(false);
+  expect(describedBy(primary)).toContain(PROPOSAL_CARD_LABELS.confirmationNeeded);
+  // Said, not shown: the box itself is what the eye reads.
+  expect(container.querySelector('.crewlet-proposal-card__blocked')).toBeNull();
+  fireEvent.click(primary);
+  expect(onApprove).not.toHaveBeenCalled();
+  // Above the decision: the box comes before both buttons in the foot.
+  const actions = container.querySelector('.crewlet-status-card__actions')!;
+  const order = [...actions.querySelectorAll('input, button')].map((el) => el.textContent || el.getAttribute('type'));
+  expect(order).toEqual(['checkbox', 'Decline', 'Remove seat']);
+  // Decline never waits on it.
+  fireEvent.click(screen.getByRole('button', { name: 'Decline' }));
+  expect(onDecline).toHaveBeenCalledTimes(1);
+  // Ticked, the primary is live and carries no reason.
+  fireEvent.click(box);
+  expect(primary.getAttribute('aria-disabled')).toBeNull();
+  expect(describedBy(primary)).not.toContain(PROPOSAL_CARD_LABELS.confirmationNeeded);
+  fireEvent.click(primary);
+  expect(onApprove).toHaveBeenCalledTimes(1);
+  // Unticked again, held again.
+  fireEvent.click(box);
+  expect(primary.getAttribute('aria-disabled')).toBe('true');
+});
+
+test('a confirmation is operated from the keyboard: Space ticks it, then Enter on the primary approves', async () => {
+  const user = userEvent.setup();
+  const onApprove = vi.fn();
+  render(card('pending', { ...REMOVE, confirmation: CONFIRM, onApprove }));
+  // Nothing takes focus on arrival; the first stop is the box.
+  expect(document.activeElement).toBe(document.body);
+  await user.tab();
+  const box = screen.getByRole('checkbox', { name: CONFIRM.label });
+  expect(document.activeElement).toBe(box);
+  await user.tab();
+  await user.tab();
+  const primary = screen.getByRole('button', { name: 'Remove seat' });
+  // Held, it keeps its place in the order and its focus, and Enter does nothing.
+  expect(document.activeElement).toBe(primary);
+  await user.keyboard('{Enter}');
+  expect(onApprove).not.toHaveBeenCalled();
+  await user.tab({ shift: true });
+  await user.tab({ shift: true });
+  expect(document.activeElement).toBe(box);
+  await user.keyboard(' ');
+  expect((box as HTMLInputElement).checked).toBe(true);
+  await user.tab();
+  await user.tab();
+  expect(document.activeElement).toBe(primary);
+  await user.keyboard('{Enter}');
+  expect(onApprove).toHaveBeenCalledTimes(1);
+});
+
+test('the tick belongs to one proposal: another proposal in place, or a settled card, starts unticked', () => {
+  const { rerender } = render(card('pending', { ...REMOVE, confirmation: CONFIRM }));
+  fireEvent.click(screen.getByRole('checkbox'));
+  expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(true);
+  // Through a step-up and the applying an approval passes through, it holds.
+  rerender(card('stepup', { ...REMOVE, confirmation: CONFIRM }));
+  expect(screen.getByRole('button', { name: 'Confirm it’s you' }).getAttribute('aria-disabled')).toBeNull();
+  rerender(card('applying', { ...REMOVE, confirmation: CONFIRM }));
+  const held = screen.getByRole('checkbox') as HTMLInputElement;
+  expect(held.checked).toBe(true);
+  // Nothing to change while the approved change is carried out.
+  expect(held.disabled).toBe(true);
+  // Handed a different proposal in the same place: unticked, held again.
+  rerender(card('pending', { ...REMOVE, title: 'Remove seat Technical Writer', confirmation: CONFIRM }));
+  expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
+  expect(screen.getByRole('button', { name: 'Remove seat' }).getAttribute('aria-disabled')).toBe('true');
+  // Ticked, settled and decided again as the same proposal: unticked.
+  const writer = { ...REMOVE, title: 'Remove seat Technical Writer', confirmation: CONFIRM };
+  fireEvent.click(screen.getByRole('checkbox'));
+  expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(true);
+  rerender(card('declined', writer));
+  expect(screen.queryByRole('checkbox')).toBeNull();
+  rerender(card('pending', writer));
+  expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
+});
+
+test('a blocked approval outranks the confirmation: ticked or not, the primary says why it is blocked', () => {
+  const reason = 'Your access no longer covers this unit.';
+  render(card('pending', { ...REMOVE, confirmation: CONFIRM, approveBlocked: reason }));
+  const primary = screen.getByRole('button', { name: 'Remove seat' });
+  fireEvent.click(screen.getByRole('checkbox'));
+  expect(primary.getAttribute('aria-disabled')).toBe('true');
+  expect(describedBy(primary)).toContain(reason);
+  expect(describedBy(primary)).not.toContain(PROPOSAL_CARD_LABELS.confirmationNeeded);
+});
+
+test('details: a compact disclosure, collapsed by default, mounted on opening, at the foot of the body above the note', () => {
+  const { container, rerender } = render(
+    card('pending', { ...REMOVE, details: <pre>PUT /config/units/core</pre> }),
+  );
+  const trigger = screen.getByRole('button', { name: 'Technical details' });
+  expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  expect(screen.queryByText('PUT /config/units/core')).toBeNull();
+  const disclosure = container.querySelector('.crewlet-proposal-card__details')!;
+  expect(disclosure.classList.contains('crewlet-disclosure--compact')).toBe(true);
+  // After the list, before the note.
+  const body = container.querySelector('.crewlet-status-card__body')!;
+  const children = [...body.children];
+  expect(children.indexOf(disclosure)).toBe(children.indexOf(body.querySelector('.crewlet-proposal-card__note')!) - 1);
+  fireEvent.click(trigger);
+  expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  expect(screen.getByRole('region', { name: 'Technical details' }).textContent).toBe('PUT /config/units/core');
+  // Its title is a label like every other word on the card.
+  rerender(card('pending', { ...REMOVE, details: 'PUT', labels: { details: 'Request' } }));
+  expect(screen.getByRole('button', { name: 'Request' })).toBeTruthy();
+  // It stays with the record once the card has settled.
+  rerender(card('applied', { ...REMOVE, details: 'PUT' }));
+  expect(screen.getByRole('button', { name: 'Technical details' })).toBeTruthy();
+  // And none is drawn without details.
+  rerender(card('pending', REMOVE));
+  expect(container.querySelector('.crewlet-proposal-card__details')).toBeNull();
+});
+
+test('a primary that has just appeared takes no pointer for half a second; the keyboard is never held', () => {
+  vi.useFakeTimers();
+  uninstall = installSheets('ProposalCard/ProposalCard.css');
+  const onApprove = vi.fn();
+  const { rerender } = render(card('pending', { onApprove }));
+  const primary = screen.getByRole('button', { name: 'Apply to this list' });
+  expect(primary.hasAttribute('data-arming')).toBe(true);
+  expect(getComputedStyle(primary).pointerEvents).toBe('none');
+  // Never drawn or said as disabled while it arms.
+  expect(primary.getAttribute('aria-disabled')).toBeNull();
+  // A keyboard press reaches it at once.
+  primary.focus();
+  fireEvent.click(primary, { detail: 0 });
+  expect(onApprove).toHaveBeenCalledTimes(1);
+  act(() => vi.advanceTimersByTime(499));
+  expect(primary.hasAttribute('data-arming')).toBe(true);
+  act(() => vi.advanceTimersByTime(1));
+  expect(primary.hasAttribute('data-arming')).toBe(false);
+  expect(getComputedStyle(primary).pointerEvents).not.toBe('none');
+  // Back to a decision under the same pointer (a step-up), it arms again.
+  rerender(card('stepup', { onApprove }));
+  const confirm = screen.getByRole('button', { name: 'Confirm it’s you' });
+  expect(confirm.hasAttribute('data-arming')).toBe(true);
+  act(() => vi.advanceTimersByTime(500));
+  expect(confirm.hasAttribute('data-arming')).toBe(false);
+  // A different proposal in place arms again too.
+  rerender(card('stepup', { onApprove, title: 'Filter another list' }));
+  expect(screen.getByRole('button', { name: 'Confirm it’s you' }).hasAttribute('data-arming')).toBe(true);
+  // Applying holds the primary its own way, with nothing to arm.
+  rerender(card('applying', { onApprove }));
+  expect(screen.getByRole('button', { name: 'Apply to this list' }).hasAttribute('data-arming')).toBe(false);
+});
+
+test('the danger tone, a confirmation and details together carry no axe violation in any state', async () => {
+  for (const state of PROPOSAL_STATES) {
+    const { container, unmount } = render(
+      <main>
+        {card(state, {
+          ...REMOVE,
+          confirmation: CONFIRM,
+          details: <pre>PUT /config/units/core</pre>,
+          receipt: 'Removed the QA Engineer seat',
+          onPrepareAgain: () => {},
+          onRetry: () => {},
+          failure: 'The unit changed after this was prepared.',
         })}
       </main>,
     );

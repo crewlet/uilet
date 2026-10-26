@@ -1,6 +1,6 @@
 import { useId, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
-import { Card, type CardSectionPadding } from '../Card/index.js';
+import { Card, type CardRail, type CardSectionPadding } from '../Card/index.js';
 import { Tag, type TagVariant } from '../Tag/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -65,6 +65,12 @@ export interface StatusCardProps extends Omit<HTMLAttributes<HTMLElement>, 'titl
    * stays legible.
    */
   settled?: boolean | undefined;
+  /**
+   * A risk down the card's leading edge, Card's own rail: what the reader
+   * has to weigh before acting, such as a proposal that removes something.
+   * Never the state, which the Tag already says in words.
+   */
+  rail?: CardRail | undefined;
   /** The body's inset. `md` by default; `none` lets a table run to the card's edges. */
   bodyPadding?: CardSectionPadding | undefined;
   /** What happened, as a `ReceiptStrip` at the card's foot, above any actions. */
@@ -80,8 +86,9 @@ export interface StatusCardProps extends Omit<HTMLAttributes<HTMLElement>, 'titl
  * A record with a state, as the product's own card: the default `Card`, one
  * hairline, a sentence-case title over the head's rule, the state as a `Tag`
  * at the end of the head, and what happened as a strip at the foot. No tone
- * rail and no tinted head: the Tag says the state in words, and a rail beside
- * it only repeated it in colour.
+ * rail for the state and no tinted head: the Tag says the state in words, and
+ * a rail beside it only repeated it in colour. A rail is drawn only for a
+ * risk the Tag does not carry (`rail`).
  *
  * A SECTION NAMED BY ITS TITLE AND ITS STATE ("Create task, Needs your
  * approval"), so a reader moving by region hears both before reading the

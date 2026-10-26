@@ -18,6 +18,28 @@
   text-align: end;
 }
 
+/* THE DELIBERATE CONFIRMATION, on a row of its own above the decision. It
+   starts at the foot's start edge, unlike the one-line reasons around it: a
+   checkbox's sentence wraps under its own first line, and set at the end its
+   lines would start in a different place each. */
+.crewlet-proposal-card__confirmation {
+  flex: 1 1 100%;
+}
+
+/* A PRIMARY THAT HAS JUST APPEARED takes no pointer for a moment (ARMING_MS
+   in ProposalCard.tsx): no hover, and no press from a pointer that was
+   already resting where it landed. Focus and the keyboard still reach it. */
+.crewlet-proposal-card__approve[data-arming] {
+  pointer-events: none;
+}
+
+/* THE DANGER TONE, while the decision is open: Card's rail (passed through
+   StatusCard) and the title in the danger ink, the step the tokens measure as
+   text, so it holds AA in every palette. The Tag keeps the state. */
+.crewlet-proposal-card--danger .crewlet-card__title {
+  color: var(--color-feedback-danger-ink);
+}
+
 /* WHY THE LAST DECISION WAS REFUSED, on a line of its own above the
    decision and at its end, as the held primary's reason is: the refusal
    strip's own inline drawing, which wraps rather than widening the row. */
