@@ -116,8 +116,8 @@ test('a collapsible result folds to its head: the title opens it and says how mu
   expect(toggle.getAttribute('aria-controls')).toBe(body.id);
   expect(body.hasAttribute('hidden')).toBe(true);
   expect(getComputedStyle(body).display).toBe('none');
-  // Folded, the subtitle gives way to the summary, and the foot's utility
-  // stands in the head, so the folded card still offers it.
+  // Folded, the subtitle gives way to the summary, and the utility stands in
+  // the head, so the folded card still offers it.
   expect(container.querySelector('.crewlet-card__subtitle')).toBeNull();
   expect(container.querySelector('.crewlet-status-card__actions')).toBeNull();
   expect(container.querySelector('.crewlet-card__header-actions')!.textContent).toBe('Open Principles');
@@ -128,8 +128,11 @@ test('a collapsible result folds to its head: the title opens it and says how mu
   expect(toggle.textContent).toBe('Company principles');
   expect(body.hasAttribute('hidden')).toBe(false);
   expect(container.querySelector('.crewlet-card__subtitle')!.textContent).toBe('Saved for the company');
-  expect(container.querySelector('.crewlet-status-card__actions')!.textContent).toBe('Open Principles');
-  expect(container.querySelector('.crewlet-card__header-actions')).toBeNull();
+  // OPEN, THE UTILITY STAYS IN THE HEAD: opening the card never moves a
+  // control under the pointer, and it is never drawn twice.
+  expect(container.querySelector('.crewlet-status-card__actions')).toBeNull();
+  expect(container.querySelector('.crewlet-card__header-actions')!.textContent).toBe('Open Principles');
+  expect(screen.getAllByRole('button', { name: 'Open Principles' })).toHaveLength(1);
   uninstall();
 });
 

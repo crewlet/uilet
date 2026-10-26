@@ -62,12 +62,12 @@
 }
 
 /*
- * A RESULT FOLDED TO ITS HEAD. The title is the button that opens it, with
+ * A RESULT THAT FOLDS TO ITS HEAD. The title is the button that opens it, with
  * the one chevron every disclosure here draws, turned the same way. The head
- * may wrap: on a narrow card the utilities a folded card keeps go under the
- * title rather than cutting it to nothing.
+ * may wrap, folded or open: on a narrow card the utilities it keeps go under
+ * the title rather than cutting it to nothing.
  */
-.crewlet-status-card--folded > .crewlet-card__header {
+.crewlet-status-card--collapsible > .crewlet-card__header {
   flex-wrap: wrap;
   row-gap: var(--spacing-1);
 }
@@ -79,7 +79,7 @@
  * whole of their own line: the pull took their inset and their gap under the
  * title, and the last line sat closer to the edge than the first did.
  */
-.crewlet-status-card--folded > .crewlet-card__header > .crewlet-card__header-actions {
+.crewlet-status-card--collapsible > .crewlet-card__header > .crewlet-card__header-actions {
   margin-block: 0;
 }
 
@@ -186,7 +186,7 @@
 }
 
 /*
- * A folded card's utilities, at the end of its head. THE FOOT'S OWN GAP: they
+ * A collapsible card's utilities, at the end of its head. THE FOOT'S OWN GAP: they
  * are the same buttons the open card draws in its foot, and at half its gap
  * the row tightened by 4px the moment the card folded. One gap, so folding a
  * card moves its utilities without respacing them.
