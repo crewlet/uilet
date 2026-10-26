@@ -108,7 +108,10 @@ test('small is a thumbnail: one modifier class, a shorter stage and smaller word
     const small = css.slice(css.indexOf('.crewlet-logo-slot--sm {'));
     expect(small).toMatch(/--crewlet-logo-slot-height: calc\(var\(--size-row-lg\) \* 1\.5\);/);
     expect(css).toMatch(/--crewlet-logo-slot-height: calc\(var\(--size-row-lg\) \* 3\);/);
-    expect(getComputedStyle(container.querySelector('.crewlet-logo-slot__label')!).fontSize).toBe('12px');
+    // The name's size is a custom property too (its line, and the action
+    // centred on it, are worked out from it), stepped down by the modifier.
+    expect(small).toMatch(/--crewlet-logo-slot-label-size: var\(--font-size-xs\);/);
+    expect(getComputedStyle(container.querySelector('.crewlet-logo-slot__label')!).fontSize).toBe('var(--crewlet-logo-slot-label-size)');
     // Still a named group with the logo as an image.
     expect(screen.getByRole('group', { name: 'Primary' })).toBeTruthy();
     expect(screen.getByRole('img', { name: 'Acme logo' })).toBeTruthy();

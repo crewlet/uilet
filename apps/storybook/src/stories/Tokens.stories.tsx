@@ -82,11 +82,20 @@ const Palette = ({ theme }: { theme: 'system' | ThemeName }) => {
   );
 };
 
+/*
+ * Every bar in a track as wide as the widest step, so the names stand in one
+ * column and the bars read as a ruler. Each bar set its own name's indent,
+ * so the names stepped right down the page as the bars grew.
+ */
+const SPACING_TRACK = `${Math.max(...Object.values(spacing).map((value) => parseFloat(value)))}px`;
+
 const Spacing = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
     {Object.entries(spacing).map(([k, v]) => (
       <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
-        <div style={{ width: v, height: 16, background: 'var(--color-border-control)' }} />
+        <div style={{ flex: 'none', width: SPACING_TRACK }}>
+          <div style={{ width: v, height: 16, background: 'var(--color-border-control)' }} />
+        </div>
         <code style={{ fontSize: 'var(--font-size-sm)' }}>spacing.{k} = {v}</code>
       </div>
     ))}
@@ -97,7 +106,16 @@ const Radii = () => (
   <div style={{ display: 'flex', gap: 'var(--spacing-3)', flexWrap: 'wrap' }}>
     {Object.entries(radius).map(([k, v]) => (
       <div key={k} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-        <div style={{ width: 56, height: 56, borderRadius: v, background: 'var(--color-surface-subtle)' }} />
+        {/* A hairline, so the corner reads: the subtle fill alone is a step off the page and drew no edge. */}
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: v,
+            background: 'var(--color-surface-subtle)',
+            border: '1px solid var(--color-border-default)',
+          }}
+        />
         <code style={{ fontSize: 'var(--font-size-xs)' }}>{k}</code>
       </div>
     ))}

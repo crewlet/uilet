@@ -11,6 +11,11 @@
  */
 
 .crewlet-theme-swatch {
+  /* The sheet's one inset at the card size: its margin off the half and its
+     padding round the card, named so the card's corner can be the sheet's
+     less it. */
+  --crewlet-theme-swatch-inset: 3px;
+
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
@@ -88,12 +93,19 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  margin: 3px 3px 3px 0;
-  padding: 3px;
+  margin: var(--crewlet-theme-swatch-inset) var(--crewlet-theme-swatch-inset) var(--crewlet-theme-swatch-inset) 0;
+  padding: var(--crewlet-theme-swatch-inset);
   border-radius: var(--radius-xs);
   background: var(--crewlet-swatch-sheet);
 }
 
+/*
+ * CONCENTRIC WITH THE SHEET: the sheet's corner less the inset between them.
+ * At the sheet's own corner the card stood three pixels in on the sides and
+ * over four on the diagonal, so its corner read as a second, looser curve.
+ * The pane's sheet pads its card by more than its own corner, so the pane
+ * keeps the card's step below.
+ */
 .crewlet-theme-swatch__card {
   display: flex;
   flex: 1;
@@ -102,7 +114,7 @@
   min-width: 0;
   padding: 4px;
   border: 1px solid var(--crewlet-swatch-hairline);
-  border-radius: var(--radius-xs);
+  border-radius: calc(var(--radius-xs) - var(--crewlet-theme-swatch-inset));
   background: var(--crewlet-swatch-card);
 }
 
@@ -117,21 +129,32 @@
 /*
  * THE ACTION GIVES WAY BEFORE IT DISAPPEARS. A narrow thumbnail has less room
  * than the action and the four states take, so the action narrows to a floor
- * and the row clips its last states, rather than the action, which is what a
+ * and the row drops its last states, rather than the action, which is what a
  * theme is chosen for, shrinking to nothing.
+ *
+ * A STATE IS DROPPED WHOLE, never drawn in half. The row wraps, and is one
+ * line tall (the action's height), so a state that does not fit beside the
+ * action at its floor moves to a second line the row hides. Clipped instead,
+ * the last state was cut through the middle at a gallery card's width, and
+ * the two halves of one thumbnail cut it at different places. The action
+ * starts at its floor and grows into the room left over, up to its full
+ * width, so it still gives way first.
  */
 .crewlet-theme-swatch__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
+  height: 6px;
   overflow: hidden;
 }
 
 /* The primary action: the accent's fill. */
 .crewlet-theme-swatch__action {
   display: block;
-  flex: 0 1 14px;
+  flex: 1 0 6px;
   min-width: 6px;
+  max-width: 14px;
   height: 6px;
   margin-right: auto;
   border-radius: var(--radius-pill);
@@ -194,6 +217,7 @@
   gap: 7px;
   justify-content: flex-start;
   padding: 8px;
+  border-radius: var(--radius-xs);
 }
 
 .crewlet-theme-swatch__item {
@@ -232,6 +256,7 @@
   flex: none;
   place-items: center;
   width: 40%;
+  max-width: none;
   height: 16px;
   margin-right: 0;
   border-radius: var(--radius-xs);

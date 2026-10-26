@@ -48,9 +48,18 @@ const heading: CSSProperties = {
  * One block rendered twice, each panel in its own palette, so the pair can be
  * compared. The palette is scoped to the panel by `themeScope`: the theme layer
  * paints on the root alone, so a data-theme on a panel would paint nothing.
+ *
+ * `stacked` puts the dark panel under the light one, for a block whose rows
+ * want the page's width rather than half of it.
  */
-const BothThemes = ({ children }: { children: ReactNode }) => (
-  <div style={{ display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+const BothThemes = ({ children, stacked = false }: { children: ReactNode; stacked?: boolean }) => (
+  <div
+    style={{
+      display: 'grid',
+      gap: 'var(--spacing-5)',
+      gridTemplateColumns: stacked ? 'minmax(0, 1fr)' : 'repeat(auto-fit, minmax(320px, 1fr))',
+    }}
+  >
     {(['light', 'dark'] as const).map((theme) => (
       <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
         <p style={heading}>{theme === 'light' ? 'Light' : 'Dark'}</p>
@@ -190,7 +199,9 @@ const COMPANIONS: GlyphName[] = ['user', 'bot', 'network', 'message-square', 'bo
 export const BesideTheSignatureIcons: StoryObj = {
   render: () => (
     <div style={{ padding: 'var(--spacing-5)' }}>
-      <BothThemes>
+      {/* Stacked, so each size stays one row: in half the page the 20 and 24px
+          rows wrapped their last illustrations onto a line of their own. */}
+      <BothThemes stacked>
         <div style={{ display: 'grid', gap: 'var(--spacing-5)' }}>
           {SIZES.map((size) => (
             <div key={size} style={{ display: 'grid', gap: 'var(--spacing-2)' }}>

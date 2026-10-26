@@ -103,7 +103,9 @@ export const Cutting: Story = {
  */
 export const InheritInASentence: Story = {
   render: () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+    // Held to the start, so the tag hugs its words rather than stretching
+    // across the column as a pill the page's width.
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--spacing-3)' }}>
       <Text as="p" variant="caption">
         Present it as{' '}
         <Text variant="inherit" mono>

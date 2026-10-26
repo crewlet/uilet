@@ -24,9 +24,14 @@ export const WithPreview: Story = {
     const [preview, setPreview] = useState<ThemeId | null>(null);
     const shown = themeRegistry.find((theme) => theme.id === (preview ?? value))!;
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 420px) 244px', gap: 'var(--spacing-5)', alignItems: 'start' }}>
-        <ThemeGallery value={value} onValueChange={setValue} onPreview={setPreview} />
-        <aside style={{ display: 'grid', gap: 'var(--spacing-2)', position: 'sticky', top: 0 }}>
+      // The pane wraps under the gallery on a narrow canvas. As a fixed
+      // second column it left a phone-width gallery a sliver, every name cut
+      // to its first letter.
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-5)', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1 1 300px', minWidth: 0, maxWidth: 420 }}>
+          <ThemeGallery value={value} onValueChange={setValue} onPreview={setPreview} />
+        </div>
+        <aside style={{ flex: '0 0 244px', display: 'grid', gap: 'var(--spacing-2)', position: 'sticky', top: 0 }}>
           <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>
             Preview · <b style={{ color: 'var(--color-text-primary)' }}>{shown.name}</b>
           </span>
