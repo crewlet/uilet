@@ -26,7 +26,16 @@ describe('the grammar', () => {
 
   test('a future stamp reads forwards rather than as a negative age', () => {
     expect(formatRelative('2026-01-01T12:30:00Z', NOW)).toBe('in 30m');
+    expect(formatRelative('2026-01-01T12:00:05Z', NOW)).toBe('in 5s');
     expect(formatUntil('2026-01-01T11:00:00Z', NOW)).toBe('due');
+  });
+
+  // A STAMP A MOMENT AHEAD HAS JUST HAPPENED: written after the shared clock's
+  // last tick, or by a server whose clock runs slightly ahead. Mutation: send
+  // every negative age to formatUntil and these read "in 1s" and "in 4s".
+  test('an instant under five seconds ahead reads just now', () => {
+    expect(formatRelative('2026-01-01T12:00:01Z', NOW)).toBe('just now');
+    expect(formatRelative('2026-01-01T12:00:04Z', NOW)).toBe('just now');
   });
 
   test('a missing stamp is null, so the caller decides what an absence looks like', () => {

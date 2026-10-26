@@ -23,6 +23,7 @@ export const TheGrammar: Story = {
       <DescriptionList
         items={[
           ['Just happened', <RelativeTime key="a" value={ago(2_000)} />],
+          ['Stamped a moment ahead of this clock', <RelativeTime key="k" value={ahead(2_000)} />],
           ['Seconds', <RelativeTime key="b" value={ago(42_000)} />],
           ['Minutes', <RelativeTime key="c" value={ago(4 * 60_000)} />],
           ['Hours', <RelativeTime key="d" value={ago(3 * 3_600_000)} />],
