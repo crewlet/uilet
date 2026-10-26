@@ -905,6 +905,13 @@ export function SheetGrid({
   // edge is the scroller's. Without the bar's room, a sheet that only scrolls
   // sideways lost the bar's height to it and scrolled down by that much too.
   const contentHeight = headerHeight + rows.length * rowHeight + 2 + crossbar;
+  // THE ROWS REACH THE FLOOR where they fill the scroller's height (a sheet as
+  // tall as its rows, or one scrolled to its end): the last row's bottom
+  // hairline then lies on the scroller's own edge, and is left to that edge
+  // (see `__row--floor` in SheetGrid.css).
+  const rowsReachFloor = headerHeight + rows.length * rowHeight >= viewport;
+  // With no rows yet, the header row is what reaches it, and Add column with it.
+  const headOnFloor = rows.length === 0 && rowsReachFloor;
   const scrollerStyle: CSSProperties | undefined =
     fit === 'content'
       ? ({
@@ -951,7 +958,11 @@ export function SheetGrid({
           onPaste={onPaste}
         >
           <div role="rowgroup" className="crewlet-sheet-grid__head">
-            <div role="row" aria-rowindex={1} className="crewlet-sheet-grid__row crewlet-sheet-grid__row--head">
+            <div
+              role="row"
+              aria-rowindex={1}
+              className={cx('crewlet-sheet-grid__row', 'crewlet-sheet-grid__row--head', headOnFloor && 'crewlet-sheet-grid__row--floor')}
+            >
               <div role="columnheader" aria-colindex={1} className={cx('crewlet-sheet-grid__corner', lastFrozen < 0 && 'crewlet-sheet-grid__frozen-edge')}>
                 <VisuallyHidden>{labels.rowHeader}</VisuallyHidden>
               </div>
@@ -1040,7 +1051,7 @@ export function SheetGrid({
                   key={row.id}
                   role="row"
                   aria-rowindex={index + 2}
-                  className="crewlet-sheet-grid__row"
+                  className={cx('crewlet-sheet-grid__row', index === rows.length - 1 && rowsReachFloor && 'crewlet-sheet-grid__row--floor')}
                   style={{ top: `${index * rowHeight}px` }}
                   data-row-id={row.id}
                 >
@@ -1216,7 +1227,7 @@ export function SheetGrid({
           // OUTSIDE THE GRID'S ROLES: a grid's rows hold cells only, so the
           // control stands beside the header row, sticks with it, and is its
           // own tab stop after the grid's.
-          <div className="crewlet-sheet-grid__add-column" style={{ height: `${headerHeight}px` }}>
+          <div className={cx('crewlet-sheet-grid__add-column', headOnFloor && 'crewlet-sheet-grid__add-column--floor')} style={{ height: `${headerHeight}px` }}>
             <Tooltip content={labels.addColumn}>
               <IconButton label={labels.addColumn} icon={<PlusGlyph size="xs" />} size="sm" title="" onClick={onAddColumn} />
             </Tooltip>

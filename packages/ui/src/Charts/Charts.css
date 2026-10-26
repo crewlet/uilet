@@ -287,9 +287,12 @@
   grid-column: 2;
 }
 
+/* The second line's two parts stand on its top, so a key that wraps grows
+   down from the sub's line instead of carrying the sub to its middle. */
 .crewlet-bar-list--beside .crewlet-bar-list__names > .crewlet-bar-list__sub {
   grid-row: 2;
   grid-column: 1;
+  align-self: start;
 }
 
 .crewlet-bar-list--beside .crewlet-bar-list__label {
@@ -361,6 +364,13 @@
  * stands on the row's second line, under the bar it keys (see the item's
  * grid above), so each name stands under its part rather than under the
  * row's own name.
+ *
+ * ITS FIRST LINE IS THE SUB'S LINE. Both stand on the second line's top, at
+ * the words' leading, so the two are one line however many lines the key
+ * wraps to. Centred on the line instead, a key that wrapped to two lines
+ * carried the sub down between them, 10px further from its name than any
+ * other row's sub, and at the legend's own leading a keyed row stood 3px
+ * taller than a row with a sub alone.
  */
 .crewlet-bar-list__key {
   margin-top: var(--spacing-1);
@@ -370,8 +380,9 @@
 .crewlet-bar-list--beside .crewlet-bar-list__key {
   grid-row: 2;
   grid-column: 2;
-  align-self: center;
+  align-self: start;
   margin-top: 0;
+  line-height: var(--font-line-height-tight);
   pointer-events: none;
 }
 
@@ -609,9 +620,12 @@
   margin-inline-start: auto;
 }
 
+/* A step clear of the dates with the figure's own row gap, so it stands as
+   far under them as a time series' legend stands under its scale: the step
+   on top of that gap put it 12px down where the time series' is 8px. */
 .crewlet-stacked-columns__legend--below {
   grid-column: 1 / -1;
-  margin-top: var(--spacing-2);
+  margin-top: var(--spacing-1);
 }
 
 /* The middle label stands on the column it names (a style property). On a
@@ -992,14 +1006,20 @@
   direction: ltr;
 }
 
-/* The plot's bottom border is the axis line the ticks hang under. */
+/*
+ * The plot's bottom border is the axis line the ticks hang under, and THE
+ * BARS STAND ON IT, as a column chart's stand on its baseline. The room a
+ * focused bar's ring takes (its 2px offset and 2px width) is kept over the
+ * tallest bar here and under the axis by the dates' own margin; padded at
+ * the foot as well, every bar floated 4px over the line it is read against.
+ */
 .crewlet-histogram__plot {
   display: flex;
   align-items: flex-end;
   gap: 1px;
   width: 100%;
   height: var(--crewlet-histogram-height, 96px);
-  padding: var(--spacing-1) 0;
+  padding: var(--spacing-1) 0 0;
   border-bottom: 1px solid var(--color-border-hover);
 }
 
@@ -1031,6 +1051,10 @@ button.crewlet-histogram__bar {
  * bar the reader is pointing at, the selection a click is about to make. The
  * fill stacks from its foot, so the failed share sits at its bottom. Floors in
  * pixels: an empty bucket at two, the smallest real count at three.
+ *
+ * Its value end is rounded at the smallest step and its foot is square, as
+ * every bar and column in the kit is; at the step above it, a histogram on a
+ * page beside a column chart drew rounder bars than the columns next to it.
  */
 .crewlet-histogram__fill {
   display: flex;
@@ -1043,7 +1067,7 @@ button.crewlet-histogram__bar {
   height: var(--crewlet-histogram-fill, 0%);
   min-height: 3px;
   background: var(--color-data-1);
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
   transition: background var(--motion-duration-fast) var(--motion-easing-default);
 }
 
@@ -1074,12 +1098,14 @@ button.crewlet-histogram__bar[data-empty]:focus-visible > .crewlet-histogram__fi
 /*
  * The dates under the bars. Absolutely placed, so a tick sits over the bucket
  * it names; the row states its own height because absolutely placed children
- * contribute none.
+ * contribute none. They stand a step under the axis, as a column chart's
+ * dates stand under its baseline, which is also the room a focused bar's
+ * ring reaches below the axis.
  */
 .crewlet-histogram__axis {
   position: relative;
   height: calc(var(--font-size-2xs) * var(--font-line-height-normal));
-  margin-top: 2px;
+  margin-top: var(--spacing-1);
 }
 
 .crewlet-histogram__tick {

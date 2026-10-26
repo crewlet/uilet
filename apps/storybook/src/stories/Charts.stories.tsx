@@ -185,23 +185,16 @@ export const RankedSplit: Story = {
  * NOTHING TO DRAW IS STILL A BOX. The sentence stands where the bars would
  * have, at the inset the panel holding them carries, so it reads as this chart
  * saying it has no data rather than as a caption belonging to the title above
- * it. Drawn here inside a card with no padding of its own, which is how every
- * panel on a dashboard holds one.
+ * it. Drawn here in a Card, which draws its content inset as every panel on a
+ * dashboard does; the sentence carries no inset of its own.
  */
 export const RankedWithNothing: Story = {
   name: 'BarList / Nothing in the window',
   render: () => (
     <div style={{ padding: 20 }}>
-      <div
-        style={{
-          maxWidth: 520,
-          background: 'var(--color-surface-subtle)',
-          border: '1px solid var(--color-border-default)',
-          borderRadius: 'var(--radius-lg)',
-        }}
-      >
+      <Card style={{ maxWidth: 520 }}>
         <BarList data={[]} emptyLabel="No model calls in this window." />
-      </div>
+      </Card>
     </div>
   ),
 };
