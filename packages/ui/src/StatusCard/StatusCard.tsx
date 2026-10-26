@@ -132,10 +132,12 @@ export function StatusCard({
       {status.label}
     </Tag>
   ) : null;
-  // FOLDED, THE FOOT'S CONTROLS STAND IN THE HEAD, after the state, so a
-  // folded result still offers its downloads and its way to the page.
+  // A COLLAPSIBLE CARD'S CONTROLS STAND IN ITS HEAD, after the state, folded
+  // or open, so a folded result still offers its downloads and its way to the
+  // page, and opening it never moves them: a reader who pressed the title to
+  // open it found the foot's CSV button arriving under the pointer.
   const headActions =
-    folded && hasActions ? (
+    collapsible && hasActions ? (
       <>
         {tag}
         <span className="crewlet-status-card__head-actions">{actions}</span>
@@ -225,7 +227,7 @@ export function StatusCard({
           {strip}
         </Card.Footer>
       )}
-      {folded || !hasActions ? null : (
+      {collapsible || !hasActions ? null : (
         <Card.Footer className={cx('crewlet-status-card__actions', `crewlet-status-card__actions--${actionsAlign}`)}>
           {actions}
         </Card.Footer>

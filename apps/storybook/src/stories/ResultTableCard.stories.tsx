@@ -114,6 +114,9 @@ export const LongTitles: Story = {
 export const Folded: Story = { args: { ...spend, collapsible: true, summary: '6 rows' } };
 
 /** Folded on a 360px drawer: the utilities go under the title rather than cutting it. */
+/** Opened from its fold: the downloads stay in the head, where the folded card drew them. */
+export const OpenedFromFold: Story = { args: { ...spend, collapsible: true, summary: '6 rows', defaultOpen: true } };
+
 export const FoldedNarrow: Story = {
   parameters: { panelWidth: 360 },
   args: { ...spend, collapsible: true, summary: '6 rows' },

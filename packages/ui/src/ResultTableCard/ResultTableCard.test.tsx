@@ -120,6 +120,27 @@ test('the foot starts with the downloads, each fetched on its press, and ends wi
   expect(csv).toHaveBeenCalledTimes(1);
 });
 
+test('a folding result keeps its downloads where they are when it opens', () => {
+  // OPENING THE CARD NEVER MOVES A CONTROL UNDER THE POINTER: the downloads
+  // stand in the head, folded or open, so a reader who pressed the title to
+  // open it does not find the CSV button arriving where they pressed.
+  const { container } = render(
+    <ResultTableCard
+      title="Tasks"
+      collapsible
+      summary="2 rows"
+      headers={['Agent', 'Tokens']}
+      rows={ROWS.map((row) => row.slice(0, 2))}
+      downloads={[{ label: 'CSV', filename: 'tasks.csv', file: () => new Promise<Blob>(() => {}) }]}
+    />,
+  );
+  const head = () => container.querySelector('.crewlet-card__header-actions');
+  const before = within(head() as HTMLElement).getByRole('button', { name: 'CSV' });
+  fireEvent.click(screen.getByRole('button', { name: 'Tasks, 2 rows' }));
+  expect(within(head() as HTMLElement).getByRole('button', { name: 'CSV' })).toBe(before);
+  expect(container.querySelector('.crewlet-status-card__actions')).toBeNull();
+});
+
 test('a long result shows its first rows and "Show all", which shows the rest in place', () => {
   const many = Array.from({ length: 48 }, (_, index) => [`Agent ${index + 1}`, String(index)]);
   render(<ResultTableCard title="Spend" headers={['Agent', 'Tokens']} rows={many} />);
@@ -154,7 +175,7 @@ test('carries no axe violation', async () => {
   expect(result.violations).toEqual([]);
 });
 
-test('folded, a result keeps its downloads and its link at the end of its head', () => {
+test('a folding result keeps its downloads and its link at the end of its head', () => {
   const { container } = render(
     <ResultTableCard
       title="Tasks"
@@ -177,5 +198,6 @@ test('folded, a result keeps its downloads and its link at the end of its head',
   expect(container.querySelector('table')!.closest('[hidden]')).not.toBeNull();
   fireEvent.click(toggle);
   expect(container.querySelector('table')!.closest('[hidden]')).toBeNull();
-  expect(container.querySelector('.crewlet-card__header-actions')).toBeNull();
+  // Open, they stay where they were.
+  expect(within(container.querySelector('.crewlet-card__header-actions') as HTMLElement).getByRole('link', { name: 'Open in Tasks' })).toBeTruthy();
 });
