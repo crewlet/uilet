@@ -9,8 +9,9 @@ export interface ListDetailProps extends Omit<HTMLAttributes<HTMLDivElement>, 'c
   /** The chosen item's detail. */
   children: ReactNode;
   /**
-   * Which pane a phone shows, where the two are one column: the list until
-   * something is chosen, then the detail. Wider, both are always shown.
+   * Which pane shows where the two are one column (under 640px of the
+   * component's own width): the list until something is chosen, then the
+   * detail. Wider, both are always shown.
    */
   showing?: ListDetailPane | undefined;
 }
@@ -24,15 +25,21 @@ export interface ListDetailProps extends Omit<HTMLAttributes<HTMLDivElement>, 'c
  * column. The list column is `--crewlet-list-detail-list` wide (17rem by
  * default), with a hairline between the two.
  *
- * BELOW 640px IT IS ONE PANE, the one `showing` names, as tall as its content
- * on a page that scrolls as any other: a phone has no room for two columns,
- * and the application gives its detail a way back to the list.
+ * BELOW 640px OF ITS OWN WIDTH IT IS ONE PANE, the one `showing` names: the
+ * list and a reading detail do not both fit, whether the window is a phone or
+ * an aside beside the screen has taken the room. The application gives its
+ * detail a way back to the list, and asks the same question to decide when to
+ * draw it (`useScreenBelow(640)` for a ListDetail that spans the screen, or a
+ * container query on it). On a phone the page scrolls as any other, each pane
+ * as tall as its content.
  */
 export function ListDetail({ list, children, showing = 'list', className, ...rest }: ListDetailProps) {
   return (
     <div {...rest} className={cx('crewlet-list-detail', `crewlet-list-detail--showing-${showing}`, className)}>
-      <div className="crewlet-list-detail__list">{list}</div>
-      <div className="crewlet-list-detail__detail">{children}</div>
+      <div className="crewlet-list-detail__panes">
+        <div className="crewlet-list-detail__list">{list}</div>
+        <div className="crewlet-list-detail__detail">{children}</div>
+      </div>
     </div>
   );
 }

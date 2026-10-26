@@ -364,6 +364,11 @@ export interface GridFit {
   readonly width: number;
   /** The keys it dropped, in the order it dropped them. */
   readonly dropped: readonly string[];
+  /**
+   * Whether the grid has STACKED into card rows: it still did not fit with
+   * every give-way column gone, so its rows are cards, as on a phone.
+   */
+  readonly stacked?: boolean | undefined;
 }
 
 const NO_DROPS: readonly string[] = [];
@@ -373,33 +378,48 @@ const NO_FIT: GridFit = { set: '', width: 0, dropped: NO_DROPS };
  * The next fit, or null when this one stands. PURE, so the rules are held
  * without a layout engine:
  *
- * - the grid GREW past the width columns were dropped at: start again from all
- *   of them (the next pass drops again only what still does not fit);
+ * - the grid GREW past the width columns were dropped or it stacked at: start
+ *   again from all of them as columns (the next pass drops, and stacks, again
+ *   only what still does not fit);
+ * - a stacked grid that did not grow stays stacked: its rows are cards and
+ *   there is no column left to measure;
  * - the tracks OVERRUN the grid: drop the visible column with the lowest
  *   `drop`, if there is one;
+ * - nothing is left to drop and the grid still cannot draw its values
+ *   (`stack`: the tracks overrun, or a value is cut short): STACK into card
+ *   rows, the shape a phone draws, rather than clip;
  * - otherwise remember a narrower width, so growing back past it re-tries.
  */
 export function fitGridColumns({
   fit,
   width,
   overflows,
+  stack = false,
   visible,
 }: {
   fit: GridFit;
   width: number;
+  /** The columns do not fit: overrun, or a value or a head cut short. */
   overflows: boolean;
+  /**
+   * The grid cannot draw its VALUES: the tracks overrun, or a value is cut
+   * short. A head alone cut short drops a give-way column but never stacks.
+   */
+  stack?: boolean;
   visible: readonly { key: string; drop?: number | undefined }[];
 }): GridFit | null {
-  if (fit.dropped.length > 0 && width > fit.width) {
+  if ((fit.dropped.length > 0 || fit.stacked) && width > fit.width) {
     return { set: fit.set, width, dropped: NO_DROPS };
   }
-  if (overflows) {
+  if (fit.stacked) return null;
+  if (overflows || stack) {
     let next: { key: string; drop?: number | undefined } | undefined;
     for (const c of visible) {
       if (c.drop === undefined) continue;
       if (!next || c.drop < (next.drop as number)) next = c;
     }
     if (next) return { set: fit.set, width, dropped: [...fit.dropped, next.key] };
+    if (stack) return { set: fit.set, width, dropped: fit.dropped, stacked: true };
   }
   if (width !== fit.width && (fit.dropped.length > 0 || fit.width === 0)) {
     return { ...fit, width };
@@ -417,31 +437,43 @@ function overflowing(wrap: HTMLElement): boolean {
 
 /**
  * Whether a content-sized column has been SQUEEZED: drawn narrower than its
- * cap AND cutting a value short. The quieter way a grid fails to fit: rather
- * than overrun, it shrinks a status pill to a letter while the columns that
- * could have gone stay. Read over the head and the first screen of rows.
- * `leading` is how many of the grid's own columns (the selection column) are
- * drawn before the caller's.
+ * cap AND cutting a value short, or its HEAD. The quieter way a grid fails to
+ * fit: rather than overrun, it shrinks a status pill to a letter, or every
+ * head of a row of counts to its first letter over values that still fit,
+ * while the columns that could have gone stay. Read over the head and the
+ * first screen of rows. `leading` is how many of the grid's own columns (the
+ * selection column) are drawn before the caller's.
+ *
+ * `'values'` where a value is cut short (the grid cannot be read: drop, then
+ * stack), `'heads'` where only a head is (drop a column if one may go, but a
+ * grid whose every value reads is not turned into cards for a head), and
+ * null where nothing is.
  */
-function squeezed<T>(wrap: HTMLElement, visible: readonly DataGridColumn<T>[], leading = 0): boolean {
+export function squeezed<T>(
+  wrap: HTMLElement,
+  visible: readonly DataGridColumn<T>[],
+  leading = 0,
+): 'values' | 'heads' | null {
   const heads = wrap.querySelector(':scope > .crewlet-data-grid__head')?.children;
-  if (!heads) return false;
+  if (!heads) return null;
   const cap = wrap.clientWidth * SHRINK_SHARE - 1;
   const rows = [...wrap.querySelectorAll(':scope > .crewlet-data-grid__body .crewlet-data-grid__row')].slice(
     0,
     SQUEEZE_SAMPLE_ROWS,
   );
+  let headCut = false;
   for (let i = 0; i < visible.length; i++) {
     const column = visible[i]!;
     if (!column.shrink || column.width) continue;
     const head = heads[i + leading];
     if (!head || head.getBoundingClientRect().width >= cap) continue;
+    if (cutShort(head)) headCut = true;
     for (const row of rows) {
       const cell = row.querySelectorAll(':scope > .crewlet-data-grid__cell')[i + leading];
-      if (cell && cutShort(cell)) return true;
+      if (cell && cutShort(cell)) return 'values';
     }
   }
-  return false;
+  return headCut ? 'heads' : null;
 }
 
 /**
@@ -546,7 +578,12 @@ export function DataGrid<T>({
   const phone = useMediaMatch(`(width < ${breakpoint.phone})`);
   const shownKeys = shownColumns.map((c) => c.key).join(',');
   const [fit, setFit] = useState<GridFit>(NO_FIT);
-  const dropped = !phone && fit.set === shownKeys ? fit.dropped : NO_DROPS;
+  // CARD ROWS on a phone, and wherever the grid's own width cannot hold its
+  // columns once every give-way column has gone (`fitGridColumns`): beside an
+  // aside the reader opened, a desktop window can leave a grid a phone's room.
+  // A card is a line per value, so a stacked grid gives back what it dropped.
+  const stacked = phone || (fit.set === shownKeys && Boolean(fit.stacked));
+  const dropped = !stacked && fit.set === shownKeys ? fit.dropped : NO_DROPS;
   const visibleColumns = useMemo(
     () => (dropped.length === 0 ? shownColumns : shownColumns.filter((c) => !dropped.includes(c.key))),
     [shownColumns, dropped],
@@ -673,10 +710,16 @@ export function DataGrid<T>({
   useLayoutEffect(() => {
     const el = wrap;
     if (!el || phone) return;
+    const current = fit.set === shownKeys ? fit : { ...NO_FIT, set: shownKeys };
+    // A STACKED GRID HAS NO COLUMNS TO MEASURE; only its width is read, to
+    // try columns again when it grows past the width it stacked at.
+    const overrun = !current.stacked && overflowing(el);
+    const squeeze = current.stacked ? null : squeezed(el, visibleColumns, leading);
     const next = fitGridColumns({
-      fit: fit.set === shownKeys ? fit : { ...NO_FIT, set: shownKeys },
+      fit: current,
       width: el.clientWidth,
-      overflows: overflowing(el) || squeezed(el, visibleColumns, leading),
+      overflows: overrun || squeeze !== null,
+      stack: overrun || squeeze === 'values',
       visible: visibleColumns,
     });
     if (next !== null) setFit(next);
@@ -844,6 +887,7 @@ export function DataGrid<T>({
       aria-labelledby={ariaLabelledby}
       className={cx('crewlet-data-grid', className)}
       data-phone-rows={phoneRows === 'compact' ? 'compact' : undefined}
+      data-stacked={stacked || undefined}
       data-flush={flush || undefined}
       style={{ gridTemplateColumns: template }}
       onPointerDown={onPointerDown}
