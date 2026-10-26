@@ -71,6 +71,16 @@
   align-items: center;
 }
 
+/*
+ * A small ghost (a DownloadButton, by default) is pulled out by its padding
+ * and edge, as a card foot's is (StatusCard.css), so its label ends on the
+ * card's text edge, the inset the file's mark starts on, rather than 9px
+ * inside it.
+ */
+.crewlet-file-list__action:has(.crewlet-btn--ghost.crewlet-btn--small) {
+  margin-inline-end: calc(-1 * (var(--spacing-2) + 1px));
+}
+
 /* THE PREVIEW IS CONTAINED, never cropped: a chart or a screenshot is read
    whole, on the inset ground, no taller than a dozen lines. */
 .crewlet-file-list__preview {

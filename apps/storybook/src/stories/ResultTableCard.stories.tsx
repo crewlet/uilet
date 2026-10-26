@@ -11,7 +11,13 @@ import { ButtonLink, ResultTableCard, type ResultTableCardProps } from '@crewlet
 const meta: Meta<typeof ResultTableCard> = {
   title: 'UI/ResultTableCard',
   component: ResultTableCard,
-  decorators: [(Story) => <div style={{ maxWidth: 388 }}>{Story()}</div>],
+  /*
+   * THE PANEL THE CARD STANDS IN: 388px, unless a story names its own
+   * `panelWidth`. A story's own width decorator is drawn inside this one, so it
+   * could only ever narrow the panel: Long Words, written for a 640px panel,
+   * stood at 388px with its last column cut off at the card's edge.
+   */
+  decorators: [(Story, { parameters }) => <div style={{ maxWidth: parameters.panelWidth ?? 388 }}>{Story()}</div>],
 };
 
 export default meta;
@@ -60,7 +66,7 @@ export const Empty: Story = { args: { ...spend, rows: [], total: undefined } };
 /** On a 390px phone sheet. */
 export const Narrow: Story = {
   args: spend,
-  decorators: [(Story) => <div style={{ maxWidth: 320 }}>{Story()}</div>],
+  parameters: { panelWidth: 320 },
 };
 
 /**
@@ -80,7 +86,7 @@ export const LongWords: Story = {
     ],
     align: ['start', 'start', 'start', 'end', 'end'],
   },
-  decorators: [(Story) => <div style={{ maxWidth: 640 }}>{Story()}</div>],
+  parameters: { panelWidth: 640 },
 };
 
 /**
@@ -101,7 +107,7 @@ export const LongTitles: Story = {
       ['Daily stand-up', 'To do', 'pm'],
     ],
   },
-  decorators: [(Story) => <div style={{ maxWidth: 358 }}>{Story()}</div>],
+  parameters: { panelWidth: 358 },
 };
 
 /** Folded to one line beside an answer: the title, how many rows, the downloads and the link. */
@@ -109,6 +115,6 @@ export const Folded: Story = { args: { ...spend, collapsible: true, summary: '6 
 
 /** Folded on a 360px drawer: the utilities go under the title rather than cutting it. */
 export const FoldedNarrow: Story = {
-  decorators: [(Story) => <div style={{ maxWidth: 360 }}>{Story()}</div>],
+  parameters: { panelWidth: 360 },
   args: { ...spend, collapsible: true, summary: '6 rows' },
 };

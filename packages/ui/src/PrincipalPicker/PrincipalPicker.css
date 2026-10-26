@@ -15,8 +15,11 @@
   border-top: 1px solid var(--color-border-default);
 }
 
+/* Inset by the option's own inline padding (`Listbox.css`), so a group's
+   heading starts on the edge its rows' badges start on rather than 4px out
+   of it. */
 .crewlet-principal-picker__heading {
-  padding: var(--spacing-1) var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-3);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
@@ -38,4 +41,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/*
+ * THE SECOND LINE STARTS UNDER THE NAME. A listbox hint ends its row
+ * (`margin-left: auto`, for a shortcut or a path beside the label); here it
+ * is the line under the name, in a column as wide as the longer of the two,
+ * so under a longer name it was pushed to that name's end: "Platform" sat
+ * 35px right of "Jane Founder" and "Product" 59px right of "Product
+ * Manager". It truncates as the name does, rather than running out of the row.
+ */
+.crewlet-principal-picker__text > .crewlet-listbox__hint {
+  margin-left: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

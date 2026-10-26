@@ -14,16 +14,14 @@
   white-space: nowrap;
 }
 
+/*
+ * THE DOT IS A StatusDot, in the two fills this rule used to paint: neutral at
+ * rest, brand once anything is unsaved. Drawn here at the 8px spacing step it
+ * was a pixel over the kit's 7px mark and moved with the density, to 6.55px at
+ * the compact step, where every other status dot holds 7px.
+ */
 .crewlet-editing-status__dot {
   flex: none;
-  width: var(--spacing-2);
-  height: var(--spacing-2);
-  border-radius: var(--radius-circle);
-  background: var(--color-text-tertiary);
-}
-
-.crewlet-editing-status--dirty .crewlet-editing-status__dot {
-  background: var(--color-brand-accent);
 }
 
 /*

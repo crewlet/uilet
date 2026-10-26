@@ -14,6 +14,10 @@
 }
 
 .crewlet-choice-buttons__option {
+  /* The option's leading, read by its line height and by the picture that
+     sits on its first line, so the two cannot drift apart. */
+  --crewlet-choice-buttons-leading: var(--font-line-height-snug);
+
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -28,7 +32,7 @@
   font: inherit;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  line-height: var(--font-line-height-snug);
+  line-height: var(--crewlet-choice-buttons-leading);
   text-align: left;
   cursor: pointer;
   transition:
@@ -41,9 +45,14 @@
  * of columns), the options in one row stretch to the tallest, and centred
  * text put a one-line detail's label lower than its neighbour's two-line
  * one. A column of options is unchanged: each is as tall as its own text.
+ *
+ * At the top by the FIRST BASELINE rather than by the top edge: the words
+ * still start at the top, and the recommended mark sits on the label's own
+ * line. Aligned by their top edges, the mark's shorter line set it 3px above
+ * the label's baseline.
  */
 .crewlet-choice-buttons__option:has(.crewlet-choice-buttons__detail) {
-  align-items: flex-start;
+  align-items: baseline;
 }
 
 .crewlet-choice-buttons__option:hover:not([aria-disabled='true']) {
@@ -149,6 +158,17 @@
   align-self: center;
 }
 
+/*
+ * With a detail under it the label's line is the FIRST line, not the
+ * option's middle, so the picture stands on a box one line tall at the top.
+ * Centred on the label and its detail together, a suggestion's swatch sat
+ * 7px under the value it shows.
+ */
+.crewlet-choice-buttons__option:has(.crewlet-choice-buttons__detail) .crewlet-choice-buttons__media {
+  align-self: flex-start;
+  min-height: calc(var(--crewlet-choice-buttons-leading) * 1em);
+}
+
 /* Before the words, not at the far end with the recommended mark. */
 .crewlet-choice-buttons__option:has(.crewlet-choice-buttons__media) {
   justify-content: flex-start;
@@ -171,11 +191,12 @@
 }
 
 .crewlet-choice-buttons--sm .crewlet-choice-buttons__option {
+  --crewlet-choice-buttons-leading: var(--font-line-height-tight);
+
   gap: var(--spacing-2);
   min-height: var(--size-control-sm);
   padding: var(--spacing-1) calc(var(--spacing-2) + var(--spacing-1) / 2);
   font-size: var(--font-size-xs);
-  line-height: var(--font-line-height-tight);
 }
 
 .crewlet-choice-buttons--sm .crewlet-choice-buttons__option:has(.crewlet-choice-buttons__detail) {

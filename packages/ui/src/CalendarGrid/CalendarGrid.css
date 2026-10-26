@@ -9,8 +9,12 @@
  */
 
 .crewlet-calendar {
+  /* The hairline of ground between two days, named because a range's band
+     paints over it (see THE BAND'S JOINS). */
+  --crewlet-calendar-gap: 1px;
+
   display: grid;
-  gap: 1px;
+  gap: var(--crewlet-calendar-gap);
   user-select: none;
 }
 
@@ -18,7 +22,7 @@
 .crewlet-calendar__week {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
+  gap: var(--crewlet-calendar-gap);
 }
 
 .crewlet-calendar__weekday {
@@ -39,7 +43,14 @@
   justify-content: center;
   /* Never under the 24px target floor, at any density. */
   min-width: var(--size-control-sm);
-  height: var(--size-control-sm);
+  /*
+   * A day is a SQUARE whatever its column's width. The columns share the
+   * grid's width, so a fixed height drew a square only at the grid's natural
+   * width and a wide rounded bar in any wider host (a 288px picker panel drew
+   * a 37 x 26 chip). The height follows the width instead, so the cell, its
+   * hover and its chosen chip stay square and the band still fills the column.
+   */
+  aspect-ratio: 1;
   /* The corner every small row in the package wears: a menu item, a
      completion, a day. */
   border-radius: var(--radius-xs);
@@ -78,37 +89,63 @@
 }
 
 /*
- * A RANGE IS ONE BAND. The cells sit 1px apart, so a tint on each of them
- * alone reads as a row of separate squares with the ground showing between.
- * An OUTLINE in the band's own colour closes that gap on every side, which is
- * what joins the weeks a multi-week range runs through as well as the days.
- *
- * An outline rather than a box-shadow because today's ring is a box-shadow: a
- * second one on the same element replaces it, and a day that is both today and
- * inside the chosen range would lose the ring that says which day it is. The
- * focus ring is an outline too and is declared after this, so it still wins on
- * the day the keyboard is on.
+ * A RANGE IS ONE BAND. The cells sit a hairline apart, so a tint on each of
+ * them alone reads as a row of separate squares with the ground showing
+ * between. The band's joins (below) paint that hairline between two of its
+ * days, across the weeks a range runs through as well as along them.
  */
 .crewlet-calendar__day.is-in-range {
   background: var(--color-brand-accent-soft);
   color: var(--color-brand-accent-ink);
   border-radius: 0;
-  outline: 1px solid var(--color-brand-accent-soft);
 }
 
+/*
+ * The ends of the band: the chosen day keeps its own fill and its own corner,
+ * and the join to the run beside it is the band's colour, so the chip reads as
+ * joined to it rather than floating one gap away from it.
+ */
 .crewlet-calendar__day.is-selected {
   background: var(--color-brand-accent);
   color: var(--color-text-on-accent);
 }
 
 /*
- * The ends of the band: the chosen day keeps its own fill and its own corner,
- * and carries the band's colour around it so the chip reads as joined to the
- * run beside it rather than floating one gap away from it.
+ * THE BAND'S JOINS, each hairline painted ONCE: by the day before it on the
+ * row, or the day above it, and the crossing where four of the band's days
+ * meet by the first of them (CalendarGrid.tsx says which neighbours are the
+ * band's). The tint is translucent, so the outline every day of the band used
+ * to draw around itself laid it twice wherever two of them met: a darker seam
+ * between every two days and every two weeks, the grid of squares the band is
+ * there to replace. A join's edges are its two days' own edges, so it meets
+ * their grounds with no seam at any width a column rounds to.
  */
-.crewlet-calendar__day.is-range-start,
-.crewlet-calendar__day.is-range-end {
-  outline: 1px solid var(--color-brand-accent-soft);
+.crewlet-calendar__day:is(.is-joined-after, .is-joined-below) {
+  position: relative;
+}
+
+.crewlet-calendar__day.is-joined-after::before,
+.crewlet-calendar__day.is-joined-below::after {
+  content: '';
+  position: absolute;
+  background: var(--color-brand-accent-soft);
+  pointer-events: none;
+}
+
+.crewlet-calendar__day.is-joined-after::before {
+  inset-block: 0;
+  inset-inline-start: 100%;
+  width: var(--crewlet-calendar-gap);
+}
+
+.crewlet-calendar__day.is-joined-below::after {
+  inset-inline: 0;
+  top: 100%;
+  height: var(--crewlet-calendar-gap);
+}
+
+.crewlet-calendar__day.is-joined-corner::after {
+  inset-inline-end: calc(-1 * var(--crewlet-calendar-gap));
 }
 
 /*

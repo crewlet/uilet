@@ -28,20 +28,28 @@
   position: relative;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-}
-
-.crewlet-tree-grid__grid {
-  min-width: var(--crewlet-tree-grid-min-width, 45rem);
-  font-size: var(--font-size-compact);
   /*
    * THE PANEL'S GROUND. It painted the step above it, which is the colour a
    * hovered row takes elsewhere in the system: an outline sitting beside a
    * table read as a table with every row hovered at once, and on a card it was
    * a lighter block inside a darker frame for no stated reason.
+   *
+   * THE FRAME IS THE SCROLLER'S, NOT THE GRID'S. Drawn on the grid inside, it
+   * scrolled with the rows: below the grid's minimum width the frame's far
+   * edge and corners were cut off by the scroller, and a sideways scroll
+   * carried its near edge out of view. On the scroller it stays put, and the
+   * scroller clips the rows to its inner corner. Table.css draws its frame on
+   * the box around its scroller instead; here that box holds the layer the
+   * menus open in, which must not be clipped.
    */
   background: var(--color-surface-subtle);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
+}
+
+.crewlet-tree-grid__grid {
+  min-width: var(--crewlet-tree-grid-min-width, 45rem);
+  font-size: var(--font-size-compact);
 }
 
 /*
@@ -50,7 +58,7 @@
  * and corner there was a second rounded box one pixel inside the first, with
  * the card's footer hanging outside it. The rows keep their own hairlines.
  */
-.crewlet-card--flush .crewlet-tree-grid__grid {
+.crewlet-card--flush .crewlet-tree-grid__scroller {
   background: none;
   border: none;
   border-radius: 0;
@@ -89,9 +97,29 @@
   padding: 0 var(--spacing-2);
 }
 
-/* The indent is the row's own level, set on the row. */
+/*
+ * The indent is the row's own level, set on the row, ON TOP OF the inset every
+ * cell has. Replacing that inset left a top-level row's chevron flush against
+ * the frame, its hover ground touching the edge, and the column starting 8px
+ * further out than its own heading and every other column.
+ */
 .crewlet-tree-grid__cell:first-child {
-  padding-inline-start: calc(var(--spacing-5) * var(--crewlet-tree-grid-depth, 0));
+  padding-inline-start: calc(var(--spacing-2) + var(--spacing-5) * var(--crewlet-tree-grid-depth, 0));
+}
+
+/*
+ * A GHOST CONTROL STARTS ON THE COLUMN'S TEXT EDGE. A small ghost button in a
+ * cell (an add row's "Add unit", a lead chosen in place through a menu) drew
+ * its word one padding and one edge (9px) inside the line the column's heading
+ * and its plain cells start on, so the column read ragged. Its padding and
+ * edge are taken back, as a card's foot does (StatusCard.css): the word sits
+ * on the column's line and only the hover's ground reaches past it.
+ */
+.crewlet-tree-grid__cell > .crewlet-btn--ghost.crewlet-btn--small:first-child,
+.crewlet-tree-grid__toggle + .crewlet-btn--ghost.crewlet-btn--small,
+.crewlet-tree-grid__cell > .crewlet-menu-anchor:first-child > .crewlet-btn--ghost.crewlet-btn--small,
+.crewlet-tree-grid__toggle + .crewlet-menu-anchor > .crewlet-btn--ghost.crewlet-btn--small {
+  margin-inline-start: calc(-1 * (var(--spacing-2) + 1px));
 }
 
 /*

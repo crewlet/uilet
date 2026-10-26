@@ -164,25 +164,34 @@ export function ListItem({
   const { templated } = useContext(ListContext);
   const interactive = href !== undefined || onClick !== undefined || asChild;
 
+  const mark =
+    tone === 'danger' ? (
+      <>
+        <CircleAlertGlyph className="crewlet-list__danger-mark" size="sm" />
+        <VisuallyHidden>{dangerLabel}</VisuallyHidden>
+        {/*
+          A TEXT NODE BESIDE the sentence, as `Link` draws one. An accessible
+          name is the concatenation of an element's parts with nothing put
+          between them, so an interactive row was announced as
+          "Failedpublish_event"; whitespace inside the span is trimmed off
+          it, and whether a browser inserts a space of its own depends on how
+          the row happens to be laid out.
+        */}
+        {' '}
+      </>
+    ) : null;
+
   // Spelled once and given whatever the row's own words turn out to be: with
   // asChild they come from the cloned element rather than from `children`.
   const contents = (words: ReactNode) => (
     <>
-      {tone === 'danger' ? (
-        <>
-          <CircleAlertGlyph className="crewlet-list__danger-mark" size="sm" />
-          <VisuallyHidden>{dangerLabel}</VisuallyHidden>
-          {/*
-            A TEXT NODE BESIDE the sentence, as `Link` draws one. An accessible
-            name is the concatenation of an element's parts with nothing put
-            between them, so an interactive row was announced as
-            "Failedpublish_event"; whitespace inside the span is trimmed off
-            it, and whether a browser inserts a space of its own depends on how
-            the row happens to be laid out.
-          */}
-          {' '}
-        </>
-      ) : null}
+      {/*
+        IN A TEMPLATED ROW THE MARK LEADS THE WORDS, inside their own cell.
+        As a child of the row it took a track of the list's template, which
+        pushed every slot after it one column on: the leading into the words'
+        track, the words into the time's, and the time onto a line of its own.
+      */}
+      {templated ? null : mark}
       {/*
         The same separator around the slots. Both sit INSIDE the row's control,
         so both are part of its name, and a row showing a time beside an id was
@@ -193,7 +202,10 @@ export function ListItem({
           <span className="crewlet-list__leading">{leading}</span>{' '}
         </>
       )}
-      <span className="crewlet-list__content">{words}</span>
+      <span className="crewlet-list__content">
+        {templated ? mark : null}
+        {words}
+      </span>
       {trailing === undefined ? null : (
         <>
           {' '}

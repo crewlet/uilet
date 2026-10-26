@@ -23,9 +23,23 @@
   border-top: 1px solid var(--color-border-default);
 }
 
+/*
+ * THE GLYPH STANDS ON THE FIRST LINE, the count and chevron on the row. A
+ * flex row centred all three on the words' block, which put the glyph between
+ * a question and its second line, or between a title and its fact, 9 to 12px
+ * under the line it names. One grid row instead: the glyph and the words at
+ * its top, the trail centred on it, and the track itself centred in the row's
+ * height, so a row of one line still stands in the middle of the row. The
+ * trail goes in a column of its own only when there is one, so a row without
+ * it keeps the whole width for its words.
+ */
 .crewlet-suggestion-row {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-auto-columns: auto;
+  grid-auto-flow: column;
+  align-items: start;
+  align-content: center;
   gap: var(--spacing-3);
   width: 100%;
   min-width: 0;
@@ -63,9 +77,12 @@
   background: none;
 }
 
+/* One line of the words tall, the glyph centred in it. */
 .crewlet-suggestion-row__icon {
   display: inline-flex;
   flex: none;
+  align-items: center;
+  height: 1lh;
   color: var(--color-text-tertiary);
 }
 
@@ -86,11 +103,18 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * Centred on the row, in a box one line tall: a count taller than the line
+ * overflows it evenly into the row's padding rather than heightening the
+ * track, which would lift a one-line row's words off the count's middle.
+ */
 .crewlet-suggestion-row__trail {
   display: inline-flex;
   flex: none;
   align-items: center;
+  align-self: center;
   gap: var(--spacing-2);
+  height: 1lh;
   margin-inline-start: auto;
   color: var(--color-text-tertiary);
 }

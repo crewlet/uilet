@@ -22,7 +22,10 @@
 /* THE SLIDE AS LARGE AS FITS, measured against the room under its caption
    (a size container), less the controls under it: the largest box of the
    slide's shape that fits both ways, so nothing is letterboxed and the
-   controls sit on the slide's foot wherever that is. */
+   controls sit on the slide's foot wherever that is. Its corner is the framed
+   stage's own, the one the next slide beside it draws: the 8px corner it used
+   to carry was the grey well's it sat in before it was drawn as the slide,
+   and it left the two slides on one screen with two different corners. */
 .crewlet-presenter__main {
   display: flex;
   flex-direction: column;
@@ -48,7 +51,6 @@
     100cqw,
     (100cqh - var(--size-control-sm) - var(--spacing-3)) * var(--crewlet-presenter-ratio, 1.7778)
   );
-  border-radius: var(--radius-md);
 }
 
 .crewlet-presenter__side {
@@ -72,14 +74,17 @@
 }
 
 /* THE END HOLDS THE NEXT SLIDE'S PLACE at its shape, so the timer and the
-   notes under it stay where they were on the last slide. */
+   notes under it stay where they were on the last slide. Its dashed edge is an
+   OUTLINE, as a framed slide's edge is, so it lands on the very pixels the
+   next slide's edge was drawn on: as a border it was drawn inside the box, one
+   pixel in from that edge on every side. */
 .crewlet-presenter__end {
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: var(--crewlet-presenter-ratio, 1.7778);
   margin: 0;
-  border: 1px dashed var(--color-border-strong);
+  outline: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-sm);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);

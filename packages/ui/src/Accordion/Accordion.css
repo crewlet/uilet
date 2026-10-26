@@ -29,6 +29,16 @@
 }
 
 /*
+ * THE CARD'S EDGE IS THE ROW'S EDGE, so the actions keep the trigger's own
+ * inline inset at the end the chevron keeps it at the start. Flush, a bordered
+ * action stood its border on the card's (0px apart, with the chevron 8px in).
+ * Only the stack's own rows: a disclosure inside a panel is not on that edge.
+ */
+.crewlet-accordion--card .crewlet-accordion__item > .crewlet-disclosure__bar > .crewlet-disclosure__actions {
+  padding-inline-end: var(--spacing-2);
+}
+
+/*
  * The heading register: this is a section title a reader scans a page for, not
  * the compact row a console folds a tool call into.
  */

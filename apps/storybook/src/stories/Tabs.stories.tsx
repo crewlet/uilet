@@ -92,12 +92,12 @@ export const Sections: Story = {
 
 /**
  * THE CHIP REGISTER, BESIDE THE CONTROL IT SITS NEXT TO. A chip stands shorter
- * than a control by design: the well adds its 1px boundary and its 2px inset
+ * than a control by design: the well adds its 1px boundary and its 1px inset
  * above and below every one of them, so a row of chips at a full control step
  * is taller than the button next to it. Both chips are 24px, the target floor
- * exactly, which puts the md well at the 30px of the button beside it, and both
- * are clamped against --size-target-min so the compact density setting cannot
- * take them under it.
+ * exactly, which puts the well at the 28px tab step, between the 26px small
+ * control and the 30px medium one, and both are clamped against
+ * --size-target-min so the compact density setting cannot take them under it.
  *
  * THE FLOOR IS TAKEN IN BOTH DIRECTIONS. A chip is side padding around
  * whatever it holds, so a one-character label or a bare glyph drew a target as

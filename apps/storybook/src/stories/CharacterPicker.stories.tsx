@@ -34,7 +34,18 @@ function Chosen() {
   );
 }
 
-export const Default: Story = { render: () => <Chosen /> };
+/*
+ * At the width a seat editor gives the grid, as the story below does: the
+ * six columns share whatever width they are handed, and across the whole
+ * canvas they stood 160px apart, a spacing no surface draws the grid at.
+ */
+export const Default: Story = {
+  render: () => (
+    <div style={{ maxWidth: 420 }}>
+      <Chosen />
+    </div>
+  ),
+};
 
 function Editor() {
   const [character, setCharacter] = useState<CrewletCharacterId>("chatlet");

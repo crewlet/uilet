@@ -147,6 +147,44 @@ describe('TagGroup overflow="fit"', () => {
     }
   });
 
+  test('a count chip standing a pixel lower on the same line costs no tag that fits', () => {
+    // The line centres its items, so a chip of another height starts a pixel
+    // away from the tags beside it. The first four items fit on the line.
+    const top = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetTop');
+    const height = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+    const inGroup = (el: HTMLElement) => el.parentElement?.classList.contains('crewlet-tag-group') ?? false;
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (!inGroup(this)) return 0;
+        if ([...this.parentElement!.children].indexOf(this) >= 4) return 26;
+        return this.hasAttribute('data-count') ? 1 : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return inGroup(this) ? 22 : 0;
+      },
+    });
+    try {
+      render(
+        <TagGroup label="Tags" overflow="fit">
+          {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((name) => (
+            <Tag key={name}>{name}</Tag>
+          ))}
+        </TagGroup>,
+      );
+      // Three tags and the count share the line; matching tops alone kept one.
+      expect(screen.getByText('Gamma')).toBeDefined();
+      expect(screen.queryByText('Delta')).toBeNull();
+      expect(screen.getByText('+2')).toBeDefined();
+    } finally {
+      if (top) Object.defineProperty(HTMLElement.prototype, 'offsetTop', top);
+      if (height) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', height);
+    }
+  });
+
   test('draws every tag and no count when they all fit', () => {
     render(
       <TagGroup label="Tags" overflow="fit">

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Kbd, SearchTrigger, Stack, useShortcut } from '@crewlethq/ui';
+import { Input, Kbd, SearchTrigger, Stack, useShortcut } from '@crewlethq/ui';
 
 const meta: Meta<typeof SearchTrigger> = {
   title: 'UI/SearchTrigger',
@@ -30,7 +30,7 @@ export const InTheRail: Story = {
     <div
       style={{
         width: 'var(--size-shell-rail)',
-        padding: '12px 10px 12px 12px',
+        padding: 'var(--spacing-3)',
         boxSizing: 'border-box',
         background: 'var(--color-surface-frame)',
       }}
@@ -106,7 +106,7 @@ export const WithItsShortcut: Story = {
         <div style={{ width: 'var(--size-shell-rail)' }}>
           <SearchTrigger {...args} onClick={() => setOpened((count) => count + 1)} />
         </div>
-        <input aria-label="A field that takes a slash" placeholder="Type a slash here" />
+        <Input width="sm" aria-label="A field that takes a slash" placeholder="Type a slash here" />
         <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>Search was asked for {opened} times.</p>
       </Stack>
     );

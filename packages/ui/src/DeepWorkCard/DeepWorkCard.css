@@ -78,3 +78,15 @@
 .crewlet-deep-work-card__steps {
   min-width: 0;
 }
+
+/*
+ * FOLDED STEPS HANG IN THE GUTTER, as a change list's disclosure does in a
+ * proposal: the trigger's padding and the panel's inset both stand in the
+ * card's own padding, so the chevron sits on the text edge under the goal's
+ * mark and the open steps' well spans the column the activity's well does.
+ * Both ends, because the well is a box: hung at the start only, it stood 8px
+ * short of the activity's well at the end, and unhung, 8px inside it at both.
+ */
+.crewlet-deep-work-card__steps.crewlet-disclosure {
+  margin-inline: calc(var(--spacing-2) * -1);
+}

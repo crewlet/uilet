@@ -31,6 +31,19 @@
   gap: var(--spacing-1);
 }
 
+/*
+ * AN ORDERED CHAIN SPACES ITS CHIPS TWICE THE LIST'S GAP APART, so each Move
+ * pair reads as its own tag's. The pair's chevrons stand well inside their
+ * targets, so at the list's gap a pair's glyph boxes sat 11px from their own
+ * tag and 15px from the tag before it, and belonged to neither. The space is
+ * added BETWEEN chips rather than taken out of one: the step inside a chip is
+ * what keeps a focused Move control's ring and a hovered one's fill clear of
+ * the tag beside it, which paints over anything that reaches into it.
+ */
+.crewlet-tags-input__chips:has([data-move]) {
+  column-gap: var(--spacing-4);
+}
+
 .crewlet-tags-input__field {
   position: relative;
   width: 100%;

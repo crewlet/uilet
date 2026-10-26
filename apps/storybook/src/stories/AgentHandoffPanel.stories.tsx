@@ -90,7 +90,10 @@ function Page({ held = false, refused = false }: { held?: boolean; refused?: boo
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <ArtifactBar title="New doc" kind="doc" kindLabel="Doc" headingLevel={1} kindTools={tools} />
-      <div style={{ display: 'flex', flex: '1 1 auto', minHeight: 0 }}>
+      {/* A GRID CELL, as the ArtifactBar stories host the workspace: the
+          workspace measures its own width (a size container), so as the item
+          of a flex row it shrank to nothing and crushed the panel to 25px. */}
+      <div style={{ display: 'grid', flex: '1 1 auto', minHeight: 0 }}>
         <ArtifactWorkspace
           bodyLabel="New doc"
           panel={

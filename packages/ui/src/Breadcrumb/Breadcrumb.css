@@ -17,13 +17,24 @@
  * Past the whole bar the trail SCROLLS rather than clipping as a box: the
  * ancestors never shrink, so once they alone are wider than the bar there is
  * nothing left to ellipsise, and a clip lands wherever the pixels ran out.
+ *
+ * ROOM FOR A LINK'S RING (`--crewlet-breadcrumb-ring-room`). A scrollport
+ * clips whatever is drawn outside it, so a crumb draws its ring inside its
+ * own box; with no padding there, the ring covered the outer 2px of the
+ * crumb's glyph and of its last letter. A link takes the room as padding
+ * inside a negative margin of the same length, and the trail takes it at its
+ * start the same way, so the ring stands clear of the words and nothing
+ * moves: every word and glyph keeps its place.
  */
 .crewlet-breadcrumb {
+  --crewlet-breadcrumb-ring-room: var(--spacing-1);
   display: flex;
   align-items: center;
   gap: 2px;
   flex: 1 100 0;
   min-width: min(100%, max(20ch, var(--crewlet-breadcrumb-floor, 0px)));
+  margin-inline-start: calc(var(--crewlet-breadcrumb-ring-room) * -1);
+  padding-inline-start: var(--crewlet-breadcrumb-ring-room);
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -86,6 +97,13 @@ svg.crewlet-breadcrumb__separator {
   color: var(--color-text-tertiary);
   text-decoration: none;
   transition: color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* The ring's room (see `.crewlet-breadcrumb`): a link's box reaches into the
+   space around it, and its words stay where they were. */
+a.crewlet-breadcrumb__crumb {
+  margin-inline: calc(var(--crewlet-breadcrumb-ring-room) * -1);
+  padding-inline: var(--crewlet-breadcrumb-ring-room);
 }
 
 a.crewlet-breadcrumb__crumb:hover {

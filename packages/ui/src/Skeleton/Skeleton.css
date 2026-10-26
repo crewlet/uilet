@@ -106,11 +106,18 @@
 }
 
 /* ── card / grid / list containers ──────────────────────────────── */
-.crewlet-skeleton--card {
+/*
+ * THE CARD'S OWN INSET, Card's default `md` step, so the lines start where
+ * the card's words will and nothing moves sideways when it arrives. The
+ * placeholder card was 24px in and a grid's 20px, two insets for one card and
+ * neither of them the 16px a Card draws at by default.
+ */
+.crewlet-skeleton--card,
+.crewlet-skeleton__card {
   background: var(--color-surface-subtle);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
+  padding: var(--spacing-4);
 }
 
 /*
@@ -128,13 +135,6 @@
   grid-template-columns: repeat(var(--crewlet-skeleton-cols, 1), 1fr);
   gap: var(--spacing-4);
   width: 100%;
-}
-
-.crewlet-skeleton__card {
-  background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-5);
 }
 
 .crewlet-skeleton--list {
@@ -182,8 +182,17 @@
 .crewlet-skeleton__table tbody { display: table-row-group; }
 .crewlet-skeleton__table tr { display: table-row; }
 
+/*
+ * THE REAL TABLE'S ROWS (Table.css, DataTable.css), so nothing jumps when the
+ * table arrives: every cell at its 8px over 12px inset, the header one
+ * micro-label line tall at the document's leading, and a body row at the row
+ * token. The header's block used to stand on a line of text nudged up 4px,
+ * which left it 1px under the row's top and 13px over its rule, and a body
+ * row stood 33px tall, 3px short of the row token.
+ */
 .crewlet-skeleton__th {
-  padding: 2px var(--spacing-4);
+  height: calc(var(--spacing-2) * 2 + var(--font-size-2xs) * var(--font-line-height-body));
+  padding: var(--spacing-2) var(--spacing-3);
   text-align: left;
   position: relative;
   display: table-cell;
@@ -195,8 +204,6 @@
   height: 14px;
   width: 60%;
   margin: 0;
-  display: inline-block;
-  transform: translateY(-4px);
 }
 
 .crewlet-skeleton__th:first-child .crewlet-skeleton__line { width: 70%; }
@@ -209,7 +216,8 @@
 }
 
 .crewlet-skeleton__td {
-  padding: var(--spacing-3) var(--spacing-4);
+  height: var(--size-row-md);
+  padding: var(--spacing-2) var(--spacing-3);
   display: table-cell;
   text-align: left;
   vertical-align: middle;
@@ -387,9 +395,6 @@
 
   .crewlet-skeleton__info-item::before { display: none; }
   .crewlet-skeleton__info-item:where(:nth-child(n + 2))::before { display: block; }
-
-  .crewlet-skeleton--card,
-  .crewlet-skeleton__card { padding: var(--spacing-4); }
 }
 
 /*

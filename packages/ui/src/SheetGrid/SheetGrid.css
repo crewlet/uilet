@@ -126,6 +126,26 @@
   background: var(--color-surface-background);
 }
 
+/*
+ * THE FRAME IS THE SCROLLER'S ONE HAIRLINE ON EVERY SIDE. A cell's trailing
+ * and bottom hairlines are the lines between it and its neighbours, so a cell
+ * with no neighbour laid its line on the scroller's own border: a 2px edge on
+ * the right and at the bottom against 1px at the top and the left, and a
+ * square corner inside the rounded one. The last column leaves its trailing
+ * line to the frame (unless Add column stands after it, which the line keeps
+ * apart), and the last row leaves its bottom line wherever the rows reach the
+ * floor (`__row--floor`, which the component sets). The cell keeps its box,
+ * so its value is centred between the line before it and the frame, as every
+ * other value is between its cell's two lines.
+ */
+.crewlet-sheet-grid__scroller:not(.crewlet-sheet-grid__scroller--add-column) .crewlet-sheet-grid__row > :last-child {
+  border-inline-end-width: 0;
+}
+
+.crewlet-sheet-grid__row--floor > :is(.crewlet-sheet-grid__corner, .crewlet-sheet-grid__header, .crewlet-sheet-grid__rownum, .crewlet-sheet-grid__cell) {
+  border-bottom-width: 0;
+}
+
 .crewlet-sheet-grid__corner,
 .crewlet-sheet-grid__header {
   background: var(--color-surface-subtle);
@@ -326,12 +346,10 @@
 }
 
 /* PENDING (D23): the reader's value, drawn at once, underlined dashed until
-   the engine confirms it. The word is in the cell's description and the strip. */
-.crewlet-sheet-grid__cell--pending > .crewlet-sheet-grid__value {
-  text-decoration: underline dashed var(--color-text-tertiary);
-  text-underline-offset: 3px;
-}
-
+   the engine confirms it. The word is in the cell's description and the strip.
+   ONE RULE, ACROSS THE CELL, for every type: a value of words also took a
+   text underline, so a pending name or number stood over two dashed lines
+   a few pixels apart while a checkbox or a chip had one. */
 .crewlet-sheet-grid__cell--pending > .crewlet-sheet-grid__value::after {
   position: absolute;
   right: var(--spacing-1);
@@ -347,6 +365,26 @@
   margin-inline-start: auto;
   padding-inline-start: var(--spacing-1);
   color: var(--color-feedback-danger-ink);
+}
+
+/* A REFUSED VALUE KEEPS ITS PLACE. The mark stands at the edge the value does
+   not start from, as the history control does: its auto margin took the
+   slack a number or a rating is pushed to the trailing edge by, and the
+   value jumped to the leading edge on the one cell a reader was asked to
+   look at. A number's and a rating's mark goes first, at the leading edge;
+   a checkbox's stands at the trailing edge out of the flow, so the box stays
+   centred under its header. */
+:is(.crewlet-sheet-grid__cell--number, .crewlet-sheet-grid__cell--rating) > .crewlet-sheet-grid__refused {
+  order: -1;
+  margin-inline: 0 auto;
+  padding-inline: 0 var(--spacing-1);
+}
+
+.crewlet-sheet-grid__cell--checkbox > .crewlet-sheet-grid__refused {
+  position: absolute;
+  inset-inline-end: var(--spacing-2);
+  margin: 0;
+  padding: 0;
 }
 
 .crewlet-sheet-grid__message {
@@ -479,6 +517,13 @@
   background: var(--color-surface-subtle);
 }
 
+/* On the floor with the header row it stands beside (a sheet with no rows
+   yet), it leaves its hairline to the frame as the headers do: it laid a 2px
+   edge under the control beside the 1px edge under the headers. */
+.crewlet-sheet-grid__add-column--floor {
+  border-bottom-width: 0;
+}
+
 .crewlet-sheet-grid__sync {
   display: inline-flex;
   align-items: center;
@@ -569,12 +614,17 @@
   color: var(--color-text-primary);
 }
 
+/* A field in a form, at the step every field's value takes (an Input's, a
+   Select's, a grid cell's), rather than at whatever size the page's own text
+   is: on a page set at 16px its value stood three pixels larger than the
+   field beside it. */
 .crewlet-sheet-cell {
   position: relative;
   display: inline-flex;
   flex-direction: column;
   gap: var(--spacing-1);
   min-width: 0;
+  font-size: var(--font-size-compact);
 }
 
 .crewlet-sheet-cell__face {
@@ -640,6 +690,36 @@
   font: inherit;
 }
 
+/*
+ * A NUMBER STAYS ON ITS EDGE WHILE IT IS EDITED. A number's and a rating's
+ * value is drawn at the cell's trailing edge in tabular figures, and the field
+ * opened over it set the digits from the leading edge in proportional ones, so
+ * the value jumped 45px across the cell and re-spaced as it opened. The field
+ * takes the column's edge and the value's figures.
+ */
+:is(.crewlet-sheet-grid__cell--number, .crewlet-sheet-grid__cell--rating) .crewlet-sheet-editor__input {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+/*
+ * A LONE CELL'S EDITOR TAKES ITS FACE'S PLACE AT ITS FACE'S SIZE, so nothing
+ * under the cell moves while it is open. The face is a control-step box with
+ * a border all round and its words a hairline and a step in: a line's field
+ * takes its corners and that inset (it was square, with its words a pixel to
+ * the left), and a list's editor keeps its height while the panel lies over
+ * the page (it kept none, and everything under the cell rose by a face). A
+ * text's line is the face's too (see the overlay's field below).
+ */
+.crewlet-sheet-cell .crewlet-sheet-editor__input {
+  padding-inline: calc(var(--spacing-2) + 1px);
+  border-radius: var(--radius-md);
+}
+
+.crewlet-sheet-cell .crewlet-sheet-editor--list {
+  min-height: var(--size-control-md);
+}
+
 .crewlet-sheet-editor__input:focus-visible,
 .crewlet-sheet-editor__filter:focus-visible,
 .crewlet-sheet-editor__textarea:focus-visible {
@@ -685,6 +765,9 @@
    popover's ground and shadow, and a field that wraps and grows to six lines,
    so the start of a value is never scrolled out of view while it is edited. */
 .crewlet-sheet-editor__overlay {
+  /* Where its words start, the field's and the notes' under it: a step in
+     from the edge of the cell it lies over, its own border taken out. */
+  --crewlet-sheet-editor-inset: calc(var(--spacing-2) - 1px);
   position: absolute;
   top: 0;
   inset-inline-start: 0;
@@ -709,10 +792,13 @@
 
 .crewlet-sheet-editor__overlay > .crewlet-sheet-editor__error,
 .crewlet-sheet-editor__overlay > .crewlet-sheet-editor__conflict {
-  margin: 0 var(--spacing-2) var(--spacing-2);
+  margin: 0 var(--crewlet-sheet-editor-inset) var(--spacing-2);
 }
 
+/* A lone cell's face has a border all round, so the words stand a hairline
+   and a step in, where the face's stood. */
 .crewlet-sheet-cell .crewlet-sheet-editor__overlay {
+  --crewlet-sheet-editor-inset: var(--spacing-2);
   position: relative;
   width: 100%;
   max-width: none;
@@ -730,11 +816,23 @@
   font: inherit;
 }
 
+/*
+ * THE VALUE DOES NOT MOVE WHEN ITS CELL OPENS. One line of the field is the
+ * row it lies over less the overlay's two hairlines, and the line is centred
+ * where the cell centres its value (on the row less the hairline under it),
+ * with the overlay's border taken out of the inline step, so the words start
+ * where the cell's did. Padded a step on every side, a value stood 3.5px
+ * lower and 1px further in than in the cell it replaced, and one line of it
+ * was 38px tall over a 32px row. A longer value grows down from that line.
+ */
 .crewlet-sheet-editor__overlay .crewlet-sheet-editor__textarea {
+  --crewlet-sheet-editor-row: var(--crewlet-sheet-row-height, var(--size-sheet-row));
+  --crewlet-sheet-editor-line: calc(var(--font-line-height-normal) * 1em);
+  --crewlet-sheet-editor-pad: calc((var(--crewlet-sheet-editor-row) - var(--crewlet-sheet-editor-line)) / 2 - 1px);
   display: block;
-  min-height: var(--crewlet-sheet-row-height, var(--size-sheet-row));
-  max-height: calc(var(--crewlet-sheet-editor-lines, 6) * var(--font-line-height-normal) * 1em + 2 * var(--spacing-2));
-  padding: var(--spacing-2);
+  min-height: calc(var(--crewlet-sheet-editor-line) + 2 * var(--crewlet-sheet-editor-pad));
+  max-height: calc(var(--crewlet-sheet-editor-lines, 6) * var(--crewlet-sheet-editor-line) + 2 * var(--crewlet-sheet-editor-pad));
+  padding: calc(var(--crewlet-sheet-editor-pad) - 0.5px) var(--crewlet-sheet-editor-inset) calc(var(--crewlet-sheet-editor-pad) + 0.5px);
   overflow-y: auto;
   border: 0;
   border-radius: var(--radius-md);
@@ -743,6 +841,13 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   resize: none;
+}
+
+/* A lone cell's field has the face's line (the control step), centred in it
+   as the face centres its value between its two borders. */
+.crewlet-sheet-cell .crewlet-sheet-editor__overlay .crewlet-sheet-editor__textarea {
+  --crewlet-sheet-editor-row: var(--size-control-md);
+  padding: var(--crewlet-sheet-editor-pad) var(--crewlet-sheet-editor-inset);
 }
 
 .crewlet-sheet-editor__list {
@@ -809,6 +914,13 @@
   border-top: 1px solid var(--color-border-default);
 }
 
+/* The rule divides the note from what stands above it; first in its panel
+   (a line editor's, with no error over it), it divided it from nothing. */
+.crewlet-sheet-editor__conflict:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
 .crewlet-sheet-editor__conflict-text {
   margin: 0;
   color: var(--color-text-secondary);
@@ -836,6 +948,16 @@
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 
+  /* A sheet of its own rather than a field over a cell, so it has no cell's
+     line to keep and is padded a step all round, its notes with it. */
+  .crewlet-sheet-grid .crewlet-sheet-editor--long .crewlet-sheet-editor__overlay {
+    --crewlet-sheet-editor-inset: var(--spacing-2);
+  }
+
+  .crewlet-sheet-grid .crewlet-sheet-editor--long .crewlet-sheet-editor__textarea {
+    --crewlet-sheet-editor-pad: var(--spacing-2);
+    padding: var(--crewlet-sheet-editor-pad) var(--crewlet-sheet-editor-inset);
+  }
 }
 
 @media (forced-colors: active) {

@@ -27,6 +27,11 @@
   /* A URL IS ONE UNBREAKABLE WORD to a line breaker. Without this the chip is
      pushed whole onto its own line and the sentence around it is torn up. */
   overflow-wrap: anywhere;
+  /* AND EACH LINE OF IT IS A WHOLE CHIP: its own inset and its own rounded
+     ends. Sliced, the line a URL broke onto began flush on a square edge, 4px
+     left of the line above it, and the line it broke from ended on one. */
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 /*

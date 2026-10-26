@@ -504,6 +504,9 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     minWidth?: number | undefined;
   } | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
+  // The frame round the trigger: the bordered field a reader sees, and the
+  // box the panel is placed against (see `position`).
+  const frame = useRef<HTMLDivElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const list = useRef<HTMLElement | null>(null);
   const search = useRef<HTMLInputElement | null>(null);
@@ -696,6 +699,17 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     else highlight.now(restingKey);
   }, [restingKey, highlight]);
 
+  // The frame is the listbox's anchor (a press on it is not a press outside)
+  // and the box the panel is placed against, so one ref feeds both.
+  const anchorRef = listbox.anchorRef;
+  const attachFrame = useCallback(
+    (el: HTMLDivElement | null) => {
+      frame.current = el;
+      anchorRef(el);
+    },
+    [anchorRef],
+  );
+
   /*
    * WHERE THE PANEL GOES, MEASURED FROM THE PANEL.
    *
@@ -728,9 +742,15 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
    * The style is written directly on the node here rather than waited for
    * through state, because a placement pass is synchronous by nature: it
    * writes, reads back, and commits once.
+   *
+   * THE ANCHOR IS THE FRAME, not the trigger button. The button sits inside
+   * the frame's 1px boundary, so a panel placed against it stood a pixel in
+   * from either edge of the field it is meant to match, and the layer gap was
+   * measured from inside that boundary: 3px under the field the reader sees,
+   * where every other popup stands 4px off its anchor.
    */
   const position = useCallback(() => {
-    const at = trigger.current;
+    const at = frame.current;
     const box = panel.current;
     if (!at || !box || !container) return;
     const inHost = container !== document.body;
@@ -1094,7 +1114,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
         disabled && 'is-disabled',
         className,
       )}
-      ref={listbox.anchorRef}
+      ref={attachFrame}
     >
       <button
         ref={(el) => {

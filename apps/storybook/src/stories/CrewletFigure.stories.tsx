@@ -37,19 +37,23 @@ const Card = ({
       margin: 0,
       display: 'flex',
       flexDirection: 'column',
-      gap: 'var(--spacing-2, 8px)',
-      padding: 'var(--spacing-3, 14px)',
+      gap: 'var(--spacing-2)',
+      padding: 'var(--spacing-3)',
       border: '1px solid var(--color-border-default)',
-      borderRadius: 14,
+      borderRadius: 'var(--radius-2xl)',
       background: 'var(--color-surface-subtle)',
     }}
   >
+    {/* The well's corner is the card's less the inset it stands at (the
+        card's padding and its hairline), so the two curves run concentric
+        at every density: a 10px corner 13px inside a 14px one bulged out
+        at all four corners. */}
     <div
       style={{
         aspectRatio: '1.5 / 1',
         display: 'grid',
         placeItems: 'center',
-        borderRadius: 10,
+        borderRadius: 'calc(var(--radius-2xl) - var(--spacing-3) - 1px)',
         background: 'var(--color-surface-inset)',
       }}
     >
@@ -92,6 +96,12 @@ export const Playground: Story = {};
 
 /** The full catalog: every available motion at a glance. */
 export const Catalog: Story = {
+  // PADDED, where the other stories are centred: the centred layout shrinks
+  // its root to the content, and a grid of auto-filled tracks in a shrunk box
+  // resolved to one 265px column, so "at a glance" was six cards stacked
+  // 1640px tall. In a full-width root the ceiling below is a definite width at
+  // every viewport, where a fixed width scrolled a phone sideways.
+  parameters: { layout: 'padded' },
   render: () => (
     <div style={{ maxWidth: 760 }}>
       <div

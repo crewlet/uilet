@@ -143,12 +143,25 @@ function useFitted(list: RefObject<HTMLUListElement | null>, active: boolean, to
     const items = [...box.children] as HTMLElement[];
     const first = items[0];
     if (!first) return;
+    /*
+     * ON THE FIRST LINE MEANS STARTING ABOVE THE FIRST ITEM'S BOTTOM EDGE, not
+     * only sharing its top. The line centres its items, so a member shorter or
+     * taller than the first starts a pixel or two away from it while standing
+     * on the same line, and an exact match counted a count chip 2px shorter
+     * than the tags as wrapped: one tag fewer than fits was shown, with an
+     * empty stretch where it belonged. A wrapped item starts at or below that
+     * edge, because the first line's box holds the first item whole. The
+     * shared top still counts, for a group laid out with no height at all
+     * (one inside a hidden panel), where every edge is the same zero.
+     */
     const top = first.offsetTop;
+    const bottom = top + first.offsetHeight;
+    const onFirstLine = (item: HTMLElement) => item.offsetTop === top || item.offsetTop < bottom;
     const tags = items.filter((item) => !item.hasAttribute('data-count'));
     const count = items.find((item) => item.hasAttribute('data-count'));
-    const onLine = tags.filter((item) => item.offsetTop === top).length;
+    const onLine = tags.filter(onFirstLine).length;
     // The count chip itself must sit on the line too, or one more tag gives way to it.
-    const room = count && count.offsetTop !== top ? onLine - 1 : onLine;
+    const room = count && !onFirstLine(count) ? onLine - 1 : onLine;
     const next = Math.max(1, Math.min(room, tags.length));
     if (next < tags.length) setFitted(next);
   }, [list, active, fitted, total]);

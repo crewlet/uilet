@@ -66,7 +66,10 @@ export const ScaledPage: Story = {
 export const Snapshots: Story = {
   render: () => (
     <LivePreviewBudgetProvider max={3}>
-      <div style={{ height: 420, overflow: 'auto', display: 'grid', gridTemplateColumns: 'repeat(3, 240px)', gap: 16, padding: 4 }}>
+      {/* ROWS AS TALL AS THE BOXES: a grid of a fixed height shares its height
+          out among rows its clipping boxes give no floor, and the boxes stood
+          over each other 54px apart. */}
+      <div style={{ height: 420, overflow: 'auto', display: 'grid', gridTemplateColumns: 'repeat(3, 240px)', gridAutoRows: 'max-content', gap: 16, padding: 4 }}>
         {Array.from({ length: 24 }, (_, i) => (
           <div key={i} style={{ ...box, width: 240 }}>
             <LivePreview width={760} fallback={<ArtifactKindGround kind="doc" />}>

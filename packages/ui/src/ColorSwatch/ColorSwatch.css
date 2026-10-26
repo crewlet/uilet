@@ -56,10 +56,33 @@
   font-size: var(--font-size-xs);
 }
 
+/*
+ * THE VALUE IS ONE LINE OF ITS OWN TEXT, copyable or not, so the hex stands
+ * where a plain value or "Not set" does. The copy control is a small icon
+ * button (26px), taller than that line: left to set the row's height, it
+ * stood a copyable value four pixels lower than a plain one and made its
+ * swatch eight pixels taller. It is centred on the line instead (`1lh`, in
+ * the value's own size) and overflows it evenly, unseen until the row is
+ * reached.
+ */
+.crewlet-color-swatch__value {
+  height: 1lh;
+  font-size: var(--font-size-xs);
+}
+
+/*
+ * ITS RING IS DRAWN INSIDE IT, as a bordered icon button's is. The control
+ * stands about four pixels over the line above its own, so the outset ring
+ * crossed the foot of the description's letters (the name's, in the small
+ * swatch). On the inset offset the ring keeps to the control's box.
+ */
+.crewlet-color-swatch__value .crewlet-copyable__button:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
 .crewlet-color-swatch__value--plain {
   color: var(--color-text-secondary);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-xs);
 }
 
 .crewlet-color-swatch__empty {

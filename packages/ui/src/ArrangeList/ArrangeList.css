@@ -15,16 +15,65 @@
 }
 
 .crewlet-arrange-list__item {
+  /*
+   * The toggle's first line, as Switch and Checkbox set their label, and half
+   * of what a small control stands over it: the line the grip and the move
+   * buttons are centred on, and the room that takes (see the rows below).
+   */
+  --crewlet-arrange-list-line: calc(var(--font-size-sm) * var(--font-line-height-snug));
+  --crewlet-arrange-list-overhang: calc((var(--size-control-sm) - var(--crewlet-arrange-list-line)) / 2);
+  /* What a Checkbox or Switch pads around its first line to reach its floor
+     (they centre that line in a small row, so the row needs no correction). */
+  --crewlet-arrange-list-toggle-pad: calc((var(--size-row-sm) - var(--crewlet-arrange-list-line)) / 2);
+
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
   min-height: var(--size-row-lg);
-  padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) var(--spacing-1);
+  /*
+   * THE TWO ENDS MIRROR EACH OTHER: the grip starts the row and the move
+   * buttons end it, the same small IconButton one step in from each edge.
+   * The end was a step wider, which stood the last chevron 16px in from its
+   * edge against the grip's 12px.
+   */
+  padding: var(--spacing-1);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: var(--color-surface-subtle);
   transition: background-color var(--motion-duration-fast) var(--motion-easing-default),
     border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* Without the move buttons the row ends in words or a control of the item's
+   own, which keep the wider step clear of the edge. */
+.crewlet-arrange-list__item:not(:has(> .crewlet-arrange-list__moves)) {
+  padding-inline-end: var(--spacing-2);
+}
+
+/*
+ * THE ROW'S MARKS SIT ON ITS FIRST LINE once the item carries a description,
+ * as a ListInput row's do. The switch or the box is set on its label's first
+ * line by its own component, so centred on a two line row the grip and the
+ * move buttons stood 11px under the line the toggle beside them is on, level
+ * with nothing. They take the top of the row, a small control tall; the
+ * toggle is lowered by the overhang, which centres its first line in that
+ * band; and the overhang is given back under the description, so the words
+ * keep the same room above and below them.
+ */
+.crewlet-arrange-list__item:has(.crewlet-switch__description, .crewlet-checkbox__description) {
+  align-items: flex-start;
+  padding-block-end: calc(var(--spacing-1) + var(--crewlet-arrange-list-overhang) - var(--crewlet-arrange-list-toggle-pad));
+}
+
+.crewlet-arrange-list__item:has(.crewlet-switch__description, .crewlet-checkbox__description)
+  > .crewlet-arrange-list__toggle {
+  margin-block-start: calc(var(--crewlet-arrange-list-overhang) - var(--crewlet-arrange-list-toggle-pad));
+}
+
+/* A control of the item's own is centred in the same band, whatever its height. */
+.crewlet-arrange-list__item:has(.crewlet-switch__description, .crewlet-checkbox__description)
+  > .crewlet-arrange-list__trailing {
+  block-size: var(--size-control-sm);
 }
 
 .crewlet-arrange-list__item:hover {

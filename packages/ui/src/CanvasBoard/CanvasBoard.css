@@ -323,7 +323,12 @@
   height: var(--spacing-2);
   box-sizing: border-box;
   border: 1px solid var(--color-brand-accent);
-  border-radius: var(--radius-xs);
+  /*
+   * A SQUARE, as the rule above says. The extra small corner is half of this
+   * 8px side, which drew every corner as a dot; half of that step keeps the
+   * quarter round the 16px square it was drawn from had.
+   */
+  border-radius: calc(var(--radius-xs) / 2);
   background: var(--color-surface-elevated);
 }
 

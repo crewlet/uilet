@@ -85,7 +85,7 @@
    * hold a row at its content. Once the menu is long enough to scroll, the
    * free space goes negative and the rows shrink to that floor first.
    *
-   * A plain row survives it by accident — one nowrap line is 19.5px, under the
+   * A plain row survives it by accident: one nowrap line is 19.5px, under the
    * floor, so there is nothing to shrink. A `--described` row does not: it
    * adds `padding-block` and stacks a label over a wrapping description, which
    * is ~52px squeezed into 28px and drawn over the rows either side.
@@ -107,9 +107,27 @@
 /*
  * The rows that carry a second line, and only those. The row height alone
  * would hold a label and a description in the space meant for one line.
+ *
+ * THEIR MARKS SIT ON THE LABEL'S LINE, not across both lines. Centred on the
+ * pair, a glyph floated between the label and the description, 10px under the
+ * line it names and belonging to neither. So the row aligns to its top, the
+ * check and the glyph stand in a box one label line tall (`1lh`, measured in
+ * the row's own font), and a hint shares the label's baseline: the answer a
+ * dialog's head gives the mark beside a title with a subtitle (Modal.css).
  */
 .crewlet-menu__item--described {
+  align-items: flex-start;
   padding-block: var(--spacing-2);
+}
+
+.crewlet-menu__item--described > .crewlet-menu__check,
+.crewlet-menu__item--described > .crewlet-menu__icon {
+  height: 1lh;
+}
+
+.crewlet-menu__item--described > .crewlet-menu__text,
+.crewlet-menu__item--described > .crewlet-menu__hint {
+  align-self: baseline;
 }
 
 /* Neutral, because the accent means "where the reader is" and in a menu that

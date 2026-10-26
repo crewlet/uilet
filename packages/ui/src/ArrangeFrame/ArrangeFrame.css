@@ -194,6 +194,12 @@
   transform: translateY(-50%);
 }
 
+/* Its controls are chips lifted inside a well at the medium radius, so they
+   take the chip step, as the canvas's zoom bar and tool palette draw theirs. */
+.crewlet-arrange-frame__bar .crewlet-icon-btn {
+  border-radius: var(--radius-chip);
+}
+
 .crewlet-arrange-frame__sep:first-child {
   display: none;
 }

@@ -17,21 +17,30 @@
  */
 
 .crewlet-stepper {
+  /* The design's 6px either side of the rule between two pills (a step and
+     a half), named because the gap and the rule both measure by it (see THE
+     RULE BETWEEN TWO STEPS). */
+  --crewlet-stepper-rule-clearance: calc(var(--spacing-1) * 1.5);
+
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  /* The design's 6px between a pill and the rule beside it: a step and a half. */
-  gap: calc(var(--spacing-1) * 1.5);
+  /* The 10px rule stands in the gap with its clearance on both sides; two
+     lines of a row that wraps stand that same 6px apart. */
+  row-gap: var(--crewlet-stepper-rule-clearance);
+  column-gap: calc(var(--crewlet-stepper-rule-clearance) * 2 + 10px);
   min-width: 0;
   margin: 0;
   padding: 0;
   list-style: none;
+  /* See the rule below: one that would lead a wrapped line is cut here. */
+  overflow-x: clip;
 }
 
 .crewlet-stepper__step {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: calc(var(--spacing-1) * 1.5);
   min-width: 0;
 }
 
@@ -41,10 +50,17 @@
  * furniture: it carries nothing a reader has to be told, and the list already
  * says the steps are in order. 10px by a hairline, the measure of this one
  * mark, and fixed at every density as a hairline is.
+ *
+ * IT STANDS IN THE GAP, outside its step's box, so a row that wraps never
+ * starts with one: the step that opens the next line has its rule past the
+ * list's start edge, where the list clips it. Drawn inside the step, it went
+ * down with it and stood alone at the head of the line, before "Voice".
  */
 .crewlet-stepper__step + .crewlet-stepper__step::before {
   content: '';
-  flex: none;
+  position: absolute;
+  top: calc(50% - 0.5px);
+  inset-inline-end: calc(100% + var(--crewlet-stepper-rule-clearance));
   width: 10px;
   height: 1px;
   background: var(--color-border-strong);
@@ -225,6 +241,8 @@
   flex-wrap: nowrap;
   align-items: stretch;
   gap: 0;
+  /* A column does not wrap, so it has no leading rule to cut. */
+  overflow-x: visible;
 }
 
 .crewlet-stepper--vertical .crewlet-stepper__step {

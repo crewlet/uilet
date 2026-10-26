@@ -4,3 +4,16 @@
   flex: none;
   color: var(--color-text-tertiary);
 }
+
+/*
+ * THE PLACE'S GLYPH STANDS ON ITS TITLE'S LINE, as a card head's glyph stands
+ * on its title. Centred on the row it sat between the title and the sentence,
+ * 10px under the name it marks. Its box is one line of the title (the cell
+ * step at its leading), the glyph centred in it; the chevron stays centred on
+ * the row the whole of which is the link.
+ */
+.crewlet-related-row__glyph:first-child {
+  align-self: flex-start;
+  align-items: center;
+  height: calc(var(--font-size-compact) * var(--font-line-height-snug));
+}

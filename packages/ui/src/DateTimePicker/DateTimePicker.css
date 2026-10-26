@@ -30,7 +30,9 @@
 
 .crewlet-datetime--sm {
   min-height: var(--size-control-sm);
-  padding: 0 var(--spacing-2);
+  /* The chevron one step inside the leading inset, as at the default size
+     and as a small Select's (see Select.css). */
+  padding: 0 var(--spacing-1) 0 var(--spacing-2);
   font-size: var(--font-size-xs);
 }
 

@@ -9,7 +9,6 @@ import {
   FormField,
   InlineEditor,
   Textarea,
-  VisuallyHidden,
   countCharacters,
 } from '@crewlethq/ui';
 
@@ -111,7 +110,13 @@ function MissionCard({ conflict = false, failing = false }: { conflict?: boolean
               onSave={save}
               onCancel={close}
             >
-              <FormField label={<VisuallyHidden>Mission</VisuallyHidden>} limit={{ length, max: MAX }}>
+              {/*
+               * The card's title already names the field, so the LABEL is
+               * hidden whole (`hideLabel`) rather than the words inside it:
+               * a label holding hidden words still stood in the column and
+               * set the box a step under the card's head.
+               */}
+              <FormField label="Mission" hideLabel limit={{ length, max: MAX }}>
                 {(field) => (
                   <Textarea
                     id={field.id}

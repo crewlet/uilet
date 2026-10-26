@@ -18,7 +18,10 @@
 .crewlet-property-list {
   display: grid;
   grid-template-columns: var(--crewlet-description-list-term, minmax(92px, max-content)) minmax(0, 1fr);
-  gap: var(--spacing-2) var(--spacing-3);
+  /* The description list's own gutter as well as its term track: with the
+     track shared and a 12px gutter here against its 16px, a page that set
+     one measure still started these values 4px left of every card's. */
+  gap: var(--spacing-2) var(--spacing-4);
   align-items: baseline;
   min-width: 0;
   font-size: var(--font-size-compact);

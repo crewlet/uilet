@@ -144,6 +144,12 @@ export interface LogoSlotProps {
  * (`FilePickButton`), and the slot itself is a `FileDrop` region for a pointer.
  * The engine checks every file; a refusal comes back as `error`, drawn under
  * the slot and announced, saying what to change.
+ *
+ * SIDE BY SIDE, SLOTS GO IN A `LogoSlotGroup`. A slot on its own knows
+ * nothing of its neighbours, so in a host's own row a name that wraps to a
+ * second line starts that slot's stage a line below the others. The group
+ * gives every slot one set of rows, so names, stages, notes and actions each
+ * start on one line across the row, however the copy wraps.
  */
 export function LogoSlot({
   label,

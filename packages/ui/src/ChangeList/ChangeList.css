@@ -171,6 +171,23 @@
   text-decoration-thickness: 1px;
 }
 
+/*
+ * TWO CHANGED RUNS THAT TOUCH stand a word space apart. A removed run has no
+ * tint of its own here, so its strike ran straight into the added run's tint
+ * ("one hour" into "30 minutes") and the two read as one struck phrase.
+ *
+ * The space is the REMOVED run's, on whichever side the other run touches.
+ * An added run's tint is cloned onto every line it wraps onto, margins and
+ * all, so a space at its start indented each line it continued on by 4px.
+ */
+.crewlet-change-list__deleted:has(+ :is(.crewlet-change-list__deleted, .crewlet-change-list__inserted)) {
+  margin-inline-end: var(--spacing-1);
+}
+
+.crewlet-change-list__inserted + .crewlet-change-list__deleted {
+  margin-inline-start: var(--spacing-1);
+}
+
 /* The disclosure's padding hangs into the gutter, so its chevron sits on the text edge. */
 .crewlet-change-list__whole {
   margin-inline-start: calc(var(--spacing-2) * -1);

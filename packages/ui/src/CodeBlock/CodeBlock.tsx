@@ -235,8 +235,12 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   };
 
   let content: ReactNode = body;
+  // How many figures the last line number has, so the numbers' track is as
+  // wide as the longest of them (see CodeBlock.css).
+  let digits: number | undefined;
   if (perLine) {
     const lines = body.split('\n');
+    if (showLineNumbers) digits = String(lines.length).length;
     content = lines.map((line, index) => (
       <span className="crewlet-codeblock__line" key={`${index}-${line}`}>
         {showLineNumbers ? (
@@ -268,11 +272,14 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
         className,
       )}
       style={
-        maxHeight === undefined
+        maxHeight === undefined && digits === undefined
           ? style
           : ({
               ...style,
-              '--crewlet-codeblock-max-height': typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+              ...(maxHeight === undefined
+                ? null
+                : { '--crewlet-codeblock-max-height': typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight }),
+              ...(digits === undefined ? null : { '--crewlet-codeblock-digits': String(digits) }),
             } as CSSProperties)
       }
     >

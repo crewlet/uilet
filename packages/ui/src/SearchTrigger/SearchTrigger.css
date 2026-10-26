@@ -33,9 +33,14 @@
  * names the pad (`--crewlet-rail-field-pad`), so its inset and the field's
  * pad are one measure and the glyph lands on the nav's glyph column; outside
  * that slot the field keeps the trigger's own pad.
+ *
+ * Its glyph-to-word gap is a nav row's (SidebarNav.css), two steps and a
+ * half, so its words start on the rows' word column too: on the trigger's
+ * two-step gap the placeholder stood 2px left of every nav label.
  */
 .crewlet-search-trigger--rail {
   display: flex;
+  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
   width: 100%;
   height: var(--size-control-sm);
   padding-inline: var(--crewlet-rail-field-pad, calc(var(--spacing-2) + var(--spacing-1) / 2));
@@ -100,8 +105,14 @@
    field collapses to its glyph where the rail becomes a drawer. The rail's
    own field does not, because the drawer is as wide as the rail was. */
 @media (width < 1024px) {
+  /* Folded, it is an icon-only control, and an icon-only control is a square
+     (IconButton's md step is the same 30px): on the box's own pad it stood
+     36px wide by 30px tall. */
   .crewlet-search-trigger--toolbar {
     min-width: 0;
+    width: var(--size-control-md);
+    padding-inline: 0;
+    justify-content: center;
   }
 
   .crewlet-search-trigger--toolbar .crewlet-search-trigger__label,

@@ -259,6 +259,21 @@
   box-shadow: var(--shadow-lg);
 }
 
+/*
+ * THE BAR IS THE FRAME. Every bar wraps a `Toolbar`, whose own row padding
+ * (a step over and under) and gap were added to the bar's: the selection
+ * toolbar stood 52px tall round 26px controls, 13px over and under them and
+ * 5px at their sides, and a group's hairline had 12px before it and 4px
+ * after. Inside a bar the toolbar keeps neither, so the bar's padding is the
+ * one inset all round, and the groups part on the step MarkdownEditor's bar
+ * parts them on, the hairline halfway between.
+ */
+.crewlet-rich-editor__bar .crewlet-toolbar,
+.crewlet-rich-editor__bubble .crewlet-toolbar {
+  gap: var(--spacing-1);
+  padding: 0;
+}
+
 .crewlet-rich-editor__group {
   display: inline-flex;
   align-items: center;
@@ -266,7 +281,6 @@
 }
 
 .crewlet-rich-editor__group + .crewlet-rich-editor__group {
-  margin-left: var(--spacing-1);
   padding-left: var(--spacing-1);
   border-left: 1px solid var(--color-border-default);
 }
@@ -289,12 +303,15 @@
   text-transform: uppercase;
 }
 
+/* An option takes a menu row's corner (Menu.css), the surface's own less the
+   step it is inset by, so the active fill nests in the panel's corner; at
+   the small step it was rounder than the corner around it. */
 .crewlet-rich-editor__option {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
   padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   color: var(--color-text-primary);
   cursor: pointer;
 }

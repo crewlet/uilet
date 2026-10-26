@@ -86,9 +86,18 @@ export const PresentInThePage: Story = {
     }, []);
     const slide = STORY_SLIDES[at]!;
     return (
-      <div>
-        <h2>Quarterly plan</h2>
-        <p>A title and a description above the show push it down the page; the stage gives up height to stay in view.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
+        {/* A page's own rhythm round the show, so the description does not sit
+            on the show's edge, under the ring the show draws as it takes focus.
+            A flex column, not a grid: a grid's auto track is sized by the
+            stage's own width, which the measured height sets through the
+            slide's ratio, and the show then grew past the page. */}
+        <header style={{ display: 'grid', gap: 'var(--spacing-1)' }}>
+          <h2 style={{ margin: 0 }}>Quarterly plan</h2>
+          <p style={{ margin: 0 }}>
+            A title and a description above the show push it down the page; the stage gives up height to stay in view.
+          </p>
+        </header>
         <section
           ref={show}
           aria-label="Slide show"

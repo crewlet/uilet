@@ -56,9 +56,13 @@
   min-width: 0;
 }
 
+/* THE NAME AT THE REMARK'S OWN SIZE, a weight over it. Left to inherit, it
+   took whatever its host's body was: 16px on a 16px page, a step over the
+   section's own heading and three over the words it signs. */
 .crewlet-comment-thread__name {
   overflow: hidden;
   color: var(--color-text-primary);
+  font-size: var(--font-size-compact);
   font-weight: var(--font-weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -69,9 +73,12 @@
   font-size: var(--font-size-xs);
 }
 
-/* Reply sits at the row's far end, wherever the head wraps. */
+/* Reply sits at the row's far end, wherever the head wraps, its padding and
+   edge pulled out as a card foot's ghost is (StatusCard.css), so the word ends
+   on the line the hairline under the remark ends on rather than 9px inside. */
 .crewlet-comment-thread__reply {
   margin-inline-start: auto;
+  margin-inline-end: calc(-1 * (var(--spacing-2) + 1px));
 }
 
 .crewlet-comment-thread__compose {

@@ -17,7 +17,12 @@ const edit = (part: string) => (
   </Button>
 );
 
-const THUMBS = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, maxWidth: 480 } as const;
+/*
+ * As many logos to a row as fit at a width their labels stand on one line at:
+ * three across a phone's row cut "For dark grounds" onto a second line, which
+ * pushed its tile 20px below the two beside it.
+ */
+const THUMBS = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(9rem, 100%), 1fr))', gap: 12, maxWidth: 480 } as const;
 const SWATCHES = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(10rem, 1fr))', gap: 12 } as const;
 
 function BrandSummary({ error }: { error?: string }) {

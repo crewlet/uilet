@@ -58,7 +58,15 @@ function Picked({ items, initial, heading }: { items: LayersListItem[]; initial:
           heading={heading}
         />
       </div>
-      <p style={{ margin: 0, color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)' }}>
+      {/* On the column's inset, so the line stands under the names rather than out in their gutter. */}
+      <p
+        style={{
+          margin: 0,
+          paddingInlineStart: COLUMN.paddingInlineStart,
+          color: 'var(--color-text-tertiary)',
+          fontSize: 'var(--font-size-xs)',
+        }}
+      >
         {opened ? `Opened ${opened}` : 'Press Enter or double-click an entry to open it'}
       </p>
     </div>

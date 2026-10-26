@@ -40,29 +40,39 @@
  * THE RING IS INSET and drawn on a pseudo element, so it never moves the
  * content, never doubles the element's own border and is never read. 2px,
  * the weight a selection ring is drawn at.
+ *
+ * IT IS THE PSEUDO ELEMENT'S OUTLINE, pulled inside by a negative offset,
+ * because an outline's curve shrinks with its offset and a border's does not.
+ * Drawn as a border on a box inset from the element, the ring took the
+ * element's own outer corner 2px inside it (4px at an inset of 3), so its
+ * corners stood further from the element's edge than its sides did: 1.8px
+ * against 1px round a hairline cell. Only the element's own hairline is left
+ * unaccounted for, since a stylesheet cannot read another box's border.
  */
 .crewlet-presence-ring {
   --crewlet-presence-ring-inset: 1px;
+  --crewlet-presence-ring-weight: 2px;
   position: relative;
   display: inline-block;
 }
 
 .crewlet-presence-ring::after {
   position: absolute;
-  inset: var(--crewlet-presence-ring-inset);
+  inset: 0;
   z-index: var(--z-index-presence);
-  border: 2px solid var(--crewlet-presence-hue);
   border-radius: inherit;
+  outline: var(--crewlet-presence-ring-weight) solid var(--crewlet-presence-hue);
+  outline-offset: calc((var(--crewlet-presence-ring-inset) + var(--crewlet-presence-ring-weight)) * -1);
   content: '';
   pointer-events: none;
 }
 
 .crewlet-presence-ring--idle::after {
-  border-style: dashed;
+  outline-style: dashed;
 }
 
 @media (forced-colors: active) {
   .crewlet-presence-ring::after {
-    border-color: Highlight;
+    outline-color: Highlight;
   }
 }

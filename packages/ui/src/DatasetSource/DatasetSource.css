@@ -168,7 +168,10 @@ button.crewlet-dataset-source__summary:focus-visible {
 
 .crewlet-dataset-source__preview {
   min-width: 0;
-  padding: var(--spacing-3);
+  /* The summary's inset is its padding and its own 1px edge, so the preview
+     takes both: at the padding alone its content stood 1px outside the
+     head's title and 1px past its tag. */
+  padding: var(--spacing-3) calc(var(--spacing-3) + 1px);
 }
 
 .crewlet-dataset-source-list {

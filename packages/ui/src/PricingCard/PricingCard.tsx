@@ -168,10 +168,13 @@ const Cadence = ({ className = '', children, ...rest }: HTMLAttributes<HTMLSpanE
 const PriceNote = ({ className = '', children, ...rest }: HTMLAttributes<HTMLSpanElement>) => (
   // The success tag, on its own line. The shape and the tint come from the one
   // primitive; this file adds only the line of its own it sits on and the way
-  // it arrives.
-  <SharedTag {...rest} variant="success" className={`crewlet-pricing-card__price-note ${className}`.trim()}>
-    {children}
-  </SharedTag>
+  // it arrives. The line is its own box, so the tag on it keeps its own width
+  // rather than stretching to the price row's.
+  <span className="crewlet-pricing-card__price-note-line">
+    <SharedTag {...rest} variant="success" className={`crewlet-pricing-card__price-note ${className}`.trim()}>
+      {children}
+    </SharedTag>
+  </span>
 );
 
 const Body = ({ className = '', children, ...rest }: HTMLAttributes<HTMLDivElement>) => (

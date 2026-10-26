@@ -110,12 +110,20 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
+/*
+ * The avatar is centred on the head's line, the name it belongs to: its box
+ * is one line tall and the avatar, a target taller than the line, overflows
+ * it evenly into the control's top pad. Hung from the line's top by a pixel
+ * it stood 3.6px under the name's middle, its top a step further from the
+ * row's edge than its side.
+ */
 .crewlet-inbox-row__leading {
   display: inline-flex;
   flex: none;
+  align-items: center;
   justify-content: center;
   width: var(--size-target-min);
-  margin-top: 1px;
+  height: 1lh;
 }
 
 .crewlet-inbox-row__main {
@@ -208,6 +216,11 @@
   overflow-wrap: anywhere;
   font-size: var(--font-size-xs);
   line-height: var(--font-line-height-snug);
+}
+
+/* A row with no leading slot: the words start at the control's own pad, and so does the task. */
+.crewlet-inbox-row:not(:has(.crewlet-inbox-row__leading)) > .crewlet-inbox-row__aside {
+  padding-inline-start: var(--spacing-2);
 }
 
 /* ---- The end of the list ---------------------------------------------- */

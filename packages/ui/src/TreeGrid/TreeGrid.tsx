@@ -72,7 +72,15 @@ export interface TreeGridColumn {
    * of it and is still the only thing a screen reader has (an actions column).
    */
   headerHidden?: boolean | undefined;
-  /** This column's grid track. One flexible column by default. */
+  /**
+   * This column's grid track. One flexible column by default.
+   *
+   * A LENGTH OR A FRACTION, NEVER A SIZE THE CONTENT DECIDES. Every row is a
+   * grid of its own on this template, so `auto`, `max-content` or
+   * `fit-content()` is sized row by row, and each row then starts its columns
+   * somewhere else. A column of one control is the control and the cell's
+   * padding on either side: `calc(var(--size-control-sm) + var(--spacing-2) * 2)`.
+   */
   width?: string | undefined;
 }
 

@@ -29,6 +29,18 @@ import { FolderPlusGlyph, UserPlusGlyph } from '@crewlethq/icons/glyphs';
 const meta: Meta<typeof AddPill> = {
   title: 'UI/AddPill',
   component: AddPill,
+  decorators: [
+    (Story) => (
+      // The pill splits OVER the mark, half of it to each side, so the canvas
+      // keeps room before the mark: flush with the padded layout's left edge,
+      // the first choice opened past the frame and was cut off. Room rather
+      // than centring, because a row's pill opens beside its mark and a
+      // centred story would move the mark out from under the pointer.
+      <div style={{ paddingInlineStart: 'var(--spacing-8)' }}>
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export default meta;

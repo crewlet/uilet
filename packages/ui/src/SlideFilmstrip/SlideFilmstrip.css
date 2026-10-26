@@ -102,21 +102,32 @@
   color: var(--color-text-secondary);
 }
 
-/* A CONTROL'S CORNER: the handle is a 24px control like any toolbar button,
+/* A CONTROL'S CORNER: the handle is a small control like any toolbar button,
    so it takes --radius-md; the thumbnail beside it is a slide, and keeps the
-   slide's own smaller corner. */
+   slide's own smaller corner.
+
+   AND THE SMALL CONTROL'S SIZE, square in both orientations: the small step,
+   which floors itself at the pointer target, with the glyph that step draws.
+   It was the 24px target floor with a 14px glyph, so the actions menu under
+   it (a small IconButton, 26px with a 12px glyph) was a larger square in the
+   same column, and in a row the handle was 24 by 26. */
 .crewlet-slide-filmstrip__handle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--size-target-min);
-  min-height: var(--size-target-min);
+  min-width: var(--size-control-sm);
+  min-height: var(--size-control-sm);
   padding: 0;
   border: 0;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-tertiary);
   cursor: grab;
+}
+
+.crewlet-slide-filmstrip__handle .crewlet-glyph {
+  width: var(--font-size-xs);
+  height: var(--font-size-xs);
 }
 
 .crewlet-slide-filmstrip__handle:hover {
@@ -175,7 +186,6 @@
 
 .crewlet-slide-filmstrip--horizontal .crewlet-slide-filmstrip__handle {
   grid-area: handle;
-  min-height: var(--size-control-sm);
   cursor: grab;
 }
 

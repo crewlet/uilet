@@ -43,6 +43,17 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * THE LOCK'S PLACE IS HELD ON EVERY ROW of a list that draws one, so the
+ * labels start on one line: a row without a lock began its label 16px left of
+ * the locked rows around it, and the column of names read ragged. The place is
+ * the xs glyph (the type scale's 12px step) and the gap after it; a list with
+ * no lock in it holds nothing.
+ */
+.crewlet-fact-list:has(.crewlet-fact-list__lock) .crewlet-fact-list__row:not(.is-locked) .crewlet-fact-list__label {
+  padding-inline-start: calc(var(--font-size-xs) + var(--spacing-1));
+}
+
 .crewlet-fact-list__value {
   display: flex;
   flex: 0 1 auto;

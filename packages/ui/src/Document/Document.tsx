@@ -176,6 +176,27 @@ export const DocumentTitleField = forwardRef<HTMLTextAreaElement, DocumentTitleF
     return () => observer.disconnect();
   }, [fit]);
 
+  // AND ONCE THE FACE HAS LOADED. A field fitted in the fallback face is
+  // measured in that face's widths: a placeholder that wraps onto two lines
+  // there wraps onto three in the title's own face, and the field, still two
+  // lines tall, cut the third off. A face arriving changes no width, so the
+  // observer above never sees it (SheetGrid measures again for the same
+  // reason).
+  useEffect(() => {
+    const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+    if (!fonts) return undefined;
+    let live = true;
+    const loaded = () => {
+      if (live) fit();
+    };
+    void fonts.ready.then(loaded);
+    fonts.addEventListener('loadingdone', loaded);
+    return () => {
+      live = false;
+      fonts.removeEventListener('loadingdone', loaded);
+    };
+  }, [fit]);
+
   // ENTER INSERTS NOTHING. Refused at `beforeinput`, the one event every way
   // of typing a line break passes through, so the keydown is left exactly as
   // an input's: the caller's handler and the page's see it unprevented.

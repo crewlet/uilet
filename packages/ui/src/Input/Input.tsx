@@ -39,7 +39,10 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   containerClassName?: string | undefined;
   /**
    * Content drawn inside the field at its leading edge: a search glyph, or an
-   * [InputAffix] standing in for a scheme the value is refused without.
+   * [InputAffix] standing in for a scheme the value is refused without. Size a
+   * glyph as an IconButton of the field's step draws it: `sm` (14px) in a
+   * medium field, the step a Select and a SearchTrigger use too, and `xs`
+   * (12px) in a small one. An unsized glyph takes the surrounding text's size.
    *
    * It does not take the pointer, so a press on it still lands in the field.
    * A control belongs beside the field rather than inside it: a target inside

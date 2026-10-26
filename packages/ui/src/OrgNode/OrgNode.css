@@ -43,6 +43,9 @@
  * the dash is what says a place is waiting rather than a frame round a value.
  */
 .crewlet-org-node-lead {
+  /* How far the pill stands inside the chart card's outer edge: the card's
+     hairline, then this strip's own padding. */
+  --crewlet-org-node-lead-inset: calc(1px + var(--spacing-1));
   position: relative;
   display: flex;
   align-items: center;
@@ -55,6 +58,11 @@
  * to this unit rather than as a second caption. RAISED, on the step a chip
  * with no boundary of its own takes (the palette suite holds it off the card
  * on both themes), so it is found by its ground rather than by a frame.
+ *
+ * ITS CORNER RUNS CONCENTRIC WITH THE CARD'S: the chart card's corner
+ * (`TreeCanvas.css`) less the inset the pill stands at, which is where its
+ * bottom corners sit. At the small radius step they bulged toward the card's
+ * corner, leaving the gap there narrower than the 5px along the card's sides.
  */
 .crewlet-org-node-lead__pill {
   display: flex;
@@ -70,7 +78,7 @@
   line-height: var(--font-line-height-tight);
   color: var(--color-text-secondary);
   background: var(--color-surface-elevated);
-  border-radius: var(--radius-sm);
+  border-radius: calc(var(--radius-lg) - var(--crewlet-org-node-lead-inset));
 }
 
 /*

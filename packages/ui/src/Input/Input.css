@@ -373,8 +373,14 @@
  * The multiline field: prose a person writes, such as a goal or a mission, so
  * it wears the page's own face. It was the code face when this rule was
  * written for a raw JSON editor that no longer exists.
+ *
+ * A BLOCK, not the browser's inline-block. Inline, the box sat on the text
+ * baseline of whatever held it, and a block parent (the shell below, a panel
+ * footer) grew a line's descent under it: the list's new-item box stood 37px
+ * for a 30px field, 7px of empty space before the list it adds to.
  */
 .crewlet-textarea {
+  display: block;
   width: 100%;
   padding: var(--spacing-2) var(--spacing-3);
   font-family: var(--font-family-sans);
@@ -494,11 +500,22 @@
   letter-spacing: normal;
 }
 
+/*
+ * A LABEL WITH AN ACTION IS STILL ONE LABEL LINE. The row took the height of
+ * the button in it, so the words sat in the middle of 26px and the control
+ * started 4.75px further from them than under every other label, and 9.5px
+ * lower than the field beside it in a row. The action now hangs on the
+ * label's line (see .crewlet-label__action) and overhangs it evenly; the row
+ * keeps only the part of a small control that would reach the box under it
+ * (under a pixel at the normal density), so a hovered action never paints
+ * over the field's edge.
+ */
 .crewlet-label--with-action {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--spacing-2);
+  padding-block-end: max(0px, calc((var(--size-control-sm) - 1lh) / 2 - var(--spacing-1)));
 }
 
 .crewlet-label__text {
@@ -528,9 +545,14 @@
   font-weight: var(--font-weight-regular);
 }
 
+/* Raised over the field it overhangs, so the ring a focused action draws two
+   pixels out from its edge is not painted over by the box under it. */
 .crewlet-label__action {
+  position: relative;
+  z-index: var(--z-index-raised);
   display: inline-flex;
   align-items: center;
+  block-size: 1lh;
 }
 
 /* ── FormField ───────────────────────────────────────────────────────── */
@@ -548,11 +570,21 @@
   padding: 0;
 }
 
-/* A fieldset's legend wears the field label's register, so a list of values
-   reads as one field among the others. */
+/*
+ * A fieldset's legend wears the field label's register, so a list of values
+ * reads as one field among the others.
+ *
+ * AND THE LABEL'S LINE, not the page's. The legend is a block whose own line
+ * box took the body's size, so it stood 24px tall round a 16.5px label, the
+ * words sat 5px down on its baseline, and the group's first control started
+ * 7.5px lower than a labelled field's beside it in the same row. At the
+ * label's size its line is the label's line, and the two kinds of field share
+ * one top and one control edge.
+ */
 .crewlet-form-field__legend {
   padding: 0;
   margin-bottom: var(--spacing-1);
+  font-size: var(--font-size-2xs);
 }
 
 .crewlet-form-field__helper {
@@ -700,7 +732,15 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * ON THE LINE A FIELD'S VALUE SITS ON. The value is the text a field would
+ * hold, so it takes the band a field's box gives that text: one line centred
+ * in the control step. Set straight under its label, it stood 5.25px above
+ * the value of the input beside it in a form row, and its reason 10.5px above
+ * that input's help.
+ */
 .crewlet-readonly-field__value {
+  padding-block: max(0px, calc((var(--size-control-md) - var(--font-size-compact) * var(--font-line-height-normal)) / 2));
   font-size: var(--font-size-compact);
   line-height: var(--font-line-height-normal);
   color: var(--color-text-primary);

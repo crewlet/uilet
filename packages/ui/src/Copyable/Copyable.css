@@ -60,8 +60,17 @@
 
 /* ---- chip -------------------------------------------------------------- */
 
+/*
+ * The chip states its own line, the document's leading rounded to a whole
+ * pixel as the keycap and the key chip take it (see Kbd.css). Inherited, it
+ * was whatever the text around it said: 17.95px on the document's own line
+ * and 17.4px inside a tighter sentence, where Chromium floored the leading
+ * above the figures to nothing and they stood nearly a pixel high in their
+ * chip.
+ */
 .crewlet-copyable--chip .crewlet-copyable__value {
   font-size: var(--font-size-2xs);
+  line-height: round(nearest, calc(var(--font-line-height-body) * 1em), 1px);
   background: var(--color-surface-inset);
   padding: 1px var(--spacing-1);
   border-radius: var(--radius-xs);

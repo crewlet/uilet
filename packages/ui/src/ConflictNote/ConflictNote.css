@@ -2,26 +2,55 @@
    so the colour is never the only carrier, and its controls beside it. */
 .crewlet-conflict-note {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--spacing-1) var(--spacing-2);
+  /*
+   * THE GLYPH SITS ON THE SENTENCE'S FIRST LINE, the answer a Callout gives
+   * its icon. Centred on the whole row, a sentence that wrapped to two lines
+   * left the glyph floating between them, ten pixels under the line it marks.
+   */
+  align-items: flex-start;
+  gap: var(--spacing-2);
   max-width: 40rem;
   color: var(--color-feedback-danger-ink);
   font-size: var(--font-size-compact);
   overflow-wrap: anywhere;
 }
 
+/*
+ * WITH CONTROLS, ONE LINE OF TEXT CENTRES ON THEM, as it does in a Callout:
+ * the sentence and its glyph are padded by half of what a small control is
+ * taller than a line, so a one-line note still reads as one row.
+ */
+.crewlet-conflict-note:has(.crewlet-conflict-note__actions) {
+  --crewlet-conflict-note-lead: max(0px, calc((var(--size-control-sm) - 1lh) / 2));
+}
+
+/* One line tall, so the drawing centres on the first line at any leading. */
 .crewlet-conflict-note__glyph {
   flex: none;
+  block-size: 1lh;
+  margin-block-start: var(--crewlet-conflict-note-lead, 0px);
+}
+
+/* The sentence and its controls: one row while there is room, and the
+   controls under the words, at the start of their column, when there is not. */
+.crewlet-conflict-note__body {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--spacing-1) var(--spacing-2);
+  min-width: 0;
 }
 
 .crewlet-conflict-note__text {
   flex: 1 1 16rem;
   min-width: 0;
+  padding-block: var(--crewlet-conflict-note-lead, 0px);
 }
 
 .crewlet-conflict-note__actions {
   display: inline-flex;
   flex-wrap: wrap;
+  align-self: center;
   gap: var(--spacing-1);
 }

@@ -13,6 +13,8 @@
   flex-wrap: nowrap;
   gap: var(--spacing-3);
   min-height: var(--size-row-lg);
+  /* The end inset is the start's less Clear's own padding (a small ghost's
+     8px), so Clear's word ends as far in as the count starts. */
   padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) var(--spacing-4);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
@@ -55,7 +57,9 @@
     left: var(--spacing-3);
     z-index: var(--z-index-overlay);
     gap: var(--spacing-2);
-    padding-inline-start: var(--spacing-3);
+    /* The start steps in to 12px, and the end with it, as above: with the end
+       left at 8px, Clear's word ended 18px in against the count's 13px. */
+    padding-inline: var(--spacing-3) var(--spacing-1);
     box-shadow: var(--shadow-lg);
   }
 }

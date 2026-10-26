@@ -108,8 +108,15 @@ export function TimeSeries({
    */
   const width = 1000;
   const plot = 120;
-  const footer = 18;
+  /*
+   * THE ROOM OVER THE PEAK AND UNDER THE LOW IS ONE ROOM: what a reading's
+   * point needs (its 4px radius and the 2px ring that cuts it out, at the
+   * default height) to stay inside the plot at either extreme. The foot was
+   * three times the head and held nothing, so the scale's words stood 18px
+   * under the baseline where a column chart's stand 4px under its own.
+   */
   const head = 6;
+  const footer = head;
   const span = to - from;
   const peaks = series.map((one) => Math.max(0, ...one.points.map((point) => point.v)));
   const peak = Math.max(1, ...peaks);

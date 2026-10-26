@@ -21,7 +21,18 @@
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-2);
-  min-height: var(--size-row-sm);
+  /*
+   * ITS FIRST LINE IS CENTRED IN THE ROW. The floor was a minimum height with
+   * the label at its top, so wherever a one-line box was centred with other
+   * controls (a toolbar, a settings row, a table's column list) the box and
+   * its label stood 4.2px above the line every other control's text was on.
+   * The floor is made of equal padding round the first line instead: one line
+   * comes out exactly the row's height with the text on its middle, and a
+   * longer label or a description grows the row downwards with the box still
+   * on its first line. `em` is the row's own size, so the compact step below
+   * recomputes it without restating it.
+   */
+  padding-block: calc((var(--size-row-sm) - var(--font-line-height-snug) * 1em) / 2);
   font-size: var(--font-size-sm);
   cursor: pointer;
 }
@@ -108,17 +119,7 @@
 .crewlet-checkbox--sm {
   --crewlet-checkbox-size: 14px;
 
-  /*
-   * ITS LINE IS CENTRED IN THE ROW. The row's floor was a minimum height with
-   * the label at its top, so in a form row of small inputs (whose text sits
-   * on their middle) the box and its label stood 5px above the line every
-   * other control's text was on. The floor is made of equal padding round
-   * the first line instead: one line comes out exactly the row's height with
-   * the text on its middle, and a longer label grows the row downwards with
-   * the box still on its first line.
-   */
-  min-height: 0;
-  padding-block: calc((var(--size-row-sm) - var(--font-line-height-snug) * 1em) / 2);
+  /* The row's padding is in `em`, so it centres this smaller line too. */
   font-size: var(--font-size-compact);
 }
 
@@ -127,15 +128,17 @@
 }
 
 /*
- * THE BARE BOX (`hideLabel`): no words beside it, so the row's floor and its
- * gap go, and the box is centred on a square the pointer floor allows. The
- * label is still its name, said rather than printed.
+ * THE BARE BOX (`hideLabel`): no words beside it, so the row's floor (its
+ * padding round a line) and its gap go, and the box is centred on a square
+ * the pointer floor allows. The label is still its name, said rather than
+ * printed.
  */
 .crewlet-checkbox--bare {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0;
+  padding-block: 0;
   min-width: var(--size-target-min);
   min-height: var(--size-target-min);
 }
@@ -147,6 +150,15 @@
 .crewlet-checkbox.is-disabled,
 .crewlet-checkbox.is-disabled .crewlet-checkbox__control {
   cursor: not-allowed;
+}
+
+/*
+ * THE ROW IS DIMMED ONCE. The box shared the rule above and took the opacity
+ * a second time inside the dimmed row, so it stood at 0.36 beside a label at
+ * 0.6: a box ticked and locked (a group whose Admin covers every app) all but
+ * vanished in the light theme.
+ */
+.crewlet-checkbox.is-disabled {
   opacity: 0.6;
 }
 

@@ -99,6 +99,19 @@
 }
 
 /*
+ * DIVIDED ROWS THAT REACH A CARD'S EDGES TAKE THE CARD'S INSET, as a table's
+ * outer cells do (DataGrid.css): a card has one left edge and its header sets
+ * it (Card.css). At the row's own step every row's words stood 4px left of
+ * the card head's glyph and the foot's sentence, and the trailing time 4px
+ * right of the head's actions. Only where nothing else insets the list, a
+ * card or body at `padding="none"`; a padded body already supplies the edge.
+ */
+.crewlet-card--p-none > .crewlet-list--divided > .crewlet-list__item > .crewlet-list__row,
+.crewlet-card__body--p-none > .crewlet-list--divided > .crewlet-list__item > .crewlet-list__row {
+  padding-inline: var(--spacing-4);
+}
+
+/*
  * Bullets and numbers are prose furniture, so those two framings drop the row
  * height and the horizontal pad: a paragraph's list should sit against the
  * paragraph's own left edge.
@@ -209,6 +222,18 @@
 }
 
 /*
+ * A ROW THAT CARRIES A RAIL squares the corners the rail runs along. An inset
+ * rail follows its row's radius, so on the plain framing's rounded row it
+ * curled at both ends into a bracket; the end the rail does not take keeps
+ * the radius, as LayersList's entries do where their rail is drawn.
+ */
+.crewlet-list__item--selected > .crewlet-list__row,
+.crewlet-list__item--danger > .crewlet-list__row {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+/*
  * A selected row does NOT also take the hover overlay. Both are a background
  * on the same element, the selected tint wins, and a composite of the two is a
  * colour nothing has measured.
@@ -239,6 +264,19 @@
 .crewlet-list__danger-mark {
   flex: none;
   color: var(--color-feedback-danger-ink);
+}
+
+/*
+ * In a templated row the mark stands at the start of the words' own cell (see
+ * List.tsx), so it is set INLINE, on the first line beside the words, as
+ * `Link` sets its mark: the document baseline makes every `svg` a block,
+ * which would put the words on a line of their own under it. The space the
+ * row puts after the hidden word makes up the rest of the gap.
+ */
+.crewlet-list__content > .crewlet-list__danger-mark {
+  display: inline-block;
+  vertical-align: -0.125em;
+  margin-inline-end: var(--spacing-1);
 }
 
 @media (prefers-reduced-motion: reduce) {

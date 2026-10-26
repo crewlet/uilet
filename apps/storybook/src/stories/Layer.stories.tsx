@@ -52,6 +52,8 @@ function Sheet({
           padding: 'var(--spacing-5)',
           display: 'grid',
           gap: 'var(--spacing-4)',
+          // Each control at its own width, as the menu trigger above it is.
+          justifyItems: 'start',
           background: 'var(--color-surface-elevated)',
           border: '1px solid var(--color-border-default)',
           borderRadius: 'var(--radius-xl)',

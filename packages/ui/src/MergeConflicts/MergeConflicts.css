@@ -17,6 +17,13 @@
   color: var(--color-text-primary);
 }
 
+/* Focus lands here when the block opens, and a heading is not a control, so
+   its ring is drawn a step off the words as a document's headings draw theirs
+   (Document.css) rather than at the 2px a control's ring keeps. */
+.crewlet-merge-conflicts__title:focus-visible {
+  outline-offset: var(--spacing-1);
+}
+
 .crewlet-merge-conflicts__note {
   margin: 0;
   font-size: var(--font-size-xs);
@@ -69,9 +76,13 @@
   white-space: pre-wrap;
 }
 
+/* The foot settles every clash, so it stands as far from the last one as the
+   clashes stand from each other. At the block's own gap it sat 4px nearer,
+   and Apply read as the last clash's control. */
 .crewlet-merge-conflicts__foot {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-2);
+  margin-block-start: calc(var(--spacing-4) - var(--spacing-3));
 }

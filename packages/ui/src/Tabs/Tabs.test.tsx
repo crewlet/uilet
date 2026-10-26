@@ -434,7 +434,7 @@ test('the register each chip size draws, at the setting it was drawn for', () =>
     render(railFoot('md'));
     const medium = screen.getAllByRole('radio')[0]!;
     // The design's chip: 24px, six under the 30px control step, so the well
-    // with its 1px boundary and 2px inset stands exactly at the step, with
+    // with its 1px boundary and 1px inset stands at the 28px tab step, with
     // 10px inside each end.
     expect(length(medium, 'min-height')).toBe(24);
     expect([length(medium, 'padding-left'), length(medium, 'padding-right')]).toEqual([10, 10]);

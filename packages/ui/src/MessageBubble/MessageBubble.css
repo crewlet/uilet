@@ -20,9 +20,20 @@
   align-items: flex-start;
 }
 
+/*
+ * EITHER SIDE IS THE SAME BOX. The reader's own bubble draws no edge, so its
+ * hairline is transparent rather than absent, and the inset is measured from
+ * the bubble's outside, the hairline included: a line from either side is as
+ * tall as the other and its words as far from the bubble's edge, where
+ * anybody else's stood 2px larger with its words a pixel further in. The
+ * reader's own keeps the box it always had, so none of its lines rewraps.
+ * Forced colours paints the transparent edge, which keeps the bubble's shape
+ * where its ground is taken away.
+ */
 .crewlet-message__bubble {
   max-width: 100%;
-  padding: var(--spacing-2) var(--spacing-3);
+  padding: calc(var(--spacing-2) - 1px) calc(var(--spacing-3) - 1px);
+  border: 1px solid transparent;
   font-size: var(--font-size-compact);
   line-height: var(--font-line-height-normal);
   color: var(--color-text-primary);
@@ -38,7 +49,7 @@
 
 /* Anybody else's: the card ground inside a hairline, the tail at the start corner. */
 .crewlet-message--other .crewlet-message__bubble {
-  border: 1px solid var(--color-border-default);
+  border-color: var(--color-border-default);
   border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs);
   background: var(--color-surface-subtle);
 }

@@ -12,6 +12,11 @@
   height: 0;
   border-top: var(--spacing-2) solid var(--color-change-mark);
   border-inline-start: var(--spacing-2) solid transparent;
+  /* THE HOST'S OWN CORNER. On a rounded element the notch's square tip stood
+     past the curve and was painted over the element's border; taking the
+     corner's radius keeps it inside. A sheet cell's corner is square, so the
+     notch there is unchanged. */
+  border-start-end-radius: inherit;
   pointer-events: auto;
 }
 

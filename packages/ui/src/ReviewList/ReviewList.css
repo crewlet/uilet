@@ -66,6 +66,15 @@
   grid-area: action;
 }
 
+/*
+ * A small ghost at the end is pulled out by its padding and edge, as a card
+ * foot's is (StatusCard.css), so "Edit" ends on the row's text edge, the
+ * inset the glyph's tile starts on, rather than 9px inside it.
+ */
+.crewlet-review-list__action > .crewlet-btn--ghost.crewlet-btn--small:last-child {
+  margin-inline-end: calc(-1 * (var(--spacing-2) + 1px));
+}
+
 .crewlet-review-list__body {
   grid-area: body;
   min-width: 0;
@@ -87,9 +96,12 @@
   line-height: var(--font-line-height-normal);
 }
 
+/* The glyph's box is the line's height and its drawing is centred in it (the
+   frame keeps its square), as LogoSlot's error glyph is: a fixed 1px nudge
+   left the 14px glyph a pixel above the 18px line. */
 .crewlet-review-list__error > svg {
   flex: none;
-  margin-top: 1px;
+  height: 1lh;
 }
 
 /* WITHOUT A GLYPH the part starts at the row's start, with no empty column before it. */

@@ -16,12 +16,27 @@
   --crewlet-switch-width: 36px;
   --crewlet-switch-height: 20px;
   --crewlet-switch-thumb: 14px;
-  --crewlet-switch-inset: 3px;
+  /*
+   * DERIVED, so the thumb is centred and concentric with the track's rounded
+   * ends: half of what the track's inner height leaves round the thumb, its
+   * 1px boundary taken off each side. A flat 3px suited the ends but not the
+   * height: an 18px inner height less a 14px thumb leaves 4px, so the thumb
+   * stood 3px under the top edge and 1px over the bottom one.
+   */
+  --crewlet-switch-inset: calc((var(--crewlet-switch-height) - var(--crewlet-switch-thumb)) / 2 - 1px);
 
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-2);
-  min-height: var(--size-row-sm);
+  /*
+   * ITS FIRST LINE IS CENTRED IN THE ROW, as a Checkbox's is and for the same
+   * reason: a minimum height with the label at its top stood a one-line
+   * switch 4.2px above the centre of any row it was centred in. Equal padding
+   * round the first line makes one line exactly the row's height with the
+   * track and the text on its middle, and a description grows the row
+   * downwards with the track still on the first line.
+   */
+  padding-block: calc((var(--size-row-sm) - var(--font-line-height-snug) * 1em) / 2);
   /*
    * The label's size, on the row, because the track below is placed against
    * the label's first LINE in `em` and `em` on the track is the size it
@@ -43,8 +58,12 @@
    * so a form holding both does not draw two rows whose controls sit at two
    * heights. The literal it replaces put a 20px track 2px below a 19.6px
    * line, which is a track hanging under its own sentence.
+   *
+   * BOTH ENDS, so the track takes exactly the line's height in the flow. On
+   * the top alone, the 20px track stood 0.2px under the 19.6px line and the
+   * one-line row came out 28.2px against a Checkbox's 28.
    */
-  margin-top: calc((var(--font-line-height-snug) * 1em - var(--crewlet-switch-height)) / 2);
+  margin-block: calc((var(--font-line-height-snug) * 1em - var(--crewlet-switch-height)) / 2);
   border-radius: var(--radius-pill);
   background: var(--color-surface-inset);
   /*
@@ -156,6 +175,14 @@
 .crewlet-switch.is-disabled,
 .crewlet-switch.is-disabled .crewlet-switch__control {
   cursor: not-allowed;
+}
+
+/*
+ * THE ROW IS DIMMED, AND ONLY THE ROW. The control shared the rule above and
+ * took the opacity with it, which replaced the zero opacity it is drawn at:
+ * a disabled switch showed the platform's own checkbox through its track.
+ */
+.crewlet-switch.is-disabled {
   opacity: 0.6;
 }
 

@@ -125,7 +125,8 @@ function Revealing() {
         </div>
         {[3].flatMap(exchange)}
       </ChatThread>
-      <div style={{ padding: 8 }}>
+      {/* On the thread's own 16px inset, so the control starts where its items do. */}
+      <div style={{ padding: '0 var(--spacing-4) var(--spacing-4)' }}>
         <Button size="small" variant="secondary" onClick={() => card.current && handle.current?.reveal(card.current)}>
           Reveal the decision
         </Button>

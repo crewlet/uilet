@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Popover, Button } from '@crewlethq/ui';
+import { Popover, Button, Inline } from '@crewlethq/ui';
 
 const meta: Meta<typeof Popover> = {
   title: 'UI/Popover',
@@ -25,8 +25,8 @@ export const Basic: Story = {
       )}
     >
       {(close) => (
-        <div style={{ padding: 12, minWidth: 220 }}>
-          <p style={{ margin: '0 0 8px 0' }}>Popover content.</p>
+        <div style={{ padding: 'var(--spacing-3)' }}>
+          <p style={{ margin: '0 0 var(--spacing-2)' }}>Popover content.</p>
           <Button size="small" onClick={close}>Close</Button>
         </div>
       )}
@@ -44,10 +44,10 @@ export const AlignEnd: Story = {
           <Button variant="outline" onClick={toggle}>Actions</Button>
         )}
       >
-        <div style={{ padding: 12, minWidth: 180 }}>
+        <Inline gap={2} style={{ padding: 'var(--spacing-3)' }}>
           <Button size="small" variant="ghost">Edit</Button>
           <Button size="small" variant="danger">Delete</Button>
-        </div>
+        </Inline>
       </Popover>
     </div>
   ),

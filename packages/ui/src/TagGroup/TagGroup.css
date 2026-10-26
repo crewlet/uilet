@@ -8,6 +8,10 @@
  */
 
 .crewlet-tag-group {
+  /* The tag's own 9px inside each round end, for the two members drawn here
+     rather than by a Tag: the count and the overflow control. */
+  --crewlet-tag-group-pad: calc(var(--spacing-2) + var(--spacing-1) / 4);
+
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -26,25 +30,49 @@
 }
 
 /* ONE LINE (overflow="fit"): what wraps is measured and left out, so the
-   line is clipped only for the instant before the count replaces it. */
+   line is clipped only for the instant before the count replaces it.
+   The clip is the TALLEST tag's height, the md step's small control (which
+   is never under the 24px floor a tag that acts takes): at the floor alone it
+   cut 2px off the foot of every md tag at the normal density. */
 .crewlet-tag-group--fit {
   flex-wrap: wrap;
   overflow: hidden;
-  max-height: max(24px, calc(24px * var(--density, 1)));
+  max-height: var(--size-control-sm);
+}
+
+/*
+ * The count stands at the end of the line of tags, so it takes the tag's own
+ * pill: its round ends, the 9px inside each end and the caption type, at the
+ * HEIGHT OF THE LINE it ends (its item stretches to the line, and the chip to
+ * its item), so it is the height of the tags beside it at every step and
+ * every density. It was a fixed 20px square-cornered badge at the step below:
+ * a different kind of mark ending a row of pills, 2px short of the default
+ * pill and 2px over a sheet cell's 18px one.
+ */
+.crewlet-tag-group__item[data-count] {
+  align-self: stretch;
 }
 
 .crewlet-tag-group__count {
   display: inline-flex;
   align-items: center;
-  height: max(20px, calc(20px * var(--density, 1)));
-  padding: 0 var(--spacing-1);
-  border-radius: var(--radius-xs);
+  box-sizing: border-box;
+  padding: 0 var(--crewlet-tag-group-pad);
+  border-radius: var(--radius-pill);
   background: var(--color-surface-subtle);
   color: var(--color-text-secondary);
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
+  line-height: 1;
   white-space: nowrap;
+}
+
+/* Ending a row of the 18px count pills (a sheet cell), it takes that step's
+   micro type and its tighter ends, as the pills beside it do. */
+.crewlet-tag-group:has(.crewlet-tag--xs) .crewlet-tag-group__count {
+  padding: 0 calc(var(--spacing-1) * 1.5);
+  font-size: var(--font-size-2xs);
 }
 
 .crewlet-tag-group__item {
@@ -54,22 +82,25 @@
 }
 
 /*
- * It wears the tag's own face: the badge radius, the badge type and the badge
- * weight, so the row reads as one set with a dashed member rather than as six
- * tags and a control. The height is the 24px target floor rather than the
- * badge's 20px step, for the same reason a tag that acts takes it.
+ * It wears the tag's own face: the pill's round ends, the 9px inside each
+ * end, the caption type and the medium weight, so the row reads as one set
+ * with a dashed member rather than as six tags and a control. The height is
+ * the 24px target floor rather than the pill's 22px step, for the same reason
+ * a tag that acts takes it. It kept the badge's 4px corners and the step
+ * below when the tag became the design's pill, and ended a row of pills on a
+ * square-cornered box.
  */
 .crewlet-tag-group__more {
   display: inline-flex;
   align-items: center;
   height: max(24px, calc(24px * var(--density, 1)));
-  padding: 0 var(--spacing-2);
+  padding: 0 var(--crewlet-tag-group-pad);
   border: 1px dashed var(--color-border-hover);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-text-secondary);
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   line-height: 1;
   white-space: nowrap;

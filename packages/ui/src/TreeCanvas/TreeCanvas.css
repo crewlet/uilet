@@ -267,20 +267,36 @@
   position: relative;
 }
 
+/*
+ * CLEAR OF THE RING ITS HOLDER DRAWS. The strip is raised and opaque, and
+ * drawn flush in the corner it covered the corner of the very rings that say
+ * where the reader is: a selected row's accent ring and a focused row's ring
+ * were cut away for the strip's whole width along the top and its whole height
+ * down the side. So it stands in by the inset ring's depth (the same offset
+ * that draws the ring inside the edge), on a corner concentric with the row's,
+ * and both rings run unbroken round it. A card's own strip is inside the
+ * card's 1px border, which the ring already covers, so it stands in one pixel
+ * less (below).
+ */
 .crewlet-tree-canvas__actions {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: calc(-1 * var(--size-focus-ring-inset-offset));
+  right: calc(-1 * var(--size-focus-ring-inset-offset));
   z-index: var(--z-index-raised);
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
   padding: var(--spacing-1);
-  border-radius: var(--radius-lg);
+  border-radius: calc(var(--radius-lg) + var(--size-focus-ring-inset-offset));
   background: var(--color-surface-subtle);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-tree-canvas__card > .crewlet-tree-canvas__actions {
+  top: calc(-1 * var(--size-focus-ring-inset-offset) - 1px);
+  right: calc(-1 * var(--size-focus-ring-inset-offset) - 1px);
 }
 
 .crewlet-tree-canvas__card:hover > .crewlet-tree-canvas__actions,

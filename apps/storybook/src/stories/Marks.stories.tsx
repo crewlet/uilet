@@ -131,7 +131,9 @@ export const Announcing: Story = {
   render: function AnnouncingStory() {
     const [n, setN] = useState(0);
     return (
-      <div style={page}>
+      // Held to the start, so the button hugs its label rather than
+      // stretching across the column as a full-width bar.
+      <div style={{ ...page, justifyItems: 'start' }}>
         <Announcer />
         <Button
           onClick={() => {

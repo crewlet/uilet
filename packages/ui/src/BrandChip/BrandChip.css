@@ -18,6 +18,10 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-compact);
   font-weight: var(--font-weight-medium);
+  /* Its own leading, so the control step sets the height. Inheriting the
+     page's 1.5, the name's 19.5px line held the chip at 25.5px against the
+     compact density's 24px step, and the plate no longer sat in its round end. */
+  line-height: var(--font-line-height-tight);
   text-decoration: none;
   transition:
     border-color var(--motion-duration-fast) var(--motion-easing-out),

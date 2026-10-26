@@ -87,13 +87,11 @@ export const ProjectProgress: Story = {
     return (
       <Card style={{ width: 360 }}>
         <Card.Body>
+          {/* Each key is a StatusDot with its word, so the dot stands off the
+              word by the kit's own gap rather than one the story picks. */}
           <div style={{ display: 'flex', gap: 10, ...caption, marginBottom: 12 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <StatusDot tone="success" /> Done
-            </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <StatusDot tone="info" /> Active
-            </span>
+            <StatusDot tone="success">Done</StatusDot>
+            <StatusDot tone="info">Active</StatusDot>
             <span>The rest is to do</span>
           </div>
           <div style={{ display: 'grid', gap: 16 }}>

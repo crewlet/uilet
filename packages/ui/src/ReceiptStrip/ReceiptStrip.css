@@ -68,6 +68,15 @@
 }
 
 /*
+ * A GHOST AT THE END is pulled out by its padding and edge, as a card foot's
+ * ghost is (StatusCard.css), so its label ends on the strip's text edge, the
+ * inset the mark starts on, rather than 9px inside it.
+ */
+.crewlet-receipt-strip__actions > .crewlet-btn--ghost.crewlet-btn--small:last-child {
+  margin-inline-end: calc(-1 * (var(--spacing-2) + 1px));
+}
+
+/*
  * THE INLINE REFUSAL, under the control that caused it: the sentence in the
  * danger ink, the hint in the secondary ink, the actions beside them, wrapping
  * onto a second line rather than widening the row.

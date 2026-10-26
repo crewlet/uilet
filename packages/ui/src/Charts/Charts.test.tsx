@@ -1343,9 +1343,12 @@ describe('a chart of the cases a board draws: none, one, below zero, more than t
       .split(' ')
       .map((pair) => Number(pair.split(',')[1]));
     const axis = Number(container.querySelector('.crewlet-chart__axis-line')!.getAttribute('y1'));
-    // The low point is under the baseline and inside the plot, not under it.
+    // The low point is under the baseline and inside the plot, not under it,
+    // with the same room under it as the peak has over it (the viewBox is
+    // 120 tall), so the scale's words stand close under the plot.
     expect(ys[1]!).toBeGreaterThan(axis);
-    expect(ys[1]!).toBeLessThanOrEqual(120 - 18);
+    expect(ys[1]!).toBeLessThan(120);
+    expect(120 - ys[1]!).toBeCloseTo(ys[0]!, 5);
     expect(axis).toBeCloseTo((ys[0]! + ys[1]!) / 2, 5);
     expect(container.textContent).toMatch(/low -10/);
   });

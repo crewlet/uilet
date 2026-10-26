@@ -138,9 +138,14 @@ svg.crewlet-switcher-trigger__chevron {
   background: var(--color-border-strong);
 }
 
+/*
+ * The head keeps the same inset at both ends. The close control is pulled out
+ * by its glyph inset (see Modal.css), so the X stands on the title's mirror
+ * line, and its square and focus ring stay clear of the sheet's clipped edge.
+ */
 .crewlet-switcher--sheet .crewlet-modal__header {
   min-height: var(--size-control-lg);
-  padding: 0 var(--spacing-2) 0 var(--spacing-4);
+  padding: 0 var(--spacing-4);
 }
 
 /* A dialog's body scrolls its whole content; here the list alone scrolls. */
@@ -164,11 +169,17 @@ svg.crewlet-switcher-trigger__chevron {
  * is the field. It is set at the trail's size rather than the palette's
  * headline size, because the panel is a list read at a glance, and at the
  * reading size on a phone, where a smaller field zooms the page when tapped.
+ *
+ * ITS GLYPH STANDS IN THE LEAD COLUMN. The band's inset and the field's own
+ * glyph slot (a step) add up to the list's inset and a row's pad, so the
+ * search glyph is drawn where every row's glyph and key start, at the rows'
+ * glyph step. It stood 4px in from them, a step smaller, which put the
+ * field's magnifier and a "Search tasks" row's magnifier off one axis.
  */
 .crewlet-input.crewlet-switcher__search {
   flex-shrink: 0;
   min-height: var(--size-control-lg);
-  padding-inline: var(--spacing-3) var(--spacing-2);
+  padding-inline: var(--spacing-2);
   border: none;
   border-bottom: 1px solid var(--color-border-default);
   border-radius: 0;

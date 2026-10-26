@@ -125,6 +125,12 @@
   display: block;
   box-sizing: border-box;
   aspect-ratio: 4 / 3;
+  /* THE RATIO HOLDS whatever the face draws. A box with a ratio grows to its
+     content by default, and the kind's drawing, sized by the tile's width,
+     stood the frame 4.5px past 4:3, so starting points with a schematic face
+     and one with the drawing stood at two heights in one row. The drawing
+     fits the ground instead (`max-height: 100%` above). */
+  min-height: 0;
   padding: 5px;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-2xl);

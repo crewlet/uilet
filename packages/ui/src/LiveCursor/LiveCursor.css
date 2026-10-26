@@ -11,6 +11,16 @@
   z-index: var(--z-index-presence);
   display: block;
   pointer-events: none;
+  /*
+   * THE TIP IS THE POINT. The pointer glyph draws its tip 3.5 units into its
+   * 24-unit frame (the tip's rounding and half its stroke), so a cursor at a
+   * point drew its tip 2.9px right of it and 2.9px below: off the cell edge or
+   * the word somebody was pointing at. The cursor is drawn back by that share
+   * of its own box, which is the pointer's (the flag is out of flow), so the
+   * flag keeps its place beside the tip at any glyph size. `translate` rather
+   * than `transform`, which places the cursor and is the property that glides.
+   */
+  translate: calc(-3.5 / 24 * 100%) calc(-3.5 / 24 * 100%);
 }
 
 .crewlet-live-cursor__pointer {

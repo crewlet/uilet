@@ -191,6 +191,41 @@ test('the ends of a range are drawn as ends, and one chosen day is not', () => {
   expect(day('Tuesday 10 March 2026').className).not.toContain('is-range-end');
 });
 
+test('each hairline in a band is joined by one day: the day before it, or the day above it', () => {
+  // The band's tint is translucent, so a gap two days' outlines both covered
+  // drew a darker seam. Each day of the band names the hairlines it paints.
+  const inRange = (date: CalendarDate) =>
+    compareDays(date, { ...MARCH, day: 10 }) > 0 && compareDays(date, { ...MARCH, day: 20 }) < 0;
+  render(
+    <CalendarGrid
+      label="March 2026"
+      year={MARCH.year}
+      month={MARCH.month}
+      focused={{ ...MARCH, day: 10 }}
+      onFocusedChange={() => {}}
+      onSelect={() => {}}
+      selected={[
+        { ...MARCH, day: 10 },
+        { ...MARCH, day: 20 },
+      ]}
+      inRange={inRange}
+    />,
+  );
+  const joins = (name: string) =>
+    ['is-joined-after', 'is-joined-below', 'is-joined-corner'].filter((join) => day(name).classList.contains(join));
+  // The band opens on Tuesday the 10th: it joins the day after it, the day
+  // under it and the crossing between those, all of them the band's.
+  expect(joins('Tuesday 10 March 2026')).toEqual(['is-joined-after', 'is-joined-below', 'is-joined-corner']);
+  // Over the closing day, with the day beside that one outside the band.
+  expect(joins('Friday 13 March 2026')).toEqual(['is-joined-after', 'is-joined-below']);
+  // The end of a row joins nothing after it, and the week under it is past the band.
+  expect(joins('Saturday 14 March 2026')).toEqual([]);
+  expect(joins('Thursday 19 March 2026')).toEqual(['is-joined-after']);
+  // The band closes on Friday the 20th, and a day outside it joins none of it.
+  expect(joins('Friday 20 March 2026')).toEqual([]);
+  expect(joins('Monday 9 March 2026')).toEqual([]);
+});
+
 test('a day shifted across a month boundary lands on the right day', () => {
   expect(shiftDay({ year: 2026, month: 1, day: 28 }, 1)).toEqual({ year: 2026, month: 2, day: 1 });
   expect(shiftDay({ year: 2026, month: 0, day: 1 }, -1)).toEqual({ year: 2025, month: 11, day: 31 });

@@ -4,7 +4,8 @@ import { DashboardCover } from '@crewlethq/ui';
 /*
  * A dashboard artifact's gallery cover, drawn natively at card size. It is
  * passed as ArtifactCard's `preview`; here it sits in a frame of the card's
- * preview size (16:9) so its fit can be judged on its own.
+ * preview size (16:9) and corner (radius-xl) so its fit can be judged on its
+ * own: the cover's inset is chosen against that corner.
  */
 const meta: Meta<typeof DashboardCover> = {
   title: 'UI/DashboardCover',
@@ -18,7 +19,7 @@ const meta: Meta<typeof DashboardCover> = {
           display: 'flex',
           overflow: 'hidden',
           border: '1px solid var(--color-border-default)',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: 'var(--radius-xl)',
           background: 'var(--color-surface-inset)',
         }}
       >

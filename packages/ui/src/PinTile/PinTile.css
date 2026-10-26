@@ -12,7 +12,7 @@
   gap: var(--spacing-3);
   min-width: 0;
   min-height: 56px;
-  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
   background: var(--color-surface-elevated);
@@ -23,8 +23,19 @@
   border-color: var(--color-border-hover);
   background: var(--color-surface-hover);
 }
+/*
+ * AN ICON BUTTON AT EITHER END TAKES THE SMALL STEP, so its glyph, inset by
+ * the button's own padding, stands about where the words stand at the other
+ * end. The end used to keep that step whether or not the unpin button was
+ * there: its glyph stood 15px in against the 12px of the glyph or name at the
+ * start, and a tile with no unpin button put its figure 8px from the edge.
+ */
 .crewlet-pin-tile:has(.crewlet-pin-tile__handle) {
   padding-inline-start: var(--spacing-1);
+}
+
+.crewlet-pin-tile:has(> .crewlet-pin-tile__unpin) {
+  padding-inline-end: var(--spacing-1);
 }
 
 .crewlet-pin-tile[data-reorder='dragging'] {

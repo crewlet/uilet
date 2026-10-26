@@ -164,11 +164,12 @@ test('a long fact gives up its room before the title does, and never all of it',
     return css.slice(at, css.indexOf('}', at));
   };
   const meta = ruleOf('.crewlet-disclosure__meta');
-  const shrink = /flex:\s*0\s+(\d+)\s+auto/.exec(meta);
-  expect(shrink, 'the fact may shrink').not.toBeNull();
-  // The title shrinks at the default factor of one, so the fact's factor is
-  // what orders them: at a hundred it absorbs effectively all of a shortfall.
-  expect(Number(shrink?.[1])).toBeGreaterThanOrEqual(100);
+  // The fact grows from a zero basis into the room the title leaves, up to its
+  // own width. A shrink ratio (a hundred to the title's one) still left the
+  // title a fraction of a pixel of every shortfall, and an ellipsis does not
+  // round: "tracker" was drawn "track…" beside a fact with room to give.
+  expect(meta).toMatch(/flex:\s*1\s+1\s+0%?;/);
+  expect(meta).toMatch(/max-width:\s*max-content/);
   expect(ruleOf('.crewlet-disclosure__title')).not.toMatch(/flex(-shrink)?:/);
   // It ends in an ellipsis rather than running on, inside the toggle.
   expect(meta).toMatch(/overflow:\s*hidden/);

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { SheetColumnEditor, SheetGrid, SheetPendingEdits, type SheetColumn, type SheetEdit, type SheetRow, type SheetSort } from '@crewlethq/ui';
 import { density } from '@crewlethq/tokens';
 import { SHEET_COLUMNS, SHEET_PEOPLE, SHEET_PRESENCE, SHEET_ROWS, manyRows } from '../fixtures/sheet.js';
@@ -402,6 +402,44 @@ function ShapingSheet() {
 export const ShapeColumns: Story = { render: () => <ShapingSheet /> };
 
 /**
+ * ONE DENSITY, SCOPED TO ONE SHEET, for a story that draws all three.
+ *
+ * The token layer declares every spacing and size step on the root as
+ * `calc(Npx * var(--density, 1))`, and a custom property is computed where it
+ * is declared: a --density set on a sheet's box reaches nothing under it, and
+ * this story drew the normal sheet three times under three headings. The box
+ * re-declares each step the root writes in terms of --density, read from the
+ * loaded stylesheets rather than copied out of them, so each one resolves
+ * against the box's own setting. The same helper lives in Card.stories.tsx
+ * and SidebarNav.stories.tsx; a shared home beside themeScope.ts is the next
+ * step.
+ */
+function densityScope(step: keyof typeof density): CSSProperties {
+  const scope: Record<string, string> = { '--density': density[step] };
+  const read = (rules: CSSRuleList) => {
+    for (const rule of Array.from(rules)) {
+      if (rule instanceof CSSStyleRule && rule.selectorText === ':root') {
+        for (const name of Array.from(rule.style)) {
+          const value = rule.style.getPropertyValue(name).trim();
+          if (name.startsWith('--') && value.includes('var(--density')) scope[name] = value;
+        }
+      } else if (rule instanceof CSSGroupingRule) {
+        read(rule.cssRules);
+      }
+    }
+  };
+  for (const sheet of Array.from(document.styleSheets)) {
+    // A stylesheet from another origin keeps its rules to itself.
+    try {
+      read(sheet.cssRules);
+    } catch {
+      continue;
+    }
+  }
+  return scope as CSSProperties;
+}
+
+/**
  * Add column at all three densities. Its track is the small control's square
  * plus an inset on each side, so the square sits inside the header's end
  * with room around it rather than filling it edge to edge.
@@ -410,7 +448,7 @@ export const AddColumnEveryDensity: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 'var(--spacing-5)' }}>
       {(['compact', 'normal', 'comfortable'] as const).map((step) => (
-        <div key={step} style={{ ['--density' as string]: density[step] }}>
+        <div key={step} style={densityScope(step)}>
           <div style={{ marginBottom: 'var(--spacing-2)' }}>{step}</div>
           <ShapingSheet />
         </div>

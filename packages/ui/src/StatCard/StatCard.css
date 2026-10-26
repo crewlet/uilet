@@ -115,6 +115,10 @@
   flex: 1 0 auto;
   min-width: 0;
   max-width: 100%;
+  /* One line of the number even while it is on its way: the placeholder alone
+     stood 8px shorter than the digits, so every tile jumped when its value
+     arrived. The line is 1em, since its leading is 1. */
+  min-height: 1em;
   font-size: var(--font-size-display);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--font-letter-spacing-tight);
@@ -175,6 +179,9 @@
  */
 .crewlet-statcard__placeholder {
   display: inline-block;
+  /* Centred on the line, where the digits' own ink stands: a leading of 1
+     leaves the same air over the figures as under them. */
+  align-self: center;
   width: 3ch;
   height: 0.7em;
   border-radius: var(--radius-xs);

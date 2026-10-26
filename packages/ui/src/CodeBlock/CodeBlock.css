@@ -160,9 +160,14 @@
   display: block;
 }
 
+/* The numbers' track is as wide as the longest number (CodeBlock.tsx states
+   its figures) and never under two, as SourceEditor's gutter is. At a fixed
+   2ch a hundredth line's third figure hung out of the track's start, 7px
+   into the block's own padding, so the inset there was no longer the inset
+   at the other edges. */
 .crewlet-codeblock--numbered .crewlet-codeblock__line {
   display: grid;
-  grid-template-columns: 2ch 1fr;
+  grid-template-columns: calc(max(2, var(--crewlet-codeblock-digits, 2)) * 1ch) 1fr;
   gap: var(--spacing-3);
   align-items: baseline;
 }
@@ -194,8 +199,18 @@
   overflow-wrap: normal;
 }
 
-/* The copy control sits in the header in the sans face, not the block's. */
+/*
+ * The copy control sits in the header in the sans face, not the block's. It
+ * is a small ghost at the header's end, and it stands as far from that end as
+ * the header's block padding holds it from the top and the bottom, so its
+ * hover fill sits evenly in the corner (8px on both sides) rather than 12px
+ * in from the end and 8px down. It is pulled out by the difference only, not
+ * by its whole padding as a card foot's ghost is (StatusCard.css): that would
+ * leave 3px for a focus ring drawn 4px out, and the block's clip would cut
+ * the ring's outer pixel.
+ */
 .crewlet-codeblock__copy {
   flex: none;
+  margin-inline-end: calc(var(--spacing-2) - var(--spacing-3));
   font-family: var(--font-family-sans);
 }

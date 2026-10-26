@@ -73,8 +73,10 @@ test('every size the stylesheet sets is a step on the type ramp', () => {
 });
 
 test('every gap is a spacing step or the document rhythm itself', () => {
+  // The one exception is the task box's nudge onto its first line, which is
+  // read off that line (half of what it is taller than the text), not a gap.
   for (const value of [...declarations('margin-block-start'), ...declarations('gap')]) {
-    expect(value).toMatch(/^(var\(--(spacing-\d+|crewlet-document-[\w-]+)\)|0\.35em)$/);
+    expect(value).toMatch(/^(var\(--(spacing-\d+|crewlet-document-[\w-]+)\)|calc\(\(1lh - 1em\) \/ 2\))$/);
   }
 });
 

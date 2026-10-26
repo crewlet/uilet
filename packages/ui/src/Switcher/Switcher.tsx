@@ -525,7 +525,9 @@ function SwitcherPanel({
       <Input
         appearance="command"
         containerClassName="crewlet-switcher__search"
-        leading={<SearchGlyph size="sm" />}
+        // The rows' glyph step, so the field's glyph is the lead column's
+        // glyph (see `.crewlet-switcher__search`).
+        leading={<SearchGlyph size="md" />}
         value={query}
         onChange={(event) => {
           onQueryChange(event.target.value);
@@ -598,15 +600,18 @@ function SwitcherPanel({
         </div>
         {loading ? (
           <>
+            {/* NO TOP MARGIN on a bar: a box skeleton stands 32px under what
+                is above it by default, which put every bar on the bottom edge
+                of its row, 16px under the line a row's words take. */}
             <div className="crewlet-switcher__skeleton" aria-hidden="true">
               {SKELETON_NAMES.map((width) => (
                 <div key={width} className="crewlet-switcher__skeleton-row">
                   <span className="crewlet-switcher__lead">
-                    <Skeleton variant="box" width={34} height={10} borderRadius={4} />
+                    <Skeleton variant="box" width={34} height={10} borderRadius={4} marginTop={0} />
                   </span>
-                  <Skeleton variant="box" width={width} height={10} borderRadius={4} />
+                  <Skeleton variant="box" width={width} height={10} borderRadius={4} marginTop={0} />
                   <span className="crewlet-switcher__meta">
-                    <Skeleton variant="box" width={14} height={10} borderRadius={4} />
+                    <Skeleton variant="box" width={14} height={10} borderRadius={4} marginTop={0} />
                   </span>
                 </div>
               ))}

@@ -11,6 +11,18 @@
   min-width: 0;
 }
 
+/*
+ * THE NODE ON THE VERSION'S OWN LINE. A step's first line here is the head
+ * inside the select, a spacing step under the top of the step and one line of
+ * the inherited type tall, so the node stands down to centre on it. The
+ * ledger's own offset centres it on prose drawn at the very top of a step,
+ * which left it 5px above the version number. Set on the rail, so `lh` reads
+ * the step's line rather than the node's smaller type.
+ */
+.crewlet-version-timeline .crewlet-timeline__rail {
+  --crewlet-timeline-node-offset: calc(var(--spacing-1) + (1lh - var(--crewlet-timeline-node-size)) / 2);
+}
+
 .crewlet-version-timeline__select {
   display: flex;
   flex-direction: column;
@@ -84,11 +96,17 @@
   font-size: var(--font-size-xs);
 }
 
+/*
+ * The controls' LABELS stand on the column's text edge, the select's and the
+ * facts' inset. A small ghost's padding is that same step, so only its 1px
+ * edge is left over: the row starts one pixel outside the body, and every
+ * line of controls, a wrapped one too, lines up with the words above it.
+ */
 .crewlet-version-timeline__actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-1);
-  padding-inline: var(--spacing-1);
+  margin-inline-start: -1px;
 }
 
 /* The version compared against is ringed in the strong neutral: it is the

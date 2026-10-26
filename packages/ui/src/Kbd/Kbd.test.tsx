@@ -63,13 +63,16 @@ test('a cap is set on the line it sits in, not on a line of its own', () => {
    * pixel short, and every row that held one sat a pixel off the rows that did
    * not. It is read off the document's own rule rather than named here, so the
    * two cannot be changed apart.
+   *
+   * It is ROUNDED TO A WHOLE PIXEL: unrounded, Chromium floored the leading
+   * above the text to nothing and every key stood a pixel high in its cap.
    */
   const here = dirname(fileURLToPath(import.meta.url));
   const cap = /\.crewlet-kbd\s*\{([^}]*)\}/.exec(readFileSync(join(here, 'Kbd.css'), 'utf8'))?.[1] ?? '';
   const base = readFileSync(resolve(here, '../../../tokens/dist/css/base.css'), 'utf8');
   const documentLeading = /(?:^|\})\s*body\s*\{[^}]*line-height:\s*var\((--[\w-]+)\)/.exec(base)?.[1];
   expect(documentLeading).toBeTruthy();
-  expect(cap).toContain(`line-height: var(${documentLeading ?? ''})`);
+  expect(cap).toContain(`line-height: round(nearest, calc(var(${documentLeading ?? ''}) * 1em), 1px)`);
 });
 
 test('Mod is Command on Apple platforms and Control everywhere else', () => {

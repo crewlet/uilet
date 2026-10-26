@@ -23,6 +23,12 @@ const ROWS = ['sm', 'md', 'lg'];
 
 const page: React.CSSProperties = { padding: 'var(--spacing-6)', display: 'grid', gap: 'var(--spacing-6)' };
 const quiet: React.CSSProperties = { color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-family-mono)' };
+/*
+ * A density section's rows, a step apart. Stacked with nothing between them,
+ * the three control boxes met edge to edge and the row boxes ran together
+ * into one block, so no single height could be read off either.
+ */
+const steps: React.CSSProperties = { display: 'grid', gap: 'var(--spacing-2)' };
 
 export const TypeScale: Story = {
   render: () => (
@@ -91,7 +97,7 @@ export const TypeScale: Story = {
 export const Density: Story = {
   render: () => (
     <div style={page}>
-      <section>
+      <section style={steps}>
         <h2>Control heights</h2>
         {CONTROLS.map((step) => (
           <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-4)' }}>
@@ -109,7 +115,7 @@ export const Density: Story = {
         ))}
       </section>
 
-      <section>
+      <section style={steps}>
         <h2>Row heights</h2>
         {ROWS.map((step) => (
           <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-4)' }}>
@@ -119,6 +125,9 @@ export const Density: Story = {
                 height: `var(--size-row-${step})`,
                 minWidth: 320,
                 background: 'var(--color-surface-subtle)',
+                // A hairline, as the control boxes above have: the subtle
+                // fill alone is a step off the page and drew no edge to read.
+                border: '1px solid var(--color-border-default)',
                 borderRadius: 'var(--radius-sm)',
               }}
             />
@@ -126,7 +135,7 @@ export const Density: Story = {
         ))}
       </section>
 
-      <section>
+      <section style={steps}>
         <h2>Spacing</h2>
         {Array.from({ length: 12 }, (_, i) => i).map((step) => (
           <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-4)' }}>

@@ -72,6 +72,17 @@
   row-gap: var(--spacing-1);
 }
 
+/*
+ * Card lets a head's small control reach into the inset so the row stands at
+ * its floor. Here the toggle already stands taller than the control, so the
+ * pull bought nothing on one line, and once the utilities wrap they are the
+ * whole of their own line: the pull took their inset and their gap under the
+ * title, and the last line sat closer to the edge than the first did.
+ */
+.crewlet-status-card--folded > .crewlet-card__header > .crewlet-card__header-actions {
+  margin-block: 0;
+}
+
 /* `hidden` has to win over the body's own `display: flex`. */
 .crewlet-status-card__body[hidden] {
   display: none;
@@ -79,6 +90,25 @@
 
 .crewlet-status-card__fold-title {
   min-width: 0;
+}
+
+/*
+ * THE PULL HAS ROOM TO LAND IN. The toggle reaches its padding past the name
+ * block's leading edge (below), and the name block clips, which is what keeps
+ * the head one line: the clip cut the toggle's hover fill square on that side
+ * and dropped the leading edge of its focus ring. The block takes the pull
+ * back as padding, so it clips where the toggle starts rather than where the
+ * chevron does, and the title, whose toggle already ends its own line, does
+ * not clip it a second time. Two classes or more on each, so they outweigh
+ * Card's own rules wherever the bundle puts this sheet.
+ */
+.crewlet-status-card--collapsible > .crewlet-card__header > .crewlet-card__header-main {
+  margin-inline-start: calc(var(--spacing-2) * -1);
+  padding-inline-start: var(--spacing-2);
+}
+
+.crewlet-card__title.crewlet-status-card__fold-title {
+  overflow: visible;
 }
 
 /*
@@ -155,12 +185,17 @@
   margin-inline-end: var(--spacing-1);
 }
 
-/* A folded card's utilities, at the end of its head, one small gap apart. */
+/*
+ * A folded card's utilities, at the end of its head. THE FOOT'S OWN GAP: they
+ * are the same buttons the open card draws in its foot, and at half its gap
+ * the row tightened by 4px the moment the card folded. One gap, so folding a
+ * card moves its utilities without respacing them.
+ */
 .crewlet-status-card__head-actions {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-1);
+  gap: var(--spacing-2);
 }
 
 @media (prefers-reduced-motion: reduce) {

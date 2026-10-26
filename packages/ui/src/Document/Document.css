@@ -182,8 +182,13 @@
 .crewlet-document li > input[type='checkbox'] {
   flex: none;
   margin: 0;
-  /* On the first line's centre rather than on the top of its box. */
-  margin-block-start: 0.35em;
+  /* On the first line's centre rather than on the top of its box: half of
+     what the line is taller than the text, read off the line itself, so the
+     box takes the item's type rather than a control's own. Written as 0.35em,
+     it was that sum for the relaxed leading alone, and the small size's
+     tighter line left the box 1.3px under its middle. */
+  font: inherit;
+  margin-block-start: calc((1lh - 1em) / 2);
   accent-color: var(--color-brand-accent);
 }
 

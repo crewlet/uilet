@@ -580,9 +580,9 @@ export interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
   /**
    * A title with nowhere left to go ENDS in an ellipsis rather than being cut.
    *
-   * The head is one line and the name block clips, so a title longer than the
-   * row is stopped at the header's edge — mid-word, with nothing to say a word
-   * was lost. `text-overflow` is the answer to that and it applies to a BLOCK
+   * The head is one line and the title clips, so a title longer than the row
+   * is cut at its own edge, mid-word, with nothing to say a word was lost.
+   * `text-overflow` is the answer to that and it applies to a BLOCK
    * container only, never to a flex one, and the title is flex: the text
    * inside it is an anonymous flex item that no rule in this stylesheet can
    * reach. So the ellipsis is a change of the title's own display, which is a
@@ -594,8 +594,8 @@ export interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
    * gap-separated flex items, so a caller who put a glyph or a tag inside the
    * title gets it on the text baseline with no gap. `Card.Header`'s own `icon`
    * slot is where a glyph belongs, and it is outside the title and unaffected.
-   * A title of plain text — which is every title in this package and every one
-   * in the engine dashboard — reads identically either way, and is exactly the
+   * A title of plain text, which is every title in this package and every one
+   * in the engine dashboard, reads identically either way, and is exactly the
    * case that was being cut.
    */
   truncate?: boolean | undefined;

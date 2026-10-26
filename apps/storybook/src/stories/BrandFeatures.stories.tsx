@@ -66,7 +66,19 @@ const grid: CSSProperties = {
   gap: 'var(--spacing-4)',
 };
 
-const cell: CSSProperties = { display: 'grid', gap: 'var(--spacing-2)', justifyItems: 'center', textAlign: 'center' };
+/*
+ * Packed to the top, so every name in a row stands on one line. A cell is
+ * stretched to the tallest one beside it, and its rows took the spare height
+ * between them, which dropped the name under a one-line description below
+ * its neighbours'.
+ */
+const cell: CSSProperties = {
+  display: 'grid',
+  alignContent: 'start',
+  gap: 'var(--spacing-2)',
+  justifyItems: 'center',
+  textAlign: 'center',
+};
 
 /**
  * One block rendered twice, each panel in its own palette, so the pair can be

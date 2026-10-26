@@ -17,6 +17,9 @@
   /* The edge's width, named because the nested send button's corner is
      derived from it (see .crewlet-composer__trailing). */
   --crewlet-composer-edge: 1px;
+  /* The corner of a control nested in the box's corner: the box's, less the
+     one-step inset and the edge, so the two curves run parallel. */
+  --crewlet-composer-nested-radius: calc(var(--radius-md) - var(--spacing-1) - var(--crewlet-composer-edge));
 
   display: grid;
   overflow: hidden;
@@ -109,20 +112,27 @@
 }
 
 .crewlet-composer__trailing .crewlet-icon-btn {
-  border-radius: calc(var(--radius-md) - var(--spacing-1) - var(--crewlet-composer-edge));
+  border-radius: var(--crewlet-composer-nested-radius);
 }
 
 /*
  * WHAT TRAVELS WITH THE MESSAGE, above the field inside the box's edge: a row
  * of tags that wraps, on the field's own inset so a tag starts where the text
  * does.
+ *
+ * AT LEAST A SMALL CONTROL TALL, so the row keeps one height whatever stands
+ * in it: a removed page's tag (24px) gives way to a small button ("Add this
+ * page", 26px), and sized by its content the box grew 2px under the pointer
+ * that removed it, and the field with it.
  */
 .crewlet-composer__attachments {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-1);
+  box-sizing: border-box;
   min-width: 0;
+  min-height: calc(var(--spacing-2) + var(--size-control-sm));
   padding: var(--spacing-2) var(--spacing-3) 0;
 }
 
@@ -148,6 +158,11 @@
   overflow-y: auto;
 }
 
+/*
+ * THE FOOTER'S END IS THE BOX'S CORNER, on the send button's own one-step
+ * inset, while its start is the field's text inset so the hint stands under
+ * the words.
+ */
 .crewlet-composer__footer {
   display: flex;
   flex-wrap: wrap;
@@ -156,6 +171,13 @@
   padding: var(--spacing-1) var(--spacing-1) var(--spacing-1) var(--spacing-3);
   border-top: 1px solid var(--color-border-default);
   background: var(--color-surface-subtle);
+}
+
+/* So the last action nests there as the send button does: at a button's own
+   8px inside the box's 8px, the gap between the curves opened from 5px along
+   the edges to 7px across the corner. A pill keeps its own shape. */
+.crewlet-composer__footer > :is(.crewlet-btn--square, .crewlet-icon-btn):not(:has(~ :is(.crewlet-btn, .crewlet-icon-btn))) {
+  border-radius: var(--crewlet-composer-nested-radius);
 }
 
 .crewlet-composer__hint {

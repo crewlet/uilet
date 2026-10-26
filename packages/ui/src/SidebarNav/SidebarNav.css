@@ -48,9 +48,12 @@
  * does not depend on the document's box-sizing: with the rail's own gap it is
  * 14px, the design's space between two runs, at density 1.
  *
- * Its end inset is a step SHORTER than a row's, because the control is a
- * 24px square with its glyph centred in it: the row pad would put the glyph
- * five pixels inside the line every count above and below it ends on.
+ * Its end inset is SHORTER than a row's by the part of the control the glyph
+ * leaves empty, because the control is a 24px square with a nav glyph (`sm`,
+ * 14px) centred in it: the row pad would put the glyph five pixels inside the
+ * line every count above and below it ends on. A plain step shorter left it a
+ * pixel inside at the normal density and nearly two at the compact one, where
+ * the pad shrinks and the square does not.
  */
 .crewlet-nav-group__head {
   display: flex;
@@ -59,7 +62,7 @@
   min-width: 0;
   min-height: var(--size-target-min);
   margin-top: calc(var(--spacing-2) + var(--spacing-1) / 2);
-  padding: 0 var(--spacing-2) 0 var(--size-nav-row-pad);
+  padding: 0 calc(var(--size-nav-row-pad) - (var(--size-target-min) - 14px) / 2) 0 var(--size-nav-row-pad);
 }
 
 /*
@@ -401,6 +404,13 @@
  * path the reader is on the guide steps up to the strong border: the same
  * neutral lift the current row itself takes, and not the accent, which the
  * rail keeps for the one count that asks the reader to act.
+ *
+ * A NESTED ROW'S WORDS START ON ITS PARENT'S WORDS. The guide stands on the
+ * glyph column's start, and the inset after it is a nav glyph (`sm`, 14px)
+ * and the row's gap to its word, less the guide's own pixel and the pad the
+ * nested row takes again. A plain step there stood every nested word 3px
+ * left of its parent's (5px at the compact density), a column that read as
+ * missed rather than indented.
  */
 .crewlet-nav-item__children {
   --crewlet-nav-children-gap: var(--spacing-1);
@@ -409,7 +419,7 @@
   flex-direction: column;
   gap: var(--crewlet-nav-children-gap);
   margin-left: var(--size-nav-row-pad);
-  padding-left: var(--spacing-2);
+  padding-left: calc(14px + var(--spacing-2) + var(--spacing-1) / 2 - var(--size-nav-row-pad) - 1px);
   border-left: 1px solid var(--color-border-default);
 }
 

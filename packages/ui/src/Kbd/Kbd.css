@@ -29,8 +29,14 @@
      and not beside it: a hint at the end of a search field, a key named in a
      sentence, a shortcut in a menu row. Tightened it stood a pixel under the
      line it sits in and the row it was in wobbled by that pixel wherever a
-     cap appeared and wherever one did not. */
-  line-height: var(--font-line-height-body);
+     cap appeared and wherever one did not.
+
+     ROUNDED TO A WHOLE PIXEL. Chromium floors the share of the leading above
+     the text to a whole pixel, so the 15.95px line round the face's 14px text
+     box put no leading above it and 1.95px below, and every key stood a pixel
+     high in its cap. At 16px the leading splits evenly in every engine and
+     the capitals sit on the cap's middle. */
+  line-height: round(nearest, calc(var(--font-line-height-body) * 1em), 1px);
   color: var(--color-text-tertiary);
   white-space: nowrap;
   vertical-align: middle;

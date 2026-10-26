@@ -562,29 +562,33 @@ describe('Avatar', () => {
     expect(badge.getAttribute('aria-label')).toBeNull();
   });
 
-  test('the initials are set on the line every other word is, and still fit the box', () => {
+  test("the initials are set on the face's own line, which centres them, and still fit the box", () => {
     /*
-     * THE BADGE IS A BOX THAT CENTRES ONE LINE, so a leading of its own bought
-     * nothing a reader can see: the ink lands in the same place whichever step
-     * it takes, and the step it takes now is the document's, read off the
-     * document's own rule rather than named here.
+     * NO LEADING, BECAUSE A LEADING IS WHAT LIFTED THEM. The badge centres its
+     * one line, but the browser gives the leading above a line a whole pixel
+     * less than the leading below it whenever it does not split evenly, so
+     * under the document's 1.45 the caps were drawn 0.9px over the middle at
+     * 20 and 26px and 1.25px at 32, measured on the ink. `normal` is the
+     * face's own ascent and descent, which in Geist straddle the cap height:
+     * with no leading to share out, the caps sit within a quarter of a pixel
+     * of the middle at every step.
      *
      * What DOES have to hold is that the line still fits: each step pairs its
-     * box with a type step so two initials sit inside the badge, and a leading
-     * that outgrew the square would push them out of it.
+     * box with a type step so two initials sit inside the badge, and a line
+     * that outgrew the square would push them out of it. The kit's two faces
+     * (Geist and Geist Mono) share one vertical metric, ascent 1.01 and
+     * descent 0.29 of the size, which is the line `normal` gives them.
      */
-    const base = readFileSync(resolve(here, '../../../tokens/dist/css/base.css'), 'utf8');
     const tokens = readFileSync(resolve(here, '../../../tokens/dist/css/tokens.css'), 'utf8');
-    const documentLeading = /(?:^|\})\s*body\s*\{[^}]*line-height:\s*var\((--[\w-]+)\)/.exec(base)?.[1];
-    expect(documentLeading).toBeTruthy();
     const root = /\.crewlet-avatar\s*\{([^}]*)\}/.exec(RULES)?.[1] ?? '';
-    expect(root).toContain(`line-height: var(${documentLeading ?? ''})`);
+    expect(root).toMatch(/line-height:\s*normal\s*;/);
 
-    const leading = Number(new RegExp(`${documentLeading ?? ''}:\\s*([\\d.]+)`).exec(tokens)?.[1] ?? '0');
-    expect(leading).toBeGreaterThan(0);
-    /** The type step a size rule names, in pixels. */
-    const typeStep = (step: string) => {
+    const leading = 1.01 + 0.29;
+    /** The type a size rule sets, in pixels: a step of the ramp, or a share of the box. */
+    const typeStep = (step: string, box: number) => {
       const rule = new RegExp(`\\.crewlet-avatar--${step}\\s*\\{([^}]*)\\}`).exec(RULES)?.[1] ?? '';
+      const share = /font-size:\s*calc\(var\(--crewlet-avatar-size\)\s*\*\s*(\d*\.?\d+)\)/.exec(rule)?.[1];
+      if (share !== undefined) return box * Number(share);
       const named = /font-size:\s*var\((--[\w-]+)\)/.exec(rule)?.[1];
       if (named === undefined) throw new Error(`the ${step} step names no font size`);
       // Type is emitted in `rem` against the browser's own root, which neither
@@ -594,8 +598,21 @@ describe('Avatar', () => {
       return Number(value) * 16;
     };
     for (const [step, box] of Object.entries(AVATAR_SIZES)) {
-      expect(typeStep(step) * leading).toBeLessThanOrEqual(box);
+      expect(typeStep(step, box) * leading).toBeLessThanOrEqual(box);
     }
+  });
+
+  test('the smallest step sets the face its numeric twin computes, so two wide capitals clear the circle', () => {
+    /*
+     * The ramp's smallest step (11px) set "MO" about 18px wide in the 20px
+     * circle, the whole of its content box. 0.45 of the box is the 9px a
+     * numeric size of 20 computes (0.36 of it, floored at 9px).
+     */
+    const xs = /\.crewlet-avatar--xs\s*\{([^}]*)\}/.exec(RULES)?.[1] ?? '';
+    expect(xs).toMatch(/font-size:\s*calc\(var\(--crewlet-avatar-size\)\s*\*\s*0\.45\)/);
+    const { container } = render(<Avatar name="Maya Ortiz" size={AVATAR_SIZES.xs} />);
+    const twin = container.querySelector<HTMLElement>('.crewlet-avatar')!;
+    expect(twin.style.fontSize).toBe(`${AVATAR_SIZES.xs * 0.45}px`);
   });
 
   test('a broken image degrades to the initials rather than to a broken glyph', () => {
@@ -723,7 +740,10 @@ describe('an agent drawn as its character', () => {
     const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Avatar.css'), 'utf8');
     for (const hue of NODE_HUES) {
       const body = new RegExp(`\\.crewlet-avatar--hue-${hue}\\s*\\{([^}]*)\\}`).exec(sheet)?.[1] ?? '';
-      expect(body, hue).toMatch(new RegExp(`background:\\s*var\\(--color-node-${hue}-fill\\)`));
+      // The fill is published as the plate and painted from it, so a stack
+      // can lay the same tint over its own ground (AvatarStack.css).
+      expect(body, hue).toMatch(new RegExp(`--crewlet-avatar-plate:\\s*var\\(--color-node-${hue}-fill\\)`));
+      expect(body, hue).toMatch(/background:\s*var\(--crewlet-avatar-plate\)/);
       expect(body, hue).toMatch(new RegExp(`border-color:\\s*var\\(--color-node-${hue}-line\\)`));
       expect(body, hue).toMatch(new RegExp(`color:\\s*var\\(--color-node-${hue}\\)`));
     }

@@ -66,17 +66,24 @@ export function ConflictNote({
   return (
     <div {...rest} role="alert" className={cx('crewlet-conflict-note', className)}>
       <CircleAlertGlyph size="sm" className="crewlet-conflict-note__glyph" />
-      <span className="crewlet-conflict-note__text">{sentence}</span>
-      {(actions !== undefined || onDismiss) && (
-        <span className="crewlet-conflict-note__actions">
-          {actions}
-          {onDismiss && (
-            <Button size="small" variant="ghost" onClick={onDismiss}>
-              {labels.dismiss}
-            </Button>
-          )}
-        </span>
-      )}
+      {/*
+        THE SENTENCE AND ITS CONTROLS WRAP TOGETHER, in the column beside the
+        glyph, so on a narrow screen the controls move under the words rather
+        than under the glyph, as a Callout's action does.
+      */}
+      <span className="crewlet-conflict-note__body">
+        <span className="crewlet-conflict-note__text">{sentence}</span>
+        {(actions !== undefined || onDismiss) && (
+          <span className="crewlet-conflict-note__actions">
+            {actions}
+            {onDismiss && (
+              <Button size="small" variant="ghost" onClick={onDismiss}>
+                {labels.dismiss}
+              </Button>
+            )}
+          </span>
+        )}
+      </span>
     </div>
   );
 }

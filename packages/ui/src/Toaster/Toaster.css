@@ -61,6 +61,13 @@
   --crewlet-toast-wash: var(--color-surface-pressed);
   /* 14px at the normal density, and the corner the dismiss sits in beside it. */
   --crewlet-toast-inset: calc(var(--spacing-3) + var(--spacing-1) / 2);
+  /*
+   * ONE LINE OF THE STRIP'S TEXT, the line its mark and its dismiss are both
+   * centred on: the title's when there is one, else the message's first. It is
+   * spelled from the same two steps as the font and the leading below, so the
+   * three cannot drift apart.
+   */
+  --crewlet-toast-line: calc(var(--font-size-compact) * var(--font-line-height-body));
 
   pointer-events: auto;
   position: relative;
@@ -103,10 +110,17 @@
   z-index: var(--z-index-raised);
 }
 
+/*
+ * The mark stands in a box ONE LINE TALL with its glyph centred in it, so a
+ * 20px mark beside an 18.85px line overflows the box evenly instead of
+ * hanging from its top. A 1px drop from the line's top edge used to put its
+ * centre 1.6px under the words it marks, and 5px under the dismiss.
+ */
 .crewlet-toast__icon {
   display: inline-flex;
   flex: none;
-  margin-top: 1px;
+  align-items: center;
+  height: var(--crewlet-toast-line);
   color: var(--crewlet-toast-mark);
 }
 
@@ -214,13 +228,17 @@
 /* The dismiss sits absolute in the corner so a multi-line message flows
    under it rather than around it, and after the body in the document, so it
    is drawn over the words at the same raised step. 24px square: the smallest
-   target WCAG 2.2 accepts. */
+   target WCAG 2.2 accepts.
+
+   ITS CENTRE IS ON THE FIRST LINE, the one the mark is centred on, rather than
+   a fixed step from the corner: at the 8px step it stood 3.4px above the title
+   it closes, and the mark, the words and the dismiss read as three heights. */
 .crewlet-toast__dismiss {
   position: absolute;
-  top: var(--spacing-2);
+  top: calc(var(--crewlet-toast-inset) + (var(--crewlet-toast-line) - var(--size-target-min)) / 2);
   right: var(--spacing-2);
-  width: 24px;
-  height: 24px;
+  width: var(--size-target-min);
+  height: var(--size-target-min);
   display: inline-flex;
   align-items: center;
   justify-content: center;

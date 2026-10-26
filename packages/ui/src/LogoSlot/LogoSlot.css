@@ -11,6 +11,12 @@
   --crewlet-logo-slot-height: calc(var(--size-row-lg) * 3);
   --crewlet-logo-slot-padding: var(--spacing-5);
   --crewlet-logo-slot-clear: var(--spacing-3);
+  /* The name's size and its line, set rather than inherited, so the action
+     beside the name can be centred on it. The line is the document's own
+     leading, which is what the name took from the page before it was named
+     here. */
+  --crewlet-logo-slot-label-size: var(--font-size-sm);
+  --crewlet-logo-slot-label-line: calc(var(--crewlet-logo-slot-label-size) * var(--font-line-height-body));
 
   display: flex;
   flex-direction: column;
@@ -35,8 +41,9 @@
 
 .crewlet-logo-slot__label {
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--crewlet-logo-slot-label-size);
   font-weight: var(--font-weight-medium);
+  line-height: var(--crewlet-logo-slot-label-line);
 }
 
 .crewlet-logo-slot__description {
@@ -44,9 +51,18 @@
   font-size: var(--font-size-xs);
 }
 
+/*
+ * THE ACTION STANDS ON THE NAME'S LINE: a box the line's height, with the
+ * action centred in it and overflowing it evenly. Held to the top of the head
+ * instead, a small button (26px) beside the name's 20px line sat its label
+ * nearly three pixels under the name's. The name does not move, so a slot with
+ * a download and one without still start their names on one line.
+ */
 .crewlet-logo-slot__download {
   display: inline-flex;
   flex: none;
+  align-items: center;
+  height: var(--crewlet-logo-slot-label-line);
 }
 
 /*
@@ -148,9 +164,12 @@
   line-height: var(--font-line-height-normal);
 }
 
+/* The glyph's box is the first line's height and its drawing is centred in
+   it (the frame keeps its square), so it sits on that line at any size. A
+   fixed 1px nudge left a 14px glyph a pixel above an 18px line. */
 .crewlet-logo-slot__error > svg {
   flex: none;
-  margin-top: 1px;
+  height: 1lh;
 }
 
 .crewlet-logo-slot__foot {
@@ -256,12 +275,11 @@
   --crewlet-logo-slot-height: calc(var(--size-row-lg) * 1.5);
   --crewlet-logo-slot-padding: var(--spacing-2);
   --crewlet-logo-slot-clear: var(--spacing-1);
+  /* On the slot itself, so the name's line (and the action centred on it)
+     is worked out from this size rather than the default one. */
+  --crewlet-logo-slot-label-size: var(--font-size-xs);
 
   gap: var(--spacing-1);
-}
-
-.crewlet-logo-slot--sm .crewlet-logo-slot__label {
-  font-size: var(--font-size-xs);
 }
 
 .crewlet-logo-slot--sm .crewlet-logo-slot__description,

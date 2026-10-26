@@ -11,6 +11,10 @@
   /* The node's diameter, which the rail's offset and its left edge both read
      off, so moving the node is one edit rather than three. */
   --crewlet-timeline-node-size: 18px;
+  /* How far the node stands below the top of its step, which centres it on a
+     first line of body prose. A step whose first line stands lower, or is
+     taller, sets this one value, and the node and its rail move together. */
+  --crewlet-timeline-node-offset: 2px;
   --crewlet-timeline-pulse-period: 1.8s;
   display: flex;
   flex-direction: column;
@@ -42,10 +46,26 @@
   background: var(--color-surface-inset);
 }
 
+/*
+ * A TINTED STEP INSETS ITS NODE as it already insets its end: with no start
+ * pad the node was drawn against the tint's edge. Every step of the ledger
+ * takes it, tinted or not, so the nodes still stand in one column; a ledger
+ * with no tint keeps its nodes on its own edge.
+ */
+.crewlet-timeline--alternating .crewlet-timeline__item {
+  padding-inline-start: var(--spacing-2);
+}
+
+/*
+ * The rail's own padding stands the node down rather than a margin on the
+ * node, so the offset is resolved in the step's own type (the node sets a
+ * smaller one): an offset written in `lh` reads the line beside it.
+ */
 .crewlet-timeline__rail {
   position: relative;
   display: flex;
   justify-content: center;
+  padding-top: var(--crewlet-timeline-node-offset);
 }
 
 .crewlet-timeline__node {
@@ -56,7 +76,6 @@
   position: relative;
   width: var(--crewlet-timeline-node-size);
   height: var(--crewlet-timeline-node-size);
-  margin-top: 2px;
   border-radius: var(--radius-pill);
   background: var(--color-surface-inset);
   border: 1px solid var(--color-border-default);
@@ -72,11 +91,21 @@
  * on a step only one row tall.
  */
 .crewlet-timeline__rail::after {
+  --crewlet-timeline-rail-start: calc(var(--crewlet-timeline-node-offset) + var(--crewlet-timeline-node-size) + 2px);
   content: '';
   position: absolute;
   left: calc(50% - 1px);
-  top: calc(var(--crewlet-timeline-node-size) + 4px);
+  top: var(--crewlet-timeline-rail-start);
   bottom: 0;
+  /*
+   * In WHOLE PIXELS, rounded down. A step whose content is one line ends a
+   * fraction of a pixel under the node (prose's 22.1px line against the
+   * node's 22px), and that fraction was drawn as a grey speck under the
+   * number; rounded down it is no rail at all, and every longer rail ends
+   * within a pixel of where it did. Where round() is not known the height is
+   * dropped and the rail runs to `bottom` as before.
+   */
+  height: round(down, calc(100% - var(--crewlet-timeline-rail-start)), 1px);
   width: 2px;
   border-radius: var(--radius-pill);
   /* The default border step, not the subtle one: this line is the thing that

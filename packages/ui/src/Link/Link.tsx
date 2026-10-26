@@ -100,7 +100,17 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   // somebody looking at it and nothing at all to somebody listening.
   const externalMark = external ? (
     <>
-      <ExternalLinkGlyph className="crewlet-link__external" size="sm" />
+      {/*
+        THE MARK TRAVELS WITH THE LAST WORD. A line may break before an inline
+        glyph, so at the end of a line the mark wrapped alone onto the next
+        one. The word joiner holds it to the word before it, and the span that
+        does not wrap holds the joiner to the mark. Hidden, so the joiner is
+        never part of the link's name.
+      */}
+      <span className="crewlet-link__external-mark" aria-hidden="true">
+        {'\u2060'}
+        <ExternalLinkGlyph className="crewlet-link__external" size="sm" />
+      </span>
       {/*
         The space is a TEXT NODE BESIDE the sentence, not inside it. An
         accessible name is the concatenation of an element's parts with nothing
