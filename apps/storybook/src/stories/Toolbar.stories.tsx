@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
 import { MaximizeGlyph, MinimizeGlyph, RedoGlyph, UndoGlyph } from '@crewlethq/icons/glyphs';
-import { Button, IconButton, Menu, Spacer, Stack, Toolbar, useFullscreen } from '@crewlethq/ui';
+import { Button, IconButton, Input, Menu, Spacer, Stack, Toolbar, useFullscreen } from '@crewlethq/ui';
 
 const meta: Meta<typeof Toolbar> = {
   title: 'UI/Toolbar',
@@ -91,7 +91,9 @@ export const StickyFilters: Story = {
   render: () => (
     <Stack gap={0}>
       <Toolbar label="Filters" mode="group" sticky>
-        <input aria-label="Filter by name" placeholder="Filter by name" />
+        {/* The kit's own field at the small step, so the row's three controls
+            stand at one height. */}
+        <Input inputSize="sm" width="sm" aria-label="Filter by name" placeholder="Filter by name" />
         <Button size="small" variant="ghost">
           State
         </Button>

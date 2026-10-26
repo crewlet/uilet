@@ -60,16 +60,19 @@
 }
 
 .crewlet-icon-btn--sm {
+  --crewlet-icon-btn-glyph-inset: calc((var(--size-control-sm) - var(--font-size-xs)) / 2);
   width: var(--size-control-sm);
   height: var(--size-control-sm);
 }
 
 .crewlet-icon-btn--md {
+  --crewlet-icon-btn-glyph-inset: calc((var(--size-control-md) - var(--font-size-sm)) / 2);
   width: var(--size-control-md);
   height: var(--size-control-md);
 }
 
 .crewlet-icon-btn--lg {
+  --crewlet-icon-btn-glyph-inset: calc((var(--size-control-lg) - var(--font-size-xl)) / 2);
   width: var(--size-control-lg);
   height: var(--size-control-lg);
 }
@@ -78,6 +81,11 @@
  * The glyph inside follows the button's step, at the ratio a label sets: a
  * medium button draws its leading glyph at its own 13px text, so a square one
  * drawing a 16px glyph put a heavier mark in the same toolbar row.
+ *
+ * How far that glyph stands in from the square's edge is published on each
+ * step (--crewlet-icon-btn-glyph-inset, beside the size it is taken from), so
+ * a head that ends on a ghost square can pull it out by exactly that much and
+ * stand its glyph on the text edge (Card.css, WidgetFrame.css).
  */
 .crewlet-icon-btn--sm .crewlet-glyph {
   width: var(--font-size-xs);

@@ -211,10 +211,11 @@
 
 /*
  * A CHIP STANDS SHORTER THAN THE CONTROL IT SITS BESIDE, and it is the row
- * that has to match: the well adds its boundary and its inset above and below
+ * that is measured: the well adds its boundary and its inset above and below
  * every chip, so a chip at a full control step makes the whole segmented row
- * taller than the button next to it. Six pixels off the md step is exactly
- * that boundary and inset, and it leaves the design's 24px chip in a 30px row.
+ * taller than the button next to it. Six pixels off the md step is the
+ * design's 24px chip, and the well's 1px boundary and 1px inset a side stand
+ * it in a 28px row, the tab step (see the well above).
  *
  * AND THE FLOOR IS TAKEN AGAIN AFTER THE SUBTRACTION. Subtracting from a step
  * subtracts from its floor too: at compact density
@@ -309,9 +310,9 @@
  * A CHIP RINGS ON ITS OWN EDGE, flush rather than 2px off it. The chip that
  * is on draws a hairline round itself, and a ring standing off that hairline
  * was two edges with a gap between them, which reads as a second outline
- * rather than as focus. Flush, the ring covers the hairline, and it stays
- * inside the well's 2px inset: two pixels wide, it meets the well's own
- * boundary rather than leaving a sliver of the well between the two.
+ * rather than as focus. Flush, the ring covers the hairline, and two pixels
+ * wide it fills the well's 1px inset and lies over the well's own 1px
+ * boundary, so no sliver of the well shows between the two.
  */
 .crewlet-tabs--pill .crewlet-tabs__tab:focus-visible {
   outline-offset: 0;
@@ -498,16 +499,23 @@
   justify-content: center;
   flex: none;
 }
+/*
+ * A PILL, which is a circle while the count is one figure: a 50% corner drew
+ * a two-figure count as an ellipse. The line is the marker's own height, so
+ * the figure is centred in it: at a line of 1 the face's 14px text box
+ * overflowed an 11px line and the figure stood most of a pixel high.
+ */
 .crewlet-tabs__marker--danger {
-  min-width: 16px;
-  height: 16px;
+  --crewlet-tabs-marker-size: 16px;
+  min-width: var(--crewlet-tabs-marker-size);
+  height: var(--crewlet-tabs-marker-size);
   padding: 0 var(--spacing-1);
-  border-radius: var(--radius-circle);
+  border-radius: var(--radius-pill);
   background: var(--color-feedback-danger-soft);
   color: var(--color-feedback-danger-ink);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-2xs);
-  line-height: 1;
+  line-height: var(--crewlet-tabs-marker-size);
 }
 .crewlet-tabs__marker--warning,
 .crewlet-tabs__marker--changed {

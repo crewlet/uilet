@@ -103,9 +103,23 @@
 }
 
 .crewlet-link__external {
-  /* Sits on the text baseline beside the last word rather than under it. */
+  /*
+   * Sits on the text baseline beside the last word rather than under it.
+   * INLINE, said here, because the document baseline sets every `svg` to
+   * `display: block`: as a block the mark broke the line inside the link and
+   * stood alone on a row of its own under the words, and the vertical-align
+   * below did nothing at all.
+   */
+  display: inline-block;
   vertical-align: -0.125em;
   margin-inline-start: var(--spacing-1);
+}
+
+/* The mark and the joiner that holds it to the last word (see Link.tsx): no
+   break between them, and nothing a reader copies with the link's words. */
+.crewlet-link__external-mark {
+  white-space: nowrap;
+  user-select: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

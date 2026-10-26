@@ -46,7 +46,7 @@ export const Sections: Story = {
     function Demo() {
       const [lens, setLens] = useState('chart');
       return (
-        <div style={{ width: 520 }}>
+        <div style={{ maxWidth: 520 }}>
           <SegmentedControl
             label="View"
             semantics="tabs"
@@ -122,7 +122,7 @@ export const Cards: Story = {
     function Demo() {
       const [template, setTemplate] = useState('startup');
       return (
-        <div style={{ width: 460 }}>
+        <div style={{ maxWidth: 460 }}>
           <SegmentedControl
             label="Template"
             semantics="radio"
@@ -167,7 +167,7 @@ export const Chips: Story = {
       const [type, setType] = useState('team');
       const [custom, setCustom] = useState('');
       return (
-        <div style={{ width: 460 }}>
+        <div style={{ maxWidth: 460 }}>
           <SegmentedControl
             label="Unit type"
             semantics="radio"

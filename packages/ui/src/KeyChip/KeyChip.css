@@ -19,7 +19,10 @@
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   letter-spacing: var(--font-letter-spacing-normal);
-  line-height: var(--font-line-height-body);
+  /* The document's leading rounded to a whole pixel, as the keycap takes it
+     (see Kbd.css): unrounded, Chromium floored the leading above the text to
+     nothing and the key stood a pixel high in its chip. */
+  line-height: round(nearest, calc(var(--font-line-height-body) * 1em), 1px);
   white-space: nowrap;
 }
 

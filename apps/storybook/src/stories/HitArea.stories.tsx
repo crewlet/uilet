@@ -66,13 +66,17 @@ function Lenses() {
   );
 }
 
-/* An application's own list: the gap and the reach come from one property. */
+/*
+ * An application's own list: the gap and the reach come from one property.
+ * The list pads above and below only, where the rows reach past their ends,
+ * so its rows stand on the section's edge as every other panel here does.
+ */
 const ownList = {
   '--crewlet-story-gap': 'var(--spacing-2)',
   display: 'grid',
   gap: 'var(--crewlet-story-gap)',
   margin: 0,
-  padding: 'var(--spacing-1)',
+  padding: 'var(--spacing-1) 0',
   listStyle: 'none',
 } as CSSProperties;
 
