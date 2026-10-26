@@ -2,7 +2,7 @@ import type { ComponentType, SVGProps } from 'react';
 
 import './ProductMark.css';
 import type { GlyphSize } from './Glyph.js';
-import { GLYPH_SIZES, cssLength } from './Glyph.js';
+import { cssLength } from './Glyph.js';
 import * as masters from './generated/products/index.js';
 import * as small from './generated/products/small/index.js';
 
@@ -57,12 +57,13 @@ const drawings: Record<Product, { small: Drawing; master: Drawing }> = {
   assistant: { small: small.Assistant, master: masters.Assistant },
 };
 
-/** The size a `size` prop draws at, in px, or null when it is not in px. */
+/**
+ * The size a `size` prop draws at, in px, or null when it is not in px. Read
+ * from the length the mark is drawn at, so the drawing switch and the
+ * rendered width can never disagree about what a step or a number means.
+ */
 function pixels(size: GlyphSize | undefined): number | null {
-  if (typeof size === 'number') return size;
-  if (size === undefined) return null;
-  if (size in GLYPH_SIZES) return GLYPH_SIZES[size as keyof typeof GLYPH_SIZES];
-  const match = /^\s*(\d*\.?\d+)px\s*$/.exec(size);
+  const match = /^(\d*\.?\d+)px$/.exec(cssLength(size).trim());
   return match === null ? null : Number(match[1]);
 }
 
