@@ -74,6 +74,15 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
  * latest" pill counts what arrived since. The browser's own scroll anchoring
  * is turned off (it fights a last child that keeps growing), and the
  * anchoring is done here instead.
+ *
+ * A JUMP HOLDS UNTIL IT LANDS. A smooth scroll passes through positions short
+ * of the end, and each one read as the reader leaving: the pill came back and
+ * following stopped, so an answer still growing left the jump short and the
+ * first press did nothing. While the jump runs, those positions are ignored
+ * and growth is followed; the reader's own wheel, touch or key ends it.
+ *
+ * THE PILL COVERS NOTHING: it sits under the log, in the thread's own column,
+ * rather than over the last lines of whatever is being read.
  */
 export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function ChatThread(
   { label, busy = false, follow = true, children, labels: overrides, className, ...rest },
@@ -87,6 +96,9 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
   // Whether the reader is at the end, read on every scroll. A ref, because
   // the content observer below reads it between renders.
   const atEnd = useRef(true);
+  // A smooth jump to the end is under way: the positions it passes through
+  // are not the reader leaving.
+  const jumping = useRef(false);
   const [detachedAt, setDetachedAt] = useState<number | null>(null);
   const countRef = useRef(count);
   countRef.current = count;
@@ -96,8 +108,13 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
       const el = scroller.current;
       if (!el) return;
       const top = el.scrollHeight - el.clientHeight;
-      if (smooth && !reduced && typeof el.scrollTo === 'function') el.scrollTo({ top, behavior: 'smooth' });
-      else el.scrollTop = top;
+      if (smooth && !reduced && typeof el.scrollTo === 'function') {
+        jumping.current = true;
+        el.scrollTo({ top, behavior: 'smooth' });
+      } else {
+        jumping.current = false;
+        el.scrollTop = top;
+      }
       atEnd.current = true;
       setDetachedAt(null);
     },
@@ -108,9 +125,35 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
     const el = scroller.current;
     if (!el) return;
     const end = el.scrollHeight - el.scrollTop - el.clientHeight <= CHAT_THREAD_FOLLOW_WITHIN;
+    if (jumping.current) {
+      // On the way to the end: only arriving there ends the jump.
+      if (end) jumping.current = false;
+      return;
+    }
     atEnd.current = end;
     setDetachedAt((prior) => (end ? null : (prior ?? countRef.current)));
   }, []);
+
+  // The reader's own wheel, touch or key ends a jump at once: what they do is
+  // never overridden by the jump they asked for a moment before. A jump the
+  // content outgrew lands where the end is when the scroll settles.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const interrupt = () => {
+      jumping.current = false;
+    };
+    const settled = () => {
+      if (jumping.current) toEnd(false);
+    };
+    const intents = ['wheel', 'touchstart', 'keydown'] as const;
+    el.addEventListener('scrollend', settled);
+    for (const intent of intents) el.addEventListener(intent, interrupt, { passive: true });
+    return () => {
+      el.removeEventListener('scrollend', settled);
+      for (const intent of intents) el.removeEventListener(intent, interrupt);
+    };
+  }, [toEnd]);
 
   // Follows what arrives while the reader is at the end: a new item, and a
   // last item that grows as its answer streams in.

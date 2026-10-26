@@ -50,11 +50,14 @@ export function formatRelative(value: TimeValue, now: number): string | null {
   const at = toInstant(value);
   if (at === null) return null;
   const seconds = Math.round((now - at) / SECOND);
+  // Under five seconds EITHER WAY there is no honest number: a clock that
+  // ticks once a second cannot tell 1 from 4, and "4s ago" on something that
+  // just happened reads as a measurement nobody made. Ahead of the clock is
+  // the same moment seen from a reading taken up to a tick earlier, or from a
+  // browser whose clock runs a little behind the server that stamped it, so
+  // it is "just now" too, never "in 1s".
+  if (Math.abs(seconds) < 5) return 'just now';
   if (seconds < 0) return formatUntil(value, now);
-  // Under five seconds there is no honest number: a clock that ticks once a
-  // second cannot tell 1 from 4, and "4s ago" on something that just happened
-  // reads as a measurement nobody made.
-  if (seconds < 5) return 'just now';
   if (seconds < MINUTE) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / MINUTE);
   if (minutes < MINUTE) return `${minutes}m ago`;

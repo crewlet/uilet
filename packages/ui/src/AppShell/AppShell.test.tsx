@@ -510,6 +510,10 @@ describe('the frame and the sheet', () => {
         const palette = themes[theme].color;
         const where = (what: string) => `${theme}: ${what}`;
         expect(channels(getComputedStyle(root).backgroundColor), where('the frame')).toEqual(parseHex(palette.surface.frame));
+        // CLIPPED, NOT SCROLLABLE: `hidden` is a scroll container a focus or a
+        // scrollIntoView past the viewport moved, lifting the whole shell over
+        // a band of frame that nothing scrolled back.
+        expect(getComputedStyle(root).overflow, where('the root')).toBe('clip');
         expect(channels(getComputedStyle(rail!).backgroundColor), where('the rail')).toEqual(parseHex(palette.surface.frame));
         const drawn = getComputedStyle(sheet);
         expect(channels(drawn.backgroundColor), where('the sheet')).toEqual(parseHex(palette.surface.background));
@@ -1169,7 +1173,7 @@ describe("the rail's foot", () => {
   });
 
   test('a foot control keeps its ring inside its own box', () => {
-    // The shell's root is `overflow: hidden` at exactly the viewport's height,
+    // The shell's root is clipped at exactly the viewport's height,
     // so an outset ring on the last row in the foot is cut off by the window.
     const ring = body(css, '.crewlet-app-shell__rail-foot > .crewlet-btn:focus-visible');
     expect(ring).toContain('outline-offset: var(--size-focus-ring-inset-offset)');

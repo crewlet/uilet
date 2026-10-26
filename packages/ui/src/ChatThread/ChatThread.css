@@ -1,7 +1,7 @@
 /*
  * A conversation as it grows: the scroller, the items a spacing step and a
- * half apart on the panel's 16px inset, and the Jump to latest pill floating
- * over its foot.
+ * half apart on the panel's 16px inset, and the Jump to latest pill in a row
+ * of its own under it.
  */
 .crewlet-chat-thread {
   position: relative;
@@ -53,14 +53,17 @@
   flex: none;
 }
 
-/* The pill, centred a step above the thread's foot. */
+/*
+ * The pill, centred in a row of its own under the log. IN FLOW, NOT FLOATING:
+ * laid over the scroller it covered the last lines of whatever was being read,
+ * a table's rows or an answer's text. Here the log gives up the row while the
+ * pill shows, and nothing it holds is hidden under it.
+ */
 .crewlet-chat-thread__jump {
-  position: absolute;
-  bottom: var(--spacing-3);
-  left: 50%;
-  transform: translateX(-50%);
-  box-shadow: var(--shadow-md);
-  border-radius: var(--radius-pill);
+  display: flex;
+  flex: none;
+  justify-content: center;
+  padding: var(--spacing-2) var(--spacing-4);
 }
 
 .crewlet-chat-thread__fresh {

@@ -59,7 +59,12 @@
      past it. A page that can also scroll as a whole carries the rail off the
      top of the window. */
   height: 100dvh;
-  overflow: hidden;
+  /* CLIPPED, NOT SCROLLABLE. `overflow: hidden` is still a scroll container:
+     a focus or a scrollIntoView on anything that reaches past the viewport
+     scrolled the whole shell up, the frame showing as a band under it, and
+     nothing a reader could do scrolled it back. `clip` cuts the same edge
+     and offers nothing to scroll (SidePanel's flush body, the same rule). */
+  overflow: clip;
   /* The FRAME, the lowest rung: what the rail stands on and what shows round
      the sheet's inset. */
   background: var(--color-surface-frame);
