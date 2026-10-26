@@ -270,7 +270,13 @@ export function AgentHandoffPanel({
               </ul>
             ) : null}
             {task ? (
-              <Disclosure title={words.task} size="compact" headingLevel="none" lazy>
+              <Disclosure
+                title={words.task}
+                size="compact"
+                headingLevel="none"
+                lazy
+                className="crewlet-agent-handoff__task-disclosure"
+              >
                 <div className="crewlet-agent-handoff__task">
                   <p className="crewlet-agent-handoff__task-title">{task.title}</p>
                   <pre className="crewlet-agent-handoff__task-body">{task.body}</pre>
@@ -282,7 +288,7 @@ export function AgentHandoffPanel({
 
         {steps.length > 0 ? (
           <Section title={words.next} className="crewlet-agent-handoff__section">
-            <Timeline itemLabel={words.step}>
+            <Timeline itemLabel={words.step} className="crewlet-agent-handoff__steps">
               {steps.map((step, i) => (
                 <Timeline.Item key={i}>{step}</Timeline.Item>
               ))}

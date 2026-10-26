@@ -206,12 +206,21 @@
 /*
  * A short label under the price: "Save $X (10 percent off)" on a discounted
  * plan, or "Billed annually" and "Free forever" on a pricing page.
+ *
+ * THE LINE AND THE PILL ARE TWO BOXES. The line takes the whole row, which is
+ * what puts the note under the price; the pill on it is as wide as its words.
+ * Both on the pill, the 100% basis outranked its max-content width, and the
+ * pill ran 120px past "Save $5 (10% off)" to the card's edge.
  */
+.crewlet-pricing-card__price-note-line {
+  display: flex;
+  flex-basis: 100%;
+  min-width: 0;
+}
+
 .crewlet-pricing-card__price-note {
   /* Layout and arrival only. The pill, the tint and the ink are the Tag's. */
-  flex-basis: 100%;
   margin-top: 2px;
-  width: max-content;
   max-width: 100%;
   animation: crewlet-pricing-card-price-note-enter var(--motion-duration-slow) var(--motion-easing-spring);
 }

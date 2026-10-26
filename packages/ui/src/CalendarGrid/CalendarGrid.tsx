@@ -262,6 +262,18 @@ export function CalendarGrid({
       ? dayLabel(date)
       : `${weekdayNames[new Date(date.year, date.month, date.day).getDay()]} ${date.day} ${monthNames[date.month]} ${date.year}`;
 
+  /*
+   * WHETHER A CELL PAINTS PART OF THE BAND: a day strictly inside the range,
+   * or a chosen day that opens or closes one, and only where this grid draws
+   * a day at all. Asked of a day's neighbours, so the band's gaps are each
+   * painted by one day (see CalendarGrid.css).
+   */
+  const banded = (cell: { date: CalendarDate; inMonth: boolean } | undefined): boolean => {
+    if (!cell || (!cell.inMonth && !showOutsideDays)) return false;
+    if (!(selected?.some((day) => sameDay(day, cell.date)) ?? false)) return inRange?.(cell.date) ?? false;
+    return (inRange?.(shiftDay(cell.date, 1)) ?? false) || (inRange?.(shiftDay(cell.date, -1)) ?? false);
+  };
+
   return (
     <div
       ref={grid}
@@ -290,9 +302,9 @@ export function CalendarGrid({
           );
         })}
       </div>
-      {weeks.map((week) => (
+      {weeks.map((week, row) => (
         <div role="row" key={cellId(week[0]!.date)} className="crewlet-calendar__week">
-          {week.map(({ date, inMonth }) => {
+          {week.map(({ date, inMonth }, column) => {
             /*
              * An empty cell, so the row still owns seven gridcells. It draws
              * no day, so it takes no name, no selected or in-range tint and
@@ -322,6 +334,13 @@ export function CalendarGrid({
              */
             const opensRange = chosen && (inRange?.(shiftDay(date, 1)) ?? false);
             const closesRange = chosen && (inRange?.(shiftDay(date, -1)) ?? false);
+            // A day of the band paints the hairline to the next day on its row
+            // and the one to the day under it, when those are the band's too,
+            // and the crossing between four of its days.
+            const band = between || opensRange || closesRange;
+            const joinedAfter = band && banded(week[column + 1]);
+            const joinedBelow = band && banded(weeks[row + 1]?.[column]);
+            const joinedCorner = joinedAfter && joinedBelow && banded(weeks[row + 1]?.[column + 1]);
             return (
               <span
                 key={cellId(date)}
@@ -340,6 +359,9 @@ export function CalendarGrid({
                   between && 'is-in-range',
                   opensRange && 'is-range-start',
                   closesRange && 'is-range-end',
+                  joinedAfter && 'is-joined-after',
+                  joinedBelow && 'is-joined-below',
+                  joinedCorner && 'is-joined-corner',
                   isToday && 'is-today',
                 )}
                 onClick={() => {

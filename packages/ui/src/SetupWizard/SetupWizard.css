@@ -179,6 +179,16 @@
 }
 
 /*
+ * A GHOST AT THE ROW'S START is pulled out by its padding and edge, as a card
+ * foot's is (StatusCard.css), so "Exit" starts on the line the title and the
+ * hairline above it start on rather than 13px inside it; only the hover's
+ * ground reaches past. The footer's buttons are the page's own step, medium.
+ */
+.crewlet-setup-wizard__footer-start > .crewlet-btn--ghost.crewlet-btn--medium:first-child {
+  margin-inline-start: calc(-1 * (var(--spacing-3) + 1px));
+}
+
+/*
  * BESIDE THE CONTENT, from 70rem of the wizard's own width: the aside holds in
  * view. Written at the specificity of the wide and no-aside rules above, and
  * after them, so the three shapes are decided by source order alone.
@@ -250,9 +260,17 @@
     gap: var(--spacing-2);
   }
 
+  /*
+   * THE FOLDED PREVIEW HANGS IN THE GUTTER, as a change list's disclosure
+   * does: the trigger's padding and the panel's inset stand outside the
+   * column, so the chevron sits on the edge the fields above start on and the
+   * open preview is as wide as they are, rather than 8px inside it at both
+   * ends.
+   */
   .crewlet-setup-wizard__preview {
     grid-area: aside;
     min-width: 0;
+    margin-inline: calc(var(--spacing-2) * -1);
   }
 
   .crewlet-setup-wizard__preview .crewlet-setup-wizard__aside {
@@ -278,6 +296,13 @@
 
   .crewlet-setup-wizard__footer-end > :last-child {
     flex: 1 1 100%;
+  }
+
+  /* The first row's last action ends it, at the row's end: a ghost there is
+     pulled out as "Exit" is at its start, so the two words stand level with
+     the primary's edges under them. */
+  .crewlet-setup-wizard__footer-end > .crewlet-btn--ghost.crewlet-btn--medium:nth-last-child(2) {
+    margin-inline-end: calc(-1 * (var(--spacing-3) + 1px));
   }
 }
 

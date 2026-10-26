@@ -276,7 +276,10 @@ describe('what each step is drawn in', () => {
       expect(getComputedStyle(chip).boxSizing, stateOf(step)).toBe('border-box');
     }
     const list = container.querySelector('ol')!;
-    expect(px(list, 'gap')).toBe(6);
+    // 6px between two lines, and 6px either side of the 10px rule, which
+    // stands in the gap between two pills rather than inside the second.
+    expect(px(list, 'row-gap')).toBe(6);
+    expect(px(list, 'column-gap')).toBe(6 + 10 + 6);
     expect(getComputedStyle(list).listStyle).toBe('none');
     expect(px(list, 'padding-left')).toBe(0);
   });
@@ -297,7 +300,11 @@ describe('what each step is drawn in', () => {
         expect(channels(rule.backgroundColor), theme).toEqual(
           parseHex(palette.get(token('color-border-strong')) ?? ''),
         );
+        // Out of the step's box, in the gap before it, so the step that opens
+        // a wrapped line takes no rule with it: the list cuts that one off.
+        expect(rule.position, theme).toBe('absolute');
       }
+      expect(getComputedStyle(container.querySelector('ol')!).overflowX, theme).toBe('clip');
     }
   });
 

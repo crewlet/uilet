@@ -28,6 +28,14 @@
   text-align: end;
 }
 
+/* THE STRIP'S OWN LINES END THERE TOO. The strip is a wrapping row of its
+   own, the sentence and the hint, and a refusal too long for one line
+   filled the slot and set both lines at its start: the end alignment above
+   moved the box and none of the words in it. */
+.crewlet-proposal-card__refusal > .crewlet-refusal-strip {
+  justify-content: flex-end;
+}
+
 /* WHERE FOCUS LANDS WHEN THE CARD SETTLES (the strip, or the card when it
    has none): the token ring for a reader on the keyboard, inset so the
    card's corner does not clip it, and nothing for a pointer (transparent

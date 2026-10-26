@@ -73,11 +73,14 @@
   background: var(--color-surface-subtle);
 }
 
+/* On the first line's centre, whatever the glyph's own box: the slot is the
+   label's line tall and centres what it holds. A 1px nudge stood the 14px
+   glyph 1.8px over the middle of the label's 19.6px line. */
 .crewlet-agent-handoff__item-icon {
   display: inline-flex;
   flex: none;
-  /* On the first line's centre, whatever the glyph's own box. */
-  margin-top: 1px;
+  align-items: center;
+  height: calc(var(--font-size-sm) * var(--font-line-height-snug));
   color: var(--color-text-tertiary);
 }
 
@@ -100,6 +103,17 @@
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
   line-height: var(--font-line-height-normal);
+}
+
+/*
+ * THE TASK AS FILED HANGS IN THE GUTTER, as a change list's disclosure does:
+ * the trigger's padding and the panel's inset stand outside the column, so the
+ * chevron sits on the edge the section's title and the carried items start
+ * on, and the open task is as wide as they are rather than 8px inside them at
+ * both ends. Only the trigger's hover ground reaches past.
+ */
+.crewlet-agent-handoff__task-disclosure {
+  margin-inline: calc(var(--spacing-2) * -1);
 }
 
 .crewlet-agent-handoff__task {
@@ -131,6 +145,24 @@
   line-height: var(--font-line-height-normal);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/*
+ * WHAT HAPPENS NEXT reads at the panel's own step, as the intro and the
+ * carried items do. The ledger takes its type from its host, and left to
+ * inherit it took the page's body: a step over everything else in the panel
+ * on a 16px page, and a step under the intro on a 13px one. Its node stands
+ * on the middle of that first line, which is the one value the ledger asks a
+ * host to set. Both classes, so it outranks the ledger's own rule whichever
+ * order a bundle writes the two sheets in.
+ */
+.crewlet-timeline.crewlet-agent-handoff__steps {
+  --crewlet-timeline-node-offset: calc(
+    (var(--font-size-sm) * var(--font-line-height-normal) - var(--crewlet-timeline-node-size)) / 2
+  );
+
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-normal);
 }
 
 .crewlet-agent-handoff__foot {
