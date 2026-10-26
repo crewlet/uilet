@@ -1,8 +1,10 @@
-import { useId, useLayoutEffect, useRef, type HTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { BanGlyph, CircleAlertGlyph, CircleCheckGlyph, ClockGlyph, LockGlyph, RefreshCwGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { ChangeList, type ChangeListLabels, type ChangeListRow } from '../ChangeList/index.js';
+import { Checkbox } from '../Checkbox/index.js';
 import type { DiffListLabels } from '../DiffList/index.js';
+import { Disclosure } from '../Disclosure/index.js';
 import { ReceiptStrip, RefusalStrip } from '../ReceiptStrip/index.js';
 import { Spinner } from '../Spinner/index.js';
 import { StatusCard, type StatusCardStatus } from '../StatusCard/index.js';
@@ -49,6 +51,29 @@ export type ProposalFailureOutcome = 'unchanged' | 'unknown';
 export const PROPOSAL_FAILURE_OUTCOMES = ['unchanged', 'unknown'] as const satisfies readonly ProposalFailureOutcome[];
 
 /**
+ * How much the decision weighs: `default`, or `danger` for a change that
+ * removes, discards or overwrites something (removing a seat, deleting a
+ * record). Danger draws the card's leading edge and its title in the danger
+ * ink and the primary as the danger button, while the card waits on the
+ * person or carries the change out.
+ */
+export type ProposalTone = 'default' | 'danger';
+
+export const PROPOSAL_TONES = ['default', 'danger'] as const satisfies readonly ProposalTone[];
+
+/**
+ * A deliberate confirmation: a checkbox the person ticks before the primary
+ * can be pressed, for a change whose consequence has to be acknowledged.
+ */
+export interface ProposalConfirmation {
+  /**
+   * What the person confirms, as the checkbox's name: "I understand the QA
+   * Engineer seat and its history are removed."
+   */
+  label: ReactNode;
+}
+
+/**
  * Why the person's own decision was refused while the card stays open to
  * another one: the approval was turned down (a fresh sign-in, a change that
  * moved) but the proposal itself still stands.
@@ -91,6 +116,10 @@ export interface ProposalCardLabels {
   unknownNotice: string;
   /** Why Decline is held while the approved change is carried out. */
   busy: string;
+  /** Why the primary is held until the `confirmation` is ticked, said as its description. */
+  confirmationNeeded: string;
+  /** The title of the collapsed `details` section. */
+  details: string;
 }
 
 export const PROPOSAL_CARD_LABELS: ProposalCardLabels = {
@@ -121,6 +150,8 @@ export const PROPOSAL_CARD_LABELS: ProposalCardLabels = {
   nothingChanged: 'Nothing changed.',
   unknownNotice: 'Could not confirm whether this was applied. It may have landed.',
   busy: 'The approved change is being carried out',
+  confirmationNeeded: 'Check the confirmation above first',
+  details: 'Technical details',
 };
 
 export interface ProposalCardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
@@ -141,6 +172,25 @@ export interface ProposalCardProps extends Omit<HTMLAttributes<HTMLElement>, 'ti
   changesHeading?: ReactNode;
   /** The consequence, in one sentence, under the list. */
   note?: ReactNode;
+  /**
+   * The precise request behind the change (a method, a path, a body) for a
+   * reader who wants it: a collapsed `Disclosure` at the foot of the body,
+   * above the note, titled `labels.details`, whose content mounts only once
+   * it is opened. Never where the change itself is said: the list is.
+   */
+  details?: ReactNode;
+  /** `default`, or `danger` for a change that removes or discards something; see `ProposalTone`. */
+  tone?: ProposalTone | undefined;
+  /**
+   * A checkbox above the decision that the person ticks before the primary
+   * can be pressed. Until then the primary is held soft disabled and
+   * described by `labels.confirmationNeeded`, as `approveBlocked` holds it.
+   * The tick belongs to the proposal it was given for: it clears when the
+   * card settles, and when the card is handed a different proposal (another
+   * `title` or `approveLabel`) in place. Drawn while the card waits on the
+   * person and while the approved change is carried out.
+   */
+  confirmation?: ProposalConfirmation | undefined;
   /** The primary action, named for its effect: "Apply to this list", "Create task". Never a bare "OK". */
   approveLabel: string;
   /**
@@ -206,6 +256,17 @@ export interface ProposalCardProps extends Omit<HTMLAttributes<HTMLElement>, 'ti
 }
 
 const SETTLED: ReadonlySet<ProposalState> = new Set(['applied', 'declined', 'expired', 'stale', 'failed']);
+
+/**
+ * HOW LONG A PRIMARY THAT HAS JUST APPEARED IGNORES THE POINTER. A card that
+ * replaces another can put its primary exactly where the last one's was,
+ * under a pointer that is still there, and the second press of a double click
+ * (or a press already on its way) landed on the new card's Approve. 500ms is
+ * the platform's default double-click interval (Windows and macOS alike), so
+ * no press meant for what stood there before reaches the new primary, and it
+ * is well under the time a reader takes to read the title it acts on.
+ */
+const ARMING_MS = 500;
 
 function statusOf(
   state: ProposalState,
@@ -276,6 +337,20 @@ function headingOf(state: ProposalState, kind: ProposalKind, labels: ProposalCar
  * "NOTHING CHANGED." ONLY WHEN IT IS TRUE. A failure whose outcome nobody
  * could confirm (`failureOutcome="unknown"`) may have landed, so the card
  * says "Not confirmed" and never adds the reassurance.
+ *
+ * A DESTRUCTIVE CHANGE LOOKS LIKE ONE (`tone="danger"`): the danger rail down
+ * the leading edge, the title in the danger ink and the danger primary. The
+ * colour only adds weight; the title, the summary and the confirmation say
+ * what is lost in words. With `confirmation`, the primary waits on a ticked
+ * checkbox, so the decision is a deliberate act rather than a single press.
+ *
+ * A PRIMARY THAT HAS JUST APPEARED IS NOT YET UNDER THE POINTER. For half a
+ * second after the card arrives (or returns to a decision) its primary takes
+ * no pointer, so a press meant for the card it replaced cannot approve this
+ * one. The keyboard is never held.
+ *
+ * THE PRECISE REQUEST IS THERE, FOLDED (`details`): a compact disclosure,
+ * collapsed by default, for a reader who wants the method, path and body.
  */
 export function ProposalCard({
   title,
@@ -287,6 +362,9 @@ export function ProposalCard({
   changes,
   changesHeading,
   note,
+  details,
+  tone = 'default',
+  confirmation,
   approveLabel,
   onApprove,
   onDecline,
@@ -339,6 +417,41 @@ export function ProposalCard({
   const deciding = state === 'pending' || state === 'stepup';
   const blocked = deciding && approveBlocked ? approveBlocked : undefined;
   const refusal = deciding ? decisionRefusal : undefined;
+  // The danger tone is the weight of a decision still to be made or being
+  // carried out; a settled card steps back with the rest of its body.
+  const danger = tone === 'danger' && !settled;
+
+  // WHICH PROPOSAL THIS IS, as far as the card can tell: a host that hands
+  // the same card a different proposal in place (rather than keying it) gives
+  // it another action or another primary, and neither the tick nor the
+  // arming below may carry over to it.
+  const identity = `${title}\u0000${approveLabel}`;
+
+  // THE TICK BELONGS TO ONE PROPOSAL, and clears once the card settles, so a
+  // card prepared again starts unticked.
+  const [tickedFor, setTickedFor] = useState<string | undefined>(undefined);
+  if (settled && tickedFor !== undefined) setTickedFor(undefined);
+  const unconfirmed =
+    deciding && confirmation !== undefined && tickedFor !== identity ? labels.confirmationNeeded : undefined;
+
+  // THE PRIMARY ARMS A MOMENT AFTER IT APPEARS (see ARMING_MS): when the
+  // card arrives, when it is handed another proposal, and when it comes back
+  // to a decision (a step-up, a refused approval). Until then it takes no
+  // pointer, so it neither shows a hover nor answers a press from a pointer
+  // that was already resting there. It still takes focus and the keyboard,
+  // which can only reach it on purpose, and it is never drawn as disabled.
+  const armKey = deciding ? `${state}\u0000${identity}` : undefined;
+  const [arm, setArm] = useState({ key: armKey, armed: false });
+  if (arm.key !== armKey) setArm({ key: armKey, armed: false });
+  useEffect(() => {
+    if (armKey === undefined) return;
+    const timer = setTimeout(
+      () => setArm((current) => (current.key === armKey ? { key: armKey, armed: true } : current)),
+      ARMING_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [armKey]);
+  const arming = armKey !== undefined && !(arm.key === armKey && arm.armed);
 
   const decision =
     deciding || state === 'applying' ? (
@@ -365,6 +478,17 @@ export function ProposalCard({
             {blocked}
           </p>
         )}
+        {confirmation === undefined ? null : (
+          <Checkbox
+            className="crewlet-proposal-card__confirmation"
+            size="sm"
+            tone={danger ? 'danger' : 'default'}
+            label={confirmation.label}
+            checked={tickedFor === identity}
+            disabled={state === 'applying'}
+            onCheckedChange={(checked) => setTickedFor(checked ? identity : undefined)}
+          />
+        )}
         <Button
           variant="secondary"
           onClick={onDecline}
@@ -372,7 +496,14 @@ export function ProposalCard({
         >
           {labels.decline}
         </Button>
-        <Button variant="primary" loading={state === 'applying'} disabledReason={blocked} onClick={onApprove}>
+        <Button
+          variant={danger ? 'danger' : 'primary'}
+          className="crewlet-proposal-card__approve"
+          loading={state === 'applying'}
+          disabledReason={blocked ?? unconfirmed}
+          data-arming={arming || undefined}
+          onClick={onApprove}
+        >
           {state === 'stepup' ? labels.confirmIdentity : approveLabel}
         </Button>
       </>
@@ -435,8 +566,15 @@ export function ProposalCard({
       strip={strip}
       actions={decision ?? again}
       actionsAlign={decision ? 'end' : 'start'}
-      className={cx('crewlet-proposal-card', `crewlet-proposal-card--${state}`, className)}
+      rail={danger ? 'danger' : undefined}
+      className={cx(
+        'crewlet-proposal-card',
+        `crewlet-proposal-card--${state}`,
+        danger && 'crewlet-proposal-card--danger',
+        className,
+      )}
       data-state={state}
+      data-tone={danger ? 'danger' : undefined}
       data-outcome={state === 'failed' ? failureOutcome : undefined}
     >
       {summary === undefined || summary === null ? null : <p className="crewlet-proposal-card__summary">{summary}</p>}
@@ -447,6 +585,11 @@ export function ProposalCard({
         labels={changeLabels}
         diffLabels={diffLabels}
       />
+      {details === undefined || details === null ? null : (
+        <Disclosure className="crewlet-proposal-card__details" title={labels.details} size="compact" lazy>
+          {details}
+        </Disclosure>
+      )}
       {note === undefined || note === null ? null : <p className="crewlet-proposal-card__note">{note}</p>}
     </StatusCard>
   );
