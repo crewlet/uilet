@@ -116,7 +116,11 @@ export const Rail: Story = {
     <div style={{ display: 'flex', height: '24rem' }}>
       <div style={{ flex: 1 }} />
       <PeekRail label="Task detail" onClose={() => {}} onStep={() => {}} openHref="#/work/ENG-12" onWidthChange={() => {}}>
-        <Text>ENG-12</Text>
+        {/* The body sets no top inset, since a record brings its own; this
+            one stands off the bar the way the frame stories' records do. */}
+        <Stack gap={2} style={{ paddingTop: 'var(--spacing-4)' }}>
+          <Text>ENG-12</Text>
+        </Stack>
       </PeekRail>
     </div>
   ),

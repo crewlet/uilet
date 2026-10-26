@@ -99,12 +99,31 @@
   max-width: var(--size-measure);
 }
 
+/* CENTRED ON THE TITLE'S LINE, as PageHeader's and ObjectHeader's actions
+   are. On the row's baseline the button's label sat on the title's, which put
+   the button's box 2.5px under the title's middle. */
 .crewlet-section__actions {
   display: flex;
   align-items: center;
+  align-self: center;
   gap: var(--spacing-2);
   flex: none;
   margin-inline-start: auto;
+}
+
+/*
+ * AND THE TITLE'S LINE IS AT LEAST A CONTROL TALL BESIDE THEM. Centring puts
+ * the actions on the row's middle, while the title, held on its sentence's
+ * baseline, stands at the row's top. Where the control is the taller of the
+ * two, the title's middle sat over the button's: by 2.5px in a side panel,
+ * which heads its sections at the small step (a 21px line beside a 26px
+ * button), and by 1.6px at comfortable density (a 27px line beside a 30px
+ * button). The line box takes the small control step instead, so the title is
+ * centred in it, the sentence keeps its baseline, and the header is no taller
+ * than the control already made it. Empty actions leave the title alone.
+ */
+.crewlet-section__header:has(> .crewlet-section__actions:not(:empty)) > .crewlet-section__title {
+  line-height: max(var(--font-line-height-normal) * 1em, var(--size-control-sm));
 }
 
 /* A titled band lays its header and its content out as a column. */

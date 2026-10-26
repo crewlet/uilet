@@ -10,9 +10,18 @@
  * leaves the content the largest thing on the page.
  */
 
+/*
+ * THE ACTIONS STAND ON THE TITLE'S LINE, as ObjectHeader's do: aligned to the
+ * block's foot they sat 25.5px under the title's middle and 3px over the
+ * sentence's, level with neither. The actions take one title line's band and
+ * centre in it (below), so a sentence or a wrapped title under it moves
+ * nothing.
+ */
 .crewlet-page-header {
+  --crewlet-page-header-title-line: calc(var(--font-size-xl) * var(--font-line-height-normal));
+
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-3);
   flex-wrap: wrap;
@@ -93,4 +102,5 @@
   align-items: center;
   gap: var(--spacing-1);
   flex-wrap: wrap;
+  min-height: var(--crewlet-page-header-title-line);
 }

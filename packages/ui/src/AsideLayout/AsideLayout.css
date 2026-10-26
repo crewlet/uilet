@@ -9,10 +9,12 @@
 }
 
 .crewlet-aside-layout__columns {
+  --crewlet-aside-layout-gap: var(--spacing-7);
+
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: var(--spacing-7);
+  gap: var(--crewlet-aside-layout-gap);
 }
 
 /* EACH COLUMN IS A STACK one step apart, so the blocks in it stand apart
@@ -26,9 +28,11 @@
 }
 
 /* FOLLOWING THE MAIN COLUMN, the aside is set off by one hairline, so its
-   facts read as about the page rather than as more of it. */
+   facts read as about the page rather than as more of it. The hairline sits
+   midway: the aside takes the gap's own step under it, where the stack's
+   smaller step left it 32px under the main column and 24px over the aside. */
 .crewlet-aside-layout__aside {
-  padding-top: var(--spacing-6);
+  padding-top: var(--crewlet-aside-layout-gap);
   border-top: 1px solid var(--color-border-default);
 }
 

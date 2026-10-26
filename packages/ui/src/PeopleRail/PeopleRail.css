@@ -26,6 +26,13 @@
   gap: var(--spacing-2);
 }
 
+/* THE CLOSE GLYPH ENDS WHERE THE ROWS DO. Pulled out by the glyph's own inset
+   in its button, as a dialog's close is: by its box it stood 7px inside the
+   line the Follow buttons under it end on. */
+.crewlet-people-rail__head > .crewlet-icon-btn {
+  margin-inline-end: calc((var(--size-control-sm) - var(--font-size-xs)) / -2);
+}
+
 .crewlet-people-rail__title {
   margin: 0;
   color: var(--color-text-primary);
@@ -42,9 +49,12 @@
   list-style: none;
 }
 
+/* THE BADGE AND THE CONTROLS SIT ON THE NAME'S LINE, never centred on the
+   row: when what a person is doing ran to a second line, the badge and Follow
+   stood 19.5px under the name they belong to, level with nothing. */
 .crewlet-people-rail__person {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-2);
   min-width: 0;
 }
