@@ -61,8 +61,10 @@
 }
 
 .crewlet-source-editor__number {
-  /* Wide enough for the longest number, so the text never shifts as lines are added. */
-  min-width: calc(var(--crewlet-source-digits, 2) * 1ch + var(--spacing-2) * 2);
+  /* Wide enough for the longest number, so the text never shifts as lines are
+     added, and never narrower than two digits: at one, a new file's text moved
+     1ch to the right the moment its tenth line was typed. */
+  min-width: calc(max(2, var(--crewlet-source-digits, 2)) * 1ch + var(--spacing-2) * 2);
   padding: 0 var(--spacing-2);
   text-align: right;
   font-variant-numeric: tabular-nums;

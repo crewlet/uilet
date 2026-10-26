@@ -69,6 +69,13 @@
   border-inline-start: 1px solid var(--color-border-default);
 }
 
+/* A group that starts a line of a wrapped bar draws none (MarkdownEditor.tsx
+   marks it), since there it would part the group from nothing. Only the ink
+   goes: the group keeps its width, so the bar breaks where it did. */
+.crewlet-markdown-editor__group[data-wrapped] {
+  border-inline-start-color: transparent;
+}
+
 .crewlet-markdown-editor__spacer {
   flex: 1;
 }
@@ -128,12 +135,15 @@
   color: var(--color-text-tertiary);
 }
 
+/* The strip's words start on the source's text edge, the field's and the
+   preview's side inset, so the count reads as the foot of the text above it
+   rather than 4px out of line with it. */
 .crewlet-markdown-editor__footer {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-1) var(--spacing-3);
-  padding: var(--spacing-1) var(--spacing-3);
+  padding: var(--spacing-1) var(--spacing-4);
   border-block-start: 1px solid var(--color-border-default);
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;

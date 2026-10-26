@@ -13,13 +13,19 @@
   min-width: 0;
 }
 
-/* The list's name in the outline's register, with Add at its end. */
+/*
+ * The list's name in the outline's register, with Add at its end. Add stands
+ * in the rows' menu track, inset by the half step a row insets its controls
+ * by, so the plus and every row's menu are one column; at the head's edge it
+ * stood 2px outside them.
+ */
 .crewlet-doc-tabs-editor__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-2);
   min-height: var(--size-control-sm);
+  padding-inline-end: calc(var(--spacing-1) / 2);
 }
 
 .crewlet-doc-tabs-editor__heading {
@@ -84,6 +90,16 @@
 
 .crewlet-doc-tabs-editor__item[data-reorder='dragging'] > * {
   opacity: 0.4;
+}
+
+/*
+ * THE ROW'S CONTROLS TAKE THE TITLE'S CORNER, the row's own less the half
+ * step it insets them by, so the handle's and the menu's fills nest in the
+ * row's as the title's does. At the button's own corner they were eight
+ * pixels inside an eight-pixel row two pixels in.
+ */
+.crewlet-doc-tabs-editor__item .crewlet-icon-btn {
+  border-radius: var(--radius-sm);
 }
 
 .crewlet-doc-tabs-editor__handle {

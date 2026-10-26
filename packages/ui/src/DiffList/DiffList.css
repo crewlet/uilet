@@ -49,9 +49,19 @@
   color: var(--color-feedback-warning-ink);
 }
 
+/*
+ * THE MARK STANDS ON THE PATH'S FIRST LINE, in a box that line's height with
+ * the glyph centred in it. Baseline-aligned with the words, a box holding
+ * only a glyph takes the glyph's foot as its baseline, so the glyph stood on
+ * the text's baseline: 3px over the middle of the line it marks, and 2px
+ * over the line box, which made every row 2px taller than the half step it
+ * is drawn on.
+ */
 .crewlet-diff-list__mark {
   display: inline-flex;
   align-items: center;
+  align-self: start;
+  height: 1lh;
   /* The glyph carries the row's own ink, so the mark and its words read as
      one thing rather than as a grey icon beside coloured text. */
   color: inherit;

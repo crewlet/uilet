@@ -243,6 +243,31 @@ export function MarkdownEditor({
     }
   };
 
+  // A GROUP THAT WRAPS STARTS ITS LINE WITHOUT ITS RULE. The hairline that
+  // parts a group from the one before it is drawn on the group's own start
+  // edge, so on a bar narrow enough to wrap (a phone's) it stood alone at the
+  // start of the second line and parted the group from nothing. Each group is
+  // measured against the one before it whenever the bar or a group changes
+  // size, and one that starts a line is marked for the stylesheet.
+  const groups = useRef<(HTMLSpanElement | null)[]>([]);
+  const hasActions = actions !== undefined;
+  useLayoutEffect(() => {
+    const spans = groups.current.filter((span): span is HTMLSpanElement => span !== null);
+    const bar = spans[0]?.parentElement;
+    if (!bar || spans.length < 2 || typeof ResizeObserver === 'undefined') return undefined;
+    const mark = () => {
+      spans.forEach((span, index) => {
+        const previous = spans[index - 1];
+        const wrapped = previous !== undefined && span.getBoundingClientRect().top >= previous.getBoundingClientRect().bottom;
+        span.toggleAttribute('data-wrapped', wrapped);
+      });
+    };
+    const observer = new ResizeObserver(mark);
+    observer.observe(bar);
+    for (const span of spans) observer.observe(span);
+    return () => observer.disconnect();
+  }, [hasActions]);
+
   const writing = mode === 'write';
   return (
     <div
@@ -256,7 +281,13 @@ export function MarkdownEditor({
     >
       <Toolbar label={text.toolbar} className="crewlet-markdown-editor__bar">
         {GROUPS.map((group, index) => (
-          <span key={index} className="crewlet-markdown-editor__group">
+          <span
+            key={index}
+            ref={(span) => {
+              groups.current[index] = span;
+            }}
+            className="crewlet-markdown-editor__group"
+          >
             {group.map((format) => (
               <IconButton
                 key={format}
@@ -273,7 +304,16 @@ export function MarkdownEditor({
             ))}
           </span>
         ))}
-        {actions && <span className="crewlet-markdown-editor__group">{actions(editor)}</span>}
+        {actions && (
+          <span
+            ref={(span) => {
+              groups.current[GROUPS.length] = span;
+            }}
+            className="crewlet-markdown-editor__group"
+          >
+            {actions(editor)}
+          </span>
+        )}
         <span className="crewlet-markdown-editor__spacer" />
         <SegmentedControl
           semantics="tabs"
