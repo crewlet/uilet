@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import {
   ClockGlyph,
   CoinsGlyph,
@@ -171,6 +171,44 @@ export const OneLongRow: Story = {
 };
 
 /**
+ * ONE DENSITY, SCOPED TO ONE RAIL, for a story that draws all three side by
+ * side.
+ *
+ * The token layer declares every spacing and size step on the root as
+ * `calc(Npx * var(--density, 1))`, and a custom property is computed where it
+ * is declared: a --density set on a rail's box reaches nothing under it, and
+ * this story drew the normal rail three times under three headings. The box
+ * re-declares each step the root writes in terms of --density, read from the
+ * loaded stylesheets rather than copied out of them, so each one resolves
+ * against the box's own setting. The same helper lives in Card.stories.tsx;
+ * a shared home beside themeScope.ts is the next step.
+ */
+function densityScope(step: keyof typeof density): CSSProperties {
+  const scope: Record<string, string> = { '--density': density[step] };
+  const read = (rules: CSSRuleList) => {
+    for (const rule of Array.from(rules)) {
+      if (rule instanceof CSSStyleRule && rule.selectorText === ':root') {
+        for (const name of Array.from(rule.style)) {
+          const value = rule.style.getPropertyValue(name).trim();
+          if (name.startsWith('--') && value.includes('var(--density')) scope[name] = value;
+        }
+      } else if (rule instanceof CSSGroupingRule) {
+        read(rule.cssRules);
+      }
+    }
+  };
+  for (const sheet of Array.from(document.styleSheets)) {
+    // A stylesheet from another origin keeps its rules to itself.
+    try {
+      read(sheet.cssRules);
+    } catch {
+      continue;
+    }
+  }
+  return scope as CSSProperties;
+}
+
+/**
  * Every state a row can be in, at all three densities, side by side.
  *
  * The rail is chrome: it is read at a glance, and what has to be legible at a
@@ -194,12 +232,11 @@ export const EveryRowState: Story = {
         <div
           key={step}
           /*
-           * --density is what the token layer's own density.css sets from
-           * data-density on the ROOT, so three densities on one page set the
-           * variable directly and read its value from the tokens rather than
-           * copying three numbers out of them.
+           * The token layer sets --density from data-density on the ROOT, so
+           * three densities on one page scope the density-scaled steps to each
+           * rail's box (see densityScope) rather than copy their numbers.
            */
-          style={{ flex: '1 1 0', minWidth: 0, ['--density' as string]: density[step] }}
+          style={{ flex: '1 1 0', minWidth: 0, ...densityScope(step) }}
         >
           <div
             style={{

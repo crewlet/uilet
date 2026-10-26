@@ -16,8 +16,23 @@ const meta: Meta<typeof Breadcrumb> = {
   title: 'UI/Breadcrumb',
   component: Breadcrumb,
   decorators: [
+    /*
+     * The frame clips, because it resizes, so it pads its start by the room a
+     * crumb's focus ring takes past the trail's edge (a bar's own inset gives
+     * the same room in an application).
+     */
     (Story) => (
-      <div style={{ display: 'flex', alignItems: 'center', minHeight: 52, maxWidth: 640, resize: 'horizontal', overflow: 'hidden' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          minHeight: 52,
+          maxWidth: 640,
+          paddingInlineStart: 'var(--spacing-1)',
+          resize: 'horizontal',
+          overflow: 'hidden',
+        }}
+      >
         <Story />
       </div>
     ),

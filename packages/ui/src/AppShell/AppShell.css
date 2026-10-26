@@ -379,7 +379,13 @@
   line-height: var(--font-line-height-tight);
 }
 
-.crewlet-app-shell__rail-row--action:not(.crewlet-app-shell__rail-row--block) > .crewlet-app-shell__rail-row-icon {
+/* A dropped control's LEADING mark slot takes the same column: a button's own
+   slot hugs its mark, which stood the engine's 7px dot 3.5px left of the
+   glyph column and its words 7px left of "Settings". Its first child only,
+   because a trailing icon shares the class and ends on the row's end. */
+.crewlet-app-shell__rail-row--action:not(.crewlet-app-shell__rail-row--block) > .crewlet-app-shell__rail-row-icon,
+.crewlet-app-shell__rail-foot > .crewlet-btn > .crewlet-btn__icon:first-child {
+  justify-content: center;
   min-width: 14px;
 }
 
@@ -537,6 +543,15 @@
 .crewlet-app-shell__rail-row--block .crewlet-app-shell__rail-row-label {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
+}
+
+/* The block's mark stands beside its FIRST line, the state it marks. Centred
+   on the whole block it sat beside the detail line, 19px under the words it
+   belongs to once a value wrapped under them. One line box tall at the
+   block's leading, so the dot centres on that line. */
+.crewlet-app-shell__rail-row--block > .crewlet-app-shell__rail-row-icon {
+  align-self: flex-start;
+  height: 1lh;
 }
 
 .crewlet-app-shell__rail-row-detail {
@@ -981,6 +996,11 @@
   gap: var(--spacing-2);
   min-width: 0;
   padding: var(--spacing-1);
+  /* The badge stands 6px in from the row's start, as it does in the rail's
+     foot (see below): a step in, a badge's ring (1.5px, 2px out) stood half a
+     pixel off the row's hover fill and its current hairline, and read as
+     touching them. */
+  padding-inline-start: calc(var(--spacing-1) + var(--spacing-1) / 2);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   text-decoration: none;
