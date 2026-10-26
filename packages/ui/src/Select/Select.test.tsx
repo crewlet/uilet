@@ -506,9 +506,10 @@ function stubGeometry({ trigger, panel }: { trigger: DOMRect; panel: DOMRect }) 
   const real = Element.prototype.getBoundingClientRect;
   Element.prototype.getBoundingClientRect = function () {
     if (this.classList.contains('crewlet-select__menu')) return boxes.panel;
-    // The measured anchor is the trigger BUTTON, not the root: `position()`
-    // reads `trigger.current`, and that ref is on the control itself.
-    if (this.classList.contains('crewlet-select__trigger')) return boxes.trigger;
+    // The measured anchor is the FRAME, the bordered root a reader sees as
+    // the field, not the button inside its boundary: `position()` reads
+    // `frame.current`, so a panel matching its field matches it edge to edge.
+    if (this.classList.contains('crewlet-select')) return boxes.trigger;
     return real.call(this);
   };
   return Object.assign(

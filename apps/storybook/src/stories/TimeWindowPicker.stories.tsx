@@ -17,7 +17,8 @@ function Demo(props: Partial<React.ComponentProps<typeof TimeWindowPicker>>) {
   return (
     <div style={{ width: 320, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <TimeWindowPicker value={value} onChange={setValue} defaultValue={DEFAULT} {...props} />
-      <pre style={{ fontSize: 12, margin: 0 }}>
+      {/* Wrapped, so the readout stays inside the demo's column at a phone's width. */}
+      <pre style={{ fontSize: 12, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
         {JSON.stringify(
           { value, spoken: describeTimeWindow(value).spoken, resolved: resolveTimeWindow(value) },
           null,

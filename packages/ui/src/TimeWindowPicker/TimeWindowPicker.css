@@ -30,7 +30,8 @@
 
 .crewlet-time-window--sm {
   min-height: var(--size-control-sm);
-  padding: 0 var(--spacing-2);
+  /* The chevron one step inside the leading inset: see DateTimePicker's. */
+  padding: 0 var(--spacing-1) 0 var(--spacing-2);
   font-size: var(--font-size-xs);
 }
 
@@ -252,11 +253,23 @@ svg.crewlet-time-window__tick {
   min-width: 0;
 }
 
+/*
+ * THE MONTH IS CENTRED OVER ITS GRID. One end of each head holds the step
+ * button and the other an empty slot, and spread along a flex row the title
+ * was centred in the room the button left: 13px off the grid's middle, away
+ * from the button. Two equal outer columns put it on the grid's own centre
+ * line whatever the button measures.
+ */
 .crewlet-time-window__calendar-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: var(--spacing-1);
+}
+
+/* The next-month button, in the last column, stands at the grid's far edge. */
+.crewlet-time-window__calendar-head > :last-child {
+  justify-self: end;
 }
 
 .crewlet-time-window__calendar-title {
@@ -302,7 +315,12 @@ svg.crewlet-time-window__tick {
 .crewlet-time-window__masked {
   display: inline-flex;
   align-items: center;
-  flex: 1;
+  /*
+   * FROM ITS OWN WIDTH, then an equal share of what is left. An equal share
+   * of the whole row (`flex: 1`) gave the date and the time one width, and
+   * the date is two characters longer: it lost its last digit to the clip.
+   */
+  flex: 1 1 auto;
   min-width: 0;
   min-height: var(--size-control-sm);
   padding: 0 var(--spacing-2);

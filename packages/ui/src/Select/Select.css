@@ -23,6 +23,14 @@
    */
   --crewlet-select-auto-min-width: 132px;
   --crewlet-select-auto-max-width: 220px;
+  /*
+   * WHERE THE CHEVRON STANDS, read by the chevron and by the room the trigger
+   * keeps for it, so the two cannot drift apart. The inset is a spacing step
+   * (one step inside the value's own, see below); the glyph is the `sm`
+   * glyph's 14px box, which density does not scale.
+   */
+  --crewlet-select-chevron-inset: var(--spacing-2);
+  --crewlet-select-chevron-size: 14px;
 
   position: relative;
   display: inline-flex;
@@ -38,7 +46,16 @@
   transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
+/*
+ * THE CHEVRON STANDS ONE STEP INSIDE THE VALUE'S INSET, at every size: its
+ * glyph carries 3.5px of side bearing, so 8px against the default size's
+ * 12px puts its ink 12.5px from the edge, level with the value's 13px. The
+ * small size kept the 8px against its own 8px inset, and a quiet picker in a
+ * toolbar stood 9px from its word and 12.5px past its chevron.
+ */
 .crewlet-select--sm {
+  --crewlet-select-chevron-inset: var(--spacing-1);
+
   min-height: var(--size-control-sm);
 }
 
@@ -174,16 +191,23 @@
   color: inherit;
   text-align: left;
   padding: 0 var(--spacing-3);
-  /* Room for the chevron, which sits over the control rather than beside it:
-     its own inset twice over, plus the glyph. */
-  padding-right: var(--spacing-6);
+  /*
+   * Room for the chevron, which sits over the control rather than beside it:
+   * its inset, its glyph and half a step to the words. The glyph is added as
+   * a length rather than folded into a spacing step, because a step scales
+   * with density and the glyph does not: as one step (24px), compact density
+   * left the words 2.6px from the chevron's ink, against 5.5px at the default.
+   */
+  padding-right: calc(
+    var(--crewlet-select-chevron-inset) + var(--crewlet-select-chevron-size) + var(--spacing-1) / 2
+  );
 }
 
+/* The leading inset only: the trailing one is the chevron's room, above. */
 .crewlet-select--sm .crewlet-select__native,
 .crewlet-select--sm .crewlet-select__trigger {
   font-size: var(--font-size-xs);
-  padding: 0 var(--spacing-2);
-  padding-right: var(--spacing-6);
+  padding-left: var(--spacing-2);
 }
 
 .crewlet-select__native:disabled,
@@ -223,7 +247,7 @@
  */
 svg.crewlet-select__chevron {
   position: absolute;
-  right: var(--spacing-2);
+  right: var(--crewlet-select-chevron-inset);
   pointer-events: none;
   color: var(--color-text-muted);
 }
@@ -447,11 +471,17 @@ svg.crewlet-select__chevron {
   outline-color: var(--color-border-selected);
 }
 
+/*
+ * INSET AS THE ROWS UNDER IT ARE: the list's own padding plus a row's, so the
+ * glyph stands in the column the ticks and group headings start on and the
+ * query starts where the option labels do. At a row's inset alone both stood
+ * 4px left of the list they filter.
+ */
 .crewlet-select__search {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-3);
+  padding: var(--spacing-2) calc(var(--spacing-1) + var(--spacing-3));
   border-bottom: 1px solid var(--color-border-default);
   color: var(--color-text-tertiary);
   flex: none;

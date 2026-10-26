@@ -10,6 +10,14 @@
   --crewlet-choice-list-radio-size: 13px;
   /* The step between two answers. Every row's pointer target reaches half of it. */
   --crewlet-choice-list-gap: var(--spacing-1);
+  /*
+   * A row's corner, and the corner its open panel ends on. A row stands 5px
+   * inside the box's 8px corner (the hairline and the padding), where a
+   * concentric corner is 3px, so it takes the extra-small step, as a Select's
+   * options and a Combobox's completions do in the same box. At the small
+   * step (6px) a chosen row's fill was rounder than the corner around it.
+   */
+  --crewlet-choice-list-row-radius: var(--radius-xs);
   display: grid;
   gap: var(--crewlet-choice-list-gap);
   padding: var(--spacing-1);
@@ -47,7 +55,7 @@
   align-items: start;
   gap: var(--spacing-3);
   padding: var(--spacing-2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--crewlet-choice-list-row-radius);
   cursor: pointer;
   transition: background-color var(--motion-duration-fast) var(--motion-easing-default);
 }
@@ -182,8 +190,8 @@
 
 .crewlet-choice-list__panel {
   padding: var(--spacing-1) var(--spacing-2) var(--spacing-3) calc(var(--spacing-2) + var(--crewlet-choice-list-radio-size) + var(--spacing-3));
-  border-end-start-radius: var(--radius-sm);
-  border-end-end-radius: var(--radius-sm);
+  border-end-start-radius: var(--crewlet-choice-list-row-radius);
+  border-end-end-radius: var(--crewlet-choice-list-row-radius);
   background: var(--color-surface-selected);
 }
 

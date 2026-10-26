@@ -242,7 +242,8 @@ export const Native: Story = {
     function Native() {
       const [role, setRole] = useState<SelectValue | SelectValue[] | undefined>('');
       return (
-        <div style={{ display: 'flex', gap: 12, width: 480 }}>
+        // Centred rather than stretched, so the small control keeps its own height.
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: 480 }}>
           <Select
             mode="native"
             ariaLabel="Role"
