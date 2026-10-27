@@ -196,11 +196,22 @@ const durationOf = (toast: Pick<Toast, 'variant' | 'duration' | 'title' | 'messa
   // UNSET IS undefined OR null: a caller in plain JavaScript, or one passing
   // a field it read from somewhere, means "the default" by either.
   const given = toast.duration ?? null;
-  if (given !== null) return given;
+  if (given !== null) return timerSafe(given);
   const variant = toast.variant ?? 'info';
   if (!isKnown(variant) || !GOES_BY_ITSELF[variant]) return 0;
   return readingDuration(readable(toast).join(' '));
 };
+
+/** The longest delay a browser's timer holds: past it, setTimeout fires at once. */
+const MAX_TIMER_MS = 2 ** 31 - 1;
+
+/**
+ * A duration a timer can count down. One that is not a finite number
+ * (`Infinity` for "never") is sticky, and a finite one past the longest delay
+ * a timer holds is that delay: both used to overflow setTimeout, which fires
+ * at once, so a toast meant to stay went the moment it was drawn.
+ */
+const timerSafe = (ms: number): number => (Number.isFinite(ms) ? Math.min(ms, MAX_TIMER_MS) : 0);
 
 /**
  * The text a toast is read by: its title and message where each is a string.

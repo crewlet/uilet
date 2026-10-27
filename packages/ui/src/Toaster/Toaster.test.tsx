@@ -215,6 +215,33 @@ describe('Toaster', () => {
     expect(onDismiss).toHaveBeenCalledWith(1);
   });
 
+  // A DURATION NO TIMER CAN HOLD NEVER DISMISSES AT ONCE. setTimeout fires
+  // immediately for a delay past 2^31-1 ms, Infinity included, so a toast
+  // meant to stay went the moment it was drawn. Infinity (and anything not a
+  // finite number) is sticky; a finite one past the bound is the bound.
+  test('a duration past what a timer holds stays, or waits the longest a timer can', () => {
+    vi.useFakeTimers();
+    const onDismiss = vi.fn();
+    render(
+      <Toaster
+        toasts={[
+          { id: 1, variant: 'success', message: 'Never', duration: Infinity },
+          { id: 2, variant: 'success', message: 'Not a number', duration: Number.NaN },
+          { id: 3, variant: 'success', message: 'Very long', duration: 2 ** 32 },
+        ]}
+        onDismiss={onDismiss}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(2 ** 31 - 2);
+    });
+    expect(onDismiss).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onDismiss.mock.calls).toEqual([[3]]);
+  });
+
   test('a warning and a failure stay until they are dismissed', () => {
     vi.useFakeTimers();
     const onDismiss = vi.fn();
