@@ -205,6 +205,16 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.72.0
+
+**`BriefCard` says whether the reader has anything to do, once, and says the rest in fewer lines.** The head's Tag is the verdict, derived from the rows: "Nothing needs you" in the success tone, or "1 thing needs you", "2 things need you" in the tone of the loudest row (danger when any row is danger, otherwise warning). The body no longer repeats it as "Nothing needs you." under a "Needs you" label. One line says what the page is about (`about`, which wraps anywhere, so a URL, a branch or a hash stays inside the card). The rows are ranked and the first is the recommendation, with the primary button, marked "Do first" on the accent's softest ground when there are two or more rows to rank; the separate recommendation that used to repeat it is gone. A quiet `context` line under the rows holds a fact to know, and the follow-ups are a list named "Ask next". THE HOST RANKS AND CAPS: the card draws at most `BRIEF_CARD_MAX_NEEDS` (3) rows and `BRIEF_CARD_MAX_FOLLOW_UPS` (2) follow-ups, and outside production it warns in the console when handed more, because a row it drops is one the verdict does not count. To move:
+
+- Rename `summary` to `about`: one line on what the page or record is about right now.
+- Remove `recommended`, and put the step it named first in `needs`. `BriefCardRecommendation` and the `recommended` and `clear` labels are gone; `labels.first` ("Do first") is new, and `labels.needs` is now the list's accessible name rather than a visible heading.
+- A row's `tone` is `warning` or `danger`. `neutral` is gone: a row is something to do, and a fact to know goes in the new `context` prop.
+- Pass at most two `followUps`; a third is no longer drawn.
+- The CSS classes `crewlet-brief-card__summary`, `__block`, `__label`, `__clear`, `__next` and `__arrow` are gone; `__about`, `__need--first`, `__first` and `__context` are new.
+
 ## Changes in 0.71.0
 
 **A toast that goes by itself stays as long as it takes to read.** An `info` or `success` toast with no `duration` used to go after a fixed four seconds, which fits a title and nothing longer: a thirty-word sentence went before its second line was read. It now stays two seconds plus 300 ms a word of its string `title` and `message`, never less than four seconds and never more than fifteen; a toast whose words are not strings stays four. Words are counted by the runtime's word segmentation (`Intl.Segmenter`), so Japanese or Chinese written without spaces is counted in its words rather than as one. A `warning`, a `danger` and a variant of your own that names no duration still stay until they are dismissed, and a `duration` you pass is still yours (`null` reads as unset, as `undefined` does). An update in place that changes a toast's words moves its end by the difference and keeps the time already shown; only a new `version` restarts the countdown. `readingDuration(text)` is the same rule, exported for a host that sizes something else to a toast's lifetime. Nothing to change unless a test advances a fake clock by four seconds past a long toast: advance it by `readingDuration` of that toast's words instead.

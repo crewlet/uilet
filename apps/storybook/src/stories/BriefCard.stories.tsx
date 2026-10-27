@@ -2,46 +2,36 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { BriefCard } from '@crewlethq/ui';
 
 /**
- * A brief, as the assistant's answer card: one sentence, at most three rows
- * that wait on the reader with one press each, one recommended next step, and
- * the questions to ask next. Nothing waiting is said in words.
+ * A brief, as the assistant's answer card: the verdict in the head, one line
+ * on what the page is about, and at most three ranked things to do, the first
+ * marked as the one to do first. Nothing waiting is said once, in the head.
  */
 const meta: Meta<typeof BriefCard> = {
   title: 'UI/BriefCard',
   component: BriefCard,
   decorators: [(Story) => <div style={{ maxWidth: 420 }}>{Story()}</div>],
   args: {
-    scope: 'Inbox',
+    scope: 'Home',
     asOf: 'Just now',
-    summary: '7 decisions and 4 unread updates; PM stopped on its daily budget at 3 pm.',
+    about: 'GOP-4 waits on your answer and 2 agents are stopped on their budgets.',
     needs: [
       {
-        key: 'pm',
-        text: 'PM is stopped on its daily budget',
-        detail: '4.0M of 4.0M tokens, resets at midnight',
+        key: 'gop-4',
+        text: 'Answer GOP-4: how backend PRs prove fail-before, pass-after',
+        detail: 'Asked 9 hours ago, blocks the merge',
+        action: { label: 'Open GOP-4', onSelect: () => {} },
+      },
+      {
+        key: 'backend',
+        text: "Raise Senior Backend Engineer's daily budget",
+        detail: 'Stopped 9 hours ago',
         tone: 'danger',
-        action: { label: 'Open budgets', onSelect: () => {} },
-      },
-      {
-        key: 'gop-8',
-        text: 'GOP-8 asks for the Plus price',
-        detail: 'Blocks GOP-9 and both store listings, 2 days old',
-        action: { label: 'Answer', onSelect: () => {} },
-      },
-      {
-        key: 'gop-11',
-        text: 'QA asks which build to test on GOP-11',
-        detail: 'Asked 2 hours ago',
-        action: { label: 'Answer', onSelect: () => {} },
+        action: { label: 'Open the agent', onSelect: () => {} },
       },
     ],
-    recommended: {
-      text: 'Answer GOP-8 first: two tasks wait on it.',
-      action: { label: 'Open GOP-8', onSelect: () => {} },
-    },
     followUps: [
-      { key: 'budget', question: 'Why is PM out of budget so early?', onSelect: () => {} },
-      { key: 'blocks', question: 'Which decision blocks the most work?', onSelect: () => {} },
+      { key: 'budget', question: 'Why did the budget run out so early?', onSelect: () => {} },
+      { key: 'blocks', question: 'What else is blocked on GOP-4?', onSelect: () => {} },
     ],
   },
 };
@@ -49,31 +39,103 @@ const meta: Meta<typeof BriefCard> = {
 export default meta;
 type Story = StoryObj<typeof BriefCard>;
 
-export const Page: Story = {};
+/** Two things need the reader: the first is the one to do first, with the primary press. */
+export const TwoNeeds: Story = {};
 
-/** A brief of one record: the decision open in the Inbox, its ask and its task. */
-export const OneRecord: Story = {
+/** Nothing needs the reader: the head says so once, and the body is what the page is about. */
+export const NothingNeedsYou: Story = {
   args: {
-    scope: 'Decision on GOP-11',
-    summary: 'QA asks whether to test the store build or the nightly; the beta ships Thursday.',
-    needs: [
-      {
-        key: 'ask',
-        text: 'QA waits on your answer',
-        detail: 'Asked 2 hours ago on GOP-11',
-        action: { label: 'Answer', onSelect: () => {} },
-      },
-    ],
-    recommended: { text: 'Test the store build: the nightly carries the Android 12 crash.' },
-    followUps: [{ key: 'crash', question: 'What happens if I hold the beta?', onSelect: () => {} }],
+    scope: 'Inbox',
+    about: 'Inbox: 8 open decisions, every one asked of someone else.',
+    needs: [],
+    followUps: [{ key: 'blocked', question: 'Which of these blocks the most work?', onSelect: () => {} }],
   },
 };
 
-export const NothingNeedsYou: Story = {
+/** A brief of one record, with one fact from elsewhere that bears on what to do. */
+export const OneRecordWithContext: Story = {
   args: {
-    summary: '5 agents working, 2 tasks closed today, spend at 41% of the week.',
-    needs: [],
-    recommended: null,
-    followUps: [{ key: 'shipped', question: 'What shipped this week?', onSelect: () => {} }],
+    scope: 'Decision GOP-11',
+    about: 'QA asks whether to test the store build or the nightly.',
+    needs: [
+      {
+        key: 'gop-11',
+        text: 'Answer GOP-11: test the store build',
+        detail: 'Asked 2 hours ago',
+        action: { label: 'Open GOP-11', onSelect: () => {} },
+      },
+    ],
+    context: 'The nightly carries the Android 12 crash, and the beta ships Thursday.',
+    followUps: [],
+  },
+};
+
+/** Three rows, the cap: ranked, the first marked to do first. */
+export const ThreeNeeds: Story = {
+  args: {
+    about: 'Three decisions wait on you before Thursday’s beta.',
+    needs: [
+      {
+        key: 'gop-8',
+        text: 'Answer GOP-8: set the Plus price',
+        detail: 'Blocks GOP-9 and both store listings',
+        action: { label: 'Open GOP-8', onSelect: () => {} },
+      },
+      {
+        key: 'gop-11',
+        text: 'Answer GOP-11: which build QA tests',
+        detail: 'Asked 2 hours ago',
+        action: { label: 'Open GOP-11', onSelect: () => {} },
+      },
+      {
+        key: 'gop-14',
+        text: 'Review GOP-14: the store listing copy',
+        detail: 'Waiting since yesterday',
+        action: { label: 'Open GOP-14', onSelect: () => {} },
+      },
+    ],
+    followUps: [],
+  },
+};
+
+/** A stopped agent ranked first: the row and the verdict in the head are both danger. */
+export const DangerFirst: Story = {
+  args: {
+    about: 'PM stopped on its daily budget, and GOP-11 waits on your answer.',
+    needs: [
+      {
+        key: 'pm',
+        text: "Raise PM's daily budget",
+        detail: 'Stopped at 3 pm, resets at midnight',
+        tone: 'danger',
+        action: { label: 'Open the agent', onSelect: () => {} },
+      },
+      {
+        key: 'gop-11',
+        text: 'Answer GOP-11: which build QA tests',
+        detail: 'Asked 2 hours ago',
+        action: { label: 'Open GOP-11', onSelect: () => {} },
+      },
+    ],
+    followUps: [{ key: 'budget', question: 'Why did PM run out so early?', onSelect: () => {} }],
+  },
+};
+
+/** Words with no break in them (a URL, a branch, a hash) wrap inside the card rather than spill out of it. */
+export const LongText: Story = {
+  args: {
+    scope: 'Decision GOP-27',
+    about:
+      'QA asks whether https://builds.example.com/android/release-candidates/2026-10-27/build-8f3a9c2e1b7d4f60 is the one to test.',
+    needs: [
+      {
+        key: 'gop-27',
+        text: 'Answer GOP-27: test feature/store-listing-copy-and-screenshots-for-the-autumn-release',
+        detail: 'Commit 8f3a9c2e1b7d4f6012ab34cd56ef7890a1b2c3d4',
+        action: { label: 'Open GOP-27', onSelect: () => {} },
+      },
+    ],
+    context: 'The review window opens tomorrow at 09:00, and the signing key is due back the same morning.',
+    followUps: [],
   },
 };
