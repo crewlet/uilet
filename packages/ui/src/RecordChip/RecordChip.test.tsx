@@ -7,6 +7,9 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
 import { RecordChip, RecordChipList } from "./index.js";
 
@@ -154,4 +157,20 @@ test("a label chip is named by its label alone, even where the label says more t
   expect(
     screen.getByRole("button", { name: "Decisions waiting on you (8)" }),
   ).toBeTruthy();
+});
+
+test("a chip stands at its line's top, so a key's mono text never pushes the line taller", () => {
+  // MEASURED IN CHROME, which jsdom cannot lay out: on the baseline a GOP-11
+  // chip's 12px mono key under the parent's absolute 17.5px leading sat a
+  // pixel off and made its line 20.5px; at the top it is 19.5px in 19.5px.
+  const css = readFileSync(
+    resolve(dirname(fileURLToPath(import.meta.url)), "RecordChip.css"),
+    "utf8",
+  );
+  const rule = css.slice(
+    css.indexOf(".crewlet-record-chip {"),
+    css.indexOf("}", css.indexOf(".crewlet-record-chip {")),
+  );
+  expect(rule).toMatch(/vertical-align: top;/);
+  expect(rule).toMatch(/line-height: calc\(1lh - 2px\);/);
 });

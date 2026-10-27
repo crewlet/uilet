@@ -86,7 +86,9 @@ export const AlsoRead: Story = {
 /**
  * At the document's own leading (not the relaxed step the sentence story
  * uses): a chip is exactly one line tall, so the lines it sits on keep their
- * rhythm with the lines it does not.
+ * rhythm with the lines it does not. The key chip (GOP-11, mono at the micro
+ * step) is the case that moved a line when the chip stood on the baseline;
+ * it stands at the line's top.
  */
 export const AtNormalLeading: Story = {
   decorators: [

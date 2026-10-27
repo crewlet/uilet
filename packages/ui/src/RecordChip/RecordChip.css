@@ -23,7 +23,14 @@
    * moved every line it sat on by a pixel.
    */
   line-height: calc(1lh - 2px);
-  vertical-align: baseline;
+  /*
+   * TOP, NOT BASELINE: a key chip's text is mono at the micro step under the
+   * parent's absolute leading, and on the baseline it sat about a pixel off
+   * its neighbours' and pushed its line to 20.5px. At the line's top it is
+   * the line's own height (19.5px in a 19.5px line) with the key within half
+   * a pixel of the surrounding baseline.
+   */
+  vertical-align: top;
   cursor: pointer;
   transition:
     background var(--motion-duration-fast) var(--motion-easing-default),
