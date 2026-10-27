@@ -216,3 +216,28 @@
     transition: none;
   }
 }
+
+/*
+ * COLUMNS SIZED BY THEIR WORDS (`columns="content"`), for a result read
+ * beside an answer. Each column takes the room its words ask for, so a short
+ * key keeps its line and the longest text takes the most and wraps between
+ * words; a word wider than the table still breaks rather than overflow. The
+ * figures (`end` columns) never wrap, and stay tabular.
+ */
+.crewlet-table--content .crewlet-table__table {
+  table-layout: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-table--content td {
+  overflow-wrap: break-word;
+}
+
+.crewlet-table--content .crewlet-table__cell--end {
+  white-space: nowrap;
+}
+
+/* A column of short tokens (a task's key) keeps each on one line. */
+.crewlet-table__cell--nowrap {
+  white-space: nowrap;
+}

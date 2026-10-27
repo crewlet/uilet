@@ -1,0 +1,161 @@
+/*
+ * A record inside a sentence. The text's own size on the text's own
+ * baseline, so a line holding one is no taller than a line without: a quiet
+ * hairline, the inset ground, and the key in mono.
+ */
+.crewlet-record-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  max-width: 100%;
+  margin: 0 1px;
+  padding: 0 var(--spacing-1);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-inset);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-snug);
+  vertical-align: baseline;
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-record-chip:hover,
+.crewlet-record-chip[data-open] {
+  border-color: var(--color-border-hover);
+  background: var(--color-surface-hover);
+}
+
+/* The chip draws its own hairline, so the ring lands on it rather than standing off it. */
+.crewlet-record-chip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-record-chip--code .crewlet-record-chip__text {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-record-chip__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-record-chip__glyph {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+/* THE PEEK: a name, a few facts and the way to it, at the panel's own inset. */
+.crewlet-popover.crewlet-record-chip__peek {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  max-height: min(420px, 70vh);
+  padding: var(--spacing-3);
+  font-size: var(--font-size-compact);
+  color: var(--color-text-primary);
+}
+
+.crewlet-record-chip__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.crewlet-record-chip__head-glyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 1lh;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-record-chip__head-words {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crewlet-record-chip__name {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-normal);
+}
+
+.crewlet-record-chip__name-code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-record-chip__meta {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-record-chip__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/* Utilities start on the text edge, a ghost button's padding pulled into the gutter. */
+.crewlet-record-chip__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-inline-start: calc(-1 * (var(--spacing-2) + 1px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-record-chip {
+    transition: none;
+  }
+}
+
+/* THE ALSO READ LINE: a caption-register lead and the chips after it, wrapping. */
+.crewlet-record-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1) var(--spacing-2);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-record-chip-list__label {
+  flex: none;
+}
+
+.crewlet-record-chip-list__items {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-record-chip-list__item {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.crewlet-record-chip-list .crewlet-record-chip {
+  margin: 0;
+}

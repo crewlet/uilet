@@ -126,3 +126,22 @@ export const WithATotalRow: Story = {
     footer: ['Total', '7,840,000', '100%'],
   },
 };
+
+/**
+ * Columns sized by their words, as a result read beside an answer wants: the
+ * key column never wraps, the question wraps between words, and the figures
+ * keep their line.
+ */
+export const SizedByWords: Story = {
+  args: {
+    headers: ['Task', 'Question', 'Asked'],
+    data: [
+      ['GOP-11', 'Ship the beta with the known Android 12 audio crash, or hold the release?', '6 hours ago'],
+      ['GOP-10', 'Which sign-in methods ship in the beta?', '20 hours ago'],
+    ],
+    align: ['start', 'start', 'end'],
+    columns: 'content',
+    nowrap: [true, false, false],
+  },
+  decorators: [(Story) => <div style={{ maxWidth: 420 }}>{Story()}</div>],
+};

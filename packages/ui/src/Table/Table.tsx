@@ -72,6 +72,18 @@ export interface TableProps {
    * the right answer for the handful of rows this component is for.
    */
   maxHeight?: string;
+  /**
+   * How the columns share the width. `even` (the default) is the grid's
+   * equal columns. `content` gives each column the room its words ask for, as
+   * a result read beside an answer wants: a short key keeps its line, a
+   * sentence wraps between words, and the figures (`end` columns) never wrap.
+   */
+  columns?: 'even' | 'content' | undefined;
+  /**
+   * Columns whose cells never wrap, by index: a short token such as a task's
+   * key ("GOP-11"), which a line would otherwise break at its hyphen.
+   */
+  nowrap?: readonly boolean[] | undefined;
   className?: string;
 }
 
@@ -86,12 +98,23 @@ export const Table = ({
   align,
   footer,
   framed = true,
+  columns = 'even',
+  nowrap,
   className = '',
 }: TableProps) => {
   const columnCount = Math.max(1, headers.length);
-  const edge = (index: number) => (align?.[index] === 'end' ? 'crewlet-table__cell--end' : undefined);
+  const edge = (index: number) =>
+    cx(align?.[index] === 'end' && 'crewlet-table__cell--end', nowrap?.[index] === true && 'crewlet-table__cell--nowrap') ||
+    undefined;
   return (
-    <div className={cx('crewlet-table', !framed && 'crewlet-table--flush', className)}>
+    <div
+      className={cx(
+        'crewlet-table',
+        !framed && 'crewlet-table--flush',
+        columns === 'content' && 'crewlet-table--content',
+        className,
+      )}
+    >
       {/*
         * The scroller, as a safety net rather than a reading mode: the table
         * lays out fixed and wraps anywhere, so its columns share the width

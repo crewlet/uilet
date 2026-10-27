@@ -127,3 +127,24 @@ test('a total row heads itself, a figure column stands at the end, and a flush t
   expect(container.querySelectorAll('.crewlet-table__cell--end').length).toBe(3);
   expect(container.querySelector('th.crewlet-table__cell--end')!.textContent).toBe('Tokens');
 });
+
+test('columns sized by their words, and a column of keys that never wraps', () => {
+  const { container } = render(
+    <Table
+      headers={['Task', 'Question']}
+      data={[['GOP-11', 'Ship the beta, or hold the release?']]}
+      columns='content'
+      nowrap={[true, false]}
+    />,
+  );
+  expect(container.querySelector('.crewlet-table')!.classList.contains('crewlet-table--content')).toBe(true);
+  const cells = container.querySelectorAll('td');
+  expect(cells[0]!.classList.contains('crewlet-table__cell--nowrap')).toBe(true);
+  expect(cells[1]!.classList.contains('crewlet-table__cell--nowrap')).toBe(false);
+});
+
+test('even columns by default, and no column held to one line', () => {
+  const { container } = render(<Table headers={['A']} data={[['x']]} />);
+  expect(container.querySelector('.crewlet-table--content')).toBeNull();
+  expect(container.querySelector('.crewlet-table__cell--nowrap')).toBeNull();
+});
