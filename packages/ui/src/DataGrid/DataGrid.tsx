@@ -12,7 +12,7 @@ import {
   type Ref,
 } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
-import { ChevronDownGlyph, ChevronUpGlyph } from '@crewlethq/icons/glyphs';
+import { ArrowDownGlyph, ArrowUpDownGlyph, ArrowUpGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { Checkbox } from '../Checkbox/index.js';
 import { EmptyState } from '../EmptyState/index.js';
@@ -27,6 +27,17 @@ import { cx } from '../utils/cx.js';
  */
 export type DataGridActivationEvent = ReactMouseEvent | ReactKeyboardEvent | KeyboardEvent;
 
+/** The edge a column's head and values share. */
+export type DataGridAlign = 'left' | 'right' | 'center';
+
+/** The track an `icon` column is drawn in: the target size and the cell's inset either side. */
+export const DATA_GRID_ICON_TRACK = 'calc(var(--size-target-min) + var(--spacing-3) * 2)';
+
+/** The edge a column is drawn on: `center` for an icon column unless it says otherwise. */
+function alignOf<T>(column: DataGridColumn<T>): DataGridAlign {
+  return column.align ?? (column.icon ? 'center' : 'left');
+}
+
 /** One column of a [DataGrid]. */
 export interface DataGridColumn<T> {
   key: string;
@@ -34,7 +45,23 @@ export interface DataGridColumn<T> {
   cell: (row: T) => ReactNode;
   /** The value sorted on. Omit to make the column unsortable. */
   sortValue?: ((row: T) => string | number | null | undefined) | undefined;
-  align?: 'left' | 'right' | undefined;
+  /**
+   * Which edge the column's values and its head share: `left` (the default)
+   * for words, `right` for figures, times and dates (their digits are
+   * tabular, so a column of them reads down one edge), `center` for a column
+   * of one mark per row. The head and every cell take the same edge and the
+   * same inset, so a head never stands off the values it names.
+   */
+  align?: DataGridAlign | undefined;
+  /**
+   * A column of ONE MARK per row (a glyph, a face, a priority): a fixed track
+   * (`DATA_GRID_ICON_TRACK`, the target size and the cell's inset either
+   * side), its head and every cell centred. A run of such columns then reads
+   * as aligned columns rather than marks scattered at their content's width.
+   * Name it with `label`, which the head says to assistive technology and
+   * shows on hover.
+   */
+  icon?: boolean | undefined;
   /**
    * The column's name where `header` cannot carry one: a glyph head, or none
    * at all. Drawn by the card layout a grid takes on a phone, where every value
@@ -244,7 +271,10 @@ const SELECT_COLUMN = 'crewlet-select';
 export interface DataGridHandle {
   /** Moves the cursor row by `by` rows, clamped, and scrolls it into view. */
   step: (by: number) => void;
-  /** Activates the cursor row, as a click on it would. False when there is none. */
+  /**
+   * Activates the cursor row, as a click on it would: its `onRowActivate`, or
+   * where it has none, its `rowHref` link. False when there is neither.
+   */
   activate: (event: ReactKeyboardEvent | KeyboardEvent) => boolean;
   /** How many rows the grid draws, its bands' rows included. */
   rowCount: () => number;
@@ -278,7 +308,16 @@ export interface DataGridProps<T> {
    * Controlled, so an application keeps it where it keeps state (an address).
    */
   sort?: string | undefined;
-  /** A sortable head pressed: ascending, then descending, then unsorted. */
+  /**
+   * The order the rows take while `sort` is empty (`key` or `-key`), drawn on
+   * its column's head as the sort in force. Empty for the rows' own order.
+   */
+  defaultSort?: string | undefined;
+  /**
+   * A sortable head pressed: ascending, then descending, then back to the
+   * default. Called with `''` for the default, never with `defaultSort`
+   * itself, so an address holds the reader's choice and nothing else.
+   */
   onSortChange?: ((sort: string) => void) | undefined;
   /** The rows arrive ordered by their source (a paged answer ordered over the whole set). */
   serverSorted?: boolean | undefined;
@@ -319,6 +358,29 @@ export interface DataGridProps<T> {
 export function parseGridSort(raw: string): { key: string; desc: boolean } | null {
   if (!raw) return null;
   return raw.startsWith('-') ? { key: raw.slice(1), desc: true } : { key: raw, desc: false };
+}
+
+/**
+ * The sort a press on a column's head asks for: ascending, then descending,
+ * then back to the default. PURE, so the cycle is held without a render.
+ *
+ * Against the EFFECTIVE sort (the reader's, else the default), because a head
+ * that reads "descending" must take its next press as one more step from
+ * descending, whoever chose it. Two rules keep every press a visible change:
+ *
+ * - a column already at its DEFAULT descending turns ascending, where the
+ *   cycle's "back to the default" would have changed nothing;
+ * - a step that lands on the default is written as `''`, so the address holds
+ *   only what the reader chose and the default can change under it.
+ */
+export function nextGridSort(column: string, sort: string, defaultSort = ''): string {
+  const chosen = sort === defaultSort ? '' : sort;
+  const current = parseGridSort(chosen || defaultSort);
+  let next: string;
+  if (current?.key !== column) next = column;
+  else if (!current.desc) next = `-${column}`;
+  else next = chosen ? '' : column;
+  return next === defaultSort ? '' : next;
 }
 
 /** A head that is a word, or nothing. */
@@ -464,7 +526,7 @@ export function squeezed<T>(
   let headCut = false;
   for (let i = 0; i < visible.length; i++) {
     const column = visible[i]!;
-    if (!column.shrink || column.width) continue;
+    if (!column.shrink || column.width || column.icon) continue;
     const head = heads[i + leading];
     if (!head || head.getBoundingClientRect().width >= cap) continue;
     if (cutShort(head)) headCut = true;
@@ -537,6 +599,7 @@ export function DataGrid<T>({
   selection,
   isFailed,
   sort: sortRaw = '',
+  defaultSort = '',
   onSortChange,
   serverSorted = false,
   cols: colsRaw = '',
@@ -555,7 +618,8 @@ export function DataGrid<T>({
   className,
 }: DataGridProps<T>) {
   const text: DataGridLabels = { ...LABELS, ...labels };
-  const sort = parseGridSort(sortRaw);
+  // THE SORT IN FORCE: the reader's, else the default the rows arrive in.
+  const sort = parseGridSort(sortRaw || defaultSort);
   const body = useRef<HTMLDivElement>(null);
   const [cursor, setCursor] = useState(-1);
   const gridId = useId();
@@ -685,7 +749,7 @@ export function DataGrid<T>({
         ),
         action: true,
         phoneLead: true,
-        width: 'calc(var(--size-target-min) + var(--spacing-3) * 2)',
+        width: DATA_GRID_ICON_TRACK,
       }
     : null;
   // WHAT IS DRAWN: the selection column, then the columns that fit. The fit
@@ -734,10 +798,31 @@ export function DataGrid<T>({
           body.current?.querySelector<HTMLElement>(`[data-row-index="${next}"]`)?.scrollIntoView({ block: 'nearest' });
           return next;
         }),
+      // THE ROW'S OWN WAY IN, from the keyboard: its handler where it has
+      // one, else its link, followed as a click on it would be (with the
+      // keys held, so a modified Enter opens it elsewhere as a modified
+      // click does). A grid of links only had no Enter at all.
       activate: (event) => {
         const row = flat[cursor];
-        if (row === undefined || !onRowActivate) return false;
-        onRowActivate(row, event);
+        if (row === undefined) return false;
+        if (onRowActivate) {
+          onRowActivate(row, event);
+          return true;
+        }
+        const link = body.current?.querySelector<HTMLAnchorElement>(
+          `[data-row-index="${cursor}"] > .crewlet-data-grid__cell > a.crewlet-data-grid__row-link`,
+        );
+        if (!link) return false;
+        link.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            metaKey: event.metaKey,
+            ctrlKey: event.ctrlKey,
+            shiftKey: event.shiftKey,
+            altKey: event.altKey,
+          }),
+        );
         return true;
       },
       rowCount: () => flat.length,
@@ -747,13 +832,15 @@ export function DataGrid<T>({
 
   function headerClick(column: DataGridColumn<T>): void {
     if (!column.sortValue || !onSortChange) return;
-    if (sort?.key === column.key && !sort.desc) onSortChange(`-${column.key}`);
-    else if (sort?.key === column.key && sort.desc) onSortChange('');
-    else onSortChange(column.key);
+    onSortChange(nextGridSort(column.key, sortRaw, defaultSort));
   }
 
   const template = drawnColumns
-    .map((c) => c.width ?? (c.shrink ? `fit-content(${SHRINK_CAP})` : `minmax(${c.floor ?? 0}, 1fr)`))
+    .map(
+      (c) =>
+        c.width ??
+        (c.icon ? DATA_GRID_ICON_TRACK : c.shrink ? `fit-content(${SHRINK_CAP})` : `minmax(${c.floor ?? 0}, 1fr)`),
+    )
     .join(' ');
 
   // A GROUPED ANSWER WITH NO ROWS ON THIS PAGE IS NOT AN EMPTY ANSWER: a band
@@ -818,7 +905,8 @@ export function DataGrid<T>({
         role="cell"
         className={cx(
           'crewlet-data-grid__cell',
-          column.align === 'right' && 'crewlet-data-grid__cell--right',
+          alignOf(column) !== 'left' && `crewlet-data-grid__cell--${alignOf(column)}`,
+          column.icon && 'crewlet-data-grid__cell--icon',
           column.shrink && 'crewlet-data-grid__cell--shrink',
         )}
         data-lead={column.phoneLead || undefined}
@@ -898,24 +986,45 @@ export function DataGrid<T>({
           const sortable = Boolean(column.sortValue && onSortChange);
           const headClass = cx(
             'crewlet-data-grid__th',
-            column.align === 'right' && 'crewlet-data-grid__th--right',
+            alignOf(column) !== 'left' && `crewlet-data-grid__th--${alignOf(column)}`,
+            column.icon && 'crewlet-data-grid__th--icon',
             column.shrink && 'crewlet-data-grid__th--shrink',
             sorted && 'crewlet-data-grid__th--sorted',
             !sortable && 'crewlet-data-grid__th--plain',
           );
-          const content = (
-            <>
-              <span className="crewlet-data-grid__truncate">{column.header}</span>
-              {sorted && (sort?.desc ? <ChevronDownGlyph size="xs" /> : <ChevronUpGlyph size="xs" />)}
-            </>
+          // A HEAD WITH NO WORD DRAWS NO WORD BOX: an empty box and its gap
+          // would push a sortable mark column's arrow off the track's middle.
+          const worded = column.header !== '' && column.header !== null && column.header !== undefined;
+          const label = worded ? <span className="crewlet-data-grid__truncate">{column.header}</span> : null;
+          // THE ARROW SAYS THE ORDER. The sorted head's names its direction;
+          // every other SORTABLE head draws the two-way arrow, shown on hover
+          // and focus, so a head says it sorts before it is pressed. Hidden
+          // from assistive technology, which hears `aria-sort` instead.
+          const arrow = sorted ? (
+            sort?.desc ? (
+              <ArrowDownGlyph size="xs" />
+            ) : (
+              <ArrowUpGlyph size="xs" />
+            )
+          ) : sortable ? (
+            <ArrowUpDownGlyph size="xs" />
+          ) : null;
+          const ariaSort = sorted ? (sort?.desc ? 'descending' : 'ascending') : undefined;
+          const mark = arrow && (
+            <span className="crewlet-data-grid__sort-mark" aria-hidden="true">
+              {arrow}
+            </span>
           );
           // A COLUMN THAT CANNOT BE SORTED IS NOT A BUTTON, and a glyph head is
           // still a named column: its `label`, said and shown on hover.
           if (!sortable) {
             const named = !headerWord(column) && !column.action ? column.label : undefined;
             return (
-              <div key={column.key} className={headClass} role="columnheader" title={named}>
-                {content}
+              // THE ORDER IN FORCE IS SAID on a head that cannot change it too:
+              // a grid sorted by its default, with nothing to press.
+              <div key={column.key} className={headClass} role="columnheader" title={named} aria-sort={ariaSort}>
+                {label}
+                {mark}
                 {named && <VisuallyHidden>{named}</VisuallyHidden>}
               </div>
             );
@@ -928,7 +1037,7 @@ export function DataGrid<T>({
               key={column.key}
               className={headClass}
               role="columnheader"
-              aria-sort={sorted ? (sort?.desc ? 'descending' : 'ascending') : undefined}
+              aria-sort={ariaSort}
             >
               <button
                 type="button"
@@ -937,7 +1046,8 @@ export function DataGrid<T>({
                 // A SORTABLE GLYPH HEAD IS NAMED BY ITS LABEL, never by its arrow alone.
                 aria-label={headerWord(column) ? undefined : column.label}
               >
-                {content}
+                {label}
+                {mark}
               </button>
             </div>
           );
