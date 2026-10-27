@@ -179,8 +179,31 @@ const READ_CAP_MS = 15000;
  * lifetime, never to pass back as `duration`, which an unset one already is.
  */
 export function readingDuration(text: string): number {
-  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const words = wordsIn(text);
   return Math.min(READ_CAP_MS, Math.max(READ_FLOOR_MS, READ_LEAD_MS + words * READ_MS_PER_WORD));
+}
+
+/** The one word segmenter, made on first use; null where the runtime has none. */
+let segmenter: Intl.Segmenter | null | undefined;
+
+/**
+ * How many words text holds, by the runtime's own word segmentation, so a
+ * script written without spaces is counted in its words: a sixty-character
+ * Japanese sentence is some thirty words, where splitting on spaces called it
+ * one and gave it the floor. A runtime with no segmenter splits on spaces.
+ */
+function wordsIn(text: string): number {
+  if (segmenter === undefined) {
+    segmenter = typeof Intl !== 'undefined' && 'Segmenter' in Intl
+      ? new Intl.Segmenter(undefined, { granularity: 'word' })
+      : null;
+  }
+  if (segmenter === null) return text.trim().split(/\s+/).filter(Boolean).length;
+  let words = 0;
+  for (const part of segmenter.segment(text)) {
+    if (part.isWordLike) words += 1;
+  }
+  return words;
 }
 
 const KNOWN = new Set<string>(['info', 'success', 'warning', 'danger']);

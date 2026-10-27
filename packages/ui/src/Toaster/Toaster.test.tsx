@@ -287,6 +287,25 @@ describe('Toaster', () => {
     expect(onDismiss).toHaveBeenCalledWith(2);
   });
 
+  // A SCRIPT WRITTEN WITHOUT SPACES IS COUNTED IN ITS WORDS. Splitting on
+  // spaces called a whole Japanese or Chinese sentence one word and gave it
+  // the floor. Read at about 500 characters a minute (Japanese) and 400
+  // (Chinese), these take about seven and eight seconds after the two to
+  // notice them; the segmented count gives them about nine and a half and
+  // nine, a little generous, and inside the cap.
+  test('a sentence written without spaces stays as long as its words take to read', () => {
+    const ja =
+      '締め切りの日付は時刻を持たないため、ロサンゼルスの暦でその瞬間が当たる日として二〇二六年三月四日に保存されました。';
+    const zh = '截止日期只保存日期而不保存时间，所以它被保存为该时刻在洛杉矶日历中所在的那一天，即二〇二六年三月四日。';
+    for (const sentence of [ja, zh]) {
+      const ms = readingDuration(sentence);
+      expect(ms).toBeGreaterThanOrEqual(8000);
+      expect(ms).toBeLessThan(15000);
+    }
+    // Spaced text is counted as before.
+    expect(readingDuration('one two three four five six seven')).toBe(4100);
+  });
+
   test('a warning and a failure stay until they are dismissed', () => {
     vi.useFakeTimers();
     const onDismiss = vi.fn();
