@@ -114,13 +114,13 @@ const ALIGNED: DataGridColumn<Task>[] = [
     key: 'status',
     header: 'Status',
     shrink: true,
-    // A VALUE CHOSEN IN PLACE: the menu's trigger is flush, so the pill starts
+    // A VALUE CHOSEN IN PLACE: the menu's trigger is the value, so the pill starts
     // on the column's line with the head and every plain value.
     cell: (t) => (
       <Menu
         label={`Status of ${t.key}`}
         trigger={<Tag size="sm">{t.status}</Tag>}
-        triggerFlush
+        valueTrigger
         items={[{ key: 'done', label: 'Done', onSelect: () => {} }]}
       />
     ),
@@ -159,7 +159,7 @@ function Aligned() {
  * inset: words on the left, times on the right with tabular digits so "4m ago"
  * and "12m ago" end together, and an `icon` column (Type) centred in a fixed
  * track and named for assistive technology. The status picker's trigger is
- * flush (`triggerFlush`), so its pill starts on the head's line.
+ * the value (`valueTrigger`), so its pill starts on the head's line.
  */
 export const AlignedColumns: Story = { render: () => <Aligned /> };
 

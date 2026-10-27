@@ -286,3 +286,15 @@
     animation: none;
   }
 }
+
+/*
+ * A TRIGGER THAT IS THE VALUE it changes (`valueTrigger`): the surrounding
+ * text's size, weight and ink, not a button label's, so a writer's row reads
+ * as a reader's. Its start is Button's `flush`. Raised over the button's own
+ * size and variant rules, which carry one class each.
+ */
+.crewlet-menu-anchor > .crewlet-btn.crewlet-menu__value-trigger {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}

@@ -624,3 +624,30 @@ describe('the selection column', () => {
     expect(heads).toHaveLength(COLUMNS.length + 1);
   });
 });
+
+// A GRID OF LINKS takes Enter too: with no handler, the handle follows the
+// cursor row's own link as a click would, the held keys included, so a
+// modified Enter opens it elsewhere. Such a grid had no Enter at all.
+test('the handle follows a row that only links, as a click on it would', () => {
+  const handle = createRef<DataGridHandle>();
+  const { container } = render(
+    <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} rowHref={(r) => `#/x/${r.id}`} handleRef={handle} />,
+  );
+  Element.prototype.scrollIntoView = vi.fn();
+  const clicks: { href: string | null; meta: boolean }[] = [];
+  container.addEventListener('click', (event) => {
+    const link = (event.target as Element).closest('a');
+    clicks.push({ href: link?.getAttribute('href') ?? null, meta: event.metaKey });
+    event.preventDefault();
+  });
+  // No cursor yet: nothing to follow.
+  expect(handle.current!.activate(new KeyboardEvent('keydown'))).toBe(false);
+  act(() => handle.current!.step(1));
+  let followed = false;
+  act(() => {
+    followed = handle.current!.activate(new KeyboardEvent('keydown', { metaKey: true }));
+  });
+  expect(followed).toBe(true);
+  // The first step lands on the first row.
+  expect(clicks).toEqual([{ href: '#/x/a', meta: true }]);
+});

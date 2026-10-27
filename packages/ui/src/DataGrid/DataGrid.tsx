@@ -271,7 +271,10 @@ const SELECT_COLUMN = 'crewlet-select';
 export interface DataGridHandle {
   /** Moves the cursor row by `by` rows, clamped, and scrolls it into view. */
   step: (by: number) => void;
-  /** Activates the cursor row, as a click on it would. False when there is none. */
+  /**
+   * Activates the cursor row, as a click on it would: its `onRowActivate`, or
+   * where it has none, its `rowHref` link. False when there is neither.
+   */
   activate: (event: ReactKeyboardEvent | KeyboardEvent) => boolean;
   /** How many rows the grid draws, its bands' rows included. */
   rowCount: () => number;
@@ -795,10 +798,31 @@ export function DataGrid<T>({
           body.current?.querySelector<HTMLElement>(`[data-row-index="${next}"]`)?.scrollIntoView({ block: 'nearest' });
           return next;
         }),
+      // THE ROW'S OWN WAY IN, from the keyboard: its handler where it has
+      // one, else its link, followed as a click on it would be (with the
+      // keys held, so a modified Enter opens it elsewhere as a modified
+      // click does). A grid of links only had no Enter at all.
       activate: (event) => {
         const row = flat[cursor];
-        if (row === undefined || !onRowActivate) return false;
-        onRowActivate(row, event);
+        if (row === undefined) return false;
+        if (onRowActivate) {
+          onRowActivate(row, event);
+          return true;
+        }
+        const link = body.current?.querySelector<HTMLAnchorElement>(
+          `[data-row-index="${cursor}"] > .crewlet-data-grid__cell > a.crewlet-data-grid__row-link`,
+        );
+        if (!link) return false;
+        link.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            metaKey: event.metaKey,
+            ctrlKey: event.ctrlKey,
+            shiftKey: event.shiftKey,
+            altKey: event.altKey,
+          }),
+        );
         return true;
       },
       rowCount: () => flat.length,
