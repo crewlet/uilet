@@ -81,6 +81,32 @@ test('the host ranks and caps: more than three rows or two follow-ups are cut, a
   warn.mockRestore();
 });
 
+test('a re-render with the same counts does not warn again, and a new count over the cap does', () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const four = ['a', 'b', 'c', 'd'].map((k) => need(k));
+  const { rerender } = render(<BriefCard about="s" needs={four} />);
+  rerender(<BriefCard about="s" needs={[...four]} />);
+  rerender(<BriefCard about="s" needs={[...four]} context="c" />);
+  expect(warn).toHaveBeenCalledTimes(1);
+  rerender(<BriefCard about="s" needs={[...four, need('e')]} />);
+  expect(warn).toHaveBeenCalledTimes(2);
+  expect(String(warn.mock.calls[1]?.[0])).toContain('5 needs');
+  warn.mockRestore();
+});
+
+test('a host with no process warns about nothing rather than throwing', () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.stubGlobal('process', undefined);
+  try {
+    render(<BriefCard about="s" needs={['a', 'b', 'c', 'd'].map((k) => need(k))} />);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+  expect(screen.getAllByRole('listitem')).toHaveLength(3);
+  expect(warn).not.toHaveBeenCalled();
+  warn.mockRestore();
+});
+
 test('a brief within its caps warns about nothing', () => {
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   render(<BriefCard about="s" needs={['a', 'b', 'c'].map((k) => need(k))} />);

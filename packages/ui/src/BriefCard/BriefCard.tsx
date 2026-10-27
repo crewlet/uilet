@@ -1,4 +1,4 @@
-import { type HTMLAttributes, type ReactNode } from 'react';
+import { useEffect, type HTMLAttributes, type ReactNode } from 'react';
 import { CircleCheckGlyph, MessageCircleQuestionMarkGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { StatusCard } from '../StatusCard/index.js';
@@ -126,21 +126,25 @@ export function BriefCard({
   ...rest
 }: BriefCardProps) {
   const labels = overrides ? { ...BRIEF_CARD_LABELS, ...overrides } : BRIEF_CARD_LABELS;
-  if (process.env.NODE_ENV !== 'production') {
-    // The host ranks and caps (BRIEF_CARD_MAX_NEEDS, BRIEF_CARD_MAX_FOLLOW_UPS):
-    // a row cut here is one the reader is never told about, so say so where a
-    // developer will see it rather than drop it in silence.
-    if (needs.length > BRIEF_CARD_MAX_NEEDS) {
+  const handedNeeds = needs.length;
+  const handedFollowUps = followUps?.length ?? 0;
+  // The host ranks and caps (BRIEF_CARD_MAX_NEEDS, BRIEF_CARD_MAX_FOLLOW_UPS):
+  // a row cut here is one the reader is never told about, so say so where a
+  // developer will see it rather than drop it in silence. Once per change of
+  // the counts, not once per render.
+  useEffect(() => {
+    if (!developing()) return;
+    if (handedNeeds > BRIEF_CARD_MAX_NEEDS) {
       console.warn(
-        `[crewlet] BriefCard was handed ${needs.length} needs and draws the first ${BRIEF_CARD_MAX_NEEDS}: rank and cap them before passing them.`,
+        `[crewlet] BriefCard was handed ${handedNeeds} needs and draws the first ${BRIEF_CARD_MAX_NEEDS}: rank and cap them before passing them.`,
       );
     }
-    if (followUps && followUps.length > BRIEF_CARD_MAX_FOLLOW_UPS) {
+    if (handedFollowUps > BRIEF_CARD_MAX_FOLLOW_UPS) {
       console.warn(
-        `[crewlet] BriefCard was handed ${followUps.length} follow-ups and draws the first ${BRIEF_CARD_MAX_FOLLOW_UPS}.`,
+        `[crewlet] BriefCard was handed ${handedFollowUps} follow-ups and draws the first ${BRIEF_CARD_MAX_FOLLOW_UPS}.`,
       );
     }
-  }
+  }, [handedNeeds, handedFollowUps]);
   const rows = needs.slice(0, BRIEF_CARD_MAX_NEEDS);
   const asks = followUps ? followUps.slice(0, BRIEF_CARD_MAX_FOLLOW_UPS) : [];
   const ranked = rows.length > 1;
@@ -213,4 +217,21 @@ export function BriefCard({
       </div>
     </StatusCard>
   );
+}
+
+/**
+ * Whether the host is a development build. A bundler replaces
+ * `process.env.NODE_ENV` with a literal, so the check costs nothing in a
+ * production build and is true in development. It is NOT guarded with
+ * `typeof process`: that expression is not replaced, and in a browser it is
+ * 'undefined' even in development, which would silence the warning
+ * everywhere. An ESM host with no bundler has no `process` at all, and the
+ * ReferenceError reads as not developing.
+ */
+function developing(): boolean {
+  try {
+    return process.env.NODE_ENV !== 'production';
+  } catch {
+    return false;
+  }
 }
