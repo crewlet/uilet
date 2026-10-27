@@ -194,9 +194,10 @@ let segmenter: Intl.Segmenter | null | undefined;
  */
 function wordsIn(text: string): number {
   if (segmenter === undefined) {
-    segmenter = typeof Intl !== 'undefined' && 'Segmenter' in Intl
-      ? new Intl.Segmenter(undefined, { granularity: 'word' })
-      : null;
+    segmenter =
+      typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function'
+        ? new Intl.Segmenter(undefined, { granularity: 'word' })
+        : null;
   }
   if (segmenter === null) return text.trim().split(/\s+/).filter(Boolean).length;
   let words = 0;

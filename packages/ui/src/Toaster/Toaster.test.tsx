@@ -312,6 +312,23 @@ describe('Toaster', () => {
     expect(readingDuration('one two three four five six seven')).toBe(4100);
   });
 
+  // A RUNTIME WITH NO WORD SEGMENTER (Safari before 14.1, Firefox before
+  // 125) COUNTS THE WORDS BETWEEN SPACES, rather than none: the module is
+  // loaded afresh with Intl.Segmenter gone, so its cached segmenter is never
+  // made.
+  test('a runtime with no word segmenter counts the words between spaces', async () => {
+    vi.resetModules();
+    vi.stubGlobal('Intl', { ...Intl, Segmenter: undefined });
+    try {
+      const fresh = await import('./Toaster.js');
+      expect(fresh.readingDuration('one two three four five six seven')).toBe(4100);
+      expect(fresh.readingDuration(Array.from({ length: 30 }, () => 'word').join(' '))).toBe(11000);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.resetModules();
+    }
+  });
+
   test('a warning and a failure stay until they are dismissed', () => {
     vi.useFakeTimers();
     const onDismiss = vi.fn();
