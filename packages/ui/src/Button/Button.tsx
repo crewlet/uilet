@@ -35,6 +35,16 @@ interface ButtonLook {
   trailingIcon?: ReactNode;
   /** Fills the line it is on. */
   block?: boolean | undefined;
+  /**
+   * Its words start on the line its box starts on: the padding and the edge
+   * are taken back at the start, so only the hover ground and the focus ring
+   * reach past them. For a GHOST button drawn as a value (a status chosen in
+   * place, a face that opens a picker), which then starts on the same line as
+   * the plain values above and below it, in a table column or a properties
+   * rail. Its focus ring is drawn inside it, so a container's clip never cuts
+   * it.
+   */
+  flush?: boolean | undefined;
   className?: string | undefined;
   children?: ReactNode;
 }
@@ -71,13 +81,17 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, Bu
   asChild?: boolean | undefined;
 }
 
-function buttonClass({ variant = 'primary', size = 'medium', shape = 'square', block, className }: ButtonLook, extra?: string) {
+function buttonClass(
+  { variant = 'primary', size = 'medium', shape = 'square', block, flush, className }: ButtonLook,
+  extra?: string,
+) {
   return cx(
     'crewlet-btn',
     `crewlet-btn--${variant}`,
     `crewlet-btn--${size}`,
     `crewlet-btn--${shape}`,
     block && 'crewlet-btn--block',
+    flush && 'crewlet-btn--flush',
     extra,
     className,
   );
@@ -124,6 +138,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     leadingIcon,
     trailingIcon,
     block,
+    flush,
     className,
     type = 'button',
     asChild = false,
@@ -139,7 +154,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   ref,
 ) {
   const reasonId = useId();
-  const look = { variant, size, shape, leadingIcon, trailingIcon, block, className, children };
+  const look = { variant, size, shape, leadingIcon, trailingIcon, block, flush, className, children };
   const classes = buttonClass(look, loading ? 'crewlet-btn--loading' : undefined);
 
   if (asChild) {
@@ -221,6 +236,7 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(functio
     leadingIcon,
     trailingIcon,
     block,
+    flush,
     className,
     external = false,
     title,
@@ -234,7 +250,7 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(functio
     <a
       {...rest}
       ref={ref}
-      className={buttonClass({ variant, size, shape, block, className })}
+      className={buttonClass({ variant, size, shape, block, flush, className })}
       title={title}
       aria-label={rest['aria-label'] ?? (children === undefined ? title : undefined)}
       target={external ? '_blank' : rest.target}

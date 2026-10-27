@@ -13,9 +13,11 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
   ChooserList,
   ColumnChooser,
+  DATA_GRID_ICON_TRACK,
   DataGrid,
   columnChoicesOf,
   fitGridColumns,
+  nextGridSort,
   parseGridSort,
   type DataGridColumn,
   type DataGridHandle,
@@ -162,6 +164,60 @@ describe('the heads', () => {
     expect(onSort.mock.calls.map((c) => c[0])).toEqual(['name', '-name', '']);
   });
 
+  test('every sortable head carries an arrow, the sorted one naming its direction, and a plain head none', () => {
+    const { container, rerender } = render(
+      <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-tokens" onSortChange={() => {}} />,
+    );
+    const marks = () =>
+      screen.getAllByRole('columnheader').map((head) => head.querySelector('.crewlet-data-grid__sort-mark') !== null);
+    expect(marks()).toEqual([true, false, true, false, false]);
+    // Hidden from assistive technology, which hears `aria-sort`.
+    for (const mark of container.querySelectorAll('.crewlet-data-grid__sort-mark')) {
+      expect(mark.getAttribute('aria-hidden')).toBe('true');
+    }
+    // The button's name is the head's word alone.
+    expect(screen.getByRole('button', { name: 'Tokens' })).toBeTruthy();
+    // A head that cannot be pressed shows the order it is in, and stays inert.
+    rerender(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-tokens" />);
+    expect(marks()).toEqual([false, false, true, false, false]);
+    expect(screen.queryByRole('button', { name: 'Tokens' })).toBeNull();
+  });
+
+  test('say the order in force on a head that cannot change it', () => {
+    render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} defaultSort="-tokens" />);
+    const heads = screen.getAllByRole('columnheader');
+    expect(heads[2]!.getAttribute('aria-sort')).toBe('descending');
+    expect(heads[0]!.getAttribute('aria-sort')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Tokens' })).toBeNull();
+  });
+
+  test('draw the default sort on its head, and a press on it steps from there', () => {
+    const onSort = vi.fn();
+    render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} defaultSort="-tokens" onSortChange={onSort} />);
+    expect(screen.getAllByRole('columnheader')[2]!.getAttribute('aria-sort')).toBe('descending');
+    expect(names().map((n) => n?.slice(0, 5))).toEqual(['Bravo', 'Alpha', 'Charl']);
+    fireEvent.click(screen.getByRole('button', { name: 'Tokens' }));
+    expect(onSort).toHaveBeenLastCalledWith('tokens');
+  });
+
+  test('the cycle is ascending, descending, then the default, and never a press that changes nothing', () => {
+    // No default: on, reversed, off.
+    expect(nextGridSort('name', '')).toBe('name');
+    expect(nextGridSort('name', 'name')).toBe('-name');
+    expect(nextGridSort('name', '-name')).toBe('');
+    expect(nextGridSort('seat', '-name')).toBe('seat');
+    // A descending default: its own column turns ascending, and the step back
+    // to descending IS the default, written as nothing.
+    expect(nextGridSort('updated', '', '-updated')).toBe('updated');
+    expect(nextGridSort('updated', 'updated', '-updated')).toBe('');
+    expect(nextGridSort('updated', '-updated', '-updated')).toBe('updated');
+    expect(nextGridSort('title', '', '-updated')).toBe('title');
+    expect(nextGridSort('title', '-title', '-updated')).toBe('');
+    // An ascending default: reversed, then back.
+    expect(nextGridSort('name', '', 'name')).toBe('-name');
+    expect(nextGridSort('name', '-name', 'name')).toBe('');
+  });
+
   test('sort the rows by the column, an absent value last both ways, and leave a server order alone', () => {
     const { rerender } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="tokens" onSortChange={() => {}} />);
     expect(names().map((n) => n?.slice(0, 5))).toEqual(['Alpha', 'Bravo', 'Charl']);
@@ -173,6 +229,123 @@ describe('the heads', () => {
     expect(names().map((n) => n?.slice(0, 5))).toEqual(['Bravo', 'Alpha', 'Charl']);
     expect(parseGridSort('-a')).toEqual({ key: 'a', desc: true });
     expect(parseGridSort('')).toBeNull();
+  });
+});
+
+/*
+ * THE ALIGNMENT GUARD. A head stood off the values it names three ways: no
+ * per-column edge but left and right, a picker's ghost button adding its own
+ * inset at the cell's edge, and pills and dates ragged against a left edge. A
+ * head and its cells must take one edge and one inset, whatever `align` says.
+ */
+describe('alignment', () => {
+  interface Fact {
+    id: string;
+    name: string;
+    age: number;
+    kind: string;
+  }
+  const FACTS: Fact[] = [
+    { id: 'a', name: 'Alpha', age: 53, kind: 'bug' },
+    { id: 'b', name: 'Bravo', age: 12, kind: 'task' },
+  ];
+  const ALIGNED: DataGridColumn<Fact>[] = [
+    { key: 'kind', header: '', label: 'Type', icon: true, cell: (r) => <svg aria-label={r.kind} /> },
+    { key: 'name', header: 'Name', cell: (r) => r.name, sortValue: (r) => r.name },
+    { key: 'age', header: 'Updated', align: 'right', cell: (r) => `${r.age}s ago`, sortValue: (r) => r.age },
+    { key: 'mark', header: 'Mark', align: 'center', cell: () => '•' },
+  ];
+
+  test('a head and every cell of a column take the same edge', () => {
+    const { container } = render(<DataGrid rows={FACTS} columns={ALIGNED} rowKey={(r) => r.id} onSortChange={() => {}} />);
+    const heads = screen.getAllByRole('columnheader');
+    const rows = [...container.querySelectorAll('.crewlet-data-grid__row')];
+    const edge = (el: Element, part: 'th' | 'cell') =>
+      (['right', 'center'] as const).find((a) => el.classList.contains(`crewlet-data-grid__${part}--${a}`)) ?? 'left';
+    const expected = ['center', 'left', 'right', 'center'];
+    expect(heads.map((h) => edge(h, 'th'))).toEqual(expected);
+    for (const row of rows) {
+      expect([...row.querySelectorAll(':scope > .crewlet-data-grid__cell')].map((c) => edge(c, 'cell'))).toEqual(expected);
+    }
+    // An icon column is a fixed track, named for assistive technology.
+    expect((container.querySelector('.crewlet-data-grid') as HTMLElement).style.gridTemplateColumns.startsWith(DATA_GRID_ICON_TRACK)).toBe(true);
+    expect(heads[0]!.textContent).toBe('Type');
+    expect(heads[0]!.getAttribute('title')).toBe('Type');
+  });
+
+  test('the stylesheet gives a head and its cells one inset and one edge per align value', () => {
+    const css = sheet();
+    // ONE INSET: head and cell read the same two variables.
+    expect(css).toMatch(/\.crewlet-data-grid__th \{[^}]*padding-inline: var\(--crewlet-data-grid-cell-start\) var\(--crewlet-data-grid-cell-end\)/);
+    expect(css).toMatch(/\.crewlet-data-grid__cell \{[^}]*padding-inline: var\(--crewlet-data-grid-cell-start\) var\(--crewlet-data-grid-cell-end\)/);
+    // ONE EDGE: each modifier justifies the head, its sort button and its cells alike.
+    for (const [align, justify] of [
+      ['right', 'flex-end'],
+      ['center', 'center'],
+    ] as const) {
+      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__th--${align} \\{[^}]*justify-content: ${justify}`));
+      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__th--${align} \\.crewlet-data-grid__sort \\{[^}]*justify-content: ${justify}`));
+      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__cell--${align} \\{[^}]*justify-content: ${justify}`));
+    }
+    // FIGURES AND TIMES END ON ONE EDGE with tabular digits.
+    expect(css).toMatch(/\.crewlet-data-grid__cell--right \{[^}]*font-variant-numeric: tabular-nums/);
+    // A CENTRED SORTABLE HEAD mirrors its arrow's box before the word, so the
+    // word stands on the column's middle: the reserve is the arrow's own size.
+    const markSize = /\.crewlet-data-grid__sort-mark \{[^}]*inline-size: ([^;]+);/.exec(css)?.[1];
+    expect(markSize).toBeDefined();
+    expect(css).toMatch(
+      new RegExp(
+        `\\.crewlet-data-grid__th--center \\.crewlet-data-grid__sort:has\\(> \\.crewlet-data-grid__truncate\\)::before \\{[^}]*inline-size: ${markSize!.replace(/[()]/g, '\\$&')}`,
+      ),
+    );
+    // AN ICON COLUMN keeps the cells' step either side, at the grid's edge too.
+    expect(css).toMatch(
+      /\.crewlet-data-grid__th\.crewlet-data-grid__th--icon,\s*\.crewlet-data-grid__cell\.crewlet-data-grid__cell--icon \{[^}]*--crewlet-data-grid-cell-start: var\(--spacing-3\);[^}]*--crewlet-data-grid-cell-end: var\(--spacing-3\)/,
+    );
+    // WHERE NOTHING HOVERS, a sortable head shows its arrow at rest.
+    expect(css).toMatch(/@media \(hover: none\) \{\s*\.crewlet-data-grid__th:not\(\.crewlet-data-grid__th--plain\) \.crewlet-data-grid__sort-mark \{\s*opacity: 1/);
+  });
+
+  // A SORTABLE MARK COLUMN has no word, so its head draws the arrow alone:
+  // no empty word box and no mirrored reserve to push it off the middle.
+  test('a sortable icon column draws its arrow alone, with no word box to offset it', () => {
+    const columns: DataGridColumn<Fact>[] = [{ ...ALIGNED[0]!, sortValue: (r) => r.kind }, ALIGNED[1]!];
+    render(<DataGrid rows={FACTS} columns={columns} rowKey={(r) => r.id} onSortChange={() => {}} />);
+    const button = screen.getByRole('button', { name: 'Type' });
+    expect(button.querySelector('.crewlet-data-grid__truncate')).toBeNull();
+    expect(button.querySelector('.crewlet-data-grid__sort-mark')).not.toBeNull();
+    // A worded head keeps its word box, which the centred reserve keys on.
+    expect(screen.getByRole('button', { name: 'Name' }).querySelector('.crewlet-data-grid__truncate')).not.toBeNull();
+  });
+
+  test('an icon column carries its modifier on the head and every cell', () => {
+    const { container } = render(<DataGrid rows={FACTS} columns={ALIGNED} rowKey={(r) => r.id} />);
+    expect(screen.getAllByRole('columnheader')[0]!.classList.contains('crewlet-data-grid__th--icon')).toBe(true);
+    for (const row of container.querySelectorAll('.crewlet-data-grid__row')) {
+      expect(row.querySelector(':scope > .crewlet-data-grid__cell')!.classList.contains('crewlet-data-grid__cell--icon')).toBe(true);
+    }
+  });
+
+  /*
+   * ONE OUTDENT MECHANISM: Button's flush reads `--crewlet-btn-flush-outdent`,
+   * a ghost control written straight into a cell takes the same declaration,
+   * and the grid's exemptions (its own edge, right and centred columns, card
+   * rows) set that one variable to 0. Two mechanisms let a flush control
+   * bypass the exemptions and pull toward the frame.
+   */
+  test('a flush control takes the grid exemptions through one variable', () => {
+    const css = sheet();
+    const outdent = 'margin-inline-start: var(--crewlet-btn-flush-outdent, calc(-1 * (var(--crewlet-btn-inset) + 1px)))';
+    expect(css).toContain(outdent);
+    expect(css).not.toMatch(/control-outdent/);
+    expect(css).toMatch(
+      /\.crewlet-data-grid__cell:is\(:first-child, \.crewlet-data-grid__cell--right, \.crewlet-data-grid__cell--center\) \{\s*--crewlet-btn-flush-outdent: 0px;/,
+    );
+    expect(css).toMatch(/\.crewlet-data-grid:where\(\[data-stacked\]\) \{[^}]*--crewlet-btn-flush-outdent: 0px;/);
+    const button = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../Button/Button.css'), 'utf8');
+    expect(button).toContain(outdent);
+    // NO OTHER RULE in the grid moves a control's start.
+    expect(css.split('margin-inline-start:').length - 1).toBe(1);
   });
 });
 
@@ -297,6 +470,15 @@ describe('the frame', () => {
     const { container } = render(<DataGrid rows={ROWS} columns={columns} rowKey={(r) => r.id} phoneRows="compact" />);
     expect(container.querySelector('.crewlet-data-grid')!.getAttribute('data-phone-rows')).toBe('compact');
     expect(container.querySelector('.crewlet-data-grid__cell')!.hasAttribute('data-lead')).toBe(true);
+  });
+
+  test('draws a foot quieter than a row: the micro step, the tertiary ink, the grid own ground', () => {
+    const foot = /\.crewlet-data-grid__foot \{([^}]*)\}/.exec(sheet())![1]!;
+    expect(foot).toMatch(/font-size: var\(--font-size-2xs\)/);
+    expect(foot).toMatch(/color: var\(--color-text-tertiary\)/);
+    expect(foot).toMatch(/background: transparent/);
+    expect(foot).toMatch(/padding: var\(--spacing-1\)/);
+    expect(foot).not.toMatch(/surface-elevated/);
   });
 
   test('says the rows loaded and offers more', () => {
@@ -441,4 +623,31 @@ describe('the selection column', () => {
     const heads = container.querySelectorAll('.crewlet-data-grid__head > [role="columnheader"]');
     expect(heads).toHaveLength(COLUMNS.length + 1);
   });
+});
+
+// A GRID OF LINKS takes Enter too: with no handler, the handle follows the
+// cursor row's own link as a click would, the held keys included, so a
+// modified Enter opens it elsewhere. Such a grid had no Enter at all.
+test('the handle follows a row that only links, as a click on it would', () => {
+  const handle = createRef<DataGridHandle>();
+  const { container } = render(
+    <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} rowHref={(r) => `#/x/${r.id}`} handleRef={handle} />,
+  );
+  Element.prototype.scrollIntoView = vi.fn();
+  const clicks: { href: string | null; meta: boolean }[] = [];
+  container.addEventListener('click', (event) => {
+    const link = (event.target as Element).closest('a');
+    clicks.push({ href: link?.getAttribute('href') ?? null, meta: event.metaKey });
+    event.preventDefault();
+  });
+  // No cursor yet: nothing to follow.
+  expect(handle.current!.activate(new KeyboardEvent('keydown'))).toBe(false);
+  act(() => handle.current!.step(1));
+  let followed = false;
+  act(() => {
+    followed = handle.current!.activate(new KeyboardEvent('keydown', { metaKey: true }));
+  });
+  expect(followed).toBe(true);
+  // The first step lands on the first row.
+  expect(clicks).toEqual([{ href: '#/x/a', meta: true }]);
 });

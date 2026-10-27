@@ -714,3 +714,18 @@ test('an end-aligned menu wider than its trigger\'s right edge opens, held insid
     Element.prototype.getBoundingClientRect = realRect;
   }
 });
+
+// A MENU DRAWN AS THE VALUE it changes (a status chosen in place) lines up
+// with the plain values beside it and reads in their size and ink: its
+// trigger is a flush button in the surrounding text's register.
+test('valueTrigger draws the trigger as the value: flush, in the surrounding text', () => {
+  render(<Menu label="Status of ENG-1" trigger="In progress" valueTrigger items={[{ key: 'a', label: 'Done', onSelect: () => {} }]} />);
+  const trigger = screen.getByRole('button', { name: 'Status of ENG-1' });
+  expect(trigger.classList.contains('crewlet-btn--flush')).toBe(true);
+  expect(trigger.classList.contains('crewlet-menu__value-trigger')).toBe(true);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Menu.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  // RAISED over the button's size and variant classes (one class each).
+  expect(css).toMatch(
+    /\.crewlet-menu-anchor > \.crewlet-btn\.crewlet-menu__value-trigger \{[^}]*font-size: inherit;[^}]*font-weight: inherit;[^}]*color: inherit;/,
+  );
+});

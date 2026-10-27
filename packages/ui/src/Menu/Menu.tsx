@@ -183,6 +183,15 @@ export interface MenuProps {
    */
   trailingIcon?: ReactNode;
   triggerVariant?: ButtonVariant | undefined;
+  /**
+   * The trigger IS THE VALUE it changes: a status chosen in place, a face
+   * that opens a picker, in a table cell or a properties rail. Its words
+   * start on its box's line ([Button]'s `flush`), so it lines up with the
+   * plain values beside it, and it takes the surrounding text's size, weight
+   * and ink rather than a button label's, so a writer's row reads as a
+   * reader's. Its hover ground and focus ring still say it is a control.
+   */
+  valueTrigger?: boolean | undefined;
   /** -1 for a pointer-only trigger whose actions the keyboard reaches another way. */
   triggerTabIndex?: number | undefined;
   open?: boolean | undefined;
@@ -212,6 +221,7 @@ export function Menu({
   trigger,
   trailingIcon,
   triggerVariant = 'ghost',
+  valueTrigger = false,
   triggerTabIndex,
   open: controlled,
   onOpenChange,
@@ -547,7 +557,16 @@ export function Menu({
       ) : trigger === undefined ? (
         <IconButton {...shared} label={label} icon={icon ?? <EllipsisVerticalGlyph />} size="sm" />
       ) : (
-        <Button {...shared} aria-label={label} variant={triggerVariant} size="small" leadingIcon={icon} trailingIcon={trailingIcon}>
+        <Button
+          {...shared}
+          aria-label={label}
+          variant={triggerVariant}
+          size="small"
+          flush={valueTrigger}
+          className={valueTrigger ? 'crewlet-menu__value-trigger' : undefined}
+          leadingIcon={icon}
+          trailingIcon={trailingIcon}
+        >
           {trigger}
         </Button>
       )}

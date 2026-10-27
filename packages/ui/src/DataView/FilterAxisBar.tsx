@@ -25,7 +25,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type Keyboard
 import { CheckGlyph, ChevronDownGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { DateTimePicker } from '../DateTimePicker/index.js';
-import { IconButton } from '../IconButton/index.js';
+import { FilterPill } from '../FilterPill/index.js';
 import { Input } from '../Input/index.js';
 import { Kbd } from '../Kbd/index.js';
 import { useListbox, useOptionKeys } from '../Listbox/index.js';
@@ -102,34 +102,48 @@ const sameValue = (a: FilterOptionValue, b: FilterOptionValue): boolean => Strin
  * like the rest.
  */
 export function formatFilterValue<TRow>(def: FilterDef<TRow>, value: FilterValue, labels: FilterAxisLabels): string {
-  const operator = operatorOf(def);
+  const { operator, answer } = filterAnswer(def, value, labels);
+  return operator ? `${operator} ${answer}` : answer;
+}
+
+/**
+ * What a chip says it is set to, in its two parts: the operator word, where
+ * the axis compares unusually and there is an answer to compare against, and
+ * the answer itself. [formatFilterValue] is the two as one string; a chip
+ * draws them in their own registers.
+ */
+function filterAnswer<TRow>(
+  def: FilterDef<TRow>,
+  value: FilterValue,
+  labels: FilterAxisLabels,
+): { operator?: string; answer: string } {
   const unusual = def.operator !== undefined && def.operator !== defaultOperator(def);
-  const prefix = unusual ? `${labels.operator[operator]} ` : '';
+  const compared = (answer: string) => (unusual ? { operator: labels.operator[operatorOf(def)], answer } : { answer });
 
   if (isMultiple(def)) {
     const held = chosenValues(value);
-    if (held.length === 0) return labels.any;
+    if (held.length === 0) return { answer: labels.any };
     if (held.length === 1) {
       const option = def.options?.find((candidate) => sameValue(candidate.value, held[0] as FilterOptionValue));
-      return `${prefix}${option ? option.label : String(held[0])}`;
+      return compared(option ? option.label : String(held[0]));
     }
-    return labels.selected(held.length);
+    return { answer: labels.selected(held.length) };
   }
   if (value === undefined || value === null || value === '') {
     // An empty single-choice axis still has an answer when the list offers one
     // for empty ("Any status"), and reads as that answer rather than as a gap.
     const option = def.options?.find((candidate) => String(candidate.value) === '');
-    return option ? option.label : labels.any;
+    return { answer: option ? option.label : labels.any };
   }
   if (def.kind === 'select') {
     const option = def.options?.find((candidate) => sameValue(candidate.value, value as FilterOptionValue));
-    return `${prefix}${option ? option.label : String(value)}`;
+    return compared(option ? option.label : String(value));
   }
   if (def.kind === 'datetime') {
     const at = new Date(String(value));
-    if (!Number.isNaN(at.getTime())) return `${prefix}${at.toLocaleString()}`;
+    if (!Number.isNaN(at.getTime())) return compared(at.toLocaleString());
   }
-  return `${prefix}${String(value)}`;
+  return compared(String(value));
 }
 
 interface EditorProps<TRow> {
@@ -394,35 +408,35 @@ export function FilterAxisChip<TRow = unknown>({
     return <TextEditor {...props} />;
   };
 
+  const { operator, answer } = filterAnswer(def, value, labels);
+  // THE FILTER PILL every filter in force is drawn as, with its words made the
+  // editor's trigger: one look and one reading for a filter on any list.
   return (
-    <div className={cx('crewlet-filter-axis-chip', className)}>
-      <Popover
-        align="start"
-        role="dialog"
-        label={labels.editor(def.label)}
-        defaultOpen={autoOpen}
-        className="crewlet-filter-axis__popover"
-        trigger={(open, toggle) => (
-          <button type="button" className={cx('crewlet-filter-axis-chip__trigger', open && 'is-open')} onClick={toggle}>
-            <span className="crewlet-filter-axis-chip__label">{def.label}:</span>
-            <span className="crewlet-filter-axis-chip__value">{formatFilterValue(def, value, labels)}</span>
-            <ChevronDownGlyph className="crewlet-filter-axis-chip__chevron" size="xs" />
-          </button>
-        )}
-      >
-        {editor}
-      </Popover>
-      {onRemove ? (
-        <IconButton
-          className="crewlet-filter-axis-chip__remove"
-          size="sm"
-          variant="ghost"
-          label={labels.remove(def.label)}
-          icon={<XGlyph size="xs" />}
-          onClick={onRemove}
-        />
-      ) : null}
-    </div>
+    <FilterPill
+      className={cx('crewlet-filter-axis-chip', className)}
+      field={def.label}
+      operator={operator}
+      value={answer}
+      onRemove={onRemove}
+      removeLabel={labels.remove(def.label)}
+      renderWords={(words, wordsClass) => (
+        <Popover
+          align="start"
+          role="dialog"
+          label={labels.editor(def.label)}
+          defaultOpen={autoOpen}
+          className="crewlet-filter-axis__popover"
+          trigger={(open, toggle) => (
+            <button type="button" className={cx(wordsClass, open && 'is-open')} onClick={toggle}>
+              {words}
+              <ChevronDownGlyph size="xs" />
+            </button>
+          )}
+        >
+          {editor}
+        </Popover>
+      )}
+    />
   );
 }
 

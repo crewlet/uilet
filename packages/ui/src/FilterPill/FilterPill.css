@@ -1,0 +1,134 @@
+/*
+ * The filter pill: one filter in force, as a sentence on the accent ground.
+ *
+ * TWO CONTROLS IN ONE PILL where the words open an editor: pressing the words
+ * opens it, pressing the cross takes the filter off. They are drawn as one
+ * object with a divider because they are one filter, and they are two BUTTONS
+ * because they do two different things, which is also why the cross carries
+ * its own name rather than relying on the words'.
+ */
+.crewlet-filter-pill {
+  display: inline-flex;
+  align-items: stretch;
+  height: var(--size-control-sm);
+  max-width: 100%;
+  min-width: 0;
+  background: var(--color-brand-accent-soft);
+  border: 1px solid var(--color-brand-accent-soft-strong);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/*
+ * THE EDGE, NOT THE FILL, under the pointer. The surface hover overlay put on
+ * the pill REPLACED the accent fill, so the one control on screen that means
+ * "this filter is on" went pale and read as the filter being switched off.
+ * The fill stays and the boundary takes the accent itself: the next fill step
+ * measures under 4.5:1 beneath the pill's own ink, which is why that step is a
+ * border value in the palette and is used as one here.
+ */
+.crewlet-filter-pill:hover {
+  border-color: var(--color-brand-accent);
+}
+
+/*
+ * THE WORDS: one line, the parts a step apart. The gap draws the space; the
+ * space characters between the parts are still in the text, which is what a
+ * copy and a screen reader take, but a flex row does not draw them, so the
+ * step is the one spacing. A long value ends in an ellipsis at the pill's
+ * edge. Plain text, or the control `renderWords` makes, which gives up a
+ * button's chrome and keeps the same line.
+ */
+.crewlet-filter-pill__words {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0 var(--spacing-3);
+  background: transparent;
+  border: 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* A pill with a remove control gives the words' trailing inset to the divider. */
+.crewlet-filter-pill:has(> .crewlet-filter-pill__remove) > .crewlet-filter-pill__words {
+  padding-inline-end: var(--spacing-2);
+}
+
+button.crewlet-filter-pill__words {
+  cursor: pointer;
+}
+
+.crewlet-filter-pill__words:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/*
+ * THREE REGISTERS. The field and the relation are what the filter is ABOUT,
+ * in the secondary ink at the regular weight; the value is the answer, in the
+ * accent ink at the semibold weight, and the only part a long filter cuts.
+ */
+.crewlet-filter-pill__field,
+.crewlet-filter-pill__operator {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-filter-pill__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-brand-accent-ink);
+  font-weight: var(--font-weight-semibold);
+}
+
+/*
+ * A glyph after the words (a popover's chevron) carries the value's ink: a
+ * grey glyph next to coloured text reads as two things.
+ */
+.crewlet-filter-pill__words > svg {
+  flex: none;
+  color: var(--color-brand-accent-ink);
+}
+
+/*
+ * The remove control: as tall as the pill's inside, behind a hairline, in the
+ * pill's own ink. At the small control's own height it stood past the pill's
+ * inner edge and was cut off at the bottom.
+ *
+ * RAISED OVER ICONBUTTON'S OWN RULES (`.crewlet-icon-btn`, `--sm`), which
+ * carry the same weight as one class and can load after this sheet in a
+ * bundle: at equal weight the control kept its 26px height and its corner
+ * radius in a 26px pill with a 1px edge, overran the pill by a pixel and lost
+ * the bottom of its focus ring. The child combinator is the extra weight, and
+ * a test holds it above every IconButton rule.
+ */
+.crewlet-filter-pill > .crewlet-filter-pill__remove {
+  height: auto;
+  border-radius: 0;
+  border-inline-start: 1px solid var(--color-brand-accent-soft-strong);
+  color: var(--color-brand-accent-ink);
+}
+
+/*
+ * Its ring is drawn INSIDE it, like the words'. The pill clips to its own
+ * radius, so an outset ring is cut off on every edge the control touches.
+ */
+.crewlet-filter-pill > .crewlet-filter-pill__remove:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-filter-pill {
+    transition: none;
+  }
+}

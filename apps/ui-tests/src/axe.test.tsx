@@ -130,20 +130,29 @@ test('a settings table, a catalogue of tiles and a numbered list carry no violat
   expect(await violations(container)).toEqual([]);
 });
 
-test('a data grid, its sortable heads, its row links and its bands carry no violation', async () => {
+test('a data grid, its sortable heads, its row links, its bands and its foot carry no violation', async () => {
   const rows = [
     { id: 'ENG-1', title: 'Rotate the key' },
     { id: 'ENG-2', title: 'Write the runbook' },
   ];
   const columns = [
     { key: 'id', header: 'Key', shrink: true, cell: (r: (typeof rows)[number]) => r.id, sortValue: (r: (typeof rows)[number]) => r.id },
-    { key: 'title', header: 'Title', cell: (r: (typeof rows)[number]) => r.title },
+    { key: 'title', header: 'Title', cell: (r: (typeof rows)[number]) => r.title, sortValue: (r: (typeof rows)[number]) => r.title },
     { key: 'mark', header: '', label: 'Kind', cell: () => <svg aria-hidden="true" /> },
   ];
   const { container } = render(
     <main>
       <h1>Worklet</h1>
       <DataGrid rows={rows} columns={columns} rowKey={(r) => r.id} rowHref={(r) => `#/worklet/${r.id}`} sort="id" onSortChange={() => {}} />
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        rowKey={(r) => r.id}
+        defaultSort="-title"
+        onSortChange={() => {}}
+        footer="That is all of it, 2 items match"
+        loadedNote="2 of 2 loaded"
+      />
       <DataGrid
         columns={columns}
         rowKey={(r) => r.id}
