@@ -1,6 +1,6 @@
 import './Toaster.css';
 
-export { ToastProvider, Toaster, toasterInsetStyle, useToast } from './Toaster.js';
+export { ToastProvider, Toaster, readingDuration, toasterInsetStyle, useToast } from './Toaster.js';
 export type {
   Toast,
   ToastAction,

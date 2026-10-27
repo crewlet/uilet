@@ -39,8 +39,9 @@ export interface Toast<TVariant extends string = string> {
   message?: ReactNode;
   /**
    * Milliseconds before it goes. 0 is sticky. Left unset, it is the variant's
-   * own default: 4s for a success or an item of information, and sticky for a
-   * warning or a failure.
+   * own default: as long as its title and message take to read
+   * ([readingDuration]) for a success or an item of information, and sticky
+   * for a warning or a failure.
    */
   duration?: number;
   /** Bump on a dedup-replace to start the countdown again. */
@@ -135,20 +136,52 @@ const TITLES: Record<ToastVariant, string | null> = {
 };
 
 /**
- * How long each kind stays, unset.
+ * Whether each kind goes by itself, unset: a success and an item of
+ * information do, for as long as they take to read ([readingDuration]); a
+ * warning and a failure stay.
  *
  * A FAILURE DOES NOT AUTO-DISMISS. A success confirms something the reader
  * already knows they asked for; a failure is news, and news that removes
  * itself is news somebody misses while reading the form they were about to
- * fix. 4s is long enough to read one line and short enough not to sit over the
- * row they are looking at next.
+ * fix.
  */
-const DURATIONS: Record<ToastVariant, number> = {
-  info: 4000,
-  success: 4000,
-  warning: 0,
-  danger: 0,
+const GOES_BY_ITSELF: Record<ToastVariant, boolean> = {
+  info: true,
+  success: true,
+  warning: false,
+  danger: false,
 };
+
+/** A reader's pace, in milliseconds a word: two hundred words a minute. */
+const READ_MS_PER_WORD = 300;
+/** The time a toast takes to be noticed at all, before a word of it is read. */
+const READ_LEAD_MS = 2000;
+/**
+ * No toast that goes by itself goes sooner: long enough to read one line, and
+ * short enough not to sit over the row the reader looks at next.
+ */
+const READ_FLOOR_MS = 4000;
+/**
+ * No toast that goes by itself stays longer: past it, a message is long
+ * enough to be one somebody must act on, which is a warning's to say, and a
+ * warning stays.
+ */
+const READ_CAP_MS = 15000;
+
+/**
+ * How long a toast that goes by itself stays, in milliseconds, from how long
+ * text takes to read: the time to notice it, then a reader's pace a word,
+ * between four seconds and fifteen.
+ *
+ * A FIXED FOUR SECONDS FIT A TITLE AND NOTHING LONGER: a thirty-word
+ * sentence was gone before its second line was read, on every screen that
+ * raised one. Exported for a host that sizes something else to a toast's
+ * lifetime, never to pass back as `duration`, which an unset one already is.
+ */
+export function readingDuration(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return Math.min(READ_CAP_MS, Math.max(READ_FLOOR_MS, READ_LEAD_MS + words * READ_MS_PER_WORD));
+}
 
 const KNOWN = new Set<string>(['info', 'success', 'warning', 'danger']);
 const isKnown = (variant: string): variant is ToastVariant => KNOWN.has(variant);
@@ -159,13 +192,22 @@ const isKnown = (variant: string): variant is ToastVariant => KNOWN.has(variant)
  * away and the provider's bound both read it here, so what counts down and
  * what the stack may drop are one rule.
  */
-const durationOf = (toast: Pick<Toast, 'variant' | 'duration'>): number => {
+const durationOf = (toast: Pick<Toast, 'variant' | 'duration' | 'title' | 'message'>): number => {
+  if (toast.duration !== undefined) return toast.duration;
   const variant = toast.variant ?? 'info';
-  return toast.duration ?? (isKnown(variant) ? DURATIONS[variant] : 0);
+  if (!isKnown(variant) || !GOES_BY_ITSELF[variant]) return 0;
+  return readingDuration(readable(toast).join(' '));
 };
 
+/**
+ * The text a toast is read by: its title and message where each is a string.
+ * Anything else it renders counts as nothing, so it stays the floor.
+ */
+const readable = (toast: Pick<Toast, 'title' | 'message'>): string[] =>
+  [toast.title, toast.message].filter((part): part is string => typeof part === 'string');
+
 /** No timer takes it away: only the reader, or the application, dismisses it. */
-const isSticky = (toast: Pick<Toast, 'variant' | 'duration'>) => durationOf(toast) <= 0;
+const isSticky = (toast: Pick<Toast, 'variant' | 'duration' | 'title' | 'message'>) => durationOf(toast) <= 0;
 
 /** Which region says it: a failure interrupts, everything else waits its turn. */
 const politeness = (variant: string): 'polite' | 'assertive' =>
@@ -189,7 +231,7 @@ const sentences = (parts: string[]) =>
 
 /** What a toast reads as, for the region that says it. */
 function spoken<TVariant extends string>(toast: Toast<TVariant>, titles: Record<ToastVariant, string | null>): string {
-  const parts = [toast.title, toast.message].filter((part) => typeof part === 'string');
+  const parts = readable(toast);
   if (parts.length > 0) return parts.join('. ');
   const variant = toast.variant ?? 'info';
   return isKnown(variant) ? (titles[variant] ?? 'Notification') : 'Notification';

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, ToastProvider, Toaster, useToast, type Toast } from '@crewlethq/ui';
+import { Button, ToastProvider, Toaster, readingDuration, useToast, type Toast } from '@crewlethq/ui';
 import { ShieldUserGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Toaster> = {
@@ -44,6 +44,30 @@ export const Info: Story = {
  * A success goes by itself after four seconds: long enough to read one line,
  * short enough not to sit over the row the reader is looking at next.
  */
+/**
+ * A toast that goes by itself stays as long as its words take to read: the
+ * short one goes after four seconds, the long one after about nine, and
+ * neither names a duration. `readingDuration` is the same rule, exported.
+ */
+export const ReadingTime: Story = {
+  render: () => {
+    const long =
+      'The launch date holds a date without a time, so it was saved as 2026-03-04, ' +
+      'the day 2026-03-05T04:00:00Z falls on in America/Los_Angeles.';
+    const Short = makeDemo(() => ({ id: nextId(), variant: 'success', message: 'Saved.' }), 'A short one');
+    const Long = makeDemo(
+      () => ({ id: nextId(), variant: 'info', title: 'Updated ENG-42', message: long }),
+      `A long one (${Math.round(readingDuration(`Updated ENG-42 ${long}`) / 1000)}s)`,
+    );
+    return (
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Short />
+        <Long />
+      </div>
+    );
+  },
+};
+
 export const Success: Story = {
   render: () => {
     const Demo = makeDemo(() => ({

@@ -24,7 +24,7 @@ import axe from 'axe-core';
 import { useEffect, useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { LayerHost } from '../Layer/index.js';
-import { ToastProvider, Toaster, toasterInsetStyle, useToast, type ToastApi } from './index.js';
+import { ToastProvider, Toaster, readingDuration, toasterInsetStyle, useToast, type ToastApi } from './index.js';
 
 afterEach(() => {
   cleanup();
@@ -163,6 +163,38 @@ describe('Toaster', () => {
     } finally {
       window.matchMedia = real;
     }
+  });
+
+  // A TOAST THAT GOES BY ITSELF STAYS AS LONG AS IT TAKES TO READ. A fixed
+  // four seconds fit a title: a thirty-word sentence went before its second
+  // line was read. Never sooner than four seconds, never longer than fifteen,
+  // and a duration the caller passed is the caller's.
+  test('a toast that goes by itself stays as long as its words take to read', () => {
+    expect(readingDuration('Saved')).toBe(4000);
+    const thirty = Array.from({ length: 30 }, () => 'word').join(' ');
+    expect(readingDuration(thirty)).toBe(11000);
+    expect(readingDuration(`${thirty} ${thirty}`)).toBe(15000);
+
+    vi.useFakeTimers();
+    const onDismiss = vi.fn();
+    render(
+      <Toaster
+        toasts={[
+          { id: 1, variant: 'info', title: 'Filed ENG-7', message: thirty },
+          { id: 2, variant: 'success', message: 'Saved' },
+          { id: 3, variant: 'info', message: thirty, duration: 5000 },
+        ]}
+        onDismiss={onDismiss}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(onDismiss.mock.calls.map(([id]) => id).sort()).toEqual([2, 3]);
+    act(() => {
+      vi.advanceTimersByTime(readingDuration(`Filed ENG-7 ${thirty}`) - 5000);
+    });
+    expect(onDismiss).toHaveBeenCalledWith(1);
   });
 
   test('a warning and a failure stay until they are dismissed', () => {
