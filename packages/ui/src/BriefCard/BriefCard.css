@@ -1,0 +1,127 @@
+/*
+ * A brief inside the product's status card: one sentence, the rows that wait
+ * on the reader, one recommendation and the questions to ask next, each block
+ * under a quiet label so a reader scans straight to the part they need.
+ */
+.crewlet-brief-card__where {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.crewlet-brief-card__asof {
+  white-space: nowrap;
+}
+
+.crewlet-brief-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+.crewlet-brief-card__summary {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-snug);
+  text-wrap: pretty;
+}
+
+.crewlet-brief-card__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-brief-card__label {
+  margin: 0;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-brief-card__needs {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * A ROW IS THE LIST ROW'S GRAMMAR: the dot on the first line, the words and
+ * their one fact, and the action centred at the end, so a column of rows reads
+ * down the dots and across to the presses.
+ */
+.crewlet-brief-card__need {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--spacing-3);
+  padding-block: var(--spacing-2);
+}
+
+.crewlet-brief-card__need + .crewlet-brief-card__need {
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-brief-card__need > .crewlet-button {
+  align-self: center;
+}
+
+.crewlet-brief-card__dot {
+  display: inline-flex;
+  align-items: center;
+  height: 1lh;
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-brief-card__words {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-brief-card__detail {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-brief-card__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0;
+  font-size: var(--font-size-compact);
+  color: var(--color-feedback-success-ink);
+}
+
+/* The recommendation: one step, on the accent's softest ground. */
+.crewlet-brief-card__next {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  background: var(--color-brand-accent-soft);
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-compact);
+}
+
+.crewlet-brief-card__arrow {
+  color: var(--color-brand-accent-ink);
+}
+
+/* The questions to ask next sit on the card's text edge: each row's own inset is pulled out. */
+.crewlet-brief-card__follow-ups {
+  margin-inline: calc(-1 * var(--spacing-3));
+}
