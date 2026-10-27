@@ -11,6 +11,27 @@ import axe from 'axe-core';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { FILTER_PILL_WORDS_CLASS, FilterPill, filterPillSentence } from './index.js';
 
+const iconButtonSheet = () =>
+  readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../IconButton/IconButton.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+
+/** A selector's weight as [classes and pseudo-classes and attributes, types], enough to compare these two sheets. */
+function weight(selector: string): number {
+  const classes = (selector.match(/\.[\w-]+/g) ?? []).length;
+  const attributes = (selector.match(/\[/g) ?? []).length;
+  const pseudo = (selector.match(/(?<!:):(?!not|is|where)[\w-]+/g) ?? []).length;
+  return (classes + attributes + pseudo) * 100;
+}
+
+/** Every selector in a sheet whose rule sets one of these properties. */
+function selectorsSetting(css: string, properties: string[]): string[] {
+  const found: string[] = [];
+  for (const [, list, body] of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+    if (!properties.some((property) => new RegExp(`(^|;|\\s)${property}\\s*:`).test(body!))) continue;
+    for (const one of list!.split(',')) found.push(one.trim());
+  }
+  return found;
+}
+
 afterEach(cleanup);
 
 const sheet = () =>
@@ -77,6 +98,39 @@ describe('the remove control', () => {
     render(<FilterPill field="Status" value="Done" />);
     expect(screen.queryByRole('button')).toBeNull();
   });
+});
+
+test('the words a pill says can be the application own', () => {
+  render(
+    <FilterPill
+      field="Rol"
+      value="Admin"
+      onRemove={() => {}}
+      labels={{ fieldEnd: ' =', remove: (sentence) => `Quitar ${sentence}` }}
+    />,
+  );
+  expect(document.querySelector(`.${FILTER_PILL_WORDS_CLASS}`)!.textContent).toBe('Rol = Admin');
+  expect(screen.getByRole('button', { name: 'Quitar Rol Admin' })).toBeTruthy();
+});
+
+// THE REMOVE CONTROL OUTRANKS ICONBUTTON. At equal weight IconButton's own
+// size rule, loaded later in a bundle, kept the control 26px tall in a 26px
+// pill with a 1px edge: it overran the pill and lost its ring's bottom edge.
+test('the remove rule outranks every IconButton rule it overrides', () => {
+  for (const property of ['height', 'border-radius', 'outline-offset']) {
+    const pill = selectorsSetting(sheet(), [property]).filter((sel) => sel.includes('crewlet-filter-pill__remove'));
+    expect(pill.length, property).toBeGreaterThan(0);
+    // THE RULES WHOSE SUBJECT IS THE BUTTON, not a glyph inside it.
+    const button = selectorsSetting(iconButtonSheet(), [property]).filter((sel) =>
+      /(^|\s)[^\s]*\.crewlet-icon-btn[\w-]*(:[\w-]+(\([^)]*\))?)*$/.test(sel),
+    );
+    expect(button.length, property).toBeGreaterThan(0);
+    const heaviest = Math.max(...button.map(weight));
+    for (const sel of pill) expect(weight(sel), `${sel} sets ${property}`).toBeGreaterThan(heaviest);
+  }
+  // And its edge is logical, so a right-to-left page draws it before the cross.
+  expect(sheet()).toMatch(/border-inline-start: 1px solid/);
+  expect(sheet()).not.toMatch(/border-left/);
 });
 
 test('a sentence is built only from words', () => {

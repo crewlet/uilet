@@ -183,6 +183,14 @@ describe('the heads', () => {
     expect(screen.queryByRole('button', { name: 'Tokens' })).toBeNull();
   });
 
+  test('say the order in force on a head that cannot change it', () => {
+    render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} defaultSort="-tokens" />);
+    const heads = screen.getAllByRole('columnheader');
+    expect(heads[2]!.getAttribute('aria-sort')).toBe('descending');
+    expect(heads[0]!.getAttribute('aria-sort')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Tokens' })).toBeNull();
+  });
+
   test('draw the default sort on its head, and a press on it steps from there', () => {
     const onSort = vi.fn();
     render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} defaultSort="-tokens" onSortChange={onSort} />);
@@ -281,6 +289,49 @@ describe('alignment', () => {
     }
     // FIGURES AND TIMES END ON ONE EDGE with tabular digits.
     expect(css).toMatch(/\.crewlet-data-grid__cell--right \{[^}]*font-variant-numeric: tabular-nums/);
+    // A CENTRED SORTABLE HEAD mirrors its arrow's box before the word, so the
+    // word stands on the column's middle: the reserve is the arrow's own size.
+    const markSize = /\.crewlet-data-grid__sort-mark \{[^}]*inline-size: ([^;]+);/.exec(css)?.[1];
+    expect(markSize).toBeDefined();
+    expect(css).toMatch(
+      new RegExp(`\\.crewlet-data-grid__th--center \\.crewlet-data-grid__sort::before \\{[^}]*inline-size: ${markSize!.replace(/[()]/g, '\\$&')}`),
+    );
+    // AN ICON COLUMN keeps the cells' step either side, at the grid's edge too.
+    expect(css).toMatch(
+      /\.crewlet-data-grid__th\.crewlet-data-grid__th--icon,\s*\.crewlet-data-grid__cell\.crewlet-data-grid__cell--icon \{[^}]*--crewlet-data-grid-cell-start: var\(--spacing-3\);[^}]*--crewlet-data-grid-cell-end: var\(--spacing-3\)/,
+    );
+    // WHERE NOTHING HOVERS, a sortable head shows its arrow at rest.
+    expect(css).toMatch(/@media \(hover: none\) \{\s*\.crewlet-data-grid__th:not\(\.crewlet-data-grid__th--plain\) \.crewlet-data-grid__sort-mark \{\s*opacity: 1/);
+  });
+
+  test('an icon column carries its modifier on the head and every cell', () => {
+    const { container } = render(<DataGrid rows={FACTS} columns={ALIGNED} rowKey={(r) => r.id} />);
+    expect(screen.getAllByRole('columnheader')[0]!.classList.contains('crewlet-data-grid__th--icon')).toBe(true);
+    for (const row of container.querySelectorAll('.crewlet-data-grid__row')) {
+      expect(row.querySelector(':scope > .crewlet-data-grid__cell')!.classList.contains('crewlet-data-grid__cell--icon')).toBe(true);
+    }
+  });
+
+  /*
+   * ONE OUTDENT MECHANISM: Button's flush reads `--crewlet-btn-flush-outdent`,
+   * a ghost control written straight into a cell takes the same declaration,
+   * and the grid's exemptions (its own edge, right and centred columns, card
+   * rows) set that one variable to 0. Two mechanisms let a flush control
+   * bypass the exemptions and pull toward the frame.
+   */
+  test('a flush control takes the grid exemptions through one variable', () => {
+    const css = sheet();
+    const outdent = 'margin-inline-start: var(--crewlet-btn-flush-outdent, calc(-1 * (var(--crewlet-btn-inset) + 1px)))';
+    expect(css).toContain(outdent);
+    expect(css).not.toMatch(/control-outdent/);
+    expect(css).toMatch(
+      /\.crewlet-data-grid__cell:is\(:first-child, \.crewlet-data-grid__cell--right, \.crewlet-data-grid__cell--center\) \{\s*--crewlet-btn-flush-outdent: 0px;/,
+    );
+    expect(css).toMatch(/\.crewlet-data-grid:where\(\[data-stacked\]\) \{[^}]*--crewlet-btn-flush-outdent: 0px;/);
+    const button = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../Button/Button.css'), 'utf8');
+    expect(button).toContain(outdent);
+    // NO OTHER RULE in the grid moves a control's start.
+    expect(css.split('margin-inline-start:').length - 1).toBe(1);
   });
 });
 

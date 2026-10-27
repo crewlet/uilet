@@ -121,6 +121,18 @@
 }
 
 /*
+ * AND AN ICON COLUMN, whose track (`DATA_GRID_ICON_TRACK`) is the target size
+ * and the cells' own step either side. At the grid's edge (a card's 16px) the
+ * edge inset left 20px for a 24px mark; the column keeps the cells' step on
+ * both sides wherever it stands, as the selection column does.
+ */
+.crewlet-data-grid__th.crewlet-data-grid__th--icon,
+.crewlet-data-grid__cell.crewlet-data-grid__cell--icon {
+  --crewlet-data-grid-cell-start: var(--spacing-3);
+  --crewlet-data-grid-cell-end: var(--spacing-3);
+}
+
+/*
  * THE LIST TABLE'S HEAD: the micro-label register every table takes, 11/500
  * uppercase. A sortable head is a button with its chrome reset; the reset
  * takes the focus ring with it, so the ring is restated below.
@@ -218,6 +230,7 @@
 .crewlet-data-grid__sort-mark {
   display: inline-flex;
   flex: none;
+  inline-size: var(--spacing-3);
   color: inherit;
   transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
 }
@@ -230,6 +243,17 @@
    right edge over its figures, arrow or not. */
 .crewlet-data-grid__th--right .crewlet-data-grid__sort-mark {
   order: -1;
+}
+
+/*
+ * AND MIRRORED IN A CENTRED COLUMN: a box the arrow's size before the word, a
+ * gap away, so the word stands on the column's middle over its values rather
+ * than half an arrow off it.
+ */
+.crewlet-data-grid__th--center .crewlet-data-grid__sort::before {
+  content: '';
+  flex: none;
+  inline-size: var(--spacing-3);
 }
 
 .crewlet-data-grid__th:hover .crewlet-data-grid__sort-mark,
@@ -351,23 +375,30 @@ button.crewlet-data-grid__row-link {
  * A GHOST CONTROL STARTS ON THE COLUMN'S TEXT EDGE. A small ghost button that
  * opens a cell ("Open ENG-12", a choice made in place through a menu) drew its
  * word one padding and one edge (9px) inside the line its column starts on.
- * Its padding and edge are taken back, as a card's foot does (StatusCard.css):
- * the word sits on the line and only the hover's ground reaches past it, into
- * the step between two columns. A column of figures ends its controls on the
- * far edge, so it is left alone.
+ * ONE MECHANISM, Button's `flush`: a flush control anywhere in a cell takes
+ * its padding and edge back, and a ghost control written straight into a cell
+ * (or as a menu's trigger there) is drawn flush without being asked, by the
+ * same declaration. The word sits on the line and only the hover's ground
+ * reaches past it, into the step between two columns.
  *
- * NEVER AT THE GRID'S OWN EDGE: its first column, and every line of a phone's
- * card (below). A grid standing alone has only its 12px edge there, and with
- * the 9px taken back, the 4px the control's focus ring stands off it ran past
- * the grid's clip: the ring lost a pixel and the hover ground stood 3px from
- * the frame.
+ * THE EXEMPTIONS ARE ONE VARIABLE, `--crewlet-btn-flush-outdent: 0`, which
+ * the flush declaration reads:
+ *
+ * - THE GRID'S OWN EDGE, its first column and every line of a phone's card
+ *   (below). A grid standing alone has only its 12px edge there, and with the
+ *   9px taken back the control's focus ring ran past the grid's clip and the
+ *   hover ground stood 3px from the frame.
+ * - A RIGHT OR A CENTRED COLUMN, which lines its values up by their end or
+ *   their middle, where a control taken back at its start would stand off
+ *   both.
  */
-.crewlet-data-grid__cell:not(:first-child, .crewlet-data-grid__cell--right, .crewlet-data-grid__cell--center)
-  > .crewlet-btn--ghost.crewlet-btn--small:not(.crewlet-btn--flush):first-child,
-.crewlet-data-grid__cell:not(:first-child, .crewlet-data-grid__cell--right, .crewlet-data-grid__cell--center)
-  > .crewlet-menu-anchor:first-child
-  > .crewlet-btn--ghost.crewlet-btn--small:not(.crewlet-btn--flush) {
-  margin-inline-start: var(--crewlet-data-grid-control-outdent, calc(-1 * (var(--spacing-2) + 1px)));
+.crewlet-data-grid__cell > .crewlet-btn--ghost.crewlet-btn--small:first-child,
+.crewlet-data-grid__cell > .crewlet-menu-anchor:first-child > .crewlet-btn--ghost.crewlet-btn--small {
+  margin-inline-start: var(--crewlet-btn-flush-outdent, calc(-1 * (var(--crewlet-btn-inset) + 1px)));
+}
+
+.crewlet-data-grid__cell:is(:first-child, .crewlet-data-grid__cell--right, .crewlet-data-grid__cell--center) {
+  --crewlet-btn-flush-outdent: 0px;
 }
 
 /*
@@ -392,12 +423,6 @@ button.crewlet-data-grid__row-link {
   justify-content: center;
 }
 
-/* A flush control keeps its own inset where the column's edge is not its
-   start: a right or a centred column lines its values up by their end or
-   their middle, and a control taken back at its start would stand off both. */
-:is(.crewlet-data-grid__cell--right, .crewlet-data-grid__cell--center) .crewlet-btn--flush {
-  margin-inline-start: 0;
-}
 
 .crewlet-data-grid__truncate {
   min-width: 0;
@@ -541,6 +566,17 @@ button.crewlet-data-grid__row-link {
   cursor: pointer;
 }
 
+/*
+ * WHERE NOTHING HOVERS (a touch screen), a sortable head shows its arrow at
+ * rest: there is no pointer to bring it out, and a head that only says it
+ * sorts under a pointer says nothing there.
+ */
+@media (hover: none) {
+  .crewlet-data-grid__th:not(.crewlet-data-grid__th--plain) .crewlet-data-grid__sort-mark {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crewlet-data-grid__th,
   .crewlet-data-grid__row,
@@ -568,7 +604,7 @@ button.crewlet-data-grid__row-link {
   /* No ghost control is pulled out here (see above): every line of a card
      starts at the grid's edge, and a compact row's marks run on one line,
      where the hover ground swallowed the gap before it. */
-  --crewlet-data-grid-control-outdent: 0px;
+  --crewlet-btn-flush-outdent: 0px;
 
   display: block;
 }

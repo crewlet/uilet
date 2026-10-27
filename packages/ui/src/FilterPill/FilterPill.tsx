@@ -3,6 +3,22 @@ import { XGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { cx } from '../utils/cx.js';
 
+/** The words a pill says, for an application that says them otherwise. */
+export interface FilterPillLabels {
+  /** The remove control's name, from the filter as a sentence: "Remove the Status is Done filter". */
+  remove: (sentence: string) => string;
+  /** Its name where the filter's parts are not words to build a sentence from. */
+  removeUnnamed: string;
+  /** What ends the field where no operator joins it to the value: "Role: Admin". */
+  fieldEnd: string;
+}
+
+export const FILTER_PILL_LABELS: FilterPillLabels = {
+  remove: (sentence) => `Remove the ${sentence} filter`,
+  removeUnnamed: 'Remove this filter',
+  fieldEnd: ':',
+};
+
 export interface FilterPillProps {
   /** What the filter is on: "Status". */
   field: ReactNode;
@@ -19,9 +35,9 @@ export interface FilterPillProps {
   /** Takes the filter off. Left out, the pill has no remove control. */
   onRemove?: (() => void) | undefined;
   /**
-   * Names the remove control. Defaults to the whole filter as a sentence,
-   * "Remove the Status is In progress filter", where its parts are words: a
-   * row of pills each announcing "Remove" names nothing.
+   * Names the remove control. Defaults to the whole filter as a sentence
+   * (`labels.remove`), "Remove the Status is In progress filter", where its
+   * parts are words: a row of pills each announcing "Remove" names nothing.
    */
   removeLabel?: string | undefined;
   /**
@@ -30,6 +46,7 @@ export interface FilterPillProps {
    * control takes; it returns that control, a `<button>`.
    */
   renderWords?: ((words: ReactNode, className: string) => ReactElement) | undefined;
+  labels?: Partial<FilterPillLabels> | undefined;
   className?: string | undefined;
 }
 
@@ -67,15 +84,17 @@ export function FilterPill({
   onRemove,
   removeLabel,
   renderWords,
+  labels,
   className,
 }: FilterPillProps) {
+  const text: FilterPillLabels = { ...FILTER_PILL_LABELS, ...labels };
   const hasValue = value !== undefined && value !== null && value !== '';
   const hasOperator = operator !== undefined && operator !== null && operator !== '';
   const words = (
     <>
       <span className="crewlet-filter-pill__field">
         {field}
-        {hasValue && !hasOperator ? ':' : null}
+        {hasValue && !hasOperator ? text.fieldEnd : null}
       </span>
       {hasOperator ? (
         <>
@@ -100,7 +119,7 @@ export function FilterPill({
           className="crewlet-filter-pill__remove"
           size="sm"
           variant="ghost"
-          label={removeLabel ?? (sentence ? `Remove the ${sentence} filter` : 'Remove this filter')}
+          label={removeLabel ?? (sentence ? text.remove(sentence) : text.removeUnnamed)}
           icon={<XGlyph size="xs" />}
           onClick={onRemove}
         />

@@ -104,11 +104,18 @@ button.crewlet-filter-pill__words {
  * The remove control: as tall as the pill's inside, behind a hairline, in the
  * pill's own ink. At the small control's own height it stood past the pill's
  * inner edge and was cut off at the bottom.
+ *
+ * RAISED OVER ICONBUTTON'S OWN RULES (`.crewlet-icon-btn`, `--sm`), which
+ * carry the same weight as one class and can load after this sheet in a
+ * bundle: at equal weight the control kept its 26px height and its corner
+ * radius in a 26px pill with a 1px edge, overran the pill by a pixel and lost
+ * the bottom of its focus ring. The child combinator is the extra weight, and
+ * a test holds it above every IconButton rule.
  */
-.crewlet-filter-pill__remove {
+.crewlet-filter-pill > .crewlet-filter-pill__remove {
   height: auto;
   border-radius: 0;
-  border-left: 1px solid var(--color-brand-accent-soft-strong);
+  border-inline-start: 1px solid var(--color-brand-accent-soft-strong);
   color: var(--color-brand-accent-ink);
 }
 
@@ -116,7 +123,7 @@ button.crewlet-filter-pill__words {
  * Its ring is drawn INSIDE it, like the words'. The pill clips to its own
  * radius, so an outset ring is cut off on every edge the control touches.
  */
-.crewlet-filter-pill__remove:focus-visible {
+.crewlet-filter-pill > .crewlet-filter-pill__remove:focus-visible {
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 

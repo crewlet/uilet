@@ -141,9 +141,13 @@
  * the end too, the box overran its cell's content edge, which a column that
  * measures what it cuts short reads as a value that does not fit. The ring is
  * drawn inside, so a container that clips (a table, a card) never cuts it.
+ *
+ * A CONTAINER WITH NO GUTTER TO GIVE sets `--crewlet-btn-flush-outdent` to 0:
+ * a table's first column and its card rows (DataGrid.css), where the outdent
+ * would pull the control toward the frame.
  */
 .crewlet-btn--flush {
-  margin-inline-start: calc(-1 * (var(--crewlet-btn-inset) + 1px));
+  margin-inline-start: var(--crewlet-btn-flush-outdent, calc(-1 * (var(--crewlet-btn-inset) + 1px)));
 }
 
 .crewlet-btn--flush:focus-visible {

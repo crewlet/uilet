@@ -133,6 +133,8 @@ const ALIGNED: DataGridColumn<Task>[] = [
     cell: (t) => `${t.updated}m ago`,
     sortValue: (t) => t.updated,
   },
+  // A CENTRED SORTABLE HEAD: its word stays on the column's middle.
+  { key: 'seen', header: 'Seen', align: 'center', cell: (t) => (t.assignee ? 'Yes' : 'No'), sortValue: (t) => (t.assignee ? 1 : 0) },
 ];
 
 function Aligned() {

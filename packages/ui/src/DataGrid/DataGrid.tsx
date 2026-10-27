@@ -882,6 +882,7 @@ export function DataGrid<T>({
         className={cx(
           'crewlet-data-grid__cell',
           alignOf(column) !== 'left' && `crewlet-data-grid__cell--${alignOf(column)}`,
+          column.icon && 'crewlet-data-grid__cell--icon',
           column.shrink && 'crewlet-data-grid__cell--shrink',
         )}
         data-lead={column.phoneLead || undefined}
@@ -962,6 +963,7 @@ export function DataGrid<T>({
           const headClass = cx(
             'crewlet-data-grid__th',
             alignOf(column) !== 'left' && `crewlet-data-grid__th--${alignOf(column)}`,
+            column.icon && 'crewlet-data-grid__th--icon',
             column.shrink && 'crewlet-data-grid__th--shrink',
             sorted && 'crewlet-data-grid__th--sorted',
             !sortable && 'crewlet-data-grid__th--plain',
@@ -980,6 +982,7 @@ export function DataGrid<T>({
           ) : sortable ? (
             <ArrowUpDownGlyph size="xs" />
           ) : null;
+          const ariaSort = sorted ? (sort?.desc ? 'descending' : 'ascending') : undefined;
           const mark = arrow && (
             <span className="crewlet-data-grid__sort-mark" aria-hidden="true">
               {arrow}
@@ -990,7 +993,9 @@ export function DataGrid<T>({
           if (!sortable) {
             const named = !headerWord(column) && !column.action ? column.label : undefined;
             return (
-              <div key={column.key} className={headClass} role="columnheader" title={named}>
+              // THE ORDER IN FORCE IS SAID on a head that cannot change it too:
+              // a grid sorted by its default, with nothing to press.
+              <div key={column.key} className={headClass} role="columnheader" title={named} aria-sort={ariaSort}>
                 {label}
                 {mark}
                 {named && <VisuallyHidden>{named}</VisuallyHidden>}
@@ -1005,7 +1010,7 @@ export function DataGrid<T>({
               key={column.key}
               className={headClass}
               role="columnheader"
-              aria-sort={sorted ? (sort?.desc ? 'descending' : 'ascending') : undefined}
+              aria-sort={ariaSort}
             >
               <button
                 type="button"
