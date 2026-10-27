@@ -40,9 +40,9 @@ export interface RecordChipProps {
  * A BUTTON THAT OPENS A DIALOG. The peek is a named `Popover` dialog, so focus
  * moves into it when it opens. Escape, Tab out of it, or a control inside it
  * that closes it hands focus back to the chip; a press outside closes it and
- * leaves focus where that press put it. The chip's name is what it shows and
- * the record's name after it, so a reader moving by control hears what it
- * opens.
+ * leaves focus where that press put it. A key chip's name is the key and the
+ * record's name after it, so a reader moving by control hears what it opens;
+ * a label chip's name is its label, which already names the record.
  *
  * A LONG LABEL IS CUT AT THE LINE'S END and carries its whole text as the
  * chip's title, so a pointer reader can still read it.
@@ -61,8 +61,10 @@ export function RecordChip({ code, label, title, glyph, children, actions, meta,
           type="button"
           className={cx('crewlet-record-chip', code ? 'crewlet-record-chip--code' : null, className)}
           data-open={open || undefined}
-          // THE KEY FIRST, as drawn, then the name it stands for.
-          aria-label={said === title ? undefined : `${said}, ${title}`}
+          // A KEY IS NAMED BY THE RECORD IT STANDS FOR: the key first, as
+          // drawn, then the name. A label is a name already and is its own,
+          // never said twice ("Decisions waiting on you (8), Decisions...").
+          aria-label={code ? `${code}, ${title}` : undefined}
           // A LABEL MAY BE CUT at the line's end; its whole text is the
           // pointer reader's. A key is short and never is.
           title={code ? undefined : said}

@@ -142,3 +142,16 @@ test("a label chip carries its whole text as its title, a key chip none", () => 
     screen.getByRole("button", { name: /GOP-11/ }).hasAttribute("title"),
   ).toBe(false);
 });
+
+test("a label chip is named by its label alone, even where the label says more than the record's name", () => {
+  render(
+    <RecordChip
+      label="Decisions waiting on you (8)"
+      title="Decisions waiting on you"
+    />,
+  );
+  expect(screen.getByRole("button").getAttribute("aria-label")).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "Decisions waiting on you (8)" }),
+  ).toBeTruthy();
+});
