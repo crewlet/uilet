@@ -9,6 +9,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
+import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle } from './index.js';
 
@@ -38,6 +39,21 @@ function Column({ onOpen = () => {} }: { onOpen?: (key: string) => void }) {
         </InboxRow>
         <InboxRow title="Crewlet-PM" meta="2d" done doneLabel="Answered" onClick={() => onOpen('ask-0')}>
           Ship the export first?
+        </InboxRow>
+      </InboxGroup>
+      <InboxGroup label="Answered" count={1} collapsible>
+        <InboxRow
+          title="Crewlet-PM"
+          meta="Sat"
+          done
+          doneLabel="Answered"
+          status={<span>Answered</span>}
+          outcome="You chose A command-line tool"
+          outcomeIcon={<svg />}
+          outcomeTone="success"
+          onClick={() => onOpen('ask-9')}
+        >
+          Should the MVP be a command-line tool?
         </InboxRow>
       </InboxGroup>
       <InboxMore>
@@ -152,4 +168,97 @@ test('carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations).toEqual([]);
+});
+
+test('a settled row is never struck through, and says its outcome and status in words', () => {
+  render(
+    <InboxList label="Inbox">
+      <InboxGroup label="Answered">
+        <InboxRow
+          title="Crewlet-PM"
+          meta="2m"
+          done
+          doneLabel="Answered"
+          status={<span>Answered</span>}
+          outcome={<>You chose One JSON file per group</>}
+          outcomeIcon={<svg />}
+          outcomeTone="success"
+          onClick={() => {}}
+        >
+          How should the MVP store a group&rsquo;s data locally?
+        </InboxRow>
+      </InboxGroup>
+    </InboxList>,
+  );
+  const row = screen.getByRole('button', {
+    name: /^Crewlet-PM Answered 2m How should the MVP store a group’s data locally\? You chose One JSON file per group Answered$/,
+  });
+  expect(row.querySelector('.crewlet-inbox-row__outcome--success')).toBeTruthy();
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  expect(css).not.toContain('line-through');
+});
+
+test('a collapsible group is a disclosure in its heading, counted, and hides its rows while closed', () => {
+  const onOpenChange = vi.fn();
+  render(
+    <InboxList label="Inbox">
+      <InboxGroup label="Answered" count={4} collapsible onOpenChange={onOpenChange}>
+        <InboxRow title="Crewlet-PM" onClick={() => {}}>
+          Ship the export first?
+        </InboxRow>
+      </InboxGroup>
+    </InboxList>,
+  );
+  const toggle = screen.getByRole('button', { name: 'Answered, 4' });
+  expect(toggle.closest('h2, h3, h4, h5, h6')).toBeTruthy();
+  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  expect(screen.queryByRole('button', { name: /Ship the export/ })).toBeNull();
+  fireEvent.click(toggle);
+  expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  expect(onOpenChange).toHaveBeenCalledWith(true);
+  expect(screen.getByRole('button', { name: /Ship the export/ })).toBeTruthy();
+  expect(screen.getByRole('region', { name: 'Answered, 4' })).toBeTruthy();
+});
+
+test('a collapsible group can be held by its caller, and opens on its own button', () => {
+  function Held() {
+    const [open, setOpen] = useState(true);
+    return (
+      <InboxList label="Inbox">
+        <InboxGroup label="Answered" count={2} collapsible open={open} onOpenChange={setOpen}>
+          <InboxRow title="Crewlet-PM" onClick={() => {}}>
+            Ship the export first?
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>
+    );
+  }
+  render(<Held />);
+  const toggle = screen.getByRole('button', { name: 'Answered, 2' });
+  // A native button: Enter and Space press it, and it says what it controls.
+  expect(toggle.tagName).toBe('BUTTON');
+  expect(toggle.getAttribute('type')).toBe('button');
+  const rows = document.getElementById(toggle.getAttribute('aria-controls')!);
+  expect(rows?.tagName).toBe('UL');
+  expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  expect(rows?.hidden).toBe(false);
+  fireEvent.click(toggle);
+  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  expect(rows?.hidden).toBe(true);
+});
+
+test('a group whose label is hidden is never collapsed, since nothing could open it', () => {
+  render(
+    <InboxList label="Inbox">
+      <InboxGroup label="Snoozed" hideLabel collapsible>
+        <InboxRow title="Crewlet-PM" onClick={() => {}}>
+          Assigned you
+        </InboxRow>
+      </InboxGroup>
+    </InboxList>,
+  );
+  expect(screen.getByRole('button', { name: /Assigned you/ })).toBeTruthy();
 });

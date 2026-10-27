@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Avatar, InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle, Link } from '@crewlethq/ui';
+import { Avatar, InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle, Link, Tag } from '@crewlethq/ui';
+import { CheckGlyph, MessageSquareGlyph } from '@crewlethq/icons/glyphs';
 
 /**
  * The inbox's column. Each row names who it is from, says in up to three
@@ -155,4 +156,105 @@ export const LongWords: Story = {
       </InboxList>
     </div>
   ),
+};
+
+/**
+ * What came of a settled row, said rather than struck: the words step down to
+ * the secondary ink and stay legible, `outcome` says what was decided on a
+ * line of its own, and `status` names the state in the head. A row answered a
+ * moment ago stays where it stood, marked; older answers wait in a closed,
+ * counted group whose label is a disclosure inside the heading.
+ */
+export const Answered: Story = {
+  render: function Render() {
+    const [open, setOpen] = useState('done-1');
+    const task = (label: string) => (
+      <Link href={`#/worklet/${label.split(' ')[0]}`} variant="quiet" size="inherit">
+        {label}
+      </Link>
+    );
+    const answered = (
+      <Tag size="xs" variant="success" appearance="soft" leadingIcon={<CheckGlyph size="sm" />}>
+        Answered
+      </Tag>
+    );
+    return (
+      <div style={{ width: 340, padding: 'var(--spacing-2)', background: 'var(--color-surface-background)' }}>
+        <InboxList label="Inbox">
+          <InboxGroup label="Needs you" count={1}>
+            <InboxRow
+              title="Crewlet-PM"
+              leading={<Avatar name="Crewlet-PM" kind="agent" size={24} decorative />}
+              done
+              doneLabel="Answered"
+              status={answered}
+              outcome={
+                <>
+                  You chose <strong>One JSON file per group</strong>
+                </>
+              }
+              outcomeIcon={<CheckGlyph size="sm" />}
+              outcomeTone="success"
+              selected={open === 'done-1'}
+              onClick={() => setOpen('done-1')}
+              aside={task('FAIR-1 Product brief and MVP backlog')}
+            >
+              How should the MVP store a group&rsquo;s data locally?
+            </InboxRow>
+            <InboxRow
+              title="Crewlet-PM"
+              meta="Sun"
+              leading={<Avatar name="Crewlet-PM" kind="agent" size={24} decorative />}
+              actionable
+              selected={open === 'ask-2'}
+              onClick={() => setOpen('ask-2')}
+              aside={task('FAIR-1 Product brief and MVP backlog')}
+            >
+              Should the MVP support unequal splits, or equal splits only?
+            </InboxRow>
+          </InboxGroup>
+          <InboxGroup label="Answered" count={2} collapsible defaultOpen>
+            <InboxRow
+              title="Crewlet-SWE"
+              meta="35m"
+              leading={<Avatar name="Crewlet-SWE" kind="agent" size={24} decorative />}
+              done
+              doneLabel="Answered"
+              outcome={
+                <>
+                  You replied <strong>&ldquo;Allow spaces, but trim them at both ends.&rdquo;</strong>
+                </>
+              }
+              outcomeIcon={<MessageSquareGlyph size="sm" />}
+              outcomeTone="success"
+              selected={open === 'done-2'}
+              onClick={() => setOpen('done-2')}
+              aside={task("FAIR-5 Store a group's data locally")}
+            >
+              Can a group&rsquo;s name contain spaces?
+            </InboxRow>
+            <InboxRow
+              title="Crewlet-PM"
+              meta="1h"
+              leading={<Avatar name="Crewlet-PM" kind="agent" size={24} decorative />}
+              done
+              doneLabel="Answered"
+              outcome={
+                <>
+                  Dana Reyes chose <strong>The person who paid</strong>
+                </>
+              }
+              outcomeIcon={<CheckGlyph size="sm" />}
+              outcomeTone="success"
+              selected={open === 'done-3'}
+              onClick={() => setOpen('done-3')}
+              aside={task('FAIR-4 Split amounts exact to the cent')}
+            >
+              Who should receive the leftover cent when an amount does not split evenly?
+            </InboxRow>
+          </InboxGroup>
+        </InboxList>
+      </div>
+    );
+  },
 };

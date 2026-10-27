@@ -33,6 +33,63 @@
   line-height: var(--font-line-height-snug);
 }
 
+/* The count after a label, in the quiet ink and the label's own register. */
+.crewlet-inbox-list__count {
+  margin-inline-start: var(--spacing-1);
+  font-size: var(--font-size-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * A collapsible group's label is a button the width of the column, so the
+ * whole line is the target, with the chevron turned a quarter while closed.
+ */
+.crewlet-inbox-list__disclosure {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  width: 100%;
+  min-height: var(--size-target-min);
+  margin: calc(var(--spacing-1) * -1) 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.crewlet-inbox-list__disclosure:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-inbox-list__chevron {
+  flex: none;
+  color: var(--color-text-tertiary);
+  transform: rotate(-90deg);
+  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-inbox-list__disclosure[aria-expanded='true'] .crewlet-inbox-list__chevron {
+  transform: rotate(0deg);
+}
+
+.crewlet-inbox-list__disclosure:hover .crewlet-inbox-list__chevron {
+  color: var(--color-text-primary);
+}
+
+.crewlet-inbox-list__disclosure .crewlet-inbox-list__count {
+  margin-inline-start: 0;
+}
+
+.crewlet-inbox-list__rows[hidden] {
+  display: none;
+}
+
 .crewlet-inbox-list__rows {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -194,14 +251,87 @@
 }
 
 /*
- * Settled. The strike is drawn in the strong hairline rather than the text's
- * own ink, so the words under it stay legible; the state is also read out,
- * because a line through a word says nothing to somebody listening.
+ * Settled. The name drops to the regular weight and the words to the
+ * secondary ink, which still reads at body contrast: a settled row is read
+ * again, to see what came of it. No strike, which says "cancelled" and cuts
+ * through the letters a reader is trying to read; the state is read out, and
+ * the outcome line and any status say it in words.
  */
+.crewlet-inbox-row__control--done .crewlet-inbox-row__title {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
 .crewlet-inbox-row__control--done .crewlet-inbox-row__text {
-  text-decoration: line-through;
-  text-decoration-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-inbox-row__status {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+/* With a status, the time stays at the end and the status sits beside it. */
+.crewlet-inbox-row__status + .crewlet-inbox-row__meta {
+  margin-inline-start: 0;
+}
+
+.crewlet-inbox-row__head > .crewlet-inbox-row__status {
+  margin-inline-start: auto;
+}
+
+/*
+ * What came of the row: a glyph in the tone's ink, then words in the
+ * secondary ink, on one line that wraps rather than cuts.
+ */
+.crewlet-inbox-row__outcome {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding-top: 2px;
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.crewlet-inbox-row__outcome-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 1lh;
   color: var(--color-text-tertiary);
+}
+
+.crewlet-inbox-row__outcome--success .crewlet-inbox-row__outcome-icon {
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-inbox-row__outcome--info .crewlet-inbox-row__outcome-icon {
+  color: var(--color-feedback-info-ink);
+}
+
+.crewlet-inbox-row__outcome--warning .crewlet-inbox-row__outcome-icon {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-inbox-row__outcome--danger .crewlet-inbox-row__outcome-icon {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-inbox-row__outcome--brand .crewlet-inbox-row__outcome-icon {
+  color: var(--color-brand-accent);
+}
+
+.crewlet-inbox-row__outcome-text {
+  min-width: 0;
+}
+
+.crewlet-inbox-row__outcome-text strong {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 /*
@@ -259,7 +389,8 @@
     transition: none;
   }
 
-  .crewlet-inbox-list__toggle {
+  .crewlet-inbox-list__toggle,
+  .crewlet-inbox-list__chevron {
     transition: none;
   }
 }

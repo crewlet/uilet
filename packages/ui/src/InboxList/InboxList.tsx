@@ -1,12 +1,15 @@
 import {
   useId,
+  useState,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
   type LiHTMLAttributes,
   type MouseEvent,
   type ReactNode,
 } from 'react';
+import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
+import type { Tone } from '../utils/tone.js';
 import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/headingLevel.js';
 import { Eyebrow } from '../Eyebrow/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
@@ -42,6 +45,24 @@ export interface InboxGroupProps extends Omit<HTMLAttributes<HTMLElement>, 'titl
   hideLabel?: boolean | undefined;
   /** Overrides the level the label is rendered at. */
   headingLevel?: HeadingLevel | undefined;
+  /**
+   * How many rows the group holds, drawn after the label in the quiet ink and
+   * read with it ("Answered, 4"). Most useful on a collapsible group, whose
+   * rows are not on screen to be counted.
+   */
+  count?: number | undefined;
+  /**
+   * The label becomes a disclosure button that shows and hides the rows. For
+   * a group a reader opens now and then, such as what they answered already,
+   * kept in the list without taking its room. Ignored with `hideLabel`, which
+   * leaves no button to open the rows with.
+   */
+  collapsible?: boolean | undefined;
+  /** Whether a collapsible group's rows are shown, when the caller holds it. */
+  open?: boolean | undefined;
+  /** Whether a collapsible group starts open, when the group holds it. */
+  defaultOpen?: boolean | undefined;
+  onOpenChange?: ((open: boolean) => void) | undefined;
 }
 
 /**
@@ -49,22 +70,79 @@ export interface InboxGroupProps extends Omit<HTMLAttributes<HTMLElement>, 'titl
  * register, so a reader navigating by heading lands on each group and a
  * reader scanning sees where one ends.
  */
-export function InboxGroup({ label, hideLabel = false, headingLevel, className, children, ...rest }: InboxGroupProps) {
+export function InboxGroup({
+  label,
+  hideLabel = false,
+  headingLevel,
+  count,
+  collapsible = false,
+  open: controlledOpen,
+  defaultOpen = false,
+  onOpenChange,
+  className,
+  children,
+  ...rest
+}: InboxGroupProps) {
   const level = useHeadingLevel();
   const Heading = headingTag(headingLevel ?? level);
   const labelId = useId();
+  const rowsId = useId();
+  const [ownOpen, setOwnOpen] = useState(defaultOpen);
+  // A HIDDEN LABEL HAS NO BUTTON to open the rows with, so a group whose
+  // label is hidden is never collapsed.
+  const collapses = collapsible && !hideLabel;
+  const open = !collapses || (controlledOpen ?? ownOpen);
+  const toggle = () => {
+    const next = !open;
+    if (controlledOpen === undefined) setOwnOpen(next);
+    onOpenChange?.(next);
+  };
+  // THE COUNT IS PART OF THE NAME, set apart by a comma a screen reader
+  // pauses on, so "Answered, 4" is read rather than "Answered4".
+  const counted =
+    count === undefined ? null : (
+      <>
+        <VisuallyHidden>,</VisuallyHidden> <span className="crewlet-inbox-list__count">{count}</span>
+      </>
+    );
   return (
-    <section {...rest} aria-labelledby={labelId} className={cx('crewlet-inbox-list__group', className)}>
+    <section
+      {...rest}
+      aria-labelledby={labelId}
+      className={cx('crewlet-inbox-list__group', collapses && 'crewlet-inbox-list__group--collapsible', className)}
+    >
       {hideLabel ? (
         <VisuallyHidden as={Heading} id={labelId}>
           {label}
+          {counted}
         </VisuallyHidden>
+      ) : collapses ? (
+        // A DISCLOSURE INSIDE THE HEADING, never a heading inside a button: a
+        // reader moving by heading still lands on the group, and the button
+        // in it says whether the rows are shown.
+        <Heading className="crewlet-inbox-list__label">
+          <button
+            type="button"
+            id={labelId}
+            className="crewlet-inbox-list__disclosure"
+            aria-expanded={open}
+            aria-controls={rowsId}
+            onClick={toggle}
+          >
+            <ChevronDownGlyph aria-hidden size="sm" className="crewlet-inbox-list__chevron" />
+            <Eyebrow>{label}</Eyebrow>
+            {counted}
+          </button>
+        </Heading>
       ) : (
         <Heading id={labelId} className="crewlet-inbox-list__label">
           <Eyebrow>{label}</Eyebrow>
+          {counted}
         </Heading>
       )}
-      <ul className="crewlet-inbox-list__rows">{children}</ul>
+      <ul id={rowsId} className="crewlet-inbox-list__rows" hidden={!open}>
+        {children}
+      </ul>
     </section>
   );
 }
@@ -99,10 +177,28 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
   unreadLabel?: string | undefined;
   /** It waits on the reader: the words take the primary ink. */
   actionable?: boolean | undefined;
-  /** Settled: the words are struck through in the quiet ink, and the state is read out. */
+  /**
+   * Settled: the name and the words step down to the secondary ink, and the
+   * state is read out. Never struck through: a settled row is still read, and
+   * a line through its words says "cancelled" where it means "done".
+   */
   done?: boolean | undefined;
   /** Read after the row's words when `done`: "Answered", "Resolved". */
   doneLabel?: string | undefined;
+  /**
+   * In the head, before the time: a short state of the row's own, such as a
+   * Tag reading "Answered". Drawn as given, so it carries its own words.
+   */
+  status?: ReactNode;
+  /**
+   * A line under the words, inside the control: what came of the row. "You
+   * chose One JSON file per group", "Crewlet-PM is acting on it".
+   */
+  outcome?: ReactNode;
+  /** A glyph before the outcome, drawn in the tone's ink and hidden from a screen reader. */
+  outcomeIcon?: ReactNode;
+  /** The ink of the outcome's glyph. The words stay in the secondary ink, so the line is read the same in every tone. */
+  outcomeTone?: Tone | undefined;
   /** Opens the row as a link. */
   href?: string | undefined;
   /**
@@ -126,6 +222,11 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
  * pressed fill says "here" without saying "look". The control carries
  * `aria-current`, so the row is announced as the open one where focus is.
  *
+ * WHAT CAME OF IT IS SAID, NOT STRUCK. A settled row steps its ink down and
+ * says its outcome on a line of its own (`outcome`), with any state the
+ * caller names in the head (`status`): every word stays legible, and the
+ * state is never carried by a decoration alone.
+ *
  * NOTHING IS CUT AT THE EDGE. The name ellipsizes, the time never wraps, and
  * the words take up to three lines before they stop, so a row says what it is
  * rather than its first few words.
@@ -144,6 +245,10 @@ export function InboxRow({
   actionable = false,
   done = false,
   doneLabel = 'Done',
+  status,
+  outcome,
+  outcomeIcon,
+  outcomeTone = 'neutral',
   href,
   onClick,
   className,
@@ -172,6 +277,12 @@ export function InboxRow({
               </span>
             </>
           )}
+          {status === undefined || status === null ? null : (
+            <>
+              {' '}
+              <span className="crewlet-inbox-row__status">{status}</span>
+            </>
+          )}
           {meta === undefined ? null : (
             <>
               {' '}
@@ -188,6 +299,19 @@ export function InboxRow({
             </>
           )}
         </span>
+        {outcome === undefined || outcome === null ? null : (
+          <>
+            {' '}
+            <span className={cx('crewlet-inbox-row__outcome', `crewlet-inbox-row__outcome--${outcomeTone}`)}>
+              {outcomeIcon === undefined ? null : (
+                <span aria-hidden className="crewlet-inbox-row__outcome-icon">
+                  {outcomeIcon}
+                </span>
+              )}
+              <span className="crewlet-inbox-row__outcome-text">{outcome}</span>
+            </span>
+          </>
+        )}
         {unread ? (
           <>
             {' '}
