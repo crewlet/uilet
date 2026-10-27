@@ -968,7 +968,10 @@ export function DataGrid<T>({
             sorted && 'crewlet-data-grid__th--sorted',
             !sortable && 'crewlet-data-grid__th--plain',
           );
-          const label = <span className="crewlet-data-grid__truncate">{column.header}</span>;
+          // A HEAD WITH NO WORD DRAWS NO WORD BOX: an empty box and its gap
+          // would push a sortable mark column's arrow off the track's middle.
+          const worded = column.header !== '' && column.header !== null && column.header !== undefined;
+          const label = worded ? <span className="crewlet-data-grid__truncate">{column.header}</span> : null;
           // THE ARROW SAYS THE ORDER. The sorted head's names its direction;
           // every other SORTABLE head draws the two-way arrow, shown on hover
           // and focus, so a head says it sorts before it is pressed. Hidden

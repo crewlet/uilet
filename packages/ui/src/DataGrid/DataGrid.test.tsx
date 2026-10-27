@@ -294,7 +294,9 @@ describe('alignment', () => {
     const markSize = /\.crewlet-data-grid__sort-mark \{[^}]*inline-size: ([^;]+);/.exec(css)?.[1];
     expect(markSize).toBeDefined();
     expect(css).toMatch(
-      new RegExp(`\\.crewlet-data-grid__th--center \\.crewlet-data-grid__sort::before \\{[^}]*inline-size: ${markSize!.replace(/[()]/g, '\\$&')}`),
+      new RegExp(
+        `\\.crewlet-data-grid__th--center \\.crewlet-data-grid__sort:has\\(> \\.crewlet-data-grid__truncate\\)::before \\{[^}]*inline-size: ${markSize!.replace(/[()]/g, '\\$&')}`,
+      ),
     );
     // AN ICON COLUMN keeps the cells' step either side, at the grid's edge too.
     expect(css).toMatch(
@@ -302,6 +304,18 @@ describe('alignment', () => {
     );
     // WHERE NOTHING HOVERS, a sortable head shows its arrow at rest.
     expect(css).toMatch(/@media \(hover: none\) \{\s*\.crewlet-data-grid__th:not\(\.crewlet-data-grid__th--plain\) \.crewlet-data-grid__sort-mark \{\s*opacity: 1/);
+  });
+
+  // A SORTABLE MARK COLUMN has no word, so its head draws the arrow alone:
+  // no empty word box and no mirrored reserve to push it off the middle.
+  test('a sortable icon column draws its arrow alone, with no word box to offset it', () => {
+    const columns: DataGridColumn<Fact>[] = [{ ...ALIGNED[0]!, sortValue: (r) => r.kind }, ALIGNED[1]!];
+    render(<DataGrid rows={FACTS} columns={columns} rowKey={(r) => r.id} onSortChange={() => {}} />);
+    const button = screen.getByRole('button', { name: 'Type' });
+    expect(button.querySelector('.crewlet-data-grid__truncate')).toBeNull();
+    expect(button.querySelector('.crewlet-data-grid__sort-mark')).not.toBeNull();
+    // A worded head keeps its word box, which the centred reserve keys on.
+    expect(screen.getByRole('button', { name: 'Name' }).querySelector('.crewlet-data-grid__truncate')).not.toBeNull();
   });
 
   test('an icon column carries its modifier on the head and every cell', () => {

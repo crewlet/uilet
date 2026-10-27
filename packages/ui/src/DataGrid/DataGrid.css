@@ -248,9 +248,11 @@
 /*
  * AND MIRRORED IN A CENTRED COLUMN: a box the arrow's size before the word, a
  * gap away, so the word stands on the column's middle over its values rather
- * than half an arrow off it.
+ * than half an arrow off it. ONLY BEFORE A WORD: a head with none (a sortable
+ * mark column) draws its arrow alone, already on the middle, and the reserve
+ * would push it off.
  */
-.crewlet-data-grid__th--center .crewlet-data-grid__sort::before {
+.crewlet-data-grid__th--center .crewlet-data-grid__sort:has(> .crewlet-data-grid__truncate)::before {
   content: '';
   flex: none;
   inline-size: var(--spacing-3);

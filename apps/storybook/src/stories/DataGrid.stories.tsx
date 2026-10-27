@@ -107,7 +107,8 @@ function DefaultOrder() {
 export const SortedFromADefault: Story = { render: () => <DefaultOrder /> };
 
 const ALIGNED: DataGridColumn<Task>[] = [
-  { key: 'type', header: '', label: 'Type', icon: true, cell: () => <BugGlyph size="sm" aria-hidden="true" /> },
+  // A SORTABLE MARK COLUMN: its arrow alone, on the track's middle.
+  { key: 'type', header: '', label: 'Type', icon: true, cell: () => <BugGlyph size="sm" aria-hidden="true" />, sortValue: (t) => t.key },
   { key: 'key', header: 'Key', shrink: true, cell: (t) => t.key, sortValue: (t) => t.key },
   {
     key: 'status',
