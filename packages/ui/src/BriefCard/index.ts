@@ -8,5 +8,4 @@ export type {
   BriefCardNeed,
   BriefCardNeedTone,
   BriefCardProps,
-  BriefCardRecommendation,
 } from './BriefCard.js';
