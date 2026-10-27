@@ -197,6 +197,24 @@ describe('Toaster', () => {
     expect(onDismiss).toHaveBeenCalledWith(1);
   });
 
+  // A NULL DURATION IS AN UNSET ONE, as it was before the default read the
+  // words: a caller in plain JavaScript passes null for "the default", and
+  // reading it as a duration made the toast sticky.
+  test('a null duration takes the default', () => {
+    vi.useFakeTimers();
+    const onDismiss = vi.fn();
+    render(
+      <Toaster
+        toasts={[{ id: 1, variant: 'success', message: 'Saved', duration: null as unknown as undefined }]}
+        onDismiss={onDismiss}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+    expect(onDismiss).toHaveBeenCalledWith(1);
+  });
+
   test('a warning and a failure stay until they are dismissed', () => {
     vi.useFakeTimers();
     const onDismiss = vi.fn();

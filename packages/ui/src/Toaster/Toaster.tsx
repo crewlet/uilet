@@ -193,7 +193,10 @@ const isKnown = (variant: string): variant is ToastVariant => KNOWN.has(variant)
  * what the stack may drop are one rule.
  */
 const durationOf = (toast: Pick<Toast, 'variant' | 'duration' | 'title' | 'message'>): number => {
-  if (toast.duration !== undefined) return toast.duration;
+  // UNSET IS undefined OR null: a caller in plain JavaScript, or one passing
+  // a field it read from somewhere, means "the default" by either.
+  const given = toast.duration ?? null;
+  if (given !== null) return given;
   const variant = toast.variant ?? 'info';
   if (!isKnown(variant) || !GOES_BY_ITSELF[variant]) return 0;
   return readingDuration(readable(toast).join(' '));
