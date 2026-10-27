@@ -145,3 +145,17 @@ export const SizedByWords: Story = {
   },
   decorators: [(Story) => <div style={{ maxWidth: 420 }}>{Story()}</div>],
 };
+
+/**
+ * A token longer than the table (a digest) wraps anywhere rather than push
+ * the table sideways, while the key column holds its line.
+ */
+export const SizedByWordsLongToken: Story = {
+  args: {
+    headers: ['Task', 'Digest'],
+    data: [['GOP-11', 'sha256:9f2c4e7a1b3d5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8']],
+    columns: 'content',
+    nowrap: [true, false],
+  },
+  decorators: [(Story) => <div style={{ maxWidth: 350 }}>{Story()}</div>],
+};

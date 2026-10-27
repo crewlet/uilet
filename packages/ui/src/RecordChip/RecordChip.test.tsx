@@ -93,3 +93,52 @@ test("an Also read line with nothing in it draws nothing", () => {
   );
   expect(container.innerHTML).toBe("");
 });
+
+test("opening the peek moves focus into it", async () => {
+  render(
+    <RecordChip
+      code="GOP-11"
+      title="Android 12 crash"
+      actions={<a href="#/worklet/GOP-11">Open task</a>}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /GOP-11/ }));
+  const peek = screen.getByRole("dialog");
+  await waitFor(() => expect(peek.contains(document.activeElement)).toBe(true));
+});
+
+test("a press outside closes the peek", async () => {
+  render(
+    <div>
+      <p data-testid="outside">Elsewhere in the answer.</p>
+      <RecordChip code="GOP-11" title="Android 12 crash" />
+    </div>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /GOP-11/ }));
+  expect(screen.getByRole("dialog")).toBeTruthy();
+  const outside = screen.getByTestId("outside");
+  fireEvent.pointerDown(outside);
+  fireEvent.mouseDown(outside);
+  fireEvent.click(outside);
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+});
+
+test("a label chip carries its whole text as its title, a key chip none", () => {
+  render(
+    <p>
+      <RecordChip
+        label="Decisions waiting on you this week"
+        title="Decisions waiting on you this week"
+      />
+      <RecordChip code="GOP-11" title="Android 12 crash" />
+    </p>,
+  );
+  expect(
+    screen
+      .getByRole("button", { name: "Decisions waiting on you this week" })
+      .getAttribute("title"),
+  ).toBe("Decisions waiting on you this week");
+  expect(
+    screen.getByRole("button", { name: /GOP-11/ }).hasAttribute("title"),
+  ).toBe(false);
+});

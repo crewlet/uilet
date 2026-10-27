@@ -16,7 +16,13 @@
   color: var(--color-text-primary);
   font: inherit;
   font-weight: var(--font-weight-medium);
-  line-height: var(--font-line-height-snug);
+  /*
+   * EXACTLY ONE OF THE LINE'S OWN LINES, hairline included: `1lh` is the
+   * line-height the chip inherits, and the two pixels are its top and bottom
+   * border. At the snug step a label chip stood 20.2px in a 19.5px line and
+   * moved every line it sat on by a pixel.
+   */
+  line-height: calc(1lh - 2px);
   vertical-align: baseline;
   cursor: pointer;
   transition:
@@ -143,8 +149,18 @@
   flex: none;
 }
 
+/*
+ * THE LIST IS THE WRAPPING ROW. Not `display: contents`, which older WebKit
+ * and Chromium drop from the accessibility tree along with the list's name,
+ * so "Also read, list, 3 items" was never said.
+ */
 .crewlet-record-chip-list__items {
-  display: contents;
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1) var(--spacing-2);
+  min-width: 0;
   margin: 0;
   padding: 0;
   list-style: none;

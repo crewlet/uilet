@@ -148,3 +148,17 @@ test('even columns by default, and no column held to one line', () => {
   expect(container.querySelector('.crewlet-table--content')).toBeNull();
   expect(container.querySelector('.crewlet-table__cell--nowrap')).toBeNull();
 });
+
+test('nowrap holds nothing under even columns, where a held cell would run into the next', () => {
+  // A caller in plain JavaScript, whom the type does not reach.
+  const props = { headers: ['Key'], data: [['GOP-11']], nowrap: [true] } as unknown as Parameters<typeof Table>[0];
+  const { container } = render(<Table {...props} />);
+  expect(container.querySelector('.crewlet-table__cell--nowrap')).toBeNull();
+});
+
+test('a column sized by its words may break a token longer than the table, and a nowrap or figure column never', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Table.css'), 'utf8');
+  expect(css).toMatch(
+    /\.crewlet-table--content td:not\(\.crewlet-table__cell--nowrap, \.crewlet-table__cell--end\) \{\s*overflow-wrap: anywhere;/,
+  );
+});

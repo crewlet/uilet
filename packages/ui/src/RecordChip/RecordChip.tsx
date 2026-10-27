@@ -30,16 +30,22 @@ export interface RecordChipProps {
  * WHY IT EXISTS. An answer that names GOP-11 and also draws a card for it says
  * the same record twice, the card a long way under the sentence that needed
  * it. The chip puts the record where the words already are, and costs the
- * line no height: it is the text's own size, on its baseline.
+ * line no height: it is the text's own size, on its baseline, exactly one of
+ * the line's own lines tall, hairline included.
  *
  * WHAT IT MAY POINT AT. The host draws a chip only for a record it read and
  * resolved itself; the words around it are prose, and a chip is never made
  * from a key the prose merely spells.
  *
  * A BUTTON THAT OPENS A DIALOG. The peek is a named `Popover` dialog, so focus
- * moves into it, Escape and a press outside close it, and focus comes back to
- * the chip. The chip's name is what it shows and the record's name after it,
- * so a reader moving by control hears what it opens.
+ * moves into it when it opens. Escape, Tab out of it, or a control inside it
+ * that closes it hands focus back to the chip; a press outside closes it and
+ * leaves focus where that press put it. The chip's name is what it shows and
+ * the record's name after it, so a reader moving by control hears what it
+ * opens.
+ *
+ * A LONG LABEL IS CUT AT THE LINE'S END and carries its whole text as the
+ * chip's title, so a pointer reader can still read it.
  */
 export function RecordChip({ code, label, title, glyph, children, actions, meta, className }: RecordChipProps) {
   const said = code ?? label ?? title;
@@ -57,6 +63,9 @@ export function RecordChip({ code, label, title, glyph, children, actions, meta,
           data-open={open || undefined}
           // THE KEY FIRST, as drawn, then the name it stands for.
           aria-label={said === title ? undefined : `${said}, ${title}`}
+          // A LABEL MAY BE CUT at the line's end; its whole text is the
+          // pointer reader's. A key is short and never is.
+          title={code ? undefined : said}
           onClick={toggle}
         >
           {glyph === undefined || glyph === null ? null : (
