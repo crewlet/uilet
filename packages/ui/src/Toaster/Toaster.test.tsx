@@ -242,6 +242,51 @@ describe('Toaster', () => {
     expect(onDismiss.mock.calls).toEqual([[3]]);
   });
 
+  // AN UPDATE IN PLACE KEEPS WHAT HAS ELAPSED; ONLY A NEW VERSION RESTARTS.
+  // With the default read from the words, new words in the same toast change
+  // its duration. Restarting the countdown then (and only when the word count
+  // moved) left the drain, keyed by the version, stretched and out of step.
+  test('an update in place keeps the elapsed time, and a new version restarts it', () => {
+    vi.useFakeTimers();
+    const thirty = Array.from({ length: 30 }, () => 'word').join(' ');
+    const onDismiss = vi.fn();
+    const { rerender } = render(
+      <Toaster toasts={[{ id: 1, variant: 'info', message: 'Saved' }]} onDismiss={onDismiss} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    rerender(<Toaster toasts={[{ id: 1, variant: 'info', message: thirty }]} onDismiss={onDismiss} />);
+    // The new end is the new duration from the first draw, not from now.
+    act(() => {
+      vi.advanceTimersByTime(readingDuration(thirty) - 3000 - 1);
+    });
+    expect(onDismiss).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onDismiss).toHaveBeenCalledWith(1);
+
+    onDismiss.mockClear();
+    const replaced = render(
+      <Toaster toasts={[{ id: 2, variant: 'info', message: 'Saved', version: 1 }]} onDismiss={onDismiss} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    replaced.rerender(
+      <Toaster toasts={[{ id: 2, variant: 'info', message: 'Saved', version: 2 }]} onDismiss={onDismiss} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(4000 - 1);
+    });
+    expect(onDismiss).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onDismiss).toHaveBeenCalledWith(2);
+  });
+
   test('a warning and a failure stay until they are dismissed', () => {
     vi.useFakeTimers();
     const onDismiss = vi.fn();

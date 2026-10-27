@@ -281,12 +281,28 @@ function ToastItem<TVariant extends string>({
    * would take it away mid-sentence.
    */
   const remaining = useRef(duration);
+  /** The version and the duration `remaining` is counting down for. */
+  const counting = useRef({ version, duration });
 
   // Declared FIRST, so that on a dedup-replace the reset runs before the timer
   // below is scheduled: React runs every cleanup, then every setup in
   // declaration order.
+  //
+  // ONLY A NEW VERSION RESTARTS THE COUNTDOWN: the toast was replaced, and its
+  // drain (keyed by the version) restarts with it. A DURATION THAT CHANGES ON
+  // ITS OWN KEEPS WHAT HAS ELAPSED: with the default read from the words, an
+  // update in place that changes them changes the duration, and restarting
+  // then (only when the word count moved) left the drain, which keeps its
+  // start, stretched and out of step with the timer. Moving the end by the
+  // difference keeps the two one timeline.
   useEffect(() => {
-    remaining.current = duration;
+    const was = counting.current;
+    if (was.version !== version) {
+      remaining.current = duration;
+    } else if (was.duration !== duration) {
+      remaining.current = Math.max(0, remaining.current + duration - was.duration);
+    }
+    counting.current = { version, duration };
   }, [duration, version]);
 
   useEffect(() => {
