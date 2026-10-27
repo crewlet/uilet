@@ -1,7 +1,8 @@
 /*
- * A brief inside the product's status card: one sentence, the rows that wait
- * on the reader, one recommendation and the questions to ask next, each block
- * under a quiet label so a reader scans straight to the part they need.
+ * A brief inside the product's status card: the verdict in the head, then one
+ * line on what the page is about, the ranked rows that wait on the reader, a
+ * quiet line of context and the questions to ask next. No block carries a
+ * label: the verdict already says what the rows are.
  */
 .crewlet-brief-card__where {
   display: inline-flex;
@@ -16,33 +17,17 @@
 .crewlet-brief-card__body {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
+  gap: var(--spacing-3);
   min-width: 0;
 }
 
-.crewlet-brief-card__summary {
+.crewlet-brief-card__about {
   margin: 0;
+  overflow-wrap: anywhere;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   line-height: var(--font-line-height-snug);
   text-wrap: pretty;
-}
-
-.crewlet-brief-card__block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-  min-width: 0;
-}
-
-.crewlet-brief-card__label {
-  margin: 0;
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--font-letter-spacing-wide);
-  text-transform: uppercase;
-  line-height: var(--font-line-height-snug);
-  color: var(--color-text-tertiary);
 }
 
 .crewlet-brief-card__needs {
@@ -56,7 +41,8 @@
 /*
  * A ROW IS THE LIST ROW'S GRAMMAR: the dot on the first line, the words and
  * their one fact, and the action centred at the end, so a column of rows reads
- * down the dots and across to the presses.
+ * down the dots and across to the presses. The first row, the one the brief
+ * recommends, stands on the accent's softest ground.
  */
 .crewlet-brief-card__need {
   display: grid;
@@ -68,6 +54,26 @@
 
 .crewlet-brief-card__need + .crewlet-brief-card__need {
   border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-brief-card__need--first {
+  padding-inline: var(--spacing-3);
+  margin-inline: calc(-1 * var(--spacing-3));
+  border-radius: var(--radius-md);
+  background: var(--color-brand-accent-soft);
+}
+
+.crewlet-brief-card__need--first + .crewlet-brief-card__need {
+  border-top: 0;
+}
+
+.crewlet-brief-card__first {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+  line-height: var(--font-line-height-snug);
+  color: var(--color-brand-accent-ink);
 }
 
 .crewlet-brief-card__need > .crewlet-button {
@@ -95,30 +101,12 @@
   color: var(--color-text-tertiary);
 }
 
-.crewlet-brief-card__clear {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
+.crewlet-brief-card__context {
   margin: 0;
-  font-size: var(--font-size-compact);
-  color: var(--color-feedback-success-ink);
-}
-
-/* The recommendation: one step, on the accent's softest ground. */
-.crewlet-brief-card__next {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--spacing-3);
-  padding: var(--spacing-2) var(--spacing-3);
-  border-radius: var(--radius-md);
-  background: var(--color-brand-accent-soft);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  color: var(--color-text-tertiary);
   overflow-wrap: anywhere;
-  font-size: var(--font-size-compact);
-}
-
-.crewlet-brief-card__arrow {
-  color: var(--color-brand-accent-ink);
 }
 
 /* The questions to ask next sit on the card's text edge: each row's own inset is pulled out. */

@@ -205,13 +205,23 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
-## Changes in 0.72.0
+## Changes in 0.73.0
 
 **`RecordChip`, a record named inside a sentence.** A button at the text's own size on its baseline, exactly one line of the text it sits in tall (`line-height: calc(1lh - 2px)` with its hairline), drawing the record's key in mono (`code`) or its name (`label`), with an optional kind glyph. It opens a **peek**: a `Popover` dialog named after the record (its key, then its name), with one line of context (`meta`), a body for its facts or rows (`children`) and a foot for the host's own link and downloads (`actions`). Focus moves into the peek; Escape, Tab out or a control that closes it returns focus to the chip, and a press outside closes it. A `code` chip's accessible name is the key and then the record's name ("GOP-11, Android 12 crash ..."); a `label` chip is named by its label alone, and carries its whole text as its `title`, so a pointer reader can read one cut at the line's end.
 
 **`RecordChipList`, the Also read line.** A caption-register lead (`label`, "Also read") and its `RecordChip` children on a wrapping row; the row is a list named by the lead. It draws nothing when it holds no chip.
 
 **`Table` sizes columns by their words.** `columns="content"` gives each column the room its words ask for rather than an equal share: a sentence wraps between words, a token longer than the table (a digest, a URL) wraps anywhere instead of pushing the table sideways, and `end` columns never wrap. With it, `nowrap` (by column index) holds a column of short tokens, such as a task's key, to one line. `nowrap` is offered only with `columns="content"`, by the type and at runtime: under the default even columns a held cell would run into the next one.
+
+## Changes in 0.72.0
+
+**`BriefCard` says whether the reader has anything to do, once, and says the rest in fewer lines.** The head's Tag is the verdict, derived from the rows: "Nothing needs you" in the success tone, or "1 thing needs you", "2 things need you" in the tone of the loudest row (danger when any row is danger, otherwise warning). The body no longer repeats it as "Nothing needs you." under a "Needs you" label. One line says what the page is about (`about`, which wraps anywhere, so a URL, a branch or a hash stays inside the card). The rows are ranked and the first is the recommendation, with the primary button, marked "Do first" on the accent's softest ground when there are two or more rows to rank; the separate recommendation that used to repeat it is gone. A quiet `context` line under the rows holds a fact to know, and the follow-ups are a list named "Ask next". THE HOST RANKS AND CAPS: the card draws at most `BRIEF_CARD_MAX_NEEDS` (3) rows and `BRIEF_CARD_MAX_FOLLOW_UPS` (2) follow-ups, and outside production it warns in the console when handed more, because a row it drops is one the verdict does not count. To move:
+
+- Rename `summary` to `about`: one line on what the page or record is about right now.
+- Remove `recommended`, and put the step it named first in `needs`. `BriefCardRecommendation` and the `recommended` and `clear` labels are gone; `labels.first` ("Do first") is new, and `labels.needs` is now the list's accessible name rather than a visible heading.
+- A row's `tone` is `warning` or `danger`. `neutral` is gone: a row is something to do, and a fact to know goes in the new `context` prop.
+- Pass at most two `followUps`; a third is no longer drawn.
+- The CSS classes `crewlet-brief-card__summary`, `__block`, `__label`, `__clear`, `__next` and `__arrow` are gone; `__about`, `__need--first`, `__first` and `__context` are new.
 
 ## Changes in 0.71.0
 
