@@ -16,6 +16,7 @@ import {
   DataGrid,
   columnChoicesOf,
   fitGridColumns,
+  nextGridSort,
   parseGridSort,
   type DataGridColumn,
   type DataGridHandle,
@@ -162,6 +163,52 @@ describe('the heads', () => {
     expect(onSort.mock.calls.map((c) => c[0])).toEqual(['name', '-name', '']);
   });
 
+  test('every sortable head carries an arrow, the sorted one naming its direction, and a plain head none', () => {
+    const { container, rerender } = render(
+      <DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-tokens" onSortChange={() => {}} />,
+    );
+    const marks = () =>
+      screen.getAllByRole('columnheader').map((head) => head.querySelector('.crewlet-data-grid__sort-mark') !== null);
+    expect(marks()).toEqual([true, false, true, false, false]);
+    // Hidden from assistive technology, which hears `aria-sort`.
+    for (const mark of container.querySelectorAll('.crewlet-data-grid__sort-mark')) {
+      expect(mark.getAttribute('aria-hidden')).toBe('true');
+    }
+    // The button's name is the head's word alone.
+    expect(screen.getByRole('button', { name: 'Tokens' })).toBeTruthy();
+    // A head that cannot be pressed shows the order it is in, and stays inert.
+    rerender(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="-tokens" />);
+    expect(marks()).toEqual([false, false, true, false, false]);
+    expect(screen.queryByRole('button', { name: 'Tokens' })).toBeNull();
+  });
+
+  test('draw the default sort on its head, and a press on it steps from there', () => {
+    const onSort = vi.fn();
+    render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} defaultSort="-tokens" onSortChange={onSort} />);
+    expect(screen.getAllByRole('columnheader')[2]!.getAttribute('aria-sort')).toBe('descending');
+    expect(names().map((n) => n?.slice(0, 5))).toEqual(['Bravo', 'Alpha', 'Charl']);
+    fireEvent.click(screen.getByRole('button', { name: 'Tokens' }));
+    expect(onSort).toHaveBeenLastCalledWith('tokens');
+  });
+
+  test('the cycle is ascending, descending, then the default, and never a press that changes nothing', () => {
+    // No default: on, reversed, off.
+    expect(nextGridSort('name', '')).toBe('name');
+    expect(nextGridSort('name', 'name')).toBe('-name');
+    expect(nextGridSort('name', '-name')).toBe('');
+    expect(nextGridSort('seat', '-name')).toBe('seat');
+    // A descending default: its own column turns ascending, and the step back
+    // to descending IS the default, written as nothing.
+    expect(nextGridSort('updated', '', '-updated')).toBe('updated');
+    expect(nextGridSort('updated', 'updated', '-updated')).toBe('');
+    expect(nextGridSort('updated', '-updated', '-updated')).toBe('updated');
+    expect(nextGridSort('title', '', '-updated')).toBe('title');
+    expect(nextGridSort('title', '-title', '-updated')).toBe('');
+    // An ascending default: reversed, then back.
+    expect(nextGridSort('name', '', 'name')).toBe('-name');
+    expect(nextGridSort('name', '-name', 'name')).toBe('');
+  });
+
   test('sort the rows by the column, an absent value last both ways, and leave a server order alone', () => {
     const { rerender } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} sort="tokens" onSortChange={() => {}} />);
     expect(names().map((n) => n?.slice(0, 5))).toEqual(['Alpha', 'Bravo', 'Charl']);
@@ -297,6 +344,15 @@ describe('the frame', () => {
     const { container } = render(<DataGrid rows={ROWS} columns={columns} rowKey={(r) => r.id} phoneRows="compact" />);
     expect(container.querySelector('.crewlet-data-grid')!.getAttribute('data-phone-rows')).toBe('compact');
     expect(container.querySelector('.crewlet-data-grid__cell')!.hasAttribute('data-lead')).toBe(true);
+  });
+
+  test('draws a foot quieter than a row: the micro step, the tertiary ink, the grid own ground', () => {
+    const foot = /\.crewlet-data-grid__foot \{([^}]*)\}/.exec(sheet())![1]!;
+    expect(foot).toMatch(/font-size: var\(--font-size-2xs\)/);
+    expect(foot).toMatch(/color: var\(--color-text-tertiary\)/);
+    expect(foot).toMatch(/background: transparent/);
+    expect(foot).toMatch(/padding: var\(--spacing-1\)/);
+    expect(foot).not.toMatch(/surface-elevated/);
   });
 
   test('says the rows loaded and offers more', () => {

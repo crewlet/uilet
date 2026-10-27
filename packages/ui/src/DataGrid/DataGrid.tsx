@@ -12,7 +12,7 @@ import {
   type Ref,
 } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
-import { ChevronDownGlyph, ChevronUpGlyph } from '@crewlethq/icons/glyphs';
+import { ArrowDownGlyph, ArrowUpDownGlyph, ArrowUpGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
 import { Checkbox } from '../Checkbox/index.js';
 import { EmptyState } from '../EmptyState/index.js';
@@ -278,7 +278,16 @@ export interface DataGridProps<T> {
    * Controlled, so an application keeps it where it keeps state (an address).
    */
   sort?: string | undefined;
-  /** A sortable head pressed: ascending, then descending, then unsorted. */
+  /**
+   * The order the rows take while `sort` is empty (`key` or `-key`), drawn on
+   * its column's head as the sort in force. Empty for the rows' own order.
+   */
+  defaultSort?: string | undefined;
+  /**
+   * A sortable head pressed: ascending, then descending, then back to the
+   * default. Called with `''` for the default, never with `defaultSort`
+   * itself, so an address holds the reader's choice and nothing else.
+   */
   onSortChange?: ((sort: string) => void) | undefined;
   /** The rows arrive ordered by their source (a paged answer ordered over the whole set). */
   serverSorted?: boolean | undefined;
@@ -319,6 +328,29 @@ export interface DataGridProps<T> {
 export function parseGridSort(raw: string): { key: string; desc: boolean } | null {
   if (!raw) return null;
   return raw.startsWith('-') ? { key: raw.slice(1), desc: true } : { key: raw, desc: false };
+}
+
+/**
+ * The sort a press on a column's head asks for: ascending, then descending,
+ * then back to the default. PURE, so the cycle is held without a render.
+ *
+ * Against the EFFECTIVE sort (the reader's, else the default), because a head
+ * that reads "descending" must take its next press as one more step from
+ * descending, whoever chose it. Two rules keep every press a visible change:
+ *
+ * - a column already at its DEFAULT descending turns ascending, where the
+ *   cycle's "back to the default" would have changed nothing;
+ * - a step that lands on the default is written as `''`, so the address holds
+ *   only what the reader chose and the default can change under it.
+ */
+export function nextGridSort(column: string, sort: string, defaultSort = ''): string {
+  const chosen = sort === defaultSort ? '' : sort;
+  const current = parseGridSort(chosen || defaultSort);
+  let next: string;
+  if (current?.key !== column) next = column;
+  else if (!current.desc) next = `-${column}`;
+  else next = chosen ? '' : column;
+  return next === defaultSort ? '' : next;
 }
 
 /** A head that is a word, or nothing. */
@@ -537,6 +569,7 @@ export function DataGrid<T>({
   selection,
   isFailed,
   sort: sortRaw = '',
+  defaultSort = '',
   onSortChange,
   serverSorted = false,
   cols: colsRaw = '',
@@ -555,7 +588,8 @@ export function DataGrid<T>({
   className,
 }: DataGridProps<T>) {
   const text: DataGridLabels = { ...LABELS, ...labels };
-  const sort = parseGridSort(sortRaw);
+  // THE SORT IN FORCE: the reader's, else the default the rows arrive in.
+  const sort = parseGridSort(sortRaw || defaultSort);
   const body = useRef<HTMLDivElement>(null);
   const [cursor, setCursor] = useState(-1);
   const gridId = useId();
@@ -747,9 +781,7 @@ export function DataGrid<T>({
 
   function headerClick(column: DataGridColumn<T>): void {
     if (!column.sortValue || !onSortChange) return;
-    if (sort?.key === column.key && !sort.desc) onSortChange(`-${column.key}`);
-    else if (sort?.key === column.key && sort.desc) onSortChange('');
-    else onSortChange(column.key);
+    onSortChange(nextGridSort(column.key, sortRaw, defaultSort));
   }
 
   const template = drawnColumns
@@ -903,11 +935,24 @@ export function DataGrid<T>({
             sorted && 'crewlet-data-grid__th--sorted',
             !sortable && 'crewlet-data-grid__th--plain',
           );
-          const content = (
-            <>
-              <span className="crewlet-data-grid__truncate">{column.header}</span>
-              {sorted && (sort?.desc ? <ChevronDownGlyph size="xs" /> : <ChevronUpGlyph size="xs" />)}
-            </>
+          const label = <span className="crewlet-data-grid__truncate">{column.header}</span>;
+          // THE ARROW SAYS THE ORDER. The sorted head's names its direction;
+          // every other SORTABLE head draws the two-way arrow, shown on hover
+          // and focus, so a head says it sorts before it is pressed. Hidden
+          // from assistive technology, which hears `aria-sort` instead.
+          const arrow = sorted ? (
+            sort?.desc ? (
+              <ArrowDownGlyph size="xs" />
+            ) : (
+              <ArrowUpGlyph size="xs" />
+            )
+          ) : sortable ? (
+            <ArrowUpDownGlyph size="xs" />
+          ) : null;
+          const mark = arrow && (
+            <span className="crewlet-data-grid__sort-mark" aria-hidden="true">
+              {arrow}
+            </span>
           );
           // A COLUMN THAT CANNOT BE SORTED IS NOT A BUTTON, and a glyph head is
           // still a named column: its `label`, said and shown on hover.
@@ -915,7 +960,8 @@ export function DataGrid<T>({
             const named = !headerWord(column) && !column.action ? column.label : undefined;
             return (
               <div key={column.key} className={headClass} role="columnheader" title={named}>
-                {content}
+                {label}
+                {mark}
                 {named && <VisuallyHidden>{named}</VisuallyHidden>}
               </div>
             );
@@ -937,7 +983,8 @@ export function DataGrid<T>({
                 // A SORTABLE GLYPH HEAD IS NAMED BY ITS LABEL, never by its arrow alone.
                 aria-label={headerWord(column) ? undefined : column.label}
               >
-                {content}
+                {label}
+                {mark}
               </button>
             </div>
           );

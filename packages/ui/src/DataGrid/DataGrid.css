@@ -127,6 +127,7 @@
  */
 .crewlet-data-grid__th {
   display: flex;
+  align-self: stretch;
   align-items: center;
   gap: var(--spacing-1);
   padding-block: var(--spacing-2);
@@ -173,6 +174,8 @@
   margin-inline: calc(-1 * var(--crewlet-data-grid-cell-start)) calc(-1 * var(--crewlet-data-grid-cell-end));
   padding-block: var(--spacing-2);
   padding-inline: var(--crewlet-data-grid-cell-start) var(--crewlet-data-grid-cell-end);
+  /* THE HEAD'S WHOLE HEIGHT, so a press anywhere in the cell sorts. */
+  align-self: stretch;
   cursor: pointer;
 }
 
@@ -183,6 +186,44 @@
 .crewlet-data-grid__th:not(.crewlet-data-grid__th--plain):hover,
 .crewlet-data-grid__th--sorted {
   color: var(--color-text-primary);
+}
+
+/*
+ * A SORTABLE HEAD SAYS SO UNDER THE POINTER: the row's own hover overlay over
+ * the whole cell, the way a row says it opens, so the target is the head and
+ * not the word in it.
+ */
+.crewlet-data-grid__th:not(.crewlet-data-grid__th--plain):hover {
+  background: var(--color-surface-hover);
+}
+
+/*
+ * THE SORT ARROW. Its box is always laid out, so a head never changes width
+ * when the arrow appears and the fit measured at rest still holds under the
+ * pointer. The two-way arrow of a head that is not the sort shows only on
+ * hover and focus, in the head's own ink; the sorted head's arrow is always
+ * shown, at full ink, and names the direction.
+ */
+.crewlet-data-grid__sort-mark {
+  display: inline-flex;
+  flex: none;
+  color: inherit;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-data-grid__th:not(.crewlet-data-grid__th--sorted) .crewlet-data-grid__sort-mark {
+  opacity: 0;
+}
+
+/* BEFORE THE WORD IN A RIGHT-ALIGNED COLUMN, so the word stays on the column's
+   right edge over its figures, arrow or not. */
+.crewlet-data-grid__th--right .crewlet-data-grid__sort-mark {
+  order: -1;
+}
+
+.crewlet-data-grid__th:hover .crewlet-data-grid__sort-mark,
+.crewlet-data-grid__sort:focus-visible .crewlet-data-grid__sort-mark {
+  opacity: 1;
 }
 
 .crewlet-data-grid__th--right {
@@ -401,14 +442,25 @@ button.crewlet-data-grid__row-link {
   color: var(--color-text-primary);
 }
 
+/*
+ * THE FOOT IS A CAPTION, NOT A ROW. At the row's height and on the head's
+ * raised ground it read as one more row, so a grid's head, rows and foot
+ * blurred into one stack. It takes the micro step of type, the tertiary ink,
+ * half the row's inset and the grid's own ground under the rows' hairline:
+ * quieter than either neighbour, and plainly the end of the list.
+ */
 .crewlet-data-grid__foot {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--crewlet-data-grid-edge);
-  border-top: 1px solid var(--color-border-hover);
-  background: var(--color-surface-elevated);
-  font-size: var(--font-size-xs);
+  flex-wrap: wrap;
+  gap: var(--spacing-1) var(--spacing-3);
+  min-height: var(--size-control-sm);
+  padding: var(--spacing-1) var(--crewlet-data-grid-edge);
+  border-top: 1px solid var(--color-border-default);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  line-height: var(--font-line-height-tight);
 }
 
 .crewlet-data-grid__foot-spacer {
@@ -416,7 +468,7 @@ button.crewlet-data-grid__row-link {
 }
 
 .crewlet-data-grid__note {
-  font-size: var(--font-size-xs);
+  font-size: inherit;
   color: var(--color-text-tertiary);
 }
 
@@ -462,7 +514,8 @@ button.crewlet-data-grid__row-link {
 
 @media (prefers-reduced-motion: reduce) {
   .crewlet-data-grid__th,
-  .crewlet-data-grid__row {
+  .crewlet-data-grid__row,
+  .crewlet-data-grid__sort-mark {
     transition: none;
   }
 }

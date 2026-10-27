@@ -74,6 +74,38 @@ function Sorted({ phoneRows }: { phoneRows?: 'labelled' | 'compact' }) {
  */
 export const Sortable: Story = { render: () => <Sorted /> };
 
+function DefaultOrder() {
+  const [sort, setSort] = useState('');
+  return (
+    <div style={{ display: 'grid', gap: 'var(--spacing-2)', maxWidth: 960 }}>
+      <DataGrid
+        rows={TASKS}
+        columns={COLUMNS}
+        rowKey={(t: Task) => t.key}
+        rowHref={(t: Task) => `#/worklet/${t.key}`}
+        sort={sort}
+        // Updated is in minutes ago, so the most recent first is ascending.
+        defaultSort="updated"
+        onSortChange={setSort}
+        cols="key,title,status,assignee,updated,open"
+        footer="That is all of it, 4 items match"
+      />
+      <code>sort={JSON.stringify(sort)}</code>
+    </div>
+  );
+}
+
+/**
+ * SORTED AT THE HEAD, FROM A DEFAULT. Every sortable head shows its two-way
+ * arrow under the pointer and on focus; the sorted head names its direction.
+ * With nothing chosen the rows are in the default order (most recently
+ * updated), and Updated's head says so. A press steps ascending, descending,
+ * then back to the default, and the value the grid writes (below the grid) is
+ * empty whenever the order is the default, so an address holds only what the
+ * reader chose. The foot is a caption: smaller, quieter and plainly the end.
+ */
+export const SortedFromADefault: Story = { render: () => <DefaultOrder /> };
+
 /**
  * A grid that cannot fit even after its give-way columns have gone, in a
  * 360px column on any window (a screen beside a wide aside): it stacks into
