@@ -6,8 +6,14 @@ import { StatusDot } from '../StatusDot/index.js';
 import { SuggestionList, SuggestionRow } from '../SuggestionRow/index.js';
 import { cx } from '../utils/cx.js';
 
-/** The most rows a brief draws: what waits on the reader is a short list or it is not a brief. */
+/**
+ * The most rows a brief draws: what waits on the reader is a short list or it
+ * is not a brief. The host ranks and caps; the card's own cut is a guard.
+ */
 export const BRIEF_CARD_MAX_NEEDS = 3;
+
+/** The most follow-ups a brief draws: the next questions, not a menu. The host caps them. */
+export const BRIEF_CARD_MAX_FOLLOW_UPS = 2;
 
 /** The one thing a row lets the reader do, in one press. */
 export interface BriefCardAction {
@@ -46,7 +52,7 @@ export interface BriefCardLabels {
   heading: string;
   /** The list's accessible name. */
   needs: string;
-  /** The mark on the first row, the one the brief recommends. */
+  /** The mark on the first row, the one the brief recommends, where there are rows to rank. */
   first: string;
   followUps: string;
   /** The verdict in the head while rows wait: "2 things need you". */
@@ -74,13 +80,15 @@ export interface BriefCardProps extends Omit<HTMLAttributes<HTMLElement>, 'title
   about: ReactNode;
   /**
    * What the reader has to do, most pressing first, at most
-   * [BRIEF_CARD_MAX_NEEDS]. The first row is the recommendation. Their count
-   * is the verdict in the head; an empty list is "Nothing needs you".
+   * [BRIEF_CARD_MAX_NEEDS]. THE HOST RANKS AND CAPS: the first row is the
+   * recommendation, and a row past the cap is dropped with a warning outside
+   * production, since the verdict in the head counts only the rows drawn. An
+   * empty list is "Nothing needs you".
    */
   needs: readonly BriefCardNeed[];
   /** One fact from elsewhere that bears on what to do, drawn quiet under the rows. */
   context?: ReactNode;
-  /** Questions to ask next, drawn as suggestion rows at the foot. */
+  /** Questions to ask next, at most [BRIEF_CARD_MAX_FOLLOW_UPS], drawn as suggestion rows at the foot. */
   followUps?: readonly BriefCardFollowUp[] | undefined;
   labels?: Partial<BriefCardLabels> | undefined;
 }
@@ -95,9 +103,12 @@ export interface BriefCardProps extends Omit<HTMLAttributes<HTMLElement>, 'title
  * card's region name answers "do I need to do anything" before the body is
  * read, and no writer can put a verdict beside rows that contradict it.
  *
- * THE FIRST ROW IS THE RECOMMENDATION. It is marked "Do first" and its press
- * is the card's primary button; a separate recommendation would say the first
- * row again.
+ * THE HEAD'S TONE IS THE LOUDEST ROW'S: danger when any row is danger,
+ * otherwise warning, and the success tone for "Nothing needs you".
+ *
+ * THE FIRST ROW IS THE RECOMMENDATION. Its press is the card's primary button,
+ * and where there are two or more rows to rank it is marked "Do first"; a
+ * separate recommendation would say the first row again.
  *
  * THE CARD DRAWS, THE HOST DECIDES. Every action is the host's own callback,
  * so where a row leads (a record opened, a question asked) is settled by the
@@ -115,7 +126,24 @@ export function BriefCard({
   ...rest
 }: BriefCardProps) {
   const labels = overrides ? { ...BRIEF_CARD_LABELS, ...overrides } : BRIEF_CARD_LABELS;
+  if (process.env.NODE_ENV !== 'production') {
+    // The host ranks and caps (BRIEF_CARD_MAX_NEEDS, BRIEF_CARD_MAX_FOLLOW_UPS):
+    // a row cut here is one the reader is never told about, so say so where a
+    // developer will see it rather than drop it in silence.
+    if (needs.length > BRIEF_CARD_MAX_NEEDS) {
+      console.warn(
+        `[crewlet] BriefCard was handed ${needs.length} needs and draws the first ${BRIEF_CARD_MAX_NEEDS}: rank and cap them before passing them.`,
+      );
+    }
+    if (followUps && followUps.length > BRIEF_CARD_MAX_FOLLOW_UPS) {
+      console.warn(
+        `[crewlet] BriefCard was handed ${followUps.length} follow-ups and draws the first ${BRIEF_CARD_MAX_FOLLOW_UPS}.`,
+      );
+    }
+  }
   const rows = needs.slice(0, BRIEF_CARD_MAX_NEEDS);
+  const asks = followUps ? followUps.slice(0, BRIEF_CARD_MAX_FOLLOW_UPS) : [];
+  const ranked = rows.length > 1;
   const hasScope = !(scope === undefined || scope === null || scope === '');
   const hasAsOf = !(asOf === undefined || asOf === null || asOf === '');
   const hasContext = !(context === undefined || context === null || context === '');
@@ -134,7 +162,10 @@ export function BriefCard({
       subtitle={subtitle}
       status={
         rows.length > 0
-          ? { label: labels.count(rows.length), tone: 'warning' }
+          ? {
+              label: labels.count(rows.length),
+              tone: rows.some((need) => need.tone === 'danger') ? 'danger' : 'warning',
+            }
           : { label: labels.allClear, tone: 'success', icon: <CircleCheckGlyph size="xs" /> }
       }
       className={cx('crewlet-brief-card', className)}
@@ -146,12 +177,15 @@ export function BriefCard({
           // eslint-disable-next-line jsx-a11y/no-redundant-roles
           <ol role="list" aria-label={labels.needs} className="crewlet-brief-card__needs">
             {rows.map((need, i) => (
-              <li key={need.key} className={cx('crewlet-brief-card__need', i === 0 && 'crewlet-brief-card__need--first')}>
+              <li
+                key={need.key}
+                className={cx('crewlet-brief-card__need', i === 0 && ranked && 'crewlet-brief-card__need--first')}
+              >
                 <span className="crewlet-brief-card__dot">
                   <StatusDot tone={need.tone ?? 'warning'} />
                 </span>
                 <span className="crewlet-brief-card__words">
-                  {i === 0 ? <span className="crewlet-brief-card__first">{labels.first}</span> : null}
+                  {i === 0 && ranked ? <span className="crewlet-brief-card__first">{labels.first}</span> : null}
                   <span>{need.text}</span>
                   {need.detail === undefined || need.detail === null ? null : (
                     <span className="crewlet-brief-card__detail">{need.detail}</span>
@@ -167,9 +201,9 @@ export function BriefCard({
           </ol>
         )}
         {hasContext ? <p className="crewlet-brief-card__context">{context}</p> : null}
-        {followUps && followUps.length > 0 ? (
+        {asks.length > 0 ? (
           <SuggestionList aria-label={labels.followUps} className="crewlet-brief-card__follow-ups">
-            {followUps.map((f) => (
+            {asks.map((f) => (
               <SuggestionRow key={f.key} icon={<MessageCircleQuestionMarkGlyph size="sm" />} onSelect={f.onSelect}>
                 {f.question}
               </SuggestionRow>

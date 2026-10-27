@@ -23,6 +23,7 @@
 
 .crewlet-brief-card__about {
   margin: 0;
+  overflow-wrap: anywhere;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   line-height: var(--font-line-height-snug);

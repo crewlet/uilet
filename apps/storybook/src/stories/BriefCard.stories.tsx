@@ -69,3 +69,73 @@ export const OneRecordWithContext: Story = {
     followUps: [],
   },
 };
+
+/** Three rows, the cap: ranked, the first marked to do first. */
+export const ThreeNeeds: Story = {
+  args: {
+    about: 'Three decisions wait on you before Thursday’s beta.',
+    needs: [
+      {
+        key: 'gop-8',
+        text: 'Answer GOP-8: set the Plus price',
+        detail: 'Blocks GOP-9 and both store listings',
+        action: { label: 'Open GOP-8', onSelect: () => {} },
+      },
+      {
+        key: 'gop-11',
+        text: 'Answer GOP-11: which build QA tests',
+        detail: 'Asked 2 hours ago',
+        action: { label: 'Open GOP-11', onSelect: () => {} },
+      },
+      {
+        key: 'gop-14',
+        text: 'Review GOP-14: the store listing copy',
+        detail: 'Waiting since yesterday',
+        action: { label: 'Open GOP-14', onSelect: () => {} },
+      },
+    ],
+    followUps: [],
+  },
+};
+
+/** A stopped agent ranked first: the row and the verdict in the head are both danger. */
+export const DangerFirst: Story = {
+  args: {
+    about: 'PM stopped on its daily budget, and GOP-11 waits on your answer.',
+    needs: [
+      {
+        key: 'pm',
+        text: "Raise PM's daily budget",
+        detail: 'Stopped at 3 pm, resets at midnight',
+        tone: 'danger',
+        action: { label: 'Open the agent', onSelect: () => {} },
+      },
+      {
+        key: 'gop-11',
+        text: 'Answer GOP-11: which build QA tests',
+        detail: 'Asked 2 hours ago',
+        action: { label: 'Open GOP-11', onSelect: () => {} },
+      },
+    ],
+    followUps: [{ key: 'budget', question: 'Why did PM run out so early?', onSelect: () => {} }],
+  },
+};
+
+/** Words with no break in them (a URL, a branch, a hash) wrap inside the card rather than spill out of it. */
+export const LongText: Story = {
+  args: {
+    scope: 'Decision GOP-27',
+    about:
+      'QA asks whether https://builds.example.com/android/release-candidates/2026-10-27/build-8f3a9c2e1b7d4f60 is the one to test.',
+    needs: [
+      {
+        key: 'gop-27',
+        text: 'Answer GOP-27: test feature/store-listing-copy-and-screenshots-for-the-autumn-release',
+        detail: 'Commit 8f3a9c2e1b7d4f6012ab34cd56ef7890a1b2c3d4',
+        action: { label: 'Open GOP-27', onSelect: () => {} },
+      },
+    ],
+    context: 'The review window opens tomorrow at 09:00, and the signing key is due back the same morning.',
+    followUps: [],
+  },
+};
