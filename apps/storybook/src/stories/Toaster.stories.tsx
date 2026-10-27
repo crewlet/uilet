@@ -58,8 +58,8 @@ export const Success: Story = {
 
 /**
  * A toast that goes by itself stays as long as its words take to read: the
- * short one goes after four seconds, the long one after about nine, and
- * neither names a duration. `readingDuration` is the same rule, exported. One
+ * short one goes after four seconds, the long one after the time its button
+ * names, and neither names a duration. `readingDuration` is the same rule, exported. One
  * Toaster draws both, as a host has one.
  */
 export const ReadingTime: Story = {
