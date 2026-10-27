@@ -29,7 +29,7 @@ export interface TableActionButton {
 /** Which edge a column's cells stand against: `start` for words, `end` for figures. */
 export type TableColumnAlign = 'start' | 'end';
 
-export interface TableProps {
+interface TableBaseProps {
   headers: ReactNode[];
   /** One array per row, in the header's own order. Cells may be any node. */
   data: ReactNode[][];
@@ -75,6 +75,36 @@ export interface TableProps {
   className?: string;
 }
 
+/**
+ * How the columns share the width. NOWRAP NEEDS COLUMNS SIZED BY THEIR WORDS:
+ * under the grid's equal columns a cell held to one line runs into the next
+ * one, so the type offers `nowrap` only with `columns="content"`, where the
+ * column grows to hold it.
+ */
+type TableColumnsProps =
+  | {
+      /** `even` (the default): the grid's equal columns. */
+      columns?: 'even' | undefined;
+      nowrap?: undefined;
+    }
+  | {
+      /**
+       * `content`: each column takes the room its words ask for, as a result
+       * read beside an answer wants. A sentence wraps between words, a token
+       * longer than the table wraps anywhere rather than push the table
+       * sideways, and the figures (`end` columns) never wrap.
+       */
+      columns: 'content';
+      /**
+       * Columns whose cells never wrap, by index: a short token such as a
+       * task's key ("GOP-11"), which a line would otherwise break at its
+       * hyphen.
+       */
+      nowrap?: readonly boolean[] | undefined;
+    };
+
+export type TableProps = TableBaseProps & TableColumnsProps;
+
 export const Table = ({
   headers,
   data,
@@ -86,12 +116,27 @@ export const Table = ({
   align,
   footer,
   framed = true,
+  columns = 'even',
+  nowrap,
   className = '',
 }: TableProps) => {
   const columnCount = Math.max(1, headers.length);
-  const edge = (index: number) => (align?.[index] === 'end' ? 'crewlet-table__cell--end' : undefined);
+  // HELD TO ONE LINE ONLY WHERE THE COLUMN CAN GROW TO HOLD IT: the type
+  // offers nowrap with content columns alone, and a caller in plain
+  // JavaScript, whom the type does not reach, is held to it here.
+  const held = columns === 'content' ? nowrap : undefined;
+  const edge = (index: number) =>
+    cx(align?.[index] === 'end' && 'crewlet-table__cell--end', held?.[index] === true && 'crewlet-table__cell--nowrap') ||
+    undefined;
   return (
-    <div className={cx('crewlet-table', !framed && 'crewlet-table--flush', className)}>
+    <div
+      className={cx(
+        'crewlet-table',
+        !framed && 'crewlet-table--flush',
+        columns === 'content' && 'crewlet-table--content',
+        className,
+      )}
+    >
       {/*
         * The scroller, as a safety net rather than a reading mode: the table
         * lays out fixed and wraps anywhere, so its columns share the width

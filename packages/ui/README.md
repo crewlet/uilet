@@ -47,7 +47,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, `FilterPill`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `ConflictNote`, `EditingStatus`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Documents and review | `DiffView` and `DiffSummary` with the line diff they draw (`diffLines`, `diffStat`, `collapseDiff`, `firstChangedLines`, `splitLines`, `MAX_DIFF_LINES`, with no React in it), `DiffList`, `VersionCompare`, `CommentThread` |
-| Conversations and the assistant | `ChatThread` (with `ChatThreadHandle`), `MessageBubble`, `RunChip`, `StepList` and `StepStateMark`, `ProposalCard`, `ChangeList` (with `shortenUnchanged`), `StatusCard`, `ReceiptStrip`, `RefusalStrip`, `ResultTableCard`, `OpenInAppCard`, `BriefCard`, `EntityList`, `RefusalCard`, `SuggestionRow` and `SuggestionList`, `SendButton` |
+| Conversations and the assistant | `ChatThread` (with `ChatThreadHandle`), `MessageBubble`, `RunChip`, `StepList` and `StepStateMark`, `ProposalCard`, `ChangeList` (with `shortenUnchanged`), `StatusCard`, `ReceiptStrip`, `RefusalStrip`, `ResultTableCard`, `OpenInAppCard`, `BriefCard`, `EntityList`, `RecordChip` and `RecordChipList` (a record named in a sentence, opening a peek, and the Also read line), `RefusalCard`, `SuggestionRow` and `SuggestionList`, `SendButton` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `Spinner`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
@@ -204,6 +204,14 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.73.0
+
+**`RecordChip`, a record named inside a sentence.** A button at the text's own size on its baseline, exactly one line of the text it sits in tall (`line-height: calc(1lh - 2px)` with its hairline, standing at the line's top so a key's mono text never moves the line), drawing the record's key in mono (`code`) or its name (`label`), with an optional kind glyph. It opens a **peek**: a `Popover` dialog named after the record (its key, then its name), with one line of context (`meta`), a body for its facts or rows (`children`) and a foot for the host's own link and downloads (`actions`). Focus moves into the peek; Escape, Tab out or a control that closes it returns focus to the chip, and a press outside closes it. A `code` chip's accessible name is the key and then the record's name ("GOP-11, Android 12 crash ..."); a `label` chip is named by its label alone, and carries its whole text as its `title`, so a pointer reader can read one cut at the line's end.
+
+**`RecordChipList`, the Also read line.** A caption-register lead (`label`, "Also read") and its `RecordChip` children on a wrapping row; the row is a list named by the lead. It draws nothing when it holds no chip.
+
+**`Table` sizes columns by their words.** `columns="content"` gives each column the room its words ask for rather than an equal share: a sentence wraps between words, a token longer than the table (a digest, a URL) wraps anywhere instead of pushing the table sideways, and `end` columns never wrap. With it, `nowrap` (by column index) holds a column of short tokens, such as a task's key, to one line. `nowrap` is offered only with `columns="content"`, by the type and at runtime: under the default even columns a held cell would run into the next one.
 
 ## Changes in 0.72.0
 

@@ -216,3 +216,31 @@
     transition: none;
   }
 }
+
+/*
+ * COLUMNS SIZED BY THEIR WORDS (`columns="content"`), for a result read
+ * beside an answer. Each column takes the room its words ask for, so a short
+ * key keeps its line and the longest text takes the most and wraps between
+ * words. A token longer than the table (a digest, a URL) wraps ANYWHERE: with
+ * `break-word` it did not, because under an auto layout a word's whole width
+ * is the column's minimum, and a sha256 in a 350px table pushed it to 606px.
+ * `anywhere` lets the minimum shrink to a character. The figures (`end`
+ * columns) and the nowrap columns never wrap, and the figures stay tabular.
+ */
+.crewlet-table--content .crewlet-table__table {
+  table-layout: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-table--content td:not(.crewlet-table__cell--nowrap, .crewlet-table__cell--end) {
+  overflow-wrap: anywhere;
+}
+
+.crewlet-table--content .crewlet-table__cell--end {
+  white-space: nowrap;
+}
+
+/* A column of short tokens (a task's key) keeps each on one line; only content columns offer it. */
+.crewlet-table--content .crewlet-table__cell--nowrap {
+  white-space: nowrap;
+}
