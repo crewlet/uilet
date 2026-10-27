@@ -191,8 +191,14 @@ describe('Toaster', () => {
       vi.advanceTimersByTime(5000);
     });
     expect(onDismiss.mock.calls.map(([id]) => id).sort()).toEqual([2, 3]);
+    // TO THE MILLISECOND, title and message both: a default that read less
+    // of the toast, or ended it sooner, dismisses it before this.
     act(() => {
-      vi.advanceTimersByTime(readingDuration(`Filed ENG-7 ${thirty}`) - 5000);
+      vi.advanceTimersByTime(readingDuration(`Filed ENG-7 ${thirty}`) - 5000 - 1);
+    });
+    expect(onDismiss).not.toHaveBeenCalledWith(1);
+    act(() => {
+      vi.advanceTimersByTime(1);
     });
     expect(onDismiss).toHaveBeenCalledWith(1);
   });
