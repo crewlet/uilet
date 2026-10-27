@@ -211,7 +211,7 @@ describe('Toaster', () => {
     const onDismiss = vi.fn();
     render(
       <Toaster
-        toasts={[{ id: 1, variant: 'success', message: 'Saved', duration: null as unknown as undefined }]}
+        toasts={[{ id: 1, variant: 'success', message: 'Saved', duration: null as unknown as number }]}
         onDismiss={onDismiss}
       />,
     );
