@@ -27,6 +27,17 @@ import { cx } from '../utils/cx.js';
  */
 export type DataGridActivationEvent = ReactMouseEvent | ReactKeyboardEvent | KeyboardEvent;
 
+/** The edge a column's head and values share. */
+export type DataGridAlign = 'left' | 'right' | 'center';
+
+/** The track an `icon` column is drawn in: the target size and the cell's inset either side. */
+export const DATA_GRID_ICON_TRACK = 'calc(var(--size-target-min) + var(--spacing-3) * 2)';
+
+/** The edge a column is drawn on: `center` for an icon column unless it says otherwise. */
+function alignOf<T>(column: DataGridColumn<T>): DataGridAlign {
+  return column.align ?? (column.icon ? 'center' : 'left');
+}
+
 /** One column of a [DataGrid]. */
 export interface DataGridColumn<T> {
   key: string;
@@ -34,7 +45,23 @@ export interface DataGridColumn<T> {
   cell: (row: T) => ReactNode;
   /** The value sorted on. Omit to make the column unsortable. */
   sortValue?: ((row: T) => string | number | null | undefined) | undefined;
-  align?: 'left' | 'right' | undefined;
+  /**
+   * Which edge the column's values and its head share: `left` (the default)
+   * for words, `right` for figures, times and dates (their digits are
+   * tabular, so a column of them reads down one edge), `center` for a column
+   * of one mark per row. The head and every cell take the same edge and the
+   * same inset, so a head never stands off the values it names.
+   */
+  align?: DataGridAlign | undefined;
+  /**
+   * A column of ONE MARK per row (a glyph, a face, a priority): a fixed track
+   * (`DATA_GRID_ICON_TRACK`, the target size and the cell's inset either
+   * side), its head and every cell centred. A run of such columns then reads
+   * as aligned columns rather than marks scattered at their content's width.
+   * Name it with `label`, which the head says to assistive technology and
+   * shows on hover.
+   */
+  icon?: boolean | undefined;
   /**
    * The column's name where `header` cannot carry one: a glyph head, or none
    * at all. Drawn by the card layout a grid takes on a phone, where every value
@@ -496,7 +523,7 @@ export function squeezed<T>(
   let headCut = false;
   for (let i = 0; i < visible.length; i++) {
     const column = visible[i]!;
-    if (!column.shrink || column.width) continue;
+    if (!column.shrink || column.width || column.icon) continue;
     const head = heads[i + leading];
     if (!head || head.getBoundingClientRect().width >= cap) continue;
     if (cutShort(head)) headCut = true;
@@ -719,7 +746,7 @@ export function DataGrid<T>({
         ),
         action: true,
         phoneLead: true,
-        width: 'calc(var(--size-target-min) + var(--spacing-3) * 2)',
+        width: DATA_GRID_ICON_TRACK,
       }
     : null;
   // WHAT IS DRAWN: the selection column, then the columns that fit. The fit
@@ -785,7 +812,11 @@ export function DataGrid<T>({
   }
 
   const template = drawnColumns
-    .map((c) => c.width ?? (c.shrink ? `fit-content(${SHRINK_CAP})` : `minmax(${c.floor ?? 0}, 1fr)`))
+    .map(
+      (c) =>
+        c.width ??
+        (c.icon ? DATA_GRID_ICON_TRACK : c.shrink ? `fit-content(${SHRINK_CAP})` : `minmax(${c.floor ?? 0}, 1fr)`),
+    )
     .join(' ');
 
   // A GROUPED ANSWER WITH NO ROWS ON THIS PAGE IS NOT AN EMPTY ANSWER: a band
@@ -850,7 +881,7 @@ export function DataGrid<T>({
         role="cell"
         className={cx(
           'crewlet-data-grid__cell',
-          column.align === 'right' && 'crewlet-data-grid__cell--right',
+          alignOf(column) !== 'left' && `crewlet-data-grid__cell--${alignOf(column)}`,
           column.shrink && 'crewlet-data-grid__cell--shrink',
         )}
         data-lead={column.phoneLead || undefined}
@@ -930,7 +961,7 @@ export function DataGrid<T>({
           const sortable = Boolean(column.sortValue && onSortChange);
           const headClass = cx(
             'crewlet-data-grid__th',
-            column.align === 'right' && 'crewlet-data-grid__th--right',
+            alignOf(column) !== 'left' && `crewlet-data-grid__th--${alignOf(column)}`,
             column.shrink && 'crewlet-data-grid__th--shrink',
             sorted && 'crewlet-data-grid__th--sorted',
             !sortable && 'crewlet-data-grid__th--plain',

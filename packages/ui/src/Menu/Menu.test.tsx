@@ -714,3 +714,10 @@ test('an end-aligned menu wider than its trigger\'s right edge opens, held insid
     Element.prototype.getBoundingClientRect = realRect;
   }
 });
+
+// A MENU DRAWN AS A VALUE (a status chosen in place) lines up with the plain
+// values beside it: its trigger is a flush button.
+test('triggerFlush draws the text trigger flush', () => {
+  render(<Menu label="Status of ENG-1" trigger="In progress" triggerFlush items={[{ key: 'a', label: 'Done', onSelect: () => {} }]} />);
+  expect(screen.getByRole('button', { name: 'Status of ENG-1' }).classList.contains('crewlet-btn--flush')).toBe(true);
+});

@@ -183,6 +183,12 @@ export interface MenuProps {
    */
   trailingIcon?: ReactNode;
   triggerVariant?: ButtonVariant | undefined;
+  /**
+   * The text trigger's words start on its box's line ([Button]'s `flush`):
+   * for a menu drawn as a value, a choice made in place in a table cell or a
+   * properties rail, which then lines up with the plain values beside it.
+   */
+  triggerFlush?: boolean | undefined;
   /** -1 for a pointer-only trigger whose actions the keyboard reaches another way. */
   triggerTabIndex?: number | undefined;
   open?: boolean | undefined;
@@ -212,6 +218,7 @@ export function Menu({
   trigger,
   trailingIcon,
   triggerVariant = 'ghost',
+  triggerFlush = false,
   triggerTabIndex,
   open: controlled,
   onOpenChange,
@@ -547,7 +554,15 @@ export function Menu({
       ) : trigger === undefined ? (
         <IconButton {...shared} label={label} icon={icon ?? <EllipsisVerticalGlyph />} size="sm" />
       ) : (
-        <Button {...shared} aria-label={label} variant={triggerVariant} size="small" leadingIcon={icon} trailingIcon={trailingIcon}>
+        <Button
+          {...shared}
+          aria-label={label}
+          variant={triggerVariant}
+          size="small"
+          flush={triggerFlush}
+          leadingIcon={icon}
+          trailingIcon={trailingIcon}
+        >
           {trigger}
         </Button>
       )}

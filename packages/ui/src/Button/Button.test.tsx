@@ -409,3 +409,21 @@ describe('IconButton', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 });
+
+// FLUSH: a ghost button drawn as a value starts on its column's line. Its
+// padding and edge are taken back on both sides by the size's own inset, and
+// its ring is drawn inside, so a clipping container never cuts it.
+test('a flush button takes back its own inset at its start and rings inside', () => {
+  render(
+    <Button variant="ghost" size="small" flush>
+      In progress
+    </Button>,
+  );
+  expect(screen.getByRole('button', { name: 'In progress' }).classList.contains('crewlet-btn--flush')).toBe(true);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Button.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  expect(css).toMatch(/\.crewlet-btn--flush \{[^}]*margin-inline-start: calc\(-1 \* \(var\(--crewlet-btn-inset\) \+ 1px\)\)/);
+  expect(css).toMatch(/\.crewlet-btn--flush:focus-visible \{[^}]*outline-offset: var\(--size-focus-ring-inset-offset\)/);
+  for (const size of ['small', 'medium', 'large']) {
+    expect(css).toMatch(new RegExp(`\\.crewlet-btn--${size} \\{[^}]*--crewlet-btn-inset:[^}]*padding: 0 var\\(--crewlet-btn-inset\\)`));
+  }
+});

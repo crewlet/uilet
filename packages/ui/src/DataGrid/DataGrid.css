@@ -179,8 +179,19 @@
   cursor: pointer;
 }
 
+/*
+ * ONE EDGE PER COLUMN, shared by its head and its values. `align` gives the
+ * head and every cell the same modifier, and both take the same inline inset
+ * (`--crewlet-data-grid-cell-start` and `-end`), so the word in the head and
+ * the values under it start (or end, or centre) on one line. A head that
+ * sorts is a button filling its head, and takes the same edge.
+ */
 .crewlet-data-grid__th--right .crewlet-data-grid__sort {
   justify-content: flex-end;
+}
+
+.crewlet-data-grid__th--center .crewlet-data-grid__sort {
+  justify-content: center;
 }
 
 .crewlet-data-grid__th:not(.crewlet-data-grid__th--plain):hover,
@@ -228,6 +239,10 @@
 
 .crewlet-data-grid__th--right {
   justify-content: flex-end;
+}
+
+.crewlet-data-grid__th--center {
+  justify-content: center;
 }
 
 .crewlet-data-grid__sort:focus-visible,
@@ -347,11 +362,11 @@ button.crewlet-data-grid__row-link {
  * the grid's clip: the ring lost a pixel and the hover ground stood 3px from
  * the frame.
  */
-.crewlet-data-grid__cell:not(:first-child, .crewlet-data-grid__cell--right)
-  > .crewlet-btn--ghost.crewlet-btn--small:first-child,
-.crewlet-data-grid__cell:not(:first-child, .crewlet-data-grid__cell--right)
+.crewlet-data-grid__cell:not(:first-child, .crewlet-data-grid__cell--right, .crewlet-data-grid__cell--center)
+  > .crewlet-btn--ghost.crewlet-btn--small:not(.crewlet-btn--flush):first-child,
+.crewlet-data-grid__cell:not(:first-child, .crewlet-data-grid__cell--right, .crewlet-data-grid__cell--center)
   > .crewlet-menu-anchor:first-child
-  > .crewlet-btn--ghost.crewlet-btn--small {
+  > .crewlet-btn--ghost.crewlet-btn--small:not(.crewlet-btn--flush) {
   margin-inline-start: var(--crewlet-data-grid-control-outdent, calc(-1 * (var(--spacing-2) + 1px)));
 }
 
@@ -366,8 +381,22 @@ button.crewlet-data-grid__row-link {
   overflow: clip;
 }
 
+/* A RIGHT-ALIGNED COLUMN holds figures, times and dates: tabular digits, so
+   "53s ago" and "12h ago" end on one edge and their digits stand in columns. */
 .crewlet-data-grid__cell--right {
   justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-data-grid__cell--center {
+  justify-content: center;
+}
+
+/* A flush control keeps its own inset where the column's edge is not its
+   start: a right or a centred column lines its values up by their end or
+   their middle, and a control taken back at its start would stand off both. */
+:is(.crewlet-data-grid__cell--right, .crewlet-data-grid__cell--center) .crewlet-btn--flush {
+  margin-inline-start: 0;
 }
 
 .crewlet-data-grid__truncate {
@@ -585,7 +614,8 @@ button.crewlet-data-grid__row-link {
 
 /* `shrink` and `right` are column shapes, and there are no columns here. */
 :where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell--shrink,
-:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell--right {
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell--right,
+:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell--center {
   white-space: normal;
   justify-content: flex-start;
 }

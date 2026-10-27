@@ -110,21 +110,44 @@
    per size. min-height rather than height, so a label that wraps is read
    rather than clipped. */
 .crewlet-btn--small {
+  --crewlet-btn-inset: var(--spacing-2);
+
   min-height: var(--size-control-sm);
-  padding: 0 var(--spacing-2);
+  padding: 0 var(--crewlet-btn-inset);
   font-size: var(--font-size-xs);
 }
 
 .crewlet-btn--medium {
+  --crewlet-btn-inset: var(--spacing-3);
+
   min-height: var(--size-control-md);
-  padding: 0 var(--spacing-3);
+  padding: 0 var(--crewlet-btn-inset);
   font-size: var(--font-size-compact);
 }
 
 .crewlet-btn--large {
+  --crewlet-btn-inset: var(--spacing-4);
+
   min-height: var(--size-control-lg);
-  padding: 0 var(--spacing-4);
+  padding: 0 var(--crewlet-btn-inset);
   font-size: var(--font-size-sm);
+}
+
+/*
+ * FLUSH: the words start on the line. The padding and the 1px edge are taken
+ * back at the start, so a ghost button drawn as a value starts on the line
+ * the plain values in its column start on, and only the hover ground and the
+ * ring reach past it, into the gutter before it. The START ONLY: taken back at
+ * the end too, the box overran its cell's content edge, which a column that
+ * measures what it cuts short reads as a value that does not fit. The ring is
+ * drawn inside, so a container that clips (a table, a card) never cuts it.
+ */
+.crewlet-btn--flush {
+  margin-inline-start: calc(-1 * (var(--crewlet-btn-inset) + 1px));
+}
+
+.crewlet-btn--flush:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-btn--square {

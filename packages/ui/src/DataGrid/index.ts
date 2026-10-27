@@ -1,6 +1,15 @@
 import './DataGrid.css';
 
-export { ChooserList, ColumnChooser, DataGrid, columnChoicesOf, fitGridColumns, nextGridSort, parseGridSort } from './DataGrid.js';
+export {
+  ChooserList,
+  ColumnChooser,
+  DATA_GRID_ICON_TRACK,
+  DataGrid,
+  columnChoicesOf,
+  fitGridColumns,
+  nextGridSort,
+  parseGridSort,
+} from './DataGrid.js';
 export { countDataGridRows, useAnyDataGridDriving, useDataGridDriving } from './driving.js';
 export type { DataGridDriving } from './driving.js';
 export type {
@@ -9,6 +18,7 @@ export type {
   ChooserListProps,
   ColumnChooserProps,
   DataGridActivationEvent,
+  DataGridAlign,
   DataGridBand,
   DataGridColumn,
   DataGridHandle,

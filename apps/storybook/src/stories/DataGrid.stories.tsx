@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, Card, ChooserList, ColumnChooser, DataGrid, Tag, columnChoicesOf, type DataGridColumn } from '@crewlethq/ui';
-import { InboxGlyph } from '@crewlethq/icons/glyphs';
+import { Button, Card, ChooserList, ColumnChooser, DataGrid, Menu, Tag, columnChoicesOf, type DataGridColumn } from '@crewlethq/ui';
+import { BugGlyph, InboxGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof DataGrid> = {
   title: 'UI/DataGrid',
@@ -105,6 +105,60 @@ function DefaultOrder() {
  * reader chose. The foot is a caption: smaller, quieter and plainly the end.
  */
 export const SortedFromADefault: Story = { render: () => <DefaultOrder /> };
+
+const ALIGNED: DataGridColumn<Task>[] = [
+  { key: 'type', header: '', label: 'Type', icon: true, cell: () => <BugGlyph size="sm" aria-hidden="true" /> },
+  { key: 'key', header: 'Key', shrink: true, cell: (t) => t.key, sortValue: (t) => t.key },
+  {
+    key: 'status',
+    header: 'Status',
+    shrink: true,
+    // A VALUE CHOSEN IN PLACE: the menu's trigger is flush, so the pill starts
+    // on the column's line with the head and every plain value.
+    cell: (t) => (
+      <Menu
+        label={`Status of ${t.key}`}
+        trigger={<Tag size="sm">{t.status}</Tag>}
+        triggerFlush
+        items={[{ key: 'done', label: 'Done', onSelect: () => {} }]}
+      />
+    ),
+  },
+  { key: 'title', header: 'Title', floor: '12rem', cell: (t) => t.title, sortValue: (t) => t.title },
+  {
+    key: 'updated',
+    header: 'Updated',
+    align: 'right',
+    shrink: true,
+    cell: (t) => `${t.updated}m ago`,
+    sortValue: (t) => t.updated,
+  },
+];
+
+function Aligned() {
+  const [sort, setSort] = useState('');
+  return (
+    <div style={{ maxWidth: 960 }}>
+      <DataGrid
+        rows={TASKS}
+        columns={ALIGNED}
+        rowKey={(t: Task) => t.key}
+        sort={sort}
+        onSortChange={setSort}
+        footer="That is all of it, 4 items match"
+      />
+    </div>
+  );
+}
+
+/**
+ * ONE EDGE PER COLUMN. Each column's head and values share an edge and an
+ * inset: words on the left, times on the right with tabular digits so "4m ago"
+ * and "12m ago" end together, and an `icon` column (Type) centred in a fixed
+ * track and named for assistive technology. The status picker's trigger is
+ * flush (`triggerFlush`), so its pill starts on the head's line.
+ */
+export const AlignedColumns: Story = { render: () => <Aligned /> };
 
 /**
  * A grid that cannot fit even after its give-way columns have gone, in a

@@ -13,6 +13,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
   ChooserList,
   ColumnChooser,
+  DATA_GRID_ICON_TRACK,
   DataGrid,
   columnChoicesOf,
   fitGridColumns,
@@ -220,6 +221,66 @@ describe('the heads', () => {
     expect(names().map((n) => n?.slice(0, 5))).toEqual(['Bravo', 'Alpha', 'Charl']);
     expect(parseGridSort('-a')).toEqual({ key: 'a', desc: true });
     expect(parseGridSort('')).toBeNull();
+  });
+});
+
+/*
+ * THE ALIGNMENT GUARD. A head stood off the values it names three ways: no
+ * per-column edge but left and right, a picker's ghost button adding its own
+ * inset at the cell's edge, and pills and dates ragged against a left edge. A
+ * head and its cells must take one edge and one inset, whatever `align` says.
+ */
+describe('alignment', () => {
+  interface Fact {
+    id: string;
+    name: string;
+    age: number;
+    kind: string;
+  }
+  const FACTS: Fact[] = [
+    { id: 'a', name: 'Alpha', age: 53, kind: 'bug' },
+    { id: 'b', name: 'Bravo', age: 12, kind: 'task' },
+  ];
+  const ALIGNED: DataGridColumn<Fact>[] = [
+    { key: 'kind', header: '', label: 'Type', icon: true, cell: (r) => <svg aria-label={r.kind} /> },
+    { key: 'name', header: 'Name', cell: (r) => r.name, sortValue: (r) => r.name },
+    { key: 'age', header: 'Updated', align: 'right', cell: (r) => `${r.age}s ago`, sortValue: (r) => r.age },
+    { key: 'mark', header: 'Mark', align: 'center', cell: () => '•' },
+  ];
+
+  test('a head and every cell of a column take the same edge', () => {
+    const { container } = render(<DataGrid rows={FACTS} columns={ALIGNED} rowKey={(r) => r.id} onSortChange={() => {}} />);
+    const heads = screen.getAllByRole('columnheader');
+    const rows = [...container.querySelectorAll('.crewlet-data-grid__row')];
+    const edge = (el: Element, part: 'th' | 'cell') =>
+      (['right', 'center'] as const).find((a) => el.classList.contains(`crewlet-data-grid__${part}--${a}`)) ?? 'left';
+    const expected = ['center', 'left', 'right', 'center'];
+    expect(heads.map((h) => edge(h, 'th'))).toEqual(expected);
+    for (const row of rows) {
+      expect([...row.querySelectorAll(':scope > .crewlet-data-grid__cell')].map((c) => edge(c, 'cell'))).toEqual(expected);
+    }
+    // An icon column is a fixed track, named for assistive technology.
+    expect((container.querySelector('.crewlet-data-grid') as HTMLElement).style.gridTemplateColumns.startsWith(DATA_GRID_ICON_TRACK)).toBe(true);
+    expect(heads[0]!.textContent).toBe('Type');
+    expect(heads[0]!.getAttribute('title')).toBe('Type');
+  });
+
+  test('the stylesheet gives a head and its cells one inset and one edge per align value', () => {
+    const css = sheet();
+    // ONE INSET: head and cell read the same two variables.
+    expect(css).toMatch(/\.crewlet-data-grid__th \{[^}]*padding-inline: var\(--crewlet-data-grid-cell-start\) var\(--crewlet-data-grid-cell-end\)/);
+    expect(css).toMatch(/\.crewlet-data-grid__cell \{[^}]*padding-inline: var\(--crewlet-data-grid-cell-start\) var\(--crewlet-data-grid-cell-end\)/);
+    // ONE EDGE: each modifier justifies the head, its sort button and its cells alike.
+    for (const [align, justify] of [
+      ['right', 'flex-end'],
+      ['center', 'center'],
+    ] as const) {
+      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__th--${align} \\{[^}]*justify-content: ${justify}`));
+      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__th--${align} \\.crewlet-data-grid__sort \\{[^}]*justify-content: ${justify}`));
+      expect(css).toMatch(new RegExp(`\\.crewlet-data-grid__cell--${align} \\{[^}]*justify-content: ${justify}`));
+    }
+    // FIGURES AND TIMES END ON ONE EDGE with tabular digits.
+    expect(css).toMatch(/\.crewlet-data-grid__cell--right \{[^}]*font-variant-numeric: tabular-nums/);
   });
 });
 

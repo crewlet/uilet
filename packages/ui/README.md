@@ -215,6 +215,10 @@ places:
 
 **`DataGrid` takes `defaultSort`**, the order the rows take while `sort` is empty, drawn on its column's head as the sort in force. A press steps ascending, descending, then back to the default, from the sort in force rather than from the address: a column at its default descending turns ascending, and a step that lands on the default is written as `''`, so an address holds only what the reader chose and no press changes nothing. `nextGridSort(column, sort, defaultSort)` is that cycle, pure.
 
+**A `DataGrid` column has one edge, shared by its head and its values.** `align` takes `left` (the default), `right` or `center` (`DataGridAlign`), and the head, its sort button and every cell take the same modifier and the same inline inset, so a head never stands off the values it names. A right-aligned column draws tabular digits, so times and figures end on one edge. A column with `icon` (one glyph or face per row) is drawn in a fixed track (`DATA_GRID_ICON_TRACK`), centred, and named by its `label`. `TableDateCell` draws tabular digits.
+
+**`Button` takes `flush`, and `Menu` takes `triggerFlush`.** A flush button's words start on the line its box starts on: its padding and edge are taken back at its start by its size's own inset (`--crewlet-btn-inset`), and its focus ring is drawn inside. A ghost button drawn as a value (a status chosen in place, a face that opens a picker) then starts on the line the plain values in its column start on, in a table or a properties rail, instead of one padding and one edge inside it.
+
 **The `DataGrid` foot is a caption, not a row.** It takes the micro step of type, the tertiary ink, half the row's inset and the grid's own ground under a hairline, where it took the head's raised ground at nearly a row's height, so a grid's head, rows and foot no longer blur into one stack. A note in the foot takes the foot's size.
 
 ## Changes in 0.69.0
