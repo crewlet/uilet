@@ -47,7 +47,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | List screens | `DataView`, and its parts on their own: `DataViewToolbar`, `FilterAxisBar`, `FilterAxisChip`, plus the filter model (`filterDefsFromColumns`, `applyColumnFilters`, `filterPredicate`, `blankFilterValue`) |
 | Feedback and overlays | `Callout`, `ConflictNote`, `EditingStatus`, `Toaster`, `Modal` (with `variant="sheet"`), `ConfirmModal`, `CommandPalette`, `Tooltip`, `Popover`, `Announcer` |
 | Documents and review | `DiffView` and `DiffSummary` with the line diff they draw (`diffLines`, `diffStat`, `collapseDiff`, `firstChangedLines`, `splitLines`, `MAX_DIFF_LINES`, with no React in it), `DiffList`, `VersionCompare`, `CommentThread` |
-| Conversations and the assistant | `ChatThread` (with `ChatThreadHandle`), `MessageBubble`, `RunChip`, `StepList` and `StepStateMark`, `ProposalCard`, `ChangeList` (with `shortenUnchanged`), `StatusCard`, `ReceiptStrip`, `RefusalStrip`, `ResultTableCard`, `OpenInAppCard`, `EntityList`, `RefusalCard`, `SuggestionRow` and `SuggestionList`, `SendButton` |
+| Conversations and the assistant | `ChatThread` (with `ChatThreadHandle`), `MessageBubble`, `RunChip`, `StepList` and `StepStateMark`, `ProposalCard`, `ChangeList` (with `shortenUnchanged`), `StatusCard`, `ReceiptStrip`, `RefusalStrip`, `ResultTableCard`, `OpenInAppCard`, `BriefCard`, `EntityList`, `RefusalCard`, `SuggestionRow` and `SuggestionList`, `SendButton` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
 | Marks | `Count`, `StatusDot`, `Spinner`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
@@ -204,6 +204,10 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.69.0
+
+**`BriefCard`, a brief as the assistant's answer card.** One sentence on what is going on (`summary`), the rows that wait on the reader (`needs`, never more than `BRIEF_CARD_MAX_NEEDS`, three, each with its words, one `detail`, a `tone` of `warning` (the default), `danger` or `neutral` drawn as a `StatusDot`, and one `action` button), one `recommended` next step on the accent's softest ground with an optional primary action (`null` leaves the block out), and `followUps`, the questions to ask next as plain `SuggestionRow`s under an "Ask next" label. An empty `needs` says "Nothing needs you." in words. It stands in a `StatusCard` titled "Brief" with `scope` and `asOf` beside the title and a Tag in the head that counts the rows ("2 need you") or says "All clear", so the card's region name carries the count. Every action is the host's own callback: the card never decides where a row leads. `labels` replaces any of its words (`BRIEF_CARD_LABELS`); the types are `BriefCardProps`, `BriefCardNeed`, `BriefCardNeedTone`, `BriefCardAction`, `BriefCardRecommendation`, `BriefCardFollowUp` and `BriefCardLabels`.
 
 ## Changes in 0.67.0
 
