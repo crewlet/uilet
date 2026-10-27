@@ -24,7 +24,7 @@ import axe from 'axe-core';
 import { useEffect, useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { LayerHost } from '../Layer/index.js';
-import { ToastProvider, Toaster, toasterInsetStyle, useToast, type ToastApi } from './index.js';
+import { ToastProvider, Toaster, readingDuration, toasterInsetStyle, useToast, type ToastApi } from './index.js';
 
 afterEach(() => {
   cleanup();
@@ -162,6 +162,170 @@ describe('Toaster', () => {
       expect(onDismiss).toHaveBeenCalledWith(1);
     } finally {
       window.matchMedia = real;
+    }
+  });
+
+  // A TOAST THAT GOES BY ITSELF STAYS AS LONG AS IT TAKES TO READ. A fixed
+  // four seconds fit a title: a thirty-word sentence went before its second
+  // line was read. Never sooner than four seconds, never longer than fifteen,
+  // and a duration the caller passed is the caller's.
+  test('a toast that goes by itself stays as long as its words take to read', () => {
+    expect(readingDuration('Saved')).toBe(4000);
+    const thirty = Array.from({ length: 30 }, () => 'word').join(' ');
+    expect(readingDuration(thirty)).toBe(11000);
+    expect(readingDuration(`${thirty} ${thirty}`)).toBe(15000);
+
+    vi.useFakeTimers();
+    const onDismiss = vi.fn();
+    render(
+      <Toaster
+        toasts={[
+          { id: 1, variant: 'info', title: 'Filed ENG-7', message: thirty },
+          { id: 2, variant: 'success', message: 'Saved' },
+          { id: 3, variant: 'info', message: thirty, duration: 5000 },
+        ]}
+        onDismiss={onDismiss}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(onDismiss.mock.calls.map(([id]) => id).sort()).toEqual([2, 3]);
+    // TO THE MILLISECOND, title and message both: a default that read less
+    // of the toast, or ended it sooner, dismisses it before this.
+    act(() => {
+      vi.advanceTimersByTime(readingDuration(`Filed ENG-7 ${thirty}`) - 5000 - 1);
+    });
+    expect(onDismiss).not.toHaveBeenCalledWith(1);
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onDismiss).toHaveBeenCalledWith(1);
+  });
+
+  // A NULL DURATION IS AN UNSET ONE, as it was before the default read the
+  // words: a caller in plain JavaScript passes null for "the default", and
+  // reading it as a duration made the toast sticky.
+  test('a null duration takes the default', () => {
+    vi.useFakeTimers();
+    const onDismiss = vi.fn();
+    render(
+      <Toaster
+        toasts={[{ id: 1, variant: 'success', message: 'Saved', duration: null as unknown as number }]}
+        onDismiss={onDismiss}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+    expect(onDismiss).toHaveBeenCalledWith(1);
+  });
+
+  // A DURATION NO TIMER CAN HOLD NEVER DISMISSES AT ONCE. setTimeout fires
+  // immediately for a delay past 2^31-1 ms, Infinity included, so a toast
+  // meant to stay went the moment it was drawn. Infinity (and anything not a
+  // finite number) is sticky; a finite one past the bound is the bound.
+  test('a duration past what a timer holds stays, or waits the longest a timer can', () => {
+    vi.useFakeTimers();
+    const onDismiss = vi.fn();
+    render(
+      <Toaster
+        toasts={[
+          { id: 1, variant: 'success', message: 'Never', duration: Infinity },
+          { id: 2, variant: 'success', message: 'Not a number', duration: Number.NaN },
+          { id: 3, variant: 'success', message: 'Very long', duration: 2 ** 32 },
+        ]}
+        onDismiss={onDismiss}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(2 ** 31 - 2);
+    });
+    expect(onDismiss).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onDismiss.mock.calls).toEqual([[3]]);
+  });
+
+  // AN UPDATE IN PLACE KEEPS WHAT HAS ELAPSED; ONLY A NEW VERSION RESTARTS.
+  // With the default read from the words, new words in the same toast change
+  // its duration. Restarting the countdown then (and only when the word count
+  // moved) left the drain, keyed by the version, stretched and out of step.
+  test('an update in place keeps the elapsed time, and a new version restarts it', () => {
+    vi.useFakeTimers();
+    const thirty = Array.from({ length: 30 }, () => 'word').join(' ');
+    const onDismiss = vi.fn();
+    const { rerender } = render(
+      <Toaster toasts={[{ id: 1, variant: 'info', message: 'Saved' }]} onDismiss={onDismiss} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    rerender(<Toaster toasts={[{ id: 1, variant: 'info', message: thirty }]} onDismiss={onDismiss} />);
+    // The new end is the new duration from the first draw, not from now.
+    act(() => {
+      vi.advanceTimersByTime(readingDuration(thirty) - 3000 - 1);
+    });
+    expect(onDismiss).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onDismiss).toHaveBeenCalledWith(1);
+
+    onDismiss.mockClear();
+    const replaced = render(
+      <Toaster toasts={[{ id: 2, variant: 'info', message: 'Saved', version: 1 }]} onDismiss={onDismiss} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    replaced.rerender(
+      <Toaster toasts={[{ id: 2, variant: 'info', message: 'Saved', version: 2 }]} onDismiss={onDismiss} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(4000 - 1);
+    });
+    expect(onDismiss).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onDismiss).toHaveBeenCalledWith(2);
+  });
+
+  // A SCRIPT WRITTEN WITHOUT SPACES IS COUNTED IN ITS WORDS. Splitting on
+  // spaces called a whole Japanese or Chinese sentence one word and gave it
+  // the floor. Read at about 500 characters a minute (Japanese) and 400
+  // (Chinese), these take about seven and eight seconds after the two to
+  // notice them; the segmented count gives them about nine and a half and
+  // nine, a little generous, and inside the cap.
+  test('a sentence written without spaces stays as long as its words take to read', () => {
+    const ja =
+      '締め切りの日付は時刻を持たないため、ロサンゼルスの暦でその瞬間が当たる日として二〇二六年三月四日に保存されました。';
+    const zh = '截止日期只保存日期而不保存时间，所以它被保存为该时刻在洛杉矶日历中所在的那一天，即二〇二六年三月四日。';
+    for (const sentence of [ja, zh]) {
+      const ms = readingDuration(sentence);
+      expect(ms).toBeGreaterThanOrEqual(8000);
+      expect(ms).toBeLessThan(15000);
+    }
+    // Spaced text is counted as before.
+    expect(readingDuration('one two three four five six seven')).toBe(4100);
+  });
+
+  // A RUNTIME WITH NO WORD SEGMENTER (Safari before 14.1, Firefox before
+  // 125) COUNTS THE WORDS BETWEEN SPACES, rather than none: the module is
+  // loaded afresh with Intl.Segmenter gone, so its cached segmenter is never
+  // made.
+  test('a runtime with no word segmenter counts the words between spaces', async () => {
+    vi.resetModules();
+    vi.stubGlobal('Intl', { ...Intl, Segmenter: undefined });
+    try {
+      const fresh = await import('./Toaster.js');
+      expect(fresh.readingDuration('one two three four five six seven')).toBe(4100);
+      expect(fresh.readingDuration(Array.from({ length: 30 }, () => 'word').join(' '))).toBe(11000);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.resetModules();
     }
   });
 

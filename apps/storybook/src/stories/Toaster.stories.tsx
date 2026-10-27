@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, ToastProvider, Toaster, useToast, type Toast } from '@crewlethq/ui';
+import { Button, ToastProvider, Toaster, readingDuration, useToast, type Toast } from '@crewlethq/ui';
 import { ShieldUserGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof Toaster> = {
@@ -41,8 +41,9 @@ export const Info: Story = {
 };
 
 /**
- * A success goes by itself after four seconds: long enough to read one line,
- * short enough not to sit over the row the reader is looking at next.
+ * A success goes by itself once it has been read: four seconds for one line,
+ * which is long enough to read it and short enough not to sit over the row the
+ * reader is looking at next.
  */
 export const Success: Story = {
   render: () => {
@@ -51,6 +52,39 @@ export const Success: Story = {
       variant: 'success',
       message: 'Saved. The engine is applying it.',
     }));
+    return <Demo />;
+  },
+};
+
+/**
+ * A toast that goes by itself stays as long as its words take to read: the
+ * short one goes after four seconds, the long one after the time its button
+ * names, and neither names a duration. `readingDuration` is the same rule, exported. One
+ * Toaster draws both, as a host has one.
+ */
+export const ReadingTime: Story = {
+  render: () => {
+    const long =
+      'The launch date holds a date without a time, so it was saved as 2026-03-04, ' +
+      'the day 2026-03-05T04:00:00Z falls on in America/Los_Angeles.';
+    function Demo() {
+      const [toasts, setToasts] = useState<Toast[]>([]);
+      const push = (toast: Toast) => setToasts((prev) => [...prev, toast]);
+      const dismiss = (id: string | number) => setToasts((prev) => prev.filter((one) => one.id !== id));
+      return (
+        <>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button onClick={() => push({ id: nextId(), variant: 'success', message: 'Saved.' })}>
+              A short one (4s)
+            </Button>
+            <Button onClick={() => push({ id: nextId(), variant: 'info', title: 'Updated ENG-42', message: long })}>
+              {`A long one (${Math.round(readingDuration(`Updated ENG-42 ${long}`) / 1000)}s)`}
+            </Button>
+          </div>
+          <Toaster toasts={toasts} onDismiss={dismiss} />
+        </>
+      );
+    }
     return <Demo />;
   },
 };
