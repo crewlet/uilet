@@ -51,18 +51,16 @@
  *
  * 0.85em AND A GAP OF 0.15em: at the text's full size and a gap twice that,
  * a mark read as a word of its own beside its reference rather than as part
- * of it. The square stays centred where the full-size one was (0.375em above
- * the baseline), so the words around a mark do not move.
+ * of it.
  *
- * AN INLINE BLOCK THAT CLIPS, because that is the one box whose baseline is
- * its own bottom edge whatever it holds: an inline-flex box takes its first
- * child's, so a vendor mark's `vertical-align: middle` put every mark a fifth
- * of an em low, and a smaller colour chip moved its box a tenth of an em
- * below the marks beside it. The drawing inside is centred in it.
+ * AN INLINE BLOCK HOLDING ONE BLOCK, because that is a box whose baseline is
+ * its own bottom edge whatever it draws: it has no line box of its own, so
+ * CSS 2.1 puts its baseline at its bottom margin edge. An inline-flex box
+ * takes its first child's, so a vendor mark's `vertical-align: middle` put
+ * every mark a fifth of an em low. The drawing inside is centred in it.
  */
 .crewlet-inline-ref__mark {
   display: inline-block;
-  overflow: hidden;
   line-height: 0;
   margin-inline-end: 0.15em;
   /* A copy carries the words, never a picture's place. */
@@ -72,8 +70,12 @@
 .crewlet-inline-ref__mark--glyph {
   width: 0.85em;
   height: 0.85em;
-  /* Its centre at 0.375em: -0.05em + 0.85em / 2. */
-  vertical-align: -0.05em;
+  /*
+   * Its centre at 0.275em above the baseline: -0.15em + 0.85em / 2. At
+   * 0.375em, a mark stood a pixel or two above the words' own middle beside
+   * a lower-case reference, which reads lower than a capital's.
+   */
+  vertical-align: -0.15em;
   /*
    * The words' quiet step, or the ink a filled ground asks for: on an accent
    * fill a secondary grey is the one colour that does not read.
@@ -81,7 +83,17 @@
   color: var(--crewlet-inline-ref-mark-ink, var(--color-text-secondary));
 }
 
-.crewlet-inline-ref__mark--glyph > * {
+/*
+ * THE DRAWING IS A BLOCK, whatever its own stylesheet says: a vendor mark
+ * draws itself `inline-block` and `vertical-align: middle` (VendorMark.css),
+ * and at one class each the later rule won, so the square held a line box,
+ * took its baseline from the drawing, and was clipped to keep the mark in
+ * place. The clip then cut the drawing's antialiased edge, and a GitHub mark,
+ * which fills its square edge to edge, lost its right side at 13px. Two
+ * classes here win over the drawing's one, the square holds no line box, and
+ * nothing is clipped.
+ */
+.crewlet-inline-ref .crewlet-inline-ref__mark--glyph > * {
   display: block;
   position: relative;
   top: 50%;
@@ -103,6 +115,11 @@
   width: 1.15em;
   height: 1.15em;
   vertical-align: -0.22em;
+  /*
+   * A FACE IS INLINE, so its square holds a line box, and the clip is what
+   * puts the square's baseline at its bottom edge.
+   */
+  overflow: hidden;
 }
 
 .crewlet-inline-ref__mark--face > * {
