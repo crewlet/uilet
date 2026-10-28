@@ -110,3 +110,19 @@ test('carries no axe violation', async () => {
   });
   expect(result.violations).toEqual([]);
 });
+
+test('a pending outcome is a status without the success check', () => {
+  const { container } = render(
+    <ReadingPaneOutcome tone="pending">
+      Sent <strong>Yes</strong>
+    </ReadingPaneOutcome>,
+  );
+  const line = screen.getByRole('status');
+  expect(line.getAttribute('data-tone')).toBe('pending');
+  expect(line.classList.contains('crewlet-reading-pane__outcome--pending')).toBe(true);
+  cleanup();
+  const done = render(<ReadingPaneOutcome>Answered</ReadingPaneOutcome>).container;
+  const mark = (c: HTMLElement) => c.querySelector('.crewlet-reading-pane__outcome-mark')?.outerHTML;
+  expect(mark(done)).not.toBe(mark(container));
+  expect(screen.getByRole('status').getAttribute('data-tone')).toBe('done');
+});

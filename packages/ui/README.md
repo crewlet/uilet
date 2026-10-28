@@ -1464,7 +1464,7 @@ What to change: a test that reads a failure toast's red edge or red words, or a 
 
 **`ChoiceButtons`** sends one answer with one press: a group of buttons as tall as a touch target, the `recommended` option first, filled and marked. `pending` and `disabledReason` hold every option still without taking its focus.
 
-**`ReadingPane`** reads one item in a single column named by its title: `ReadingPaneByline`, `ReadingPaneTitle`, `ReadingPaneLead`, `ReadingPaneQuote` (`verbatim` for a machine's words), `ReadingPaneReasoning`, `ReadingPaneOutcome` (a status line) and `ReadingPaneSection`.
+**`ReadingPane`** reads one item in a single column named by its title: `ReadingPaneByline`, `ReadingPaneTitle`, `ReadingPaneLead`, `ReadingPaneQuote` (`verbatim` for a machine's words), `ReadingPaneReasoning`, `ReadingPaneOutcome` (a status line, `tone="pending"` for an action accepted and still on its way, drawn with a clock in the secondary ink rather than the success check) and `ReadingPaneSection`.
 
 **`Link`** adds `variant="quiet"`, a reference among other words in `--color-text-link-quiet` that never underlines and steps up to the accent ink on hover, and `size="inherit"`.
 
