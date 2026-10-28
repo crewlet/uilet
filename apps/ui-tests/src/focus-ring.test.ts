@@ -136,6 +136,8 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'ImageUpload/ImageUpload.css | .crewlet-image-upload__trigger:focus-visible',
       // The words at the end of an inbox that open its snoozed and earlier rows.
       'InboxList/InboxList.css | .crewlet-inbox-list__toggle:focus-visible',
+      // A reference in a sentence that is a link: a mark and words, no box.
+      'InlineRef/InlineRef.css | .crewlet-inline-ref--link:focus-visible',
       // A callout's tone in the rich editor, drawn as the callout's own label:
       // words with no box, which the ring is the only line around.
       'RichEditor/RichEditor.css | .crewlet-rich-editor__tone:focus-visible',

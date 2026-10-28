@@ -97,6 +97,13 @@
   background: var(--color-brand-accent);
   border-color: transparent;
   color: var(--color-text-on-accent);
+  /*
+   * A COLOUR OR A REFERENCE IN THE LABEL takes the label's own ink for its
+   * edge and its mark: the control border and the secondary grey are measured
+   * on the surfaces, and on the accent they all but vanish (1.09:1 light).
+   */
+  --crewlet-color-chip-ring: currentColor;
+  --crewlet-inline-ref-mark-ink: currentColor;
 }
 
 .crewlet-choice-buttons__option--recommended:hover:not([aria-disabled='true']) {
