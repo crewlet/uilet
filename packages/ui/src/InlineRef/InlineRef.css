@@ -1,6 +1,6 @@
 /*
- * A reference inside a sentence (InlineRef.tsx): a mark at the text's size,
- * then its words, in the sentence's own ink unless it is a link.
+ * A reference inside a sentence (InlineRef.tsx): a mark a little below the
+ * text's size, then its words, in the sentence's own ink unless it is a link.
  */
 
 .crewlet-inline-ref {
@@ -45,9 +45,14 @@
 }
 
 /*
- * ONE SQUARE AT THE TEXT'S SIZE for every glyph, mark and chip, centred on
- * the same line, so a GitHub mark beside one word and a task's glyph beside
- * the next stand at the same height.
+ * ONE SQUARE A LITTLE BELOW THE TEXT'S SIZE for every glyph, mark and chip,
+ * centred on the same line, so a GitHub mark beside one word and a task's
+ * glyph beside the next stand at the same height.
+ *
+ * 0.85em AND A GAP OF 0.15em: at the text's full size and a gap twice that,
+ * a mark read as a word of its own beside its reference rather than as part
+ * of it. The square stays centred where the full-size one was (0.375em above
+ * the baseline), so the words around a mark do not move.
  *
  * AN INLINE BLOCK THAT CLIPS, because that is the one box whose baseline is
  * its own bottom edge whatever it holds: an inline-flex box takes its first
@@ -59,15 +64,16 @@
   display: inline-block;
   overflow: hidden;
   line-height: 0;
-  margin-inline-end: 0.3em;
+  margin-inline-end: 0.15em;
   /* A copy carries the words, never a picture's place. */
   user-select: none;
 }
 
 .crewlet-inline-ref__mark--glyph {
-  width: 1em;
-  height: 1em;
-  vertical-align: -0.125em;
+  width: 0.85em;
+  height: 0.85em;
+  /* Its centre at 0.375em: -0.05em + 0.85em / 2. */
+  vertical-align: -0.05em;
   /*
    * The words' quiet step, or the ink a filled ground asks for: on an accent
    * fill a secondary grey is the one colour that does not read.

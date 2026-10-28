@@ -3,16 +3,17 @@ import { safeHref } from '../Markdown/grammar.js';
 import { cx } from '../utils/cx.js';
 
 export type InlineRefMarkShape =
-  /** A vendor's mark, a kind's glyph or a colour chip: a square at the text's size. */
+  /** A vendor's mark, a kind's glyph or a colour chip: a square of 0.85em. */
   | 'glyph'
   /** A face (`Avatar size="text"`), which stands a little taller than the words. */
   | 'face';
 
 export interface InlineRefProps {
   /**
-   * What the reference is, drawn before its words at the text's own size: a
-   * vendor's mark, a kind's glyph, a colour chip, a face. Decoration, hidden
-   * from assistive technology and left out of a copy: `kind` says it in words.
+   * What the reference is, drawn just before its words, a little below their
+   * size: a vendor's mark, a kind's glyph, a colour chip, a face. Decoration,
+   * hidden from assistive technology and left out of a copy: `kind` says it
+   * in words.
    */
   mark?: ReactNode;
   /** `face` for an `Avatar size="text"`, which keeps its own box; `glyph` (the default) for the rest. */
@@ -64,8 +65,9 @@ function splitHead(children: ReactNode): { head: ReactNode; rest: ReactNode[] } 
  *
  * WHY IT EXISTS. Operator-facing text is full of things a reader has to stop
  * and decode: `gophrase/backend#14` is a pull request on GitHub, `#ffe100` a
- * yellow, `~design-review` a Mattermost channel. A mark at the text's own size
- * says which before the words are read, and costs the line no height.
+ * yellow, `~design-review` a Mattermost channel. A mark a little below the
+ * text's size says which before the words are read, and costs the line no
+ * height.
  *
  * NOT A CHIP. A `RecordChip` is a button that opens a peek of a record the
  * host resolved; this is a link, or words, in the sentence's own ink, so the
