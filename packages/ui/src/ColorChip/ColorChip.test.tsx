@@ -3,6 +3,9 @@
  * the same `#rrggbb` gate as every brand part.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
@@ -58,4 +61,22 @@ test('on a button it is the mark, and the button is named by its words alone', a
   expect(screen.getByRole('button', { name: 'Use #007f7f · 4.5:1' })).toBeTruthy();
   const result = await axe.run(container, { resultTypes: ['violations'], rules: { 'color-contrast': { enabled: false } } });
   expect(result.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test('its edge is the control border, a boundary a reader can see, unless its ground names another', () => {
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ColorChip.css'), 'utf8');
+  const base = sheet.slice(sheet.indexOf('.crewlet-color-chip {'), sheet.indexOf('}', sheet.indexOf('.crewlet-color-chip {')));
+  expect(base).toContain('box-shadow: inset 0 0 0 1px var(--crewlet-color-chip-ring, var(--color-border-control))');
+});
+
+test('at the text size it is sized by the words around it, and nearly square', () => {
+  const { container } = render(
+    <p>
+      Accent <ColorChip value="#ffe100" size="text" shape="square" /> #ffe100
+    </p>,
+  );
+  const drawn = chip(container);
+  expect(drawn.classList.contains('crewlet-color-chip--text')).toBe(true);
+  expect(drawn.getAttribute('aria-hidden')).toBe('true');
+  expect(drawn.style.getPropertyValue(custom)).toBe('#ffe100');
 });

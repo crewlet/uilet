@@ -80,6 +80,54 @@
  * 9px, in the component), so the step and its numeric twin draw one badge and
  * two initials clear the ring by a pixel or more.
  */
+/*
+ * A FACE IN A SENTENCE (`size="text"`): its box is the words' own size, so
+ * it takes their font size and is measured in it, and its initials are set
+ * apart at half that (`.crewlet-avatar__initials`), since setting the box's
+ * own type would change what its em measures.
+ */
+.crewlet-avatar--text {
+  --crewlet-avatar-size: 1.15em;
+  font-size: inherit;
+  /*
+   * AN INLINE BLOCK, not a flex box, because it sits inside words a reader
+   * copies: a browser copies a line break before an inline flex container,
+   * so "ask @miles" came out over two lines. Its face is centred by its line
+   * instead (`line-height` is its own height).
+   */
+  display: inline-block;
+  text-align: center;
+  line-height: var(--crewlet-avatar-size);
+}
+
+/* An image face is a block at every other size. */
+.crewlet-avatar--text.crewlet-avatar--image {
+  display: inline-block;
+}
+
+/* A glyph face (a token's key) centred by the line too, never a flex box. */
+.crewlet-avatar--text .crewlet-avatar__icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* The character takes 74% of the box: the rest, shared above and below it. */
+.crewlet-avatar--text .crewlet-avatar__character {
+  margin: 13% auto;
+}
+
+.crewlet-avatar__initials {
+  /*
+   * RELATIVE, like InlineCode's size and for its reason: the face sits in
+   * whatever register its sentence is set in, so its initials are half of
+   * that, never a step off the scale.
+   */
+  --crewlet-avatar-initials-size: 0.5em;
+  font-size: var(--crewlet-avatar-initials-size);
+  line-height: 1;
+  vertical-align: middle;
+}
+
 .crewlet-avatar--xs {
   --crewlet-avatar-size: 20px;
   font-size: calc(var(--crewlet-avatar-size) * 0.45);

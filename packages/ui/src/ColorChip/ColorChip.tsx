@@ -2,8 +2,12 @@ import type { CSSProperties } from 'react';
 import { cx } from '../utils/cx.js';
 import { normalizeHex } from '../utils/hexColour.js';
 
-/** `xs` is 12px, a mark inside a small button; `sm` is 16px, beside a word in a row. */
-export type ColorChipSize = 'xs' | 'sm';
+/**
+ * `xs` is 12px, a mark inside a small button; `sm` is 16px, beside a word in a
+ * row; `text` is sized by the words around it, for a colour written inside a
+ * sentence, a code span or a button's label.
+ */
+export type ColorChipSize = 'xs' | 'sm' | 'text';
 
 export type ColorChipShape = 'round' | 'square';
 

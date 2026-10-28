@@ -15,6 +15,12 @@
  * mark, black on a light ground and white on a dark one, and a fixed hex would
  * be wrong in one theme whichever one was picked.
  *
+ * Mattermost's blue is its mark on a light ground, and Mattermost publishes
+ * the same drawing reversed (white) for a dark one, which is what the dark
+ * themes draw: its blue on the dark ground fell under 3:1 and the mark next
+ * to its channel's name all but disappeared. The reversed mark takes the
+ * current text colour, as GitHub's does (`VendorMark.css`).
+ *
  * Datadog draws its own mark as a violet tile with the dog knocked OUT of it,
  * so the dog is a hole rather than a shape and needs something opaque behind
  * it: the white plate is the tile itself, corner for corner off the violet
@@ -121,7 +127,7 @@ export function VendorMark({ vendor, size, title, muted = false, className, ...r
   const semantics: SVGProps<SVGSVGElement> = title
     ? { role: 'img', 'aria-label': title, 'aria-hidden': undefined, focusable: 'false' }
     : { 'aria-hidden': true, focusable: 'false' };
-  const classes = ['crewlet-vendor-mark'];
+  const classes = ['crewlet-vendor-mark', `crewlet-vendor-mark--${vendor}`];
   if (muted) classes.push('crewlet-vendor-mark--muted');
   if (className !== undefined) classes.push(className);
   return (

@@ -1,0 +1,129 @@
+/*
+ * A reference inside a sentence (InlineRef.tsx): a mark at the text's size,
+ * then its words, in the sentence's own ink unless it is a link.
+ */
+
+.crewlet-inline-ref {
+  /*
+   * InlineCode's size, restated because a consumer may import this component
+   * without that one's stylesheet; the suite holds the two equal.
+   */
+  --crewlet-inline-code-size: 0.92em;
+  /* THE SENTENCE'S OWN INK: a reference in a row or on a filled option reads in what is around it. */
+  color: inherit;
+  /* A token is one word to a reader, and moves to the next line whole. */
+  white-space: nowrap;
+}
+
+.crewlet-inline-ref--wrap {
+  white-space: normal;
+}
+
+/* The mark and the first word are one run, so no mark ever ends a line alone. */
+.crewlet-inline-ref__head {
+  white-space: nowrap;
+}
+
+/*
+ * A LINK reads as one, in the accent's ink step as `Link` draws it. The
+ * underline is the words', never the mark's: an inline-block takes no
+ * decoration from the anchor around it.
+ */
+.crewlet-inline-ref--link {
+  color: var(--color-brand-accent-ink);
+  text-decoration: none;
+  border-radius: var(--radius-xs);
+}
+
+.crewlet-inline-ref--link:hover {
+  text-decoration: underline;
+}
+
+.crewlet-inline-ref--link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/*
+ * ONE SQUARE AT THE TEXT'S SIZE for every glyph, mark and chip, centred on
+ * the same line, so a GitHub mark beside one word and a task's glyph beside
+ * the next stand at the same height.
+ *
+ * AN INLINE BLOCK THAT CLIPS, because that is the one box whose baseline is
+ * its own bottom edge whatever it holds: an inline-flex box takes its first
+ * child's, so a vendor mark's `vertical-align: middle` put every mark a fifth
+ * of an em low, and a smaller colour chip moved its box a tenth of an em
+ * below the marks beside it. The drawing inside is centred in it.
+ */
+.crewlet-inline-ref__mark {
+  display: inline-block;
+  overflow: hidden;
+  line-height: 0;
+  margin-inline-end: 0.3em;
+  /* A copy carries the words, never a picture's place. */
+  user-select: none;
+}
+
+.crewlet-inline-ref__mark--glyph {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  /*
+   * The words' quiet step, or the ink a filled ground asks for: on an accent
+   * fill a secondary grey is the one colour that does not read.
+   */
+  color: var(--crewlet-inline-ref-mark-ink, var(--color-text-secondary));
+}
+
+.crewlet-inline-ref__mark--glyph > * {
+  display: block;
+  position: relative;
+  top: 50%;
+  margin-inline: auto;
+  translate: 0 -50%;
+}
+
+.crewlet-inline-ref__mark--glyph > svg {
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * A FACE (`Avatar size="text"`) stands in a square a little larger than the
+ * words, and a little below their centre, so it reaches no higher than a
+ * capital and the line keeps its height. It fills its square from the top.
+ */
+.crewlet-inline-ref__mark--face {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.22em;
+}
+
+.crewlet-inline-ref__mark--face > * {
+  vertical-align: top;
+}
+
+.crewlet-inline-ref--code .crewlet-inline-ref__text {
+  font-family: var(--font-family-mono);
+  font-size: var(--crewlet-inline-code-size);
+  /* An identifier is read character by character. */
+  font-variant-ligatures: none;
+}
+
+/*
+ * WHAT A SCREEN READER IS TOLD AND THE EYE IS NOT: what the mark means, and
+ * that a link opens a tab. Clipped as `VisuallyHidden` clips, and left out of
+ * a copy, which carries the words a reader selected.
+ */
+.crewlet-inline-ref__said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: pre;
+  user-select: none;
+}

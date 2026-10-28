@@ -3,6 +3,9 @@
  * pending answer that holds every option still, and a reason that keeps focus.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -147,4 +150,13 @@ test('carries no axe violation', async () => {
     resultTypes: ['violations'],
   });
   expect(result.violations).toEqual([]);
+});
+
+test('on the accent fill a colour chip and a reference mark take the label own ink', () => {
+  const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceButtons.css'), 'utf8');
+  const at = sheet.indexOf('.crewlet-choice-buttons__option--recommended {');
+  const recommended = sheet.slice(at, sheet.indexOf('}', at));
+  // A grey edge on the accent measured 1.09:1; the label's own ink is 4.69:1.
+  expect(recommended).toContain('--crewlet-color-chip-ring: currentColor');
+  expect(recommended).toContain('--crewlet-inline-ref-mark-ink: currentColor');
 });
