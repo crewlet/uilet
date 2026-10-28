@@ -115,14 +115,40 @@ test("a reference reads in the ink around it unless it is a link, and its code a
 
 test("every mark stands in one square centred on the line, its drawing a block filling it", () => {
   const sheet = css("InlineRef.css");
-  // A clipping inline block's baseline is its own bottom, whatever it holds.
   const mark = rule(sheet, ".crewlet-inline-ref__mark");
   expect(mark).toContain("display: inline-block");
-  expect(mark).toContain("overflow: hidden");
   const box = rule(sheet, ".crewlet-inline-ref__mark--glyph");
   expect(box).toContain("width: 0.85em");
   expect(box).toContain("height: 0.85em");
-  expect(rule(sheet, ".crewlet-inline-ref__mark--glyph > *")).toContain("display: block");
+  expect(rule(sheet, ".crewlet-inline-ref .crewlet-inline-ref__mark--glyph > *")).toContain(
+    "display: block",
+  );
+});
+
+// NO CLIP ON A GLYPH'S SQUARE, AND A DRAWING THAT IS A BLOCK WHATEVER IT IS. A
+// vendor mark draws itself `inline-block` at one class, which at one class of
+// ours won by coming later: the square then held a line box, its baseline
+// came from the drawing, and only a clip kept it in place, which cut the
+// GitHub mark's right edge. With the drawing a block the square holds no line
+// box and its baseline is its bottom edge, clip or not (measured in Chromium
+// at 13 to 16px: every mark's centre unchanged to a thousandth of a pixel).
+//
+// Mutation: put the clip back on the glyph's square, or the drawing rule
+// back at one class, and this fails.
+test("a glyph's square clips nothing, and its drawing outranks the drawing's own display", () => {
+  const sheet = css("InlineRef.css");
+  for (const selector of [".crewlet-inline-ref__mark", ".crewlet-inline-ref__mark--glyph"]) {
+    expect(rule(sheet, selector), selector).not.toMatch(/overflow/);
+  }
+  // A FACE IS INLINE, and keeps the clip that bottoms its baseline.
+  expect(rule(sheet, ".crewlet-inline-ref__mark--face")).toContain("overflow: hidden");
+  const classes = (selector: string) => (selector.match(/\.[\w-]+/g) ?? []).length;
+  const ours = ".crewlet-inline-ref .crewlet-inline-ref__mark--glyph > *";
+  const theirs = /(^|\n)(\.crewlet-vendor-mark) \{[^}]*display:\s*inline-block/.exec(
+    css("../../../icons/src/VendorMark.css"),
+  );
+  expect(theirs, "VendorMark.css draws the mark inline-block").not.toBeNull();
+  expect(classes(ours)).toBeGreaterThan(classes(theirs![2]!));
 });
 
 // A SMALLER MARK, CLOSER TO ITS WORDS, ON THE SAME CENTRE: shrinking the square
@@ -130,10 +156,14 @@ test("every mark stands in one square centred on the line, its drawing a block f
 // so its centre stays 0.375em above the baseline, where the full-size square's
 // was. Measured in Chromium at 12, 14 and 22px: every mark's centre within a
 // quarter pixel of the words' and no line box taller.
-test("a mark stands 0.15em from its words, centred where the words are", () => {
+// A MARK STANDS A LITTLE LOWER THAN THE MIDDLE OF A CAPITAL, at the middle of
+// the lower-case words its references are mostly written in: its centre 0.275em
+// above the baseline, a tenth of an em below the 0.375em it stood at, one to
+// two pixels at the dashboard's 13 to 16px.
+test("a mark stands 0.15em from its words, centred 0.275em above the baseline", () => {
   const sheet = css("InlineRef.css");
   expect(rule(sheet, ".crewlet-inline-ref__mark")).toContain("margin-inline-end: 0.15em");
   const box = rule(sheet, ".crewlet-inline-ref__mark--glyph");
   const em = (prop: string) => Number(new RegExp(`${prop}:\\s*(-?[\\d.]+)em`).exec(box)?.[1]);
-  expect(em("vertical-align") + em("height") / 2).toBeCloseTo(0.375, 5);
+  expect(em("vertical-align") + em("height") / 2).toBeCloseTo(0.275, 5);
 });
