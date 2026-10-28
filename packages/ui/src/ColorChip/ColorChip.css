@@ -10,14 +10,35 @@
   width: var(--spacing-3);
   height: var(--spacing-3);
   background: var(--crewlet-color-chip-value, var(--color-surface-inset));
-  /* An edge of its own, so a colour that matches its ground is still a chip. */
-  box-shadow: inset 0 0 0 1px var(--color-border-hover);
+  /*
+   * AN EDGE OF ITS OWN, so a colour that matches its ground is still a chip,
+   * at the control border's step: it is the chip's boundary, a graphic a
+   * reader has to see (WCAG 1.4.11), and that step clears 3:1 on every ground
+   * in both themes. On a filled ground (an accent option) the ground sets
+   * `--crewlet-color-chip-ring` to its own label's ink, since a grey edge
+   * drawn on the accent nearly vanishes into it.
+   */
+  box-shadow: inset 0 0 0 1px var(--crewlet-color-chip-ring, var(--color-border-control));
   vertical-align: middle;
 }
 
 .crewlet-color-chip--sm {
   width: var(--spacing-4);
   height: var(--spacing-4);
+}
+
+/*
+ * AT THE TEXT'S SIZE, for a colour written in a sentence, a code span or a
+ * label: sized by the words around it, so it scales with any register, and
+ * nearly square, since a round chip at this size reads as a status dot.
+ */
+.crewlet-color-chip--text {
+  width: 0.8em;
+  height: 0.8em;
+}
+
+.crewlet-color-chip--text.crewlet-color-chip--square {
+  border-radius: calc(var(--radius-xs) / 2);
 }
 
 .crewlet-color-chip--round {
