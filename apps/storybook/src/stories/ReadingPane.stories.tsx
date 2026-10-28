@@ -146,7 +146,7 @@ export const AnAnswerOnItsWay: Story = {
       </ReadingPaneByline>
       <ReadingPaneTitle>May I delete the fixtures directory?</ReadingPaneTitle>
       <ReadingPaneOutcome tone="pending">
-        Answer recorded: <strong>&ldquo;Yes, delete it.&rdquo;</strong>. The Senior Backend Engineer is busy on
+        Answer recorded: <strong>&ldquo;Yes, delete it.&rdquo;</strong> The Senior Backend Engineer is busy on
         GP-4&rsquo;s run and picks this up next.
       </ReadingPaneOutcome>
       <ReadingPaneOutcome>
