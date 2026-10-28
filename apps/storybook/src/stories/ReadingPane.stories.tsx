@@ -133,3 +133,25 @@ export const ACodingRun: Story = {
     </ReadingPane>
   ),
 };
+
+/**
+ * An answer sent and not yet taken is pending: a clock in the secondary ink,
+ * never the success check, until the run's record says it was used.
+ */
+export const AnAnswerOnItsWay: Story = {
+  render: () => (
+    <ReadingPane>
+      <ReadingPaneByline leading={<Avatar name="Crewlet-SWE" size={20} decorative />}>
+        <strong>Crewlet-SWE</strong>&rsquo;s coding run on {task}
+      </ReadingPaneByline>
+      <ReadingPaneTitle>May I delete the fixtures directory?</ReadingPaneTitle>
+      <ReadingPaneOutcome tone="pending">
+        Answer recorded: <strong>&ldquo;Yes, delete it.&rdquo;</strong> The Senior Backend Engineer is busy on
+        GP-4&rsquo;s run and picks this up next.
+      </ReadingPaneOutcome>
+      <ReadingPaneOutcome>
+        Answered <strong>&ldquo;Yes, delete it.&rdquo;</strong>
+      </ReadingPaneOutcome>
+    </ReadingPane>
+  ),
+};

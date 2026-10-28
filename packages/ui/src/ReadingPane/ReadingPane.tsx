@@ -1,5 +1,5 @@
 import { createContext, useContext, useId, type HTMLAttributes, type ReactNode } from 'react';
-import { CheckGlyph } from '@crewlethq/icons/glyphs';
+import { CheckGlyph, ClockGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import {
   HeadingLevelProvider,
@@ -175,17 +175,42 @@ export function ReadingPaneReasoning({ title, footer, className, children, ...re
   );
 }
 
-export type ReadingPaneOutcomeProps = HTMLAttributes<HTMLParagraphElement>;
+export interface ReadingPaneOutcomeProps extends HTMLAttributes<HTMLParagraphElement> {
+  /**
+   * Whether the action has done what it set out to (`done`, the default: a
+   * check, in the success ink) or has been accepted and is still on its way
+   * (`pending`: a clock, in the secondary ink), such as an answer sent to
+   * somebody who has not taken it yet. A pending outcome never draws the
+   * success check, because the reader would read it as finished.
+   */
+  tone?: 'done' | 'pending';
+}
 
 /**
  * What the reader's action did, in place of the controls that did it:
  * "Answered **Accept**". A live region, so the line is announced when it
- * replaces the button that was just pressed.
+ * replaces the button that was just pressed, and again when a pending outcome
+ * becomes a done one.
  */
-export function ReadingPaneOutcome({ className, children, ...rest }: ReadingPaneOutcomeProps) {
+export function ReadingPaneOutcome({
+  tone = 'done',
+  className,
+  children,
+  ...rest
+}: ReadingPaneOutcomeProps) {
+  const Mark = tone === 'pending' ? ClockGlyph : CheckGlyph;
   return (
-    <p role="status" {...rest} className={cx('crewlet-reading-pane__outcome', className)}>
-      <CheckGlyph size="sm" className="crewlet-reading-pane__outcome-mark" />
+    <p
+      role="status"
+      {...rest}
+      data-tone={tone}
+      className={cx(
+        'crewlet-reading-pane__outcome',
+        tone === 'pending' && 'crewlet-reading-pane__outcome--pending',
+        className,
+      )}
+    >
+      <Mark size="sm" className="crewlet-reading-pane__outcome-mark" />
       <span>{children}</span>
     </p>
   );

@@ -170,6 +170,11 @@
   flex: none;
 }
 
+/* Accepted and on its way, not done: the secondary ink, never the success one. */
+.crewlet-reading-pane__outcome--pending {
+  color: var(--color-text-secondary);
+}
+
 .crewlet-reading-pane__outcome strong {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
