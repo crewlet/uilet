@@ -101,6 +101,25 @@ describe('a vendor mark', () => {
     assert.deepEqual([...inherited].sort(), monochrome);
   });
 
+  it('names its vendor in a class, so a rule can reach one mark', () => {
+    for (const vendor of VENDORS.filter((v) => v !== 'crewlet')) {
+      const markup = render(VendorMark, { vendor });
+      assert.match(attribute(markup, 'class') ?? '', new RegExp(`(^| )crewlet-vendor-mark--${vendor}( |$)`));
+    }
+  });
+
+  it('draws Mattermost reversed on the dark themes, as Mattermost publishes it for a dark ground', async () => {
+    // Its blue under 3:1 on the dark ground; reversed it is the text's ink.
+    // The dark themes are chosen as the tokens choose them: dark is the
+    // default, unless the document or the system asks for light.
+    const sheet = await readFile(resolve(PACKAGE, 'src/VendorMark.css'), 'utf8');
+    assert.match(sheet, /:root\[data-theme='dark'\] \.crewlet-vendor-mark--mattermost \{\s*fill: currentColor;/);
+    assert.match(
+      sheet,
+      /@media not \(prefers-color-scheme: light\) \{\s*:root:not\(\[data-theme='light'\]\) \.crewlet-vendor-mark--mattermost \{\s*fill: currentColor;/,
+    );
+  });
+
   it('reads no token, because a vendor hue is not ours to theme', async () => {
     /*
      * The other half of the exception. A mark is the one place here that draws

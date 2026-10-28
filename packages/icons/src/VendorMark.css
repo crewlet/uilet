@@ -21,6 +21,22 @@
 }
 
 /*
+ * MATTERMOST REVERSED ON A DARK GROUND, as Mattermost publishes it for one
+ * (VendorMark.tsx). Dark is the tokens' default, so it is dark unless the
+ * document or the system asks for light: the same three cases the theme
+ * itself is chosen by. On a light ground the drawing keeps its own blue.
+ */
+:root[data-theme='dark'] .crewlet-vendor-mark--mattermost {
+  fill: currentColor;
+}
+
+@media not (prefers-color-scheme: light) {
+  :root:not([data-theme='light']) .crewlet-vendor-mark--mattermost {
+    fill: currentColor;
+  }
+}
+
+/*
  * Forced colours drop filters and repaint everything from the user's own
  * palette, so the muted mark would come back at full strength and read as
  * connected. Opacity survives, and carries the distinction on its own.
