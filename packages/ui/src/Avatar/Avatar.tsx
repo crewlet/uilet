@@ -84,7 +84,15 @@ export const AVATAR_STATUS_LABELS: Readonly<Record<AvatarStatus, string>> = {
 export const AVATAR_SIZES = { xs: 20, sm: 26, md: 32, lg: 40 } as const;
 
 export type AvatarSizeStep = keyof typeof AVATAR_SIZES;
-export type AvatarSize = AvatarSizeStep | number;
+/**
+ * A step, a number of px, or `text`: a face inside a sentence, sized by the
+ * words around it (1.15em square, a little taller than their capitals, so it
+ * reads as a face and costs the line no height where `InlineRef` sets it).
+ */
+export type AvatarSize = AvatarSizeStep | number | 'text';
+
+/** The px a text-sized face is drawn as for its detail: a body line's 16px. */
+const TEXT_FACE_PIXELS = 16;
 
 /**
  * An agent's corner, as a share of its box.
@@ -107,7 +115,7 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   src?: string | undefined;
   /** The name behind the initials, and the image's alt text. */
   name?: string | undefined;
-  /** A step, or a number of px. */
+  /** A step, a number of px, or `text` to be sized by the words around it. */
   size?: AvatarSize | undefined;
   /** An agent (the default) is a squircle; a human is a circle. */
   kind?: AvatarKind | undefined;
@@ -264,6 +272,7 @@ export const avatarTint = (seed: string): number => {
 
 /** The px a size prop means. */
 export function avatarPixels(size: AvatarSize): number {
+  if (size === 'text') return TEXT_FACE_PIXELS;
   return typeof size === 'number' ? size : AVATAR_SIZES[size];
 }
 
@@ -327,7 +336,8 @@ export const Avatar = ({
     setImageFailed(false);
   }, [src]);
 
-  const step = typeof size === 'number' ? null : size;
+  const text = size === 'text';
+  const step = typeof size === 'number' || text ? null : size;
   const pixels = avatarPixels(size);
   /*
    * A step takes its box and its type from the scale, in the stylesheet. A
@@ -339,7 +349,7 @@ export const Avatar = ({
    * outline, with a floor of 9px, under which they are not initials any more.
    */
   const measured =
-    step === null
+    step === null && !text
       ? ({
           '--crewlet-avatar-size': `${pixels}px`,
           fontSize: Math.max(9, Math.round(pixels * 0.36)),
@@ -359,6 +369,7 @@ export const Avatar = ({
     'crewlet-avatar',
     `crewlet-avatar--${kind}`,
     step === null ? null : `crewlet-avatar--${step}`,
+    text ? 'crewlet-avatar--text' : null,
     framed ? 'crewlet-avatar--notched' : null,
     ring === undefined || framed ? null : `crewlet-avatar--ring-${ring}`,
     framed ? null : className,
@@ -426,7 +437,13 @@ export const Avatar = ({
         aria-label={decorative ? undefined : spoken}
       >
         {icon === undefined || icon === null ? (
-          getInitials(avatarInitialsName(name, kind))
+          // A TEXT-SIZED FACE takes the words' size for its box, so its
+          // initials are set apart at a size of their own.
+          text ? (
+            <span className="crewlet-avatar__initials">{getInitials(avatarInitialsName(name, kind))}</span>
+          ) : (
+            getInitials(avatarInitialsName(name, kind))
+          )
         ) : (
           <span className="crewlet-avatar__icon" aria-hidden="true">
             {icon}
@@ -441,7 +458,7 @@ export const Avatar = ({
   return (
     <span
       className={cx('crewlet-avatar-frame', className)}
-      style={{ '--crewlet-avatar-size': `${pixels}px`, ...style } as CSSProperties}
+      style={(text ? style : { '--crewlet-avatar-size': `${pixels}px`, ...style }) as CSSProperties}
     >
       {face}
       {status !== undefined ? (

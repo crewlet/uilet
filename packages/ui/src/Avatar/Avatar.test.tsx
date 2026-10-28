@@ -867,3 +867,17 @@ describe('the mark', () => {
     expect(result.violations).toEqual([]);
   });
 });
+
+test('a face in a sentence is sized by its words, with no size of its own on it', () => {
+  const { container } = render(
+    <p>
+      Ask <Avatar name="Miles Okafor" kind="human" size="text" decorative /> Miles.
+    </p>,
+  );
+  const face = container.querySelector<HTMLElement>('.crewlet-avatar')!;
+  expect(face.classList.contains('crewlet-avatar--text')).toBe(true);
+  expect(face.style.getPropertyValue('--crewlet-avatar-size')).toBe('');
+  // Its initials are set apart, since the box takes the words' own size.
+  expect(face.querySelector('.crewlet-avatar__initials')?.textContent).toBe('MO');
+  expect(face.tagName).toBe('SPAN');
+});
