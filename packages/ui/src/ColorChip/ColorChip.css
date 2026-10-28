@@ -31,10 +31,14 @@
  * AT THE TEXT'S SIZE, for a colour written in a sentence, a code span or a
  * label: sized by the words around it, so it scales with any register, and
  * nearly square, since a round chip at this size reads as a status dot.
+ *
+ * 0.68em, four fifths of the 0.85em square an `InlineRef` mark stands in, so
+ * a swatch reads as a little lighter than a vendor's mark beside it, as a
+ * filled square drawn edge to edge would otherwise read heavier.
  */
 .crewlet-color-chip--text {
-  width: 0.8em;
-  height: 0.8em;
+  width: 0.68em;
+  height: 0.68em;
 }
 
 .crewlet-color-chip--text.crewlet-color-chip--square {

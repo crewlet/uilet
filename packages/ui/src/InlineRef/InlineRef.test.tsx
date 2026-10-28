@@ -120,7 +120,20 @@ test("every mark stands in one square centred on the line, its drawing a block f
   expect(mark).toContain("display: inline-block");
   expect(mark).toContain("overflow: hidden");
   const box = rule(sheet, ".crewlet-inline-ref__mark--glyph");
-  expect(box).toContain("width: 1em");
-  expect(box).toContain("height: 1em");
+  expect(box).toContain("width: 0.85em");
+  expect(box).toContain("height: 0.85em");
   expect(rule(sheet, ".crewlet-inline-ref__mark--glyph > *")).toContain("display: block");
+});
+
+// A SMALLER MARK, CLOSER TO ITS WORDS, ON THE SAME CENTRE: shrinking the square
+// from its bottom edge would sink every mark below the words it stood beside,
+// so its centre stays 0.375em above the baseline, where the full-size square's
+// was. Measured in Chromium at 12, 14 and 22px: every mark's centre within a
+// quarter pixel of the words' and no line box taller.
+test("a mark stands 0.15em from its words, centred where the words are", () => {
+  const sheet = css("InlineRef.css");
+  expect(rule(sheet, ".crewlet-inline-ref__mark")).toContain("margin-inline-end: 0.15em");
+  const box = rule(sheet, ".crewlet-inline-ref__mark--glyph");
+  const em = (prop: string) => Number(new RegExp(`${prop}:\\s*(-?[\\d.]+)em`).exec(box)?.[1]);
+  expect(em("vertical-align") + em("height") / 2).toBeCloseTo(0.375, 5);
 });
