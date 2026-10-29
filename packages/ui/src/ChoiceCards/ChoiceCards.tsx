@@ -30,11 +30,17 @@ export interface ChoiceCardOption {
   /** The choice cannot be made now. */
   disabled?: boolean | undefined;
   /**
-   * Why not, and what fixes it ("Add E2B_API_KEY to use it"): the card's last
-   * line while it is disabled, in the warning ink, and read with its radio.
-   * The one way a card gives its reason.
+   * Why not, and what fixes it ("Add E2B_API_KEY to use it"), in the warning
+   * ink and read with its radio: the one way a card gives its reason. It is
+   * the card's last line, or, with `disabledReasonAt`, the value of a fact.
    */
   disabledReason?: ReactNode;
+  /**
+   * The index of the fact whose value the reason takes the place of ("Needs:
+   * E2B key not set. Add E2B_API_KEY"), so a card that cannot be chosen keeps
+   * the same lines as the cards beside it rather than growing one.
+   */
+  disabledReasonAt?: number | undefined;
 }
 
 /** The narrowest a card stands: `md` 20rem, `lg` 24rem. */
@@ -82,7 +88,10 @@ export function ChoiceCards({ label, options, value, onChange, minCardWidth = 'm
   const name = useId();
   // EVERY CARD SPANS THE SAME ROWS: the name, the description, the most facts any card has, and a reason line where one has it.
   const facts = Math.max(0, ...options.map((o) => o.facts?.length ?? 0));
-  const reasons = options.some((o) => o.disabled && o.disabledReason) ? 1 : 0;
+  const inFact = (o: ChoiceCardOption) =>
+    o.disabledReasonAt !== undefined && o.disabledReasonAt >= 0 && o.disabledReasonAt < (o.facts?.length ?? 0);
+  // A reason given on a fact's line takes no row of its own.
+  const reasons = options.some((o) => o.disabled && o.disabledReason && !inFact(o)) ? 1 : 0;
   const rows = { '--crewlet-choice-cards-rows': 2 + facts + reasons } as CSSProperties;
   return (
     <div
@@ -95,12 +104,13 @@ export function ChoiceCards({ label, options, value, onChange, minCardWidth = 'm
         const id = `${name}-${option.value}`;
         const checked = option.value === value;
         const part = (what: string) => `${id}-${what}`;
-        const reasonLine = option.disabled && option.disabledReason ? part('reason') : null;
+        const reason = option.disabled && option.disabledReason ? part('reason') : null;
+        const reasonAt = reason && inFact(option) ? option.disabledReasonAt! : -1;
         const labelledBy = [part('label'), option.tag ? part('tag') : null].filter(Boolean).join(' ');
         const describedBy = [
           option.description ? part('description') : null,
-          ...(option.facts ?? []).map((_, index) => part(`fact-${index}`)),
-          reasonLine,
+          ...(option.facts ?? []).map((_, index) => (index === reasonAt ? null : part(`fact-${index}`))),
+          reason,
         ]
           .filter(Boolean)
           .join(' ');
@@ -147,19 +157,25 @@ export function ChoiceCards({ label, options, value, onChange, minCardWidth = 'm
                 {option.facts.map((fact, index) => (
                   <span
                     key={index}
-                    id={part(`fact-${index}`)}
-                    className="crewlet-choice-cards__fact"
+                    id={index === reasonAt ? undefined : part(`fact-${index}`)}
+                    className={cx('crewlet-choice-cards__fact', index === reasonAt && 'is-reason')}
                   >
                     <span className="crewlet-choice-cards__fact-label">{fact.label}</span>
-                    <span className="crewlet-choice-cards__fact-value">
-                      {fact.tone ? <StatusDot tone={fact.tone}>{fact.value}</StatusDot> : fact.value}
+                    <span id={index === reasonAt ? reason! : undefined} className="crewlet-choice-cards__fact-value">
+                      {fact.tone ? (
+                        <StatusDot tone={fact.tone}>{index === reasonAt ? option.disabledReason : fact.value}</StatusDot>
+                      ) : index === reasonAt ? (
+                        option.disabledReason
+                      ) : (
+                        fact.value
+                      )}
                     </span>
                   </span>
                 ))}
               </span>
             ) : null}
-            {reasonLine ? (
-              <span id={reasonLine} className="crewlet-choice-cards__reason">
+            {reason && reasonAt < 0 ? (
+              <span id={reason} className="crewlet-choice-cards__reason">
                 {option.disabledReason}
               </span>
             ) : null}

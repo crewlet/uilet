@@ -9,7 +9,8 @@ import { themeScope } from '../themeScope';
  * Choices a person compares, as cards of the same lines: a picture, the
  * choice's name and its tag; one line of description; and a few facts, one to
  * a line. Cards side by side share every line, so their facts stand level. A
- * disabled card says why and what fixes it on its last line. Native radios, so the arrow keys move the choice.
+ * disabled card says why and what fixes it, on its last line or in place of a
+ * fact's value. Native radios, so the arrow keys move the choice.
  */
 const meta: Meta<typeof ChoiceCards> = {
   title: 'UI/ChoiceCards',
@@ -52,7 +53,9 @@ const PLACES: ChoiceCardOption[] = [
       { label: 'Isolation', value: 'A separate machine' },
     ],
     disabled: true,
-    disabledReason: 'Add E2B_API_KEY under Settings, Secrets, to use it.',
+    disabledReason: 'E2B key not set. Add E2B_API_KEY under Settings, Secrets.',
+    // The reason takes the Needs line's value, so the card keeps the lines of the cards beside it.
+    disabledReasonAt: 0,
   },
 ];
 
@@ -95,7 +98,7 @@ function Chooser({ options, initial, minCardWidth }: { options: ChoiceCardOption
   return <ChoiceCards label="Choose one" options={options} value={value} onChange={setValue} minCardWidth={minCardWidth} />;
 }
 
-/** Three places, the company default tagged, one unavailable: its last line says why and is read with its radio. */
+/** Three places, the company default tagged, one unavailable: its Needs line says why, read with its radio, and it keeps the same lines as the others. */
 export const WhereItRuns: Story = { render: () => <Chooser options={PLACES} initial="container" /> };
 
 /** Three coding CLIs, each named by its vendor's mark, the same three lines in every card. */
@@ -115,6 +118,15 @@ export const SideBySide: Story = {
       )}
     />
   ),
+};
+
+/**
+ * The three places side by side, one unavailable: every card the same lines
+ * and the same height, the unavailable one's reason on its Needs line.
+ */
+export const PlacesSideBySide: Story = {
+  decorators: [(Story) => <div style={{ maxWidth: 1080 }}>{Story()}</div>],
+  render: () => <Chooser options={PLACES} initial="container" />,
 };
 
 /** Words only: a name and one line of description, no picture and no facts. */

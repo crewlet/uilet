@@ -242,6 +242,11 @@
   overflow-wrap: anywhere;
 }
 
+/* A reason given on a fact's line (`disabledReasonAt`) takes that line's value, in the same ink. */
+.crewlet-choice-cards__fact.is-reason .crewlet-choice-cards__fact-value {
+  color: var(--color-feedback-warning-ink);
+}
+
 /* The reason a disabled card cannot be chosen: the card's last row, in the warning ink. */
 .crewlet-choice-cards__reason {
   grid-row: -2;

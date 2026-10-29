@@ -22,7 +22,7 @@ const description = (radio: Element): string[] =>
   (radio.getAttribute('aria-describedby') ?? '')
     .split(' ')
     .filter(Boolean)
-    .map((id) => document.getElementById(id)?.textContent ?? '');
+    .map((id) => (document.getElementById(id)?.textContent ?? '').trim());
 
 const OPTIONS: ChoiceCardOption[] = [
   {
@@ -97,6 +97,50 @@ test('a disabled card gives its reason on one last line, read with its radio, an
   // The name, the description, the most facts any card has (two) and the reason: five rows for every card.
   const group = container.querySelector('.crewlet-choice-cards') as HTMLElement;
   expect(group.style.getPropertyValue('--crewlet-choice-cards-rows')).toBe('5');
+});
+
+test('a reason given on a fact’s line keeps the disabled card to the same lines as the cards beside it', () => {
+  const { container } = render(
+    <ChoiceCards
+      label="Where coding runs happen"
+      value="direct"
+      onChange={() => {}}
+      options={[
+        {
+          value: 'direct',
+          label: 'On the host',
+          description: 'Runs beside the engine.',
+          facts: [
+            { label: 'Needs', value: 'Nothing more needed', tone: 'success' },
+            { label: 'Isolation', value: 'Shares the host' },
+          ],
+        },
+        {
+          value: 'e2b',
+          label: 'In E2B',
+          description: 'A cloud sandbox.',
+          facts: [
+            { label: 'Needs', value: 'E2B key not set', tone: 'warning' },
+            { label: 'Isolation', value: 'A separate machine' },
+          ],
+          disabled: true,
+          disabledReason: 'E2B key not set. Add E2B_API_KEY.',
+          disabledReasonAt: 0,
+        },
+      ]}
+    />,
+  );
+  // Equal heights: every card spans the name, the description and two facts, and no reason row.
+  const group = container.querySelector('.crewlet-choice-cards') as HTMLElement;
+  expect(group.style.getPropertyValue('--crewlet-choice-cards-rows')).toBe('4');
+  const [host, e2bCard] = [...container.querySelectorAll('.crewlet-choice-cards__card')];
+  expect(e2bCard!.children.length).toBe(host!.children.length);
+  expect(e2bCard!.querySelector('.crewlet-choice-cards__reason')).toBeNull();
+  // The reason is the Needs line's value, and the radio's description ends with it, read once.
+  const needs = e2bCard!.querySelector('.crewlet-choice-cards__fact.is-reason')!;
+  expect(needs.textContent).toBe('Needs E2B key not set. Add E2B_API_KEY.');
+  const e2b = screen.getByRole('radio', { name: 'In E2B' });
+  expect(description(e2b)).toEqual(['A cloud sandbox.', 'IsolationA separate machine', 'E2B key not set. Add E2B_API_KEY.']);
 });
 
 test('the narrowest a card stands is the prop that says so', () => {
