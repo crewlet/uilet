@@ -261,6 +261,30 @@ describe('the three shapes', () => {
   });
 });
 
+describe('the footer holds still between steps', () => {
+  test('the wizard fills its screen, so a short step does not lift the footer', () => {
+    uninstall = installAtWidth(1024, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard />);
+    const wizard = getComputedStyle(container.querySelector('.crewlet-setup-wizard')!);
+    expect(wizard.display).toBe('flex');
+    expect(wizard.flexDirection).toBe('column');
+    expect(wizard.flexGrow).toBe('1');
+    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__frame')!).flexGrow).toBe('1');
+  });
+
+  test('on a phone the content’s row takes a short step’s slack, not the footer’s', () => {
+    uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
+    asPhone();
+    const { container } = render(<Wizard />);
+    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__frame')!).gridTemplateRows).toBe(
+      'auto auto 1fr auto auto',
+    );
+    cleanup();
+    const bare = render(<Wizard aside={undefined} asideLabel={undefined} />);
+    expect(getComputedStyle(bare.container.querySelector('.crewlet-setup-wizard__frame')!).gridTemplateRows).toBe('auto auto 1fr auto');
+  });
+});
+
 describe('the footer and a wide step', () => {
   test('the way out stands at the start of the footer row and the step’s actions at its end', () => {
     uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');

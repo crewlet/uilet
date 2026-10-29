@@ -29,9 +29,20 @@
 
   container-type: inline-size;
   min-width: 0;
+  /*
+   * IT FILLS ITS SCREEN, so the footer rests at the bottom of the view on
+   * every step: sized to its content, a short step lifted the footer and its
+   * Continue hundreds of pixels up the page, and the next step dropped them
+   * again, so the button a person pressed moved on every press. Stretched,
+   * the content row takes the slack and the footer stays where it was.
+   */
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .crewlet-setup-wizard__frame {
+  flex: 1 0 auto;
   display: grid;
   grid-template-columns: var(--crewlet-setup-wizard-rail) minmax(0, var(--crewlet-setup-wizard-column));
   grid-template-areas:
@@ -241,7 +252,14 @@
       'content'
       'aside'
       'foot';
-    grid-template-rows: auto;
+    /*
+     * THE CONTENT'S ROW TAKES THE SLACK here too. Every row auto shared a
+     * short step's spare height among all four, the footer's with them, so the
+     * footer stood 20px above the view's bottom on a step shorter than the
+     * view and on it on every step that scrolls: Continue moved under the
+     * thumb between presses.
+     */
+    grid-template-rows: auto auto 1fr auto auto;
     row-gap: var(--spacing-5);
   }
 
@@ -251,6 +269,7 @@
       'rail'
       'content'
       'foot';
+    grid-template-rows: auto auto 1fr auto;
   }
 
   .crewlet-setup-wizard__rail {
