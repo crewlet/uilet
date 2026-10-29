@@ -82,6 +82,15 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
                   value={option.value}
                   checked={checked}
                   disabled={off}
+                  // A CHOICE WITH A REASON is named without it: inside the row's label,
+                  // the reason was read once in the name and again as the description.
+                  aria-labelledby={
+                    reasonId
+                      ? [`${id}-label`, option.detail ? `${id}-detail` : null, option.tag ? `${id}-tag` : null]
+                          .filter(Boolean)
+                          .join(' ')
+                      : undefined
+                  }
                   aria-describedby={reasonId}
                   onChange={() => onChange(option.value)}
                   className="crewlet-choice-list__radio"
@@ -92,10 +101,12 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
                   </span>
                 ) : null}
                 <span className="crewlet-choice-list__text">
-                  <span className="crewlet-choice-list__label">{option.label}</span>
+                  <span id={`${id}-label`} className="crewlet-choice-list__label">
+                    {option.label}
+                  </span>
                   {option.detail || reasonId ? (
                     <span className="crewlet-choice-list__detail">
-                      {option.detail}
+                      {option.detail ? <span id={`${id}-detail`}>{option.detail}</span> : null}
                       {reasonId ? (
                         <span id={reasonId} className="crewlet-choice-list__reason">
                           {option.disabledReason}
@@ -104,7 +115,11 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
                     </span>
                   ) : null}
                 </span>
-                {option.tag ? <span className="crewlet-choice-list__tag">{option.tag}</span> : null}
+                {option.tag ? (
+                  <span id={`${id}-tag`} className="crewlet-choice-list__tag">
+                    {option.tag}
+                  </span>
+                ) : null}
               </label>
               {checked && option.panel ? <div className="crewlet-choice-list__panel">{option.panel}</div> : null}
             </div>

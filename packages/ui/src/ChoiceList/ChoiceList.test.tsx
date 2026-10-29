@@ -99,7 +99,8 @@ test('a disabled choice cannot be chosen, and its radio is described by why', ()
       ]}
     />,
   );
-  const e2b = screen.getByRole('radio', { name: /In E2B/ }) as HTMLInputElement;
+  // Named by its label and detail, the reason left to its description, so it is read once.
+  const e2b = screen.getByRole('radio', { name: 'In E2B A separate machine' }) as HTMLInputElement;
   expect(e2b.disabled).toBe(true);
   expect(screen.getByRole('radio', { name: /On the host/ })).not.toHaveProperty('disabled', true);
   fireEvent.click(screen.getByText('In E2B'));
