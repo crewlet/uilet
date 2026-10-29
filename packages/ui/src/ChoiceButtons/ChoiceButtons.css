@@ -5,6 +5,11 @@
  * The plain option is the secondary button's recipe (the card's own ground
  * inside the strong hairline), and the recommended one the primary's, so the
  * pair reads as the screen's one primary action and its alternatives.
+ *
+ * AS TOGGLES (`chosen` given, so every option carries `aria-pressed`) the
+ * accent is the chosen option's alone: the recommended one is drawn plain with
+ * its mark kept, so an answer that went against the recommendation never shows
+ * the option NOT chosen as the loudest one on the screen.
  */
 
 .crewlet-choice-buttons {
@@ -20,7 +25,6 @@
 
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--spacing-3);
   min-width: 0;
   min-height: var(--size-control-lg);
@@ -65,13 +69,21 @@
 }
 
 /*
- * THE OPTION APPLIED is drawn as every chosen option in the package is: the
- * selected edge over the soft selected fill, calm beside the focus ring, and
- * held under the pointer so a hover never makes it look unchosen.
+ * THE OPTION APPLIED stands on the soft selected fill inside an edge in the
+ * accent's ink, with a check mark in the same ink, held under the pointer and
+ * the press so neither makes it look unchosen.
+ *
+ * The edge is the accent's INK, not the selected edge the package's other
+ * chosen options draw. That edge is a tint, as low as 1.65:1 against this fill
+ * (dark, on the raised rung), and here the edge is what tells a pressed toggle
+ * from the others, which WCAG 1.4.11 holds to 3:1. The ink clears 4.71:1 at
+ * its tightest (light, on the frame), and the check mark makes the state more
+ * than a colour.
  */
 .crewlet-choice-buttons__option.is-chosen,
-.crewlet-choice-buttons__option.is-chosen:hover {
-  border-color: var(--color-border-selected);
+.crewlet-choice-buttons__option.is-chosen:hover,
+.crewlet-choice-buttons__option.is-chosen:active {
+  border-color: var(--color-brand-accent-ink);
   background: var(--color-surface-selected);
 }
 
@@ -93,7 +105,7 @@
   cursor: progress;
 }
 
-.crewlet-choice-buttons__option--recommended {
+.crewlet-choice-buttons__option--recommended:not([aria-pressed]) {
   background: var(--color-brand-accent);
   border-color: transparent;
   color: var(--color-text-on-accent);
@@ -106,12 +118,12 @@
   --crewlet-inline-ref-mark-ink: currentColor;
 }
 
-.crewlet-choice-buttons__option--recommended:hover:not([aria-disabled='true']) {
+.crewlet-choice-buttons__option--recommended:not([aria-pressed]):hover:not([aria-disabled='true']) {
   background: var(--color-brand-accent-hover);
   border-color: transparent;
 }
 
-.crewlet-choice-buttons__option--recommended:active:not([aria-disabled='true']) {
+.crewlet-choice-buttons__option--recommended:not([aria-pressed]):active:not([aria-disabled='true']) {
   background: var(--color-brand-accent-active);
 }
 
@@ -120,33 +132,18 @@
  * nearly the fill's own colour, so its ring stands off it as a primary
  * button's does.
  */
-.crewlet-choice-buttons__option--recommended:focus-visible {
+.crewlet-choice-buttons__option--recommended:not([aria-pressed]):focus-visible {
   outline-offset: 2px;
 }
 
 /*
- * THE RECOMMENDED OPTION, CHOSEN, is drawn as every chosen option is: the
- * selected edge over the soft selected fill, in the primary ink, its mark kept
- * so a reader still sees which option was recommended. The chosen rule swapped
- * the accent fill for the soft one and left the accent's own ink behind, white
- * on a pale tint, under 1.5:1 in the light theme. Held under the pointer and
- * the press too, which otherwise bring the accent back.
+ * The words take the room the option has to spare, so the recommended mark and
+ * the check mark after them sit together at the far end, and a picture before
+ * them keeps its place at the start.
  */
-.crewlet-choice-buttons__option--recommended.is-chosen,
-.crewlet-choice-buttons__option--recommended.is-chosen:hover:not([aria-disabled='true']),
-.crewlet-choice-buttons__option--recommended.is-chosen:active:not([aria-disabled='true']) {
-  border-color: var(--color-border-selected);
-  background: var(--color-surface-selected);
-  color: var(--color-text-primary);
-}
-
-/* Off the accent, the ring is drawn over the selected edge again. */
-.crewlet-choice-buttons__option--recommended.is-chosen:focus-visible {
-  outline-offset: var(--size-focus-ring-inset-offset);
-}
-
 .crewlet-choice-buttons__text {
   display: grid;
+  flex: 1 1 auto;
   gap: 2px;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -162,13 +159,8 @@
  * On the accent fill the detail takes the label's own ink. The tertiary step
  * is measured on the surfaces, not on the accent, where it does not clear.
  */
-.crewlet-choice-buttons__option--recommended .crewlet-choice-buttons__detail {
+.crewlet-choice-buttons__option--recommended:not([aria-pressed]) .crewlet-choice-buttons__detail {
   color: var(--color-text-on-accent);
-}
-
-/* Chosen, it is off the accent, and the detail takes its tertiary step again. */
-.crewlet-choice-buttons__option--recommended.is-chosen .crewlet-choice-buttons__detail {
-  color: var(--color-text-tertiary);
 }
 
 /*
@@ -183,8 +175,12 @@
   text-transform: uppercase;
 }
 
-/* The picture before the words, centred on the label's line. */
-.crewlet-choice-buttons__media {
+/*
+ * The picture before the words and the check mark at the far end, each
+ * centred on the label's line.
+ */
+.crewlet-choice-buttons__media,
+.crewlet-choice-buttons__check {
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -193,22 +189,22 @@
 
 /*
  * With a detail under it the label's line is the FIRST line, not the
- * option's middle, so the picture stands on a box one line tall at the top.
- * Centred on the label and its detail together, a suggestion's swatch sat
- * 7px under the value it shows.
+ * option's middle, so the picture and the check mark stand on a box one line
+ * tall at the top. Centred on the label and its detail together, a
+ * suggestion's swatch sat 7px under the value it shows.
  */
-.crewlet-choice-buttons__option:has(.crewlet-choice-buttons__detail) .crewlet-choice-buttons__media {
+.crewlet-choice-buttons__option:has(.crewlet-choice-buttons__detail) .crewlet-choice-buttons__media,
+.crewlet-choice-buttons__option:has(.crewlet-choice-buttons__detail) .crewlet-choice-buttons__check {
   align-self: flex-start;
   min-height: calc(var(--crewlet-choice-buttons-leading) * 1em);
 }
 
-/* Before the words, not at the far end with the recommended mark. */
-.crewlet-choice-buttons__option:has(.crewlet-choice-buttons__media) {
-  justify-content: flex-start;
-}
-
-.crewlet-choice-buttons__option:has(.crewlet-choice-buttons__media) .crewlet-choice-buttons__note {
-  margin-inline-start: auto;
+/*
+ * The chosen option's check mark, at the label's size and in the edge's ink,
+ * which clears the 3:1 a mark has to on the selected fill in every theme.
+ */
+.crewlet-choice-buttons__check {
+  color: var(--color-brand-accent-ink);
 }
 
 /*
