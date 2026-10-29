@@ -86,13 +86,15 @@ export interface ChoiceCardsProps {
  */
 export function ChoiceCards({ label, options, value, onChange, minCardWidth = 'md', className }: ChoiceCardsProps) {
   const name = useId();
-  // EVERY CARD SPANS THE SAME ROWS: the name, the description, the most facts any card has, and a reason line where one has it.
+  // EVERY CARD SPANS THE SAME ROWS: the name, a description row where any card
+  // has one, the most facts any card has, and a reason line where one has it.
+  const described = options.some((o) => o.description != null && o.description !== false && o.description !== '');
   const facts = Math.max(0, ...options.map((o) => o.facts?.length ?? 0));
   const inFact = (o: ChoiceCardOption) =>
     o.disabledReasonAt !== undefined && o.disabledReasonAt >= 0 && o.disabledReasonAt < (o.facts?.length ?? 0);
   // A reason given on a fact's line takes no row of its own.
   const reasons = options.some((o) => o.disabled && o.disabledReason && !inFact(o)) ? 1 : 0;
-  const rows = { '--crewlet-choice-cards-rows': 2 + facts + reasons } as CSSProperties;
+  const rows = { '--crewlet-choice-cards-rows': 1 + (described ? 1 : 0) + facts + reasons } as CSSProperties;
   return (
     <div
       role="radiogroup"
@@ -100,17 +102,21 @@ export function ChoiceCards({ label, options, value, onChange, minCardWidth = 'm
       className={cx('crewlet-choice-cards', `crewlet-choice-cards--${minCardWidth}`, className)}
       style={rows}
     >
-      {options.map((option) => {
-        const id = `${name}-${option.value}`;
+      {options.map((option, index) => {
+        // IDS BY POSITION, never by value: a value may hold a space or any
+        // character, and an id reference list splits on whitespace.
+        const id = `${name}-${index}`;
         const checked = option.value === value;
         const part = (what: string) => `${id}-${what}`;
         const reason = option.disabled && option.disabledReason ? part('reason') : null;
         const reasonAt = reason && inFact(option) ? option.disabledReasonAt! : -1;
         const labelledBy = [part('label'), option.tag ? part('tag') : null].filter(Boolean).join(' ');
+        // A REASON ON A FACT'S LINE is described with the fact's name ("Needs:
+        // E2B key not set"), so the line it takes is read whole.
         const describedBy = [
           option.description ? part('description') : null,
-          ...(option.facts ?? []).map((_, index) => (index === reasonAt ? null : part(`fact-${index}`))),
-          reason,
+          ...(option.facts ?? []).map((_, at) => (at === reasonAt ? reason : part(`fact-${at}`))),
+          reasonAt < 0 ? reason : null,
         ]
           .filter(Boolean)
           .join(' ');
@@ -151,20 +157,23 @@ export function ChoiceCards({ label, options, value, onChange, minCardWidth = 'm
               <span id={part('description')} className="crewlet-choice-cards__description">
                 {option.description}
               </span>
+            ) : described ? (
+              <span className="crewlet-choice-cards__description" aria-hidden />
             ) : null}
             {option.facts && option.facts.length > 0 ? (
               <span className="crewlet-choice-cards__facts">
-                {option.facts.map((fact, index) => (
+                {option.facts.map((fact, at) => (
                   <span
-                    key={index}
-                    id={index === reasonAt ? undefined : part(`fact-${index}`)}
-                    className={cx('crewlet-choice-cards__fact', index === reasonAt && 'is-reason')}
+                    key={at}
+                    id={at === reasonAt ? reason! : part(`fact-${at}`)}
+                    className={cx('crewlet-choice-cards__fact', at === reasonAt && 'is-reason')}
                   >
                     <span className="crewlet-choice-cards__fact-label">{fact.label}</span>
-                    <span id={index === reasonAt ? reason! : undefined} className="crewlet-choice-cards__fact-value">
+                    {/* A space between name and value, for a reader that reads the line as one string; the flex gap draws it. */}{' '}
+                    <span className="crewlet-choice-cards__fact-value">
                       {fact.tone ? (
-                        <StatusDot tone={fact.tone}>{index === reasonAt ? option.disabledReason : fact.value}</StatusDot>
-                      ) : index === reasonAt ? (
+                        <StatusDot tone={fact.tone}>{at === reasonAt ? option.disabledReason : fact.value}</StatusDot>
+                      ) : at === reasonAt ? (
                         option.disabledReason
                       ) : (
                         fact.value

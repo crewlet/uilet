@@ -177,12 +177,22 @@
   white-space: nowrap;
 }
 
+/* On the chosen card's tint the default edge all but vanishes in light, so the tag takes the strong one. */
+.crewlet-choice-cards__card.is-checked .crewlet-choice-cards__tag {
+  border-color: var(--color-border-strong);
+}
+
 .crewlet-choice-cards__label {
   min-width: 0;
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
 }
 
+/*
+ * The second row is the description's in every card once any card has one: a
+ * card without one keeps an empty cell there, so its facts stay level with
+ * the facts beside them.
+ */
 .crewlet-choice-cards__description {
   grid-row: 2;
   color: var(--color-text-secondary);
@@ -273,9 +283,30 @@
   }
 }
 
+/*
+ * UNDER FORCED COLOURS the system repaints every colour above, so the drawn
+ * radio's dot and the tint vanish together: the radio becomes the platform's
+ * own, which marks itself; the chosen card's edge takes the system's
+ * selection colour, twice as wide; and a card that cannot be chosen takes the
+ * system's disabled ink, edge and words, rather than reading as one that can.
+ */
 @media (forced-colors: active) {
+  .crewlet-choice-cards__radio {
+    appearance: auto;
+  }
+
   .crewlet-choice-cards__card.is-checked {
     border-width: 2px;
+    border-color: Highlight;
+  }
+
+  .crewlet-choice-cards__card.is-disabled {
+    border-color: GrayText;
+    color: GrayText;
+  }
+
+  .crewlet-choice-cards__card.is-disabled :is(.crewlet-choice-cards__label, .crewlet-choice-cards__description, .crewlet-choice-cards__fact-label, .crewlet-choice-cards__fact-value) {
+    color: GrayText;
   }
 }
 

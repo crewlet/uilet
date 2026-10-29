@@ -17,12 +17,23 @@ afterEach(cleanup);
 /** A token's custom property, built here so the stylesheet checks do not read it as one this file declares. */
 const token = (name: string) => `--${name}`;
 
-/** What a radio is described by, its parts in order. */
-const description = (radio: Element): string[] =>
-  (radio.getAttribute('aria-describedby') ?? '')
-    .split(' ')
-    .filter(Boolean)
-    .map((id) => (document.getElementById(id)?.textContent ?? '').trim());
+/**
+ * What the radio of this name is described by, as assistive technology
+ * computes it: Testing Library's role query computes it with
+ * computeAccessibleDescription, and hands it to the matcher, which keeps it.
+ * Its spaces are folded.
+ */
+function description(name: string): string {
+  let computed = '';
+  screen.getByRole('radio', {
+    name,
+    description: (text) => {
+      computed = text;
+      return true;
+    },
+  });
+  return computed.replace(/\s+/g, ' ').trim();
+}
 
 const OPTIONS: ChoiceCardOption[] = [
   {
@@ -60,7 +71,7 @@ test('choosing a card reports its value, and a disabled card neither chooses nor
   expect(onChange).toHaveBeenCalledWith('direct');
   const e2b = screen.getByRole('radio', { name: /In E2B/ }) as HTMLInputElement;
   expect(e2b.disabled).toBe(true);
-  expect(description(e2b)).toContain('Add E2B_API_KEY under Settings, Secrets.');
+  expect(description('In E2B')).toMatch(/Add E2B_API_KEY under Settings, Secrets\.$/);
 });
 
 test('a fact with a state draws its dot beside the words, never alone', () => {
@@ -92,8 +103,7 @@ test('a disabled card gives its reason on one last line, read with its radio, an
       ]}
     />,
   );
-  const e2b = screen.getByRole('radio', { name: 'In E2B' });
-  expect(description(e2b).at(-1)).toBe('Add E2B_API_KEY to use it.');
+  expect(description('In E2B')).toMatch(/Add E2B_API_KEY to use it\.$/);
   // The name, the description, the most facts any card has (two) and the reason: five rows for every card.
   const group = container.querySelector('.crewlet-choice-cards') as HTMLElement;
   expect(group.style.getPropertyValue('--crewlet-choice-cards-rows')).toBe('5');
@@ -138,9 +148,9 @@ test('a reason given on a fact’s line keeps the disabled card to the same line
   expect(e2bCard!.querySelector('.crewlet-choice-cards__reason')).toBeNull();
   // The reason is the Needs line's value, and the radio's description ends with it, read once.
   const needs = e2bCard!.querySelector('.crewlet-choice-cards__fact.is-reason')!;
-  expect(needs.textContent).toBe('Needs E2B key not set. Add E2B_API_KEY.');
-  const e2b = screen.getByRole('radio', { name: 'In E2B' });
-  expect(description(e2b)).toEqual(['A cloud sandbox.', 'IsolationA separate machine', 'E2B key not set. Add E2B_API_KEY.']);
+  expect(needs.textContent?.replace(/\s+/g, ' ')).toBe('Needs E2B key not set. Add E2B_API_KEY.');
+  // The line is read whole, its name with it, in its place among the facts, and once.
+  expect(description('In E2B')).toBe('A cloud sandbox. Needs E2B key not set. Add E2B_API_KEY. Isolation A separate machine');
 });
 
 test('the narrowest a card stands is the prop that says so', () => {
@@ -168,12 +178,7 @@ test('every card spans the same rows of the group and lays its lines on them, so
 test('a radio is named by its choice and tag alone, and described by the rest of the card', () => {
   render(<ChoiceCards label="Where it runs" options={OPTIONS} value={null} onChange={() => {}} />);
   // Named by the whole card, it was read as every word on it on each arrow press.
-  const radio = screen.getByRole('radio', { name: 'In a container Company default' });
-  expect(description(radio)).toEqual([
-    'A fresh container for each coding run.',
-    'Needs Docker 24.0.7 found',
-    'IsolationOwn filesystem',
-  ]);
+  expect(description('In a container Company default')).toBe('A fresh container for each coding run. Needs Docker 24.0.7 found Isolation Own filesystem');
   expect(screen.getByRole('radio', { name: 'On the host' })).toBeTruthy();
 });
 
@@ -218,4 +223,67 @@ test('has no accessibility violations', async () => {
   const { container } = render(<ChoiceCards label="Where it runs" options={OPTIONS} value="container" onChange={() => {}} />);
   const results = await axe.run(container);
   expect(results.violations).toEqual([]);
+});
+
+test('cards stand level when only some have a description: the others keep its row empty', () => {
+  const { container } = render(<ChoiceCards label="Where it runs" options={OPTIONS} value={null} onChange={() => {}} />);
+  const [inContainer, host, e2b] = [...container.querySelectorAll('.crewlet-choice-cards__card')];
+  // The E2B card has no description, so it keeps an empty cell on the description's row, hidden from a reader.
+  const empty = e2b!.querySelector('.crewlet-choice-cards__description')!;
+  expect(empty.textContent).toBe('');
+  expect(empty.getAttribute('aria-hidden')).toBe('true');
+  expect(empty.id).toBe('');
+  // Its first fact then sits on the row after the description, as the facts beside it do.
+  expect(e2b!.children[2]!.classList.contains('crewlet-choice-cards__description')).toBe(true);
+  expect(inContainer!.children[2]!.classList.contains('crewlet-choice-cards__description')).toBe(true);
+  expect(host!.children[2]!.classList.contains('crewlet-choice-cards__description')).toBe(true);
+});
+
+test('a set with no description gives none a row, so no card carries an empty line', () => {
+  const { container } = render(
+    <ChoiceCards
+      label="Plan"
+      value={null}
+      onChange={() => {}}
+      options={[
+        { value: 'a', label: 'A', facts: [{ label: 'Cost', value: 'Low' }] },
+        { value: 'b', label: 'B', facts: [{ label: 'Cost', value: 'High' }] },
+      ]}
+    />,
+  );
+  expect(container.querySelector('.crewlet-choice-cards__description')).toBeNull();
+  const group = container.querySelector('.crewlet-choice-cards') as HTMLElement;
+  // The name and one fact.
+  expect(group.style.getPropertyValue('--crewlet-choice-cards-rows')).toBe('2');
+});
+
+test('a value with a space or any character still names and describes its radio', () => {
+  render(
+    <ChoiceCards
+      label="Model"
+      value="claude opus"
+      onChange={() => {}}
+      options={[
+        { value: 'claude opus', label: 'Opus', description: 'The strongest.' },
+        { value: 'a"b<c', label: 'Odd', description: 'Any character.' },
+      ]}
+    />,
+  );
+  // An id built from the value split on its space, and the radio lost its name.
+  expect(description('Opus')).toBe('The strongest.');
+  expect(description('Odd')).toBe('Any character.');
+});
+
+test('the chosen card keeps its tag edged in the strong border, which the tint does not swallow', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    const uninstall = installThemed(theme, 'ChoiceCards/ChoiceCards.css');
+    try {
+      const { container } = render(<ChoiceCards label="Where it runs" options={OPTIONS} value="container" onChange={() => {}} />);
+      const tag = getComputedStyle(container.querySelector('.crewlet-choice-cards__card.is-checked .crewlet-choice-cards__tag')!);
+      expect(channels(tag.borderTopColor), theme).toEqual(channels(themeColour(theme, token('color-border-strong'))));
+    } finally {
+      cleanup();
+      uninstall();
+    }
+  }
 });
