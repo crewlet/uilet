@@ -300,6 +300,17 @@ describe('the footer and a wide step', () => {
     expect([...footer.querySelectorAll('button')].map((button) => button.textContent)).toEqual(['Exit', 'Back', 'Continue']);
   });
 
+  test('the step’s primary action keeps one width, so a longer word on the last step moves nothing beside it', () => {
+    uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard actions={undefined} footerStart={<button type="button">Exit</button>} />);
+    const end = container.querySelector('.crewlet-setup-wizard__footer-end')!;
+    expect(end.lastElementChild!.textContent).toBe('Continue');
+    // 8rem: the longest of those words at the medium button.
+    expect(getComputedStyle(end.lastElementChild!).minInlineSize).toBe('128px');
+    // Back, before it, keeps its own width.
+    expect(getComputedStyle(end.firstElementChild!).minInlineSize).not.toBe('128px');
+  });
+
   test('on a phone the actions share two rows, the primary the whole width on the last', () => {
     uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
     asPhone();

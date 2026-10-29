@@ -190,6 +190,18 @@
 }
 
 /*
+ * THE STEP'S PRIMARY ACTION KEEPS ONE WIDTH on every step. Sized to its word,
+ * "Continue" grew into "Create model" or "Save changes" on the last step, and
+ * every button before it in the row moved 30px to make room: the Back a person
+ * had just pressed was no longer under the pointer. 8rem holds the longest of
+ * those words at the kit's medium button; a longer one still grows rather than
+ * clips.
+ */
+.crewlet-setup-wizard__footer-end > :last-child {
+  min-inline-size: 8rem;
+}
+
+/*
  * A GHOST AT THE ROW'S START is pulled out by its padding and edge, as a card
  * foot's is (StatusCard.css), so "Exit" starts on the line the title and the
  * hairline above it start on rather than 13px inside it; only the hover's
