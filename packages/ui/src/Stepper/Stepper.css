@@ -73,8 +73,8 @@
   gap: calc(var(--spacing-1) * 1.25);
   box-sizing: border-box;
   /* The design's 20px pill, which follows the density with every other step
-     height in the kit. It labels and takes no press, so the 24px target floor
-     is not its to clear. */
+     height in the kit. A pill that only labels takes no press; one a reader
+     can pick clears the 24px target floor through the band below. */
   height: calc(20px * var(--density, 1));
   max-width: 100%;
   padding: 0 var(--spacing-2);
@@ -211,10 +211,28 @@
 }
 
 .crewlet-stepper__chip.crewlet-stepper__target {
+  position: relative;
   font-family: var(--font-family-sans);
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   line-height: 1;
+}
+
+/*
+ * A PICKABLE PILL IS PRESSED THROUGH THE TARGET FLOOR, not its own 20px: an
+ * invisible band of --size-target-min, centred on the pill, reaches above and
+ * under it, so a phone's row of steps takes a thumb without the pill growing
+ * past the design's height. The band is sized and centred rather than inset
+ * from the pill: an inset counts from inside the pill's hairline, which left
+ * it 22px.
+ */
+.crewlet-stepper__chip.crewlet-stepper__target::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: var(--size-target-min);
+  translate: 0 -50%;
 }
 
 .crewlet-stepper__target:hover {
