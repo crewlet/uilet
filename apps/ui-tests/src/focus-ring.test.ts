@@ -119,8 +119,9 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'IconButton/IconButton.css | .crewlet-icon-btn:focus-visible',
       // Filled with the accent, its border the fill itself.
       'DataTable/DataTable.css | .crewlet-data-table__items-per-page-btn.is-active:focus-visible',
-      // The recommended answer, filled with the accent as a primary button is.
-      'ChoiceButtons/ChoiceButtons.css | .crewlet-choice-buttons__option--recommended:focus-visible',
+      // The recommended answer, filled with the accent as a primary button is
+      // while the options send rather than toggle.
+      'ChoiceButtons/ChoiceButtons.css | .crewlet-choice-buttons__option--recommended:not([aria-pressed]):focus-visible',
       // Filled toast actions, whose borders are their fills, and a borderless dismiss.
       'Toaster/Toaster.css | .crewlet-toast__action-btn:focus-visible',
       'Toaster/Toaster.css | .crewlet-toast__action-link:focus-visible',

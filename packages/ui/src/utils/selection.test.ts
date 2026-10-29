@@ -35,7 +35,7 @@ function rulesOf(sheet: string): Map<string, string> {
 }
 
 const CHOSEN: ReadonlyArray<
-  readonly [sheet: string, selector: string, edge: 'border' | 'outline' | null, fill: 'background' | 'image' | 'halo' | null]
+  readonly [sheet: string, selector: string, edge: 'border' | 'outline' | 'ink' | null, fill: 'background' | 'image' | 'halo' | null]
 > = [
   ['ThemeGallery/ThemeGallery.css', '.crewlet-theme-gallery__card.is-chosen', 'border', 'background'],
   ['SlideFilmstrip/SlideFilmstrip.css', ".crewlet-slide-filmstrip__item[data-selected='true'] .crewlet-slide-filmstrip__thumb", 'outline', 'halo'],
@@ -44,8 +44,10 @@ const CHOSEN: ReadonlyArray<
   ['DatasetSource/DatasetSource.css', '.crewlet-dataset-source--selected', 'border', null],
   ['DatasetSource/DatasetSource.css', '.crewlet-dataset-source--selected .crewlet-dataset-source__summary', null, 'background'],
   ['ChoiceList/ChoiceList.css', '.crewlet-choice-list__row.is-checked', null, 'background'],
-  // A suggestion applied stays on screen, chosen; held under the pointer too.
-  ['ChoiceButtons/ChoiceButtons.css', '.crewlet-choice-buttons__option.is-chosen, .crewlet-choice-buttons__option.is-chosen:hover', 'border', 'background'],
+  // A suggestion applied stays on screen, chosen; held under the pointer and
+  // the press. Its edge is the accent's ink: it is a toggle's pressed state,
+  // which WCAG 1.4.11 holds to 3:1, and the tint does not clear that.
+  ['ChoiceButtons/ChoiceButtons.css', '.crewlet-choice-buttons__option.is-chosen, .crewlet-choice-buttons__option.is-chosen:hover, .crewlet-choice-buttons__option.is-chosen:active', 'ink', 'background'],
   ['LayersList/LayersList.css', ".crewlet-layers-list__item[aria-current='true']", null, 'background'],
   // Laid over the card's own surface, so the fill is an image.
   ['Card/Card.css', '.crewlet-card.is-selected', 'border', 'image'],
@@ -57,7 +59,7 @@ const CHOSEN: ReadonlyArray<
   ['DataGrid/DataGrid.css', '.crewlet-data-grid__row--picked, .crewlet-data-grid__row--picked:hover', null, 'background'],
 ];
 
-test('every chosen option is drawn in the selected edge and fill, never the accent', () => {
+test('every chosen option is drawn on the selected fill, edged in the selected tint or the accent ink, never the accent', () => {
   for (const [sheet, selector, edge, fill] of CHOSEN) {
     const body = rulesOf(sheet).get(selector);
     expect(body, `${sheet}: ${selector}`).toBeDefined();
@@ -67,6 +69,7 @@ test('every chosen option is drawn in the selected edge and fill, never the acce
     expect(body, `${sheet}: ${selector}`).not.toMatch(/(outline|border)(-width)?:\s*2px/);
     if (edge === 'border') expect(body, `${sheet}: ${selector}`).toMatch(/border-color:\s*var\(--color-border-selected\)/);
     if (edge === 'outline') expect(body, `${sheet}: ${selector}`).toMatch(/outline-color:\s*var\(--color-border-selected\)/);
+    if (edge === 'ink') expect(body, `${sheet}: ${selector}`).toMatch(/border-color:\s*var\(--color-brand-accent-ink\)/);
     if (fill === 'background') expect(body, `${sheet}: ${selector}`).toMatch(/background:\s*var\(--color-surface-selected\)/);
     if (fill === 'image') expect(body, `${sheet}: ${selector}`).toMatch(/background-image: linear-gradient\(var\(--color-surface-selected\), var\(--color-surface-selected\)\)/);
     if (fill === 'halo') expect(body, `${sheet}: ${selector}`).toMatch(/box-shadow:\s*0 0 0 3px var\(--color-surface-selected\)/);

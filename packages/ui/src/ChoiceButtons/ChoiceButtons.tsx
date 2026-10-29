@@ -1,4 +1,5 @@
 import { useId, type HTMLAttributes, type MouseEvent, type ReactNode } from 'react';
+import { CheckGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -24,7 +25,12 @@ export interface ChoiceButtonsProps extends Omit<HTMLAttributes<HTMLDivElement>,
   /** Names the group: "Answers". */
   label: string;
   options: readonly ChoiceButtonOption[];
-  /** The option the asker recommends: drawn first, filled, and marked. */
+  /**
+   * The option the asker recommends: drawn first and marked, and filled with
+   * the accent while the options send rather than toggle (`chosen` left out).
+   * As toggles it is drawn plain with its mark kept, so the chosen option is
+   * always the most prominent one.
+   */
   recommended?: string | null | undefined;
   /** The mark on the recommended option, read as part of its name. */
   recommendedLabel?: string | undefined;
@@ -36,8 +42,10 @@ export interface ChoiceButtonsProps extends Omit<HTMLAttributes<HTMLDivElement>,
    * The option already applied, for options that stay on screen after a
    * press (a suggestion that updated a field). Given, every option is a
    * toggle button that says whether it is the one applied, and that one is
-   * drawn chosen: the selected edge and fill, never the accent. `null` when
-   * none is; left out, the options send and say nothing of a choice.
+   * drawn chosen: the selected fill inside an edge in the accent's ink, with a
+   * check mark. The recommended option leaves the accent fill and keeps its
+   * mark. `null` when none is; left out, the options send and say nothing of
+   * a choice.
    */
   chosen?: string | null | undefined;
   /**
@@ -135,6 +143,12 @@ export function ChoiceButtons({
                 {' '}
                 <span className="crewlet-choice-buttons__note">{recommendedLabel}</span>
               </>
+            ) : null}
+            {/* The cue beside the colour: decoration, since `aria-pressed` says it. */}
+            {isChosen ? (
+              <span className="crewlet-choice-buttons__check" aria-hidden="true">
+                <CheckGlyph />
+              </span>
             ) : null}
           </button>
         );
