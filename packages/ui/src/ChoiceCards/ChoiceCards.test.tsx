@@ -287,3 +287,11 @@ test('the chosen card keeps its tag edged in the strong border, which the tint d
     }
   }
 });
+
+test('a tag that does not fit beside the name takes a line of its own, the name whole and level with its radio', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  expect(/\.crewlet-choice-cards__title \{([^}]*)\}/.exec(css)?.[1]).toMatch(/flex-wrap:\s*wrap;/);
+  // Its lines stand at the row's top: a taller title beside it never moves the name off its radio's line.
+  expect(/\.crewlet-choice-cards__title \{([^}]*)\}/.exec(css)?.[1]).toMatch(/align-content:\s*flex-start;/);
+  expect(/\.crewlet-choice-cards__tag \{([^}]*)\}/.exec(css)?.[1]).toMatch(/white-space:\s*nowrap;/);
+});
