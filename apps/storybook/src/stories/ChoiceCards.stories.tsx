@@ -9,8 +9,7 @@ import { themeScope } from '../themeScope';
  * Choices a person compares, as cards of the same lines: a picture, the
  * choice's name and its tag; one line of description; and a few facts, one to
  * a line. Cards side by side share every line, so their facts stand level. A
- * disabled card says why and what fixes it, on a fact of its own (`reason`) or
- * on a reason line. Native radios, so the arrow keys move the choice.
+ * disabled card says why and what fixes it on its last line. Native radios, so the arrow keys move the choice.
  */
 const meta: Meta<typeof ChoiceCards> = {
   title: 'UI/ChoiceCards',
@@ -49,10 +48,11 @@ const PLACES: ChoiceCardOption[] = [
     media: <GlobeGlyph size="xl" />,
     description: 'A cloud sandbox, off the host.',
     facts: [
-      { label: 'Needs', value: 'E2B key not set. Add E2B_API_KEY under Settings, Secrets.', tone: 'warning', reason: true },
+      { label: 'Needs', value: 'E2B key not set', tone: 'warning' },
       { label: 'Isolation', value: 'A separate machine' },
     ],
     disabled: true,
+    disabledReason: 'Add E2B_API_KEY under Settings, Secrets, to use it.',
   },
 ];
 
@@ -90,12 +90,12 @@ const CLIS: ChoiceCardOption[] = [
   },
 ];
 
-function Chooser({ options, initial, size }: { options: ChoiceCardOption[]; initial: string; size?: 'md' | 'lg' }) {
+function Chooser({ options, initial, minCardWidth }: { options: ChoiceCardOption[]; initial: string; minCardWidth?: 'md' | 'lg' }) {
   const [value, setValue] = useState<string | null>(initial);
-  return <ChoiceCards label="Choose one" options={options} value={value} onChange={setValue} size={size} />;
+  return <ChoiceCards label="Choose one" options={options} value={value} onChange={setValue} minCardWidth={minCardWidth} />;
 }
 
-/** Three places, the company default tagged, one unavailable: its Needs fact is the reason, read with its radio. */
+/** Three places, the company default tagged, one unavailable: its last line says why and is read with its radio. */
 export const WhereItRuns: Story = { render: () => <Chooser options={PLACES} initial="container" /> };
 
 /** Three coding CLIs, each named by its vendor's mark, the same three lines in every card. */
@@ -112,27 +112,6 @@ export const SideBySide: Story = {
       initial="claude-code"
       options={CLIS.map((o) =>
         o.value === 'opencode' ? { ...o, description: 'An open CLI that runs models from many providers, chosen per model.' } : o,
-      )}
-    />
-  ),
-};
-
-/** A disabled card whose reason is a line of its own, under its facts. */
-export const WithReasonLine: Story = {
-  render: () => (
-    <Chooser
-      initial="direct"
-      options={PLACES.map((o) =>
-        o.value === 'e2b'
-          ? {
-              ...o,
-              facts: [
-                { label: 'Needs', value: 'E2B key not set', tone: 'warning' },
-                { label: 'Isolation', value: 'A separate machine' },
-              ],
-              disabledReason: 'Add E2B_API_KEY under Settings, Secrets, to use it.',
-            }
-          : o,
       )}
     />
   ),

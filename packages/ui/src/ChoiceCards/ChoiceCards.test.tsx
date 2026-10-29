@@ -70,7 +70,7 @@ test('a fact with a state draws its dot beside the words, never alone', () => {
   expect(status?.querySelector('.crewlet-status-dot')?.getAttribute('aria-hidden')).toBe('true');
 });
 
-test('a fact marked as the reason describes its disabled card, and every card spans the same rows', () => {
+test('a disabled card gives its reason on one last line, read with its radio, and every card spans that line', () => {
   const { container } = render(
     <ChoiceCards
       label="Where coding runs happen"
@@ -83,26 +83,36 @@ test('a fact marked as the reason describes its disabled card, and every card sp
           label: 'In E2B',
           description: 'A cloud sandbox.',
           facts: [
-            { label: 'Needs', value: 'E2B key not set', tone: 'warning', reason: true },
+            { label: 'Needs', value: 'E2B key not set', tone: 'warning' },
             { label: 'Isolation', value: 'A separate machine' },
           ],
           disabled: true,
+          disabledReason: 'Add E2B_API_KEY to use it.',
         },
       ]}
     />,
   );
-  const e2b = screen.getByRole('radio', { name: /In E2B/ });
-  expect(description(e2b).join(' ')).toContain('E2B key not set');
-  // The name, the description and the most facts any card has (two): four rows for every card.
+  const e2b = screen.getByRole('radio', { name: 'In E2B' });
+  expect(description(e2b).at(-1)).toBe('Add E2B_API_KEY to use it.');
+  // The name, the description, the most facts any card has (two) and the reason: five rows for every card.
   const group = container.querySelector('.crewlet-choice-cards') as HTMLElement;
-  expect(group.style.getPropertyValue('--crewlet-choice-cards-rows')).toBe('4');
+  expect(group.style.getPropertyValue('--crewlet-choice-cards-rows')).toBe('5');
+});
+
+test('the narrowest a card stands is the prop that says so', () => {
+  const { container } = render(
+    <ChoiceCards label="Wide" options={OPTIONS} value={null} onChange={() => {}} minCardWidth="lg" />,
+  );
+  expect(container.querySelector('.crewlet-choice-cards')!.classList.contains('crewlet-choice-cards--lg')).toBe(true);
 });
 
 test('every card spans the same rows of the group and lays its lines on them, so cards side by side stand level', () => {
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-  const card = /\.crewlet-choice-cards__card \{([^}]*)\}/.exec(css)?.[1] ?? '';
-  expect(card).toMatch(/grid-row:\s*span var\(--crewlet-choice-cards-rows\);/);
-  expect(card).toMatch(/grid-template-rows:\s*subgrid;/);
+  // A plain column of its lines everywhere, and the shared rows where subgrid is supported.
+  expect(/\.crewlet-choice-cards__card \{([^}]*)\}/.exec(css)?.[1]).toMatch(/display:\s*flex;/);
+  const supported = /@supports \(grid-template-rows: subgrid\) \{\s*\.crewlet-choice-cards__card \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(supported).toMatch(/grid-row:\s*span var\(--crewlet-choice-cards-rows\);/);
+  expect(supported).toMatch(/grid-template-rows:\s*subgrid;/);
   // Each fact is a line of its own: the facts give their children to the card's grid.
   expect(/\.crewlet-choice-cards__facts \{([^}]*)\}/.exec(css)?.[1]).toMatch(/display:\s*contents;/);
   // The rows a card spans count every card's lines: two facts and a reason line make five.

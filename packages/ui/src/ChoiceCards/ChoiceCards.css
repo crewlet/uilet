@@ -37,10 +37,9 @@
 }
 
 /*
- * THE CARD spans its rows and takes them from the group (`subgrid`), so a row
- * is as tall as its tallest line across the cards beside it. The space under
- * a card is its margin, the gap between one row of cards and the next; the
- * lines inside a card keep their own, smaller gap.
+ * THE CARD is a column of its lines. The space under a card is its margin,
+ * the gap between one row of cards and the next; the lines inside a card keep
+ * their own, smaller gap.
  *
  * Its first line is as tall as the largest picture a card set draws (a
  * product's mark), so the radio and every name sit on one line whatever
@@ -50,12 +49,9 @@
   --crewlet-choice-cards-title: var(--size-control-sm);
 
   position: relative;
-  display: grid;
-  grid-row: span var(--crewlet-choice-cards-rows);
-  grid-template-rows: subgrid;
-  grid-template-columns: minmax(0, 1fr);
-  row-gap: var(--spacing-1);
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
   min-width: 0;
   margin-block-end: var(--spacing-3);
   padding: var(--spacing-3);
@@ -253,9 +249,23 @@
   font-size: var(--font-size-xs);
 }
 
-/* A fact that is the reason (`reason`) says so in the same ink. */
-.crewlet-choice-cards__fact.is-reason .crewlet-choice-cards__fact-value {
-  color: var(--color-feedback-warning-ink);
+
+/*
+ * WHERE SUBGRID IS SUPPORTED, every card spans the same rows of the group and
+ * takes them from it, so a row is as tall as its tallest line across the cards
+ * beside it and their facts stand level. Elsewhere each card stays the plain
+ * column above: its lines still read in order, only not level with the next
+ * card's.
+ */
+@supports (grid-template-rows: subgrid) {
+  .crewlet-choice-cards__card {
+    display: grid;
+    grid-row: span var(--crewlet-choice-cards-rows);
+    grid-template-rows: subgrid;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--spacing-1);
+    align-content: start;
+  }
 }
 
 @media (forced-colors: active) {
