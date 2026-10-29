@@ -15,7 +15,8 @@ import { themeScope } from '../themeScope';
 const meta: Meta<typeof ChoiceCards> = {
   title: 'UI/ChoiceCards',
   component: ChoiceCards,
-  decorators: [(Story) => <div style={{ maxWidth: 640 }}>{Story()}</div>],
+  // A form's column by default. A story that stands cards side by side sets `frameWidth`: a width decorator of its own is drawn inside this frame and cannot widen it.
+  decorators: [(Story, { parameters }) => <div style={{ maxWidth: parameters.frameWidth ?? 640 }}>{Story()}</div>],
 };
 
 export default meta;
@@ -109,7 +110,7 @@ export const CodingClis: Story = { render: () => <Chooser options={CLIS} initial
  * description that wraps in one card moves the facts of all three alike.
  */
 export const SideBySide: Story = {
-  decorators: [(Story) => <div style={{ maxWidth: 1080 }}>{Story()}</div>],
+  parameters: { frameWidth: 1080 },
   render: () => (
     <Chooser
       initial="claude-code"
@@ -125,7 +126,7 @@ export const SideBySide: Story = {
  * and the same height, the unavailable one's reason on its Needs line.
  */
 export const PlacesSideBySide: Story = {
-  decorators: [(Story) => <div style={{ maxWidth: 1080 }}>{Story()}</div>],
+  parameters: { frameWidth: 1080 },
   render: () => <Chooser options={PLACES} initial="container" />,
 };
 
@@ -149,7 +150,7 @@ export const Simple: Story = {
  * raised like the cards that can be chosen, and its words stay legible.
  */
 export const DisabledBesideEnabled: Story = {
-  decorators: [(Story) => <div style={{ maxWidth: 1320 }}>{Story()}</div>],
+  parameters: { frameWidth: 1320 },
   render: () => (
     <div style={{ display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
       {(['light', 'dark'] as const).map((theme) => (
