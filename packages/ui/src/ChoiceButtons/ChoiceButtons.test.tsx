@@ -9,11 +9,18 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
-import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { contrast, flatten, parseHex } from '@crewlethq/tokens/test/palette';
+import { channels, installSheets, installThemed, px, themeColours } from '../../../../apps/ui-tests/src/cascade.js';
 import { ColorChip } from '../ColorChip/index.js';
 import { ChoiceButtons, type ChoiceButtonOption } from './index.js';
 
 afterEach(cleanup);
+
+/*
+ * Spelled without the leading dashes and prefixed at use: the package's
+ * variable check reads a quoted `--name` in a .tsx file as a declaration.
+ */
+const token = (name: string) => `--${name}`;
 
 const OPTIONS: ChoiceButtonOption[] = [
   { value: 'greedy', label: 'Greedy only', detail: 'Simple and fast.' },
@@ -159,4 +166,42 @@ test('on the accent fill a colour chip and a reference mark take the label own i
   // A grey edge on the accent measured 1.09:1; the label's own ink is 4.69:1.
   expect(recommended).toContain('--crewlet-color-chip-ring: currentColor');
   expect(recommended).toContain('--crewlet-inline-ref-mark-ink: currentColor');
+});
+
+test('a recommended option that is chosen stays legible and keeps its mark, in every theme', () => {
+  /*
+   * AN ANSWER READ BACK marks the option chosen, and the recommended one keeps
+   * its mark. Chosen, the recommended option is drawn on the soft selected
+   * fill, and it kept the accent's ink, white on a pale tint, under 1.5:1 in
+   * the light theme. Its label, its mark and its detail are measured against
+   * that fill as it lands on every ground an answer is drawn on.
+   */
+  for (const theme of ['light', 'dark'] as const) {
+    const uninstall = installThemed(theme, 'ChoiceButtons/ChoiceButtons.css');
+    try {
+      const palette = themeColours(theme);
+      render(
+        <ChoiceButtons label="Answers" options={OPTIONS} recommended="exact" chosen="exact" onChoose={() => {}} />,
+      );
+      const option = screen.getByRole('button', { pressed: true });
+      expect(option.textContent).toContain('Recommended');
+      const fill = getComputedStyle(option).backgroundColor;
+      for (const ground of ['surface-background', 'surface-elevated', 'surface-frame']) {
+        const backdrop = parseHex(palette.get(token(`color-${ground}`)) ?? '');
+        expect(backdrop, `${theme} ${ground}`).not.toBeNull();
+        const behind = flatten(fill, backdrop!);
+        for (const [part, element] of [
+          ['label', option],
+          ['mark', option.querySelector('.crewlet-choice-buttons__note')!],
+          ['detail', option.querySelector('.crewlet-choice-buttons__detail')!],
+        ] as const) {
+          const ratio = contrast(channels(getComputedStyle(element).color), behind);
+          expect(ratio, `${theme} ${part} on ${ground}: ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    } finally {
+      cleanup();
+      uninstall();
+    }
+  }
 });
