@@ -1,0 +1,242 @@
+/*
+ * Choices a person compares, as cards in a grid that wraps. The chosen card
+ * takes the selected fill and the strong boundary, as a chosen ChoiceList row
+ * does; the radio stays the mark, drawn in the card's corner; and no card is
+ * ringed in the accent except by the focus ring itself.
+ *
+ * ONE LINE A ROW, THE SAME ROWS IN EVERY CARD: the picture, the name and its
+ * tag on the first; the description on the second; then each fact on a line
+ * of its own, its name and its value; and a reason line where any card has
+ * one. Every card spans the same rows of the group's grid and lays its lines
+ * on them as a subgrid, so cards side by side share each row: a description
+ * that wraps in one card moves the facts of all of them, and Runs stays level
+ * with Runs. Facts run together as one line of meta wrapped differently in
+ * each card, and three cards read as three different shapes.
+ *
+ * A card is at least 20rem (24rem at `lg`), the width a fact's name and a
+ * short value keep to one line in: a form's column holds one to a row, and a
+ * wider surface two or three, aligned.
+ */
+.crewlet-choice-cards {
+  --crewlet-choice-cards-min: 20rem;
+  --crewlet-choice-cards-radio: 16px;
+  /* How many rows a card spans, set from the options: the name, the description, the most facts, a reason. */
+  --crewlet-choice-cards-rows: 3;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--crewlet-choice-cards-min)), 1fr)
+  );
+  grid-auto-rows: auto;
+  column-gap: var(--spacing-3);
+  row-gap: 0;
+}
+
+.crewlet-choice-cards--lg {
+  --crewlet-choice-cards-min: 24rem;
+}
+
+/*
+ * THE CARD spans its rows and takes them from the group (`subgrid`), so a row
+ * is as tall as its tallest line across the cards beside it. The space under
+ * a card is its margin, the gap between one row of cards and the next; the
+ * lines inside a card keep their own, smaller gap.
+ *
+ * Its first line is as tall as the largest picture a card set draws (a
+ * product's mark), so the radio and every name sit on one line whatever
+ * picture each card has.
+ */
+.crewlet-choice-cards__card {
+  --crewlet-choice-cards-title: var(--size-control-sm);
+
+  position: relative;
+  display: grid;
+  grid-row: span var(--crewlet-choice-cards-rows);
+  grid-template-rows: subgrid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--spacing-1);
+  align-content: start;
+  min-width: 0;
+  margin-block-end: var(--spacing-3);
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-choice-cards__card:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-choice-cards__card.is-checked {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-selected);
+}
+
+.crewlet-choice-cards__card.is-disabled {
+  cursor: not-allowed;
+  background: var(--color-surface-subtle);
+}
+
+/* The ring sits inside the card's own box, over its border, rather than a second line beside it. */
+.crewlet-choice-cards__card:has(.crewlet-choice-cards__radio:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* The radio, drawn in the card's top end and centred on the first line: an empty ring, or the accent ring round an accent dot. */
+.crewlet-choice-cards__radio {
+  appearance: none;
+  position: absolute;
+  inset-block-start: calc(var(--spacing-3) + (var(--crewlet-choice-cards-title) - var(--crewlet-choice-cards-radio)) / 2);
+  inset-inline-end: var(--spacing-3);
+  display: inline-grid;
+  place-content: center;
+  width: var(--crewlet-choice-cards-radio);
+  height: var(--crewlet-choice-cards-radio);
+  margin: 0;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-circle);
+  background: var(--color-surface-elevated);
+}
+
+.crewlet-choice-cards__radio:checked {
+  border-color: var(--color-brand-accent);
+}
+
+.crewlet-choice-cards__radio:checked::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-circle);
+  background: var(--color-brand-accent);
+}
+
+/*
+ * THE CARD DRAWS THE RING (above), so the radio's own is transparent rather
+ * than off: invisible beside the card's, and still a ring where forced-colors
+ * mode repaints every outline in the system's colour.
+ */
+.crewlet-choice-cards__radio:focus-visible {
+  outline: 2px solid transparent;
+}
+
+/* The first line: the picture, the name and its tag, stopping short of the radio. */
+.crewlet-choice-cards__title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  grid-row: 1;
+  min-width: 0;
+  min-height: var(--crewlet-choice-cards-title);
+  padding-inline-end: calc(var(--spacing-2) + var(--crewlet-choice-cards-radio));
+}
+
+.crewlet-choice-cards__media {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-choice-cards__tag {
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.crewlet-choice-cards__label {
+  min-width: 0;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-choice-cards__description {
+  grid-row: 2;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* The facts give each of their lines to the card's grid, one row a fact. */
+.crewlet-choice-cards__facts {
+  display: contents;
+}
+
+/*
+ * A fact: its name in the quiet ink, then its value, on one line while there
+ * is room. Its two parts share one size and line height and align to the top,
+ * so a fact with a dot is no taller than one without: aligned on a baseline,
+ * the dot (a box with no text) gave the line a baseline of its own and the
+ * Needs line stood a pixel taller than Runs.
+ */
+.crewlet-choice-cards__fact {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+}
+
+.crewlet-choice-cards__fact-label {
+  flex: none;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-choice-cards__fact-value {
+  min-width: 0;
+  color: var(--color-text-secondary);
+}
+
+/*
+ * A FACT WRAPS RATHER THAN CLIPS. A StatusDot is one line and its word gives
+ * way with an ellipsis, which is right in a table cell and wrong here: a
+ * fact is read to choose between the cards, and a narrow card cut "Docker
+ * 24.0.7 found" to "Docker 24.0..." with nothing to reveal the rest. The word
+ * wraps under itself, and the dot stays on the first line's centre, where it
+ * sat while the fact was one line.
+ */
+.crewlet-choice-cards__fact-value > .crewlet-status {
+  display: flex;
+  align-items: flex-start;
+}
+
+.crewlet-choice-cards__fact-value > .crewlet-status > .crewlet-status-dot {
+  margin-block-start: calc((1lh - var(--crewlet-status-dot-size)) / 2);
+}
+
+.crewlet-choice-cards__fact-value > .crewlet-status > .crewlet-status__label {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The reason a disabled card cannot be chosen: the card's last row, in the warning ink. */
+.crewlet-choice-cards__reason {
+  grid-row: -2;
+  color: var(--color-feedback-warning-ink);
+  font-size: var(--font-size-xs);
+}
+
+/* A fact that is the reason (`reason`) says so in the same ink. */
+.crewlet-choice-cards__fact.is-reason .crewlet-choice-cards__fact-value {
+  color: var(--color-feedback-warning-ink);
+}
+
+@media (forced-colors: active) {
+  .crewlet-choice-cards__card.is-checked {
+    border-width: 2px;
+  }
+}
+
+/* The border's ease into its hover and checked inks is held for a reader who asked for no motion. */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-choice-cards__card {
+    transition: none;
+  }
+}
