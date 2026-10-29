@@ -42,6 +42,13 @@ export interface StatusDotProps {
  * Its fill is the tone's own fill step, which clears 3:1 against every surface
  * it can sit on, because a mark is read the way a glyph is rather than the way
  * text is.
+ *
+ * ITS SIZE IS A SUPPORTED CUSTOM PROPERTY, `--crewlet-status-dot-size` on the
+ * dot (7px), for a layout that has to place the dot against a line it does
+ * not share a box with: a wrapped line centres it with
+ * `calc((1lh - var(--crewlet-status-dot-size)) / 2)`. Read it; do not set it.
+ * The size is the design's, the same at every density, and a dot drawn at
+ * another size beside the kit's own reads as another mark.
  */
 export function StatusDot({ tone = 'neutral', pulse = false, children, className }: StatusDotProps) {
   const worded = children !== undefined && children !== null && children !== false && children !== '';

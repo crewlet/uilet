@@ -279,9 +279,9 @@ describe('what the bar draws', () => {
   test('no part is narrower than the kit’s status dot, or than an equal share where that would not fit', () => {
     // jsdom lays nothing out, so the floor is read as the declaration it is:
     // min(the dot, an equal share of the bar less its gaps), with the dot's
-    // size read from StatusDot.css, so the two marks a reader tells by hue
-    // cannot drift apart.
-    const dot = /\.crewlet-status-dot\s*\{[^}]*?\bwidth:\s*(\d+px)/.exec(
+    // size read from StatusDot.css (the one property its width and height
+    // read), so the two marks a reader tells by hue cannot drift apart.
+    const dot = /\.crewlet-status-dot\s*\{[^}]*?--crewlet-status-dot-size:\s*(\d+px)/.exec(
       readFileSync(resolve(here, '../StatusDot/StatusDot.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''),
     )?.[1];
     expect(dot).toBe('7px');
