@@ -67,8 +67,10 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
   return (
     <div className={cx('crewlet-choice-list', disabled && 'is-disabled', className)}>
       <div role="radiogroup" aria-label={label} className="crewlet-choice-list__group">
-        {options.map((option) => {
-          const id = `${name}-${option.value}`;
+        {options.map((option, index) => {
+          // IDS BY POSITION, never by value: a value may hold a space or any
+          // character, and an id reference list splits on whitespace.
+          const id = `${name}-${index}`;
           const checked = option.value === value;
           const off = disabled || option.disabled;
           const reasonId = option.disabled && option.disabledReason ? `${id}-reason` : undefined;

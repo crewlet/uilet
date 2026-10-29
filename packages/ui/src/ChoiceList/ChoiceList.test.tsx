@@ -109,6 +109,22 @@ test('a disabled choice cannot be chosen, and its radio is described by why', ()
   expect(described?.textContent).toBe('Add E2B_API_KEY first.');
 });
 
+test('a value with a space still names its radio and describes its reason', () => {
+  render(
+    <ChoiceList
+      label="Model"
+      value={null}
+      onChange={() => {}}
+      options={[
+        { value: 'claude opus', label: 'Opus', detail: 'The strongest.', disabled: true, disabledReason: 'Sign in first.' },
+      ]}
+    />,
+  );
+  // An id built from the value split on its space, and the radio lost its name and its reason.
+  const opus = screen.getByRole('radio', { name: 'Opus The strongest.' });
+  expect(document.getElementById(opus.getAttribute('aria-describedby') ?? '')?.textContent).toBe('Sign in first.');
+});
+
 test('carries no axe violation', async () => {
   const { container } = render(
     <main>
