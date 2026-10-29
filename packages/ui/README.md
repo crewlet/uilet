@@ -205,6 +205,14 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.77.0
+
+**`CheckGrid`, checkboxes where rows meet columns**: which seats run which jobs, which people hold which access. Each box is a native checkbox named by its row and its column ("Backend Engineer Coding"), each row a group named by its row, and a box can be on, off or partly on (`mixed`). Where every column fits, a header names the columns once and the boxes stand under them; where they do not (a phone, a narrow column), each row stacks with its column's name beside every box, so no column is cut off behind a sideways scroll. Which applies is the grid's own width, by a container query, and a grid of more than six columns always stacks. A column can refuse new ticks with `disabledReason`, drawn once under the grid and read with each refused box; a box already on stays free to take off. The types are `CheckGridProps`, `CheckGridRow`, `CheckGridColumn` and `CheckGridState`.
+
+**`ChoiceCards` stands three across a form's wide column.** `minCardWidth` takes `sm`, 15rem, beside `md` (20rem, still the default) and `lg` (24rem). The new `density` prop takes `compact` (the default stays `comfortable`): the card's padding and the gap between cards step down from `--spacing-3` to `--spacing-2`, a picture is capped at 1.25rem (the icons package's `lg` glyph step, `GLYPH_SIZES.lg`) whatever size the caller drew it at, and the description takes the facts' size. Every line stays: the description, each fact and a disabled card's whole reason wrap in full, and nothing is clamped or dropped. The radios, their names and descriptions, the subgrid rows and the forced-colours treatment are unchanged. The new type is `ChoiceCardsDensity`.
+
+**A `ChoiceCards` name stays whole beside its tag.** Where the name and its `tag` do not fit on one line, the tag moves to a line of its own rather than breaking the name mid-phrase, and the title's lines stand at the top of their row, so a name stays level with its radio when a card beside it takes two. The name is at least the title step tall, its words centred in it, so its line is centred on the radio at both densities whether or not the tag wraps.
+
 ## Changes in 0.76.1
 
 **`SetupWizard`'s row of steps on a phone has a name of its own.** While the row hides steps it takes the keyboard to scroll, as a group named by the new `labels.stepsRow` ("All steps, scrolls sideways"), rather than by `stepsLabel` again, which already names the navigation around it and the list inside it.
