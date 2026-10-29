@@ -24,10 +24,10 @@ export interface SetupWizardLabels {
    * is already named by `stepsLabel`, and the list inside it too, so the row
    * repeating that name was the same words three times over.
    */
-  stepsRow: string;
+  stepsRow?: string;
 }
 
-const LABELS: SetupWizardLabels = {
+const LABELS: Required<SetupWizardLabels> = {
   progress: (position, total) => `Step ${position} of ${total}`,
   asideToggle: 'Preview',
   stepsRow: 'All steps, scrolls sideways',
@@ -334,8 +334,9 @@ export function SetupWizard({
                 data-fade-right={row.right ? '' : undefined}
                 onScroll={measure}
                 onFocus={(event) => {
+                  // THE ROW'S OWN STEP: an `li` around the whole wizard is not one.
                   const step = event.target.closest<HTMLElement>('li');
-                  if (event.target === event.currentTarget || !step) return;
+                  if (event.target === event.currentTarget || !step || !event.currentTarget.contains(step)) return;
                   clearOfFade(event.currentTarget, step);
                   measure();
                 }}

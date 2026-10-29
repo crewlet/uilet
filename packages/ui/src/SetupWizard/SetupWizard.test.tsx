@@ -14,7 +14,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { installAtWidth } from '../../../../apps/ui-tests/src/cascade.js';
 import type { StepperStep } from '../Stepper/index.js';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
-import { SetupWizard, type SetupWizardProps } from './index.js';
+import { SetupWizard, type SetupWizardLabels, type SetupWizardProps } from './index.js';
 
 let uninstall: (() => void) | undefined;
 afterEach(() => {
@@ -85,6 +85,21 @@ function mockRow(dir: 'ltr' | 'rtl'): Map<Element, number> {
     scrolled.set(this, value);
   });
   return scrolled;
+}
+
+/**
+ * Gives the row the fade's width as its `scroll-padding-inline`, which the
+ * stylesheet sets and jsdom cannot compute from a token.
+ */
+function withFade(px: number) {
+  const real = window.getComputedStyle.bind(window);
+  vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) => {
+    const style = real(el, pseudo);
+    if (!el.classList.contains('crewlet-setup-wizard__steps')) return style;
+    return new Proxy(style, {
+      get: (target, key) => (key === 'scrollPaddingInlineStart' ? `${px}px` : Reflect.get(target, key)),
+    });
+  });
 }
 
 /** Answers the phone query as a phone would, for the hook that reads it. */
@@ -400,7 +415,7 @@ describe('the steps on a phone', () => {
     // THE MASK IS THE SCROLLER'S, and the frame around it has none.
     expect(scroller).toMatch(/(^|\s)mask-image:/);
     expect(frame).not.toMatch(/mask/);
-    // The scroller's own outline cannot be seen through its mask, so it draws none in the focus colour.
+    // The scroller's own ring would be seen through its mask, dimmed, so it draws none in the focus colour.
     expect(rule('.crewlet-setup-wizard__steps:focus-visible')).toMatch(/outline: 2px solid transparent;/);
     expect(rule('.crewlet-setup-wizard__steps:focus-visible')).not.toMatch(/--color-focus/);
     // The frame draws the ring while the scroller has the keyboard's focus.
@@ -421,14 +436,7 @@ describe('the steps on a phone', () => {
     for (const dir of ['ltr', 'rtl'] as const) {
       const scrolled = mockRow(dir);
       asPhone();
-      const real = window.getComputedStyle.bind(window);
-      vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) => {
-        const style = real(el, pseudo);
-        if (!el.classList.contains('crewlet-setup-wizard__steps')) return style;
-        return new Proxy(style, {
-          get: (target, key) => (key === 'scrollPaddingInlineStart' ? '24px' : Reflect.get(target, key)),
-        });
-      });
+      withFade(24);
       const { container } = render(
         <div dir={dir}>
           <Wizard />
@@ -445,6 +453,34 @@ describe('the steps on a phone', () => {
       cleanup();
       vi.restoreAllMocks();
     }
+  });
+
+  test('a focus that reaches no step of the row moves nothing, even with the wizard inside a list item', () => {
+    const scrolled = mockRow('ltr');
+    asPhone();
+    withFade(24);
+    const { container } = render(
+      <ul>
+        <li>
+          <Wizard />
+        </li>
+      </ul>,
+    );
+    const scroller = container.querySelector<HTMLElement>('.crewlet-setup-wizard__steps')!;
+    const before = scrolled.get(scroller) ?? 0;
+    // A focus inside the row that is on none of its steps: the nearest list item is the page's, outside the row.
+    act(() => {
+      scroller.querySelector('ol')!.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    });
+    expect(scrolled.get(scroller) ?? 0).toBe(before);
+  });
+
+  test('a full labels object built before the row had a label still type-checks, and the row keeps its default name', () => {
+    const before: SetupWizardLabels = { progress: (at, total) => `${at}/${total}`, asideToggle: 'Preview' };
+    mockRow('ltr');
+    asPhone();
+    const { container } = render(<Wizard labels={before} />);
+    expect(within(container).getByRole('group').getAttribute('aria-label')).toBe('All steps, scrolls sideways');
   });
 
   test('a wide page has no bar: the rail says how far along itself', () => {

@@ -362,9 +362,12 @@
 
   /*
    * A row that overflows takes the keyboard, so it can be scrolled without a
-   * pointer. Its ring is the frame's, unmasked, inside the frame's edge; the
-   * scroller's own outline stays transparent, which a forced-colours mode
-   * still draws, so the ring is never lost there either.
+   * pointer. Its ring is the frame's, unmasked, inside the frame's edge, and
+   * the frame's ring is the one that carries the focus in a forced-colours
+   * mode too. The scroller's own outline is transparent only to turn off the
+   * browser's default ring, which would sit under the mask, dimmed, beside
+   * the frame's (transparent rather than none, as the kit's focus check asks
+   * of every focus style).
    */
   .crewlet-setup-wizard__steps:focus-visible {
     outline: 2px solid transparent;
