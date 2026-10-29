@@ -82,6 +82,40 @@ export const AsTiles: Story = {
  * selected edge and fill) with every option a toggle button saying whether it
  * is the one applied. Hover, press and focus are the Inbox's own.
  */
+/**
+ * An answer read back: the option chosen is marked, and the recommended one keeps
+ * its mark whether or not it was the one chosen. Chosen, the recommended option
+ * leaves the accent for the selected fill and the primary ink.
+ */
+export const RecommendedChosen: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 24, maxWidth: 520 }}>
+      <ChoiceButtons
+        label="Answered, as recommended"
+        recommended="exact"
+        chosen="exact"
+        disabledReason="This question is answered."
+        onChoose={() => {}}
+        options={[
+          { value: 'greedy', label: 'Greedy only', detail: 'Simple and fast.' },
+          { value: 'exact', label: 'Exact search', detail: 'Fewest transfers.' },
+        ]}
+      />
+      <ChoiceButtons
+        label="Answered, against the recommendation"
+        recommended="exact"
+        chosen="greedy"
+        disabledReason="This question is answered."
+        onChoose={() => {}}
+        options={[
+          { value: 'greedy', label: 'Greedy only', detail: 'Simple and fast.' },
+          { value: 'exact', label: 'Exact search', detail: 'Fewest transfers.' },
+        ]}
+      />
+    </div>
+  ),
+};
+
 export const SmallSuggestions: Story = {
   render: function Render() {
     const [chosen, setChosen] = useState<string | null>(null);
