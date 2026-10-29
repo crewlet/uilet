@@ -878,6 +878,17 @@ test('a hidden label names its field and is hidden as a whole element', () => {
 });
 
 test('a label’s action keeps its own case and spacing, not the label’s capitals', () => {
+  /*
+   * DECLARED, not only computed: text-transform and letter-spacing inherit in
+   * a browser, but the cascade under test computes an unset one as its initial
+   * value, so a computed "none" passed with the reset removed. The rule itself
+   * is what holds the action out of the label's capitals.
+   */
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Input.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const action = /\.crewlet-label__action \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(action).toMatch(/text-transform:\s*none;/);
+  expect(action).toMatch(/letter-spacing:\s*var\(--font-letter-spacing-normal\);/);
+  // And the label it sits in is the one in capitals, which the action must not take.
   const uninstall = installSheets('Input/Input.css');
   try {
     const { container } = render(
@@ -885,11 +896,8 @@ test('a label’s action keeps its own case and spacing, not the label’s capit
         {(field) => <Input id={field.id} aria-describedby={field.describedBy} />}
       </FormField>,
     );
-    const label = getComputedStyle(container.querySelector('.crewlet-label')!);
-    const action = getComputedStyle(container.querySelector('.crewlet-label__action')!);
-    expect(label.textTransform).toBe('uppercase');
-    expect(action.textTransform).toBe('none');
-    expect(action.letterSpacing).not.toBe(label.letterSpacing);
+    expect(getComputedStyle(container.querySelector('.crewlet-label')!).textTransform).toBe('uppercase');
+    expect(container.querySelector('.crewlet-label .crewlet-label__action')).not.toBeNull();
   } finally {
     uninstall();
   }
