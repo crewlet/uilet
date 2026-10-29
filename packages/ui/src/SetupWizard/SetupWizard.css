@@ -190,15 +190,22 @@
 }
 
 /*
- * THE STEP'S PRIMARY ACTION KEEPS ONE WIDTH on every step. Sized to its word,
- * "Continue" grew into "Create model" or "Save changes" on the last step, and
- * every button before it in the row moved 30px to make room: the Back a person
- * had just pressed was no longer under the pointer. 8rem holds the longest of
- * those words at the kit's medium button; a longer one still grows rather than
- * clips.
+ * THE STEP'S PRIMARY ACTION (`primaryAction`) KEEPS ONE WIDTH on every step.
+ * Sized to its word, "Continue" grew into "Create model" or "Save changes" on
+ * the last step, and every button before it in the row moved 30px to make
+ * room: the Back a person had just pressed was no longer under the pointer.
+ * 8rem holds the longest of those words at the kit's medium button; a longer
+ * one still grows rather than clips. The box carries the width and the button
+ * fills it, so the rule names the primary action rather than whichever
+ * element happens to come last.
  */
-.crewlet-setup-wizard__footer-end > :last-child {
+.crewlet-setup-wizard__primary {
+  display: flex;
   min-inline-size: 8rem;
+}
+
+.crewlet-setup-wizard__primary > * {
+  flex: 1 1 auto;
 }
 
 /*

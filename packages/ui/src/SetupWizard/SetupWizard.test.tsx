@@ -302,13 +302,28 @@ describe('the footer and a wide step', () => {
 
   test('the step’s primary action keeps one width, so a longer word on the last step moves nothing beside it', () => {
     uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
-    const { container } = render(<Wizard actions={undefined} footerStart={<button type="button">Exit</button>} />);
+    const { container } = render(
+      <Wizard footer={<button type="button">Back</button>} primaryAction={<button type="button">Continue</button>} />,
+    );
     const end = container.querySelector('.crewlet-setup-wizard__footer-end')!;
-    expect(end.lastElementChild!.textContent).toBe('Continue');
+    const primary = end.lastElementChild!;
+    // The width is on the primary action's own box, named, not on whatever comes last.
+    expect(primary.className).toBe('crewlet-setup-wizard__primary');
+    expect(primary.textContent).toBe('Continue');
     // 8rem: the longest of those words at the medium button.
-    expect(getComputedStyle(end.lastElementChild!).minInlineSize).toBe('128px');
+    expect(getComputedStyle(primary).minInlineSize).toBe('128px');
+    expect(getComputedStyle(primary.firstElementChild!).flexGrow).toBe('1');
     // Back, before it, keeps its own width.
     expect(getComputedStyle(end.firstElementChild!).minInlineSize).not.toBe('128px');
+  });
+
+  test('on a phone the primary action takes its row’s whole width', () => {
+    uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
+    asPhone();
+    const { container } = render(
+      <Wizard footer={<button type="button">Back</button>} primaryAction={<button type="button">Continue</button>} />,
+    );
+    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__primary')!).flexBasis).toBe('100%');
   });
 
   test('on a phone the actions share two rows, the primary the whole width on the last', () => {

@@ -60,8 +60,15 @@ export interface SetupWizardProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   aside?: ReactNode;
   /** What the aside is, for its complementary landmark: "Preview of your draft". Required with `aside`. */
   asideLabel?: string | undefined;
-  /** The step's actions, at the end of the footer row and held at the bottom of the view: Back, Skip for now, Continue. */
-  footer: ReactNode;
+  /** The step's other actions, at the end of the footer row before the primary one: Back, Skip for now. */
+  footer?: ReactNode;
+  /**
+   * The step's primary action, last in the footer row: Continue, Create,
+   * Save changes. It keeps one width on every step, so a longer word on the
+   * last step moves nothing beside it, and on a phone it takes the whole
+   * width of its row, under the thumb.
+   */
+  primaryAction?: ReactNode;
   /** What stands at the start of the footer row, apart from the step's actions: Exit. */
   footerStart?: ReactNode;
   /**
@@ -108,6 +115,13 @@ const PHONE = `(width < ${breakpoint.phone})`;
  * in `useMediaMatch`, the one subscription for that question; how it is laid
  * out is decided in the stylesheet, at the same breakpoint token.
  *
+ * IT FILLS ITS SCREEN when its parent is a flex column as tall as the view
+ * (an `AppShell`'s content, or any `display: flex; flex-direction: column`
+ * box with that height): it grows into the room, the content's row takes a
+ * short step's slack, and the footer rests at the bottom on every step. In a
+ * block parent it is as tall as its content, and the footer still holds at
+ * the bottom of the view while a long step scrolls under it.
+ *
  * FOCUS FOLLOWS THE STEP. When the step changes, focus moves to its heading,
  * so a keyboard or screen reader user starts on the new step rather than on a
  * Continue button that now belongs to it; the first render takes no focus.
@@ -129,6 +143,7 @@ export function SetupWizard({
   aside,
   asideLabel,
   footer,
+  primaryAction,
   footerStart,
   wide = false,
   labels,
@@ -237,7 +252,10 @@ export function SetupWizard({
 
         <footer className="crewlet-setup-wizard__footer">
           {footerStart ? <div className="crewlet-setup-wizard__footer-start">{footerStart}</div> : null}
-          <div className="crewlet-setup-wizard__footer-end">{footer}</div>
+          <div className="crewlet-setup-wizard__footer-end">
+            {footer}
+            {primaryAction ? <span className="crewlet-setup-wizard__primary">{primaryAction}</span> : null}
+          </div>
         </footer>
       </div>
     </div>
