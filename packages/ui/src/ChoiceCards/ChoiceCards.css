@@ -72,9 +72,18 @@
   background: var(--color-surface-hover);
 }
 
+/*
+ * THE CHOSEN CARD wears the soft selected tint laid OVER the raised surface,
+ * inside an edge in the accent's ink, as a chosen ChoiceButtons option does.
+ * The tint is translucent: laid on its own it let the page's ground through,
+ * darker than the raised cards beside it in dark, and the chosen card looked
+ * recessed. The edge is the accent's ink rather than the strong border,
+ * because the edge is what tells the chosen card from the others at 3:1.
+ */
 .crewlet-choice-cards__card.is-checked {
-  border-color: var(--color-border-strong);
-  background: var(--color-surface-selected);
+  border-color: var(--color-brand-accent-ink);
+  background-color: var(--color-surface-elevated);
+  background-image: linear-gradient(var(--color-surface-selected), var(--color-surface-selected));
 }
 
 /*

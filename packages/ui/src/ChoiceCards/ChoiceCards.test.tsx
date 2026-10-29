@@ -143,6 +143,23 @@ test('a disabled card stands on the page ground with a quiet radio, never raised
   }
 });
 
+test('the chosen card lays its tint over the raised surface inside an accent edge, so it never looks recessed', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    const uninstall = installThemed(theme, 'ChoiceCards/ChoiceCards.css');
+    try {
+      const { container } = render(<ChoiceCards label="Where it runs" options={OPTIONS} value="container" onChange={() => {}} />);
+      const chosen = getComputedStyle(container.querySelector('.crewlet-choice-cards__card.is-checked')!);
+      // The raised surface under the tint, as under every card beside it.
+      expect(channels(chosen.backgroundColor), theme).toEqual(channels(themeColour(theme, token('color-surface-elevated'))));
+      expect(chosen.backgroundImage, theme).toMatch(/^linear-gradient\(/);
+      expect(channels(chosen.borderColor), theme).toEqual(channels(themeColour(theme, token('color-brand-accent-ink'))));
+    } finally {
+      cleanup();
+      uninstall();
+    }
+  }
+});
+
 test('has no accessibility violations', async () => {
   const { container } = render(<ChoiceCards label="Where it runs" options={OPTIONS} value="container" onChange={() => {}} />);
   const results = await axe.run(container);
