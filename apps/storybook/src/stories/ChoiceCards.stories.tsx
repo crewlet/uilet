@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ChoiceCards, type ChoiceCardOption } from '@crewlethq/ui';
 import { VendorMark } from '@crewlethq/icons';
 import { GlobeGlyph, PackageGlyph, ServerGlyph, SquareTerminalGlyph } from '@crewlethq/icons/glyphs';
+import { themeScope } from '../themeScope';
 
 /**
  * Choices a person compares, as cards of the same lines: a picture, the
@@ -148,5 +149,23 @@ export const Simple: Story = {
         { value: 'none', label: 'Not yet', description: 'Set it up now, assign it later.' },
       ]}
     />
+  ),
+};
+
+/**
+ * A card that cannot be chosen beside two that can, in both themes: it stands
+ * on the page's own ground with a quiet radio and a muted picture, never
+ * raised like the cards that can be chosen, and its words stay legible.
+ */
+export const DisabledBesideEnabled: Story = {
+  decorators: [(Story) => <div style={{ maxWidth: 1320 }}>{Story()}</div>],
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+      {(['light', 'dark'] as const).map((theme) => (
+        <div key={theme} style={{ ...themeScope(theme), padding: 'var(--spacing-4)', background: 'var(--color-surface-background)' }}>
+          <Chooser options={PLACES} initial="container" />
+        </div>
+      ))}
+    </div>
   ),
 };

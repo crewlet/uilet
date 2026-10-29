@@ -9,9 +9,13 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
+import { channels, installThemed, themeColour } from '../../../../apps/ui-tests/src/cascade.js';
 import { ChoiceCards, type ChoiceCardOption } from './index.js';
 
 afterEach(cleanup);
+
+/** A token's custom property, built here so the stylesheet checks do not read it as one this file declares. */
+const token = (name: string) => `--${name}`;
 
 /** What a radio is described by, its parts in order. */
 const description = (radio: Element): string[] =>
@@ -117,6 +121,26 @@ test('a radio is named by its choice and tag alone, and described by the rest of
     'IsolationOwn filesystem',
   ]);
   expect(screen.getByRole('radio', { name: 'On the host' })).toBeTruthy();
+});
+
+test('a disabled card stands on the page ground with a quiet radio, never raised like an enabled one', () => {
+  // The subtle surface it took was brighter than the raised one in light, so
+  // the card that could not be chosen read as the most inviting.
+  for (const theme of ['light', 'dark'] as const) {
+    const uninstall = installThemed(theme, 'ChoiceCards/ChoiceCards.css');
+    try {
+      const { container } = render(<ChoiceCards label="Where it runs" options={OPTIONS} value={null} onChange={() => {}} />);
+      const [enabled, , disabled] = [...container.querySelectorAll('.crewlet-choice-cards__card')];
+      expect(channels(getComputedStyle(enabled!).backgroundColor), theme).toEqual(channels(themeColour(theme, token('color-surface-elevated'))));
+      expect(getComputedStyle(disabled!).backgroundColor, theme).toMatch(/^(transparent|rgba\(0, 0, 0, 0\))$/);
+      const radio = getComputedStyle(disabled!.querySelector('.crewlet-choice-cards__radio')!);
+      expect(channels(radio.borderColor), theme).toEqual(channels(themeColour(theme, token('color-border-default'))));
+      expect(channels(radio.backgroundColor), theme).toEqual(channels(themeColour(theme, token('color-surface-subtle'))));
+    } finally {
+      cleanup();
+      uninstall();
+    }
+  }
 });
 
 test('has no accessibility violations', async () => {

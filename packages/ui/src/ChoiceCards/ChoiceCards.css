@@ -77,9 +77,30 @@
   background: var(--color-surface-selected);
 }
 
+/*
+ * A CARD THAT CANNOT BE CHOSEN stands on the page's own ground and takes no
+ * hover: the subtle surface it took is brighter than the raised one in light,
+ * so the card that could not be chosen read as the most inviting. Its radio is
+ * drawn quiet, as ChoiceList's disabled radio is, and its picture muted; its
+ * words stay at full contrast, and its reason says why.
+ */
 .crewlet-choice-cards__card.is-disabled {
   cursor: not-allowed;
+  background: transparent;
+}
+
+.crewlet-choice-cards__card.is-disabled:hover {
+  background: transparent;
+}
+
+.crewlet-choice-cards__card.is-disabled .crewlet-choice-cards__radio {
+  border-color: var(--color-border-default);
   background: var(--color-surface-subtle);
+}
+
+.crewlet-choice-cards__card.is-disabled .crewlet-choice-cards__media {
+  color: var(--color-text-tertiary);
+  filter: grayscale(1);
 }
 
 /* The ring sits inside the card's own box, over its border, rather than a second line beside it. */
