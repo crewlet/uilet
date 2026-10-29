@@ -21,6 +21,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { Announcer } from '../Announcer/index.js';
 import { Checkbox } from '../Checkbox/index.js';
 import { Combobox } from '../Combobox/index.js';
@@ -874,4 +875,22 @@ test('a hidden label names its field and is hidden as a whole element', () => {
   const box = screen.getByRole('textbox', { name: 'Mission' });
   const label = document.querySelector(`label[for="${box.id}"]`)!;
   expect(label.classList.contains('crewlet-visually-hidden')).toBe(true);
+});
+
+test('a label’s action keeps its own case and spacing, not the label’s capitals', () => {
+  const uninstall = installSheets('Input/Input.css');
+  try {
+    const { container } = render(
+      <FormField label="Or another model" labelAction={<a href="https://example.com/models">Claude Code’s model names</a>}>
+        {(field) => <Input id={field.id} aria-describedby={field.describedBy} />}
+      </FormField>,
+    );
+    const label = getComputedStyle(container.querySelector('.crewlet-label')!);
+    const action = getComputedStyle(container.querySelector('.crewlet-label__action')!);
+    expect(label.textTransform).toBe('uppercase');
+    expect(action.textTransform).toBe('none');
+    expect(action.letterSpacing).not.toBe(label.letterSpacing);
+  } finally {
+    uninstall();
+  }
 });

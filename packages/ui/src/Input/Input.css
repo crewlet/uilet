@@ -546,13 +546,18 @@
 }
 
 /* Raised over the field it overhangs, so the ring a focused action draws two
-   pixels out from its edge is not painted over by the box under it. */
+   pixels out from its edge is not painted over by the box under it. The
+   action is a control, not part of the label, so it keeps its own case and
+   spacing: inside the label's capitals a link read "CLAUDE CODE'S MODEL
+   NAMES", and a button's word was set in capitals no other button has. */
 .crewlet-label__action {
   position: relative;
   z-index: var(--z-index-raised);
   display: inline-flex;
   align-items: center;
   block-size: 1lh;
+  letter-spacing: var(--font-letter-spacing-normal);
+  text-transform: none;
 }
 
 /* ── FormField ───────────────────────────────────────────────────────── */
