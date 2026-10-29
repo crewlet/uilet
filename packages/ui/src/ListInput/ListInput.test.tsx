@@ -21,7 +21,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { Announcer } from '../Announcer/index.js';
 import { InlineEditor } from '../InlineEditor/index.js';
 import { ListInput, withDraft, type ListInputHandle } from './ListInput.js';
-import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { installSheets, px, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 
 afterEach(cleanup);
 
@@ -325,8 +325,13 @@ test('a row rests with one control, and reveals the pair that reorders it on foc
   expect(screen.getByRole('button', { name: 'Move goal 1 of 2 down' })).toBeDefined();
   expect(screen.getByRole('button', { name: 'Remove goal 1 of 2' })).toBeDefined();
 
+  // Under the pointer, through the harness's stand-in for `:hover`.
+  const release = userAction(move.closest('.crewlet-list-input__item')!, 'hover');
+  expect(px(move, 'opacity')).toBe(1);
+  release();
+
   /*
-   * The reveal itself is read off the rule that performs it. jsdom does not
+   * The reveal on focus is read off the rule that performs it. jsdom does not
    * re-evaluate a dynamic pseudo-class in a computed style (measured: a
    * focused input leaves `:focus-within` unmatched), so the alternative would
    * be a case that always passes. The harness writes a selector list as one
@@ -338,7 +343,6 @@ test('a row rests with one control, and reveals the pair that reorders it on foc
     .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule)
     .filter((rule) => rule.style.opacity === '1' && rule.selectorText.includes('__move'))
     .map((rule) => rule.selectorText);
-  expect(revealed.some((selector) => selector.includes(':hover'))).toBe(true);
   expect(revealed.some((selector) => selector.includes(':focus-within'))).toBe(true);
 });
 

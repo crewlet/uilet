@@ -6,9 +6,11 @@
  * length token arrives as its number, that a selector list is scored and
  * matched member by member (jsdom does neither, and the harness corrects it),
  * that a pseudo-element is measured on a stand-in only its own rules reach
- * (jsdom computes no style for one), and that a reduced-motion query or a
- * width query is answered where it stands, so its rule wins or loses exactly
- * as it would in a browser.
+ * (jsdom computes no style for one), that a state under the pointer or a
+ * press is held on a stand-in that scores what its pseudo-class scores (jsdom
+ * matches neither outside an event's dispatch), and that a reduced-motion
+ * query or a width query is answered where it stands, so its rule wins or
+ * loses exactly as it would in a browser.
  */
 import { afterEach, expect, test } from 'vitest';
 import {
@@ -23,6 +25,10 @@ import {
   pseudoElement,
   px,
   standInPseudoElement,
+  standInUserAction,
+  themeColour,
+  themeColours,
+  userAction,
 } from './cascade.js';
 
 let remove: (() => void) | null = null;
@@ -179,6 +185,61 @@ test('a pseudo-element is written as its stand-in, and every other selector is k
   expect(standInPseudoElement('.e::placeholder')).toBe('.e::placeholder');
   const frames = '@keyframes k { 0%, 100% { opacity: 1; } }';
   expect(oneSelectorPerRule(frames, standInPseudoElement)).toBe(frames);
+});
+
+test('a state under the pointer or a press is held on a stand-in, which scores what the pseudo-class does', () => {
+  /*
+   * jsdom matches `:hover` and `:active` only while a mouse event is being
+   * dispatched, so read afterwards every rule for either loses. The stand-in
+   * ties with one class, as the pseudo-class does: `.b.c` written after
+   * `.b:hover` still wins under the pointer, and `.b:hover` written after
+   * `.b.c` wins there and nowhere else.
+   */
+  document.body.innerHTML = '<div class="row"><button class="b c"></button></div>';
+  const button = document.querySelector('button')!;
+  remove = installCss(
+    [
+      '.b:hover { color: rgb(1, 1, 1); }',
+      '.b.c { color: rgb(2, 2, 2); outline-color: rgb(3, 3, 3); }',
+      '.b:hover { outline-color: rgb(4, 4, 4); }',
+      '.row:hover .b { background-color: rgb(5, 5, 5); }',
+      '.b:active:not([disabled]) { border-top-color: rgb(6, 6, 6); }',
+    ].join('\n'),
+  );
+  const style = getComputedStyle(button);
+  expect([style.color, style.outlineColor, style.backgroundColor, style.borderTopColor]).not.toContain('rgb(4, 4, 4)');
+  const hover = userAction(button, 'hover');
+  expect(getComputedStyle(button).color).toBe('rgb(2, 2, 2)');
+  expect(getComputedStyle(button).outlineColor).toBe('rgb(4, 4, 4)');
+  // The row it is inside is under the pointer too, as a browser has it.
+  expect(getComputedStyle(button).backgroundColor).toBe('rgb(5, 5, 5)');
+  expect(getComputedStyle(button).borderTopColor).not.toBe('rgb(6, 6, 6)');
+  const press = userAction(button, 'active');
+  expect(getComputedStyle(button).borderTopColor).toBe('rgb(6, 6, 6)');
+  press();
+  hover();
+  expect(getComputedStyle(button).outlineColor).toBe('rgb(3, 3, 3)');
+  expect(document.querySelectorAll('[data-crewlet-hover], [data-crewlet-active]')).toHaveLength(0);
+});
+
+test('an alias follows the theme to the value its target holds there', () => {
+  /*
+   * `--color-surface-selected` is emitted as `var(--color-brand-accent-soft)`,
+   * and no theme declares it. Left standing in a themed sheet, the chosen fill
+   * computed as transparent and every ink was measured on the bare ground.
+   */
+  for (const theme of ['light', 'dark'] as const) {
+    expect(themeColours(theme).has('--color-surface-selected')).toBe(false);
+    expect(themeColour(theme, '--color-surface-selected')).toBe(themeColours(theme).get('--color-brand-accent-soft'));
+  }
+  expect(themeColour('light', '--color-surface-selected')).not.toBe(themeColour('dark', '--color-surface-selected'));
+  expect(() => themeColour('dark', '--color-no-such-token')).toThrow(/no colour/);
+});
+
+test('only the two pointer states are written as their stand-ins', () => {
+  expect(standInUserAction(".a:hover:not([aria-disabled='true'])")).toBe(".a[data-crewlet-hover]:not([aria-disabled='true'])");
+  expect(standInUserAction('.a:not(:active) .b:focus-visible')).toBe('.a:not([data-crewlet-active]) .b:focus-visible');
+  expect(standInUserAction('.a:active-view-transition, .a:hovered')).toBe('.a:active-view-transition, .a:hovered');
 });
 
 test('a list is split where it stands, and a keyframe list is left alone', () => {

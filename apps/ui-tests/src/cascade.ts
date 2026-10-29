@@ -33,6 +33,13 @@
  * stands in for it (`standInPseudoElement`), and a suite that measures one puts
  * that child where the pseudo-element would be (`pseudoElement`).
  *
+ * Nor does it hold a POINTER: `:hover` and `:active` match only while a mouse
+ * event is being dispatched, so read afterwards every rule for a state under
+ * the pointer or a press loses, and a suite measuring one sees the option at
+ * rest. So each goes in as an attribute that scores what the pseudo-class
+ * scores (`standInUserAction`), which a suite sets where the pointer is
+ * (`userAction`).
+ *
  * It is NOT a browser. It answers what the cascade decides, never what the
  * page looks like: a flex gap, a wrap and a scrollbar are all outside it.
  */
@@ -203,7 +210,7 @@ function resolveOwn(css: string): string {
  */
 export function installCss(css: string): () => void {
   const style = document.createElement("style");
-  style.textContent = oneSelectorPerRule(css, standInPseudoElement);
+  style.textContent = oneSelectorPerRule(css, (selector) => standInPseudoElement(standInUserAction(selector)));
   document.head.append(style);
   return () => style.remove();
 }
@@ -302,6 +309,39 @@ export function pseudoElement(host: Element, which: "before" | "after"): Element
   if (which === "before") host.prepend(standIn);
   else host.append(standIn);
   return standIn;
+}
+
+/** A state jsdom never holds outside an event's dispatch: under the pointer, or pressed. */
+export type UserAction = "hover" | "active";
+
+/** The attribute that stands in for `:hover` or `:active`. */
+const USER_ACTION = "data-crewlet";
+
+/**
+ * One selector with every `:hover` and `:active` written as the attribute that
+ * stands in for it, `[data-crewlet-hover]` and `[data-crewlet-active]`.
+ *
+ * EXACT on specificity: an attribute selector and a pseudo-class weigh the
+ * same, so every rule ties, wins and loses as it does in a browser. At rest no
+ * element carries the attribute, so nothing changes for a suite that sets
+ * none, exactly as jsdom matched neither state outside an event before.
+ */
+export function standInUserAction(selector: string): string {
+  return selector.replace(/:(hover|active)(?![\w-])/g, `[${USER_ACTION}-$1]`);
+}
+
+/**
+ * Puts the element under the pointer, or presses it, as a browser has it: the
+ * state matches the element and every element it is inside, so a rule written
+ * for a hovered row reaches the cell in it. Returns the remover.
+ */
+export function userAction(element: Element, ...actions: UserAction[]): () => void {
+  const held: Element[] = [];
+  for (let node: Element | null = element; node !== null; node = node.parentElement) held.push(node);
+  for (const node of held) for (const action of actions) node.setAttribute(`${USER_ACTION}-${action}`, "");
+  return () => {
+    for (const node of held) for (const action of actions) node.removeAttribute(`${USER_ACTION}-${action}`);
+  };
 }
 
 /** A selector list split at its own commas, not the ones inside `:not(…)` or `[…]`. */
@@ -403,7 +443,7 @@ export function installThemed(
   theme: "light" | "dark",
   ...paths: string[]
 ): () => void {
-  const table = themeTokens(theme);
+  const table = resolvedTokens(theme);
   return installCss(
     paths
       .map((path) => readFileSync(join(uiSource, path), "utf8"))
@@ -440,6 +480,35 @@ function themeTokens(theme: "light" | "dark"): ReadonlyMap<string, string> {
     walk(`--${kebab(group)}`, values);
   }
   walk("--color", tokens.themes[theme].color);
+  return found;
+}
+
+/**
+ * The same, with every ALIAS followed to the value it names, which is what a
+ * stylesheet in that theme reads. The build emits a few tokens as a `var()` of
+ * another (`--color-surface-selected` is `var(--color-brand-accent-soft)`), so
+ * in a browser they follow the theme, while the theme's own blocks do not
+ * declare them at all. Left out, every rule painting the chosen fill went in
+ * with its var() standing, computed as transparent, and a contrast read off it
+ * was measured against the bare ground rather than the fill.
+ */
+function resolvedTokens(theme: "light" | "dark"): ReadonlyMap<string, string> {
+  const found = new Map(themeTokens(theme));
+  const aliases = [
+    ...readFileSync(join(tokenDist, "tokens.css"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .matchAll(/(--[\w-]+):\s*var\((--[\w-]+)\)\s*;/g),
+  ].filter(([, name]) => !found.has(name!));
+  // An alias of an alias resolves once its target has.
+  for (let pending = aliases; pending.length > 0; ) {
+    const left = pending.filter(([, name, target]) => {
+      const value = found.get(target!);
+      if (value !== undefined) found.set(name!, value);
+      return value === undefined;
+    });
+    if (left.length === pending.length) break;
+    pending = left;
+  }
   return found;
 }
 
@@ -597,7 +666,7 @@ export function installForcedColors(
   theme: "light" | "dark",
   ...paths: string[]
 ): () => void {
-  const table = themeTokens(theme);
+  const table = resolvedTokens(theme);
   const source = paths
     .map((path) => readFileSync(join(uiSource, path), "utf8"))
     .join("\n")
@@ -743,7 +812,7 @@ export function installAtWidth(
   theme: "light" | "dark",
   ...paths: string[]
 ): () => void {
-  const table = themeTokens(theme);
+  const table = resolvedTokens(theme);
   const source = paths
     .map((path) => readFileSync(join(uiSource, path), "utf8"))
     .join("\n")
@@ -785,6 +854,16 @@ export function answerWidth(css: string, width: number): string {
       }
     },
   );
+}
+
+/**
+ * One colour as a stylesheet in that theme reads it, an alias followed to the
+ * value it names: what `installThemed` puts in place of its `var()`.
+ */
+export function themeColour(theme: "light" | "dark", name: string): string {
+  const value = resolvedTokens(theme).get(name);
+  if (value === undefined) throw new Error(`${theme} has no colour ${name}`);
+  return value;
 }
 
 /**
