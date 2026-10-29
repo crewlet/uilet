@@ -300,25 +300,67 @@
 
   /*
    * THE ROW OF STEPS SCROLLS RATHER THAN WRAPS: eight steps wrapped into three
-   * rows of pills between the position line and the step. It is one row that
-   * scrolls sideways, with the current step brought into view (SetupWizard.tsx),
-   * and room above and under the pills for the 24px band a pill that can be
-   * picked is pressed through, which a scroller would otherwise clip.
+   * rows of pills between the position line and the step. The row is as wide
+   * as its steps, inside a scroller of the wizard's own that brings the
+   * current step into view (SetupWizard.tsx), with room above and under the
+   * pills for the 24px band a pill that can be picked is pressed through,
+   * which the scroller would otherwise clip.
+   *
+   * THE SCROLLER SAYS IT SCROLLS: with its bar hidden, an edge that hides
+   * steps fades out, at whichever side has steps beyond it, so a row cut at
+   * the screen's edge reads as more to come rather than as the last step.
    */
-  .crewlet-setup-wizard__rail .crewlet-stepper {
-    position: relative;
-    flex-wrap: nowrap;
+  .crewlet-setup-wizard__steps {
+    --crewlet-setup-wizard-fade: var(--spacing-6);
+    --crewlet-setup-wizard-fade-left: 0px;
+    --crewlet-setup-wizard-fade-right: 0px;
+
+    min-width: 0;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    padding-block: calc((var(--size-target-min) - 20px) / 2);
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--crewlet-setup-wizard-fade-left),
+      #000 calc(100% - var(--crewlet-setup-wizard-fade-right)),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--crewlet-setup-wizard-fade-left),
+      #000 calc(100% - var(--crewlet-setup-wizard-fade-right)),
+      transparent
+    );
   }
 
-  .crewlet-setup-wizard__rail .crewlet-stepper::-webkit-scrollbar {
+  .crewlet-setup-wizard__steps::-webkit-scrollbar {
     display: none;
   }
 
-  .crewlet-setup-wizard__rail .crewlet-stepper__step {
+  .crewlet-setup-wizard__steps[data-fade-left] {
+    --crewlet-setup-wizard-fade-left: var(--crewlet-setup-wizard-fade);
+  }
+
+  .crewlet-setup-wizard__steps[data-fade-right] {
+    --crewlet-setup-wizard-fade-right: var(--crewlet-setup-wizard-fade);
+  }
+
+  /* A row that overflows takes the keyboard, so it can be scrolled without a pointer; it draws no edge, so the ring sits inside it. */
+  .crewlet-setup-wizard__steps:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: var(--size-focus-ring-inset-offset);
+  }
+
+  .crewlet-setup-wizard__steps .crewlet-stepper {
+    flex-wrap: nowrap;
+    inline-size: max-content;
+    max-inline-size: none;
+    padding-block: calc((var(--size-target-min) - var(--crewlet-stepper-pill-height)) / 2);
+  }
+
+  .crewlet-setup-wizard__steps .crewlet-stepper__step {
     flex: none;
   }
 
@@ -369,18 +411,19 @@
     display: contents;
   }
 
-  .crewlet-setup-wizard__footer-end > :first-child {
+  .crewlet-setup-wizard__footer-end > :first-child:not(.crewlet-setup-wizard__primary) {
     margin-inline-start: auto;
   }
 
-  .crewlet-setup-wizard__footer-end > :last-child {
+  /* The primary action, named, takes the second row; the actions given in `footer` share the first, whatever their count. */
+  .crewlet-setup-wizard__primary {
     flex: 1 1 100%;
   }
 
   /* The first row's last action ends it, at the row's end: a ghost there is
      pulled out as "Exit" is at its start, so the two words stand level with
      the primary's edges under them. */
-  .crewlet-setup-wizard__footer-end > .crewlet-btn--ghost.crewlet-btn--medium:nth-last-child(2) {
+  .crewlet-setup-wizard__footer-end > .crewlet-btn--ghost.crewlet-btn--medium:has(+ .crewlet-setup-wizard__primary) {
     margin-inline-end: calc(-1 * (var(--spacing-3) + 1px));
   }
 }

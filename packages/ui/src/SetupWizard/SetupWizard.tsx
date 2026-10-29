@@ -1,4 +1,4 @@
-import { createElement, useEffect, useId, useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
+import { createElement, useCallback, useEffect, useId, useRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
 import { Disclosure } from '../Disclosure/index.js';
 import { useMediaMatch } from '../MediaMatch/index.js';
@@ -84,6 +84,30 @@ export interface SetupWizardProps extends Omit<HTMLAttributes<HTMLDivElement>, '
 /** Under this the rail becomes a row of steps above the content, and the aside a disclosure. */
 const PHONE = `(width < ${breakpoint.phone})`;
 
+/** The phone's row of steps: whether it overflows its scroller, and which physical edges hide steps. */
+interface StepRow {
+  overflows: boolean;
+  left: boolean;
+  right: boolean;
+}
+
+const STILL_ROW: StepRow = { overflows: false, left: false, right: false };
+
+/**
+ * Which edges of a scroller hide part of its row, read off the drawn boxes of
+ * its steps against its own, so it holds in either direction.
+ * Half a pixel of slack absorbs a fractional layout.
+ */
+function stepRowOf(scroller: HTMLElement): StepRow {
+  const steps = scroller.querySelectorAll<HTMLElement>('li');
+  if (steps.length === 0) return STILL_ROW;
+  const box = scroller.getBoundingClientRect();
+  const boxes = [...steps].map((step) => step.getBoundingClientRect());
+  const left = Math.min(...boxes.map((r) => r.left)) < box.left - 0.5;
+  const right = Math.max(...boxes.map((r) => r.right)) > box.right + 0.5;
+  return { overflows: scroller.scrollWidth > scroller.clientWidth + 0.5 || left || right, left, right };
+}
+
 /**
  * A setup a person walks step by step on a page of its own: a brand, an
  * integration, a company.
@@ -110,10 +134,12 @@ const PHONE = `(width < ${breakpoint.phone})`;
  * page's and not the window's, as in `AsideLayout`. Under the
  * phone breakpoint the rail becomes one row of steps above the content that
  * scrolls sideways with the current step kept in view (eight steps wrapped
- * into three rows of pills), under a line that says "Step 3 of 6 · Colours"
- * and a thin bar of how far along, the aside folds into a
- * disclosure, so the fields come first, and the footer's actions share two
- * rows with the last of them, the primary, the whole width. Which element a phone draws is decided
+ * into three rows of pills), faded at an edge that hides steps and reachable
+ * by the keyboard while it does, under a line that says "Step 3 of 6 ·
+ * Colours" and a thin bar of how far along; the aside folds into a
+ * disclosure, so the fields come first; and the footer's actions share two
+ * rows, the primary action (`primaryAction`) the whole width of the second.
+ * Which element a phone draws is decided
  * in `useMediaMatch`, the one subscription for that question; how it is laid
  * out is decided in the stylesheet, at the same breakpoint token.
  *
@@ -160,7 +186,8 @@ export function SetupWizard({
   const contentLevel = nextHeadingLevel(stepLevel);
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const railRef = useRef<HTMLElement>(null);
+  const stepsRef = useRef<HTMLDivElement>(null);
+  const [row, setRow] = useState<StepRow>(STILL_ROW);
   const shown = useRef(current);
 
   useEffect(() => {
@@ -169,14 +196,35 @@ export function SetupWizard({
     headingRef.current?.focus();
   }, [current]);
 
+  // WHICH EDGES OF THE PHONE'S ROW HIDE STEPS, and whether it scrolls at all, read off the drawn boxes.
+  const measure = useCallback(() => {
+    const scroller = stepsRef.current;
+    if (!scroller) return;
+    const next = stepRowOf(scroller);
+    setRow((was) => (was.overflows === next.overflows && was.left === next.left && was.right === next.right ? was : next));
+  }, []);
+
   // ON A PHONE THE CURRENT STEP STAYS IN VIEW in the row of steps, which scrolls rather than wraps.
   useEffect(() => {
     if (!phone) return;
-    const list = railRef.current?.querySelector<HTMLElement>('.crewlet-stepper');
-    const here = list?.querySelector<HTMLElement>('[aria-current="step"]')?.closest<HTMLElement>('li');
-    if (!list || !here) return;
-    list.scrollLeft = here.offsetLeft - (list.clientWidth - here.offsetWidth) / 2;
-  }, [phone, current]);
+    const scroller = stepsRef.current;
+    const here = scroller?.querySelector<HTMLElement>('[aria-current="step"]')?.closest<HTMLElement>('li');
+    if (!scroller || !here) return;
+    // BY THE DRAWN BOXES, never by offsets: an offset counts from the start
+    // edge, and in a right-to-left page scrollLeft runs from zero down, so a
+    // position built from offsets scrolled the other way. The distance between
+    // the two centres is the same physical distance in either direction.
+    const box = scroller.getBoundingClientRect();
+    const step = here.getBoundingClientRect();
+    scroller.scrollLeft += step.left + step.width / 2 - (box.left + box.width / 2);
+    measure();
+  }, [phone, current, measure]);
+
+  useEffect(() => {
+    if (!phone) return;
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [phone, measure]);
 
   if (aside !== undefined && aside !== null && !asideLabel) {
     throw new TypeError('SetupWizard needs an asideLabel with an aside: it names the aside’s landmark');
@@ -231,7 +279,7 @@ export function SetupWizard({
           />
         </div>
 
-        <nav ref={railRef} className="crewlet-setup-wizard__rail" aria-label={stepsLabel}>
+        <nav className="crewlet-setup-wizard__rail" aria-label={stepsLabel}>
           {phone && step ? (
             <>
               <p className="crewlet-setup-wizard__position">
@@ -247,7 +295,23 @@ export function SetupWizard({
               />
             </>
           ) : null}
-          {stepper}
+          {phone ? (
+            // A ROW THAT OVERFLOWS IS A SCROLLER THE KEYBOARD CAN REACH: it
+            // takes focus and a name only while it hides steps, since a pill
+            // that only labels its step takes no focus of its own.
+            <div
+              ref={stepsRef}
+              className="crewlet-setup-wizard__steps"
+              data-fade-left={row.left ? '' : undefined}
+              data-fade-right={row.right ? '' : undefined}
+              onScroll={measure}
+              {...(row.overflows ? { tabIndex: 0, role: 'group', 'aria-label': stepsLabel } : {})}
+            >
+              {stepper}
+            </div>
+          ) : (
+            stepper
+          )}
         </nav>
 
         <section className="crewlet-setup-wizard__content" aria-labelledby={headingId}>
