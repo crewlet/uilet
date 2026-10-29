@@ -43,8 +43,15 @@ export interface ChoiceCardOption {
   disabledReasonAt?: number | undefined;
 }
 
-/** The narrowest a card stands: `md` 20rem, `lg` 24rem. */
-export type ChoiceCardsMinWidth = 'md' | 'lg';
+/** The narrowest a card stands: `sm` 15rem, `md` 20rem, `lg` 24rem. */
+export type ChoiceCardsMinWidth = 'sm' | 'md' | 'lg';
+
+/**
+ * How much room a card's lines take: `comfortable`, the default, or
+ * `compact`, tighter padding and gaps and a smaller picture, for a set of
+ * three that has to stand side by side in a form's wide column.
+ */
+export type ChoiceCardsDensity = 'comfortable' | 'compact';
 
 export interface ChoiceCardsProps {
   /** Names the group for a screen reader. */
@@ -54,11 +61,19 @@ export interface ChoiceCardsProps {
   value: string | null;
   onChange: (value: string) => void;
   /**
-   * The narrowest a card stands, which decides how many share a row: `md`
-   * (20rem) for a short name and facts, `lg` (24rem) for choices with more to
-   * say. A form's column holds one to a row; a wider surface two or three.
+   * The narrowest a card stands, which decides how many share a row: `sm`
+   * (15rem) for three compact cards across a form's wide column, `md` (20rem)
+   * for a short name and facts, `lg` (24rem) for choices with more to say. A
+   * form's column holds one to a row; a wider surface two or three. Under any
+   * of them a phone's width stacks the cards, one to a row.
    */
   minCardWidth?: ChoiceCardsMinWidth | undefined;
+  /**
+   * How much room each card's lines take. `compact` keeps every line (the
+   * description, each fact, a disabled card's whole reason) and only takes
+   * less room around them; nothing is clamped or dropped.
+   */
+  density?: ChoiceCardsDensity | undefined;
   className?: string | undefined;
 }
 
@@ -84,7 +99,15 @@ export interface ChoiceCardsProps {
  * A FACT'S STATE IS NEVER ONLY A COLOUR: the dot sits beside words that say
  * it ("Docker 24.0.7 found", "E2B key not set").
  */
-export function ChoiceCards({ label, options, value, onChange, minCardWidth = 'md', className }: ChoiceCardsProps) {
+export function ChoiceCards({
+  label,
+  options,
+  value,
+  onChange,
+  minCardWidth = 'md',
+  density = 'comfortable',
+  className,
+}: ChoiceCardsProps) {
   const name = useId();
   // EVERY CARD SPANS THE SAME ROWS: the name, a description row where any card
   // has one, the most facts any card has, and a reason line where one has it.
@@ -99,7 +122,12 @@ export function ChoiceCards({ label, options, value, onChange, minCardWidth = 'm
     <div
       role="radiogroup"
       aria-label={label}
-      className={cx('crewlet-choice-cards', `crewlet-choice-cards--${minCardWidth}`, className)}
+      className={cx(
+        'crewlet-choice-cards',
+        `crewlet-choice-cards--${minCardWidth}`,
+        density === 'compact' && 'crewlet-choice-cards--compact',
+        className,
+      )}
       style={rows}
     >
       {options.map((option, index) => {

@@ -13,9 +13,9 @@
  * with Runs. Facts run together as one line of meta wrapped differently in
  * each card, and three cards read as three different shapes.
  *
- * A card is at least 20rem (24rem at `lg`), the width a fact's name and a
- * short value keep to one line in: a form's column holds one to a row, and a
- * wider surface two or three, aligned.
+ * A card is at least 20rem (15rem at `sm`, 24rem at `lg`), the width a fact's
+ * name and a short value keep to one line in: a form's column holds one to a
+ * row, and a wider surface two or three, aligned.
  */
 .crewlet-choice-cards {
   --crewlet-choice-cards-min: 20rem;
@@ -30,6 +30,10 @@
   grid-auto-rows: auto;
   column-gap: var(--spacing-3);
   row-gap: 0;
+}
+
+.crewlet-choice-cards--sm {
+  --crewlet-choice-cards-min: 15rem;
 }
 
 .crewlet-choice-cards--lg {
@@ -272,6 +276,40 @@
   font-size: var(--font-size-xs);
 }
 
+
+/*
+ * COMPACT: the same lines in less room, for three cards side by side in a
+ * form's wide column. The padding and the gaps between cards step down one
+ * (a card's own lines already keep the smallest), the picture is capped at
+ * the small mark size, and the description takes the facts' size. Every line stays: a description
+ * and a disabled card's reason wrap in full, since a reason cut short is a
+ * dead end with no way to read why.
+ */
+.crewlet-choice-cards--compact {
+  /* The largest picture a compact card draws: a product's mark at the small step. */
+  --crewlet-choice-cards-compact-media: 1.25rem;
+  column-gap: var(--spacing-2);
+}
+
+.crewlet-choice-cards--compact .crewlet-choice-cards__card {
+  margin-block-end: var(--spacing-2);
+  padding: var(--spacing-2);
+}
+
+.crewlet-choice-cards--compact .crewlet-choice-cards__radio {
+  inset-block-start: calc(var(--spacing-2) + (var(--crewlet-choice-cards-title) - var(--crewlet-choice-cards-radio)) / 2);
+  inset-inline-end: var(--spacing-2);
+}
+
+/* The picture at most the small mark size, whatever size the caller drew it at, a wrapped mark included. */
+.crewlet-choice-cards--compact .crewlet-choice-cards__media svg {
+  inline-size: var(--crewlet-choice-cards-compact-media);
+  block-size: var(--crewlet-choice-cards-compact-media);
+}
+
+.crewlet-choice-cards--compact .crewlet-choice-cards__description {
+  font-size: var(--font-size-xs);
+}
 
 /*
  * WHERE SUBGRID IS SUPPORTED, every card spans the same rows of the group and

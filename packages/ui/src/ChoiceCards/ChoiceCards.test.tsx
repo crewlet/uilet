@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
-import { channels, installThemed, themeColour } from '../../../../apps/ui-tests/src/cascade.js';
+import { channels, installThemed, px, themeColour } from '../../../../apps/ui-tests/src/cascade.js';
 import { ChoiceCards, type ChoiceCardOption } from './index.js';
 
 afterEach(cleanup);
@@ -153,11 +153,87 @@ test('a reason given on a fact’s line keeps the disabled card to the same line
   expect(description('In E2B')).toBe('A cloud sandbox. Needs E2B key not set. Add E2B_API_KEY. Isolation A separate machine');
 });
 
-test('the narrowest a card stands is the prop that says so', () => {
+test('the narrowest a card stands is the prop that says so, sm, md or lg', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const [width, rem] of [['sm', '15rem'], ['md', '20rem'], ['lg', '24rem']] as const) {
+    const { container } = render(
+      <ChoiceCards label="Cards" options={OPTIONS} value={null} onChange={() => {}} minCardWidth={width} />,
+    );
+    expect(container.querySelector('.crewlet-choice-cards')!.classList.contains(`crewlet-choice-cards--${width}`), width).toBe(true);
+    cleanup();
+    // md is the group's own default; sm and lg each set the property again.
+    const rule = width === 'md' ? /\.crewlet-choice-cards \{([^}]*)\}/.exec(css)?.[1] : new RegExp(`\\.crewlet-choice-cards--${width} \\{([^}]*)\\}`).exec(css)?.[1];
+    expect(rule, width).toMatch(new RegExp(`--crewlet-choice-cards-min:\\s*${rem};`));
+  }
+});
+
+/**
+ * COMPACT TAKES LESS ROOM AND KEEPS EVERY LINE: three cards have to stand
+ * side by side in a form's wide column, and a disabled card's reason is still
+ * the one way it says why, so nothing is clamped or dropped to fit.
+ */
+test('compact takes less room around the same lines, and keeps every line whole', () => {
+  const uninstall = installThemed('light', 'ChoiceCards/ChoiceCards.css');
+  try {
+    const glyph = <svg width="24" height="24" aria-hidden />;
+    const withMedia = OPTIONS.map((o) => ({ ...o, media: glyph }));
+    const measure = (density: 'comfortable' | 'compact') => {
+      const { container } = render(
+        <ChoiceCards label="Cards" options={withMedia} value="container" onChange={() => {}} density={density} />,
+      );
+      const card = container.querySelector('.crewlet-choice-cards__card')!;
+      const out = {
+        padding: px(card, 'padding-top'),
+        margin: px(card, 'margin-block-end'),
+        gap: px(container.querySelector('.crewlet-choice-cards')!, 'column-gap'),
+        description: px(card.querySelector('.crewlet-choice-cards__description')!, 'font-size'),
+        text: container.textContent,
+        compact: container.querySelector('.crewlet-choice-cards')!.classList.contains('crewlet-choice-cards--compact'),
+      };
+      cleanup();
+      return out;
+    };
+    const roomy = measure('comfortable');
+    const tight = measure('compact');
+    expect(roomy.compact).toBe(false);
+    expect(tight.compact).toBe(true);
+    expect(tight.padding).toBeGreaterThan(0);
+    expect(tight.padding).toBeLessThan(roomy.padding);
+    expect(tight.margin).toBeLessThan(roomy.margin);
+    expect(tight.gap).toBeLessThan(roomy.gap);
+    expect(tight.description).toBeLessThan(roomy.description);
+    // EVERY LINE STAYS: the same words, the reason whole.
+    expect(tight.text).toBe(roomy.text);
+    expect(tight.text).toContain('Add E2B_API_KEY under Settings, Secrets.');
+  } finally {
+    uninstall();
+  }
+  // NOTHING IN COMPACT CLAMPS: no ellipsis or line clamp on any of its rules.
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const compact = [...css.matchAll(/\.crewlet-choice-cards--compact[^{]*\{([^}]*)\}/g)].map((m) => m[1]).join('');
+  expect(compact).not.toMatch(/line-clamp|text-overflow|white-space:\s*nowrap|display:\s*none/);
+  // The picture is capped at the small mark size, both ways, whatever size the caller drew it at.
+  // (jsdom resolves no custom property, so the rule is read rather than computed.)
+  expect(css).toMatch(/--crewlet-choice-cards-compact-media:\s*1\.25rem;/);
+  const media = /\.crewlet-choice-cards--compact \.crewlet-choice-cards__media svg \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(media).toMatch(/inline-size:\s*var\(--crewlet-choice-cards-compact-media\);/);
+  expect(media).toMatch(/block-size:\s*var\(--crewlet-choice-cards-compact-media\);/);
+});
+
+test('a tag that does not fit beside the name takes a line of its own, the name whole and level with its radio', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  expect(/\.crewlet-choice-cards__title \{([^}]*)\}/.exec(css)?.[1]).toMatch(/flex-wrap:\s*wrap;/);
+  // Its lines stand at the row's top: a taller title beside it never moves the name off its radio's line.
+  expect(/\.crewlet-choice-cards__title \{([^}]*)\}/.exec(css)?.[1]).toMatch(/align-content:\s*flex-start;/);
+  expect(/\.crewlet-choice-cards__tag \{([^}]*)\}/.exec(css)?.[1]).toMatch(/white-space:\s*nowrap;/);
+});
+
+test('compact cards have no accessibility violations either', async () => {
   const { container } = render(
-    <ChoiceCards label="Wide" options={OPTIONS} value={null} onChange={() => {}} minCardWidth="lg" />,
+    <ChoiceCards label="Where it runs" options={OPTIONS} value="container" onChange={() => {}} minCardWidth="sm" density="compact" />,
   );
-  expect(container.querySelector('.crewlet-choice-cards')!.classList.contains('crewlet-choice-cards--lg')).toBe(true);
+  const result = await axe.run(container);
+  expect(result.violations).toEqual([]);
 });
 
 test('every card spans the same rows of the group and lays its lines on them, so cards side by side stand level', () => {
@@ -286,12 +362,4 @@ test('the chosen card keeps its tag edged in the strong border, which the tint d
       uninstall();
     }
   }
-});
-
-test('a tag that does not fit beside the name takes a line of its own, the name whole and level with its radio', () => {
-  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-  expect(/\.crewlet-choice-cards__title \{([^}]*)\}/.exec(css)?.[1]).toMatch(/flex-wrap:\s*wrap;/);
-  // Its lines stand at the row's top: a taller title beside it never moves the name off its radio's line.
-  expect(/\.crewlet-choice-cards__title \{([^}]*)\}/.exec(css)?.[1]).toMatch(/align-content:\s*flex-start;/);
-  expect(/\.crewlet-choice-cards__tag \{([^}]*)\}/.exec(css)?.[1]).toMatch(/white-space:\s*nowrap;/);
 });

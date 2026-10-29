@@ -205,6 +205,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.77.0
+
+**`ChoiceCards` stands three across a form's wide column.** `minCardWidth` takes `sm`, 15rem, beside `md` (20rem, still the default) and `lg` (24rem). The new `density` prop takes `compact` (the default stays `comfortable`): the card's padding and the gap between cards step down from `--spacing-3` to `--spacing-2`, a picture is capped at 1.25rem whatever size the caller drew it at, and the description takes the facts' size. Every line stays: the description, each fact and a disabled card's whole reason wrap in full, and nothing is clamped or dropped. The radios, their names and descriptions, the subgrid rows and the forced-colours treatment are unchanged. The new type is `ChoiceCardsDensity`.
+
+**A `ChoiceCards` name stays whole beside its tag.** Where the name and its `tag` do not fit on one line, the tag moves to a line of its own rather than breaking the name mid-phrase, and the title's lines stand at the top of their row, so a name stays level with its radio when a card beside it takes two.
+
 ## Changes in 0.76.1
 
 **`SetupWizard`'s row of steps on a phone has a name of its own.** While the row hides steps it takes the keyboard to scroll, as a group named by the new `labels.stepsRow` ("All steps, scrolls sideways"), rather than by `stepsLabel` again, which already names the navigation around it and the list inside it.

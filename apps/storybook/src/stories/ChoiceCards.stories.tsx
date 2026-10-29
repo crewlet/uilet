@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ChoiceCards, type ChoiceCardOption } from '@crewlethq/ui';
+import { ChoiceCards, type ChoiceCardOption, type ChoiceCardsDensity, type ChoiceCardsMinWidth } from '@crewlethq/ui';
 import { VendorMark } from '@crewlethq/icons';
 import { GlobeGlyph, PackageGlyph, ServerGlyph, SquareTerminalGlyph } from '@crewlethq/icons/glyphs';
 import { themeScope } from '../themeScope';
@@ -94,9 +94,28 @@ const CLIS: ChoiceCardOption[] = [
   },
 ];
 
-function Chooser({ options, initial, minCardWidth }: { options: ChoiceCardOption[]; initial: string; minCardWidth?: 'md' | 'lg' }) {
+function Chooser({
+  options,
+  initial,
+  minCardWidth,
+  density,
+}: {
+  options: ChoiceCardOption[];
+  initial: string;
+  minCardWidth?: ChoiceCardsMinWidth;
+  density?: ChoiceCardsDensity;
+}) {
   const [value, setValue] = useState<string | null>(initial);
-  return <ChoiceCards label="Choose one" options={options} value={value} onChange={setValue} minCardWidth={minCardWidth} />;
+  return (
+    <ChoiceCards
+      label="Choose one"
+      options={options}
+      value={value}
+      onChange={setValue}
+      minCardWidth={minCardWidth}
+      density={density}
+    />
+  );
 }
 
 /** Three places, the company default tagged, one unavailable: its Needs line says why, read with its radio, and it keeps the same lines as the others. */
@@ -128,6 +147,40 @@ export const SideBySide: Story = {
 export const PlacesSideBySide: Story = {
   parameters: { frameWidth: 1080 },
   render: () => <Chooser options={PLACES} initial="container" />,
+};
+
+/**
+ * COMPACT, THREE ACROSS A FORM'S WIDE COLUMN: `minCardWidth="sm"` (15rem) and
+ * `density="compact"`. Less padding, smaller gaps and the small picture, with
+ * every line kept: the description, each fact, and the unavailable card's
+ * whole reason on its Needs line. Narrower than three cards, they wrap; at a
+ * phone's width they stack one to a row.
+ */
+export const CompactThreeAcross: Story = {
+  parameters: { frameWidth: 800 },
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)' }}>
+      <Chooser options={CLIS} initial="claude-code" minCardWidth="sm" density="compact" />
+      <Chooser options={PLACES} initial="container" minCardWidth="sm" density="compact" />
+    </div>
+  ),
+};
+
+/**
+ * Compact in both themes, one card unavailable: the reason reads whole, in
+ * the same ink as at the comfortable density.
+ */
+export const CompactBothThemes: Story = {
+  parameters: { frameWidth: 1680 },
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+      {(['light', 'dark'] as const).map((theme) => (
+        <div key={theme} style={{ ...themeScope(theme), padding: 'var(--spacing-4)', background: 'var(--color-surface-background)' }}>
+          <Chooser options={PLACES} initial="container" minCardWidth="sm" density="compact" />
+        </div>
+      ))}
+    </div>
+  ),
 };
 
 /** Words only: a name and one line of description, no picture and no facts. */
