@@ -8,7 +8,7 @@ import { themeScope } from '../themeScope';
  * system draws somebody else's colours.
  *
  * Both themes side by side, because most of these are a fixed hue that has to
- * hold on either ground, while GitHub's and Notion's are the current text
+ * hold on either ground, while GitHub's, Notion's and OpenCode's are the current text
  * colour and invert with the theme. The muted state is the answer to
  * "available, not connected", and it drains the mark's own colour rather than
  * inventing a second palette for somebody else's brand.
@@ -120,6 +120,33 @@ export const OneWeight: StoryObj = {
                 <span style={caption}>{vendor}</span>
               </span>
             ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * The coding CLIs a model runs, each mark beside the CLI's own name, in both
+ * themes: Claude's Clay spark holds on either ground, and OpenCode's mark
+ * takes the text colour.
+ */
+export const CodingCLIs: StoryObj = {
+  render: () => (
+    <div style={{ padding: 'var(--spacing-5)', display: 'grid', gap: 'var(--spacing-5)', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+      {(['light', 'dark'] as const).map((theme) => (
+        <div key={theme} style={{ ...panel, ...themeScope(theme) }}>
+          <p style={caption}>{theme}</p>
+          <div style={row}>
+            <span style={label}>
+              <VendorMark vendor="claude" size={20} />
+              Claude Code
+            </span>
+            <span style={label}>
+              <VendorMark vendor="opencode" size={20} />
+              OpenCode
+            </span>
           </div>
         </div>
       ))}
