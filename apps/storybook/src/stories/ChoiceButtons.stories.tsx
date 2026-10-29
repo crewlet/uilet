@@ -76,46 +76,60 @@ export const AsTiles: Story = {
 };
 
 /**
+ * An answer read back: the chosen option stands on the selected fill inside an
+ * edge in the accent's ink, with a check mark, so the choice is never colour
+ * alone. The recommended option keeps its mark whether or not it was chosen;
+ * against the recommendation it is drawn as a plain option, so the chosen one
+ * is the most prominent. The same cues in the small size, and, last, the live
+ * question nobody has answered, where the recommended option keeps the accent.
+ */
+export const RecommendedChosen: Story = {
+  render: () => {
+    const options = [
+      { value: 'greedy', label: 'Greedy only', detail: 'Simple and fast.' },
+      { value: 'exact', label: 'Exact search', detail: 'Fewest transfers.' },
+    ];
+    return (
+      <div style={{ display: 'grid', gap: 24, maxWidth: 520 }}>
+        <ChoiceButtons
+          label="Answered, as recommended"
+          recommended="exact"
+          chosen="exact"
+          disabledReason="This question is answered."
+          onChoose={() => {}}
+          options={options}
+        />
+        <ChoiceButtons
+          label="Answered, against the recommendation"
+          recommended="exact"
+          chosen="greedy"
+          disabledReason="This question is answered."
+          onChoose={() => {}}
+          options={options}
+        />
+        <ChoiceButtons
+          label="Answered, small"
+          size="sm"
+          recommended="exact"
+          chosen="greedy"
+          disabledReason="This question is answered."
+          onChoose={() => {}}
+          options={options}
+        />
+        <ChoiceButtons label="Not answered yet" recommended="exact" onChoose={() => {}} options={options} />
+      </div>
+    );
+  },
+};
+
+/**
  * SMALL, WITH A PICTURE AND A CHOICE: the same option, compact, in a row that
  * wraps, as the brand setup offers shades for a low-contrast colour. Each
  * leads with a `ColorChip`, and `chosen` keeps the applied one marked (the
- * selected edge and fill) with every option a toggle button saying whether it
- * is the one applied. Hover, press and focus are the Inbox's own.
+ * selected fill, an edge in the accent's ink and a check mark) with every
+ * option a toggle button saying whether it is the one applied. Hover, press
+ * and focus are the Inbox's own.
  */
-/**
- * An answer read back: the option chosen is marked, and the recommended one keeps
- * its mark whether or not it was the one chosen. Chosen, the recommended option
- * leaves the accent for the selected fill and the primary ink.
- */
-export const RecommendedChosen: Story = {
-  render: () => (
-    <div style={{ display: 'grid', gap: 24, maxWidth: 520 }}>
-      <ChoiceButtons
-        label="Answered, as recommended"
-        recommended="exact"
-        chosen="exact"
-        disabledReason="This question is answered."
-        onChoose={() => {}}
-        options={[
-          { value: 'greedy', label: 'Greedy only', detail: 'Simple and fast.' },
-          { value: 'exact', label: 'Exact search', detail: 'Fewest transfers.' },
-        ]}
-      />
-      <ChoiceButtons
-        label="Answered, against the recommendation"
-        recommended="exact"
-        chosen="greedy"
-        disabledReason="This question is answered."
-        onChoose={() => {}}
-        options={[
-          { value: 'greedy', label: 'Greedy only', detail: 'Simple and fast.' },
-          { value: 'exact', label: 'Exact search', detail: 'Fewest transfers.' },
-        ]}
-      />
-    </div>
-  ),
-};
-
 export const SmallSuggestions: Story = {
   render: function Render() {
     const [chosen, setChosen] = useState<string | null>(null);
