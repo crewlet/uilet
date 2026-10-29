@@ -106,3 +106,33 @@ function WhoBuildsIt() {
 }
 
 export const WithPictures: Story = { render: () => <WhoBuildsIt /> };
+
+/**
+ * Where it runs: a place this node cannot use stays in the list, disabled,
+ * with why and the fix on its detail line (`disabled`, `disabledReason`).
+ */
+function WhereItRuns() {
+  const [value, setValue] = useState<string | null>('container');
+  return (
+    <div style={{ maxWidth: 560 }}>
+      <ChoiceList
+        label="Where coding runs happen"
+        value={value}
+        onChange={setValue}
+        options={[
+          { value: 'direct', label: 'On this engine’s host', detail: 'Nothing more needed · Shares the host · Instant' },
+          { value: 'container', label: 'In a container', detail: 'Docker 24.0.7 found · Own filesystem and network · ~2 s', tag: 'Company default' },
+          {
+            value: 'e2b',
+            label: 'In E2B',
+            detail: 'E2B key not set · A separate machine · ~5 s',
+            disabled: true,
+            disabledReason: 'Add E2B_API_KEY under Settings, Secrets.',
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
+export const WithUnavailableChoice: Story = { render: () => <WhereItRuns /> };

@@ -44,6 +44,9 @@ const CHOSEN: ReadonlyArray<
   ['DatasetSource/DatasetSource.css', '.crewlet-dataset-source--selected', 'border', null],
   ['DatasetSource/DatasetSource.css', '.crewlet-dataset-source--selected .crewlet-dataset-source__summary', null, 'background'],
   ['ChoiceList/ChoiceList.css', '.crewlet-choice-list__row.is-checked', null, 'background'],
+  // A chosen card: its tint over its own raised surface, edged in the accent's
+  // ink, which holds the 3:1 the edge alone must clear.
+  ['ChoiceCards/ChoiceCards.css', '.crewlet-choice-cards__card.is-checked', 'ink', 'image'],
   // A suggestion applied stays on screen, chosen; held under the pointer and
   // the press. Its edge is the accent's ink: it is a toggle's pressed state,
   // which WCAG 1.4.11 holds to 3:1, and the tint does not clear that.
@@ -112,6 +115,8 @@ test('every component that draws a chosen option keeps a 2px focus ring for the 
   expect(rulesOf('SlideGrid/SlideGrid.css').get('.crewlet-slide-grid__card:focus-visible')).toMatch(ring);
   expect(rulesOf('DatasetSource/DatasetSource.css').get('button.crewlet-dataset-source__summary:focus-visible')).toMatch(ring);
   expect(rulesOf('ChoiceList/ChoiceList.css').get('.crewlet-choice-list__radio:focus-visible')).toMatch(ring);
+  // The card rings, over its own edge, for the radio inside it.
+  expect(rulesOf('ChoiceCards/ChoiceCards.css').get('.crewlet-choice-cards__card:has(.crewlet-choice-cards__radio:focus-visible)')).toMatch(ring);
   expect(rulesOf('LayersList/LayersList.css').get('.crewlet-layers-list__item:focus-visible')).toMatch(ring);
   expect(rulesOf('ArtifactKindIllustration/ArtifactKindIllustration.css').get('.crewlet-kind-tile:focus-visible .crewlet-kind-tile__frame')).toMatch(ring);
 });
@@ -148,6 +153,19 @@ test("a list's radio is drawn, an empty ring until it is chosen, and the platfor
   expect(text).toMatch(/@media \(forced-colors: active\) \{\s*\.crewlet-choice-list__radio \{\s*appearance: auto;/);
   // The tag is about an answer, not the pick, so it is not a second accent mark.
   expect(list.get('.crewlet-choice-list__tag')).toMatch(/color: var\(--color-text-tertiary\)/);
+});
+
+test("a card's radio is the platform's under forced colours, its pick in the system's selection colour, an unavailable card in its disabled ink", () => {
+  /*
+   * Forced colours repaint the drawn radio's dot and the chosen tint away
+   * together, so a chosen card showed no mark and an unavailable card looked
+   * like any other. The platform's radio marks itself.
+   */
+  const text = readFileSync(resolve(here, '..', 'ChoiceCards/ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const forced = /@media \(forced-colors: active\) \{([\s\S]*?)\n\}/.exec(text)?.[1] ?? '';
+  expect(forced).toMatch(/\.crewlet-choice-cards__radio \{\s*appearance: auto;/);
+  expect(forced).toMatch(/\.crewlet-choice-cards__card\.is-checked \{[^}]*border-color: Highlight;/);
+  expect(forced).toMatch(/\.crewlet-choice-cards__card\.is-disabled \{[^}]*border-color: GrayText;[^}]*color: GrayText;/);
 });
 
 test('the source editor rings as a field does, and draws no halo', () => {

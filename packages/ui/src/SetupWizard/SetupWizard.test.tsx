@@ -63,6 +63,30 @@ function Wizard(props: Partial<SetupWizardProps>) {
   );
 }
 
+/**
+ * Draws the phone's row of steps as a browser would, for the code that reads
+ * its boxes: a scroller 300px wide, each step 80px on a 100px pitch from the
+ * start edge (the right one, right to left), so six steps overflow it. Returns
+ * where each scroller was scrolled to.
+ */
+function mockRow(dir: 'ltr' | 'rtl'): Map<Element, number> {
+  const scrolled = new Map<Element, number>();
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    const at = (left: number, width: number) => ({ left, width, right: left + width, top: 0, bottom: 20, height: 20, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;
+    if (this.classList.contains('crewlet-setup-wizard__steps')) return at(0, 300);
+    const step = this.tagName === 'LI' && this.closest('.crewlet-setup-wizard__steps') ? [...this.parentElement!.children].indexOf(this) : -1;
+    if (step >= 0) return at(dir === 'ltr' ? step * 100 : 220 - step * 100, 80);
+    return at(0, 0);
+  });
+  vi.spyOn(Element.prototype, 'scrollLeft', 'get').mockImplementation(function (this: Element) {
+    return scrolled.get(this) ?? 0;
+  });
+  vi.spyOn(Element.prototype, 'scrollLeft', 'set').mockImplementation(function (this: Element, value: number) {
+    scrolled.set(this, value);
+  });
+  return scrolled;
+}
+
 /** Answers the phone query as a phone would, for the hook that reads it. */
 function asPhone() {
   vi.spyOn(window, 'matchMedia').mockImplementation(
@@ -261,6 +285,98 @@ describe('the three shapes', () => {
   });
 });
 
+describe('the footer holds still between steps', () => {
+  test('the wizard fills its screen, so a short step does not lift the footer', () => {
+    uninstall = installAtWidth(1024, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard />);
+    const wizard = getComputedStyle(container.querySelector('.crewlet-setup-wizard')!);
+    expect(wizard.display).toBe('flex');
+    expect(wizard.flexDirection).toBe('column');
+    expect(wizard.flexGrow).toBe('1');
+    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__frame')!).flexGrow).toBe('1');
+  });
+
+  test('on a phone the content’s row takes a short step’s slack, not the footer’s', () => {
+    uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
+    asPhone();
+    const { container } = render(<Wizard />);
+    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__frame')!).gridTemplateRows).toBe(
+      'auto auto 1fr auto auto',
+    );
+    cleanup();
+    const bare = render(<Wizard aside={undefined} asideLabel={undefined} />);
+    expect(getComputedStyle(bare.container.querySelector('.crewlet-setup-wizard__frame')!).gridTemplateRows).toBe('auto auto 1fr auto');
+  });
+});
+
+describe('the steps on a phone', () => {
+  test('one row of pills that scrolls rather than wraps, under the position line and a bar of how far along', () => {
+    uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
+    asPhone();
+    const { container } = render(<Wizard />);
+    const row = getComputedStyle(container.querySelector('.crewlet-setup-wizard__steps .crewlet-stepper')!);
+    expect(row.flexWrap).toBe('nowrap');
+    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__steps')!).overflowX).toBe('auto');
+    const bar = container.querySelector<HTMLElement>('.crewlet-setup-wizard__progress')!;
+    expect(bar.getAttribute('aria-hidden')).toBe('true');
+    const at = STEPS.findIndex((s) => s.id === 'colours') + 1;
+    expect(Number(bar.style.getPropertyValue('--crewlet-setup-wizard-progress'))).toBeCloseTo(at / STEPS.length);
+  });
+
+  test('the band a pill is pressed through is cleared by the pill height the stepper declares, not a copy of it', () => {
+    const read = (sheet: string) =>
+      readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', sheet), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const stepper = read('Stepper/Stepper.css');
+    expect(/\.crewlet-stepper \{([^}]*)\}/.exec(stepper)?.[1]).toMatch(/--crewlet-stepper-pill-height: calc\(20px \* var\(--density, 1\)\);/);
+    const wizard = read('SetupWizard/SetupWizard.css');
+    const row = /\.crewlet-setup-wizard__steps \.crewlet-stepper \{([^}]*)\}/.exec(wizard)?.[1] ?? '';
+    expect(row).toMatch(/padding-block: calc\(\(var\(--size-target-min\) - var\(--crewlet-stepper-pill-height\)\) \/ 2\);/);
+    expect(wizard).not.toMatch(/- 20px\)/);
+  });
+
+  test('the current step is brought to the middle of the row, by the drawn boxes, left to right and right to left', () => {
+    for (const dir of ['ltr', 'rtl'] as const) {
+      const scrolled = mockRow(dir);
+      asPhone();
+      const { container } = render(
+        <div dir={dir}>
+          <Wizard />
+        </div>,
+      );
+      const scroller = container.querySelector<HTMLElement>('.crewlet-setup-wizard__steps')!;
+      // Colours is the third step: its centre stands at 240px (ltr) or 60px (rtl) in a row whose middle is 150px.
+      expect(scrolled.get(scroller), dir).toBe(dir === 'ltr' ? 90 : -90);
+      cleanup();
+      vi.restoreAllMocks();
+    }
+  });
+
+  test('a row that hides steps fades at that edge and takes the keyboard, named, and one that does not stays out of the tab order', () => {
+    mockRow('ltr');
+    asPhone();
+    const { container } = render(<Wizard />);
+    const scroller = container.querySelector<HTMLElement>('.crewlet-setup-wizard__steps')!;
+    expect(scroller.hasAttribute('data-fade-right')).toBe(true);
+    expect(scroller.hasAttribute('data-fade-left')).toBe(false);
+    expect(scroller.tabIndex).toBe(0);
+    expect(within(container).getByRole('group', { name: 'Setup steps' })).toBe(scroller);
+    cleanup();
+    vi.restoreAllMocks();
+    // Every step in view: no fade, no stop for the keyboard.
+    asPhone();
+    const still = render(<Wizard />).container.querySelector<HTMLElement>('.crewlet-setup-wizard__steps')!;
+    expect(still.hasAttribute('data-fade-right')).toBe(false);
+    expect(still.getAttribute('tabindex')).toBeNull();
+    expect(still.getAttribute('role')).toBeNull();
+  });
+
+  test('a wide page has no bar: the rail says how far along itself', () => {
+    uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard />);
+    expect(container.querySelector('.crewlet-setup-wizard__progress')).toBeNull();
+  });
+});
+
 describe('the footer and a wide step', () => {
   test('the way out stands at the start of the footer row and the step’s actions at its end', () => {
     uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
@@ -276,6 +392,32 @@ describe('the footer and a wide step', () => {
     expect([...footer.querySelectorAll('button')].map((button) => button.textContent)).toEqual(['Exit', 'Back', 'Continue']);
   });
 
+  test('the step’s primary action keeps one width, so a longer word on the last step moves nothing beside it', () => {
+    uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(
+      <Wizard footer={<button type="button">Back</button>} primaryAction={<button type="button">Continue</button>} />,
+    );
+    const end = container.querySelector('.crewlet-setup-wizard__footer-end')!;
+    const primary = end.lastElementChild!;
+    // The width is on the primary action's own box, named, not on whatever comes last.
+    expect(primary.className).toBe('crewlet-setup-wizard__primary');
+    expect(primary.textContent).toBe('Continue');
+    // 8rem: the longest of those words at the medium button.
+    expect(getComputedStyle(primary).minInlineSize).toBe('128px');
+    expect(getComputedStyle(primary.firstElementChild!).flexGrow).toBe('1');
+    // Back, before it, keeps its own width.
+    expect(getComputedStyle(end.firstElementChild!).minInlineSize).not.toBe('128px');
+  });
+
+  test('on a phone the primary action takes its row’s whole width', () => {
+    uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
+    asPhone();
+    const { container } = render(
+      <Wizard footer={<button type="button">Back</button>} primaryAction={<button type="button">Continue</button>} />,
+    );
+    expect(getComputedStyle(container.querySelector('.crewlet-setup-wizard__primary')!).flexBasis).toBe('100%');
+  });
+
   test('on a phone the actions share two rows, the primary the whole width on the last', () => {
     uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
     asPhone();
@@ -287,18 +429,34 @@ describe('the footer and a wide step', () => {
           <>
             <button type="button">Back</button>
             <button type="button">Save as draft</button>
-            <button type="button">Adopt</button>
           </>
         }
+        primaryAction={<button type="button">Adopt</button>}
       />,
     );
     const footer = container.querySelector('.crewlet-setup-wizard__footer')!;
     expect(getComputedStyle(footer).flexWrap).toBe('wrap');
     for (const group of footer.children) expect(getComputedStyle(group).display).toBe('contents');
-    const [back, save, adopt] = [...footer.querySelectorAll('.crewlet-setup-wizard__footer-end > button')];
+    const [back, save] = [...footer.querySelectorAll('.crewlet-setup-wizard__footer-end > button')];
     expect(getComputedStyle(back!).marginInlineStart).toBe('auto');
-    expect(getComputedStyle(save!).flex).not.toMatch(/100%/);
-    expect(getComputedStyle(adopt!).flexBasis).toBe('100%');
+    expect(getComputedStyle(save!).flexBasis).not.toBe('100%');
+    // The width follows the primary action by name, not by position.
+    expect(getComputedStyle(footer.querySelector('.crewlet-setup-wizard__primary')!).flexBasis).toBe('100%');
+    cleanup();
+    vi.restoreAllMocks();
+    asPhone();
+    const unnamed = render(
+      <Wizard
+        footer={
+          <>
+            <button type="button">Back</button>
+            <button type="button">Continue</button>
+          </>
+        }
+      />,
+    );
+    const last = unnamed.container.querySelector('.crewlet-setup-wizard__footer-end > button:last-child')!;
+    expect(getComputedStyle(last).flexBasis).not.toBe('100%');
     // Wide, each group keeps its own row of buttons.
     cleanup();
     uninstall();

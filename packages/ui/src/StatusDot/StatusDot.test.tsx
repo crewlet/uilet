@@ -122,9 +122,12 @@ describe('StatusDot', () => {
     // The approved design draws a 7px dot. A density token here would shrink
     // the mark with the gaps around it, and a round mark needs its two sides
     // to agree or it is an ellipse.
+    // The size is one property both sides read, so they cannot disagree, and
+    // a layout that centres the dot on a line reads the same measure.
     const root = /\.crewlet-status-dot\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
-    expect(/(?:^|;|\s)width:\s*([^;]+);/.exec(root)?.[1]?.trim()).toBe('7px');
-    expect(/(?:^|;|\s)height:\s*([^;]+);/.exec(root)?.[1]?.trim()).toBe('7px');
+    expect(/--crewlet-status-dot-size:\s*([^;]+);/.exec(root)?.[1]?.trim()).toBe('7px');
+    expect(/(?:^|;|\s)width:\s*([^;]+);/.exec(root)?.[1]?.trim()).toBe('var(--crewlet-status-dot-size)');
+    expect(/(?:^|;|\s)height:\s*([^;]+);/.exec(root)?.[1]?.trim()).toBe('var(--crewlet-status-dot-size)');
     expect(root).toContain('border-radius: var(--radius-circle)');
   });
 

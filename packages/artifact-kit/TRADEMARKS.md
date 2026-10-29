@@ -26,7 +26,7 @@ The `CrewletIcon`, `CrewletReading` and `CrewletFigure` components that the `@cr
 
 ## Third-party marks
 
-`@crewlethq/icons` also ships the marks of the applications a Crewlet product integrates with, or offers as an integration, in `packages/icons/svg/vendor/`, drawn by the `VendorMark` component. Atlassian, ClickUp, Datadog, Discord, Figma, GitHub, GitLab, Mattermost, Microsoft Teams, Notion, Slack and Telegram are trademarks of their respective owners, none of whom are affiliated with Crewlet and none of whom have endorsed it.
+`@crewlethq/icons` also ships the marks of the applications a Crewlet product integrates with, or offers as an integration, in `packages/icons/svg/vendor/`, drawn by the `VendorMark` component. Anthropic and Claude, Atlassian, ClickUp, Datadog, Discord, Figma, GitHub, GitLab, Mattermost, Microsoft Teams, Notion, OpenCode, Slack and Telegram are trademarks of their respective owners, none of whom are affiliated with Crewlet and none of whom have endorsed it.
 
 They are here for nominative use: naming the application a feature connects to, so that a reader recognises it. That means a mark appears beside that application's own name, identifies only that application, and is never used to suggest a partnership, a sponsorship or an endorsement. Each owner's own brand guidelines apply on top of this page, and where the two differ the owner's win.
 

@@ -101,8 +101,20 @@
   background: var(--color-surface-selected);
 }
 
-.crewlet-choice-list.is-disabled .crewlet-choice-list__row {
+.crewlet-choice-list.is-disabled .crewlet-choice-list__row,
+.crewlet-choice-list__row.is-disabled {
   cursor: not-allowed;
+}
+
+/* A choice that cannot be made takes no hover: the ground would offer it. */
+.crewlet-choice-list__row.is-disabled:hover {
+  background: none;
+}
+
+/* Its ring is drawn on the quiet boundary and ground; its words stay at full contrast. */
+.crewlet-choice-list__row.is-disabled .crewlet-choice-list__radio {
+  border-color: var(--color-border-default);
+  background: var(--color-surface-subtle);
 }
 
 /*
@@ -161,6 +173,15 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
   overflow-wrap: anywhere;
+}
+
+/* Why a disabled choice cannot be made, after its detail on the same line, in the warning ink. */
+.crewlet-choice-list__reason {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-choice-list__detail > .crewlet-choice-list__reason:not(:first-child) {
+  margin-inline-start: var(--spacing-2);
 }
 
 /* A tag says something ABOUT an answer ("Suggested"), so it is set in the

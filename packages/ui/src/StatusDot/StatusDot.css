@@ -16,10 +16,17 @@
  * reader notice it" difference to. Every soft step does, by 4.48 at the least.
  */
 
+/*
+ * The size is a property of the dot rather than two bare numbers so that a
+ * layout placing the dot against a line it does not share a box with (a
+ * ChoiceCards fact that wraps) centres it on that line by the same measure.
+ */
 .crewlet-status-dot {
+  --crewlet-status-dot-size: 7px;
+
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: var(--crewlet-status-dot-size);
+  height: var(--crewlet-status-dot-size);
   border-radius: var(--radius-circle);
   /*
    * The quiet state is still a mark, so it takes the tertiary step rather than

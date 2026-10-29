@@ -558,6 +558,20 @@ describe('picking a step', () => {
     }
   });
 
+  test('a picked pill takes a press through the 24px target floor without growing past 20px', () => {
+    uninstall = installSheets('Stepper/Stepper.css');
+    const { container } = render(<Stepper label="Setup steps" steps={SETUP} current="colours" onSelect={() => {}} />);
+    const button = container.querySelector<HTMLElement>('.crewlet-stepper__target')!;
+    expect(px(button, 'height')).toBe(20);
+    expect(getComputedStyle(button).position).toBe('relative');
+    const band = getComputedStyle(pseudoElement(button, 'after'));
+    expect(band.position).toBe('absolute');
+    // Sized to the floor and centred on the pill, not inset from inside its hairline.
+    expect(band.height).toBe('24px');
+    expect(band.top).toBe('50%');
+    expect(band.translate).toBe('0 -50%');
+  });
+
   test('carries no axe violation as a rail of buttons and as a row of them', async () => {
     const { container } = render(
       <main>

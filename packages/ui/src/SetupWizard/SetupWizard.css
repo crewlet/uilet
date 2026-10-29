@@ -29,9 +29,20 @@
 
   container-type: inline-size;
   min-width: 0;
+  /*
+   * IT FILLS ITS SCREEN, so the footer rests at the bottom of the view on
+   * every step: sized to its content, a short step lifted the footer and its
+   * Continue hundreds of pixels up the page, and the next step dropped them
+   * again, so the button a person pressed moved on every press. Stretched,
+   * the content row takes the slack and the footer stays where it was.
+   */
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .crewlet-setup-wizard__frame {
+  flex: 1 0 auto;
   display: grid;
   grid-template-columns: var(--crewlet-setup-wizard-rail) minmax(0, var(--crewlet-setup-wizard-column));
   grid-template-areas:
@@ -179,6 +190,25 @@
 }
 
 /*
+ * THE STEP'S PRIMARY ACTION (`primaryAction`) KEEPS ONE WIDTH on every step.
+ * Sized to its word, "Continue" grew into "Create model" or "Save changes" on
+ * the last step, and every button before it in the row moved 30px to make
+ * room: the Back a person had just pressed was no longer under the pointer.
+ * 8rem holds the longest of those words at the kit's medium button; a longer
+ * one still grows rather than clips. The box carries the width and the button
+ * fills it, so the rule names the primary action rather than whichever
+ * element happens to come last.
+ */
+.crewlet-setup-wizard__primary {
+  display: flex;
+  min-inline-size: 8rem;
+}
+
+.crewlet-setup-wizard__primary > * {
+  flex: 1 1 auto;
+}
+
+/*
  * A GHOST AT THE ROW'S START is pulled out by its padding and edge, as a card
  * foot's is (StatusCard.css), so "Exit" starts on the line the title and the
  * hairline above it start on rather than 13px inside it; only the hover's
@@ -241,7 +271,14 @@
       'content'
       'aside'
       'foot';
-    grid-template-rows: auto;
+    /*
+     * THE CONTENT'S ROW TAKES THE SLACK here too. Every row auto shared a
+     * short step's spare height among all four, the footer's with them, so the
+     * footer stood 20px above the view's bottom on a step shorter than the
+     * view and on it on every step that scrolls: Continue moved under the
+     * thumb between presses.
+     */
+    grid-template-rows: auto auto 1fr auto auto;
     row-gap: var(--spacing-5);
   }
 
@@ -251,6 +288,7 @@
       'rail'
       'content'
       'foot';
+    grid-template-rows: auto auto 1fr auto;
   }
 
   .crewlet-setup-wizard__rail {
@@ -258,6 +296,89 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-2);
+  }
+
+  /*
+   * THE ROW OF STEPS SCROLLS RATHER THAN WRAPS: eight steps wrapped into three
+   * rows of pills between the position line and the step. The row is as wide
+   * as its steps, inside a scroller of the wizard's own that brings the
+   * current step into view (SetupWizard.tsx), with room above and under the
+   * pills for the 24px band a pill that can be picked is pressed through,
+   * which the scroller would otherwise clip.
+   *
+   * THE SCROLLER SAYS IT SCROLLS: with its bar hidden, an edge that hides
+   * steps fades out, at whichever side has steps beyond it, so a row cut at
+   * the screen's edge reads as more to come rather than as the last step.
+   */
+  .crewlet-setup-wizard__steps {
+    --crewlet-setup-wizard-fade: var(--spacing-6);
+    --crewlet-setup-wizard-fade-left: 0px;
+    --crewlet-setup-wizard-fade-right: 0px;
+
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--crewlet-setup-wizard-fade-left),
+      #000 calc(100% - var(--crewlet-setup-wizard-fade-right)),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--crewlet-setup-wizard-fade-left),
+      #000 calc(100% - var(--crewlet-setup-wizard-fade-right)),
+      transparent
+    );
+  }
+
+  .crewlet-setup-wizard__steps::-webkit-scrollbar {
+    display: none;
+  }
+
+  .crewlet-setup-wizard__steps[data-fade-left] {
+    --crewlet-setup-wizard-fade-left: var(--crewlet-setup-wizard-fade);
+  }
+
+  .crewlet-setup-wizard__steps[data-fade-right] {
+    --crewlet-setup-wizard-fade-right: var(--crewlet-setup-wizard-fade);
+  }
+
+  /* A row that overflows takes the keyboard, so it can be scrolled without a pointer; it draws no edge, so the ring sits inside it. */
+  .crewlet-setup-wizard__steps:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: var(--size-focus-ring-inset-offset);
+  }
+
+  .crewlet-setup-wizard__steps .crewlet-stepper {
+    flex-wrap: nowrap;
+    inline-size: max-content;
+    max-inline-size: none;
+    padding-block: calc((var(--size-target-min) - var(--crewlet-stepper-pill-height)) / 2);
+  }
+
+  .crewlet-setup-wizard__steps .crewlet-stepper__step {
+    flex: none;
+  }
+
+  /* How far along, as a thin bar under the position line, in the accent. */
+  .crewlet-setup-wizard__progress {
+    display: block;
+    block-size: 2px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+    background: var(--color-border-default);
+  }
+
+  .crewlet-setup-wizard__progress::before {
+    content: '';
+    display: block;
+    block-size: 100%;
+    inline-size: calc(var(--crewlet-setup-wizard-progress, 0) * 100%);
+    background: var(--color-brand-accent);
   }
 
   /*
@@ -290,18 +411,19 @@
     display: contents;
   }
 
-  .crewlet-setup-wizard__footer-end > :first-child {
+  .crewlet-setup-wizard__footer-end > :first-child:not(.crewlet-setup-wizard__primary) {
     margin-inline-start: auto;
   }
 
-  .crewlet-setup-wizard__footer-end > :last-child {
+  /* The primary action, named, takes the second row; the actions given in `footer` share the first, whatever their count. */
+  .crewlet-setup-wizard__primary {
     flex: 1 1 100%;
   }
 
   /* The first row's last action ends it, at the row's end: a ghost there is
      pulled out as "Exit" is at its start, so the two words stand level with
      the primary's edges under them. */
-  .crewlet-setup-wizard__footer-end > .crewlet-btn--ghost.crewlet-btn--medium:nth-last-child(2) {
+  .crewlet-setup-wizard__footer-end > .crewlet-btn--ghost.crewlet-btn--medium:has(+ .crewlet-setup-wizard__primary) {
     margin-inline-end: calc(-1 * (var(--spacing-3) + 1px));
   }
 }

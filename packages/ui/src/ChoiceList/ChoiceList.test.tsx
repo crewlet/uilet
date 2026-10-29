@@ -86,11 +86,73 @@ test('a disabled list takes no choice', () => {
   expect((screen.getAllByRole('radio') as HTMLInputElement[]).every((r) => r.disabled)).toBe(true);
 });
 
+test('a disabled choice cannot be chosen, and its radio is described by why', () => {
+  const onChange = vi.fn();
+  render(
+    <ChoiceList
+      label="Where it runs"
+      value="host"
+      onChange={onChange}
+      options={[
+        { value: 'host', label: 'On the host' },
+        { value: 'e2b', label: 'In E2B', detail: 'A separate machine', disabled: true, disabledReason: 'Add E2B_API_KEY first.' },
+      ]}
+    />,
+  );
+  // Named by its label and detail, the reason left to its description, so it is read once.
+  const e2b = screen.getByRole('radio', { name: 'In E2B A separate machine' }) as HTMLInputElement;
+  expect(e2b.disabled).toBe(true);
+  expect(screen.getByRole('radio', { name: /On the host/ })).not.toHaveProperty('disabled', true);
+  fireEvent.click(screen.getByText('In E2B'));
+  expect(onChange).not.toHaveBeenCalled();
+  const described = document.getElementById(e2b.getAttribute('aria-describedby') ?? '');
+  expect(described?.textContent).toBe('Add E2B_API_KEY first.');
+});
+
+test('a value with a space still names its radio and describes its reason', () => {
+  render(
+    <ChoiceList
+      label="Model"
+      value={null}
+      onChange={() => {}}
+      options={[
+        { value: 'claude opus', label: 'Opus', detail: 'The strongest.', disabled: true, disabledReason: 'Sign in first.' },
+      ]}
+    />,
+  );
+  // An id built from the value split on its space, and the radio lost its name and its reason.
+  const opus = screen.getByRole('radio', { name: 'Opus The strongest.' });
+  expect(document.getElementById(opus.getAttribute('aria-describedby') ?? '')?.textContent).toBe('Sign in first.');
+});
+
 test('carries no axe violation', async () => {
   const { container } = render(
     <main>
       <h1>Decision</h1>
       <Harness />
+    </main>,
+  );
+  const result = await axe.run(container, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+    rules: { 'color-contrast': { enabled: false } },
+    resultTypes: ['violations'],
+  });
+  expect(result.violations).toEqual([]);
+});
+
+test('carries no axe violation with a choice unavailable and its reason', async () => {
+  const { container } = render(
+    <main>
+      <h1>Where it runs</h1>
+      <ChoiceList
+        label="Where it runs"
+        value="host"
+        onChange={() => {}}
+        options={[
+          { value: 'host', label: 'On the host', detail: 'Shares the host' },
+          { value: 'e2b', label: 'In E2B', detail: 'A separate machine', disabled: true, disabledReason: 'Add E2B_API_KEY first.' },
+        ]}
+      />
     </main>,
   );
   const result = await axe.run(container, {

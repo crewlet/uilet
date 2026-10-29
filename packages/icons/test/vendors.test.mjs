@@ -83,14 +83,14 @@ describe('a vendor mark', () => {
 
   it('draws the monochrome marks in the current text colour and nobody else in it', () => {
     /*
-     * GitHub and Notion each publish one mark, black on a light ground and
-     * white on a dark one, so the current text colour is the vendor's own
+     * GitHub, Notion and OpenCode each publish one mark, dark on a light
+     * ground and light on a dark one, so the current text colour is the vendor's own
      * instruction and a fixed hex would be wrong in one theme whichever was
      * picked. Every other mark is the vendor's own colours, which is the one
      * sanctioned exception to colour carrying state rather than identity, and
      * a mark quietly joining this list is a mark that has lost them.
      */
-    const monochrome = ['github', 'notion'];
+    const monochrome = ['github', 'notion', 'opencode'];
     // Monochrome is the current text colour AND no colour of the mark's own
     // beneath it: Crewlet's drawing is rooted in currentColor, as every
     // illustration is, and paints its brand violet on the group inside.

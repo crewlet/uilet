@@ -21,6 +21,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { Announcer } from '../Announcer/index.js';
 import { Checkbox } from '../Checkbox/index.js';
 import { Combobox } from '../Combobox/index.js';
@@ -874,4 +875,30 @@ test('a hidden label names its field and is hidden as a whole element', () => {
   const box = screen.getByRole('textbox', { name: 'Mission' });
   const label = document.querySelector(`label[for="${box.id}"]`)!;
   expect(label.classList.contains('crewlet-visually-hidden')).toBe(true);
+});
+
+test('a label’s action keeps its own case and spacing, not the label’s capitals', () => {
+  /*
+   * DECLARED, not only computed: text-transform and letter-spacing inherit in
+   * a browser, but the cascade under test computes an unset one as its initial
+   * value, so a computed "none" passed with the reset removed. The rule itself
+   * is what holds the action out of the label's capitals.
+   */
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Input.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const action = /\.crewlet-label__action \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(action).toMatch(/text-transform:\s*none;/);
+  expect(action).toMatch(/letter-spacing:\s*var\(--font-letter-spacing-normal\);/);
+  // And the label it sits in is the one in capitals, which the action must not take.
+  const uninstall = installSheets('Input/Input.css');
+  try {
+    const { container } = render(
+      <FormField label="Or another model" labelAction={<a href="https://example.com/models">Claude Code’s model names</a>}>
+        {(field) => <Input id={field.id} aria-describedby={field.describedBy} />}
+      </FormField>,
+    );
+    expect(getComputedStyle(container.querySelector('.crewlet-label')!).textTransform).toBe('uppercase');
+    expect(container.querySelector('.crewlet-label .crewlet-label__action')).not.toBeNull();
+  } finally {
+    uninstall();
+  }
 });

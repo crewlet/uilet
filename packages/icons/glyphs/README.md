@@ -90,6 +90,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `circle` | `CircleGlyph` | `package/icons/circle.svg` |
 | `circle-alert` | `CircleAlertGlyph` | `package/icons/circle-alert.svg` |
 | `circle-check` | `CircleCheckGlyph` | `package/icons/circle-check.svg` |
+| `circle-dashed` | `CircleDashedGlyph` | `package/icons/circle-dashed.svg` |
 | `circle-question-mark` | `CircleQuestionMarkGlyph` | `package/icons/circle-question-mark.svg` |
 | `circle-stop` | `CircleStopGlyph` | `package/icons/circle-stop.svg` |
 | `clock` | `ClockGlyph` | `package/icons/clock.svg` |
@@ -190,6 +191,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `settings-2` | `Settings2Glyph` | `package/icons/settings-2.svg` |
 | `share-2` | `Share2Glyph` | `package/icons/share-2.svg` |
 | `shield` | `ShieldGlyph` | `package/icons/shield.svg` |
+| `shield-check` | `ShieldCheckGlyph` | `package/icons/shield-check.svg` |
 | `shield-user` | `ShieldUserGlyph` | `package/icons/shield-user.svg` |
 | `sliders-vertical` | `SlidersVerticalGlyph` | `package/icons/sliders-vertical.svg` |
 | `smartphone` | `SmartphoneGlyph` | `package/icons/smartphone.svg` |

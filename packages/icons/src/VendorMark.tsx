@@ -9,11 +9,11 @@
  * from a mark, and a mark appears only beside the app's own name, so the rule
  * holds everywhere else.
  *
- * GitHub's and Notion's marks are monochrome by design, so they take the
- * current text colour and read on either theme. That is the vendor's own
- * instruction rather than an exemption from the rule above: each publishes one
- * mark, black on a light ground and white on a dark one, and a fixed hex would
- * be wrong in one theme whichever one was picked.
+ * GitHub's, Notion's and OpenCode's marks are monochrome by design, so they
+ * take the current text colour and read on either theme. That is each
+ * vendor's own instruction rather than an exemption from the rule above: each
+ * publishes one mark, dark on a light ground and light on a dark one, and a
+ * fixed hex would be wrong in one theme whichever one was picked.
  *
  * Mattermost's blue is its mark on a light ground, and Mattermost publishes
  * the same drawing reversed (white) for a dark one, which is what the dark
@@ -35,10 +35,22 @@
  * copy, so the mark on a catalogue tile is the mark everywhere else, and it
  * takes the same size and the same muted state as every vendor beside it.
  *
+ * OpenCode publishes its mark twice, near-black on a light ground and
+ * near-white on a dark one, so it is drawn in the current text colour, its
+ * inner square a quarter of that ink, as GitHub's is: one fixed pair of hexes
+ * would be wrong in one theme. Its drawing is a 240 by 300 upright that fills
+ * its own viewBox, as every vendor's does; the mark's square slot centres it.
+ *
  * The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram and Microsoft
- * Teams drawings are Simple Icons' renderings (CC0 1.0). Using a mark to name
- * the app it belongs to is nominative use; TRADEMARKS.md says what that does
- * and does not allow.
+ * Teams drawings are Simple Icons' renderings (CC0 1.0). Claude's is the
+ * Claude Spark in Clay, from Anthropic's own press kit
+ * (anthropic.com/press-kit, "Anthropic media resources", Claude logos, 3 Claude
+ * Spark), unchanged but for the file's size attributes. OpenCode's is the
+ * square logo from its own brand page (opencode.ai/brand,
+ * opencode-logo-light-square.svg), its no-op clip and mask removed and its
+ * colours taken from the text as above.
+ * Using a mark to name the app it belongs to is nominative use; TRADEMARKS.md
+ * says what that does and does not allow.
  */
 
 import type { ComponentType, SVGProps } from 'react';
@@ -52,6 +64,7 @@ import * as marks from './generated/vendors/index.js';
 /** The apps this package carries a mark for, Crewlet's own services among them. */
 export const VENDORS = [
   'atlassian',
+  'claude',
   'clickup',
   'crewlet',
   'datadog',
@@ -62,6 +75,7 @@ export const VENDORS = [
   'mattermost',
   'microsoft-teams',
   'notion',
+  'opencode',
   'slack',
   'telegram',
 ] as const;
@@ -83,6 +97,7 @@ export interface VendorMarkProps extends Omit<SVGProps<SVGSVGElement>, 'title'> 
 
 const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   atlassian: marks.Atlassian,
+  claude: marks.Claude,
   clickup: marks.Clickup,
   crewlet: CrewletIcon,
   datadog: marks.Datadog,
@@ -93,6 +108,7 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   mattermost: marks.Mattermost,
   'microsoft-teams': marks.MicrosoftTeams,
   notion: marks.Notion,
+  opencode: marks.Opencode,
   slack: marks.Slack,
   telegram: marks.Telegram,
 };

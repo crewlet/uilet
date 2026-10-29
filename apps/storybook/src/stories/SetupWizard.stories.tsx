@@ -363,7 +363,8 @@ function Page({
   const optional = TITLES[current].optional === true;
 
   return (
-    <div style={{ padding: 20 }}>
+    // A FLEX COLUMN AS TALL AS THE VIEW, as an AppShell's content is: the wizard fills it and its footer rests at the bottom.
+    <div style={{ padding: 20, display: "flex", flexDirection: "column", minHeight: "100vh", boxSizing: "border-box" }}>
       <SetupWizard
         title="Set up your brand"
         trail={
@@ -395,10 +396,7 @@ function Page({
         asideLabel={current === "review" ? undefined : "Preview of your draft"}
         footer={
           current === "review" ? (
-            <>
-              <Button variant="secondary">Save as draft</Button>
-              <Button variant="primary">Adopt as the company brand</Button>
-            </>
+            <Button variant="secondary">Save as draft</Button>
           ) : (
             <>
               {index > 0 ? (
@@ -414,10 +412,16 @@ function Page({
                   Skip for now
                 </Button>
               ) : null}
-              <Button variant="primary" onClick={() => go(ORDER[index + 1]!)}>
-                Continue
-              </Button>
             </>
+          )
+        }
+        primaryAction={
+          current === "review" ? (
+            <Button variant="primary">Adopt as the company brand</Button>
+          ) : (
+            <Button variant="primary" onClick={() => go(ORDER[index + 1]!)}>
+              Continue
+            </Button>
           )
         }
       >
