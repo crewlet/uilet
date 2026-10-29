@@ -27,6 +27,14 @@ export interface ChoiceListOption {
    * "Something else" choice opens.
    */
   panel?: ReactNode;
+  /** This choice cannot be made now; the rest of the list can. */
+  disabled?: boolean | undefined;
+  /**
+   * Why not, and what fixes it, on the choice's detail line while it is
+   * disabled, and read with the radio as its description. A choice greyed out
+   * with no reason is a dead end.
+   */
+  disabledReason?: ReactNode;
 }
 
 export interface ChoiceListProps {
@@ -49,7 +57,8 @@ export interface ChoiceListProps {
  *
  * NATIVE RADIOS, so the arrow keys move the choice and Tab leaves the group as
  * the platform does, and every row is its radio's label, so the whole row
- * takes the pointer. A choice's `panel` is drawn under it only while it is
+ * takes the pointer. A disabled choice is skipped by the arrows, keeps its
+ * words at full contrast, and says why on its detail line. A choice's `panel` is drawn under it only while it is
  * selected, which is how a list ends in "Something else" with a field of its
  * own without a second control beside the list.
  */
@@ -61,16 +70,19 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
         {options.map((option) => {
           const id = `${name}-${option.value}`;
           const checked = option.value === value;
+          const off = disabled || option.disabled;
+          const reasonId = option.disabled && option.disabledReason ? `${id}-reason` : undefined;
           return (
             <div key={option.value} className={cx('crewlet-choice-list__item', option.separated && 'is-separated')}>
-              <label className={cx('crewlet-choice-list__row', HIT_AREA_CLASS, option.media != null && 'has-media', checked && 'is-checked')} htmlFor={id}>
+              <label className={cx('crewlet-choice-list__row', HIT_AREA_CLASS, option.media != null && 'has-media', checked && 'is-checked', option.disabled && 'is-disabled')} htmlFor={id}>
                 <input
                   id={id}
                   type="radio"
                   name={name}
                   value={option.value}
                   checked={checked}
-                  disabled={disabled}
+                  disabled={off}
+                  aria-describedby={reasonId}
                   onChange={() => onChange(option.value)}
                   className="crewlet-choice-list__radio"
                 />
@@ -81,7 +93,16 @@ export function ChoiceList({ options, value, onChange, label, footer, disabled, 
                 ) : null}
                 <span className="crewlet-choice-list__text">
                   <span className="crewlet-choice-list__label">{option.label}</span>
-                  {option.detail ? <span className="crewlet-choice-list__detail">{option.detail}</span> : null}
+                  {option.detail || reasonId ? (
+                    <span className="crewlet-choice-list__detail">
+                      {option.detail}
+                      {reasonId ? (
+                        <span id={reasonId} className="crewlet-choice-list__reason">
+                          {option.disabledReason}
+                        </span>
+                      ) : null}
+                    </span>
+                  ) : null}
                 </span>
                 {option.tag ? <span className="crewlet-choice-list__tag">{option.tag}</span> : null}
               </label>
