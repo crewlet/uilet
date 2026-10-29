@@ -285,6 +285,27 @@ describe('the footer holds still between steps', () => {
   });
 });
 
+describe('the steps on a phone', () => {
+  test('one row of pills that scrolls rather than wraps, under the position line and a bar of how far along', () => {
+    uninstall = installAtWidth(390, 'light', 'SetupWizard/SetupWizard.css');
+    asPhone();
+    const { container } = render(<Wizard />);
+    const row = getComputedStyle(container.querySelector('.crewlet-setup-wizard__rail .crewlet-stepper')!);
+    expect(row.flexWrap).toBe('nowrap');
+    expect(row.overflowX).toBe('auto');
+    const bar = container.querySelector<HTMLElement>('.crewlet-setup-wizard__progress')!;
+    expect(bar.getAttribute('aria-hidden')).toBe('true');
+    const at = STEPS.findIndex((s) => s.id === 'colours') + 1;
+    expect(Number(bar.style.getPropertyValue('--crewlet-setup-wizard-progress'))).toBeCloseTo(at / STEPS.length);
+  });
+
+  test('a wide page has no bar: the rail says how far along itself', () => {
+    uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');
+    const { container } = render(<Wizard />);
+    expect(container.querySelector('.crewlet-setup-wizard__progress')).toBeNull();
+  });
+});
+
 describe('the footer and a wide step', () => {
   test('the way out stands at the start of the footer row and the step’s actions at its end', () => {
     uninstall = installAtWidth(1440, 'light', 'SetupWizard/SetupWizard.css');

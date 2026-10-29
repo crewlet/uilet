@@ -299,6 +299,47 @@
   }
 
   /*
+   * THE ROW OF STEPS SCROLLS RATHER THAN WRAPS: eight steps wrapped into three
+   * rows of pills between the position line and the step. It is one row that
+   * scrolls sideways, with the current step brought into view (SetupWizard.tsx),
+   * and room above and under the pills for the 24px band a pill that can be
+   * picked is pressed through, which a scroller would otherwise clip.
+   */
+  .crewlet-setup-wizard__rail .crewlet-stepper {
+    position: relative;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-block: calc((var(--size-target-min) - 20px) / 2);
+  }
+
+  .crewlet-setup-wizard__rail .crewlet-stepper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .crewlet-setup-wizard__rail .crewlet-stepper__step {
+    flex: none;
+  }
+
+  /* How far along, as a thin bar under the position line, in the accent. */
+  .crewlet-setup-wizard__progress {
+    display: block;
+    block-size: 2px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+    background: var(--color-border-default);
+  }
+
+  .crewlet-setup-wizard__progress::before {
+    content: '';
+    display: block;
+    block-size: 100%;
+    inline-size: calc(var(--crewlet-setup-wizard-progress, 0) * 100%);
+    background: var(--color-brand-accent);
+  }
+
+  /*
    * THE FOLDED PREVIEW HANGS IN THE GUTTER, as a change list's disclosure
    * does: the trigger's padding and the panel's inset stand outside the
    * column, so the chevron sits on the edge the fields above start on and the

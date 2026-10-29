@@ -1,4 +1,4 @@
-import { createElement, useEffect, useId, useRef, type HTMLAttributes, type ReactNode } from 'react';
+import { createElement, useEffect, useId, useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
 import { Disclosure } from '../Disclosure/index.js';
 import { useMediaMatch } from '../MediaMatch/index.js';
@@ -108,8 +108,10 @@ const PHONE = `(width < ${breakpoint.phone})`;
  * 1024px window beside the application's rail, the aside moves under the
  * content and the rail stays: a container query, because the room is the
  * page's and not the window's, as in `AsideLayout`. Under the
- * phone breakpoint the rail becomes a row of steps above the content, under a
- * line that says "Step 3 of 6 · Colours", the aside folds into a
+ * phone breakpoint the rail becomes one row of steps above the content that
+ * scrolls sideways with the current step kept in view (eight steps wrapped
+ * into three rows of pills), under a line that says "Step 3 of 6 · Colours"
+ * and a thin bar of how far along, the aside folds into a
  * disclosure, so the fields come first, and the footer's actions share two
  * rows with the last of them, the primary, the whole width. Which element a phone draws is decided
  * in `useMediaMatch`, the one subscription for that question; how it is laid
@@ -158,6 +160,7 @@ export function SetupWizard({
   const contentLevel = nextHeadingLevel(stepLevel);
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const railRef = useRef<HTMLElement>(null);
   const shown = useRef(current);
 
   useEffect(() => {
@@ -165,6 +168,15 @@ export function SetupWizard({
     shown.current = current;
     headingRef.current?.focus();
   }, [current]);
+
+  // ON A PHONE THE CURRENT STEP STAYS IN VIEW in the row of steps, which scrolls rather than wraps.
+  useEffect(() => {
+    if (!phone) return;
+    const list = railRef.current?.querySelector<HTMLElement>('.crewlet-stepper');
+    const here = list?.querySelector<HTMLElement>('[aria-current="step"]')?.closest<HTMLElement>('li');
+    if (!list || !here) return;
+    list.scrollLeft = here.offsetLeft - (list.clientWidth - here.offsetWidth) / 2;
+  }, [phone, current]);
 
   if (aside !== undefined && aside !== null && !asideLabel) {
     throw new TypeError('SetupWizard needs an asideLabel with an aside: it names the aside’s landmark');
@@ -219,13 +231,21 @@ export function SetupWizard({
           />
         </div>
 
-        <nav className="crewlet-setup-wizard__rail" aria-label={stepsLabel}>
+        <nav ref={railRef} className="crewlet-setup-wizard__rail" aria-label={stepsLabel}>
           {phone && step ? (
-            <p className="crewlet-setup-wizard__position">
-              {text.progress(position + 1, steps.length)}
-              <span aria-hidden="true">{' · '}</span>
-              <span className="crewlet-setup-wizard__position-step">{step.label}</span>
-            </p>
+            <>
+              <p className="crewlet-setup-wizard__position">
+                {text.progress(position + 1, steps.length)}
+                <span aria-hidden="true">{' · '}</span>
+                <span className="crewlet-setup-wizard__position-step">{step.label}</span>
+              </p>
+              {/* How far along, drawn: the line above says it in words. */}
+              <span
+                className="crewlet-setup-wizard__progress"
+                aria-hidden="true"
+                style={{ '--crewlet-setup-wizard-progress': String((position + 1) / steps.length) } as CSSProperties}
+              />
+            </>
           ) : null}
           {stepper}
         </nav>
