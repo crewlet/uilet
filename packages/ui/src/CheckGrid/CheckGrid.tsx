@@ -55,12 +55,19 @@ const MOST_COLUMNS = 6;
  * stacks: its name, then its boxes, each with its column's name beside it. No
  * column is ever cut off behind a scroll the reader cannot see.
  *
+ * A TABLE TO ASSISTIVE TECHNOLOGY, by ARIA roles on the grid's own boxes: a
+ * `table` named by `label`, a `row` for the header and each row, a
+ * `columnheader` per column and a `rowheader` per row's name, and a `cell`
+ * round each box, so a screen reader moves down a column and hears where it
+ * is. Roles rather than table elements, because the stacked layout changes
+ * every box's `display`, which takes a native table's semantics away in some
+ * browsers.
+ *
  * EVERY BOX IS NAMED BY ITS ROW AND ITS COLUMN ("Backend Engineer Coding"),
- * read from the two labels drawn, so the name always holds the words a reader
- * sees. Each row is a group named by its row, and the header row is hidden
- * from assistive technology, since each box already says its column. The
- * boxes are native checkboxes in reading order: Tab moves row by row, Space
- * ticks.
+ * read from the two labels drawn, so the name holds the words a reader sees
+ * whichever layout stands, the stacked one included, where the header row is
+ * gone. The boxes are native checkboxes in reading order: Tab moves row by
+ * row, Space ticks.
  */
 export function CheckGrid({ label, rows, columns, stateOf, onChange, className }: CheckGridProps) {
   const base = useId();
@@ -70,24 +77,22 @@ export function CheckGrid({ label, rows, columns, stateOf, onChange, className }
   const notes = columns.flatMap((column, c) => (column.disabledReason ? [{ column, c }] : []));
   return (
     <div
-      role="group"
-      aria-label={label}
       className={cx('crewlet-check-grid', `crewlet-check-grid--${layout}`, className)}
       style={{ ['--crewlet-check-grid-columns' as string]: columns.length }}
     >
-      <div className="crewlet-check-grid__table">
-        <div className="crewlet-check-grid__head" aria-hidden="true">
-          <span />
+      <div role="table" aria-label={label} className="crewlet-check-grid__table">
+        <div role="row" className="crewlet-check-grid__head">
+          <span role="cell" className="crewlet-check-grid__corner" />
           {columns.map((column) => (
-            <span key={column.value} className="crewlet-check-grid__column">
+            <span key={column.value} role="columnheader" className="crewlet-check-grid__column">
               {column.media ? <span className="crewlet-check-grid__media">{column.media}</span> : null}
               {column.label}
             </span>
           ))}
         </div>
         {rows.map((row, r) => (
-          <div key={row.value} role="group" aria-labelledby={rowId(r)} className="crewlet-check-grid__row">
-            <span className="crewlet-check-grid__name">
+          <div key={row.value} role="row" className="crewlet-check-grid__row">
+            <span role="rowheader" className="crewlet-check-grid__name">
               {row.media ? <span className="crewlet-check-grid__media">{row.media}</span> : null}
               <span id={rowId(r)}>{row.label}</span>
             </span>
@@ -96,19 +101,20 @@ export function CheckGrid({ label, rows, columns, stateOf, onChange, className }
               const refused = column.disabledReason !== undefined && state === 'unchecked';
               const box = `${base}-box-${r}-${c}`;
               return (
-                <Checkbox
-                  key={column.value}
-                  id={box}
-                  size="sm"
-                  className="crewlet-check-grid__box"
-                  label={column.label}
-                  aria-labelledby={`${rowId(r)} ${box}-label`}
-                  aria-describedby={refused ? noteId(c) : undefined}
-                  checked={state === 'checked'}
-                  indeterminate={state === 'mixed'}
-                  disabled={refused}
-                  onCheckedChange={(next) => onChange(row.value, column.value, next)}
-                />
+                <span key={column.value} role="cell" className="crewlet-check-grid__cell">
+                  <Checkbox
+                    id={box}
+                    size="sm"
+                    className="crewlet-check-grid__box"
+                    label={column.label}
+                    aria-labelledby={`${rowId(r)} ${box}-label`}
+                    aria-describedby={refused ? noteId(c) : undefined}
+                    checked={state === 'checked'}
+                    indeterminate={state === 'mixed'}
+                    disabled={refused}
+                    onCheckedChange={(next) => onChange(row.value, column.value, next)}
+                  />
+                </span>
               );
             })}
           </div>

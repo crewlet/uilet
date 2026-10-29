@@ -68,8 +68,9 @@
   flex: none;
 }
 
-/* Each box stands centred under its column's name. */
-.crewlet-check-grid__row > .crewlet-check-grid__box {
+/* Each box's cell stands centred under its column's name. */
+.crewlet-check-grid__row > .crewlet-check-grid__cell {
+  display: inline-flex;
   justify-self: center;
 }
 

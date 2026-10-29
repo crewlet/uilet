@@ -1,8 +1,9 @@
 /**
  * CheckGrid: which rows hold which columns, as native checkboxes.
  *
- * The invariants: every box is named by its row and its column, the words a
- * reader sees; a column that refuses a box says why, once, and never locks
+ * The invariants: it is a table to a screen reader, its rows and columns
+ * headed; every box is named by its row and its column, the words a reader
+ * sees; a column that refuses a box says why, once, and never locks
  * a ticked box on; and at any width every column is shown, either side by
  * side under a header or, where they do not fit, stacked under each row's
  * name with its own column's name beside each box.
@@ -58,19 +59,39 @@ const sheet = () =>
 
 afterEach(cleanup);
 
-test('every box is named by its row and its column, and each row is a group named by its row', () => {
+test('every box is named by its row and its column', () => {
   grid();
-  expect(screen.getByRole('group', { name: 'Jobs per seat' })).toBeTruthy();
   for (const row of ROWS) {
-    const group = screen.getByRole('group', { name: row.label });
     for (const column of COLUMNS) {
-      expect(within(group).getByRole('checkbox', { name: `${row.label} ${column.label}` })).toBeTruthy();
+      expect(box(`${row.label} ${column.label}`)).toBeTruthy();
     }
   }
-  // The header row draws the columns once, and is not read again on top of every box.
-  const head = document.querySelector('.crewlet-check-grid__head')!;
-  expect(head.getAttribute('aria-hidden')).toBe('true');
-  expect(head.textContent).toBe(COLUMNS.map((c) => c.label).join(''));
+});
+
+/**
+ * A TABLE TO A SCREEN READER: the grid's rows and columns are ARIA rows,
+ * column headers, row headers and cells, so moving down a column is moving
+ * down a column, and each cell sits under the header of its own column.
+ */
+test('is a table: a header per column, a header per row, and each box in the cell under its column', () => {
+  grid();
+  const table = screen.getByRole('table', { name: 'Jobs per seat' });
+  const rows = within(table).getAllByRole('row');
+  expect(rows).toHaveLength(ROWS.length + 1);
+  const headers = within(rows[0]!).getAllByRole('columnheader');
+  expect(headers.map((h) => h.textContent)).toEqual(COLUMNS.map((c) => c.label));
+  expect(within(table).getAllByRole('rowheader').map((h) => h.textContent)).toEqual(ROWS.map((r) => r.label));
+  ROWS.forEach((row, r) => {
+    const cells = within(rows[r + 1]!).getAllByRole('cell');
+    expect(cells).toHaveLength(COLUMNS.length);
+    COLUMNS.forEach((column, c) => {
+      // The box in the c-th cell is the c-th column's: the cell and its header line up.
+      expect(within(cells[c]!).getByRole('checkbox', { name: `${row.label} ${column.label}` })).toBeTruthy();
+      expect(headers[c]!.textContent).toBe(column.label);
+    });
+  });
+  // The header row's corner, over the row headers, is a cell and not a header of nothing.
+  expect(within(rows[0]!).getAllByRole('cell')).toHaveLength(1);
 });
 
 test('a box shows on, partly on or off, and a press asks for the other', () => {
@@ -114,11 +135,23 @@ test('the boxes are native checkboxes in reading order, row by row', () => {
   }
 });
 
-test('has no accessibility violations, with a box partly on and a column refusing', async () => {
-  const { container } = grid();
-  const result = await axe.run(container);
-  expect(result.violations).toEqual([]);
-});
+/**
+ * NO VIOLATIONS SIDE BY SIDE OR STACKED. jsdom lays nothing out, so a
+ * container query never applies here; the stacked layout is what its rules
+ * make it, the header row gone and each box's column name drawn, and is set
+ * on the elements to be checked as it stands.
+ */
+test.each(['side by side', 'stacked'] as const)(
+  'has no accessibility violations %s, with a box partly on and a column refusing',
+  async (layout) => {
+    const { container } = grid();
+    if (layout === 'stacked') {
+      (container.querySelector('.crewlet-check-grid__head') as HTMLElement).style.display = 'none';
+    }
+    const result = await axe.run(container);
+    expect(result.violations).toEqual([]);
+  },
+);
 
 /**
  * NO COLUMN IS CUT OFF. Side by side, the grid needs the row names' track and
