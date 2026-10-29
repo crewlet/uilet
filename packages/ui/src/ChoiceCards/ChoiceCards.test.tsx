@@ -8,7 +8,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, expect, test, vi } from 'vitest';
+import { GLYPH_SIZES } from '@crewlethq/icons/glyphs';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { channels, installThemed, px, themeColour } from '../../../../apps/ui-tests/src/cascade.js';
 import { ChoiceCards, type ChoiceCardOption } from './index.js';
 
@@ -220,12 +221,106 @@ test('compact takes less room around the same lines, and keeps every line whole'
   expect(media).toMatch(/block-size:\s*var\(--crewlet-choice-cards-compact-media\);/);
 });
 
-test('a tag that does not fit beside the name takes a line of its own, the name whole and level with its radio', () => {
-  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-  expect(/\.crewlet-choice-cards__title \{([^}]*)\}/.exec(css)?.[1]).toMatch(/flex-wrap:\s*wrap;/);
-  // Its lines stand at the row's top: a taller title beside it never moves the name off its radio's line.
-  expect(/\.crewlet-choice-cards__title \{([^}]*)\}/.exec(css)?.[1]).toMatch(/align-content:\s*flex-start;/);
-  expect(/\.crewlet-choice-cards__tag \{([^}]*)\}/.exec(css)?.[1]).toMatch(/white-space:\s*nowrap;/);
+/**
+ * The title's first line, MEASURED from the cascade: where the name's centre
+ * falls against the radio's, which is drawn centred on the title step.
+ *
+ * jsdom lays nothing out, so the line is computed the way a browser lays a
+ * flex line from the properties the sheet gives it, each read off the
+ * installed sheet: the name's box (its `min-block-size`, or the document's
+ * own line it inherits from `@crewlethq/tokens/css/base`, 13px at 1.45), the
+ * mark's box, whether the title wraps and where its lines pack
+ * (`align-content`), and whether the title's box stretches to its subgrid row
+ * (`align-self`), which is taller when a card beside it takes two lines. Every
+ * `var()` is resolved from the nearest element declaring it, and its
+ * arithmetic by jsdom's own `calc()` on a probe.
+ */
+const DOCUMENT_LINE = 13 * 1.45;
+
+function declared(element: Element, name: string): string {
+  for (let at: Element | null = element; at; at = at.parentElement) {
+    const value = getComputedStyle(at).getPropertyValue(name).trim();
+    if (value !== '') return value;
+  }
+  throw new Error(`${name} is declared on nothing above this element`);
+}
+
+/** A length the sheet writes, resolved: 0 where the property is unset. */
+function length(element: Element, property: string): number {
+  let value = getComputedStyle(element).getPropertyValue(property).trim();
+  if (value === '' || value === 'auto' || value === 'none') return 0;
+  for (let depth = 0; value.includes('var('); depth++) {
+    if (depth > 8) throw new Error(`${property}: ${value} does not resolve`);
+    value = value.replace(/var\((--[\w-]+)\)/g, (_, name: string) => declared(element, name));
+  }
+  const probe = document.createElement('div');
+  probe.style.width = value;
+  document.body.append(probe);
+  const resolved = px(probe, 'width');
+  probe.remove();
+  return resolved;
+}
+
+/** The name's and the radio's vertical centres in a card, given the height of its title's subgrid row. */
+function centres(card: Element, row: number | null): { name: number; radio: number } {
+  const title = card.querySelector('.crewlet-choice-cards__title')!;
+  const label = card.querySelector('.crewlet-choice-cards__label')!;
+  const radio = card.querySelector('.crewlet-choice-cards__radio')!;
+  const mark = card.querySelector('.crewlet-choice-cards__media svg');
+  const name = Math.max(DOCUMENT_LINE, length(label, 'min-block-size'), length(label, 'min-height'));
+  const drawn = mark ? length(mark, 'block-size') || Number(mark.getAttribute('height')) : 0;
+  const line = Math.max(name, drawn);
+  const own = Math.max(length(title, 'min-height'), line);
+  const style = getComputedStyle(title);
+  // A title that starts at its row's top is its own height; one that stretches is the row's.
+  const box = /^(flex-)?start$/.test(style.alignSelf) || row === null ? own : Math.max(own, row);
+  // A multi-line container packed at the start lays its line at its contents' height; any
+  // other (a single line, or lines stretched) makes the one line the whole box.
+  const packed = style.flexWrap === 'wrap' && /^(flex-)?start$/.test(style.alignContent);
+  const height = packed ? line : box;
+  return {
+    name: length(card, 'padding-top') + height / 2,
+    radio: length(radio, 'inset-block-start') + length(radio, 'height') / 2,
+  };
+}
+
+describe.each(['comfortable', 'compact'] as const)('at %s density', (density) => {
+  let uninstall = () => {};
+  beforeEach(() => {
+    uninstall = installThemed('light', 'ChoiceCards/ChoiceCards.css');
+  });
+  afterEach(() => uninstall());
+
+  test.each([
+    ['a text-only card', false, null],
+    ['a card with a 24px mark', true, null],
+    ['a card beside a neighbour whose title takes two lines', true, 2 * 26 + 4],
+  ] as const)('%s centres its name on its radio', (_, marked, row) => {
+    const { container } = render(
+      <ChoiceCards
+        label="Cards"
+        density={density}
+        value="a"
+        onChange={() => {}}
+        options={[
+          {
+            value: 'a',
+            label: 'On the host',
+            ...(marked ? { media: <svg width="24" height="24" aria-hidden /> } : {}),
+          },
+        ]}
+      />,
+    );
+    const { name, radio } = centres(container.querySelector('.crewlet-choice-cards__card')!, row);
+    expect(name).toBeCloseTo(radio, 1);
+  });
+});
+
+/** The compact cap is the icons package's `lg` glyph step, not a size of its own. */
+test("compact's largest picture is the icons package's lg glyph step", () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8');
+  const rem = /--crewlet-choice-cards-compact-media:\s*([\d.]+)rem;/.exec(css)?.[1];
+  expect(Number(rem) * 16).toBe(GLYPH_SIZES.lg);
 });
 
 test('compact cards have no accessibility violations either', async () => {

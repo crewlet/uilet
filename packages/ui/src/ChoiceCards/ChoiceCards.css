@@ -194,7 +194,17 @@
   border-color: var(--color-border-strong);
 }
 
+/*
+ * THE NAME IS THE TITLE LINE'S STRUT: at least the title step tall, its words
+ * centred in it. The title wraps (a tag that does not fit takes a line of its
+ * own) and its lines stand at the row's top, so a line is only as tall as what
+ * is on it; without the strut a name in the document's 18.85px line sat 3.5px
+ * above the radio, which is centred on the title step.
+ */
 .crewlet-choice-cards__label {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--crewlet-choice-cards-title);
   min-width: 0;
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
@@ -276,17 +286,16 @@
   font-size: var(--font-size-xs);
 }
 
-
 /*
  * COMPACT: the same lines in less room, for three cards side by side in a
  * form's wide column. The padding and the gaps between cards step down one
  * (a card's own lines already keep the smallest), the picture is capped at
- * the small mark size, and the description takes the facts' size. Every line stays: a description
- * and a disabled card's reason wrap in full, since a reason cut short is a
- * dead end with no way to read why.
+ * the `lg` glyph step, and the description takes the facts' size. Every line
+ * stays: a description and a disabled card's reason wrap in full, since a
+ * reason cut short is a dead end with no way to read why.
  */
 .crewlet-choice-cards--compact {
-  /* The largest picture a compact card draws: a product's mark at the small step. */
+  /* The largest picture a compact card draws: the icons package's `lg` glyph step (GLYPH_SIZES.lg, 20px). */
   --crewlet-choice-cards-compact-media: 1.25rem;
   column-gap: var(--spacing-2);
 }
@@ -301,7 +310,7 @@
   inset-inline-end: var(--spacing-2);
 }
 
-/* The picture at most the small mark size, whatever size the caller drew it at, a wrapped mark included. */
+/* The picture at most the `lg` glyph step, whatever size the caller drew it at, a wrapped mark included. */
 .crewlet-choice-cards--compact .crewlet-choice-cards__media svg {
   inline-size: var(--crewlet-choice-cards-compact-media);
   block-size: var(--crewlet-choice-cards-compact-media);

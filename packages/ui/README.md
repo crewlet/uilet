@@ -207,9 +207,9 @@ places:
 
 ## Changes in 0.77.0
 
-**`ChoiceCards` stands three across a form's wide column.** `minCardWidth` takes `sm`, 15rem, beside `md` (20rem, still the default) and `lg` (24rem). The new `density` prop takes `compact` (the default stays `comfortable`): the card's padding and the gap between cards step down from `--spacing-3` to `--spacing-2`, a picture is capped at 1.25rem whatever size the caller drew it at, and the description takes the facts' size. Every line stays: the description, each fact and a disabled card's whole reason wrap in full, and nothing is clamped or dropped. The radios, their names and descriptions, the subgrid rows and the forced-colours treatment are unchanged. The new type is `ChoiceCardsDensity`.
+**`ChoiceCards` stands three across a form's wide column.** `minCardWidth` takes `sm`, 15rem, beside `md` (20rem, still the default) and `lg` (24rem). The new `density` prop takes `compact` (the default stays `comfortable`): the card's padding and the gap between cards step down from `--spacing-3` to `--spacing-2`, a picture is capped at 1.25rem (the icons package's `lg` glyph step, `GLYPH_SIZES.lg`) whatever size the caller drew it at, and the description takes the facts' size. Every line stays: the description, each fact and a disabled card's whole reason wrap in full, and nothing is clamped or dropped. The radios, their names and descriptions, the subgrid rows and the forced-colours treatment are unchanged. The new type is `ChoiceCardsDensity`.
 
-**A `ChoiceCards` name stays whole beside its tag.** Where the name and its `tag` do not fit on one line, the tag moves to a line of its own rather than breaking the name mid-phrase, and the title's lines stand at the top of their row, so a name stays level with its radio when a card beside it takes two.
+**A `ChoiceCards` name stays whole beside its tag.** Where the name and its `tag` do not fit on one line, the tag moves to a line of its own rather than breaking the name mid-phrase, and the title's lines stand at the top of their row, so a name stays level with its radio when a card beside it takes two. The name is at least the title step tall, its words centred in it, so its line is centred on the radio at both densities whether or not the tag wraps.
 
 ## Changes in 0.76.1
 
