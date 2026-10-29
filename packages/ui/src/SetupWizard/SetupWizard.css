@@ -309,14 +309,27 @@
    * THE SCROLLER SAYS IT SCROLLS: with its bar hidden, an edge that hides
    * steps fades out, at whichever side has steps beyond it, so a row cut at
    * the screen's edge reads as more to come rather than as the last step.
+   *
+   * THE FADE NEVER DIMS A FOCUS RING. A mask fades everything the element
+   * paints, its own outline included, so the scroller's ring is drawn by the
+   * frame around it, which is not masked. And a pill that takes focus is
+   * scrolled clear of the faded edges, so its ring is never in the fade
+   * either: `scroll-padding-inline` is the fade's own width, which the wizard
+   * reads to place it (SetupWizard.tsx, `clearOfFade`).
    */
-  .crewlet-setup-wizard__steps {
+  .crewlet-setup-wizard__steps-frame {
     --crewlet-setup-wizard-fade: var(--spacing-6);
+
+    min-width: 0;
+  }
+
+  .crewlet-setup-wizard__steps {
     --crewlet-setup-wizard-fade-left: 0px;
     --crewlet-setup-wizard-fade-right: 0px;
 
     min-width: 0;
     overflow-x: auto;
+    scroll-padding-inline: var(--crewlet-setup-wizard-fade);
     overscroll-behavior-x: contain;
     scrollbar-width: none;
     -webkit-mask-image: linear-gradient(
@@ -347,8 +360,20 @@
     --crewlet-setup-wizard-fade-right: var(--crewlet-setup-wizard-fade);
   }
 
-  /* A row that overflows takes the keyboard, so it can be scrolled without a pointer; it draws no edge, so the ring sits inside it. */
+  /*
+   * A row that overflows takes the keyboard, so it can be scrolled without a
+   * pointer. Its ring is the frame's, unmasked, inside the frame's edge, and
+   * the frame's ring is the one that carries the focus in a forced-colours
+   * mode too. The scroller's own outline is transparent only to turn off the
+   * browser's default ring, which would sit under the mask, dimmed, beside
+   * the frame's (transparent rather than none, as the kit's focus check asks
+   * of every focus style).
+   */
   .crewlet-setup-wizard__steps:focus-visible {
+    outline: 2px solid transparent;
+  }
+
+  .crewlet-setup-wizard__steps-frame:has(> .crewlet-setup-wizard__steps:focus-visible) {
     outline: 2px solid var(--color-focus);
     outline-offset: var(--size-focus-ring-inset-offset);
   }
