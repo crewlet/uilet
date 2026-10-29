@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -359,7 +359,7 @@ describe('the steps on a phone', () => {
     expect(scroller.hasAttribute('data-fade-right')).toBe(true);
     expect(scroller.hasAttribute('data-fade-left')).toBe(false);
     expect(scroller.tabIndex).toBe(0);
-    expect(within(container).getByRole('group', { name: 'Setup steps' })).toBe(scroller);
+    expect(within(container).getByRole('group', { name: 'All steps, scrolls sideways' })).toBe(scroller);
     cleanup();
     vi.restoreAllMocks();
     // Every step in view: no fade, no stop for the keyboard.
@@ -368,6 +368,83 @@ describe('the steps on a phone', () => {
     expect(still.hasAttribute('data-fade-right')).toBe(false);
     expect(still.getAttribute('tabindex')).toBeNull();
     expect(still.getAttribute('role')).toBeNull();
+  });
+
+  test('the row that takes the keyboard has a name of its own, never the navigation’s again', () => {
+    mockRow('ltr');
+    asPhone();
+    const { container } = render(<Wizard labels={{ stepsRow: 'Alle Schritte, seitlich scrollbar' }} />);
+    const nav = within(container).getByRole('navigation', { name: 'Setup steps' });
+    const row = within(nav).getByRole('group');
+    expect(row.getAttribute('aria-label')).toBe('Alle Schritte, seitlich scrollbar');
+    expect(row.getAttribute('aria-label')).not.toBe(nav.getAttribute('aria-label'));
+    cleanup();
+    vi.restoreAllMocks();
+    mockRow('ltr');
+    asPhone();
+    const plain = render(<Wizard />).container;
+    expect(within(plain).getByRole('group').getAttribute('aria-label')).toBe('All steps, scrolls sideways');
+  });
+
+  test('the edge fade never dims a focus ring: the unmasked frame draws the row’s ring, and a focused pill is scrolled clear of the fade', () => {
+    const read = (sheet: string) =>
+      readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', sheet), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const wizard = read('SetupWizard/SetupWizard.css');
+    const rule = (selector: string) => {
+      const at = wizard.indexOf(`${selector} {`);
+      expect(at, selector).toBeGreaterThan(-1);
+      return wizard.slice(at + selector.length + 2, wizard.indexOf('}', at));
+    };
+    const scroller = rule('.crewlet-setup-wizard__steps');
+    const frame = rule('.crewlet-setup-wizard__steps-frame');
+    // THE MASK IS THE SCROLLER'S, and the frame around it has none.
+    expect(scroller).toMatch(/(^|\s)mask-image:/);
+    expect(frame).not.toMatch(/mask/);
+    // The scroller's own outline cannot be seen through its mask, so it draws none in the focus colour.
+    expect(rule('.crewlet-setup-wizard__steps:focus-visible')).toMatch(/outline: 2px solid transparent;/);
+    expect(rule('.crewlet-setup-wizard__steps:focus-visible')).not.toMatch(/--color-focus/);
+    // The frame draws the ring while the scroller has the keyboard's focus.
+    expect(rule('.crewlet-setup-wizard__steps-frame:has(> .crewlet-setup-wizard__steps:focus-visible)')).toMatch(
+      /outline: 2px solid var\(--color-focus\);/,
+    );
+    // A pill taking focus stops a fade's width from either edge.
+    expect(scroller).toMatch(/scroll-padding-inline: var\(--crewlet-setup-wizard-fade\);/);
+    expect(wizard).toMatch(/to right,\s*transparent,\s*#000 var\(--crewlet-setup-wizard-fade-left\)/);
+    expect(rule('.crewlet-setup-wizard__steps[data-fade-left]')).toMatch(/var\(--crewlet-setup-wizard-fade\)/);
+  });
+
+  test('a step that takes focus is scrolled clear of the faded edge it sits under, left to right and right to left', () => {
+    // Steps 80px wide every 100px in a 300px row, under a 24px fade: the first
+    // stands 24px into one faded edge, the third 4px into the other, the second
+    // in neither. Right to left the row is mirrored, and so are the moves.
+    const expected = { ltr: [-24, 0, 4], rtl: [24, 0, -4] };
+    for (const dir of ['ltr', 'rtl'] as const) {
+      const scrolled = mockRow(dir);
+      asPhone();
+      const real = window.getComputedStyle.bind(window);
+      vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) => {
+        const style = real(el, pseudo);
+        if (!el.classList.contains('crewlet-setup-wizard__steps')) return style;
+        return new Proxy(style, {
+          get: (target, key) => (key === 'scrollPaddingInlineStart' ? '24px' : Reflect.get(target, key)),
+        });
+      });
+      const { container } = render(
+        <div dir={dir}>
+          <Wizard />
+        </div>,
+      );
+      const scroller = container.querySelector<HTMLElement>('.crewlet-setup-wizard__steps')!;
+      const pills = [...scroller.querySelectorAll<HTMLButtonElement>('button')];
+      expect(pills).toHaveLength(3);
+      pills.forEach((pill, i) => {
+        const before = scrolled.get(scroller) ?? 0;
+        act(() => pill.focus());
+        expect((scrolled.get(scroller) ?? 0) - before, `${dir} step ${i + 1}`).toBe(expected[dir][i]);
+      });
+      cleanup();
+      vi.restoreAllMocks();
+    }
   });
 
   test('a wide page has no bar: the rail says how far along itself', () => {

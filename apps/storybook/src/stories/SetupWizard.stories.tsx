@@ -473,6 +473,12 @@ export const Narrower: Story = {
 /**
  * ON A PHONE the rail is a row of steps under "Step 3 of 6 · Colours", the
  * preview folds into a disclosure, and the actions hold above the safe area.
+ *
+ * The row fades at an edge that hides steps. Press Tab into it: while it
+ * hides steps it takes the keyboard, named "All steps, scrolls sideways"
+ * (not the navigation's name again), and its focus ring is drawn at full
+ * strength around it, fade or not. A step taking focus stops clear of the
+ * fade.
  */
 export const Phone: Story = {
   parameters: { viewport: { options: WIDTHS } },

@@ -205,6 +205,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.76.1
+
+**`SetupWizard`'s row of steps on a phone has a name of its own.** While the row hides steps it takes the keyboard to scroll, as a group named by the new `labels.stepsRow` ("All steps, scrolls sideways"), rather than by `stepsLabel` again, which already names the navigation around it and the list inside it.
+
+**The row's edge fade never dims a focus ring.** The row's ring is drawn by a frame around it (`crewlet-setup-wizard__steps-frame`), which the fade does not reach, and a step that takes focus is scrolled clear of the faded edges, by the fade's width (the row's `scroll-padding-inline`), in either direction.
+
 ## Changes in 0.76.0
 
 **`ChoiceCards`, choices a person compares.** One answer from a few, each a card of the same lines: a picture (`media`), the choice's name (`label`) and its `tag`; one line of `description`; and a few `facts`, one to a line, each a name and a value, with an optional `tone` drawn as a `StatusDot` beside words that say the state. Cards side by side share every line on a CSS subgrid, so their facts stand level; where subgrid is not supported each card is a plain column. A description row is held only when some card has one, and a card without one keeps it empty. `minCardWidth` is the narrowest a card stands (`md`, 20rem, the default, or `lg`, 24rem), which decides how many share a row. The radios are native, so the arrow keys move the choice; each is named by its choice and tag alone and described by the rest of the card. A card that cannot be chosen (`disabled`) stands on the page's ground with a quiet radio and a muted picture, and says why in `disabledReason`, on its last line or, with `disabledReasonAt`, in place of a fact's value, read with the fact's name. A chosen card lays the selected tint over its raised surface inside an edge in the accent's ink. Under forced colours the radio is the platform's own, the chosen card's edge the system's selection colour and an unavailable card the system's disabled ink. The types are `ChoiceCardsProps`, `ChoiceCardOption`, `ChoiceCardFact` and `ChoiceCardsMinWidth`.

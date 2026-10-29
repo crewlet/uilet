@@ -18,11 +18,19 @@ export interface SetupWizardLabels {
   progress: (position: number, total: number) => string;
   /** The disclosure the aside folds into on a phone: "Preview". */
   asideToggle: string;
+  /**
+   * The phone's row of steps while it hides some and takes the keyboard to
+   * scroll: what that stop is, in words of its own. The navigation around it
+   * is already named by `stepsLabel`, and the list inside it too, so the row
+   * repeating that name was the same words three times over.
+   */
+  stepsRow: string;
 }
 
 const LABELS: SetupWizardLabels = {
   progress: (position, total) => `Step ${position} of ${total}`,
   asideToggle: 'Preview',
+  stepsRow: 'All steps, scrolls sideways',
 };
 
 export interface SetupWizardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'onSelect'> {
@@ -106,6 +114,23 @@ function stepRowOf(scroller: HTMLElement): StepRow {
   const left = Math.min(...boxes.map((r) => r.left)) < box.left - 0.5;
   const right = Math.max(...boxes.map((r) => r.right)) > box.right + 0.5;
   return { overflows: scroller.scrollWidth > scroller.clientWidth + 0.5 || left || right, left, right };
+}
+
+/**
+ * Scrolls the row so a step that took focus stands clear of the faded edges,
+ * where the fade would dim its focus ring. A browser scrolls a focused element
+ * into view only when none of it shows, so a step half under the fade stayed
+ * there. The fade's width is the scroller's `scroll-padding-inline`, which the
+ * stylesheet sets to it; by the drawn boxes, so it holds in either direction.
+ */
+function clearOfFade(scroller: HTMLElement, step: HTMLElement) {
+  const fade = Number.parseFloat(getComputedStyle(scroller).scrollPaddingInlineStart) || 0;
+  const box = scroller.getBoundingClientRect();
+  const drawn = step.getBoundingClientRect();
+  const pastRight = drawn.right - (box.right - fade);
+  const pastLeft = box.left + fade - drawn.left;
+  if (pastRight > 0) scroller.scrollLeft += pastRight;
+  else if (pastLeft > 0) scroller.scrollLeft -= pastLeft;
 }
 
 /**
@@ -298,16 +323,26 @@ export function SetupWizard({
           {phone ? (
             // A ROW THAT OVERFLOWS IS A SCROLLER THE KEYBOARD CAN REACH: it
             // takes focus and a name only while it hides steps, since a pill
-            // that only labels its step takes no focus of its own.
-            <div
-              ref={stepsRef}
-              className="crewlet-setup-wizard__steps"
-              data-fade-left={row.left ? '' : undefined}
-              data-fade-right={row.right ? '' : undefined}
-              onScroll={measure}
-              {...(row.overflows ? { tabIndex: 0, role: 'group', 'aria-label': stepsLabel } : {})}
-            >
-              {stepper}
+            // that only labels its step takes no focus of its own. Its focus
+            // ring is drawn by the frame around it, which the edge fade does
+            // not reach (SetupWizard.css).
+            <div className="crewlet-setup-wizard__steps-frame">
+              <div
+                ref={stepsRef}
+                className="crewlet-setup-wizard__steps"
+                data-fade-left={row.left ? '' : undefined}
+                data-fade-right={row.right ? '' : undefined}
+                onScroll={measure}
+                onFocus={(event) => {
+                  const step = event.target.closest<HTMLElement>('li');
+                  if (event.target === event.currentTarget || !step) return;
+                  clearOfFade(event.currentTarget, step);
+                  measure();
+                }}
+                {...(row.overflows ? { tabIndex: 0, role: 'group', 'aria-label': text.stepsRow } : {})}
+              >
+                {stepper}
+              </div>
             </div>
           ) : (
             stepper
