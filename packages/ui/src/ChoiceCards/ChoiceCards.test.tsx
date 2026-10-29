@@ -13,6 +13,13 @@ import { ChoiceCards, type ChoiceCardOption } from './index.js';
 
 afterEach(cleanup);
 
+/** What a radio is described by, its parts in order. */
+const description = (radio: Element): string[] =>
+  (radio.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map((id) => document.getElementById(id)?.textContent ?? '');
+
 const OPTIONS: ChoiceCardOption[] = [
   {
     value: 'container',
@@ -49,7 +56,7 @@ test('choosing a card reports its value, and a disabled card neither chooses nor
   expect(onChange).toHaveBeenCalledWith('direct');
   const e2b = screen.getByRole('radio', { name: /In E2B/ }) as HTMLInputElement;
   expect(e2b.disabled).toBe(true);
-  expect(document.getElementById(e2b.getAttribute('aria-describedby')!)!.textContent).toBe('Add E2B_API_KEY under Settings, Secrets.');
+  expect(description(e2b)).toContain('Add E2B_API_KEY under Settings, Secrets.');
 });
 
 test('a fact with a state draws its dot beside the words, never alone', () => {
@@ -81,8 +88,7 @@ test('a fact marked as the reason describes its disabled card, and every card sp
     />,
   );
   const e2b = screen.getByRole('radio', { name: /In E2B/ });
-  const described = document.getElementById(e2b.getAttribute('aria-describedby') ?? '');
-  expect(described?.textContent).toContain('E2B key not set');
+  expect(description(e2b).join(' ')).toContain('E2B key not set');
   // The name, the description and the most facts any card has (two): four rows for every card.
   const group = container.querySelector('.crewlet-choice-cards') as HTMLElement;
   expect(group.style.getPropertyValue('--crewlet-choice-cards-rows')).toBe('4');
@@ -99,6 +105,18 @@ test('every card spans the same rows of the group and lays its lines on them, so
   const { container } = render(<ChoiceCards label="Where it runs" options={OPTIONS} value={null} onChange={() => {}} />);
   const group = container.querySelector('.crewlet-choice-cards') as HTMLElement;
   expect(group.style.getPropertyValue('--crewlet-choice-cards-rows')).toBe('5');
+});
+
+test('a radio is named by its choice and tag alone, and described by the rest of the card', () => {
+  render(<ChoiceCards label="Where it runs" options={OPTIONS} value={null} onChange={() => {}} />);
+  // Named by the whole card, it was read as every word on it on each arrow press.
+  const radio = screen.getByRole('radio', { name: 'In a container Company default' });
+  expect(description(radio)).toEqual([
+    'A fresh container for each coding run.',
+    'Needs Docker 24.0.7 found',
+    'IsolationOwn filesystem',
+  ]);
+  expect(screen.getByRole('radio', { name: 'On the host' })).toBeTruthy();
 });
 
 test('has no accessibility violations', async () => {
