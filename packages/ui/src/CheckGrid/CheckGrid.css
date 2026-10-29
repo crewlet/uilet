@@ -1,0 +1,286 @@
+/*
+ * CheckGrid: checkboxes where rows meet columns.
+ *
+ * WIDE, every column stands side by side under a header row: the row names'
+ * track (at least 10rem) and one equal track per column (7.5rem), so the
+ * columns of every row line up without a subgrid. A column's name beside each
+ * box is said and not drawn, since the header draws it once.
+ *
+ * NARROW, each row stacks: its name on a line of its own, then its boxes
+ * wrapping, each with its column's name drawn beside it; the header row is
+ * gone. No column is cut off behind a sideways scroll. WHERE IS NARROW is the
+ * grid's own width, by a container query, so a narrow column on a wide screen
+ * stacks too: under the width every column needs, the name's track plus each
+ * column's track and gap. A container query cannot read a custom property in
+ * its condition, so that width is written once per column count below, up to
+ * the six the grid stands side by side for (`MOST_COLUMNS`); a grid of more
+ * always stacks.
+ */
+.crewlet-check-grid {
+  --crewlet-check-grid-name: 10rem;
+  --crewlet-check-grid-column: 7.5rem;
+  container: crewlet-check-grid / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-check-grid__table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.crewlet-check-grid__head,
+.crewlet-check-grid__row {
+  display: grid;
+  grid-template-columns:
+    minmax(var(--crewlet-check-grid-name), 1fr)
+    repeat(var(--crewlet-check-grid-columns, 3), var(--crewlet-check-grid-column));
+  column-gap: var(--spacing-3);
+  align-items: center;
+}
+
+/* A column's name over its boxes: its glyph and its word, wrapping inside its track. */
+.crewlet-check-grid__column {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+/* A row's name: its picture and its words, at the start. */
+.crewlet-check-grid__name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.crewlet-check-grid__media {
+  display: inline-flex;
+  flex: none;
+}
+
+/* Each box stands centred under its column's name. */
+.crewlet-check-grid__row > .crewlet-check-grid__box {
+  justify-self: center;
+}
+
+/* WIDE: the column's name beside a box is said (it names the box) and not drawn. */
+.crewlet-check-grid__box .crewlet-checkbox__text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Why a column refuses a box, once, under the grid. */
+.crewlet-check-grid__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  list-style: none;
+}
+
+/* NARROW, by column count: under the name's track plus each column's track and gap. */
+@container crewlet-check-grid (width < 18.25rem) {
+  .crewlet-check-grid--1 .crewlet-check-grid__head {
+    display: none;
+  }
+
+  .crewlet-check-grid--1 .crewlet-check-grid__row {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--spacing-3);
+    padding-block: var(--spacing-1);
+  }
+
+  .crewlet-check-grid--1 .crewlet-check-grid__name {
+    flex-basis: 100%;
+  }
+
+  .crewlet-check-grid--1 .crewlet-check-grid__box .crewlet-checkbox__text {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+}
+
+@container crewlet-check-grid (width < 26.5rem) {
+  .crewlet-check-grid--2 .crewlet-check-grid__head {
+    display: none;
+  }
+
+  .crewlet-check-grid--2 .crewlet-check-grid__row {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--spacing-3);
+    padding-block: var(--spacing-1);
+  }
+
+  .crewlet-check-grid--2 .crewlet-check-grid__name {
+    flex-basis: 100%;
+  }
+
+  .crewlet-check-grid--2 .crewlet-check-grid__box .crewlet-checkbox__text {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+}
+
+@container crewlet-check-grid (width < 34.75rem) {
+  .crewlet-check-grid--3 .crewlet-check-grid__head {
+    display: none;
+  }
+
+  .crewlet-check-grid--3 .crewlet-check-grid__row {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--spacing-3);
+    padding-block: var(--spacing-1);
+  }
+
+  .crewlet-check-grid--3 .crewlet-check-grid__name {
+    flex-basis: 100%;
+  }
+
+  .crewlet-check-grid--3 .crewlet-check-grid__box .crewlet-checkbox__text {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+}
+
+@container crewlet-check-grid (width < 43rem) {
+  .crewlet-check-grid--4 .crewlet-check-grid__head {
+    display: none;
+  }
+
+  .crewlet-check-grid--4 .crewlet-check-grid__row {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--spacing-3);
+    padding-block: var(--spacing-1);
+  }
+
+  .crewlet-check-grid--4 .crewlet-check-grid__name {
+    flex-basis: 100%;
+  }
+
+  .crewlet-check-grid--4 .crewlet-check-grid__box .crewlet-checkbox__text {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+}
+
+@container crewlet-check-grid (width < 51.25rem) {
+  .crewlet-check-grid--5 .crewlet-check-grid__head {
+    display: none;
+  }
+
+  .crewlet-check-grid--5 .crewlet-check-grid__row {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--spacing-3);
+    padding-block: var(--spacing-1);
+  }
+
+  .crewlet-check-grid--5 .crewlet-check-grid__name {
+    flex-basis: 100%;
+  }
+
+  .crewlet-check-grid--5 .crewlet-check-grid__box .crewlet-checkbox__text {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+}
+
+@container crewlet-check-grid (width < 59.5rem) {
+  .crewlet-check-grid--6 .crewlet-check-grid__head {
+    display: none;
+  }
+
+  .crewlet-check-grid--6 .crewlet-check-grid__row {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--spacing-3);
+    padding-block: var(--spacing-1);
+  }
+
+  .crewlet-check-grid--6 .crewlet-check-grid__name {
+    flex-basis: 100%;
+  }
+
+  .crewlet-check-grid--6 .crewlet-check-grid__box .crewlet-checkbox__text {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+}
+
+/* More columns than the grid stands side by side for: always stacked. */
+.crewlet-check-grid--many .crewlet-check-grid__head {
+  display: none;
+}
+
+.crewlet-check-grid--many .crewlet-check-grid__row {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--spacing-3);
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-check-grid--many .crewlet-check-grid__name {
+  flex-basis: 100%;
+}
+
+.crewlet-check-grid--many .crewlet-check-grid__box .crewlet-checkbox__text {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+}
