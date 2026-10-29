@@ -9,11 +9,11 @@
  * from a mark, and a mark appears only beside the app's own name, so the rule
  * holds everywhere else.
  *
- * GitHub's and Notion's marks are monochrome by design, so they take the
- * current text colour and read on either theme. That is the vendor's own
- * instruction rather than an exemption from the rule above: each publishes one
- * mark, black on a light ground and white on a dark one, and a fixed hex would
- * be wrong in one theme whichever one was picked.
+ * GitHub's, Notion's and OpenCode's marks are monochrome by design, so they
+ * take the current text colour and read on either theme. That is each
+ * vendor's own instruction rather than an exemption from the rule above: each
+ * publishes one mark, dark on a light ground and light on a dark one, and a
+ * fixed hex would be wrong in one theme whichever one was picked.
  *
  * Mattermost's blue is its mark on a light ground, and Mattermost publishes
  * the same drawing reversed (white) for a dark one, which is what the dark
@@ -38,9 +38,8 @@
  * OpenCode publishes its mark twice, near-black on a light ground and
  * near-white on a dark one, so it is drawn in the current text colour, its
  * inner square a quarter of that ink, as GitHub's is: one fixed pair of hexes
- * would be wrong in one theme. Its drawing is a 240 by 300 upright, padded
- * here to a square box, centred, so it stands the size of the square marks
- * beside it rather than narrower.
+ * would be wrong in one theme. Its drawing is a 240 by 300 upright that fills
+ * its own viewBox, as every vendor's does; the mark's square slot centres it.
  *
  * The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram and Microsoft
  * Teams drawings are Simple Icons' renderings (CC0 1.0). Claude's is the
@@ -49,7 +48,7 @@
  * Spark), unchanged but for the file's size attributes. OpenCode's is the
  * square logo from its own brand page (opencode.ai/brand,
  * opencode-logo-light-square.svg), its no-op clip and mask removed and its
- * colours taken from the text as above, and its box padded square.
+ * colours taken from the text as above.
  * Using a mark to name the app it belongs to is nominative use; TRADEMARKS.md
  * says what that does and does not allow.
  */

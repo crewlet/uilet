@@ -82,7 +82,7 @@ import { VendorMark } from '@crewlethq/icons';
 
 GitHub's, Notion's and OpenCode's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
 
-**`claude` and `opencode` name the coding CLI a model runs** (Claude Code and OpenCode). Claude's is the Claude Spark (Clay) from Anthropic's press kit at anthropic.com/press-kit; OpenCode's is the logo from opencode.ai/brand, its box padded square. Each mark is its owner's trademark.
+**`claude` and `opencode` name the coding CLI a model runs** (Claude Code and OpenCode). Claude's is the Claude Spark (Clay) from Anthropic's press kit at anthropic.com/press-kit; OpenCode's is the logo from opencode.ai/brand. Each mark is its owner's trademark.
 
 **`crewlet` is Crewlet's own mark**, for the services built into it (Worklet, Doclet) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
 

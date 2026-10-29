@@ -101,14 +101,6 @@ describe('a vendor mark', () => {
     assert.deepEqual([...inherited].sort(), monochrome);
   });
 
-  it('pads the coding CLI marks to a square box, so each stands the size of the square marks beside it', async () => {
-    for (const vendor of ['claude', 'opencode']) {
-      const svg = await readFile(resolve(PACKAGE, `svg/vendor/${vendor}.svg`), 'utf8');
-      const [, , width, height] = /viewBox="([^"]+)"/.exec(svg)[1].split(/\s+/).map(Number);
-      assert.equal(width, height, vendor);
-    }
-  });
-
   it('names its vendor in a class, so a rule can reach one mark', () => {
     for (const vendor of VENDORS.filter((v) => v !== 'crewlet')) {
       const markup = render(VendorMark, { vendor });
