@@ -41,8 +41,11 @@ export interface TabsItem {
   count?: number | string | null;
   /**
    * What needs the reader behind this tab, drawn after the label: problems
-   * as a danger count, a warning or an unsaved change as a 6px dot. It
-   * replaces the count while it is set. `label` is what a screen reader hears.
+   * as a danger count, a warning or an unsaved change as a 6px dot. A danger
+   * count replaces the tab's count while it is set, since two figures side by
+   * side read as one; a dot sits after the count, since how many things are
+   * behind a tab and whether one needs the reader are two facts ("Agents 5"
+   * with a warning). `label` is what a screen reader hears.
    */
   marker?: TabsMarker | undefined;
   /**
@@ -398,20 +401,21 @@ export function Tabs({
           {item.label}
           {item.live ? <VisuallyHidden>{`, ${item.live}`}</VisuallyHidden> : null}
         </span>
-        {item.marker ? (
-          item.marker.tone === 'danger' ? (
-            <span className="crewlet-tabs__marker crewlet-tabs__marker--danger">
-              <span aria-hidden="true">{item.marker.count}</span>
-              <VisuallyHidden>{item.marker.label}</VisuallyHidden>
-            </span>
-          ) : (
-            <span className={`crewlet-tabs__marker crewlet-tabs__marker--${item.marker.tone}`}>
-              <VisuallyHidden>{item.marker.label}</VisuallyHidden>
-            </span>
-          )
-        ) : item.count != null && item.count !== '' ? (
-          <Count value={item.count} />
-        ) : null}
+        {item.marker?.tone === 'danger' ? (
+          <span className="crewlet-tabs__marker crewlet-tabs__marker--danger">
+            <span aria-hidden="true">{item.marker.count}</span>
+            <VisuallyHidden>{item.marker.label}</VisuallyHidden>
+          </span>
+        ) : (
+          <>
+            {item.count != null && item.count !== '' ? <Count value={item.count} /> : null}
+            {item.marker ? (
+              <span className={`crewlet-tabs__marker crewlet-tabs__marker--${item.marker.tone}`}>
+                <VisuallyHidden>{item.marker.label}</VisuallyHidden>
+              </span>
+            ) : null}
+          </>
+        )}
       </>
     );
 

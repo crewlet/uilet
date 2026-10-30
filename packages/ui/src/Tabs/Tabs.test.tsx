@@ -15,7 +15,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRef } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
 import { afterEach, expect, test, vi } from 'vitest';
 import { SegmentedControl } from '../SegmentedControl/index.js';
@@ -605,7 +605,7 @@ test('every tab is watched for its own size, not only the row', () => {
   }
 });
 
-test('a marker says what needs the reader behind a tab, and replaces the count while it is set', () => {
+test('a marker says what needs the reader behind a tab, and a danger count replaces the tab\'s count', () => {
   const { container } = render(
     <Tabs
       variant="underline"
@@ -620,11 +620,29 @@ test('a marker says what needs the reader behind a tab, and replaces the count w
     />,
   );
   const tabs = screen.getAllByRole('tab');
-  expect(tabs.map((tab) => tab.textContent)).toEqual(['Profile22 problems', 'ModelA warning', 'WorkChanged', 'Advanced6']);
+  expect(tabs.map((tab) => tab.textContent)).toEqual(['Profile22 problems', 'ModelA warning', 'Work3Changed', 'Advanced6']);
   expect(container.querySelector('.crewlet-tabs__marker--danger')?.textContent).toContain('2');
   expect(container.querySelectorAll('.crewlet-tabs__marker--warning, .crewlet-tabs__marker--changed')).toHaveLength(2);
-  // The count a marker stands in for is not drawn beside it.
-  expect(tabs[2]!.textContent).not.toContain('3');
+  // A DOT SITS AFTER THE COUNT: how many things are behind the tab, then
+  // that one needs the reader.
+  const work = tabs[2]!;
+  const count = within(work).getByText('3');
+  const dot = work.querySelector('.crewlet-tabs__marker--changed')!;
+  expect(count.compareDocumentPosition(dot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('a danger count stands in for the tab\'s own count, so two figures never sit side by side', () => {
+  render(
+    <Tabs
+      variant="underline"
+      ariaLabel="Sections"
+      value="checks"
+      items={[{ value: 'checks', label: 'Checks', count: 7, marker: { tone: 'danger', count: 2, label: '2 problems' } }]}
+    />,
+  );
+  const tab = screen.getByRole('tab');
+  expect(tab.textContent).toBe('Checks22 problems');
+  expect(tab.textContent).not.toContain('7');
 });
 
 test('the chip variant outlines the lens that is on in the accent, and a focused chip draws the ring in its place', () => {
