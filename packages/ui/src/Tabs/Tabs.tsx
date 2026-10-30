@@ -353,6 +353,17 @@ export function Tabs({
     // environment without ResizeObserver hears of that from nothing else.
   }, [variant, value, items, barred]);
 
+  /*
+   * A PILL OR CHIP ROW SCROLLS INSIDE A BAR, and only there, so there its
+   * current tab is brought into the row's view as an underline row's is: a
+   * lens past the room the actions leave was otherwise chosen and never shown.
+   */
+  useLayoutEffect(() => {
+    if (variant === 'underline' || !barred) return;
+    const nav = navRef.current;
+    if (nav) reveal(nav);
+  }, [variant, value, items, barred]);
+
   const rootClass = cx(
     'crewlet-tabs',
     `crewlet-tabs--${variant}`,

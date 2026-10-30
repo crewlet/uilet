@@ -886,3 +886,31 @@ test('a pill or chip row scrolls inside a bar rather than painting under its act
   const host = /\.crewlet-tabs-host\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
   expect(host).toMatch(/display:\s*contents/);
 });
+
+test('a chip past the room a bar leaves is scrolled into view, and only inside a bar', () => {
+  // A chip row 320 wide beside its action, the current chip drawn from 400 to
+  // 460: the row moves by exactly the overhang.
+  const chips = (actions: boolean) => (
+    <Tabs
+      ariaLabel="Lens"
+      variant="chip"
+      value="charter"
+      items={lenses}
+      onValueChange={() => {}}
+      actions={actions ? <button type="button">New</button> : undefined}
+    />
+  );
+  const scroll = scrollable(0);
+  laidOut(new DOMRect(0, 0, 320, 28), new DOMRect(400, 0, 60, 28));
+  render(chips(true));
+  expect(scroll.at).toBe(140);
+  vi.restoreAllMocks();
+
+  // Without actions a chip row does not scroll, so nothing moves it.
+  cleanup();
+  const still = scrollable(0);
+  laidOut(new DOMRect(0, 0, 320, 28), new DOMRect(400, 0, 60, 28));
+  render(chips(false));
+  expect(still.at).toBe(0);
+  vi.restoreAllMocks();
+});
