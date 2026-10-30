@@ -24,7 +24,7 @@ function Harness({
   const [width, setWidth] = useState(start);
   return (
     <ResizeHandle
-      label="Resize the assistant panel"
+      label="Resize the Ask Crewlet panel"
       value={width}
       min={360}
       max={640}
@@ -36,7 +36,7 @@ function Harness({
   );
 }
 
-const handle = () => screen.getByRole('separator', { name: 'Resize the assistant panel' });
+const handle = () => screen.getByRole('separator', { name: 'Resize the Ask Crewlet panel' });
 
 test('is a vertical separator that states its value and its bounds', () => {
   render(<Harness />);

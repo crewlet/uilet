@@ -528,7 +528,7 @@ No token is renamed or removed here; values moved to the approved design, and se
 | `--motion-duration-breath` | 2200ms | The PERIOD of a mark saying work is still happening: one full round, out and back, 0.45 cycles a second. Not a transition. A pulsing `StatusDot` breathes one round of it |
 | `--motion-duration-turn` | 1000ms | The PERIOD of one full rotation of a working ring (`Spinner`), linear. Not a transition |
 | `--motion-duration-sweep` | 1500ms | The PERIOD of a working ring's arc lengthening and shortening, out and back. Not a whole number of turns, so the arc's longest reach lands somewhere new each round. Not a transition |
-| `--motion-duration-spark` | 1600ms | The PERIOD of the Assistant mark's working gesture (`ThinkingIndicator`): a quarter turn of its main spark and a dip of its companion over half of the period, then rest. Not a transition |
+| `--motion-duration-spark` | 1600ms | The PERIOD of the Ask Crewlet mark's working gesture (`ThinkingIndicator`): a quarter turn of its main spark and a dip of its companion over half of the period, then rest. Not a transition |
 
 A component that moves stops every motion it starts in the same stylesheet, naming the rule's selector again, after it, inside `@media (prefers-reduced-motion: reduce)`, which is what `crewlet-css-check` in `@crewlethq/ui` holds it to; and `@crewlethq/tokens/css/base` collapses motion for the whole document under `prefers-reduced-motion: reduce`.
 

@@ -1,5 +1,5 @@
 /*
- * The assistant at work: the Assistant's mark, its spark turning, and a line
+ * Ask Crewlet at work: the Ask Crewlet mark, its spark turning, and a line
  * of status under a shimmer. See ThinkingIndicator.tsx for why it replaces a
  * caret and how it is announced.
  */
@@ -21,7 +21,7 @@
 }
 
 /*
- * THE SPARK TURNS A QUARTER, THEN RESTS. The Assistant's main spark
+ * THE SPARK TURNS A QUARTER, THEN RESTS. The Ask Crewlet mark's main spark
  * (data-motion="turn") makes a quarter turn about its own centre while its
  * companion (data-motion="twinkle") dims and shrinks, both on one timeline of
  * --motion-duration-spark (1.6s). The gesture runs from 20% to 70% of the

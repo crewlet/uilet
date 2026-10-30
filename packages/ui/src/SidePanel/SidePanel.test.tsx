@@ -33,7 +33,7 @@ function Harness({
       panel={
         open ? (
           <SidePanel
-            title="Crewlet Assistant"
+            title="Ask Crewlet"
             onClose={() => setOpen(false)}
             resizable
             width={width}
@@ -62,21 +62,21 @@ function open() {
 
 test('is a complementary region named by its heading, level two', () => {
   render(
-    <SidePanel title="Crewlet Assistant" onClose={() => {}}>
+    <SidePanel title="Ask Crewlet" onClose={() => {}}>
       <p>Thread</p>
     </SidePanel>,
   );
-  expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
-  expect(screen.getByRole('heading', { level: 2, name: 'Crewlet Assistant' })).toBeTruthy();
+  expect(screen.getByRole('complementary', { name: 'Ask Crewlet' })).toBeTruthy();
+  expect(screen.getByRole('heading', { level: 2, name: 'Ask Crewlet' })).toBeTruthy();
 });
 
 test('opening focuses the heading, which draws no ring, and closing from inside hands focus back', () => {
   render(<Harness />);
   const ask = open();
-  const heading = screen.getByRole('heading', { name: 'Crewlet Assistant' });
+  const heading = screen.getByRole('heading', { name: 'Ask Crewlet' });
   expect(document.activeElement).toBe(heading);
   expect(heading.classList.contains('crewlet-side-panel__title--quiet')).toBe(true);
-  fireEvent.click(screen.getByRole('button', { name: 'Close Crewlet Assistant' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close Ask Crewlet' }));
   expect(screen.queryByRole('complementary')).toBeNull();
   expect(document.activeElement).toBe(ask);
 });
@@ -90,7 +90,7 @@ test('initialFocus none leaves focus where the page put it, and a ref takes it t
   function ToComposer() {
     const field = useRef<HTMLTextAreaElement>(null);
     return (
-      <SidePanel title="Crewlet Assistant" onClose={() => {}} initialFocus={field} footer={<textarea ref={field} aria-label="Message" />}>
+      <SidePanel title="Ask Crewlet" onClose={() => {}} initialFocus={field} footer={<textarea ref={field} aria-label="Message" />}>
         <p>Thread</p>
       </SidePanel>
     );
@@ -102,7 +102,7 @@ test('initialFocus none leaves focus where the page put it, and a ref takes it t
 test('Escape closes it from a field inside, unless something inside answered first', () => {
   const onClose = vi.fn();
   render(
-    <SidePanel title="Crewlet Assistant" onClose={onClose} footer={<input aria-label="Message" />}>
+    <SidePanel title="Ask Crewlet" onClose={onClose} footer={<input aria-label="Message" />}>
       <input aria-label="Search" onKeyDown={(event) => event.key === 'Escape' && event.preventDefault()} />
     </SidePanel>,
   );
@@ -114,25 +114,25 @@ test('Escape closes it from a field inside, unless something inside answered fir
 
 test('a hidden title still names the panel', () => {
   render(
-    <SidePanel title="Crewlet Assistant" hideTitle onClose={() => {}}>
+    <SidePanel title="Ask Crewlet" hideTitle onClose={() => {}}>
       <p>Thread</p>
     </SidePanel>,
   );
-  const heading = screen.getByRole('heading', { name: 'Crewlet Assistant' });
+  const heading = screen.getByRole('heading', { name: 'Ask Crewlet' });
   expect(heading.classList.contains('crewlet-side-panel__title--hidden')).toBe(true);
-  expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
+  expect(screen.getByRole('complementary', { name: 'Ask Crewlet' })).toBeTruthy();
 });
 
 test('flush drops the body inset and publishes it as zero inside the body only', () => {
   const uninstall = installSheets('SidePanel/SidePanel.css');
   try {
     const panelOf = (flush?: boolean) => (
-      <SidePanel title="Crewlet Assistant" flush={flush} onClose={() => {}} footer={<input aria-label="Message" />}>
+      <SidePanel title="Ask Crewlet" flush={flush} onClose={() => {}} footer={<input aria-label="Message" />}>
         <p>Thread</p>
       </SidePanel>
     );
     const { rerender } = render(panelOf());
-    const panel = screen.getByRole('complementary', { name: 'Crewlet Assistant' });
+    const panel = screen.getByRole('complementary', { name: 'Ask Crewlet' });
     const body = panel.querySelector<HTMLElement>('.crewlet-side-panel__body')!;
     const inset = (el: Element) => getComputedStyle(el).getPropertyValue('--crewlet-side-panel-inset').trim();
     const resting = inset(panel);
@@ -173,7 +173,7 @@ test('a flush body is not a scroll container, so focusing deep in a tall thread 
   });
   try {
     render(
-      <SidePanel title="Crewlet Assistant" flush onClose={() => {}} footer={<input aria-label="Message" />}>
+      <SidePanel title="Ask Crewlet" flush onClose={() => {}} footer={<input aria-label="Message" />}>
         <ChatThread label="Conversation">
           {Array.from({ length: 30 }, (_, index) => (
             <p key={index}>Message {index + 1}</p>
@@ -182,7 +182,7 @@ test('a flush body is not a scroll container, so focusing deep in a tall thread 
         </ChatThread>
       </SidePanel>,
     );
-    const panel = screen.getByRole('complementary', { name: 'Crewlet Assistant' });
+    const panel = screen.getByRole('complementary', { name: 'Ask Crewlet' });
     const body = panel.querySelector<HTMLElement>('.crewlet-side-panel__body')!;
     const log = screen.getByRole('log');
     const sized = (el: HTMLElement, client: number, scroll: number) => {
@@ -207,11 +207,11 @@ test('a flush body is not a scroll container, so focusing deep in a tall thread 
 test('as a column it carries a grip with its width, and the frame publishes the content floor', () => {
   render(<Harness shape="column" />);
   open();
-  const grip = screen.getByRole('separator', { name: 'Resize Crewlet Assistant' });
+  const grip = screen.getByRole('separator', { name: 'Resize Ask Crewlet' });
   expect(grip.getAttribute('aria-valuenow')).toBe('420');
   fireEvent.keyDown(grip, { key: 'ArrowLeft', shiftKey: true });
   expect(grip.getAttribute('aria-valuenow')).toBe('484');
-  const panel = screen.getByRole('complementary', { name: 'Crewlet Assistant' });
+  const panel = screen.getByRole('complementary', { name: 'Ask Crewlet' });
   expect(panel.style.getPropertyValue('--crewlet-side-panel-width')).toBe('484px');
   const frame = document.querySelector<HTMLElement>('.crewlet-side-panel-frame')!;
   expect(frame.getAttribute('data-shape')).toBe('column');
@@ -221,7 +221,7 @@ test('as a column it carries a grip with its width, and the frame publishes the 
 test('as a drawer it stays a region with no grip, and the content stays reachable', () => {
   render(<Harness shape="drawer" />);
   open();
-  expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
+  expect(screen.getByRole('complementary', { name: 'Ask Crewlet' })).toBeTruthy();
   expect(screen.queryByRole('separator')).toBeNull();
   expect(screen.queryByRole('dialog')).toBeNull();
 });
@@ -229,7 +229,7 @@ test('as a drawer it stays a region with no grip, and the content stays reachabl
 test('as a sheet it is a modal dialog: Tab stays in it, Escape closes it, focus goes back', () => {
   render(<Harness shape="sheet" />);
   const ask = open();
-  const dialog = screen.getByRole('dialog', { name: 'Crewlet Assistant' });
+  const dialog = screen.getByRole('dialog', { name: 'Ask Crewlet' });
   expect(dialog.getAttribute('aria-modal')).toBe('true');
   expect(screen.queryByRole('separator')).toBeNull();
   const field = screen.getByRole('textbox', { name: 'Message' });

@@ -43,7 +43,7 @@
 /*
  * A part that would come within 1 px of the keyline on the 16 grid declares
  * data-soon="tuck" and is drawn one step smaller about its own centre (today
- * only the Assistant's main spark: tip radius 5 to 4.5, tips on whole pixel
+ * only the Ask Crewlet mark's main spark: tip radius 5 to 4.5, tips on whole pixel
  * edges).
  */
 .crewlet-product-mark--soon [data-soon='tuck'] {

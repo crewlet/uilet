@@ -106,7 +106,7 @@ export interface AppShellAsideResize {
   onChange: (width: number) => void;
   /** Where a gesture ends: the moment to keep the width. */
   onCommit?: ((width: number) => void) | undefined;
-  /** Names the grip: "Resize the assistant panel". */
+  /** Names the grip: "Resize the Ask Crewlet panel". */
   label: string;
 }
 

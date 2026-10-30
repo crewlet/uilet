@@ -20,7 +20,7 @@ const NAMES: Record<Product, string> = {
   worklet: 'Worklet',
   doclet: 'Doclet',
   chat: 'Crewlet Chat',
-  assistant: 'AI Assistant',
+  assistant: 'Ask Crewlet',
 };
 
 const TILES: Record<Product, string> = {

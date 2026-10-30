@@ -42,7 +42,7 @@ export const InAComposer: Story = {
     const [files, setFiles] = useState(['screenshot.png', 'error.png']);
     return (
       <Composer
-        label="Ask the assistant"
+        label="Ask Crewlet"
         value={value}
         onChange={setValue}
         submitOn="enter"

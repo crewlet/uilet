@@ -56,7 +56,7 @@ export interface ResizeHandleProps {
   onValueCommit?: ((value: number) => void) | undefined;
   /** The resting size Enter and a double press return to. Without one neither does anything. */
   defaultValue?: number | undefined;
-  /** Names the separator: "Resize the assistant panel". */
+  /** Names the separator: "Resize the Ask Crewlet panel". */
   label: string;
   /**
    * Which edge of the sized panel the handle stands on. On the `left` edge

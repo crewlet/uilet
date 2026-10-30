@@ -17,9 +17,9 @@ export const SIDE_PANEL_MIN_WIDTH = 360;
 export const SIDE_PANEL_MAX_WIDTH = 640;
 
 export interface SidePanelLabels {
-  /** Names the close button: "Close the assistant". */
+  /** Names the close button: "Close Ask Crewlet". */
   close: (title: string) => string;
-  /** Names the grip: "Resize the assistant panel". */
+  /** Names the grip: "Resize the Ask Crewlet panel". */
   resize: (title: string) => string;
 }
 

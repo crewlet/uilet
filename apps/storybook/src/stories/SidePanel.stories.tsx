@@ -115,7 +115,7 @@ function Demo({
         panel={
           open ? (
             <SidePanel
-              title="Crewlet Assistant"
+              title="Ask Crewlet"
               icon={<BotGlyph size="md" />}
               onClose={() => setOpen(false)}
               resizable

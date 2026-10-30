@@ -76,7 +76,7 @@ function drawsSmall(size: GlyphSize | undefined, drawing: ProductMarkDrawing): b
 
 /**
  * The mark of one of Crewlet's own products: Worklet (projects and tasks),
- * Doclet (spaces and pages), Chat (talking with agents) and the Assistant
+ * Doclet (spaces and pages), Chat (talking with agents) and Ask Crewlet
  * (asking Crewlet itself, as the signed-in person).
  *
  * ONE FAMILY WITH THE BRAND MARK. Each stands on the same tile: the crewmate
@@ -84,7 +84,7 @@ function drawsSmall(size: GlyphSize | undefined, drawing: ProductMarkDrawing): b
  * lower facet for the brand mark's depth. What tells them apart is one white
  * figure each: a tick over one open task (Worklet), a page with a chamfer
  * fold (Doclet), a speech bubble with the crewmate's visor (Chat), and two
- * sparks (the Assistant). The Assistant has no face: it acts as the person who
+ * sparks (Ask Crewlet). Ask Crewlet has no face: it acts as the person who
  * asks and has no identity of its own, so it is drawn as a capability of
  * Crewlet rather than as one more member of a crew.
  *

@@ -62,7 +62,7 @@ function InComposer() {
   return (
     <div style={{ maxWidth: 420 }}>
       <Composer
-        label="Ask the assistant"
+        label="Ask Crewlet"
         value={draft}
         onChange={setDraft}
         onSubmit={send}
