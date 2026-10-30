@@ -205,6 +205,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.81.0
+
+**A `Tabs` dot marker sits beside the count.** A warning or an unsaved change is drawn as its 6px dot after the tab's count rather than in its place ("Agents 5" with a warning), since how many things are behind a tab and whether one needs the reader are two facts. A danger marker, which is a count of problems, still stands in for the tab's count, so two figures never sit side by side.
+
 ## Changes in 0.80.0
 
 **`DataTable` takes `columnSizing="content"`** (compact variant): each column as wide as what it holds, its header included, the cells' own insets apart, and the spare width given to the trailing spacer. For a short table in a wide pane (an agent, a switch, a level and a status), which the fit spread across the box until a row read as four separate facts. The browser's automatic table layout measures the columns, so no width is stated on a column the caller did not lock with `width`, the fit pass does not run, and no resize handle is drawn. Its cells stay on one line whatever Wrap lines says, since a column as wide as its content truncates nothing, while a panel or strip that spans the row wraps; a row wider than its box scrolls sideways. `fill`, the default, is the table as it was. The type is `DataTableColumnSizing`.
