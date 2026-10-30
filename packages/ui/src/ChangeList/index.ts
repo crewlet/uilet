@@ -6,6 +6,7 @@ export type {
   ChangeListChangedRow,
   ChangeListFactRow,
   ChangeListLabels,
+  ChangeListLayout,
   ChangeListProps,
   ChangeListRemovedRow,
   ChangeListRow,

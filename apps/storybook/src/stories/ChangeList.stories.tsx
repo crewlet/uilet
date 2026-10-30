@@ -140,3 +140,19 @@ const blocks: ChangeListRow[] = [
 ];
 
 export const BlockValues: Story = { args: { heading: 'What will change', rows: blocks } };
+
+/*
+ * INLINE: each row one line, its values as chips, for a short change read in
+ * passing (a level moved in a review). A pair still says "Changed from X to
+ * Y", and an added or removed value says so before it.
+ */
+const levels: ChangeListRow[] = [
+  { kind: 'changed', label: 'Deployments', from: 'Read-only', to: 'Read and write' },
+  { kind: 'added', label: 'Checks', to: 'Read-only' },
+  { kind: 'removed', label: 'Actions', from: 'Read-only' },
+];
+
+export const InlineChips: Story = {
+  name: 'Inline, values as chips',
+  args: { layout: 'inline', rows: levels },
+};
