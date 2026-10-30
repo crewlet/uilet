@@ -798,6 +798,15 @@ export interface DataTableProps<TRow = DataTableRow> {
    * the header chevron opens or closes every row on the page.
    */
   renderExpandedRow?: (row: TRow) => ReactNode | null | undefined;
+  /**
+   * The name of one row's expand button, open or closed: "Show SRE's
+   * Datadog details". Defaults to `labels.expandRow` and `labels.collapseRow`.
+   *
+   * ONE NAME PER ROW, because a screen reader lists a page's buttons by name:
+   * a table of twelve rows each offering "Expand row" is twelve controls a
+   * reader cannot tell apart without walking back to each row's first cell.
+   */
+  expandLabel?: (row: TRow, open: boolean) => string;
   /** Optional initial expanded row key (resolved via the row-key resolver). */
   defaultExpandedKey?: string | number | null;
   /**
@@ -836,6 +845,13 @@ export interface DataTableProps<TRow = DataTableRow> {
    * This one is for a table that is the whole of its own surface.
    */
   title?: ReactNode;
+  /**
+   * The table's accessible name, for a table with no `title` of its own: an
+   * integration's Agents tab, a list a card's header already names visually.
+   * Without it, a table with a `title` is named by that title; a table with
+   * neither is announced as a table of so many rows belonging to nothing.
+   */
+  ariaLabel?: string;
   description?: ReactNode;
   /** The header's glyph. A component, not a name. */
   icon?: ReactNode;
@@ -922,6 +938,8 @@ export const DataTable = <TRow,>({
   loadingMore = false,
   loadMoreLabel = 'Load more',
   title,
+  ariaLabel,
+  expandLabel,
   description,
   icon,
   defaultWrapLines,
@@ -2106,6 +2124,12 @@ export const DataTable = <TRow,>({
      read out again on each. */
   const instanceId = useId();
   const reorderHintId = `${instanceId}-reorder`;
+  /* The table is named by its own title where it draws one and the caller
+     gave it no name of its own. */
+  const titleId = `${instanceId}-title`;
+  /* Each open row's panel, by the row's place on the page, which is unique
+     where a caller's row key may hold characters an id cannot. */
+  const panelId = (index: number) => `${instanceId}-panel-${index}`;
   /**
    * WHAT NAMES A COLUMN HEADER: its label, and nothing else in the cell.
    *
@@ -2787,7 +2811,13 @@ export const DataTable = <TRow,>({
    * stays (column alignment) and the button goes, so the row does not
    * advertise an affordance that does nothing.
    */
-  const renderExpandCell = (rowIsOpen: boolean, canExpand: boolean, onToggle: () => void) => {
+  const renderExpandCell = (
+    row: TRow,
+    rowIsOpen: boolean,
+    canExpand: boolean,
+    onToggle: () => void,
+    controls: string,
+  ) => {
     if (!expandable) return null;
     return (
       <td key="__expand" className="crewlet-data-table__expand-cell" style={{ width: 32 }}>
@@ -2796,7 +2826,16 @@ export const DataTable = <TRow,>({
             type="button"
             className="crewlet-data-table__expand-btn"
             aria-expanded={rowIsOpen}
-            aria-label={rowIsOpen ? labels.collapseRow : labels.expandRow}
+            // ONLY WHILE OPEN: the panel is not in the page while closed, and
+            // a reference to an id nothing carries points at nothing.
+            aria-controls={rowIsOpen ? controls : undefined}
+            aria-label={
+              expandLabel
+                ? expandLabel(row, rowIsOpen)
+                : rowIsOpen
+                  ? labels.collapseRow
+                  : labels.expandRow
+            }
             onClick={(event) => { event.stopPropagation(); onToggle(); }}
           >
             <ChevronRightGlyph className={cx('crewlet-data-table__chevron', rowIsOpen && 'is-open')} size="md" />
@@ -3009,7 +3048,11 @@ export const DataTable = <TRow,>({
             <span className="crewlet-data-table__header-icon">{icon}</span>
           )}
           <div className="crewlet-data-table__header-text">
-            {title != null && <h3 className="crewlet-data-table__title">{title}</h3>}
+            {title != null && (
+              <h3 id={titleId} className="crewlet-data-table__title">
+                {title}
+              </h3>
+            )}
             {description != null && (
               <p className="crewlet-data-table__description">{description}</p>
             )}
@@ -3108,6 +3151,8 @@ export const DataTable = <TRow,>({
           !bodyHoldsRows && 'crewlet-data-table__table--rowless',
         )}
         aria-busy={loading || undefined}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabel == null && headerVisible && title != null ? titleId : undefined}
       >
         <thead>
           <tr>
@@ -3213,7 +3258,7 @@ export const DataTable = <TRow,>({
               </td>
             </tr>
           ) : (
-            displayedData.map((row) => {
+            displayedData.map((row, rowIndex) => {
               const trKey = resolveRowKey(row);
               const isArchived = archivedPredicate ? archivedPredicate(row) : false;
               const expanded = expandable ? expandedKeys.has(trKey) : false;
@@ -3283,7 +3328,13 @@ export const DataTable = <TRow,>({
                       }
                     } : undefined}
                   >
-                    {renderExpandCell(expanded, canExpand, () => toggleExpanded(trKey))}
+                    {renderExpandCell(
+                      row,
+                      expanded,
+                      canExpand,
+                      () => toggleExpanded(trKey),
+                      panelId(rowIndex),
+                    )}
                     {columnOrder
                       .filter((columnKey) => columns[columnKey]?.sticky !== 'right')
                       .map((columnKey) => {
@@ -3308,7 +3359,11 @@ export const DataTable = <TRow,>({
                         isArchived ? 'crewlet-data-table__row--archived' : undefined,
                       ].filter(Boolean).join(' ')}
                     >
-                      <td colSpan={expandColSpan} className="crewlet-data-table__expanded-cell">
+                      <td
+                        id={panelId(rowIndex)}
+                        colSpan={expandColSpan}
+                        className="crewlet-data-table__expanded-cell"
+                      >
                         {expandedContent}
                       </td>
                     </tr>
