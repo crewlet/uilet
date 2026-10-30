@@ -642,7 +642,8 @@ export const AccessoryRows: Story = {
  * A short table in a wide pane, sized to its content. The same three columns
  * filled to the box, and then with `columnSizing="content"`: each column as
  * wide as what it holds, the cells' own insets apart, and the spare width at
- * the trailing edge. The accessory strip still spans the row and wraps.
+ * the trailing edge. The rows expand, and every surface that spans a row (its
+ * rule, the strip under it, its opened panel) spans the whole of it.
  */
 export const SizedToContent: Story = {
   name: 'Archetypes / Sized to content (a short table in a wide pane)',
@@ -656,6 +657,10 @@ export const SizedToContent: Story = {
         ariaLabel={sizing === 'content' ? 'API keys, sized to content' : 'API keys, filled'}
         columnSizing={sizing}
         data={apiKeys}
+        expandLabel={(row, open) => `${open ? 'Hide' : 'Show'} ${row.name}`}
+        renderExpandedRow={(row) => (
+          <div style={{ fontSize: 12 }}>Prefix key_{row.prefix}, expires {row.expires}.</div>
+        )}
         defaultColumnOrder={['name', 'last_used', 'status']}
         columns={{
           name:      { label: 'Name' },

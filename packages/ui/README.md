@@ -205,6 +205,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.81.1
+
+**A `DataTable` strip spans the whole row.** On an expandable table the accessory strip under a row spanned one column fewer than the row, so it stopped before the last column, while the opened panel spanned all of it. Unseen while that column was a sliver of spacer, it broke the strip, and the rule under its row, off two thirds across a table sized to its content.
+
 ## Changes in 0.81.0
 
 **A `Tabs` dot marker sits beside the count.** A warning or an unsaved change is drawn as its 6px dot after the tab's count rather than in its place ("Agents 5" with a warning), since how many things are behind a tab and whether one needs the reader are two facts. A danger marker, which is a count of problems, still stands in for the tab's count, so two figures never sit side by side.

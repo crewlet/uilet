@@ -1034,6 +1034,28 @@ test('a table sized to its content states no width a column did not lock, and dr
   expect(screen.queryAllByRole('separator', { name: /^Resize / })).toHaveLength(0);
 });
 
+test('a strip under a row spans the whole row, as an opened panel does', () => {
+  // EXPANDABLE, which is the case that was a column short: the chevron's
+  // column is one the strip did not count.
+  const { container } = render(
+    <DataTable<Seat>
+      variant="compact"
+      data={seats}
+      columns={nameAndNote}
+      getRowKey={(row) => row.id}
+      columnSizing="content"
+      renderExpandedRow={(row) => <p>detail for {row.name}</p>}
+      renderAccessoryRow={(row) => (row.id === 'alpha' ? <p>waiting on a person</p> : null)}
+    />,
+  );
+  const columns = container.querySelectorAll('thead tr > th').length;
+  const strip = container.querySelector<HTMLTableCellElement>('td.crewlet-data-table__accessory-cell')!;
+  expect(strip.colSpan).toBe(columns);
+  fireEvent.click(screen.getAllByRole('button', { name: 'Expand row' })[0]!);
+  const panel = container.querySelector<HTMLTableCellElement>('td.crewlet-data-table__expanded-cell')!;
+  expect(panel.colSpan).toBe(columns);
+});
+
 test('content sizing is the compact variant\'s, and the default variant ignores it', () => {
   const { container } = render(
     <DataTable<Seat> data={seats} columns={nameAndNote} getRowKey={(row) => row.id} columnSizing="content" />,
