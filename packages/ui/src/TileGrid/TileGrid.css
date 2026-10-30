@@ -46,7 +46,9 @@
 }
 
 @container crewlet-tile-grid (width < 28rem) {
-  .crewlet-tile-grid > .crewlet-tile-grid__track {
+  /* As specific as the per-count rules above and after them, so a grid of two
+     or four folds to one here too, not only a grid of three. */
+  .crewlet-tile-grid[data-columns] > .crewlet-tile-grid__track {
     --crewlet-tile-grid-tracks: 1;
   }
 }
