@@ -563,6 +563,45 @@ export const ExpandableRows: Story = {
 };
 
 /*
+ * A named table whose rows each name their own expand control. A table with no
+ * title of its own takes `ariaLabel`; `expandLabel` gives each row's chevron a
+ * name a screen reader can tell from the next row's, and the open chevron
+ * points at its panel (`aria-controls`).
+ */
+export const NamedExpandableRows: Story = {
+  name: 'Archetypes / Named table and per-row expand labels',
+  render: () => (
+    <div style={{ padding: 20, maxWidth: 1000 }}>
+      <SettingsHint>
+        The table is announced as "Audit events", and each chevron by its own row: "Show
+        the detail of jane@example.com's user.invited", rather than "Expand row" on every row.
+      </SettingsHint>
+      <DataTable
+        variant="compact"
+        paginated={false}
+        showSettings={false}
+        rowKey="id"
+        ariaLabel="Audit events"
+        data={auditEvents}
+        defaultColumnOrder={['when', 'event', 'actor']}
+        columns={{
+          when: { label: 'When' },
+          event: { label: 'Event', render: (row) => <code>{row.event}</code> },
+          actor: { label: 'Actor' },
+        }}
+        expandLabel={(row, open) => `${open ? 'Hide' : 'Show'} the detail of ${row.actor}'s ${row.event}`}
+        renderExpandedRow={(row) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 12px' }}>
+            <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Outcome</div>
+            <div>{row.outcome}</div>
+          </div>
+        )}
+      />
+    </div>
+  ),
+};
+
+/*
  * Accessory rows, such as an API key's prefix strip.
  * Each main row gets a secondary row immediately below, spanning the
  * full column width. Used for tree-like surfaces where each entity

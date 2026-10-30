@@ -259,6 +259,44 @@ test('the expand control is a button carrying its own state', () => {
   expect(screen.getAllByRole('button', { name: 'Collapse row' })[0]!.getAttribute('aria-expanded')).toBe('true');
 });
 
+test('each row names its own expand control, and an open one points at its panel', () => {
+  render(
+    <DataTable<Seat>
+      data={seats}
+      columns={{ name: { label: 'Seat' } }}
+      getRowKey={(row) => row.id}
+      renderExpandedRow={(row) => <p>detail for {row.name}</p>}
+      expandLabel={(row, open) => `${open ? 'Hide' : 'Show'} ${row.name}'s detail`}
+    />,
+  );
+  const toggle = screen.getByRole('button', { name: "Show alpha's detail" });
+  expect(screen.getByRole('button', { name: "Show beta's detail" })).toBeTruthy();
+  // CLOSED, IT CONTROLS NOTHING: the panel is not in the page yet.
+  expect(toggle.getAttribute('aria-controls')).toBeNull();
+  fireEvent.click(toggle);
+  const open = screen.getByRole('button', { name: "Hide alpha's detail" });
+  const panel = document.getElementById(open.getAttribute('aria-controls')!);
+  expect(panel?.textContent).toBe('detail for alpha');
+});
+
+test('a table is named by its own label, else by its title, else by nothing', () => {
+  const { rerender } = render(
+    <DataTable<Seat> data={seats} columns={nameAndNote} getRowKey={(row) => row.id} ariaLabel="Agents on Datadog" />,
+  );
+  expect(screen.getByRole('table', { name: 'Agents on Datadog' })).toBeTruthy();
+  rerender(<DataTable<Seat> data={seats} columns={nameAndNote} getRowKey={(row) => row.id} title="Seats" />);
+  expect(screen.getByRole('table', { name: 'Seats' })).toBeTruthy();
+  // THE CALLER'S LABEL WINS over the title it draws beside the table.
+  rerender(
+    <DataTable<Seat> data={seats} columns={nameAndNote} getRowKey={(row) => row.id} title="Seats" ariaLabel="Seats on the acme plan" />,
+  );
+  expect(screen.getByRole('table', { name: 'Seats on the acme plan' })).toBeTruthy();
+  rerender(<DataTable<Seat> data={seats} columns={nameAndNote} getRowKey={(row) => row.id} />);
+  const table = screen.getByRole('table');
+  expect(table.getAttribute('aria-label')).toBeNull();
+  expect(table.getAttribute('aria-labelledby')).toBeNull();
+});
+
 test('a hidden column comes back from the settings frame, and the caller is told', () => {
   /*
    * THE FRAME IS THE ONE WAY IN. The toolbar carried a Columns panel beside
