@@ -19,7 +19,7 @@ export interface ThinkingIndicatorProps extends Omit<HTMLAttributes<HTMLDivEleme
 }
 
 /**
- * The assistant at work, drawn where its answer will be: the Assistant's mark
+ * Ask Crewlet at work, drawn where its answer will be: the Ask Crewlet mark
  * with its main spark making a quarter turn while its companion twinkles, then
  * resting, and, while nothing of the answer is on screen yet, a line saying
  * what it is doing under a slow shimmer. The mark is drawn at 16 px, so it is

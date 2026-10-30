@@ -99,7 +99,7 @@ import { ProductMark } from '@crewlethq/icons/product-mark';
 
 <ProductMark product="worklet" size={24} />
 <ProductMark product="chat" size="md" soon />
-<ProductMark product="assistant" size="sm" title="AI Assistant" />
+<ProductMark product="assistant" size="sm" title="Ask Crewlet" />
 ```
 
 `@crewlethq/icons/product-mark` is the marks' own entry, with `ProductMark`, `PRODUCTS` and their types and nothing else: its import graph reaches the drawings, the glyph frame and `ProductMark.css`, never the root with its illustrations, vendor marks and their stylesheets, so a first paint that draws one mark (an Ask button) pays for that alone whatever its bundler does with the root's side effects. The root still exports the same functions; `test/bundle.test.mjs` holds the entry's graph and what a build of it carries (about 6 KB for all eight drawings).
@@ -112,14 +112,14 @@ import { ProductMark } from '@crewlethq/icons/product-mark';
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `soon` | boolean | `false` | Draws a product that has not shipped hollow: a faint violet body under a violet keyline and figure. Never grey, which is how a vendor mark says "not connected". |
 
-The four services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. `PRODUCTS` lists them. Pair the Assistant's mark with its words ("Ask" on a button, "AI Assistant" in navigation and catalogues), because a sparkle alone is also read as "new" or "favourite"; for the same reason, Crewlet's own "new" and "soon" cues never use a four point star.
+The four services built into Crewlet each have a mark of their own, drawn from the brand mark's construction. `PRODUCTS` lists them. Pair the Ask Crewlet mark with its name ("Ask Crewlet" on a button, in navigation and in catalogues), because a sparkle alone is also read as "new" or "favourite"; for the same reason, Crewlet's own "new" and "soon" cues never use a four point star.
 
 | Product | Figure |
 | ------- | ------ |
 | `worklet` (projects and tasks) | A large tick for the finished task over one open row: a hollow chamfered box and its line for the task still to do. Done is solid and heavy, open is hollow and light. |
 | `doclet` (spaces and pages) | A page whose corner is folded by the brand's own 45 degree chamfer, with a heading block and two lines of text. |
 | `chat` (talking with agents) | A chamfered speech bubble whose one horizontal window is the crewmate's visor, cut through to the tile. The family's one crew reference, with no eyes and no face. |
-| `assistant` (asking Crewlet itself, as the signed-in person) | A four point concave spark with a small companion spark on the 45 degree axis that points into the octagon's upper right chamfer. No face: the assistant has no identity of its own, so it is a capability of Crewlet rather than a crew member. |
+| `assistant` (asking Crewlet itself, as the signed-in person) | A four point concave spark with a small companion spark on the 45 degree axis that points into the octagon's upper right chamfer. No face: Ask Crewlet has no identity of its own, so it is a capability of Crewlet rather than a crew member. |
 
 ### Construction
 
@@ -152,13 +152,13 @@ Each product has two drawings. The master, `svg/product/<product>.svg` on `0 0 4
 
 ### Soon
 
-`soon` is derived from the drawing that is mounted, at either size, with no second file. `ProductMark.css` drops the body to an 8 percent tint, hides the facet, and paints the hidden keyline (3 units on the master, one whole pixel on the 16 grid) and the figure in the brand violet. The keyline's inner contour winds against its outer one, so it stays hollow under either fill rule. A part that would come within a pixel of the keyline on the 16 grid declares `data-soon="tuck"` and is drawn at 0.9 about its own centre (only the Assistant's main spark). The state is a class, `crewlet-product-mark--soon`, so a strict `style-src` never refuses it.
+`soon` is derived from the drawing that is mounted, at either size, with no second file. `ProductMark.css` drops the body to an 8 percent tint, hides the facet, and paints the hidden keyline (3 units on the master, one whole pixel on the 16 grid) and the figure in the brand violet. The keyline's inner contour winds against its outer one, so it stays hollow under either fill rule. A part that would come within a pixel of the keyline on the 16 grid declares `data-soon="tuck"` and is drawn at 0.9 about its own centre (only the Ask Crewlet mark's main spark). The state is a class, `crewlet-product-mark--soon`, so a strict `style-src` never refuses it.
 
 **Under forced colours** (Windows high contrast) a mark draws its one colour form in the reader's system colours: the tile and facet in `CanvasText` with the figure knocked out to `Canvas`, which keeps every figure readable on any palette. Soon keeps its hollow keyline and figure in `CanvasText`, at half strength.
 
 ### Motion
 
-The marks never move by themselves. The Assistant's main spark carries `data-motion="turn"` and its companion `data-motion="twinkle"`, in both drawings, so a working state can move them; `ThinkingIndicator` in `@crewlethq/ui` owns that motion. Over one period of `--motion-duration-spark` (1.6s), the spark makes a quarter turn about its own centre, tucking to 0.8 through the middle of the turn so its tip passes the companion with clear violet between them, while the companion dips to 0.7 and half strength; both rest for the other half of the period. Under `prefers-reduced-motion: reduce` both animations stop and the mark holds a still working pose (the spark at 0.8, the companion at 0.7 and half strength). Any other host that moves these parts pivots them with `transform-box: fill-box; transform-origin: center`, keeps rotate and scale in one transform, and stops them under reduced motion.
+The marks never move by themselves. The Ask Crewlet mark's main spark carries `data-motion="turn"` and its companion `data-motion="twinkle"`, in both drawings, so a working state can move them; `ThinkingIndicator` in `@crewlethq/ui` owns that motion. Over one period of `--motion-duration-spark` (1.6s), the spark makes a quarter turn about its own centre, tucking to 0.8 through the middle of the turn so its tip passes the companion with clear violet between them, while the companion dips to 0.7 and half strength; both rest for the other half of the period. Under `prefers-reduced-motion: reduce` both animations stop and the mark holds a still working pose (the spark at 0.8, the companion at 0.7 and half strength). Any other host that moves these parts pivots them with `transform-box: fill-box; transform-origin: center`, keeps rotate and scale in one transform, and stops them under reduced motion.
 
 ### App tiles
 

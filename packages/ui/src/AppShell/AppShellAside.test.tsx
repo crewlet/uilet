@@ -42,12 +42,12 @@ function Shell({
       topbar={<AppShell.Topbar title="Work" />}
       aside={shape ? aside : undefined}
       asideShape={shape}
-      asideLabel="Crewlet Assistant"
+      asideLabel="Ask Crewlet"
       asideWidth={420}
       asideReserve={760}
       onAsideClose={onClose}
       asideResize={
-        resize ? { min: 360, max: 640, defaultValue: 420, label: 'Resize the assistant panel', ...resize } : undefined
+        resize ? { min: 360, max: 640, defaultValue: 420, label: 'Resize the Ask Crewlet panel', ...resize } : undefined
       }
       peek={peek}
       peekShape={peekShape}
@@ -62,13 +62,13 @@ const root = () => document.querySelector<HTMLElement>('.crewlet-app-shell')!;
 test('with no aside there is no track, no region and no shape', () => {
   render(<Shell />);
   expect(root().hasAttribute('data-aside')).toBe(false);
-  expect(screen.queryByRole('complementary', { name: 'Crewlet Assistant' })).toBeNull();
+  expect(screen.queryByRole('complementary', { name: 'Ask Crewlet' })).toBeNull();
   expect(root().style.getPropertyValue('--crewlet-app-shell-aside')).toBe('');
 });
 
 test('as a column it is a complementary region beside the sheet, with its width and the page floor on the root', () => {
   render(<Shell shape="column" />);
-  const region = screen.getByRole('complementary', { name: 'Crewlet Assistant' });
+  const region = screen.getByRole('complementary', { name: 'Ask Crewlet' });
   expect(region.getAttribute('aria-modal')).toBeNull();
   expect(root().getAttribute('data-aside')).toBe('column');
   expect(root().style.getPropertyValue('--crewlet-app-shell-aside')).toBe('420px');
@@ -91,7 +91,7 @@ test('the grip stands in the seam as a column, sizes by keyboard and keeps the w
   const onChange = vi.fn();
   const onCommit = vi.fn();
   render(<Shell shape="column" resize={{ onChange, onCommit }} />);
-  const grip = screen.getByRole('separator', { name: 'Resize the assistant panel' });
+  const grip = screen.getByRole('separator', { name: 'Resize the Ask Crewlet panel' });
   expect(grip.getAttribute('aria-valuenow')).toBe('420');
   expect(grip.getAttribute('aria-controls')).toBe(document.querySelector('.crewlet-app-shell__aside-sheet')!.id);
   fireEvent.keyDown(grip, { key: 'ArrowLeft' });
@@ -101,7 +101,7 @@ test('the grip stands in the seam as a column, sizes by keyboard and keeps the w
 
 test.each<AppShellAsideShape>(['overlay', 'sheet'])('as %s it is a named modal dialog with no grip', (shape) => {
   render(<Shell shape={shape} resize={{ onChange: () => {} }} />);
-  const dialog = screen.getByRole('dialog', { name: 'Crewlet Assistant' });
+  const dialog = screen.getByRole('dialog', { name: 'Ask Crewlet' });
   expect(dialog.getAttribute('aria-modal')).toBe('true');
   expect(root().getAttribute('data-aside')).toBe(shape);
   expect(screen.queryByRole('separator')).toBeNull();
@@ -115,7 +115,7 @@ test('as an overlay focus moves in, Escape closes it, and focus goes back to wha
       <AppShell
         aside={open ? <button type="button">Inside</button> : null}
         asideShape="overlay"
-        asideLabel="Crewlet Assistant"
+        asideLabel="Ask Crewlet"
         onAsideClose={() => setOpen(false)}
       >
         <button type="button" onClick={() => setOpen(true)}>
@@ -168,7 +168,7 @@ function LooseOpener({ inside = <button type="button">Inside</button> }: { insid
       aside={open ? inside : null}
       asideShape="overlay"
       asideModal={false}
-      asideLabel="Crewlet Assistant"
+      asideLabel="Ask Crewlet"
       onAsideClose={() => setOpen(false)}
     >
       <button type="button" onClick={() => setOpen(true)}>
@@ -183,7 +183,7 @@ test('as a non-modal overlay it is a named complementary region with no veil, no
   render(<LooseOpener />);
   fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
   expect(screen.queryByRole('dialog')).toBeNull();
-  const region = screen.getByRole('complementary', { name: 'Crewlet Assistant' });
+  const region = screen.getByRole('complementary', { name: 'Ask Crewlet' });
   expect(region.getAttribute('data-shape')).toBe('overlay');
   expect(region.getAttribute('data-modal')).toBe('false');
   expect(region.hasAttribute('aria-modal')).toBe(false);
@@ -198,7 +198,7 @@ test('as a non-modal overlay it is a named complementary region with no veil, no
   const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
   elsewhere.focus();
   expect(document.activeElement).toBe(elsewhere);
-  expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
+  expect(screen.getByRole('complementary', { name: 'Ask Crewlet' })).toBeTruthy();
 });
 
 test('as a non-modal overlay focus moves in, Escape from inside closes it, and focus goes back to what opened it', () => {
@@ -208,7 +208,7 @@ test('as a non-modal overlay focus moves in, Escape from inside closes it, and f
   fireEvent.click(ask);
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Inside' }));
   fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
-  expect(screen.queryByRole('complementary', { name: 'Crewlet Assistant' })).toBeNull();
+  expect(screen.queryByRole('complementary', { name: 'Ask Crewlet' })).toBeNull();
   expect(document.activeElement).toBe(ask);
 });
 
@@ -220,21 +220,21 @@ test('as a non-modal overlay Escape from the page is the page\'s, and a reader o
   const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
   elsewhere.focus();
   fireEvent.keyDown(elsewhere, { key: 'Escape' });
-  expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
+  expect(screen.getByRole('complementary', { name: 'Ask Crewlet' })).toBeTruthy();
   // An Escape a control inside answered itself is not a close.
   const inside = screen.getByRole('button', { name: 'Inside' });
   inside.addEventListener('keydown', (event) => event.preventDefault(), { once: true });
   fireEvent.keyDown(inside, { key: 'Escape' });
-  expect(screen.getByRole('complementary', { name: 'Crewlet Assistant' })).toBeTruthy();
+  expect(screen.getByRole('complementary', { name: 'Ask Crewlet' })).toBeTruthy();
 });
 
 test('a sheet is modal whatever asideModal says', () => {
   render(
-    <AppShell aside={<button type="button">Inside</button>} asideShape="sheet" asideModal={false} asideLabel="Crewlet Assistant">
+    <AppShell aside={<button type="button">Inside</button>} asideShape="sheet" asideModal={false} asideLabel="Ask Crewlet">
       <button type="button">Page</button>
     </AppShell>,
   );
-  expect(screen.getByRole('dialog', { name: 'Crewlet Assistant' }).getAttribute('aria-modal')).toBe('true');
+  expect(screen.getByRole('dialog', { name: 'Ask Crewlet' }).getAttribute('aria-modal')).toBe('true');
   expect(document.querySelector('.crewlet-app-shell__aside-veil')).not.toBeNull();
 });
 
@@ -298,7 +298,7 @@ test('a side panel in the aside leaves the landmark and the grip to the shell, a
     <Shell
       shape="column"
       aside={
-        <SidePanel title="Crewlet Assistant" onClose={() => {}} resizable width={420} onWidthChange={() => {}}>
+        <SidePanel title="Ask Crewlet" onClose={() => {}} resizable width={420} onWidthChange={() => {}}>
           <p>Ask about anything on this page.</p>
         </SidePanel>
       }
@@ -306,7 +306,7 @@ test('a side panel in the aside leaves the landmark and the grip to the shell, a
   );
   expect(screen.getAllByRole('complementary')).toHaveLength(2); // the rail and the aside
   expect(screen.queryByRole('separator')).toBeNull();
-  expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Crewlet Assistant' }));
+  expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Ask Crewlet' }));
 });
 
 test('carries no violation as a column and as an overlay', async () => {
@@ -326,7 +326,7 @@ test('carries no violation as a column and as an overlay', async () => {
   expect(await run()).toEqual([]);
   await act(async () => {
     rerender(
-      <AppShell aside={<button type="button">Inside</button>} asideShape="overlay" asideModal={false} asideLabel="Crewlet Assistant">
+      <AppShell aside={<button type="button">Inside</button>} asideShape="overlay" asideModal={false} asideLabel="Ask Crewlet">
         <button type="button">Page</button>
       </AppShell>,
     );

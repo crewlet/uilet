@@ -308,7 +308,7 @@ export const WithAHostControlOnAPhone: Story = {
   args: {
     ...ReadOnly.args,
     title: 'New slide deck for the quarterly board review of the payments platform',
-    end: <IconButton variant="secondary" size="md" label="Ask the assistant" icon={<ProductMark product="assistant" size="sm" />} />,
+    end: <IconButton variant="secondary" size="md" label="Ask Crewlet" icon={<ProductMark product="assistant" size="sm" />} />,
   },
   decorators: [
     (Story) => (

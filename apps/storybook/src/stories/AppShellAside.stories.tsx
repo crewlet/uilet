@@ -98,10 +98,10 @@ function TaskList({ onPeek }: { onPeek?: (key: string) => void }) {
 function Assistant({ onClose }: { onClose: () => void }) {
   return (
     <SidePanel
-      title="Crewlet Assistant"
+      title="Ask Crewlet"
       icon={<BotGlyph size="md" />}
       onClose={onClose}
-      labels={{ close: () => 'Close the assistant' }}
+      labels={{ close: () => 'Close Ask Crewlet' }}
       actions={
         <>
           <IconButton size="sm" variant="ghost" label="New conversation" icon={<PencilGlyph size="sm" />} />
@@ -163,7 +163,7 @@ function Frame({
       asideModal={modal}
       asideWidth={width}
       asideReserve={640}
-      asideLabel="Crewlet Assistant"
+      asideLabel="Ask Crewlet"
       onAsideClose={() => setOpen(false)}
       asideResize={
         resizable
@@ -173,7 +173,7 @@ function Frame({
               defaultValue: RESTING,
               onChange: stored.setWidth,
               onCommit: stored.commitWidth,
-              label: 'Resize the assistant panel',
+              label: 'Resize the Ask Crewlet panel',
             }
           : undefined
       }
