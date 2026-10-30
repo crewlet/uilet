@@ -273,6 +273,7 @@ export function Tabs({
     navRef,
     items.map((item) => item.value),
     value,
+    barred,
   );
   const isFolded = (item: TabsItem) => fold.folded.includes(item.value);
 
@@ -348,7 +349,9 @@ export function Tabs({
       mutation.disconnect();
       resize?.disconnect();
     };
-  }, [variant, value, items]);
+    // `barred`: the row's box changes with the actions beside it, and an
+    // environment without ResizeObserver hears of that from nothing else.
+  }, [variant, value, items, barred]);
 
   const rootClass = cx(
     'crewlet-tabs',
@@ -504,18 +507,24 @@ export function Tabs({
    * THE BAR: the row, then its actions, siblings in one flex line. The row
    * shrinks and the actions do not, so a tight bar scrolls or folds tabs
    * while every action stays drawn.
+   *
+   * THE WRAPPER IS ALWAYS THERE, so the row is never re-parented. Actions
+   * often arrive after a fetch; a row that moved into a new element when they
+   * did was a new node, which dropped the focused tab and left the slider and
+   * the fold measuring the node that was gone. With no actions the wrapper is
+   * `display: contents`, draws nothing and carries no class of the caller's:
+   * `className` stays on the row as before.
    */
-  const bar = (row: ReactNode) =>
-    barred ? (
-      <div className={cx('crewlet-tabs-bar', `crewlet-tabs-bar--${variant}`, `crewlet-tabs-bar--${size}`, className)}>
-        {row}
+  const bar = (row: ReactNode) => (
+    <div className={barred ? cx('crewlet-tabs-bar', `crewlet-tabs-bar--${variant}`, className) : 'crewlet-tabs-host'}>
+      {row}
+      {barred ? (
         <div className="crewlet-tabs__actions" data-tabs-actions="">
           {actions}
         </div>
-      </div>
-    ) : (
-      row
-    );
+      ) : null}
+    </div>
+  );
 
   if (renderItem) {
     return bar(

@@ -94,6 +94,8 @@ export function useFold(
   row: RefObject<HTMLElement | null>,
   values: readonly string[],
   current: string | undefined,
+  /** Anything else that moves the room the row has, such as actions arriving beside it. */
+  layout: unknown = null,
 ): Fold {
   const [fold, setFold] = useState<Fold>(NOTHING_FOLDED);
   const signature = values.join('\n');
@@ -141,6 +143,6 @@ export function useFold(
       watch.observe(item);
     }
     return () => watch.disconnect();
-  }, [enabled, box, row, signature, current]);
+  }, [enabled, box, row, signature, current, layout]);
   return enabled ? fold : NOTHING_FOLDED;
 }

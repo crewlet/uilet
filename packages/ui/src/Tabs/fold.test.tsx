@@ -291,3 +291,41 @@ describe('a tab list that folds beside its actions', () => {
     expect(rest).toEqual(['Turns', 'Memory', 'Schedules', 'Settings']);
   });
 });
+
+describe('actions that arrive after the row is drawn', () => {
+  // The room beside a late action is 280; with no action it is 2000.
+  function layBeside(): void {
+    lay(0);
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (!this.matches('.crewlet-tabs-fold, nav.crewlet-tabs--fold')) return 0;
+        return this.parentElement?.classList.contains('crewlet-tabs-bar') ? 280 : 2000;
+      },
+    });
+  }
+
+  function Late({ actions }: { actions: boolean }) {
+    return (
+      <Tabs
+        overflow="menu"
+        variant="underline"
+        ariaLabel="Sections"
+        items={TABS}
+        value="overview"
+        actions={actions ? <button type="button">Check now</button> : undefined}
+      />
+    );
+  }
+
+  test('the fold measures again in the room the actions leave, and again when they go', async () => {
+    layBeside();
+    const { rerender } = render(<Late actions={false} />);
+    await waitFor(() => expect(drawn()).toHaveLength(6));
+    rerender(<Late actions />);
+    await waitFor(() => expect(drawn()).toEqual(['Overview', 'Work']));
+    expect(screen.getByRole('button', { name: 'Check now' })).toBeDefined();
+    rerender(<Late actions={false} />);
+    await waitFor(() => expect(drawn()).toHaveLength(6));
+  });
+});
