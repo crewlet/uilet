@@ -479,6 +479,51 @@
 }
 
 /*
+ * THE BAR: a row and its actions. The row (or the box holding the row and
+ * "More") takes the room the actions leave and gives way first: it shrinks
+ * to nothing before an action does, scrolling or folding its tabs inside
+ * that room. An underline row fills the bar, so its rule and its fold are
+ * measured in the space the actions leave; a pill or chip row keeps its own
+ * width and the actions sit at the far end.
+ */
+.crewlet-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+.crewlet-tabs-bar > .crewlet-tabs {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.crewlet-tabs-bar > .crewlet-tabs--underline,
+.crewlet-tabs-bar > .crewlet-tabs-fold {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crewlet-tabs__actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-inline-start: auto;
+}
+
+/* The underline's rule runs on under the actions to the bar's edge, painted
+   on the same last pixel row the row's own border sits on. */
+.crewlet-tabs-bar--underline {
+  align-items: stretch;
+  box-shadow: inset 0 -1px 0 var(--color-border-default);
+}
+
+.crewlet-tabs-bar--underline > .crewlet-tabs__actions {
+  align-self: center;
+}
+
+/*
  * The slider ARRIVES rather than travels, and a chip changes without a fade.
  * The indicator still moves; what stops is the animation between the two
  * places it can be.

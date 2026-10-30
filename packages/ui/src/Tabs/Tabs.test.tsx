@@ -661,3 +661,102 @@ test('the chip variant outlines the lens that is on in the accent, and a focused
   expect(count).toMatch(/background:\s*none/);
   expect(count).toMatch(/padding:\s*0/);
 });
+
+/*
+ * ACTIONS STAND BESIDE THE ROW, NEVER IN IT. A tab list holds tabs alone, so
+ * a screen's own button ("Check now") is the list's next sibling in one bar,
+ * and the keyboard meets the tabs (one stop) and then the button.
+ */
+const SECTIONS_WITH_ACTIONS = [
+  { value: 'agents', label: 'Agents' },
+  { value: 'activity', label: 'Activity' },
+  { value: 'settings', label: 'Settings' },
+];
+
+test('actions are the tab list sibling in one bar, and the tab list holds tabs alone', () => {
+  render(
+    <Tabs
+      variant="underline"
+      ariaLabel="Datadog sections"
+      className="screen-tabs"
+      items={SECTIONS_WITH_ACTIONS}
+      value="agents"
+      actions={<button type="button">Check now</button>}
+    />,
+  );
+  const list = screen.getByRole('tablist', { name: 'Datadog sections' });
+  const action = screen.getByRole('button', { name: 'Check now' });
+  expect(list.contains(action)).toBe(false);
+  for (const child of list.children) expect(child.getAttribute('role')).toBe('tab');
+  const bar = list.parentElement!;
+  expect(bar.className).toContain('crewlet-tabs-bar');
+  expect(bar.className).toContain('crewlet-tabs-bar--underline');
+  // The consumer's class lands on the outermost element, the bar.
+  expect(bar.className).toContain('screen-tabs');
+  expect(list.className).not.toContain('screen-tabs');
+  const slot = action.parentElement!;
+  expect(slot.className).toBe('crewlet-tabs__actions');
+  expect(list.nextElementSibling).toBe(slot);
+});
+
+test('the keyboard reaches the tabs at one stop, then each action', () => {
+  render(
+    <>
+      <Tabs
+        ariaLabel="Datadog sections"
+        items={SECTIONS_WITH_ACTIONS}
+        value="activity"
+        actions={
+          <>
+            <button type="button">Check now</button>
+            <button type="button">Open Datadog</button>
+          </>
+        }
+      />
+    </>,
+  );
+  const focusable = [...document.querySelectorAll<HTMLElement>('button')].filter((el) => el.tabIndex >= 0);
+  expect(focusable.map((el) => el.textContent)).toEqual(['Activity', 'Check now', 'Open Datadog']);
+});
+
+test('a row of links keeps its actions outside the navigation landmark', () => {
+  render(
+    <Tabs
+      ariaLabel="Workspace"
+      items={SECTIONS_WITH_ACTIONS}
+      value="agents"
+      actions={<button type="button">New</button>}
+      renderItem={({ item, className, children }) => (
+        <a key={item.value} href={`#/${item.value}`} className={className}>
+          {children}
+        </a>
+      )}
+    />,
+  );
+  const nav = screen.getByRole('navigation', { name: 'Workspace' });
+  const action = screen.getByRole('button', { name: 'New' });
+  expect(nav.contains(action)).toBe(false);
+  expect(nav.nextElementSibling).toBe(action.parentElement);
+});
+
+test('without actions the row is drawn as before, with no bar', () => {
+  const { container } = render(
+    <Tabs ariaLabel="Plain" className="plain" items={SECTIONS_WITH_ACTIONS} value="agents" />,
+  );
+  expect(container.querySelector('.crewlet-tabs-bar')).toBeNull();
+  expect(screen.getByRole('tablist', { name: 'Plain' }).className).toContain('plain');
+});
+
+test('the actions keep their width and the row gives way first', () => {
+  // Read off the stylesheet, because this is a layout rule and jsdom lays nothing out.
+  const css = tabsCss();
+  const actions = /\.crewlet-tabs__actions\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(actions).toMatch(/flex:\s*none/);
+  const row = /\.crewlet-tabs-bar > \.crewlet-tabs\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(row).toMatch(/min-width:\s*0/);
+  const filling = /\.crewlet-tabs-bar > \.crewlet-tabs--underline,\s*\.crewlet-tabs-bar > \.crewlet-tabs-fold\s*\{([^}]*)\}/.exec(
+    css,
+  )?.[1] ?? '';
+  expect(filling).toMatch(/flex:\s*1 1 auto/);
+  expect(filling).toMatch(/min-width:\s*0/);
+});

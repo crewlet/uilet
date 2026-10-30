@@ -205,6 +205,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.78.0
+
+**`Tabs` take `actions`, controls at the row's far end in a tab list too.** A screen's own buttons ("Check now", "New") stand beside its tabs, in one bar with them, and never inside the tab list: the actions are the row's next sibling, so a screen reader meets a tab list of tabs alone and then the buttons, and the keyboard reaches the tabs (one stop, the arrows inside) and then each action. In router mode they stand outside the `nav` for the same reason. The actions keep their width at every size and the row gives way first: it takes the room left beside them, and scrolls (`overflow="scroll"`) or folds into "More" (`overflow="menu"`) inside that room, where the slider and the fold are measured. An underline row's rule runs on under the actions to the bar's edge. With `actions`, `className` lands on the bar, the new outermost element (`.crewlet-tabs-bar`, the actions in `.crewlet-tabs__actions`). `trailing` is unchanged: router mode only, inside the `nav`.
+
 ## Changes in 0.77.0
 
 **`CheckGrid`, checkboxes where rows meet columns**: which seats run which jobs, which people hold which access. Each box is a native checkbox named by its row and its column ("Backend Engineer Coding"), each row a group named by its row, and a box can be on, off or partly on (`mixed`). Where every column fits, a header names the columns once and the boxes stand under them; where they do not (a phone, a narrow column), each row stacks with its column's name beside every box, so no column is cut off behind a sideways scroll. Which applies is the grid's own width, by a container query, and a grid of more than six columns always stacks. A column can refuse new ticks with `disabledReason`, drawn once under the grid and read with each refused box; a box already on stays free to take off. The types are `CheckGridProps`, `CheckGridRow`, `CheckGridColumn` and `CheckGridState`.

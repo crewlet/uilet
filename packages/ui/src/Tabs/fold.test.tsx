@@ -256,3 +256,38 @@ describe('a row of links that folds', () => {
     expect(note().classList.contains('is-folded')).toBe(true);
   });
 });
+
+describe('a tab list that folds beside its actions', () => {
+  // The bar gives the row the room its actions leave: the box measures
+  // `space`, the room beside a 90-wide action, which is what CSS lays out.
+  function Bar() {
+    const [value, setValue] = useState('overview');
+    return (
+      <Tabs
+        overflow="menu"
+        variant="underline"
+        ariaLabel="Sections"
+        items={TABS}
+        value={value}
+        onValueChange={setValue}
+        actions={<button type="button">Check now</button>}
+      />
+    );
+  }
+
+  test('the tabs fold into More inside the room left, and the action stays drawn and reachable', async () => {
+    lay(280);
+    render(<Bar />);
+    await waitFor(() => expect(drawn()).toEqual(['Overview', 'Work']));
+    const action = screen.getByRole('button', { name: 'Check now' });
+    expect(action.closest('[inert]')).toBeNull();
+    expect(action.closest('[aria-hidden="true"]')).toBeNull();
+    // More belongs to the row's box; the action follows the whole box.
+    const box = document.querySelector('.crewlet-tabs-fold')!;
+    expect(box.contains(screen.getByRole('button', { name: 'More of Sections' }))).toBe(true);
+    expect(box.contains(action)).toBe(false);
+    expect(box.nextElementSibling?.contains(action)).toBe(true);
+    const rest = await openMore();
+    expect(rest).toEqual(['Turns', 'Memory', 'Schedules', 'Settings']);
+  });
+});
