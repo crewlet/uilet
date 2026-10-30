@@ -639,6 +639,62 @@ export const AccessoryRows: Story = {
 };
 
 /*
+ * A short table in a wide pane, sized to its content. The same three columns
+ * filled to the box, and then with `columnSizing="content"`: each column as
+ * wide as what it holds, the cells' own insets apart, and the spare width at
+ * the trailing edge. The accessory strip still spans the row and wraps.
+ */
+export const SizedToContent: Story = {
+  name: 'Archetypes / Sized to content (a short table in a wide pane)',
+  render: () => {
+    const table = (sizing: 'fill' | 'content') => (
+      <DataTable
+        variant="compact"
+        paginated={false}
+        showSettings={false}
+        rowKey="id"
+        ariaLabel={sizing === 'content' ? 'API keys, sized to content' : 'API keys, filled'}
+        columnSizing={sizing}
+        data={apiKeys}
+        defaultColumnOrder={['name', 'last_used', 'status']}
+        columns={{
+          name:      { label: 'Name' },
+          last_used: { label: 'Last used' },
+          status:    {
+            label: 'Status',
+            render: (row) => (
+              <Tag size="sm" variant={row.status === 'active' ? 'success' : 'neutral'}>
+                {row.status}
+              </Tag>
+            ),
+          },
+        }}
+        renderAccessoryRow={(row) =>
+          row.status === 'revoked' ? (
+            <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', padding: '4px 0' }}>
+              Revoked keys are kept for the audit log and stop authenticating at once. A
+              revoked key cannot be restored; create a new one instead.
+            </div>
+          ) : null
+        }
+      />
+    );
+    return (
+      <div style={{ padding: 20, maxWidth: 1000, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <SettingsHint>
+          Filled (the default): the columns grow until the row fills the box.
+        </SettingsHint>
+        {table('fill')}
+        <SettingsHint>
+          columnSizing="content": the columns stand together and the trailing spacer takes the rest.
+        </SettingsHint>
+        {table('content')}
+      </div>
+    );
+  },
+};
+
+/*
  * Copyable cells, for values a reader pastes elsewhere (an artifact
  * digest here). Copyable wraps any value with an inline copy button.
  * Pair with the title/description card pattern.

@@ -174,3 +174,43 @@ test('a line value stays inline, whatever it holds', () => {
   expect(container.querySelector('.crewlet-change-list__row--block')).toBeNull();
   expect(container.querySelector('.crewlet-change-list__block')).toBeNull();
 });
+
+test('an inline list sets each row on one line, its values as chips said in the same words', () => {
+  const rows: ChangeListRow[] = [
+    { kind: 'changed', label: 'Deployments', from: 'Read-only', to: 'Read and write' },
+    { kind: 'added', label: 'Checks', to: 'Read-only' },
+    { kind: 'removed', label: 'Actions', from: 'Read-only' },
+    { kind: 'fact', label: 'Contents', value: 'Read and write' },
+  ];
+  const { container } = render(<ChangeList layout="inline" rows={rows} />);
+  expect(container.querySelector('.crewlet-change-list--inline')).toBeTruthy();
+  const value = (kind: string) => container.querySelector(`.crewlet-change-list__row--${kind} .crewlet-change-list__value`)!;
+  // THE SAME WORDS AS A LINE'S: the arrow is never the only word.
+  expect(value('changed').textContent).toBe('Changed from Read-only to Read and write');
+  expect(value('changed').querySelector('del .crewlet-tag')!.textContent).toBe('Read-only');
+  expect(value('changed').querySelector('ins .crewlet-tag')!.textContent).toBe('Read and write');
+  expect(value('added').textContent).toBe('Added: Read-only');
+  expect(value('removed').textContent).toBe('Removed: Read-only');
+  expect(value('fact').querySelector('.crewlet-tag')!.textContent).toBe('Read and write');
+  // Still a description list: a term a row, named by its label.
+  expect(within(container.querySelector('dl')!).getAllByRole('term').map((t) => t.textContent)).toEqual([
+    'Deployments',
+    'Checks',
+    'Actions',
+    'Contents',
+  ]);
+});
+
+test('an inline list keeps a word diff and a block value in their own layout', () => {
+  const { container } = render(
+    <ChangeList
+      layout="inline"
+      rows={[
+        { kind: 'text', label: 'Escalation', words: [{ op: '-', text: 'one hour' }, { op: '+', text: '30 minutes' }] },
+        { kind: 'fact', label: 'Rules', value: 'Two rules', block: true },
+      ]}
+    />,
+  );
+  expect(container.querySelector('.crewlet-change-list__words')).toBeTruthy();
+  expect(container.querySelector('.crewlet-change-list__row--block .crewlet-tag')).toBeNull();
+});

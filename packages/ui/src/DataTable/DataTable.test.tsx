@@ -1003,6 +1003,45 @@ test('a column the caller never named is a column the caller never hid', () => {
   expect(screen.getByRole('link', { name: 'alpha' })).toBeTruthy();
 });
 
+test('a table sized to its content states no width a column did not lock, and draws no resize handle', () => {
+  const columns: Record<string, DataTableColumn<Seat>> = {
+    ...nameAndNote,
+    live: { label: 'Live', width: 96 },
+  };
+  const { container, rerender } = render(
+    <DataTable<Seat> variant="compact" data={seats} columns={columns} getRowKey={(row) => row.id} />,
+  );
+  const table = () => container.querySelector('table')!;
+  const width = (header: string) => screen.getByRole('columnheader', { name: new RegExp(header) }).style.width;
+  // FILLED, every column states the width the fit and the handles write.
+  expect(table().classList.contains('crewlet-data-table__table--content')).toBe(false);
+  expect(width('Seat')).not.toBe('');
+  expect(screen.queryAllByRole('separator', { name: /^Resize / }).length).toBeGreaterThan(0);
+
+  rerender(
+    <DataTable<Seat> variant="compact" data={seats} columns={columns} getRowKey={(row) => row.id} columnSizing="content" />,
+  );
+  expect(table().classList.contains('crewlet-data-table__table--content')).toBe(true);
+  // THE BROWSER MEASURES THEM: no header and no cell of an unlocked column
+  // states a width, which under the automatic layout would be a floor.
+  expect(width('Seat')).toBe('');
+  expect(width('Note')).toBe('');
+  const firstRow = container.querySelector('tbody tr')!;
+  expect((firstRow.children[0] as HTMLElement).style.width).toBe('');
+  // A width the caller locked is still stated.
+  expect(width('Live')).toBe('96px');
+  // And nothing resizes a column, so no handle invites a reader to.
+  expect(screen.queryAllByRole('separator', { name: /^Resize / })).toHaveLength(0);
+});
+
+test('content sizing is the compact variant\'s, and the default variant ignores it', () => {
+  const { container } = render(
+    <DataTable<Seat> data={seats} columns={nameAndNote} getRowKey={(row) => row.id} columnSizing="content" />,
+  );
+  expect(container.querySelector('table')!.classList.contains('crewlet-data-table__table--content')).toBe(false);
+  expect(screen.getByRole('columnheader', { name: /Seat/ }).style.width).not.toBe('');
+});
+
 test('resizable={false} leaves no resize handle in either variant', () => {
   // A separator a reader can move, which is what a resize handle IS: see
   // `resizerState`.

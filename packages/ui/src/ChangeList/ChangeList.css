@@ -207,3 +207,56 @@
 .crewlet-change-list--settled .crewlet-change-list__value {
   color: var(--color-text-secondary);
 }
+
+/*
+ * INLINE: one line a row, the label and then its values as chips. The rows
+ * stack; a row wraps as the pair does, the arrow staying with what it points
+ * at. A word diff and a block value keep their own layout under the label.
+ */
+.crewlet-change-list--inline .crewlet-change-list__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.crewlet-change-list--inline .crewlet-change-list__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+}
+
+.crewlet-change-list--inline .crewlet-change-list__row--text,
+.crewlet-change-list--inline .crewlet-change-list__row--block {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* The label in the secondary ink at the row's own size, closed by a colon. */
+.crewlet-change-list--inline .crewlet-change-list__label {
+  font-size: inherit;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-change-list--inline .crewlet-change-list__row:not(.crewlet-change-list__row--text):not(.crewlet-change-list__row--block) > .crewlet-change-list__label::after {
+  content: ':';
+}
+
+.crewlet-change-list--inline .crewlet-change-list__pair {
+  align-items: center;
+}
+
+.crewlet-change-list--inline .crewlet-change-list__next {
+  align-items: center;
+}
+
+/* THE CHIP IS THE MARK, so the element around it draws none of its own. */
+.crewlet-change-list__chip {
+  display: inline-flex;
+  text-decoration: none;
+}
+
+.crewlet-change-list--inline .crewlet-change-list__note {
+  flex-basis: 100%;
+  margin-top: 0;
+}

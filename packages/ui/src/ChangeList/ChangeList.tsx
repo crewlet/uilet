@@ -110,8 +110,24 @@ export const CHANGE_LIST_LABELS: ChangeListLabels = {
   showWhole: 'Show the whole change',
 };
 
+/**
+ * How the rows are laid out.
+ *
+ *   - 'grid'   the labels in one column and the values in the other, the
+ *              values in DiffList's tints. The default: a record's fields.
+ *   - 'inline' each row one line, its label and then its values as chips:
+ *              "Deployments: [Read-only] → [Read and write]". For a short
+ *              change read in passing, such as a level moved in a review.
+ */
+export type ChangeListLayout = 'grid' | 'inline';
+
 export interface ChangeListProps {
   rows: readonly ChangeListRow[];
+  /**
+   * `inline` sets each row on one line with its values as chips. A word diff
+   * and a block value keep their own layout under their label in either.
+   */
+  layout?: ChangeListLayout | undefined;
   /** The eyebrow over the rows: "What will change", "What will be created", "What changed". */
   heading?: ReactNode;
   /**
@@ -248,8 +264,80 @@ function BlockValue({ row, labels }: { row: Exclude<ChangeListRow, ChangeListTex
   }
 }
 
-function Value({ row, labels }: { row: Exclude<ChangeListRow, ChangeListTextRow>; labels: ChangeListLabels }) {
+/**
+ * A line value as chips: the old value on an outline chip, the new one on the
+ * added tone, a removed one on the removed tone. The same words are said as a
+ * line's, and the `del` and `ins` around each chip keep what each one is.
+ */
+function ChipValue({ row, labels }: { row: Exclude<ChangeListRow, ChangeListTextRow>; labels: ChangeListLabels }) {
+  switch (row.kind) {
+    case 'fact':
+      return (
+        <Tag size="sm" variant="neutral">
+          {row.value}
+        </Tag>
+      );
+    case 'changed':
+      return (
+        <span className="crewlet-change-list__pair">
+          <VisuallyHidden>{`${labels.changedFrom} `}</VisuallyHidden>
+          <del className="crewlet-change-list__chip">
+            <Tag size="sm" variant="neutral" appearance="outline">
+              {row.from}
+            </Tag>
+          </del>
+          <span className="crewlet-change-list__next">
+            <ArrowRightGlyph size="sm" className="crewlet-change-list__arrow" />
+            <VisuallyHidden>{` ${labels.to} `}</VisuallyHidden>
+            <ins className="crewlet-change-list__chip">
+              <Tag size="sm" variant="success">
+                {row.to}
+              </Tag>
+            </ins>
+          </span>
+        </span>
+      );
+    case 'added':
+      return (
+        <span className="crewlet-change-list__pair">
+          <VisuallyHidden>{`${labels.added} `}</VisuallyHidden>
+          <ins className="crewlet-change-list__chip">
+            <Tag size="sm" variant="success">
+              {row.to}
+            </Tag>
+          </ins>
+          {row.isNew ? (
+            <Tag size="xs" variant="success" appearance="outline">
+              {labels.isNew}
+            </Tag>
+          ) : null}
+        </span>
+      );
+    case 'removed':
+      return (
+        <span className="crewlet-change-list__pair">
+          <VisuallyHidden>{`${labels.removed} `}</VisuallyHidden>
+          <del className="crewlet-change-list__chip">
+            <Tag size="sm" variant="danger" appearance="outline">
+              {row.from}
+            </Tag>
+          </del>
+        </span>
+      );
+  }
+}
+
+function Value({
+  row,
+  labels,
+  inline,
+}: {
+  row: Exclude<ChangeListRow, ChangeListTextRow>;
+  labels: ChangeListLabels;
+  inline: boolean;
+}) {
   if (row.block) return <BlockValue row={row} labels={labels} />;
+  if (inline) return <ChipValue row={row} labels={labels} />;
   switch (row.kind) {
     case 'fact':
       return <span className="crewlet-change-list__fact">{row.value}</span>;
@@ -309,11 +397,26 @@ function Value({ row, labels }: { row: Exclude<ChangeListRow, ChangeListTextRow>
  * values in the other, rows apart by the list's spacing rather than rules,
  * and no box of its own inside the card that holds it.
  */
-export function ChangeList({ rows, heading, settled = false, labels: overrides, diffLabels, className }: ChangeListProps) {
+export function ChangeList({
+  rows,
+  heading,
+  layout = 'grid',
+  settled = false,
+  labels: overrides,
+  diffLabels,
+  className,
+}: ChangeListProps) {
   const labels = overrides ? { ...CHANGE_LIST_LABELS, ...overrides } : CHANGE_LIST_LABELS;
   const headingId = useId();
   return (
-    <div className={cx('crewlet-change-list', settled && 'crewlet-change-list--settled', className)}>
+    <div
+      className={cx(
+        'crewlet-change-list',
+        layout === 'inline' && 'crewlet-change-list--inline',
+        settled && 'crewlet-change-list--settled',
+        className,
+      )}
+    >
       {heading === undefined || heading === null ? null : (
         <div id={headingId} className="crewlet-change-list__heading">
           {heading}
@@ -344,7 +447,7 @@ export function ChangeList({ rows, heading, settled = false, labels: overrides, 
                   ) : null}
                 </>
               ) : (
-                <Value row={row} labels={labels} />
+                <Value row={row} labels={labels} inline={layout === 'inline'} />
               )}
               {row.note === undefined || row.note === null ? null : (
                 <span className="crewlet-change-list__note">{row.note}</span>

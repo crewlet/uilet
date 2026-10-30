@@ -357,6 +357,18 @@ export type DataTableItemsPerPage = number | typeof ALL_ITEMS;
 export type DataTableDensity = 'compact' | 'comfortable';
 
 /**
+ * How a compact table's columns share its width.
+ *
+ *   - 'fill'    every column grows in proportion until the row fills its
+ *               box. The default: a list page, where the columns are the
+ *               screen and a reader resizes them.
+ *   - 'content' each column is as wide as what it holds, its header
+ *               included, the cells' own insets apart, and the trailing
+ *               spacer takes the rest.
+ */
+export type DataTableColumnSizing = 'fill' | 'content';
+
+/**
  * Every string the table renders on its own behalf, in one prop.
  *
  * ONE PROP RATHER THAN THIRTY. A table draws a lot of chrome it invents the
@@ -573,6 +585,19 @@ export interface DataTableProps<TRow = DataTableRow> {
    * render anywhere on the table.
    */
   resizable?: boolean;
+  /**
+   * How the columns share the table's width. Compact variant only.
+   *
+   * `content` IS FOR A SHORT TABLE IN A WIDE PANE: an agent, a switch, a
+   * level and a status, spread by the fit across a 900px box, sat so far
+   * apart that a row read as four facts about nothing in particular. Sized
+   * to content, the columns stand together and the spare width goes to the
+   * trailing spacer. Nothing resizes a column then, neither the fit nor a
+   * reader, so no resize handle is drawn; a column with a `width` keeps it,
+   * and a row wider than its box scrolls sideways as any table here does.
+   * `fill` (the default) is the table as it always was.
+   */
+  columnSizing?: DataTableColumnSizing;
   onRowAction?: ((row: TRow) => void) | null;
   actionLabel?: string;
   /** The action column's glyph. A component, not a name. */
@@ -892,6 +917,7 @@ export const DataTable = <TRow,>({
   pageCount,
   minColumnWidth = 80,
   resizable = true,
+  columnSizing = 'fill',
   itemsPerPageOptions = [5, 10, 20, 50, 100],
   onRowAction = null,
   actionLabel = 'Delete',
@@ -978,6 +1004,12 @@ export const DataTable = <TRow,>({
    * wins so they remain orthogonal escape hatches.
    */
   const isCompact = variant === 'compact';
+  /*
+   * A COLUMN SIZED TO ITS CONTENT carries no width of its own: the automatic
+   * table layout measures it, so neither the fit pass nor a resize handle has
+   * anything to write. Only a `width` the caller locked is still stated.
+   */
+  const sizedToContent = isCompact && columnSizing === 'content';
   /*
    * Two derivations of the props alone, declared here rather than beside their
    * first use a thousand lines below: the fit pass reads both, and a `const`
@@ -1436,6 +1468,7 @@ export const DataTable = <TRow,>({
     hasChromeColumn,
     isCompact,
     minColumnWidth,
+    sizedToContent,
   });
   fitInputs.current = {
     columns,
@@ -1447,11 +1480,14 @@ export const DataTable = <TRow,>({
     hasChromeColumn,
     isCompact,
     minColumnWidth,
+    sizedToContent,
   };
 
   useLayoutEffect(() => {
-    const { columns, columnOrder, visibleColumns, columnWidths, resizedColumns, expandable, hasChromeColumn, isCompact, minColumnWidth } =
+    const { columns, columnOrder, visibleColumns, columnWidths, resizedColumns, expandable, hasChromeColumn, isCompact, minColumnWidth, sizedToContent } =
       fitInputs.current;
+    // NOTHING TO FIT: the browser sizes a content-sized column itself.
+    if (sizedToContent) return;
     const el = scrollRef.current;
     if (!el) return;
     /*
@@ -2359,6 +2395,17 @@ export const DataTable = <TRow,>({
    * right-aligned numbers is a header that points at the wrong edge, and two
    * copies of this rule is how that happens.
    */
+  /**
+   * The width a column's cells state: the live width the fit pass or a reader
+   * set, and none for a column sized to its content, which keeps only a
+   * `width` its caller locked.
+   */
+  const statedWidth = (columnKey: string): React.CSSProperties | undefined => {
+    const width = columnWidths[columnKey];
+    if (width == null || (sizedToContent && columns[columnKey]?.width == null)) return undefined;
+    return { width: `${width}px` };
+  };
+
   const columnClasses = (column: DataTableColumn<TRow>): string => cx(
     column.align === 'right' && 'crewlet-data-table__cell--right',
     column.align === 'center' && 'crewlet-data-table__cell--center',
@@ -2380,9 +2427,7 @@ export const DataTable = <TRow,>({
        * tracks any operator-driven resize from the header handle. The
        * state is seeded from column.width / column.defaultWidth.
        */
-      if (columnWidths[columnKey] != null) {
-        style.width = `${columnWidths[columnKey]}px`;
-      }
+      Object.assign(style, statedWidth(columnKey));
     } else {
       style.width = `${columnWidths[columnKey]}px`;
     }
@@ -2464,10 +2509,7 @@ export const DataTable = <TRow,>({
     const isSticky = column.sticky === 'right';
 
     if (isCompact) {
-      const style: React.CSSProperties = {};
-      if (columnWidths[columnKey] != null) {
-        style.width = `${columnWidths[columnKey]}px`;
-      }
+      const style: React.CSSProperties = { ...statedWidth(columnKey) };
 
       /*
        * Resizer: right-edge drag handle present on every data column
@@ -2496,7 +2538,7 @@ export const DataTable = <TRow,>({
       const visibleStickyExists = columnOrder.some(
         (k) => columns[k]?.sticky === 'right' && isColumnVisible(k),
       );
-      const suppressResizer = !resizable || isSticky || visibleStickyExists;
+      const suppressResizer = !resizable || sizedToContent || isSticky || visibleStickyExists;
       const resizer = suppressResizer ? null : (
         <button
           type="button"
@@ -3148,6 +3190,7 @@ export const DataTable = <TRow,>({
       <table
         className={cx(
           'crewlet-data-table__table',
+          sizedToContent && 'crewlet-data-table__table--content',
           !bodyHoldsRows && 'crewlet-data-table__table--rowless',
         )}
         aria-busy={loading || undefined}
@@ -3203,10 +3246,7 @@ export const DataTable = <TRow,>({
                     <td key="__expand" className="crewlet-data-table__expand-cell" style={{ width: 32 }} />
                   )}
                   {visibleKeys.map((columnKey, colIdx) => (
-                    <td
-                      key={columnKey}
-                      style={columnWidths[columnKey] != null ? { width: `${columnWidths[columnKey]}px` } : undefined}
-                    >
+                    <td key={columnKey} style={statedWidth(columnKey)}>
                       <span
                         className="crewlet-data-table__skeleton-bar"
                         style={{

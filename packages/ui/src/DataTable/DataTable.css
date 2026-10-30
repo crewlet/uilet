@@ -798,6 +798,44 @@ body.crewlet-data-table-resizing {
 }
 
 /*
+ * A TABLE SIZED TO ITS CONTENT (`columnSizing="content"`) is laid out by the
+ * automatic algorithm, with no width stated on its columns. The spacer asks
+ * for the whole row, so every other column gives up all it can: down to its
+ * widest cell. What is left over is the spacer's.
+ *
+ * Its cells never wrap, Wrap lines or not. A cell that may break anywhere is
+ * a column the automatic layout squeezes to a few letters a line, which is
+ * what a name became the first time this was drawn; and with every column as
+ * wide as its content there is nothing to truncate, so the toggle has nothing
+ * to decide.
+ *
+ * After the gutter rule above and as specific, so a pinned column keeps its
+ * gutter as the spacer's floor while the spacer still takes the rest of the
+ * row. The panels that span the row wrap, as their content does at any width:
+ * kept on one line, a sentence in one would be measured as the narrowest the
+ * table may be.
+ */
+.crewlet-data-table--compact .crewlet-data-table__table.crewlet-data-table__table--content {
+  table-layout: auto;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table.crewlet-data-table__table--content td:not(.crewlet-data-table__expanded-cell):not(.crewlet-data-table__accessory-cell) {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.crewlet-data-table--compact .crewlet-data-table__table.crewlet-data-table__table--content .crewlet-data-table__th--spacer,
+.crewlet-data-table--compact .crewlet-data-table__table.crewlet-data-table__table--content .crewlet-data-table__td--spacer {
+  width: 100%;
+}
+
+.crewlet-data-table__table--content td.crewlet-data-table__expanded-cell,
+.crewlet-data-table__table--content td.crewlet-data-table__accessory-cell {
+  white-space: normal;
+}
+
+/*
  * Row actions column: pinned to the viewport's right edge with
  * position: sticky so the kebab affordance stays visible during
  * horizontal scroll AND keeps a fixed visual position regardless of

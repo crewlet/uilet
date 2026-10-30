@@ -3,6 +3,7 @@ import './DataTable.css';
 export { DataTable, DATA_TABLE_LABELS, ALL_ITEMS } from './DataTable.js';
 export type {
   DataTableColumn,
+  DataTableColumnSizing,
   DataTableDensity,
   DataTableItemsPerPage,
   DataTableLabels,

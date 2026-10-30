@@ -494,6 +494,35 @@ test('the header divides one column from the next, and never a chrome cell', () 
   expect(rule).toContain('bottom: calc((var(--spacing-1) + var(--spacing-2)) / 2)');
 });
 
+test('a table sized to its content lays itself out, and its spacer takes what is left', () => {
+  const css = SHEETS['DataTable/DataTable.css']!;
+  const table = '.crewlet-data-table--compact .crewlet-data-table__table.crewlet-data-table__table--content';
+  expect(block(css, table)).toContain('table-layout: auto');
+  const spacer = block(css, `${table} .crewlet-data-table__th--spacer,\n${table} .crewlet-data-table__td--spacer`);
+  expect(spacer).toContain('width: 100%');
+  // AFTER THE GUTTER, so a pinned pane's gutter is the spacer's floor and
+  // not its whole width.
+  const gutter = css.indexOf('.crewlet-data-table__table:has(.crewlet-data-table__th--sticky-right)');
+  expect(gutter).toBeGreaterThan(0);
+  expect(css.indexOf(`${table} .crewlet-data-table__th--spacer`)).toBeGreaterThan(gutter);
+  // ITS CELLS NEVER WRAP, Wrap lines or not: a cell that may break anywhere
+  // is a column the automatic layout squeezes to a few letters a line.
+  const cells = block(
+    css,
+    `${table} td:not(.crewlet-data-table__expanded-cell):not(.crewlet-data-table__accessory-cell)`,
+  );
+  expect(cells).toContain('white-space: nowrap');
+  expect(cells).toContain('overflow-wrap: normal');
+  // And it outranks the Wrap lines rule, which is three classes and a type.
+  expect(css).toContain('.crewlet-data-table--compact.crewlet-data-table--wrap-lines .crewlet-data-table__table td {');
+  // A panel that spans the row wraps, or its sentence would set the row's floor.
+  const panels = block(
+    css,
+    '.crewlet-data-table__table--content td.crewlet-data-table__expanded-cell,\n.crewlet-data-table__table--content td.crewlet-data-table__accessory-cell',
+  );
+  expect(panels).toContain('white-space: normal');
+});
+
 test('the header block says what the table is at the step a title takes', () => {
   const css = SHEETS['DataTable/DataTable.css']!;
   const title = block(css, '.crewlet-data-table__title');
