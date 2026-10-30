@@ -225,10 +225,11 @@
 }
 
 /* A footnote may not set its column's width: the track does, and the note
-   wraps inside it, balanced so the wrap reads as deliberate. */
+   wraps inside it, balanced so the wrap reads as deliberate. It is set as
+   the label is, so a fact line holds two sizes, the labels' and the values'. */
 .crewlet-fact-line__note,
 .crewlet-fact-line__set-by {
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
   text-wrap: balance;
 }

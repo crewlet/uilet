@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, TabPanel, Tabs } from '@crewlethq/ui';
+import { Button, TabPanel, Tabs, type TabsSize } from '@crewlethq/ui';
 import {
   ChartNoAxesGanttGlyph,
   InboxGlyph,
+  RotateCwGlyph,
   SquareTerminalGlyph,
 } from '@crewlethq/icons/glyphs';
 
@@ -346,3 +347,107 @@ function LensChips() {
  * them; the lens that is on is outlined in the accent and nothing else.
  */
 export const Chip: Story = { render: () => <LensChips /> };
+
+function CheckNow({ size }: { size: TabsSize }) {
+  const [checking, setChecking] = useState(false);
+  return (
+    <Button
+      size={size === 'sm' ? 'small' : 'medium'}
+      variant="ghost"
+      leadingIcon={<RotateCwGlyph size="sm" />}
+      loading={checking}
+      onClick={() => {
+        setChecking(true);
+        window.setTimeout(() => setChecking(false), 1200);
+      }}
+    >
+      Check now
+    </Button>
+  );
+}
+
+function IntegrationTabs({ size, width, overflow }: { size: TabsSize; width: number; overflow: 'scroll' | 'menu' }) {
+  const [value, setValue] = useState('agents');
+  return (
+    <div style={{ maxWidth: width, resize: 'horizontal', overflow: 'hidden', paddingBottom: 'var(--spacing-2)' }}>
+      <Tabs
+        variant="underline"
+        size={size}
+        overflow={overflow}
+        ariaLabel={`Datadog sections, ${size === 'sm' ? 'compact' : 'default'}, ${width}px`}
+        value={value}
+        onValueChange={setValue}
+        items={[
+          { value: 'agents', label: 'Agents', count: 6 },
+          { value: 'activity', label: 'Activity' },
+          { value: 'deliveries', label: 'Deliveries', count: 128 },
+          { value: 'settings', label: 'Settings' },
+        ]}
+        actions={<CheckNow size={size} />}
+      />
+    </div>
+  );
+}
+
+/**
+ * IN-PAGE TABS WITH THE SCREEN'S OWN ACTION at the row's far end: an
+ * integration's sections and its "Check now". The button is the tab list's
+ * sibling, never one of its tabs, so the keyboard reaches the tabs (one stop,
+ * the arrows inside) and then the button. Both densities, then the same row
+ * at a phone's width: the button keeps its size and the tabs give way,
+ * folding into "More" or scrolling inside the room it leaves. Drag a row's
+ * corner to try other widths.
+ */
+export const WithActions: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-6)' }}>
+      <IntegrationTabs size="md" width={720} overflow="scroll" />
+      <IntegrationTabs size="sm" width={720} overflow="scroll" />
+      <IntegrationTabs size="md" width={320} overflow="menu" />
+      <IntegrationTabs size="sm" width={280} overflow="scroll" />
+    </div>
+  ),
+};
+
+function LensesWithNew({ variant, width }: { variant: 'pill' | 'chip'; width: number }) {
+  const [value, setValue] = useState('about');
+  return (
+    <div style={{ maxWidth: width, resize: 'horizontal', overflow: 'hidden', paddingBottom: 'var(--spacing-2)' }}>
+      <Tabs
+        variant={variant}
+        size="sm"
+        ariaLabel={`Project lenses, ${variant}, ${width}px`}
+        value={value}
+        onValueChange={setValue}
+        items={[
+          { value: 'about', label: 'About' },
+          { value: 'tasks', label: 'Tasks', count: 12 },
+          { value: 'decisions', label: 'Decisions', count: 3 },
+          { value: 'pages', label: 'Pages' },
+        ]}
+        actions={
+          <Button size="small" variant="ghost">
+            New
+          </Button>
+        }
+      />
+    </div>
+  );
+}
+
+/**
+ * PILL AND CHIP ROWS WITH AN ACTION, where the row is wider than the room it
+ * has. The row keeps its own width while it fits, then scrolls inside the room
+ * the action leaves, its scrollbar hidden as an underline row's is; no tab
+ * ever paints under the action.
+ */
+export const WithActionsPillAndChip: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-6)' }}>
+      <LensesWithNew variant="pill" width={640} />
+      <LensesWithNew variant="pill" width={320} />
+      <LensesWithNew variant="chip" width={640} />
+      <LensesWithNew variant="chip" width={320} />
+    </div>
+  ),
+};

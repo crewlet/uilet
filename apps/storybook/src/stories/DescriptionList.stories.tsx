@@ -108,3 +108,23 @@ export const OneColumnDownAPage: Story = {
     </div>
   ),
 };
+
+/**
+ * ONE TYPE SIZE, for a list inside a table row: the terms at the details'
+ * size, told apart by the secondary ink, so the list reads as part of the row
+ * rather than as a caption under it.
+ */
+export const Uniform: Story = {
+  render: () => (
+    <div style={{ maxWidth: 560 }}>
+      <DescriptionList uniform dense fit>
+        <DescriptionList.Item term="Account">crewlet-sre@agents.crewlet.invalid</DescriptionList.Item>
+        <DescriptionList.Item term="Role at Datadog">Datadog Admin Role</DescriptionList.Item>
+        <DescriptionList.Item term="Credential">
+          <code>DATADOG_APP_KEY_SRE</code>, minted 1 day ago
+        </DescriptionList.Item>
+        <DescriptionList.Item term="Last sync">1 day ago</DescriptionList.Item>
+      </DescriptionList>
+    </div>
+  ),
+};

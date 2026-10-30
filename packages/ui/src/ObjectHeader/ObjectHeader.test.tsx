@@ -206,3 +206,11 @@ test('draws a mark on its own plate beside the header, and only when given one',
   expect(body.querySelector('h2')!.textContent).toBe('Slack');
   expect(body.textContent).toContain('Each agent posts as its own bot.');
 });
+
+test('a fact line holds two sizes: a note and a by-line are set as the label is', () => {
+  const sheet = css();
+  const label = /\.crewlet-fact-line__label\s*\{([^}]*)\}/.exec(sheet)?.[1]?.match(/font-size:\s*([^;]+);/)?.[1];
+  const note = /\.crewlet-fact-line__note,\s*\.crewlet-fact-line__set-by\s*\{([^}]*)\}/.exec(sheet)?.[1]?.match(/font-size:\s*([^;]+);/)?.[1];
+  expect(label).toBe('var(--font-size-xs)');
+  expect(note).toBe(label);
+});

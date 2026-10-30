@@ -27,6 +27,13 @@ export interface DescriptionListProps extends HTMLAttributes<HTMLDListElement> {
    */
   termWidth?: string | undefined;
   /**
+   * ONE TYPE SIZE: the terms at the details' own size, told apart by the
+   * secondary ink alone. For a list that sits inside a row of a table, where
+   * a second, smaller size reads as a caption under the row rather than as
+   * part of it.
+   */
+  uniform?: boolean | undefined;
+  /**
    * The pairs. Given as tuples so a caller can build them from a record
    * without inventing a key for each one; `DescriptionList.Item` children are
    * the other form, for a pair whose detail is a component.
@@ -51,6 +58,7 @@ export function DescriptionList({
   dense = false,
   fit = false,
   termWidth,
+  uniform = false,
   items,
   className,
   style,
@@ -69,6 +77,7 @@ export function DescriptionList({
         'crewlet-description-list',
         dense && 'crewlet-description-list--dense',
         fit && 'crewlet-description-list--fit',
+        uniform && 'crewlet-description-list--uniform',
         className,
       )}
     >

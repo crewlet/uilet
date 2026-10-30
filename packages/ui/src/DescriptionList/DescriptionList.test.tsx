@@ -114,3 +114,12 @@ test('lists that have to line up share one term column', () => {
   rerender(<DescriptionList items={[['Requests a minute', '600']]} />);
   expect(container.querySelector('dl')!.style.getPropertyValue('--crewlet-description-list-term')).toBe('');
 });
+
+test('a uniform list sets its terms at the details\' size, in the secondary ink', () => {
+  const { container } = render(<DescriptionList uniform items={[['Account', 'crewlet-sre']]} />);
+  expect(container.querySelector('dl')!.className).toContain('crewlet-description-list--uniform');
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'DescriptionList.css'), 'utf8');
+  const rule = /\.crewlet-description-list--uniform \.crewlet-description-list__term\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(rule).toMatch(/font-size:\s*inherit/);
+  expect(rule).toMatch(/color:\s*var\(--color-text-secondary\)/);
+});

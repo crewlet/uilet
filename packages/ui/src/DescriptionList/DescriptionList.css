@@ -88,3 +88,9 @@
 .crewlet-description-list--fit .crewlet-description-list__detail {
   margin-bottom: 0;
 }
+
+/* One type size: the terms at the details' size, in the secondary ink. */
+.crewlet-description-list--uniform .crewlet-description-list__term {
+  font-size: inherit;
+  color: var(--color-text-secondary);
+}

@@ -70,3 +70,26 @@ test('a grid of compact tiles folds before a track is narrower than a compact he
   // Two tracks of four need what two of two need.
   expect(folds.find((f) => f.columns === 'any' && f.tracks === 1)!.below).toBeGreaterThanOrEqual(need(2));
 });
+
+/*
+ * EVERY COUNT FOLDS TO ONE ON A PHONE. The one-column fold was written as
+ * `.crewlet-tile-grid > .crewlet-tile-grid__track`, less specific than the
+ * per-count rules (`[data-columns='4']`, `[data-columns='2']`), so a grid of
+ * two or four stayed on two tracks at any width and only a grid of three
+ * reached one. Read off the stylesheet, since jsdom evaluates no container
+ * query.
+ */
+test('a grid of any count folds to one track below 28rem', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'TileGrid.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+  const block = /@container crewlet-tile-grid \(width < 28rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+  expect(block).toMatch(/\.crewlet-tile-grid\[data-columns\] > \.crewlet-tile-grid__track\s*\{\s*--crewlet-tile-grid-tracks: 1;/);
+  // After every per-count rule it has to beat, so it wins at the same weight.
+  const last = Math.max(
+    css.lastIndexOf(".crewlet-tile-grid[data-columns='2'] > .crewlet-tile-grid__track"),
+    css.lastIndexOf(".crewlet-tile-grid[data-columns='4'] > .crewlet-tile-grid__track"),
+  );
+  expect(css.indexOf('@container crewlet-tile-grid (width < 28rem)')).toBeGreaterThan(last);
+});

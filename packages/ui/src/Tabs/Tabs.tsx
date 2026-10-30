@@ -111,7 +111,10 @@ export interface TabsProps {
   size?: TabsSize;
   /** Names the row. A tab row with no name is announced as "tab list" alone. */
   ariaLabel?: string;
-  /** On the row's root: the row, or with overflow `menu` on a tab list, the box holding the row and "More". */
+  /**
+   * On the outermost element: the row; with overflow `menu` on a tab list, the
+   * box holding the row and "More"; with `actions`, the bar holding both.
+   */
   className?: string;
   /** Currently active item value. */
   value?: string;
@@ -137,6 +140,21 @@ export interface TabsProps {
    * without `renderItem` ignores it.
    */
   trailing?: ReactNode;
+  /**
+   * Controls at the row's far end that act on the screen the tabs belong to,
+   * such as "Check now" or "New", in EITHER MODE.
+   *
+   * BESIDE THE ROW, NEVER IN IT. A tab list holds tabs alone, so the actions
+   * are the row's next sibling in one bar, and a screen reader meets the tab
+   * list and then the buttons, as the keyboard does: one stop for the tabs,
+   * then each action. In router mode they stand outside the navigation
+   * landmark for the same reason: an action is not a place.
+   *
+   * THE TABS GIVE WAY FIRST. The actions keep their own width at every size;
+   * the row takes what is left, and scrolls or folds into "More" inside it,
+   * so its slider and its fold are measured in that room.
+   */
+  actions?: ReactNode;
   /**
    * What the row does with tabs it has no room for. `scroll` (the default)
    * scrolls it. `menu` draws the tabs that FIT, in order, and folds the rest
@@ -232,6 +250,7 @@ export function Tabs({
   panelId,
   renderItem,
   trailing,
+  actions,
   overflow = 'scroll',
   moreLabel = 'More',
   moreMenuLabel,
@@ -244,6 +263,8 @@ export function Tabs({
   // A tab list holds tabs alone, so "More" stands beside it in a box of its
   // own; a row of links holds its menu itself.
   const boxed = folding && !renderItem;
+  // Actions stand beside the row in a bar, which then carries `className`.
+  const barred = actions !== undefined && actions !== null && actions !== false;
   useImperativeHandle(ref, () => (boxed ? boxRef.current : navRef.current) as HTMLElement, [boxed]);
   const { buttons, onKeyDown } = useRoving(items.length, null);
   const fold = useFold(
@@ -252,6 +273,7 @@ export function Tabs({
     navRef,
     items.map((item) => item.value),
     value,
+    barred,
   );
   const isFolded = (item: TabsItem) => fold.folded.includes(item.value);
 
@@ -327,14 +349,27 @@ export function Tabs({
       mutation.disconnect();
       resize?.disconnect();
     };
-  }, [variant, value, items]);
+    // `barred`: the row's box changes with the actions beside it, and an
+    // environment without ResizeObserver hears of that from nothing else.
+  }, [variant, value, items, barred]);
+
+  /*
+   * A PILL OR CHIP ROW SCROLLS INSIDE A BAR, and only there, so there its
+   * current tab is brought into the row's view as an underline row's is: a
+   * lens past the room the actions leave was otherwise chosen and never shown.
+   */
+  useLayoutEffect(() => {
+    if (variant === 'underline' || !barred) return;
+    const nav = navRef.current;
+    if (nav) reveal(nav);
+  }, [variant, value, items, barred]);
 
   const rootClass = cx(
     'crewlet-tabs',
     `crewlet-tabs--${variant}`,
     `crewlet-tabs--${size}`,
     folding && 'crewlet-tabs--fold',
-    !boxed && className,
+    !boxed && !barred && className,
   );
   const selected = tabStop(
     items.map((item) => ({ disabled: item.disabled || isFolded(item) })),
@@ -479,8 +514,31 @@ export function Tabs({
       </span>
     ) : null;
 
+  /*
+   * THE BAR: the row, then its actions, siblings in one flex line. The row
+   * shrinks and the actions do not, so a tight bar scrolls or folds tabs
+   * while every action stays drawn.
+   *
+   * THE WRAPPER IS ALWAYS THERE, so the row is never re-parented. Actions
+   * often arrive after a fetch; a row that moved into a new element when they
+   * did was a new node, which dropped the focused tab and left the slider and
+   * the fold measuring the node that was gone. With no actions the wrapper is
+   * `display: contents`, draws nothing and carries no class of the caller's:
+   * `className` stays on the row as before.
+   */
+  const bar = (row: ReactNode) => (
+    <div className={barred ? cx('crewlet-tabs-bar', `crewlet-tabs-bar--${variant}`, className) : 'crewlet-tabs-host'}>
+      {row}
+      {barred ? (
+        <div className="crewlet-tabs__actions" data-tabs-actions="">
+          {actions}
+        </div>
+      ) : null}
+    </div>
+  );
+
   if (renderItem) {
-    return (
+    return bar(
       <nav ref={navRef} className={rootClass} aria-label={ariaLabel}>
         {rows}
         {more}
@@ -492,7 +550,7 @@ export function Tabs({
         ) : (
           trailing
         )}
-      </nav>
+      </nav>,
     );
   }
 
@@ -501,13 +559,16 @@ export function Tabs({
       {rows}
     </div>
   );
-  if (!boxed) return list;
-  return (
-    <div ref={boxRef} className={cx('crewlet-tabs-fold', `crewlet-tabs-fold--${variant}`, className)}>
+  if (!boxed) return bar(list);
+  return bar(
+    <div
+      ref={boxRef}
+      className={cx('crewlet-tabs-fold', `crewlet-tabs-fold--${variant}`, !barred && className)}
+    >
       {list}
       {more}
       {noteNode}
-    </div>
+    </div>,
   );
 }
 

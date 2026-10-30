@@ -249,6 +249,35 @@ test('a folded tab row carries no violation: a tab list and a row of links, each
   }
 });
 
+test('a tab row with actions carries no violation: a tab list and a row of links, each with a button beside it', async () => {
+  const items = ['Agents', 'Activity', 'Settings'].map((label) => ({ value: label.toLowerCase(), label }));
+  const { container } = render(
+    <main>
+      <h1>Datadog</h1>
+      <Tabs
+        variant="underline"
+        ariaLabel="Datadog sections"
+        items={items}
+        value="agents"
+        actions={<button type="button">Check now</button>}
+      />
+      <Tabs
+        variant="underline"
+        ariaLabel="Workspace sections"
+        items={items}
+        value="activity"
+        actions={<button type="button">New</button>}
+        renderItem={({ item, className, isActive, children }) => (
+          <a href={`#/${item.value}`} className={className} aria-current={isActive ? 'page' : undefined}>
+            {children}
+          </a>
+        )}
+      />
+    </main>,
+  );
+  expect(await violations(container)).toEqual([]);
+});
+
 test('the buttons, the marks and the hidden text carry no violation', async () => {
   const { container } = render(
     <main>
