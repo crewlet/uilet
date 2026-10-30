@@ -2789,6 +2789,12 @@ export const DataTable = <TRow,>({
    * chevron column is auto-appended on the right (after the action
    * column, if any) so each row exposes an expand affordance even
    * when the whole row is also clickable.
+   *
+   * EVERY CELL THAT SPANS THE ROW SPANS ALL OF IT, the expanded panel and
+   * the accessory strip alike. The strip used to span `colSpan`, one
+   * column short on an expandable table, so it stopped before the last
+   * column: invisible while that was a sliver of spacer, and a strip and a
+   * rule ending two thirds across once the columns were sized to content.
    */
   const expandColSpan = colSpan + (expandable ? 1 : 0);
 
@@ -3415,7 +3421,7 @@ export const DataTable = <TRow,>({
                         isArchived ? 'crewlet-data-table__row--archived' : undefined,
                       ].filter(Boolean).join(' ')}
                     >
-                      <td colSpan={colSpan} className="crewlet-data-table__accessory-cell">
+                      <td colSpan={expandColSpan} className="crewlet-data-table__accessory-cell">
                         {accessory}
                       </td>
                     </tr>
