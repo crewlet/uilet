@@ -4,6 +4,7 @@
  */
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { useState } from 'react';
 import { afterEach, expect, test } from 'vitest';
 import { HandGlyph, MousePointer2Glyph } from '@crewlethq/icons/glyphs';
@@ -34,7 +35,7 @@ test('one tool is in hand, and a press puts down the last one', () => {
 test('each tool\'s tip names its key, and describes the tool rather than renaming it', () => {
   render(<Palette />);
   const hand = screen.getByRole('button', { name: 'Hand' });
-  fireEvent.focus(hand);
+  tabTo(hand);
   const tip = document.getElementById(hand.getAttribute('aria-describedby')!.split(' ').pop()!);
   expect(tip?.textContent).toMatch(/^Hand.*H/);
   expect(hand.getAttribute('title')).toBe('');

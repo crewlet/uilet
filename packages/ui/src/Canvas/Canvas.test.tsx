@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { createRef, useState, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -1026,7 +1027,7 @@ test('the actual size control is drawn only where it is asked for, and every zoo
   expect(viewOf(container).k).toBe(1);
   // The tip says the shortcut, and is what the control is described by.
   const fit = screen.getByRole('button', { name: 'Fit to view' });
-  fireEvent.focus(fit);
+  tabTo(fit);
   const tip = document.getElementById(fit.getAttribute('aria-describedby')!.split(' ').pop()!);
   expect(tip?.textContent).toMatch(/Fit to view.*Shift.*1/);
   // The native title would be a second, plainer tip over it.

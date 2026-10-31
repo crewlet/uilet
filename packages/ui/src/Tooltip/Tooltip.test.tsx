@@ -11,6 +11,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { Tooltip } from './index.js';
 import { LayerHost } from '../Layer/index.js';
 import { Popover } from '../Popover/index.js';
@@ -29,19 +30,6 @@ afterEach(() => {
 function settle(ms = 1000) {
   act(() => {
     vi.advanceTimersByTime(ms);
-  });
-}
-
-/**
- * Focus the element as Tab does: the key, then the focus. A dispatched focus
- * event leaves the element unfocused, and jsdom's `:focus-visible` (which the
- * tip asks of a focus before it opens for one) reads the event before it, as
- * a browser's heuristic does, so a focus after a pointer press is not visible.
- */
-function focus(element: HTMLElement) {
-  fireEvent.keyDown(document.body, { key: 'Tab' });
-  act(() => {
-    element.focus();
   });
 }
 
@@ -73,7 +61,7 @@ test('focus opens it at once, because a keyboard reader asked for it', () => {
       <button>Schedule</button>
     </Tooltip>,
   );
-  focus(screen.getByRole('button', { name: 'Schedule' }));
+  tabTo(screen.getByRole('button', { name: 'Schedule' }));
   expect(tip()).not.toBeNull();
 });
 
@@ -95,7 +83,7 @@ test('a press closes the tip, and the focus it brings neither opens nor holds it
   expect(tip()).not.toBeNull();
   // The press, then the focus a press brings, as a browser orders them.
   fireEvent.pointerDown(trigger);
-  focus(trigger);
+  tabTo(trigger);
   expect(tip()).toBeNull();
   // Still on the control: the press answered it, so it stays shut.
   settle();
@@ -124,7 +112,7 @@ test('a focus that is not visible focus does not open the tip', () => {
   // focus a pointer brought is stood in for here.
   const matches = trigger.matches.bind(trigger);
   vi.spyOn(trigger, 'matches').mockImplementation((selector: string) => (selector === ':focus-visible' ? false : matches(selector)));
-  focus(trigger);
+  tabTo(trigger);
   expect(tip()).toBeNull();
 });
 
@@ -139,12 +127,12 @@ test('focus handed back to the trigger while the reader uses a pointer does not 
     );
     const trigger = screen.getByRole('button', { name: 'Details' });
     trigger.setAttribute(FOCUS_RETURNED_ATTRIBUTE, '');
-    focus(trigger);
+    tabTo(trigger);
     expect(tip()).toBeNull();
     // A key makes it the keyboard's again, and the same focus is a reader's.
     act(() => trigger.blur());
     root.setAttribute(FOCUS_MODALITY_ATTRIBUTE, 'keyboard');
-    focus(trigger);
+    tabTo(trigger);
     expect(tip()).not.toBeNull();
   } finally {
     root.removeAttribute(FOCUS_MODALITY_ATTRIBUTE);
@@ -193,7 +181,7 @@ test('it is DISMISSABLE: Escape closes it and leaves focus where it was', () => 
     </Tooltip>,
   );
   const trigger = screen.getByRole('button', { name: 'Schedule' });
-  focus(trigger);
+  tabTo(trigger);
   expect(tip()).not.toBeNull();
 
   fireEvent.keyDown(trigger, { key: 'Escape' });
@@ -212,7 +200,7 @@ test('a control focused by the keyboard keeps its tip when the pointer passes ov
     </Tooltip>,
   );
   const trigger = screen.getByRole('button', { name: 'Schedule' });
-  focus(trigger);
+  tabTo(trigger);
   fireEvent.pointerEnter(trigger);
   fireEvent.pointerLeave(trigger);
   settle();
@@ -227,7 +215,7 @@ test('nothing opens while it is disabled', () => {
   );
   const trigger = screen.getByRole('button', { name: 'Schedule' });
   fireEvent.pointerEnter(trigger);
-  focus(trigger);
+  tabTo(trigger);
   settle();
   expect(tip()).toBeNull();
   expect(trigger.getAttribute('aria-describedby')).toBeNull();
@@ -248,7 +236,7 @@ test('it portals into the nearest LayerHost rather than always into the body', (
       </LayerHost>
     </div>,
   );
-  focus(screen.getByRole('button', { name: 'Schedule' }));
+  tabTo(screen.getByRole('button', { name: 'Schedule' }));
   expect(screen.getByTestId('canvas').contains(tip())).toBe(true);
 });
 
@@ -360,7 +348,7 @@ test('the tip carries no accessibility violation', async () => {
       </Tooltip>
     </main>,
   );
-  focus(screen.getByRole('button', { name: 'Schedule' }));
+  tabTo(screen.getByRole('button', { name: 'Schedule' }));
   const result = await axe.run(document.body, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
     rules: { 'color-contrast': { enabled: false } },
