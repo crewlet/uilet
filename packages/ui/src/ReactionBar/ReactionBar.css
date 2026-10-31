@@ -71,7 +71,7 @@
 
 .crewlet-reaction:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 /* The add pill: the glyph alone, in the quiet ink. */

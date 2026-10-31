@@ -47,7 +47,7 @@
 
 .crewlet-thread-summary:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 .crewlet-thread-summary__count {

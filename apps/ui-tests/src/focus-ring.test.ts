@@ -147,6 +147,12 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'Charts/Charts.css | .crewlet-chart-frame:focus-visible',
       // A histogram's slot, which draws no edge: its fill is the mark inside it.
       'Charts/Charts.css | .crewlet-histogram__bar:focus-visible',
+      // A message's author name, set as text: it draws no edge of its own.
+      'ChatMessage/ChatMessage.css | .crewlet-chat-message__author > button:focus-visible',
+      // A message's face as a button, which draws no edge: the ring stands off the face.
+      'ChatMessage/ChatMessage.css | .crewlet-chat-message__gutter > button:focus-visible',
+      // A name in a message's words, a soft fill with no edge, ringed as a link is.
+      'MentionChip/MentionChip.css | button.crewlet-mention-chip:focus-visible',
       // A tab is borderless; the pill variant's chips override it (see below).
       'Tabs/Tabs.css | .crewlet-tabs__tab:focus-visible',
       // A list that takes focus when it expands, with no edge of its own.
