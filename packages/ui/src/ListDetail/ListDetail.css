@@ -74,6 +74,18 @@
   border-right: 1px solid var(--color-border-default);
 }
 
+/* A DIRECTORY RUNS TO THE HAIRLINE. A DirectoryList is navigation: its lines
+   draw their own inset and their hover and selected grounds, as the rail's
+   do, and its groups keep their own step before the scrollbar. Inside the
+   list's inset as well, a line's state ended 60px before the hairline, a
+   column of nothing between the word and the line it stands against. So a
+   list pane holding one gives its end inset back, and the lines run to the
+   hairline as the rail's run to its edge. Folded to one pane, the pane takes
+   the screen's inset again (below). */
+.crewlet-list-detail__list:has(> .crewlet-directory) {
+  padding-right: 0;
+}
+
 .crewlet-list-detail__detail {
   display: flex;
   flex-direction: column;

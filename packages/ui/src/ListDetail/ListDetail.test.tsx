@@ -91,6 +91,13 @@ test('where it reaches the sheet, the detail scrolls with its inset inside and i
   expect(foldedBleeding).toContain('scrollbar-gutter: stable;');
 });
 
+// A DIRECTORY'S LINES RUN TO THE HAIRLINE: they draw their own inset, so the
+// list's own end inset stood their states 60px off the line beside them.
+test('a list pane holding a directory gives its end inset back, and only that one', () => {
+  expect(rule('.crewlet-list-detail__list:has(> .crewlet-directory)')).toContain('padding-right: 0;');
+  expect(rule('.crewlet-list-detail__list')).toContain('padding-right: var(--crewlet-list-detail-gutter);');
+});
+
 test("standing in a fill screen's column, it reaches past the column's end pad to the sheet's edge", () => {
   // The shell publishes the pad (the inset and the scrollbar's width), and it
   // is 0 on every screen that does not fill the window.

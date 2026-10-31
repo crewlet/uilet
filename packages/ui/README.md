@@ -205,6 +205,10 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.84.2
+
+**A directory's lines run to the hairline.** In a `ListDetail` the list pane kept its end inset (`--crewlet-list-detail-gutter`, 32px) before the hairline, and a `DirectoryList` inside it kept its own step and its scrollbar's gutter as well, so a line's state ("In use", "Connected") ended 60px before the line beside it. A list pane holding a `DirectoryList` now gives its end inset back: the lines end at the groups' own step before the scrollbar, as the rail's rows end at its edge. Every other list keeps the inset, and folded to one pane the list takes the screen's inset as before. Props are unchanged.
+
 ## Changes in 0.84.1
 
 **A face's status badge is a quarter of the face.** `Avatar`'s corner badge was 0.3 of the face and never under 10px, so it was half of a 20px face and a third of a 32px one, and read as a second face beside the first. It is now 0.25 of the face and never under 8px, hangs 0.04 of the face past the corner (at least a pixel), and its notch is 1.5px instead of 2px: 8px on 20, 26 and 32px faces, 10px on a 40px face and 16px on a 64px one, where it was 10, 10, 10, 12 and 19px. A `mark` sits in the same corner and takes the same size. The variables are unchanged (`--crewlet-avatar-status-size`, `--crewlet-avatar-status-overhang`, `--crewlet-avatar-status-gap`), and so are the props. Story: `Avatar` Status Sizes.
