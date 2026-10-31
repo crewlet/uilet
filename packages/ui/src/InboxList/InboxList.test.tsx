@@ -298,6 +298,21 @@ test('a row taken from a group stays in its place, inert, until its height has c
   expect(drawn()).toEqual(['a', 'c']);
 });
 
+// THE LAST ROW LEAVES TOO, as long as its group is still drawn: the group
+// keeps it while its children are empty, and is left empty once it has gone.
+// A group the host stops drawing takes its rows with it at once.
+test('the last row of a group leaves with its motion while the group stays drawn', async () => {
+  const { rerender } = render(<Needs keys={['a']} />);
+  const motion = driveMotion(rowOf('a')).start({ transition: 'grid-template-rows' });
+  rerender(<Needs keys={[]} />);
+  expect(drawn()).toEqual(['a']);
+  expect(rowOf('a').hasAttribute('inert')).toBe(true);
+  motion.finish();
+  await settleMotion();
+  expect(drawn()).toEqual([]);
+  expect(screen.getByRole('heading', { name: 'Needs you' })).toBeTruthy();
+});
+
 test('a leaving row lets focus go, and a row that comes back is live where it stands', () => {
   const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
   const leaving = rowOf('b');
