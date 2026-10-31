@@ -12,7 +12,7 @@ import { dirname, relative, resolve, sep } from 'node:path';
 // from the one the palette suite measures. It is read from the TypeScript
 // source, which Node strips, because the build runs before tsc has emitted
 // dist/color.js; the palette suite and the package entry read the built copy.
-import { parseHex, withAlpha } from '../src/color.ts';
+import { atLightness, oklabHex, parseHex, parseRgba, toOklab, withAlpha } from '../src/color.ts';
 // The brand mapping's one source is stylesheets/brand.css; the scope's
 // stylesheet is written from it by the same module the artifact kit reads the
 // mapping's public tokens through, so the two cannot disagree about it.
@@ -115,16 +115,38 @@ const EDGE_ALPHAS = { hairline: ['text', 'primary', 0.13], soft: ['border', 'con
 const FILL_ALPHAS = { row: 0.04, soft: 0.06 };
 
 // THE ARTIFACT KIND GROUNDS: the steps a card drawn ON a kind's hue reads (a
-// first-step card, a call to make something of that kind), each the kind's
-// hue at a fixed alpha. `ground` is the card's ground at its top and
-// `groundStrong` the same under the pointer, `groundEnd` the foot of the
-// card's gradient, and `glow` the light behind its drawing. The palette suite
-// holds the primary text to 4.5:1 on the ground and the strong ground over
-// the card rung, in every palette. Six kinds alias a node hue in the base
-// (tokens/color.json) and one carries its own; the steps are derived from
-// whichever hue the kind resolves to, per palette, so a theme repaints them
-// without declaring a kind.
-const KIND_GROUND_ALPHAS = { Ground: 0.26, GroundStrong: 0.3, GroundEnd: 0.13, Glow: 0.46 };
+// first-step card, a call to make something of that kind). Six kinds alias a
+// node hue in the base (tokens/color.json) and one carries its own; the steps
+// are derived from whichever hue the kind resolves to, per palette, so a theme
+// repaints them without declaring a kind.
+//
+// VIVID, NOT A TINT. A tint of the hue (the hue at an alpha over the card)
+// carries a quarter of its chroma and read dull and grey, amber most of all on
+// a light page, where it went brown. So each ground is OPAQUE: the lightness of
+// the hue mixed into the card's own neutral (the card rung composited over the
+// sheet, its chroma dropped) at the step's weight, at the hue's own hue and its
+// full chroma, as much of it as a screen can show there. `ground` is the card
+// at rest (0.26 of the hue's lightness) and `groundStrong` under the pointer
+// (0.3); `groundEnd`, the foot of the card's gradient, is the ground mixed 0.7
+// with that neutral in OKLab, so it carries 0.7 of the ground's chroma; `glow`,
+// the light behind the card's drawing, is the hue at an alpha. The palette
+// suite holds the primary text to 4.5:1 on the ground and the strong ground.
+const KIND_GROUND_LIGHTNESS = { Ground: 0.26, GroundStrong: 0.3 };
+const KIND_GROUND_END = 0.7;
+const KIND_GLOW_ALPHA = 0.46;
+
+/** A palette's card rung as the opaque colour it paints: `surface.subtle` over `surface.background`. */
+function cardRung(tokens, where) {
+  const sheet = parseHex(tokens.color?.surface?.background?.value ?? '');
+  if (sheet === null) throw new Error(`${where}: color.surface.background is not #rrggbb, and the kind grounds are mixed into the card over it`);
+  const subtle = tokens.color?.surface?.subtle?.value ?? '';
+  const opaque = parseHex(subtle);
+  if (opaque !== null) return opaque;
+  const tint = parseRgba(subtle);
+  if (tint === null) throw new Error(`${where}: color.surface.subtle is "${subtle}", neither #rrggbb nor rgba()`);
+  const over = (top, under) => top * tint.a + under * (1 - tint.a);
+  return { r: over(tint.rgb.r, sheet.r), g: over(tint.rgb.g, sheet.g), b: over(tint.rgb.b, sheet.b) };
+}
 
 /**
  * THE START SHEET'S SHADOW, `shadow.sheetStart`: `shadow.sheet` mirrored, each
@@ -266,12 +288,21 @@ function deriveTints(tokens, where, { contrast = 'standard', kindHues } = {}) {
   if (kindHues === undefined) throw new Error(`${where}: the kind hue map is required, and every kind ground is derived from it`);
   tokens.color.artifact ??= {};
   tokens.color.artifact.kind ??= {};
+  const neutral = toOklab(cardRung(tokens, where)).L;
   for (const [kind, node] of kindHues) {
     const hue = node === null ? tokens.color.artifact.kind[kind]?.value : tokens.color.node?.[node]?.value;
     if (hue === undefined) throw new Error(`${where}: color.${node === null ? `artifact.kind.${kind}` : `node.${node}`} is missing, and the ${kind} kind's grounds are derived from it`);
-    for (const [step, alpha] of Object.entries(KIND_GROUND_ALPHAS)) {
-      tokens.color.artifact.kind[`${kind}${step}`] = { value: withAlpha(hue, alpha) };
+    const hueRgb = parseHex(hue);
+    if (hueRgb === null) throw new Error(`${where}: the ${kind} kind's hue is "${hue}"; its grounds are derived from a #rrggbb hue`);
+    const lightness = toOklab(hueRgb).L;
+    const steps = tokens.color.artifact.kind;
+    for (const [step, weight] of Object.entries(KIND_GROUND_LIGHTNESS)) {
+      steps[`${kind}${step}`] = { value: atLightness(hue, weight * lightness + (1 - weight) * neutral) };
     }
+    const ground = toOklab(parseHex(steps[`${kind}Ground`].value));
+    const end = { L: KIND_GROUND_END * ground.L + (1 - KIND_GROUND_END) * neutral, a: KIND_GROUND_END * ground.a, b: KIND_GROUND_END * ground.b };
+    steps[`${kind}GroundEnd`] = { value: oklabHex(end) };
+    steps[`${kind}Glow`] = { value: withAlpha(hue, KIND_GLOW_ALPHA) };
   }
   return tokens;
 }

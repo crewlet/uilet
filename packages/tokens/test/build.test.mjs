@@ -14,7 +14,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { cascade, fromOklab, hex, parseBlocks, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
+import { atLightness, cascade, flatten, fromOklab, hex, oklabHex, parseBlocks, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
 import * as palette from './palette.mjs';
 import { ARTIFACT_KINDS, ARTIFACT_KIND_FILL_ALPHA, SOFT_ALPHA, paletteSelectors, paletteStates } from './palette.mjs';
 import * as exported from '../dist/index.js';
@@ -428,16 +428,34 @@ describe('the edge scale and the quiet fills', () => {
     assert.equal(font.size.badge, '10px');
   });
 
-  test("the artifact kind grounds are the kind's own hue at the declared alphas, in every palette", () => {
+  test("the artifact kind grounds are the kind's own hue, vivid, at the card's lightness mix, in every palette", () => {
+    // Opaque, at the hue's own hue and chroma (as much as a screen shows), at
+    // a lightness mixed from the hue's and the card's neutral: so a ground
+    // keeps its colour where a tint of it went grey.
+    const chroma = ({ a, b }) => Math.hypot(a, b);
+    const angle = ({ a, b }) => (Math.atan2(b, a) * 180) / Math.PI;
     for (const [state, values] of everyState()) {
+      const sheet = parseHex(values.get('--color-surface-background'));
+      const card = toOklab(flatten(values.get('--color-surface-subtle'), sheet));
       for (const kind of ARTIFACT_KINDS) {
         let hue = values.get(`--color-artifact-kind-${kind}`);
         const alias = /^var\((--[a-z0-9-]+)\)$/.exec(hue ?? '');
         if (alias) hue = values.get(alias[1]);
-        assert.ok(parseHex(hue), `${state} ${kind} resolves to ${hue}`);
-        for (const [step, alpha] of [['ground', 0.26], ['ground-strong', 0.3], ['ground-end', 0.13], ['glow', 0.46]]) {
-          assert.equal(values.get(`--color-artifact-kind-${kind}-${step}`), withAlpha(hue, alpha), `${state} ${kind} ${step}`);
+        const hueLab = toOklab(parseHex(hue));
+        for (const [step, weight] of [['ground', 0.26], ['ground-strong', 0.3]]) {
+          const value = values.get(`--color-artifact-kind-${kind}-${step}`);
+          assert.equal(value, atLightness(hue, weight * hueLab.L + (1 - weight) * card.L), `${state} ${kind} ${step}`);
+          const lab = toOklab(parseHex(value));
+          // The hue's own hue, within what eight bits a channel can hold.
+          assert.ok(chroma(lab) < 0.02 || Math.abs(((angle(lab) - angle(hueLab) + 540) % 360) - 180) < 4, `${state} ${kind} ${step} keeps its hue`);
         }
+        const ground = toOklab(parseHex(values.get(`--color-artifact-kind-${kind}-ground`)));
+        assert.equal(
+          values.get(`--color-artifact-kind-${kind}-ground-end`),
+          oklabHex({ L: 0.7 * ground.L + 0.3 * card.L, a: 0.7 * ground.a, b: 0.7 * ground.b }),
+          `${state} ${kind} ground-end`,
+        );
+        assert.equal(values.get(`--color-artifact-kind-${kind}-glow`), withAlpha(hue, 0.46), `${state} ${kind} glow`);
       }
     }
   });
