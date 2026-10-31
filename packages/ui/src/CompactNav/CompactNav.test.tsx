@@ -5,6 +5,7 @@
 
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useEffect, useState } from 'react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
@@ -390,6 +391,66 @@ describe('a folded group', () => {
       </>
     );
   }
+
+  /**
+   * THE ENGINE'S OWN SHAPE: plain hash links (no handler of their own, so the
+   * browser's own navigation moves the hash), and a router that re-renders
+   * the places from `location.hash` when it changes, marking the one it lands
+   * on current.
+   */
+  function HashRouted() {
+    const [hash, setHash] = useState(() => location.hash);
+    useEffect(() => {
+      const follow = () => setHash(location.hash);
+      window.addEventListener('hashchange', follow);
+      return () => window.removeEventListener('hashchange', follow);
+    }, []);
+    const place = (key: string, label: string) => ({
+      key,
+      label,
+      icon: <svg />,
+      href: `#/company/${key}`,
+      current: hash === `#/company/${key}`,
+      onPrefetch: () => {},
+    });
+    return (
+      <CompactNav label="Navigation">
+        <CompactNavGroup label="Company" icon={<svg />} links={[place('org', 'Org chart'), place('brand', 'Brand')]} />
+      </CompactNav>
+    );
+  }
+
+  describe("with the engine's hash links and router", () => {
+    afterEach(() => {
+      history.replaceState(null, '', ' ');
+    });
+
+    for (const how of ['press', 'keys'] as const) {
+      test(`choosing by ${how} closes the flyout, and it stays closed once the router has moved`, async () => {
+        const user = userEvent.setup();
+        render(<HashRouted />);
+        const company = screen.getByRole('button', { name: 'Company' });
+        if (how === 'press') {
+          await user.click(company);
+          await user.click(screen.getByRole('menuitem', { name: 'Brand' }));
+        } else {
+          company.focus();
+          await user.keyboard('{ArrowRight}{ArrowDown}{Enter}');
+        }
+        // The browser's own navigation, which jsdom performs for a fragment,
+        // and the router's re-render after it.
+        await act(async () => {
+          window.dispatchEvent(new HashChangeEvent('hashchange'));
+        });
+        expect(location.hash).toBe('#/company/brand');
+        expect(screen.queryByRole('menu')).toBeNull();
+        expect(company.getAttribute('aria-expanded')).toBe('false');
+        // The tile says where the reader went, and holds the reader's focus.
+        expect(company.getAttribute('aria-current')).toBe('true');
+        expect(document.activeElement).toBe(company);
+      });
+    }
+  });
 
   describe('choosing a place closes the flyout, and focus follows the navigation', () => {
     test('a press: the flyout closes, and focus is not left in the closed popup', async () => {
