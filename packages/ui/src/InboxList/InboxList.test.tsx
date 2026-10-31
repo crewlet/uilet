@@ -317,7 +317,15 @@ test('the last row of a group leaves with its motion while the group stays drawn
 // list redraws on every live push). The group keeps any keyed component child
 // as a leaving row; the wrapper forwards `leaving` and `onLeft` to its row, and
 // the host's own `onLeft` still runs, once, when the row has closed.
-const Item = memo(function Item({ id, leaving, onLeft }: { id: string; leaving?: boolean; onLeft?: () => void }) {
+const Item = memo(function Item({
+  id,
+  leaving,
+  onLeft,
+}: {
+  id: string;
+  leaving?: boolean | undefined;
+  onLeft?: (() => void) | undefined;
+}) {
   return (
     <InboxRow title={`Row ${id}`} leaving={leaving} onLeft={onLeft} onClick={() => {}}>
       Words of {id}
@@ -325,7 +333,15 @@ const Item = memo(function Item({ id, leaving, onLeft }: { id: string; leaving?:
   );
 });
 
-function Wrapped({ keys, onLeft, empty = false }: { keys: readonly string[]; onLeft?: () => void; empty?: boolean }) {
+function Wrapped({
+  keys,
+  onLeft,
+  empty = false,
+}: {
+  keys: readonly string[];
+  onLeft?: (() => void) | undefined;
+  empty?: boolean;
+}) {
   return (
     <InboxGroup label="Needs you">
       {keys.map((key) => (
