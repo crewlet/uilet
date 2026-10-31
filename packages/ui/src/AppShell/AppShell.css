@@ -133,6 +133,10 @@
  * run the height of the window parallel to it, eight pixels off.
  */
 .crewlet-app-shell__rail {
+  /* The fold control's containing block. Re-declared as `fixed` by the
+     narrow block below, which comes later at the same weight, so the drawer
+     keeps its layer. */
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -718,6 +722,24 @@
   height: 100%;
 }
 
+/*
+ * A FLUSH SCREEN draws its own frame to the sheet's edges: the column gives up
+ * its pad, its measure and its gap, and the scroller reserves no gutter, since
+ * nothing in it scrolls and a strip at its end would cut the screen's own
+ * edge. The column is the containing block for a `LayerHost` the screen
+ * keeps, so its layers fill the screen rather than the window.
+ */
+.crewlet-app-shell--fill-flush .crewlet-app-shell__main {
+  scrollbar-gutter: auto;
+}
+
+.crewlet-app-shell--fill-flush .crewlet-app-shell__content {
+  position: relative;
+  gap: 0;
+  max-width: none;
+  padding: 0;
+}
+
 /* Hidden by default, revealed by the breakpoint below: the wide layout has the
    rail on screen already, so the control that opens it has nothing to do. */
 .crewlet-app-shell__toggle {
@@ -865,6 +887,100 @@
 .crewlet-app-shell__aside[data-shape='overlay'],
 .crewlet-app-shell__aside[data-shape='sheet'] {
   animation: crewlet-app-shell-aside-slide var(--motion-duration-slow) var(--motion-easing-emphasized);
+}
+
+/*
+ * THE COMPACT RAIL: the same track, narrowed to the compact column. One
+ * variable is the rail's width for the grid, the aside's cap and the drawer
+ * alike, so folding the rail is this one declaration. The shell writes the
+ * attribute only where the layout is wide: the drawer under the step is
+ * always the full list.
+ */
+.crewlet-app-shell[data-rail='compact'] {
+  --crewlet-app-shell-rail: var(--size-shell-rail-compact);
+}
+
+/*
+ * THE FOLD CONTROL stands over the compact column's centre, in the row under
+ * the head, in both shapes, so it never moves under the pointer that pressed
+ * it. Quiet until the rail is pointed at: the tertiary ink, which holds 3:1
+ * on the frame, then the secondary, and the ghost's own primary under the
+ * pointer.
+ */
+.crewlet-app-shell__fold {
+  position: absolute;
+  top: calc(var(--size-shell-inset) + var(--crewlet-app-shell-topbar));
+  left: calc((var(--size-shell-rail-compact) - var(--size-control-sm)) / 2);
+  z-index: 1;
+  display: inline-flex;
+}
+
+.crewlet-app-shell__fold > .crewlet-icon-btn {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-app-shell__rail:hover > .crewlet-app-shell__fold > .crewlet-icon-btn:not(:hover) {
+  color: var(--color-text-secondary);
+}
+
+/*
+ * THE MARK STANDS WHERE THE COMPACT RAIL'S DOES, in both shapes: centred over
+ * the compact column, in the head. Full, the name follows it; compact, the
+ * name is not drawn (the link keeps it as its name and title).
+ */
+.crewlet-app-shell--foldable .crewlet-app-shell__rail-head > .crewlet-brand,
+.crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-head > .crewlet-brand {
+  padding-left: calc((var(--size-shell-rail-compact) - var(--crewlet-brand-mark)) / 2);
+}
+
+.crewlet-app-shell[data-rail='compact'] .crewlet-brand__name,
+.crewlet-app-shell[data-rail='compact'] .crewlet-brand__context {
+  display: none;
+}
+
+/*
+ * FULL, THE FIELD STARTS AFTER THE FOLD CONTROL, a step off it, on the row
+ * the control stands in. The field holds its place at the top of the rail's
+ * middle while the rows scroll under it, on the frame's own ground, so the
+ * control beside it is always beside it.
+ */
+.crewlet-app-shell--foldable[data-rail='full'] .crewlet-app-shell__rail-search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-left: calc((var(--size-shell-rail-compact) + var(--size-control-sm)) / 2 + var(--spacing-2));
+  background: var(--color-surface-frame);
+}
+
+/* COMPACT, THE FOLD CONTROL HAS A ROW OF ITS OWN under the mark, which the
+   head leaves room for, and the column of tiles starts under it. */
+.crewlet-app-shell--foldable[data-rail='compact'] .crewlet-app-shell__rail-head {
+  margin-bottom: var(--size-control-sm);
+}
+
+.crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-body {
+  padding: var(--spacing-1) 0;
+  scrollbar-width: thin;
+}
+
+/*
+ * The compact foot: what the full foot holds, centred in the column, a step
+ * apart: the status's dot, a Settings tile, the reader's face.
+ */
+.crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-foot {
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) 0 var(--spacing-3);
+}
+
+.crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-foot > .crewlet-compact-nav {
+  align-self: stretch;
+}
+
+.crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-foot > .crewlet-app-shell__rail-status {
+  justify-content: center;
+  min-width: 0;
+  margin: 0;
 }
 
 @media (width < 1024px) {
@@ -1174,6 +1290,33 @@ button.crewlet-account-row__who:focus-visible {
   flex: none;
   align-items: center;
   gap: var(--spacing-1);
+}
+
+/*
+ * THE COMPACT ACCOUNT: the reader's face alone, centred in the compact rail's
+ * foot, the face's own corner carrying the lift, the hover and the ring. It
+ * keeps the row's link and menu rules above (hover, current, ring), with no
+ * pad of its own, so the box is the face.
+ */
+.crewlet-account-row--compact {
+  justify-content: center;
+  padding: 0;
+}
+
+.crewlet-account-row__who--compact,
+.crewlet-app-shell__rail-foot .crewlet-account-row__who--compact {
+  flex: none;
+  width: auto;
+  min-height: 0;
+  padding: calc(var(--spacing-1) / 2);
+  border-radius: var(--radius-md);
+}
+
+/* The ring stands off the face, outside it: drawn inside, it would cover the
+   face's own edge and status. */
+.crewlet-account-row__who.crewlet-account-row__who--compact:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
