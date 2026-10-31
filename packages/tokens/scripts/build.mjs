@@ -126,6 +126,38 @@ const FILL_ALPHAS = { row: 0.04, soft: 0.06 };
 // without declaring a kind.
 const KIND_GROUND_ALPHAS = { Ground: 0.26, GroundStrong: 0.3, GroundEnd: 0.13, Glow: 0.46 };
 
+/**
+ * THE START SHEET'S SHADOW, `shadow.sheetStart`: `shadow.sheet` mirrored, each
+ * layer's horizontal offset negated. `shadow.sheet` is cast toward the inline
+ * start, into the page a sheet pinned at the end covers; a sheet pinned at the
+ * start (a navigation panel) covers the page on its other side, so its shadow
+ * falls the other way. Derived, so a palette that retunes the sheet's shadow
+ * retunes both.
+ */
+function mirrorShadow(value, where) {
+  const layers = [];
+  let depth = 0;
+  let from = 0;
+  for (let i = 0; i <= value.length; i += 1) {
+    const ch = value[i];
+    if (ch === '(') depth += 1;
+    else if (ch === ')') depth -= 1;
+    else if ((ch === ',' && depth === 0) || i === value.length) {
+      layers.push(value.slice(from, i).trim());
+      from = i + 1;
+    }
+  }
+  return layers
+    .map((layer) => {
+      const offset = /^(inset\s+)?(-?)(\d*\.?\d+px|0)(\s)/.exec(layer);
+      if (offset === null) throw new Error(`${where}: shadow.sheet layer "${layer}" does not start with a horizontal offset in px`);
+      const [whole, inset = '', sign, length, space] = offset;
+      const flipped = length === '0' ? length : sign === '-' ? length : `-${length}`;
+      return `${inset}${flipped}${space}${layer.slice(whole.length)}`;
+    })
+    .join(', ');
+}
+
 // The theme that paints the bare root. Every other theme paints under its own
 // data-palette attribute, so a document that names none gets this one, and an
 // application that never adopts the attribute is unchanged.
@@ -226,6 +258,10 @@ function deriveTints(tokens, where, { contrast = 'standard', kindHues } = {}) {
   tokens.color.fill = Object.fromEntries(
     Object.entries(FILL_ALPHAS).map(([step, alpha]) => [step, { value: withAlpha(fill('text', 'primary'), alpha) }]),
   );
+  // The start sheet's shadow. See mirrorShadow.
+  const sheetShadow = tokens.shadow?.sheet?.value;
+  if (sheetShadow === undefined) throw new Error(`${where}: shadow.sheet is missing, and shadow.sheetStart is derived from it`);
+  tokens.shadow.sheetStart = { value: mirrorShadow(sheetShadow, where) };
   // The artifact kind grounds. See KIND_GROUND_ALPHAS.
   if (kindHues === undefined) throw new Error(`${where}: the kind hue map is required, and every kind ground is derived from it`);
   tokens.color.artifact ??= {};
