@@ -1,0 +1,42 @@
+/*
+ * A mention in a message's words: a chip in the line, in the info tone's
+ * light blue, or the warning tone where it names the reader.
+ */
+
+.crewlet-mention-chip {
+  display: inline;
+  padding: 0 2px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: var(--color-feedback-info-soft);
+  color: var(--color-feedback-info-ink);
+  font: inherit;
+  font-weight: var(--font-weight-regular);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.crewlet-mention-chip--self,
+.crewlet-mention-chip--everyone {
+  background: var(--color-feedback-warning-soft);
+  color: var(--color-feedback-warning-ink);
+}
+
+button.crewlet-mention-chip {
+  cursor: pointer;
+}
+
+/* Under the pointer the fill takes the tone's next strength, its line step. */
+button.crewlet-mention-chip:hover {
+  background: var(--color-feedback-info-line);
+}
+
+button.crewlet-mention-chip--self:hover,
+button.crewlet-mention-chip--everyone:hover {
+  background: var(--color-feedback-warning-line);
+}
+
+button.crewlet-mention-chip:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
