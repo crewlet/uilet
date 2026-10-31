@@ -225,6 +225,10 @@ places:
 
 **`DockColumn` is new**: a column a host docks beside its content and takes away again, such as a list of rooms pinned beside a conversation. It stands in the host's own `auto` grid track (or as a flex item that does not grow) and eases its width between none and its panel's (`width`, px or any length) on the slow step with the emphasized curve, so the content beside it resizes frame by frame rather than jumping. The panel keeps its own width and is held to the edge that faces the content, so it slides in from the outer edge, and on close it stays drawn and `inert` until the column has closed over it; opened again on the way out, it is live where it is. Closed from inside (an Unpin in its own head), focus goes to `focusOnClose`, the control that docks it again, and is never left in the panel. `side` (`start`, the default, or `end`) places it, `divider` (on by default) draws the hairline on the edge that faces the content, and `--crewlet-dock-column-ground` gives the panel a ground. It is a plain column, not a landmark: what it holds names itself. Under reduced motion it simply is or is not. Types: `DockColumnProps`, `DockColumnSide`.
 
+### Refs
+
+**A trigger keeps its own ref across re-renders.** `Tooltip` cloned its trigger with a new ref callback on every render, so React took the element away from the trigger's own ref and gave it back in each commit, and a layout effect earlier in the tree read null while the control stood in the document (a `DockColumn` handing focus to a tooltip-wrapped Pin control as it closed). `Tooltip`, `Popover`, `Menu`'s trigger props and `Modal`'s frame now join their refs with **`useComposedRef`** (new, with **`attachRef`**), one callback that is stable while the refs it joins are and releases each the way React would. `Popover` also keeps the ref its trigger carried, which it used to replace.
+
 ## Changes in 0.82.0
 
 ### A conversation's messages
