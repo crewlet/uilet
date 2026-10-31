@@ -3,7 +3,7 @@
  * the keys that walk it, and the figures that ride the tiles.
  */
 
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import axe from 'axe-core';
@@ -360,7 +360,7 @@ describe('a folded group', () => {
     await user.keyboard('{Enter}');
     expect(chosen).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('menu')).toBeNull();
-    expect(document.activeElement).toBe(company);
+    await waitFor(() => expect(document.activeElement).toBe(company));
   });
 
   /**
@@ -447,7 +447,7 @@ describe('a folded group', () => {
         expect(company.getAttribute('aria-expanded')).toBe('false');
         // The tile says where the reader went, and holds the reader's focus.
         expect(company.getAttribute('aria-current')).toBe('true');
-        expect(document.activeElement).toBe(company);
+        await waitFor(() => expect(document.activeElement).toBe(company));
       });
     }
   });
@@ -462,7 +462,7 @@ describe('a folded group', () => {
       expect(screen.queryByRole('menu')).toBeNull();
       expect(company.getAttribute('aria-expanded')).toBe('false');
       // Nowhere else to go: back to the tile, never to the document's top.
-      expect(document.activeElement).toBe(company);
+      await waitFor(() => expect(document.activeElement).toBe(company));
     });
 
     test('a press on a place whose page takes focus: focus stays with the page', async () => {
@@ -495,8 +495,64 @@ describe('a folded group', () => {
       await user.keyboard('{ArrowRight}');
       await user.keyboard('{Enter}');
       expect(screen.queryByRole('menu')).toBeNull();
-      expect(document.activeElement).toBe(company);
+      await waitFor(() => expect(document.activeElement).toBe(company));
     });
+
+    /*
+     * THE DESTINATION TAKES FOCUS FIRST. A router that moves focus to the
+     * page only where nothing holds it (focus on the document's body) found
+     * the tile holding it, because the tile was handed focus in the same
+     * press, and the reader was stranded on the rail. The tile takes focus
+     * back only where nothing has by the next frame.
+     */
+    function PoliteRouted() {
+      const [at, setAt] = useState('');
+      useEffect(() => {
+        const held = document.activeElement;
+        if (at && (held === null || held === document.body)) document.getElementById('page')?.focus();
+      }, [at]);
+      const go = (event: { preventDefault: () => void; currentTarget: EventTarget }) => {
+        event.preventDefault();
+        setAt((event.currentTarget as HTMLElement).getAttribute('href') ?? '');
+      };
+      return (
+        <>
+          <CompactNav label="Navigation">
+            <CompactNavGroup
+              label="Company"
+              icon={<svg />}
+              links={[
+                { key: 'org', label: 'Org chart', icon: <svg />, href: '#/company/org', onClick: go },
+                { key: 'spend', label: 'Spend', icon: <svg />, href: '#/company/spend', onClick: go },
+              ]}
+            />
+          </CompactNav>
+          <main id="page" tabIndex={-1}>
+            The page
+          </main>
+        </>
+      );
+    }
+
+    for (const how of ['press', 'keys'] as const) {
+      test(`by ${how}: a router that takes focus only where nothing holds it gets it`, async () => {
+        const user = userEvent.setup();
+        render(<PoliteRouted />);
+        const company = screen.getByRole('button', { name: 'Company' });
+        if (how === 'press') {
+          await user.click(company);
+          await user.click(screen.getByRole('menuitem', { name: 'Spend' }));
+        } else {
+          company.focus();
+          await user.keyboard('{ArrowRight}{ArrowDown}{Enter}');
+        }
+        expect(screen.queryByRole('menu')).toBeNull();
+        expect(document.activeElement).toBe(screen.getByRole('main'));
+        // And the tile does not pull it back a frame later.
+        await new Promise((done) => setTimeout(done, 50));
+        expect(document.activeElement).toBe(screen.getByRole('main'));
+      });
+    }
   });
 
   test('the pointer resting on the tile opens it after a moment, and leaving both closes it', () => {

@@ -437,6 +437,15 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
   }, [releaseRest]);
   useEffect(() => releaseRest, [releaseRest]);
 
+  // The frame after a choice, when focus that nothing took goes back to the tile.
+  const settling = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (settling.current !== null) cancelAnimationFrame(settling.current);
+    },
+    [],
+  );
+
   const show = useCallback(
     (by: Opener, first: boolean) => {
       clear();
@@ -568,17 +577,32 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
 
   /*
    * CHOOSING A PLACE CLOSES THE FLYOUT, AND FOCUS FOLLOWS THE NAVIGATION. The
-   * place's own handler runs first, and the page it opens may take focus (a
-   * screen that focuses its heading): that focus is the reader's, and it is
-   * left where the page put it. Focus still inside the flyout, by a press as
-   * much as by the keys, would be dropped to the top of the document when the
-   * flyout goes, so it is handed back to the tile instead. It used to be
-   * handed back for the keys alone, and a press left the reader nowhere.
+   * destination takes focus first: the place's own handler, and a router
+   * that focuses the page it lands on, in its handler or its effects, often
+   * only where nothing holds focus. So the flyout closes and lets focus fall
+   * with it, and only where nothing has taken it by the next frame (focus on
+   * the document, where the reader's next Tab would start from the top) is it
+   * handed back to the tile, by a press as by the keys. Handed to the tile at
+   * once, a router that waits for an empty focus found the tile holding it,
+   * and the reader stayed on the rail. A place that does not navigate (no
+   * `href`) is a close like Escape: focus goes straight back to the tile.
    */
   const choose = (link: CompactNavLink) => (event: MouseEvent<HTMLElement>) => {
     link.onClick?.(event);
-    close(panel.current?.contains(document.activeElement) === true);
+    const held = panel.current?.contains(document.activeElement) === true;
     holdRest();
+    if (link.href === undefined) {
+      close(held);
+      return;
+    }
+    close(false);
+    if (!held) return;
+    if (settling.current !== null) cancelAnimationFrame(settling.current);
+    settling.current = requestAnimationFrame(() => {
+      settling.current = null;
+      const now = tile.current?.ownerDocument.activeElement;
+      if (now === null || now === undefined || now === tile.current?.ownerDocument.body) returnFocus(tile.current);
+    });
   };
 
   const flyout = open ? (
