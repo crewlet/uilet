@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { ThinkingIndicator } from './index.js';
 
 afterEach(cleanup);
@@ -98,6 +99,22 @@ test('holds a still working pose under a reduced-motion preference, and stops ev
   expect(css).not.toMatch(/transition(-[a-z]+)?\s*:/);
   expect(reduced).toMatch(/\.crewlet-thinking__status\s*\{[^}]*animation: none;/);
   expect(reduced).toMatch(/\.crewlet-thinking__status\s*\{[^}]*background-image: none;/);
+});
+
+// A long status in a column that sizes its items by their content (a
+// message's footer) made the indicator as wide as its words, and a phone's
+// transcript scrolled sideways. Mutation: drop the cap, and it reads none.
+test('is never wider than its column, so a long status truncates', () => {
+  const uninstall = installSheets('ThinkingIndicator/ThinkingIndicator.css');
+  try {
+    const { container } = render(<ThinkingIndicator status="Senior Backend Engineer is writing a reply" />);
+    const root = container.querySelector<HTMLElement>('.crewlet-thinking')!;
+    expect(getComputedStyle(root).maxWidth).toBe('100%');
+    const line = container.querySelector<HTMLElement>('.crewlet-thinking__status')!;
+    expect(getComputedStyle(line).textOverflow).toBe('ellipsis');
+  } finally {
+    uninstall();
+  }
 });
 
 test('carries no axe violation', async () => {
