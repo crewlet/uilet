@@ -175,19 +175,6 @@ function shadeAt(L: number, a: number, b: number): Rgb {
 }
 
 /**
- * The colour `hex` at another OKLab lightness `L`, keeping its hue and as much
- * of its chroma as a screen can show there, as lowercase `#rrggbb`, or null
- * when `hex` is not `#rrggbb`. A vivid colour taken dark or very light cannot
- * carry its full chroma, and chroma gives way where it must, never the hue.
- */
-export function atLightness(hex: string, L: number): string | null {
-  const colour = parseHex(hex);
-  if (!colour) return null;
-  const { a, b } = toOklab(colour);
-  return oklabHex({ L, a, b });
-}
-
-/**
  * An OKLab colour as lowercase `#rrggbb`, its lightness held to 0 to 1 and its
  * chroma given up, never its hue, where a screen cannot show it all.
  */

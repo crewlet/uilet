@@ -22,7 +22,6 @@
  */
 
 import {
-  atLightness,
   contrast,
   formatHex,
   fromLinear,
@@ -37,7 +36,7 @@ import {
   withAlpha,
 } from '../dist/color.js';
 
-export { atLightness, contrast, fromOklab, luminance, oklabHex, oklabToLinear, parseHex, parseRgba, toOklab, withAlpha };
+export { contrast, fromOklab, luminance, oklabHex, oklabToLinear, parseHex, parseRgba, toOklab, withAlpha };
 export { formatHex as hex };
 
 /** @typedef {{ r: number, g: number, b: number }} RGB */
