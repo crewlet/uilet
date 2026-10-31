@@ -49,6 +49,23 @@ export function keyGlyph(key: string, apple: boolean): { glyph: string; spoken: 
   return { glyph: shown, spoken: shown };
 }
 
+/**
+ * A shortcut in the spelling `aria-keyshortcuts` takes: `Control+K`, `H`.
+ *
+ * ONE SPELLING FOR EVERY CONTROL THAT NAMES ITS KEYS, beside the cap that
+ * draws them, so what a screen reader is told and what the tooltip shows are
+ * read off the same list. `Mod` is the platform's command key, as it is in
+ * the cap.
+ */
+export function ariaKeyshortcuts(keys: readonly string[], apple: boolean): string {
+  return keys
+    .map((key) => {
+      if (key === 'Mod') return apple ? 'Meta' : 'Control';
+      return key.length === 1 ? key.toUpperCase() : key;
+    })
+    .join('+');
+}
+
 export interface KbdProps extends HTMLAttributes<HTMLElement> {
   /** Draws the keycap quieter, for a hint that sits inside a field. */
   subtle?: boolean | undefined;
