@@ -26,6 +26,11 @@
 .crewlet-app-shell {
   --crewlet-app-shell-rail: var(--size-shell-rail);
   --crewlet-app-shell-topbar: var(--size-shell-topbar);
+  /* THE SHEET'S SIDE INSET, ONE LENGTH: the bar's, the content column's, and
+     the inset a box that reaches past the column to the sheet's edge keeps
+     inside itself (a `ListDetail` on a fill screen), one step narrower on a
+     narrow window. */
+  --crewlet-app-shell-inset: var(--spacing-5);
   /* What stands on the frame to the sheet's left: the rail's column, or
      nothing where there is no rail or the rail is a drawer. */
   --crewlet-app-shell-beside: var(--crewlet-app-shell-rail);
@@ -628,7 +633,8 @@
   gap: var(--spacing-3);
   flex: none;
   height: var(--crewlet-app-shell-topbar);
-  padding: 0 calc(var(--spacing-5) + var(--crewlet-app-shell-gutter, 0px)) 0 var(--spacing-5);
+  padding: 0 calc(var(--crewlet-app-shell-inset) + var(--crewlet-app-shell-gutter, 0px)) 0
+    var(--crewlet-app-shell-inset);
   border-bottom: 1px solid var(--color-border-default);
   background: var(--color-surface-background);
 }
@@ -718,46 +724,69 @@
   gap: var(--spacing-5);
   max-width: var(--size-content-max);
   margin: 0 auto;
-  padding: var(--spacing-5) var(--spacing-5);
+  padding: var(--crewlet-app-shell-inset);
   padding-bottom: var(--crewlet-app-shell-content-end);
   min-width: 0;
 }
 
-/* A screen that draws to the bottom of the window: the scroller stops
-   scrolling and the content column takes the height that is left.
-
-   IT KEEPS THE GUTTER RESERVED, like every other screen. The top bar's end
-   inset counts the scroller's gutter (`--crewlet-app-shell-gutter`, measured
-   by the shell), so a fill screen that reserved none put the bar's controls
-   one gutter further out than on the screen beside it: with classic
-   scrollbars, Add seat moved 11px between an org chart and its roster, two
-   tabs of one page. A strip at the end edge of a full-screen canvas is the
-   smaller cost than a bar that moves under the pointer. */
+/*
+ * A screen that draws to the bottom of the window: the scroller stops
+ * scrolling and the content column takes the height that is left, and the
+ * whole width, since a screen that fills the window is a frame for panes
+ * rather than a page of prose (prose inside it keeps its own measure).
+ *
+ * THE SCROLLER RESERVES NO GUTTER; THE COLUMN PADS BY IT INSTEAD. Nothing
+ * scrolls here, so the strip a scrolling screen keeps for its scrollbar is
+ * only there to hold the content where the bar's controls expect it (the
+ * bar's end inset counts the gutter). A reserved strip did that, and also
+ * stood between the sheet's edge and every pane that scrolls on its own: a
+ * list's detail drew its scrollbar 31px inside the sheet, beside an empty
+ * strip, and nothing in the screen could paint over a reserved gutter. The
+ * same length as padding holds the content exactly where it stood, and a box
+ * standing in the column can reach past padding: the column publishes it as
+ * `--crewlet-app-shell-bleed-end`, and a `ListDetail` takes it back so its
+ * scrollbar is the sheet's last pixel. The scrollbar's width is read off the
+ * shell's gauge here (AppShell.tsx), so the bar keeps its place between a
+ * fill screen and a scrolling one.
+ */
 .crewlet-app-shell--fill .crewlet-app-shell__main {
   overflow: hidden;
+  scrollbar-gutter: auto;
 }
 
 .crewlet-app-shell--fill .crewlet-app-shell__content {
   --crewlet-app-shell-content-end: var(--spacing-5);
+  --crewlet-app-shell-bleed-end: calc(var(--crewlet-app-shell-inset) + var(--crewlet-app-shell-gutter, 0px));
 
   height: 100%;
+  max-width: none;
+  padding-right: var(--crewlet-app-shell-bleed-end);
+}
+
+/*
+ * THE GAUGE: an empty scroller, never seen, that always draws its scrollbar,
+ * so the shell can read the scrollbar's width on a fill screen, where the
+ * screen's own scroller reserves none. It is a row of no height in the
+ * sheet's column, so it takes no room and moves nothing.
+ */
+.crewlet-app-shell__gauge {
+  flex: none;
+  height: 0;
+  overflow-y: scroll;
+  visibility: hidden;
 }
 
 /*
  * A FLUSH SCREEN draws its own frame to the sheet's edges: the column gives up
- * its pad, its measure and its gap, and the scroller reserves no gutter, since
- * nothing in it scrolls and a strip at its end would cut the screen's own
- * edge. The column is the containing block for a `LayerHost` the screen
+ * its pad and its gap as well, so there is nothing for a box in it to reach
+ * past. The column is the containing block for a `LayerHost` the screen
  * keeps, so its layers fill the screen rather than the window.
  */
-.crewlet-app-shell--fill-flush .crewlet-app-shell__main {
-  scrollbar-gutter: auto;
-}
-
 .crewlet-app-shell--fill-flush .crewlet-app-shell__content {
+  --crewlet-app-shell-bleed-end: 0px;
+
   position: relative;
   gap: 0;
-  max-width: none;
   padding: 0;
 }
 
@@ -1098,6 +1127,9 @@
 @media (width < 1024px) {
   .crewlet-app-shell {
     --crewlet-app-shell-beside: 0px;
+    /* 16px: the content's 12px stood every page's first line 4px left of
+       the bar's title and the controls over it. */
+    --crewlet-app-shell-inset: var(--spacing-4);
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1180,18 +1212,8 @@
     display: inline-flex;
   }
 
-  /* THE TOP BAR'S GUTTER, 16px: the content's 12px stood every page's first
-     line 4px left of the title and the controls over it. The bar and the
-     content take it together. */
-  .crewlet-app-shell__topbar {
-    padding: 0 calc(var(--spacing-4) + var(--crewlet-app-shell-gutter, 0px)) 0 var(--spacing-4);
-  }
-
   .crewlet-app-shell__content {
     --crewlet-app-shell-content-end: var(--spacing-9);
-
-    padding: var(--spacing-4) var(--spacing-4);
-    padding-bottom: var(--crewlet-app-shell-content-end);
   }
 }
 

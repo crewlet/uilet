@@ -187,15 +187,18 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   /** The scroll container itself, for a router restoring a position. */
   mainRef?: Ref<HTMLElement> | undefined;
   /**
-   * Gives the screen the whole height left under the bar, as a flex column,
-   * for a canvas or a split view that draws to the bottom of the window
-   * instead of scrolling.
+   * Gives the screen the whole height and width left under the bar, as a flex
+   * column, for a canvas or a split view that draws to the bottom of the
+   * window instead of scrolling. The column keeps its pad, and its end pad
+   * counts the scrollbar's width, so its content stands where a scrolling
+   * screen's does; a `ListDetail` standing in it reaches past that pad, so
+   * its detail's scrollbar is on the sheet's edge.
    *
    * `flush` is the same column EDGE TO EDGE: the content column gives up its
-   * pad, its measure and its gap, and the scroller reserves no gutter, for a
-   * screen that draws its own frame to the sheet's edges (a conversation with
-   * a list and a pane either side of it). The column is positioned, so a
-   * `LayerHost` the screen keeps inside it fills exactly the screen.
+   * pad and its gap as well, for a screen that draws its own frame to the
+   * sheet's edges (a conversation with a list and a pane either side of it).
+   * The column is positioned, so a `LayerHost` the screen keeps inside it
+   * fills exactly the screen.
    */
   fill?: boolean | 'flush' | undefined;
   /**
@@ -316,6 +319,7 @@ export function AppShell({
   const narrow = useMediaMatch(NARROW);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
+  const [gauge, setGauge] = useState<HTMLElement | null>(null);
   /*
    * The drawer's own place in the layer band, reported back by the surface
    * that registered it, so the rail can be painted ONE step above the veil
@@ -381,22 +385,29 @@ export function AppShell({
    * 15px past the cards under them. CSS cannot read a scrollbar's width, so
    * it is read here, as the scroller's border box less its client box, and
    * handed to the stylesheet as `--crewlet-app-shell-gutter`. It is 0 where
-   * scrollbars overlay the content, and on a screen that does not scroll.
+   * scrollbars overlay the content, and on a flush screen, which draws its
+   * own frame.
+   *
+   * A FILL SCREEN'S SCROLLER RESERVES NONE (its column pads by the gutter
+   * instead, which a pane can reach past), so there it is read off the gauge,
+   * an empty scroller that always draws a scrollbar: the bar's end inset is
+   * the same on a fill screen as on the scrolling screen beside it.
    */
   const [gutter, setGutter] = useState(0);
   useLayoutEffect(() => {
-    if (!scroller) return undefined;
-    const measure = () => setGutter(Math.max(0, scroller.offsetWidth - scroller.clientWidth));
+    const ruler = gauge ?? scroller;
+    if (!ruler) return undefined;
+    const measure = () => setGutter(Math.max(0, ruler.offsetWidth - ruler.clientWidth));
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
     const observer = new ResizeObserver(unlessRailMoving(measure));
-    observer.observe(scroller);
+    observer.observe(ruler);
     const held = heldMeasures.current;
     return () => {
       observer.disconnect();
       held.delete(measure);
     };
-  }, [scroller, unlessRailMoving]);
+  }, [gauge, scroller, unlessRailMoving]);
 
   /*
    * WHAT THE ASIDE COLUMN TAKES FROM THE WINDOW'S RIGHT, measured, so a peek
@@ -618,6 +629,7 @@ export function AppShell({
         <div ref={sheet} className="crewlet-app-shell__sheet">
           {topbar}
           {banner ? <div className="crewlet-app-shell__banner">{banner}</div> : null}
+          {fill === true ? <div ref={setGauge} className="crewlet-app-shell__gauge" aria-hidden="true" /> : null}
           {/*
            * THE BODY IS ALWAYS THERE, peek or none. It is the row the
            * scroller and a peek column share, and it is never added or taken

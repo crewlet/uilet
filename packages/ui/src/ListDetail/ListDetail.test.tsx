@@ -54,3 +54,41 @@ test('folds by its own width: the pane shape is a container query, and only the 
   const phone = css.match(/@media \(width < 640px\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
   expect(phone).not.toMatch(/grid-template-columns|display: none/);
 });
+
+const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ListDetail.css'), 'utf8').replace(
+  /\/\*[\s\S]*?\*\//g,
+  '',
+);
+const rule = (selector: string, within = css) => {
+  const at = within.indexOf(`${selector} {`);
+  return at < 0 ? '' : within.slice(at, within.indexOf('}', at)).replace(/\s+/g, ' ');
+};
+
+test('the detail is the outermost box that scrolls: its inset is inside it, and its gutter always reserved', () => {
+  // A trailing control (a header's Disconnect) never touches the scrollbar,
+  // and does not move when the detail grows long enough to scroll.
+  const detail = rule('.crewlet-list-detail__detail');
+  expect(detail).toContain('overflow-y: auto;');
+  expect(detail).toContain('scrollbar-gutter: stable;');
+  expect(detail).toContain('padding-right: var(--crewlet-list-detail-end);');
+  // The screen's own side inset, so the page's two edges match.
+  expect(rule('.crewlet-list-detail')).toContain(
+    '--crewlet-list-detail-end: var(--crewlet-app-shell-inset, var(--spacing-5));',
+  );
+  // Folded, the list is the pane that scrolls, and takes the same end.
+  const folds = css.match(/@container crewlet-list-detail \(width < 640px\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
+  const list = rule('.crewlet-list-detail__list', folds);
+  expect(list).toContain('padding-right: var(--crewlet-list-detail-end);');
+  expect(list).toContain('scrollbar-gutter: stable;');
+  // On a phone neither pane scrolls, and the page's pad is the only inset.
+  const phone = css.match(/@media \(width < 640px\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
+  expect(phone).toMatch(/padding-right:\s*0;/);
+});
+
+test("standing in a fill screen's column, it reaches past the column's end pad to the sheet's edge", () => {
+  // The shell publishes the pad (the inset and the scrollbar's width), and it
+  // is 0 on every screen that does not fill the window.
+  expect(rule('.crewlet-app-shell__content > .crewlet-list-detail')).toContain(
+    'margin-right: calc(var(--crewlet-app-shell-bleed-end, 0px) * -1);',
+  );
+});

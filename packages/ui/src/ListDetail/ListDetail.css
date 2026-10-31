@@ -10,6 +10,15 @@
  * drew the detail 130px wide beside a 17rem list. The phone rule below is the
  * one decision that stays the window's: on a phone the page scrolls as a
  * whole rather than each pane on its own.
+ *
+ * A PANE THAT SCROLLS IS THE PANE'S OUTERMOST BOX, and its inset is padding
+ * inside it. The detail reserves its scrollbar's gutter whether or not it
+ * scrolls, and keeps the screen's side inset between its content and that
+ * gutter, so a trailing control (a header's Disconnect, a tile's Open) never
+ * touches the scrollbar and does not move when the detail grows long enough
+ * to scroll. On a screen that fills the window the ListDetail reaches past
+ * the column's end pad to the sheet's edge (below), so the scrollbar is the
+ * sheet's last pixel and the content still ends under the bar's last control.
  */
 
 /* THE HAIRLINE STANDS MIDWAY between the two panes: the list's inset before it
@@ -17,6 +26,9 @@
    the list than to the detail it divides it from; the two still add to 64. */
 .crewlet-list-detail {
   --crewlet-list-detail-gutter: var(--spacing-7);
+  /* The inset at a scrolling pane's end: the screen's own side inset in a
+     shell, so the page's two edges match. */
+  --crewlet-list-detail-end: var(--crewlet-app-shell-inset, var(--spacing-5));
 
   container: crewlet-list-detail / inline-size;
   display: flex;
@@ -25,6 +37,14 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
+}
+
+/* STANDING IN A FILL SCREEN'S COLUMN, IT TAKES THE COLUMN'S END PAD BACK: the
+   inset and the scrollbar's width, which the shell publishes for exactly
+   this (`--crewlet-app-shell-bleed-end`, AppShell.css), and which is 0 on
+   every other screen. The detail keeps the same inset inside itself. */
+.crewlet-app-shell__content > .crewlet-list-detail {
+  margin-right: calc(var(--crewlet-app-shell-bleed-end, 0px) * -1);
 }
 
 .crewlet-list-detail__panes {
@@ -51,7 +71,9 @@
   gap: var(--spacing-5);
   min-width: 0;
   min-height: 0;
+  padding-right: var(--crewlet-list-detail-end);
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 /* ONE PANE UNDER 640px OF ITS OWN WIDTH: the list and a reading detail do not
@@ -62,10 +84,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* The list is the pane that scrolls now, and takes the detail's end. */
   .crewlet-list-detail__list {
-    padding-right: 0;
+    padding-right: var(--crewlet-list-detail-end);
     border-right: 0;
     overflow-y: auto;
+    scrollbar-gutter: stable;
   }
 
   .crewlet-list-detail--showing-list .crewlet-list-detail__detail,
@@ -74,7 +98,8 @@
   }
 }
 
-/* ON A PHONE THE PAGE SCROLLS AS A WHOLE, as tall as its content. */
+/* ON A PHONE THE PAGE SCROLLS AS A WHOLE, as tall as its content, so neither
+   pane is a scroller, and the page's own pad is the only inset. */
 @media (width < 640px) {
   .crewlet-list-detail {
     height: auto;
@@ -82,6 +107,7 @@
 
   .crewlet-list-detail__list,
   .crewlet-list-detail__detail {
+    padding-right: 0;
     overflow: visible;
   }
 }
