@@ -9,7 +9,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
 import { INBOX_ROW_LEAVE, InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle } from './index.js';
@@ -311,6 +311,50 @@ test('the last row of a group leaves with its motion while the group stays drawn
   await settleMotion();
   expect(drawn()).toEqual([]);
   expect(screen.getByRole('heading', { name: 'Needs you' })).toBeTruthy();
+});
+
+// A HOST DRAWS ITS ROWS THROUGH A WRAPPER OF ITS OWN (memoized, since the
+// list redraws on every live push). The group keeps any keyed component child
+// as a leaving row; the wrapper forwards `leaving` and `onLeft` to its row, and
+// the host's own `onLeft` still runs, once, when the row has closed.
+const Item = memo(function Item({ id, leaving, onLeft }: { id: string; leaving?: boolean; onLeft?: () => void }) {
+  return (
+    <InboxRow title={`Row ${id}`} leaving={leaving} onLeft={onLeft} onClick={() => {}}>
+      Words of {id}
+    </InboxRow>
+  );
+});
+
+function Wrapped({ keys, onLeft, empty = false }: { keys: readonly string[]; onLeft?: () => void; empty?: boolean }) {
+  return (
+    <InboxGroup label="Needs you">
+      {keys.map((key) => (
+        <Item key={key} id={key} onLeft={onLeft} />
+      ))}
+      {empty ? <li key="empty">Nothing needs you</li> : null}
+    </InboxGroup>
+  );
+}
+
+test('a row drawn through a wrapper leaves with its motion, and the host hears once that it has gone', async () => {
+  const onLeft = vi.fn();
+  const { rerender } = render(<Wrapped keys={['a', 'b']} onLeft={onLeft} />);
+  const motion = driveMotion(rowOf('b')).start({ transition: 'grid-template-rows' });
+  rerender(<Wrapped keys={['a']} onLeft={onLeft} />);
+  expect(drawn()).toEqual(['a', 'b']);
+  expect(rowOf('b').hasAttribute('inert')).toBe(true);
+  expect(onLeft).not.toHaveBeenCalled();
+  motion.finish();
+  await settleMotion();
+  expect(drawn()).toEqual(['a']);
+  expect(onLeft).toHaveBeenCalledTimes(1);
+});
+
+test('a keyed element that is not a component goes at once', () => {
+  const { rerender } = render(<Wrapped keys={[]} empty />);
+  expect(screen.getByText('Nothing needs you')).toBeTruthy();
+  rerender(<Wrapped keys={['a']} />);
+  expect(screen.queryByText('Nothing needs you')).toBeNull();
 });
 
 test('a leaving row lets focus go, and a row that comes back is live where it stands', () => {

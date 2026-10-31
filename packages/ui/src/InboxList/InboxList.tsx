@@ -105,8 +105,14 @@ function keepPlaces(previous: readonly string[], next: readonly string[], kept: 
   return order;
 }
 
-function keyedRows(children: ReactNode): ReactElement<InboxRowProps>[] {
-  return Children.toArray(children).filter((child): child is ReactElement<InboxRowProps> => isValidElement(child));
+/** What a row the group keeps while it leaves is handed: an `InboxRow`'s own two props. */
+interface LeavingRowProps {
+  leaving?: boolean | undefined;
+  onLeft?: (() => void) | undefined;
+}
+
+function keyedRows(children: ReactNode): ReactElement<LeavingRowProps>[] {
+  return Children.toArray(children).filter((child): child is ReactElement<LeavingRowProps> => isValidElement(child));
 }
 
 /**
@@ -117,12 +123,19 @@ function keyedRows(children: ReactNode): ReactElement<InboxRowProps>[] {
  * the same commit, so the host has no row left to keep drawing; the group
  * keeps the row's last drawing instead, and drops it once it has closed.
  * A row that comes back while it leaves is live again where it stands.
+ *
+ * ANY COMPONENT CHILD IS A ROW. A host draws its rows through a wrapper of
+ * its own (memoized, for a list that redraws on every live push), so the
+ * group keeps any keyed component child, hands it `leaving`, and the wrapper
+ * forwards `leaving` and `onLeft` to its `InboxRow`. The host's own `onLeft`
+ * still runs when the row has closed. A plain element (an empty state's
+ * `li`) is not a row, and goes at once.
  */
 function useLeavingRows(children: ReactNode): ReactNode[] {
   const [rows, setRows] = useState(() => ({
     children,
     order: keyedRows(children).map((row) => String(row.key)),
-    leaving: new Map<string, ReactElement<InboxRowProps>>(),
+    leaving: new Map<string, ReactElement<LeavingRowProps>>(),
   }));
   let now = rows;
   if (rows.children !== children) {
@@ -131,7 +144,7 @@ function useLeavingRows(children: ReactNode): ReactNode[] {
     const leaving = new Map([...rows.leaving].filter(([key]) => !present.has(key)));
     for (const row of keyedRows(rows.children)) {
       const key = String(row.key);
-      if (!present.has(key) && row.type === InboxRow) leaving.set(key, row);
+      if (!present.has(key) && typeof row.type !== 'string') leaving.set(key, row);
     }
     now = {
       children,
@@ -157,7 +170,14 @@ function useLeavingRows(children: ReactNode): ReactNode[] {
     const row = drawn.get(key);
     if (row) return row;
     const last = now.leaving.get(key);
-    return last ? cloneElement(last, { leaving: true, onLeft: () => drop(key) }) : null;
+    if (!last) return null;
+    return cloneElement(last, {
+      leaving: true,
+      onLeft: () => {
+        last.props.onLeft?.();
+        drop(key);
+      },
+    });
   });
 }
 
@@ -315,10 +335,11 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
    * On its way out: the row stays drawn, inert, while its height closes, so
    * the rows under it slide up rather than jump, and is drawn no more once it
    * has closed. An `InboxGroup` does this itself for a keyed row that leaves
-   * its children; pass it for a list of your own, with `onLeft`.
+   * its children, and a wrapper the host draws its rows through forwards
+   * this and `onLeft` to its `InboxRow`; pass it for a list of your own.
    */
   leaving?: boolean | undefined;
-  /** Runs once a leaving row has closed and is drawn no more. */
+  /** Runs once a leaving row has closed and is drawn no more, once for each leave. */
   onLeft?: (() => void) | undefined;
   /** Just arrived: a brief wash of the accent that fades back to the row's own ground. */
   arrived?: boolean | undefined;
@@ -386,8 +407,16 @@ export function InboxRow({
   useLayoutEffect(() => {
     if (presence.leaving) releaseFocus(self.current);
   }, [presence.leaving]);
+  // Once for each leave, however often the row is drawn while it is gone.
+  const told = useRef(false);
   useEffect(() => {
-    if (gone) onLeft?.();
+    if (!gone) {
+      told.current = false;
+      return;
+    }
+    if (told.current) return;
+    told.current = true;
+    onLeft?.();
   }, [gone, onLeft]);
   // Every part is set apart by a space, so the control is announced as
   // "Crewlet-PM coding run 2h Which ledger" rather than as one run-on word: an
