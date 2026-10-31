@@ -26,11 +26,40 @@
 
 /* The heading's own line box is the label's, so the label sits where it is drawn. */
 .crewlet-inbox-list__label {
+  /* The arrival's wash stands behind the label's words, inside it. */
+  position: relative;
+  isolation: isolate;
   margin: 0;
   padding: var(--spacing-3) var(--spacing-2) var(--spacing-1);
   font: inherit;
   font-size: var(--font-size-2xs);
   line-height: var(--font-line-height-snug);
+}
+
+/*
+ * A ROW ARRIVED: a wash of the accent that fades back to the ground, over the
+ * row itself, or over a group's label and count where the row landed in a
+ * closed group. The row's keyframes name no last step, so the wash returns
+ * to whatever the row draws of its own (hover, selected).
+ */
+.crewlet-inbox-list__arrival {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--radius-xs);
+  pointer-events: none;
+  animation: crewlet-inbox-arrive calc(var(--motion-duration-moderate) * 8) var(--motion-easing-out) both;
+}
+
+.crewlet-inbox-row--arrived {
+  animation: crewlet-inbox-arrive calc(var(--motion-duration-moderate) * 8) var(--motion-easing-out);
+}
+
+@keyframes crewlet-inbox-arrive {
+  0%,
+  40% {
+    background: var(--color-brand-accent-soft-strong);
+  }
 }
 
 /* The count after a label, in the quiet ink and the label's own register. */
@@ -107,10 +136,36 @@
  * a selected row takes no hover on top of it: both are a background on the
  * same element, and a composite of the two is a colour nothing has measured.
  */
+/* ONE TRACK, so a leaving row can close its height (below). */
 .crewlet-inbox-row {
+  display: grid;
+  grid-template-rows: 1fr;
   min-width: 0;
   border-radius: var(--radius-md);
   transition: background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-inbox-row__body {
+  min-width: 0;
+  min-height: 0;
+}
+
+/*
+ * A ROW LEAVING closes its one track to nothing and fades, on the slow step
+ * with the emphasized curve, the motion a column opens and shuts by, so the
+ * rows under it slide up into its place. The shell's presence waits on the
+ * track's transition (`INBOX_ROW_LEAVE`), and the row is inert all the while.
+ */
+.crewlet-inbox-row--leaving {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--motion-duration-slow) var(--motion-easing-emphasized),
+    opacity var(--motion-duration-moderate) var(--motion-easing-out);
+}
+
+.crewlet-inbox-row--leaving .crewlet-inbox-row__body {
+  overflow: hidden;
 }
 
 .crewlet-inbox-row:hover {
@@ -349,7 +404,7 @@
 }
 
 /* A row with no leading slot: the words start at the control's own pad, and so does the task. */
-.crewlet-inbox-row:not(:has(.crewlet-inbox-row__leading)) > .crewlet-inbox-row__aside {
+.crewlet-inbox-row:not(:has(.crewlet-inbox-row__leading)) .crewlet-inbox-row__aside {
   padding-inline-start: var(--spacing-2);
 }
 
@@ -385,8 +440,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .crewlet-inbox-row {
+  .crewlet-inbox-row,
+  .crewlet-inbox-row--leaving {
     transition: none;
+  }
+
+  .crewlet-inbox-row--arrived,
+  .crewlet-inbox-list__arrival {
+    animation: none;
   }
 
   .crewlet-inbox-list__toggle,

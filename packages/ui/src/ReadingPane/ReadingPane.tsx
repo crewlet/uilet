@@ -1,6 +1,16 @@
-import { createContext, useContext, useId, type HTMLAttributes, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import { CheckGlyph, ClockGlyph } from '@crewlethq/icons/glyphs';
 import { cx } from '../utils/cx.js';
+import { returnFocus } from '../utils/focusModality.js';
 import {
   HeadingLevelProvider,
   headingTag,
@@ -28,7 +38,21 @@ function usePane(part: string): ReadingPaneContextValue {
 export interface ReadingPaneProps extends HTMLAttributes<HTMLElement> {
   /** Overrides the level the title is rendered at. */
   headingLevel?: HeadingLevel | undefined;
+  /**
+   * What the pane shows, as a key: the item's id. A new value draws the new
+   * item afresh and plays it in, a short fade and rise on the moderate step
+   * (`READING_PANE_ENTER` on the column; nothing moves under reduced motion),
+   * and moves focus to its title, without scrolling the page, where focus was
+   * in the pane or nowhere (the control the reader answered with went with
+   * the old item). Focus a reader left in the list beside the pane stays there.
+   */
+  contentKey?: string | number | undefined;
+  /** Where focus goes after a change of `contentKey`, in place of the title. */
+  focusTarget?: (() => HTMLElement | null | undefined) | undefined;
 }
+
+/** The keyframes a new item plays in by, on the column: the one motion a suite fakes. */
+export const READING_PANE_ENTER = { animations: ['crewlet-reading-pane-enter'] } as const;
 
 /**
  * One item read in full, top to bottom, in one column: the line saying who is
@@ -45,17 +69,44 @@ export interface ReadingPaneProps extends HTMLAttributes<HTMLElement> {
  * The article is named by its title, so a reader moving by landmark hears the
  * question rather than "article".
  */
-export function ReadingPane({ headingLevel, className, children, ...rest }: ReadingPaneProps) {
+export function ReadingPane({ headingLevel, contentKey, focusTarget, className, children, ...rest }: ReadingPaneProps) {
   const titleId = useId();
   const outer = useHeadingLevel();
   const level = headingLevel ?? outer;
   const named = rest['aria-label'] !== undefined || rest['aria-labelledby'] !== undefined;
+  const pane = useRef<HTMLDivElement | null>(null);
+  const column = useRef<HTMLElement | null>(null);
+  // THE FIRST ITEM IS NOT PLAYED IN: a page opens on it, nothing changed.
+  const [firstKey] = useState(contentKey);
+  const entering = contentKey !== firstKey;
+
+  /*
+   * FOCUS FOLLOWS THE ITEM WHERE IT WAS THE ITEM'S. After an answer the
+   * control the reader pressed went with the old item, and focus fell to the
+   * document: it goes to the new item's title, so the next Tab starts there.
+   * A reader who chose the item in the list keeps focus in the list.
+   */
+  const settled = useRef(contentKey);
+  useLayoutEffect(() => {
+    if (contentKey === settled.current) return;
+    settled.current = contentKey;
+    const held = document.activeElement;
+    const ours = held === null || held === document.body || pane.current?.contains(held) === true;
+    if (!ours) return;
+    const target = focusTarget?.() ?? column.current?.querySelector<HTMLElement>('.crewlet-reading-pane__title');
+    returnFocus(target, { preventScroll: true });
+  }, [contentKey, focusTarget]);
+
   return (
-    <div className="crewlet-reading-pane">
+    <div ref={pane} className="crewlet-reading-pane">
       <article
         {...rest}
+        // A NEW ITEM IS DRAWN AFRESH, so it plays in from its start and keeps
+        // nothing of the item before it.
+        key={contentKey}
+        ref={column}
         aria-labelledby={named ? rest['aria-labelledby'] : titleId}
-        className={cx('crewlet-reading-pane__column', className)}
+        className={cx('crewlet-reading-pane__column', entering && 'crewlet-reading-pane__column--entering', className)}
       >
         <ReadingPaneContext.Provider value={{ titleId, level }}>
           <HeadingLevelProvider level={nextHeadingLevel(level)}>{children}</HeadingLevelProvider>
@@ -110,7 +161,9 @@ export function ReadingPaneTitle({ className, children, ...rest }: ReadingPaneTi
   const { titleId, level } = usePane('ReadingPane.Title');
   const Heading = headingTag(level);
   return (
-    <Heading id={titleId} {...rest} className={cx('crewlet-reading-pane__title', className)}>
+    // Focusable from code alone, for the pane to hand focus to when its item
+    // changes; never a tab stop.
+    <Heading id={titleId} tabIndex={-1} {...rest} className={cx('crewlet-reading-pane__title', className)}>
       {children}
     </Heading>
   );

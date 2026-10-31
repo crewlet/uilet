@@ -11,7 +11,8 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle } from './index.js';
+import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
+import { INBOX_ROW_LEAVE, InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle } from './index.js';
 
 afterEach(cleanup);
 
@@ -261,4 +262,126 @@ test('a group whose label is hidden is never collapsed, since nothing could open
     </InboxList>,
   );
   expect(screen.getByRole('button', { name: /Assigned you/ })).toBeTruthy();
+});
+
+// ---- Motion: a row leaving, a row arriving --------------------------------
+
+function Needs({ keys, arrived }: { keys: readonly string[]; arrived?: string }) {
+  return (
+    <InboxList label="Inbox">
+      <InboxGroup label="Needs you" arrived={arrived}>
+        {keys.map((key) => (
+          <InboxRow key={key} title={`Row ${key}`} onClick={() => {}}>
+            Words of {key}
+          </InboxRow>
+        ))}
+      </InboxGroup>
+    </InboxList>
+  );
+}
+
+const rowOf = (key: string) => screen.getByText(`Row ${key}`).closest('li')!;
+const drawn = () => [...document.querySelectorAll('.crewlet-inbox-row')].map((li) => li.textContent?.match(/Row (\w)/)?.[1]);
+
+// THE HOST ONLY REMOVES THE ROW. The group keeps its last drawing in its place,
+// inert, while its height closes, and drops it once the motion has ended.
+test('a row taken from a group stays in its place, inert, until its height has closed', async () => {
+  const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
+  const leaving = rowOf('b');
+  const motion = driveMotion(leaving).start({ transition: INBOX_ROW_LEAVE.transitions[0] });
+  rerender(<Needs keys={['a', 'c']} />);
+  expect(drawn()).toEqual(['a', 'b', 'c']);
+  expect(leaving.classList.contains('crewlet-inbox-row--leaving')).toBe(true);
+  expect(leaving.hasAttribute('inert')).toBe(true);
+  motion.finish();
+  await settleMotion();
+  expect(drawn()).toEqual(['a', 'c']);
+});
+
+test('a leaving row lets focus go, and a row that comes back is live where it stands', () => {
+  const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
+  const leaving = rowOf('b');
+  driveMotion(leaving).start({ transition: 'grid-template-rows' });
+  within(leaving).getByRole('button').focus();
+  rerender(<Needs keys={['a', 'c']} />);
+  expect(leaving.contains(document.activeElement)).toBe(false);
+  rerender(<Needs keys={['a', 'b', 'c']} />);
+  expect(drawn()).toEqual(['a', 'b', 'c']);
+  expect(rowOf('b').hasAttribute('inert')).toBe(false);
+});
+
+test('under reduced motion a row taken away goes at once', () => {
+  const restore = preferReducedMotion(true);
+  try {
+    const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
+    driveMotion(rowOf('b')).start({ transition: 'grid-template-rows' });
+    rerender(<Needs keys={['a', 'c']} />);
+    expect(drawn()).toEqual(['a', 'c']);
+  } finally {
+    restore();
+  }
+});
+
+test('a row of a list of its own leaves by `leaving`, and says when it has gone', async () => {
+  const onLeft = vi.fn();
+  const { container, rerender } = render(
+    <ul>
+      <InboxRow title="Row a" onLeft={onLeft} />
+    </ul>,
+  );
+  const motion = driveMotion(container.querySelector('li')!).start({ transition: 'grid-template-rows' });
+  rerender(
+    <ul>
+      <InboxRow title="Row a" leaving onLeft={onLeft} />
+    </ul>,
+  );
+  expect(container.querySelector('li')?.hasAttribute('inert')).toBe(true);
+  expect(onLeft).not.toHaveBeenCalled();
+  motion.finish();
+  await settleMotion();
+  expect(container.querySelector('li')).toBeNull();
+  expect(onLeft).toHaveBeenCalled();
+});
+
+// A ROW ARRIVED: a wash on the row, or on a closed group's label and count,
+// played afresh for each arrival and never drawing anew what the reader can focus.
+test('an arrival washes the row, or the label and count of the group it landed in', () => {
+  render(
+    <ul>
+      <InboxRow title="Row a" arrived />
+    </ul>,
+  );
+  expect(rowOf('a').classList.contains('crewlet-inbox-row--arrived')).toBe(true);
+  cleanup();
+
+  const Answered = ({ arrived }: { arrived?: string }) => (
+    <InboxGroup label="Answered" count={3} collapsible arrived={arrived}>
+      <InboxRow key="a" title="Row a" />
+    </InboxGroup>
+  );
+  const { container, rerender } = render(<Answered />);
+  expect(container.querySelector('.crewlet-inbox-list__arrival')).toBeNull();
+  const toggle = screen.getByRole('button', { name: /Answered/ });
+  rerender(<Answered arrived="a" />);
+  const first = container.querySelector('.crewlet-inbox-list__arrival')!;
+  expect(first.getAttribute('aria-hidden')).toBe('true');
+  rerender(<Answered arrived="b" />);
+  expect(container.querySelector('.crewlet-inbox-list__arrival')).not.toBe(first);
+  expect(screen.getByRole('button', { name: /Answered/ })).toBe(toggle);
+});
+
+test('the motions are the kit\'s: the row closes its one track on the slow step, and nothing moves under reduced motion', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    return at < 0 ? '' : css.slice(at, css.indexOf('}', at)).replace(/\s+/g, ' ');
+  };
+  expect(rule('.crewlet-inbox-row')).toContain('grid-template-rows: 1fr;');
+  const leaving = rule('.crewlet-inbox-row--leaving');
+  expect(leaving).toContain('grid-template-rows: 0fr;');
+  expect(leaving).toContain('grid-template-rows var(--motion-duration-slow) var(--motion-easing-emphasized)');
+  expect(rule('.crewlet-inbox-row--arrived')).toContain('animation: crewlet-inbox-arrive');
+  const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
+  expect(reduced).toMatch(/\.crewlet-inbox-row--leaving\s*\{\s*transition: none;/);
+  expect(reduced).toMatch(/\.crewlet-inbox-list__arrival\s*\{\s*animation: none;/);
 });
