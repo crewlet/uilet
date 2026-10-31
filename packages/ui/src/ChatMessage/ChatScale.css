@@ -1,0 +1,42 @@
+/*
+ * ONE SCALE FOR A CONVERSATION. Every part of a transcript reads from these:
+ * the message rows, their toolbar, reactions and thread line, the day's rule
+ * and pill, the New line and the link previews. A name, the words under it
+ * and the box they were typed in are one size, and everything around them
+ * (times, counts, the second lines of previews) is one step down. A surface
+ * that wants a denser or roomier transcript sets them once, on itself.
+ *
+ * A sheet of its own, imported by every part that reads it, so a consumer
+ * that imports one part (`@crewlethq/ui/ChatDay`) still gets the scale.
+ */
+:root {
+  /* The words: names, bodies and the message box, on one line height. */
+  --crewlet-chat-text: var(--font-size-sm);
+  --crewlet-chat-line: var(--font-line-height-normal);
+  /* Times, counts, reactions and second lines: one step down. */
+  --crewlet-chat-meta: var(--font-size-xs);
+  /* The row's side inset, the face column, the gap after it, and the space
+     between the pieces stacked under a message's words. */
+  --crewlet-chat-pad-x: var(--spacing-5);
+  --crewlet-chat-avatar: 36px;
+  --crewlet-chat-gap: var(--spacing-3);
+  --crewlet-chat-stack: 6px;
+  /* One width for every link preview, so a stack of them shares both edges. */
+  --crewlet-chat-card: 440px;
+  /* A day: the pill's height, the room above and below its rule, and how far
+     under the list's top edge the pill pins. A host with a bar floating over
+     the list's top (an unread banner) moves the pin down past it. */
+  --crewlet-chat-day-pill: 24px;
+  --crewlet-chat-day-gap: var(--spacing-5);
+  --crewlet-chat-day-pin: var(--spacing-3);
+  /* The hover toolbar: a medium control, big enough to aim at while the
+     pointer is passing, inside its inset and its hairline, twice. */
+  --crewlet-chat-toolbar-inset: var(--spacing-1);
+  --crewlet-chat-toolbar: calc(var(--size-control-md) + (var(--crewlet-chat-toolbar-inset) + 1px) * 2);
+  /* The ground the transcript is set on. A host that sets it on another fill
+     names that fill here, and everything lifted off the rows (the toolbar,
+     the day's pill, the open thread line) is filled with it. */
+  --crewlet-chat-ground: var(--color-surface-background);
+  /* A row that names the reader: a light wash of the warning hue. */
+  --crewlet-chat-mention: var(--color-feedback-warning-soft);
+}
