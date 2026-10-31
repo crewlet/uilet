@@ -830,3 +830,161 @@ test('a wholly locked group draws its key once, on its label, and its rows none'
   expect(secrets.querySelectorAll('svg.crewlet-locked-label__key')).toHaveLength(1);
   expect(container.querySelectorAll('.crewlet-nav-group--locked')).toHaveLength(1);
 });
+
+/*
+ * A LONG LIST READ IN PASSING: the dense rows, the two states a room list
+ * needs, and groups that fold without hiding what is calling.
+ */
+describe('the dense list', () => {
+  function Rooms({ collapsed, onCollapsedChange }: { collapsed?: boolean; onCollapsedChange?: (next: boolean) => void }) {
+    return (
+      <SidebarNav label="Rooms" dense>
+        <NavGroup
+          label="Channels"
+          collapsible
+          collapsed={collapsed}
+          onCollapsedChange={onCollapsedChange}
+          action={{ label: 'New room', icon: <svg />, onClick: () => {} }}
+        >
+          <NavItem label="general" icon={<svg />} />
+          <NavItem label="engineering" icon={<svg />} current />
+          <NavItem label="design" icon={<svg />} unread />
+          <NavItem label="random" icon={<svg />} unread muted />
+          <NavItem label="launch" icon={<svg />} unread badge={{ value: 2, label: 'mentions' }} />
+        </NavGroup>
+      </SidebarNav>
+    );
+  }
+
+  test('an unread row says so after its name, unless its figure already says what is waiting', () => {
+    render(<Rooms />);
+    const design = screen.getByRole('button', { name: 'design, unread' });
+    expect(design.closest('.crewlet-nav-item')?.classList.contains('crewlet-nav-item--unread')).toBe(true);
+    expect(screen.getByRole('button', { name: 'launch, 2 mentions' })).toBeDefined();
+  });
+
+  test('muted outranks unread: the row is quiet and says it is muted', () => {
+    render(<Rooms />);
+    const random = screen.getByRole('button', { name: 'random, muted' });
+    const item = random.closest('.crewlet-nav-item')!;
+    expect(item.classList.contains('crewlet-nav-item--muted')).toBe(true);
+    expect(item.classList.contains('crewlet-nav-item--unread')).toBe(false);
+  });
+
+  test('a collapsible heading is a button named by its words, beside its own control', () => {
+    render(<Rooms />);
+    const group = screen.getByRole('group', { name: 'Channels' });
+    const fold = within(group).getByRole('button', { name: 'Channels' });
+    expect(fold.getAttribute('aria-expanded')).toBe('true');
+    expect(within(group).getByRole('button', { name: 'New room' })).toBeDefined();
+    expect(within(group).getAllByRole('button').filter((b) => b.closest('.crewlet-nav-item'))).toHaveLength(5);
+  });
+
+  test('folded, a group keeps the row the reader is on and the rows with news they have not muted', async () => {
+    const user = userEvent.setup();
+    render(<Rooms />);
+    const group = screen.getByRole('group', { name: 'Channels' });
+    await user.click(within(group).getByRole('button', { name: 'Channels' }));
+    expect(within(group).getByRole('button', { name: 'Channels' }).getAttribute('aria-expanded')).toBe('false');
+    expect(group.classList.contains('crewlet-nav-group--collapsed')).toBe(true);
+    const rows = [...group.querySelectorAll('.crewlet-nav-item__label')].map((label) => label.textContent);
+    expect(rows).toEqual(['engineering', 'design, unread', 'launch, 2 mentions']);
+    await user.click(within(group).getByRole('button', { name: 'Channels' }));
+    expect(group.querySelectorAll('.crewlet-nav-item')).toHaveLength(5);
+  });
+
+  test('a caller can keep the fold, and hears every change', async () => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    render(<Rooms collapsed onCollapsedChange={changed} />);
+    const group = screen.getByRole('group', { name: 'Channels' });
+    expect(group.querySelectorAll('.crewlet-nav-item')).toHaveLength(3);
+    await user.click(within(group).getByRole('button', { name: 'Channels' }));
+    expect(changed).toHaveBeenCalledWith(false);
+    // Kept by the caller, so it stays folded until the caller says otherwise.
+    expect(group.querySelectorAll('.crewlet-nav-item')).toHaveLength(3);
+  });
+
+  test("the fold is the group's: a row's own nested rows are not folded with it", () => {
+    render(
+      <SidebarNav label="Rooms">
+        <NavGroup label="Teams" collapsible defaultCollapsed>
+          <NavItem label="Platform" current defaultExpanded>
+            <NavItem label="Backend" href="#/backend" />
+          </NavItem>
+          <NavItem label="Quiet" />
+        </NavGroup>
+      </SidebarNav>,
+    );
+    expect(screen.getByRole('link', { name: 'Backend' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Quiet' })).toBeNull();
+  });
+
+  test('a run with no name cannot fold, since nothing would name the control', () => {
+    render(
+      <SidebarNav label="Rooms">
+        <NavGroup collapsible defaultCollapsed>
+          <NavItem label="Activity" />
+        </NavGroup>
+      </SidebarNav>,
+    );
+    expect(screen.getByRole('button', { name: 'Activity' })).toBeDefined();
+    expect(document.querySelector('.crewlet-nav-group__toggle')).toBeNull();
+  });
+
+  test('dense rows stand at the target floor, edge to edge, with every glyph and name on its line', () => {
+    const uninstall = installSheets('SidebarNav/SidebarNav.css');
+    try {
+      render(
+        <>
+          <Rooms />
+          <SidebarNav label="Sections">
+            <NavItem href="#/" label="Overview" icon={<svg />} />
+          </SidebarNav>
+        </>,
+      );
+      const nav = screen.getByRole('navigation', { name: 'Rooms' });
+      const row = screen.getByRole('button', { name: 'general' });
+      expect(px(row, 'min-height')).toBe(24);
+      expect(getComputedStyle(row).fontWeight).toBe('400');
+      // The gutter halves, and the pad grows by the same step.
+      expect(px(nav, 'padding-left')).toBe(4);
+      expect(px(row, 'padding-left')).toBe(16);
+      const plain = screen.getByRole('navigation', { name: 'Sections' });
+      const overview = screen.getByRole('link', { name: 'Overview' });
+      expect(px(nav, 'padding-left') + px(row, 'padding-left')).toBe(
+        px(plain, 'padding-left') + px(overview, 'padding-left'),
+      );
+      // A face's width, so faces, counts and glyphs share one column.
+      expect(px(row.querySelector('.crewlet-nav-item__icon')!, 'min-width')).toBe(20);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test("the badge is the chrome's one count badge, 16px", () => {
+    const uninstall = installSheets('SidebarNav/SidebarNav.css');
+    try {
+      render(<Rooms />);
+      const badge = screen.getByRole('button', { name: 'launch, 2 mentions' }).querySelector('.crewlet-nav-item__badge')!;
+      expect(px(badge, 'height')).toBe(16);
+      expect(px(badge, 'min-width')).toBe(16);
+      expect(px(badge, 'font-size')).toBe(10);
+    } finally {
+      uninstall();
+    }
+  });
+
+  test('the dense list has no accessibility violations, open or folded', async () => {
+    const user = userEvent.setup();
+    const view = render(<Rooms />);
+    const options = {
+      runOnly: { type: 'tag' as const, values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations' as const],
+    };
+    expect((await axe.run(view.container, options)).violations.map((v) => v.id)).toEqual([]);
+    await user.click(screen.getByRole('button', { name: 'Channels' }));
+    expect((await axe.run(view.container, options)).violations.map((v) => v.id)).toEqual([]);
+  });
+});
