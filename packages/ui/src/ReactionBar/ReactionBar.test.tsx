@@ -3,24 +3,15 @@
  * with the reader first, held when the reader cannot react, and the add pill
  * that opens the emoji picker, quiet in a row until the row is pointed at.
  */
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
 import { installHover, installSheets, userAction } from '../../../../apps/ui-tests/src/cascade.js';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { ChatMessage } from '../ChatMessage/index.js';
 import { AddReaction, REACTION_BAR_LABELS, ReactionBar, reactionWho, type ReactionSummary } from './index.js';
 
 afterEach(cleanup);
-
-/**
- * Focus as a keyboard reader brings it: a key first, so `:focus-visible`
- * matches (a click earlier in the file leaves jsdom reading the next focus as
- * a pointer's), which is the only focus that opens a tip.
- */
-function keyboardFocus(element: HTMLElement) {
-  fireEvent.keyDown(document.body, { key: 'Tab' });
-  act(() => element.focus());
-}
 
 const SHEETS = ['ChatMessage/ChatScale.css', 'ChatMessage/ChatMessage.css', 'ReactionBar/ReactionBar.css'] as const;
 
@@ -62,7 +53,7 @@ test('draws a toggle pill to an emoji, named by the emoji and who reacted, press
 test('says who reacted on hover', async () => {
   render(<ReactionBar reactions={[eyes]} onToggle={() => {}} />);
   const pill = screen.getByRole('button', { name: /eyes/ });
-  keyboardFocus(pill);
+  tabTo(pill);
   await waitFor(() => expect(screen.getByRole('tooltip').textContent).toBe('You and Product Manager reacted with 👀'));
 });
 
@@ -73,7 +64,7 @@ test('a reader who cannot react sees who did, and why the pills hold', async () 
   expect(pill.getAttribute('aria-disabled')).toBe('true');
   fireEvent.click(pill);
   expect(onToggle).not.toHaveBeenCalled();
-  keyboardFocus(pill);
+  tabTo(pill);
   await waitFor(() =>
     expect(screen.getByRole('tooltip').textContent).toBe('You and Product Manager reacted with 👀. Join the room to react.'),
   );

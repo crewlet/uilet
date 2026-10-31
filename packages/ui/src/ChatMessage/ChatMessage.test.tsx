@@ -7,7 +7,7 @@
  */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { createRef, type ReactNode } from 'react';
+import { createRef, type ReactNode, type Ref } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { installHover, installMotion, installSheets, userAction } from '../../../../apps/ui-tests/src/cascade.js';
 import { ChatThread } from '../ChatThread/index.js';
@@ -17,7 +17,8 @@ afterEach(cleanup);
 
 const SHEETS = ['ChatMessage/ChatScale.css', 'ChatMessage/ChatMessage.css'] as const;
 
-function Row(props: Partial<ChatMessageProps> & { children?: ReactNode }) {
+/** A row with every required prop filled in; `ref` reaches the article, as ChatMessage forwards it. */
+function Row(props: Partial<ChatMessageProps> & { children?: ReactNode; ref?: Ref<HTMLElement> }) {
   return (
     <ChatMessage
       id="m1"

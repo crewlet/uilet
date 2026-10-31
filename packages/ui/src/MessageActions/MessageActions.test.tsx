@@ -3,25 +3,16 @@
  * reactions named by what they do, tools whose hint is their name, a tool
  * that can be a Menu's own trigger, and a divider said by nothing.
  */
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
 import { BookmarkGlyph, EllipsisGlyph, MessagesSquareGlyph } from '@crewlethq/icons/glyphs';
 import { installThemed } from '../../../../apps/ui-tests/src/cascade.js';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { Menu } from '../Menu/index.js';
 import { ActionDivider, MessageAction, MessageActions, QuickReaction } from './index.js';
 
 afterEach(cleanup);
-
-/**
- * Focus as a keyboard reader brings it: a key first, so `:focus-visible`
- * matches (a click earlier in the file leaves jsdom reading the next focus as
- * a pointer's), which is the only focus that opens a tip.
- */
-function keyboardFocus(element: HTMLElement) {
-  fireEvent.keyDown(document.body, { key: 'Tab' });
-  act(() => element.focus());
-}
 
 function Tray({ onReact = () => {}, onReply = () => {}, saved = false }: { onReact?: (emoji: string) => void; onReply?: () => void; saved?: boolean }) {
   return (
@@ -69,7 +60,7 @@ test('a tool is named by its label, says it as its hint, and carries its pressed
   fireEvent.click(reply);
   expect(onReply).toHaveBeenCalledTimes(1);
   expect(screen.getByRole('button', { name: 'Remove from Saved' }).getAttribute('aria-pressed')).toBe('true');
-  keyboardFocus(reply);
+  tabTo(reply);
   await waitFor(() => expect(screen.getByRole('tooltip').textContent).toBe('Reply in thread'));
 });
 
