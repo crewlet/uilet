@@ -139,3 +139,29 @@ export const LongText: Story = {
     followUps: [],
   },
 };
+
+/**
+ * A ROOM'S CATCH UP: what was said, a point to a row, each citing the message
+ * it came from with the host's own press (a reply opens its thread), under
+ * what the room is about and anything that needs the reader.
+ */
+export const RoomCatchUp: Story = {
+  args: {
+    scope: '#engineering',
+    asOf: 'Just now',
+    about: 'The release branch is cut and two pull requests wait for review.',
+    needs: [
+      {
+        key: 'review',
+        text: 'Review the payments pull request',
+        detail: 'Senior Backend Engineer asked you by name',
+        action: { label: 'Open', onSelect: () => {} },
+      },
+    ],
+    points: [
+      { key: 'p1', text: 'Miles cut the release branch at 09:40.', source: { label: "Open Miles's message", onSelect: () => {} } },
+      { key: 'p2', text: 'The payments pull request passed CI and waits for review.', source: { label: 'Open the thread', onSelect: () => {} } },
+      { key: 'p3', text: 'The deploy window moved to Friday morning.', source: { label: 'Open the message', onSelect: () => {} } },
+    ],
+  },
+};
