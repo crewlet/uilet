@@ -93,6 +93,44 @@ test('the actions sit in the footer', () => {
   expect(container.querySelector('.crewlet-composer__footer')!.textContent).toContain('Submit');
 });
 
+test("a chat composer's tools stand at the footer's start and its formatting row along the top", () => {
+  const { container } = render(
+    <Composer
+      value=""
+      onChange={() => {}}
+      onSubmit={() => {}}
+      submitOn="enter"
+      label="Message #engineering"
+      toolbar={
+        <div role="toolbar" aria-label="Formatting">
+          <button type="button">Bold</button>
+        </div>
+      }
+      tools={<button type="button">Attach</button>}
+      actions={<button type="button">Send</button>}
+    />,
+  );
+  const box = container.querySelector('.crewlet-composer')!;
+  // The formatting row comes first, before the words it acts on.
+  expect(box.firstElementChild!.className).toBe('crewlet-composer__toolbar');
+  expect(screen.getByRole('toolbar', { name: 'Formatting' })).toBeTruthy();
+  // The footer holds the tools first and the actions last, a spacer between.
+  const footer = container.querySelector('.crewlet-composer__footer')!;
+  const parts = [...footer.children].map((child) => child.className || child.textContent);
+  expect(parts[0]).toBe('crewlet-composer__tools');
+  expect(footer.lastElementChild!.textContent).toBe('Send');
+  expect(footer.querySelector('.crewlet-composer__tools + .crewlet-composer__spacer')).not.toBeNull();
+});
+
+test('tools alone draw the footer', () => {
+  const { container } = render(
+    <Composer value="" onChange={() => {}} label="Message" submitOn="enter" tools={<button type="button">Attach</button>} />,
+  );
+  const footer = container.querySelector('.crewlet-composer__footer')!;
+  expect(footer).not.toBeNull();
+  expect(footer.hasAttribute('data-hint-only')).toBe(false);
+});
+
 test('carries no axe violation', async () => {
   const { container } = render(
     <main>

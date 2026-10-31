@@ -1,7 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
-import { Button, Composer, SendButton, Tag } from '@crewlethq/ui';
-import { LayoutDashboardGlyph, PlusGlyph } from '@crewlethq/icons/glyphs';
+import { useRef, useState } from 'react';
+import { Button, Composer, IconButton, SendButton, Tag, Toolbar, formatMarkdown } from '@crewlethq/ui';
+import {
+  AtSignGlyph,
+  BoldGlyph,
+  FaceSlightlySmilingGlyph,
+  ItalicGlyph,
+  LayoutDashboardGlyph,
+  ListGlyph,
+  PlusGlyph,
+  StrikethroughGlyph,
+} from '@crewlethq/icons/glyphs';
 
 /**
  * A message written in place: a field that grows with its text and a footer
@@ -163,3 +172,51 @@ export const ChatNearTheLimit: Story = {
 
 /** The page removed: "Add this page" stands where the chip was. */
 export const PageRemoved: Story = { render: () => <Chat attached={false} /> };
+
+/**
+ * A CONVERSATION'S MESSAGE BOX: the formatting row along the top (`toolbar`),
+ * one line of words, and the tools at the footer's start (`tools`) with the
+ * send button keeping the corner. Each formatting control applies
+ * `formatMarkdown` to the field's selection.
+ */
+function RoomComposer() {
+  const [text, setText] = useState('');
+  const field = useRef<HTMLTextAreaElement | null>(null);
+  const apply = (format: 'bold' | 'italic' | 'strikethrough' | 'bulletList') => {
+    const box = field.current;
+    const selection = { start: box?.selectionStart ?? text.length, end: box?.selectionEnd ?? text.length };
+    setText(formatMarkdown(text, selection, format).value);
+  };
+  return (
+    <div style={{ maxWidth: 560 }}>
+      <Composer
+        ref={field}
+        value={text}
+        onChange={setText}
+        onSubmit={() => setText('')}
+        submitOn="enter"
+        rows={1}
+        label="Message #engineering"
+        placeholder="Message #engineering"
+        toolbar={
+          <Toolbar label="Formatting">
+            <IconButton label="Bold" icon={<BoldGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('bold')} />
+            <IconButton label="Italic" icon={<ItalicGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('italic')} />
+            <IconButton label="Strikethrough" icon={<StrikethroughGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('strikethrough')} />
+            <IconButton label="Bulleted list" icon={<ListGlyph size="xs" />} size="sm" variant="ghost" onClick={() => apply('bulletList')} />
+          </Toolbar>
+        }
+        tools={
+          <>
+            <IconButton label="Attach" icon={<PlusGlyph size="xs" />} size="sm" variant="ghost" />
+            <IconButton label="Emoji" icon={<FaceSlightlySmilingGlyph size="xs" />} size="sm" variant="ghost" />
+            <IconButton label="Mention someone" icon={<AtSignGlyph size="xs" />} size="sm" variant="ghost" />
+          </>
+        }
+        actions={<SendButton mode="send" disabledReason={text.trim() === '' ? 'Write a message first' : undefined} onPress={() => setText('')} />}
+      />
+    </div>
+  );
+}
+
+export const WithToolsAndFormatting: Story = { render: () => <RoomComposer /> };
