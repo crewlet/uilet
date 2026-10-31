@@ -6,11 +6,12 @@
  * of `backend-engineer`, `sre_lead` and `cs-lead` into a column of single
  * letters.
  *
- * The OUTLINE is the other: an agent is a squircle and a person a circle, and
- * that is the only thing telling them apart, so the kind, the corner ladder,
- * the ring and the status badge are measured through the cascade where jsdom
- * can answer for them and read off the stylesheet where it cannot (it applies
- * no `@supports` block, no mask and resolves no `calc()`).
+ * The SHAPE is the other: every face, a person's and an agent's alike, is one
+ * rounded square on one corner ladder, and the kind is said by the monogram's
+ * face. The kind, the corner ladder, the ring and the status badge are
+ * measured through the cascade where jsdom can answer for them and read off
+ * the stylesheet where it cannot (it applies no mask and resolves no
+ * `calc()`).
  */
 
 import { readFileSync } from 'node:fs';
@@ -27,6 +28,7 @@ import { KeyGlyph } from '@crewlethq/icons/glyphs';
 import { NODE_HUES } from '../utils/nodeHue.js';
 import {
   AVATAR_CHARACTER_FULL_DETAIL,
+  AVATAR_CORNER_RANGE,
   AVATAR_CORNER_RATIO,
   AVATAR_SIZES,
   AVATAR_STATUS_LABELS,
@@ -145,10 +147,9 @@ describe('the kind', () => {
     expect(human?.className).not.toContain('crewlet-avatar--agent');
   });
 
-  test('an agent is set in the mono face and drawn with a corner; a person in the sans face and round', () => {
-    // Through the cascade, with the family and the circle token resolved from
-    // @crewlethq/tokens, so a later rule that re-set either would be what the
-    // test reads.
+  test('an agent is set in the mono face and a person in the sans face, on one shape', () => {
+    // Through the cascade, with the family resolved from @crewlethq/tokens, so
+    // a later rule that re-set either would be what the test reads.
     uninstall = installSheets('Avatar/Avatar.css');
     const { container } = render(
       <>
@@ -162,8 +163,9 @@ describe('the kind', () => {
     const family = (list: string | undefined) => (list ?? '').replaceAll("'", '"');
     expect(family(agent?.fontFamily)).toBe(family(font.family.mono));
     expect(family(human?.fontFamily)).toBe(family(font.family.sans));
-    expect(human?.borderRadius).toBe('50%');
-    expect(agent?.borderRadius).toBe(`calc(var(${property('crewlet-avatar-size')}) * ${AVATAR_CORNER_RATIO})`);
+    // One corner for both kinds, read from the one rule on the base class.
+    expect(human?.borderRadius).toBe(agent?.borderRadius);
+    expect(agent?.borderRadius).toMatch(/^clamp\(/);
   });
 
   test('an image keeps its kind, its ring and its status, and so do the initials it degrades to', () => {
@@ -193,9 +195,9 @@ describe('the kind', () => {
   });
 
   test('there is no dashed badge, in any combination, in the markup or in the stylesheet', () => {
-    // One structural cue: a person is the circle. The dashed edge that used to
-    // mark a human seat was a second answer to the same question, and the two
-    // could disagree.
+    // The dashed edge that used to mark a human seat was a second answer to
+    // the kind, and the two could disagree. Neither it nor a per-kind shape
+    // class comes back.
     const { container } = render(
       <>
         {KINDS.flatMap((kind) =>
@@ -222,29 +224,29 @@ describe('the kind', () => {
   });
 });
 
-describe("an agent's corner", () => {
+describe("a face's corner", () => {
   /** Every rule in the stylesheet that sets a corner, by its selector. */
   const cornerRules = () =>
     [...RULES.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
       .filter((match) => /(^|;|\s)border-radius\s*:/.test(match[2] ?? ''))
       .map((match) => ({ selector: (match[1] ?? '').trim(), body: match[2] ?? '' }));
 
-  test('is ONE proportion of the box, stated once in the stylesheet and equal to the exported ratio', () => {
-    // THE OLD DEFECT'S GUARD. A step table in the stylesheet beside a
-    // numeric table in the component was two ladders, and they disagreed:
-    // `size={80}` drew a squarer badge than `size="lg"` at half its width.
-    // So no step rule may set a corner: the size is all a step sets.
+  test('is ONE rule for every face, stated once and equal to the exported ratio and range', () => {
+    // THE OLD DEFECT'S GUARD. A step table in the stylesheet beside a numeric
+    // table in the component was two ladders, and they disagreed. And a rule
+    // per kind drew a person and an agent in two shapes. So the base class
+    // sets the one corner, and no step or kind rule sets one.
     const rules = cornerRules();
     // The status badge is the one other corner, and it is a circle whatever
     // the face's size, so it reads no ladder.
-    expect(rules.map((rule) => rule.selector)).toEqual([
-      '.crewlet-avatar--agent',
-      '.crewlet-avatar--agent',
-      '.crewlet-avatar--human',
-      '.crewlet-avatar__status',
-    ]);
-    const ratio = /border-radius:\s*calc\(var\(--crewlet-avatar-size\)\s*\*\s*([\d.]+)\)/.exec(rules[0]!.body)?.[1];
-    expect(Number(ratio)).toBe(AVATAR_CORNER_RATIO);
+    expect(rules.map((rule) => rule.selector)).toEqual(['.crewlet-avatar', '.crewlet-avatar__status']);
+    const clamp = /border-radius:\s*clamp\(var\(--radius-xs\),\s*calc\(var\(--crewlet-avatar-size\)\s*\*\s*(\d+)\s*\/\s*(\d+)\),\s*var\(--radius-lg\)\)/.exec(
+      rules[0]!.body,
+    );
+    expect(clamp, rules[0]!.body).not.toBeNull();
+    expect(Number(clamp![1]) / Number(clamp![2])).toBe(AVATAR_CORNER_RATIO);
+    expect(AVATAR_CORNER_RANGE).toEqual({ min: 4, max: 12 });
+    expect(RULES).not.toContain('corner-shape');
     // Every step sets the one size property the corner reads, to its own box.
     for (const [step, box] of Object.entries(AVATAR_SIZES)) {
       const rule = new RegExp(`\\.crewlet-avatar--${step}\\s*\\{([^}]*)\\}`).exec(RULES)?.[1] ?? '';
@@ -253,32 +255,23 @@ describe("an agent's corner", () => {
     }
   });
 
-  test("is the approved design's own ladder, within a pixel at every size it draws", () => {
-    // The artboards' agent badges, box and corner: 7px at 24 and 9px at 30 is
-    // the pair the ratio was read from, and the rest have to agree with it.
-    const design: Array<[number, number]> = [
-      [18, 5],
-      [20, 6],
-      [22, 7],
-      [24, 7],
-      [26, 8],
-      [28, 8],
-      [30, 9],
-      [44, 13],
-    ];
-    // The widest is 22px, which the design draws at 7 and the ratio at 6.38.
-    for (const [box, corner] of design) expect(Math.abs(avatarCorner(box) - corner), `${box}px`).toBeLessThan(0.625);
-    // And at the four steps it is the 6/8/9/12 the design implies there.
-    const steps = Object.values(AVATAR_SIZES).map((box) => Math.round(avatarCorner(box)));
-    expect(steps).toEqual([6, 8, 9, 12]);
+  test('is two ninths of the side, held between the xs and lg radius steps', () => {
+    // 8px on a 36px face, the size a message row draws.
+    expect(avatarCorner(36)).toBe(8);
+    // At the four steps: 4.44, 5.78, 7.11 and 8.89.
+    expect(Object.values(AVATAR_SIZES).map((box) => Number(avatarCorner(box).toFixed(2)))).toEqual([4.44, 5.78, 7.11, 8.89]);
+    // Never under 4px on the smallest faces, never over 12px on the largest.
+    expect(avatarCorner(12)).toBe(4);
+    expect(avatarCorner(16)).toBe(4);
+    expect(avatarCorner(54)).toBe(12);
+    expect(avatarCorner(120)).toBe(12);
   });
 
-  test('grows with the box and is never squarer at a bigger size than at a smaller one', () => {
+  test('grows with the box and never shrinks at a bigger size', () => {
     for (let pixels = 12; pixels <= 200; pixels += 1) {
-      expect(avatarCorner(pixels)).toBeGreaterThan(avatarCorner(pixels - 1));
-      expect(avatarCorner(pixels) / pixels).toBeCloseTo(avatarCorner(pixels - 1) / (pixels - 1), 10);
+      expect(avatarCorner(pixels)).toBeGreaterThanOrEqual(avatarCorner(pixels - 1));
     }
-    expect(avatarCorner(80)).toBeGreaterThan(avatarCorner(AVATAR_SIZES.lg));
+    expect(avatarCorner(48)).toBeGreaterThan(avatarCorner(AVATAR_SIZES.lg));
   });
 
   test('a numeric size goes through the same rule as a step, by the same property', () => {
@@ -289,7 +282,7 @@ describe("an agent's corner", () => {
         <Avatar name="C" size={80} kind="human" />
       </>,
     );
-    const [step, measured, round] = [...container.querySelectorAll<HTMLElement>('.crewlet-avatar')];
+    const [step, measured, person] = [...container.querySelectorAll<HTMLElement>('.crewlet-avatar')];
     expect(step?.className).toContain('crewlet-avatar--xs');
     expect(step?.style.getPropertyValue(property('crewlet-avatar-size'))).toBe('');
     expect(measured?.style.getPropertyValue(property('crewlet-avatar-size'))).toBe('64px');
@@ -299,22 +292,21 @@ describe("an agent's corner", () => {
     expect(measured?.style.width).toBe('');
     // 0.36 of the box, so two initials stay inside it.
     expect(measured?.style.fontSize).toBe('23px');
-    expect(round?.style.borderRadius).toBe('');
+    expect(person?.style.borderRadius).toBe('');
   });
+});
 
-  test('is a whole squircle where the browser draws one, and only for an agent', () => {
-    // A superellipse corner at 0.29 of the box stands half as deep as the
-    // design's arc; at half the box it stands within 0.13px of it at 24px.
-    const at = RULES.indexOf('@supports (corner-shape: squircle)');
-    expect(at).toBeGreaterThan(-1);
-    const block = /^@supports[^{]*\{\s*([^{}]+)\{([^{}]*)\}\s*\}/.exec(RULES.slice(at));
-    expect(block?.[1]?.trim()).toBe('.crewlet-avatar--agent');
-    const declarations = (block?.[2] ?? '').split(';').map((one) => one.trim()).filter(Boolean);
-    expect(declarations.sort()).toEqual(['border-radius: var(--radius-circle)', 'corner-shape: squircle']);
-    // The arithmetic the comment claims, so a change to the ratio has to face it.
-    const arc = AVATAR_CORNER_RATIO * (1 - Math.SQRT1_2);
-    const squircle = 0.5 * (1 - 2 ** -0.25);
-    expect(Math.abs(arc - squircle) * 24).toBeLessThan(0.15);
+describe("a face's outline", () => {
+  test('is the hairline step whatever the face holds, and no hue line or strong hairline', () => {
+    // A row of faces reads as faces, not as framed tiles. The neutral badge
+    // drew the strong hairline and a hue's plate its own line.
+    const rules = [...RULES.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter((match) => /(^|;|\s)border(-color)?\s*:/.test(match[2] ?? ''));
+    const drawn = rules.map((match) => [(match[1] ?? '').trim(), (match[2] ?? '').replace(/\s+/g, ' ').trim()]);
+    expect(drawn).toEqual([
+      ['.crewlet-avatar--fallback', 'border: 1px solid var(--color-edge-hairline);'],
+      ['.crewlet-avatar--character', 'border: 1px solid var(--color-edge-hairline);'],
+    ]);
+    expect(RULES).not.toMatch(/border-color:\s*var\(--color-node-[a-z]+-line\)/);
   });
 });
 
@@ -495,6 +487,15 @@ describe('the status', () => {
     }
   });
 
+  test('is under a third of the face, hanging a twentieth of it past the corner', () => {
+    // Where a reader looks for presence, the size of a presence dot: 11px on a
+    // 36px face, 2px past its corner, never under 10px and always a pixel out.
+    const frame = /\.crewlet-avatar-frame\s*\{([^}]*)\}/.exec(RULES)?.[1] ?? '';
+    expect(frame).toContain(`${property('crewlet-avatar-status-size')}: max(10px, calc(var(${property('crewlet-avatar-size')}) * 0.3))`);
+    expect(frame).toContain(`${property('crewlet-avatar-status-overhang')}: max(1px, calc(var(${property('crewlet-avatar-size')}) * 0.05))`);
+    expect(frame).toContain(`${property('crewlet-avatar-status-gap')}: 2px`);
+  });
+
   test('cuts the notch with a mask centred where the badge sits', () => {
     // jsdom applies no mask, so the rule is read off the stylesheet: the cut
     // and the badge share one centre and one size.
@@ -517,7 +518,7 @@ describe('the tone', () => {
     expect(badge.className).not.toContain('tint-');
   });
 
-  test("the neutral badge is the design's: the raised rung, the strong hairline, the secondary ink", () => {
+  test("the neutral badge is the design's: the raised rung, the face's hairline, the secondary ink", () => {
     for (const theme of ['dark', 'light'] as const) {
       uninstall?.();
       uninstall = installThemed(theme, 'Avatar/Avatar.css');
@@ -527,7 +528,9 @@ describe('the tone', () => {
       const drawn = getComputedStyle(container.querySelector('.crewlet-avatar')!);
       const token = (name: string) => parseHex(palette.get(property(name)) ?? '');
       expect(channels(drawn.backgroundColor), theme).toEqual(token('color-surface-elevated'));
-      expect(channels(drawn.borderTopColor), theme).toEqual(token('color-border-strong'));
+      // The hairline is a tint of the primary text, so its channels are the text's.
+      expect(channels(drawn.borderTopColor), theme).toEqual(channels(palette.get(property('color-edge-hairline')) ?? ''));
+      expect(channels(drawn.borderTopColor), theme).toEqual(token('color-text-primary'));
       expect(channels(drawn.color), theme).toEqual(token('color-text-secondary'));
     }
   });
@@ -602,7 +605,7 @@ describe('Avatar', () => {
     }
   });
 
-  test('the smallest step sets the face its numeric twin computes, so two wide capitals clear the circle', () => {
+  test('the smallest step sets the face its numeric twin computes, so two wide capitals clear the outline', () => {
     /*
      * The ramp's smallest step (11px) set "MO" about 18px wide in the 20px
      * circle, the whole of its content box. 0.45 of the box is the 9px a
@@ -684,7 +687,7 @@ describe('an agent drawn as its character', () => {
     expect(container.firstElementChild!.getAttribute('role')).toBeNull();
   });
 
-  test('is an agent\'s face only: a person keeps the circle and the initials', () => {
+  test('is an agent\'s face only: a person keeps the initials', () => {
     const { container } = render(<Avatar name="Jane Founder" kind="human" character="hexlet" hue="cyan" />);
     expect(characterOf(container)).toBeNull();
     expect(container.textContent).toBe('JF');
@@ -744,13 +747,14 @@ describe('an agent drawn as its character', () => {
       // can lay the same tint over its own ground (AvatarStack.css).
       expect(body, hue).toMatch(new RegExp(`--crewlet-avatar-plate:\\s*var\\(--color-node-${hue}-fill\\)`));
       expect(body, hue).toMatch(/background:\s*var\(--crewlet-avatar-plate\)/);
-      expect(body, hue).toMatch(new RegExp(`border-color:\\s*var\\(--color-node-${hue}-line\\)`));
+      // Its edge is the face's hairline, as every face's is, not the hue's line.
+      expect(body, hue).not.toMatch(/border/);
       expect(body, hue).toMatch(new RegExp(`color:\\s*var\\(--color-node-${hue}\\)`));
     }
   });
 });
 
-describe('an agent badge drops the word its shape already says', () => {
+describe('an agent badge drops the word its badge already says', () => {
   test('a leading "agent" word is not where the initials come from', () => {
     expect(avatarInitialsName('Agent CEO', 'agent')).toBe('CEO');
     expect(avatarInitialsName('agent-cto', 'agent')).toBe('cto');
@@ -758,7 +762,7 @@ describe('an agent badge drops the word its shape already says', () => {
     // Only a LEADING word, and only the whole word.
     expect(avatarInitialsName('Support Agent', 'agent')).toBe('Support Agent');
     expect(avatarInitialsName('Agentic Ops', 'agent')).toBe('Agentic Ops');
-    // A person called Agent Smith is a circle, and the word is their name.
+    // A person called Agent Smith keeps the word, because it is their name.
     expect(avatarInitialsName('Agent Smith', 'human')).toBe('Agent Smith');
     render(
       <>

@@ -6,9 +6,10 @@
  * same eight families it also spent on phases and event categories, so one
  * amber meant "the execute phase", "the decision category" and "the Analyst"
  * at once. A hash of a name carries no information: rename the seat and its
- * colour changes, which is the proof it never meant anything. Identity is the
- * OUTLINE (a squircle for an agent, a circle for a person), the monogram and
- * the name, and for an agent an operator gave one, its character and its hue.
+ * colour changes, which is the proof it never meant anything. Identity is
+ * what the face holds (a monogram set in the kind's face, a picture, or for an
+ * agent an operator gave one, its character and its hue) and the name beside
+ * it. Every face is ONE SHAPE, people and agents alike (see "the shape").
  *
  * A STATE IS A CORNER BADGE, NEVER A LINE ROUND THE PLATE. A ring in a state's
  * hue round a plate in the agent's own hue put two colours on a 32px mark and
@@ -148,46 +149,40 @@
   font-size: var(--font-size-sm);
 }
 
+/* ── the shape ────────────────────────────────────────────────────────── */
+
+/*
+ * ONE FACE SHAPE FOR PEOPLE AND AGENTS: a square with rounded corners, the
+ * corner two ninths of the side (8px on a 36px face), never under the xs
+ * radius on the smallest faces and never over the lg radius on the largest.
+ * A person was a circle and an agent a squircle, so a row of people and
+ * agents changed shape from face to face, and a list of members read as two
+ * lists. One shape lines every face up on the same square and lets what the
+ * face holds say who it is: a character on its hue, a picture, or initials
+ * set in the kind's own face (below).
+ *
+ * THE CORNER MOVES WITH THE BOX, computed here from the size property every
+ * step and every numeric size sets, so there is ONE ladder: `AVATAR_CORNER`
+ * in the component states the same ratio and clamp for a caller that has to
+ * round something else to match a face (ImageUpload, PresenceStack), and the
+ * suite holds the two equal. No step rule sets a corner.
+ */
+.crewlet-avatar {
+  border-radius: clamp(var(--radius-xs), calc(var(--crewlet-avatar-size) * 2 / 9), var(--radius-lg));
+}
+
 /* ── kinds ─────────────────────────────────────────────────────────────── */
 
 /*
- * AN AGENT IS A SQUIRCLE, set in the mono face: what the engine runs, named
- * the way a handle is written.
- *
- * THE CORNER MOVES WITH THE BOX, at 0.29 of it (`AVATAR_CORNER_RATIO` in the
- * component, which the suite holds equal to this number): the approved
- * design's 7px at 24 and 9px at 30, as one proportion. It is computed here from
- * the size property every step and every numeric size sets, so there is ONE
- * ladder. There used to be two, a step table here and a numeric table in the
- * component, and they disagreed: `size={80}` drew a squarer badge than
- * `size="lg"` at half its width.
- *
- * WHERE THE BROWSER DRAWS A SQUIRCLE, IT IS A WHOLE ONE. `corner-shape:
- * squircle` is a superellipse of exponent 4, which at a given radius reaches
- * much closer to the box's corner than a circular arc does: at the 45 degree
- * point it stands 0.159 of the radius in from each edge, against 0.293 for an
- * arc. Kept at 0.29 of the box, that corner would stand 0.046 of the box in,
- * half the design's depth and a nearly square badge. At half the box it stands
- * 0.0795 of the box in, against the design's 0.0849 (0.13px at 24px), with the
- * continuous curvature a squircle is for. So the corner is the circle token
- * there, and the fallback above is what every other browser draws.
+ * The kind is said by the monogram's face: an agent's initials are set in the
+ * mono face, the way a handle is written, and a person's in the sans face. A
+ * character or a picture says it on its own.
  */
 .crewlet-avatar--agent {
-  border-radius: calc(var(--crewlet-avatar-size) * 0.29);
   font-family: var(--font-family-mono);
 }
 
-@supports (corner-shape: squircle) {
-  .crewlet-avatar--agent {
-    corner-shape: squircle;
-    border-radius: var(--radius-circle);
-  }
-}
-
-/* A PERSON IS A CIRCLE, set in the sans face, the round badge every member list
-   a reader has used already speaks. */
 .crewlet-avatar--human {
-  border-radius: var(--radius-circle);
   font-family: var(--font-family-sans);
 }
 
@@ -217,16 +212,22 @@
 
 /* ── tones ─────────────────────────────────────────────────────────────── */
 
+/*
+ * A FACE'S OWN OUTLINE IS THE HAIRLINE (`--color-edge-hairline`), whatever it
+ * holds: the neutral badge, a seeded tint, a character's plate. A row of faces
+ * then reads as faces rather than as a row of framed boxes, where the strong
+ * hairline and a hue's line drew each face as a tile. A reader who asked for
+ * more contrast gets the control edge here, as the edge scale promises.
+ */
 .crewlet-avatar--fallback {
-  border: 1px solid transparent;
+  border: 1px solid var(--color-edge-hairline);
 }
 
-/* The design's badge: the raised rung with the strong hairline round it and
-   the secondary ink, so a badge on a card reads as a mark standing on it
-   rather than as a hole in it. */
+/* The design's badge: the raised rung inside the face's hairline and the
+   secondary ink, so a badge on a card reads as a mark standing on it rather
+   than as a hole in it. */
 .crewlet-avatar--neutral {
   background: var(--color-surface-elevated);
-  border-color: var(--color-border-strong);
   color: var(--color-text-secondary);
 }
 
@@ -254,7 +255,7 @@
  * plate's sides, a tall one its top and its foot, and none touches the curve.
  */
 .crewlet-avatar--character {
-  border: 1px solid transparent;
+  border: 1px solid var(--color-edge-hairline);
 }
 
 .crewlet-avatar__character {
@@ -264,50 +265,44 @@
   height: 74%;
 }
 
-/* The plate an agent's hue is drawn on: the hue's fill, its line round the
-   badge and the hue itself as the character's ink. The fill is published as
+/* The plate an agent's hue is drawn on: the hue's fill inside the face's
+   hairline, and the hue itself as the character's ink. The fill is published as
    `--crewlet-avatar-plate` and painted from it, because it is a TINT (12% of
    the hue over whatever the badge stands on), and a stack has to lay it over
    its own ground rather than over the badge behind it (AvatarStack.css). */
 .crewlet-avatar--hue-purple {
   --crewlet-avatar-plate: var(--color-node-purple-fill);
   background: var(--crewlet-avatar-plate);
-  border-color: var(--color-node-purple-line);
   color: var(--color-node-purple);
 }
 
 .crewlet-avatar--hue-cyan {
   --crewlet-avatar-plate: var(--color-node-cyan-fill);
   background: var(--crewlet-avatar-plate);
-  border-color: var(--color-node-cyan-line);
   color: var(--color-node-cyan);
 }
 
 .crewlet-avatar--hue-green {
   --crewlet-avatar-plate: var(--color-node-green-fill);
   background: var(--crewlet-avatar-plate);
-  border-color: var(--color-node-green-line);
   color: var(--color-node-green);
 }
 
 .crewlet-avatar--hue-amber {
   --crewlet-avatar-plate: var(--color-node-amber-fill);
   background: var(--crewlet-avatar-plate);
-  border-color: var(--color-node-amber-line);
   color: var(--color-node-amber);
 }
 
 .crewlet-avatar--hue-rose {
   --crewlet-avatar-plate: var(--color-node-rose-fill);
   background: var(--crewlet-avatar-plate);
-  border-color: var(--color-node-rose-line);
   color: var(--color-node-rose);
 }
 
 .crewlet-avatar--hue-blue {
   --crewlet-avatar-plate: var(--color-node-blue-fill);
   background: var(--crewlet-avatar-plate);
-  border-color: var(--color-node-blue-line);
   color: var(--color-node-blue);
 }
 
@@ -321,7 +316,7 @@
  * AN OUTLINE RATHER THAN THAT SHADOW PAIR, for three reasons. The gap is
  * TRANSPARENT, so the ring reads on whatever the badge stands on, where the
  * design's gap is the card's own fill and cuts a card-coloured band into any
- * other ground. An outline follows the corner, the squircle's included, in
+ * other ground. An outline follows the corner, the face's clamp included, in
  * every engine this package supports. And forced-colors mode keeps an outline
  * and drops every shadow, so the ring is still drawn for the readers who most
  * need a boundary.
@@ -342,13 +337,20 @@
 /*
  * THE FRAME is the face's own box, so a badge with a status takes exactly the
  * room one without takes: the corner badge hangs past it rather than growing
- * it, and a row lays out the same either way. The badge is 0.42 of the box,
- * never under 10px, which is the size its glyph stays a shape at.
+ * it, and a row lays out the same either way.
+ *
+ * THE BADGE WHERE A READER LOOKS FOR PRESENCE: under a third of the face (0.3
+ * of the box), hanging a twentieth of the box past its bottom-right corner,
+ * with the notch (a gap of the ground round it) kept. At 36px that is an 11px
+ * badge set 2px past the corner, the size and place of a presence dot, where
+ * a badge at 0.42 of the box read as a second face. It never drops under
+ * 10px, where its glyph stops being a shape, and always hangs at least a
+ * pixel past the corner.
  */
 .crewlet-avatar-frame {
-  --crewlet-avatar-status-size: max(10px, calc(var(--crewlet-avatar-size) * 0.42));
-  --crewlet-avatar-status-overhang: 2px;
-  --crewlet-avatar-status-gap: 1.5px;
+  --crewlet-avatar-status-size: max(10px, calc(var(--crewlet-avatar-size) * 0.3));
+  --crewlet-avatar-status-overhang: max(1px, calc(var(--crewlet-avatar-size) * 0.05));
+  --crewlet-avatar-status-gap: 2px;
   position: relative;
   display: inline-flex;
   flex: none;

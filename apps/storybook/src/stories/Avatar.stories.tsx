@@ -49,10 +49,12 @@ export const WithImage: Story = {
 export const InitialsOnly: Story = {};
 
 /**
- * AN AGENT IS A SQUIRCLE AND A PERSON A CIRCLE, and that outline is the one
- * thing telling them apart. The agent's initials are set in the mono face, the
- * way a handle is written; a person's in the sans face. A picture keeps its
- * kind's outline.
+ * ONE SHAPE FOR PEOPLE AND AGENTS: a rounded square whose corner is two ninths
+ * of the side, between the xs and lg radius steps, so a row of people and
+ * agents lines up on one square. The face's contents say who it is: an
+ * agent's initials are set in the mono face, the way a handle is written, a
+ * person's in the sans face, and an agent may be drawn as its character. Its
+ * outline is the hairline step.
  */
 export const Kinds: Story = {
   render: () => (
@@ -67,6 +69,34 @@ export const Kinds: Story = {
           </div>
         );
       })}
+    </div>
+  ),
+};
+
+/**
+ * A CONVERSATION'S GUTTER: people and agents at 36px, one above the other, as
+ * a message list draws them. One shape lines every face up on the same square
+ * whoever it is, and the status badge sits where a reader looks for presence.
+ */
+export const MixedRow: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 12, padding: 16, background: 'var(--color-surface-background)' }}>
+      <div style={{ ...row, gap: 12 }}>
+        <Avatar name="Jane Founder" kind="human" size={36} />
+        <span style={caption}>a person</span>
+      </div>
+      <div style={{ ...row, gap: 12 }}>
+        <Avatar name="Software Engineer" character="gemlet" hue="cyan" size={36} status="working" />
+        <span style={caption}>an agent at work</span>
+      </div>
+      <div style={{ ...row, gap: 12 }}>
+        <Avatar src={samplePortrait} name="Miles Okafor" kind="human" size={36} />
+        <span style={caption}>a person&apos;s picture</span>
+      </div>
+      <div style={{ ...row, gap: 12 }}>
+        <Avatar name="Site Reliability" size={36} status="needs" />
+        <span style={caption}>an agent waiting on somebody</span>
+      </div>
     </div>
   ),
 };
@@ -90,10 +120,10 @@ export const Handles: Story = {
 };
 
 /**
- * An agent's initials skip its leading "agent" word, which the squircle
- * already says: Agent CEO, Agent CTO and Agent PM are CE, CT and PM rather
- * than AC, AC and AP. The accessible name keeps the whole name, and a person
- * called Agent Smith keeps the word, because for a circle it is their name.
+ * An agent's initials skip its leading "agent" word, which the badge already
+ * says: Agent CEO, Agent CTO and Agent PM are CE, CT and PM rather than AC, AC
+ * and AP. The accessible name keeps the whole name, and a person called Agent
+ * Smith keeps the word, because it is their name.
  */
 export const AgentNames: Story = {
   render: () => (
@@ -153,10 +183,9 @@ export const Mark: Story = {
 };
 
 /**
- * The corner moves with the box, at 0.29 of it: the approved design's 7px at
- * 24 and 9px at 30, as one proportion a numeric size follows too. Where the
- * browser draws `corner-shape: squircle` an agent is a whole squircle instead,
- * as deep at the diagonal as that corner.
+ * The corner moves with the box, at two ninths of it (8px on a 36px face), as
+ * one proportion a numeric size follows too, and is held between the xs radius
+ * (4px) on the smallest faces and the lg radius (12px) on the largest.
  */
 export const Sizes: Story = {
   render: () => (
@@ -205,7 +234,11 @@ export const Status: Story = {
   ),
 };
 
-/** Every status at every size: the badge never drops under 10px, where its glyph stops being a shape. */
+/**
+ * Every status at every size: the badge is 0.3 of the face and hangs 0.05 of
+ * it past the corner (an 11px badge 2px out on a 36px face), and it never
+ * drops under 10px, where its glyph stops being a shape.
+ */
 export const StatusSizes: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 16, padding: 16, background: 'var(--color-surface-subtle)', borderRadius: 12 }}>
@@ -271,7 +304,9 @@ export const IdentityTints: Story = {
  * cut out of it by a 2px ring of the ground, which is the sheet by default:
  * every stack the approved design draws stands on it, in a page's top bar and
  * in a task's side column. Past `max` (four by default) the rest are counted
- * in a pill, which is a number rather than somebody. A screen reader hears one
+ * in a pill, which is a number rather than somebody. The ring is the only edge
+ * a stacked face draws: its own hairline would frame it inside the ring. A
+ * screen reader hears one
  * image: "2 agents and 1 person: Jane Founder, Chief Technology, Software
  * Engineer".
  */
@@ -330,7 +365,7 @@ export const Stack: Story = {
           ]}
           size="md"
         />
-        <span style={caption}>at the md step; a picture keeps its kind&apos;s outline</span>
+        <span style={caption}>at the md step; a picture takes the same corner</span>
       </div>
     </div>
   ),

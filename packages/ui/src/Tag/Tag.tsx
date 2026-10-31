@@ -35,7 +35,14 @@ export type TagSize = 'xs' | 'sm' | 'md';
  */
 export type InteractiveTagSize = Exclude<TagSize, 'xs'>;
 
-export type TagAppearance = 'soft' | 'outline';
+/**
+ * How the pill is drawn. `soft` is its tone's tint (the default), `outline` the
+ * boundary with no tint. `quiet` is a LABEL rather than a pill: a small filled
+ * mark with no boundary and square-ish corners, 16px tall in the label's own
+ * register (a seat's kind beside its name, "Agent"), so it reads as part of
+ * the line it sits in rather than as a control. It takes no size step.
+ */
+export type TagAppearance = 'soft' | 'outline' | 'quiet';
 
 interface TagLook {
   /** The state this tag names. Neutral by default, which is what a category such as a phase takes. */
@@ -52,7 +59,7 @@ interface TagLook {
    * carrier. With a hue the variant colours nothing, and `dot` draws neutral.
    */
   hue?: NodeHue | undefined;
-  /** A tinted fill, or a boundary over the surface beneath. */
+  /** A tinted fill, a boundary over the surface beneath, or a quiet label. */
   appearance?: TagAppearance | undefined;
   /** Drawn before the label. A glyph component, not a name. */
   leadingIcon?: ReactNode;

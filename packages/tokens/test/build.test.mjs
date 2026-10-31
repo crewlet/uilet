@@ -405,6 +405,21 @@ describe('the edge scale and the quiet fills', () => {
     assert.equal(all.length, (themeRegistry.length - 1) * 3);
   });
 
+  test("the start sheet's shadow is the sheet's, mirrored, in every palette", () => {
+    // Each layer's horizontal offset negated and nothing else, so a palette
+    // that retunes the sheet's shadow retunes both.
+    const offsets = (value) => value.split(/,(?![^(]*\))/).map((layer) => layer.trim().split(/\s+/));
+    for (const [state, values] of everyState()) {
+      const sheet = offsets(values.get('--shadow-sheet'));
+      const start = offsets(values.get('--shadow-sheet-start'));
+      assert.equal(start.length, sheet.length, state);
+      sheet.forEach((layer, i) => {
+        assert.equal(parseFloat(start[i][0]), -parseFloat(layer[0]), `${state} layer ${i} x`);
+        assert.deepEqual(start[i].slice(1), layer.slice(1), `${state} layer ${i} rest`);
+      });
+    }
+  });
+
   test('the count badge is one pill: a 16px height, the first spacing step and a 10px figure', () => {
     assert.equal(tokens.get('--size-badge'), 'calc(16px * var(--density, 1))');
     assert.equal(tokens.get('--size-badge-pad'), 'var(--spacing-1)');

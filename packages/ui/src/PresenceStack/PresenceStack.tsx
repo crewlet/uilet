@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { isCrewletCharacter } from '@crewlethq/icons/characters';
-import { AVATAR_SIZES, Avatar, type AvatarSizeStep } from '../Avatar/index.js';
+import { AVATAR_SIZES, Avatar, avatarCorner, type AvatarSizeStep } from '../Avatar/index.js';
 import { presenceHueClass } from '../PresenceRing/index.js';
 import { presenceLabels, presenceOrder, type PresenceLabels, type PresenceMember } from '../PresenceModel/index.js';
 import { cx } from '../utils/cx.js';
@@ -77,7 +77,13 @@ export function PresenceStack({ members, self = true, max = 4, size = 'sm', onSe
       </span>
     ) : null;
 
-  const style = { '--crewlet-avatar-stack-size': `${AVATAR_SIZES[size]}px` } as CSSProperties;
+  // The member wraps its face (a button when faces select), so it takes the
+  // face's corner from Avatar's one ladder: its focus ring and its cut-out
+  // follow the face rather than a shape of their own.
+  const style = {
+    '--crewlet-avatar-stack-size': `${AVATAR_SIZES[size]}px`,
+    '--crewlet-presence-stack-corner': `${avatarCorner(AVATAR_SIZES[size])}px`,
+  } as CSSProperties;
 
   if (onSelect === undefined) {
     if (ordered.length === 0) return null;

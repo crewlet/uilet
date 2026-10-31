@@ -49,6 +49,8 @@ export interface SidePanelBaseProps {
   /** A preset's own block class, added beside every part's class. */
   alias?: string | undefined;
   title: string;
+  /** A second line after the title, on its baseline: what the panel is about. */
+  subtitle?: ReactNode;
   icon?: ReactNode;
   onClose: () => void;
   closeLabel: string;
@@ -85,6 +87,7 @@ function part(name: string, alias: string | undefined): string {
 export function SidePanelBase({
   alias,
   title,
+  subtitle,
   icon,
   onClose,
   closeLabel,
@@ -110,6 +113,7 @@ export function SidePanelBase({
   children,
 }: SidePanelBaseProps) {
   const titleId = useId();
+  const subtitled = subtitle !== undefined && subtitle !== null && subtitle !== false && !hideTitle;
   const panelId = useId();
   const root = useRef<HTMLDivElement | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -175,6 +179,21 @@ export function SidePanelBase({
   const grip =
     resizable && !inShell && !expanded && (shape === null || shape === 'column') && width !== undefined && onWidthChange;
 
+  const headingNode = (
+    <h2
+      ref={heading}
+      id={titleId}
+      className={cx(
+        part('title', alias),
+        !ringHeading && 'crewlet-side-panel__title--quiet',
+        hideTitle && 'crewlet-side-panel__title--hidden',
+      )}
+      tabIndex={-1}
+    >
+      {title}
+    </h2>
+  );
+
   return (
     <>
       <div
@@ -200,24 +219,23 @@ export function SidePanelBase({
             edge="left"
           />
         ) : null}
-        <div className={part('head', alias)}>
+        <div className={cx(part('head', alias), subtitled && 'crewlet-side-panel__head--subtitled')}>
           {icon ? (
             <span className={part('icon', alias)} aria-hidden>
               {icon}
             </span>
           ) : null}
-          <h2
-            ref={heading}
-            id={titleId}
-            className={cx(
-              part('title', alias),
-              !ringHeading && 'crewlet-side-panel__title--quiet',
-              hideTitle && 'crewlet-side-panel__title--hidden',
-            )}
-            tabIndex={-1}
-          >
-            {title}
-          </h2>
+          {subtitled ? (
+            /* THE TITLE AND WHAT IT IS ABOUT, on one baseline ("Thread" and the
+               room it is in), the second dropping under the first when the two
+               do not fit, and the title ellipsised on its own line. */
+            <div className={part('heading', alias)}>
+              {headingNode}
+              <span className={part('subtitle', alias)}>{subtitle}</span>
+            </div>
+          ) : (
+            headingNode
+          )}
           <span className={part('actions', alias)}>
             {actions}
             {onExpandedChange ? (

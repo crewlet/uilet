@@ -7,9 +7,14 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
 import type { PresenceMember } from '../PresenceModel/index.js';
+import { AVATAR_SIZES, avatarCorner } from '../Avatar/index.js';
 import { PresenceStack } from './index.js';
 
 afterEach(cleanup);
+
+/** Spelled without the leading dashes and prefixed at use: the package's
+    variable check reads a quoted `--name` in a .tsx file as a declaration. */
+const property = (name: string) => `--${name}`;
 
 const members: PresenceMember[] = [
   { id: 's1', name: 'Sam Lee', kind: 'human', activity: 'idle', hue: 'blue' },
@@ -34,6 +39,17 @@ test('draws four badges by default, ordered by activity, and counts the rest', (
   expect(container.querySelector('.crewlet-avatar-stack__more')?.textContent).toBe('+1');
   expect(badges[0]!.classList.contains('crewlet-presence-hue--cyan')).toBe(true);
   expect(badges[0]!.classList.contains('crewlet-presence-stack__badge--present')).toBe(true);
+});
+
+test("every member, a person's or an agent's, rounds as the face it wraps", () => {
+  // One shape for every face, so the member (a button when faces select) takes
+  // the face's corner from Avatar's ladder for its focus ring and cut-out.
+  for (const size of ['xs', 'md'] as const) {
+    const { container, unmount } = render(<PresenceStack members={members} size={size} onSelect={() => {}} />);
+    const stack = container.querySelector<HTMLElement>('.crewlet-presence-stack')!;
+    expect(stack.style.getPropertyValue(property('crewlet-presence-stack-corner'))).toBe(`${avatarCorner(AVATAR_SIZES[size])}px`);
+    unmount();
+  }
 });
 
 test('an idle badge loses its ring and fades', () => {

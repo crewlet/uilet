@@ -343,6 +343,46 @@ export const Sheet: Story = {
 };
 
 /**
+ * A NAVIGATION SHEET from the start edge (`side="start"`): a list of places
+ * (here, a conversation's rooms) belongs where the navigation it stands for
+ * is, so it slides in from the inline start with its edge and its shadow on
+ * its inline end. Picking a place closes it. Set the width a panel wants on
+ * the frame's own class.
+ */
+export const StartSheet: Story = {
+  render: function StartSheetStory() {
+    const [open, setOpen] = useState(false);
+    const [room, setRoom] = useState('engineering');
+    const rooms = ['announcements', 'engineering', 'design-crit', 'android-beta'];
+    return (
+      <>
+        <Button onClick={() => setOpen(true)}>Rooms (#{room})</Button>
+        <Modal open={open} variant="sheet" side="start" title="Rooms" onClose={() => setOpen(false)}>
+          <nav aria-label="Rooms">
+            <ul style={{ display: 'grid', gap: 4, margin: 0, padding: 0, listStyle: 'none' }}>
+              {rooms.map((name) => (
+                <li key={name}>
+                  <Button
+                    variant="ghost"
+                    aria-current={name === room ? 'page' : undefined}
+                    onClick={() => {
+                      setRoom(name);
+                      setOpen(false);
+                    }}
+                  >
+                    #{name}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </Modal>
+      </>
+    );
+  },
+};
+
+/**
  * An EDITOR sheet, committed from its own head.
  *
  * A sheet's body is a column a reader scrolls, and the commit pair at the

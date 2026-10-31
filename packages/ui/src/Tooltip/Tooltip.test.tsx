@@ -11,8 +11,11 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { Tooltip } from './index.js';
 import { LayerHost } from '../Layer/index.js';
+import { Popover } from '../Popover/index.js';
+import { FOCUS_MODALITY_ATTRIBUTE, FOCUS_RETURNED_ATTRIBUTE } from '../utils/focusModality.js';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -58,8 +61,82 @@ test('focus opens it at once, because a keyboard reader asked for it', () => {
       <button>Schedule</button>
     </Tooltip>,
   );
-  fireEvent.focus(screen.getByRole('button', { name: 'Schedule' }));
+  tabTo(screen.getByRole('button', { name: 'Schedule' }));
   expect(tip()).not.toBeNull();
+});
+
+/*
+ * FOCUS HOLDS THE TIP ONLY WHEN IT IS KEYBOARD FOCUS. A mouse press focuses a
+ * button as well, and a layer hands focus back as it closes, and a tip shown
+ * for a hover outlived the hover on either: press Formatting, move away, and
+ * "Hide formatting" stayed on the screen until something else took focus.
+ */
+test('a press closes the tip, and the focus it brings neither opens nor holds it', () => {
+  render(
+    <Tooltip content="Hide formatting">
+      <button>Formatting</button>
+    </Tooltip>,
+  );
+  const trigger = screen.getByRole('button', { name: 'Formatting' });
+  fireEvent.pointerEnter(trigger);
+  settle();
+  expect(tip()).not.toBeNull();
+  // The press, then the focus a press brings, as a browser orders them.
+  fireEvent.pointerDown(trigger);
+  tabTo(trigger);
+  expect(tip()).toBeNull();
+  // Still on the control: the press answered it, so it stays shut.
+  settle();
+  expect(tip()).toBeNull();
+  // The pointer leaves while the button keeps focus: nothing holds a tip open.
+  fireEvent.pointerLeave(trigger);
+  settle();
+  expect(tip()).toBeNull();
+  // And the pointer's next arrival opens it again, focus or not.
+  fireEvent.pointerEnter(trigger);
+  settle();
+  expect(tip()).not.toBeNull();
+  fireEvent.pointerLeave(trigger);
+  settle();
+  expect(tip()).toBeNull();
+});
+
+test('a focus that is not visible focus does not open the tip', () => {
+  render(
+    <Tooltip content="Runs at 09:00">
+      <button>Schedule</button>
+    </Tooltip>,
+  );
+  const trigger = screen.getByRole('button', { name: 'Schedule' });
+  // jsdom matches :focus-visible on any focus, so the browser's answer for a
+  // focus a pointer brought is stood in for here.
+  const matches = trigger.matches.bind(trigger);
+  vi.spyOn(trigger, 'matches').mockImplementation((selector: string) => (selector === ':focus-visible' ? false : matches(selector)));
+  tabTo(trigger);
+  expect(tip()).toBeNull();
+});
+
+test('focus handed back to the trigger while the reader uses a pointer does not open the tip', () => {
+  const root = document.documentElement;
+  root.setAttribute(FOCUS_MODALITY_ATTRIBUTE, 'pointer');
+  try {
+    render(
+      <Tooltip content="Open the room's details">
+        <button>Details</button>
+      </Tooltip>,
+    );
+    const trigger = screen.getByRole('button', { name: 'Details' });
+    trigger.setAttribute(FOCUS_RETURNED_ATTRIBUTE, '');
+    tabTo(trigger);
+    expect(tip()).toBeNull();
+    // A key makes it the keyboard's again, and the same focus is a reader's.
+    act(() => trigger.blur());
+    root.setAttribute(FOCUS_MODALITY_ATTRIBUTE, 'keyboard');
+    tabTo(trigger);
+    expect(tip()).not.toBeNull();
+  } finally {
+    root.removeAttribute(FOCUS_MODALITY_ATTRIBUTE);
+  }
 });
 
 test('it is HOVERABLE: the pointer may travel from the trigger onto the panel', () => {
@@ -104,8 +181,7 @@ test('it is DISMISSABLE: Escape closes it and leaves focus where it was', () => 
     </Tooltip>,
   );
   const trigger = screen.getByRole('button', { name: 'Schedule' });
-  trigger.focus();
-  fireEvent.focus(trigger);
+  tabTo(trigger);
   expect(tip()).not.toBeNull();
 
   fireEvent.keyDown(trigger, { key: 'Escape' });
@@ -124,7 +200,7 @@ test('a control focused by the keyboard keeps its tip when the pointer passes ov
     </Tooltip>,
   );
   const trigger = screen.getByRole('button', { name: 'Schedule' });
-  fireEvent.focus(trigger);
+  tabTo(trigger);
   fireEvent.pointerEnter(trigger);
   fireEvent.pointerLeave(trigger);
   settle();
@@ -139,7 +215,7 @@ test('nothing opens while it is disabled', () => {
   );
   const trigger = screen.getByRole('button', { name: 'Schedule' });
   fireEvent.pointerEnter(trigger);
-  fireEvent.focus(trigger);
+  tabTo(trigger);
   settle();
   expect(tip()).toBeNull();
   expect(trigger.getAttribute('aria-describedby')).toBeNull();
@@ -160,7 +236,7 @@ test('it portals into the nearest LayerHost rather than always into the body', (
       </LayerHost>
     </div>,
   );
-  fireEvent.focus(screen.getByRole('button', { name: 'Schedule' }));
+  tabTo(screen.getByRole('button', { name: 'Schedule' }));
   expect(screen.getByTestId('canvas').contains(tip())).toBe(true);
 });
 
@@ -203,6 +279,64 @@ test('the trigger keeps its own ref, and gets it back on the way out', () => {
   expect(own).toBeNull();
 });
 
+/*
+ * A TOOLTIP CAN STAND WHERE A TRIGGER IS EXPECTED. A Popover clones its
+ * trigger with a ref and its state; when the trigger is a tooltip round a
+ * button, those land on the tooltip and are merged onto the button, so the
+ * panel is anchored to it and the button says what it opens.
+ */
+test('a ref and attributes handed to the tooltip are the trigger\'s, composed with its own', () => {
+  let forwarded: HTMLElement | null = null;
+  let own: HTMLElement | null = null;
+  const order: string[] = [];
+  render(
+    <Tooltip
+      content="Add a reaction"
+      ref={(el) => { forwarded = el; }}
+      aria-expanded={false}
+      aria-describedby="hint"
+      data-state="closed"
+      style={{ color: 'inherit' }}
+      onClick={() => order.push('outer')}
+    >
+      <button ref={(el) => { own = el; }} aria-describedby="own" style={{ margin: 0 }} onClick={() => order.push('own')}>
+        React
+      </button>
+    </Tooltip>,
+  );
+  const trigger = screen.getByRole('button', { name: 'React' });
+  expect(forwarded).toBe(trigger);
+  expect(own).toBe(trigger);
+  expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  expect(trigger.getAttribute('data-state')).toBe('closed');
+  expect(trigger.getAttribute('aria-describedby')).toBe('own hint');
+  expect(trigger.style.margin).toBe('0px');
+  expect(trigger.style.color).toBe('inherit');
+  fireEvent.click(trigger);
+  expect(order).toEqual(['own', 'outer']);
+});
+
+test("a Popover's trigger may be a tooltip round its button", () => {
+  render(
+    <Popover
+      label="Reactions"
+      trigger={(_open, toggle) => (
+        <Tooltip content="Add a reaction">
+          <button onClick={toggle}>React</button>
+        </Tooltip>
+      )}
+    >
+      <p>Pick one</p>
+    </Popover>,
+  );
+  const trigger = screen.getByRole('button', { name: 'React' });
+  expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  fireEvent.click(trigger);
+  expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  expect(trigger.getAttribute('aria-controls')).not.toBeNull();
+  expect(document.getElementById(trigger.getAttribute('aria-controls')!)).not.toBeNull();
+});
+
 test('the tip carries no accessibility violation', async () => {
   // axe schedules its own work, so it needs the real clock back.
   vi.useRealTimers();
@@ -214,7 +348,7 @@ test('the tip carries no accessibility violation', async () => {
       </Tooltip>
     </main>,
   );
-  fireEvent.focus(screen.getByRole('button', { name: 'Schedule' }));
+  tabTo(screen.getByRole('button', { name: 'Schedule' }));
   const result = await axe.run(document.body, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
     rules: { 'color-contrast': { enabled: false } },

@@ -14,6 +14,7 @@ import {
   markdownWords,
   type MarkdownEditorApi,
   type MarkdownFormat,
+  type MarkdownTextFormat,
 } from './index.js';
 
 afterEach(cleanup);
@@ -26,7 +27,7 @@ function drawn(value: string, start: number, end: number): string {
 }
 
 /** Applies `format` to `source`, whose selection is written as brackets or a bar. */
-function apply(source: string, format: MarkdownFormat): string {
+function apply(source: string, format: MarkdownFormat | MarkdownTextFormat): string {
   const caret = source.indexOf('|');
   const open = source.indexOf('[');
   const value = source.replace(/[[\]|]/g, '');
@@ -57,6 +58,39 @@ describe('an inline format', () => {
   test('italic is the underscore, so it never shares a marker with bold', () => {
     expect(apply('[cent]', 'italic')).toBe('_[cent]_');
     expect(apply('[cent]', 'code')).toBe('`[cent]`');
+  });
+});
+
+describe("a composer's own formats", () => {
+  test('strikethrough wraps in the grammar\'s deletion marker, and a second press takes it off', () => {
+    expect(apply('drop the [old plan]', 'strikethrough')).toBe('drop the ~~[old plan]~~');
+    expect(apply('drop the ~~[old plan]~~', 'strikethrough')).toBe('drop the [old plan]');
+  });
+
+  test('a quote marks every line it touches, keeping their own markers, and a second press takes it off', () => {
+    expect(apply('[one\n- two]', 'quote')).toBe('[> one\n> - two]');
+    expect(apply('[> one\n> - two]', 'quote')).toBe('[one\n- two]');
+    expect(apply('ask |', 'quote')).toBe('> ask |');
+  });
+
+  test('a link makes the selection its label and selects the address to type over', () => {
+    const value = 'see the runbook now';
+    const edit = formatMarkdown(value, { start: 8, end: 15 }, 'link');
+    expect(edit.value).toBe('see the [runbook](https://) now');
+    expect(edit.value.slice(edit.selection.start, edit.selection.end)).toBe('https://');
+  });
+
+  test('a link on a caret writes an empty label with the caret inside it', () => {
+    const edit = formatMarkdown('see ', { start: 4, end: 4 }, 'link');
+    expect(edit.value).toBe('see [](https://)');
+    expect(edit.selection).toEqual({ start: 5, end: 5 });
+  });
+
+  test('a selection that already is a link becomes its label again', () => {
+    const value = 'see [runbook](https://example.com) now';
+    const edit = formatMarkdown(value, { start: 4, end: 34 }, 'link');
+    expect(edit.value).toBe('see runbook now');
+    expect(edit.value.slice(edit.selection.start, edit.selection.end)).toBe('runbook');
   });
 });
 

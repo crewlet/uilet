@@ -123,6 +123,56 @@ test('a hidden title still names the panel', () => {
   expect(screen.getByRole('complementary', { name: 'Ask Crewlet' })).toBeTruthy();
 });
 
+test('a subtitle follows the title on its line, is not part of the name, and lets the head grow', () => {
+  render(
+    <SidePanelFrame panel={<SidePanel title="Thread" subtitle={<a href="#engineering">#engineering</a>} onClose={() => {}}>Replies</SidePanel>}>
+      <p>Page</p>
+    </SidePanelFrame>,
+  );
+  const region = screen.getByRole('complementary', { name: 'Thread' });
+  const heading = screen.getByRole('heading', { level: 2, name: 'Thread' });
+  const subtitle = screen.getByRole('link', { name: '#engineering' }).parentElement!;
+  expect(subtitle.className).toContain('crewlet-side-panel__subtitle');
+  // The title and the subtitle share one wrapper, the title first.
+  expect(heading.parentElement).toBe(subtitle.parentElement);
+  expect(heading.nextElementSibling).toBe(subtitle);
+  expect(region.querySelector('.crewlet-side-panel__head')!.className).toContain('crewlet-side-panel__head--subtitled');
+
+  // A head with no subtitle is drawn as it always was.
+  cleanup();
+  render(
+    <SidePanelFrame panel={<SidePanel title="Details" onClose={() => {}}>About</SidePanel>}>
+      <p>Page</p>
+    </SidePanelFrame>,
+  );
+  const plain = screen.getByRole('heading', { level: 2, name: 'Details' });
+  expect(plain.parentElement!.className).toContain('crewlet-side-panel__head');
+  expect(plain.parentElement!.className).not.toContain('crewlet-side-panel__head--subtitled');
+});
+
+test('the subtitled head is a floor, not a height, and wraps the subtitle under an ellipsised title', () => {
+  const remove = installSheets('SidePanel/SidePanel.css');
+  try {
+    render(
+      <SidePanelFrame panel={<SidePanel title="Catch up" subtitle="#engineering" onClose={() => {}}>Summary</SidePanel>}>
+        <p>Page</p>
+      </SidePanelFrame>,
+    );
+    const head = document.querySelector<HTMLElement>('.crewlet-side-panel__head--subtitled')!;
+    const drawn = getComputedStyle(head);
+    expect(drawn.height).toBe('auto');
+    expect(drawn.minHeight).not.toBe('');
+    const heading = getComputedStyle(document.querySelector('.crewlet-side-panel__heading')!);
+    expect(heading.flexWrap).toBe('wrap');
+    expect(heading.alignItems).toBe('baseline');
+    const title = getComputedStyle(screen.getByRole('heading', { level: 2, name: 'Catch up' }));
+    expect(title.textOverflow).toBe('ellipsis');
+    expect(title.whiteSpace).toBe('nowrap');
+  } finally {
+    remove();
+  }
+});
+
 test('flush drops the body inset and publishes it as zero inside the body only', () => {
   const uninstall = installSheets('SidePanel/SidePanel.css');
   try {

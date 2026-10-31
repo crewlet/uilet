@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -482,7 +483,7 @@ describe('audit fixes', () => {
     const trigger = within(header).getByRole('button', { name: 'Actions for row 1' });
     // One tip: the native title would be a second one beside it.
     expect(trigger.getAttribute('title')).toBe('');
-    act(() => trigger.focus());
+    tabTo(trigger);
     expect(screen.getByRole('tooltip').textContent).toBe('Actions for row 1');
   });
 
@@ -497,7 +498,7 @@ describe('audit fixes', () => {
     };
     try {
       render(<Host onDeleteRow={() => {}} />);
-      act(() => within(grid()).getByRole('button', { name: 'Actions for row 2' }).focus());
+      tabTo(within(grid()).getByRole('button', { name: 'Actions for row 2' }));
       // Centred, it started at 29.5 + 13 - 55 = -12.5: past the grid, and clamped to the window.
       expect(screen.getByRole('tooltip').style.left).toBe('29.5px');
     } finally {
