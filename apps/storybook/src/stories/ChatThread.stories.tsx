@@ -137,7 +137,7 @@ function Revealing() {
       <ChatThread ref={handle} label="Conversation">
         {[0, 1, 2].flatMap(exchange)}
         <div ref={card} style={{ height: 600, border: '1px solid var(--color-border-default)', borderRadius: 12, padding: 16 }}>
-          A tall card that needs a decision: its head comes to the top of the view.
+          A tall card that needs a decision: its head comes to the top of the view, since the whole of it does not fit.
         </div>
         {[3].flatMap(exchange)}
       </ChatThread>
@@ -151,5 +151,22 @@ function Revealing() {
   );
 }
 
-/** `reveal` brings a card that needs a decision into view: whole when it fits, its head at the top otherwise. */
+/**
+ * `reveal` brings an item into the middle of the view, with what came before
+ * and after it in sight, and a card taller than the view with its head at the
+ * top. It places the item in the view the Jump to latest row leaves once the
+ * move has brought that row in.
+ */
 export const RevealADecision: Story = { render: () => <Revealing /> };
+
+/**
+ * `jump={false}`: a log that offers its own way back (a day's Jump to menu)
+ * draws no row under itself. Scroll up and nothing is added or laid over it.
+ */
+export const WithoutTheJumpRow: Story = {
+  render: () => (
+    <ChatThread label="Conversation" jump={false}>
+      {Array.from({ length: 8 }, (_, index) => exchange(index)).flat()}
+    </ChatThread>
+  ),
+};

@@ -1,0 +1,74 @@
+/*
+ * Who is typing and which agent is working, under a composer, in the meta
+ * step and the tertiary ink.
+ */
+
+.crewlet-activity-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-4);
+  min-height: 20px;
+  min-width: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--crewlet-chat-meta);
+}
+
+/* No piece is wider than the line: a long working status truncates. */
+.crewlet-activity-line > * {
+  max-width: 100%;
+}
+
+/* The working line in the line's own step, over the indicator's. */
+.crewlet-activity-line .crewlet-activity-line__working {
+  font-size: var(--crewlet-chat-meta);
+}
+
+.crewlet-activity-line__typing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.crewlet-activity-line__dots {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.crewlet-activity-line__dots > i {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-circle);
+  background: currentColor;
+  animation: crewlet-activity-line-typing calc(var(--motion-duration-slow) * 4) var(--motion-easing-in-out) infinite;
+}
+
+.crewlet-activity-line__dots > i:nth-child(2) {
+  animation-delay: var(--motion-duration-base);
+}
+
+.crewlet-activity-line__dots > i:nth-child(3) {
+  animation-delay: var(--motion-duration-slow);
+}
+
+@keyframes crewlet-activity-line-typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: none;
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* Under reduced motion the dots hold still at full strength: the words say
+   who is typing. */
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-activity-line__dots > i {
+    animation: none;
+  }
+}

@@ -1,0 +1,304 @@
+/*
+ * One message in a transcript: a face in a gutter, the head line, the words
+ * and a footer stack. Every size reads the conversation scale
+ * (ChatScale.css); every edge and fill the quiet scale in @crewlethq/tokens.
+ */
+
+.crewlet-chat-message {
+  /* Where the row's first line starts: the toolbar rests on it. */
+  --crewlet-chat-row-top: var(--spacing-2);
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--crewlet-chat-avatar) minmax(0, 1fr);
+  column-gap: var(--crewlet-chat-gap);
+  padding: var(--crewlet-chat-row-top) var(--crewlet-chat-pad-x) var(--spacing-1);
+  font-size: var(--crewlet-chat-text);
+  line-height: var(--crewlet-chat-line);
+  transition: background var(--motion-duration-fast) var(--motion-easing-default);
+  /* A message the reader is taken to stops under the day's pinned pill. */
+  scroll-margin-top: calc(var(--crewlet-chat-day-pin) + var(--crewlet-chat-day-pill) + var(--spacing-2));
+}
+
+.crewlet-chat-message.is-continuation {
+  --crewlet-chat-row-top: 1px;
+  padding-bottom: 1px;
+}
+
+.crewlet-chat-message:hover,
+.crewlet-chat-message:focus-visible,
+.crewlet-chat-message:has(:focus-visible),
+.crewlet-chat-message.is-active {
+  background: var(--color-fill-row);
+}
+
+.crewlet-chat-message:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* A row that names the reader: its wash and the warning bar on its edge. It
+   keeps its wash, and only its wash, under the pointer: the toolbar and the
+   gutter's time say which row is pointed at, and a hover step laid over the
+   wash took the row's quiet text under 4.5:1 on the darker palettes. */
+.crewlet-chat-message.is-mention,
+.crewlet-chat-message.is-mention:hover,
+.crewlet-chat-message.is-mention:focus-visible,
+.crewlet-chat-message.is-mention:has(:focus-visible),
+.crewlet-chat-message.is-mention.is-active {
+  background: var(--crewlet-chat-mention);
+  box-shadow: inset 2px 0 0 var(--color-feedback-warning);
+}
+
+/* The row a link or a search opened at: a wash of the accent that fades back
+   to whatever the row draws of its own (the mention wash included), so there
+   is no last keyframe to name it. */
+.crewlet-chat-message.is-flash {
+  animation: crewlet-chat-message-flash calc(var(--motion-duration-moderate) * 8) var(--motion-easing-out);
+}
+
+@keyframes crewlet-chat-message-flash {
+  0%,
+  40% {
+    background: var(--color-brand-accent-soft-strong);
+  }
+}
+
+.crewlet-chat-message.is-sending .crewlet-chat-message__body {
+  color: var(--color-text-tertiary);
+}
+
+/* The face starts a hairline under the top of the name's line box, so across
+   the name and the first line of words it sits centred on the pair. It keeps
+   its own height: stretched to the row, the face's button (and its focus
+   ring) ran the full height of a long message. */
+.crewlet-chat-message__gutter {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+/* A face that opens the author's profile: the face is the whole control. */
+.crewlet-chat-message__gutter > button {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+}
+
+.crewlet-chat-message__gutter > button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* A continuation's time sits on the baseline of the first line of its words.
+   The two are in different columns and set at different sizes, so the grid
+   aligns them by baseline rather than by sharing a line height. It ends on
+   the column's edge: a time is wider than a face, and centred it ran into the
+   gap before the words. */
+.crewlet-chat-message.is-continuation > .crewlet-chat-message__gutter {
+  justify-content: flex-end;
+  padding-top: 0;
+}
+
+.crewlet-chat-message.is-continuation > .crewlet-chat-message__gutter,
+.crewlet-chat-message.is-continuation > .crewlet-chat-message__main {
+  align-self: baseline;
+}
+
+.crewlet-chat-message__gutter-time {
+  visibility: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.crewlet-chat-message:hover .crewlet-chat-message__gutter-time,
+.crewlet-chat-message:focus-visible .crewlet-chat-message__gutter-time,
+.crewlet-chat-message:has(:focus-visible) .crewlet-chat-message__gutter-time,
+.crewlet-chat-message.is-active .crewlet-chat-message__gutter-time {
+  visibility: visible;
+}
+
+.crewlet-chat-message__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* THE HEAD IS SET AS TEXT, not as a flex row. Every line of it, the first or
+   one a narrow pane wraps the time onto, is held to one body line by the
+   block's strut, and the smaller meta stands on the name's baseline inside
+   it. As a wrapping flex row the line grew a pixel to fit the time's own
+   line box, and a time wrapped alone got a short line of its own. */
+.crewlet-chat-message__head {
+  min-width: 0;
+  line-height: calc(var(--crewlet-chat-text) * var(--crewlet-chat-line));
+}
+
+/* The gap follows each part, so a part a narrow pane wraps starts flush. */
+.crewlet-chat-message__head > * {
+  white-space: nowrap;
+}
+
+.crewlet-chat-message__head > :not(:last-child) {
+  margin-inline-end: var(--spacing-2);
+}
+
+/* A label beside the name ("Agent") is centred on the lower-case letters, as
+   text sets an inline mark. */
+.crewlet-chat-message__head > .crewlet-tag {
+  vertical-align: middle;
+}
+
+.crewlet-chat-message__author {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* A name that opens the author's profile reads as the name, not a button. */
+.crewlet-chat-message__author > button {
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.crewlet-chat-message__author > button:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.crewlet-chat-message__author > button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Meta on the head shares the name's baseline. A line height of its own
+   would sit its smaller text lower in a box as tall as the name's and grow
+   the line by a pixel, so it takes none. */
+.crewlet-chat-message__time {
+  color: var(--color-text-tertiary);
+  font-size: var(--crewlet-chat-meta);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.crewlet-chat-message__body {
+  min-width: 0;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* Emphasis in a message is the semibold step, as it is everywhere else in
+   the product: the browser's own bold read heavier than the names. */
+.crewlet-chat-message__body :is(b, strong) {
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Previews, reactions and the thread line: one stack, one gap. */
+.crewlet-chat-message__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--crewlet-chat-stack);
+  margin-top: var(--crewlet-chat-stack);
+}
+
+/* NO PIECE UNDER A MESSAGE IS WIDER THAN ITS COLUMN. Stacked on the start
+   edge, each piece takes its one-line width, and an agent's working line set
+   it wider than a phone's column: the transcript scrolled sideways. */
+.crewlet-chat-message__footer > * {
+  max-width: 100%;
+}
+
+/* THE TOOLBAR STANDS ON THE ROW'S FIRST LINE, over the row above, and over
+   the day's pinned pill as well as the rows: a toolbar that slid under the
+   pill lost its middle buttons wherever the two crossed. */
+.crewlet-chat-message__actions {
+  position: absolute;
+  top: calc(var(--crewlet-chat-row-top) - var(--crewlet-chat-toolbar));
+  right: var(--crewlet-chat-pad-x);
+  z-index: calc(var(--z-index-sticky) + var(--z-index-raised));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-chat-message:hover > .crewlet-chat-message__actions,
+.crewlet-chat-message:focus-visible > .crewlet-chat-message__actions,
+.crewlet-chat-message:has(:focus-visible) > .crewlet-chat-message__actions,
+.crewlet-chat-message.is-active > .crewlet-chat-message__actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* With no row above to stand over (see ChatMessage.tsx), or when the host
+   asks, it is drawn inside the row's own head. */
+.crewlet-chat-message.has-actions-inside > .crewlet-chat-message__actions {
+  top: var(--spacing-1);
+}
+
+/* A row's quiet controls, the add-reaction pill among them, show while the
+   row is pointed at or holds keyboard focus, and while their picker is open. */
+.crewlet-chat-message .crewlet-reaction--add {
+  opacity: 0;
+}
+
+.crewlet-chat-message:hover .crewlet-reaction--add,
+.crewlet-chat-message:has(:focus-visible) .crewlet-reaction--add,
+.crewlet-chat-message.is-active .crewlet-reaction--add,
+.crewlet-chat-message .crewlet-reaction--add[aria-expanded='true'] {
+  opacity: 1;
+}
+
+/* A TOUCH SCREEN HAS NO HOVER: a tap on the row (which focuses it) shows the
+   toolbar, so replying in a thread, saving and the More menu are reached by
+   touch as well as by pointer and keyboard. The add pill is always shown
+   there, so a reaction is one tap away without finding the toolbar first. */
+@media (hover: none) {
+  .crewlet-chat-message:focus-within > .crewlet-chat-message__actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .crewlet-chat-message .crewlet-reaction--add {
+    opacity: 1;
+  }
+}
+
+/* The line under a message that was not sent. */
+.crewlet-chat-message-failure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--crewlet-chat-meta);
+  line-height: var(--crewlet-chat-line);
+}
+
+.crewlet-chat-message-failure__words {
+  margin-inline-end: var(--spacing-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-chat-message {
+    transition: none;
+  }
+
+  .crewlet-chat-message.is-flash {
+    animation: none;
+  }
+
+  .crewlet-chat-message__actions {
+    transition: none;
+  }
+}

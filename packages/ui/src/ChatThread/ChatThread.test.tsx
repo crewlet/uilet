@@ -2,7 +2,8 @@
  * A conversation as it grows: a focusable log with its live region off, busy
  * while a request runs; it follows the end only while the reader is within
  * 48px of it, counts what arrives once they scroll away, returns with Jump to
- * latest, and reveals a decision's head when the whole card does not fit.
+ * latest (unless the host leaves that row out), and reveals an item in the
+ * middle of the view, or its head when the whole of it does not fit.
  */
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
@@ -125,10 +126,10 @@ test('the pill sits under the log, never over what is being read', () => {
   }
 });
 
-test('reveals a decision whole when it fits, and its head at the top when it does not', () => {
+test('reveals an item in the middle of the view when it fits, and its head at the top when it does not', () => {
   const handle = createRef<ChatThreadHandle>();
   render(
-    <ChatThread ref={handle} label="Conversation">
+    <ChatThread ref={handle} label="Conversation" jump={false}>
       {items(3)}
     </ChatThread>,
   );
@@ -144,7 +145,90 @@ test('reveals a decision whole when it fits, and its head at the top when it doe
   log.scrollTop = 0;
   card.getBoundingClientRect = () => ({ top: 900, height: 300 }) as DOMRect;
   act(() => handle.current!.reveal(card));
-  expect(log.scrollTop).toBe(800);
+  // Its middle on the view's middle: 50px of the view above it and below it.
+  expect(log.scrollTop).toBe(850);
+});
+
+// A message the reader is taken to stops under the day's pinned pill, which
+// it names as its scroll-margin-top. Mutation: ignore the margin, and a tall
+// message's head lands under the pill.
+test("reveal keeps an item's scroll margins clear", () => {
+  const handle = createRef<ChatThreadHandle>();
+  render(
+    <ChatThread ref={handle} label="Conversation" jump={false}>
+      {items(3)}
+    </ChatThread>,
+  );
+  const log = screen.getByRole('log');
+  layout(log, 2000);
+  log.scrollTop = 0;
+  const row = document.createElement('article');
+  row.style.scrollMarginTop = '40px';
+  log.appendChild(row);
+  log.getBoundingClientRect = () => ({ top: 0, height: 400 }) as DOMRect;
+  row.getBoundingClientRect = () => ({ top: 900, height: 500 }) as DOMRect;
+  act(() => handle.current!.reveal(row));
+  expect(log.scrollTop).toBe(860);
+  // It fits in the 360px under the margin: centred in that.
+  log.scrollTop = 0;
+  row.getBoundingClientRect = () => ({ top: 900, height: 200 }) as DOMRect;
+  act(() => handle.current!.reveal(row));
+  expect(log.scrollTop).toBe(780);
+});
+
+// THE ROW THE MOVE BRINGS IN IS ACCOUNTED FOR. Revealing an item away from
+// the end detaches the reader, and the Jump to latest row then takes 42px off
+// the foot of the view. Mutation: place the item once, in the view as it was,
+// and it sits 21px low, its foot closer to the row than its head to the top.
+test('reveal places the item in the view the Jump to latest row leaves', () => {
+  const handle = createRef<ChatThreadHandle>();
+  render(
+    <ChatThread ref={handle} label="Conversation">
+      {items(3)}
+    </ChatThread>,
+  );
+  const log = screen.getByRole('log');
+  // The row, while it shows, takes 42px of the thread's height from the log.
+  Object.defineProperty(log, 'clientHeight', {
+    configurable: true,
+    get: () => (document.querySelector('.crewlet-chat-thread__jump') ? 358 : 400),
+  });
+  Object.defineProperty(log, 'scrollHeight', { configurable: true, value: 2000 });
+  log.scrollTop = 1600;
+  fireEvent.scroll(log);
+  expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
+  const row = document.createElement('article');
+  log.appendChild(row);
+  log.getBoundingClientRect = () => ({ top: 0, height: 400 }) as DOMRect;
+  row.getBoundingClientRect = () => ({ top: 900 - log.scrollTop, height: 300 }) as DOMRect;
+  act(() => handle.current!.reveal(row));
+  expect(screen.getByRole('button', { name: 'Jump to latest' })).toBeTruthy();
+  // 29px above it and 29px below it, in the 358px the row leaves.
+  expect(log.scrollTop).toBe(871);
+});
+
+test('jump={false} draws no Jump to latest row, however far the reader scrolls', () => {
+  render(
+    <ChatThread label="Conversation" jump={false}>
+      {items(3)}
+    </ChatThread>,
+  );
+  const log = screen.getByRole('log');
+  layout(log, 1000);
+  log.scrollTop = 0;
+  fireEvent.scroll(log);
+  expect(screen.queryByRole('button', { name: /Jump to latest/ })).toBeNull();
+  expect(document.querySelector('.crewlet-chat-thread__jump')).toBeNull();
+});
+
+test('hands a host its scrolling element', () => {
+  const handle = createRef<ChatThreadHandle>();
+  render(
+    <ChatThread ref={handle} label="Conversation">
+      {items(1)}
+    </ChatThread>,
+  );
+  expect(handle.current!.scroller()).toBe(screen.getByRole('log'));
 });
 
 test('turns the browser scroll anchoring off, and rings inside the region', () => {

@@ -1,0 +1,90 @@
+/*
+ * The line under a message that has replies, and the working line under it.
+ */
+
+.crewlet-thread-summary-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  max-width: 100%;
+}
+
+/* No piece is wider than the column: a long working line truncates. */
+.crewlet-thread-summary-wrap > * {
+  max-width: 100%;
+}
+
+/* The faces sit on the content edge: the line's 1px edge and its inset are
+   taken back by the same amount outside it. */
+.crewlet-thread-summary {
+  --crewlet-thread-summary-inset: var(--spacing-1);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  max-width: 100%;
+  height: var(--size-control-md);
+  box-sizing: border-box;
+  margin-inline-start: calc((var(--crewlet-thread-summary-inset) + 1px) * -1);
+  padding: 0 var(--crewlet-thread-summary-inset);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-compact);
+  line-height: 1;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* Lifted onto the transcript's own ground inside a hairline, under the
+   pointer or the keyboard, and while the thread is open. */
+.crewlet-thread-summary:is(:hover, :focus-visible, .is-open) {
+  border-color: var(--color-edge-hairline);
+  background: var(--crewlet-chat-ground);
+}
+
+.crewlet-thread-summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-thread-summary__count {
+  color: var(--color-brand-accent-ink);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+/* "Last reply 1h ago" and "View thread" share one cell, so the line keeps
+   its width when one gives way to the other under the pointer. */
+.crewlet-thread-summary__tail {
+  display: inline-grid;
+  min-width: 0;
+  padding-inline-end: var(--spacing-1);
+  white-space: nowrap;
+}
+
+.crewlet-thread-summary__last,
+.crewlet-thread-summary__view {
+  grid-area: 1 / 1;
+}
+
+.crewlet-thread-summary__last {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-thread-summary__view {
+  justify-self: end;
+  visibility: hidden;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-thread-summary:is(:hover, :focus-visible, .is-open) .crewlet-thread-summary__last {
+  visibility: hidden;
+}
+
+.crewlet-thread-summary:is(:hover, :focus-visible, .is-open) .crewlet-thread-summary__view {
+  visibility: visible;
+}
