@@ -29,19 +29,23 @@ import type { AppShellRailShape } from './railShape.js';
 /**
  * Where a change of shape is: `fold` while the rail narrows over the full
  * rail's fading words, `folded` while the compact column fades in after it,
- * and `unfold` while the rail widens and the full rail's words fade in.
+ * `unfold` while the rail widens and the full rail's words fade in, and
+ * `reverse` while a fold pressed again mid way widens the rail back and its
+ * words return from wherever their fade had reached.
  */
-export type AppShellRailMotion = 'fold' | 'folded' | 'unfold';
+export type AppShellRailMotion = 'fold' | 'folded' | 'unfold' | 'reverse';
 
 /**
  * The rail's own motion, which a change of shape waits for: its width, on the
- * rail itself, and the keyframes its words fade by (AppShell.css), wherever
+ * rail itself, and the keyframes its words arrive by (AppShell.css), wherever
  * they run inside it. Named, so that nothing else moving inside the rail (a
- * meter filling, a badge arriving, a paused animation) holds a fold.
+ * meter filling, a badge arriving, a paused animation) holds a fold. The
+ * words LEAVE by a transition of their opacity, which a reversal turns back
+ * from where it is, and the rail's width outlasts it.
  */
 export const RAIL_MOTION = {
   transitions: ['width'],
-  animations: ['crewlet-app-shell-rail-fade', 'crewlet-app-shell-rail-unfold', 'crewlet-app-shell-rail-settle'],
+  animations: ['crewlet-app-shell-rail-unfold', 'crewlet-app-shell-rail-settle'],
 } as const;
 
 /**
@@ -70,7 +74,7 @@ export function useRailMotion(
 
   let motion: AppShellRailMotion | null = null;
   if (full.leaving) motion = 'fold';
-  else if (full.entering) motion = 'unfold';
+  else if (full.entering) motion = full.returning ? 'reverse' : 'unfold';
   else if (compact.entering) motion = 'folded';
 
   return { drawn: full.present ? 'full' : 'compact', motion, leaving: full.leaving };

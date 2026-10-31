@@ -23,11 +23,16 @@ function reduced(reduce: boolean): void {
 /** A box the stylesheet would move, and the content it keeps while it leaves. */
 function Probe({ shown, instant = false }: { shown: boolean; instant?: boolean }) {
   const box = useRef<HTMLDivElement | null>(null);
-  const { present, leaving, entering } = usePresence(shown, box, { instant });
+  const { present, leaving, entering, returning } = usePresence(shown, box, { instant });
   return (
     <div ref={box} data-testid="box">
       {present ? (
-        <p data-leaving={leaving ? '' : undefined} data-entering={entering ? '' : undefined} inert={leaving || undefined}>
+        <p
+          data-leaving={leaving ? '' : undefined}
+          data-entering={entering ? '' : undefined}
+          data-returning={returning ? '' : undefined}
+          inert={leaving || undefined}
+        >
           The content
         </p>
       ) : null}
@@ -220,6 +225,27 @@ describe('usePresence', () => {
     opening.finish();
     await settleMotion();
     expect(content()?.hasAttribute('data-entering')).toBe(false);
+  });
+
+  test('shown again before it had left, it says it is returning, not entering afresh', async () => {
+    reduced(false);
+    const { rerender } = render(<Probe shown />);
+    const driver = driveMotion(screen.getByTestId('box'));
+    const closing = driver.start();
+    rerender(<Probe shown={false} />);
+    const opening = driver.start();
+    closing.cancel();
+    rerender(<Probe shown />);
+    expect(content()?.hasAttribute('data-returning')).toBe(true);
+    opening.finish();
+    await settleMotion();
+    expect(content()?.hasAttribute('data-returning')).toBe(false);
+    // A plain entrance, after it had gone, is not a return.
+    rerender(<Probe shown={false} />);
+    driver.start();
+    rerender(<Probe shown />);
+    expect(content()?.hasAttribute('data-entering')).toBe(true);
+    expect(content()?.hasAttribute('data-returning')).toBe(false);
   });
 
   test('under reduced motion it goes straight through, whatever is running', () => {

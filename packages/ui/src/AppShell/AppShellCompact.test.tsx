@@ -407,10 +407,16 @@ describe("the rail's slots, compact", () => {
 
 describe('the geometry', () => {
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
-  /** The declarations of the first rule written for exactly this selector. */
+  /**
+   * The declarations of the first rule whose selector list names exactly this
+   * selector, as its last member (`selector {`) or another (`selector,`).
+   */
   const rule = (selector: string): string => {
-    const at = css.indexOf(`\n${selector} {`);
-    return at === -1 ? '' : css.slice(at, css.indexOf('}', at));
+    const at = [`\n${selector} {`, `\n${selector},\n`]
+      .map((head) => css.indexOf(head))
+      .filter((index) => index !== -1)
+      .sort((a, b) => a - b)[0];
+    return at === undefined ? '' : css.slice(at, css.indexOf('}', at));
   };
 
   test('folding is the one rail variable narrowed to the compact column', () => {
@@ -497,11 +503,34 @@ describe('the geometry', () => {
     for (const name of RAIL_MOTION.animations) expect(css).toContain(`@keyframes ${name} {`);
   });
 
+  test('a fold fades the words by a transition, which a reversal turns back from where it is', () => {
+    const parts = [
+      '.crewlet-app-shell__rail-body',
+      '.crewlet-app-shell__rail-foot',
+      '.crewlet-app-shell__rail-status',
+      '.crewlet-app-shell__rail-head .crewlet-brand__name',
+      '.crewlet-app-shell__rail-head .crewlet-brand__context',
+    ];
+    for (const part of parts) {
+      // Folding: the words go to nothing by a transition, and no keyframes.
+      const fold = rule(`.crewlet-app-shell[data-rail-motion='fold'] ${part}`);
+      expect(fold, part).toContain('opacity: 0;');
+      expect(fold, part).not.toContain('animation');
+      // While the rail moves either way, that opacity is transitioned, so a
+      // reversal starts from the opacity the fold had reached.
+      expect(rule(`.crewlet-app-shell[data-rail-motion] ${part}`), part).toContain(
+        'transition: opacity var(--motion-duration-base) var(--motion-easing-out);',
+      );
+      // And reversing plays no entrance from nothing.
+      expect(css, part).not.toContain(`.crewlet-app-shell[data-rail-motion='reverse'] ${part}`);
+    }
+  });
+
   test('every fade has its stop under reduced motion', () => {
     const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
-    for (const motion of ['fold', 'unfold', 'folded']) {
+    for (const scope of ["[data-rail-motion]", "[data-rail-motion='unfold']", "[data-rail-motion='folded']"]) {
       for (const part of ['rail-body', 'rail-foot', 'rail-status']) {
-        expect(reduced).toContain(`.crewlet-app-shell[data-rail-motion='${motion}'] .crewlet-app-shell__${part}`);
+        expect(reduced).toContain(`.crewlet-app-shell${scope} .crewlet-app-shell__${part}`);
       }
     }
   });
@@ -668,10 +697,12 @@ describe("the rail's motion", () => {
     const widening = driver.start();
     narrowing.cancel();
     press();
-    expect(motion()).toBe('unfold');
+    // REVERSED, not unfolded afresh: the words come back from wherever their
+    // fade had reached rather than blinking to nothing and fading in.
+    expect(motion()).toBe('reverse');
     expect(root().getAttribute('data-rail')).toBe('full');
     await settleMotion();
-    expect(motion()).toBe('unfold');
+    expect(motion()).toBe('reverse');
     widening.finish();
     await settleMotion();
     expect(motion()).toBeNull();

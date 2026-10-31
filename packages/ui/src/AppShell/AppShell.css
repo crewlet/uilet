@@ -1020,19 +1020,21 @@
  * UNFOLDING, the full rail is drawn at once and fades in while the edge
  * uncovers it. The brand's mark and the fold control are in the same place in
  * both shapes, so neither fades.
+ *
+ * THE WORDS LEAVE BY A TRANSITION and arrive by keyframes. A fold takes their
+ * opacity to nothing; a fold pressed again mid way (`reverse`) declares
+ * nothing of its own, so the same transition takes the opacity back from
+ * wherever it had reached. Faded out by keyframes instead, a reversal could
+ * only start an entrance from nothing, and the words blinked out and back.
+ * The transition is declared only while the rail moves, so nothing else that
+ * sets these parts' opacity is eased.
  */
 .crewlet-app-shell[data-rail-motion='fold'] > .crewlet-app-shell__rail {
   width: var(--size-shell-rail-compact);
 }
 
-@keyframes crewlet-app-shell-rail-fade {
-  to {
-    opacity: 0;
-  }
-}
-
-/* Two names for one entrance, so a fold pressed again while the compact
-   column is still arriving starts the full rail's entrance afresh. */
+/* Two names for one entrance, so an unfold pressed while the compact column
+   is still arriving starts the full rail's entrance afresh. */
 @keyframes crewlet-app-shell-rail-unfold {
   from {
     opacity: 0;
@@ -1045,12 +1047,20 @@
   }
 }
 
+.crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-body,
+.crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-foot,
+.crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-status,
+.crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-head .crewlet-brand__name,
+.crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-head .crewlet-brand__context {
+  transition: opacity var(--motion-duration-base) var(--motion-easing-out);
+}
+
 .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-body,
 .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-foot,
 .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-status,
 .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-head .crewlet-brand__name,
 .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-head .crewlet-brand__context {
-  animation: crewlet-app-shell-rail-fade var(--motion-duration-base) var(--motion-easing-out) forwards;
+  opacity: 0;
 }
 
 .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-body,
@@ -1185,11 +1195,14 @@
 
   /* Under reduced motion the shell draws the new shape at once
      (`usePresence`), so no phase starts; these hold even if one did. */
-  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-body,
-  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-foot,
-  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-status,
-  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-head .crewlet-brand__name,
-  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-head .crewlet-brand__context,
+  .crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-body,
+  .crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-foot,
+  .crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-status,
+  .crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-head .crewlet-brand__name,
+  .crewlet-app-shell[data-rail-motion] .crewlet-app-shell__rail-head .crewlet-brand__context {
+    transition: none;
+  }
+
   .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-body,
   .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-foot,
   .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-status,

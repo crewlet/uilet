@@ -178,12 +178,19 @@ export interface Presence {
    * plays none.
    */
   entering: boolean;
+  /**
+   * Shown again BEFORE IT HAD LEFT: entering, from wherever its exit had
+   * reached rather than from nothing, so a stylesheet turns the exit back
+   * instead of playing an entrance over it.
+   */
+  returning: boolean;
 }
 
 interface PresenceState {
   shown: boolean;
   leaving: boolean;
   entering: boolean;
+  returning: boolean;
 }
 
 /**
@@ -201,7 +208,7 @@ export function usePresence(
   { transitions, animations, instant = false }: PresenceOptions = {},
 ): Presence {
   const still = useMediaMatch(REDUCED_MOTION_QUERY) || instant;
-  const [state, setState] = useState<PresenceState>({ shown, leaving: false, entering: false });
+  const [state, setState] = useState<PresenceState>({ shown, leaving: false, entering: false, returning: false });
 
   /*
    * THE CHANGE IS READ IN THE RENDER THAT MAKES IT, not in an effect after
@@ -209,11 +216,13 @@ export function usePresence(
    * on the way out, running every effect it has for nothing.
    */
   let current = state;
-  if (state.shown !== shown) current = { shown, leaving: !shown && !still, entering: shown && !still };
+  if (state.shown !== shown) {
+    current = { shown, leaving: !shown && !still, entering: shown && !still, returning: shown && !still && state.leaving };
+  }
   // A reader who asks for less motion mid way ends the motion there.
-  if (still && (current.leaving || current.entering)) current = { ...current, leaving: false, entering: false };
+  if (still && (current.leaving || current.entering)) current = { ...current, leaving: false, entering: false, returning: false };
   if (current !== state) setState(current);
-  const { leaving, entering } = current;
+  const { leaving, entering, returning } = current;
   const moving = leaving || entering;
 
   // The lists by value, so a list written inline does not restart the wait on
@@ -227,7 +236,7 @@ export function usePresence(
     // started another, and the state has moved on without it.
     return afterMotion(
       motion.current,
-      () => setState((now) => (now.shown === shown ? { ...now, leaving: false, entering: false } : now)),
+      () => setState((now) => (now.shown === shown ? { ...now, leaving: false, entering: false, returning: false } : now)),
       {
         transitions: ownTransitions === undefined ? undefined : ownTransitions.split(' ').filter(Boolean),
         animations: ownAnimations === undefined ? undefined : ownAnimations.split(' ').filter(Boolean),
@@ -235,5 +244,5 @@ export function usePresence(
     );
   }, [moving, shown, motion, ownTransitions, ownAnimations]);
 
-  return { present: shown || leaving, leaving, entering };
+  return { present: shown || leaving, leaving, entering, returning };
 }
