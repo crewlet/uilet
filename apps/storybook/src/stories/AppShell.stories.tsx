@@ -1,19 +1,23 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { CrewletIcon } from '@crewlethq/icons';
 import {
   ActivityGlyph,
   BookOpenGlyph,
+  BuildingComplexGlyph,
   CircleCheckGlyph,
   CoinsGlyph,
   HouseGlyph,
   InboxGlyph,
   KeyGlyph,
   LayoutDashboardGlyph,
+  LayoutGridGlyph,
+  MessageSquareGlyph,
   NetworkGlyph,
   PaletteGlyph,
   PinGlyph,
   PlusGlyph,
+  SearchGlyph,
   ServerGlyph,
   SettingsGlyph,
   SlidersVerticalGlyph,
@@ -28,6 +32,10 @@ import {
   Button,
   ButtonLink,
   Callout,
+  CompactNav,
+  CompactNavGroup,
+  CompactNavItem,
+  CompactNavSeparator,
   DescriptionList,
   IconButton,
   IconButtonLink,
@@ -45,6 +53,7 @@ import {
   Tag,
   Text,
   useAppShell,
+  type AppShellRailShape,
 } from '@crewlethq/ui';
 
 /*
@@ -651,6 +660,185 @@ export const NoRail: Story = {
   render: () => (
     <AppShell topbar={<AppShell.Topbar title="Sign in" />}>
       <PageHeader title="Sign in" description="A shell with one column and no navigation." />
+    </AppShell>
+  ),
+};
+
+/*
+ * THE RAIL FOLDED TO ITS MARKS, from ONE list of places. The application keeps
+ * the list and hands each place to whichever shape the shell is drawing
+ * (`useAppShell().rail`): `SidebarNav` rows when full, `CompactNav` tiles when
+ * compact, the named groups folded into one tile each.
+ */
+interface Place {
+  key: string;
+  label: string;
+  icon: ReactNode;
+  badge?: { value: number | string; label: string };
+  count?: { value: number | string; label: string };
+}
+
+const YOU: Place[] = [
+  { key: 'home', label: 'Home', icon: <HouseGlyph size="sm" /> },
+  { key: 'inbox', label: 'Inbox', icon: <InboxGlyph size="sm" />, badge: { value: '50+', label: 'unread' } },
+  { key: 'me', label: 'My work', icon: <CircleCheckGlyph size="sm" />, count: { value: 23, label: 'open' } },
+];
+
+const GROUPS: { key: string; label: string; icon: ReactNode; places: Place[] }[] = [
+  {
+    key: 'company',
+    label: 'Company',
+    icon: <BuildingComplexGlyph size="sm" />,
+    places: [
+      { key: 'principles', label: 'Principles', icon: <BuildingComplexGlyph size="sm" /> },
+      { key: 'org', label: 'Org chart', icon: <NetworkGlyph size="sm" /> },
+      { key: 'spend', label: 'Spend', icon: <CoinsGlyph size="sm" /> },
+    ],
+  },
+  {
+    key: 'workspace',
+    label: 'Workspace',
+    icon: <LayoutGridGlyph size="sm" />,
+    places: [
+      { key: 'worklet', label: 'Worklet', icon: <SquareKanbanGlyph size="sm" /> },
+      {
+        key: 'chatlet',
+        label: 'Chatlet',
+        icon: <MessageSquareGlyph size="sm" />,
+        badge: { value: 4, label: 'unread mentions and direct messages' },
+      },
+      { key: 'doclet', label: 'Doclet', icon: <BookOpenGlyph size="sm" /> },
+      { key: 'live', label: 'Live', icon: <ActivityGlyph size="sm" /> },
+    ],
+  },
+];
+
+function FoldingRail({ at }: { at: string }) {
+  const { rail } = useAppShell();
+  const nav =
+    rail === 'compact' ? (
+      <CompactNav label="Navigation">
+        <CompactNavItem label="Search" icon={<SearchGlyph size="sm" />} title="Ask or jump to…" keyshortcuts="Control+K Meta+K" onClick={() => {}} />
+        {YOU.map((place) => (
+          <CompactNavItem {...place} key={place.key} href={`#/${place.key}`} current={place.key === at} />
+        ))}
+        <CompactNavSeparator label="Company and Workspace" />
+        {GROUPS.map((group) => (
+          <CompactNavGroup
+            key={group.key}
+            label={group.label}
+            icon={group.icon}
+            links={group.places.map((place) => ({ ...place, href: `#/${place.key}`, current: place.key === at }))}
+          />
+        ))}
+      </CompactNav>
+    ) : (
+      <SidebarNav label="Navigation">
+        <NavGroup label="">
+          {YOU.map((place) => (
+            <NavItem {...place} key={place.key} href={`#/${place.key}`} current={place.key === at} />
+          ))}
+        </NavGroup>
+        {GROUPS.map((group) => (
+          <NavGroup key={group.key} label={group.label}>
+            {group.places.map((place) => (
+              <NavItem {...place} key={place.key} href={`#/${place.key}`} current={place.key === at} />
+            ))}
+          </NavGroup>
+        ))}
+      </SidebarNav>
+    );
+  return (
+    <AppShell.Rail
+      header={<BrandLockup name="GoPhrase" mark={<CrewletIcon />} href="#/" />}
+      search={
+        <SearchTrigger variant="rail" label="Ask or jump to…" shortcut={<Kbd keys={['Mod', 'k']} subtle />} keyshortcuts="Control+K Meta+K" />
+      }
+      status={<EngineStatus alarms={[]} />}
+      footer={
+        rail === 'compact' ? (
+          <>
+            <CompactNav label="Account">
+              <CompactNavItem label="Settings" icon={<SettingsGlyph size="sm" />} href="#/settings" />
+            </CompactNav>
+            <AccountRow avatar={<Avatar name="Miles" kind="human" size="md" decorative />} name="Miles" detail="miles.crewlet" href="#/account" />
+          </>
+        ) : (
+          <AccountRow
+            avatar={<Avatar name="Miles" kind="human" size="md" decorative />}
+            name="Miles"
+            detail="miles.crewlet"
+            href="#/account"
+            actions={<IconButtonLink href="#/settings" label="Settings" size="sm" icon={<SettingsGlyph size="sm" />} />}
+          />
+        )
+      }
+    >
+      {nav}
+    </AppShell.Rail>
+  );
+}
+
+function FoldingShell({ initial }: { initial: AppShellRailShape }) {
+  const [rail, setRail] = useState<AppShellRailShape>(initial);
+  return (
+    <AppShell
+      rail={rail}
+      onRailChange={setRail}
+      railFoldKeys={['Mod', '\\']}
+      sidebar={<FoldingRail at="chatlet" />}
+      topbar={<Topbar />}
+    >
+      <Screen />
+    </AppShell>
+  );
+}
+
+/**
+ * The full rail with its fold control: one button over the compact column's
+ * centre in the row under the head, the search field starting a step after
+ * it, and the brand's mark over the same centre. Press it (the story binds no
+ * key; an application binds Mod and backslash itself) and the rail folds to its marks
+ * with neither the mark nor the control moving, and focus still on the
+ * control that unfolds it.
+ */
+export const Foldable: Story = {
+  render: () => <FoldingShell initial="full" />,
+};
+
+/**
+ * The compact rail: Search, Home, Inbox and My work as tiles, then Company
+ * and Workspace folded into one tile each, whose flyouts open beside the rail
+ * on the pointer, a press, or Right. The Workspace tile carries Chatlet's
+ * badge and is current while Chatlet is the page. The engine's status stands
+ * at the top of the foot, over Settings and the reader's face.
+ */
+export const Compact: Story = {
+  render: () => <FoldingShell initial="compact" />,
+};
+
+/**
+ * The compact choice under the shell step: the drawer is the full list,
+ * whatever the reader chose, and has no fold control.
+ */
+export const CompactChoiceNarrow: Story = {
+  parameters: { viewport: { options: UNDER_THE_BREAKPOINT } },
+  globals: { viewport: { value: 'narrow' } },
+  render: () => <FoldingShell initial="compact" />,
+};
+
+/**
+ * A FLUSH SCREEN (`fill="flush"`): the content column runs edge to edge under
+ * the bar, with no pad, measure or gap, for a screen that draws its own frame
+ * to the sheet's edges, such as a conversation with a list beside it.
+ */
+export const FillFlush: Story = {
+  render: () => (
+    <AppShell fill="flush" sidebar={<Rail />} topbar={<Topbar />}>
+      <div style={{ display: 'grid', gridTemplateColumns: '280px minmax(0, 1fr)', height: '100%' }}>
+        <div style={{ borderRight: '1px solid var(--color-border-default)', background: 'var(--color-surface-subtle)' }} />
+        <div />
+      </div>
     </AppShell>
   ),
 };

@@ -29,6 +29,7 @@ export type {
   AppShellContextValue,
   AppShellPeekShape,
   AppShellProps,
+  AppShellRailShape,
   AppShellRailProps,
   AppShellRailRowProps,
   AppShellRailStatusProps,

@@ -1,0 +1,322 @@
+/*
+ * The compact rail: each place its glyph's tile over its name, in one column.
+ *
+ * A PLACE IS 48PX TALL: a 26px tile, its name under it and a breath. Fourteen
+ * places, two rules, and the rail's head and foot stand in a 900px window, so
+ * the column a reader folded the rail to see more of the page never scrolls
+ * on a laptop.
+ *
+ * Tokens only. The tile's sizes are component variables, so a surface that
+ * draws the compact rail at another width changes them in one place.
+ */
+
+.crewlet-compact-nav {
+  --crewlet-compact-nav-tile-width: 36px;
+  --crewlet-compact-nav-tile-height: var(--size-control-sm);
+  --crewlet-compact-nav-glyph: 17px;
+  width: 100%;
+  min-width: 0;
+}
+
+.crewlet-compact-nav__list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0;
+  padding: 0 var(--spacing-1);
+  list-style: none;
+}
+
+.crewlet-compact-nav__entry {
+  display: flex;
+  min-width: 0;
+}
+
+/* A place is a link or a button, and a folded group is a button: one look for
+   all three. The entry itself draws nothing; the tile is what lifts. */
+.crewlet-compact-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--spacing-1) / 2);
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: calc(var(--spacing-1) - 1px) 0 var(--spacing-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* The ring is drawn on the tile (below), not round the whole entry. The
+   entry's own outline is transparent rather than none, so forced colours,
+   which paint a transparent outline in the system's ink, still draw one. */
+.crewlet-compact-nav__item:focus {
+  outline: 2px solid transparent;
+}
+
+.crewlet-compact-nav__tile {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--crewlet-compact-nav-tile-width);
+  height: var(--crewlet-compact-nav-tile-height);
+  border-radius: var(--radius-md);
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* A step larger than the full rail's 14px glyph: in the compact rail the
+   glyph is the place's name at a glance, and the word under it is the
+   caption. */
+.crewlet-compact-nav__tile > .crewlet-glyph {
+  width: var(--crewlet-compact-nav-glyph);
+  height: var(--crewlet-compact-nav-glyph);
+}
+
+.crewlet-compact-nav__item:hover .crewlet-compact-nav__tile,
+.crewlet-compact-nav__item[data-open] .crewlet-compact-nav__tile {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.crewlet-compact-nav__item:hover .crewlet-compact-nav__label,
+.crewlet-compact-nav__item[data-open] .crewlet-compact-nav__label {
+  color: var(--color-text-primary);
+}
+
+/*
+ * WHERE THE READER IS: the full rail's own current row, drawn on the tile.
+ * Raised, the plain hairline as an OUTLINE (forced colours keep outlines and
+ * drop backgrounds), and the primary ink. After :hover, so the current tile
+ * shows its lift rather than the overlay. A folded group's tile is current
+ * (`aria-current="true"`) while one of its places is.
+ */
+.crewlet-compact-nav__item[aria-current] .crewlet-compact-nav__tile {
+  background: var(--color-surface-elevated);
+  outline: 1px solid var(--color-border-default);
+  outline-offset: -1px;
+  color: var(--color-text-primary);
+}
+
+.crewlet-compact-nav__item[aria-current] .crewlet-compact-nav__label {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* The ring is the tile's, after the current rule that draws its hairline on
+   the same property, so a focused current tile draws the ring. */
+.crewlet-compact-nav__item:focus-visible .crewlet-compact-nav__tile {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+}
+
+.crewlet-compact-nav__label {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 calc(var(--spacing-1) / 2);
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-tight);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A place the reader holds no access to keeps its name and its key, in the
+   quiet ink, as a locked group's rows do in the full rail. */
+.crewlet-compact-nav__item--locked:not([aria-current]):not(:hover) .crewlet-compact-nav__label,
+.crewlet-compact-nav__item--locked:not([aria-current]):not(:hover) .crewlet-compact-nav__tile {
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * THE FIGURE RIDES THE TILE'S TOP END CORNER, cut out of the rail by a ring of
+ * the rail's own ground, so it reads apart from the glyph under it. It is the
+ * one count badge size the whole chrome draws (`--size-badge`), the accent
+ * fill where it is waiting on the reader and the raised ground where it is
+ * only a tally.
+ */
+.crewlet-compact-nav__figure {
+  position: absolute;
+  top: calc(var(--spacing-1) * -1 - 1px);
+  right: calc(var(--spacing-2) * -1 + 1px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-badge);
+  height: var(--size-badge);
+  box-sizing: border-box;
+  padding: 0 var(--size-badge-pad);
+  border: 2px solid var(--color-surface-frame);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-badge);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.crewlet-compact-nav__figure--badge {
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+}
+
+/* A short rule between two runs of tiles, centred in the column. */
+.crewlet-compact-nav__separator {
+  display: flex;
+  justify-content: center;
+  padding: calc(var(--spacing-1) + var(--spacing-1) / 2) 0;
+}
+
+.crewlet-compact-nav__rule {
+  width: var(--spacing-6);
+  height: 1px;
+  background: var(--color-border-default);
+}
+
+/*
+ * THE FLYOUT: a folded group's places beside the rail, on the popover's rung.
+ * Its rows are the full rail's rows at the menu's step: the glyph, the name,
+ * and the figure at the end, so the places read as they do unfolded.
+ */
+.crewlet-compact-nav__flyout {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 208px;
+  max-width: min(320px, calc(100vw - var(--spacing-4)));
+  box-sizing: border-box;
+  padding: var(--spacing-1);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-family-sans);
+  animation: crewlet-compact-nav-flyout-in var(--motion-duration-fast) var(--motion-easing-out);
+}
+
+/* Inside a LayerHost the coordinates are the host's own, so the flyout is
+   absolute within it rather than fixed against the window. */
+.crewlet-compact-nav__flyout--in-host {
+  position: absolute;
+}
+
+@keyframes crewlet-compact-nav-flyout-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--spacing-1) * -1));
+  }
+}
+
+.crewlet-compact-nav__flyout-head {
+  padding: var(--spacing-1) var(--spacing-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-tight);
+}
+
+/* A router's link is drawn by the caller; its wrapper stays out of the box tree. */
+.crewlet-compact-nav__link-slot {
+  display: contents;
+}
+
+.crewlet-compact-nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  height: var(--size-control-md);
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+  outline: none;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-default),
+    color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-compact-nav__link:hover,
+.crewlet-compact-nav__link:focus-visible {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/* The place the reader is on: the selected fill, the primary ink, a step
+   heavier. Declared after the hover so the selected fill holds under it. */
+.crewlet-compact-nav__link[aria-current='page'] {
+  background: var(--color-surface-selected);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.crewlet-compact-nav__link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-compact-nav__link--locked:not([aria-current]):not(:hover):not(:focus-visible) {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-compact-nav__link-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.crewlet-compact-nav__link-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-compact-nav__link-figure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: var(--size-badge);
+  height: var(--size-badge);
+  box-sizing: border-box;
+  padding: 0 var(--size-badge-pad);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-badge);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.crewlet-compact-nav__link-figure--badge {
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-compact-nav__tile,
+  .crewlet-compact-nav__link {
+    transition: none;
+  }
+
+  .crewlet-compact-nav__flyout {
+    animation: none;
+  }
+}

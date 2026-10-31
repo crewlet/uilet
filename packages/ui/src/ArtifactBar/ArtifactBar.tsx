@@ -4,7 +4,7 @@ import { ArtifactIcon } from '../ArtifactIcon/index.js';
 import type { ArtifactKind } from '../ArtifactKindGlyph/index.js';
 import { Button } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
-import { Kbd, isApplePlatform } from '../Kbd/index.js';
+import { Kbd, ariaKeyshortcuts, isApplePlatform } from '../Kbd/index.js';
 import { Menu, type MenuEntry, type MenuItem } from '../Menu/index.js';
 import { SegmentedControl } from '../SegmentedControl/index.js';
 import { Tooltip } from '../Tooltip/index.js';
@@ -318,16 +318,6 @@ export function ArtifactBar({
   );
 }
 
-/** The `aria-keyshortcuts` spelling of a shortcut: `Control+K`, `H`. */
-function ariaKeys(keys: readonly string[], apple: boolean): string {
-  return keys
-    .map((key) => {
-      if (key === 'Mod') return apple ? 'Meta' : 'Control';
-      return key.length === 1 ? key.toUpperCase() : key;
-    })
-    .join('+');
-}
-
 function Tip({ tool, apple }: { tool: ArtifactBarTool; apple: boolean }) {
   return (
     <span className="crewlet-artifact-bar__tip">
@@ -351,7 +341,7 @@ function ToolButton({ tool, apple }: { tool: ArtifactBarTool; apple: boolean }) 
           title=""
           pressed={tool.pressed}
           disabledReason={tool.disabledReason}
-          aria-keyshortcuts={tool.keys ? ariaKeys(tool.keys, apple) : undefined}
+          aria-keyshortcuts={tool.keys ? ariaKeyshortcuts(tool.keys, apple) : undefined}
           onClick={tool.onSelect}
         />
       </Tooltip>
@@ -366,7 +356,7 @@ function ToolButton({ tool, apple }: { tool: ArtifactBarTool; apple: boolean }) 
 
 /** A labelled tool: its word beside the glyph while the bar is wide, the glyph alone when it is not. */
 function LabelledTool({ tool, apple }: { tool: ArtifactBarTool; apple: boolean }) {
-  const shortcut = tool.keys ? ariaKeys(tool.keys, apple) : undefined;
+  const shortcut = tool.keys ? ariaKeyshortcuts(tool.keys, apple) : undefined;
   if (tool.emphasis === 'primary') {
     return (
       <Tooltip content={<Tip tool={tool} apple={apple} />} placement="bottom" disabled={!tool.keys}>

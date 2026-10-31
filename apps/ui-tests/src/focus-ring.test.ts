@@ -132,6 +132,9 @@ test('a ring stands off its element only where the element draws no edge', () =>
       // A link in rendered prose, which is text with an underline and no box.
       'Document/Document.css | .crewlet-document a:focus-visible',
       'BrandLockup/BrandLockup.css | .crewlet-brand__home:focus-visible',
+      // The compact rail's account: the reader's face alone, a mark with no
+      // box of its own, which a ring drawn inside would cover.
+      'AppShell/AppShell.css | .crewlet-account-row__who.crewlet-account-row__who--compact:focus-visible',
       'EntityChip/EntityChip.css | .crewlet-entity-chip--link:focus-visible',
       'DataTable/DataTable.css | .crewlet-data-table__clear-filters:focus-visible',
       'ImageUpload/ImageUpload.css | .crewlet-image-upload__trigger:focus-visible',

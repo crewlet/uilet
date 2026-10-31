@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useRailShape } from '../AppShell/railShape.js';
 import { cx } from '../utils/cx.js';
 
 /** What a caller is handed when it draws the link element itself. */
@@ -8,6 +9,8 @@ export interface BrandLinkProps {
   /** Present only when `href` was given; a router link takes its own target. */
   href?: string | undefined;
   'aria-label': string;
+  /** The name as the pointer's title, where the rail is compact and draws the mark alone. */
+  title?: string | undefined;
 }
 
 export interface BrandLockupProps {
@@ -41,8 +44,13 @@ export interface BrandLockupProps {
  *
  * The mark is hidden from assistive technology: a logo beside its own name is
  * the definition of decoration.
+ *
+ * IN A COMPACT RAIL THE MARK STANDS ALONE (the shell's stylesheet stops
+ * drawing the name), so the link takes the name as its title too: the
+ * pointer is told what the mark is, and the link is still named by it.
  */
 export function BrandLockup({ name, mark, context, href, renderLink, className }: BrandLockupProps) {
+  const title = useRailShape() === 'compact' ? name : undefined;
   const inside = (
     <>
       {mark ? (
@@ -58,6 +66,7 @@ export function BrandLockup({ name, mark, context, href, renderLink, className }
     children: inside,
     'aria-label': name,
     ...(href === undefined ? {} : { href }),
+    ...(title === undefined ? {} : { title }),
   };
   return (
     <div className={cx('crewlet-brand', className)}>
@@ -67,9 +76,11 @@ export function BrandLockup({ name, mark, context, href, renderLink, className }
         // Not a link, because it goes nowhere. An anchor with no href is
         // announced as text anyway, and one with href="#" navigates the page
         // it is meant to be the way out of.
-        <span className="crewlet-brand__home">{inside}</span>
+        <span className="crewlet-brand__home" title={title}>
+          {inside}
+        </span>
       ) : (
-        <a className="crewlet-brand__home" href={href} aria-label={name}>
+        <a className="crewlet-brand__home" href={href} aria-label={name} title={title}>
           {inside}
         </a>
       )}
