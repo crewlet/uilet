@@ -213,6 +213,8 @@ places:
 
 **A badge takes a tone.** `NavItem`'s and `CompactNavItem`'s `badge` (type `NavBadge`) take `tone`, `'attention' | 'quiet'` (Count's own `CountTone`), with `attention` the default, so the inbox's accent pill is unchanged. `quiet` keeps the round pill, its size and its place on the row's end line, in the quiet count's grey: a neutral wash (`--color-fill-soft`) carrying the secondary ink, lifting to the row's ink on the reader's own row, measured on every ground a row can have in every palette. It is for work that is the reader's own and waits but does not call: My work beside the Inbox. In the compact rail a quiet badge is the tile's quiet figure, and a folded group's tile adds up only the badges that call. Story: `SidebarNav` Badge Tones.
 
+**Choosing a place in a folded group's flyout leaves focus somewhere.** The flyout closed on every choice, by a press, by the pointer resting and by the keys, but only a choice made with the keys handed focus back to the tile; a press left focus on the place's link, which went with the flyout, so the reader's next Tab started from the top of the document. Focus now follows the navigation: where the page the place opened takes focus, it stays there, and where it is still in the flyout it goes back to the tile, by a press as by a key (without a ring for a pointer reader).
+
 ## Changes in 0.83.0
 
 ### The application rail

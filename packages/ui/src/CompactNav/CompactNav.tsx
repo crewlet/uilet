@@ -368,8 +368,9 @@ type Opener = 'pointer' | 'press' | 'keys';
  * whatever came next in the document.
  *
  * EVERY PLACE IS A REAL LINK, so a modified press opens a tab as it does in
- * the full rail; choosing one closes the flyout and, where the keyboard chose
- * it, hands focus back to the tile.
+ * the full rail; choosing one closes the flyout, and focus follows the
+ * navigation: where the page it opened took focus it stays there, and where
+ * it is still in the flyout it goes back to the tile, by a press as by a key.
  *
  * WHAT OPENED IT DECIDES WHAT CLOSES IT. Opened by the pointer resting on the
  * tile, it closes when the pointer leaves both; opened by a press or the keys,
@@ -542,9 +543,18 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
     if (opener.current === 'pointer') timer.current = setTimeout(() => setOpen(false), CLOSE_DELAY);
   };
 
+  /*
+   * CHOOSING A PLACE CLOSES THE FLYOUT, AND FOCUS FOLLOWS THE NAVIGATION. The
+   * place's own handler runs first, and the page it opens may take focus (a
+   * screen that focuses its heading): that focus is the reader's, and it is
+   * left where the page put it. Focus still inside the flyout, by a press as
+   * much as by the keys, would be dropped to the top of the document when the
+   * flyout goes, so it is handed back to the tile instead. It used to be
+   * handed back for the keys alone, and a press left the reader nowhere.
+   */
   const choose = (link: CompactNavLink) => (event: MouseEvent<HTMLElement>) => {
     link.onClick?.(event);
-    close(panel.current?.contains(document.activeElement) === true && event.detail === 0);
+    close(panel.current?.contains(document.activeElement) === true);
   };
 
   const flyout = open ? (

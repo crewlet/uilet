@@ -362,6 +362,82 @@ describe('a folded group', () => {
     expect(document.activeElement).toBe(company);
   });
 
+  /**
+   * A page whose places navigate the way a router does: the link's own
+   * handler runs the navigation, and the page it lands on may take focus (a
+   * screen that focuses its heading) or may not.
+   */
+  function Routed({ focusesPage }: { focusesPage: boolean }) {
+    const go = (event: { preventDefault: () => void }) => {
+      event.preventDefault();
+      if (focusesPage) document.getElementById('page')?.focus();
+    };
+    return (
+      <>
+        <CompactNav label="Navigation">
+          <CompactNavGroup
+            label="Company"
+            icon={<svg />}
+            links={[
+              { key: 'org', label: 'Org chart', icon: <svg />, href: '#/company/org', onClick: go },
+              { key: 'spend', label: 'Spend', icon: <svg />, href: '#/company/spend', onClick: go },
+            ]}
+          />
+        </CompactNav>
+        <main id="page" tabIndex={-1}>
+          The page
+        </main>
+      </>
+    );
+  }
+
+  describe('choosing a place closes the flyout, and focus follows the navigation', () => {
+    test('a press: the flyout closes, and focus is not left in the closed popup', async () => {
+      const user = userEvent.setup();
+      render(<Routed focusesPage={false} />);
+      const company = screen.getByRole('button', { name: 'Company' });
+      await user.click(company);
+      await user.click(screen.getByRole('menuitem', { name: 'Spend' }));
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(company.getAttribute('aria-expanded')).toBe('false');
+      // Nowhere else to go: back to the tile, never to the document's top.
+      expect(document.activeElement).toBe(company);
+    });
+
+    test('a press on a place whose page takes focus: focus stays with the page', async () => {
+      const user = userEvent.setup();
+      render(<Routed focusesPage />);
+      await user.click(screen.getByRole('button', { name: 'Company' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Spend' }));
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(document.activeElement).toBe(screen.getByRole('main'));
+    });
+
+    test('Enter on a place whose page takes focus: focus stays with the page, not pulled back to the tile', async () => {
+      const user = userEvent.setup();
+      render(<Routed focusesPage />);
+      const company = screen.getByRole('button', { name: 'Company' });
+      company.focus();
+      await user.keyboard('{ArrowRight}');
+      await user.keyboard('{ArrowDown}');
+      await user.keyboard('{Enter}');
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(company.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(screen.getByRole('main'));
+    });
+
+    test('Enter on a place whose page does not take focus: back to the tile', async () => {
+      const user = userEvent.setup();
+      render(<Routed focusesPage={false} />);
+      const company = screen.getByRole('button', { name: 'Company' });
+      company.focus();
+      await user.keyboard('{ArrowRight}');
+      await user.keyboard('{Enter}');
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(document.activeElement).toBe(company);
+    });
+  });
+
   test('the pointer resting on the tile opens it after a moment, and leaving both closes it', () => {
     vi.useFakeTimers();
     render(<Rail />);
