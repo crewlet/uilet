@@ -66,6 +66,17 @@ function rule(selector: string): string {
   return new RegExp(`${selector.replace(/[.]/g, '\\.')} \\{([^}]*)\\}`).exec(css)?.[1] ?? '';
 }
 
+// THE GROUPS ARE THE LIST'S SCROLLER, and keep their inset inside: the gutter
+// is reserved whether or not they scroll, and the lines end a step before it,
+// so a line's state never touches the scrollbar and does not move when the
+// list grows long enough to scroll.
+test("the groups scroll with their gutter reserved, and a line's state clear of the bar", () => {
+  const groups = rule('.crewlet-directory__groups');
+  expect(groups).toMatch(/overflow-y:\s*auto;/);
+  expect(groups).toMatch(/scrollbar-gutter:\s*stable;/);
+  expect(groups).toMatch(/padding-right:\s*var\(--spacing-2\);/);
+});
+
 // THE RAIL'S ROW STEP: a line is exactly the rail's height, in its compact
 // type, so a state pill or a hint can never make one line taller than the rest.
 test("a line stands at the rail's row step, its hint inline after the label", () => {

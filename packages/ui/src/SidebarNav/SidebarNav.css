@@ -415,6 +415,26 @@
   line-height: 1;
 }
 
+/*
+ * A QUIET BADGE keeps the pill, its size and its place at the row's end, and
+ * takes the quiet count's grey: a neutral wash (`--color-fill-soft`, the
+ * ground of a quiet label at rest) carrying the secondary ink, for work that
+ * is the reader's own and waiting, but not calling. The secondary ink rather
+ * than the count's tertiary, because on a wash over a hovered row the
+ * tertiary measured 4.41:1 in light; it is the ink the compact rail's quiet
+ * figure takes, so the two shapes draw the same grey. On the reader's own row
+ * its ink lifts to the row's, as the count's does; the suite measures the
+ * pair on every ground a row can have.
+ */
+.crewlet-nav-item__badge--quiet {
+  background: var(--color-fill-soft);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-nav-item__row[aria-current='page'] .crewlet-nav-item__badge--quiet {
+  color: inherit;
+}
+
 /* Beside a count the badge is the second figure, not a second push to the
    end: two auto margins would split the room between them and float the
    count into the middle of the row. */

@@ -172,13 +172,32 @@ export function installSheets(...paths: string[]): () => void {
  * no single answer and is LEFT STANDING, exactly as before: a measurement
  * through it still reads zero, which is honest, where picking one of three
  * values would be a number nobody drew.
+ *
+ * `answered` is for a sheet whose width queries are already answered
+ * (`installAtWidth`): there a property redeclared ON THE SAME SELECTOR by a
+ * query that matched (a shell's inset, one step narrower on a narrow window)
+ * has exactly one answer, the later one, as the cascade gives it. A name
+ * redeclared on any other selector is still left standing.
  */
-function resolveOwn(css: string): string {
+function resolveOwn(css: string, { answered = false }: { answered?: boolean } = {}): string {
   const seen = new Map<string, string | null>();
-  for (const [, name, value] of css.matchAll(
-    /(--crewlet-[\w-]+):\s*([^;{}]+);/g,
-  )) {
-    seen.set(name!, seen.has(name!) ? null : value!.trim());
+  if (answered) {
+    const declared = new Map<string, { selector: string; value: string }[]>();
+    for (const [, selector, body] of css.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+      for (const [, name, value] of body!.matchAll(/(--crewlet-[\w-]+):\s*([^;{}]+);/g)) {
+        declared.set(name!, [...(declared.get(name!) ?? []), { selector: selector!.trim(), value: value!.trim() }]);
+      }
+    }
+    for (const [name, all] of declared) {
+      const oneSelector = all.every((declaration) => declaration.selector === all[0]!.selector);
+      seen.set(name, oneSelector ? all[all.length - 1]!.value : null);
+    }
+  } else {
+    for (const [, name, value] of css.matchAll(
+      /(--crewlet-[\w-]+):\s*([^;{}]+);/g,
+    )) {
+      seen.set(name!, seen.has(name!) ? null : value!.trim());
+    }
   }
   let out = css;
   for (let pass = 0; pass < 4; pass += 1) {
@@ -831,7 +850,7 @@ export function installAtWidth(
       /var\((--[\w-]+)\)/g,
       (whole, name: string) => table.get(name) ?? whole,
     );
-  return installCss(answerWidth(resolveOwn(resolveLengths(source)), width));
+  return installCss(resolveOwn(answerWidth(resolveLengths(source), width), { answered: true }));
 }
 
 /**

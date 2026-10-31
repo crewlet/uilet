@@ -10,6 +10,17 @@
  * drew the detail 130px wide beside a 17rem list. The phone rule below is the
  * one decision that stays the window's: on a phone the page scrolls as a
  * whole rather than each pane on its own.
+ *
+ * ON A SCREEN THAT FILLS THE WINDOW, THE PANE THAT SCROLLS IS ITS OUTERMOST
+ * BOX, and its inset is padding inside it. Standing directly in the fill
+ * column, the ListDetail reaches past the column's end pad to the sheet's
+ * edge (below), so the scrollbar is the sheet's last pixel; the detail then
+ * reserves its scrollbar's gutter whether or not it scrolls, and keeps the
+ * screen's side inset between its content and that gutter, so a trailing
+ * control (a header's Disconnect, a tile's Open) never touches the scrollbar,
+ * does not move when the detail grows long enough to scroll, and ends under
+ * the bar's last control. Anywhere else (a scrolling or a flush screen, or
+ * outside a shell) it is as wide as its box, with nothing reserved.
  */
 
 /* THE HAIRLINE STANDS MIDWAY between the two panes: the list's inset before it
@@ -17,6 +28,9 @@
    the list than to the detail it divides it from; the two still add to 64. */
 .crewlet-list-detail {
   --crewlet-list-detail-gutter: var(--spacing-7);
+  /* The inset at a scrolling pane's end: the screen's own side inset in a
+     shell, so the page's two edges match. */
+  --crewlet-list-detail-end: var(--crewlet-app-shell-inset, var(--spacing-5));
 
   container: crewlet-list-detail / inline-size;
   display: flex;
@@ -25,6 +39,21 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
+}
+
+/* STANDING IN A FILL SCREEN'S COLUMN, IT TAKES THE COLUMN'S END PAD BACK: the
+   inset and the scrollbar's width, which the shell publishes for exactly
+   this (`--crewlet-app-shell-bleed-end`, AppShell.css). The detail keeps the
+   same inset inside itself, and reserves its gutter, there and only there. */
+:where(.crewlet-app-shell--fill:not(.crewlet-app-shell--fill-flush) .crewlet-app-shell__content) > .crewlet-list-detail {
+  margin-right: calc(var(--crewlet-app-shell-bleed-end, 0px) * -1);
+}
+
+:where(.crewlet-app-shell--fill:not(.crewlet-app-shell--fill-flush) .crewlet-app-shell__content)
+  > .crewlet-list-detail
+  .crewlet-list-detail__detail {
+  padding-right: var(--crewlet-list-detail-end);
+  scrollbar-gutter: stable;
 }
 
 .crewlet-list-detail__panes {
@@ -66,6 +95,15 @@
     padding-right: 0;
     border-right: 0;
     overflow-y: auto;
+  }
+
+  /* The list is the pane that scrolls now, and takes the detail's end where
+     the ListDetail reaches the sheet. */
+  :where(.crewlet-app-shell--fill:not(.crewlet-app-shell--fill-flush) .crewlet-app-shell__content)
+    > .crewlet-list-detail
+    .crewlet-list-detail__list {
+    padding-right: var(--crewlet-list-detail-end);
+    scrollbar-gutter: stable;
   }
 
   .crewlet-list-detail--showing-list .crewlet-list-detail__detail,

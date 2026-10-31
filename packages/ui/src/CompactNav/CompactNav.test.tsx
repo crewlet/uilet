@@ -3,8 +3,9 @@
  * the keys that walk it, and the figures that ride the tiles.
  */
 
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useEffect, useState } from 'react';
 import axe from 'axe-core';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
@@ -163,6 +164,36 @@ describe("a folded group's figure", () => {
     expect(groupBadge([{ badge: { value: '50+', label: 'unread' } }, { badge: { value: 3, label: 'new' } }])).toBe('53+');
     expect(groupBadge([{ badge: { value: '1,200', label: 'unread' } }, { badge: { value: 3, label: 'new' } }])).toBe(1203);
     expect(groupBadge([{ badge: { value: 'new', label: 'item' } }, { badge: { value: 3, label: 'new' } }])).toBe('new+');
+  });
+
+  test('a quiet badge is not carried into the sum: only what waits in the accent is', () => {
+    expect(
+      groupBadge([{ badge: { value: 3, label: 'unread' } }, { badge: { value: 23, label: 'open', tone: 'quiet' } }]),
+    ).toBe(3);
+    expect(groupBadge([{ badge: { value: 23, label: 'open', tone: 'quiet' } }])).toBeUndefined();
+  });
+
+  test("a quiet badge on a tile and in a flyout is the quiet count's figure, not the accent's", async () => {
+    const user = userEvent.setup();
+    render(
+      <CompactNav label="Navigation">
+        <CompactNavItem label="My work" icon={<svg />} href="#/me" badge={{ value: 23, label: 'open', tone: 'quiet' }} />
+        <CompactNavGroup
+          label="Workspace"
+          icon={<svg />}
+          links={[{ key: 'w', label: 'Worklet', icon: <svg />, href: '#/w', badge: { value: 4, label: 'open', tone: 'quiet' } }]}
+        />
+      </CompactNav>,
+    );
+    const tile = screen.getByRole('link', { name: 'My work, 23 open' }).querySelector('.crewlet-compact-nav__figure')!;
+    expect(tile.textContent).toBe('23');
+    expect(tile.classList.contains('crewlet-compact-nav__figure--badge')).toBe(false);
+    // The group carries nothing: no accent waits in it.
+    const group = screen.getByRole('button', { name: /Workspace/ });
+    expect(group.querySelector('.crewlet-compact-nav__figure')).toBeNull();
+    await user.click(group);
+    const link = screen.getByRole('menuitem', { name: 'Worklet, 4 open' }).querySelector('.crewlet-compact-nav__link-figure')!;
+    expect(link.classList.contains('crewlet-compact-nav__link-figure--badge')).toBe(false);
   });
 
   test('quiet counts are not carried, and nothing waiting is no figure', () => {
@@ -329,7 +360,199 @@ describe('a folded group', () => {
     await user.keyboard('{Enter}');
     expect(chosen).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('menu')).toBeNull();
-    expect(document.activeElement).toBe(company);
+    await waitFor(() => expect(document.activeElement).toBe(company));
+  });
+
+  /**
+   * A page whose places navigate the way a router does: the link's own
+   * handler runs the navigation, and the page it lands on may take focus (a
+   * screen that focuses its heading) or may not.
+   */
+  function Routed({ focusesPage }: { focusesPage: boolean }) {
+    const go = (event: { preventDefault: () => void }) => {
+      event.preventDefault();
+      if (focusesPage) document.getElementById('page')?.focus();
+    };
+    return (
+      <>
+        <CompactNav label="Navigation">
+          <CompactNavGroup
+            label="Company"
+            icon={<svg />}
+            links={[
+              { key: 'org', label: 'Org chart', icon: <svg />, href: '#/company/org', onClick: go },
+              { key: 'spend', label: 'Spend', icon: <svg />, href: '#/company/spend', onClick: go },
+            ]}
+          />
+        </CompactNav>
+        <main id="page" tabIndex={-1}>
+          The page
+        </main>
+      </>
+    );
+  }
+
+  /**
+   * THE ENGINE'S OWN SHAPE: plain hash links (no handler of their own, so the
+   * browser's own navigation moves the hash), and a router that re-renders
+   * the places from `location.hash` when it changes, marking the one it lands
+   * on current.
+   */
+  function HashRouted() {
+    const [hash, setHash] = useState(() => location.hash);
+    useEffect(() => {
+      const follow = () => setHash(location.hash);
+      window.addEventListener('hashchange', follow);
+      return () => window.removeEventListener('hashchange', follow);
+    }, []);
+    const place = (key: string, label: string) => ({
+      key,
+      label,
+      icon: <svg />,
+      href: `#/company/${key}`,
+      current: hash === `#/company/${key}`,
+      onPrefetch: () => {},
+    });
+    return (
+      <CompactNav label="Navigation">
+        <CompactNavGroup label="Company" icon={<svg />} links={[place('org', 'Org chart'), place('brand', 'Brand')]} />
+      </CompactNav>
+    );
+  }
+
+  describe("with the engine's hash links and router", () => {
+    afterEach(() => {
+      history.replaceState(null, '', ' ');
+    });
+
+    for (const how of ['press', 'keys'] as const) {
+      test(`choosing by ${how} closes the flyout, and it stays closed once the router has moved`, async () => {
+        const user = userEvent.setup();
+        render(<HashRouted />);
+        const company = screen.getByRole('button', { name: 'Company' });
+        if (how === 'press') {
+          await user.click(company);
+          await user.click(screen.getByRole('menuitem', { name: 'Brand' }));
+        } else {
+          company.focus();
+          await user.keyboard('{ArrowRight}{ArrowDown}{Enter}');
+        }
+        // The browser's own navigation, which jsdom performs for a fragment,
+        // and the router's re-render after it.
+        await act(async () => {
+          window.dispatchEvent(new HashChangeEvent('hashchange'));
+        });
+        expect(location.hash).toBe('#/company/brand');
+        expect(screen.queryByRole('menu')).toBeNull();
+        expect(company.getAttribute('aria-expanded')).toBe('false');
+        // The tile says where the reader went, and holds the reader's focus.
+        expect(company.getAttribute('aria-current')).toBe('true');
+        await waitFor(() => expect(document.activeElement).toBe(company));
+      });
+    }
+  });
+
+  describe('choosing a place closes the flyout, and focus follows the navigation', () => {
+    test('a press: the flyout closes, and focus is not left in the closed popup', async () => {
+      const user = userEvent.setup();
+      render(<Routed focusesPage={false} />);
+      const company = screen.getByRole('button', { name: 'Company' });
+      await user.click(company);
+      await user.click(screen.getByRole('menuitem', { name: 'Spend' }));
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(company.getAttribute('aria-expanded')).toBe('false');
+      // Nowhere else to go: back to the tile, never to the document's top.
+      await waitFor(() => expect(document.activeElement).toBe(company));
+    });
+
+    test('a press on a place whose page takes focus: focus stays with the page', async () => {
+      const user = userEvent.setup();
+      render(<Routed focusesPage />);
+      await user.click(screen.getByRole('button', { name: 'Company' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Spend' }));
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(document.activeElement).toBe(screen.getByRole('main'));
+    });
+
+    test('Enter on a place whose page takes focus: focus stays with the page, not pulled back to the tile', async () => {
+      const user = userEvent.setup();
+      render(<Routed focusesPage />);
+      const company = screen.getByRole('button', { name: 'Company' });
+      company.focus();
+      await user.keyboard('{ArrowRight}');
+      await user.keyboard('{ArrowDown}');
+      await user.keyboard('{Enter}');
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(company.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(screen.getByRole('main'));
+    });
+
+    test('Enter on a place whose page does not take focus: back to the tile', async () => {
+      const user = userEvent.setup();
+      render(<Routed focusesPage={false} />);
+      const company = screen.getByRole('button', { name: 'Company' });
+      company.focus();
+      await user.keyboard('{ArrowRight}');
+      await user.keyboard('{Enter}');
+      expect(screen.queryByRole('menu')).toBeNull();
+      await waitFor(() => expect(document.activeElement).toBe(company));
+    });
+
+    /*
+     * THE DESTINATION TAKES FOCUS FIRST. A router that moves focus to the
+     * page only where nothing holds it (focus on the document's body) found
+     * the tile holding it, because the tile was handed focus in the same
+     * press, and the reader was stranded on the rail. The tile takes focus
+     * back only where nothing has by the next frame.
+     */
+    function PoliteRouted() {
+      const [at, setAt] = useState('');
+      useEffect(() => {
+        const held = document.activeElement;
+        if (at && (held === null || held === document.body)) document.getElementById('page')?.focus();
+      }, [at]);
+      const go = (event: { preventDefault: () => void; currentTarget: EventTarget }) => {
+        event.preventDefault();
+        setAt((event.currentTarget as HTMLElement).getAttribute('href') ?? '');
+      };
+      return (
+        <>
+          <CompactNav label="Navigation">
+            <CompactNavGroup
+              label="Company"
+              icon={<svg />}
+              links={[
+                { key: 'org', label: 'Org chart', icon: <svg />, href: '#/company/org', onClick: go },
+                { key: 'spend', label: 'Spend', icon: <svg />, href: '#/company/spend', onClick: go },
+              ]}
+            />
+          </CompactNav>
+          <main id="page" tabIndex={-1}>
+            The page
+          </main>
+        </>
+      );
+    }
+
+    for (const how of ['press', 'keys'] as const) {
+      test(`by ${how}: a router that takes focus only where nothing holds it gets it`, async () => {
+        const user = userEvent.setup();
+        render(<PoliteRouted />);
+        const company = screen.getByRole('button', { name: 'Company' });
+        if (how === 'press') {
+          await user.click(company);
+          await user.click(screen.getByRole('menuitem', { name: 'Spend' }));
+        } else {
+          company.focus();
+          await user.keyboard('{ArrowRight}{ArrowDown}{Enter}');
+        }
+        expect(screen.queryByRole('menu')).toBeNull();
+        expect(document.activeElement).toBe(screen.getByRole('main'));
+        // And the tile does not pull it back a frame later.
+        await new Promise((done) => setTimeout(done, 50));
+        expect(document.activeElement).toBe(screen.getByRole('main'));
+      });
+    }
   });
 
   test('the pointer resting on the tile opens it after a moment, and leaving both closes it', () => {
@@ -369,6 +592,60 @@ describe('a folded group', () => {
     fireEvent.pointerEnter(screen.getByRole('button', { name: 'Company' }), { pointerType: 'touch' });
     act(() => vi.advanceTimersByTime(400));
     expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  // A CHOICE IS NOT A REQUEST TO OPEN AGAIN. Choosing a place closes the
+  // flyout with the pointer still on the tile or beside it, and resting there
+  // opened it again a moment later, over the page just chosen.
+  test('after a choice, resting on the tile does not reopen it until the pointer leaves and returns', () => {
+    vi.useFakeTimers();
+    render(<Rail />);
+    const company = screen.getByRole('button', { name: 'Company' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    fireEvent.click(screen.getAllByRole('menuitem')[1]!);
+    expect(screen.queryByRole('menu')).toBeNull();
+
+    // Still on the tile, past the delay.
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    fireEvent.pointerMove(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(400));
+    expect(screen.queryByRole('menu')).toBeNull();
+
+    // Away, and back: resting opens it again.
+    fireEvent.pointerLeave(company, { pointerType: 'mouse' });
+    fireEvent.pointerMove(document.body, { pointerType: 'mouse' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    expect(screen.getByRole('menu', { name: 'Company' })).toBeTruthy();
+  });
+
+  test('after a choice made where the flyout stood, the next rest on the tile opens it', () => {
+    vi.useFakeTimers();
+    render(<Rail />);
+    const company = screen.getByRole('button', { name: 'Company' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    fireEvent.click(screen.getAllByRole('menuitem')[1]!);
+    // The pointer moves on over the page, then comes to the tile.
+    fireEvent.pointerMove(document.body, { pointerType: 'mouse' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    expect(screen.getByRole('menu', { name: 'Company' })).toBeTruthy();
+  });
+
+  test('after a choice, a press and the keys still open it at once', () => {
+    vi.useFakeTimers();
+    render(<Rail />);
+    const company = screen.getByRole('button', { name: 'Company' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    fireEvent.click(screen.getAllByRole('menuitem')[1]!);
+    fireEvent.click(company, { detail: 1 });
+    expect(screen.getByRole('menu', { name: 'Company' })).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('menuitem')[1]!);
+    fireEvent.keyDown(company, { key: 'ArrowRight' });
+    expect(screen.getByRole('menu', { name: 'Company' })).toBeTruthy();
   });
 });
 

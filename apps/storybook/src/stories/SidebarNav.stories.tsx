@@ -165,11 +165,12 @@ export const Sections: Story = {
 /**
  * WHAT WAITS ON THE READER IS ONE PILL, WHEREVER IT STANDS. The inbox, the
  * reader's own work and the conversations that name them each carry a
- * `badge`: the accent's filled pill, round for one or two figures, centred on
- * its row's line and ending on the row's end inset, so the pills stand in one
- * column down the rail. A `count` (the turns Live is running) is the quiet
+ * `badge`: a round pill for one or two figures, centred on its row's line and
+ * ending on the row's end inset, so the pills stand in one column down the
+ * rail. The inbox and the conversations call in the accent; the reader's own
+ * work waits in the quiet grey (`tone: 'quiet'`), its ink lifting with the
+ * row the reader is on. A `count` (the turns Live is running) is the quiet
  * figure on the same end line, for what a place holds rather than what waits.
- * The current row keeps its pill as it is, because the fill is opaque.
  */
 export const BadgesOnTheRowsAboutYou: Story = {
   render: () => (
@@ -181,7 +182,7 @@ export const BadgesOnTheRowsAboutYou: Story = {
           label="My work"
           icon={<CircleCheckGlyph size="sm" />}
           current
-          badge={{ value: 23, label: 'open, assigned to you' }}
+          badge={{ value: 23, label: 'open, assigned to you', tone: 'quiet' }}
         />
         <NavItem
           href="#/chatlet"
@@ -194,6 +195,38 @@ export const BadgesOnTheRowsAboutYou: Story = {
           label="Live"
           icon={<ActivityGlyph size="sm" />}
           count={{ value: 2, label: 'working', mark: <StatusDot tone="info" pulse /> }}
+        />
+      </NavGroup>
+    </SidebarNav>
+  ),
+};
+
+/**
+ * THE TWO TONES OF A BADGE, side by side. `attention` (the default) is the
+ * accent's filled pill, what the reader is asked to act on: the unread in the
+ * inbox. `quiet` keeps the same round pill, the same size and the same end
+ * line, in the quiet count's grey: the reader's own open work, which waits but
+ * does not call. Both are read with their words ("My work, 23 open, assigned
+ * to you"). The pair is measured on every ground a row can have, the
+ * reader's own row included, in every palette.
+ */
+export const BadgeTones: Story = {
+  render: () => (
+    <SidebarNav label="Navigation">
+      <NavGroup label="">
+        <NavItem href="#/inbox" label="Inbox" icon={<InboxGlyph size="sm" />} badge={{ value: '50+', label: 'unread' }} />
+        <NavItem
+          href="#/me"
+          label="My work"
+          icon={<CircleCheckGlyph size="sm" />}
+          badge={{ value: 23, label: 'open, assigned to you', tone: 'quiet' }}
+        />
+        <NavItem
+          href="#/me-current"
+          label="My work, current"
+          icon={<CircleCheckGlyph size="sm" />}
+          current
+          badge={{ value: 23, label: 'open, assigned to you', tone: 'quiet' }}
         />
       </NavGroup>
     </SidebarNav>

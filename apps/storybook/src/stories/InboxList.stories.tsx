@@ -1,6 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Avatar, InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle, Link, Tag } from '@crewlethq/ui';
+import {
+  Avatar,
+  Button,
+  InboxGroup,
+  InboxList,
+  InboxMore,
+  InboxRow,
+  InboxToggle,
+  Link,
+  ReadingPane,
+  ReadingPaneTitle,
+  Tag,
+} from '@crewlethq/ui';
 import { CheckGlyph, MessageSquareGlyph } from '@crewlethq/icons/glyphs';
 
 /**
@@ -254,6 +266,74 @@ export const Answered: Story = {
             </InboxRow>
           </InboxGroup>
         </InboxList>
+      </div>
+    );
+  },
+};
+
+const QUESTIONS = [
+  { key: 'q1', who: 'Crewlet-PM', text: 'Which ledger should a shared expense post to?' },
+  { key: 'q2', who: 'Crewlet-Dev', text: 'Can a group name contain spaces?' },
+  { key: 'q3', who: 'Crewlet-QA', text: 'Should a settled group stay visible on the home page?' },
+] as const;
+
+/**
+ * ANSWERING MOVES ON. Answer the open question: its row leaves Needs you,
+ * inert while its height closes so the rows under it slide up, lands in the
+ * closed Answered group (its label and count take a brief wash), and the
+ * pane plays the next question in and puts focus on its title. The host only
+ * moves the row between groups and names the next item; the motion is the
+ * kit's, and under reduced motion every step is instant.
+ */
+export const AnsweringMovesOn: Story = {
+  render: function AnsweringMovesOnStory() {
+    const [waiting, setWaiting] = useState<string[]>(QUESTIONS.map((q) => q.key));
+    const [answered, setAnswered] = useState<string[]>([]);
+    const [open, setOpen] = useState<string>(QUESTIONS[0].key);
+    const item = QUESTIONS.find((q) => q.key === open)!;
+    const answer = () => {
+      const next = waiting.find((key) => key !== open);
+      setWaiting((was) => was.filter((key) => key !== open));
+      setAnswered((was) => [open, ...was]);
+      if (next) setOpen(next);
+    };
+    const row = (key: string, done: boolean) => {
+      const q = QUESTIONS.find((each) => each.key === key)!;
+      return (
+        <InboxRow
+          key={key}
+          title={q.who}
+          meta="2m"
+          leading={<Avatar name={q.who} kind="agent" size={24} decorative />}
+          actionable={!done}
+          done={done}
+          doneLabel="Answered"
+          selected={open === key}
+          onClick={() => setOpen(key)}
+        >
+          {q.text}
+        </InboxRow>
+      );
+    };
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 'var(--spacing-5)', maxWidth: 960 }}>
+        <InboxList label="Inbox">
+          <InboxGroup label="Needs you" count={waiting.length}>
+            {waiting.map((key) => row(key, false))}
+          </InboxGroup>
+          <InboxGroup label="Answered" count={answered.length} collapsible arrived={answered[0]}>
+            {answered.map((key) => row(key, true))}
+          </InboxGroup>
+        </InboxList>
+        <ReadingPane contentKey={open}>
+          <ReadingPaneTitle>{item.text}</ReadingPaneTitle>
+          <p style={{ margin: 0 }}>Asked by {item.who}.</p>
+          {waiting.includes(open) ? (
+            <div>
+              <Button onClick={answer}>Answer</Button>
+            </div>
+          ) : null}
+        </ReadingPane>
       </div>
     );
   },

@@ -154,10 +154,12 @@ function Console({
   navigationKey,
   footer,
   banner,
+  fill,
 }: {
   navigationKey?: string;
   footer?: ReactNode;
   banner?: ReactNode;
+  fill?: boolean | 'flush';
 }) {
   return (
     <AppShell
@@ -165,6 +167,7 @@ function Console({
       topbar={<AppShell.Topbar title="Overview" actions={<button>Search</button>} />}
       navigationKey={navigationKey}
       banner={banner}
+      fill={fill}
     >
       <h2>The screen</h2>
       <button>Retry</button>
@@ -584,11 +587,16 @@ describe('the frame and the sheet', () => {
   });
 
   test('the shell measures the scroller gutter for the bar, and it is 0 where nothing is reserved', () => {
-    // The bar's end inset is the content's plus the measured gutter, wide and narrow.
-    const source = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8');
-    const ends = [...source.matchAll(/\.crewlet-app-shell__topbar\s*\{[^}]*?padding:\s*0 calc\((var\(--spacing-\d\)) \+ var\(--crewlet-app-shell-gutter, 0px\)\) 0 (var\(--spacing-\d\));/g)];
-    expect(ends.map((match) => match[1])).toEqual(['var(--spacing-5)', 'var(--spacing-4)']);
-    for (const match of ends) expect(match[2]).toBe(match[1]);
+    // The bar's end inset is the shell's one inset plus the measured gutter,
+    // and the inset is 20px wide and 16px under the step.
+    const source = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'AppShell.css'), 'utf8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const bar = /\.crewlet-app-shell__topbar\s*\{[^}]*?padding:\s*([^;]+);/.exec(source)?.[1]?.replace(/\s+/g, ' ');
+    expect(bar).toBe('0 calc(var(--crewlet-app-shell-inset) + var(--crewlet-app-shell-gutter, 0px)) 0 var(--crewlet-app-shell-inset)');
+    const insets = [...source.matchAll(/--crewlet-app-shell-inset:\s*([^;]+);/g)].map((match) => match[1]);
+    expect(insets).toEqual(['var(--spacing-5)', 'var(--spacing-4)']);
 
     const offset = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
     const client = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
@@ -618,6 +626,48 @@ describe('the frame and the sheet', () => {
     // jsdom draws no scrollbar, as a platform with overlay scrollbars does not.
     const { container } = render(<Console />);
     expect((container.firstElementChild as HTMLElement).style.getPropertyValue('--crewlet-app-shell-gutter')).toBe('0px');
+  });
+
+  test('a fill screen reads the gutter off the gauge, since its scroller reserves none', () => {
+    /*
+     * A FILL SCREEN'S SCROLLER RESERVES NO GUTTER: its column pads its end by
+     * the gutter instead, so a pane standing in it can reach the sheet's
+     * edge. Measured off that scroller the gutter was 0 there, and the bar's
+     * controls moved one scrollbar out between a fill screen and the
+     * scrolling screen beside it. The shell reads it off its gauge, an empty
+     * scroller that always draws one, and a flush screen, which draws its own
+     * frame, has none.
+     */
+    const offset = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+    const client = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
+    const gauged = (element: Element) => element.classList.contains('crewlet-app-shell__gauge-ruler');
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return gauged(this) ? 1194 : 0;
+      },
+    });
+    Object.defineProperty(Element.prototype, 'clientWidth', {
+      configurable: true,
+      get(this: Element) {
+        return gauged(this) ? 1183 : 0;
+      },
+    });
+    try {
+      const { container, rerender } = render(<Console fill />);
+      const root = container.firstElementChild as HTMLElement;
+      const gauge = root.querySelector('.crewlet-app-shell__gauge')!;
+      expect(gauge.getAttribute('aria-hidden')).toBe('true');
+      expect(gauge.querySelector('.crewlet-app-shell__gauge-ruler')).not.toBeNull();
+      expect(root.style.getPropertyValue('--crewlet-app-shell-gutter')).toBe('11px');
+
+      rerender(<Console fill="flush" />);
+      expect(root.querySelector('.crewlet-app-shell__gauge')).toBeNull();
+      expect(root.style.getPropertyValue('--crewlet-app-shell-gutter')).toBe('0px');
+    } finally {
+      if (offset) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', offset);
+      if (client) Object.defineProperty(Element.prototype, 'clientWidth', client);
+    }
   });
 
   test('under the step the sheet is the whole window: no inset, no corner, no hairline', () => {
@@ -1647,13 +1697,30 @@ describe('the rail head, its field and the scroller', () => {
   });
 
   // THE SCROLLER IS A SIZE CONTAINER, so a column beside the screen can be the
-  // view's height; and a fill screen keeps the gutter reserved, so the bar's
-  // end inset (which counts it) does not move between a fill screen and its
-  // neighbour.
-  test('the scroller is a size container, and a fill screen keeps its gutter', () => {
+  // view's height. A FILL SCREEN'S SCROLLER RESERVES NO GUTTER: its column
+  // pads its end by the inset and the gutter instead, which holds the content
+  // under the bar's controls and which a pane can reach past to the sheet's
+  // edge, and it runs the sheet's whole width. A flush column has no pad to
+  // reach past.
+  test('the scroller is a size container, and a fill screen pads by the gutter rather than reserving it', () => {
     const main = rule('.crewlet-app-shell__main');
     expect(main).toContain('scrollbar-gutter: stable;');
     expect(main).toContain('container-type: size;');
-    expect(rule('.crewlet-app-shell--fill .crewlet-app-shell__main')).not.toContain('scrollbar-gutter');
+    expect(rule('.crewlet-app-shell--fill .crewlet-app-shell__main')).toContain('scrollbar-gutter: auto;');
+    const column = rule('.crewlet-app-shell--fill .crewlet-app-shell__content');
+    expect(column).toContain(
+      '--crewlet-app-shell-bleed-end: calc(var(--crewlet-app-shell-inset) + var(--crewlet-app-shell-gutter, 0px));',
+    );
+    expect(column).toContain('padding-right: var(--crewlet-app-shell-bleed-end);');
+    expect(column).toContain('max-width: none;');
+    expect(rule('.crewlet-app-shell--fill-flush .crewlet-app-shell__content')).toContain(
+      '--crewlet-app-shell-bleed-end: 0px;',
+    );
+    // THE RULER HAS A HEIGHT, inside a clipped row of none: a scroller of no
+    // height draws no scrollbar in Firefox, and measured 0 there.
+    expect(rule('.crewlet-app-shell__gauge')).toContain('height: 0;');
+    expect(rule('.crewlet-app-shell__gauge')).toContain('overflow: hidden;');
+    expect(rule('.crewlet-app-shell__gauge-ruler')).toContain('height: var(--size-target-min);');
+    expect(rule('.crewlet-app-shell__gauge-ruler')).toContain('overflow-y: scroll;');
   });
 });

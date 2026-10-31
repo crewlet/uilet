@@ -13,7 +13,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { useState, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MinusGlyph, PlusGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronsLeftGlyph, ChevronsRightGlyph } from '@crewlethq/icons/glyphs';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
@@ -185,19 +185,17 @@ describe('the fold control', () => {
     expect(fold.getAttribute('aria-expanded')).toBe('true');
   });
 
-  test("it is a minus while the rail is full and a plus while it is compact, the kit's own glyphs", async () => {
+  test('its chevrons point the way the rail will go: left to fold it, right to unfold it', async () => {
     narrowWindow(false);
     const user = userEvent.setup();
     render(<Shell />);
     const fold = screen.getByRole('button', { name: 'Collapse the sidebar' });
-    // The drawing inside the glyph, which is what tells a plus from a minus.
+    // The drawing inside the glyph, which is what tells one chevron from the other.
     const drawing = (markup: string) => /<svg[^>]*>([\s\S]*)<\/svg>/.exec(markup)?.[1];
     const glyph = () => drawing(fold.querySelector('svg')?.outerHTML ?? '');
-    expect(glyph()).toBe(drawing(renderToStaticMarkup(<MinusGlyph size="sm" />)));
+    expect(glyph()).toBe(drawing(renderToStaticMarkup(<ChevronsLeftGlyph size="sm" />)));
     await user.click(fold);
-    expect(glyph()).toBe(drawing(renderToStaticMarkup(<PlusGlyph size="sm" />)));
-    // No chevron is drawn anywhere in the rail's head: the corner control is
-    // the one fold control.
+    expect(glyph()).toBe(drawing(renderToStaticMarkup(<ChevronsRightGlyph size="sm" />)));
     expect(document.querySelectorAll('.crewlet-app-shell__fold')).toHaveLength(1);
   });
 
@@ -425,7 +423,7 @@ describe('the geometry', () => {
     );
   });
 
-  test('the fold control stands in the top left corner in both shapes, ending before the mark on the column’s centre', () => {
+  test('the fold control stands left of the brand mark, on the head\'s row, in both shapes, and the column holds both', () => {
     narrowWindow(false);
     const uninstall = installSheets('AppShell/AppShell.css', 'BrandLockup/BrandLockup.css', 'IconButton/IconButton.css');
     try {
@@ -434,17 +432,20 @@ describe('the geometry', () => {
         const fold = document.querySelector<HTMLElement>('.crewlet-app-shell__fold')!;
         const control = fold.querySelector<HTMLElement>('button')!;
         expect(getComputedStyle(fold).position).toBe('absolute');
-        expect(px(fold, 'top')).toBe(0);
-        expect(px(fold, 'left')).toBe(0);
         // The target floor, so it holds at every density.
         expect(px(control, 'width')).toBe(24);
         expect(px(control, 'height')).toBe(24);
-        // The mark stands over the compact column's centre in both shapes,
-        // and the control ends short of it.
+        // ON THE HEAD'S ROW: centred on the bar's line, as the mark is (the
+        // inset, then half of what the bar leaves around a 24px box).
+        expect(px(fold, 'top')).toBe(8 + (52 - 24) / 2);
+        // THE CONTROL, A STEP, THE MARK, centred together in the compact
+        // column, so the 76px column holds both: 12 + 24 + 4 + 24 + 12.
         const brand = document.querySelector<HTMLElement>('.crewlet-brand')!;
-        expect(px(brand, 'padding-left') + 24 / 2).toBe(76 / 2);
+        expect(px(fold, 'left')).toBe(12);
+        expect(px(brand, 'padding-left')).toBe(40);
         expect(px(fold, 'left') + px(control, 'width')).toBeLessThan(px(brand, 'padding-left'));
-        // Its ring is drawn inside its own box: the corner is the window's.
+        expect(px(brand, 'padding-left') + 24).toBeLessThanOrEqual(76);
+        // Its ring is drawn inside its own box, clear of the mark beside it.
         expect(rule('.crewlet-app-shell__fold > .crewlet-icon-btn:focus-visible')).toContain(
           'outline-offset: var(--size-focus-ring-inset-offset)',
         );

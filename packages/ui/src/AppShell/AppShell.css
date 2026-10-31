@@ -26,6 +26,11 @@
 .crewlet-app-shell {
   --crewlet-app-shell-rail: var(--size-shell-rail);
   --crewlet-app-shell-topbar: var(--size-shell-topbar);
+  /* THE SHEET'S SIDE INSET, ONE LENGTH: the bar's, the content column's, and
+     the inset a box that reaches past the column to the sheet's edge keeps
+     inside itself (a `ListDetail` on a fill screen), one step narrower on a
+     narrow window. */
+  --crewlet-app-shell-inset: var(--spacing-5);
   /* What stands on the frame to the sheet's left: the rail's column, or
      nothing where there is no rail or the rail is a drawer. */
   --crewlet-app-shell-beside: var(--crewlet-app-shell-rail);
@@ -628,7 +633,8 @@
   gap: var(--spacing-3);
   flex: none;
   height: var(--crewlet-app-shell-topbar);
-  padding: 0 calc(var(--spacing-5) + var(--crewlet-app-shell-gutter, 0px)) 0 var(--spacing-5);
+  padding: 0 calc(var(--crewlet-app-shell-inset) + var(--crewlet-app-shell-gutter, 0px)) 0
+    var(--crewlet-app-shell-inset);
   border-bottom: 1px solid var(--color-border-default);
   background: var(--color-surface-background);
 }
@@ -718,46 +724,76 @@
   gap: var(--spacing-5);
   max-width: var(--size-content-max);
   margin: 0 auto;
-  padding: var(--spacing-5) var(--spacing-5);
+  padding: var(--crewlet-app-shell-inset);
   padding-bottom: var(--crewlet-app-shell-content-end);
   min-width: 0;
 }
 
-/* A screen that draws to the bottom of the window: the scroller stops
-   scrolling and the content column takes the height that is left.
-
-   IT KEEPS THE GUTTER RESERVED, like every other screen. The top bar's end
-   inset counts the scroller's gutter (`--crewlet-app-shell-gutter`, measured
-   by the shell), so a fill screen that reserved none put the bar's controls
-   one gutter further out than on the screen beside it: with classic
-   scrollbars, Add seat moved 11px between an org chart and its roster, two
-   tabs of one page. A strip at the end edge of a full-screen canvas is the
-   smaller cost than a bar that moves under the pointer. */
+/*
+ * A screen that draws to the bottom of the window: the scroller stops
+ * scrolling and the content column takes the height that is left, and the
+ * whole width, since a screen that fills the window is a frame for panes
+ * rather than a page of prose (prose inside it keeps its own measure).
+ *
+ * THE SCROLLER RESERVES NO GUTTER; THE COLUMN PADS BY IT INSTEAD. Nothing
+ * scrolls here, so the strip a scrolling screen keeps for its scrollbar is
+ * only there to hold the content where the bar's controls expect it (the
+ * bar's end inset counts the gutter). A reserved strip did that, and also
+ * stood between the sheet's edge and every pane that scrolls on its own: a
+ * list's detail drew its scrollbar 31px inside the sheet, beside an empty
+ * strip, and nothing in the screen could paint over a reserved gutter. The
+ * same length as padding holds the content exactly where it stood, and a box
+ * standing in the column can reach past padding: the column publishes it as
+ * `--crewlet-app-shell-bleed-end`, and a `ListDetail` takes it back so its
+ * scrollbar is the sheet's last pixel. The scrollbar's width is read off the
+ * shell's gauge here (AppShell.tsx), so the bar keeps its place between a
+ * fill screen and a scrolling one.
+ */
 .crewlet-app-shell--fill .crewlet-app-shell__main {
   overflow: hidden;
+  scrollbar-gutter: auto;
 }
 
 .crewlet-app-shell--fill .crewlet-app-shell__content {
   --crewlet-app-shell-content-end: var(--spacing-5);
+  --crewlet-app-shell-bleed-end: calc(var(--crewlet-app-shell-inset) + var(--crewlet-app-shell-gutter, 0px));
 
   height: 100%;
+  max-width: none;
+  padding-right: var(--crewlet-app-shell-bleed-end);
+}
+
+/*
+ * THE GAUGE: an empty scroller, never seen, that always draws its scrollbar,
+ * so the shell can read the scrollbar's width on a fill screen, where the
+ * screen's own scroller reserves none. It is a row of no height in the
+ * sheet's column, clipped, so it takes no room and moves nothing; the ruler
+ * inside it has a height of its own, because a scroller of no height draws
+ * no scrollbar in Firefox and measured 0 there.
+ */
+.crewlet-app-shell__gauge {
+  flex: none;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.crewlet-app-shell__gauge-ruler {
+  height: var(--size-target-min);
+  overflow-y: scroll;
 }
 
 /*
  * A FLUSH SCREEN draws its own frame to the sheet's edges: the column gives up
- * its pad, its measure and its gap, and the scroller reserves no gutter, since
- * nothing in it scrolls and a strip at its end would cut the screen's own
- * edge. The column is the containing block for a `LayerHost` the screen
+ * its pad and its gap as well, so there is nothing for a box in it to reach
+ * past. The column is the containing block for a `LayerHost` the screen
  * keeps, so its layers fill the screen rather than the window.
  */
-.crewlet-app-shell--fill-flush .crewlet-app-shell__main {
-  scrollbar-gutter: auto;
-}
-
 .crewlet-app-shell--fill-flush .crewlet-app-shell__content {
+  --crewlet-app-shell-bleed-end: 0px;
+
   position: relative;
   gap: 0;
-  max-width: none;
   padding: 0;
 }
 
@@ -922,22 +958,26 @@
 }
 
 /*
- * THE FOLD CONTROL stands in the rail's top left corner, in both shapes, so
- * it never moves under the pointer that pressed it: a minus while the rail is
- * full and a plus while it is compact. The corner is the square the head
- * leaves empty up and to the left of the brand's mark, and the control is the
- * target floor (`--size-target-min`), so it ends short of the mark on the
- * compact column's centre at every density.
+ * THE FOLD CONTROL stands on the head's row, before the brand's mark, in both
+ * shapes, so it never moves under the pointer that pressed it: chevrons
+ * pointing left to fold the rail and right to unfold it.
+ *
+ * THE CONTROL AND THE MARK ARE ONE PAIR: the control at the target floor
+ * (`--size-target-min`, at every density), a step (`--spacing-1`), then the
+ * mark, which is a target's size too, the pair centred in the compact column
+ * so the 76px column holds both (12 + 24 + 4 + 24 + 12). The control is
+ * centred on the bar's line as the mark is: the inset, then half of what the
+ * bar leaves round it. The mark's inset below is the same arithmetic from the
+ * other side.
  *
  * Quiet until the rail is pointed at: the tertiary ink, which holds 3:1 on
  * the frame, then the secondary, and the ghost's own primary under the
- * pointer. Its ring is drawn inside its own box, because the corner it
- * stands in is the window's, and a ring outside it would be cut there.
+ * pointer. Its ring is drawn inside its own box, clear of the mark beside it.
  */
 .crewlet-app-shell__fold {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: calc(var(--size-shell-inset) + (var(--crewlet-app-shell-topbar) - var(--size-target-min)) / 2);
+  left: calc((var(--size-shell-rail-compact) - 2 * var(--size-target-min) - var(--spacing-1)) / 2);
   z-index: 1;
   display: inline-flex;
 }
@@ -957,13 +997,20 @@
 }
 
 /*
- * THE MARK STANDS WHERE THE COMPACT RAIL'S DOES, in both shapes: centred over
- * the compact column, in the head. Full, the name follows it; compact, the
- * name is not drawn (the link keeps it as its name and title).
+ * THE MARK STANDS WHERE THE COMPACT RAIL'S DOES, in both shapes. With no fold
+ * control it is centred over the compact column; beside the fold control it
+ * is the second of the pair (above), a step after the control, which is half
+ * the column and half the step in. Full, the name follows it; compact, the
+ * name is not drawn (the link keeps it as its name and title), and the
+ * lockup's end inset is given up, so the mark is all the column holds.
  */
-.crewlet-app-shell--foldable .crewlet-app-shell__rail-head > .crewlet-brand,
 .crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-head > .crewlet-brand {
   padding-left: calc((var(--size-shell-rail-compact) - var(--crewlet-brand-mark)) / 2);
+  padding-right: 0;
+}
+
+.crewlet-app-shell--foldable[data-rail] .crewlet-app-shell__rail-head > .crewlet-brand {
+  padding-left: calc((var(--size-shell-rail-compact) + var(--spacing-1)) / 2);
 }
 
 .crewlet-app-shell[data-rail='compact'] .crewlet-brand__name,
@@ -1087,6 +1134,9 @@
 @media (width < 1024px) {
   .crewlet-app-shell {
     --crewlet-app-shell-beside: 0px;
+    /* 16px: the content's 12px stood every page's first line 4px left of
+       the bar's title and the controls over it. */
+    --crewlet-app-shell-inset: var(--spacing-4);
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1169,18 +1219,8 @@
     display: inline-flex;
   }
 
-  /* THE TOP BAR'S GUTTER, 16px: the content's 12px stood every page's first
-     line 4px left of the title and the controls over it. The bar and the
-     content take it together. */
-  .crewlet-app-shell__topbar {
-    padding: 0 calc(var(--spacing-4) + var(--crewlet-app-shell-gutter, 0px)) 0 var(--spacing-4);
-  }
-
   .crewlet-app-shell__content {
     --crewlet-app-shell-content-end: var(--spacing-9);
-
-    padding: var(--spacing-4) var(--spacing-4);
-    padding-bottom: var(--crewlet-app-shell-content-end);
   }
 }
 

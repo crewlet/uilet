@@ -49,7 +49,7 @@ import {
   type PlacementRect,
 } from '../Layer/index.js';
 import { LockedLabel } from '../LockedLabel/index.js';
-import type { NavFigure, NavLinkProps } from '../SidebarNav/index.js';
+import type { NavBadge, NavFigure, NavLinkProps } from '../SidebarNav/index.js';
 import { cx } from '../utils/cx.js';
 import { tokenMs } from '../utils/tokenMs.js';
 import { returnFocus } from '../utils/focusModality.js';
@@ -83,9 +83,11 @@ interface CompactPlace {
   current?: boolean | undefined;
   /**
    * How many things here are waiting on the reader: the accent figure on the
-   * tile's corner, as `SidebarNav.Item`'s badge.
+   * tile's corner, as `SidebarNav.Item`'s badge. `tone: 'quiet'` draws it as
+   * the quiet figure, as the full rail's quiet badge, and keeps it out of a
+   * group's sum.
    */
-  badge?: NavFigure | undefined;
+  badge?: NavBadge | undefined;
   /** How many of something the place holds: the quiet figure, as `SidebarNav.Item`'s count. */
   count?: NavFigure | undefined;
   /**
@@ -185,7 +187,7 @@ export function CompactNavItem({
   const figure = badge ?? count;
   const inside = (
     <>
-      <Tile icon={icon} figure={figure} attention={badge !== undefined} />
+      <Tile icon={icon} figure={figure} attention={calling(badge)} />
       <TileLabel label={label} figures={[count, badge].filter((f) => f !== undefined).map(figureWords).join('')} locked={locked} />
     </>
   );
@@ -290,6 +292,11 @@ function figureNumber(value: number | string): { n: number; more: boolean } | nu
   return { n: Number(match[1]!.replaceAll(',', '')), more: match[2] === '+' };
 }
 
+/** Whether a badge calls in the accent: any badge but a quiet one. */
+function calling(badge: NavBadge | undefined): badge is NavBadge {
+  return badge !== undefined && badge.tone !== 'quiet';
+}
+
 /**
  * What a folded group's tile carries: its places' badges, ADDED UP, so the
  * fold never hides what is waiting on the reader. One badge is drawn as it
@@ -298,10 +305,11 @@ function figureNumber(value: number | string): { n: number; more: boolean } | nu
  * badge's own value with a `+`, since there is more than it says.
  *
  * The quiet counts are not carried: a count says how much a place holds, and
- * a sum of how much six places hold is a figure about nothing.
+ * a sum of how much six places hold is a figure about nothing. Nor is a quiet
+ * badge: the group's figure is the accent, and only what calls is added to it.
  */
 export function groupBadge(links: readonly Pick<CompactNavLink, 'badge'>[]): (number | string) | undefined {
-  const badges = links.flatMap((link) => (link.badge ? [link.badge] : []));
+  const badges = links.flatMap((link) => (calling(link.badge) ? [link.badge] : []));
   if (badges.length === 0) return undefined;
   if (badges.length === 1) return badges[0]!.value;
   const read = badges.map((badge) => figureNumber(badge.value));
@@ -360,8 +368,9 @@ type Opener = 'pointer' | 'press' | 'keys';
  * whatever came next in the document.
  *
  * EVERY PLACE IS A REAL LINK, so a modified press opens a tab as it does in
- * the full rail; choosing one closes the flyout and, where the keyboard chose
- * it, hands focus back to the tile.
+ * the full rail; choosing one closes the flyout, and focus follows the
+ * navigation: where the page it opened took focus it stays there, and where
+ * it is still in the flyout it goes back to the tile, by a press as by a key.
  *
  * WHAT OPENED IT DECIDES WHAT CLOSES IT. Opened by the pointer resting on the
  * tile, it closes when the pointer leaves both; opened by a press or the keys,
@@ -386,8 +395,9 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
   const container = useLayerContainer();
   const current = links.some((link) => link.current);
   const badge = groupBadge(links);
+  // What the group's figure sums, in words: the calling badges only.
   const spoken = links
-    .filter((link) => link.badge)
+    .filter((link) => calling(link.badge))
     .map((link) => `${link.label} ${String(link.badge!.value)} ${link.badge!.label}`)
     .join(', ');
 
@@ -405,14 +415,46 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
     [clear],
   );
 
+  /*
+   * A CHOICE IS NOT A REQUEST TO OPEN AGAIN. Choosing a place closes the
+   * flyout with the pointer still on the tile or beside it, and resting there
+   * opened it again a moment later, over the page the reader had just chosen.
+   * After a choice the rest is held until the pointer has been somewhere
+   * other than the tile; a press and the keys still open it at once.
+   */
+  const restHeld = useRef<(() => void) | null>(null);
+  const releaseRest = useCallback(() => {
+    restHeld.current?.();
+    restHeld.current = null;
+  }, []);
+  const holdRest = useCallback(() => {
+    releaseRest();
+    const away = (event: Event) => {
+      if (!tile.current?.contains(event.target as Node)) releaseRest();
+    };
+    document.addEventListener('pointermove', away);
+    restHeld.current = () => document.removeEventListener('pointermove', away);
+  }, [releaseRest]);
+  useEffect(() => releaseRest, [releaseRest]);
+
+  // The frame after a choice, when focus that nothing took goes back to the tile.
+  const settling = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (settling.current !== null) cancelAnimationFrame(settling.current);
+    },
+    [],
+  );
+
   const show = useCallback(
     (by: Opener, first: boolean) => {
       clear();
+      releaseRest();
       opener.current = by;
       focusFirst.current = first;
       setOpen(true);
     },
-    [clear],
+    [clear, releaseRest],
   );
 
   const popup = usePopupLayer({
@@ -524,7 +566,7 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
   const onPointerEnter = (event: PointerEvent<HTMLElement>) => {
     if (event.pointerType !== 'mouse') return;
     clear();
-    if (!open) timer.current = setTimeout(() => show('pointer', false), OPEN_DELAY);
+    if (!open && restHeld.current === null) timer.current = setTimeout(() => show('pointer', false), OPEN_DELAY);
   };
 
   const onPointerLeave = (event: PointerEvent<HTMLElement>) => {
@@ -533,9 +575,34 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
     if (opener.current === 'pointer') timer.current = setTimeout(() => setOpen(false), CLOSE_DELAY);
   };
 
+  /*
+   * CHOOSING A PLACE CLOSES THE FLYOUT, AND FOCUS FOLLOWS THE NAVIGATION. The
+   * destination takes focus first: the place's own handler, and a router
+   * that focuses the page it lands on, in its handler or its effects, often
+   * only where nothing holds focus. So the flyout closes and lets focus fall
+   * with it, and only where nothing has taken it by the next frame (focus on
+   * the document, where the reader's next Tab would start from the top) is it
+   * handed back to the tile, by a press as by the keys. Handed to the tile at
+   * once, a router that waits for an empty focus found the tile holding it,
+   * and the reader stayed on the rail. A place that does not navigate (no
+   * `href`) is a close like Escape: focus goes straight back to the tile.
+   */
   const choose = (link: CompactNavLink) => (event: MouseEvent<HTMLElement>) => {
     link.onClick?.(event);
-    close(panel.current?.contains(document.activeElement) === true && event.detail === 0);
+    const held = panel.current?.contains(document.activeElement) === true;
+    holdRest();
+    if (link.href === undefined) {
+      close(held);
+      return;
+    }
+    close(false);
+    if (!held) return;
+    if (settling.current !== null) cancelAnimationFrame(settling.current);
+    settling.current = requestAnimationFrame(() => {
+      settling.current = null;
+      const now = tile.current?.ownerDocument.activeElement;
+      if (now === null || now === undefined || now === tile.current?.ownerDocument.body) returnFocus(tile.current);
+    });
   };
 
   const flyout = open ? (
@@ -576,7 +643,7 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
             </span>
             {figure ? (
               <span
-                className={cx('crewlet-compact-nav__link-figure', link.badge && 'crewlet-compact-nav__link-figure--badge')}
+                className={cx('crewlet-compact-nav__link-figure', calling(link.badge) && 'crewlet-compact-nav__link-figure--badge')}
                 aria-hidden
               >
                 {figure.value}
@@ -646,7 +713,10 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
         }}
         onKeyDown={onTileKeyDown}
         onPointerEnter={onPointerEnter}
-        onPointerLeave={onPointerLeave}
+        onPointerLeave={(event) => {
+          if (event.pointerType === 'mouse') releaseRest();
+          onPointerLeave(event);
+        }}
       >
         <Tile icon={icon} figure={badge === undefined ? undefined : { value: badge, label: '' }} attention />
         <TileLabel label={label} figures={spoken ? `, ${spoken}` : ''} locked={undefined} />

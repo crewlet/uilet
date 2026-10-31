@@ -43,6 +43,7 @@ import { KeyChip } from '../KeyChip/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { LockedLabel } from '../LockedLabel/index.js';
+import type { CountTone } from '../Count/index.js';
 
 export interface SidebarNavProps {
   /**
@@ -171,6 +172,21 @@ export interface NavFigure {
   label: string;
 }
 
+/**
+ * A figure of what waits on the reader, and how loudly it asks.
+ *
+ * `attention` (the default) is the accent's filled pill, the one hue in the
+ * chrome: what the reader is asked to act on, the unread in an inbox.
+ * `quiet` keeps the pill's round shape and its place at the row's end, in
+ * the quiet count's grey: work that is the reader's own and is waiting, but
+ * not calling (the open tasks assigned to them). The vocabulary is `Count`'s
+ * own (`CountTone`), so a figure is quiet or calling in the same words
+ * wherever it stands.
+ */
+export interface NavBadge extends NavFigure {
+  tone?: CountTone | undefined;
+}
+
 /** A quiet figure: how many of something the destination holds. */
 export interface NavCount extends NavFigure {
   /**
@@ -204,9 +220,10 @@ export interface NavItemProps {
    * of what is waiting on the reader is the one thing in the rail that asks
    * them to act, which is what the accent means; it is a FILL carrying a
    * figure rather than a figure in a hue, so it still reads to somebody who
-   * cannot separate the hue. Anything else is a `count`.
+   * cannot separate the hue. Anything else is a `count`. `tone: 'quiet'`
+   * keeps the pill and draws it in the quiet count's grey (`NavBadge`).
    */
-  badge?: NavFigure | undefined;
+  badge?: NavBadge | undefined;
   href?: string | undefined;
   /** Whether this row is the screen the reader is on. */
   current?: boolean | undefined;
@@ -467,7 +484,12 @@ export function NavItem({
         {count || badge || state ? <VisuallyHidden>{`${spoken([count, badge])}${state}`}</VisuallyHidden> : null}
       </span>
       {count ? <Figure figure={count} mark={count.mark} className="crewlet-nav-item__count" /> : null}
-      {badge ? <Figure figure={badge} className="crewlet-nav-item__badge" /> : null}
+      {badge ? (
+        <Figure
+          figure={badge}
+          className={cx('crewlet-nav-item__badge', badge.tone === 'quiet' && 'crewlet-nav-item__badge--quiet')}
+        />
+      ) : null}
     </>
   );
 

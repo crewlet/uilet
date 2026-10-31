@@ -9,9 +9,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle } from './index.js';
+import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
+import { INBOX_ROW_LEAVE, InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle } from './index.js';
 
 afterEach(cleanup);
 
@@ -261,4 +262,239 @@ test('a group whose label is hidden is never collapsed, since nothing could open
     </InboxList>,
   );
   expect(screen.getByRole('button', { name: /Assigned you/ })).toBeTruthy();
+});
+
+// ---- Motion: a row leaving, a row arriving --------------------------------
+
+function Needs({ keys, arrived }: { keys: readonly string[]; arrived?: string }) {
+  return (
+    <InboxList label="Inbox">
+      <InboxGroup label="Needs you" arrived={arrived}>
+        {keys.map((key) => (
+          <InboxRow key={key} title={`Row ${key}`} onClick={() => {}}>
+            Words of {key}
+          </InboxRow>
+        ))}
+      </InboxGroup>
+    </InboxList>
+  );
+}
+
+const rowOf = (key: string) => screen.getByText(`Row ${key}`).closest('li')!;
+const drawn = () => [...document.querySelectorAll('.crewlet-inbox-row')].map((li) => li.textContent?.match(/Row (\w)/)?.[1]);
+
+// THE HOST ONLY REMOVES THE ROW. The group keeps its last drawing in its place,
+// inert, while its height closes, and drops it once the motion has ended.
+test('a row taken from a group stays in its place, inert, until its height has closed', async () => {
+  const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
+  const leaving = rowOf('b');
+  const motion = driveMotion(leaving).start({ transition: INBOX_ROW_LEAVE.transitions[0] });
+  rerender(<Needs keys={['a', 'c']} />);
+  expect(drawn()).toEqual(['a', 'b', 'c']);
+  expect(leaving.classList.contains('crewlet-inbox-row--leaving')).toBe(true);
+  expect(leaving.hasAttribute('inert')).toBe(true);
+  motion.finish();
+  await settleMotion();
+  expect(drawn()).toEqual(['a', 'c']);
+});
+
+// THE LAST ROW LEAVES TOO, as long as its group is still drawn: the group
+// keeps it while its children are empty, and is left empty once it has gone.
+// A group the host stops drawing takes its rows with it at once.
+test('the last row of a group leaves with its motion while the group stays drawn', async () => {
+  const { rerender } = render(<Needs keys={['a']} />);
+  const motion = driveMotion(rowOf('a')).start({ transition: 'grid-template-rows' });
+  rerender(<Needs keys={[]} />);
+  expect(drawn()).toEqual(['a']);
+  expect(rowOf('a').hasAttribute('inert')).toBe(true);
+  motion.finish();
+  await settleMotion();
+  expect(drawn()).toEqual([]);
+  expect(screen.getByRole('heading', { name: 'Needs you' })).toBeTruthy();
+});
+
+// A HOST DRAWS ITS ROWS THROUGH A WRAPPER OF ITS OWN (memoized, since the
+// list redraws on every live push). The group keeps any keyed component child
+// as a leaving row; the wrapper forwards `leaving` and `onLeft` to its row, and
+// the host's own `onLeft` still runs, once, when the row has closed.
+const Item = memo(function Item({
+  id,
+  leaving,
+  onLeft,
+}: {
+  id: string;
+  leaving?: boolean | undefined;
+  onLeft?: (() => void) | undefined;
+}) {
+  return (
+    <InboxRow title={`Row ${id}`} leaving={leaving} onLeft={onLeft} onClick={() => {}}>
+      Words of {id}
+    </InboxRow>
+  );
+});
+
+function Wrapped({
+  keys,
+  onLeft,
+  empty = false,
+}: {
+  keys: readonly string[];
+  onLeft?: (() => void) | undefined;
+  empty?: boolean;
+}) {
+  return (
+    <InboxGroup label="Needs you">
+      {keys.map((key) => (
+        <Item key={key} id={key} onLeft={onLeft} />
+      ))}
+      {empty ? <li key="empty">Nothing needs you</li> : null}
+    </InboxGroup>
+  );
+}
+
+test('a row drawn through a wrapper leaves with its motion, and the host hears once that it has gone', async () => {
+  const onLeft = vi.fn();
+  const { rerender } = render(<Wrapped keys={['a', 'b']} onLeft={onLeft} />);
+  const motion = driveMotion(rowOf('b')).start({ transition: 'grid-template-rows' });
+  rerender(<Wrapped keys={['a']} onLeft={onLeft} />);
+  expect(drawn()).toEqual(['a', 'b']);
+  expect(rowOf('b').hasAttribute('inert')).toBe(true);
+  expect(onLeft).not.toHaveBeenCalled();
+  motion.finish();
+  await settleMotion();
+  expect(drawn()).toEqual(['a']);
+  expect(onLeft).toHaveBeenCalledTimes(1);
+});
+
+test('a keyed element that is not a component goes at once', () => {
+  const { rerender } = render(<Wrapped keys={[]} empty />);
+  expect(screen.getByText('Nothing needs you')).toBeTruthy();
+  rerender(<Wrapped keys={['a']} />);
+  expect(screen.queryByText('Nothing needs you')).toBeNull();
+});
+
+// A ROW IS THE SAME ROW BY ITS KEY. Rows without a key of their own are told
+// apart by position, so taking the second of three made the third look gone:
+// a copy of a live row was kept leaving beside it. Such rows go at once, and
+// the group says so, once, in development.
+test('rows without keys of their own are not kept while they leave, and the group says so once', () => {
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    const Unkeyed = ({ keys }: { keys: readonly string[] }) => (
+      <InboxGroup label="Needs you">
+        {/* Rows with no key of their own: the case under test. */}
+        {keys.map((key) => (
+          <InboxRow title={`Row ${key}`} onClick={() => {}} />
+        ))}
+      </InboxGroup>
+    );
+    const { rerender } = render(<Unkeyed keys={['a', 'b', 'c']} />);
+    driveMotion(rowOf('c')).start({ transition: 'grid-template-rows' });
+    rerender(<Unkeyed keys={['a', 'c']} />);
+    expect(drawn()).toEqual(['a', 'c']);
+    rerender(<Unkeyed keys={['a']} />);
+    const told = warn.mock.calls.filter(([words]) => String(words).includes('InboxGroup'));
+    expect(told).toHaveLength(1);
+  } finally {
+    error.mockRestore();
+    warn.mockRestore();
+  }
+});
+
+test('a row that leaves, comes back and leaves again is drawn once', () => {
+  const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
+  driveMotion(rowOf('b')).start({ transition: 'grid-template-rows' });
+  rerender(<Needs keys={['a', 'c']} />);
+  rerender(<Needs keys={['a', 'b', 'c']} />);
+  rerender(<Needs keys={['a', 'c']} />);
+  expect(drawn()).toEqual(['a', 'b', 'c']);
+});
+
+test('a leaving row lets focus go, and a row that comes back is live where it stands', () => {
+  const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
+  const leaving = rowOf('b');
+  driveMotion(leaving).start({ transition: 'grid-template-rows' });
+  within(leaving).getByRole('button').focus();
+  rerender(<Needs keys={['a', 'c']} />);
+  expect(leaving.contains(document.activeElement)).toBe(false);
+  rerender(<Needs keys={['a', 'b', 'c']} />);
+  expect(drawn()).toEqual(['a', 'b', 'c']);
+  expect(rowOf('b').hasAttribute('inert')).toBe(false);
+});
+
+test('under reduced motion a row taken away goes at once', () => {
+  const restore = preferReducedMotion(true);
+  try {
+    const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
+    driveMotion(rowOf('b')).start({ transition: 'grid-template-rows' });
+    rerender(<Needs keys={['a', 'c']} />);
+    expect(drawn()).toEqual(['a', 'c']);
+  } finally {
+    restore();
+  }
+});
+
+test('a row of a list of its own leaves by `leaving`, and says when it has gone', async () => {
+  const onLeft = vi.fn();
+  const { container, rerender } = render(
+    <ul>
+      <InboxRow title="Row a" onLeft={onLeft} />
+    </ul>,
+  );
+  const motion = driveMotion(container.querySelector('li')!).start({ transition: 'grid-template-rows' });
+  rerender(
+    <ul>
+      <InboxRow title="Row a" leaving onLeft={onLeft} />
+    </ul>,
+  );
+  expect(container.querySelector('li')?.hasAttribute('inert')).toBe(true);
+  expect(onLeft).not.toHaveBeenCalled();
+  motion.finish();
+  await settleMotion();
+  expect(container.querySelector('li')).toBeNull();
+  expect(onLeft).toHaveBeenCalled();
+});
+
+// A ROW ARRIVED: a wash on the row, or on a closed group's label and count,
+// played afresh for each arrival and never drawing anew what the reader can focus.
+test('an arrival washes the row, or the label and count of the group it landed in', () => {
+  render(
+    <ul>
+      <InboxRow title="Row a" arrived />
+    </ul>,
+  );
+  expect(rowOf('a').classList.contains('crewlet-inbox-row--arrived')).toBe(true);
+  cleanup();
+
+  const Answered = ({ arrived }: { arrived?: string }) => (
+    <InboxGroup label="Answered" count={3} collapsible arrived={arrived}>
+      <InboxRow key="a" title="Row a" />
+    </InboxGroup>
+  );
+  const { container, rerender } = render(<Answered />);
+  expect(container.querySelector('.crewlet-inbox-list__arrival')).toBeNull();
+  const toggle = screen.getByRole('button', { name: /Answered/ });
+  rerender(<Answered arrived="a" />);
+  const first = container.querySelector('.crewlet-inbox-list__arrival')!;
+  expect(first.getAttribute('aria-hidden')).toBe('true');
+  rerender(<Answered arrived="b" />);
+  expect(container.querySelector('.crewlet-inbox-list__arrival')).not.toBe(first);
+  expect(screen.getByRole('button', { name: /Answered/ })).toBe(toggle);
+});
+
+test('the motions are the kit\'s: the row closes its one track on the slow step, and nothing moves under reduced motion', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'InboxList.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    return at < 0 ? '' : css.slice(at, css.indexOf('}', at)).replace(/\s+/g, ' ');
+  };
+  expect(rule('.crewlet-inbox-row')).toContain('grid-template-rows: 1fr;');
+  const leaving = rule('.crewlet-inbox-row--leaving');
+  expect(leaving).toContain('grid-template-rows: 0fr;');
+  expect(leaving).toContain('grid-template-rows var(--motion-duration-slow) var(--motion-easing-emphasized)');
+  expect(rule('.crewlet-inbox-row--arrived')).toContain('animation: crewlet-inbox-arrive');
+  const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
+  expect(reduced).toMatch(/\.crewlet-inbox-row--leaving\s*\{\s*transition: none;/);
+  expect(reduced).toMatch(/\.crewlet-inbox-list__arrival\s*\{\s*animation: none;/);
 });
