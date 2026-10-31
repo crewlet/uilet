@@ -18,6 +18,7 @@ import {
 import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
 import { releaseFocus, usePresence } from '../Presence/index.js';
 import { cx } from '../utils/cx.js';
+import { developing } from '../utils/developing.js';
 import type { Tone } from '../utils/tone.js';
 import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/headingLevel.js';
 import { Eyebrow } from '../Eyebrow/index.js';
@@ -87,32 +88,62 @@ export interface InboxGroupProps extends Omit<HTMLAttributes<HTMLElement>, 'titl
  */
 export const INBOX_ROW_LEAVE = { transitions: ['grid-template-rows'] } as const;
 
-/** The order to draw after a change: `next`'s, with each row still leaving kept where it stood. */
-function keepPlaces(previous: readonly string[], next: readonly string[], kept: (key: string) => boolean): string[] {
-  const order = [...next];
-  previous.forEach((key, index) => {
-    if (order.includes(key) || !kept(key)) return;
-    let at = 0;
-    for (let back = index - 1; back >= 0; back -= 1) {
-      const found = order.indexOf(previous[back]!);
-      if (found >= 0) {
-        at = found + 1;
-        break;
-      }
-    }
-    order.splice(at, 0, key);
-  });
-  return order;
-}
-
 /** What a row the group keeps while it leaves is handed: an `InboxRow`'s own two props. */
 interface LeavingRowProps {
   leaving?: boolean | undefined;
   onLeft?: (() => void) | undefined;
 }
 
-function keyedRows(children: ReactNode): ReactElement<LeavingRowProps>[] {
-  return Children.toArray(children).filter((child): child is ReactElement<LeavingRowProps> => isValidElement(child));
+/** One of a group's element children, as the group draws it. */
+interface Row {
+  /** Its key among the group's children. */
+  key: string;
+  element: ReactElement<LeavingRowProps>;
+  /**
+   * The host gave it a key of its own, so it is the same row from one draw to
+   * the next. A row without one is told apart by its position.
+   */
+  keyed: boolean;
+  /** A component (a row, or a host's wrapper of one), never a plain element. */
+  component: boolean;
+}
+
+function rowsOf(children: ReactNode): Row[] {
+  const given: boolean[] = [];
+  Children.forEach(children, (child) => {
+    if (isValidElement(child)) given.push(child.key !== null);
+  });
+  return Children.toArray(children)
+    .filter((child): child is ReactElement<LeavingRowProps> => isValidElement(child))
+    .map((element, index) => ({
+      key: String(element.key),
+      element,
+      keyed: given[index] === true,
+      component: typeof element.type !== 'string',
+    }));
+}
+
+function sameKeys(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((key, index) => key === b[index]);
+}
+
+/** The order to draw after a change: `next`'s, with each row still leaving kept after the row it stood after. */
+function keepPlaces(previous: readonly string[], next: readonly string[], kept: ReadonlySet<string>): string[] {
+  const placed = new Set(next);
+  const order = [...next];
+  previous.forEach((key, index) => {
+    if (placed.has(key) || !kept.has(key)) return;
+    let at = 0;
+    for (let back = index - 1; back >= 0; back -= 1) {
+      if (placed.has(previous[back]!)) {
+        at = order.indexOf(previous[back]!) + 1;
+        break;
+      }
+    }
+    order.splice(at, 0, key);
+    placed.add(key);
+  });
+  return order;
 }
 
 /**
@@ -124,39 +155,64 @@ function keyedRows(children: ReactNode): ReactElement<LeavingRowProps>[] {
  * keeps the row's last drawing instead, and drops it once it has closed.
  * A row that comes back while it leaves is live again where it stands.
  *
- * ANY COMPONENT CHILD IS A ROW. A host draws its rows through a wrapper of
- * its own (memoized, for a list that redraws on every live push), so the
- * group keeps any keyed component child, hands it `leaving`, and the wrapper
- * forwards `leaving` and `onLeft` to its `InboxRow`. The host's own `onLeft`
- * still runs when the row has closed. A plain element (an empty state's
- * `li`) is not a row, and goes at once.
+ * ANY COMPONENT CHILD WITH A KEY OF ITS OWN IS A ROW. A host draws its rows
+ * through a wrapper of its own (memoized, for a list that redraws on every
+ * live push), so the group keeps any keyed component child, hands it
+ * `leaving`, and the wrapper forwards `leaving` and `onLeft` to its
+ * `InboxRow`. The host's own `onLeft` still runs when the row has closed. A
+ * plain element (an empty state's `li`) is not a row, and goes at once; so
+ * does a row without a key of its own, which is told apart only by its
+ * position, so that taking the second of three would make the third look
+ * gone. The group says so, once, in development.
+ *
+ * NOTHING IS DONE WHERE NOTHING CHANGED. The rows are compared by their keys,
+ * and only a change of them is worked out; a group that redraws on every
+ * live push with the same rows draws them as given.
  */
 function useLeavingRows(children: ReactNode): ReactNode[] {
-  const [rows, setRows] = useState(() => ({
-    children,
-    order: keyedRows(children).map((row) => String(row.key)),
+  const rows = rowsOf(children);
+  const keys = rows.map((row) => row.key);
+  const [shown, setRows] = useState(() => ({
+    keys,
+    order: keys,
     leaving: new Map<string, ReactElement<LeavingRowProps>>(),
   }));
-  let now = rows;
-  if (rows.children !== children) {
-    const next = keyedRows(children);
-    const present = new Set(next.map((row) => String(row.key)));
-    const leaving = new Map([...rows.leaving].filter(([key]) => !present.has(key)));
-    for (const row of keyedRows(rows.children)) {
-      const key = String(row.key);
-      if (!present.has(key) && typeof row.type !== 'string') leaving.set(key, row);
+
+  /*
+   * EACH ROW'S LAST DRAWING, from the last commit: what a row that has just
+   * gone leaves with, so it leaves as the reader last saw it (selected, with
+   * its latest words). Written after each commit, and read only on a change
+   * of the rows, so it is always the drawing on screen.
+   */
+  const drawn = useRef(new Map<string, Row>());
+  useLayoutEffect(() => {
+    drawn.current = new Map(rows.map((row) => [row.key, row] as const));
+  });
+
+  let now = shown;
+  if (!sameKeys(shown.keys, keys)) {
+    const present = new Set(keys);
+    const leaving = new Map([...shown.leaving].filter(([key]) => !present.has(key)));
+    for (const key of shown.keys) {
+      if (present.has(key)) continue;
+      const last = drawn.current.get(key);
+      if (last?.keyed && last.component) leaving.set(key, last.element);
     }
-    now = {
-      children,
-      order: keepPlaces(
-        rows.order,
-        next.map((row) => String(row.key)),
-        (key) => leaving.has(key),
-      ),
-      leaving,
-    };
+    now = { keys, order: keepPlaces(shown.order, keys, new Set(leaving.keys())), leaving };
     setRows(now);
   }
+
+  const warned = useRef(false);
+  useEffect(() => {
+    if (warned.current || !developing()) return;
+    if (rows.some((row) => row.component && !row.keyed)) {
+      warned.current = true;
+      console.warn(
+        '[crewlet] InboxGroup was handed a row without a key of its own. Give each row a stable key, such as its id: a row without one is told apart by its position, and is not kept while it leaves.',
+      );
+    }
+  });
+
   const drop = useCallback((key: string) => {
     setRows((was) => {
       if (!was.leaving.has(key)) return was;
@@ -165,9 +221,11 @@ function useLeavingRows(children: ReactNode): ReactNode[] {
       return { ...was, leaving, order: was.order.filter((each) => each !== key) };
     });
   }, []);
-  const drawn = new Map(keyedRows(children).map((row) => [String(row.key), row] as const));
+
+  if (now.leaving.size === 0) return rows.map((row) => row.element);
+  const live = new Map(rows.map((row) => [row.key, row.element] as const));
   return now.order.map((key) => {
-    const row = drawn.get(key);
+    const row = live.get(key);
     if (row) return row;
     const last = now.leaving.get(key);
     if (!last) return null;

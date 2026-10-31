@@ -5,6 +5,7 @@ import { StatusCard } from '../StatusCard/index.js';
 import { StatusDot } from '../StatusDot/index.js';
 import { SuggestionList, SuggestionRow } from '../SuggestionRow/index.js';
 import { cx } from '../utils/cx.js';
+import { developing } from '../utils/developing.js';
 
 /**
  * The most rows a brief draws: what waits on the reader is a short list or it
@@ -264,21 +265,4 @@ export function BriefCard({
       </div>
     </StatusCard>
   );
-}
-
-/**
- * Whether the host is a development build. A bundler replaces
- * `process.env.NODE_ENV` with a literal, so the check costs nothing in a
- * production build and is true in development. It is NOT guarded with
- * `typeof process`: that expression is not replaced, and in a browser it is
- * 'undefined' even in development, which would silence the warning
- * everywhere. An ESM host with no bundler has no `process` at all, and the
- * ReferenceError reads as not developing.
- */
-function developing(): boolean {
-  try {
-    return process.env.NODE_ENV !== 'production';
-  } catch {
-    return false;
-  }
 }

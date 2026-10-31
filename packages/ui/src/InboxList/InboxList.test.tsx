@@ -373,6 +373,44 @@ test('a keyed element that is not a component goes at once', () => {
   expect(screen.queryByText('Nothing needs you')).toBeNull();
 });
 
+// A ROW IS THE SAME ROW BY ITS KEY. Rows without a key of their own are told
+// apart by position, so taking the second of three made the third look gone:
+// a copy of a live row was kept leaving beside it. Such rows go at once, and
+// the group says so, once, in development.
+test('rows without keys of their own are not kept while they leave, and the group says so once', () => {
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    const Unkeyed = ({ keys }: { keys: readonly string[] }) => (
+      <InboxGroup label="Needs you">
+        {/* Rows with no key of their own: the case under test. */}
+        {keys.map((key) => (
+          <InboxRow title={`Row ${key}`} onClick={() => {}} />
+        ))}
+      </InboxGroup>
+    );
+    const { rerender } = render(<Unkeyed keys={['a', 'b', 'c']} />);
+    driveMotion(rowOf('c')).start({ transition: 'grid-template-rows' });
+    rerender(<Unkeyed keys={['a', 'c']} />);
+    expect(drawn()).toEqual(['a', 'c']);
+    rerender(<Unkeyed keys={['a']} />);
+    const told = warn.mock.calls.filter(([words]) => String(words).includes('InboxGroup'));
+    expect(told).toHaveLength(1);
+  } finally {
+    error.mockRestore();
+    warn.mockRestore();
+  }
+});
+
+test('a row that leaves, comes back and leaves again is drawn once', () => {
+  const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
+  driveMotion(rowOf('b')).start({ transition: 'grid-template-rows' });
+  rerender(<Needs keys={['a', 'c']} />);
+  rerender(<Needs keys={['a', 'b', 'c']} />);
+  rerender(<Needs keys={['a', 'c']} />);
+  expect(drawn()).toEqual(['a', 'b', 'c']);
+});
+
 test('a leaving row lets focus go, and a row that comes back is live where it stands', () => {
   const { rerender } = render(<Needs keys={['a', 'b', 'c']} />);
   const leaving = rowOf('b');
