@@ -8,12 +8,20 @@
  * ONE LINE OF PROSE TALL, at every state: the mark alone, the mark with a
  * status line, and the line changing from one step to the next all keep the
  * same height, so the thread never moves while the assistant works.
+ *
+ * NEVER WIDER THAN ITS COLUMN. The status never wraps, so where the
+ * indicator is sized by its content (a flex column that starts its items on
+ * the start edge, as a message's footer does) a long status made it as wide
+ * as its words and widened the column with it, and a phone's transcript
+ * scrolled sideways. Held to its container, the status truncates as it was
+ * written to.
  */
 .crewlet-thinking {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
   min-width: 0;
+  max-width: 100%;
   min-height: calc(var(--font-size-compact) * var(--font-line-height-relaxed));
   font-family: var(--font-family-sans);
   font-size: var(--font-size-compact);

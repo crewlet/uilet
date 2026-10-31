@@ -302,6 +302,30 @@
   --crewlet-tag-ink: var(--color-text-tertiary);
 }
 
+/*
+ * THE QUIET LABEL (`appearance="quiet"`): a seat's kind beside its name
+ * ("Agent"), a small filled mark with no boundary, so it reads as part of the
+ * name line rather than as a control. 16px tall with a step of room each side,
+ * the xs corner rather than a pill's round ends, and the label register at the
+ * regular weight. The neutral label sits on the soft fill under the secondary
+ * ink; a tone keeps its own tint and ink. It takes no size step: these rules
+ * come after the steps, at their specificity, so a step cannot reshape it.
+ */
+.crewlet-tag--quiet {
+  --crewlet-tag-height: calc(16px * var(--density, 1));
+  --crewlet-tag-pad: var(--spacing-1);
+  --crewlet-tag-edge: transparent;
+  gap: var(--spacing-1);
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-tag--neutral.crewlet-tag--quiet {
+  --crewlet-tag-fill: var(--color-fill-soft);
+  --crewlet-tag-ink: var(--color-text-secondary);
+}
+
 /* ── the interactive form ──────────────────────────────────────────────── */
 
 .crewlet-tag--actionable {

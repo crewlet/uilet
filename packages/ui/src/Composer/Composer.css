@@ -137,6 +137,32 @@
 }
 
 /*
+ * THE FORMATTING ROW, along the box's top on the field's own inset less the
+ * small tool's own room round its glyph, so the first glyph starts on the
+ * words' line. It belongs to the field rather than to a strip of its own: no
+ * rule under it.
+ */
+.crewlet-composer__toolbar {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: var(--spacing-1) var(--spacing-1) 0 calc(var(--spacing-3) - (var(--size-control-sm) - var(--font-size-xs)) / 2);
+}
+
+/*
+ * THE TOOLS AT THE FOOTER'S START, a tight row whose first glyph starts on
+ * the words' line, as the formatting row's does. The spacer after them puts
+ * the actions at the end.
+ */
+.crewlet-composer__tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  margin-inline-start: calc(-1 * (var(--size-control-sm) - var(--font-size-xs)) / 2);
+}
+
+/*
  * DISABLED, AS A FIELD IS: the whole box at the disabled field's 0.6 and the
  * not-allowed cursor, so it no longer reads as somewhere to type. Faded once:
  * the field and a disabled send button inside it keep their own opacity at 1,
@@ -211,4 +237,49 @@
   .crewlet-composer {
     transition: none;
   }
+}
+
+/*
+ * A CONVERSATION'S MESSAGE BOX (`appearance="chat"`), on the transcript's own
+ * scale (ChatMessage/ChatScale.css): the large corner on the transcript's
+ * ground with the row wash laid over it, a step lighter than the list, and a
+ * small shadow, so the box sits just above the messages, inside the edge
+ * scale's strong step, the edge a field draws. The words are set at the
+ * transcript's size on one line to start. The footer belongs to the field
+ * rather than standing as a strip under it: no rule and no ground of its own.
+ */
+.crewlet-composer--chat {
+  border-color: var(--color-edge-strong);
+  background:
+    linear-gradient(var(--color-fill-row), var(--color-fill-row)),
+    var(--crewlet-chat-ground);
+  box-shadow: var(--shadow-xs);
+}
+
+.crewlet-composer--chat .crewlet-composer__field {
+  min-height: 0;
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--crewlet-chat-text);
+  line-height: var(--crewlet-chat-line);
+}
+
+.crewlet-composer--chat .crewlet-composer__footer {
+  gap: 2px;
+  padding: var(--spacing-1);
+  padding-inline-start: var(--spacing-3);
+  border-top: 0;
+  background: transparent;
+}
+
+/* A tool whose menu or picker is open reads as held down. */
+.crewlet-composer--chat .crewlet-composer__tools [aria-expanded='true'] {
+  background: var(--color-surface-pressed);
+  color: var(--color-text-primary);
+}
+
+/* The formatting row's glyphs rest in the tertiary ink while the box is not
+   in use, so the row reads as part of the field rather than as a toolbar
+   competing with the conversation, and take their own ink once it is. */
+.crewlet-composer--chat:not(:focus-within) .crewlet-composer__toolbar :is(button, [role='button']):not(:hover) {
+  color: var(--color-text-tertiary);
 }

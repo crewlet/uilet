@@ -1,0 +1,76 @@
+/*
+ * ChatDivider: a line between the rows of a conversation, set on the
+ * conversation's own scale (ChatScale.css).
+ */
+
+/* A quiet labelled rule: the words in the middle, a hairline either side. */
+.crewlet-chat-divider--date {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--crewlet-chat-pad-x);
+  color: var(--color-text-tertiary);
+  font-size: var(--crewlet-chat-meta);
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-chat-divider--date::before,
+.crewlet-chat-divider--date::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border-default);
+}
+
+.crewlet-chat-divider--date .crewlet-chat-divider__label {
+  white-space: nowrap;
+}
+
+/*
+ * THE NEW LINE TAKES NO HEIGHT. A hairline across the whole list in the
+ * danger hue, laid on the boundary between the last read message and the
+ * first unread one, with "New" at its end on the transcript's ground, so it
+ * reads over the rows it passes. Brought to the top of the view (scrolled to
+ * as a target), it stops under the day's pinned pill rather than behind it.
+ */
+.crewlet-chat-divider--unread {
+  position: relative;
+  z-index: var(--z-index-raised);
+  height: 0;
+  pointer-events: none;
+  scroll-margin-top: calc(var(--crewlet-chat-day-pin) + var(--crewlet-chat-day-pill) + var(--spacing-3));
+}
+
+.crewlet-chat-divider--unread::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: var(--color-feedback-danger);
+}
+
+.crewlet-chat-divider--unread .crewlet-chat-divider__label {
+  position: absolute;
+  top: 0;
+  right: var(--crewlet-chat-pad-x);
+  padding: 0 var(--spacing-1);
+  transform: translateY(-50%);
+  background: var(--crewlet-chat-ground);
+  color: var(--color-feedback-danger-ink);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-normal);
+}
+
+/*
+ * FORCED COLORS drops the line's background, which is the whole line. A
+ * border is the one edge the mode keeps, painted in its own text colour.
+ */
+@media (forced-colors: active) {
+  .crewlet-chat-divider--unread::before,
+  .crewlet-chat-divider--date::before,
+  .crewlet-chat-divider--date::after {
+    border-top: 1px solid CanvasText;
+  }
+}

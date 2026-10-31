@@ -36,12 +36,27 @@ export interface ChatThreadHandle {
   /** Scrolls to the end and follows it again. */
   scrollToLatest: () => void;
   /**
-   * Brings an item that needs a decision into view: the whole of it when it
-   * fits, and otherwise its head at the top of the view, never past it, so
-   * its actions are reached by reading rather than skipped over.
+   * Brings an item into view in the MIDDLE of the log, with what came before
+   * and after it in sight: a message opened from a link, a mention or a
+   * search, or a card that needs a decision. An item taller than the view
+   * lands with its head at the top instead, never past it, so its actions are
+   * reached by reading rather than skipped over. The item's own
+   * `scroll-margin-top` and `scroll-margin-bottom` are kept clear, so an item
+   * that names the height of a pinned day pill stops under it. The Jump to
+   * latest row the move brings in is accounted for: the item is placed in the
+   * view that is left once the row stands under the log.
    */
   reveal: (element: HTMLElement) => void;
+  /**
+   * The scrolling element, for a host that measures or moves what is inside
+   * it (a windowed transcript, or one that keeps its place while an older
+   * page is added above). Null before the log has mounted.
+   */
+  scroller: () => HTMLDivElement | null;
 }
+
+/** Where a short transcript rests in its view: under the top, or on the foot. */
+export type ChatThreadRest = 'start' | 'end';
 
 export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' | 'children'> {
   /** Names the log for a screen reader: "Conversation". */
@@ -53,6 +68,19 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
    * default; `false` never moves the scroll on its own.
    */
   follow?: boolean | undefined;
+  /**
+   * Draws the Jump to latest row under the log while the reader is scrolled
+   * away from the end. `true` by default; `false` for a log that offers its
+   * own way back (a day's Jump to menu), so nothing is added under it.
+   */
+  jump?: boolean | undefined;
+  /**
+   * Where a transcript shorter than the view rests: `start` (the default)
+   * under the top, or `end`, on the foot, against the composer under it, as a
+   * conversation's newest messages always are. The items keep no gap of their
+   * own in `end`, since a conversation's rows set their own spacing.
+   */
+  rest?: ChatThreadRest | undefined;
   /** The thread's blocks, one child per item, oldest first. */
   children?: ReactNode;
   labels?: Partial<ChatThreadLabels> | undefined;
@@ -82,10 +110,12 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
  * and growth is followed; the reader's own wheel, touch or key ends it.
  *
  * THE PILL COVERS NOTHING: it sits under the log, in the thread's own column,
- * rather than over the last lines of whatever is being read.
+ * rather than over the last lines of whatever is being read. A log that
+ * offers its own way back (a day's Jump to menu) leaves it out with
+ * `jump={false}`.
  */
 export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function ChatThread(
-  { label, busy = false, follow = true, children, labels: overrides, className, ...rest },
+  { label, busy = false, follow = true, jump = true, rest: restAt = 'start', children, labels: overrides, className, ...rest },
   ref,
 ) {
   const labels = overrides ? { ...CHAT_THREAD_LABELS, ...overrides } : CHAT_THREAD_LABELS;
@@ -102,6 +132,13 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
   const [detachedAt, setDetachedAt] = useState<number | null>(null);
   const countRef = useRef(count);
   countRef.current = count;
+  // Whether the Jump to latest row stands under the log in the last commit,
+  // read by reveal() between renders.
+  const rowShown = useRef(false);
+  rowShown.current = jump && detachedAt !== null;
+  // An item reveal() placed in a view the Jump to latest row is about to
+  // shorten: placed again once the row stands.
+  const revealing = useRef<HTMLElement | null>(null);
 
   const toEnd = useCallback(
     (smooth: boolean) => {
@@ -170,27 +207,54 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
     return () => observer.disconnect();
   }, [follow, toEnd]);
 
+  // THE ITEM IN THE MIDDLE OF THE VIEW. A message opened from a link sat with
+  // its foot on the view's foot, the messages after it out of sight, and the
+  // Jump to latest row the move then brought in took its last lines as well.
+  const place = useCallback(
+    (element: HTMLElement) => {
+      const el = scroller.current;
+      if (!el) return;
+      jumping.current = false;
+      const box = element.getBoundingClientRect();
+      const top = box.top - el.getBoundingClientRect().top + el.scrollTop;
+      const margins = getComputedStyle(element);
+      const above = Number.parseFloat(margins.scrollMarginTop) || 0;
+      const below = Number.parseFloat(margins.scrollMarginBottom) || 0;
+      const room = el.clientHeight - above - below;
+      // Mid view when it fits; otherwise its head under its margin, never past it.
+      const target = box.height <= room ? top - above - (room - box.height) / 2 : top - above;
+      el.scrollTop = Math.max(0, Math.min(target, el.scrollHeight - el.clientHeight));
+      onScroll();
+    },
+    [onScroll],
+  );
+
+  // Placed again in the view the Jump to latest row left, before paint, once
+  // the move that detached the reader has drawn the row.
+  const detached = detachedAt !== null;
+  useLayoutEffect(() => {
+    const element = revealing.current;
+    revealing.current = null;
+    if (element && detached) place(element);
+  }, [detached, place]);
+
   useImperativeHandle(
     ref,
     () => ({
       scrollToLatest: () => toEnd(true),
       reveal: (element: HTMLElement) => {
-        const el = scroller.current;
-        if (!el) return;
-        const top = element.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
-        const height = element.getBoundingClientRect().height;
-        // The whole of it when it fits; otherwise its head at the top, never past it.
-        const target = height <= el.clientHeight ? top + height - el.clientHeight : top;
-        el.scrollTop = Math.max(0, Math.min(target, top));
-        onScroll();
+        const shown = rowShown.current;
+        place(element);
+        revealing.current = jump && !shown && !atEnd.current ? element : null;
       },
+      scroller: () => scroller.current,
     }),
-    [onScroll, toEnd],
+    [jump, place, toEnd],
   );
 
   const fresh = detachedAt === null ? 0 : Math.max(0, count - detachedAt);
   return (
-    <div {...rest} className={cx('crewlet-chat-thread', className)}>
+    <div {...rest} className={cx('crewlet-chat-thread', restAt === 'end' && 'crewlet-chat-thread--rest-end', className)}>
       <div
         ref={scroller}
         role="log"
@@ -207,7 +271,7 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
           {children}
         </div>
       </div>
-      {detachedAt === null ? null : (
+      {!jump || detachedAt === null ? null : (
         <div className="crewlet-chat-thread__jump">
           <Button variant="secondary" size="small" shape="pill" leadingIcon={<ArrowDownGlyph />} onClick={() => toEnd(true)}>
             {labels.jumpToLatest}

@@ -44,32 +44,14 @@
   cursor: pointer;
 }
 
-/* The kind modifiers keep the trigger, the overlay and the Avatar outlines in
-   step. A person's picture is a circle. */
-.crewlet-image-upload--human .crewlet-image-upload__trigger,
-.crewlet-image-upload--human .crewlet-image-upload__overlay {
-  border-radius: var(--radius-circle);
-}
-
 /* THE SAME CORNER THE PICTURE INSIDE TAKES, which is why it is a variable
-   rather than a step: Avatar moves an agent badge's corner with its box, so a
-   trigger pinned to one step is rounder or squarer than the badge under it at
-   every size but one, and the badge's corners show through the overlay. */
-.crewlet-image-upload--agent .crewlet-image-upload__trigger,
-.crewlet-image-upload--agent .crewlet-image-upload__overlay {
+   rather than a step: Avatar moves a face's corner with its box, so a trigger
+   pinned to one step is rounder or squarer than the face under it at every
+   size but one, and the face's corners show through the overlay. Every face
+   is one shape, a person's and an agent's alike, so one rule serves both. */
+.crewlet-image-upload__trigger,
+.crewlet-image-upload__overlay {
   border-radius: var(--crewlet-image-upload-corner);
-}
-
-/* AND THE SAME SQUIRCLE, where the browser draws one, for the same reason:
-   Avatar.css states why its squircle is a whole one at the circle token, and
-   this is that rule for the two frames over the picture. The suite holds the
-   two blocks to one declaration list. */
-@supports (corner-shape: squircle) {
-  .crewlet-image-upload--agent .crewlet-image-upload__trigger,
-  .crewlet-image-upload--agent .crewlet-image-upload__overlay {
-    corner-shape: squircle;
-    border-radius: var(--radius-circle);
-  }
 }
 
 .crewlet-image-upload__trigger:disabled {
@@ -168,19 +150,6 @@
   cursor: pointer;
   opacity: 0;
   transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
-}
-
-/*
- * ON A PERSON'S CIRCLE THE BADGE SITS ON THE EDGE, where the circle crosses
- * its own diagonal: (1 - 1/sqrt(2)) / 2 of the size, 0.1464, in from each
- * side, less half the 24px badge. The six pixels out above are the agent
- * tile's, whose squircle corner reaches that far; a circle turns away sooner,
- * and at the default 80px the badge's middle stood 8px off the picture, so
- * the badge floated beside it rather than being pinned to it.
- */
-.crewlet-image-upload--human .crewlet-image-upload__remove {
-  top: calc(var(--crewlet-image-upload-size) * 0.1464 - 12px);
-  right: calc(var(--crewlet-image-upload-size) * 0.1464 - 12px);
 }
 
 .crewlet-image-upload:hover .crewlet-image-upload__remove,

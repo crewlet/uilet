@@ -132,6 +132,9 @@ test('a ring stands off its element only where the element draws no edge', () =>
       // A link in rendered prose, which is text with an underline and no box.
       'Document/Document.css | .crewlet-document a:focus-visible',
       'BrandLockup/BrandLockup.css | .crewlet-brand__home:focus-visible',
+      // The compact rail's account: the reader's face alone, a mark with no
+      // box of its own, which a ring drawn inside would cover.
+      'AppShell/AppShell.css | .crewlet-account-row__who.crewlet-account-row__who--compact:focus-visible',
       'EntityChip/EntityChip.css | .crewlet-entity-chip--link:focus-visible',
       'DataTable/DataTable.css | .crewlet-data-table__clear-filters:focus-visible',
       'ImageUpload/ImageUpload.css | .crewlet-image-upload__trigger:focus-visible',
@@ -147,6 +150,12 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'Charts/Charts.css | .crewlet-chart-frame:focus-visible',
       // A histogram's slot, which draws no edge: its fill is the mark inside it.
       'Charts/Charts.css | .crewlet-histogram__bar:focus-visible',
+      // A message's author name, set as text: it draws no edge of its own.
+      'ChatMessage/ChatMessage.css | .crewlet-chat-message__author > button:focus-visible',
+      // A message's face as a button, which draws no edge: the ring stands off the face.
+      'ChatMessage/ChatMessage.css | .crewlet-chat-message__gutter > button:focus-visible',
+      // A name in a message's words, a soft fill with no edge, ringed as a link is.
+      'MentionChip/MentionChip.css | button.crewlet-mention-chip:focus-visible',
       // A tab is borderless; the pill variant's chips override it (see below).
       'Tabs/Tabs.css | .crewlet-tabs__tab:focus-visible',
       // A list that takes focus when it expands, with no edge of its own.
@@ -159,6 +168,8 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'AvatarPicker/AvatarPicker.css | button.crewlet-avatar-picker:focus-visible',
       // A command palette step's chip, a soft tint with no edge of its own.
       'CommandPalette/CommandPalette.css | .crewlet-palette__step:focus-visible',
+      // A link preview unfurled under a message: a bar and words, no box.
+      'LinkCard/LinkCard.css | .crewlet-link-card:focus-visible',
     ].sort(),
   );
 });

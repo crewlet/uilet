@@ -16,6 +16,9 @@ export const COMPOSER_COUNTER_AT = 0.8;
  */
 export type ComposerSubmitKey = 'mod-enter' | 'enter';
 
+/** The box's look: `default`, a form's field, or `chat`, a conversation's message box. */
+export type ComposerAppearance = 'default' | 'chat';
+
 export interface ComposerProps
   extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange' | 'onSubmit' | 'children'> {
   value: string;
@@ -29,8 +32,29 @@ export interface ComposerProps
   submitOn?: ComposerSubmitKey | undefined;
   /** Names the field for a screen reader, since it carries no visible label. */
   label: string;
+  /**
+   * `chat` is a conversation's message box, on the transcript's own type and
+   * ground (the `--crewlet-chat-*` scale): the large corner, the transcript's
+   * ground with the row wash and a small shadow, the words at the chat step, a
+   * footer with no rule of its own, a tool whose menu is open drawn pressed,
+   * and the formatting row's glyphs quiet until the box is in use.
+   */
+  appearance?: ComposerAppearance | undefined;
   /** The footer's controls, at its end: Cancel and Submit. */
   actions?: ReactNode;
+  /**
+   * Tools at the footer's START, before the actions: what a chat composer
+   * offers beside sending (attach, emoji, a mention, drafting with the
+   * assistant). They stand where the eye starts, under the words, and the
+   * send control keeps the corner.
+   */
+  tools?: ReactNode;
+  /**
+   * A row along the box's top, inside its edge and before everything else: a
+   * formatting `Toolbar` (bold, italic, a list) that acts on the words below.
+   * Pass a `Toolbar` with its own name; the row is laid out, not labelled.
+   */
+  toolbar?: ReactNode;
   /**
    * A control on the field's own row, at its end: the send button of a chat
    * composer (`SendButton`). With one, the field starts at one line and grows
@@ -59,8 +83,9 @@ export interface ComposerProps
 
 /**
  * A message written in place: a borderless field that grows with its text,
- * and a footer strip holding the send shortcut, a counter and the actions, in
- * one box that takes the focus ring as a whole.
+ * and a footer strip holding the tools, the send shortcut, a counter and the
+ * actions, in one box that takes the focus ring as a whole. A formatting row
+ * (`toolbar`) may stand along the box's top, above the words it acts on.
  *
  * THE FOOTER IS DRAWN ONLY WITH SOMETHING IN IT. With no shortcut, counter or
  * actions there is no strip at all, and one holding only the shortcut's hint
@@ -82,7 +107,10 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     onSubmit,
     submitOn = 'mod-enter',
     label,
+    appearance = 'default',
     actions,
+    tools,
+    toolbar,
     trailing,
     attachments,
     attachmentsLabel = 'Attached to this message',
@@ -102,7 +130,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   const disabled = Boolean(disabledProp) || disabledReason !== undefined;
   const inline = present(trailing);
   const near = maxLength !== undefined && value.length >= maxLength * COMPOSER_COUNTER_AT;
-  const hasActions = present(actions);
+  const hasActions = present(actions) || present(tools);
   const hint = onSubmit !== undefined && submitOn === 'mod-enter';
 
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -121,11 +149,13 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     <div
       className={cx(
         'crewlet-composer',
+        appearance === 'chat' && 'crewlet-composer--chat',
         inline && 'crewlet-composer--inline',
         disabled && 'is-disabled',
         className,
       )}
     >
+      {present(toolbar) ? <div className="crewlet-composer__toolbar">{toolbar}</div> : null}
       {present(attachments) ? (
         <div role="group" aria-label={attachmentsLabel} className="crewlet-composer__attachments">
           {attachments}
@@ -152,6 +182,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
       {disabledReason === undefined ? null : <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden>}
       {hint || near || hasActions ? (
         <div className="crewlet-composer__footer" data-hint-only={(!near && !hasActions) || undefined}>
+          {present(tools) ? <div className="crewlet-composer__tools">{tools}</div> : null}
           {hint ? (
             <span className="crewlet-composer__hint">
               <Kbd keys={['Mod', 'Enter']} subtle /> to send

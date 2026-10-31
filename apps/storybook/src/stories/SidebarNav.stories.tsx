@@ -3,9 +3,11 @@ import { useState, type CSSProperties } from 'react';
 import {
   ClockGlyph,
   CoinsGlyph,
+  HashGlyph,
   InboxGlyph,
   KeyGlyph,
   LayoutDashboardGlyph,
+  LockGlyph,
   NetworkGlyph,
   PlusGlyph,
   ServerGlyph,
@@ -13,7 +15,7 @@ import {
   UsersGlyph,
 } from '@crewlethq/icons/glyphs';
 import { density } from '@crewlethq/tokens';
-import { NavGroup, NavItem, SidebarNav, StatusDot } from '@crewlethq/ui';
+import { Avatar, NavGroup, NavItem, SidebarNav, StatusDot } from '@crewlethq/ui';
 
 const meta: Meta<typeof SidebarNav> = {
   title: 'UI/SidebarNav',
@@ -277,4 +279,66 @@ export const EveryRowState: Story = {
       ))}
     </div>
   ),
+};
+
+/**
+ * A LONG LIST READ IN PASSING (`dense`), as the Rooms panel beside a
+ * conversation draws it: rows at the 24px target floor, the gutter halved so
+ * the open room's highlight is a long bar, every glyph and name still on the
+ * line a navigation row puts it on, faces and glyphs in one 20px column, and
+ * names in the regular weight.
+ *
+ * A room with news is `unread` (its name a step heavier, in the primary ink);
+ * a muted one rests in the quiet ink and says so. Each section folds from its
+ * heading, and a folded section still shows the open room and the rooms with
+ * news: fold Channels to see it.
+ */
+export const DenseList: Story = {
+  render: function DenseListStory() {
+    const [at, setAt] = useState('engineering');
+    const room = (key: string, extra: Partial<Parameters<typeof NavItem>[0]> = {}) => (
+      <NavItem
+        key={key}
+        label={key}
+        icon={<HashGlyph size="sm" />}
+        current={at === key}
+        onClick={() => setAt(key)}
+        {...extra}
+      />
+    );
+    const person = (name: string, extra: Partial<Parameters<typeof NavItem>[0]> = {}) => (
+      <NavItem
+        key={name}
+        label={name}
+        icon={<Avatar name={name} kind="agent" size="xs" decorative />}
+        current={at === name}
+        onClick={() => setAt(name)}
+        {...extra}
+      />
+    );
+    return (
+      <SidebarNav label="Rooms" dense>
+        <NavGroup label="Starred" collapsible>
+          {room('engineering')}
+          {room('launch', { unread: true, badge: { value: 2, label: 'mentions' } })}
+        </NavGroup>
+        <NavGroup
+          label="Channels"
+          collapsible
+          action={{ label: 'New room', icon: <PlusGlyph size="sm" />, onClick: () => {} }}
+        >
+          {room('general')}
+          {room('design', { unread: true })}
+          {room('random', { unread: true, muted: true })}
+          {room('leadership', { icon: <LockGlyph size="sm" /> })}
+          {room('a room whose name is longer than the panel is wide')}
+        </NavGroup>
+        <NavGroup label="Direct messages" collapsible>
+          {person('Senior Backend Engineer', { unread: true, badge: { value: 1, label: 'unread for you' } })}
+          {person('Designer')}
+          {person('Release Manager', { muted: true })}
+        </NavGroup>
+      </SidebarNav>
+    );
+  },
 };

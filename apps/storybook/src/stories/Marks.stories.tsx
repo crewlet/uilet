@@ -49,6 +49,31 @@ export const Counts: Story = {
 };
 
 /**
+ * THE ONE COLOUR A COUNT TAKES is the accent, for what WAITS ON THE READER (a
+ * mention, a direct message, a new reply to them): `tone="attention"`, the
+ * 16px pill with a 10px figure every such badge is drawn as, so it never
+ * reads louder than the name beside it. A quiet total beside it stays quiet.
+ */
+export const AttentionCounts: Story = {
+  render: () => (
+    <div style={page}>
+      <div style={row}>
+        <span>#engineering</span>
+        <Count value={3} label="unread mentions" tone="attention" />
+      </div>
+      <div style={row}>
+        <span>Direct messages</span>
+        <Count value={12} label="unread messages" tone="attention" />
+      </div>
+      <div style={row}>
+        <span>Saved</span>
+        <Count value={1} label="saved messages" />
+      </div>
+    </div>
+  ),
+};
+
+/**
  * A status dot always sits beside its own word, which is why it is hidden from
  * assistive technology: a reader who heard both would be told the state twice.
  *

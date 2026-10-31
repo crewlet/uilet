@@ -23,3 +23,22 @@
      and the pill lands on 18px with its figures on its middle. */
   line-height: round(nearest, calc(var(--font-line-height-body) * 1em), 1px);
 }
+
+/*
+ * WHAT WAITS ON THE READER (`tone="attention"`): the accent pill every count
+ * of that kind is drawn as, wherever it stands, at the badge's own size: 16px
+ * tall and at least as wide, its figure at the badge step in the semibold
+ * weight. At 18px with an 11px figure such a badge read louder than the name
+ * beside it.
+ */
+.crewlet-count--attention {
+  box-sizing: border-box;
+  min-width: var(--size-badge);
+  height: var(--size-badge);
+  padding: 0 var(--size-badge-pad);
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+  font-size: var(--font-size-badge);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}

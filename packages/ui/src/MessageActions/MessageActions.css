@@ -1,0 +1,73 @@
+/*
+ * The tray a message shows on hover: the transcript's own ground ringed with
+ * the hairline and a small shadow, the large corner, and 30px tools inside
+ * the inset, so it reads as a soft tray of tools rather than a framed bar.
+ * Two classes, so the tray's own rules hold over Toolbar's in any bundle
+ * order.
+ */
+.crewlet-toolbar.crewlet-message-actions {
+  flex-wrap: nowrap;
+  gap: var(--crewlet-chat-toolbar-inset);
+  height: var(--crewlet-chat-toolbar);
+  box-sizing: border-box;
+  padding: var(--crewlet-chat-toolbar-inset);
+  border: 1px solid var(--color-edge-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--crewlet-chat-ground);
+  box-shadow: var(--shadow-xs);
+}
+
+/* A tool whose menu or picker is open reads as held down, which is not the
+   accent fill a toggle that is on (Saved) draws. */
+.crewlet-message-actions .crewlet-icon-btn[aria-expanded='true'] {
+  background: var(--color-surface-pressed);
+  color: var(--color-text-primary);
+}
+
+.crewlet-message-actions__emoji {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-md);
+  height: var(--size-control-md);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-size: var(--font-size-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.crewlet-message-actions__emoji:hover {
+  background: var(--color-fill-soft);
+}
+
+.crewlet-message-actions__emoji:active {
+  background: var(--color-surface-pressed);
+}
+
+/* Held, as the tray's icon tools are: faded, no fill under the pointer, and
+   the reason in its hint. */
+.crewlet-message-actions__emoji[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crewlet-message-actions__emoji[aria-disabled='true']:is(:hover, :active) {
+  background: transparent;
+}
+
+.crewlet-message-actions__emoji:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-message-actions__divider {
+  flex: none;
+  width: 1px;
+  height: var(--spacing-4);
+  margin: 0 var(--spacing-1);
+  background: var(--color-border-default);
+}

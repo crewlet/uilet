@@ -87,6 +87,61 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * A HEADING THAT FOLDS ITS GROUP (`collapsible`): the button is the heading's
+ * words and a chevron, the chevron centred in the glyph column (a nav glyph's
+ * 14px; the xs chevron is 12px) and the words on the label line, so the
+ * headings and the rows of a folded list stay one grid. It is the target
+ * floor tall, the head's own height, and as wide as its words, so the head's
+ * control keeps its own target at the end.
+ *
+ * THE RING IS DRAWN INSIDE ITS EDGE, because the words ellipsize and the box
+ * that cuts them would cut an outset ring on every side.
+ */
+.crewlet-nav-group__toggle {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: calc(var(--spacing-2) + var(--spacing-1) / 2);
+  min-width: 0;
+  min-height: var(--size-target-min);
+  margin: 0;
+  padding: 0 var(--spacing-1) 0 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-nav-group__toggle:hover {
+  color: var(--color-text-primary);
+}
+
+.crewlet-nav-group__toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+/* The words take the button's ink, so the heading lifts as one. */
+.crewlet-nav-group__toggle > .crewlet-nav-group__label {
+  color: inherit;
+}
+
+.crewlet-nav-group__chevron {
+  display: inline-flex;
+  flex: none;
+  margin: 0 calc((14px - 12px) / 2);
+  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* Folded, the chevron points at the words it would open. */
+.crewlet-nav-group--collapsed .crewlet-nav-group__chevron {
+  transform: rotate(-90deg);
+}
+
 /* The heading's control. Pushed to the end whether or not the heading has
    words, and at the floor the heading stands at. */
 .crewlet-nav-group__action {
@@ -332,13 +387,16 @@
  * somebody who cannot separate the hue at all: the filled pill is the signal,
  * the figure is the count.
  *
- * The design's 18px pill, at least as wide as it is tall so a single digit is
- * a round mark and not a lozenge, and following the density like the xs Tag
- * it matches. The label is the on-accent step, the primary action's own pair,
- * on every row alike, because the fill is opaque.
+ * The chrome's one count badge (`--size-badge`, 16px with a 10px figure), at
+ * least as wide as it is tall so a single digit is a round mark and not a
+ * lozenge, and following the density. The same pill is drawn on the compact
+ * rail's tiles and in its flyouts, so a count waiting for the reader is one
+ * mark wherever it is; at 18px with an 11px figure it read louder than the
+ * names beside it. The label is the on-accent step, the primary action's own
+ * pair, on every row alike, because the fill is opaque.
  */
 .crewlet-nav-item__badge {
-  --crewlet-nav-item-badge-size: calc(18px * var(--density, 1));
+  --crewlet-nav-item-badge-size: var(--size-badge);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -347,11 +405,11 @@
   min-width: var(--crewlet-nav-item-badge-size);
   height: var(--crewlet-nav-item-badge-size);
   margin-left: auto;
-  padding: 0 calc(var(--spacing-1) + 1px);
+  padding: 0 var(--size-badge-pad);
   border-radius: var(--radius-pill);
   background: var(--color-brand-accent);
   color: var(--color-text-on-accent);
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-badge);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -429,8 +487,75 @@
   border-left-color: var(--color-border-strong);
 }
 
+/*
+ * THE DENSE LIST (`dense`): a list read in passing that runs long, a step
+ * denser than the application's navigation.
+ *
+ * Its rows stand at the 24px target floor, the gutter is halved so a row's
+ * highlight runs nearly from edge to edge (a long bar rather than a pill), and
+ * the row's pad grows by exactly what the gutter gave up, so every glyph and
+ * name stays on the line it was on, whatever the surface set the two tokens
+ * to. The glyph column is as wide as a small face (an `Avatar` at `xs`), so a
+ * face, a glyph and a group's count stand in one column and every name starts
+ * on one line. Names are set in the regular weight, a step lighter than the
+ * navigation's, which is what lets an unread row stand out by weight.
+ */
+.crewlet-sidebar-nav--dense {
+  --crewlet-nav-dense-pad: calc(var(--size-nav-row-pad) + var(--size-nav-gutter) - var(--spacing-1));
+  --crewlet-nav-dense-slot: 20px;
+  padding-right: var(--spacing-1);
+  padding-left: var(--spacing-1);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-item__row {
+  min-height: var(--size-target-min);
+  padding-right: var(--crewlet-nav-dense-pad);
+  padding-left: var(--crewlet-nav-dense-pad);
+  font-weight: var(--font-weight-regular);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-group__head {
+  padding-right: calc(var(--crewlet-nav-dense-pad) - (var(--size-target-min) - 14px) / 2);
+  padding-left: var(--crewlet-nav-dense-pad);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-item__icon {
+  min-width: var(--crewlet-nav-dense-slot);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-group__chevron {
+  margin-right: calc((var(--crewlet-nav-dense-slot) - 12px) / 2);
+  margin-left: calc((var(--crewlet-nav-dense-slot) - 12px) / 2);
+}
+
+.crewlet-sidebar-nav--dense .crewlet-nav-item__children {
+  margin-left: var(--crewlet-nav-dense-pad);
+  padding-left: calc(var(--crewlet-nav-dense-slot) + var(--spacing-2) + var(--spacing-1) / 2 - var(--crewlet-nav-dense-pad) - 1px);
+}
+
+/*
+ * A ROW WITH NEWS (`unread`): its name a step heavier than its neighbours' and
+ * in the primary ink, which is the whole of the signal in a dense list whose
+ * names are regular. A muted row is never drawn unread (the component drops
+ * the class), so the two rules never meet.
+ */
+.crewlet-nav-item--unread > .crewlet-nav-item__head > .crewlet-nav-item__row {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+/*
+ * A MUTED ROW rests in the quiet ink, glyph and name together, and lifts as
+ * every row does: under the pointer, and while it is the row the reader is on.
+ */
+.crewlet-nav-item--muted > .crewlet-nav-item__head > .crewlet-nav-item__row:not([aria-current]):not(:hover) {
+  color: var(--color-text-tertiary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crewlet-nav-group__action,
+  .crewlet-nav-group__toggle,
+  .crewlet-nav-group__chevron,
   .crewlet-nav-item__row,
   .crewlet-nav-item__chevron {
     transition: none;

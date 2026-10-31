@@ -172,3 +172,44 @@ test('carries no axe violation with rows and context, with nothing waiting, and 
   });
   expect(result.violations).toEqual([]);
 });
+
+test("a room's catch up lists what was said, each point citing its message with the host's own press", async () => {
+  const opened: string[] = [];
+  const { container } = render(
+    <BriefCard
+      scope="#engineering"
+      about="The release branch is cut and two reviews wait."
+      needs={[]}
+      points={[
+        { key: 'p1', text: 'Miles cut the release branch.', source: { label: "Open Miles's message", onSelect: () => opened.push('m1') } },
+        { key: 'p2', text: 'Two pull requests wait for review.', source: { label: 'Open the thread', onSelect: () => opened.push('t2') } },
+        { key: 'p3', text: 'The deploy window moved to Friday.' },
+      ]}
+    />,
+  );
+  const list = screen.getByRole('list', { name: 'What was said' });
+  const items = [...list.querySelectorAll('li')];
+  expect(items.map((item) => item.querySelector('.crewlet-brief-card__point-text')!.textContent)).toEqual([
+    'Miles cut the release branch.',
+    'Two pull requests wait for review.',
+    'The deploy window moved to Friday.',
+  ]);
+  fireEvent.click(screen.getByRole('button', { name: "Open Miles's message" }));
+  fireEvent.click(screen.getByRole('button', { name: 'Open the thread' }));
+  expect(opened).toEqual(['m1', 't2']);
+  // A point with no source draws no press.
+  expect(items[2]!.querySelector('button')).toBeNull();
+  const results = await axe.run(container);
+  expect(results.violations).toEqual([]);
+});
+
+test('points are capped at five, said so outside production, and absent points draw no list', () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const many = Array.from({ length: 7 }, (_, i) => ({ key: `p${i}`, text: `Point ${i + 1}` }));
+  const { rerender } = render(<BriefCard about="A room" needs={[]} points={many} />);
+  expect(screen.getByRole('list', { name: 'What was said' }).querySelectorAll('li')).toHaveLength(5);
+  expect(warn).toHaveBeenCalledWith(expect.stringContaining('7 points'));
+  warn.mockRestore();
+  rerender(<BriefCard about="A room" needs={[]} />);
+  expect(screen.queryByRole('list', { name: 'What was said' })).toBeNull();
+});

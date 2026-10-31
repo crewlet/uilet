@@ -88,6 +88,42 @@
   border-bottom: 1px solid var(--color-border-default);
 }
 
+/* With a subtitle the head holds one or two lines, so its height is a floor
+   rather than a height, and its controls stay on the first line. */
+.crewlet-side-panel__head--subtitled {
+  align-items: flex-start;
+  height: auto;
+  min-height: var(--crewlet-side-panel-head-height);
+  padding-block: calc((var(--crewlet-side-panel-head-height) - var(--size-control-sm)) / 2);
+  box-sizing: border-box;
+}
+
+/* The title and the subtitle on one baseline, the subtitle dropping under
+   the title when the two do not fit; the title shrinks to its own line and
+   is ellipsised there. Centred on the controls' line while it is one line. */
+.crewlet-side-panel__heading {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--spacing-2);
+  min-width: 0;
+  min-height: var(--size-control-sm);
+  align-content: center;
+}
+
+.crewlet-side-panel__heading > .crewlet-side-panel__title {
+  flex: 0 1 auto;
+}
+
+.crewlet-side-panel__subtitle {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-snug);
+}
+
 .crewlet-side-panel__icon {
   display: inline-flex;
   flex: none;

@@ -1,0 +1,116 @@
+/*
+ * ChatDay: a day of a conversation under its date, set on the conversation's
+ * own scale (ChatScale.css).
+ */
+
+/* The day is the pill's range: pinned, the pill stays inside it, so the next
+   day pushes it out from below. */
+.crewlet-chat-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * THE PILL'S PLACE. A box as tall as the pill, first in the day, set so the
+ * pill's middle is on the rule. Sticky in the day, it holds the pill a little
+ * under the list's top edge for as long as the day is in view, and the day's
+ * end pushes it out, a small gap above the next day's pill.
+ *
+ * ITS OWN MARGINS STAY POSITIVE. A sticky box may travel as far as its margin
+ * box allows, so a negative margin here let the pill run past the end of its
+ * day and sit on the next day's pill. The rule under it takes the overlap
+ * instead, with a negative margin of its own, which moves nothing sticky.
+ *
+ * The box lets the pointer through to the rows beside the pill; the pill
+ * takes it. It stands under a message's hover toolbar (which stands over the
+ * rows and the pill alike) and over the rows and the New line.
+ */
+.crewlet-chat-day__label {
+  position: sticky;
+  top: var(--crewlet-chat-day-pin);
+  z-index: var(--z-index-sticky);
+  display: flex;
+  flex: none;
+  justify-content: center;
+  height: var(--crewlet-chat-day-pill);
+  margin-top: calc(var(--crewlet-chat-day-gap) - var(--crewlet-chat-day-pill) / 2);
+  pointer-events: none;
+  /* A host that raises the pin (a banner arriving) moves the pinned pill
+     down with it rather than jumping it. */
+  transition: top var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/*
+ * THE DAY'S RULE: a hairline across the whole list with the day's gap under
+ * it, in the flow like any row. It rises half a pill, so it runs through the
+ * pill's middle.
+ */
+.crewlet-chat-day__rule {
+  position: relative;
+  flex: none;
+  height: 1px;
+  margin: calc(var(--crewlet-chat-day-pill) / -2) 0 var(--crewlet-chat-day-gap);
+  background: var(--color-edge-hairline);
+}
+
+/* The New line on the day's rule covers the rule, as one line. */
+.crewlet-chat-day__rule > .crewlet-chat-divider--unread {
+  position: absolute;
+  inset: 0;
+}
+
+/*
+ * THE PILL floats over the rows: the transcript's own ground, ringed with the
+ * hairline and a small shadow, so it reads as lifted off the messages it
+ * passes over. The ring is a shadow, which forced colors drops, so a
+ * transparent outline stands in for it there.
+ */
+.crewlet-chat-day__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  height: var(--crewlet-chat-day-pill);
+  box-sizing: border-box;
+  padding: 0 var(--spacing-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+  background-color: var(--crewlet-chat-ground);
+  box-shadow:
+    0 0 0 1px var(--color-edge-hairline),
+    var(--shadow-xs);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+/* A pill that opens a menu: its chevron sits a step closer to its edge. */
+.crewlet-chat-day__pill--button {
+  padding-inline-end: var(--spacing-2);
+  cursor: pointer;
+}
+
+/* Under the pointer, and while its menu is open, the hover overlay laid on
+   the pill's own ground. */
+.crewlet-chat-day__pill--button:hover,
+.crewlet-chat-day__pill--button[aria-expanded='true'] {
+  background-image: linear-gradient(var(--color-surface-hover), var(--color-surface-hover));
+}
+
+/* The pill draws its own ring, so focus is drawn over it, as one edge. */
+.crewlet-chat-day__pill--button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-chat-day__label {
+    transition: none;
+  }
+}

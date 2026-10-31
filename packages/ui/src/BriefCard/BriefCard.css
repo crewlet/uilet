@@ -113,3 +113,29 @@
 .crewlet-brief-card__follow-ups {
   margin-inline: calc(-1 * var(--spacing-3));
 }
+
+/*
+ * WHAT WAS SAID (a room's catch up): one point to a row, the sentence and its
+ * citation, the press that opens the message it came from, at the row's end.
+ * A quiet list with no markers, between the needs and the context.
+ */
+.crewlet-brief-card__points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-brief-card__point {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--spacing-3);
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-brief-card__point-text {
+  color: var(--color-text-primary);
+}

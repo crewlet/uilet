@@ -24,6 +24,7 @@ Lucide publishes some 1,850 icons and this package carries the ones something dr
 - **`mouse-pointer-2`**, the pointer a collaborator's `LiveCursor` in `@crewlethq/ui` is drawn with, beside its name flag, on a board or a page that shares cursors.
 - **A company's principles**, each statement's card heading with its own glyph: `telescope` for the vision (where the company is looking), and `scroll-text` for the standing policies (the written rules every agent is given), beside `target`, already here, for the mission.
 - **A company's brand and the folders artifacts are filed in**: `swatch-book` for the `brand` artifact kind (`ArtifactKindGlyph`) and the Company › Brand page, `blend` for a brand's colours, `badge-check` for an artifact drawn in the company's current brand, and `folder-open` for a folder with nothing in it, or nothing the reader can open, beside the `folder` a folder is otherwise drawn with.
+- **The conversation surfaces** (`ChatMessage`, `MessageActions`, `ReactionBar` and the composer in `@crewlethq/ui`, and Chatlet's top bar and Rooms panel in the engine dashboard): `face-slightly-smiling-plus` for adding a reaction, `face-slightly-smiling` for the composer's emoji picker, `at-sign` for a mention, `bookmark` for saving a message for later, `bell-off` for a muted room, `messages-square` for the threads a reader follows, `reply` for replying in a thread, `panel-left` for the Rooms panel and `baseline` for the composer's formatting toggle. Lucide 1.47.0 names the two faces `face-slightly-smiling` and `face-slightly-smiling-plus` (`smile` and `smile-plus` are its retired aliases).
 - **The assistant drawer** in the engine dashboard: `square-pen` for New conversation in its head (the conversations themselves keep `rotate-ccw-clock`, already here, because Lucide retired `history` as an alias of it), `square` drawn filled for the Stop a running request turns the send button into, and `circle-stop` for a request or one of its steps that the person stopped.
 
 ## Provenance
@@ -62,13 +63,17 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `arrow-up` | `ArrowUpGlyph` | `package/icons/arrow-up.svg` |
 | `arrow-up-down` | `ArrowUpDownGlyph` | `package/icons/arrow-up-down.svg` |
 | `arrow-up-right` | `ArrowUpRightGlyph` | `package/icons/arrow-up-right.svg` |
+| `at-sign` | `AtSignGlyph` | `package/icons/at-sign.svg` |
 | `badge-check` | `BadgeCheckGlyph` | `package/icons/badge-check.svg` |
 | `badge-percent` | `BadgePercentGlyph` | `package/icons/badge-percent.svg` |
 | `ban` | `BanGlyph` | `package/icons/ban.svg` |
+| `baseline` | `BaselineGlyph` | `package/icons/baseline.svg` |
 | `bell` | `BellGlyph` | `package/icons/bell.svg` |
+| `bell-off` | `BellOffGlyph` | `package/icons/bell-off.svg` |
 | `blend` | `BlendGlyph` | `package/icons/blend.svg` |
 | `bold` | `BoldGlyph` | `package/icons/bold.svg` |
 | `book-open` | `BookOpenGlyph` | `package/icons/book-open.svg` |
+| `bookmark` | `BookmarkGlyph` | `package/icons/bookmark.svg` |
 | `bot` | `BotGlyph` | `package/icons/bot.svg` |
 | `brain` | `BrainGlyph` | `package/icons/brain.svg` |
 | `bug` | `BugGlyph` | `package/icons/bug.svg` |
@@ -111,6 +116,8 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `external-link` | `ExternalLinkGlyph` | `package/icons/external-link.svg` |
 | `eye` | `EyeGlyph` | `package/icons/eye.svg` |
 | `eye-off` | `EyeOffGlyph` | `package/icons/eye-off.svg` |
+| `face-slightly-smiling` | `FaceSlightlySmilingGlyph` | `package/icons/face-slightly-smiling.svg` |
+| `face-slightly-smiling-plus` | `FaceSlightlySmilingPlusGlyph` | `package/icons/face-slightly-smiling-plus.svg` |
 | `file-code` | `FileCodeGlyph` | `package/icons/file-code.svg` |
 | `file-text` | `FileTextGlyph` | `package/icons/file-text.svg` |
 | `flag` | `FlagGlyph` | `package/icons/flag.svg` |
@@ -156,6 +163,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `menu` | `MenuGlyph` | `package/icons/menu.svg` |
 | `message-circle-question-mark` | `MessageCircleQuestionMarkGlyph` | `package/icons/message-circle-question-mark.svg` |
 | `message-square` | `MessageSquareGlyph` | `package/icons/message-square.svg` |
+| `messages-square` | `MessagesSquareGlyph` | `package/icons/messages-square.svg` |
 | `minimize` | `MinimizeGlyph` | `package/icons/minimize.svg` |
 | `minus` | `MinusGlyph` | `package/icons/minus.svg` |
 | `monitor` | `MonitorGlyph` | `package/icons/monitor.svg` |
@@ -165,6 +173,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `network` | `NetworkGlyph` | `package/icons/network.svg` |
 | `package` | `PackageGlyph` | `package/icons/package.svg` |
 | `palette` | `PaletteGlyph` | `package/icons/palette.svg` |
+| `panel-left` | `PanelLeftGlyph` | `package/icons/panel-left.svg` |
 | `paperclip` | `PaperclipGlyph` | `package/icons/paperclip.svg` |
 | `pause` | `PauseGlyph` | `package/icons/pause.svg` |
 | `pencil` | `PencilGlyph` | `package/icons/pencil.svg` |
@@ -178,6 +187,7 @@ The package's own `license` field is therefore `MIT AND ISC`. The Feather portio
 | `refresh-ccw` | `RefreshCcwGlyph` | `package/icons/refresh-ccw.svg` |
 | `refresh-cw` | `RefreshCwGlyph` | `package/icons/refresh-cw.svg` |
 | `repeat-2` | `Repeat2Glyph` | `package/icons/repeat-2.svg` |
+| `reply` | `ReplyGlyph` | `package/icons/reply.svg` |
 | `rotate-ccw` | `RotateCcwGlyph` | `package/icons/rotate-ccw.svg` |
 | `rotate-ccw-clock` | `RotateCcwClockGlyph` | `package/icons/rotate-ccw-clock.svg` |
 | `rotate-cw` | `RotateCwGlyph` | `package/icons/rotate-cw.svg` |

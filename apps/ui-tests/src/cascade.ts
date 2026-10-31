@@ -522,27 +522,36 @@ function resolvedTokens(theme: "light" | "dark"): ReadonlyMap<string, string> {
  * palette the reader's system asks for, cannot be put to it directly.
  *
  * This installs the built `tokens.css` and `themes.css`, in import order, with
- * each `prefers-color-scheme` query ANSWERED for the system named: a block
- * whose query matches is unwrapped where it stands, keeping its selector and
- * its place in the file, and one that does not match is dropped. Nothing else
- * is decided here. Which block wins is left to jsdom's own cascade, over the
- * selectors, specificity and source order the build emitted, which is exactly
- * what decides whether an explicit choice beats the system.
+ * each `prefers-color-scheme` query ANSWERED for the system named, and each
+ * `prefers-contrast: more` query answered for the contrast it asks for (no
+ * preference unless `contrast` says `more`): a block whose query matches is
+ * unwrapped where it stands, keeping its selector and its place in the file,
+ * and one that does not match is dropped. Nothing else is decided here. Which
+ * block wins is left to jsdom's own cascade, over the selectors, specificity
+ * and source order the build emitted, which is exactly what decides whether
+ * an explicit choice beats the system.
  *
  * Any other at-rule in either file is REFUSED rather than guessed at: a query
  * this cannot answer honestly is one whose block would silently never apply.
  * Returns the remover, as above.
  */
-export function installThemes(system: "light" | "dark"): () => void {
+export function installThemes(
+  system: "light" | "dark",
+  { contrast = "no-preference" }: { contrast?: "no-preference" | "more" } = {},
+): () => void {
   const css = ["tokens.css", "themes.css"]
     .map((name) =>
-      answerColorScheme(readFileSync(join(tokenDist, name), "utf8"), system),
+      answerColorScheme(readFileSync(join(tokenDist, name), "utf8"), system, contrast),
     )
     .join("\n");
   return installCss(css);
 }
 
-function answerColorScheme(css: string, system: "light" | "dark"): string {
+function answerColorScheme(
+  css: string,
+  system: "light" | "dark",
+  contrast: "no-preference" | "more",
+): string {
   const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
   let out = "";
   let from = 0;
@@ -555,11 +564,13 @@ function answerColorScheme(css: string, system: "light" | "dark"): string {
     if (open < 0)
       throw new Error(`an at-rule with no block: ${text.slice(at, at + 60)}`);
     const prelude = text.slice(at, open).trim();
-    const query =
+    const scheme =
       /^@media\s*\(\s*prefers-color-scheme\s*:\s*(light|dark)\s*\)$/.exec(
         prelude,
       );
-    if (!query) throw new Error(`installThemes cannot answer "${prelude}"`);
+    const more = /^@media\s*\(\s*prefers-contrast\s*:\s*more\s*\)$/.test(prelude);
+    if (!scheme && !more) throw new Error(`installThemes cannot answer "${prelude}"`);
+    const matches = scheme ? scheme[1] === system : contrast === "more";
     // The block's end is its MATCHING brace, since the query wraps a rule.
     let depth = 1;
     let close = open + 1;
@@ -569,7 +580,7 @@ function answerColorScheme(css: string, system: "light" | "dark"): string {
       else if (text[close] === "}") depth -= 1;
     }
     out += text.slice(from, at);
-    if (query[1] === system) out += text.slice(open + 1, close - 1);
+    if (matches) out += text.slice(open + 1, close - 1);
     from = close;
   }
   return out + text.slice(from);

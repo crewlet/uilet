@@ -290,6 +290,35 @@ describe('what the root paints, for each choice on each system', () => {
     });
   }
 
+  /*
+   * A READER WHO ASKED FOR MORE CONTRAST gets every step of the edge scale at
+   * full strength, whichever palette won: the theme sheet's more-contrast
+   * block shadows each palette block by tying its selector and coming later.
+   */
+  for (const [system, choice, palette] of CASES) {
+    test(`asking for more contrast on a ${system} system, "${choice}" draws every edge at the ${palette} control edge`, () => {
+      remove = installThemes(system, { contrast: 'more' });
+      render(<ThemeSwitcher storageKey="test_theme" />);
+      fireEvent.click(screen.getByRole('radio', { name: choice === 'Dark' ? 'Light' : 'Dark' }));
+      fireEvent.click(screen.getByRole('radio', { name: choice }));
+      const painted = getComputedStyle(document.documentElement);
+      const control = PALETTES[palette].get(`--${'color-border-control'}`) ?? '';
+      expect(control).not.toBe('');
+      for (const step of ['hairline', 'soft', 'medium', 'strong']) {
+        const edge = painted.getPropertyValue(`--${'color-edge'}-${step}`).trim();
+        // The three tints are var() of the control edge, which jsdom hands
+        // back unresolved; the strong step is the palette's own value.
+        expect([spelled(control), 'var(--color-border-control)'], `${step}: ${edge}`).toContain(spelled(edge));
+      }
+      // And without the request the hairline is the calm tint.
+      remove();
+      remove = installThemes(system);
+      expect(spelled(getComputedStyle(document.documentElement).getPropertyValue(`--${'color-edge'}-hairline`))).toBe(
+        spelled(PALETTES[palette].get(`--${'color-edge'}-hairline`) ?? ''),
+      );
+    });
+  }
+
   test('with nothing chosen, the root follows the system', () => {
     // A browser that reports no preference at all matches no
     // prefers-color-scheme query, so it gets exactly the dark case here.

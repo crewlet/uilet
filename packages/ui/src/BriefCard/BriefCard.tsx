@@ -15,6 +15,9 @@ export const BRIEF_CARD_MAX_NEEDS = 3;
 /** The most follow-ups a brief draws: the next questions, not a menu. The host caps them. */
 export const BRIEF_CARD_MAX_FOLLOW_UPS = 2;
 
+/** The most points of what was said a brief draws: the engine writes at most five. */
+export const BRIEF_CARD_MAX_POINTS = 5;
+
 /** The one thing a row lets the reader do, in one press. */
 export interface BriefCardAction {
   /** A verb and its object: "Answer", "Open GOP-11", "Ask why". */
@@ -41,6 +44,19 @@ export interface BriefCardNeed {
 }
 
 /** A question the reader can ask next, in the same conversation. */
+/**
+ * One point of what was said (a room's catch up), and the message it came
+ * from. `source` is the citation: the host's own press that opens the message
+ * (or its thread), named for it ("Open Miles's message"), so every point can
+ * be checked against what was actually written.
+ */
+export interface BriefCardPoint {
+  key: string;
+  /** What was said, in a sentence. */
+  text: ReactNode;
+  source?: BriefCardAction | undefined;
+}
+
 export interface BriefCardFollowUp {
   key: string;
   question: string;
@@ -52,6 +68,8 @@ export interface BriefCardLabels {
   heading: string;
   /** The list's accessible name. */
   needs: string;
+  /** Names the list of what was said. */
+  points: string;
   /** The mark on the first row, the one the brief recommends, where there are rows to rank. */
   first: string;
   followUps: string;
@@ -64,6 +82,7 @@ export interface BriefCardLabels {
 export const BRIEF_CARD_LABELS: BriefCardLabels = {
   heading: 'Brief',
   needs: 'Needs you',
+  points: 'What was said',
   first: 'Do first',
   followUps: 'Ask next',
   count: (n) => (n === 1 ? '1 thing needs you' : `${n} things need you`),
@@ -86,6 +105,12 @@ export interface BriefCardProps extends Omit<HTMLAttributes<HTMLElement>, 'title
    * empty list is "Nothing needs you".
    */
   needs: readonly BriefCardNeed[];
+  /**
+   * What was said, for a brief of a conversation (a room's catch up), each
+   * point citing the message it came from, at most [BRIEF_CARD_MAX_POINTS].
+   * Drawn as a list under the needs, in the order given.
+   */
+  points?: readonly BriefCardPoint[] | undefined;
   /** One fact from elsewhere that bears on what to do, drawn quiet under the rows. */
   context?: ReactNode;
   /** Questions to ask next, at most [BRIEF_CARD_MAX_FOLLOW_UPS], drawn as suggestion rows at the foot. */
@@ -119,6 +144,7 @@ export function BriefCard({
   asOf,
   about,
   needs,
+  points,
   context,
   followUps,
   labels: overrides,
@@ -128,6 +154,7 @@ export function BriefCard({
   const labels = overrides ? { ...BRIEF_CARD_LABELS, ...overrides } : BRIEF_CARD_LABELS;
   const handedNeeds = needs.length;
   const handedFollowUps = followUps?.length ?? 0;
+  const handedPoints = points?.length ?? 0;
   // The host ranks and caps (BRIEF_CARD_MAX_NEEDS, BRIEF_CARD_MAX_FOLLOW_UPS):
   // a row cut here is one the reader is never told about, so say so where a
   // developer will see it rather than drop it in silence. Once per change of
@@ -144,9 +171,13 @@ export function BriefCard({
         `[crewlet] BriefCard was handed ${handedFollowUps} follow-ups and draws the first ${BRIEF_CARD_MAX_FOLLOW_UPS}.`,
       );
     }
-  }, [handedNeeds, handedFollowUps]);
+    if (handedPoints > BRIEF_CARD_MAX_POINTS) {
+      console.warn(`[crewlet] BriefCard was handed ${handedPoints} points and draws the first ${BRIEF_CARD_MAX_POINTS}.`);
+    }
+  }, [handedNeeds, handedFollowUps, handedPoints]);
   const rows = needs.slice(0, BRIEF_CARD_MAX_NEEDS);
   const asks = followUps ? followUps.slice(0, BRIEF_CARD_MAX_FOLLOW_UPS) : [];
+  const said = points ? points.slice(0, BRIEF_CARD_MAX_POINTS) : [];
   const ranked = rows.length > 1;
   const hasScope = !(scope === undefined || scope === null || scope === '');
   const hasAsOf = !(asOf === undefined || asOf === null || asOf === '');
@@ -203,6 +234,22 @@ export function BriefCard({
               </li>
             ))}
           </ol>
+        )}
+        {said.length === 0 ? null : (
+          // A list the reader moves through by item; Safari drops the role of a list styled without markers.
+          // eslint-disable-next-line jsx-a11y/no-redundant-roles
+          <ul role="list" aria-label={labels.points} className="crewlet-brief-card__points">
+            {said.map((point) => (
+              <li key={point.key} className="crewlet-brief-card__point">
+                <span className="crewlet-brief-card__point-text">{point.text}</span>
+                {point.source ? (
+                  <Button size="small" variant="ghost" onClick={point.source.onSelect}>
+                    {point.source.label}
+                  </Button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         )}
         {hasContext ? <p className="crewlet-brief-card__context">{context}</p> : null}
         {asks.length > 0 ? (

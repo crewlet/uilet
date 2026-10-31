@@ -219,3 +219,38 @@ export const Shapes: Story = {
     );
   },
 };
+
+/**
+ * A SUBTITLE says what the panel is about, after the title on its baseline in
+ * the tertiary ink: a thread and the room it is in, a room's details and what
+ * kind of room it is. In a narrow column the subtitle drops under the title,
+ * and a long title keeps its one line, ellipsised. It is not part of the
+ * panel's name.
+ */
+export const WithSubtitle: Story = {
+  render: function Render() {
+    const [width, setWidth] = useState(SIDE_PANEL_WIDTH);
+    return (
+      <SidePanelFrame
+        panel={
+          <SidePanel
+            title="Thread"
+            subtitle={<a href="#engineering">#engineering</a>}
+            onClose={() => {}}
+            resizable
+            width={width}
+            onWidthChange={setWidth}
+          >
+            <Prose>
+              <p>Narrow the panel with its grip to see the subtitle drop under the title.</p>
+            </Prose>
+          </SidePanel>
+        }
+      >
+        <div style={{ padding: 'var(--spacing-4)' }}>
+          <Text>The page beside the panel.</Text>
+        </div>
+      </SidePanelFrame>
+    );
+  },
+};

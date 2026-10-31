@@ -74,8 +74,10 @@ import {
   type Ref,
 } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
-import { ChevronUpGlyph, MenuGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronUpGlyph, ChevronsLeftGlyph, ChevronsRightGlyph, MenuGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
+import { Kbd, ariaKeyshortcuts, isApplePlatform } from '../Kbd/index.js';
+import { Tooltip } from '../Tooltip/index.js';
 import { focusables, isComposing, layerCount, useModalLayer } from '../Layer/index.js';
 import { HIT_AREA_CLASS } from '../HitArea/hitArea.js';
 import { cx } from '../utils/cx.js';
@@ -87,9 +89,11 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { ResizeHandle } from './ResizeHandle.js';
 import { AsideContext, PeekContext, type AppShellAsideShape, type AppShellPeekShape } from './regions.js';
 import { ScreenWidthContext, contentInlineSize, createScreenWidthStore } from './screenWidth.js';
+import { RailShapeContext, useRailShape, type AppShellRailShape } from './railShape.js';
 
 export { useAppShellAside, useAppShellPeek } from './regions.js';
 export type { AppShellAsideShape, AppShellPeekShape, AppShellRegionValue } from './regions.js';
+export type { AppShellRailShape } from './railShape.js';
 
 /** The aside's resting width, in px, where the host names none. */
 export const APP_SHELL_ASIDE_WIDTH = 420;
@@ -133,6 +137,12 @@ interface AppShellContextValue {
   railId: string;
   toggleLabel: string;
   hasRail: boolean;
+  /**
+   * The shape the rail is drawn in NOW: `compact` only where the host asked
+   * for it and the layout is wide, `full` in the drawer and everywhere else,
+   * so an application picks `CompactNav` or `SidebarNav` from this alone.
+   */
+  rail: AppShellRailShape;
 }
 
 const AppShellContext = createContext<AppShellContextValue | null>(null);
@@ -175,8 +185,14 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
    * Gives the screen the whole height left under the bar, as a flex column,
    * for a canvas or a split view that draws to the bottom of the window
    * instead of scrolling.
+   *
+   * `flush` is the same column EDGE TO EDGE: the content column gives up its
+   * pad, its measure and its gap, and the scroller reserves no gutter, for a
+   * screen that draws its own frame to the sheet's edges (a conversation with
+   * a list and a pane either side of it). The column is positioned, so a
+   * `LayerHost` the screen keeps inside it fills exactly the screen.
    */
-  fill?: boolean | undefined;
+  fill?: boolean | 'flush' | undefined;
   /**
    * Any value that changes when the reader goes somewhere. The drawer closes
    * when it does: a drawer left open over the screen you have just navigated
@@ -187,6 +203,28 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   toggleLabel?: string | undefined;
   /** The link that precedes everything, for a keyboard reader. */
   skipLabel?: string | undefined;
+  /**
+   * The rail's shape the reader chose: the full navigation, or the compact
+   * column of glyphs. A desktop choice: under the shell step the rail is a
+   * drawer drawn full whatever this says, and `useAppShell().rail` reports
+   * the shape actually drawn.
+   */
+  rail?: AppShellRailShape | undefined;
+  /**
+   * Called with the other shape when the reader presses the fold control.
+   * Given, the shell draws THE fold control (never in the drawer); keeping the
+   * choice, and binding a key to it, are the application's.
+   */
+  onRailChange?: ((next: AppShellRailShape) => void) | undefined;
+  /**
+   * The keys the application binds to the fold (`['Mod', '\\']`), drawn in
+   * the control's tooltip and set as its `aria-keyshortcuts`. The shell binds
+   * nothing: the same press may mean something else where the rail is a
+   * drawer, and only the application knows.
+   */
+  railFoldKeys?: readonly string[] | undefined;
+  /** The fold control's two names. Defaults to "Collapse the sidebar" and "Expand the sidebar". */
+  railFoldLabels?: { collapse: string; expand: string } | undefined;
   /**
    * A panel the frame keeps beside every screen: the assistant. Nothing (or
    * null) means no aside and no track. Normally a `SidePanel`, which leaves
@@ -244,6 +282,10 @@ export function AppShell({
   navigationKey,
   toggleLabel = 'Sections',
   skipLabel = 'Skip to content',
+  rail: railChoice = 'full',
+  onRailChange,
+  railFoldKeys,
+  railFoldLabels,
   aside,
   asideWidth = APP_SHELL_ASIDE_WIDTH,
   asideReserve,
@@ -379,6 +421,12 @@ export function AppShell({
     };
   }, [screenWidth]);
 
+  const hasRail = sidebar !== undefined && sidebar !== null;
+  // THE SHAPE DRAWN, not the shape chosen: compact is a desktop shape, and the
+  // drawer under the step is always the full list.
+  const railShape: AppShellRailShape = hasRail && railChoice === 'compact' && !narrow ? 'compact' : 'full';
+  const foldable = hasRail && onRailChange !== undefined && !narrow;
+
   const shell: AppShellContextValue = {
     narrow,
     drawerOpen,
@@ -388,7 +436,8 @@ export function AppShell({
     scroller,
     railId,
     toggleLabel,
-    hasRail: sidebar !== undefined && sidebar !== null,
+    hasRail,
+    rail: railShape,
   };
 
   return (
@@ -399,9 +448,11 @@ export function AppShell({
         className={cx(
           'crewlet-app-shell',
           fill && 'crewlet-app-shell--fill',
+          fill === 'flush' && 'crewlet-app-shell--fill-flush',
           // Named on the root rather than read off the tree by a selector,
           // because a shell with no rail is one column whatever else it holds.
           !shell.hasRail && 'crewlet-app-shell--no-rail',
+          foldable && 'crewlet-app-shell--foldable',
           className,
         )}
         /*
@@ -413,6 +464,7 @@ export function AppShell({
          */
         data-aside={hasAside ? asideShape : undefined}
         data-peek={hasPeek ? peekShape : undefined}
+        data-rail={hasRail ? railShape : undefined}
         style={{
           ...style,
           ['--crewlet-app-shell-gutter' as string]: `${gutter}px`,
@@ -465,7 +517,18 @@ export function AppShell({
             aria-modal={drawerOpen || undefined}
             aria-label={drawerOpen ? toggleLabel : undefined}
           >
-            {sidebar}
+            {/*
+             * THE FOLD CONTROL IS THE SHELL'S, before the rail's own content
+             * and outside it, so it is ONE ELEMENT whichever shape the
+             * application draws: an application that swaps its whole rail
+             * between the shapes cannot remount it, and the focus that folded
+             * the rail is still on it. First in the rail's order because it
+             * acts on the whole rail, as a region's own control precedes it.
+             */}
+            {foldable ? (
+              <RailFold rail={railShape} onRailChange={onRailChange} keys={railFoldKeys} labels={railFoldLabels} railId={railId} />
+            ) : null}
+            <RailShapeContext.Provider value={railShape}>{sidebar}</RailShapeContext.Provider>
           </aside>
         ) : null}
         <div ref={sheet} className="crewlet-app-shell__sheet">
@@ -744,6 +807,58 @@ function ShellDrawer({
   );
 }
 
+/**
+ * THE FOLD CONTROL: one button, pinned over the compact column's centre in
+ * the row under the rail's head, in the same place in both shapes. Its glyph
+ * points the way the rail will go and its name says what pressing it does;
+ * its tooltip carries the keys the application binds.
+ */
+function RailFold({
+  rail,
+  onRailChange,
+  keys,
+  labels,
+  railId,
+}: {
+  rail: AppShellRailShape;
+  onRailChange: ((next: AppShellRailShape) => void) | undefined;
+  keys: readonly string[] | undefined;
+  labels: { collapse: string; expand: string } | undefined;
+  railId: string;
+}) {
+  const compact = rail === 'compact';
+  const label = compact ? (labels?.expand ?? 'Expand the sidebar') : (labels?.collapse ?? 'Collapse the sidebar');
+  const apple = isApplePlatform();
+  return (
+    <span className="crewlet-app-shell__fold">
+      <Tooltip
+        placement="bottom"
+        content={
+          <>
+            {label}
+            {keys ? (
+              <>
+                {' '}
+                <Kbd keys={keys} subtle apple={apple} />
+              </>
+            ) : null}
+          </>
+        }
+      >
+        <IconButton
+          label={label}
+          size="sm"
+          variant="ghost"
+          icon={compact ? <ChevronsRightGlyph size="sm" /> : <ChevronsLeftGlyph size="sm" />}
+          aria-controls={railId}
+          aria-keyshortcuts={keys ? ariaKeyshortcuts(keys, apple) : undefined}
+          onClick={() => onRailChange?.(compact ? 'full' : 'compact')}
+        />
+      </Tooltip>
+    </span>
+  );
+}
+
 export interface AppShellRailProps {
   /**
    * The head of the rail, drawn at the top bar's own height. Its first child
@@ -776,21 +891,38 @@ export interface AppShellRailProps {
   children?: ReactNode;
 }
 
-/** The rail's three regions: a head, a scrolling middle, and a foot. */
+/**
+ * The rail's three regions: a head, a scrolling middle, and a foot.
+ *
+ * ONE RAIL IN BOTH SHAPES, its slots kept. Compact, the head holds the brand
+ * alone (the lockup shows its mark, over the column's centre, and keeps its
+ * name as the link's name and title); the field is not drawn, because a
+ * 76px column has no room for one and the application draws a Search tile
+ * among its `CompactNav` places instead; and the status stands at the top of
+ * the foot as its dot and count, since the head has no line left beside the
+ * mark. The middle and the foot are drawn as the application gives them.
+ */
 export function AppShellRail({ header, search, status, footer, className, children }: AppShellRailProps) {
+  const compact = useRailShape() === 'compact';
+  const statusSlot = status ? <div className="crewlet-app-shell__rail-status">{status}</div> : null;
   return (
     <div className={cx('crewlet-app-shell__rail-inner', className)}>
-      {header || status ? (
+      {header || (status && !compact) ? (
         <div className="crewlet-app-shell__rail-head">
           {header}
-          {status ? <div className="crewlet-app-shell__rail-status">{status}</div> : null}
+          {compact ? null : statusSlot}
         </div>
       ) : null}
       <div className="crewlet-app-shell__rail-body">
-        {search ? <div className="crewlet-app-shell__rail-search">{search}</div> : null}
+        {search && !compact ? <div className="crewlet-app-shell__rail-search">{search}</div> : null}
         {children}
       </div>
-      {footer ? <div className="crewlet-app-shell__rail-foot">{footer}</div> : null}
+      {footer || (status && compact) ? (
+        <div className="crewlet-app-shell__rail-foot">
+          {compact ? statusSlot : null}
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }

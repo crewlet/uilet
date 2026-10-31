@@ -14,9 +14,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { cascade, fromOklab, hex, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
+import { atLightness, cascade, flatten, fromOklab, hex, oklabHex, parseBlocks, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
 import * as palette from './palette.mjs';
-import { ARTIFACT_KIND_FILL_ALPHA, SOFT_ALPHA, paletteStates } from './palette.mjs';
+import { ARTIFACT_KINDS, ARTIFACT_KIND_FILL_ALPHA, SOFT_ALPHA, paletteSelectors, paletteStates } from './palette.mjs';
 import * as exported from '../dist/index.js';
 import { DEFAULT_THEME_ID, breakpoint, font, isThemeId, size, spacing, themeGroups, themeRegistry, themes } from '../dist/index.js';
 
@@ -349,6 +349,118 @@ describe('the derived tints', () => {
   });
 });
 
+describe('the edge scale and the quiet fills', () => {
+  /** Every state of every theme, with the theme's contrast profile. */
+  const profiled = () =>
+    themeRegistry.flatMap((theme) =>
+      Object.entries(paletteStates(sourcesOf(theme.id))).map(([state, values]) => [`${theme.id} ${state}`, values, theme.contrast]),
+    );
+
+  test("every step is the palette's own ink or control edge at its alpha, in every palette", () => {
+    // Derived per palette, so a theme's edge follows its own ink and its own
+    // control edge. A high-contrast theme draws the three tints at full
+    // strength, because a tint is the opposite of what it promises.
+    for (const [state, values, contrast] of profiled()) {
+      const text = values.get('--color-text-primary');
+      const control = values.get('--color-border-control');
+      // The base state is the marketing root under every theme, so it is
+      // always drawn at the standard strength.
+      const high = contrast === 'high' && !state.endsWith(' base');
+      assert.equal(values.get('--color-edge-hairline'), high ? control : withAlpha(text, 0.13), `${state} hairline`);
+      assert.equal(values.get('--color-edge-soft'), high ? control : withAlpha(control, 0.3), `${state} soft`);
+      assert.equal(values.get('--color-edge-medium'), high ? control : withAlpha(control, 0.5), `${state} medium`);
+      assert.equal(values.get('--color-edge-strong'), control, `${state} strong`);
+      assert.equal(values.get('--color-fill-row'), withAlpha(text, 0.04), `${state} row fill`);
+      assert.equal(values.get('--color-fill-soft'), withAlpha(text, 0.06), `${state} soft fill`);
+    }
+    // The marketing root carries them too, so the token layer alone has a value.
+    assert.equal(tokens.get('--color-edge-hairline'), withAlpha(tokens.get('--color-text-primary'), 0.13));
+  });
+
+  test('every sheet draws the edge scale at full strength for a reader who asks for more contrast', () => {
+    // One block per sheet, under the sheet's own three selectors, after the
+    // palette blocks it shadows: a selector there ties the specificity of the
+    // block it overrides and wins by coming later.
+    const sheets = [
+      ['tokens.css', tokensCss, [':root']],
+      ['themes.css', themesCss, Object.values(paletteSelectors(null))],
+      ...themeRegistry
+        .filter((theme) => theme.id !== DEFAULT_THEME_ID)
+        .map((theme) => [`themes/${theme.id}.css`, read(`themes/${theme.id}.css`), Object.values(paletteSelectors(theme.id))]),
+    ];
+    for (const [name, css, selectors] of sheets) {
+      const blocks = parseBlocks(css).filter((block) => block.declarations.size > 0);
+      const contrast = blocks.filter((block) => block.atRule === '@media (prefers-contrast: more)');
+      assert.deepEqual(contrast.map((block) => block.selector), selectors, `${name} more-contrast selectors`);
+      const last = Math.max(...blocks.map((block, index) => (block.atRule !== '@media (prefers-contrast: more)' && block.declarations.has('--color-edge-hairline') ? index : -1)));
+      for (const block of contrast) {
+        assert.ok(blocks.indexOf(block) > last, `${name}: ${block.selector} comes after every palette block`);
+        for (const step of ['hairline', 'soft', 'medium']) {
+          assert.equal(block.declarations.get(`--color-edge-${step}`), 'var(--color-border-control)', `${name}: ${block.selector} ${step}`);
+        }
+      }
+    }
+    // And all.css carries every named theme's block.
+    const all = parseBlocks(read('themes/all.css')).filter((block) => block.atRule === '@media (prefers-contrast: more)');
+    assert.equal(all.length, (themeRegistry.length - 1) * 3);
+  });
+
+  test("the start sheet's shadow is the sheet's, mirrored, in every palette", () => {
+    // Each layer's horizontal offset negated and nothing else, so a palette
+    // that retunes the sheet's shadow retunes both.
+    const offsets = (value) => value.split(/,(?![^(]*\))/).map((layer) => layer.trim().split(/\s+/));
+    for (const [state, values] of everyState()) {
+      const sheet = offsets(values.get('--shadow-sheet'));
+      const start = offsets(values.get('--shadow-sheet-start'));
+      assert.equal(start.length, sheet.length, state);
+      sheet.forEach((layer, i) => {
+        assert.equal(parseFloat(start[i][0]), -parseFloat(layer[0]), `${state} layer ${i} x`);
+        assert.deepEqual(start[i].slice(1), layer.slice(1), `${state} layer ${i} rest`);
+      });
+    }
+  });
+
+  test('the count badge is one pill: a 16px height, the first spacing step and a 10px figure', () => {
+    assert.equal(tokens.get('--size-badge'), 'calc(16px * var(--density, 1))');
+    assert.equal(tokens.get('--size-badge-pad'), 'var(--spacing-1)');
+    assert.equal(tokens.get('--font-size-badge'), '0.625rem');
+    assert.equal(size.badge, '16px');
+    assert.equal(font.size.badge, '10px');
+  });
+
+  test("the artifact kind grounds are the kind's own hue, vivid, at the card's lightness mix, in every palette", () => {
+    // Opaque, at the hue's own hue and chroma (as much as a screen shows), at
+    // a lightness mixed from the hue's and the card's neutral: so a ground
+    // keeps its colour where a tint of it went grey.
+    const chroma = ({ a, b }) => Math.hypot(a, b);
+    const angle = ({ a, b }) => (Math.atan2(b, a) * 180) / Math.PI;
+    for (const [state, values] of everyState()) {
+      const sheet = parseHex(values.get('--color-surface-background'));
+      const card = toOklab(flatten(values.get('--color-surface-subtle'), sheet));
+      for (const kind of ARTIFACT_KINDS) {
+        let hue = values.get(`--color-artifact-kind-${kind}`);
+        const alias = /^var\((--[a-z0-9-]+)\)$/.exec(hue ?? '');
+        if (alias) hue = values.get(alias[1]);
+        const hueLab = toOklab(parseHex(hue));
+        for (const [step, weight] of [['ground', 0.26], ['ground-strong', 0.3]]) {
+          const value = values.get(`--color-artifact-kind-${kind}-${step}`);
+          assert.equal(value, atLightness(hue, weight * hueLab.L + (1 - weight) * card.L), `${state} ${kind} ${step}`);
+          const lab = toOklab(parseHex(value));
+          // The hue's own hue, within what eight bits a channel can hold.
+          assert.ok(chroma(lab) < 0.02 || Math.abs(((angle(lab) - angle(hueLab) + 540) % 360) - 180) < 4, `${state} ${kind} ${step} keeps its hue`);
+        }
+        const ground = toOklab(parseHex(values.get(`--color-artifact-kind-${kind}-ground`)));
+        assert.equal(
+          values.get(`--color-artifact-kind-${kind}-ground-end`),
+          oklabHex({ L: 0.7 * ground.L + 0.3 * card.L, a: 0.7 * ground.a, b: 0.7 * ground.b }),
+          `${state} ${kind} ground-end`,
+        );
+        assert.equal(values.get(`--color-artifact-kind-${kind}-glow`), withAlpha(hue, 0.46), `${state} ${kind} glow`);
+      }
+    }
+  });
+});
+
 describe('the quiet link', () => {
   /**
    * A link inside running text or a row, which must not compete with the
@@ -551,13 +663,17 @@ describe('the named themes', () => {
     // A block on the bare root, or under another theme's attribute, would
     // repaint every document that imports the sheet, and so every document
     // that imports all.css.
+    // The more-contrast block repeats the same three selectors, and is held
+    // by 'the edge scale and the quiet fills'.
+    const own = (id) => [`:root[data-palette="${id}"]`, `:root[data-palette="${id}"]:not([data-theme="dark"])`, `:root[data-palette="${id}"][data-theme="light"]`];
     for (const theme of named) {
-      const selectors = [...read(`themes/${theme.id}.css`).matchAll(/^\s*(:root[^{]*)\{/gm)].map(([, selector]) => selector.trim());
-      assert.deepEqual(
-        selectors,
-        [`:root[data-palette="${theme.id}"]`, `:root[data-palette="${theme.id}"]:not([data-theme="dark"])`, `:root[data-palette="${theme.id}"][data-theme="light"]`],
-        theme.id,
-      );
+      // A wrapper's closing brace reads as an empty block; only blocks that
+      // declare something paint.
+      const blocks = parseBlocks(read(`themes/${theme.id}.css`)).filter((block) => block.declarations.size > 0);
+      const palette = blocks.filter((block) => block.atRule !== '@media (prefers-contrast: more)').map((block) => block.selector);
+      assert.deepEqual(palette, own(theme.id), theme.id);
+      const contrast = blocks.filter((block) => block.atRule === '@media (prefers-contrast: more)').map((block) => block.selector);
+      assert.deepEqual(contrast, own(theme.id), `${theme.id} more contrast`);
     }
   });
 

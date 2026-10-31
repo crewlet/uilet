@@ -24,6 +24,16 @@
  * unread"), because a bare "5" after a name says nothing about what it counts,
  * and both carry those words as required props, so a figure without them does
  * not type-check.
+ *
+ * A LONG LIST READ IN PASSING IS THE SAME COMPONENT, DENSER (`dense`): a room
+ * list beside a conversation, with rows at the target floor, names in the
+ * regular weight, and two states a navigation does not need, `unread` (the
+ * name a step heavier and brighter) and `muted` (the quiet ink). Its groups
+ * can fold (`collapsible`), and a folded group still shows the row the reader
+ * is on and the rows with news, so folding never hides what is calling.
+ *
+ * THE RAIL FOLDED TO ITS MARKS IS `CompactNav`, whose places take these rows'
+ * own prop types, so one list of places feeds both shapes.
  */
 
 import { createContext, useContext, useId, useState, type MouseEventHandler, type ReactNode } from 'react';
@@ -41,6 +51,16 @@ export interface SidebarNavProps {
    * landmarks both called "navigation".
    */
   label: string;
+  /**
+   * A list read in passing that runs long (a room list, a directory), drawn a
+   * step denser than the application's navigation: rows at the target floor
+   * (24px), the gutter halved so a row's highlight runs nearly from edge to
+   * edge, the row's pad grown by the same step so every glyph and name keeps
+   * the line it was on, a glyph slot as wide as a small face so faces and
+   * glyphs share one column, and names in the regular weight, which is what
+   * lets an `unread` row stand out by weight alone.
+   */
+  dense?: boolean | undefined;
   className?: string | undefined;
   children?: ReactNode;
 }
@@ -90,12 +110,33 @@ export interface NavGroupProps {
    * heading to carry the key, so its rows keep theirs.
    */
   locked?: string | undefined;
+  /**
+   * The heading folds the group: it becomes a button, its chevron in the glyph
+   * column and its words on the label line, and a folded group still draws
+   * the rows a reader must not lose sight of, the one they are on and the
+   * ones marked `unread` (and not `muted`). Only for a NAMED group: the words
+   * are the button's name.
+   */
+  collapsible?: boolean | undefined;
+  /** Whether a collapsible group is folded, for a caller that keeps the state. */
+  collapsed?: boolean | undefined;
+  /** Whether a collapsible group starts folded, for one that leaves the state to the group. */
+  defaultCollapsed?: boolean | undefined;
+  /** Every fold and unfold of a collapsible group. */
+  onCollapsedChange?: ((collapsed: boolean) => void) | undefined;
   className?: string | undefined;
   children?: ReactNode;
 }
 
 /** Whether the group a row stands in carries the lock for all of its rows. */
 const GroupLocked = createContext(false);
+
+/**
+ * Whether the group a row stands in is folded, which keeps only its current
+ * and unread rows. A row hands its own nested rows `false`: the fold is the
+ * group's, and a row's children are the row's.
+ */
+const GroupFolded = createContext(false);
 
 /** What a caller is handed when it draws the row's element itself. */
 export interface NavLinkProps {
@@ -187,6 +228,21 @@ export interface NavItemProps {
    * is the page that says the reader may not read it.
    */
   locked?: string | undefined;
+  /**
+   * Something here is new to the reader: a room with messages they have not
+   * read. The row's name steps up to the primary ink and the medium weight,
+   * which reads in a `dense` list whose names are regular. A screen reader
+   * hears ", unread" after the name unless the row's figure already says
+   * what is waiting, and a folded group keeps the row in view.
+   */
+  unread?: boolean | undefined;
+  /**
+   * The reader asked to hear less from here: the row rests in the quiet ink,
+   * and lifts as every row does under the pointer and while current. It
+   * outranks `unread`, since a muted place's news is not asking for them, and
+   * a screen reader hears ", muted" after the name.
+   */
+  muted?: boolean | undefined;
   /** The row's hint, as the pointer's title: what the destination answers. */
   title?: string | undefined;
   /**
@@ -209,9 +265,9 @@ export interface NavItemProps {
 }
 
 /** The navigation region in the rail. */
-export function SidebarNav({ label, className, children }: SidebarNavProps) {
+export function SidebarNav({ label, dense = false, className, children }: SidebarNavProps) {
   return (
-    <nav className={cx('crewlet-sidebar-nav', className)} aria-label={label}>
+    <nav className={cx('crewlet-sidebar-nav', dense && 'crewlet-sidebar-nav--dense', className)} aria-label={label}>
       {children}
     </nav>
   );
@@ -226,13 +282,39 @@ export function SidebarNav({ label, className, children }: SidebarNavProps) {
  * `<div>` here still carries the label's own padding, which put sixteen blank
  * pixels at the top of the rail and named a group nothing could read.
  */
-export function NavGroup({ label, action, locked, className, children }: NavGroupProps) {
+export function NavGroup({
+  label,
+  action,
+  locked,
+  collapsible = false,
+  collapsed,
+  defaultCollapsed = false,
+  onCollapsedChange,
+  className,
+  children,
+}: NavGroupProps) {
   const id = useId();
+  const [ownCollapsed, setOwnCollapsed] = useState(defaultCollapsed);
   const named = label !== undefined && label !== null && label !== false && label !== '';
   const groupLocked = named && locked !== undefined && locked !== '';
+  const folds = named && collapsible;
+  const folded = folds && (collapsed ?? ownCollapsed);
+
+  function toggle(): void {
+    const next = !folded;
+    if (collapsed === undefined) setOwnCollapsed(next);
+    onCollapsedChange?.(next);
+  }
+
+  const words = <LockedLabel reason={groupLocked ? locked : undefined}>{label}</LockedLabel>;
   return (
     <div
-      className={cx('crewlet-nav-group', groupLocked && 'crewlet-nav-group--locked', className)}
+      className={cx(
+        'crewlet-nav-group',
+        groupLocked && 'crewlet-nav-group--locked',
+        folded && 'crewlet-nav-group--collapsed',
+        className,
+      )}
       // A group is only a group to a screen reader when it has a name; an
       // unnamed one would add a level to walk through that says nothing.
       role={named ? 'group' : undefined}
@@ -243,9 +325,29 @@ export function NavGroup({ label, action, locked, className, children }: NavGrou
     >
       {named || action ? (
         <div className="crewlet-nav-group__head">
-          {named ? (
+          {folds ? (
+            /*
+             * THE HEADING IS THE FOLD. Its chevron stands in the glyph column
+             * and its words on the label line, so a folded list's headings
+             * and rows still read as one grid, and the button is named by the
+             * words alone (the chevron is decoration; `aria-expanded` says
+             * which way it points).
+             */
+            <button
+              type="button"
+              className="crewlet-nav-group__toggle"
+              id={id}
+              aria-expanded={!folded}
+              onClick={toggle}
+            >
+              <span className="crewlet-nav-group__chevron" aria-hidden>
+                <ChevronDownGlyph size="xs" />
+              </span>
+              <span className="crewlet-nav-group__label">{words}</span>
+            </button>
+          ) : named ? (
             <span className="crewlet-nav-group__label" id={id}>
-              <LockedLabel reason={groupLocked ? locked : undefined}>{label}</LockedLabel>
+              {words}
             </span>
           ) : null}
           {action ? (
@@ -257,7 +359,9 @@ export function NavGroup({ label, action, locked, className, children }: NavGrou
           ) : null}
         </div>
       ) : null}
-      <GroupLocked.Provider value={groupLocked}>{children}</GroupLocked.Provider>
+      <GroupLocked.Provider value={groupLocked}>
+        <GroupFolded.Provider value={folded}>{children}</GroupFolded.Provider>
+      </GroupLocked.Provider>
     </div>
   );
 }
@@ -307,6 +411,8 @@ export function NavItem({
   current = false,
   disabledReason,
   locked,
+  unread = false,
+  muted = false,
   title,
   onPrefetch,
   renderLink,
@@ -320,10 +426,21 @@ export function NavItem({
 }: NavItemProps) {
   const id = useId();
   const inLockedGroup = useContext(GroupLocked);
+  const inFoldedGroup = useContext(GroupFolded);
   const [ownExpanded, setOwnExpanded] = useState(defaultExpanded);
   const open = expanded ?? ownExpanded;
   const nested = children !== undefined && children !== null && children !== false;
   const inert = disabledReason !== undefined;
+  const calling = unread && !muted;
+
+  // A FOLDED GROUP KEEPS WHAT THE READER MUST NOT LOSE: the row they are on,
+  // and the rows with news they have not muted. Every other row is not drawn
+  // at all, so it is out of the tab order and the tree as well as the picture.
+  if (inFoldedGroup && !current && !calling) return null;
+
+  // The row's state in words, after its figures: ", unread" only where no
+  // figure already says what is waiting.
+  const state = muted ? ', muted' : calling && !count && !badge ? ', unread' : '';
 
   function toggle(): void {
     const next = !open;
@@ -347,7 +464,7 @@ export function NavItem({
         <LockedLabel reason={locked} mark={!inLockedGroup}>
           {label}
         </LockedLabel>
-        {count || badge ? <VisuallyHidden>{spoken([count, badge])}</VisuallyHidden> : null}
+        {count || badge || state ? <VisuallyHidden>{`${spoken([count, badge])}${state}`}</VisuallyHidden> : null}
       </span>
       {count ? <Figure figure={count} mark={count.mark} className="crewlet-nav-item__count" /> : null}
       {badge ? <Figure figure={badge} className="crewlet-nav-item__badge" /> : null}
@@ -439,7 +556,14 @@ export function NavItem({
     // what a screen reader is told from coming apart; a `data-current` beside
     // it would be a second answer to one question, and the first stylesheet to
     // read the wrong one is the one that disagrees.
-    <div className={cx('crewlet-nav-item', className)}>
+    <div
+      className={cx(
+        'crewlet-nav-item',
+        calling && 'crewlet-nav-item--unread',
+        muted && 'crewlet-nav-item--muted',
+        className,
+      )}
+    >
       <div className="crewlet-nav-item__head">
         {row}
         {separateToggle ? (
@@ -462,7 +586,7 @@ export function NavItem({
       {inert ? <VisuallyHidden id={`${id}-reason`}>{disabledReason}</VisuallyHidden> : null}
       {nested ? (
         <div className="crewlet-nav-item__children" id={`${id}-children`} hidden={!open}>
-          {children}
+          <GroupFolded.Provider value={false}>{children}</GroupFolded.Provider>
         </div>
       ) : null}
     </div>
