@@ -85,7 +85,7 @@ Show the ratio of the value it returns, measured with `contrast`, rather than th
 
 ## Changed in 0.82.0: the edge scale, the quiet fills, the count badge and the folded rail
 
-A dense surface (a conversation, a list of cards) drew the field's 3:1 edge round every reaction, preview, toolbar and face, so it read as a grid of frames. The edge scale is one grey at four strengths, chosen by what the edge does, and two quiet fills sit under the overlay steps. Every colour step is derived per palette by the build (an `rgba()` of the palette's own value, never `color-mix()`), so a theme repaints it without declaring it. Nothing is renamed or removed.
+A dense surface (a conversation, a list of cards) drew the field's 3:1 edge round every reaction, preview, toolbar and face, so it read as a grid of frames. The edge scale is one grey at four strengths, chosen by what the edge does, and two quiet fills sit under the overlay steps. Every colour step is derived per palette by the build (a value of the palette's own colours, never `color-mix()`), so a theme repaints it without declaring it. Nothing is renamed or removed.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -95,7 +95,8 @@ A dense surface (a conversation, a list of cards) drew the field's 3:1 edge roun
 | `--color-edge-strong` | the control edge | A field (a message box) and a pressed or pointed pill's ring. |
 | `--color-fill-row` | the primary text at 0.04 | A pointed row inside a dense list. |
 | `--color-fill-soft` | the primary text at 0.06 | A pill or a quiet label at rest (a reaction, a seat's kind beside its name). |
-| `--color-artifact-kind-<kind>-ground`, `-ground-strong`, `-ground-end`, `-glow` | the kind's hue at 0.26, 0.3, 0.13 and 0.46 | A card drawn ON a kind's hue (a first-step card): its ground at rest and under the pointer, its gradient's foot and the light behind its drawing. |
+| `--color-artifact-kind-<kind>-ground`, `-ground-strong`, `-ground-end`, `-glow` | opaque: the kind's own hue and full chroma at a lightness 0.26 (0.3 under the pointer) of the way from the card's neutral to the hue's; the foot is the ground mixed 0.7 with that neutral in OKLab; the glow is the hue at 0.46 | A card drawn ON a kind's hue (a first-step card): its ground at rest and under the pointer, its gradient's foot and the light behind its drawing. A tint of the hue read grey; these keep its colour. |
+| `--shadow-sheet-start` | `--shadow-sheet` mirrored | The shadow of a side sheet pinned to the inline start (`Modal side="start"`), cast into the page it covers. |
 | `--size-badge` | 16px, density-scaled | The height and least width of a count that waits for the reader, wherever it is drawn. |
 | `--size-badge-pad` | `var(--spacing-1)` | The badge's inline pad. |
 | `--font-size-badge` | 10px (0.625rem) | The badge's figure, at the semibold weight. |

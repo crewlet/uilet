@@ -49,7 +49,7 @@ import { Button } from '@crewlethq/ui/Button';  // 8 KB of CSS, not 182 KB
 | Documents and review | `DiffView` and `DiffSummary` with the line diff they draw (`diffLines`, `diffStat`, `collapseDiff`, `firstChangedLines`, `splitLines`, `MAX_DIFF_LINES`, with no React in it), `DiffList`, `VersionCompare`, `CommentThread` |
 | Conversations and the assistant | `ChatThread` (with `ChatThreadHandle`), `MessageBubble`, `RunChip`, `StepList` and `StepStateMark`, `ProposalCard`, `ChangeList` (with `shortenUnchanged`), `StatusCard`, `ReceiptStrip`, `RefusalStrip`, `ResultTableCard`, `OpenInAppCard`, `BriefCard`, `EntityList`, `RecordChip` and `RecordChipList` (a record named in a sentence, opening a peek, and the Also read line), `RefusalCard`, `SuggestionRow` and `SuggestionList`, `SendButton` |
 | Charts | `Legend`, `BarList`, `StackedBar`, `StackedColumns`, `ActivityStrip`, `TimeSeries`, `Sparkline`, the reading layer they share (`ChartTooltip`, `useChartHover`), and the ramp (`DATA_COLORS`, `DATA_COLOR_OTHER`, `dataColor`) |
-| Marks | `Count`, `StatusDot`, `Spinner`, `EmptyValue`, `VisuallyHidden` |
+| Marks | `Count` (with `tone="attention"`), `StatusDot`, `Spinner`, `EmptyValue`, `VisuallyHidden` |
 | Hooks and seams | `useModalLayer`, `usePopupLayer`, `LayerHost`, `useListbox`, `useOptionKeys`, `useHighlightRest` and `HIGHLIGHT_REST_MS`, `useClipboard`, `useDownload`, `downloadText`, `downloadBlob`, `safeFilename`, `toCsv`, `elementToPng` and `ElementToPngError`, `useOutcome`, `useAnnouncer`, `useNow`, `formatRelative`, `HeadingLevelProvider`, `cx`, the node hues (`NODE_HUES`, `NODE_HUE_NAMES`, `isNodeHue`) |
 | Layout | `Container`, `Section`, `Card`, `TileGrid`, `ListDetail`, `AsideLayout`, `Tabs`, `Accordion`, `Disclosure`, `Outline` (with `useActiveHeading` and `scrollToHeading`), `TreeGrid` |
 | Arranging a page | `ArrangeBoard`, `ArrangeGrid`, `ArrangeFrame` (with `useGridResize`), `ArrangeGroup`, `ArrangeList`, and the reorder hooks under them (`useReorder`, `useReorderLists`, `moveKey`) |
@@ -204,6 +204,24 @@ places:
   `document.body` while a canvas is fullscreen is not painted at all.
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
+
+## Changes in 0.82.0
+
+### Faces, hints, sheets and counts
+
+**Every face is one rounded square, a person's and an agent's alike.** A person was a circle and an agent a squircle, so a row of people and agents changed shape from face to face. `Avatar` now draws every face as a square whose corner is two ninths of its side, held between the xs and lg radius steps (8px on a 36px face; `AVATAR_CORNER_RATIO` is 2/9 and `AVATAR_CORNER_RANGE` is `{ min: 4, max: 12 }`, and `avatarCorner(px)` answers both). The kind is said by the face's contents: the initials in the mono face for an agent and the sans face for a person, a character, a picture. A face's outline is the hairline step (`--color-edge-hairline`), whatever it holds, where the neutral badge drew the strong hairline and a hue's plate its own line. The status badge is under a third of the face (0.3 of it, never under 10px) and hangs a twentieth of it past the corner, the size and place of a presence dot. In an `AvatarStack` the ground's ring is the only edge a face draws. `PresenceStack`, `ImageUpload` and `Skeleton`'s face take the same corner. Props are unchanged.
+
+**A `Tooltip` stays open for keyboard focus only, and a press closes it.** A mouse press focuses a button too, and so does a layer handing focus back as it closes, so a tip shown for a hover outlived the hover. Focus now holds the tip only when it is the focus `:focus-visible` matches (`isVisibleFocus`, exported beside `returnFocus`, which also refuses a focus handed back while the reader uses a pointer). A press closes the tip, and it opens again on the pointer's next arrival. A ref and any other attribute handed to a `Tooltip` are its trigger's: they are merged onto the child (handlers run after the child's own, `style` merged, descriptions joined), so a tooltip can stand where a `Popover` or a `Menu` expects its trigger. A suite that means keyboard focus focuses through `tabTo` in `apps/ui-tests/src/keyboard.ts`.
+
+**`Modal` takes `side="start"`** for a sheet pinned to the inline start, a navigation panel such as a list of rooms: it slides in from that edge with its edge and its shadow (`--shadow-sheet-start`, the sheet's own shadow mirrored) on its inline end. `side` is read on the sheet variant only. A modal's head and foot no longer shrink under a long body.
+
+**`Count` takes `tone="attention"`**: a count of what waits on the reader (a mention, a direct message, a new reply to them) as the accent pill at the badge's size (`--size-badge`, its figure at `--font-size-badge`), the same pill a navigation row's badge draws. A count is still never tinted by severity, and `quiet`, the default, is unchanged. The type is `CountTone`.
+
+**`Tag` takes `appearance="quiet"`**: a small filled label with no boundary, 16px tall in the label register, for a seat's kind beside its name ("Agent"). It takes no size step.
+
+**`SidePanel` takes `subtitle`**: what the panel is about, after the title on its baseline in the tertiary ink ("Thread" then the room it is in). It drops under the title when the two do not fit, and the head grows to hold it.
+
+**`formatMarkdown` applies `strikethrough`, `quote` and `link`** (`MARKDOWN_TEXT_FORMATS`, type `MarkdownTextFormat`), for a composer's own formatting row. `MarkdownEditor`'s bar does not draw them. A strikethrough wraps in `~~`, a quote toggles `> ` on every line it touches and keeps their own markers, and a link makes the selection its label and selects the address to type over.
 
 ## Changes in 0.81.1
 
