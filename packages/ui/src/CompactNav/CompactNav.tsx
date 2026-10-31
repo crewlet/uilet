@@ -51,6 +51,7 @@ import {
 import { LockedLabel } from '../LockedLabel/index.js';
 import type { NavFigure, NavLinkProps } from '../SidebarNav/index.js';
 import { cx } from '../utils/cx.js';
+import { tokenMs } from '../utils/tokenMs.js';
 import { returnFocus } from '../utils/focusModality.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -333,11 +334,6 @@ export function placeFlyout(
   return { left, top };
 }
 
-/** A motion token as milliseconds, for a delay JavaScript counts. */
-function ms(value: string): number {
-  return Number.parseFloat(value);
-}
-
 /*
  * THE POINTER'S TWO DELAYS. Opening waits the fast step, so a pointer
  * crossing the column on its way to the page does not flash a flyout at every
@@ -345,8 +341,8 @@ function ms(value: string): number {
  * to cross the gap from the tile onto the flyout (WCAG 2.2's 1.4.13: content
  * shown on hover can be hovered).
  */
-const OPEN_DELAY = ms(motion.duration.fast);
-const CLOSE_DELAY = ms(motion.duration.moderate);
+const OPEN_DELAY = tokenMs(motion.duration.fast);
+const CLOSE_DELAY = tokenMs(motion.duration.moderate);
 
 /** How the flyout was opened, which decides what closes it. */
 type Opener = 'pointer' | 'press' | 'keys';

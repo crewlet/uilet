@@ -78,8 +78,10 @@ function installMedia(initial: boolean): { set: (matches: boolean) => void; rest
  * the query the shell asks and evaluates it the way a browser would, over the
  * four width features a layout switch is written with, and refuses anything
  * else: a query it could not read would otherwise answer false and pass as the
- * wide layout. Every query the shell asks is recorded, so a case can hold the
- * stylesheet to the same one.
+ * wide layout. Every LAYOUT query the shell asks is recorded, so a case can
+ * hold the stylesheet to the same one. The reader's motion preference is a
+ * question of another kind (the rail asks it before it eases), answered here
+ * as no preference and not recorded.
  */
 function installViewport(width: number, asked: string[]): () => void {
   const had = Object.getOwnPropertyDescriptor(globalThis, 'matchMedia');
@@ -103,9 +105,10 @@ function installViewport(width: number, asked: string[]): () => void {
     configurable: true,
     writable: true,
     value: (query: string) => {
-      asked.push(query);
+      const motion = query.trim() === '(prefers-reduced-motion: reduce)';
+      if (!motion) asked.push(query);
       return {
-        matches: answer(query),
+        matches: motion ? false : answer(query),
         media: query,
         onchange: null,
         addEventListener: () => {},
@@ -803,6 +806,34 @@ test('the shell has no accessibility violations, with the drawer open or closed'
     resultTypes: ['violations'],
   });
   expect(open.violations.map((violation) => violation.id)).toEqual([]);
+});
+
+test('a shell the reader can fold has no accessibility violations in either shape', async () => {
+  for (const rail of ['full', 'compact'] as const) {
+    const view = render(
+      <AppShell
+        rail={rail}
+        onRailChange={() => {}}
+        railFoldKeys={['Mod', '\\']}
+        sidebar={<Rail />}
+        topbar={<AppShell.Topbar title="Overview" />}
+      >
+        <h2>The screen</h2>
+      </AppShell>,
+    );
+    // The corner control names what pressing it does and says whether the
+    // rail is expanded, for the rail it controls.
+    const fold = screen.getByRole('button', { name: rail === 'full' ? 'Collapse the sidebar' : 'Expand the sidebar' });
+    expect(fold.getAttribute('aria-expanded')).toBe(String(rail === 'full'));
+    expect(fold.getAttribute('aria-controls')).toBe(screen.getByRole('complementary').id);
+    const result = await axe.run(view.container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
+    view.unmount();
+  }
 });
 
 /**

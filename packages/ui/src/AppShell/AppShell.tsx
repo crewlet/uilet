@@ -74,7 +74,7 @@ import {
   type Ref,
 } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
-import { ChevronUpGlyph, ChevronsLeftGlyph, ChevronsRightGlyph, MenuGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronUpGlyph, MenuGlyph, MinusGlyph, PlusGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { Kbd, ariaKeyshortcuts, isApplePlatform } from '../Kbd/index.js';
 import { Tooltip } from '../Tooltip/index.js';
@@ -89,11 +89,14 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { ResizeHandle } from './ResizeHandle.js';
 import { AsideContext, PeekContext, type AppShellAsideShape, type AppShellPeekShape } from './regions.js';
 import { ScreenWidthContext, contentInlineSize, createScreenWidthStore } from './screenWidth.js';
-import { RailShapeContext, useRailShape, type AppShellRailShape } from './railShape.js';
+import { RailLeavingContext, RailShapeContext, useRailShape, type AppShellRailShape } from './railShape.js';
+import { useRailMotion } from './railMotion.js';
+import { releaseFocus } from '../Presence/index.js';
 
 export { useAppShellAside, useAppShellPeek } from './regions.js';
 export type { AppShellAsideShape, AppShellPeekShape, AppShellRegionValue } from './regions.js';
 export type { AppShellRailShape } from './railShape.js';
+export type { AppShellRailMotion } from './railMotion.js';
 
 /** The aside's resting width, in px, where the host names none. */
 export const APP_SHELL_ASIDE_WIDTH = 420;
@@ -141,6 +144,8 @@ interface AppShellContextValue {
    * The shape the rail is drawn in NOW: `compact` only where the host asked
    * for it and the layout is wide, `full` in the drawer and everywhere else,
    * so an application picks `CompactNav` or `SidebarNav` from this alone.
+   * While the rail folds it is still `full`, and it turns `compact` when the
+   * rail reaches the compact column (see `railMotion.ts`).
    */
   rail: AppShellRailShape;
 }
@@ -212,8 +217,10 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   rail?: AppShellRailShape | undefined;
   /**
    * Called with the other shape when the reader presses the fold control.
-   * Given, the shell draws THE fold control (never in the drawer); keeping the
-   * choice, and binding a key to it, are the application's.
+   * Given, the shell draws THE fold control (never in the drawer): a minus in
+   * the rail's top left corner while it is full, and a plus in the same place
+   * while it is compact. Keeping the choice, and binding a key to it, are the
+   * application's.
    */
   onRailChange?: ((next: AppShellRailShape) => void) | undefined;
   /**
@@ -346,6 +353,26 @@ export function AppShell({
   );
 
   /*
+   * MEASUREMENTS ARE HELD WHILE THE RAIL MOVES. The rail eases its width, and
+   * the sheet beside it with it, so every observer below fires on every frame
+   * of a fold: the screen's width re-rendered every `useScreenWidth` and
+   * `useScreenBelow` reader sixty times a second, and a screen could change
+   * shape mid motion and again at its end. While a phase runs a measurement
+   * is kept rather than taken, and each kept one is taken once, at the width
+   * the rail comes to rest at. A container query on the column still follows
+   * every frame: that is the stylesheet's, and costs no render.
+   */
+  const railMoving = useRef(false);
+  const heldMeasures = useRef(new Set<() => void>());
+  const unlessRailMoving = useCallback(
+    (measure: () => void) => () => {
+      if (railMoving.current) heldMeasures.current.add(measure);
+      else measure();
+    },
+    [],
+  );
+
+  /*
    * THE SCROLLER'S GUTTER, measured, so the top bar can reserve the same
    * strip. The scroller keeps its scrollbar's gutter at every height (see
    * AppShell.css), and where the platform draws scrollbars in the layout
@@ -362,10 +389,14 @@ export function AppShell({
     const measure = () => setGutter(Math.max(0, scroller.offsetWidth - scroller.clientWidth));
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(unlessRailMoving(measure));
     observer.observe(scroller);
-    return () => observer.disconnect();
-  }, [scroller]);
+    const held = heldMeasures.current;
+    return () => {
+      observer.disconnect();
+      held.delete(measure);
+    };
+  }, [scroller, unlessRailMoving]);
 
   /*
    * WHAT THE ASIDE COLUMN TAKES FROM THE WINDOW'S RIGHT, measured, so a peek
@@ -392,11 +423,15 @@ export function AppShell({
       setOccupied(Math.max(0, Math.round(frame.getBoundingClientRect().right - page.getBoundingClientRect().right)));
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(unlessRailMoving(measure));
     observer.observe(page);
     observer.observe(frame);
-    return () => observer.disconnect();
-  }, [asideColumn]);
+    const held = heldMeasures.current;
+    return () => {
+      observer.disconnect();
+      held.delete(measure);
+    };
+  }, [asideColumn, unlessRailMoving]);
 
   /*
    * THE SCREEN'S WIDTH, measured on the content column and published for the
@@ -413,19 +448,63 @@ export function AppShell({
     const measure = () => screenWidth.set(contentInlineSize(column));
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(unlessRailMoving(measure));
     observer.observe(column);
+    const held = heldMeasures.current;
     return () => {
       observer.disconnect();
+      held.delete(measure);
       screenWidth.set(null);
     };
-  }, [screenWidth]);
+  }, [screenWidth, unlessRailMoving]);
 
   const hasRail = sidebar !== undefined && sidebar !== null;
-  // THE SHAPE DRAWN, not the shape chosen: compact is a desktop shape, and the
-  // drawer under the step is always the full list.
-  const railShape: AppShellRailShape = hasRail && railChoice === 'compact' && !narrow ? 'compact' : 'full';
+  // THE SHAPE THE READER CHOSE, where it can be drawn: compact is a desktop
+  // shape, and the drawer under the step is always the full list.
+  const railTarget: AppShellRailShape = hasRail && railChoice === 'compact' && !narrow ? 'compact' : 'full';
+  // AND THE SHAPE DRAWN, which trails the choice while the rail folds, so the
+  // full rail's words fade out under the moving edge rather than vanishing.
+  const { drawn: railShape, motion: railMotion, leaving: railLeaving } = useRailMotion(railTarget, hasRail && !narrow, rail);
   const foldable = hasRail && onRailChange !== undefined && !narrow;
+  // Read by the observers above, between renders.
+  railMoving.current = railMotion !== null;
+  // The rail has come to rest: every measurement kept while it moved is
+  // taken now, once.
+  useLayoutEffect(() => {
+    if (railMotion !== null) return;
+    const held = [...heldMeasures.current];
+    heldMeasures.current.clear();
+    for (const measure of held) measure();
+  }, [railMotion]);
+
+  /*
+   * FOCUS LEAVES THE FOLDING CONTENT FOR THE RAIL'S FIRST LIVE CONTROL. A
+   * reader who folds the rail by its key from a row inside it would otherwise
+   * be left in content that has just turned inert. The first control the
+   * fold leaves live is the fold control, where the host draws one, and
+   * otherwise the brand's link in the head, both in the same place in both
+   * shapes. A rail with neither has nowhere live to go while it folds: focus
+   * is taken off the row, and handed to the folded rail's first control once
+   * that is drawn.
+   */
+  const refocusFolded = useRef(false);
+  useLayoutEffect(() => {
+    const aside = rail.current;
+    if (!aside) return;
+    if (railLeaving) {
+      const held = aside.ownerDocument.activeElement;
+      const leavingPart = held instanceof HTMLElement ? held.closest('[inert]') : null;
+      if (!leavingPart || !aside.contains(leavingPart)) return;
+      const live = focusables(aside).find((element) => !element.closest('[inert]')) ?? null;
+      releaseFocus(leavingPart, live);
+      refocusFolded.current = live === null;
+      return;
+    }
+    if (!refocusFolded.current) return;
+    refocusFolded.current = false;
+    const held = aside.ownerDocument.activeElement;
+    if (held === null || held === aside.ownerDocument.body) focusables(aside)[0]?.focus();
+  }, [railLeaving]);
 
   const shell: AppShellContextValue = {
     narrow,
@@ -465,6 +544,7 @@ export function AppShell({
         data-aside={hasAside ? asideShape : undefined}
         data-peek={hasPeek ? peekShape : undefined}
         data-rail={hasRail ? railShape : undefined}
+        data-rail-motion={railMotion ?? undefined}
         style={{
           ...style,
           ['--crewlet-app-shell-gutter' as string]: `${gutter}px`,
@@ -524,11 +604,15 @@ export function AppShell({
              * between the shapes cannot remount it, and the focus that folded
              * the rail is still on it. First in the rail's order because it
              * acts on the whole rail, as a region's own control precedes it.
+             * It says the CHOSEN shape, not the one drawn: while the rail
+             * folds, it already offers to unfold it.
              */}
             {foldable ? (
-              <RailFold rail={railShape} onRailChange={onRailChange} keys={railFoldKeys} labels={railFoldLabels} railId={railId} />
+              <RailFold rail={railTarget} onRailChange={onRailChange} keys={railFoldKeys} labels={railFoldLabels} railId={railId} />
             ) : null}
-            <RailShapeContext.Provider value={railShape}>{sidebar}</RailShapeContext.Provider>
+            <RailShapeContext.Provider value={railShape}>
+              <RailLeavingContext.Provider value={railLeaving}>{sidebar}</RailLeavingContext.Provider>
+            </RailShapeContext.Provider>
           </aside>
         ) : null}
         <div ref={sheet} className="crewlet-app-shell__sheet">
@@ -808,10 +892,16 @@ function ShellDrawer({
 }
 
 /**
- * THE FOLD CONTROL: one button, pinned over the compact column's centre in
- * the row under the rail's head, in the same place in both shapes. Its glyph
- * points the way the rail will go and its name says what pressing it does;
- * its tooltip carries the keys the application binds.
+ * THE FOLD CONTROL: one button in the rail's top left corner, in the same
+ * place in both shapes. A minus while the rail is full, to make it smaller,
+ * and a plus while it is compact, to open it. Its name says what pressing it
+ * does, `aria-expanded` says whether the rail is open now, and its tooltip
+ * carries the keys the application binds.
+ *
+ * THE CORNER IS THE SQUARE THE HEAD LEAVES EMPTY, up and to the left of the
+ * brand's mark, which stands over the compact column's centre in both shapes,
+ * so the control and the mark never meet and neither moves when the rail
+ * folds.
  */
 function RailFold({
   rail,
@@ -849,8 +939,9 @@ function RailFold({
           label={label}
           size="sm"
           variant="ghost"
-          icon={compact ? <ChevronsRightGlyph size="sm" /> : <ChevronsLeftGlyph size="sm" />}
+          icon={compact ? <PlusGlyph size="sm" /> : <MinusGlyph size="sm" />}
           aria-controls={railId}
+          aria-expanded={!compact}
           aria-keyshortcuts={keys ? ariaKeyshortcuts(keys, apple) : undefined}
           onClick={() => onRailChange?.(compact ? 'full' : 'compact')}
         />
@@ -877,7 +968,8 @@ export interface AppShellRailProps {
    * A compact status at the end of the head's line, beside the name the head
    * carries: an `<AppShell.RailStatus>`, the application's own state in a
    * dot and a count. It takes its own width, so the name keeps the rest and
-   * truncates there, and it stands in the drawer's head the same way.
+   * truncates there, and it stands in the drawer's head the same way. In the
+   * compact rail it has a row of its own under the head's mark.
    */
   status?: ReactNode;
   /**
@@ -898,13 +990,28 @@ export interface AppShellRailProps {
  * alone (the lockup shows its mark, over the column's centre, and keeps its
  * name as the link's name and title); the field is not drawn, because a
  * 76px column has no room for one and the application draws a Search tile
- * among its `CompactNav` places instead; and the status stands at the top of
- * the foot as its dot and count, since the head has no line left beside the
- * mark. The middle and the foot are drawn as the application gives them.
+ * among its `CompactNav` places instead; and the status stands in a row of
+ * its own under the mark, as its dot and count, since the head has no line
+ * left beside the mark. That row is the first thing under the head in the
+ * column, before the places, so the state a reader checks at a glance is
+ * where their eye starts. The middle and the foot are drawn as the
+ * application gives them.
  */
 export function AppShellRail({ header, search, status, footer, className, children }: AppShellRailProps) {
   const compact = useRailShape() === 'compact';
-  const statusSlot = status ? <div className="crewlet-app-shell__rail-status">{status}</div> : null;
+  /*
+   * ON ITS WAY OUT while the rail folds over it: nothing in what changes shape
+   * (the middle, the foot, the status) takes focus or a press until the
+   * compact column is drawn in its place. The head stays live: its mark
+   * stands in the same place in both shapes, and it is where focus goes from
+   * a row that folds away when the host draws no fold control.
+   */
+  const leaving = useContext(RailLeavingContext) || undefined;
+  const statusSlot = status ? (
+    <div className="crewlet-app-shell__rail-status" inert={leaving}>
+      {status}
+    </div>
+  ) : null;
   return (
     <div className={cx('crewlet-app-shell__rail-inner', className)}>
       {header || (status && !compact) ? (
@@ -913,13 +1020,13 @@ export function AppShellRail({ header, search, status, footer, className, childr
           {compact ? null : statusSlot}
         </div>
       ) : null}
-      <div className="crewlet-app-shell__rail-body">
+      {compact ? statusSlot : null}
+      <div className="crewlet-app-shell__rail-body" inert={leaving}>
         {search && !compact ? <div className="crewlet-app-shell__rail-search">{search}</div> : null}
         {children}
       </div>
-      {footer || (status && compact) ? (
-        <div className="crewlet-app-shell__rail-foot">
-          {compact ? statusSlot : null}
+      {footer ? (
+        <div className="crewlet-app-shell__rail-foot" inert={leaving}>
           {footer}
         </div>
       ) : null}

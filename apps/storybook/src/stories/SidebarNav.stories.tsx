@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState, type CSSProperties } from 'react';
 import {
+  ActivityGlyph,
+  CircleCheckGlyph,
   ClockGlyph,
   CoinsGlyph,
   HashGlyph,
@@ -8,6 +10,7 @@ import {
   KeyGlyph,
   LayoutDashboardGlyph,
   LockGlyph,
+  MessageSquareGlyph,
   NetworkGlyph,
   PlusGlyph,
   ServerGlyph,
@@ -157,6 +160,44 @@ export const Sections: Story = {
       </SidebarNav>
     );
   },
+};
+
+/**
+ * WHAT WAITS ON THE READER IS ONE PILL, WHEREVER IT STANDS. The inbox, the
+ * reader's own work and the conversations that name them each carry a
+ * `badge`: the accent's filled pill, round for one or two figures, centred on
+ * its row's line and ending on the row's end inset, so the pills stand in one
+ * column down the rail. A `count` (the turns Live is running) is the quiet
+ * figure on the same end line, for what a place holds rather than what waits.
+ * The current row keeps its pill as it is, because the fill is opaque.
+ */
+export const BadgesOnTheRowsAboutYou: Story = {
+  render: () => (
+    <SidebarNav label="Navigation">
+      <NavGroup label="">
+        <NavItem href="#/inbox" label="Inbox" icon={<InboxGlyph size="sm" />} badge={{ value: '50+', label: 'unread' }} />
+        <NavItem
+          href="#/me"
+          label="My work"
+          icon={<CircleCheckGlyph size="sm" />}
+          current
+          badge={{ value: 23, label: 'open, assigned to you' }}
+        />
+        <NavItem
+          href="#/chatlet"
+          label="Chatlet"
+          icon={<MessageSquareGlyph size="sm" />}
+          badge={{ value: 4, label: 'unread mentions and direct messages' }}
+        />
+        <NavItem
+          href="#/live"
+          label="Live"
+          icon={<ActivityGlyph size="sm" />}
+          count={{ value: 2, label: 'working', mark: <StatusDot tone="info" pulse /> }}
+        />
+      </NavGroup>
+    </SidebarNav>
+  ),
 };
 
 export const OneLongRow: Story = {

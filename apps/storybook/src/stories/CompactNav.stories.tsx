@@ -42,11 +42,11 @@ type Story = StoryObj<typeof CompactNav>;
 
 /**
  * The rail folded to its marks, as the approved design draws it: Search, the
- * three places every reader starts from (the inbox carrying the one badge,
- * the reader's own work a quiet count), a rule, then Company and Workspace
- * folded into one tile each. Point at or press a group's tile to open its
- * flyout; from the keyboard, Right opens it on its first place, Up and Down
- * walk it, Escape or Left close it and Tab moves on from the tile.
+ * three places every reader starts from (the inbox and the reader's own work
+ * each carrying the badge of what waits on them), a rule, then Company and
+ * Workspace folded into one tile each. Point at or press a group's tile to
+ * open its flyout; from the keyboard, Right opens it on its first place, Up
+ * and Down walk it, Escape or Left close it and Tab moves on from the tile.
  *
  * The Workspace tile carries Chatlet's badge, and is current while Chatlet is
  * the page, so folding never hides what is waiting or where the reader is.
@@ -85,7 +85,7 @@ export const Folded: Story = {
           href="#/me"
           current={at === 'me'}
           onClick={go('me')}
-          count={{ value: 23, label: 'open' }}
+          badge={{ value: 23, label: 'open, assigned to you' }}
         />
         <CompactNavSeparator label="Company and Workspace" />
         <CompactNavGroup
@@ -129,7 +129,7 @@ export const Tiles: Story = {
       <CompactNavItem label="Home" icon={<HouseGlyph size="sm" />} href="#/home" />
       <CompactNavItem label="Chatlet" icon={<MessageSquareGlyph size="sm" />} href="#/chatlet" current />
       <CompactNavItem label="Inbox" icon={<InboxGlyph size="sm" />} href="#/inbox" badge={{ value: 5, label: 'unread' }} />
-      <CompactNavItem label="My work" icon={<CircleCheckGlyph size="sm" />} href="#/me" count={{ value: 23, label: 'open' }} />
+      <CompactNavItem label="Worklet" icon={<SquareKanbanGlyph size="sm" />} href="#/worklet" count={{ value: 23, label: 'open' }} />
       <CompactNavItem label="Budgets" icon={<TargetGlyph size="sm" />} href="#/budgets" locked="Needs Admin access" />
       <CompactNavItem label="Integrations" icon={<PlugGlyph size="sm" />} href="#/integrations" />
     </CompactNav>

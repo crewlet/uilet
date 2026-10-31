@@ -11,6 +11,7 @@ import { ChevronLeftGlyph, XGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { focusables, useBodyScrollLock, useLayerContainer, useModalLayer } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
+import { useComposedRef } from '../utils/composedRef.js';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -335,16 +336,15 @@ function ModalFrame({
   }, []);
 
   const layer = useModalLayer({ onClose, dismissable, initialFocus: where });
+  // Stable, so a re-render of the modal never takes its frame off the stack.
+  const frameRef = useComposedRef<HTMLElement>(frame, layer.panelRef);
   useBodyScrollLock(true);
 
   const labelledBy = given(title) ? titleId : undefined;
   const described = describedBy ?? (given(subtitle) ? subtitleId : undefined);
   const frameProps = {
     ...rest,
-    ref: (el: HTMLElement | null) => {
-      frame.current = el;
-      layer.panelRef(el);
-    },
+    ref: frameRef,
     className: cx(
       'crewlet-modal',
       `crewlet-modal--${variant}`,

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { CrewletIcon } from '@crewlethq/icons';
 import {
   ActivityGlyph,
@@ -681,7 +681,9 @@ interface Place {
 const YOU: Place[] = [
   { key: 'home', label: 'Home', icon: <HouseGlyph size="sm" /> },
   { key: 'inbox', label: 'Inbox', icon: <InboxGlyph size="sm" />, badge: { value: '50+', label: 'unread' } },
-  { key: 'me', label: 'My work', icon: <CircleCheckGlyph size="sm" />, count: { value: 23, label: 'open' } },
+  // THE READER'S OWN WORK WAITS ON THEM, as the inbox does: the same filled
+  // pill, on the same line at the row's end.
+  { key: 'me', label: 'My work', icon: <CircleCheckGlyph size="sm" />, badge: { value: 23, label: 'open, assigned to you' } },
 ];
 
 const GROUPS: { key: string; label: string; icon: ReactNode; places: Place[] }[] = [
@@ -761,7 +763,8 @@ function FoldingRail({ at }: { at: string }) {
             <CompactNav label="Account">
               <CompactNavItem label="Settings" icon={<SettingsGlyph size="sm" />} href="#/settings" />
             </CompactNav>
-            <AccountRow avatar={<Avatar name="Miles" kind="human" size="md" decorative />} name="Miles" detail="miles.crewlet" href="#/account" />
+            {/* THE FACE AT THE TILES' STEP (`sm`, 26px), centred on their line. */}
+            <AccountRow avatar={<Avatar name="Miles" kind="human" size="sm" decorative />} name="Miles" detail="miles.crewlet" href="#/account" />
           </>
         ) : (
           <AccountRow
@@ -779,7 +782,7 @@ function FoldingRail({ at }: { at: string }) {
   );
 }
 
-function FoldingShell({ initial }: { initial: AppShellRailShape }) {
+function FoldingShell({ initial, style }: { initial: AppShellRailShape; style?: CSSProperties }) {
   const [rail, setRail] = useState<AppShellRailShape>(initial);
   return (
     <AppShell
@@ -788,6 +791,7 @@ function FoldingShell({ initial }: { initial: AppShellRailShape }) {
       railFoldKeys={['Mod', '\\']}
       sidebar={<FoldingRail at="chatlet" />}
       topbar={<Topbar />}
+      style={style}
     >
       <Screen />
     </AppShell>
@@ -795,26 +799,48 @@ function FoldingShell({ initial }: { initial: AppShellRailShape }) {
 }
 
 /**
- * The full rail with its fold control: one button over the compact column's
- * centre in the row under the head, the search field starting a step after
- * it, and the brand's mark over the same centre. Press it (the story binds no
- * key; an application binds Mod and backslash itself) and the rail folds to its marks
- * with neither the mark nor the control moving, and focus still on the
- * control that unfolds it.
+ * The full rail with its fold control: a minus in the rail's top left corner,
+ * up and to the left of the brand's mark, which stands over the compact
+ * column's centre. Press it (the story binds no key; an application binds Mod
+ * and backslash itself) and the rail eases to its marks: its words fade out
+ * under the moving edge, the compact column fades in when they are gone, and
+ * neither the mark nor the control moves. Focus stays on the control, which
+ * is a plus now, and says the rail is not expanded. Under reduced motion the
+ * rail changes shape at once.
  */
 export const Foldable: Story = {
   render: () => <FoldingShell initial="full" />,
 };
 
 /**
- * The compact rail: Search, Home, Inbox and My work as tiles, then Company
- * and Workspace folded into one tile each, whose flyouts open beside the rail
- * on the pointer, a press, or Right. The Workspace tile carries Chatlet's
- * badge and is current while Chatlet is the page. The engine's status stands
- * at the top of the foot, over Settings and the reader's face.
+ * The compact rail: the plus in the corner, the brand's mark, and under it
+ * the engine's status in a row of its own, then Search, Home, Inbox and My
+ * work as tiles, then Company and Workspace folded into one tile each, whose
+ * flyouts open beside the rail on the pointer, a press, or Right. The
+ * Workspace tile carries Chatlet's badge and is current while Chatlet is the
+ * page. The foot holds Settings and the reader's face, centred on the line
+ * the tiles are centred on, at their height.
  */
 export const Compact: Story = {
   render: () => <FoldingShell initial="compact" />,
+};
+
+/**
+ * THE FOLD CONTROL IN BOTH SHAPES, one shell over the other: the full rail
+ * with the minus that makes it smaller, and the compact rail with the plus
+ * that opens it, in the same corner. Each is named for what pressing it does
+ * ("Collapse the sidebar", "Expand the sidebar"), says whether the rail is
+ * expanded, and carries the keys the application binds in its tooltip. Tab
+ * to either to see its ring, drawn inside its own box because the corner is
+ * the window's.
+ */
+export const FoldControlInBothShapes: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', height: '100dvh' }}>
+      <FoldingShell initial="full" style={{ height: '100%' }} />
+      <FoldingShell initial="compact" style={{ height: '100%' }} />
+    </div>
+  ),
 };
 
 /**

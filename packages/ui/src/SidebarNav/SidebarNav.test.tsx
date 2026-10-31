@@ -209,6 +209,36 @@ describe('a figure at the end of a row', () => {
     expect(mine.querySelector('.crewlet-nav-item__count')).not.toBeNull();
     expect(mine.querySelector('.crewlet-nav-item__badge')).toBeNull();
   });
+
+  test("a badge is one pill wherever it stands: the reader's own work draws the inbox's, on the same end line", () => {
+    const uninstall = installSheets('SidebarNav/SidebarNav.css');
+    try {
+      render(
+        <SidebarNav label="Sections">
+          <NavItem href="#/inbox" label="Inbox" badge={{ value: '50+', label: 'unread' }} />
+          <NavItem href="#/me" label="My work" current badge={{ value: 23, label: 'open, assigned to you' }} />
+        </SidebarNav>,
+      );
+      const pill = (name: string) =>
+        screen.getByRole('link', { name }).querySelector<HTMLElement>('.crewlet-nav-item__badge')!;
+      const inbox = pill('Inbox, 50+ unread');
+      const mine = pill('My work, 23 open, assigned to you');
+      for (const badge of [inbox, mine]) {
+        // The row's last mark, pushed to its end, on a row that centres what
+        // it holds on one line.
+        expect(badge.parentElement?.lastElementChild).toBe(badge);
+        expect(getComputedStyle(badge).marginLeft).toBe('auto');
+        expect(getComputedStyle(badge.parentElement!).alignItems).toBe('center');
+      }
+      // One box on every row, the reader's own row included.
+      for (const property of ['height', 'min-width', 'padding-left', 'padding-right', 'font-size']) {
+        expect(px(mine, property), property).toBe(px(inbox, property));
+      }
+      expect(getComputedStyle(mine).borderRadius).toBe(getComputedStyle(inbox).borderRadius);
+    } finally {
+      uninstall();
+    }
+  });
 });
 
 describe("a row's lead", () => {

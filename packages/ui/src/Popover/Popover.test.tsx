@@ -12,7 +12,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axe from 'axe-core';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { LAYER_REPOSITION_EVENT, LayerHost, useModalLayer } from '../Layer/index.js';
 import { Popover } from './index.js';
@@ -534,4 +534,35 @@ test('initialFocus picks where a dialog panel starts, and the first control is t
   render(<Chip initialFocus={() => document.querySelector<HTMLElement>('.crewlet-popover')} />);
   fireEvent.click(screen.getByRole('button', { name: 'Owner' }));
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Owner' })));
+});
+
+/*
+ * THE TRIGGER'S OWN REF IS KEPT, and kept still. The popover cloned its
+ * trigger with an inline ref callback that REPLACED the ref the trigger
+ * carried, and released and re-attached the element on every render.
+ */
+test("the trigger keeps its own ref, across the popover's re-renders", () => {
+  const own = vi.fn();
+  function Screen() {
+    const stable = useCallback((el: HTMLButtonElement | null) => own(el), []);
+    return (
+      <Popover
+        label="Owner"
+        trigger={(open, toggle) => (
+          <button ref={stable} type="button" onClick={toggle}>
+            Owner{open ? ' (open)' : ''}
+          </button>
+        )}
+      >
+        <p>Value</p>
+      </Popover>
+    );
+  }
+  render(<Screen />);
+  const button = screen.getByRole('button', { name: 'Owner' });
+  expect(own).toHaveBeenLastCalledWith(button);
+  fireEvent.click(button);
+  fireEvent.click(screen.getByRole('button', { name: 'Owner (open)' }));
+  // Handed its element once, never released while it stood in the document.
+  expect(own.mock.calls).toEqual([[button]]);
 });

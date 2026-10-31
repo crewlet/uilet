@@ -22,3 +22,9 @@ export const RailShapeContext = createContext<AppShellRailShape>('full');
 export function useRailShape(): AppShellRailShape {
   return useContext(RailShapeContext);
 }
+
+/**
+ * Whether the rail's content is drawn only to finish leaving, while the rail
+ * folds over it (railMotion.ts): `AppShell.Rail` makes it inert then.
+ */
+export const RailLeavingContext = createContext(false);

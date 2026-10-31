@@ -1,1 +1,1 @@
-export { useMediaMatch } from './useMediaMatch.js';
+export { REDUCED_MOTION_QUERY, prefersReducedMotion, useMediaMatch } from './useMediaMatch.js';

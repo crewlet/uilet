@@ -111,6 +111,21 @@ describe('component source', () => {
       .map(({ path }) => path);
     expect(offenders).toEqual([]);
   });
+
+  test('the reader\'s motion preference is asked through one query, written once', () => {
+    /*
+     * `REDUCED_MOTION_QUERY` beside `useMediaMatch`, and `prefersReducedMotion`
+     * for a read outside render. Copies of the string drift: one spelt with a
+     * space less is a query that never matches, and a component that asks it
+     * moves for a reader who asked it not to.
+     */
+    const offenders = files
+      .filter(({ path }) => !path.endsWith('.css') && !/\.test\.tsx?$/.test(path))
+      .filter(({ path }) => !path.endsWith('MediaMatch/useMediaMatch.ts'))
+      .filter(({ text }) => /['"`]\(prefers-reduced-motion/.test(text))
+      .map(({ path }) => path);
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe('a shadow list', () => {

@@ -34,3 +34,21 @@ export function useMediaMatch(query: string): boolean {
   );
   return useSyncExternalStore(subscribe, read, () => false);
 }
+
+/**
+ * The reader's request for less motion: the one spelling of the query every
+ * component asks, through `useMediaMatch` during render and through
+ * `prefersReducedMotion` outside it. A copy of the string is a copy that can
+ * drift, and a query spelt one character off never matches.
+ */
+export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+/**
+ * Whether the reader has asked for less motion, read once, for code outside a
+ * render: a scroll, a timer's length. `view` is the window the element lives
+ * in (`ownerDocument.defaultView`), the page's own by default. False on the
+ * server and wherever `matchMedia` is missing, as `useMediaMatch` answers.
+ */
+export function prefersReducedMotion(view: Window | null = typeof window === 'undefined' ? null : window): boolean {
+  return view?.matchMedia?.(REDUCED_MOTION_QUERY).matches ?? false;
+}

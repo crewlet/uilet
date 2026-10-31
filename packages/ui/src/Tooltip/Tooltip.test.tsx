@@ -10,6 +10,7 @@
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
+import { useCallback, useLayoutEffect } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { Tooltip } from './index.js';
@@ -277,6 +278,48 @@ test('the trigger keeps its own ref, and gets it back on the way out', () => {
 
   view.rerender(<Screen mounted={false} />);
   expect(own).toBeNull();
+});
+
+/*
+ * AND IT KEEPS IT ACROSS A RE-RENDER. The tip used to clone its trigger with a
+ * new ref callback on every render, so React released the trigger's own ref
+ * and attached it again in each commit, in tree order: a layout effect EARLIER
+ * in the tree read null while the button stood in the document.
+ */
+test("a re-render of the tip never takes the trigger's own ref away", () => {
+  const own = vi.fn();
+  const seen: (HTMLElement | null)[] = [];
+  const box = { current: null as HTMLElement | null };
+  function Earlier({ tick }: { tick: number }) {
+    // Reads the ref in a layout effect that runs before the tip's commit.
+    useLayoutEffect(() => {
+      seen.push(box.current);
+    }, [tick]);
+    return null;
+  }
+  function Screen({ tick }: { tick: number }) {
+    return (
+      <>
+        <Earlier tick={tick} />
+        <Tooltip content={`Runs at 0${tick}:00`}>
+          <button
+            ref={useCallback((el: HTMLButtonElement | null) => {
+              box.current = el;
+              own(el);
+            }, [])}
+          >
+            Schedule
+          </button>
+        </Tooltip>
+      </>
+    );
+  }
+  const view = render(<Screen tick={1} />);
+  view.rerender(<Screen tick={2} />);
+  view.rerender(<Screen tick={3} />);
+  const button = screen.getByRole('button', { name: 'Schedule' });
+  expect(seen.slice(1)).toEqual([button, button]);
+  expect(own.mock.calls).toEqual([[button]]);
 });
 
 /*

@@ -1,0 +1,61 @@
+/*
+ * A column docked beside the content (DockColumn.tsx).
+ *
+ * THE COLUMN EASES ITS WIDTH between none and its panel's, on the slow step
+ * with the emphasized curve: the motion the application rail folds by,
+ * so a column of the frame and a column of a screen open and close as one
+ * movement. The host gives it an `auto` track, so its width is the track.
+ * Clipped rather than hidden, so it is never a scroll container a focus or a
+ * scrollIntoView could scroll.
+ *
+ * THE PANEL KEEPS ITS WIDTH and is held to the column's edge that faces the
+ * content: before the content (`start`) it is held to the column's end, so
+ * the moving edge uncovers it from the start edge, and after the content
+ * (`end`) the other way round.
+ *
+ * Tokens only. The width is the component's own variable, set from the
+ * `width` prop, so the column and the panel read one value.
+ */
+
+.crewlet-dock-column {
+  display: flex;
+  justify-content: flex-end;
+  width: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: clip;
+  transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);
+}
+
+.crewlet-dock-column[data-side='end'] {
+  justify-content: flex-start;
+}
+
+.crewlet-dock-column[data-open] {
+  width: var(--crewlet-dock-column-width);
+}
+
+.crewlet-dock-column__panel {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: var(--crewlet-dock-column-width);
+  min-height: 0;
+  background: var(--crewlet-dock-column-ground, transparent);
+}
+
+/* The hairline on the panel's edge that faces the content. */
+.crewlet-dock-column--divider[data-side='start'] > .crewlet-dock-column__panel {
+  border-inline-end: 1px solid var(--color-border-default);
+}
+
+.crewlet-dock-column--divider[data-side='end'] > .crewlet-dock-column__panel {
+  border-inline-start: 1px solid var(--color-border-default);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-dock-column {
+    transition: none;
+  }
+}
