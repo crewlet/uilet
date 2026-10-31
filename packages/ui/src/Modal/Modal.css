@@ -286,12 +286,31 @@
 }
 
 /*
+ * A SHEET FROM THE START EDGE (`side="start"`): a navigation panel, pinned to
+ * the inline start and arriving from past it, with its edge and its shadow on
+ * its inline end, into the page it covers. The shadow is the sheet's own,
+ * mirrored by the token build, so a palette's sheet shadow reads the same way
+ * round on either side.
+ */
+.crewlet-modal-overlay--sheet.crewlet-modal-overlay--start {
+  justify-content: flex-start;
+}
+
+.crewlet-modal--sheet.crewlet-modal--start {
+  --crewlet-modal-sheet-from: -100%;
+  border-inline-start: none;
+  border-inline-end: 1px solid var(--color-border-default);
+  box-shadow: var(--shadow-sheet-start);
+}
+
+/*
  * The shell's one breakpoint, strictly under it as the shell switches. Below
  * it there is no content beside a sheet to keep in view, so the sheet takes
  * the whole width and its edge goes with it.
  */
 @media (width < 1024px) {
-  .crewlet-modal--sheet {
+  .crewlet-modal--sheet,
+  .crewlet-modal--sheet.crewlet-modal--start {
     width: 100%;
     border-inline: none;
   }
@@ -314,6 +333,11 @@
   --crewlet-modal-glyph-inset: calc((var(--size-control-md) - var(--font-size-sm)) / 2);
 
   display: flex;
+  /* The head and the foot keep their height and the body gives way: in the
+     frame's column a head that could shrink was squeezed under a long body
+     to the bar's height, and a wrapped title and subtitle ran over its
+     edges. */
+  flex-shrink: 0;
   align-items: center;
   gap: var(--spacing-3);
   padding: var(--spacing-4);
@@ -534,6 +558,7 @@
  */
 .crewlet-modal__footer {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--spacing-2);

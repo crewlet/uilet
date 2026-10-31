@@ -19,12 +19,11 @@ export interface ImageUploadProps extends Omit<HTMLAttributes<HTMLDivElement>, '
   /** Rendered width and height in pixels. */
   size?: number | undefined;
   /**
-   * The picture is an Avatar, so it takes the Avatar's kind, and with it the
-   * outline the preview, the fallback, the trigger and the overlay are all
-   * drawn in. `agent`, the default as it is Avatar's, is the squircle, which
-   * is also the outline for a mark that is not a person, a company's logo
-   * among them: a wide mark cropped into a circle loses its ends. `human` is
-   * a person's round picture.
+   * The picture is an Avatar, so it takes the Avatar's kind: `agent`, the
+   * default as it is Avatar's, for a seat or a mark that is not a person (a
+   * company's logo among them), and `human` for a person's picture. Both are
+   * the one rounded square every face is drawn as, and the preview, the
+   * fallback, the trigger and the overlay all take its corner.
    */
   kind?: AvatarKind | undefined;
   /** When true, the control is display only: no overlay, no remove button, no file picker. */
@@ -44,7 +43,7 @@ export interface ImageUploadProps extends Omit<HTMLAttributes<HTMLDivElement>, '
  * current image (or an initials fallback), an overlay with a camera icon and
  * an "Upload" or "Change" label (shown on hover, or always while no image is
  * set), a hidden file input, a remove button, and an uploading state. One
- * primitive covers both a logo in the squircle and a person's round picture.
+ * primitive covers a logo, an agent's picture and a person's.
  *
  * The selection callback hands back the raw File rather than a data URL because
  * the upload now happens over the network.

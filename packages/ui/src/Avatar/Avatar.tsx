@@ -1,24 +1,21 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties, HTMLAttributes, ReactElement, ReactNode } from 'react';
 import { CrewletCharacter, type CrewletCharacterId } from '@crewlethq/icons/characters';
+import { radius } from '@crewlethq/tokens';
 import { cx } from '../utils/cx.js';
 import type { NodeHue } from '../utils/nodeHue.js';
 
 /**
- * WHAT THE BADGE STANDS FOR, drawn as its outline.
+ * WHAT THE BADGE STANDS FOR: an agent (the default), what the engine runs, or a
+ * human, a person.
  *
- * `agent` is the default: a SQUIRCLE with the initials in the mono face, which
- * is what the engine runs and what nearly every badge on that product is.
- * `human` is a CIRCLE with the initials in the sans face: a person.
- *
- * ONE STRUCTURAL CUE, where there used to be two. The badge took a `shape`
- * (square or circle) and a `variant` (solid, or `dashed` for a human seat), and
- * the two could disagree: a dashed square and a solid circle were both
- * reachable and meant nothing. The approved design draws a person as a circle
- * and an agent as a squircle, and that outline is the whole of the difference,
- * so it is the one prop. It is a SHAPE rather than a hue, which leaves every
- * hue meaning only a state, and it reads to somebody who cannot separate hues
- * at all.
+ * ONE SHAPE FOR BOTH. Every face is the same rounded square, its corner two
+ * ninths of the side between the xs and lg radius steps (`AVATAR_CORNER`). A
+ * person was a circle and an agent a squircle, so a row of people and agents
+ * changed shape from face to face; with one shape the face's contents say who
+ * it is. An agent's initials are set in the mono face and a person's in the
+ * sans face, an agent may be drawn as its character, and the name is always
+ * beside the face or in its accessible name, so the kind never rests on a hue.
  */
 export type AvatarKind = 'agent' | 'human';
 
@@ -95,20 +92,28 @@ export type AvatarSize = AvatarSizeStep | number | 'text';
 const TEXT_FACE_PIXELS = 16;
 
 /**
- * An agent's corner, as a share of its box.
+ * Every face's corner, as a share of its box, held between two radius steps.
  *
- * The approved design draws 7px at 24 and 9px at 30 (and 5 at 18, 6 at 20, 8
- * at 26 and 28, 13 at 44): a corner that moves WITH the box rather than
- * sitting on one radius step, which would read as a pill at the smallest badge
- * and as a plain box at the largest. 0.29 is that ladder as one number, and
- * every size the design draws lands within 0.62px of it.
+ * Two ninths of the side (8px on a 36px face): a corner that moves WITH the
+ * box rather than sitting on one radius step, which would read as a pill at
+ * the smallest face and as a plain box at the largest. It never drops under
+ * the xs radius (4px), where a 20px face would read as square, and never
+ * passes the lg radius (12px), where a large profile face would read as a
+ * circle.
  *
  * THE STYLESHEET COMPUTES IT, from `--crewlet-avatar-size`, for a step and for
  * a numeric size alike, so there is one ladder and nothing to keep in step
- * with it. The number is restated in `Avatar.css`, which cannot import it, and
- * the suite holds the two equal.
+ * with it. The ratio is restated in `Avatar.css`, which cannot import it, and
+ * the suite holds the two equal; the two steps are read from the radius
+ * tokens here and there alike.
  */
-export const AVATAR_CORNER_RATIO = 0.29;
+export const AVATAR_CORNER_RATIO = 2 / 9;
+
+/** A radius token's value, in px. */
+const radiusPixels = (value: string): number => Number.parseFloat(value);
+
+/** The least and the most a face's corner is drawn with, in px: the xs and lg radius steps. */
+export const AVATAR_CORNER_RANGE = { min: radiusPixels(radius.xs), max: radiusPixels(radius.lg) } as const;
 
 export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   /** Image source. With one set the badge renders the image; otherwise the initials. */
@@ -117,7 +122,7 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   name?: string | undefined;
   /** A step, a number of px, or `text` to be sized by the words around it. */
   size?: AvatarSize | undefined;
-  /** An agent (the default) is a squircle; a human is a circle. */
+  /** An agent (the default, its initials in the mono face) or a human (in the sans face). Both are one rounded square. */
   kind?: AvatarKind | undefined;
   tone?: AvatarTone | undefined;
   /**
@@ -155,7 +160,7 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
   /**
    * The Crewlet character an AGENT is drawn as, in place of its initials and
    * of any image. A person is never drawn as one: on a `human` badge this is
-   * ignored, and the circle and the initials stay.
+   * ignored, and the initials stay.
    */
   character?: CrewletCharacterId | undefined;
   /**
@@ -175,11 +180,11 @@ export interface AvatarProps extends HTMLAttributes<HTMLElement> {
 }
 
 /**
- * The words an agent's name leads with that its squircle already says.
+ * The words an agent's name leads with that its badge already says.
  *
- * Only a LEADING "agent" word, because that is the only case where the word
- * restates the shape: a person called "Agent Smith" is a circle, and the word
- * is their name.
+ * Only a LEADING "agent" word, and only on an agent's badge, because that is
+ * the only case where the word restates the kind: a person called "Agent
+ * Smith" keeps the word, because it is their name.
  */
 const AGENT_WORD = /^agent(?:[\s._-]+)(?=\S)/i;
 
@@ -188,7 +193,7 @@ const AGENT_WORD = /^agent(?:[\s._-]+)(?=\S)/i;
  * dropped (`Agent CEO` gives CEO, `agent-cto` gives cto), and every other
  * name as it is.
  *
- * THE SHAPE ALREADY SAYS "AGENT". A company that names its seats for what
+ * THE BADGE ALREADY SAYS "AGENT". A company that names its seats for what
  * they are ("Agent CEO", "Agent CTO", "Agent PM") otherwise got AC, AC and
  * AP: the two seats a chart draws most were the same badge side by side. The
  * badge's accessible name keeps the whole name. A name that is nothing but
@@ -277,8 +282,7 @@ export function avatarPixels(size: AvatarSize): number {
 }
 
 /**
- * The corner an agent's badge of this many pixels is drawn with, in px, where
- * the browser draws a circular corner (`Avatar.css` has the squircle).
+ * The corner a face of this many pixels is drawn with, in px.
  *
  * The same arithmetic the stylesheet does, for a caller that has to round
  * something ELSE to match a badge: `ImageUpload`'s trigger and overlay sit
@@ -292,7 +296,7 @@ export function avatarPixels(size: AvatarSize): number {
  * anti-aliased like any other curve.
  */
 export function avatarCorner(pixels: number): number {
-  return pixels * AVATAR_CORNER_RATIO;
+  return Math.min(AVATAR_CORNER_RANGE.max, Math.max(AVATAR_CORNER_RANGE.min, pixels * AVATAR_CORNER_RATIO));
 }
 
 /**
@@ -342,7 +346,7 @@ export const Avatar = ({
   /*
    * A step takes its box and its type from the scale, in the stylesheet. A
    * number sets the SAME custom property the steps set, so its box, and the
-   * agent's corner computed from it, come out of the one rule every step goes
+   * corner computed from it, come out of the one rule every step goes
    * through: a numeric badge cannot be drawn squarer or rounder than the steps
    * either side of it. Its type is computed here, because nothing in the scale
    * can answer for an arbitrary box: 0.36 of it keeps two initials inside the

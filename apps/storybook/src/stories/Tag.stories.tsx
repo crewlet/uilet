@@ -17,7 +17,7 @@ const meta: Meta<typeof Tag> = {
       control: 'inline-radio',
       options: ['neutral', 'info', 'success', 'warning', 'danger', 'brand'],
     },
-    appearance: { control: 'inline-radio', options: ['soft', 'outline'] },
+    appearance: { control: 'inline-radio', options: ['soft', 'outline', 'quiet'] },
     size: { control: 'inline-radio', options: ['xs', 'sm', 'md'] },
     dot: { control: 'boolean' },
     monospace: { control: 'boolean' },
@@ -99,6 +99,27 @@ export const Appearances: Story = {
         <Tag variant="danger" appearance="outline">
           outline
         </Tag>
+      </Row>
+    </div>
+  ),
+};
+
+/**
+ * THE QUIET LABEL (`appearance="quiet"`): a seat's kind beside its name, a
+ * small filled mark with no boundary, 16px tall in the label register, so it
+ * reads as part of the name line rather than as a control beside it.
+ */
+export const QuietLabel: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 12 }}>
+      <Row>
+        <span style={{ fontWeight: 'var(--font-weight-medium)' }}>Senior Backend Engineer</span>
+        <Tag appearance="quiet">Agent</Tag>
+        <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)' }}>10:42</span>
+      </Row>
+      <Row>
+        <span style={{ fontWeight: 'var(--font-weight-medium)' }}>Miles Okafor</span>
+        <Tag appearance="quiet">Guest</Tag>
       </Row>
     </div>
   ),

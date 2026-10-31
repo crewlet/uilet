@@ -8,5 +8,5 @@ export type {
   MarkdownEditorMode,
   MarkdownEditorProps,
 } from './MarkdownEditor.js';
-export { MARKDOWN_FORMATS, formatMarkdown, insertMarkdown, markdownWords } from './format.js';
-export type { MarkdownEdit, MarkdownFormat, MarkdownSelection } from './format.js';
+export { MARKDOWN_FORMATS, MARKDOWN_TEXT_FORMATS, formatMarkdown, insertMarkdown, markdownWords } from './format.js';
+export type { MarkdownEdit, MarkdownFormat, MarkdownSelection, MarkdownTextFormat } from './format.js';

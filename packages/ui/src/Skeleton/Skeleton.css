@@ -80,10 +80,12 @@
 .crewlet-skeleton__line--label { height: 13px; width: 40%; margin-bottom: var(--spacing-2); }
 .crewlet-skeleton__line--value { height: 14px; width: 80%; }
 
+/* A face's placeholder takes a face's shape, the rounded square every Avatar
+   is drawn as: at 40px its corner is 8.9px, which the md step rounds to. */
 .crewlet-skeleton__avatar {
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-circle);
+  border-radius: var(--radius-md);
   flex-shrink: 0;
 }
 

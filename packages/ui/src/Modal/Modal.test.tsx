@@ -20,6 +20,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import axe from 'axe-core';
 import { useState } from 'react';
 import { afterEach, expect, test } from 'vitest';
+import { shadow } from '@crewlethq/tokens';
 import { Modal } from './index.js';
 import { installCss, installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { atDensity, DENSITIES, installSheetsAtDensity } from '../../../../apps/ui-tests/src/density.js';
@@ -757,6 +758,66 @@ test("the sheet's shadow is cast sideways, into the page it covers", () => {
   const [x, y] = cast.split(/\s+/).slice(0, 2).map(Number.parseFloat);
   expect(x).toBeLessThan(0);
   expect(y).toBe(0);
+});
+
+/**
+ * A SHEET FROM THE START EDGE, for a navigation panel: pinned to the inline
+ * start, arriving from past it, its edge and its shadow on its inline end.
+ */
+test('side="start" pins a sheet to the start edge, arriving from it, its edge and shadow on its end', () => {
+  render(
+    <Modal open onClose={() => {}} title="Rooms" variant="sheet" side="start">
+      <p>Every room</p>
+    </Modal>,
+  );
+  const frame = screen.getByRole('dialog', { name: 'Rooms' });
+  expect(frame.className).toContain('crewlet-modal--start');
+  expect(veil().className).toContain('crewlet-modal-overlay--start');
+  cleanup();
+
+  // Derived by the token build (the sheet's own shadow, mirrored), so it is
+  // read from the typed export rather than from a token source file.
+  const mirrored = shadow.sheetStart;
+  removeSheet = installCss(modalCss().replaceAll('var(--shadow-sheet-start)', mirrored));
+  const [overlay] = paint(
+    '<div class="crewlet-modal-overlay crewlet-modal-overlay--sheet crewlet-modal-overlay--start"><div class="crewlet-modal crewlet-modal--sheet crewlet-modal--start"></div></div>',
+  );
+  const sheet = overlay!.firstElementChild as HTMLElement;
+  expect(getComputedStyle(overlay!).justifyContent).toBe('flex-start');
+  const drawn = getComputedStyle(sheet);
+  expect(drawn.getPropertyValue('--crewlet-modal-sheet-from').trim()).toBe('-100%');
+  expect(declared('.crewlet-modal--sheet.crewlet-modal--start')).toEqual(
+    expect.arrayContaining(['border-inline-start', 'border-inline-end', 'box-shadow']),
+  );
+  // The shadow falls into the page on the sheet's end: the sheet's own,
+  // mirrored, so its first offset is positive.
+  const [x, y] = drawn.getPropertyValue('box-shadow').split(/\s+/).slice(0, 2).map(Number.parseFloat);
+  expect(x).toBeGreaterThan(0);
+  expect(y).toBe(0);
+});
+
+test('a dialog has no side: side is read on the sheet only', () => {
+  render(
+    <Modal open onClose={() => {}} title="Rename" side="start">
+      <p>A name</p>
+    </Modal>,
+  );
+  expect(screen.getByRole('dialog', { name: 'Rename' }).className).not.toContain('crewlet-modal--start');
+  expect(veil().className).not.toContain('crewlet-modal-overlay--start');
+});
+
+test('the head and the foot keep their height and the body gives way', () => {
+  // In the frame's column a head that could shrink was squeezed under a long
+  // body, and a wrapped title and subtitle ran over its edges.
+  // The head's and the foot's own blocks, not a variant's ahead of them.
+  const own = (part: string) =>
+    new RegExp(`(?:^|\\n)\\.crewlet-modal__${part}\\s*\\{([^}]*)\\}`).exec(modalCss().replace(/\/\*[\s\S]*?\*\//g, ''))?.[1] ?? '';
+  expect(own('header')).toMatch(/flex-shrink:\s*0/);
+  expect(own('footer')).toMatch(/flex-shrink:\s*0/);
+  withLengths();
+  const [head, foot] = paint('<div class="crewlet-modal__header"></div><div class="crewlet-modal__footer"></div>');
+  expect(getComputedStyle(head!).flexShrink).toBe('0');
+  expect(getComputedStyle(foot!).flexShrink).toBe('0');
 });
 
 /**

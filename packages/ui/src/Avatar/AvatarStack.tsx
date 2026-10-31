@@ -8,7 +8,7 @@ import { AVATAR_SIZES, Avatar, type AvatarKind, type AvatarSizeStep } from './Av
 export interface AvatarStackMember {
   /** Who: the initials, and a word of the stack's accessible name. */
   name: string;
-  /** An agent (the default) is a squircle; a human is a circle. */
+  /** An agent (the default) or a human; both are drawn as one rounded square. */
   kind?: AvatarKind | undefined;
   src?: string | undefined;
   /** The Crewlet character an agent member is drawn as, as `Avatar` draws it. */
@@ -69,7 +69,7 @@ function counted(count: number, one: string, many: string): string {
  *
  * THE KINDS ARE COUNTED, NOT ASSUMED. A stack of watchers holds people and
  * agents together, and "3 agents: Jane Founder, CTO, SWE" would call a person
- * an agent to the one reader who cannot see the circle that says otherwise.
+ * an agent to the one reader who cannot read the face that says otherwise.
  */
 export function avatarStackLabel(members: readonly AvatarStackMember[]): string {
   const humans = members.filter((member) => member.kind === 'human').length;

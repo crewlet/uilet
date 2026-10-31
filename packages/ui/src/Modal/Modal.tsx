@@ -27,6 +27,17 @@ export type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
 export type ModalVariant = 'dialog' | 'sheet';
 
 /**
+ * Which edge a SHEET is pinned to, in the page's own direction.
+ *
+ * `end` is the default and every editor: a sheet about something on the page
+ * stands beside it, at the end, where a reader's eye finishes a row. `start`
+ * is a navigation panel (a list of rooms, a list of places), which belongs
+ * where the navigation it stands for is drawn: it slides in from the start
+ * edge, its edge and its shadow on its inline end. A dialog has no side.
+ */
+export type ModalSide = 'start' | 'end';
+
+/**
  * Where a dialog sits in the window.
  *
  * `top` is the default and the one placement the engine's dashboard has: a
@@ -123,6 +134,8 @@ export interface ModalProps extends FrameAttributes {
   children?: ReactNode;
   size?: ModalSize | undefined;
   variant?: ModalVariant | undefined;
+  /** The edge a sheet is pinned to (`end` by default). Read on the sheet variant only. */
+  side?: ModalSide | undefined;
   shape?: ModalShape | undefined;
   placement?: ModalPlacement | undefined;
   /**
@@ -263,6 +276,7 @@ function ModalFrame({
   children,
   size = 'sm',
   variant = 'dialog',
+  side = 'end',
   shape = 'framed',
   placement,
   phoneSheet = false,
@@ -335,6 +349,7 @@ function ModalFrame({
       'crewlet-modal',
       `crewlet-modal--${variant}`,
       variant === 'dialog' ? `crewlet-modal--${size}` : undefined,
+      sheet && side === 'start' ? 'crewlet-modal--start' : undefined,
       prompt ? 'crewlet-modal--prompt' : undefined,
       className,
     ),
@@ -450,6 +465,7 @@ function ModalFrame({
         'crewlet-modal-overlay',
         `crewlet-modal-overlay--${variant}`,
         `crewlet-modal-overlay--${place}`,
+        sheet && side === 'start' && 'crewlet-modal-overlay--start',
         phone && 'crewlet-modal-overlay--phone-sheet',
         backdrop === 'clear' && 'crewlet-modal-overlay--clear',
         // Fixed against the window, absolute inside a LayerHost: a fullscreen

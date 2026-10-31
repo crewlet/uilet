@@ -17,6 +17,7 @@ export type { HeadingLevel, HeadingLevelProviderProps } from './headingLevel.js'
 export {
   FOCUS_MODALITY_ATTRIBUTE,
   FOCUS_RETURNED_ATTRIBUTE,
+  isVisibleFocus,
   returnFocus,
   trackFocusModality,
   useFocusModality,

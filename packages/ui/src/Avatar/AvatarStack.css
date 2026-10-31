@@ -6,7 +6,8 @@
  * badges standing in front of each other rather than as one blot. The ring is
  * a SHADOW rather than a border, because it has to fall outside the badge
  * without moving it, and it is decoration: forced-colors mode drops it and the
- * badges' own hairlines still separate them.
+ * badges' own borders, which that mode paints in the system ink, still
+ * separate them.
  *
  * THE GROUND IS A VARIABLE because a stack stands on whatever it is put on,
  * and a cut-out in the sheet's colour on a card is a band of the wrong grey
@@ -37,6 +38,17 @@
 }
 
 /*
+ * THE RING IS THE ONLY EDGE A STACKED FACE NEEDS. A face's own hairline inside
+ * the ring drew each face as a framed tile, two edges a pixel apart, so a
+ * stacked face (a member, or the face a member wraps) draws its border in no
+ * colour. The border keeps its width, so the face keeps its box.
+ */
+.crewlet-avatar-stack > .crewlet-avatar-stack__member.crewlet-avatar,
+.crewlet-avatar-stack > .crewlet-avatar-stack__member > .crewlet-avatar {
+  border-color: transparent;
+}
+
+/*
  * A BADGE IN FRONT HIDES THE ONE BEHIND IT. A hue's plate is a tint, 12% of
  * the hue over whatever the badge stands on, and in a stack that is partly
  * the badge before it: its outline, its ring and its face showed through
@@ -63,9 +75,9 @@
 }
 
 /*
- * THE COUNT OF THE REST. A PILL, where every badge is a squircle or a circle:
- * it is a number rather than somebody, and drawn in either kind's outline it
- * would read as one more agent or one more person. Otherwise it is the neutral
+ * THE COUNT OF THE REST. A PILL, where every face is a rounded square: it is
+ * a number rather than somebody, and drawn in a face's outline it would read
+ * as one more agent or one more person. Otherwise it is the neutral
  * badge exactly (the raised rung, the strong hairline, the secondary ink), in
  * the sans face with tabular figures so "+9" and "+12" sit alike.
  */

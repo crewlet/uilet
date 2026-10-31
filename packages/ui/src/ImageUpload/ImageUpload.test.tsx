@@ -77,7 +77,7 @@ describe('ImageUpload', () => {
   });
 
   test('the trigger rounds exactly as the badge inside it does, at any size', () => {
-    // Avatar moves an agent badge's corner with its box, so a trigger pinned
+    // Avatar moves a face's corner with its box, so a trigger pinned
     // to one radius step is rounder or squarer than the badge under it at
     // every size but the one the step was chosen for, and the badge's corners
     // show through the overlay. Both read the same ladder: the badge from the
@@ -85,52 +85,24 @@ describe('ImageUpload', () => {
     // Spelled without the leading dashes and prefixed at use: the package's
     // variable check reads a quoted `--name` in a .tsx file as a declaration.
     const property = (name: string) => `--${name}`;
-    for (const size of [20, 64, 120]) {
-      const { container, unmount } = render(<ImageUpload name="Acme" size={size} onSelect={() => {}} />);
-      const wrapper = container.querySelector<HTMLElement>('.crewlet-image-upload')!;
-      const badge = container.querySelector<HTMLElement>('.crewlet-avatar')!;
-      expect(wrapper.className).toContain('crewlet-image-upload--agent');
-      expect(badge.className).toContain('crewlet-avatar--agent');
-      expect(badge.style.getPropertyValue(property('crewlet-avatar-size'))).toBe(`${size}px`);
-      expect(wrapper.style.getPropertyValue(property('crewlet-image-upload-corner'))).toBe(`${avatarCorner(size)}px`);
-      unmount();
+    for (const kind of ['agent', 'human'] as const) {
+      for (const size of [20, 64, 120]) {
+        const { container, unmount } = render(<ImageUpload name="Acme" kind={kind} size={size} onSelect={() => {}} />);
+        const wrapper = container.querySelector<HTMLElement>('.crewlet-image-upload')!;
+        const badge = container.querySelector<HTMLElement>('.crewlet-avatar')!;
+        expect(wrapper.className).toContain(`crewlet-image-upload--${kind}`);
+        expect(badge.className).toContain(`crewlet-avatar--${kind}`);
+        expect(badge.style.getPropertyValue(property('crewlet-avatar-size'))).toBe(`${size}px`);
+        expect(wrapper.style.getPropertyValue(property('crewlet-image-upload-corner'))).toBe(`${avatarCorner(size)}px`);
+        unmount();
+      }
     }
-    // And the stylesheet reads it rather than naming a step of its own.
-    const rule =
-      /\.crewlet-image-upload--agent \.crewlet-image-upload__trigger,\s*\.crewlet-image-upload--agent \.crewlet-image-upload__overlay\s*\{([^}]*)\}/.exec(
-        css(),
-      )?.[1] ?? '';
+    // And the stylesheet reads it, for either kind, rather than naming a step
+    // or a shape of its own.
+    const rule = /\n\.crewlet-image-upload__trigger,\s*\.crewlet-image-upload__overlay\s*\{([^}]*)\}/.exec(css())?.[1] ?? '';
     expect(rule).toContain('border-radius: var(--crewlet-image-upload-corner)');
-  });
-
-  test('where the browser draws a squircle, the frame draws the same one as the badge', () => {
-    // A frame with a circular corner over a squircle picture shows the
-    // picture's shoulders through the overlay. The two @supports blocks are
-    // held to one declaration list, so moving the badge's squircle moves this.
-    const supports = (sheet: string) => {
-      const at = sheet.indexOf('@supports (corner-shape: squircle)');
-      expect(at).toBeGreaterThan(-1);
-      const body = /\{[^{]*\{([^}]*)\}/.exec(sheet.slice(at))?.[1] ?? '';
-      return body
-        .split(';')
-        .map((declaration) => declaration.trim())
-        .filter(Boolean)
-        .sort();
-    };
-    const avatar = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../Avatar/Avatar.css'), 'utf8');
-    expect(supports(css())).toEqual(supports(avatar));
-    expect(supports(css())).toContain('corner-shape: squircle');
-  });
-
-  test("a person's picture is a circle, frame and all", () => {
-    const { container } = render(<ImageUpload name="Carlos Diaz" kind="human" onSelect={() => {}} />);
-    expect(container.querySelector('.crewlet-image-upload')?.className).toContain('crewlet-image-upload--human');
-    expect(container.querySelector('.crewlet-avatar')?.className).toContain('crewlet-avatar--human');
-    const rule =
-      /\.crewlet-image-upload--human \.crewlet-image-upload__trigger,\s*\.crewlet-image-upload--human \.crewlet-image-upload__overlay\s*\{([^}]*)\}/.exec(
-        css(),
-      )?.[1] ?? '';
-    expect(rule).toContain('border-radius: var(--radius-circle)');
+    expect(css()).not.toMatch(/crewlet-image-upload--(human|agent)[^{]*\{[^}]*border-radius/);
+    expect(css()).not.toContain('corner-shape');
   });
 
   test('its label clears 4.5:1 on the scrim, over every ground the picture can be', () => {

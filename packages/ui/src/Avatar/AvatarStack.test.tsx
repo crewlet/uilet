@@ -229,6 +229,25 @@ describe('what a stack draws', () => {
     }
   });
 
+  test('the ring is the only edge a stacked face draws, and the chip keeps its own', () => {
+    // A face's hairline inside the ring drew each one as a framed tile. The
+    // border keeps its width, so the face keeps its box.
+    uninstall = installThemed('dark', 'Avatar/Avatar.css', 'Avatar/AvatarStack.css');
+    const palette = themeColours('dark');
+    const { container } = render(
+      <AvatarStack members={[{ name: 'Jane Founder', kind: 'human' }, { name: 'SWE', character: 'gemlet', hue: 'cyan' }, ...AGENTS]} />,
+    );
+    const faces = [...container.querySelectorAll('.crewlet-avatar')];
+    expect(faces).toHaveLength(4);
+    for (const face of faces) {
+      const drawn = getComputedStyle(face);
+      expect(['transparent', 'rgba(0, 0, 0, 0)'], face.className).toContain(drawn.borderTopColor);
+      expect(drawn.borderTopWidth, face.className).toBe('1px');
+    }
+    const more = getComputedStyle(container.querySelector('.crewlet-avatar-stack__more')!);
+    expect(channels(more.borderTopColor)).toEqual(parseHex(palette.get(property('color-border-strong')) ?? ''));
+  });
+
   test('the chip is a pill of the neutral badge, with figures that line up', () => {
     uninstall = installThemed('dark', 'Avatar/AvatarStack.css');
     const palette = themeColours('dark');

@@ -29,6 +29,16 @@ export const MARKDOWN_FORMATS = [
 
 export type MarkdownFormat = (typeof MARKDOWN_FORMATS)[number];
 
+/**
+ * Formats `formatMarkdown` applies that the editor's own bar does not draw,
+ * for a bar of another surface's own (a conversation's composer): a
+ * strikethrough, a quote and a link. Kept apart from `MarkdownFormat` so a
+ * map from every format the bar draws to its label or glyph stays complete.
+ */
+export const MARKDOWN_TEXT_FORMATS = ['strikethrough', 'quote', 'link'] as const;
+
+export type MarkdownTextFormat = (typeof MARKDOWN_TEXT_FORMATS)[number];
+
 /** A selection in the source, as the textarea reports it. `start === end` is a caret. */
 export interface MarkdownSelection {
   start: number;
@@ -46,7 +56,7 @@ export interface MarkdownEdit {
  * than a single asterisk, so a bold run and an italic one never share a
  * marker a reader has to count.
  */
-const WRAP: Record<'bold' | 'italic' | 'code', string> = { bold: '**', italic: '_', code: '`' };
+const WRAP: Record<'bold' | 'italic' | 'code' | 'strikethrough', string> = { bold: '**', italic: '_', code: '`', strikethrough: '~~' };
 
 /** A line's own marker, whichever block format put it there. */
 const LINE_MARKER = /^(#{1,6} |- \[[ xX]\] |[-*+] |\d+[.)] )/;
@@ -58,13 +68,21 @@ export function insertMarkdown(value: string, { start, end }: MarkdownSelection,
   return { value: next, selection: { start: caret, end: caret } };
 }
 
+/** A quote's own marker, which wraps a line's other markers rather than replacing them. */
+const QUOTE_MARKER = /^> ?/;
+
 /** The format applied to the selection, or taken off it when it is already there. */
-export function formatMarkdown(value: string, selection: MarkdownSelection, format: MarkdownFormat): MarkdownEdit {
+export function formatMarkdown(value: string, selection: MarkdownSelection, format: MarkdownFormat | MarkdownTextFormat): MarkdownEdit {
   switch (format) {
     case 'bold':
     case 'italic':
     case 'code':
+    case 'strikethrough':
       return wrap(value, selection, WRAP[format]);
+    case 'quote':
+      return prefixLines(value, selection, () => '> ', () => true, QUOTE_MARKER);
+    case 'link':
+      return link(value, selection);
     case 'heading2':
       return prefixLines(value, selection, () => '## ', (marker) => marker === '## ');
     case 'heading3':
@@ -137,19 +155,26 @@ function prefixLines(
   selection: MarkdownSelection,
   marker: (index: number) => string,
   has: (existing: string) => boolean,
+  pattern: RegExp = LINE_MARKER,
 ): MarkdownEdit {
   const [from, to] = lineSpan(value, selection);
   const lines = value.slice(from, to).split('\n');
   const single = lines.length === 1;
   const written = lines.filter((line) => single || line.trim() !== '');
-  const off = written.length > 0 && written.every((line) => has(LINE_MARKER.exec(line)?.[0] ?? ''));
+  // `pattern` is the marker a line may already carry: a block's own marker by
+  // default, which the new one replaces, or only the quote's, which wraps
+  // whatever a line already starts with (`> - item`).
+  const off = written.length > 0 && written.every((line) => {
+    const existing = pattern.exec(line)?.[0];
+    return existing !== undefined && has(existing);
+  });
 
   let index = 0;
   let caretShift = 0;
   const caretLine = value.slice(from, selection.start).split('\n').length - 1;
   const next = lines.map((line, at) => {
     if (!single && line.trim() === '') return line;
-    const old = LINE_MARKER.exec(line)?.[0] ?? '';
+    const old = pattern.exec(line)?.[0] ?? '';
     const body = line.slice(old.length);
     const added = off ? '' : marker(index);
     index += 1;
@@ -163,6 +188,35 @@ function prefixLines(
     return { value: result, selection: { start: caret, end: caret } };
   }
   return { value: result, selection: { start: from, end: from + block.length } };
+}
+
+/** A link's markdown, its label and its address in their groups. */
+const LINK = /^\[([^\]\n]*)\]\(([^)\s]*)\)$/;
+
+/** The address a new link starts with, selected so typing replaces it. */
+const LINK_ADDRESS = 'https://';
+
+/**
+ * Makes the selection a link's label, with the address selected for typing
+ * over (`[selection](https://)`), or with no selection writes `[](https://)`
+ * with the caret in the label. A selection that already IS a link becomes its
+ * label again. The selection is trimmed first, as a wrap's is.
+ */
+function link(value: string, selection: MarkdownSelection): MarkdownEdit {
+  let { start, end } = selection;
+  while (start < end && /\s/.test(value[start] ?? '')) start += 1;
+  while (end > start && /\s/.test(value[end - 1] ?? '')) end -= 1;
+  const selected = value.slice(start, end);
+  const existing = LINK.exec(selected);
+  if (existing) {
+    const label = existing[1] ?? '';
+    return { value: value.slice(0, start) + label + value.slice(end), selection: { start, end: start + label.length } };
+  }
+  const written = `[${selected}](${LINK_ADDRESS})`;
+  const result = value.slice(0, start) + written + value.slice(end);
+  if (selected === '') return { value: result, selection: { start: start + 1, end: start + 1 } };
+  const address = start + selected.length + 3;
+  return { value: result, selection: { start: address, end: address + LINK_ADDRESS.length } };
 }
 
 /** The table the bar inserts: a header, its rule and one empty row. */

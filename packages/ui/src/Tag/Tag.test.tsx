@@ -270,7 +270,8 @@ describe('Tag colour', () => {
     // Every tone but the neutral default, which takes its fill from the base
     // rule rather than from a variant block, and every node hue an author may
     // choose for a value, so the measurement below holds each hue's ink on
-    // its own fill too.
+    // its own fill too. The neutral quiet label binds a pair of its own (the
+    // soft fill under the secondary ink), so it is measured as a variant is.
     expect(variants.sort()).toEqual([
       'brand',
       'danger',
@@ -281,6 +282,7 @@ describe('Tag colour', () => {
       'hue-purple',
       'hue-rose',
       'info',
+      'quiet',
       'success',
       'warning',
     ]);
@@ -523,8 +525,32 @@ describe('Tag geometry', () => {
     expect(base).toMatch(/border-radius:\s*var\(--radius-pill\)/);
     expect(base).toMatch(/font-size:\s*var\(--font-size-xs\)/);
     // A split pill's two halves and the remove control follow the round ends
-    // rather than squaring them off.
-    expect(css).not.toMatch(/--radius-xs/);
+    // rather than squaring them off. The quiet label is the one square-ish
+    // mark, and it is a label, never a pill that splits or removes.
+    const uncommented = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const square = [...uncommented.matchAll(/([^{}]+)\{([^{}]*--radius-xs[^{}]*)\}/g)].map((match) => (match[1] ?? '').trim());
+    expect(square).toEqual(['.crewlet-tag--quiet']);
+  });
+
+  test('the quiet label is a 16px filled mark with no boundary, in the label register, whatever its size step', () => {
+    const uncommented = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const quiet = /\.crewlet-tag--quiet\s*\{([^}]*)\}/.exec(uncommented)?.[1] ?? '';
+    expect(px(/--crewlet-tag-height:\s*([^;]+);/.exec(quiet)?.[1] ?? '', 1)).toBe(16);
+    expect(quiet).toMatch(/--crewlet-tag-edge:\s*transparent/);
+    expect(quiet).toMatch(/font-size:\s*var\(--font-size-2xs\)/);
+    expect(quiet).toMatch(/font-weight:\s*var\(--font-weight-regular\)/);
+    // After every size step, so a step cannot reshape it.
+    for (const step of ['xs', 'sm', 'md']) {
+      expect(uncommented.indexOf('.crewlet-tag--quiet {')).toBeGreaterThan(uncommented.indexOf(`.crewlet-tag--${step} {`));
+    }
+    render(
+      <Tag appearance="quiet" size="md">
+        Agent
+      </Tag>,
+    );
+    const label = screen.getByText('Agent').closest('.crewlet-tag')!;
+    expect(label.className).toContain('crewlet-tag--quiet');
+    expect(label.className).toContain('crewlet-tag--neutral');
   });
 
   test('the size ladder never inverts, at any density the tokens define', () => {

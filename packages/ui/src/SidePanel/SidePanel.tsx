@@ -31,6 +31,13 @@ export const SIDE_PANEL_LABELS: SidePanelLabels = {
 export interface SidePanelProps {
   /** Names the panel; it is the panel's heading, level two. */
   title: string;
+  /**
+   * What the panel is about, after the title on its baseline in the tertiary
+   * ink ("Thread" then the room it is in): text or a link. It drops under the
+   * title when the two do not fit, and the title keeps one line, ellipsised.
+   * Not part of the panel's name. Not drawn with `hideTitle`.
+   */
+  subtitle?: ReactNode;
   /** A mark before the title: the product mark, the glyph of the control that opened it. */
   icon?: ReactNode;
   /** Draw the title for assistive technology only, where the icon says it. */
@@ -110,6 +117,7 @@ export interface SidePanelProps {
  */
 export function SidePanel({
   title,
+  subtitle,
   icon,
   hideTitle,
   onClose,
@@ -132,6 +140,7 @@ export function SidePanel({
   return (
     <SidePanelBase
       title={title}
+      subtitle={subtitle}
       icon={icon}
       hideTitle={hideTitle}
       onClose={onClose}

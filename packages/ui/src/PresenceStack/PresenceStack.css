@@ -27,12 +27,10 @@
   font: inherit;
 }
 
-.crewlet-presence-stack > .crewlet-presence-stack__member--human {
-  border-radius: var(--radius-circle);
-}
-
-.crewlet-presence-stack > .crewlet-presence-stack__member--agent {
-  border-radius: var(--radius-sm);
+/* The face's own corner, which the component sets from Avatar's ladder: one
+   shape for people and agents. */
+.crewlet-presence-stack > .crewlet-presence-stack__member {
+  border-radius: var(--crewlet-presence-stack-corner);
 }
 
 button.crewlet-presence-stack__member {

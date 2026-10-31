@@ -131,3 +131,28 @@ export function returnFocus(el: HTMLElement | null | undefined, options?: FocusO
   clear();
   return false;
 }
+
+/**
+ * Whether `el` holds the focus a ring is drawn for: KEYBOARD focus, the focus
+ * `:focus-visible` matches, less a focus handed back by `returnFocus` while
+ * the reader is using a pointer, which the base stylesheet draws no ring on
+ * either. A surface that keeps something open while its trigger is focused (a
+ * tooltip) asks this rather than "is it focused": a mouse press focuses a
+ * button too, and so does a layer handing focus back as it closes, and
+ * neither is a reader asking to read the hint.
+ *
+ * A browser that cannot answer for `:focus-visible` counts every focus as
+ * visible, the accessible failure mode: a missed answer costs some calm,
+ * never a keyboard reader's hint.
+ */
+export function isVisibleFocus(el: Element): boolean {
+  let visible: boolean;
+  try {
+    visible = el.matches(':focus-visible');
+  } catch {
+    visible = true;
+  }
+  if (!visible) return false;
+  const pointer = el.ownerDocument.documentElement.getAttribute(FOCUS_MODALITY_ATTRIBUTE) === 'pointer';
+  return !(pointer && el.hasAttribute(FOCUS_RETURNED_ATTRIBUTE));
+}

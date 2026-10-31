@@ -8,6 +8,7 @@ import {
   useState,
   type CSSProperties,
   type FocusEvent,
+  type HTMLAttributes,
   type PointerEvent,
   type ReactElement,
   type ReactNode,
@@ -27,6 +28,7 @@ import {
   type PlacementRect,
 } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
+import { isVisibleFocus } from '../utils/focusModality.js';
 
 export type TooltipPlacement = 'top' | 'bottom';
 
@@ -36,7 +38,23 @@ export type TooltipPlacement = 'top' | 'bottom';
  */
 export type TooltipAlign = 'center' | 'start';
 
-export interface TooltipProps {
+/**
+ * Everything a tooltip is handed beyond its own props belongs to its TRIGGER.
+ *
+ * A tooltip stands where a trigger is expected: a `Popover` or a `Menu` clones
+ * its trigger with a ref and its state (`aria-expanded`, `aria-controls`, a
+ * press handler), and when that trigger is `<Tooltip><button /></Tooltip>`
+ * those land on the tooltip. They are merged onto the child: the ref composed
+ * with the child's own and the tooltip's, every handler run after the child's
+ * own, `style` merged, and any other attribute set over the child's, since the
+ * component cloning its trigger is the one that knows the state it names.
+ * `className` is not among them: it is the panel's.
+ */
+type TriggerAttributes = Omit<HTMLAttributes<HTMLElement>, 'content' | 'children' | 'className'>;
+
+export interface TooltipProps extends TriggerAttributes {
+  /** A ref to the TRIGGER element, composed with the child's own. */
+  ref?: Ref<HTMLElement> | undefined;
   /** One short line. A tooltip is not a place to put a list or a paragraph. */
   content: ReactNode;
   /** The preferred side. It flips when there is not room and there is more room the other way. */
@@ -66,6 +84,16 @@ export interface TooltipProps {
 /** A motion token as a number of milliseconds, for a delay JavaScript has to count. */
 function ms(value: string): number {
   return Number.parseFloat(value);
+}
+
+/** Two handlers as one: the first, then the second, each given the event. */
+function composeHandlers(first: unknown, second: unknown): unknown {
+  if (typeof first !== 'function') return second;
+  if (typeof second !== 'function') return first;
+  return (...args: unknown[]) => {
+    (first as (...a: unknown[]) => void)(...args);
+    (second as (...a: unknown[]) => void)(...args);
+  };
 }
 
 /**
@@ -136,9 +164,20 @@ const CLOSE_DELAY = ms(motion.duration.base);
  *   is pressed. NOTHING HIDES IT ON A TIMER: a reader who needs longer than
  *   somebody else's idea of long enough is exactly the reader this is for.
  *
+ * FOCUS HOLDS IT ONLY WHEN IT IS KEYBOARD FOCUS, the focus `:focus-visible`
+ * matches (`isVisibleFocus`). A mouse press focuses a button too, and so does
+ * a layer handing focus back as it closes, so a tip shown for a hover outlived
+ * the hover: press Formatting, move away, and "Hide formatting" stayed on the
+ * screen until something else took focus. Hover still opens it, keyboard
+ * focus still opens it and keeps it, and A PRESS CLOSES IT, as a press on a
+ * control answers its hint; it opens again on the pointer's next arrival.
+ *
  * It is linked by `aria-describedby` rather than `aria-labelledby`: the
  * control has a name already, and replacing it with the hint is how a Close
  * button came to be announced as "Closing is unavailable until this finishes".
+ *
+ * Any other prop, and a ref, belongs to the trigger and is merged onto the
+ * child (see `TriggerAttributes`), so a tooltip can be a Popover's trigger.
  */
 export function Tooltip({
   content,
@@ -149,6 +188,8 @@ export function Tooltip({
   closeDelay = CLOSE_DELAY,
   className,
   children,
+  ref: forwardedRef,
+  ...forwarded
 }: TooltipProps) {
   const id = useId();
   const panelId = `${id}-tooltip`;
@@ -158,7 +199,9 @@ export function Tooltip({
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // Hover and focus are counted separately: a control focused by the keyboard
   // and then passed over by the pointer must not close when the pointer leaves.
-  const over = useRef({ pointer: false, focus: false });
+  // `pressed` is a press that answered the tip: it stays shut until the
+  // pointer leaves and comes back.
+  const over = useRef({ pointer: false, focus: false, pressed: false });
   const [place, setPlace] = useState<{ left: number; top: number; side: 'above' | 'below' } | null>(null);
   const container = useLayerContainer();
 
@@ -199,7 +242,7 @@ export function Tooltip({
   // Escape, and a press anywhere else, close it at once: a reader dismissing a
   // panel has already decided, and a delay there is just a panel that ignores
   // them.
-  const layer = usePopupLayer({ open, onDismiss: () => { over.current = { pointer: false, focus: false }; clear(); setOpen(false); } });
+  const layer = usePopupLayer({ open, onDismiss: () => { over.current = { pointer: false, focus: false, pressed: false }; clear(); setOpen(false); } });
 
   useEffect(() => clear, [clear]);
   useEffect(() => {
@@ -287,41 +330,72 @@ export function Tooltip({
   }, [open]);
 
   const child = children as ReactElement<Record<string, unknown>>;
-  const describedBy = child.props['aria-describedby'] as string | undefined;
+  /*
+   * What the tooltip was handed for its trigger (see `TriggerAttributes`), laid
+   * over the child's own: each handler composed after the child's, `style`
+   * merged, the descriptions joined, and every other attribute set over the
+   * child's. The tooltip's own handlers below then wrap the result.
+   */
+  const outer = forwarded as Record<string, unknown>;
+  const passed: Record<string, unknown> = { ...outer };
+  for (const key of Object.keys(outer)) {
+    if (/^on[A-Z]/.test(key)) passed[key] = composeHandlers(child.props[key], outer[key]);
+  }
+  if (outer['style'] !== undefined) passed['style'] = { ...(child.props['style'] as CSSProperties | undefined), ...(outer['style'] as CSSProperties) };
+  const describedBy = cx(child.props['aria-describedby'] as string | undefined, outer['aria-describedby'] as string | undefined) || undefined;
   const ownRef = child.props['ref'] as Ref<HTMLElement> | undefined;
+  /** The trigger's own handler for an event the tooltip also listens to. */
+  const call = (key: string, event: unknown) => ((passed[key] ?? child.props[key]) as ((e: unknown) => void) | undefined)?.(event);
   const trigger = cloneElement(child, {
+    ...passed,
     ref: (el: HTMLElement | null) => {
       anchor.current = el;
       layer.insideRef(el);
       const release = attach(ownRef, el);
+      const releaseForwarded = attach(forwardedRef, el);
       return () => {
         anchor.current = null;
         layer.insideRef(null);
         release();
+        releaseForwarded();
       };
     },
     'aria-describedby': open ? cx(describedBy, panelId) : describedBy,
     onPointerEnter: (event: PointerEvent) => {
       over.current.pointer = true;
-      show(openDelay);
-      (child.props['onPointerEnter'] as ((e: PointerEvent) => void) | undefined)?.(event);
+      if (!over.current.pressed) show(openDelay);
+      call('onPointerEnter', event);
     },
     onPointerLeave: (event: PointerEvent) => {
       over.current.pointer = false;
+      over.current.pressed = false;
       hide(closeDelay);
-      (child.props['onPointerLeave'] as ((e: PointerEvent) => void) | undefined)?.(event);
+      call('onPointerLeave', event);
     },
-    // Focus opens with NO delay: a keyboard reader who reached this control
-    // asked for it, and there is no pointer passing over anything.
-    onFocus: (event: FocusEvent) => {
-      over.current.focus = true;
-      show(0);
-      (child.props['onFocus'] as ((e: FocusEvent) => void) | undefined)?.(event);
+    // A press answers the tip: it closes at once and stays shut while the
+    // pointer is still on the control, whatever focus the press brought.
+    onPointerDown: (event: PointerEvent) => {
+      over.current.pressed = true;
+      over.current.focus = false;
+      clear();
+      setOpen(false);
+      call('onPointerDown', event);
+    },
+    // KEYBOARD focus opens with NO delay: a keyboard reader who reached this
+    // control asked for it, and there is no pointer passing over anything.
+    // Any other focus (a press, a layer handing focus back) neither opens the
+    // tip nor holds it open.
+    onFocus: (event: FocusEvent<HTMLElement>) => {
+      const visible = !over.current.pressed && isVisibleFocus(event.currentTarget);
+      over.current.focus = visible;
+      if (visible) show(0);
+      call('onFocus', event);
     },
     onBlur: (event: FocusEvent) => {
       over.current.focus = false;
+      over.current.pressed = false;
       hide(0);
-      (child.props['onBlur'] as ((e: FocusEvent) => void) | undefined)?.(event);
+      call('onBlur', event);
     },
   } as Record<string, unknown>);
 
