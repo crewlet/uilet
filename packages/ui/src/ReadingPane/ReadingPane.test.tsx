@@ -4,7 +4,7 @@
  * deeper in the outline.
  */
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -171,6 +171,36 @@ test('focus a reader left in the list stays there, and a host can name where foc
   screen.getByRole('button', { name: 'Answer 2' }).focus();
   rerender(<Pane item="3" focusTarget={() => screen.getByRole('button', { name: 'Answer 3' })} />);
   expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Answer 3' }));
+});
+
+// A DOCUMENT WITH FOCUS ON ITS BODY IS NOT THE PANE'S. Safari does not focus a
+// pressed control, and a live update moves nothing: focus follows the item
+// only where the reader was last in the pane, by focus or by a press.
+test('a press in the list, or a change nobody made, leaves focus where it is', () => {
+  const { rerender } = render(<Pane item="1" />);
+  // A live update: nobody is in the pane.
+  rerender(<Pane item="2" />);
+  expect(document.activeElement).toBe(document.body);
+  // A press on a row in the list that does not take focus, as in Safari.
+  fireEvent.pointerDown(screen.getByRole('button', { name: 'In the list' }));
+  rerender(<Pane item="3" />);
+  expect(document.activeElement).toBe(document.body);
+});
+
+test('a press in the pane that does not take focus still hands focus to the next item', () => {
+  const { rerender } = render(<Pane item="1" />);
+  fireEvent.pointerDown(screen.getByRole('button', { name: 'Answer 1' }));
+  rerender(<Pane item="2" />);
+  expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Question 2' }));
+});
+
+test('coming back to the first item plays it in too', () => {
+  const { container, rerender } = render(<Pane item="1" />);
+  rerender(<Pane item="2" />);
+  rerender(<Pane item="1" />);
+  expect(
+    container.querySelector('.crewlet-reading-pane__column')!.classList.contains('crewlet-reading-pane__column--entering'),
+  ).toBe(true);
 });
 
 test('the entrance is the kit\'s motion, and nothing moves under reduced motion', () => {

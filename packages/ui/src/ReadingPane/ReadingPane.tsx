@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -42,9 +43,10 @@ export interface ReadingPaneProps extends HTMLAttributes<HTMLElement> {
    * What the pane shows, as a key: the item's id. A new value draws the new
    * item afresh and plays it in, a short fade and rise on the moderate step
    * (`READING_PANE_ENTER` on the column; nothing moves under reduced motion),
-   * and moves focus to its title, without scrolling the page, where focus was
-   * in the pane or nowhere (the control the reader answered with went with
-   * the old item). Focus a reader left in the list beside the pane stays there.
+   * and moves focus to its title, without scrolling the page, where the reader
+   * was last in the pane (focus came into it, or a press landed in it): the
+   * control they answered with went with the old item. A reader in the list
+   * beside the pane, or nowhere (a live update), keeps their place.
    */
   contentKey?: string | number | undefined;
   /** Where focus goes after a change of `contentKey`, in place of the title. */
@@ -76,23 +78,58 @@ export function ReadingPane({ headingLevel, contentKey, focusTarget, className, 
   const named = rest['aria-label'] !== undefined || rest['aria-labelledby'] !== undefined;
   const pane = useRef<HTMLDivElement | null>(null);
   const column = useRef<HTMLElement | null>(null);
-  // THE FIRST ITEM IS NOT PLAYED IN: a page opens on it, nothing changed.
-  const [firstKey] = useState(contentKey);
-  const entering = contentKey !== firstKey;
+  /*
+   * EVERY ITEM AFTER THE FIRST DRAW IS PLAYED IN, the first one again too
+   * when the reader comes back to it: only the item a page opens on is not,
+   * since nothing changed. Compared with the key drawn last, not the first.
+   */
+  const [drawnKey, setDrawnKey] = useState(contentKey);
+  const [moved, setMoved] = useState(false);
+  if (drawnKey !== contentKey) {
+    setDrawnKey(contentKey);
+    setMoved(true);
+  }
 
   /*
-   * FOCUS FOLLOWS THE ITEM WHERE IT WAS THE ITEM'S. After an answer the
-   * control the reader pressed went with the old item, and focus fell to the
-   * document: it goes to the new item's title, so the next Tab starts there.
-   * A reader who chose the item in the list keeps focus in the list.
+   * FOCUS FOLLOWS THE ITEM ONLY WHERE THE READER WAS IN THE PANE: focus came
+   * into it, or a press landed in it, and nothing has been focused or pressed
+   * outside it since. After an answer the control the reader pressed went
+   * with the old item and focus fell to the document; it goes to the new
+   * item's title, so the next Tab starts there. A focused body is not the
+   * pane's: Safari does not focus a pressed control, and a live update moves
+   * nothing, so a reader in the list, or nowhere, keeps their place.
    */
+  const owned = useRef(false);
+  useEffect(() => {
+    const root = pane.current;
+    if (!root) return undefined;
+    const doc = root.ownerDocument;
+    const inside = (node: EventTarget | null) => node instanceof Node && root.contains(node);
+    const focusIn = () => {
+      owned.current = true;
+    };
+    // Focus that falls to nowhere (the control went with its item) leaves it the pane's.
+    const focusOut = (event: FocusEvent) => {
+      if (event.relatedTarget !== null && !inside(event.relatedTarget)) owned.current = false;
+    };
+    const press = (event: Event) => {
+      owned.current = inside(event.target);
+    };
+    root.addEventListener('focusin', focusIn);
+    root.addEventListener('focusout', focusOut);
+    doc.addEventListener('pointerdown', press, true);
+    return () => {
+      root.removeEventListener('focusin', focusIn);
+      root.removeEventListener('focusout', focusOut);
+      doc.removeEventListener('pointerdown', press, true);
+    };
+  }, []);
+
   const settled = useRef(contentKey);
   useLayoutEffect(() => {
     if (contentKey === settled.current) return;
     settled.current = contentKey;
-    const held = document.activeElement;
-    const ours = held === null || held === document.body || pane.current?.contains(held) === true;
-    if (!ours) return;
+    if (!owned.current) return;
     const target = focusTarget?.() ?? column.current?.querySelector<HTMLElement>('.crewlet-reading-pane__title');
     returnFocus(target, { preventScroll: true });
   }, [contentKey, focusTarget]);
@@ -106,7 +143,7 @@ export function ReadingPane({ headingLevel, contentKey, focusTarget, className, 
         key={contentKey}
         ref={column}
         aria-labelledby={named ? rest['aria-labelledby'] : titleId}
-        className={cx('crewlet-reading-pane__column', entering && 'crewlet-reading-pane__column--entering', className)}
+        className={cx('crewlet-reading-pane__column', moved && 'crewlet-reading-pane__column--entering', className)}
       >
         <ReadingPaneContext.Provider value={{ titleId, level }}>
           <HeadingLevelProvider level={nextHeadingLevel(level)}>{children}</HeadingLevelProvider>
