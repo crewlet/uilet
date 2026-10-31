@@ -125,7 +125,7 @@ function Row({ id, who, at, children, withActions = true, ...rest }: RowProps) {
         </button>
       }
       author={<button type="button">{who.name}</button>}
-      badges={who.agent ? <Tag size="xs">Agent</Tag> : undefined}
+      badges={who.agent ? <Tag size="xs" appearance="quiet">Agent</Tag> : undefined}
       time={`${at} AM`}
       gutterTime={at}
       timeTitle={`Thursday, October 30 at ${at} AM`}
