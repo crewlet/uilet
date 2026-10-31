@@ -1,0 +1,63 @@
+/*
+ * A searchable grid of emoji in a popover: the field, then each group under
+ * its quiet heading, eight to a row, in a scroller of its own.
+ */
+
+.crewlet-emoji-picker__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  width: 296px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-2);
+}
+
+.crewlet-emoji-picker__scroll {
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* A group's heading, in the meta register at the regular weight. */
+.crewlet-emoji-picker__group {
+  padding: var(--spacing-2) var(--spacing-1) var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.crewlet-emoji-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--crewlet-emoji-picker-columns), minmax(0, 1fr));
+  gap: 2px;
+}
+
+.crewlet-emoji-picker__cell {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.crewlet-emoji-picker__cell:hover {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-emoji-picker__cell:focus-visible {
+  background: var(--color-surface-hover);
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-emoji-picker__none {
+  margin: var(--spacing-3) var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
