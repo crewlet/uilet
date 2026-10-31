@@ -125,6 +125,83 @@ describe('the way out', () => {
   });
 });
 
+describe('the focus a closing dock gives up', () => {
+  /** A host whose Unpin stands inside the dock, and whose Rooms control docks it again. */
+  function Host({ open, named = true }: { open: boolean; named?: boolean }) {
+    return (
+      <div>
+        <button type="button" id="rooms">
+          Rooms
+        </button>
+        <DockColumn
+          open={open}
+          width={280}
+          data-testid="dock"
+          focusOnClose={named ? () => document.getElementById('rooms') : undefined}
+        >
+          <button type="button">Unpin</button>
+        </DockColumn>
+      </div>
+    );
+  }
+
+  const unpin = () => screen.getByRole('button', { name: 'Unpin' });
+  const rooms = () => screen.getByRole('button', { name: 'Rooms' });
+
+  test('closed from inside, focus goes to the control that docks it again, as it starts to leave', async () => {
+    reduced(false);
+    const { rerender } = render(<Host open />);
+    const easing = driveMotion(column()).start();
+    unpin().focus();
+    rerender(<Host open={false} />);
+    // Still drawn, inert, and no longer holding the reader.
+    expect(panel()?.hasAttribute('inert')).toBe(true);
+    expect(document.activeElement).toBe(rooms());
+    easing.finish();
+    await settleMotion();
+    expect(document.activeElement).toBe(rooms());
+  });
+
+  test('where nothing moves, focus is handed over as the panel goes', () => {
+    reduced(false);
+    const { rerender } = render(<Host open />);
+    unpin().focus();
+    rerender(<Host open={false} />);
+    expect(panel()).toBeNull();
+    expect(document.activeElement).toBe(rooms());
+  });
+
+  test('under reduced motion, focus is handed over as the panel goes', () => {
+    reduced(true);
+    const { rerender } = render(<Host open />);
+    driveMotion(column()).start();
+    unpin().focus();
+    rerender(<Host open={false} />);
+    expect(panel()).toBeNull();
+    expect(document.activeElement).toBe(rooms());
+  });
+
+  test('with no control named, focus is taken off the panel rather than held in it', () => {
+    reduced(false);
+    const { rerender } = render(<Host open named={false} />);
+    driveMotion(column()).start();
+    unpin().focus();
+    rerender(<Host open={false} named={false} />);
+    expect(panel()).not.toBeNull();
+    expect(panel()?.contains(document.activeElement)).toBe(false);
+  });
+
+  test('a reader who has moved on is not pulled back', () => {
+    reduced(false);
+    const { rerender } = render(<Host open />);
+    const elsewhere = document.body.appendChild(document.createElement('button'));
+    restorers.push(() => elsewhere.remove());
+    elsewhere.focus();
+    rerender(<Host open={false} />);
+    expect(document.activeElement).toBe(elsewhere);
+  });
+});
+
 describe('the stylesheet', () => {
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'DockColumn.css'), 'utf8');
   /** The declarations of the first rule written for exactly this selector. */
@@ -133,9 +210,9 @@ describe('the stylesheet', () => {
     return at === -1 ? '' : css.slice(at, css.indexOf('}', at));
   };
 
-  test('the column eases its width on the moderate step with the emphasized curve, and clips', () => {
+  test('the column eases its width on the slow step with the emphasized curve, and clips', () => {
     const base = rule('.crewlet-dock-column');
-    expect(base).toContain('transition: width var(--motion-duration-moderate) var(--motion-easing-emphasized);');
+    expect(base).toContain('transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);');
     expect(base).toContain('width: 0;');
     expect(base).toContain('overflow: clip;');
     expect(rule('.crewlet-dock-column[data-open]')).toContain('width: var(--crewlet-dock-column-width);');

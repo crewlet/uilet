@@ -91,6 +91,7 @@ import { AsideContext, PeekContext, type AppShellAsideShape, type AppShellPeekSh
 import { ScreenWidthContext, contentInlineSize, createScreenWidthStore } from './screenWidth.js';
 import { RailLeavingContext, RailShapeContext, useRailShape, type AppShellRailShape } from './railShape.js';
 import { useRailMotion } from './railMotion.js';
+import { releaseFocus } from '../Presence/index.js';
 
 export { useAppShellAside, useAppShellPeek } from './regions.js';
 export type { AppShellAsideShape, AppShellPeekShape, AppShellRegionValue } from './regions.js';
@@ -435,6 +436,21 @@ export function AppShell({
   // full rail's words fade out under the moving edge rather than vanishing.
   const { drawn: railShape, motion: railMotion, leaving: railLeaving } = useRailMotion(railTarget, hasRail && !narrow, rail);
   const foldable = hasRail && onRailChange !== undefined && !narrow;
+
+  /*
+   * FOCUS LEAVES THE FOLDING CONTENT FOR THE FOLD CONTROL. A reader who folds
+   * the rail by its key from a row inside it would otherwise be left in
+   * content that has just turned inert; the control that unfolds the rail
+   * stands outside it, in the same place in both shapes.
+   */
+  useLayoutEffect(() => {
+    if (!railLeaving) return;
+    const aside = rail.current;
+    releaseFocus(
+      aside?.querySelector('.crewlet-app-shell__rail-inner') ?? null,
+      aside?.querySelector<HTMLElement>('.crewlet-app-shell__fold button'),
+    );
+  }, [railLeaving]);
 
   const shell: AppShellContextValue = {
     narrow,

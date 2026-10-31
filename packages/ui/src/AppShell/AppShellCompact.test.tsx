@@ -470,9 +470,9 @@ describe('the geometry', () => {
     expect(rule('.crewlet-app-shell__rail')).toContain('width: var(--crewlet-app-shell-rail);');
   });
 
-  test('the rail eases its width on the moderate step, and its content keeps the width of the shape drawn', () => {
+  test('the rail eases its width on the slow step, and its content keeps the width of the shape drawn', () => {
     expect(rule('.crewlet-app-shell__rail')).toContain(
-      'transition: width var(--motion-duration-moderate) var(--motion-easing-emphasized)',
+      'transition: width var(--motion-duration-slow) var(--motion-easing-emphasized)',
     );
     // The moving edge clips across only, so no ring or badge is cut at a
     // row's top or bottom.
@@ -597,6 +597,29 @@ describe("the rail's motion", () => {
     await settleMotion();
     expect(motion()).toBeNull();
     expect(screen.getByRole('button', { name: 'Expand the sidebar' })).toBe(fold);
+  });
+
+  test('a fold started from a row inside the rail hands focus to the fold control', () => {
+    narrowWindow(false);
+    // ONE RAIL TREE IN BOTH SHAPES, as an application that draws its places
+    // from `useAppShell().rail` keeps it: the row is still drawn, inert, when
+    // the fold starts. (A tree swapped whole on the chosen shape remounts the
+    // row before any effect runs, and the focus goes with it.)
+    function SteadyShell() {
+      const [shape, setShape] = useState<AppShellRailShape>('full');
+      return (
+        <AppShell rail={shape} onRailChange={setShape} sidebar={<FullRail />}>
+          screen
+        </AppShell>
+      );
+    }
+    render(<SteadyShell />);
+    driveMotion(rail()).start();
+    const row = screen.getByRole('link', { name: 'Home' });
+    row.focus();
+    press();
+    expect(motion()).toBe('fold');
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Expand the sidebar' }));
   });
 
   test('unfolding draws the full rail at once, live, and ends when the rail has moved', async () => {

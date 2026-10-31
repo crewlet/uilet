@@ -7,7 +7,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { useRef } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
-import { afterMotion, runningMotion, usePresence } from './index.js';
+import { afterMotion, releaseFocus, runningMotion, usePresence } from './index.js';
 
 const restorers: (() => void)[] = [];
 
@@ -83,6 +83,38 @@ describe('the motion running on an element', () => {
     motion.finish();
     await settleMotion();
     expect(done).not.toHaveBeenCalled();
+  });
+});
+
+describe('the focus something leaving gives up', () => {
+  function mount(): { container: HTMLElement; inside: HTMLButtonElement; outside: HTMLButtonElement } {
+    document.body.innerHTML = '<div id="panel"><button>Unpin</button></div><button>Rooms</button>';
+    const [inside, outside] = [...document.querySelectorAll('button')] as HTMLButtonElement[];
+    return { container: document.getElementById('panel')!, inside: inside!, outside: outside! };
+  }
+
+  test('goes to the control the host names', () => {
+    const { container, inside, outside } = mount();
+    inside.focus();
+    releaseFocus(container, outside);
+    expect(document.activeElement).toBe(outside);
+  });
+
+  test('is taken off it where the host names nothing, or names something inside it', () => {
+    const { container, inside } = mount();
+    inside.focus();
+    releaseFocus(container, null);
+    expect(document.activeElement).toBe(document.body);
+    inside.focus();
+    releaseFocus(container, inside);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  test('is left alone where the reader has moved on', () => {
+    const { container, outside } = mount();
+    outside.focus();
+    releaseFocus(container, null);
+    expect(document.activeElement).toBe(outside);
   });
 });
 

@@ -22,6 +22,7 @@
 
 import { useLayoutEffect, useState, type RefObject } from 'react';
 import { useMediaMatch } from '../MediaMatch/index.js';
+import { returnFocus } from '../utils/focusModality.js';
 
 /** The reader's request for less motion, which every wait here gives way to. */
 export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
@@ -64,6 +65,24 @@ export function afterMotion(element: Element | null, done: () => void, subtree =
   return () => {
     live = false;
   };
+}
+
+/**
+ * Takes focus out of something that is about to turn inert, as it starts to
+ * leave: to `target` where the host names one (the control that brings it
+ * back), and otherwise off the element that held it.
+ *
+ * FOCUS IS NEVER LEFT INSIDE WHAT IS LEAVING. An inert element cannot hold
+ * focus, and a browser that blurs it hands the reader to the top of the
+ * document, with no telling where Tab goes next; one that does not leaves a
+ * keyboard reader typing into a panel that takes nothing. Does nothing when
+ * focus is elsewhere: a reader who has moved on is not pulled back.
+ */
+export function releaseFocus(container: Element | null, target?: HTMLElement | null): void {
+  const held = container?.ownerDocument.activeElement;
+  if (!container || !(held instanceof HTMLElement) || !container.contains(held)) return;
+  if (target?.isConnected && !container.contains(target) && returnFocus(target)) return;
+  held.blur();
 }
 
 export interface PresenceOptions {

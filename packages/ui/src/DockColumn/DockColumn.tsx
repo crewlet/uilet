@@ -20,13 +20,18 @@
  * panel on its way out takes focus or a press; opened again on the way out,
  * it is live again where it is. Under reduced motion it simply is or is not.
  *
+ * FOCUS LEAVES WITH IT. A reader who closes the dock from inside it (an Unpin
+ * in its own head) is handed to `focusOnClose`, the control that docks it
+ * again, as the panel starts to leave, and never left in a panel that takes
+ * nothing; with no such control focus is taken off the panel.
+ *
  * A PLAIN COLUMN, NOT A LANDMARK: what it holds names itself (a navigation
  * named Rooms), and a column named the same as the region inside it is two
  * landmarks of one name a screen reader cannot tell apart.
  */
 
-import { useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
-import { usePresence } from '../Presence/index.js';
+import { useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
+import { releaseFocus, usePresence } from '../Presence/index.js';
 import { cx } from '../utils/cx.js';
 
 /** The edge of the content the column stands at, in the inline direction. */
@@ -53,6 +58,12 @@ export interface DockColumnProps extends HTMLAttributes<HTMLDivElement> {
    */
   divider?: boolean | undefined;
   /**
+   * Where focus goes when the dock closes while focus is inside it: the
+   * control that docks it again. Asked as the panel starts to leave. Left
+   * out, or answering nothing, focus is taken off the panel.
+   */
+  focusOnClose?: (() => HTMLElement | null | undefined) | undefined;
+  /**
    * The panel. Its ground is the column's `--crewlet-dock-column-ground`,
    * which a host sets on its own class (`var(--color-surface-subtle)`), and
    * none by default.
@@ -65,6 +76,7 @@ export function DockColumn({
   width,
   side = 'start',
   divider = true,
+  focusOnClose,
   className,
   style,
   children,
@@ -83,10 +95,43 @@ export function DockColumn({
       style={{ ...style, '--crewlet-dock-column-width': typeof width === 'number' ? `${width}px` : width } as CSSProperties}
     >
       {present ? (
-        <div className="crewlet-dock-column__panel" inert={leaving || undefined}>
+        <DockPanel leaving={leaving} focusOnClose={focusOnClose}>
           {children}
-        </div>
+        </DockPanel>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The panel, and the focus it gives up. Its own component so that the hand
+ * off on a close with no motion runs in a LAYOUT CLEANUP, while the panel is
+ * still in the document and can still tell whether focus was inside it.
+ */
+function DockPanel({
+  leaving,
+  focusOnClose,
+  children,
+}: {
+  leaving: boolean;
+  focusOnClose: DockColumnProps['focusOnClose'];
+  children?: ReactNode;
+}) {
+  const panel = useRef<HTMLDivElement | null>(null);
+  const target = useRef(focusOnClose);
+  target.current = focusOnClose;
+  // As it starts to leave, before the browser fixes up a focus inert holds.
+  useLayoutEffect(() => {
+    if (leaving) releaseFocus(panel.current, target.current?.());
+  }, [leaving]);
+  // And as it goes where nothing moved, so it never left.
+  useLayoutEffect(() => {
+    const element = panel.current;
+    return () => releaseFocus(element, target.current?.());
+  }, []);
+  return (
+    <div ref={panel} className="crewlet-dock-column__panel" inert={leaving || undefined}>
+      {children}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 /*
  * A column docked beside the content (DockColumn.tsx).
  *
- * THE COLUMN EASES ITS WIDTH between none and its panel's, on the moderate
- * step with the emphasized curve: the motion the application rail folds by,
+ * THE COLUMN EASES ITS WIDTH between none and its panel's, on the slow step
+ * with the emphasized curve: the motion the application rail folds by,
  * so a column of the frame and a column of a screen open and close as one
  * movement. The host gives it an `auto` track, so its width is the track.
  * Clipped rather than hidden, so it is never a scroll container a focus or a
@@ -24,7 +24,7 @@
   min-width: 0;
   min-height: 0;
   overflow: clip;
-  transition: width var(--motion-duration-moderate) var(--motion-easing-emphasized);
+  transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);
 }
 
 .crewlet-dock-column[data-side='end'] {

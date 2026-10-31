@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState, type CSSProperties, type ReactNode } from 'react';
-import { HashGlyph, PanelLeftGlyph } from '@crewlethq/icons/glyphs';
-import { Button, DockColumn, NavGroup, NavItem, SidebarNav, Stack, Text, type DockColumnSide } from '@crewlethq/ui';
+import { forwardRef, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { HashGlyph, PanelLeftGlyph, PinGlyph } from '@crewlethq/icons/glyphs';
+import { Button, DockColumn, IconButton, Inline, NavGroup, NavItem, SidebarNav, Spacer, Stack, Text, type DockColumnSide } from '@crewlethq/ui';
 
 const meta: Meta<typeof DockColumn> = {
   title: 'UI/DockColumn',
@@ -15,7 +15,21 @@ type Story = StoryObj<typeof DockColumn>;
 /** The panel's ground, set on the column the way a host sets it on its own class. */
 const SUBTLE = { '--crewlet-dock-column-ground': 'var(--color-surface-subtle)' } as CSSProperties;
 
-function Rooms() {
+/** The rooms, with an Unpin in their own head: a close from inside the dock. */
+function Rooms({ onUnpin }: { onUnpin: () => void }) {
+  return (
+    <Stack gap={1} style={{ padding: 'var(--spacing-2) 0' }}>
+      <Inline gap={2} style={{ paddingInline: 'var(--spacing-3) var(--spacing-2)' }}>
+        <Text variant="caption">Rooms</Text>
+        <Spacer />
+        <IconButton label="Unpin rooms" icon={<PinGlyph size="sm" />} size="sm" variant="ghost" onClick={onUnpin} />
+      </Inline>
+      <RoomList />
+    </Stack>
+  );
+}
+
+function RoomList() {
   return (
     <SidebarNav label="Rooms" dense>
       <NavGroup label="Channels">
@@ -28,11 +42,21 @@ function Rooms() {
   );
 }
 
-function Conversation({ docked, onToggle }: { docked: boolean; onToggle: () => void }) {
+const Conversation = forwardRef<HTMLButtonElement, { docked: boolean; onToggle: () => void }>(function Conversation(
+  { docked, onToggle },
+  toggle,
+) {
   return (
     <Stack gap={3} style={{ minWidth: 0, padding: 'var(--spacing-4)' }}>
       <div>
-        <Button variant="secondary" size="small" leadingIcon={<PanelLeftGlyph size="sm" />} aria-pressed={docked} onClick={onToggle}>
+        <Button
+          ref={toggle}
+          variant="secondary"
+          size="small"
+          leadingIcon={<PanelLeftGlyph size="sm" />}
+          aria-pressed={docked}
+          onClick={onToggle}
+        >
           {docked ? 'Unpin rooms' : 'Pin rooms'}
         </Button>
       </div>
@@ -44,7 +68,7 @@ function Conversation({ docked, onToggle }: { docked: boolean; onToggle: () => v
       ))}
     </Stack>
   );
-}
+});
 
 /** A host's own grid: an `auto` track for the column, and the content beside it. */
 function Host({ side, children, column }: { side: DockColumnSide; children: ReactNode; column: ReactNode }) {
@@ -66,27 +90,31 @@ function Host({ side, children, column }: { side: DockColumnSide; children: Reac
 
 function Pinnable({ side, initial }: { side: DockColumnSide; initial: boolean }) {
   const [docked, setDocked] = useState(initial);
+  const toggle = useRef<HTMLButtonElement | null>(null);
   return (
     <Host
       side={side}
       column={
-        <DockColumn open={docked} width={280} side={side} style={SUBTLE}>
-          <Rooms />
+        // UNPINNED FROM INSIDE, focus goes to the control that pins it again.
+        <DockColumn open={docked} width={280} side={side} style={SUBTLE} focusOnClose={() => toggle.current}>
+          <Rooms onUnpin={() => setDocked(false)} />
         </DockColumn>
       }
     >
-      <Conversation docked={docked} onToggle={() => setDocked((open) => !open)} />
+      <Conversation ref={toggle} docked={docked} onToggle={() => setDocked((open) => !open)} />
     </Host>
   );
 }
 
 /**
  * ROOMS PINNED BESIDE A CONVERSATION. Press Unpin and the column eases shut on
- * the moderate step with the emphasized curve, the motion the application
+ * the slow step with the emphasized curve, the motion the application
  * rail folds by: the panel keeps its width and slides out to the start edge,
  * the conversation widens with it, and the panel stays drawn but inert until
  * the column has closed over it. Pin it again on the way out and it is live
- * where it is. Under reduced motion the column simply is or is not.
+ * where it is. Unpin it from the pin in its own head and focus goes to the
+ * Pin rooms control, never left in a panel that takes nothing. Under reduced
+ * motion the column simply is or is not.
  */
 export const PinnedBesideAConversation: Story = {
   render: () => <Pinnable side="start" initial />,

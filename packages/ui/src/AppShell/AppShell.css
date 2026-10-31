@@ -151,7 +151,7 @@
      at a row's top or bottom is never cut. */
   overflow-x: clip;
   background: var(--color-surface-frame);
-  transition: width var(--motion-duration-moderate) var(--motion-easing-emphasized);
+  transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);
 }
 
 /* THE CONTENT IS LAID OUT AT ITS SHAPE'S WIDTH, never at a width between the
@@ -1009,7 +1009,7 @@
 
 /*
  * THE RAIL'S MOTION (railMotion.ts). The rail's width eases between the two
- * shapes on the moderate step with the emphasized curve, the motion a
+ * shapes on the slow step with the emphasized curve, the motion a
  * `DockColumn` opens and closes by, so a column of the frame and a column of
  * a screen move as one. What the rail holds keeps the width of the shape
  * drawn, so the moving edge clips the words rather than squeezing them.
@@ -1058,7 +1058,7 @@
 .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-status,
 .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-head .crewlet-brand__name,
 .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-head .crewlet-brand__context {
-  animation: crewlet-app-shell-rail-unfold var(--motion-duration-moderate) var(--motion-easing-out);
+  animation: crewlet-app-shell-rail-unfold var(--motion-duration-slow) var(--motion-easing-out);
 }
 
 .crewlet-app-shell[data-rail-motion='folded'] .crewlet-app-shell__rail-body,
