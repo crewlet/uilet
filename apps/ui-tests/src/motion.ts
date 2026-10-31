@@ -17,21 +17,35 @@ export interface DrivenMotion {
   finish(): void;
   /** Ends it as a browser does when it is replaced or reversed. */
   cancel(): void;
+  /** Holds it where it is, as `animation-play-state: paused` does: it never ends. */
+  pause(): void;
 }
 
 export interface MotionDriver {
   /**
-   * Starts a motion on the element. `endTime` Infinity is an endless one (a
-   * pulse); `during` keeps it running only while it answers true, as a
-   * stylesheet animates only while a rule matches.
+   * Starts a motion under the element, shaped as a browser reports one: a CSS
+   * transition of `transition` (by default `width`) or, given `animation`, a
+   * keyframes animation of that name, on `target` (by default the element
+   * itself). `endTime` Infinity is an endless one (a pulse); `during` keeps it
+   * running only while it answers true, as a stylesheet animates only while a
+   * rule matches.
    */
-  start(options?: { endTime?: number; during?: () => boolean }): DrivenMotion;
+  start(options?: {
+    transition?: string;
+    animation?: string;
+    target?: Element;
+    endTime?: number;
+    during?: () => boolean;
+  }): DrivenMotion;
 }
 
 interface FakeAnimation {
   playState: AnimationPlayState;
-  effect: { getComputedTiming: () => { endTime: number } };
+  currentTime: number;
+  effect: { target: Element; getComputedTiming: () => { endTime: number } };
   finished: Promise<void>;
+  transitionProperty?: string;
+  animationName?: string;
   during: () => boolean;
 }
 
@@ -39,10 +53,10 @@ export function driveMotion(element: Element): MotionDriver {
   const started: FakeAnimation[] = [];
   Object.defineProperty(element, 'getAnimations', {
     configurable: true,
-    value: () => started.filter((animation) => animation.playState === 'running' && animation.during()),
+    value: () => started.filter((animation) => animation.playState !== 'finished' && animation.playState !== 'idle' && animation.during()),
   });
   return {
-    start({ endTime = 200, during = () => true } = {}) {
+    start({ transition = 'width', animation: name, target = element, endTime = 200, during = () => true } = {}) {
       let resolve: () => void = () => {};
       let reject: (reason: unknown) => void = () => {};
       const finished = new Promise<void>((done, fail) => {
@@ -53,9 +67,11 @@ export function driveMotion(element: Element): MotionDriver {
       finished.catch(() => {});
       const animation: FakeAnimation = {
         playState: 'running',
-        effect: { getComputedTiming: () => ({ endTime }) },
+        currentTime: 0,
+        effect: { target, getComputedTiming: () => ({ endTime }) },
         finished,
         during,
+        ...(name === undefined ? { transitionProperty: transition } : { animationName: name }),
       };
       started.push(animation);
       return {
@@ -66,6 +82,9 @@ export function driveMotion(element: Element): MotionDriver {
         cancel: () => {
           animation.playState = 'idle';
           reject(new DOMException('The motion was replaced.', 'AbortError'));
+        },
+        pause: () => {
+          animation.playState = 'paused';
         },
       };
     },

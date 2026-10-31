@@ -28,6 +28,7 @@ import {
 } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
 import { useComposedRef } from '../utils/composedRef.js';
+import { tokenMs } from '../utils/tokenMs.js';
 import { isVisibleFocus } from '../utils/focusModality.js';
 
 export type TooltipPlacement = 'top' | 'bottom';
@@ -81,11 +82,6 @@ export interface TooltipProps extends TriggerAttributes {
   children: ReactElement;
 }
 
-/** A motion token as a number of milliseconds, for a delay JavaScript has to count. */
-function ms(value: string): number {
-  return Number.parseFloat(value);
-}
-
 /** Two handlers as one: the first, then the second, each given the event. */
 function composeHandlers(first: unknown, second: unknown): unknown {
   if (typeof first !== 'function') return second;
@@ -110,8 +106,8 @@ function composeHandlers(first: unknown, second: unknown): unknown {
  * panel. WCAG 2.2 requires that content shown on hover be hoverable, and a
  * panel that vanished on `pointerleave` fails that outright.
  */
-const OPEN_DELAY = ms(motion.duration.slow);
-const CLOSE_DELAY = ms(motion.duration.base);
+const OPEN_DELAY = tokenMs(motion.duration.slow);
+const CLOSE_DELAY = tokenMs(motion.duration.base);
 
 /**
  * Tooltip: one short line about the control under the pointer.

@@ -86,6 +86,62 @@ describe('the motion running on an element', () => {
   });
 });
 
+describe("a surface waits only for its own motion", () => {
+  function box(): { element: HTMLElement; child: HTMLElement } {
+    const element = document.createElement('div');
+    const child = element.appendChild(document.createElement('span'));
+    document.body.appendChild(element);
+    restorers.push(() => element.remove());
+    return { element, child };
+  }
+
+  test('a paused motion is not waited for: it would never end', () => {
+    const { element } = box();
+    driveMotion(element).start().pause();
+    const done = vi.fn();
+    afterMotion(element, done);
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  test("a transition on something inside it is not its own", () => {
+    const { element, child } = box();
+    driveMotion(element).start({ target: child });
+    expect(runningMotion(element)).toEqual([]);
+  });
+
+  test('only the transitions it names, on itself', () => {
+    const { element } = box();
+    const driver = driveMotion(element);
+    driver.start({ transition: 'background-color' });
+    expect(runningMotion(element, { transitions: ['width'] })).toEqual([]);
+    driver.start({ transition: 'width' });
+    expect(runningMotion(element, { transitions: ['width'] })).toHaveLength(1);
+  });
+
+  test('only the keyframes it names, wherever they run under it: never a meter filling', () => {
+    const { element, child } = box();
+    const driver = driveMotion(element);
+    driver.start({ animation: 'crewlet-meter-fill', target: child, endTime: 1500 });
+    expect(runningMotion(element, { animations: ['crewlet-app-shell-rail-unfold'] })).toEqual([]);
+    driver.start({ animation: 'crewlet-app-shell-rail-unfold', target: child });
+    expect(runningMotion(element, { animations: ['crewlet-app-shell-rail-unfold'] })).toHaveLength(1);
+  });
+
+  test('in a hidden tab, where the end is never reported, it settles after its own time and a margin', () => {
+    vi.useFakeTimers();
+    restorers.push(() => vi.useRealTimers());
+    const { element } = box();
+    // Never finished: a browser need not report the end of a motion nobody sees.
+    driveMotion(element).start({ endTime: 300 });
+    const done = vi.fn();
+    afterMotion(element, done);
+    vi.advanceTimersByTime(300);
+    expect(done).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(200);
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('the focus something leaving gives up', () => {
   function mount(): { container: HTMLElement; inside: HTMLButtonElement; outside: HTMLButtonElement } {
     document.body.innerHTML = '<div id="panel"><button>Unpin</button></div><button>Rooms</button>';

@@ -34,6 +34,17 @@ import type { AppShellRailShape } from './railShape.js';
 export type AppShellRailMotion = 'fold' | 'folded' | 'unfold';
 
 /**
+ * The rail's own motion, which a change of shape waits for: its width, on the
+ * rail itself, and the keyframes its words fade by (AppShell.css), wherever
+ * they run inside it. Named, so that nothing else moving inside the rail (a
+ * meter filling, a badge arriving, a paused animation) holds a fold.
+ */
+export const RAIL_MOTION = {
+  transitions: ['width'],
+  animations: ['crewlet-app-shell-rail-fade', 'crewlet-app-shell-rail-unfold', 'crewlet-app-shell-rail-settle'],
+} as const;
+
+/**
  * The shape to draw the rail's content in, the phase of the change under
  * way, and whether the content drawn is only leaving (and so inert), for a
  * rail whose chosen shape is `target`.
@@ -53,9 +64,9 @@ export function useRailMotion(
   const instant = !moves || !moved;
 
   // The rail's words fade inside it while its edge moves, so both are the
-  // motion a phase waits out.
-  const full = usePresence(target === 'full', rail, { subtree: true, instant });
-  const compact = usePresence(target === 'compact' && !full.leaving, rail, { subtree: true, instant });
+  // motion a phase waits out, and nothing else is.
+  const full = usePresence(target === 'full', rail, { ...RAIL_MOTION, instant });
+  const compact = usePresence(target === 'compact' && !full.leaving, rail, { ...RAIL_MOTION, instant });
 
   let motion: AppShellRailMotion | null = null;
   if (full.leaving) motion = 'fold';

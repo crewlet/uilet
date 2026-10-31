@@ -71,6 +71,9 @@ export interface DockColumnProps extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
 }
 
+/** The dock's own motion: its width, on the column itself. */
+const DOCK_MOTION = { transitions: ['width'] } as const;
+
 export function DockColumn({
   open,
   width,
@@ -83,8 +86,9 @@ export function DockColumn({
   ...rest
 }: DockColumnProps) {
   const column = useRef<HTMLDivElement | null>(null);
-  // The column's own width transition is the motion the panel waits out.
-  const { present, leaving } = usePresence(open, column);
+  // The column's own width transition is the motion the panel waits out, and
+  // nothing the panel's content runs.
+  const { present, leaving } = usePresence(open, column, DOCK_MOTION);
   return (
     <div
       {...rest}

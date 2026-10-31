@@ -23,6 +23,7 @@ import { NavItem, SidebarNav } from '../SidebarNav/index.js';
 import { StatusDot } from '../StatusDot/index.js';
 import { AppShell, useAppShell, type AppShellRailShape } from './index.js';
 import { driveMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
+import { RAIL_MOTION } from './railMotion.js';
 
 const restorers: (() => void)[] = [];
 
@@ -492,6 +493,10 @@ describe('the geometry', () => {
     );
   });
 
+  test("the keyframes the rail waits for are the rail's own, written in its stylesheet", () => {
+    for (const name of RAIL_MOTION.animations) expect(css).toContain(`@keyframes ${name} {`);
+  });
+
   test('every fade has its stop under reduced motion', () => {
     const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
     for (const motion of ['fold', 'unfold', 'folded']) {
@@ -576,7 +581,7 @@ describe("the rail's motion", () => {
     // The rail's width, and its words fading, while the fold is under way;
     // and the compact column's entrance, which runs only once it is drawn.
     const narrowing = driver.start();
-    const arriving = driver.start({ during: () => motion() === 'folded' });
+    const arriving = driver.start({ animation: 'crewlet-app-shell-rail-settle', during: () => motion() === 'folded' });
     press();
     expect(motion()).toBe('fold');
     expect(root().getAttribute('data-rail')).toBe('full');
@@ -620,6 +625,23 @@ describe("the rail's motion", () => {
     press();
     expect(motion()).toBe('fold');
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Expand the sidebar' }));
+  });
+
+  test("a fold waits for the rail's own motion, never for a paused or unrelated one inside it", async () => {
+    narrowWindow(false);
+    render(<Shell />);
+    const driver = driveMotion(rail());
+    const inside = document.querySelector('.crewlet-app-shell__rail-body')!;
+    // A paused animation, and a meter filling, inside the rail.
+    driver.start({ animation: 'crewlet-app-shell-rail-settle', target: inside }).pause();
+    driver.start({ animation: 'crewlet-meter-fill', target: inside, endTime: 1500 });
+    const narrowing = driver.start();
+    press();
+    expect(motion()).toBe('fold');
+    narrowing.finish();
+    await settleMotion();
+    expect(root().getAttribute('data-rail')).toBe('compact');
+    expect(document.querySelector('.crewlet-app-shell__rail-inner [inert]')).toBeNull();
   });
 
   test('unfolding draws the full rail at once, live, and ends when the rail has moved', async () => {

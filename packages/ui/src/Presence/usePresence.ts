@@ -8,60 +8,137 @@
  * and INERT all the while: it is on its way out, and nothing in it may take
  * focus, a press or a screen reader's attention.
  *
- * THE STYLESHEET SAYS HOW LONG. The wait is for the animations and the
- * transitions actually running on the element (`getAnimations()`), whatever
- * the stylesheet set them to, rather than for a duration written again here:
- * a copy of the duration is a second number that drifts from the first. A
- * motion replaced mid way (a transition retargeted, or reversed by a reopen)
- * is waited out in its turn, and an endless one (a pulse) is never waited for.
+ * THE STYLESHEET SAYS HOW LONG. The wait is for the motion actually running
+ * (`getAnimations()`), whatever the stylesheet set it to, rather than for a
+ * duration written again here: a copy of the duration is a second number that
+ * drifts from the first. A motion replaced mid way (a transition retargeted,
+ * or reversed by a reopen) is waited out in its turn.
+ *
+ * AND IT WAITS ONLY FOR ITS OWN MOTION (`MotionOwnership`): the transitions on
+ * the element ITSELF, and the keyframes the surface names, wherever they run
+ * under it. Never a motion something else inside it happens to run (a meter
+ * filling, a badge arriving), which would hold a rail inert for as long as
+ * the meter took; never a paused one, which would hold it for ever; never an
+ * endless one (a pulse). And never longer than the motion's own remaining
+ * time and a margin, so a tab hidden mid motion, where a browser may not
+ * report the end until it is seen again, still settles.
  *
  * NOTHING WAITS WHERE NOTHING MOVES. Under `prefers-reduced-motion: reduce`,
- * where no motion runs, and where the Web Animations API is missing, the
- * change goes straight through in the same commit, before any paint.
+ * where no motion of its own runs, and where the Web Animations API is
+ * missing, the change goes straight through in the same commit, before any
+ * paint.
  */
 
 import { useLayoutEffect, useState, type RefObject } from 'react';
+import { motion as motionTokens } from '@crewlethq/tokens';
 import { REDUCED_MOTION_QUERY, useMediaMatch } from '../MediaMatch/index.js';
 import { returnFocus } from '../utils/focusModality.js';
+import { tokenMs } from '../utils/tokenMs.js';
 
-/**
- * The animations and transitions running on an element (and, with `subtree`,
- * inside it) that will end: an endless one, such as a status dot's pulse, is
- * left out, because waiting for it is waiting for ever.
- */
-export function runningMotion(element: Element, subtree = false): Animation[] {
-  if (typeof element.getAnimations !== 'function') return [];
-  return element.getAnimations({ subtree }).filter((animation) => {
-    if (animation.playState === 'finished' || animation.playState === 'idle') return false;
-    const end = animation.effect?.getComputedTiming().endTime;
-    return typeof end === 'number' && Number.isFinite(end);
-  });
+/** Which motions are a surface's own: the ones its presence waits for. */
+export interface MotionOwnership {
+  /**
+   * The transitions on the element ITSELF, by property: `width`, for a
+   * column that eases its width. Left out, any transition on the element
+   * itself. A transition on an element inside it is never its own.
+   */
+  transitions?: readonly string[] | undefined;
+  /**
+   * The keyframes that are part of the motion, by name, wherever they run
+   * under the element: a rail's words fading in while its edge moves. Left
+   * out, none.
+   */
+  animations?: readonly string[] | undefined;
 }
 
 /**
- * Calls `done` once every motion running on `element` has ended: AT ONCE,
+ * The grace a wait allows past the motion's own end before it stops waiting
+ * to be told: the fast step, a little over a frame at any refresh rate.
+ */
+const MOTION_MARGIN_MS = tokenMs(motionTokens.duration.fast);
+
+function transitionProperty(animation: Animation): string | null {
+  const property = (animation as { transitionProperty?: unknown }).transitionProperty;
+  return typeof property === 'string' ? property : null;
+}
+
+function animationName(animation: Animation): string | null {
+  const name = (animation as { animationName?: unknown }).animationName;
+  return typeof name === 'string' ? name : null;
+}
+
+function targetOf(animation: Animation): Element | null {
+  const effect = animation.effect as KeyframeEffect | null;
+  return effect && 'target' in effect ? effect.target : null;
+}
+
+/**
+ * The motions of its own running on an element that will end (see
+ * `MotionOwnership`): playing, not paused, not endless, and its own.
+ */
+export function runningMotion(element: Element, owned: MotionOwnership = {}): Animation[] {
+  if (typeof element.getAnimations !== 'function') return [];
+  const names = owned.animations ?? [];
+  return element.getAnimations({ subtree: names.length > 0 }).filter((animation) => {
+    if (animation.playState !== 'running') return false;
+    const end = animation.effect?.getComputedTiming().endTime;
+    if (typeof end !== 'number' || !Number.isFinite(end)) return false;
+    const property = transitionProperty(animation);
+    if (property !== null) {
+      return targetOf(animation) === element && (owned.transitions?.includes(property) ?? true);
+    }
+    const name = animationName(animation);
+    return name !== null && names.includes(name);
+  });
+}
+
+/** The longest any of these still has to run, in ms. */
+function remainingMs(running: readonly Animation[]): number {
+  return Math.max(
+    0,
+    ...running.map((animation) => {
+      const end = Number(animation.effect?.getComputedTiming().endTime ?? 0);
+      const now = typeof animation.currentTime === 'number' ? animation.currentTime : 0;
+      return end - now;
+    }),
+  );
+}
+
+/**
+ * Calls `done` once the element's own motion has ended: AT ONCE,
  * synchronously, where none runs, so a caller in a layout effect draws the
- * outcome before the first paint. Returns the cancel, which a caller runs
- * when the wait no longer matters (the thing was opened again).
+ * outcome before the first paint, and never later than that motion's
+ * remaining time and a margin. Returns the cancel, which a caller runs when
+ * the wait no longer matters (the thing was opened again).
  *
  * A motion cancelled rather than finished (retargeted, reversed) counts as
- * ended, and whatever runs in its place is waited for in turn.
+ * ended, and whatever of its own runs in its place is waited for in turn.
  */
-export function afterMotion(element: Element | null, done: () => void, subtree = false): () => void {
+export function afterMotion(element: Element | null, done: () => void, owned: MotionOwnership = {}): () => void {
   let live = true;
+  let bound: ReturnType<typeof setTimeout> | undefined;
+  const stop = () => {
+    live = false;
+    if (bound !== undefined) clearTimeout(bound);
+  };
+  const finish = () => {
+    if (!live) return;
+    stop();
+    done();
+  };
   const wait = () => {
     if (!live) return;
-    const running = element ? runningMotion(element, subtree) : [];
+    const running = element ? runningMotion(element, owned) : [];
     if (running.length === 0) {
-      done();
+      finish();
       return;
     }
+    if (bound !== undefined) clearTimeout(bound);
+    bound = setTimeout(finish, remainingMs(running) + MOTION_MARGIN_MS);
     void Promise.allSettled(running.map((animation) => animation.finished)).then(wait);
   };
   wait();
-  return () => {
-    live = false;
-  };
+  return stop;
 }
 
 /**
@@ -82,13 +159,7 @@ export function releaseFocus(container: Element | null, target?: HTMLElement | n
   held.blur();
 }
 
-export interface PresenceOptions {
-  /**
-   * Waits for the motion inside the element as well as its own: a rail whose
-   * words fade while its edge moves. Off by default, which waits for the
-   * element's own transition alone, the one a column's width eases by.
-   */
-  subtree?: boolean | undefined;
+export interface PresenceOptions extends MotionOwnership {
   /**
    * Makes this change instant: the host knows it is not one the reader made
    * (a window resized across a breakpoint), so nothing waits for it.
@@ -127,7 +198,7 @@ interface PresenceState {
 export function usePresence(
   shown: boolean,
   motion: RefObject<Element | null>,
-  { subtree = false, instant = false }: PresenceOptions = {},
+  { transitions, animations, instant = false }: PresenceOptions = {},
 ): Presence {
   const still = useMediaMatch(REDUCED_MOTION_QUERY) || instant;
   const [state, setState] = useState<PresenceState>({ shown, leaving: false, entering: false });
@@ -145,6 +216,11 @@ export function usePresence(
   const { leaving, entering } = current;
   const moving = leaving || entering;
 
+  // The lists by value, so a list written inline does not restart the wait on
+  // every render.
+  const ownTransitions = transitions?.join(' ');
+  const ownAnimations = animations?.join(' ');
+
   useLayoutEffect(() => {
     if (!moving) return undefined;
     // Only the change this wait was started for: a reopen on the way out has
@@ -152,9 +228,12 @@ export function usePresence(
     return afterMotion(
       motion.current,
       () => setState((now) => (now.shown === shown ? { ...now, leaving: false, entering: false } : now)),
-      subtree,
+      {
+        transitions: ownTransitions === undefined ? undefined : ownTransitions.split(' ').filter(Boolean),
+        animations: ownAnimations === undefined ? undefined : ownAnimations.split(' ').filter(Boolean),
+      },
     );
-  }, [moving, shown, motion, subtree]);
+  }, [moving, shown, motion, ownTransitions, ownAnimations]);
 
   return { present: shown || leaving, leaving, entering };
 }
