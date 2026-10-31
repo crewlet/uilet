@@ -79,9 +79,10 @@
   overflow-wrap: anywhere;
 }
 
-/* A state in words (a StatusDot's label) at a Tag's caption step, so a row
-   reads the same whichever one a tile carries. It inherited the page's size,
-   and on a 16px page "Connected" stood taller than the name before it. */
+/* THE STATE, the tone's dot and its word, at the caption step the fact
+   beside it takes, so a compact tile's line reads name, state, fact at one
+   height. It inherited the page's size, and on a 16px page "Connected" stood
+   taller than the name before it. */
 .crewlet-catalog-tile__status {
   display: inline-flex;
   font-size: var(--font-size-xs);

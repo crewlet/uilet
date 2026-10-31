@@ -155,7 +155,7 @@ export const InAFillScreen: Story = {
                 density="compact"
                 mark={<VendorMark vendor={vendor} size={20} />}
                 title={vendor[0]!.toUpperCase() + vendor.slice(1)}
-                status={<StatusDot tone="success">Connected</StatusDot>}
+                status={{ tone: 'success', label: 'Connected' }}
                 description="Delivers to the agents it is shared with."
                 action={
                   <Button size="small" variant="secondary">
