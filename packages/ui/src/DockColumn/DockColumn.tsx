@@ -30,7 +30,7 @@
  * landmarks of one name a screen reader cannot tell apart.
  */
 
-import { useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react';
 import { releaseFocus, usePresence } from '../Presence/index.js';
 import { cx } from '../utils/cx.js';
 
@@ -89,6 +89,12 @@ export function DockColumn({
   // The column's own width transition is the motion the panel waits out, and
   // nothing the panel's content runs.
   const { present, leaving } = usePresence(open, column, DOCK_MOTION);
+  // WHETHER THE HOST CLOSED IT, as of the last render, for the panel to read
+  // as it goes: a panel unmounted with its dock still open went with a route,
+  // or with StrictMode rehearsing an unmount, and neither is a close.
+  const closed = useRef(!open);
+  closed.current = !open;
+  const isClosed = useCallback(() => closed.current, []);
   return (
     <div
       {...rest}
@@ -99,7 +105,7 @@ export function DockColumn({
       style={{ ...style, '--crewlet-dock-column-width': typeof width === 'number' ? `${width}px` : width } as CSSProperties}
     >
       {present ? (
-        <DockPanel leaving={leaving} focusOnClose={focusOnClose}>
+        <DockPanel leaving={leaving} isClosed={isClosed} focusOnClose={focusOnClose}>
           {children}
         </DockPanel>
       ) : null}
@@ -114,10 +120,12 @@ export function DockColumn({
  */
 function DockPanel({
   leaving,
+  isClosed,
   focusOnClose,
   children,
 }: {
   leaving: boolean;
+  isClosed: () => boolean;
   focusOnClose: DockColumnProps['focusOnClose'];
   children?: ReactNode;
 }) {
@@ -128,11 +136,13 @@ function DockPanel({
   useLayoutEffect(() => {
     if (leaving) releaseFocus(panel.current, target.current?.());
   }, [leaving]);
-  // And as it goes where nothing moved, so it never left.
+  // And as it goes where nothing moved, so it never left: only on a close.
   useLayoutEffect(() => {
     const element = panel.current;
-    return () => releaseFocus(element, target.current?.());
-  }, []);
+    return () => {
+      if (isClosed()) releaseFocus(element, target.current?.());
+    };
+  }, [isClosed]);
   return (
     <div ref={panel} className="crewlet-dock-column__panel" inert={leaving || undefined}>
       {children}

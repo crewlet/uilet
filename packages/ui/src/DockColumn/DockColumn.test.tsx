@@ -8,7 +8,7 @@ import axe from 'axe-core';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { useRef } from 'react';
+import { StrictMode, useRef } from 'react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
 import { Tooltip } from '../Tooltip/index.js';
@@ -216,6 +216,55 @@ describe('the focus a closing dock gives up', () => {
     driveMotion(column()).start();
     unpin().focus();
     rerender(<Chat open={false} />);
+    expect(document.activeElement).toBe(rooms());
+  });
+
+  /** A page whose dock can go with the route, and whose Rooms control stays. */
+  function Page({ dock = true, open = true, takesFocus = false }: { dock?: boolean; open?: boolean; takesFocus?: boolean }) {
+    return (
+      <div>
+        <button type="button" id="rooms">
+          Rooms
+        </button>
+        {dock ? (
+          <DockColumn open={open} width={280} data-testid="dock" focusOnClose={() => document.getElementById('rooms')}>
+            <button type="button">Unpin</button>
+            {takesFocus ? (
+              <input
+                aria-label="Find a room"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- a panel that takes focus once, as it mounts
+                autoFocus
+              />
+            ) : null}
+          </DockColumn>
+        ) : null}
+      </div>
+    );
+  }
+
+  test('a dock that goes with the route is not a close: focus is not handed anywhere', () => {
+    reduced(false);
+    const { rerender } = render(<Page />);
+    unpin().focus();
+    rerender(<Page dock={false} />);
+    expect(document.activeElement).not.toBe(rooms());
+  });
+
+  test("StrictMode's rehearsed unmount is not a close: a panel that takes focus keeps it", () => {
+    reduced(false);
+    render(
+      <StrictMode>
+        <Page takesFocus />
+      </StrictMode>,
+    );
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Find a room' }));
+  });
+
+  test('a close still hands focus over when the panel goes at once', () => {
+    reduced(true);
+    const { rerender } = render(<Page />);
+    unpin().focus();
+    rerender(<Page open={false} />);
     expect(document.activeElement).toBe(rooms());
   });
 
