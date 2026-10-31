@@ -339,18 +339,19 @@
  * room one without takes: the corner badge hangs past it rather than growing
  * it, and a row lays out the same either way.
  *
- * THE BADGE WHERE A READER LOOKS FOR PRESENCE: under a third of the face (0.3
- * of the box), hanging a twentieth of the box past its bottom-right corner,
- * with the notch (a gap of the ground round it) kept. At 36px that is an 11px
- * badge set 2px past the corner, the size and place of a presence dot, where
- * a badge at 0.42 of the box read as a second face. It never drops under
- * 10px, where its glyph stops being a shape, and always hangs at least a
- * pixel past the corner.
+ * THE BADGE WHERE A READER LOOKS FOR PRESENCE: a quarter of the face (0.25
+ * of the box), hanging a twenty-fifth of the box past its bottom-right
+ * corner, with the notch (a gap of the ground round it) kept. At 40px that is
+ * a 10px badge set under 2px past the corner, the size and place of a
+ * presence dot. It never drops under 8px, the smallest its glyph still reads
+ * as a shape, and always hangs at least a pixel past the corner. The floor
+ * used to be 10px and the share 0.3, which made the badge half of a 20px face
+ * and a third of a 32px one: a second face beside the first, not a dot on it.
  */
 .crewlet-avatar-frame {
-  --crewlet-avatar-status-size: max(10px, calc(var(--crewlet-avatar-size) * 0.3));
-  --crewlet-avatar-status-overhang: max(1px, calc(var(--crewlet-avatar-size) * 0.05));
-  --crewlet-avatar-status-gap: 2px;
+  --crewlet-avatar-status-size: max(8px, calc(var(--crewlet-avatar-size) * 0.25));
+  --crewlet-avatar-status-overhang: max(1px, calc(var(--crewlet-avatar-size) * 0.04));
+  --crewlet-avatar-status-gap: 1.5px;
   position: relative;
   display: inline-flex;
   flex: none;

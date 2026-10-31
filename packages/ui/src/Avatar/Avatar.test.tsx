@@ -487,13 +487,13 @@ describe('the status', () => {
     }
   });
 
-  test('is under a third of the face, hanging a twentieth of it past the corner', () => {
-    // Where a reader looks for presence, the size of a presence dot: 11px on a
-    // 36px face, 2px past its corner, never under 10px and always a pixel out.
+  test('is a quarter of the face, hanging a twenty-fifth of it past the corner', () => {
+    // Where a reader looks for presence, the size of a presence dot: 10px on a
+    // 40px face, under 2px past its corner, never under 8px and always a pixel out.
     const frame = /\.crewlet-avatar-frame\s*\{([^}]*)\}/.exec(RULES)?.[1] ?? '';
-    expect(frame).toContain(`${property('crewlet-avatar-status-size')}: max(10px, calc(var(${property('crewlet-avatar-size')}) * 0.3))`);
-    expect(frame).toContain(`${property('crewlet-avatar-status-overhang')}: max(1px, calc(var(${property('crewlet-avatar-size')}) * 0.05))`);
-    expect(frame).toContain(`${property('crewlet-avatar-status-gap')}: 2px`);
+    expect(frame).toContain(`${property('crewlet-avatar-status-size')}: max(8px, calc(var(${property('crewlet-avatar-size')}) * 0.25))`);
+    expect(frame).toContain(`${property('crewlet-avatar-status-overhang')}: max(1px, calc(var(${property('crewlet-avatar-size')}) * 0.04))`);
+    expect(frame).toContain(`${property('crewlet-avatar-status-gap')}: 1.5px`);
   });
 
   test('cuts the notch with a mask centred where the badge sits', () => {
