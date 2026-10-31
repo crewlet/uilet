@@ -235,9 +235,9 @@ export const Status: Story = {
 };
 
 /**
- * Every status at every size: the badge is 0.3 of the face and hangs 0.05 of
- * it past the corner (an 11px badge 2px out on a 36px face), and it never
- * drops under 10px, where its glyph stops being a shape.
+ * Every status at every size: the badge is 0.25 of the face and hangs 0.04 of
+ * it past the corner (a 10px badge under 2px out on a 40px face), and it never
+ * drops under 8px, the smallest its glyph still reads as a shape.
  */
 export const StatusSizes: Story = {
   render: () => (
