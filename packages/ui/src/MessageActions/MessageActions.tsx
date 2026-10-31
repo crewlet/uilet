@@ -4,6 +4,7 @@ import { IconButton } from '../IconButton/index.js';
 import { Toolbar } from '../Toolbar/index.js';
 import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
+import { heldHint } from '../utils/heldHint.js';
 
 export interface MessageActionsProps {
   /** Names the toolbar: "Message actions" by default. */
@@ -38,6 +39,12 @@ export interface MessageActionProps extends Omit<ButtonHTMLAttributes<HTMLButton
   icon: ReactNode;
   /** A toggle that is on (Saved): `aria-pressed`. */
   pressed?: boolean | undefined;
+  /**
+   * Why the reader cannot use it here ("Join the room to react."): the tool
+   * is marked unavailable, does nothing when pressed, and adds the reason to
+   * its hint.
+   */
+  disabledReason?: string | undefined;
 }
 
 /**
@@ -47,12 +54,21 @@ export interface MessageActionProps extends Omit<ButtonHTMLAttributes<HTMLButton
  * while the menu it opens is open.
  */
 export const MessageAction = forwardRef<HTMLButtonElement, MessageActionProps>(function MessageAction(
-  { label, icon, pressed, ...rest },
+  { label, icon, pressed, disabledReason, ...rest },
   ref,
 ) {
   return (
-    <Tooltip content={label} disabled={rest['aria-expanded'] === true || rest['aria-expanded'] === 'true'}>
-      <IconButton {...rest} ref={ref} label={label} icon={icon} size="md" variant="ghost" pressed={pressed} />
+    <Tooltip content={heldHint(label, disabledReason)} disabled={rest['aria-expanded'] === true || rest['aria-expanded'] === 'true'}>
+      <IconButton
+        {...rest}
+        ref={ref}
+        label={label}
+        icon={icon}
+        size="md"
+        variant="ghost"
+        pressed={pressed}
+        disabledReason={disabledReason}
+      />
     </Tooltip>
   );
 });
@@ -64,14 +80,28 @@ export interface QuickReactionProps {
   onPick: () => void;
   /** The words, given the name: "React with eyes" by default. */
   label?: ((name: string) => string) | undefined;
+  /**
+   * Why the reader cannot react here ("Join the room to react."), as
+   * `ReactionBar` takes it: the emoji is marked unavailable, does not react
+   * when pressed, and adds the reason to its hint.
+   */
+  disabledReason?: string | undefined;
 }
 
 /** A quick reaction in the tray: the emoji itself is the button. */
-export function QuickReaction({ emoji, name, onPick, label = (said) => `React with ${said}` }: QuickReactionProps) {
+export function QuickReaction({ emoji, name, onPick, label = (said) => `React with ${said}`, disabledReason }: QuickReactionProps) {
   const words = label(name ?? emojiName(emoji));
   return (
-    <Tooltip content={words}>
-      <button type="button" className="crewlet-message-actions__emoji" aria-label={words} onClick={onPick}>
+    <Tooltip content={heldHint(words, disabledReason)}>
+      <button
+        type="button"
+        className="crewlet-message-actions__emoji"
+        aria-label={words}
+        aria-disabled={disabledReason ? true : undefined}
+        onClick={() => {
+          if (!disabledReason) onPick();
+        }}
+      >
         <span aria-hidden="true">{emoji}</span>
       </button>
     </Tooltip>

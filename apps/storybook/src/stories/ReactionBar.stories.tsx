@@ -36,7 +36,7 @@ function Live({ disabledReason }: { disabledReason?: string }) {
       reactions={list}
       onToggle={toggle}
       disabledReason={disabledReason}
-      add={disabledReason ? undefined : <AddReaction onPick={toggle} />}
+      add={<AddReaction onPick={toggle} disabledReason={disabledReason} />}
     />
   );
 }
@@ -44,5 +44,5 @@ function Live({ disabledReason }: { disabledReason?: string }) {
 /** Toggle a pill, or add a reaction from the picker. */
 export const Default: Story = { render: () => <Live /> };
 
-/** A reader who is not in the room: the pills say who reacted, and why they hold. */
+/** A reader who is not in the room: the pills say who reacted, and they and the add pill say why they hold. */
 export const Held: Story = { render: () => <Live disabledReason="Join the room to react." /> };

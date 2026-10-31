@@ -3,6 +3,7 @@ import { FaceSlightlySmilingPlusGlyph } from '@crewlethq/icons/glyphs';
 import { EmojiPicker, emojiName, type EmojiPickerProps } from '../EmojiPicker/index.js';
 import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
+import { heldHint } from '../utils/heldHint.js';
 
 /** One emoji's reactions on a message. */
 export interface ReactionSummary {
@@ -106,7 +107,7 @@ export function ReactionBar({ reactions, onToggle, add, disabledReason, labels: 
         const who = reactionWho(reaction, labels);
         const hint = labels.reacted(who, reaction.emoji);
         return (
-          <Tooltip key={reaction.emoji} content={disabledReason ? `${hint}. ${disabledReason}` : hint}>
+          <Tooltip key={reaction.emoji} content={heldHint(hint, disabledReason)}>
             <button
               type="button"
               className={cx('crewlet-reaction', reaction.mine && 'is-mine')}
@@ -137,21 +138,35 @@ export interface AddReactionProps extends Pick<EmojiPickerProps, 'onPick' | 'onO
   label?: string | undefined;
   /** Which edge of the pill the picker lines up with, `start` by default. */
   align?: EmojiPickerProps['align'];
+  /**
+   * Why the reader cannot react here, as `ReactionBar` takes it: the pill is
+   * marked unavailable, does not open the picker, and adds the reason to its
+   * hint.
+   */
+  disabledReason?: string | undefined;
 }
 
 /**
  * The pill after a message's reactions that opens the emoji picker. Inside a
  * `ChatMessage` it is quiet until the row is pointed at, focused or tapped.
  */
-export function AddReaction({ label = 'Add a reaction', align = 'start', ...picker }: AddReactionProps) {
+export function AddReaction({ label = 'Add a reaction', align = 'start', disabledReason, ...picker }: AddReactionProps) {
   return (
     <EmojiPicker
       {...picker}
       label={label}
-      tooltip={label}
+      tooltip={heldHint(label, disabledReason)}
       align={align}
       trigger={(_open, toggle) => (
-        <button type="button" className="crewlet-reaction crewlet-reaction--add" aria-label={label} onClick={toggle}>
+        <button
+          type="button"
+          className="crewlet-reaction crewlet-reaction--add"
+          aria-label={label}
+          aria-disabled={disabledReason ? true : undefined}
+          onClick={() => {
+            if (!disabledReason) toggle();
+          }}
+        >
           <FaceSlightlySmilingPlusGlyph size="sm" />
         </button>
       )}

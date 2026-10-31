@@ -48,6 +48,17 @@
   background: var(--color-surface-pressed);
 }
 
+/* Held, as the tray's icon tools are: faded, no fill under the pointer, and
+   the reason in its hint. */
+.crewlet-message-actions__emoji[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crewlet-message-actions__emoji[aria-disabled='true']:is(:hover, :active) {
+  background: transparent;
+}
+
 .crewlet-message-actions__emoji:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);

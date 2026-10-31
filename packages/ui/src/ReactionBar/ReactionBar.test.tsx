@@ -105,6 +105,19 @@ test('the add pill opens the emoji picker, and a pick is reported', async () => 
   expect(screen.queryByRole('dialog')).toBeNull();
 });
 
+test('a held add pill does not open the picker, and says why in its hint', async () => {
+  const onPick = vi.fn();
+  render(<AddReaction onPick={onPick} disabledReason="Join the room to react." />);
+  const add = screen.getByRole('button', { name: 'Add a reaction' });
+  expect(add.getAttribute('aria-disabled')).toBe('true');
+  fireEvent.click(add);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(add.getAttribute('aria-expanded')).toBe('false');
+  tabTo(add);
+  await waitFor(() => expect(screen.getByRole('tooltip').textContent).toBe('Add a reaction. Join the room to react.'));
+  expect(onPick).not.toHaveBeenCalled();
+});
+
 function Row() {
   return (
     <ChatMessage id="m1" label="PM, 11:02 AM" avatar={null} author="PM" time="11:02 AM" timeTitle="11:02 AM"

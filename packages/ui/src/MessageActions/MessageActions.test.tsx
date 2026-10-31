@@ -74,6 +74,49 @@ test("a tool can be a Menu's own trigger, and its hint steps aside while the men
   expect(screen.queryByRole('tooltip')).toBeNull();
 });
 
+// A READER WHO CANNOT REACT is held in the tray as in the reactions under
+// the words: the emoji and the tools are marked unavailable, do nothing, and
+// say why. Mutation: leave QuickReaction without the reason, and a reader
+// outside the room reacts from the tray.
+test('a held quick reaction or tool is marked unavailable, does nothing, and says why in its hint', async () => {
+  const onPick = vi.fn();
+  const onSave = vi.fn();
+  render(
+    <MessageActions>
+      <QuickReaction emoji="👀" onPick={onPick} disabledReason="Join the room to react." />
+      <MessageAction label="Save for later" icon={<BookmarkGlyph size="md" />} onClick={onSave} disabledReason="Join the room to save." />
+    </MessageActions>,
+  );
+  const eyes = screen.getByRole('button', { name: 'React with eyes' });
+  expect(eyes.getAttribute('aria-disabled')).toBe('true');
+  fireEvent.click(eyes);
+  expect(onPick).not.toHaveBeenCalled();
+  tabTo(eyes);
+  await waitFor(() => expect(screen.getByRole('tooltip').textContent).toBe('React with eyes. Join the room to react.'));
+  const save = screen.getByRole('button', { name: 'Save for later' });
+  expect(save.getAttribute('aria-disabled')).toBe('true');
+  fireEvent.click(save);
+  expect(onSave).not.toHaveBeenCalled();
+  tabTo(save);
+  await waitFor(() => expect(screen.getByRole('tooltip').textContent).toBe('Save for later. Join the room to save.'));
+});
+
+test('a held quick reaction fades with the tray and takes no fill under the pointer', () => {
+  const uninstall = installThemed('light', 'MessageActions/MessageActions.css');
+  try {
+    render(
+      <MessageActions>
+        <QuickReaction emoji="👀" onPick={() => {}} disabledReason="Join the room to react." />
+      </MessageActions>,
+    );
+    const eyes = screen.getByRole('button', { name: 'React with eyes' });
+    expect(getComputedStyle(eyes).opacity).toBe('0.5');
+    expect(getComputedStyle(eyes).cursor).toBe('not-allowed');
+  } finally {
+    uninstall();
+  }
+});
+
 test('the divider is said by nothing', () => {
   render(<Tray />);
   expect(document.querySelector('.crewlet-message-actions__divider')!.getAttribute('aria-hidden')).toBe('true');

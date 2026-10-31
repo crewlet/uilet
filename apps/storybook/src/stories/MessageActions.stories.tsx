@@ -18,17 +18,19 @@ const meta: Meta<typeof MessageActions> = {
 export default meta;
 type Story = StoryObj<typeof MessageActions>;
 
-function Tray() {
+function Tray({ held }: { held?: string }) {
   const [saved, setSaved] = useState(false);
   return (
     <MessageActions>
-      <QuickReaction emoji="✅" onPick={() => {}} />
-      <QuickReaction emoji="👀" onPick={() => {}} />
-      <QuickReaction emoji="🙌" onPick={() => {}} />
+      <QuickReaction emoji="✅" onPick={() => {}} disabledReason={held} />
+      <QuickReaction emoji="👀" onPick={() => {}} disabledReason={held} />
+      <QuickReaction emoji="🙌" onPick={() => {}} disabledReason={held} />
       <EmojiPicker
         label="Add a reaction"
         onPick={() => {}}
-        trigger={(_open, toggle) => <MessageAction label="Add a reaction" icon={<FaceSlightlySmilingPlusGlyph size="md" />} onClick={toggle} />}
+        trigger={(_open, toggle) => (
+          <MessageAction label="Add a reaction" icon={<FaceSlightlySmilingPlusGlyph size="md" />} onClick={toggle} disabledReason={held} />
+        )}
       />
       <MessageAction label="Reply in thread" icon={<MessagesSquareGlyph size="md" />} />
       <MessageAction
@@ -53,3 +55,10 @@ function Tray() {
 
 /** Tab to the tray once, then walk it with the arrows. Save is a toggle; More and add reaction read as held while open. */
 export const Default: Story = { render: () => <Tray /> };
+
+/**
+ * A reader who is not in the room: the quick reactions and Add a reaction are
+ * marked unavailable, do nothing when pressed, and say why in their hint, as
+ * the reactions under the words do. Reply, save and More stay available.
+ */
+export const Held: Story = { render: () => <Tray held="Join the room to react." /> };
