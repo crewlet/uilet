@@ -21,7 +21,7 @@ import { BrandLockup } from '../BrandLockup/index.js';
 import { CompactNav, CompactNavGroup, CompactNavItem } from '../CompactNav/index.js';
 import { NavItem, SidebarNav } from '../SidebarNav/index.js';
 import { StatusDot } from '../StatusDot/index.js';
-import { AppShell, useAppShell, type AppShellRailShape } from './index.js';
+import { AppShell, useAppShell, useScreenWidth, type AppShellRailShape } from './index.js';
 import { driveMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
 import { RAIL_MOTION } from './railMotion.js';
 
@@ -758,6 +758,60 @@ describe("the rail's motion", () => {
     await settleMotion();
     expect(motion()).toBeNull();
     expect(root().getAttribute('data-rail')).toBe('full');
+  });
+
+  test("the screen's width is held while the rail moves, and published once when it stops", async () => {
+    narrowWindow(false);
+    // Observers the suite calls by hand, as a browser would on each frame of
+    // the rail's motion, and a content column with a width to measure.
+    const observed: (() => void)[] = [];
+    const hadObserver = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      constructor(callback: ResizeObserverCallback) {
+        observed.push(() => callback([], this as unknown as ResizeObserver));
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    let width = 900;
+    const rects = vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue([{}] as unknown as DOMRectList);
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => width);
+    restorers.push(() => {
+      globalThis.ResizeObserver = hadObserver;
+      rects.mockRestore();
+      client.mockRestore();
+    });
+    let renders = 0;
+    function Width() {
+      const measured = useScreenWidth();
+      renders += 1;
+      return <p data-testid="width">{String(measured)}</p>;
+    }
+    render(
+      <Shell>
+        <Width />
+      </Shell>,
+    );
+    expect(screen.getByTestId('width').textContent).toBe('900');
+    const narrowing = driveMotion(rail()).start();
+    press();
+    expect(motion()).toBe('fold');
+    const before = renders;
+    // Every frame of the fold widens the screen; none of it is published.
+    for (const step of [940, 990, 1040, 1060]) {
+      width = step;
+      act(() => {
+        for (const notify of observed) notify();
+      });
+    }
+    expect(screen.getByTestId('width').textContent).toBe('900');
+    expect(renders).toBe(before);
+    narrowing.finish();
+    await settleMotion();
+    expect(motion()).toBeNull();
+    // Once, at the width the rail came to rest at.
+    expect(screen.getByTestId('width').textContent).toBe('1060');
   });
 
   test('under reduced motion the new shape is drawn at once, whatever is running', () => {

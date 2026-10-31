@@ -353,6 +353,26 @@ export function AppShell({
   );
 
   /*
+   * MEASUREMENTS ARE HELD WHILE THE RAIL MOVES. The rail eases its width, and
+   * the sheet beside it with it, so every observer below fires on every frame
+   * of a fold: the screen's width re-rendered every `useScreenWidth` and
+   * `useScreenBelow` reader sixty times a second, and a screen could change
+   * shape mid motion and again at its end. While a phase runs a measurement
+   * is kept rather than taken, and each kept one is taken once, at the width
+   * the rail comes to rest at. A container query on the column still follows
+   * every frame: that is the stylesheet's, and costs no render.
+   */
+  const railMoving = useRef(false);
+  const heldMeasures = useRef(new Set<() => void>());
+  const unlessRailMoving = useCallback(
+    (measure: () => void) => () => {
+      if (railMoving.current) heldMeasures.current.add(measure);
+      else measure();
+    },
+    [],
+  );
+
+  /*
    * THE SCROLLER'S GUTTER, measured, so the top bar can reserve the same
    * strip. The scroller keeps its scrollbar's gutter at every height (see
    * AppShell.css), and where the platform draws scrollbars in the layout
@@ -369,10 +389,14 @@ export function AppShell({
     const measure = () => setGutter(Math.max(0, scroller.offsetWidth - scroller.clientWidth));
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(unlessRailMoving(measure));
     observer.observe(scroller);
-    return () => observer.disconnect();
-  }, [scroller]);
+    const held = heldMeasures.current;
+    return () => {
+      observer.disconnect();
+      held.delete(measure);
+    };
+  }, [scroller, unlessRailMoving]);
 
   /*
    * WHAT THE ASIDE COLUMN TAKES FROM THE WINDOW'S RIGHT, measured, so a peek
@@ -399,11 +423,15 @@ export function AppShell({
       setOccupied(Math.max(0, Math.round(frame.getBoundingClientRect().right - page.getBoundingClientRect().right)));
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(unlessRailMoving(measure));
     observer.observe(page);
     observer.observe(frame);
-    return () => observer.disconnect();
-  }, [asideColumn]);
+    const held = heldMeasures.current;
+    return () => {
+      observer.disconnect();
+      held.delete(measure);
+    };
+  }, [asideColumn, unlessRailMoving]);
 
   /*
    * THE SCREEN'S WIDTH, measured on the content column and published for the
@@ -420,13 +448,15 @@ export function AppShell({
     const measure = () => screenWidth.set(contentInlineSize(column));
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(unlessRailMoving(measure));
     observer.observe(column);
+    const held = heldMeasures.current;
     return () => {
       observer.disconnect();
+      held.delete(measure);
       screenWidth.set(null);
     };
-  }, [screenWidth]);
+  }, [screenWidth, unlessRailMoving]);
 
   const hasRail = sidebar !== undefined && sidebar !== null;
   // THE SHAPE THE READER CHOSE, where it can be drawn: compact is a desktop
@@ -436,6 +466,16 @@ export function AppShell({
   // full rail's words fade out under the moving edge rather than vanishing.
   const { drawn: railShape, motion: railMotion, leaving: railLeaving } = useRailMotion(railTarget, hasRail && !narrow, rail);
   const foldable = hasRail && onRailChange !== undefined && !narrow;
+  // Read by the observers above, between renders.
+  railMoving.current = railMotion !== null;
+  // The rail has come to rest: every measurement kept while it moved is
+  // taken now, once.
+  useLayoutEffect(() => {
+    if (railMotion !== null) return;
+    const held = [...heldMeasures.current];
+    heldMeasures.current.clear();
+    for (const measure of held) measure();
+  }, [railMotion]);
 
   /*
    * FOCUS LEAVES THE FOLDING CONTENT FOR THE RAIL'S FIRST LIVE CONTROL. A
