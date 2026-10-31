@@ -537,6 +537,60 @@ describe('a folded group', () => {
     act(() => vi.advanceTimersByTime(400));
     expect(screen.queryByRole('menu')).toBeNull();
   });
+
+  // A CHOICE IS NOT A REQUEST TO OPEN AGAIN. Choosing a place closes the
+  // flyout with the pointer still on the tile or beside it, and resting there
+  // opened it again a moment later, over the page just chosen.
+  test('after a choice, resting on the tile does not reopen it until the pointer leaves and returns', () => {
+    vi.useFakeTimers();
+    render(<Rail />);
+    const company = screen.getByRole('button', { name: 'Company' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    fireEvent.click(screen.getAllByRole('menuitem')[1]!);
+    expect(screen.queryByRole('menu')).toBeNull();
+
+    // Still on the tile, past the delay.
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    fireEvent.pointerMove(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(400));
+    expect(screen.queryByRole('menu')).toBeNull();
+
+    // Away, and back: resting opens it again.
+    fireEvent.pointerLeave(company, { pointerType: 'mouse' });
+    fireEvent.pointerMove(document.body, { pointerType: 'mouse' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    expect(screen.getByRole('menu', { name: 'Company' })).toBeTruthy();
+  });
+
+  test('after a choice made where the flyout stood, the next rest on the tile opens it', () => {
+    vi.useFakeTimers();
+    render(<Rail />);
+    const company = screen.getByRole('button', { name: 'Company' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    fireEvent.click(screen.getAllByRole('menuitem')[1]!);
+    // The pointer moves on over the page, then comes to the tile.
+    fireEvent.pointerMove(document.body, { pointerType: 'mouse' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    expect(screen.getByRole('menu', { name: 'Company' })).toBeTruthy();
+  });
+
+  test('after a choice, a press and the keys still open it at once', () => {
+    vi.useFakeTimers();
+    render(<Rail />);
+    const company = screen.getByRole('button', { name: 'Company' });
+    fireEvent.pointerEnter(company, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(150));
+    fireEvent.click(screen.getAllByRole('menuitem')[1]!);
+    fireEvent.click(company, { detail: 1 });
+    expect(screen.getByRole('menu', { name: 'Company' })).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('menuitem')[1]!);
+    fireEvent.keyDown(company, { key: 'ArrowRight' });
+    expect(screen.getByRole('menu', { name: 'Company' })).toBeTruthy();
+  });
 });
 
 describe('accessibility', () => {

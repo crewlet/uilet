@@ -415,14 +415,37 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
     [clear],
   );
 
+  /*
+   * A CHOICE IS NOT A REQUEST TO OPEN AGAIN. Choosing a place closes the
+   * flyout with the pointer still on the tile or beside it, and resting there
+   * opened it again a moment later, over the page the reader had just chosen.
+   * After a choice the rest is held until the pointer has been somewhere
+   * other than the tile; a press and the keys still open it at once.
+   */
+  const restHeld = useRef<(() => void) | null>(null);
+  const releaseRest = useCallback(() => {
+    restHeld.current?.();
+    restHeld.current = null;
+  }, []);
+  const holdRest = useCallback(() => {
+    releaseRest();
+    const away = (event: Event) => {
+      if (!tile.current?.contains(event.target as Node)) releaseRest();
+    };
+    document.addEventListener('pointermove', away);
+    restHeld.current = () => document.removeEventListener('pointermove', away);
+  }, [releaseRest]);
+  useEffect(() => releaseRest, [releaseRest]);
+
   const show = useCallback(
     (by: Opener, first: boolean) => {
       clear();
+      releaseRest();
       opener.current = by;
       focusFirst.current = first;
       setOpen(true);
     },
-    [clear],
+    [clear, releaseRest],
   );
 
   const popup = usePopupLayer({
@@ -534,7 +557,7 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
   const onPointerEnter = (event: PointerEvent<HTMLElement>) => {
     if (event.pointerType !== 'mouse') return;
     clear();
-    if (!open) timer.current = setTimeout(() => show('pointer', false), OPEN_DELAY);
+    if (!open && restHeld.current === null) timer.current = setTimeout(() => show('pointer', false), OPEN_DELAY);
   };
 
   const onPointerLeave = (event: PointerEvent<HTMLElement>) => {
@@ -555,6 +578,7 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
   const choose = (link: CompactNavLink) => (event: MouseEvent<HTMLElement>) => {
     link.onClick?.(event);
     close(panel.current?.contains(document.activeElement) === true);
+    holdRest();
   };
 
   const flyout = open ? (
@@ -665,7 +689,10 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
         }}
         onKeyDown={onTileKeyDown}
         onPointerEnter={onPointerEnter}
-        onPointerLeave={onPointerLeave}
+        onPointerLeave={(event) => {
+          if (event.pointerType === 'mouse') releaseRest();
+          onPointerLeave(event);
+        }}
       >
         <Tile icon={icon} figure={badge === undefined ? undefined : { value: badge, label: '' }} attention />
         <TileLabel label={label} figures={spoken ? `, ${spoken}` : ''} locked={undefined} />
