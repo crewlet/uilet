@@ -1,0 +1,155 @@
+/*
+ * LinkCard: what a link points at, unfurled under its message.
+ *
+ * AN UNFURL, NOT A CARD. No box and no fill: a slim bar on the left in the
+ * status's line colour (the medium edge with none), and the lines beside it
+ * in the dashboard's own type (the title in the primary ink, the small meta
+ * under it), so a preview reads as part of its message. One width for every
+ * preview (ChatScale.css), so a stack of them shares both edges.
+ */
+.crewlet-link-card {
+  --crewlet-link-card-bar: 3px;
+  --crewlet-link-card-tone: var(--color-edge-medium);
+  --crewlet-link-card-dot: var(--color-text-tertiary);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: min(100%, var(--crewlet-chat-card));
+  box-sizing: border-box;
+  padding: 2px 0 2px calc(var(--crewlet-link-card-bar) + var(--spacing-3));
+  border-radius: var(--radius-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--font-line-height-snug);
+  text-decoration: none;
+}
+
+.crewlet-link-card::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: var(--crewlet-link-card-bar);
+  border-radius: var(--radius-pill);
+  background: var(--crewlet-link-card-tone);
+}
+
+/* The bar takes the tone's line colour; the status dot, small enough to
+   carry it, the tone's full colour, so the status reads in both modes. */
+.crewlet-link-card--info {
+  --crewlet-link-card-tone: var(--color-feedback-info-line);
+  --crewlet-link-card-dot: var(--color-feedback-info);
+}
+
+.crewlet-link-card--success {
+  --crewlet-link-card-tone: var(--color-feedback-success-line);
+  --crewlet-link-card-dot: var(--color-feedback-success);
+}
+
+.crewlet-link-card--warning {
+  --crewlet-link-card-tone: var(--color-feedback-warning-line);
+  --crewlet-link-card-dot: var(--color-feedback-warning);
+}
+
+.crewlet-link-card--danger {
+  --crewlet-link-card-tone: var(--color-feedback-danger-line);
+  --crewlet-link-card-dot: var(--color-feedback-danger);
+}
+
+/* No box to ring over: the ring stands off the preview's words. */
+.crewlet-link-card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The app it comes from: its mark and its name, small and quiet. */
+.crewlet-link-card__source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-link-card__mark,
+.crewlet-link-card__face {
+  display: inline-flex;
+  flex: none;
+}
+
+/* The title in the primary ink at the regular weight, two lines at most;
+   under the pointer it takes the accent ink and an underline. */
+.crewlet-link-card__title {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-compact);
+  font-weight: var(--font-weight-regular);
+  overflow-wrap: anywhere;
+}
+
+/* THE TITLE ALONE IS UNDERLINED. The document's base underlines every link
+   under the pointer, and an underline on the link runs through all of its
+   lines (the source, the details, the owner), which no line inside can
+   take off again. */
+a.crewlet-link-card:hover {
+  text-decoration: none;
+}
+
+a.crewlet-link-card:hover .crewlet-link-card__title {
+  color: var(--color-brand-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.crewlet-link-card__code {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-link-card__meta {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status and owner as words on one line: a dot in the status's colour, and
+   a small face with the owner's name. */
+.crewlet-link-card__fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-3);
+  margin-top: 2px;
+}
+
+.crewlet-link-card__status,
+.crewlet-link-card__owner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  white-space: nowrap;
+}
+
+.crewlet-link-card__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: var(--radius-circle);
+  background: var(--crewlet-link-card-dot);
+}
+
+/* FORCED COLORS drops the bar's and the dot's backgrounds; a border is the
+   one edge the mode keeps. */
+@media (forced-colors: active) {
+  .crewlet-link-card::before {
+    border-left: var(--crewlet-link-card-bar) solid CanvasText;
+  }
+
+  .crewlet-link-card__dot {
+    border: 1px solid CanvasText;
+  }
+}

@@ -1,0 +1,161 @@
+/*
+ * PersonRow: a person or an agent as one row of a list, as a button or as a
+ * listbox option. One design for every list of people.
+ */
+.crewlet-person-row {
+  /* The row's corner. A list inside a rounded panel sets it to the panel's
+     corner less the panel's inset, so the two curves run parallel. */
+  --crewlet-person-row-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--spacing-2);
+  border: 0;
+  border-radius: var(--crewlet-person-row-radius);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--font-line-height-normal);
+  text-align: left;
+  list-style: none;
+  cursor: pointer;
+}
+
+/* One line, for a list that opens under a caret: the name, its detail after
+   it, and the trailing words at the end. */
+.crewlet-person-row--compact {
+  gap: var(--spacing-2);
+  min-height: var(--size-row-md);
+  padding-block: 0;
+}
+
+/*
+ * A ROW SHOWS THE HOVER OVERLAY OR THE CHOSEN TINT, NEVER BOTH: they are the
+ * same property on the same element, and the chosen row keeps its tint under
+ * the pointer.
+ */
+.crewlet-person-row:hover,
+.crewlet-person-row.is-highlighted {
+  background: var(--color-surface-hover);
+}
+
+.crewlet-person-row.is-selected,
+.crewlet-person-row.is-selected:hover {
+  background: var(--color-brand-accent-soft);
+}
+
+/* The row the arrows are on, in a list a field owns: a bar on its start
+   edge, so it is found in a list whose chosen rows are tinted too. */
+.crewlet-person-row.is-highlighted {
+  box-shadow: inset 2px 0 0 var(--color-brand-accent);
+}
+
+.crewlet-person-row:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: var(--size-focus-ring-inset-offset);
+}
+
+.crewlet-person-row:disabled,
+.crewlet-person-row.is-disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+/*
+ * One column for every face or glyph, so every name starts on one edge: a
+ * room's 16px glyph started its name a step left of the faces beside it.
+ */
+.crewlet-person-row__face {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-control-md);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-person-row--compact .crewlet-person-row__face {
+  min-width: var(--size-control-sm);
+}
+
+.crewlet-person-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-person-row__name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  font-weight: var(--font-weight-regular);
+  white-space: nowrap;
+}
+
+.crewlet-person-row__detail {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-person-row--compact .crewlet-person-row__detail {
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-person-row__meta {
+  flex: none;
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+/* The toggle's mark: a plus that is quiet until the row is pointed at, and a
+   check on the accent once the row is chosen. */
+.crewlet-person-row__mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-control-sm);
+  height: var(--size-control-sm);
+  margin-left: auto;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+}
+
+.crewlet-person-row__meta + .crewlet-person-row__mark {
+  margin-left: 0;
+}
+
+.crewlet-person-row:hover .crewlet-person-row__mark {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+}
+
+.crewlet-person-row.is-selected .crewlet-person-row__mark {
+  background: var(--color-brand-accent);
+  color: var(--color-text-on-accent);
+}
+
+/*
+ * FORCED COLORS repaints every background to Canvas, which took the chosen
+ * tint and the arrows' row with it. An outline is the one mark the mode
+ * keeps, in the system's own colour for exactly this.
+ */
+@media (forced-colors: active) {
+  .crewlet-person-row.is-selected,
+  .crewlet-person-row.is-highlighted {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}

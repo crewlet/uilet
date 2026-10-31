@@ -168,6 +168,8 @@ test('a ring stands off its element only where the element draws no edge', () =>
       'AvatarPicker/AvatarPicker.css | button.crewlet-avatar-picker:focus-visible',
       // A command palette step's chip, a soft tint with no edge of its own.
       'CommandPalette/CommandPalette.css | .crewlet-palette__step:focus-visible',
+      // A link preview unfurled under a message: a bar and words, no box.
+      'LinkCard/LinkCard.css | .crewlet-link-card:focus-visible',
     ].sort(),
   );
 });

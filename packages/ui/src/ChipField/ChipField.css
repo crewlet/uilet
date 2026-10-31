@@ -1,0 +1,108 @@
+/*
+ * ChipField: chosen items as chips inside the field, before a bare text box.
+ * The chips and the box wrap as one line of words; the box takes whatever
+ * width the last line leaves, and a line of its own when that is too little.
+ */
+.crewlet-chip-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+  box-sizing: border-box;
+  width: 100%;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: text;
+}
+
+/* A field like any other: the field's fill, boundary and corner. */
+.crewlet-chip-field--boxed {
+  min-height: var(--size-control-lg);
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 1px solid var(--color-border-field);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-subtle);
+}
+
+/*
+ * ONE RING, the one every field in this package draws: an outline over the
+ * boundary, on the field rather than on the box inside it, because the
+ * field is what the reader sees as the control. The selector names the box
+ * rather than asking :focus-within, so tabbing to a chip's Remove control
+ * rings that control alone, not the field round it as well.
+ */
+.crewlet-chip-field--boxed:has(.crewlet-chip-field__input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -1px;
+}
+
+/* Narrowed and tinted for a pointer, as the text box's ring is. See Input.css. */
+:where(:root[data-crewlet-focus='pointer']) .crewlet-chip-field--boxed:has(.crewlet-chip-field__input:focus-visible) {
+  outline-width: 1px;
+  outline-color: var(--color-border-selected);
+}
+
+/*
+ * The address line at the top of a view: full width, a rule under it, and
+ * the view's own side inset (`--crewlet-chip-field-inset`, the chat's row
+ * inset by default). Its focus is a bar along the rule; the transparent
+ * outline is what forced colors, which drops the bar, draws instead.
+ */
+.crewlet-chip-field--bare {
+  gap: var(--spacing-2);
+  min-height: var(--size-shell-topbar);
+  padding: var(--spacing-2) var(--crewlet-chip-field-inset, var(--spacing-5));
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-chip-field--bare:has(.crewlet-chip-field__input:focus-visible) {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  box-shadow: inset 0 -2px 0 var(--color-focus);
+}
+
+.crewlet-chip-field__prefix {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+/* The list lends its chips to the field's own line (ChipField.tsx spells its
+   role out, which a contents box can lose). */
+.crewlet-chip-field__chips {
+  display: contents;
+  list-style: none;
+}
+
+.crewlet-chip-field__chip {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.crewlet-chip-field__input {
+  flex: 1;
+  min-width: 120px;
+  height: var(--size-control-md);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 var(--spacing-1);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.crewlet-chip-field--bare .crewlet-chip-field__input {
+  padding-inline: 0;
+}
+
+.crewlet-chip-field__input::placeholder {
+  color: var(--color-text-tertiary);
+  opacity: 1;
+}
+
+.crewlet-chip-field.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
