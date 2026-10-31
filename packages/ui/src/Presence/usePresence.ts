@@ -21,11 +21,8 @@
  */
 
 import { useLayoutEffect, useState, type RefObject } from 'react';
-import { useMediaMatch } from '../MediaMatch/index.js';
+import { REDUCED_MOTION_QUERY, useMediaMatch } from '../MediaMatch/index.js';
 import { returnFocus } from '../utils/focusModality.js';
-
-/** The reader's request for less motion, which every wait here gives way to. */
-export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 /**
  * The animations and transitions running on an element (and, with `subtree`,

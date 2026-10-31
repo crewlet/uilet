@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type HTMLAttributes } from 'react';
 import { cx } from '../utils/cx.js';
+import { prefersReducedMotion } from '../MediaMatch/index.js';
 
 /** One heading of a document, as an outline lists it. */
 export interface OutlineItem {
@@ -86,7 +87,7 @@ export function scrollToHeading(id: string, ownerDocument: Document = document):
   const heading = ownerDocument.getElementById(id);
   if (!heading) return false;
   if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
-  const still = ownerDocument.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const still = prefersReducedMotion(ownerDocument.defaultView);
   heading.scrollIntoView?.({ behavior: still ? 'auto' : 'smooth', block: 'start' });
   heading.focus({ preventScroll: true });
   return true;

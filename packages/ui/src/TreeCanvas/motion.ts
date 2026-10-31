@@ -33,8 +33,9 @@
  * group's box, which is drawn round wherever its members are this frame.
  */
 
-import { useCallback, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { placeGroups, type ForestLayout, type PlacedNode } from '../Tree/index.js';
+import { REDUCED_MOTION_QUERY, useMediaMatch } from '../MediaMatch/index.js';
 
 /** How far apart two cards are revealed, in milliseconds. */
 export const ENTRANCE_STEP_MS = 60;
@@ -65,24 +66,10 @@ export function entranceOrder(layout: ForestLayout): string[] {
 
 /** Whether the reader has asked for less motion, and again whenever that changes. */
 export function useStillness(): boolean {
-  const query = '(prefers-reduced-motion: reduce)';
-  const subscribe = useCallback((notify: () => void) => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {};
-    const list = window.matchMedia(query);
-    list.addEventListener('change', notify);
-    return () => list.removeEventListener('change', notify);
-  }, []);
-  const read = useCallback(
-    () =>
-      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-        ? window.matchMedia(query).matches
-        : false,
-    [],
-  );
-  // On a server, and anywhere the query cannot be asked, the answer is the one
-  // that draws everything: a chart nobody can see the motion of is still a
-  // chart that has to be complete.
-  return useSyncExternalStore(subscribe, read, () => false);
+  // On a server, and anywhere the query cannot be asked, `useMediaMatch`
+  // answers false, which draws everything: a chart nobody can see the motion
+  // of is still a chart that has to be complete.
+  return useMediaMatch(REDUCED_MOTION_QUERY);
 }
 
 /**

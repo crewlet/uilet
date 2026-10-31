@@ -12,7 +12,7 @@ import {
 } from 'react';
 import { ArrowDownGlyph } from '@crewlethq/icons/glyphs';
 import { Button } from '../Button/index.js';
-import { useMediaMatch } from '../MediaMatch/index.js';
+import { REDUCED_MOTION_QUERY, useMediaMatch } from '../MediaMatch/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
@@ -121,7 +121,7 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
   const labels = overrides ? { ...CHAT_THREAD_LABELS, ...overrides } : CHAT_THREAD_LABELS;
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useRef<HTMLDivElement | null>(null);
-  const reduced = useMediaMatch('(prefers-reduced-motion: reduce)');
+  const reduced = useMediaMatch(REDUCED_MOTION_QUERY);
   const count = Children.toArray(children).length;
   // Whether the reader is at the end, read on every scroll. A ref, because
   // the content observer below reads it between renders.

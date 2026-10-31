@@ -9,6 +9,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { announce } from '../Announcer/index.js';
+import { prefersReducedMotion } from '../MediaMatch/index.js';
 
 /**
  * How the arrow keys map to a move.
@@ -156,8 +157,7 @@ function place<K extends string>(lists: ReorderLists<K>, key: K, list: string, i
  * frame more, or a frame when nothing glides.
  */
 const SETTLE_MS = 200;
-const settleMs = () =>
-  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 20 : SETTLE_MS;
+const settleMs = () => (prefersReducedMotion() ? 20 : SETTLE_MS);
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 /**
@@ -264,7 +264,7 @@ export function useReorderLists<K extends string>({
     const last = before.current;
     before.current = new Map();
     if (last.size === 0) return;
-    if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (typeof window === 'undefined' || prefersReducedMotion()) return;
     for (const [key, node] of nodes.current) {
       const was = last.get(key);
       if (!was) continue;
