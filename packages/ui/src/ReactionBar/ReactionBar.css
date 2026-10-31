@@ -1,0 +1,93 @@
+/*
+ * A message's reactions: one pill to an emoji, then the add pill. A pill at
+ * rest is a fill and no frame; the edge arrives under the pointer.
+ */
+
+.crewlet-reaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.crewlet-reaction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  min-width: 44px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 var(--spacing-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-fill-soft);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--crewlet-chat-meta);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-default),
+    background var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+/* The emoji is the pill's picture and the count its caption: at the count's
+   size the emoji read smaller than the number beside it. */
+.crewlet-reaction__emoji {
+  font-size: var(--font-size-md);
+}
+
+.crewlet-reaction__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-regular);
+}
+
+/* The pointed pill drops its fill and takes the strong edge. */
+.crewlet-reaction:hover {
+  border-color: var(--color-edge-strong);
+  background: transparent;
+}
+
+/* Yours: the accent's soft fill, its ink and a heavier count, ringed in the
+   accent, so it differs from the others by more than its hue. */
+.crewlet-reaction.is-mine {
+  border-color: var(--color-brand-accent);
+  background: var(--color-brand-accent-soft);
+  color: var(--color-brand-accent-ink);
+}
+
+.crewlet-reaction.is-mine:hover {
+  background: var(--color-brand-accent-soft-strong);
+}
+
+.crewlet-reaction.is-mine .crewlet-reaction__count {
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-reaction[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+.crewlet-reaction:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+/* The add pill: the glyph alone, in the quiet ink. */
+.crewlet-reaction.crewlet-reaction--add {
+  min-width: 32px;
+  padding: 0;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-reaction.crewlet-reaction--add[aria-expanded='true'] {
+  background: var(--color-surface-pressed);
+  color: var(--color-text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-reaction {
+    transition: none;
+  }
+}
