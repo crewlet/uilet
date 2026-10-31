@@ -32,14 +32,14 @@ export interface ActionCardProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 }
 
 /**
- * A first step offered as a picture: a tall card on one of the kit's colour
- * grounds, its title at the top and a drawing at its foot. A new room opens
- * with a row of these (add people, add a description, start from a
- * template) until its first message.
+ * A first step offered as a picture: a tall card on a calm tint of one of
+ * the kit's kind colours, edged in the kind's hairline, its title at the top
+ * and a drawing at its foot. A new room opens with a row of these (add
+ * people, add a description, start from a template) until its first message.
  *
- * A QUIET HOVER. The ground deepens a step and a small shadow lifts the card
- * off the page; nothing moves, so a row of cards holds still under a pointer
- * passing over it.
+ * A QUIET HOVER. The tint deepens a step, the edge takes the kind's hue and a
+ * small shadow lifts the card off the page; nothing moves, so a row of cards
+ * holds still under a pointer passing over it.
  *
  * A BUTTON NAMED BY ITS TITLE. The drawing is hidden from assistive
  * technology, so a reader hears "Add people and agents, button" and nothing

@@ -2,11 +2,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ActionCard, ActionCardRow, ArtifactKindIllustration, type ActionCardTone } from '@crewlethq/ui';
 
 /**
- * First steps offered as pictures: tall cards on an artifact kind's colour
- * ground, the title at the top and a drawing at the foot. A new room opens
- * with a row of them until its first message. The hover is quiet (the
- * ground deepens and a small shadow lifts the card) and nothing moves.
- * Switch the theme and the palette: every ground is a measured kind colour.
+ * First steps offered as pictures: tall cards on a calm tint of an artifact
+ * kind's hue, the title at the top and a drawing at the foot, edged in the
+ * kind's hairline. A new room opens with a row of them until its first
+ * message. The hover is quiet (the tint deepens, the edge takes the hue and a
+ * small shadow lifts the card) and nothing moves. Switch the theme and the
+ * palette: every ground is a measured tint of a kind colour.
  */
 const meta: Meta<typeof ActionCard> = {
   title: 'UI/ActionCard',

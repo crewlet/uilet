@@ -215,6 +215,10 @@ places:
 
 **Choosing a place in a folded group's flyout leaves focus somewhere.** The flyout closed on every choice, by a press, by the pointer resting and by the keys, but only a choice made with the keys handed focus back to the tile; a press left focus on the place's link, which went with the flyout, so the reader's next Tab started from the top of the document. Focus now follows the navigation: where the page the place opened takes focus, it stays there, and where it is still in the flyout it goes back to the tile, by a press as by a key (without a ring for a pointer reader).
 
+### First-step cards
+
+**`ActionCard` is calmer, in light and dark.** The cards a new room opens with ("Add people and agents", "Add a description", "Start from a template") stood on saturated slabs of the kind's hue, deep purple, navy and brown on the dark sheet, under a full-hue edge and a muddy glow. Each ground is now a calm tint: the card rung, tinted by a share of the kind's hue (`--color-artifact-kind-<kind>-ground` and its steps, derived by the tokens build at 0.42 of the hue's chroma and 0.12 of its lightness from the card's neutral, 0.6 and 0.18 under the pointer, held to a chroma ceiling and to 4.5:1 for the title in every palette). The edge at rest is the kind's hairline (`--crewlet-kind-line`), and the kind's hue under the pointer, where the tint deepens and a small shadow lifts the card; the ring is drawn over the card's own edge. The corner and the shadow are from the edge scale (`--radius-xl`, `--shadow-xs`, `--shadow-sm` under the pointer). Every kind's drawing takes the same box, the card's width less its inset at the drawing canvas's own shape, so a tall page and a wide slide weigh the same, set a step into the card's foot on a soft shadow of the kind's Fill, with a lower halo (the glow at 0.24, was 0.46). Props are unchanged.
+
 ## Changes in 0.83.0
 
 ### The application rail
