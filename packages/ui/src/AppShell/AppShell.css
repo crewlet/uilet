@@ -27,23 +27,30 @@
   --crewlet-app-shell-rail: var(--size-shell-rail);
   --crewlet-app-shell-topbar: var(--size-shell-topbar);
   /* What stands on the frame to the sheet's left: the rail's column, or
-     nothing where there is no rail or the rail is a drawer. The aside's cap
-     below subtracts it, so it is one name for both. */
+     nothing where there is no rail or the rail is a drawer. */
   --crewlet-app-shell-beside: var(--crewlet-app-shell-rail);
-  /* THE ASIDE'S TRACK, while it is a column: the panel's width and the inset
-     it is held off the window's edge by, capped so the sheet keeps the
-     host's floor (`--crewlet-app-shell-aside-reserve`, the page's sheet with
-     its own inset and hairlines). The host publishes both widths on this
-     element; with no reserve the panel takes the width it was given. */
-  --crewlet-app-shell-aside-track: calc(
-    min(
-      var(--crewlet-app-shell-aside),
-      max(
-        0px,
-        100% - var(--crewlet-app-shell-beside) - var(--crewlet-app-shell-aside-reserve, 0px) - var(--size-shell-inset)
-      )
-    ) +
-      var(--size-shell-inset)
+  /*
+   * THE ASIDE'S TRACK, while it is a column: the inset it is held off the
+   * window's edge by at least, and the panel's width and that inset at most.
+   * THE CAP IS THE GRID'S. The page's sheet takes the host's floor as its
+   * own track's minimum (`--crewlet-app-shell-aside-reserve`, the page's sheet
+   * with its own inset and hairlines), and the grid hands the aside what is
+   * left once the rail and that floor have theirs, up to its width. The rail's
+   * track is the rail's live width, so while the rail eases between its
+   * shapes the cap eases with it: a cap computed from the rail's VARIABLE
+   * named the shape drawn, and jumped at both ends of a fold. With no reserve
+   * the panel takes the width it was given, as far as the window holds it.
+   */
+  --crewlet-app-shell-aside-track: minmax(
+    var(--size-shell-inset),
+    calc(var(--crewlet-app-shell-aside) + var(--size-shell-inset))
+  );
+  /* The page's floor beside an aside column, never more than the window
+     leaves it: on a window too narrow for the floor, the page gives way rather
+     than the shell growing past the window's edge. */
+  --crewlet-app-shell-sheet-floor: min(
+    var(--crewlet-app-shell-aside-reserve, 0px),
+    max(0px, 100% - var(--crewlet-app-shell-beside) - var(--size-shell-inset))
   );
   /* Where the drawer's veil sits while it is open. The shell replaces it with
      the surface's own place in the layer band; this default only has to clear
@@ -92,11 +99,11 @@
    keeps its column and is only narrower, so nothing under the bar moves but
    its end edge. */
 .crewlet-app-shell[data-aside='column'] {
-  grid-template-columns: auto minmax(0, 1fr) var(--crewlet-app-shell-aside-track);
+  grid-template-columns: auto minmax(var(--crewlet-app-shell-sheet-floor), 1fr) var(--crewlet-app-shell-aside-track);
 }
 
 .crewlet-app-shell--no-rail[data-aside='column'] {
-  grid-template-columns: minmax(0, 1fr) var(--crewlet-app-shell-aside-track);
+  grid-template-columns: minmax(var(--crewlet-app-shell-sheet-floor), 1fr) var(--crewlet-app-shell-aside-track);
 }
 
 /* The skip link, drawn only while it holds focus, over everything. */
@@ -1087,7 +1094,7 @@
      step is still a column; the rail is a drawer here and takes no track. */
   .crewlet-app-shell[data-aside='column'],
   .crewlet-app-shell--no-rail[data-aside='column'] {
-    grid-template-columns: minmax(0, 1fr) var(--crewlet-app-shell-aside-track);
+    grid-template-columns: minmax(var(--crewlet-app-shell-sheet-floor), 1fr) var(--crewlet-app-shell-aside-track);
   }
 
   .crewlet-app-shell--no-rail {

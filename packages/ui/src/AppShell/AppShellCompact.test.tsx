@@ -472,7 +472,9 @@ describe('the geometry', () => {
 
   test('the rail is its own width, and the grid’s first track follows it', () => {
     expect(css).toMatch(/\.crewlet-app-shell \{[^}]*grid-template-columns: auto minmax\(0, 1fr\);/);
-    expect(css).toMatch(/\.crewlet-app-shell\[data-aside='column'\] \{\s*grid-template-columns: auto minmax\(0, 1fr\)/);
+    expect(css).toMatch(
+      /\.crewlet-app-shell\[data-aside='column'\] \{\s*grid-template-columns: auto minmax\(var\(--crewlet-app-shell-sheet-floor\), 1fr\)/,
+    );
     // The one rail variable, which the compact shape narrows (above).
     expect(rule('.crewlet-app-shell__rail')).toContain('width: var(--crewlet-app-shell-rail);');
   });
@@ -491,6 +493,23 @@ describe('the geometry', () => {
     // The drawer never changes shape, and fills a window narrower than it.
     const narrow = css.slice(css.indexOf('@media (width < 1024px)'));
     expect(narrow).toMatch(/\.crewlet-app-shell__rail-inner \{\s*width: auto;/);
+  });
+
+  test("the aside's cap is the grid's, read from the rail's live width, so a fold never jumps it", () => {
+    // The track the aside column takes: the inset at least, the panel and the
+    // inset at most, and the grid gives it what the rail (at whatever width it
+    // has eased to) and the page's floor leave. No track subtracts the rail's
+    // variable, which names the shape DRAWN and would jump at a fold's ends.
+    const declared = /--crewlet-app-shell-aside-track:([^;]*);/.exec(css)?.[1] ?? '';
+    expect(declared.replace(/\s+/g, '').trim()).toBe(
+      'minmax(var(--size-shell-inset),calc(var(--crewlet-app-shell-aside)+var(--size-shell-inset)))',
+    );
+    expect(declared).not.toContain('--crewlet-app-shell-beside');
+    expect(declared).not.toContain('--crewlet-app-shell-rail');
+    // The page's sheet keeps the host's floor as its track's minimum.
+    expect(rule(".crewlet-app-shell[data-aside='column']")).toContain(
+      'grid-template-columns: auto minmax(var(--crewlet-app-shell-sheet-floor), 1fr) var(--crewlet-app-shell-aside-track);',
+    );
   });
 
   test('folding narrows the rail to the compact column while the full rail is still drawn', () => {

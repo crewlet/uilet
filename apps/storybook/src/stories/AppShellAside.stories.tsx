@@ -15,6 +15,8 @@ import {
   BrandLockup,
   Button,
   Card,
+  CompactNav,
+  CompactNavItem,
   IconButton,
   NavItem,
   PeekRail,
@@ -24,10 +26,12 @@ import {
   Stack,
   Text,
   Textarea,
+  useAppShell,
   useMediaMatch,
   useStoredWidth,
   type AppShellAsideShape,
   type AppShellProps,
+  type AppShellRailShape,
 } from '@crewlethq/ui';
 
 /*
@@ -52,13 +56,23 @@ const MAX = 640;
 const RESTING = 420;
 
 function Rail() {
+  // In whichever shape the shell draws, so a foldable frame folds it.
+  const { rail } = useAppShell();
   return (
     <AppShell.Rail header={<BrandLockup name="Crewlet" mark={<CrewletIcon />} href="#/" />}>
-      <SidebarNav label="Sections">
-        <NavItem href="#/" label="Home" icon={<HouseGlyph size="sm" />} />
-        <NavItem href="#/inbox" label="Inbox" icon={<InboxGlyph size="sm" />} />
-        <NavItem href="#/work" label="Work" icon={<SquareKanbanGlyph size="sm" />} current />
-      </SidebarNav>
+      {rail === 'compact' ? (
+        <CompactNav label="Sections">
+          <CompactNavItem href="#/" label="Home" icon={<HouseGlyph size="sm" />} />
+          <CompactNavItem href="#/inbox" label="Inbox" icon={<InboxGlyph size="sm" />} />
+          <CompactNavItem href="#/work" label="Work" icon={<SquareKanbanGlyph size="sm" />} current />
+        </CompactNav>
+      ) : (
+        <SidebarNav label="Sections">
+          <NavItem href="#/" label="Home" icon={<HouseGlyph size="sm" />} />
+          <NavItem href="#/inbox" label="Inbox" icon={<InboxGlyph size="sm" />} />
+          <NavItem href="#/work" label="Work" icon={<SquareKanbanGlyph size="sm" />} current />
+        </SidebarNav>
+      )}
     </AppShell.Rail>
   );
 }
@@ -129,6 +143,7 @@ function Frame({
   shape,
   open: startOpen = true,
   resizable = true,
+  foldable = false,
   modal,
   peek,
   children,
@@ -137,10 +152,12 @@ function Frame({
   open?: boolean;
   modal?: boolean;
   resizable?: boolean;
+  foldable?: boolean;
   peek?: (asideColumn: boolean) => Pick<AppShellProps, 'peek' | 'peekShape'>;
   children?: ReactNode;
 }) {
   const [open, setOpen] = useState(startOpen);
+  const [rail, setRail] = useState<AppShellRailShape>('full');
   const decided = useShapeFromWidth();
   const asideShape = shape === 'auto' ? decided : shape;
   const stored = useStoredWidth({ key: 'crewlet.storybook.aside.width', min: MIN, max: MAX });
@@ -148,6 +165,7 @@ function Frame({
   return (
     <AppShell
       sidebar={<Rail />}
+      {...(foldable ? { rail, onRailChange: setRail, railFoldKeys: ['Mod', '\\'] } : null)}
       topbar={
         <AppShell.Topbar
           title="Work"
@@ -192,6 +210,18 @@ function Frame({
  */
 export const Column: Story = {
   render: () => <Frame shape="column" />,
+};
+
+/**
+ * THE CAP FOLLOWS A FOLDING RAIL. On a window where the page's floor (640px
+ * here) leaves the column less than its width, the column takes what is
+ * left, and that is the grid's own arithmetic over the rail's LIVE width:
+ * fold the rail from its corner and the column widens with it, frame by
+ * frame, and unfold it and the column gives the room back the same way. It
+ * never jumps at either end of the motion.
+ */
+export const CapFollowsAFoldingRail: Story = {
+  render: () => <Frame shape="column" foldable />,
 };
 
 /**
