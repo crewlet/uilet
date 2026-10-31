@@ -89,7 +89,7 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { ResizeHandle } from './ResizeHandle.js';
 import { AsideContext, PeekContext, type AppShellAsideShape, type AppShellPeekShape } from './regions.js';
 import { ScreenWidthContext, contentInlineSize, createScreenWidthStore } from './screenWidth.js';
-import { RailShapeContext, useRailShape, type AppShellRailShape } from './railShape.js';
+import { RailLeavingContext, RailShapeContext, useRailShape, type AppShellRailShape } from './railShape.js';
 import { useRailMotion } from './railMotion.js';
 
 export { useAppShellAside, useAppShellPeek } from './regions.js';
@@ -433,7 +433,7 @@ export function AppShell({
   const railTarget: AppShellRailShape = hasRail && railChoice === 'compact' && !narrow ? 'compact' : 'full';
   // AND THE SHAPE DRAWN, which trails the choice while the rail folds, so the
   // full rail's words fade out under the moving edge rather than vanishing.
-  const { drawn: railShape, motion: railMotion } = useRailMotion(railTarget, hasRail && !narrow, rail);
+  const { drawn: railShape, motion: railMotion, leaving: railLeaving } = useRailMotion(railTarget, hasRail && !narrow, rail);
   const foldable = hasRail && onRailChange !== undefined && !narrow;
 
   const shell: AppShellContextValue = {
@@ -540,7 +540,9 @@ export function AppShell({
             {foldable ? (
               <RailFold rail={railTarget} onRailChange={onRailChange} keys={railFoldKeys} labels={railFoldLabels} railId={railId} />
             ) : null}
-            <RailShapeContext.Provider value={railShape}>{sidebar}</RailShapeContext.Provider>
+            <RailShapeContext.Provider value={railShape}>
+              <RailLeavingContext.Provider value={railLeaving}>{sidebar}</RailLeavingContext.Provider>
+            </RailShapeContext.Provider>
           </aside>
         ) : null}
         <div ref={sheet} className="crewlet-app-shell__sheet">
@@ -927,9 +929,12 @@ export interface AppShellRailProps {
  */
 export function AppShellRail({ header, search, status, footer, className, children }: AppShellRailProps) {
   const compact = useRailShape() === 'compact';
+  // ON ITS WAY OUT while the rail folds over it: nothing in it takes focus or
+  // a press until the compact column is drawn in its place.
+  const leaving = useContext(RailLeavingContext);
   const statusSlot = status ? <div className="crewlet-app-shell__rail-status">{status}</div> : null;
   return (
-    <div className={cx('crewlet-app-shell__rail-inner', className)}>
+    <div className={cx('crewlet-app-shell__rail-inner', className)} inert={leaving || undefined}>
       {header || (status && !compact) ? (
         <div className="crewlet-app-shell__rail-head">
           {header}

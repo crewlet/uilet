@@ -22,7 +22,7 @@ import { CompactNav, CompactNavGroup, CompactNavItem } from '../CompactNav/index
 import { NavItem, SidebarNav } from '../SidebarNav/index.js';
 import { StatusDot } from '../StatusDot/index.js';
 import { AppShell, useAppShell, type AppShellRailShape } from './index.js';
-import { RAIL_FADE_ANIMATION, RAIL_SETTLE_ANIMATION, transitionMs } from './railMotion.js';
+import { driveMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
 
 const restorers: (() => void)[] = [];
 
@@ -470,9 +470,9 @@ describe('the geometry', () => {
     expect(rule('.crewlet-app-shell__rail')).toContain('width: var(--crewlet-app-shell-rail);');
   });
 
-  test('the rail eases its width on the slow step, and its content keeps the width of the shape drawn', () => {
+  test('the rail eases its width on the moderate step, and its content keeps the width of the shape drawn', () => {
     expect(rule('.crewlet-app-shell__rail')).toContain(
-      'transition: width var(--motion-duration-slow) var(--motion-easing-emphasized)',
+      'transition: width var(--motion-duration-moderate) var(--motion-easing-emphasized)',
     );
     // The moving edge clips across only, so no ring or badge is cut at a
     // row's top or bottom.
@@ -499,8 +499,13 @@ describe('the geometry', () => {
         expect(reduced).toContain(`.crewlet-app-shell[data-rail-motion='${motion}'] .crewlet-app-shell__${part}`);
       }
     }
-    expect(css).toContain(`@keyframes ${RAIL_FADE_ANIMATION}`);
-    expect(css).toContain(`@keyframes ${RAIL_SETTLE_ANIMATION}`);
+  });
+
+  test('the rail and a docked column move as one: the same step and the same curve', () => {
+    const dock = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../DockColumn/DockColumn.css'), 'utf8');
+    const easing = /transition: width (var\(--motion-duration-[a-z]+\) var\(--motion-easing-[a-z]+\));/;
+    expect(easing.exec(rule('.crewlet-app-shell__rail'))?.[1]).toBeDefined();
+    expect(easing.exec(dock)?.[1]).toBe(easing.exec(rule('.crewlet-app-shell__rail'))?.[1]);
   });
 
   test('the rail is the fold control’s containing block wide, and the drawer’s fixed layer narrow', () => {
@@ -546,46 +551,16 @@ describe('a flush screen', () => {
 });
 
 describe("the rail's motion", () => {
-  /**
-   * Gives the rail the transition the stylesheet gives it, which jsdom never
-   * computes: the shell reads the rail's own transition to know how long a
-   * change of shape takes, and reads none here otherwise.
-   */
-  function railTransition(duration: string, property = 'width'): void {
-    const original = globalThis.getComputedStyle.bind(globalThis);
-    const spy = vi.spyOn(globalThis, 'getComputedStyle').mockImplementation((element, pseudo) => {
-      const style = original(element, pseudo);
-      if (!(element instanceof HTMLElement) || !element.classList.contains('crewlet-app-shell__rail')) return style;
-      const stub: Record<string, string> = { transitionDuration: duration, transitionDelay: '0s', transitionProperty: property };
-      return new Proxy(style, {
-        get: (target, key) => {
-          if (typeof key === 'string' && key in stub) return stub[key];
-          const value: unknown = Reflect.get(target, key);
-          return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(target) : value;
-        },
-      });
-    });
-    restorers.push(() => spy.mockRestore());
-  }
-
-  /** The end of an animation or a transition, as the browser reports it. */
-  function ended(target: Element, type: 'animationend' | 'transitionend', detail: Record<string, string>): void {
-    const event = new Event(type, { bubbles: true });
-    for (const [key, value] of Object.entries(detail)) Object.defineProperty(event, key, { value });
-    act(() => {
-      target.dispatchEvent(event);
-    });
-  }
-
   const motion = () => root().getAttribute('data-rail-motion');
   const drawnNav = () => screen.getByRole('navigation', { name: 'Navigation' }).className;
+  const rail = () => document.querySelector<HTMLElement>('.crewlet-app-shell__rail')!;
   const press = () => {
     act(() => {
       document.querySelector<HTMLButtonElement>('.crewlet-app-shell__fold button')!.click();
     });
   };
 
-  test('with nothing to animate, the new shape is drawn at once', () => {
+  test('with nothing moving, the new shape is drawn at once', () => {
     narrowWindow(false);
     render(<Shell />);
     press();
@@ -594,93 +569,85 @@ describe("the rail's motion", () => {
     expect(drawnNav()).toContain('crewlet-compact-nav');
   });
 
-  test('under a reduced-motion baseline nothing moves: a transition to none is no transition', () => {
+  test('folding keeps the full rail drawn, inert, until the rail has moved, then fades the compact column in', async () => {
     narrowWindow(false);
-    railTransition('1e-05s', 'none');
     render(<Shell />);
-    press();
-    expect(root().getAttribute('data-rail')).toBe('compact');
-    expect(motion()).toBeNull();
-  });
-
-  test('folding keeps the full rail drawn until its words have faded, then fades the compact column in', () => {
-    narrowWindow(false);
-    vi.useFakeTimers();
-    railTransition('0.3s');
-    render(<Shell />);
+    const driver = driveMotion(rail());
+    // The rail's width, and its words fading, while the fold is under way;
+    // and the compact column's entrance, which runs only once it is drawn.
+    const narrowing = driver.start();
+    const arriving = driver.start({ during: () => motion() === 'folded' });
     press();
     expect(motion()).toBe('fold');
     expect(root().getAttribute('data-rail')).toBe('full');
     expect(drawnNav()).toContain('crewlet-sidebar-nav');
-    // The control says the CHOSEN shape at once: it already offers to unfold.
+    expect(document.querySelector('.crewlet-app-shell__rail-inner')?.hasAttribute('inert')).toBe(true);
+    // The control says the CHOSEN shape at once: it already offers to unfold,
+    // and it is not inert, since it stands outside the content.
     const fold = screen.getByRole('button', { name: 'Expand the sidebar' });
     expect(fold.getAttribute('aria-expanded')).toBe('false');
-    const body = document.querySelector('.crewlet-app-shell__rail-body')!;
-    // Another animation ending inside the rail is not the fade.
-    ended(body, 'animationend', { animationName: 'crewlet-status-dot-pulse' });
-    expect(motion()).toBe('fold');
-    ended(body, 'animationend', { animationName: RAIL_FADE_ANIMATION });
+    expect(fold.closest('[inert]')).toBeNull();
+    narrowing.finish();
+    await settleMotion();
     expect(motion()).toBe('folded');
     expect(root().getAttribute('data-rail')).toBe('compact');
     expect(drawnNav()).toContain('crewlet-compact-nav');
-    ended(document.querySelector('.crewlet-app-shell__rail-body')!, 'animationend', { animationName: RAIL_SETTLE_ANIMATION });
+    expect(document.querySelector('.crewlet-app-shell__rail-inner')?.hasAttribute('inert')).toBe(false);
+    arriving.finish();
+    await settleMotion();
     expect(motion()).toBeNull();
-    // Focus and identity are the control's throughout.
     expect(screen.getByRole('button', { name: 'Expand the sidebar' })).toBe(fold);
   });
 
-  test("unfolding draws the full rail at once and ends when the rail's own width stops", () => {
+  test('unfolding draws the full rail at once, live, and ends when the rail has moved', async () => {
     narrowWindow(false);
-    vi.useFakeTimers();
-    railTransition('0.3s');
     render(<Shell initial="compact" />);
+    const widening = driveMotion(rail()).start();
     press();
     expect(motion()).toBe('unfold');
     expect(root().getAttribute('data-rail')).toBe('full');
     expect(drawnNav()).toContain('crewlet-sidebar-nav');
-    const rail = document.querySelector('.crewlet-app-shell__rail')!;
-    // A row's own transition, and another property of the rail, end nothing.
-    ended(document.querySelector('.crewlet-nav-item__row')!, 'transitionend', { propertyName: 'width' });
-    ended(rail, 'transitionend', { propertyName: 'background-color' });
-    expect(motion()).toBe('unfold');
-    ended(rail, 'transitionend', { propertyName: 'width' });
+    expect(document.querySelector('.crewlet-app-shell__rail-inner')?.hasAttribute('inert')).toBe(false);
+    widening.finish();
+    await settleMotion();
     expect(motion()).toBeNull();
   });
 
-  test('the clock ends a phase no event reports, as long as the rail’s own transition', () => {
+  test('a press during a fold unfolds where the rail is, and the fold that was under way ends nothing', async () => {
     narrowWindow(false);
-    vi.useFakeTimers();
-    railTransition('300ms');
     render(<Shell />);
+    const driver = driveMotion(rail());
+    const narrowing = driver.start();
     press();
-    act(() => {
-      vi.advanceTimersByTime(299);
-    });
     expect(motion()).toBe('fold');
-    act(() => {
-      vi.advanceTimersByTime(1);
+    const widening = driver.start();
+    narrowing.cancel();
+    press();
+    expect(motion()).toBe('unfold');
+    expect(root().getAttribute('data-rail')).toBe('full');
+    await settleMotion();
+    expect(motion()).toBe('unfold');
+    widening.finish();
+    await settleMotion();
+    expect(motion()).toBeNull();
+    expect(root().getAttribute('data-rail')).toBe('full');
+  });
+
+  test('under reduced motion the new shape is drawn at once, whatever is running', () => {
+    narrowWindow(false);
+    const had = globalThis.matchMedia;
+    globalThis.matchMedia = ((query: string) => ({
+      ...had(query),
+      matches: query.includes('prefers-reduced-motion'),
+    })) as typeof globalThis.matchMedia;
+    restorers.push(() => {
+      globalThis.matchMedia = had;
     });
-    expect(motion()).toBe('folded');
+    render(<Shell />);
+    driveMotion(rail()).start();
+    press();
     expect(root().getAttribute('data-rail')).toBe('compact');
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
     expect(motion()).toBeNull();
-  });
-
-  test('a press during a fold unfolds, and the fold that was under way ends nothing', () => {
-    narrowWindow(false);
-    vi.useFakeTimers();
-    railTransition('0.3s');
-    render(<Shell />);
-    press();
-    expect(motion()).toBe('fold');
-    press();
-    expect(motion()).toBe('unfold');
-    expect(root().getAttribute('data-rail')).toBe('full');
-    ended(document.querySelector('.crewlet-app-shell__rail-body')!, 'animationend', { animationName: RAIL_FADE_ANIMATION });
-    expect(motion()).toBe('unfold');
-    expect(root().getAttribute('data-rail')).toBe('full');
   });
 
   test('a shape that changes with the window crossing into the wide layout is drawn at once', () => {
@@ -692,7 +659,7 @@ describe("the rail's motion", () => {
       writable: true,
       value: (query: string) => ({
         get matches() {
-          return narrow;
+          return query.includes('width') && narrow;
         },
         media: query,
         onchange: null,
@@ -707,40 +674,18 @@ describe("the rail's motion", () => {
       if (had) Object.defineProperty(globalThis, 'matchMedia', had);
       else delete (globalThis as Record<string, unknown>).matchMedia;
     });
-    railTransition('0.3s');
     render(
       <AppShell rail="compact" onRailChange={() => {}} sidebar={<FullRail />}>
         screen
       </AppShell>,
     );
     expect(root().getAttribute('data-rail')).toBe('full');
+    driveMotion(rail()).start();
     narrow = false;
     act(() => {
       for (const listener of listeners) listener();
     });
     expect(root().getAttribute('data-rail')).toBe('compact');
     expect(motion()).toBeNull();
-  });
-
-  test('the length of a change is the rail’s longest transition, in whole ms', () => {
-    const element = document.createElement('div');
-    const cases: [duration: string, delay: string, property: string, ms: number][] = [
-      ['0.3s', '0s', 'width', 300],
-      ['120ms, 0.3s', '0s', 'opacity, width', 300],
-      ['0.2s', '0.1s', 'width', 300],
-      ['0.3s, 0.2s', '0s', 'none, width', 200],
-      // The document baseline's way of stopping motion.
-      ['1e-05s', '0s', 'none', 0],
-      ['1e-05s', '0s', 'width', 0],
-      // jsdom, or no stylesheet at all.
-      ['', '', '', 0],
-    ];
-    for (const [transitionDuration, transitionDelay, transitionProperty, ms] of cases) {
-      const spy = vi
-        .spyOn(globalThis, 'getComputedStyle')
-        .mockReturnValue({ transitionDuration, transitionDelay, transitionProperty } as CSSStyleDeclaration);
-      expect(transitionMs(element), `${transitionProperty} over ${transitionDuration} after ${transitionDelay}`).toBe(ms);
-      spy.mockRestore();
-    }
   });
 });

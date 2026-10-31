@@ -151,7 +151,7 @@
      at a row's top or bottom is never cut. */
   overflow-x: clip;
   background: var(--color-surface-frame);
-  transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);
+  transition: width var(--motion-duration-moderate) var(--motion-easing-emphasized);
 }
 
 /* THE CONTENT IS LAID OUT AT ITS SHAPE'S WIDTH, never at a width between the
@@ -1009,16 +1009,17 @@
 
 /*
  * THE RAIL'S MOTION (railMotion.ts). The rail's width eases between the two
- * shapes on the slow step, and what it holds keeps the width of the shape
+ * shapes on the moderate step with the emphasized curve, the motion a
+ * `DockColumn` opens and closes by, so a column of the frame and a column of
+ * a screen move as one. What the rail holds keeps the width of the shape
  * drawn, so the moving edge clips the words rather than squeezing them.
  *
- * FOLDING, the full rail stays drawn while the edge narrows to the compact
- * column, and its words fade out on the base step; the compact column is
- * drawn when they are gone, by which time the decelerating edge has covered
- * nearly all its way, and fades in on the fast step. UNFOLDING, the full
- * rail is drawn at once and fades in while the edge uncovers it. The brand's
- * mark and the fold control are in the same place in both shapes, so
- * neither fades.
+ * FOLDING, the full rail stays drawn, inert, while the edge narrows to the
+ * compact column, and its words fade out on the base step; the compact column
+ * is drawn when the rail's motion has ended, and fades in on the fast step.
+ * UNFOLDING, the full rail is drawn at once and fades in while the edge
+ * uncovers it. The brand's mark and the fold control are in the same place in
+ * both shapes, so neither fades.
  */
 .crewlet-app-shell[data-rail-motion='fold'] > .crewlet-app-shell__rail {
   width: var(--size-shell-rail-compact);
@@ -1057,7 +1058,7 @@
 .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-status,
 .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-head .crewlet-brand__name,
 .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-head .crewlet-brand__context {
-  animation: crewlet-app-shell-rail-unfold var(--motion-duration-slow) var(--motion-easing-out);
+  animation: crewlet-app-shell-rail-unfold var(--motion-duration-moderate) var(--motion-easing-out);
 }
 
 .crewlet-app-shell[data-rail-motion='folded'] .crewlet-app-shell__rail-body,
@@ -1182,8 +1183,8 @@
     animation: none;
   }
 
-  /* With the rail's transition gone the shell draws the new shape at once
-     (railMotion.ts), so no phase starts; these hold even if one did. */
+  /* Under reduced motion the shell draws the new shape at once
+     (`usePresence`), so no phase starts; these hold even if one did. */
   .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-body,
   .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-foot,
   .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-status,
