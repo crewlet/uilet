@@ -231,7 +231,7 @@ places:
 
 ### Refs
 
-**A trigger keeps its own ref across re-renders.** `Tooltip` cloned its trigger with a new ref callback on every render, so React took the element away from the trigger's own ref and gave it back in each commit, and a layout effect earlier in the tree read null while the control stood in the document (a `DockColumn` handing focus to a tooltip-wrapped Pin control as it closed). `Tooltip`, `Popover`, `Menu`'s trigger props and `Modal`'s frame now join their refs with **`useComposedRef`** (new, with **`attachRef`**), one callback that is stable while the refs it joins are and releases each the way React would. `Popover` also keeps the ref its trigger carried, which it used to replace.
+**A trigger keeps its own ref across re-renders.** `Tooltip` cloned its trigger with a new ref callback on every render, so React took the element away from the trigger's own ref and gave it back in each commit, and a layout effect earlier in the tree read null while the control stood in the document (a `DockColumn` handing focus to a tooltip-wrapped Pin control as it closed). `Tooltip`, `Popover`, `Menu`'s trigger props and `Modal`'s frame now join their refs with **`useComposedRef(...refs)`** (new, with **`composeRefs`** for code outside a component and **`attachRef`** for one ref), one callback for any number of refs that is the same callback while they are the same and releases each the way React would. `Popover` also keeps the ref its trigger carried, which it used to replace.
 
 ## Changes in 0.82.0
 

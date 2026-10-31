@@ -13,7 +13,7 @@
  * them does, which is exactly when React would have moved a ref of its own.
  */
 
-import { useCallback, type Ref, type RefCallback, type RefObject } from 'react';
+import { useRef, type Ref, type RefCallback, type RefObject } from 'react';
 
 /**
  * Hands `element` to one ref, and returns how to take it back, the way React
@@ -35,22 +35,38 @@ export function attachRef<T>(ref: Ref<T> | undefined, element: T | null): () => 
 }
 
 /**
- * A ref callback that hands the element to every ref given and releases each
- * as React would, stable for as long as each ref given is the same.
+ * One ref callback that hands the element to every ref given and releases
+ * each as React would, for code outside a component.
  */
-export function useComposedRef<T>(
-  first: Ref<T> | undefined,
-  second?: Ref<T> | undefined,
-  third?: Ref<T> | undefined,
-  fourth?: Ref<T> | undefined,
-): RefCallback<T> {
-  return useCallback(
-    (element: T | null) => {
-      const releases = [first, second, third, fourth].map((ref) => attachRef(ref, element));
-      return () => {
-        for (const release of releases) release();
-      };
-    },
-    [first, second, third, fourth],
-  );
+export function composeRefs<T>(...refs: readonly (Ref<T> | undefined)[]): RefCallback<T> {
+  return (element: T | null) => {
+    const releases = refs.map((ref) => attachRef(ref, element));
+    return () => {
+      for (const release of releases) release();
+    };
+  };
+}
+
+/** Whether two lists hold the same refs, in the same order. */
+function sameRefs<T>(a: readonly (Ref<T> | undefined)[], b: readonly (Ref<T> | undefined)[]): boolean {
+  return a.length === b.length && a.every((ref, index) => ref === b[index]);
+}
+
+/**
+ * `composeRefs` for a component: any number of refs joined into one callback
+ * that is THE SAME CALLBACK for as long as the refs given are the same, in the
+ * same order, and a new one the render any of them changes.
+ *
+ * Held in a ref and compared ref by ref rather than memoised on a dependency
+ * list, which must be written out, and a list of refs of any length cannot
+ * be. Not state: a ref written inline beside the hook is new on every render,
+ * and replacing state for it would render again for ever. Here it simply
+ * makes a new callback, which is what React does with an inline ref.
+ */
+export function useComposedRef<T>(...refs: readonly (Ref<T> | undefined)[]): RefCallback<T> {
+  const joined = useRef<{ refs: readonly (Ref<T> | undefined)[]; callback: RefCallback<T> } | null>(null);
+  if (!joined.current || !sameRefs(joined.current.refs, refs)) {
+    joined.current = { refs, callback: composeRefs(...refs) };
+  }
+  return joined.current.callback;
 }

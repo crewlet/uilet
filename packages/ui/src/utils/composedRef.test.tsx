@@ -53,6 +53,35 @@ describe('useComposedRef', () => {
     expect(own.mock.calls[0]?.[0]).toBeInstanceOf(HTMLSpanElement);
   });
 
+  test('joins any number of refs, and stays the same callback while they are the same', () => {
+    const boxes = Array.from({ length: 6 }, () => createRef<HTMLElement>());
+    const seen: unknown[] = [];
+    function Probe({ tick }: { tick: number }) {
+      const joined = useComposedRef<HTMLElement>(...boxes);
+      seen.push(joined);
+      return <span ref={joined}>{tick}</span>;
+    }
+    const { rerender, container } = render(<Probe tick={1} />);
+    rerender(<Probe tick={2} />);
+    const span = container.querySelector('span');
+    for (const box of boxes) expect(box.current).toBe(span);
+    expect(seen[0]).toBe(seen[1]);
+  });
+
+  test('an inline ref beside it makes a new callback each render, as React does, and never loops', () => {
+    const seen: (HTMLElement | null)[] = [];
+    function Probe({ tick }: { tick: number }) {
+      const joined = useComposedRef<HTMLElement>((el) => {
+        seen.push(el);
+      });
+      return <span ref={joined}>{tick}</span>;
+    }
+    const { rerender, container } = render(<Probe tick={1} />);
+    rerender(<Probe tick={2} />);
+    const span = container.querySelector('span');
+    expect(seen).toEqual([span, null, span]);
+  });
+
   test('hands the element to every ref it joins, and moves when one of them changes', () => {
     const box = createRef<HTMLElement>();
     const first = vi.fn();
