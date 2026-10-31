@@ -944,6 +944,13 @@
  * middle while the rows scroll under it, on the frame's own ground, so the
  * control beside it is always beside it.
  */
+/* The middle is a stacking context of its own, so the field pinned in it
+   stands over the rows scrolling under it and the whole middle stands under
+   the fold control, which is painted a step above the rail. */
+.crewlet-app-shell--foldable .crewlet-app-shell__rail-body {
+  isolation: isolate;
+}
+
 .crewlet-app-shell--foldable[data-rail='full'] .crewlet-app-shell__rail-search {
   position: sticky;
   top: 0;
