@@ -456,10 +456,6 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
   useLayoutEffect(() => {
     if (!open) return undefined;
     position();
-    if (focusFirst.current) {
-      focusFirst.current = false;
-      panel.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
-    }
     const onLayout = () => position();
     container?.addEventListener(LAYER_REPOSITION_EVENT, onLayout);
     window.addEventListener('resize', onLayout);
@@ -470,6 +466,18 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
       window.removeEventListener('scroll', onLayout, true);
     };
   }, [open, container, position]);
+
+  /*
+   * THE KEYS PUT FOCUS ON THE FIRST PLACE ONCE THE FLYOUT IS PLACED. Until
+   * then it is laid out but hidden (it needs a size before it can be placed),
+   * and a browser refuses focus to an element under `visibility: hidden`, so
+   * a focus moved on the first layout was dropped and stayed on the tile.
+   */
+  useLayoutEffect(() => {
+    if (!place || !focusFirst.current) return;
+    focusFirst.current = false;
+    panel.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+  }, [place]);
 
   useEffect(() => {
     if (!open) setPlace(null);
