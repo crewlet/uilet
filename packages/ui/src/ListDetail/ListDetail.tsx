@@ -25,6 +25,12 @@ export interface ListDetailProps extends Omit<HTMLAttributes<HTMLDivElement>, 'c
  * column. The list column is `--crewlet-list-detail-list` wide (17rem by
  * default), with a hairline between the two.
  *
+ * THE DETAIL'S SCROLLBAR IS ON THE SHEET'S EDGE. Placed directly in a fill
+ * screen's column, it reaches past the column's end pad, and the detail
+ * keeps the screen's side inset inside itself, with its scrollbar's gutter
+ * always reserved: its content ends under the bar's last control, and a
+ * trailing control never touches the scrollbar.
+ *
  * BELOW 640px OF ITS OWN WIDTH IT IS ONE PANE, the one `showing` names: the
  * list and a reading detail do not both fit, whether the window is a phone or
  * an aside beside the screen has taken the room. The application gives its

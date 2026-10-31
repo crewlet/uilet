@@ -42,14 +42,45 @@ test('every tone reads a kind that ArtifactKinds.css grounds', () => {
   }
 });
 
-test('the hover is quiet: the ground deepens and a shadow lifts the card, and nothing moves', () => {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const css = readFileSync(join(here, 'ActionCard.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-  const at = css.indexOf('.crewlet-action-card:hover {');
-  const hover = css.slice(at, css.indexOf('}', at));
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ActionCard.css'), 'utf8').replace(
+  /\/\*[\s\S]*?\*\//g,
+  '',
+);
+/** The declarations of the first rule written for exactly this selector. */
+const rule = (selector: string): string => {
+  const at = css.indexOf(`${selector} {`);
+  return at === -1 ? '' : css.slice(at, css.indexOf('}', at));
+};
+
+test('the hover is quiet: the tint deepens, the edge takes the hue, a shadow lifts the card, and nothing moves', () => {
+  const hover = rule('.crewlet-action-card:hover');
   expect(hover).toMatch(/--crewlet-action-card-ground:\s*var\(--crewlet-kind-ground-strong\);/);
+  expect(hover).toMatch(/--crewlet-action-card-edge:\s*var\(--crewlet-kind-hue\);/);
   expect(hover).toMatch(/box-shadow:\s*var\(--shadow-sm\);/);
   expect(hover).not.toMatch(/transform|translate|scale/);
+});
+
+test("at rest the edge is the kind's hairline, not its hue: a tint is found by its title, not a slab's outline", () => {
+  const card = rule('.crewlet-action-card');
+  expect(card).toMatch(/--crewlet-action-card-edge:\s*var\(--crewlet-kind-line\);/);
+  expect(card).toMatch(/border:\s*1px solid var\(--crewlet-action-card-edge\);/);
+});
+
+test('its corner and its shadow are from the edge scale', () => {
+  const card = rule('.crewlet-action-card');
+  expect(card).toMatch(/border-radius:\s*var\(--radius-xl\);/);
+  expect(card).toMatch(/box-shadow:\s*var\(--shadow-xs\);/);
+  // The ring is drawn over the card's own edge, as every bordered control's.
+  expect(rule('.crewlet-action-card:focus-visible')).toMatch(/outline-offset:\s*var\(--size-focus-ring-inset-offset\);/);
+});
+
+test("every kind's drawing takes the same box: the card's width less its inset, at the canvas's own shape", () => {
+  const drawing = rule('.crewlet-action-card__art .crewlet-kind-illustration');
+  expect(drawing).toMatch(/width:\s*100%;/);
+  expect(drawing).toMatch(/height:\s*auto;/);
+  expect(drawing).not.toMatch(/max-height/);
+  // Inside the card's inset, not bled to its edges.
+  expect(rule('.crewlet-action-card__art')).not.toMatch(/margin:\s*0 calc/);
 });
 
 test('a row of cards carries no axe violation', async () => {

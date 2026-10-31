@@ -3,6 +3,7 @@ import './SidebarNav.css';
 
 export { NavGroup, NavItem, SidebarNav } from './SidebarNav.js';
 export type {
+  NavBadge,
   NavCount,
   NavFigure,
   NavGroupAction,

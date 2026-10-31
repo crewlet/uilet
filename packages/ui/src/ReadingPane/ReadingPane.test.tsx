@@ -5,8 +5,11 @@
  */
 
 import { cleanup, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import axe from 'axe-core';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { HeadingLevelProvider } from '../utils/headingLevel.js';
 import {
   ReadingPane,
@@ -17,6 +20,7 @@ import {
   ReadingPaneReasoning,
   ReadingPaneSection,
   ReadingPaneTitle,
+  READING_PANE_ENTER,
 } from './index.js';
 
 afterEach(cleanup);
@@ -125,4 +129,55 @@ test('a pending outcome is a status without the success check', () => {
   const mark = (c: HTMLElement) => c.querySelector('.crewlet-reading-pane__outcome-mark')?.outerHTML;
   expect(mark(done)).not.toBe(mark(container));
   expect(screen.getByRole('status').getAttribute('data-tone')).toBe('done');
+});
+
+// ---- A new item: played in, and focus follows it where it was the item's ----
+
+function Pane({ item, focusTarget }: { item: string; focusTarget?: () => HTMLElement | null }) {
+  return (
+    <>
+      <button type="button">In the list</button>
+      <ReadingPane contentKey={item} focusTarget={focusTarget}>
+        <ReadingPaneTitle>Question {item}</ReadingPaneTitle>
+        <button type="button">Answer {item}</button>
+      </ReadingPane>
+    </>
+  );
+}
+
+test('a new item plays in, and focus left in the pane moves to its title without scrolling', () => {
+  const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+  const { container, rerender } = render(<Pane item="1" />);
+  const column = () => container.querySelector('.crewlet-reading-pane__column')!;
+  // The first item is not played in: the page opened on it.
+  expect(column().classList.contains('crewlet-reading-pane__column--entering')).toBe(false);
+  screen.getByRole('button', { name: 'Answer 1' }).focus();
+  rerender(<Pane item="2" />);
+  expect(column().classList.contains('crewlet-reading-pane__column--entering')).toBe(true);
+  const title = screen.getByRole('heading', { name: 'Question 2' });
+  expect(document.activeElement).toBe(title);
+  expect(title.getAttribute('tabindex')).toBe('-1');
+  expect(focus).toHaveBeenLastCalledWith({ preventScroll: true });
+  focus.mockRestore();
+});
+
+test('focus a reader left in the list stays there, and a host can name where focus goes', () => {
+  const { rerender } = render(<Pane item="1" />);
+  const list = screen.getByRole('button', { name: 'In the list' });
+  list.focus();
+  rerender(<Pane item="2" />);
+  expect(document.activeElement).toBe(list);
+
+  screen.getByRole('button', { name: 'Answer 2' }).focus();
+  rerender(<Pane item="3" focusTarget={() => screen.getByRole('button', { name: 'Answer 3' })} />);
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Answer 3' }));
+});
+
+test('the entrance is the kit\'s motion, and nothing moves under reduced motion', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ReadingPane.css'), 'utf8');
+  expect(css).toContain(
+    `animation: ${READING_PANE_ENTER.animations[0]} var(--motion-duration-moderate) var(--motion-easing-out);`,
+  );
+  const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
+  expect(reduced).toMatch(/\.crewlet-reading-pane__column--entering\s*\{\s*animation: none;/);
 });

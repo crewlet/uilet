@@ -14,7 +14,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { atLightness, cascade, flatten, fromOklab, hex, oklabHex, parseBlocks, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
+import { cascade, flatten, fromOklab, hex, oklabHex, parseBlocks, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
 import * as palette from './palette.mjs';
 import { ARTIFACT_KINDS, ARTIFACT_KIND_FILL_ALPHA, SOFT_ALPHA, paletteSelectors, paletteStates } from './palette.mjs';
 import * as exported from '../dist/index.js';
@@ -428,10 +428,10 @@ describe('the edge scale and the quiet fills', () => {
     assert.equal(font.size.badge, '10px');
   });
 
-  test("the artifact kind grounds are the kind's own hue, vivid, at the card's lightness mix, in every palette", () => {
-    // Opaque, at the hue's own hue and chroma (as much as a screen shows), at
-    // a lightness mixed from the hue's and the card's neutral: so a ground
-    // keeps its colour where a tint of it went grey.
+  test("the artifact kind grounds are calm tints of the kind's own hue, never slabs of it, in every palette", () => {
+    // Opaque, at a small step of the hue's lightness from the card's neutral
+    // and a SHARE of its chroma: the card, tinted. The grounds of 0.83.0 took
+    // the full chroma at 0.26 of the lightness and read as saturated slabs.
     const chroma = ({ a, b }) => Math.hypot(a, b);
     const angle = ({ a, b }) => (Math.atan2(b, a) * 180) / Math.PI;
     for (const [state, values] of everyState()) {
@@ -442,20 +442,30 @@ describe('the edge scale and the quiet fills', () => {
         const alias = /^var\((--[a-z0-9-]+)\)$/.exec(hue ?? '');
         if (alias) hue = values.get(alias[1]);
         const hueLab = toOklab(parseHex(hue));
-        for (const [step, weight] of [['ground', 0.26], ['ground-strong', 0.3]]) {
+        for (const [step, lightness, share, ceiling] of [['ground', 0.12, 0.42, 0.08], ['ground-strong', 0.18, 0.6, 0.11]]) {
           const value = values.get(`--color-artifact-kind-${kind}-${step}`);
-          assert.equal(value, atLightness(hue, weight * hueLab.L + (1 - weight) * card.L), `${state} ${kind} ${step}`);
+          assert.equal(
+            value,
+            oklabHex({ L: lightness * hueLab.L + (1 - lightness) * card.L, a: share * hueLab.a, b: share * hueLab.b }),
+            `${state} ${kind} ${step}`,
+          );
           const lab = toOklab(parseHex(value));
           // The hue's own hue, within what eight bits a channel can hold.
           assert.ok(chroma(lab) < 0.02 || Math.abs(((angle(lab) - angle(hueLab) + 540) % 360) - 180) < 4, `${state} ${kind} ${step} keeps its hue`);
+          // CALM: never more than its share of the hue's colour, and never a
+          // slab, whatever a palette's hue is.
+          assert.ok(chroma(lab) <= share * chroma(hueLab) + 0.005, `${state} ${kind} ${step} takes only its share of the chroma`);
+          assert.ok(chroma(lab) <= ceiling, `${state} ${kind} ${step} is a tint, not a slab: ${chroma(lab).toFixed(3)}`);
+          // Near the card: a tint of it, not a different rung.
+          assert.ok(Math.abs(lab.L - card.L) <= Math.abs(hueLab.L - card.L) * lightness + 0.01, `${state} ${kind} ${step} stays near the card`);
         }
         const ground = toOklab(parseHex(values.get(`--color-artifact-kind-${kind}-ground`)));
         assert.equal(
           values.get(`--color-artifact-kind-${kind}-ground-end`),
-          oklabHex({ L: 0.7 * ground.L + 0.3 * card.L, a: 0.7 * ground.a, b: 0.7 * ground.b }),
+          oklabHex({ L: 0.6 * ground.L + 0.4 * card.L, a: 0.6 * ground.a, b: 0.6 * ground.b }),
           `${state} ${kind} ground-end`,
         );
-        assert.equal(values.get(`--color-artifact-kind-${kind}-glow`), withAlpha(hue, 0.46), `${state} ${kind} glow`);
+        assert.equal(values.get(`--color-artifact-kind-${kind}-glow`), withAlpha(hue, 0.24), `${state} ${kind} glow`);
       }
     }
   });

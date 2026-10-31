@@ -1,9 +1,11 @@
 /*
- * ActionCard: a first step offered as a picture, on an artifact kind's
- * colour ground. The ground is the kind's own Ground steps (ArtifactKinds.css)
- * laid over the card rung, which the palette suite holds to 4.5:1 for the
- * primary text in every palette and both modes, with the kind's glow behind
- * the drawing.
+ * ActionCard: a first step offered as a picture, on a CALM TINT of an
+ * artifact kind's hue. The ground is the kind's own Ground steps
+ * (ArtifactKinds.css): the card rung tinted by a share of the hue's chroma,
+ * never a slab of it, which the palette suite holds to 4.5:1 for the primary
+ * text in every palette and both modes and to a chroma ceiling. A hairline in
+ * the kind's Line step is the edge, the kind's hue under the pointer, and a
+ * soft halo of the hue stands behind the drawing.
  */
 
 /*
@@ -31,6 +33,7 @@
 
 .crewlet-action-card {
   --crewlet-action-card-ground: var(--crewlet-kind-ground);
+  --crewlet-action-card-edge: var(--crewlet-kind-line);
   position: relative;
   display: flex;
   flex: none;
@@ -41,30 +44,38 @@
   box-sizing: border-box;
   overflow: hidden;
   padding: var(--spacing-3) var(--spacing-3) 0;
-  /* The kind's hue itself is the edge: 3:1 or more on the sheet in every
-     palette and mode, where the kind's Line step measured 2.5:1. */
-  border: 1px solid var(--crewlet-kind-hue);
-  border-radius: var(--radius-lg);
+  /* The kind's Line step: a hairline that says which kind without shouting
+     it. The title and the tint are what the card is found by. */
+  border: 1px solid var(--crewlet-action-card-edge);
+  /* The edge scale: the extra-large corner a tall card of its own takes, and
+     the smallest shadow, so the card sits on the page rather than in it. */
+  border-radius: var(--radius-xl);
   background-color: var(--color-surface-subtle);
   background-image:
-    radial-gradient(110% 64% at 50% 100%, var(--crewlet-kind-glow) 0%, transparent 72%),
+    radial-gradient(90% 56% at 50% 100%, var(--crewlet-kind-glow) 0%, transparent 72%),
     linear-gradient(180deg, var(--crewlet-action-card-ground) 0%, var(--crewlet-kind-ground-end) 100%);
+  box-shadow: var(--shadow-xs);
   color: var(--color-text-primary);
   font: inherit;
   text-align: left;
   cursor: pointer;
   scroll-snap-align: start;
-  transition: box-shadow var(--motion-duration-fast) var(--motion-easing-default);
+  transition:
+    box-shadow var(--motion-duration-fast) var(--motion-easing-default),
+    border-color var(--motion-duration-fast) var(--motion-easing-default);
 }
 
-/* A QUIET HOVER: the ground deepens a step and a small shadow lifts the
-   card off the page. Nothing moves. */
+/* A QUIET HOVER: the tint deepens a step, the edge takes the kind's hue and a
+   small shadow lifts the card off the page. Nothing moves, so a row of cards
+   stays still under a pointer passing over it. */
 .crewlet-action-card:hover {
   --crewlet-action-card-ground: var(--crewlet-kind-ground-strong);
+  --crewlet-action-card-edge: var(--crewlet-kind-hue);
   box-shadow: var(--shadow-sm);
 }
 
-/* The card draws its own edge, so the ring is drawn over it. */
+/* The card draws its own edge, so the ring is drawn over it, on the same
+   corner. */
 .crewlet-action-card:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: var(--size-focus-ring-inset-offset);
@@ -80,20 +91,25 @@
   text-wrap: balance;
 }
 
-/* The drawing stands on the card's foot, still. */
+/*
+ * THE DRAWING STANDS ON THE CARD'S FOOT, still, the card's own width less its
+ * inset. Every kind's drawing is one canvas (160 by 120), so each takes the
+ * same box whatever its shape, a tall page and a wide slide alike, where a
+ * fixed width and a height cap drew a page half the size of a slide. It is
+ * set a step into the foot, so it stands on the edge rather than floating
+ * above it, on a soft shadow of the kind's Fill.
+ */
 .crewlet-action-card__art {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 100px;
-  margin: 0 calc(var(--spacing-3) * -1);
+  margin-bottom: calc(var(--spacing-2) * -1);
 }
 
 .crewlet-action-card__art .crewlet-kind-illustration {
-  width: 112px;
-  max-height: 96px;
-  margin-bottom: calc(var(--spacing-2) * -1);
-  filter: drop-shadow(0 6px 12px var(--crewlet-kind-line));
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 10px var(--crewlet-kind-fill));
 }
 
 /* FORCED COLORS drops the ground; the hue's border stays as the card's edge. */

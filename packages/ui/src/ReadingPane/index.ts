@@ -8,6 +8,7 @@ export {
   ReadingPaneReasoning,
   ReadingPaneOutcome,
   ReadingPaneSection,
+  READING_PANE_ENTER,
 } from './ReadingPane.js';
 export type {
   ReadingPaneProps,

@@ -1,13 +1,22 @@
 import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useCallback,
+  useEffect,
   useId,
+  useLayoutEffect,
+  useRef,
   useState,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
   type LiHTMLAttributes,
   type MouseEvent,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import { ChevronDownGlyph } from '@crewlethq/icons/glyphs';
+import { releaseFocus, usePresence } from '../Presence/index.js';
 import { cx } from '../utils/cx.js';
 import type { Tone } from '../utils/tone.js';
 import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/headingLevel.js';
@@ -63,6 +72,93 @@ export interface InboxGroupProps extends Omit<HTMLAttributes<HTMLElement>, 'titl
   /** Whether a collapsible group starts open, when the group holds it. */
   defaultOpen?: boolean | undefined;
   onOpenChange?: ((open: boolean) => void) | undefined;
+  /**
+   * The latest row to arrive in the group, as a token (the row's key): each
+   * new value plays a brief wash of the accent over the group's label and
+   * count, so a row that lands in a closed group (Answered) is seen to land.
+   * Pass it only for a row that has just arrived, never on a first draw.
+   */
+  arrived?: string | number | undefined;
+}
+
+/**
+ * The motion a leaving row waits for: its height closing, a transition of the
+ * row's own `grid-template-rows` (InboxList.css). A suite fakes exactly this.
+ */
+export const INBOX_ROW_LEAVE = { transitions: ['grid-template-rows'] } as const;
+
+/** The order to draw after a change: `next`'s, with each row still leaving kept where it stood. */
+function keepPlaces(previous: readonly string[], next: readonly string[], kept: (key: string) => boolean): string[] {
+  const order = [...next];
+  previous.forEach((key, index) => {
+    if (order.includes(key) || !kept(key)) return;
+    let at = 0;
+    for (let back = index - 1; back >= 0; back -= 1) {
+      const found = order.indexOf(previous[back]!);
+      if (found >= 0) {
+        at = found + 1;
+        break;
+      }
+    }
+    order.splice(at, 0, key);
+  });
+  return order;
+}
+
+function keyedRows(children: ReactNode): ReactElement<InboxRowProps>[] {
+  return Children.toArray(children).filter((child): child is ReactElement<InboxRowProps> => isValidElement(child));
+}
+
+/**
+ * A group's rows, and each keyed row that has just gone from them, kept in
+ * its place and LEAVING until its height has closed.
+ *
+ * THE HOST ONLY REMOVES THE ROW. An answered row moves to another group in
+ * the same commit, so the host has no row left to keep drawing; the group
+ * keeps the row's last drawing instead, and drops it once it has closed.
+ * A row that comes back while it leaves is live again where it stands.
+ */
+function useLeavingRows(children: ReactNode): ReactNode[] {
+  const [rows, setRows] = useState(() => ({
+    children,
+    order: keyedRows(children).map((row) => String(row.key)),
+    leaving: new Map<string, ReactElement<InboxRowProps>>(),
+  }));
+  let now = rows;
+  if (rows.children !== children) {
+    const next = keyedRows(children);
+    const present = new Set(next.map((row) => String(row.key)));
+    const leaving = new Map([...rows.leaving].filter(([key]) => !present.has(key)));
+    for (const row of keyedRows(rows.children)) {
+      const key = String(row.key);
+      if (!present.has(key) && row.type === InboxRow) leaving.set(key, row);
+    }
+    now = {
+      children,
+      order: keepPlaces(
+        rows.order,
+        next.map((row) => String(row.key)),
+        (key) => leaving.has(key),
+      ),
+      leaving,
+    };
+    setRows(now);
+  }
+  const drop = useCallback((key: string) => {
+    setRows((was) => {
+      if (!was.leaving.has(key)) return was;
+      const leaving = new Map(was.leaving);
+      leaving.delete(key);
+      return { ...was, leaving, order: was.order.filter((each) => each !== key) };
+    });
+  }, []);
+  const drawn = new Map(keyedRows(children).map((row) => [String(row.key), row] as const));
+  return now.order.map((key) => {
+    const row = drawn.get(key);
+    if (row) return row;
+    const last = now.leaving.get(key);
+    return last ? cloneElement(last, { leaving: true, onLeft: () => drop(key) }) : null;
+  });
 }
 
 /**
@@ -79,10 +175,12 @@ export function InboxGroup({
   open: controlledOpen,
   defaultOpen = false,
   onOpenChange,
+  arrived,
   className,
   children,
   ...rest
 }: InboxGroupProps) {
+  const rows = useLeavingRows(children);
   const level = useHeadingLevel();
   const Heading = headingTag(headingLevel ?? level);
   const labelId = useId();
@@ -105,6 +203,10 @@ export function InboxGroup({
         <VisuallyHidden>,</VisuallyHidden> <span className="crewlet-inbox-list__count">{count}</span>
       </>
     );
+  // A WASH PER ARRIVAL, keyed by it: each new token draws the wash afresh, so
+  // it plays again, and nothing the reader can focus is drawn anew.
+  const arrival =
+    arrived === undefined ? null : <span key={arrived} aria-hidden="true" className="crewlet-inbox-list__arrival" />;
   return (
     <section
       {...rest}
@@ -133,15 +235,17 @@ export function InboxGroup({
             <Eyebrow>{label}</Eyebrow>
             {counted}
           </button>
+          {arrival}
         </Heading>
       ) : (
         <Heading id={labelId} className="crewlet-inbox-list__label">
           <Eyebrow>{label}</Eyebrow>
           {counted}
+          {arrival}
         </Heading>
       )}
       <ul id={rowsId} className="crewlet-inbox-list__rows" hidden={!open}>
-        {children}
+        {rows}
       </ul>
     </section>
   );
@@ -207,6 +311,17 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
    * open the link in a tab.
    */
   onClick?: ((event: MouseEvent<HTMLElement>) => void) | undefined;
+  /**
+   * On its way out: the row stays drawn, inert, while its height closes, so
+   * the rows under it slide up rather than jump, and is drawn no more once it
+   * has closed. An `InboxGroup` does this itself for a keyed row that leaves
+   * its children; pass it for a list of your own, with `onLeft`.
+   */
+  leaving?: boolean | undefined;
+  /** Runs once a leaving row has closed and is drawn no more. */
+  onLeft?: (() => void) | undefined;
+  /** Just arrived: a brief wash of the accent that fades back to the row's own ground. */
+  arrived?: boolean | undefined;
 }
 
 /**
@@ -251,10 +366,29 @@ export function InboxRow({
   outcomeTone = 'neutral',
   href,
   onClick,
+  leaving = false,
+  onLeft,
+  arrived = false,
   className,
   children,
   ...rest
 }: InboxRowProps) {
+  /*
+   * A ROW THAT LEAVES CLOSES ITS HEIGHT. It stays drawn, inert, while its
+   * height eases to nothing (grid-template-rows, InboxList.css), so the rows
+   * under it slide up into its place, and is drawn no more once it has
+   * closed. Focus inside it is let go as it starts, never left in a row that
+   * takes nothing. Under reduced motion it simply goes.
+   */
+  const self = useRef<HTMLLIElement | null>(null);
+  const presence = usePresence(!leaving, self, INBOX_ROW_LEAVE);
+  const gone = !presence.present;
+  useLayoutEffect(() => {
+    if (presence.leaving) releaseFocus(self.current);
+  }, [presence.leaving]);
+  useEffect(() => {
+    if (gone) onLeft?.();
+  }, [gone, onLeft]);
   // Every part is set apart by a space, so the control is announced as
   // "Crewlet-PM coding run 2h Which ledger" rather than as one run-on word: an
   // accessible name is the concatenation of an element's parts with nothing
@@ -347,12 +481,27 @@ export function InboxRow({
       </button>
     );
 
+  if (gone) return null;
   return (
-    <li {...rest} className={cx('crewlet-inbox-row', selected && 'crewlet-inbox-row--selected', className)}>
-      {control}
-      {aside === undefined || aside === null || aside === false ? null : (
-        <div className="crewlet-inbox-row__aside">{aside}</div>
+    <li
+      {...rest}
+      ref={self}
+      inert={presence.leaving}
+      className={cx(
+        'crewlet-inbox-row',
+        selected && 'crewlet-inbox-row--selected',
+        arrived && 'crewlet-inbox-row--arrived',
+        presence.leaving && 'crewlet-inbox-row--leaving',
+        className,
       )}
+    >
+      {/* One box in the row's one track, so the track can close over it. */}
+      <div className="crewlet-inbox-row__body">
+        {control}
+        {aside === undefined || aside === null || aside === false ? null : (
+          <div className="crewlet-inbox-row__aside">{aside}</div>
+        )}
+      </div>
     </li>
   );
 }

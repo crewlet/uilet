@@ -32,6 +32,25 @@
   }
 }
 
+/* A NEW ITEM PLAYS IN (`contentKey`): a short fade and rise, so the reader
+   sees the pane move on rather than its words change under them. */
+.crewlet-reading-pane__column--entering {
+  animation: crewlet-reading-pane-enter var(--motion-duration-moderate) var(--motion-easing-out);
+}
+
+@keyframes crewlet-reading-pane-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-2));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-reading-pane__column--entering {
+    animation: none;
+  }
+}
+
 /* ---- The byline -------------------------------------------------------- */
 
 .crewlet-reading-pane__byline {

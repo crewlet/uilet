@@ -74,7 +74,7 @@ import {
   type Ref,
 } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
-import { ChevronUpGlyph, MenuGlyph, MinusGlyph, PlusGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronUpGlyph, ChevronsLeftGlyph, ChevronsRightGlyph, MenuGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { Kbd, ariaKeyshortcuts, isApplePlatform } from '../Kbd/index.js';
 import { Tooltip } from '../Tooltip/index.js';
@@ -187,15 +187,18 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   /** The scroll container itself, for a router restoring a position. */
   mainRef?: Ref<HTMLElement> | undefined;
   /**
-   * Gives the screen the whole height left under the bar, as a flex column,
-   * for a canvas or a split view that draws to the bottom of the window
-   * instead of scrolling.
+   * Gives the screen the whole height and width left under the bar, as a flex
+   * column, for a canvas or a split view that draws to the bottom of the
+   * window instead of scrolling. The column keeps its pad, and its end pad
+   * counts the scrollbar's width, so its content stands where a scrolling
+   * screen's does; a `ListDetail` standing in it reaches past that pad, so
+   * its detail's scrollbar is on the sheet's edge.
    *
    * `flush` is the same column EDGE TO EDGE: the content column gives up its
-   * pad, its measure and its gap, and the scroller reserves no gutter, for a
-   * screen that draws its own frame to the sheet's edges (a conversation with
-   * a list and a pane either side of it). The column is positioned, so a
-   * `LayerHost` the screen keeps inside it fills exactly the screen.
+   * pad and its gap as well, for a screen that draws its own frame to the
+   * sheet's edges (a conversation with a list and a pane either side of it).
+   * The column is positioned, so a `LayerHost` the screen keeps inside it
+   * fills exactly the screen.
    */
   fill?: boolean | 'flush' | undefined;
   /**
@@ -217,10 +220,10 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   rail?: AppShellRailShape | undefined;
   /**
    * Called with the other shape when the reader presses the fold control.
-   * Given, the shell draws THE fold control (never in the drawer): a minus in
-   * the rail's top left corner while it is full, and a plus in the same place
-   * while it is compact. Keeping the choice, and binding a key to it, are the
-   * application's.
+   * Given, the shell draws THE fold control (never in the drawer): a chevron
+   * on the head's row, before the brand's mark, pointing left while the rail
+   * is full and right while it is compact. Keeping the choice, and binding a
+   * key to it, are the application's.
    */
   onRailChange?: ((next: AppShellRailShape) => void) | undefined;
   /**
@@ -316,6 +319,7 @@ export function AppShell({
   const narrow = useMediaMatch(NARROW);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
+  const [gauge, setGauge] = useState<HTMLElement | null>(null);
   /*
    * The drawer's own place in the layer band, reported back by the surface
    * that registered it, so the rail can be painted ONE step above the veil
@@ -381,22 +385,29 @@ export function AppShell({
    * 15px past the cards under them. CSS cannot read a scrollbar's width, so
    * it is read here, as the scroller's border box less its client box, and
    * handed to the stylesheet as `--crewlet-app-shell-gutter`. It is 0 where
-   * scrollbars overlay the content, and on a screen that does not scroll.
+   * scrollbars overlay the content, and on a flush screen, which draws its
+   * own frame.
+   *
+   * A FILL SCREEN'S SCROLLER RESERVES NONE (its column pads by the gutter
+   * instead, which a pane can reach past), so there it is read off the gauge,
+   * an empty scroller that always draws a scrollbar: the bar's end inset is
+   * the same on a fill screen as on the scrolling screen beside it.
    */
   const [gutter, setGutter] = useState(0);
   useLayoutEffect(() => {
-    if (!scroller) return undefined;
-    const measure = () => setGutter(Math.max(0, scroller.offsetWidth - scroller.clientWidth));
+    const ruler = gauge ?? scroller;
+    if (!ruler) return undefined;
+    const measure = () => setGutter(Math.max(0, ruler.offsetWidth - ruler.clientWidth));
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
     const observer = new ResizeObserver(unlessRailMoving(measure));
-    observer.observe(scroller);
+    observer.observe(ruler);
     const held = heldMeasures.current;
     return () => {
       observer.disconnect();
       held.delete(measure);
     };
-  }, [scroller, unlessRailMoving]);
+  }, [gauge, scroller, unlessRailMoving]);
 
   /*
    * WHAT THE ASIDE COLUMN TAKES FROM THE WINDOW'S RIGHT, measured, so a peek
@@ -618,6 +629,7 @@ export function AppShell({
         <div ref={sheet} className="crewlet-app-shell__sheet">
           {topbar}
           {banner ? <div className="crewlet-app-shell__banner">{banner}</div> : null}
+          {fill === true ? <div ref={setGauge} className="crewlet-app-shell__gauge" aria-hidden="true" /> : null}
           {/*
            * THE BODY IS ALWAYS THERE, peek or none. It is the row the
            * scroller and a peek column share, and it is never added or taken
@@ -892,16 +904,16 @@ function ShellDrawer({
 }
 
 /**
- * THE FOLD CONTROL: one button in the rail's top left corner, in the same
- * place in both shapes. A minus while the rail is full, to make it smaller,
- * and a plus while it is compact, to open it. Its name says what pressing it
- * does, `aria-expanded` says whether the rail is open now, and its tooltip
- * carries the keys the application binds.
+ * THE FOLD CONTROL: one button on the head's row, before the brand's mark, in
+ * the same place in both shapes. Its chevrons point the way the rail will go,
+ * left to fold it while it is full and right to unfold it while it is
+ * compact. Its name says what pressing it does, `aria-expanded` says whether
+ * the rail is open now, and its tooltip carries the keys the application
+ * binds.
  *
- * THE CORNER IS THE SQUARE THE HEAD LEAVES EMPTY, up and to the left of the
- * brand's mark, which stands over the compact column's centre in both shapes,
- * so the control and the mark never meet and neither moves when the rail
- * folds.
+ * THE CONTROL AND THE MARK ARE ONE PAIR, a step apart and centred together in
+ * the compact column, so the column holds both and neither moves when the
+ * rail folds (AppShell.css).
  */
 function RailFold({
   rail,
@@ -939,7 +951,7 @@ function RailFold({
           label={label}
           size="sm"
           variant="ghost"
-          icon={compact ? <PlusGlyph size="sm" /> : <MinusGlyph size="sm" />}
+          icon={compact ? <ChevronsRightGlyph size="sm" /> : <ChevronsLeftGlyph size="sm" />}
           aria-controls={railId}
           aria-expanded={!compact}
           aria-keyshortcuts={keys ? ariaKeyshortcuts(keys, apple) : undefined}

@@ -1,6 +1,8 @@
 import { useId, type HTMLAttributes, type ReactNode } from 'react';
+import { StatusDot } from '../StatusDot/index.js';
 import { cx } from '../utils/cx.js';
 import { headingTag, useHeadingLevel, type HeadingLevel } from '../utils/headingLevel.js';
+import type { Tone } from '../utils/tone.js';
 
 export type CatalogTileElement = 'article' | 'li' | 'div';
 
@@ -13,6 +15,24 @@ export type CatalogTileElement = 'article' | 'li' | 'div';
  * already in use rather than offers a choice.
  */
 export type CatalogTileDensity = 'comfortable' | 'compact';
+
+/**
+ * An entry's state, as data: the tile draws it, the same way on every tile.
+ *
+ * ONE PRESENTATION, NOT A SLOT. Taken as any node, a service's In use came as
+ * a soft pill and an app's Connected as a dot and a word, so one row of tiles
+ * drew its states two ways and at two heights. A tone and a word cannot be
+ * drawn two ways.
+ */
+export interface CatalogTileStatus {
+  /**
+   * What the state is: `success` for in use or connected, `warning` for
+   * something owed, `danger` for broken, `neutral` for coming soon.
+   */
+  tone: Tone;
+  /** The state in a word or two: In use, Connected, Needs attention. */
+  label: string;
+}
 
 export interface CatalogTileProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   /** The element the tile is: an `li` in a `TileGrid as="ul"`. */
@@ -28,12 +48,12 @@ export interface CatalogTileProps extends Omit<HTMLAttributes<HTMLElement>, 'tit
   /** Overrides the level the name is rendered at. */
   headingLevel?: HeadingLevel | undefined;
   /**
-   * The entry's state, as a `Tag`, ONLY when the state is worth reading: On,
-   * Connected, Needs attention, Coming soon. An entry in its resting state
-   * (available, not set up) carries none, and its name stands centred beside
-   * its mark; a pill under every name is a column a reader learns to skip.
+   * The entry's state, drawn as its tone's dot and its word, ONLY when the
+   * state is worth reading: In use, Connected, Needs attention, Coming soon.
+   * An entry in its resting state (available, not set up) carries none; a
+   * state under every name is a column a reader learns to skip.
    */
-  status?: ReactNode;
+  status?: CatalogTileStatus | undefined;
   /** One sentence: what the entry is for, or what is owed when something is. */
   description?: ReactNode;
   /** A quiet fact at the foot (`2 agents · 14 deliveries`). */
@@ -78,6 +98,11 @@ export function CatalogTile({
   const Heading = headingTag(headingLevel ?? level);
   const titleId = useId();
   const foot = meta !== undefined || action !== undefined;
+  const state = status ? (
+    <span className="crewlet-catalog-tile__status">
+      <StatusDot tone={status.tone}>{status.label}</StatusDot>
+    </span>
+  ) : null;
   if (density === 'compact') {
     // ONE HEADER LINE, AND NO FOOT: the fact and the action ride the line the
     // name is on, so a summary of what is in use reads down one edge of names
@@ -102,9 +127,7 @@ export function CatalogTile({
             <Heading id={titleId} className="crewlet-catalog-tile__name">
               {title}
             </Heading>
-            {status === undefined || status === null ? null : (
-              <span className="crewlet-catalog-tile__status">{status}</span>
-            )}
+            {state}
             {meta === undefined || meta === null ? null : <span className="crewlet-catalog-tile__meta">{meta}</span>}
           </span>
           {action === undefined ? null : <span className="crewlet-catalog-tile__action">{action}</span>}
@@ -134,9 +157,7 @@ export function CatalogTile({
           <Heading id={titleId} className="crewlet-catalog-tile__name">
             {title}
           </Heading>
-          {status === undefined || status === null ? null : (
-            <span className="crewlet-catalog-tile__status">{status}</span>
-          )}
+          {state}
         </span>
       </div>
       {description === undefined ? null : <p className="crewlet-catalog-tile__description">{description}</p>}

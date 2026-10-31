@@ -42,8 +42,8 @@ type Story = StoryObj<typeof CompactNav>;
 
 /**
  * The rail folded to its marks, as the approved design draws it: Search, the
- * three places every reader starts from (the inbox and the reader's own work
- * each carrying the badge of what waits on them), a rule, then Company and
+ * three places every reader starts from (the inbox's badge in the accent, and
+ * the reader's own work in the quiet grey), a rule, then Company and
  * Workspace folded into one tile each. Point at or press a group's tile to
  * open its flyout; from the keyboard, Right opens it on its first place, Up
  * and Down walk it, Escape or Left close it and Tab moves on from the tile.
@@ -85,7 +85,7 @@ export const Folded: Story = {
           href="#/me"
           current={at === 'me'}
           onClick={go('me')}
-          badge={{ value: 23, label: 'open, assigned to you' }}
+          badge={{ value: 23, label: 'open, assigned to you', tone: 'quiet' }}
         />
         <CompactNavSeparator label="Company and Workspace" />
         <CompactNavGroup

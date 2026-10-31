@@ -210,6 +210,33 @@ describe('a figure at the end of a row', () => {
     expect(mine.querySelector('.crewlet-nav-item__badge')).toBeNull();
   });
 
+  test("a quiet badge keeps the badge's round pill and its place, in the quiet count's grey", () => {
+    const uninstall = installSheets('SidebarNav/SidebarNav.css');
+    try {
+      render(
+        <SidebarNav label="Sections">
+          <NavItem href="#/inbox" label="Inbox" badge={{ value: '50+', label: 'unread' }} />
+          <NavItem href="#/me" label="My work" badge={{ value: 23, label: 'open, assigned to you', tone: 'quiet' }} />
+        </SidebarNav>,
+      );
+      const pill = (name: string) =>
+        screen.getByRole('link', { name }).querySelector<HTMLElement>('.crewlet-nav-item__badge')!;
+      const inbox = pill('Inbox, 50+ unread');
+      const mine = pill('My work, 23 open, assigned to you');
+      // Attention is the default, so the inbox is unchanged.
+      expect(inbox.classList.contains('crewlet-nav-item__badge--quiet')).toBe(false);
+      expect(mine.classList.contains('crewlet-nav-item__badge--quiet')).toBe(true);
+      // The same pill on the same end line.
+      for (const property of ['height', 'min-width', 'padding-left', 'padding-right', 'font-size']) {
+        expect(px(mine, property), property).toBe(px(inbox, property));
+      }
+      expect(getComputedStyle(mine).borderRadius).toBe(getComputedStyle(inbox).borderRadius);
+      expect(getComputedStyle(mine).marginLeft).toBe('auto');
+    } finally {
+      uninstall();
+    }
+  });
+
   test("a badge is one pill wherever it stands: the reader's own work draws the inbox's, on the same end line", () => {
     const uninstall = installSheets('SidebarNav/SidebarNav.css');
     try {
@@ -437,6 +464,7 @@ describe('the rail colour', () => {
   const HOVERED = '.crewlet-nav-item__row:hover';
   const CURRENT = ".crewlet-nav-item__row[aria-current='page']";
   const ATTENTION = '.crewlet-nav-item__badge';
+  const QUIET = '.crewlet-nav-item__badge--quiet';
   const LEAD = '.crewlet-key-chip';
 
   function colour(values: Map<string, string>, name: string, ground: Rgb): Rgb {
@@ -455,6 +483,10 @@ describe('the rail colour', () => {
     expect(pair(CURRENT).ink).toBe(token('color-text-primary'));
     expect(pair(ATTENTION).fill).toBe(token('color-brand-accent'));
     expect(pair(ATTENTION).ink).toBe(token('color-text-on-accent'));
+    // The quiet badge: a neutral wash carrying the secondary ink, the grey the
+    // compact rail's quiet figure draws.
+    expect(pair(QUIET).fill).toBe(token('color-fill-soft'));
+    expect(pair(QUIET).ink).toBe(token('color-text-secondary'));
     expect(pair(LEAD).fill).toBe(token('color-surface-elevated'));
     expect(pair(LEAD).ink).toBe(token('color-text-secondary'));
     expect(Object.keys(states)).toEqual(['base', 'dark', 'light (media query)', 'light (attribute)']);
@@ -500,6 +532,7 @@ describe('the rail colour', () => {
     const hover = pair(HOVERED);
     const current = pair(CURRENT);
     const attention = pair(ATTENTION);
+    const quiet = pair(QUIET);
     const lead = pair(LEAD);
     const failures: string[] = [];
     for (const [state, values] of Object.entries(states)) {
@@ -543,6 +576,18 @@ describe('the rail colour', () => {
         );
         measure("a project's key chip", colour(values, lead.ink, page), flatten(values.get(lead.fill ?? '') ?? '', ground), on);
       }
+      // The quiet badge's wash over a resting and a hovered row, in the
+      // count's ink; on the reader's own row it takes the row's ink, as the
+      // count does.
+      for (const [on, ground] of [rows[0], rows[1]] as [string, Rgb][]) {
+        measure('a quiet badge', colour(values, quiet.ink, page), flatten(values.get(quiet.fill ?? '') ?? '', ground), on);
+      }
+      measure(
+        'a quiet badge',
+        colour(values, current.ink, page),
+        flatten(values.get(quiet.fill ?? '') ?? '', chosen),
+        'the row the reader is on',
+      );
     }
     expect(failures).toEqual([]);
   });

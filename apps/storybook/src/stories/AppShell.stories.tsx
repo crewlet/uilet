@@ -674,16 +674,22 @@ interface Place {
   key: string;
   label: string;
   icon: ReactNode;
-  badge?: { value: number | string; label: string };
+  badge?: { value: number | string; label: string; tone?: 'quiet' | 'attention' };
   count?: { value: number | string; label: string };
 }
 
 const YOU: Place[] = [
   { key: 'home', label: 'Home', icon: <HouseGlyph size="sm" /> },
   { key: 'inbox', label: 'Inbox', icon: <InboxGlyph size="sm" />, badge: { value: '50+', label: 'unread' } },
-  // THE READER'S OWN WORK WAITS ON THEM, as the inbox does: the same filled
-  // pill, on the same line at the row's end.
-  { key: 'me', label: 'My work', icon: <CircleCheckGlyph size="sm" />, badge: { value: 23, label: 'open, assigned to you' } },
+  // THE READER'S OWN WORK WAITS ON THEM, in the inbox's round pill on the
+  // same line at the row's end, in the quiet count's grey: it waits, but it
+  // does not call.
+  {
+    key: 'me',
+    label: 'My work',
+    icon: <CircleCheckGlyph size="sm" />,
+    badge: { value: 23, label: 'open, assigned to you', tone: 'quiet' },
+  },
 ];
 
 const GROUPS: { key: string; label: string; icon: ReactNode; places: Place[] }[] = [
@@ -799,27 +805,28 @@ function FoldingShell({ initial, style }: { initial: AppShellRailShape; style?: 
 }
 
 /**
- * The full rail with its fold control: a minus in the rail's top left corner,
- * up and to the left of the brand's mark, which stands over the compact
- * column's centre. Press it (the story binds no key; an application binds Mod
- * and backslash itself) and the rail eases to its marks: its words fade out
- * under the moving edge, the compact column fades in when they are gone, and
- * neither the mark nor the control moves. Focus stays on the control, which
- * is a plus now, and says the rail is not expanded. Under reduced motion the
- * rail changes shape at once.
+ * The full rail with its fold control: chevrons pointing left, on the head's
+ * row before the brand's mark, the pair centred in the compact column. Press
+ * it (the story binds no key; an application binds Mod and backslash itself)
+ * and the rail eases to its marks: its words fade out under the moving edge,
+ * the compact column fades in when they are gone, and neither the mark nor
+ * the control moves. Focus stays on the control, whose chevrons point right
+ * now, and which says the rail is not expanded. Under reduced motion the rail
+ * changes shape at once.
  */
 export const Foldable: Story = {
   render: () => <FoldingShell initial="full" />,
 };
 
 /**
- * The compact rail: the plus in the corner, the brand's mark, and under it
- * the engine's status in a row of its own, then Search, Home, Inbox and My
- * work as tiles, then Company and Workspace folded into one tile each, whose
- * flyouts open beside the rail on the pointer, a press, or Right. The
- * Workspace tile carries Chatlet's badge and is current while Chatlet is the
- * page. The foot holds Settings and the reader's face, centred on the line
- * the tiles are centred on, at their height.
+ * The compact rail: the fold control and the brand's mark on the head's row
+ * (the 76px column holds both), and under them the engine's status in a row
+ * of its own, then Search, Home, Inbox and My work as tiles, then Company and
+ * Workspace folded into one tile each, whose flyouts open beside the rail on
+ * the pointer, a press, or Right. The Workspace tile carries Chatlet's badge
+ * and is current while Chatlet is the page. The foot holds Settings and the
+ * reader's face, centred on the line the tiles are centred on, at their
+ * height.
  */
 export const Compact: Story = {
   render: () => <FoldingShell initial="compact" />,
@@ -827,12 +834,12 @@ export const Compact: Story = {
 
 /**
  * THE FOLD CONTROL IN BOTH SHAPES, one shell over the other: the full rail
- * with the minus that makes it smaller, and the compact rail with the plus
- * that opens it, in the same corner. Each is named for what pressing it does
- * ("Collapse the sidebar", "Expand the sidebar"), says whether the rail is
- * expanded, and carries the keys the application binds in its tooltip. Tab
- * to either to see its ring, drawn inside its own box because the corner is
- * the window's.
+ * with chevrons pointing left to fold it, and the compact rail with chevrons
+ * pointing right to unfold it, in the same place before the brand's mark.
+ * Each is named for what pressing it does ("Collapse the sidebar", "Expand
+ * the sidebar"), says whether the rail is expanded, and carries the keys the
+ * application binds in its tooltip. Tab to either to see its ring, drawn
+ * inside its own box, clear of the mark beside it.
  */
 export const FoldControlInBothShapes: Story = {
   render: () => (

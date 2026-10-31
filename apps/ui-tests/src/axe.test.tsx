@@ -111,7 +111,7 @@ test('a settings table, a catalogue of tiles and a numbered list carry no violat
         <CatalogTile
           mark={<svg />}
           title="GitHub"
-          status={<Tag size="sm">Connected</Tag>}
+          status={{ tone: 'success', label: 'Connected' }}
           description="Issues and pull requests."
           meta="2 agents"
           action={<Button size="small">Manage</Button>}
