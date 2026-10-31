@@ -55,6 +55,9 @@ export interface ChatThreadHandle {
   scroller: () => HTMLDivElement | null;
 }
 
+/** Where a short transcript rests in its view: under the top, or on the foot. */
+export type ChatThreadRest = 'start' | 'end';
+
 export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' | 'children'> {
   /** Names the log for a screen reader: "Conversation". */
   label: string;
@@ -71,6 +74,13 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
    * own way back (a day's Jump to menu), so nothing is added under it.
    */
   jump?: boolean | undefined;
+  /**
+   * Where a transcript shorter than the view rests: `start` (the default)
+   * under the top, or `end`, on the foot, against the composer under it, as a
+   * conversation's newest messages always are. The items keep no gap of their
+   * own in `end`, since a conversation's rows set their own spacing.
+   */
+  rest?: ChatThreadRest | undefined;
   /** The thread's blocks, one child per item, oldest first. */
   children?: ReactNode;
   labels?: Partial<ChatThreadLabels> | undefined;
@@ -105,7 +115,7 @@ export interface ChatThreadProps extends Omit<HTMLAttributes<HTMLDivElement>, 'r
  * `jump={false}`.
  */
 export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function ChatThread(
-  { label, busy = false, follow = true, jump = true, children, labels: overrides, className, ...rest },
+  { label, busy = false, follow = true, jump = true, rest: restAt = 'start', children, labels: overrides, className, ...rest },
   ref,
 ) {
   const labels = overrides ? { ...CHAT_THREAD_LABELS, ...overrides } : CHAT_THREAD_LABELS;
@@ -244,7 +254,7 @@ export const ChatThread = forwardRef<ChatThreadHandle, ChatThreadProps>(function
 
   const fresh = detachedAt === null ? 0 : Math.max(0, count - detachedAt);
   return (
-    <div {...rest} className={cx('crewlet-chat-thread', className)}>
+    <div {...rest} className={cx('crewlet-chat-thread', restAt === 'end' && 'crewlet-chat-thread--rest-end', className)}>
       <div
         ref={scroller}
         role="log"

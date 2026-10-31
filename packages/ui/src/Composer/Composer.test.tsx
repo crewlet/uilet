@@ -122,6 +122,26 @@ test("a chat composer's tools stand at the footer's start and its formatting row
   expect(footer.querySelector('.crewlet-composer__tools + .crewlet-composer__spacer')).not.toBeNull();
 });
 
+test('a chat composer is drawn on the transcript\'s scale, its footer with no rule of its own', () => {
+  const uninstall = installThemed('dark', 'ChatMessage/ChatScale.css', 'Composer/Composer.css');
+  try {
+    const { container } = render(
+      <Composer appearance="chat" value="" onChange={() => {}} label="Message" submitOn="enter" tools={<button type="button" aria-expanded="true">Emoji</button>} />,
+    );
+    const box = container.querySelector('.crewlet-composer')!;
+    expect(box.className).toContain('crewlet-composer--chat');
+    const footer = getComputedStyle(container.querySelector('.crewlet-composer__footer')!);
+    expect(footer.borderTopWidth === '0px' || footer.borderTopStyle === 'none' || footer.borderTop.startsWith('0')).toBe(true);
+    const field = getComputedStyle(container.querySelector('.crewlet-composer__field')!);
+    expect(field.fontSize).not.toBe('');
+  } finally {
+    uninstall();
+  }
+  // The default composer is unchanged.
+  const { container } = render(<Composer value="" onChange={() => {}} label="Reply" />);
+  expect(container.querySelector('.crewlet-composer')!.className).not.toContain('crewlet-composer--chat');
+});
+
 test('tools alone draw the footer', () => {
   const { container } = render(
     <Composer value="" onChange={() => {}} label="Message" submitOn="enter" tools={<button type="button">Attach</button>} />,

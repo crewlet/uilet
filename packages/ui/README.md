@@ -253,7 +253,9 @@ places:
 
 **`SidePanel` takes `subtitle`**: what the panel is about, after the title on its baseline in the tertiary ink ("Thread" then the room it is in). It drops under the title when the two do not fit, and the head grows to hold it.
 
-**`Composer` takes `tools` and `toolbar`**: the tools at the footer's start (attach, emoji, a mention), before the actions at its end, and a formatting row along the box's top, inside its edge, above the words it acts on. Either one alone draws its part.
+**`Composer` takes `tools` and `toolbar`**: the tools at the footer's start (attach, emoji, a mention), before the actions at its end, and a formatting row along the box's top, inside its edge, above the words it acts on. Either one alone draws its part. **`appearance="chat"`** is a conversation's message box on the transcript's scale: the transcript's ground with the row wash and a small shadow inside the strong edge, the words at the chat step, a footer with no rule of its own, an open tool drawn pressed, and the formatting row quiet until the box is in use. The type is `ComposerAppearance`.
+
+**`ChatThread` takes `rest="end"`**: a transcript shorter than its view rests on its foot, against the composer under it, rather than under its top. `start` is the default. The type is `ChatThreadRest`.
 
 **`formatMarkdown` applies `strikethrough`, `quote` and `link`** (`MARKDOWN_TEXT_FORMATS`, type `MarkdownTextFormat`), for a composer's own formatting row. `MarkdownEditor`'s bar does not draw them. A strikethrough wraps in `~~`, a quote toggles `> ` on every line it touches and keeps their own markers, and a link makes the selection its label and selects the address to type over.
 

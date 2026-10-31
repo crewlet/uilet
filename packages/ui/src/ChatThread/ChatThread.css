@@ -54,6 +54,23 @@
 }
 
 /*
+ * A SHORT TRANSCRIPT RESTS ON ITS FOOT (`rest="end"`), against the composer
+ * under it, as a conversation's newest messages always are, rather than
+ * under the top with an empty band between it and the box. The scroller is a
+ * column and the items take the room above them; a conversation's rows set
+ * their own spacing, so the items keep no gap.
+ */
+.crewlet-chat-thread--rest-end .crewlet-chat-thread__scroller {
+  display: flex;
+  flex-direction: column;
+}
+
+.crewlet-chat-thread--rest-end .crewlet-chat-thread__items {
+  margin-top: auto;
+  gap: 0;
+}
+
+/*
  * The pill, centred in a row of its own under the log. IN FLOW, NOT FLOATING:
  * laid over the scroller it covered the last lines of whatever was being read,
  * a table's rows or an answer's text. Here the log gives up the row while the

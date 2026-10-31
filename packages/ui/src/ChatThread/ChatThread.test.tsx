@@ -284,3 +284,29 @@ test('carries no axe violation, following and detached', async () => {
   });
   expect(result.violations).toEqual([]);
 });
+
+test('a short transcript rests on its foot with rest="end", and under its top by default', () => {
+  const uninstall = installSheets('ChatThread/ChatThread.css');
+  try {
+    const { container, rerender } = render(
+      <ChatThread label="Conversation">
+        <p>One</p>
+      </ChatThread>,
+    );
+    const root = container.querySelector('.crewlet-chat-thread')!;
+    expect(root.className).not.toContain('crewlet-chat-thread--rest-end');
+    rerender(
+      <ChatThread label="Conversation" rest="end">
+        <p>One</p>
+      </ChatThread>,
+    );
+    expect(root.className).toContain('crewlet-chat-thread--rest-end');
+    const scroller = getComputedStyle(container.querySelector('.crewlet-chat-thread__scroller')!);
+    expect(scroller.display).toBe('flex');
+    expect(scroller.flexDirection).toBe('column');
+    const items = getComputedStyle(container.querySelector('.crewlet-chat-thread__items')!);
+    expect(items.marginTop).toBe('auto');
+  } finally {
+    uninstall();
+  }
+});

@@ -16,6 +16,9 @@ export const COMPOSER_COUNTER_AT = 0.8;
  */
 export type ComposerSubmitKey = 'mod-enter' | 'enter';
 
+/** The box's look: `default`, a form's field, or `chat`, a conversation's message box. */
+export type ComposerAppearance = 'default' | 'chat';
+
 export interface ComposerProps
   extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange' | 'onSubmit' | 'children'> {
   value: string;
@@ -29,6 +32,14 @@ export interface ComposerProps
   submitOn?: ComposerSubmitKey | undefined;
   /** Names the field for a screen reader, since it carries no visible label. */
   label: string;
+  /**
+   * `chat` is a conversation's message box, on the transcript's own type and
+   * ground (the `--crewlet-chat-*` scale): the large corner, the transcript's
+   * ground with the row wash and a small shadow, the words at the chat step, a
+   * footer with no rule of its own, a tool whose menu is open drawn pressed,
+   * and the formatting row's glyphs quiet until the box is in use.
+   */
+  appearance?: ComposerAppearance | undefined;
   /** The footer's controls, at its end: Cancel and Submit. */
   actions?: ReactNode;
   /**
@@ -96,6 +107,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     onSubmit,
     submitOn = 'mod-enter',
     label,
+    appearance = 'default',
     actions,
     tools,
     toolbar,
@@ -137,6 +149,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     <div
       className={cx(
         'crewlet-composer',
+        appearance === 'chat' && 'crewlet-composer--chat',
         inline && 'crewlet-composer--inline',
         disabled && 'is-disabled',
         className,
