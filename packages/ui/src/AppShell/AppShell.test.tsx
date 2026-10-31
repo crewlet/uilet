@@ -805,6 +805,34 @@ test('the shell has no accessibility violations, with the drawer open or closed'
   expect(open.violations.map((violation) => violation.id)).toEqual([]);
 });
 
+test('a shell the reader can fold has no accessibility violations in either shape', async () => {
+  for (const rail of ['full', 'compact'] as const) {
+    const view = render(
+      <AppShell
+        rail={rail}
+        onRailChange={() => {}}
+        railFoldKeys={['Mod', '\\']}
+        sidebar={<Rail />}
+        topbar={<AppShell.Topbar title="Overview" />}
+      >
+        <h2>The screen</h2>
+      </AppShell>,
+    );
+    // The corner control names what pressing it does and says whether the
+    // rail is expanded, for the rail it controls.
+    const fold = screen.getByRole('button', { name: rail === 'full' ? 'Collapse the sidebar' : 'Expand the sidebar' });
+    expect(fold.getAttribute('aria-expanded')).toBe(String(rail === 'full'));
+    expect(fold.getAttribute('aria-controls')).toBe(screen.getByRole('complementary').id);
+    const result = await axe.run(view.container, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
+      rules: { 'color-contrast': { enabled: false } },
+      resultTypes: ['violations'],
+    });
+    expect(result.violations.map((violation) => violation.id)).toEqual([]);
+    view.unmount();
+  }
+});
+
 /**
  * The rail's foot, and the one vertical line the whole rail is built on.
  *

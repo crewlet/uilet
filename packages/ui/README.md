@@ -205,6 +205,20 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.83.0
+
+### The application rail
+
+**The fold control is a plus and a minus in the rail's top left corner.** The chevron in the row under the rail's head is gone. In its place `AppShell` draws one control in the corner the head leaves empty, up and to the left of the brand's mark: a minus (`MinusGlyph`) while the rail is full, to make it smaller, and a plus (`PlusGlyph`) while it is compact, to open it. It is the same element in both shapes and never moves, so focus stays on it across a fold. It keeps its names ("Collapse the sidebar" and "Expand the sidebar", or `railFoldLabels`), `aria-controls`, `aria-keyshortcuts` and the keys in its tooltip, and now says `aria-expanded` (true while the rail is full). It stands at the target floor (`--size-target-min`, 24px) at every density, its ring is drawn inside its own box, and it is quiet until the rail is pointed at. Full, the search field keeps the nav's own columns, since nothing stands before it any more. Props are unchanged.
+
+**The rail eases between its two shapes.** Its width moves on the slow step with the emphasized curve, and what it holds keeps the width of the shape drawn, so the moving edge clips the rail's words rather than squeezing or rewrapping them, and the column under the edge never drifts. Folding, the full rail stays drawn while its words fade out, then the compact column fades in as the edge settles; unfolding, the full rail is drawn at once and fades in while the edge uncovers it. The brand's mark and the fold control do not move or fade. `useAppShell().rail` reports the shape drawn, so it stays `full` until a fold's words have faded; the root's `data-rail-motion` (`fold`, `folded`, `unfold`, type `AppShellRailMotion`) names the phase under way. Under reduced motion, and wherever the rail has no transition, the new shape is drawn at once. A change that arrives with the window crossing into the wide layout is drawn at once too. The rail's grid track is now `auto` and the rail takes `--crewlet-app-shell-rail` as its own width, which is still the one variable a host sets for a narrower rail.
+
+**In the compact rail the status has a row of its own under the brand's mark**, where the fold chevron stood, rather than at the top of the foot: the `AppShell.RailStatus` dot and count, centred, a small control step tall, before the places. It keeps its button, its name ("Engine serving, 2 alarms"), its popup attributes and its ref. A panel it opens now stands at the top of the rail, so open it below the status (`side="bottom"`) in both shapes. Full, it stays at the end of the head's line.
+
+**The compact account face is centred on the tiles' line.** It took the full row's badge column and the step after it, which stood the face 4px left of the column's centre in a box 8px wider than the face. It now sits in a box of its own size, centred under the tiles. Hand the face at the tiles' height in the compact rail (`Avatar size="sm"`, 26px); the full row keeps `size="md"`.
+
+**A place that waits on the reader takes the badge, whichever place it is.** `NavItem` and `CompactNavItem` draw a `badge` as the one filled accent pill, centred on the row's line and ending on the row's end inset, so a column of badges lines up down the rail; a `count` is the quiet figure. Nothing changed in how either is drawn: to show the reader's own work as the inbox is shown, pass `badge` rather than `count`. New stories: `AppShell` Fold Control In Both Shapes, and `SidebarNav` Badges On The Rows About You.
+
 ## Changes in 0.82.0
 
 ### A conversation's messages

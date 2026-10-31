@@ -50,7 +50,10 @@
      the page chrome for the moment before that lands. */
   --crewlet-app-shell-drawer-z: var(--z-index-overlay);
   display: grid;
-  grid-template-columns: var(--crewlet-app-shell-rail) minmax(0, 1fr);
+  /* The rail's track is the rail's own width (`auto`), and the rail takes
+     `--crewlet-app-shell-rail` itself, so the track follows it while it eases
+     between its two shapes (see the rail's motion, below). */
+  grid-template-columns: auto minmax(0, 1fr);
   /* One row, the viewport's height less nothing: the sheet's own margin is
      what holds it off the frame's edges, and a row sized by its content would
      let a tall screen push the sheet's bottom edge off the window. */
@@ -89,7 +92,7 @@
    keeps its column and is only narrower, so nothing under the bar moves but
    its end edge. */
 .crewlet-app-shell[data-aside='column'] {
-  grid-template-columns: var(--crewlet-app-shell-rail) minmax(0, 1fr) var(--crewlet-app-shell-aside-track);
+  grid-template-columns: auto minmax(0, 1fr) var(--crewlet-app-shell-aside-track);
 }
 
 .crewlet-app-shell--no-rail[data-aside='column'] {
@@ -139,14 +142,25 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  width: var(--crewlet-app-shell-rail);
   min-height: 0;
   min-width: 0;
+  /* THE MOVING EDGE CUTS WHAT IT PASSES. While the rail eases between its
+     shapes its content keeps the width of the shape drawn (below), and the
+     edge clips it rather than squeezing it. Across only: a ring or a badge
+     at a row's top or bottom is never cut. */
+  overflow-x: clip;
   background: var(--color-surface-frame);
+  transition: width var(--motion-duration-slow) var(--motion-easing-emphasized);
 }
 
+/* THE CONTENT IS LAID OUT AT ITS SHAPE'S WIDTH, never at a width between the
+   two, so no word in the rail rewraps while it moves and nothing drifts with
+   the edge: the column stands still and the edge travels over it. */
 .crewlet-app-shell__rail-inner {
   display: flex;
   flex-direction: column;
+  width: var(--crewlet-app-shell-rail);
   min-height: 0;
   height: 100%;
 }
@@ -890,7 +904,7 @@
 }
 
 /*
- * THE COMPACT RAIL: the same track, narrowed to the compact column. One
+ * THE COMPACT RAIL: the same rail, narrowed to the compact column. One
  * variable is the rail's width for the grid, the aside's cap and the drawer
  * alike, so folding the rail is this one declaration. The shell writes the
  * attribute only where the layout is wide: the drawer under the step is
@@ -901,26 +915,38 @@
 }
 
 /*
- * THE FOLD CONTROL stands over the compact column's centre, in the row under
- * the head, in both shapes, so it never moves under the pointer that pressed
- * it. Quiet until the rail is pointed at: the tertiary ink, which holds 3:1
- * on the frame, then the secondary, and the ghost's own primary under the
- * pointer.
+ * THE FOLD CONTROL stands in the rail's top left corner, in both shapes, so
+ * it never moves under the pointer that pressed it: a minus while the rail is
+ * full and a plus while it is compact. The corner is the square the head
+ * leaves empty up and to the left of the brand's mark, and the control is the
+ * target floor (`--size-target-min`), so it ends short of the mark on the
+ * compact column's centre at every density.
+ *
+ * Quiet until the rail is pointed at: the tertiary ink, which holds 3:1 on
+ * the frame, then the secondary, and the ghost's own primary under the
+ * pointer. Its ring is drawn inside its own box, because the corner it
+ * stands in is the window's, and a ring outside it would be cut there.
  */
 .crewlet-app-shell__fold {
   position: absolute;
-  top: calc(var(--size-shell-inset) + var(--crewlet-app-shell-topbar));
-  left: calc((var(--size-shell-rail-compact) - var(--size-control-sm)) / 2);
+  top: 0;
+  left: 0;
   z-index: 1;
   display: inline-flex;
 }
 
 .crewlet-app-shell__fold > .crewlet-icon-btn {
+  width: var(--size-target-min);
+  height: var(--size-target-min);
   color: var(--color-text-tertiary);
 }
 
 .crewlet-app-shell__rail:hover > .crewlet-app-shell__fold > .crewlet-icon-btn:not(:hover) {
   color: var(--color-text-secondary);
+}
+
+.crewlet-app-shell__fold > .crewlet-icon-btn:focus-visible {
+  outline-offset: var(--size-focus-ring-inset-offset);
 }
 
 /*
@@ -939,30 +965,16 @@
 }
 
 /*
- * FULL, THE FIELD STARTS AFTER THE FOLD CONTROL, a step off it, on the row
- * the control stands in. The field holds its place at the top of the rail's
- * middle while the rows scroll under it, on the frame's own ground, so the
- * control beside it is always beside it.
+ * COMPACT, THE STATUS HAS A ROW OF ITS OWN under the mark, a small control
+ * step tall, its dot and its count centred in the column: the first thing
+ * under the head, before the places, where the fold control stood before it
+ * moved to the corner.
  */
-/* The middle is a stacking context of its own, so the field pinned in it
-   stands over the rows scrolling under it and the whole middle stands under
-   the fold control, which is painted a step above the rail. */
-.crewlet-app-shell--foldable .crewlet-app-shell__rail-body {
-  isolation: isolate;
-}
-
-.crewlet-app-shell--foldable[data-rail='full'] .crewlet-app-shell__rail-search {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding-left: calc((var(--size-shell-rail-compact) + var(--size-control-sm)) / 2 + var(--spacing-2));
-  background: var(--color-surface-frame);
-}
-
-/* COMPACT, THE FOLD CONTROL HAS A ROW OF ITS OWN under the mark, which the
-   head leaves room for, and the column of tiles starts under it. */
-.crewlet-app-shell--foldable[data-rail='compact'] .crewlet-app-shell__rail-head {
-  margin-bottom: var(--size-control-sm);
+.crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-inner > .crewlet-app-shell__rail-status {
+  justify-content: center;
+  min-width: 0;
+  min-height: var(--size-control-sm);
+  margin: 0;
 }
 
 .crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-body {
@@ -972,7 +984,7 @@
 
 /*
  * The compact foot: what the full foot holds, centred in the column, a step
- * apart: the status's dot, a Settings tile, the reader's face.
+ * apart: a Settings tile, the reader's face.
  */
 .crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-foot {
   align-items: center;
@@ -984,10 +996,74 @@
   align-self: stretch;
 }
 
-.crewlet-app-shell[data-rail='compact'] .crewlet-app-shell__rail-foot > .crewlet-app-shell__rail-status {
-  justify-content: center;
-  min-width: 0;
-  margin: 0;
+/*
+ * THE COMPACT FACE IS CENTRED ON THE TILES' LINE. It gives up the full row's
+ * badge column and the step after it (above): kept, the step stood the face
+ * 4px left of the column's centre, in a box 8px wider than the face, so the
+ * face sat off the line every tile above it is centred on.
+ */
+.crewlet-app-shell__rail-foot .crewlet-account-row--compact .crewlet-account-row__avatar {
+  width: auto;
+  margin-inline-end: 0;
+}
+
+/*
+ * THE RAIL'S MOTION (railMotion.ts). The rail's width eases between the two
+ * shapes on the slow step, and what it holds keeps the width of the shape
+ * drawn, so the moving edge clips the words rather than squeezing them.
+ *
+ * FOLDING, the full rail stays drawn while the edge narrows to the compact
+ * column, and its words fade out on the base step; the compact column is
+ * drawn when they are gone, by which time the decelerating edge has covered
+ * nearly all its way, and fades in on the fast step. UNFOLDING, the full
+ * rail is drawn at once and fades in while the edge uncovers it. The brand's
+ * mark and the fold control are in the same place in both shapes, so
+ * neither fades.
+ */
+.crewlet-app-shell[data-rail-motion='fold'] > .crewlet-app-shell__rail {
+  width: var(--size-shell-rail-compact);
+}
+
+@keyframes crewlet-app-shell-rail-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Two names for one entrance, so a fold pressed again while the compact
+   column is still arriving starts the full rail's entrance afresh. */
+@keyframes crewlet-app-shell-rail-unfold {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes crewlet-app-shell-rail-settle {
+  from {
+    opacity: 0;
+  }
+}
+
+.crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-body,
+.crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-foot,
+.crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-status,
+.crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-head .crewlet-brand__name,
+.crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-head .crewlet-brand__context {
+  animation: crewlet-app-shell-rail-fade var(--motion-duration-base) var(--motion-easing-out) forwards;
+}
+
+.crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-body,
+.crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-foot,
+.crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-status,
+.crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-head .crewlet-brand__name,
+.crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-head .crewlet-brand__context {
+  animation: crewlet-app-shell-rail-unfold var(--motion-duration-slow) var(--motion-easing-out);
+}
+
+.crewlet-app-shell[data-rail-motion='folded'] .crewlet-app-shell__rail-body,
+.crewlet-app-shell[data-rail-motion='folded'] .crewlet-app-shell__rail-foot,
+.crewlet-app-shell[data-rail-motion='folded'] .crewlet-app-shell__rail-status {
+  animation: crewlet-app-shell-rail-settle var(--motion-duration-fast) var(--motion-easing-out);
 }
 
 @media (width < 1024px) {
@@ -1065,6 +1141,12 @@
     transition: transform var(--motion-duration-slow) var(--motion-easing-emphasized);
   }
 
+  /* The drawer never changes shape, and on a window narrower than the rail
+     it is the window's width: its content fills it rather than being cut. */
+  .crewlet-app-shell__rail-inner {
+    width: auto;
+  }
+
   .crewlet-app-shell__toggle {
     display: inline-flex;
   }
@@ -1097,6 +1179,24 @@
   .crewlet-app-shell__aside[data-shape='column'] > .crewlet-app-shell__aside-sheet,
   .crewlet-app-shell__aside[data-shape='overlay'],
   .crewlet-app-shell__aside[data-shape='sheet'] {
+    animation: none;
+  }
+
+  /* With the rail's transition gone the shell draws the new shape at once
+     (railMotion.ts), so no phase starts; these hold even if one did. */
+  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-body,
+  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-foot,
+  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-status,
+  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-head .crewlet-brand__name,
+  .crewlet-app-shell[data-rail-motion='fold'] .crewlet-app-shell__rail-head .crewlet-brand__context,
+  .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-body,
+  .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-foot,
+  .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-status,
+  .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-head .crewlet-brand__name,
+  .crewlet-app-shell[data-rail-motion='unfold'] .crewlet-app-shell__rail-head .crewlet-brand__context,
+  .crewlet-app-shell[data-rail-motion='folded'] .crewlet-app-shell__rail-body,
+  .crewlet-app-shell[data-rail-motion='folded'] .crewlet-app-shell__rail-foot,
+  .crewlet-app-shell[data-rail-motion='folded'] .crewlet-app-shell__rail-status {
     animation: none;
   }
 }

@@ -21,6 +21,9 @@ export interface AccountRowProps {
   /**
    * The reader's badge, drawn decorative: the name beside it says who it is.
    * In a rail's foot the row is sized for a medium one (`size="md"`, 32px).
+   * In the compact rail the face stands among the compact places' tiles and
+   * takes their height, a small one (`size="sm"`, 26px), centred in the
+   * column as each tile is.
    */
   avatar: ReactNode;
   /** Who the reader is. */
@@ -82,7 +85,9 @@ export interface AccountRowProps {
  * IN THE COMPACT RAIL THE ROW IS THE READER'S FACE (`compact`): the same link
  * or menu button, holding the badge alone, named by the name and the detail
  * as the full row is, and showing them in a tooltip, since a face says who
- * it is only to somebody who already knows.
+ * it is only to somebody who already knows. The face is centred in the
+ * column on the line the tiles above it are centred on, and at their height
+ * when it is handed at the small step.
  */
 export function AccountRow({
   avatar,

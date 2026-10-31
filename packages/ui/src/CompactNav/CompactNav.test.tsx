@@ -89,6 +89,21 @@ describe('a tile', () => {
     expect(count.classList.contains('crewlet-compact-nav__figure--badge')).toBe(false);
   });
 
+  test("a badge is one pill on every tile: the reader's own work carries the inbox's", () => {
+    render(
+      <CompactNav label="Navigation">
+        <CompactNavItem label="Inbox" icon={<svg />} href="#/inbox" badge={{ value: '50+', label: 'unread' }} />
+        <CompactNavItem label="My work" icon={<svg />} href="#/me" badge={{ value: 23, label: 'open, assigned to you' }} />
+      </CompactNav>,
+    );
+    const figure = (name: string) => screen.getByRole('link', { name }).querySelector('.crewlet-compact-nav__figure')!;
+    const inbox = figure('Inbox, 50+ unread');
+    const mine = figure('My work, 23 open, assigned to you');
+    expect(mine.textContent).toBe('23');
+    expect(mine.className).toBe(inbox.className);
+    expect(mine.classList.contains('crewlet-compact-nav__figure--badge')).toBe(true);
+  });
+
   test('without a destination it is a button, with its shortcut, and a press runs it', async () => {
     const onSearch = vi.fn();
     render(<Rail onSearch={onSearch} />);
