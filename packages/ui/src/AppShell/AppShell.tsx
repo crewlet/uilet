@@ -438,18 +438,32 @@ export function AppShell({
   const foldable = hasRail && onRailChange !== undefined && !narrow;
 
   /*
-   * FOCUS LEAVES THE FOLDING CONTENT FOR THE FOLD CONTROL. A reader who folds
-   * the rail by its key from a row inside it would otherwise be left in
-   * content that has just turned inert; the control that unfolds the rail
-   * stands outside it, in the same place in both shapes.
+   * FOCUS LEAVES THE FOLDING CONTENT FOR THE RAIL'S FIRST LIVE CONTROL. A
+   * reader who folds the rail by its key from a row inside it would otherwise
+   * be left in content that has just turned inert. The first control the
+   * fold leaves live is the fold control, where the host draws one, and
+   * otherwise the brand's link in the head, both in the same place in both
+   * shapes. A rail with neither has nowhere live to go while it folds: focus
+   * is taken off the row, and handed to the folded rail's first control once
+   * that is drawn.
    */
+  const refocusFolded = useRef(false);
   useLayoutEffect(() => {
-    if (!railLeaving) return;
     const aside = rail.current;
-    releaseFocus(
-      aside?.querySelector('.crewlet-app-shell__rail-inner') ?? null,
-      aside?.querySelector<HTMLElement>('.crewlet-app-shell__fold button'),
-    );
+    if (!aside) return;
+    if (railLeaving) {
+      const held = aside.ownerDocument.activeElement;
+      const leavingPart = held instanceof HTMLElement ? held.closest('[inert]') : null;
+      if (!leavingPart || !aside.contains(leavingPart)) return;
+      const live = focusables(aside).find((element) => !element.closest('[inert]')) ?? null;
+      releaseFocus(leavingPart, live);
+      refocusFolded.current = live === null;
+      return;
+    }
+    if (!refocusFolded.current) return;
+    refocusFolded.current = false;
+    const held = aside.ownerDocument.activeElement;
+    if (held === null || held === aside.ownerDocument.body) focusables(aside)[0]?.focus();
   }, [railLeaving]);
 
   const shell: AppShellContextValue = {
@@ -945,12 +959,21 @@ export interface AppShellRailProps {
  */
 export function AppShellRail({ header, search, status, footer, className, children }: AppShellRailProps) {
   const compact = useRailShape() === 'compact';
-  // ON ITS WAY OUT while the rail folds over it: nothing in it takes focus or
-  // a press until the compact column is drawn in its place.
-  const leaving = useContext(RailLeavingContext);
-  const statusSlot = status ? <div className="crewlet-app-shell__rail-status">{status}</div> : null;
+  /*
+   * ON ITS WAY OUT while the rail folds over it: nothing in what changes shape
+   * (the middle, the foot, the status) takes focus or a press until the
+   * compact column is drawn in its place. The head stays live: its mark
+   * stands in the same place in both shapes, and it is where focus goes from
+   * a row that folds away when the host draws no fold control.
+   */
+  const leaving = useContext(RailLeavingContext) || undefined;
+  const statusSlot = status ? (
+    <div className="crewlet-app-shell__rail-status" inert={leaving}>
+      {status}
+    </div>
+  ) : null;
   return (
-    <div className={cx('crewlet-app-shell__rail-inner', className)} inert={leaving || undefined}>
+    <div className={cx('crewlet-app-shell__rail-inner', className)}>
       {header || (status && !compact) ? (
         <div className="crewlet-app-shell__rail-head">
           {header}
@@ -958,11 +981,15 @@ export function AppShellRail({ header, search, status, footer, className, childr
         </div>
       ) : null}
       {compact ? statusSlot : null}
-      <div className="crewlet-app-shell__rail-body">
+      <div className="crewlet-app-shell__rail-body" inert={leaving}>
         {search && !compact ? <div className="crewlet-app-shell__rail-search">{search}</div> : null}
         {children}
       </div>
-      {footer ? <div className="crewlet-app-shell__rail-foot">{footer}</div> : null}
+      {footer ? (
+        <div className="crewlet-app-shell__rail-foot" inert={leaving}>
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -615,7 +615,9 @@ describe("the rail's motion", () => {
     expect(motion()).toBe('fold');
     expect(root().getAttribute('data-rail')).toBe('full');
     expect(drawnNav()).toContain('crewlet-sidebar-nav');
-    expect(document.querySelector('.crewlet-app-shell__rail-inner')?.hasAttribute('inert')).toBe(true);
+    expect(document.querySelector('.crewlet-app-shell__rail-body')?.hasAttribute('inert')).toBe(true);
+    // The head stands in the same place in both shapes, so it stays live.
+    expect(document.querySelector('.crewlet-app-shell__rail-head')?.closest('[inert]')).toBeNull();
     // The control says the CHOSEN shape at once: it already offers to unfold,
     // and it is not inert, since it stands outside the content.
     const fold = screen.getByRole('button', { name: 'Expand the sidebar' });
@@ -626,7 +628,7 @@ describe("the rail's motion", () => {
     expect(motion()).toBe('folded');
     expect(root().getAttribute('data-rail')).toBe('compact');
     expect(drawnNav()).toContain('crewlet-compact-nav');
-    expect(document.querySelector('.crewlet-app-shell__rail-inner')?.hasAttribute('inert')).toBe(false);
+    expect(document.querySelector('.crewlet-app-shell__rail-inner [inert]')).toBeNull();
     arriving.finish();
     await settleMotion();
     expect(motion()).toBeNull();
@@ -673,6 +675,36 @@ describe("the rail's motion", () => {
     expect(document.querySelector('.crewlet-app-shell__rail-inner [inert]')).toBeNull();
   });
 
+  test('a host that drives the shape with no fold control: focus goes to the first live control, the brand', () => {
+    narrowWindow(false);
+    const { rerender } = render(<AppShell rail="full" sidebar={<FullRail />}>screen</AppShell>);
+    driveMotion(rail()).start();
+    screen.getByRole('link', { name: 'Home' }).focus();
+    rerender(<AppShell rail="compact" sidebar={<FullRail />}>screen</AppShell>);
+    expect(motion()).toBe('fold');
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'GoPhrase' }));
+  });
+
+  test('with no live control at all, focus lands on the folded rail\'s first control once it is drawn', async () => {
+    narrowWindow(false);
+    const bare = (
+      <AppShell.Rail>
+        <Places />
+      </AppShell.Rail>
+    );
+    const { rerender } = render(<AppShell rail="full" sidebar={bare}>screen</AppShell>);
+    const narrowing = driveMotion(rail()).start();
+    screen.getByRole('link', { name: 'Home' }).focus();
+    rerender(<AppShell rail="compact" sidebar={bare}>screen</AppShell>);
+    expect(motion()).toBe('fold');
+    // Nowhere live to go while the rail folds: off the leaving row.
+    expect(document.querySelector('.crewlet-app-shell__rail-body')?.contains(document.activeElement)).toBe(false);
+    narrowing.finish();
+    await settleMotion();
+    expect(root().getAttribute('data-rail')).toBe('compact');
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Home' }));
+  });
+
   test('unfolding draws the full rail at once, live, and ends when the rail has moved', async () => {
     narrowWindow(false);
     render(<Shell initial="compact" />);
@@ -681,7 +713,7 @@ describe("the rail's motion", () => {
     expect(motion()).toBe('unfold');
     expect(root().getAttribute('data-rail')).toBe('full');
     expect(drawnNav()).toContain('crewlet-sidebar-nav');
-    expect(document.querySelector('.crewlet-app-shell__rail-inner')?.hasAttribute('inert')).toBe(false);
+    expect(document.querySelector('.crewlet-app-shell__rail-inner [inert]')).toBeNull();
     widening.finish();
     await settleMotion();
     expect(motion()).toBeNull();
