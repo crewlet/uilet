@@ -70,12 +70,12 @@
   outline-offset: var(--size-focus-ring-inset-offset);
 }
 
-/* A card title keeps the heading weight a title carries, two lines at most
-   at its width, balanced so neither line is a single word. */
+/* The title at the medium weight, as every emphasis in a conversation is,
+   two lines at most at its width, balanced so neither line is one word. */
 .crewlet-action-card__title {
   max-width: 14ch;
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   line-height: var(--font-line-height-snug);
   text-wrap: balance;
 }
