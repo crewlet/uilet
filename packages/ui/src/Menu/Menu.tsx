@@ -98,6 +98,7 @@ import { Button, type ButtonVariant } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
 import { cx } from '../utils/cx.js';
 import { returnFocus } from '../utils/focusModality.js';
+import { useComposedRef } from '../utils/composedRef.js';
 
 export interface MenuItem {
   kind?: 'item';
@@ -273,6 +274,9 @@ export function Menu({
     open,
     onDismiss: (reason) => close(reason !== 'outside'),
   });
+  // STABLE across renders (`useComposedRef`), so a caller's trigger is not
+  // released and handed back on every render of the menu.
+  const sharedRef = useComposedRef<HTMLElement>(triggerRef, popup.insideRef);
 
   const entries = () => (menu.current ? [...menu.current.querySelectorAll<HTMLElement>(ITEM_SELECTOR)] : []);
 
@@ -531,10 +535,7 @@ export function Menu({
   ) : null;
 
   const shared: MenuTriggerProps = {
-    ref: (el: HTMLElement | null) => {
-      triggerRef.current = el;
-      popup.insideRef(el);
-    },
+    ref: sharedRef,
     'aria-haspopup': 'menu' as const,
     'aria-expanded': open,
     'aria-controls': open ? menuId : undefined,

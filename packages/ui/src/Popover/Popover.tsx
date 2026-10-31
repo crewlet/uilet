@@ -10,6 +10,7 @@ import {
   type KeyboardEvent,
   type ReactElement,
   type ReactNode,
+  type Ref,
 } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -26,6 +27,7 @@ import {
 } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
 import { returnFocus } from '../utils/focusModality.js';
+import { useComposedRef } from '../utils/composedRef.js';
 
 export type PopoverAlign = 'start' | 'end';
 export type PopoverSide = 'top' | 'bottom';
@@ -322,11 +324,19 @@ export function Popover({
 
   const triggerEl = trigger(open, toggle);
   const haspopup = role === 'none' ? undefined : role;
+  /*
+   * The trigger's own ref is kept, joined to this component's, and the joined
+   * ref is STABLE (`useComposedRef`): an inline callback here replaced the
+   * ref the trigger carried, and released and re-attached the element on
+   * every render of the popover.
+   */
+  const anchorRef = useComposedRef<HTMLElement>(
+    anchor,
+    layer.insideRef,
+    (triggerEl.props as { ref?: Ref<HTMLElement> | undefined }).ref,
+  );
   const anchored = cloneElement(triggerEl, {
-    ref: (el: HTMLElement | null) => {
-      anchor.current = el;
-      layer.insideRef(el);
-    },
+    ref: anchorRef,
     'aria-expanded': open,
     'aria-haspopup': (triggerEl.props as Record<string, unknown>)['aria-haspopup'] ?? haspopup,
     'aria-controls': open ? panelId : undefined,

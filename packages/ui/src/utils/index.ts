@@ -1,4 +1,5 @@
 export { cx } from './cx.js';
+export { attachRef, useComposedRef } from './composedRef.js';
 export { useClipboard, writeClipboard } from './useClipboard.js';
 export type { Clipboard, ClipboardOptions, ClipboardState } from './useClipboard.js';
 export { useOutcome } from './useOutcome.js';

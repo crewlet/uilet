@@ -13,7 +13,6 @@ import {
   type ReactElement,
   type ReactNode,
   type Ref,
-  type RefObject,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from '@crewlethq/tokens';
@@ -28,6 +27,7 @@ import {
   type PlacementRect,
 } from '../Layer/index.js';
 import { cx } from '../utils/cx.js';
+import { useComposedRef } from '../utils/composedRef.js';
 import { isVisibleFocus } from '../utils/focusModality.js';
 
 export type TooltipPlacement = 'top' | 'bottom';
@@ -93,33 +93,6 @@ function composeHandlers(first: unknown, second: unknown): unknown {
   return (...args: unknown[]) => {
     (first as (...a: unknown[]) => void)(...args);
     (second as (...a: unknown[]) => void)(...args);
-  };
-}
-
-/**
- * Hands an element to the trigger's OWN ref as well as to this component's.
- *
- * The trigger is cloned with a ref of this component's making, and a ref the
- * caller had already put on it would otherwise be dropped in silence: a Menu
- * trigger that has to be focused again when its menu closes, a list's Move
- * button a parent scrolls to, a measured control, all of them simply stop
- * being handed their element the day somebody wraps them in a tip.
- *
- * A cleanup is always returned, so the ref a caller wrote in either supported
- * shape is released the way React would have released it: the callback form
- * that returns its own teardown gets that teardown called, and one that does
- * not is called with null, exactly as React does for a ref it owns.
- */
-function attach(ref: Ref<HTMLElement> | undefined, el: HTMLElement | null): () => void {
-  if (typeof ref === 'function') {
-    const release = ref(el);
-    return typeof release === 'function' ? release : () => void ref(null);
-  }
-  if (!ref) return () => {};
-  const box = ref as RefObject<HTMLElement | null>;
-  box.current = el;
-  return () => {
-    box.current = null;
   };
 }
 
@@ -343,23 +316,23 @@ export function Tooltip({
   }
   if (outer['style'] !== undefined) passed['style'] = { ...(child.props['style'] as CSSProperties | undefined), ...(outer['style'] as CSSProperties) };
   const describedBy = cx(child.props['aria-describedby'] as string | undefined, outer['aria-describedby'] as string | undefined) || undefined;
+  /*
+   * THE TRIGGER'S OWN REF IS KEPT, joined to this component's. A ref the
+   * caller had already put on it would otherwise be dropped in silence: a
+   * Menu trigger that has to be focused again when its menu closes, a list's
+   * Move button a parent scrolls to, a measured control, all of them stopped
+   * being handed their element the day somebody wrapped them in a tip. And
+   * the joined ref is STABLE (`useComposedRef`), so a re-render of the tip
+   * does not take the element away from the trigger's own ref and give it
+   * back in the same commit.
+   */
   const ownRef = child.props['ref'] as Ref<HTMLElement> | undefined;
+  const triggerRef = useComposedRef<HTMLElement>(anchor, layer.insideRef, ownRef, forwardedRef);
   /** The trigger's own handler for an event the tooltip also listens to. */
   const call = (key: string, event: unknown) => ((passed[key] ?? child.props[key]) as ((e: unknown) => void) | undefined)?.(event);
   const trigger = cloneElement(child, {
     ...passed,
-    ref: (el: HTMLElement | null) => {
-      anchor.current = el;
-      layer.insideRef(el);
-      const release = attach(ownRef, el);
-      const releaseForwarded = attach(forwardedRef, el);
-      return () => {
-        anchor.current = null;
-        layer.insideRef(null);
-        release();
-        releaseForwarded();
-      };
-    },
+    ref: triggerRef,
     'aria-describedby': open ? cx(describedBy, panelId) : describedBy,
     onPointerEnter: (event: PointerEvent) => {
       over.current.pointer = true;

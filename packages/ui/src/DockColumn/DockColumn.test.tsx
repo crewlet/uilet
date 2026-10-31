@@ -8,8 +8,10 @@ import axe from 'axe-core';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { useRef } from 'react';
 import { afterEach, describe, expect, test } from 'vitest';
 import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
+import { Tooltip } from '../Tooltip/index.js';
 import { DockColumn } from './index.js';
 
 const restorers: (() => void)[] = [];
@@ -189,6 +191,32 @@ describe('the focus a closing dock gives up', () => {
     rerender(<Host open={false} named={false} />);
     expect(panel()).not.toBeNull();
     expect(panel()?.contains(document.activeElement)).toBe(false);
+  });
+
+  test('focus reaches a control LATER in the tree, wrapped in a tooltip, held by its own ref', () => {
+    // The Chatlet shape: the dock first, the control that pins it again in a
+    // bar after it, a tip round it, and the host reading the control's ref.
+    reduced(false);
+    function Chat({ open }: { open: boolean }) {
+      const pin = useRef<HTMLButtonElement | null>(null);
+      return (
+        <div>
+          <DockColumn open={open} width={280} data-testid="dock" focusOnClose={() => pin.current}>
+            <button type="button">Unpin</button>
+          </DockColumn>
+          <Tooltip content="Pin the rooms beside the conversation">
+            <button ref={pin} type="button">
+              Rooms
+            </button>
+          </Tooltip>
+        </div>
+      );
+    }
+    const { rerender } = render(<Chat open />);
+    driveMotion(column()).start();
+    unpin().focus();
+    rerender(<Chat open={false} />);
+    expect(document.activeElement).toBe(rooms());
   });
 
   test('a reader who has moved on is not pulled back', () => {
