@@ -14,7 +14,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { cascade, flatten, fromOklab, hex, oklabHex, parseBlocks, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
+import { cascade, contrast, flatten, fromOklab, hex, oklabHex, parseBlocks, parseHex, parseRgba, toOklab, withAlpha } from './color.mjs';
 import * as palette from './palette.mjs';
 import { ARTIFACT_KINDS, ARTIFACT_KIND_FILL_ALPHA, SOFT_ALPHA, paletteSelectors, paletteStates } from './palette.mjs';
 import * as exported from '../dist/index.js';
@@ -466,6 +466,36 @@ describe('the edge scale and the quiet fills', () => {
           `${state} ${kind} ground-end`,
         );
         assert.equal(values.get(`--color-artifact-kind-${kind}-glow`), withAlpha(hue, 0.24), `${state} ${kind} glow`);
+      }
+    }
+  });
+
+  test("a first-step card's edge is the kind's hue toward the ink, at 3:1 on the sheet and on its tint, in every palette", () => {
+    // The card's extent has to be seen (3:1 for a boundary), and in its own
+    // hue: a neutral grey outline round a tint of the hue read as a card from
+    // another family. At rest against the sheet and the ground, under the
+    // pointer against the sheet and the strong ground, a step stronger.
+    for (const [state, values] of everyState()) {
+      const sheet = parseHex(values.get('--color-surface-background'));
+      const ink = toOklab(parseHex(values.get('--color-text-primary')));
+      for (const kind of ARTIFACT_KINDS) {
+        let hue = values.get(`--color-artifact-kind-${kind}`);
+        const alias = /^var\((--[a-z0-9-]+)\)$/.exec(hue ?? '');
+        if (alias) hue = values.get(alias[1]);
+        const hueLab = toOklab(parseHex(hue));
+        const at = (step) => parseHex(values.get(`--color-artifact-kind-${kind}-${step}`) ?? '');
+        const toward = (step) => {
+          // How far from the hue toward the ink the step stands, along that line.
+          const lab = toOklab(at(step));
+          const span = Math.hypot(ink.L - hueLab.L, ink.a - hueLab.a, ink.b - hueLab.b);
+          return Math.hypot(lab.L - hueLab.L, lab.a - hueLab.a, lab.b - hueLab.b) / span;
+        };
+        for (const [edge, ground] of [['edge', 'ground'], ['edge-strong', 'ground-strong']]) {
+          assert.ok(at(edge), `${state} ${kind} ${edge} is declared`);
+          assert.ok(contrast(at(edge), sheet) >= 3, `${state} ${kind} ${edge} on the sheet: ${contrast(at(edge), sheet).toFixed(2)}`);
+          assert.ok(contrast(at(edge), at(ground)) >= 3, `${state} ${kind} ${edge} on the ${ground}: ${contrast(at(edge), at(ground)).toFixed(2)}`);
+        }
+        assert.ok(toward('edge-strong') > toward('edge'), `${state} ${kind} edge-strong is a step further toward the ink`);
       }
     }
   });

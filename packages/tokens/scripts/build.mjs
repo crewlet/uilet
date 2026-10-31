@@ -12,7 +12,7 @@ import { dirname, relative, resolve, sep } from 'node:path';
 // from the one the palette suite measures. It is read from the TypeScript
 // source, which Node strips, because the build runs before tsc has emitted
 // dist/color.js; the palette suite and the package entry read the built copy.
-import { oklabHex, parseHex, parseRgba, toOklab, withAlpha } from '../src/color.ts';
+import { contrast, oklabHex, parseHex, parseRgba, toOklab, withAlpha } from '../src/color.ts';
 // The brand mapping's one source is stylesheets/brand.css; the scope's
 // stylesheet is written from it by the same module the artifact kit reads the
 // mapping's public tokens through, so the two cannot disagree about it.
@@ -143,6 +143,43 @@ const KIND_GROUND_STEPS = {
 };
 const KIND_GROUND_END = 0.6;
 const KIND_GLOW_ALPHA = 0.24;
+
+// THE EDGE OF A FIRST-STEP CARD, in the kind's own hue. A boundary has to
+// clear 3:1 to be seen, and a neutral grey one round a tint of the hue read
+// as a card from another family. `edge` is the hue mixed toward the
+// palette's ink in OKLab, by the least share (in steps of KIND_EDGE_STEP)
+// that clears KIND_EDGE_CONTRAST against both the sheet and the card's
+// ground; `edgeStrong`, under the pointer, starts KIND_EDGE_HOVER further
+// toward the ink and clears the same against the sheet and the strong
+// ground. In a light palette the ink is dark and the edge a darker step of
+// the hue; in a dark one, a lighter step.
+const KIND_EDGE_CONTRAST = 3;
+const KIND_EDGE_STEP = 0.02;
+const KIND_EDGE_HOVER = 0.16;
+
+/** The hue `share` of the way to the ink, in OKLab. */
+function towardInk(hue, ink, share) {
+  return oklabHex({
+    L: hue.L + share * (ink.L - hue.L),
+    a: hue.a + share * (ink.a - hue.a),
+    b: hue.b + share * (ink.b - hue.b),
+  });
+}
+
+/**
+ * The least step of the hue toward the ink, from `from` on, that clears the
+ * edge's contrast against every ground in `against`, with the share it took.
+ */
+function kindEdge(hue, ink, against, from, where) {
+  const steps = Math.round(1 / KIND_EDGE_STEP);
+  for (let at = Math.round(from / KIND_EDGE_STEP); at <= steps; at += 1) {
+    const share = Math.min(1, at * KIND_EDGE_STEP);
+    const value = towardInk(hue, ink, share);
+    const rgb = parseHex(value);
+    if (against.every((ground) => contrast(rgb, ground) >= KIND_EDGE_CONTRAST)) return { value, share };
+  }
+  throw new Error(`${where}: no step of the hue toward the ink clears ${KIND_EDGE_CONTRAST}:1 on the sheet and the card's tint`);
+}
 
 /** A palette's card rung as the opaque colour it paints: `surface.subtle` over `surface.background`. */
 function cardRung(tokens, where) {
@@ -298,6 +335,9 @@ function deriveTints(tokens, where, { contrast = 'standard', kindHues } = {}) {
   tokens.color.artifact ??= {};
   tokens.color.artifact.kind ??= {};
   const neutral = toOklab(cardRung(tokens, where)).L;
+  const inkRgb = parseHex(tokens.color?.text?.primary?.value ?? '');
+  if (inkRgb === null) throw new Error(`${where}: color.text.primary is not #rrggbb, and the kind edges are mixed toward it`);
+  const ink = toOklab(inkRgb);
   for (const [kind, node] of kindHues) {
     const hue = node === null ? tokens.color.artifact.kind[kind]?.value : tokens.color.node?.[node]?.value;
     if (hue === undefined) throw new Error(`${where}: color.${node === null ? `artifact.kind.${kind}` : `node.${node}`} is missing, and the ${kind} kind's grounds are derived from it`);
@@ -315,6 +355,12 @@ function deriveTints(tokens, where, { contrast = 'standard', kindHues } = {}) {
     const end = { L: KIND_GROUND_END * ground.L + (1 - KIND_GROUND_END) * neutral, a: KIND_GROUND_END * ground.a, b: KIND_GROUND_END * ground.b };
     steps[`${kind}GroundEnd`] = { value: oklabHex(end) };
     steps[`${kind}Glow`] = { value: withAlpha(hue, KIND_GLOW_ALPHA) };
+    // The card's edge, at rest and under the pointer. See KIND_EDGE_CONTRAST.
+    const sheetRgb = parseHex(tokens.color.surface.background.value);
+    const edge = kindEdge(hueLab, ink, [sheetRgb, parseHex(steps[`${kind}Ground`].value)], 0, `${where} ${kind} edge`);
+    const strong = kindEdge(hueLab, ink, [sheetRgb, parseHex(steps[`${kind}GroundStrong`].value)], edge.share + KIND_EDGE_HOVER, `${where} ${kind} edgeStrong`);
+    steps[`${kind}Edge`] = { value: edge.value };
+    steps[`${kind}EdgeStrong`] = { value: strong.value };
   }
   return tokens;
 }
