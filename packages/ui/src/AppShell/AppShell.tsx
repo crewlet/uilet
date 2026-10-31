@@ -74,7 +74,7 @@ import {
   type Ref,
 } from 'react';
 import { breakpoint } from '@crewlethq/tokens';
-import { ChevronUpGlyph, MenuGlyph, MinusGlyph, PlusGlyph } from '@crewlethq/icons/glyphs';
+import { ChevronUpGlyph, ChevronsLeftGlyph, ChevronsRightGlyph, MenuGlyph } from '@crewlethq/icons/glyphs';
 import { IconButton } from '../IconButton/index.js';
 import { Kbd, ariaKeyshortcuts, isApplePlatform } from '../Kbd/index.js';
 import { Tooltip } from '../Tooltip/index.js';
@@ -217,10 +217,10 @@ export interface AppShellProps extends Omit<HTMLAttributes<HTMLDivElement>, 'tit
   rail?: AppShellRailShape | undefined;
   /**
    * Called with the other shape when the reader presses the fold control.
-   * Given, the shell draws THE fold control (never in the drawer): a minus in
-   * the rail's top left corner while it is full, and a plus in the same place
-   * while it is compact. Keeping the choice, and binding a key to it, are the
-   * application's.
+   * Given, the shell draws THE fold control (never in the drawer): a chevron
+   * on the head's row, before the brand's mark, pointing left while the rail
+   * is full and right while it is compact. Keeping the choice, and binding a
+   * key to it, are the application's.
    */
   onRailChange?: ((next: AppShellRailShape) => void) | undefined;
   /**
@@ -892,16 +892,16 @@ function ShellDrawer({
 }
 
 /**
- * THE FOLD CONTROL: one button in the rail's top left corner, in the same
- * place in both shapes. A minus while the rail is full, to make it smaller,
- * and a plus while it is compact, to open it. Its name says what pressing it
- * does, `aria-expanded` says whether the rail is open now, and its tooltip
- * carries the keys the application binds.
+ * THE FOLD CONTROL: one button on the head's row, before the brand's mark, in
+ * the same place in both shapes. Its chevrons point the way the rail will go,
+ * left to fold it while it is full and right to unfold it while it is
+ * compact. Its name says what pressing it does, `aria-expanded` says whether
+ * the rail is open now, and its tooltip carries the keys the application
+ * binds.
  *
- * THE CORNER IS THE SQUARE THE HEAD LEAVES EMPTY, up and to the left of the
- * brand's mark, which stands over the compact column's centre in both shapes,
- * so the control and the mark never meet and neither moves when the rail
- * folds.
+ * THE CONTROL AND THE MARK ARE ONE PAIR, a step apart and centred together in
+ * the compact column, so the column holds both and neither moves when the
+ * rail folds (AppShell.css).
  */
 function RailFold({
   rail,
@@ -939,7 +939,7 @@ function RailFold({
           label={label}
           size="sm"
           variant="ghost"
-          icon={compact ? <PlusGlyph size="sm" /> : <MinusGlyph size="sm" />}
+          icon={compact ? <ChevronsRightGlyph size="sm" /> : <ChevronsLeftGlyph size="sm" />}
           aria-controls={railId}
           aria-expanded={!compact}
           aria-keyshortcuts={keys ? ariaKeyshortcuts(keys, apple) : undefined}

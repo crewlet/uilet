@@ -205,6 +205,12 @@ places:
 - A surface that pans or zooms dispatches `LAYER_REPOSITION_EVENT` on its host
   when the content beneath it moves, and every panel anchored inside follows.
 
+## Changes in 0.84.0
+
+### The application rail
+
+**The fold control is a chevron again, before the brand's mark.** The plus and minus of 0.83.0 give way to the chevrons the control drew before them, pointing left to fold the rail while it is full and right to unfold it while it is compact, and the control moves from the rail's top left corner onto the head's row, just before the brand's mark. The control and the mark are one pair, a step apart (`--spacing-1`) and centred together in the compact column, so the 76px column holds both (12, 24, 4, 24, 12) and neither moves when the rail folds; the mark's inset follows from the same arithmetic. Its names, `aria-expanded`, `aria-controls`, `aria-keyshortcuts`, the keys in its tooltip, its target floor and its ring inside its own box are unchanged. In the compact rail the lockup gives up its end inset, so the mark is all the column holds. Props are unchanged.
+
 ## Changes in 0.83.0
 
 ### The application rail

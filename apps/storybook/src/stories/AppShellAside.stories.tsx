@@ -216,7 +216,7 @@ export const Column: Story = {
  * THE CAP FOLLOWS A FOLDING RAIL. On a window where the page's floor (640px
  * here) leaves the column less than its width, the column takes what is
  * left, and that is the grid's own arithmetic over the rail's LIVE width:
- * fold the rail from its corner and the column widens with it, frame by
+ * fold the rail from its head and the column widens with it, frame by
  * frame, and unfold it and the column gives the room back the same way. It
  * never jumps at either end of the motion.
  */
