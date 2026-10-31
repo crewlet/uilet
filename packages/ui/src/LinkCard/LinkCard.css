@@ -91,6 +91,14 @@
   overflow-wrap: anywhere;
 }
 
+/* THE TITLE ALONE IS UNDERLINED. The document's base underlines every link
+   under the pointer, and an underline on the link runs through all of its
+   lines (the source, the details, the owner), which no line inside can
+   take off again. */
+a.crewlet-link-card:hover {
+  text-decoration: none;
+}
+
 a.crewlet-link-card:hover .crewlet-link-card__title {
   color: var(--color-brand-accent-ink);
   text-decoration: underline;
