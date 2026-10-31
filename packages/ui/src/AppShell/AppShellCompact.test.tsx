@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { BrandLockup } from '../BrandLockup/index.js';
 import { CompactNav, CompactNavGroup, CompactNavItem } from '../CompactNav/index.js';
 import { NavItem, SidebarNav } from '../SidebarNav/index.js';
@@ -197,7 +198,9 @@ describe('the fold control', () => {
     render(<Shell keys={['Mod', '\\']} />);
     const fold = screen.getByRole('button', { name: 'Collapse the sidebar' });
     expect(fold.getAttribute('aria-keyshortcuts')).toMatch(/^(Control|Meta)\+\\$/);
-    act(() => fold.focus());
+    // A tooltip opens for keyboard focus, so the control is reached as Tab
+    // reaches it.
+    tabTo(fold);
     const tip = await screen.findByRole('tooltip');
     expect(tip.textContent).toContain('Collapse the sidebar');
     expect(tip.querySelector('kbd')).not.toBeNull();
