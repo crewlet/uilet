@@ -629,7 +629,11 @@ export function AppShell({
         <div ref={sheet} className="crewlet-app-shell__sheet">
           {topbar}
           {banner ? <div className="crewlet-app-shell__banner">{banner}</div> : null}
-          {fill === true ? <div ref={setGauge} className="crewlet-app-shell__gauge" aria-hidden="true" /> : null}
+          {fill === true ? (
+            <div className="crewlet-app-shell__gauge" aria-hidden="true">
+              <div ref={setGauge} className="crewlet-app-shell__gauge-ruler" />
+            </div>
+          ) : null}
           {/*
            * THE BODY IS ALWAYS THERE, peek or none. It is the row the
            * scroller and a peek column share, and it is never added or taken

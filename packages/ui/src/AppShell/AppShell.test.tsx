@@ -640,7 +640,7 @@ describe('the frame and the sheet', () => {
      */
     const offset = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
     const client = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
-    const gauged = (element: Element) => element.classList.contains('crewlet-app-shell__gauge');
+    const gauged = (element: Element) => element.classList.contains('crewlet-app-shell__gauge-ruler');
     Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
       configurable: true,
       get(this: HTMLElement) {
@@ -658,6 +658,7 @@ describe('the frame and the sheet', () => {
       const root = container.firstElementChild as HTMLElement;
       const gauge = root.querySelector('.crewlet-app-shell__gauge')!;
       expect(gauge.getAttribute('aria-hidden')).toBe('true');
+      expect(gauge.querySelector('.crewlet-app-shell__gauge-ruler')).not.toBeNull();
       expect(root.style.getPropertyValue('--crewlet-app-shell-gutter')).toBe('11px');
 
       rerender(<Console fill="flush" />);
@@ -1715,7 +1716,11 @@ describe('the rail head, its field and the scroller', () => {
     expect(rule('.crewlet-app-shell--fill-flush .crewlet-app-shell__content')).toContain(
       '--crewlet-app-shell-bleed-end: 0px;',
     );
-    expect(rule('.crewlet-app-shell__gauge')).toContain('overflow-y: scroll;');
+    // THE RULER HAS A HEIGHT, inside a clipped row of none: a scroller of no
+    // height draws no scrollbar in Firefox, and measured 0 there.
     expect(rule('.crewlet-app-shell__gauge')).toContain('height: 0;');
+    expect(rule('.crewlet-app-shell__gauge')).toContain('overflow: hidden;');
+    expect(rule('.crewlet-app-shell__gauge-ruler')).toContain('height: var(--size-target-min);');
+    expect(rule('.crewlet-app-shell__gauge-ruler')).toContain('overflow-y: scroll;');
   });
 });

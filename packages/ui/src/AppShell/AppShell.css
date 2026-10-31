@@ -767,13 +767,20 @@
  * THE GAUGE: an empty scroller, never seen, that always draws its scrollbar,
  * so the shell can read the scrollbar's width on a fill screen, where the
  * screen's own scroller reserves none. It is a row of no height in the
- * sheet's column, so it takes no room and moves nothing.
+ * sheet's column, clipped, so it takes no room and moves nothing; the ruler
+ * inside it has a height of its own, because a scroller of no height draws
+ * no scrollbar in Firefox and measured 0 there.
  */
 .crewlet-app-shell__gauge {
   flex: none;
   height: 0;
-  overflow-y: scroll;
+  overflow: hidden;
   visibility: hidden;
+}
+
+.crewlet-app-shell__gauge-ruler {
+  height: var(--size-target-min);
+  overflow-y: scroll;
 }
 
 /*
