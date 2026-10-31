@@ -3,9 +3,9 @@
  * artifact kind's hue. The ground is the kind's own Ground steps
  * (ArtifactKinds.css): the card rung tinted by a share of the hue's chroma,
  * never a slab of it, which the palette suite holds to 4.5:1 for the primary
- * text in every palette and both modes and to a chroma ceiling. A hairline in
- * the kind's Line step is the edge, the kind's hue under the pointer, and a
- * soft halo of the hue stands behind the drawing.
+ * text in every palette and both modes and to a chroma ceiling. The edge is
+ * the control boundary at rest, the kind's hue under the pointer, and a soft
+ * halo of the hue stands behind the drawing.
  */
 
 /*
@@ -33,7 +33,7 @@
 
 .crewlet-action-card {
   --crewlet-action-card-ground: var(--crewlet-kind-ground);
-  --crewlet-action-card-edge: var(--crewlet-kind-line);
+  --crewlet-action-card-edge: var(--color-border-control);
   position: relative;
   display: flex;
   flex: none;
@@ -44,8 +44,10 @@
   box-sizing: border-box;
   overflow: hidden;
   padding: var(--spacing-3) var(--spacing-3) 0;
-  /* The kind's Line step: a hairline that says which kind without shouting
-     it. The title and the tint are what the card is found by. */
+  /* THE CONTROL BOUNDARY AT REST, which clears 3:1 on every surface, so the
+     card's extent is seen without the hue: the kind's Line step (its hue at
+     0.38) did not clear it, and the hue itself was the loud outline a calm
+     card gave up. The tint and the drawing say which kind. */
   border: 1px solid var(--crewlet-action-card-edge);
   /* The edge scale: the extra-large corner a tall card of its own takes, and
      the smallest shadow, so the card sits on the page rather than in it. */
@@ -112,7 +114,8 @@
   filter: drop-shadow(0 4px 10px var(--crewlet-kind-fill));
 }
 
-/* FORCED COLORS drops the ground; the hue's border stays as the card's edge. */
+/* FORCED COLORS drops the ground and the hue; the edge is drawn in the
+   system's text colour, so the card keeps its outline. */
 @media (forced-colors: active) {
   .crewlet-action-card {
     border-color: CanvasText;

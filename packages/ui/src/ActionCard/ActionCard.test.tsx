@@ -60,9 +60,12 @@ test('the hover is quiet: the tint deepens, the edge takes the hue, a shadow lif
   expect(hover).not.toMatch(/transform|translate|scale/);
 });
 
-test("at rest the edge is the kind's hairline, not its hue: a tint is found by its title, not a slab's outline", () => {
+// AT REST THE EDGE IS A BOUNDARY A READER CAN SEE: the control boundary, which
+// clears 3:1 on every surface. The kind's Line step (its hue at 0.38) did
+// not, and the hue itself at rest was the loud outline the calm card left.
+test('at rest the edge is the control boundary, at 3:1 or more, and the hue only under the pointer', () => {
   const card = rule('.crewlet-action-card');
-  expect(card).toMatch(/--crewlet-action-card-edge:\s*var\(--crewlet-kind-line\);/);
+  expect(card).toMatch(/--crewlet-action-card-edge:\s*var\(--color-border-control\);/);
   expect(card).toMatch(/border:\s*1px solid var\(--crewlet-action-card-edge\);/);
 });
 
