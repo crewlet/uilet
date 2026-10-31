@@ -165,6 +165,36 @@ describe("a folded group's figure", () => {
     expect(groupBadge([{ badge: { value: 'new', label: 'item' } }, { badge: { value: 3, label: 'new' } }])).toBe('new+');
   });
 
+  test('a quiet badge is not carried into the sum: only what waits in the accent is', () => {
+    expect(
+      groupBadge([{ badge: { value: 3, label: 'unread' } }, { badge: { value: 23, label: 'open', tone: 'quiet' } }]),
+    ).toBe(3);
+    expect(groupBadge([{ badge: { value: 23, label: 'open', tone: 'quiet' } }])).toBeUndefined();
+  });
+
+  test("a quiet badge on a tile and in a flyout is the quiet count's figure, not the accent's", async () => {
+    const user = userEvent.setup();
+    render(
+      <CompactNav label="Navigation">
+        <CompactNavItem label="My work" icon={<svg />} href="#/me" badge={{ value: 23, label: 'open', tone: 'quiet' }} />
+        <CompactNavGroup
+          label="Workspace"
+          icon={<svg />}
+          links={[{ key: 'w', label: 'Worklet', icon: <svg />, href: '#/w', badge: { value: 4, label: 'open', tone: 'quiet' } }]}
+        />
+      </CompactNav>,
+    );
+    const tile = screen.getByRole('link', { name: 'My work, 23 open' }).querySelector('.crewlet-compact-nav__figure')!;
+    expect(tile.textContent).toBe('23');
+    expect(tile.classList.contains('crewlet-compact-nav__figure--badge')).toBe(false);
+    // The group carries nothing: no accent waits in it.
+    const group = screen.getByRole('button', { name: /Workspace/ });
+    expect(group.querySelector('.crewlet-compact-nav__figure')).toBeNull();
+    await user.click(group);
+    const link = screen.getByRole('menuitem', { name: 'Worklet, 4 open' }).querySelector('.crewlet-compact-nav__link-figure')!;
+    expect(link.classList.contains('crewlet-compact-nav__link-figure--badge')).toBe(false);
+  });
+
   test('quiet counts are not carried, and nothing waiting is no figure', () => {
     expect(groupBadge([{}, {}])).toBeUndefined();
     render(<Rail />);

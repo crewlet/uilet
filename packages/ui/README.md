@@ -211,6 +211,8 @@ places:
 
 **The fold control is a chevron again, before the brand's mark.** The plus and minus of 0.83.0 give way to the chevrons the control drew before them, pointing left to fold the rail while it is full and right to unfold it while it is compact, and the control moves from the rail's top left corner onto the head's row, just before the brand's mark. The control and the mark are one pair, a step apart (`--spacing-1`) and centred together in the compact column, so the 76px column holds both (12, 24, 4, 24, 12) and neither moves when the rail folds; the mark's inset follows from the same arithmetic. Its names, `aria-expanded`, `aria-controls`, `aria-keyshortcuts`, the keys in its tooltip, its target floor and its ring inside its own box are unchanged. In the compact rail the lockup gives up its end inset, so the mark is all the column holds. Props are unchanged.
 
+**A badge takes a tone.** `NavItem`'s and `CompactNavItem`'s `badge` (type `NavBadge`) take `tone`, `'attention' | 'quiet'` (Count's own `CountTone`), with `attention` the default, so the inbox's accent pill is unchanged. `quiet` keeps the round pill, its size and its place on the row's end line, in the quiet count's grey: a neutral wash (`--color-fill-soft`) carrying the secondary ink, lifting to the row's ink on the reader's own row, measured on every ground a row can have in every palette. It is for work that is the reader's own and waits but does not call: My work beside the Inbox. In the compact rail a quiet badge is the tile's quiet figure, and a folded group's tile adds up only the badges that call. Story: `SidebarNav` Badge Tones.
+
 ## Changes in 0.83.0
 
 ### The application rail

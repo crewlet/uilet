@@ -49,7 +49,7 @@ import {
   type PlacementRect,
 } from '../Layer/index.js';
 import { LockedLabel } from '../LockedLabel/index.js';
-import type { NavFigure, NavLinkProps } from '../SidebarNav/index.js';
+import type { NavBadge, NavFigure, NavLinkProps } from '../SidebarNav/index.js';
 import { cx } from '../utils/cx.js';
 import { tokenMs } from '../utils/tokenMs.js';
 import { returnFocus } from '../utils/focusModality.js';
@@ -83,9 +83,11 @@ interface CompactPlace {
   current?: boolean | undefined;
   /**
    * How many things here are waiting on the reader: the accent figure on the
-   * tile's corner, as `SidebarNav.Item`'s badge.
+   * tile's corner, as `SidebarNav.Item`'s badge. `tone: 'quiet'` draws it as
+   * the quiet figure, as the full rail's quiet badge, and keeps it out of a
+   * group's sum.
    */
-  badge?: NavFigure | undefined;
+  badge?: NavBadge | undefined;
   /** How many of something the place holds: the quiet figure, as `SidebarNav.Item`'s count. */
   count?: NavFigure | undefined;
   /**
@@ -185,7 +187,7 @@ export function CompactNavItem({
   const figure = badge ?? count;
   const inside = (
     <>
-      <Tile icon={icon} figure={figure} attention={badge !== undefined} />
+      <Tile icon={icon} figure={figure} attention={calling(badge)} />
       <TileLabel label={label} figures={[count, badge].filter((f) => f !== undefined).map(figureWords).join('')} locked={locked} />
     </>
   );
@@ -290,6 +292,11 @@ function figureNumber(value: number | string): { n: number; more: boolean } | nu
   return { n: Number(match[1]!.replaceAll(',', '')), more: match[2] === '+' };
 }
 
+/** Whether a badge calls in the accent: any badge but a quiet one. */
+function calling(badge: NavBadge | undefined): badge is NavBadge {
+  return badge !== undefined && badge.tone !== 'quiet';
+}
+
 /**
  * What a folded group's tile carries: its places' badges, ADDED UP, so the
  * fold never hides what is waiting on the reader. One badge is drawn as it
@@ -298,10 +305,11 @@ function figureNumber(value: number | string): { n: number; more: boolean } | nu
  * badge's own value with a `+`, since there is more than it says.
  *
  * The quiet counts are not carried: a count says how much a place holds, and
- * a sum of how much six places hold is a figure about nothing.
+ * a sum of how much six places hold is a figure about nothing. Nor is a quiet
+ * badge: the group's figure is the accent, and only what calls is added to it.
  */
 export function groupBadge(links: readonly Pick<CompactNavLink, 'badge'>[]): (number | string) | undefined {
-  const badges = links.flatMap((link) => (link.badge ? [link.badge] : []));
+  const badges = links.flatMap((link) => (calling(link.badge) ? [link.badge] : []));
   if (badges.length === 0) return undefined;
   if (badges.length === 1) return badges[0]!.value;
   const read = badges.map((badge) => figureNumber(badge.value));
@@ -386,8 +394,9 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
   const container = useLayerContainer();
   const current = links.some((link) => link.current);
   const badge = groupBadge(links);
+  // What the group's figure sums, in words: the calling badges only.
   const spoken = links
-    .filter((link) => link.badge)
+    .filter((link) => calling(link.badge))
     .map((link) => `${link.label} ${String(link.badge!.value)} ${link.badge!.label}`)
     .join(', ');
 
@@ -576,7 +585,7 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
             </span>
             {figure ? (
               <span
-                className={cx('crewlet-compact-nav__link-figure', link.badge && 'crewlet-compact-nav__link-figure--badge')}
+                className={cx('crewlet-compact-nav__link-figure', calling(link.badge) && 'crewlet-compact-nav__link-figure--badge')}
                 aria-hidden
               >
                 {figure.value}

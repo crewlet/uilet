@@ -674,16 +674,22 @@ interface Place {
   key: string;
   label: string;
   icon: ReactNode;
-  badge?: { value: number | string; label: string };
+  badge?: { value: number | string; label: string; tone?: 'quiet' | 'attention' };
   count?: { value: number | string; label: string };
 }
 
 const YOU: Place[] = [
   { key: 'home', label: 'Home', icon: <HouseGlyph size="sm" /> },
   { key: 'inbox', label: 'Inbox', icon: <InboxGlyph size="sm" />, badge: { value: '50+', label: 'unread' } },
-  // THE READER'S OWN WORK WAITS ON THEM, as the inbox does: the same filled
-  // pill, on the same line at the row's end.
-  { key: 'me', label: 'My work', icon: <CircleCheckGlyph size="sm" />, badge: { value: 23, label: 'open, assigned to you' } },
+  // THE READER'S OWN WORK WAITS ON THEM, in the inbox's round pill on the
+  // same line at the row's end, in the quiet count's grey: it waits, but it
+  // does not call.
+  {
+    key: 'me',
+    label: 'My work',
+    icon: <CircleCheckGlyph size="sm" />,
+    badge: { value: 23, label: 'open, assigned to you', tone: 'quiet' },
+  },
 ];
 
 const GROUPS: { key: string; label: string; icon: ReactNode; places: Place[] }[] = [
