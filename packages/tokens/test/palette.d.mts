@@ -220,3 +220,5 @@ export const ARTIFACT_KIND_HUES: readonly string[];
 export const ARTIFACT_KIND_FILL_ALPHA: number;
 /** How far apart, in OKLab dE under normal vision, any two kind hues sit. */
 export const ARTIFACT_KIND_DE: number;
+/** The kind ground steps the primary text is held to 4.5:1 on, over the card rung (`ground`, `ground-strong`). */
+export const ARTIFACT_KIND_GROUNDS: readonly string[];

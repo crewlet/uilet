@@ -371,6 +371,13 @@ export const ARTIFACT_KIND_HUES = ARTIFACT_KINDS.map((kind) => `--color-artifact
 export const ARTIFACT_KIND_FILL_ALPHA = 0.12;
 /** How far apart, in OKLab dE under normal vision, any two kind hues sit. */
 export const ARTIFACT_KIND_DE = 8;
+/**
+ * The steps a card drawn ON a kind's hue reads its words on: its ground at
+ * rest and under the pointer (`-ground`, `-ground-strong`), each laid on the
+ * card rung it stands on. The primary text clears 4.5:1 on both, in every
+ * palette, because the card's title is set in it.
+ */
+export const ARTIFACT_KIND_GROUNDS = ['ground', 'ground-strong'];
 
 // ---------------------------------------------------------------------------
 // The rail
@@ -1001,6 +1008,13 @@ function checkState(state, values, profile, push, theme = { tint: null, contrast
         ink.ratio,
         `${ink.ratio.toFixed(2)}:1 (worst on ${ink.name})`,
       );
+      // See ARTIFACT_KIND_GROUNDS. Laid on the card rung, where a card on a
+      // kind's hue stands.
+      const card = flatten(values.get('--color-surface-subtle'), ground);
+      for (const step of ARTIFACT_KIND_GROUNDS) {
+        const ratio = contrast(colour('--color-text-primary'), flatten(values.get(`${name}-${step}`), card));
+        say('the primary text clears 4.5:1 on a kind ground', ratio >= 4.5, `--color-text-primary on ${name}-${step}`, ratio, `${ratio.toFixed(2)}:1`);
+      }
     }
     if (profile === 'full') {
       for (let i = 0; i < kinds.length; i += 1) {

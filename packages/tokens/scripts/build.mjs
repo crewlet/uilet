@@ -2,7 +2,7 @@ import StyleDictionary from 'style-dictionary';
 import { spawn } from 'node:child_process';
 import { watch } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { appendFile, copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, relative, resolve, sep } from 'node:path';
@@ -90,6 +90,42 @@ const ACCENT_LINE_ALPHA = 0.32;
 // is the opposite of what that theme promises its reader.
 const SELECTED_EDGE_ALPHA = 0.6;
 
+// THE EDGE SCALE, `color.edge.*`: one grey at four strengths, chosen by what
+// the edge does rather than drawing the field's 3:1 edge round everything, so
+// a dense surface (a conversation, a list of cards) reads as calm. The
+// hairline is the primary text at an alpha: the ring round anything that
+// floats (a toolbar, a menu, a day's pill) and the hover edge of a row part.
+// The soft and medium steps are the control edge at an alpha: a card at rest,
+// then a card under the pointer and a bordered button. The strong step IS the
+// control edge: a field and a pressed or pointed pill. Every step is derived
+// per palette, so it follows the palette's own ink and edge.
+//
+// A reader who asked for more contrast gets every step at full strength: a
+// high-contrast theme draws the three tints as the control edge, and every
+// theme sheet carries a `prefers-contrast: more` block that does the same for
+// the system's own setting (see contrastBlocks).
+const EDGE_ALPHAS = { hairline: ['text', 'primary', 0.13], soft: ['border', 'control', 0.3], medium: ['border', 'control', 0.5] };
+
+// THE QUIET FILLS, `color.fill.*`: two steps of the primary text, for a
+// surface that wants a wash rather than a rung. `row` is a pointed row inside
+// a dense list, `soft` a pill or a quiet label at rest (a reaction, a seat's
+// kind beside its name). They are not rungs: a component reaches for one only
+// where the overlay steps (`surface.hover`, `surface.pressed`) would read as
+// a control.
+const FILL_ALPHAS = { row: 0.04, soft: 0.06 };
+
+// THE ARTIFACT KIND GROUNDS: the steps a card drawn ON a kind's hue reads (a
+// first-step card, a call to make something of that kind), each the kind's
+// hue at a fixed alpha. `ground` is the card's ground at its top and
+// `groundStrong` the same under the pointer, `groundEnd` the foot of the
+// card's gradient, and `glow` the light behind its drawing. The palette suite
+// holds the primary text to 4.5:1 on the ground and the strong ground over
+// the card rung, in every palette. Six kinds alias a node hue in the base
+// (tokens/color.json) and one carries its own; the steps are derived from
+// whichever hue the kind resolves to, per palette, so a theme repaints them
+// without declaring a kind.
+const KIND_GROUND_ALPHAS = { Ground: 0.26, GroundStrong: 0.3, GroundEnd: 0.13, Glow: 0.46 };
+
 // The theme that paints the bare root. Every other theme paints under its own
 // data-palette attribute, so a document that names none gets this one, and an
 // application that never adopts the attribute is unchanged.
@@ -123,10 +159,33 @@ async function readBaseTokens() {
 }
 
 /**
+ * Which hue each artifact kind is drawn in, read once from the base: a kind
+ * the base writes as an alias of a node hue (`{color.node.blue}`) maps to that
+ * node hue's name, and a kind with a value of its own maps to null. A theme
+ * declares the node hues and the own kinds, never the aliases, so this map is
+ * how a theme's kind grounds are derived from the hue the kind resolves to.
+ */
+function kindHueSources(baseTokens) {
+  const kinds = baseTokens.color?.artifact?.kind;
+  if (kinds === undefined) throw new Error('tokens/color.json: color.artifact.kind is missing, and every kind ground is derived from it');
+  const sources = new Map();
+  for (const [name, token] of Object.entries(kinds)) {
+    // A kind's own hue is the key with no step suffix (doc, not docFill).
+    if (/[A-Z]/.test(name)) continue;
+    const alias = /^\{color\.node\.([a-z]+)\}$/.exec(String(token.value));
+    if (alias === null && parseHex(token.value) === null) {
+      throw new Error(`tokens/color.json: color.artifact.kind.${name} is "${token.value}"; a kind is a node hue alias or its own #rrggbb`);
+    }
+    sources.set(name, alias === null ? null : alias[1]);
+  }
+  return sources;
+}
+
+/**
  * Add the soft and line steps a palette's own fills imply. The fill is the one
  * source: every tint follows it, in every palette, without a second edit.
  */
-function deriveTints(tokens, where, { contrast = 'standard' } = {}) {
+function deriveTints(tokens, where, { contrast = 'standard', kindHues } = {}) {
   const fill = (group, name) => {
     const token = tokens.color?.[group]?.[name];
     if (token === undefined) throw new Error(`${where}: color.${group}.${name} is missing, and its soft tint is derived from it`);
@@ -155,6 +214,29 @@ function deriveTints(tokens, where, { contrast = 'standard' } = {}) {
   tokens.color.border.selected = {
     value: contrast === 'high' ? fill('brand', 'accent') : withAlpha(fill('brand', 'accent'), SELECTED_EDGE_ALPHA),
   };
+  // The edge scale and the quiet fills. See EDGE_ALPHAS and FILL_ALPHAS.
+  const control = fill('border', 'control');
+  tokens.color.edge = Object.fromEntries(
+    Object.entries(EDGE_ALPHAS).map(([step, [group, name, alpha]]) => [
+      step,
+      { value: contrast === 'high' ? control : withAlpha(fill(group, name), alpha) },
+    ]),
+  );
+  tokens.color.edge.strong = { value: control };
+  tokens.color.fill = Object.fromEntries(
+    Object.entries(FILL_ALPHAS).map(([step, alpha]) => [step, { value: withAlpha(fill('text', 'primary'), alpha) }]),
+  );
+  // The artifact kind grounds. See KIND_GROUND_ALPHAS.
+  if (kindHues === undefined) throw new Error(`${where}: the kind hue map is required, and every kind ground is derived from it`);
+  tokens.color.artifact ??= {};
+  tokens.color.artifact.kind ??= {};
+  for (const [kind, node] of kindHues) {
+    const hue = node === null ? tokens.color.artifact.kind[kind]?.value : tokens.color.node?.[node]?.value;
+    if (hue === undefined) throw new Error(`${where}: color.${node === null ? `artifact.kind.${kind}` : `node.${node}`} is missing, and the ${kind} kind's grounds are derived from it`);
+    for (const [step, alpha] of Object.entries(KIND_GROUND_ALPHAS)) {
+      tokens.color.artifact.kind[`${kind}${step}`] = { value: withAlpha(hue, alpha) };
+    }
+  }
   return tokens;
 }
 
@@ -194,7 +276,7 @@ function validateThemeMeta(meta, id, groups) {
  * Every theme in tokens/themes/, in the order a picker lists them: by group,
  * then by each theme's own order.
  */
-async function readThemes() {
+async function readThemes(kindHues) {
   const { groups } = await readTokenFile(resolve(themesDir, 'groups.json'));
   const groupIds = groups.map((group) => group.id);
   if (groupIds.length === 0 || new Set(groupIds).size !== groupIds.length || !groupIds.every((id) => THEME_ID.test(id))) {
@@ -208,7 +290,7 @@ async function readThemes() {
     const meta = validateThemeMeta(await readTokenFile(resolve(dir, 'theme.json')), id, groups);
     const read = async (mode) => {
       const where = `tokens/themes/${id}/${mode}.json`;
-      return validate(deriveTints(await readTokenFile(resolve(dir, `${mode}.json`)), where, { contrast: meta.contrast }), where);
+      return validate(deriveTints(await readTokenFile(resolve(dir, `${mode}.json`)), where, { contrast: meta.contrast, kindHues }), where);
     };
     palettes.push({ id, meta, light: await read('light'), dark: await read('dark') });
   }
@@ -559,6 +641,35 @@ ${light
 
 ${light}
 }
+
+/* More contrast, for a reader whose system asks for it: the edge scale at
+   full strength in either mode. */
+${contrastBlock([':root', ':root:not([data-theme="dark"])', ':root[data-theme="light"]'])}`;
+}
+
+/**
+ * MORE CONTRAST, for a reader whose system asks for it
+ * (`prefers-contrast: more`): every step of the edge scale at full strength,
+ * as a high-contrast theme draws it. They chose outlines over calm.
+ *
+ * One block per sheet, under the same three selectors the sheet's palette is
+ * painted with, placed after them: each selector ties the specificity of the
+ * palette block it shadows and wins by coming later, whichever mode is on.
+ * Outside the light media query the two light selectors may still match (a
+ * root that is merely not pinned dark), which is harmless, because the value
+ * is the palette's own control edge in every mode: `var()` resolves it from
+ * whichever palette block won.
+ */
+const MORE_CONTRAST = '@media (prefers-contrast: more)';
+const CONTRAST_EDGES = Object.keys(EDGE_ALPHAS).map((step) => `--color-edge-${step}`);
+
+function contrastBlock(selectors) {
+  const declarations = CONTRAST_EDGES.map((name) => `    ${name}: var(--color-border-control);`).join('\n');
+  return `${MORE_CONTRAST} {
+  ${selectors.join(',\n  ')} {
+${declarations}
+  }
+}
 `;
 }
 
@@ -601,7 +712,8 @@ ${root}[data-theme="light"] {
 
 ${light}
 }
-`;
+
+${contrastBlock([root, `${root}:not([data-theme="dark"])`, `${root}[data-theme="light"]`])}`;
 }
 
 const paletteHeader = (palette) => `/* Generated by style-dictionary. The ${palette.meta.name} theme: ${palette.meta.description}
@@ -835,8 +947,10 @@ const materialSymbols = `/* Generated by style-dictionary. Loads the Material Sy
 `;
 
 async function build() {
-  const base = validate(deriveTints(await readBaseTokens(), 'tokens/color.json'), 'tokens/');
-  const { groups, palettes } = await readThemes();
+  const baseTokens = await readBaseTokens();
+  const kindHues = kindHueSources(baseTokens);
+  const base = validate(deriveTints(baseTokens, 'tokens/color.json', { kindHues }), 'tokens/');
+  const { groups, palettes } = await readThemes(kindHues);
   const { light, dark } = palettes.find((palette) => palette.id === DEFAULT_THEME);
 
   // The constructor's implicit init runs detached, so a malformed token file
@@ -847,6 +961,10 @@ async function build() {
   await sd.init();
   await sd.cleanAllPlatforms();
   await sd.buildAllPlatforms();
+  // The token layer on its own (the marketing palette) honours a request for
+  // more contrast too, so an edge read from tokens.css alone is never the
+  // calm step for a reader who asked for outlines.
+  await appendFile(resolve(cssDir, 'tokens.css'), `\n${contrastBlock([':root'])}`);
 
   await mkdir(cssDir, { recursive: true });
   await writeFile(resolve(cssDir, 'legacy.css'), legacyAliases);

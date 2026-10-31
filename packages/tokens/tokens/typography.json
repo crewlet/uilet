@@ -6,6 +6,7 @@
       "mono": { "value": "'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace", "comment": "Code, identifiers and tabular values. Geist Mono is self-hosted by @crewlethq/tokens/css/fonts." }
     },
     "size": {
+      "badge": { "value": "10px", "comment": "The figure inside a count badge (size.badge), set at the semibold weight with tabular numerals. Named for its job and kept off the ramp: it is the one place type is set under 11px, because a figure in a 16px pill is read as a mark rather than as a word." },
       "2xs": { "value": "11px", "comment": "Micro labels and table column heads." },
       "xs": { "value": "12px", "comment": "Dense secondary text and badges." },
       "compact": { "value": "13px", "comment": "The BODY: the document's own size (@crewlethq/tokens/css/base sets it on body, at font.lineHeight.body), and table cells and captions. The approved design sets every screen on a 13px base, a step under the 14px most interfaces read at, because a dense board is read by scanning rows rather than by reading paragraphs. It sits between xs and sm rather than extending the ramp at either end, so it is named for its job, and it kept that name when it became the body rather than taking a second one." },

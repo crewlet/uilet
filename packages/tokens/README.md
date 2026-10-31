@@ -83,6 +83,31 @@ nearestContrastShade('#00baba', '#f6f7fb', WCAG_CONTRAST.aaLarge); // '#00a0a0',
 
 Show the ratio of the value it returns, measured with `contrast`, rather than the floor it was asked for.
 
+## Changed in 0.82.0: the edge scale, the quiet fills, the count badge and the folded rail
+
+A dense surface (a conversation, a list of cards) drew the field's 3:1 edge round every reaction, preview, toolbar and face, so it read as a grid of frames. The edge scale is one grey at four strengths, chosen by what the edge does, and two quiet fills sit under the overlay steps. Every colour step is derived per palette by the build (an `rgba()` of the palette's own value, never `color-mix()`), so a theme repaints it without declaring it. Nothing is renamed or removed.
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| `--color-edge-hairline` | the primary text at 0.13 | The ring round anything that floats (a toolbar, a menu, a day's pill) and the hover edge of a row part. |
+| `--color-edge-soft` | the control edge at 0.3 | A card at rest, such as a link preview. |
+| `--color-edge-medium` | the control edge at 0.5 | A card under the pointer, and a bordered button at rest. |
+| `--color-edge-strong` | the control edge | A field (a message box) and a pressed or pointed pill's ring. |
+| `--color-fill-row` | the primary text at 0.04 | A pointed row inside a dense list. |
+| `--color-fill-soft` | the primary text at 0.06 | A pill or a quiet label at rest (a reaction, a seat's kind beside its name). |
+| `--color-artifact-kind-<kind>-ground`, `-ground-strong`, `-ground-end`, `-glow` | the kind's hue at 0.26, 0.3, 0.13 and 0.46 | A card drawn ON a kind's hue (a first-step card): its ground at rest and under the pointer, its gradient's foot and the light behind its drawing. |
+| `--size-badge` | 16px, density-scaled | The height and least width of a count that waits for the reader, wherever it is drawn. |
+| `--size-badge-pad` | `var(--spacing-1)` | The badge's inline pad. |
+| `--font-size-badge` | 10px (0.625rem) | The badge's figure, at the semibold weight. |
+| `--size-shell-rail-compact` | 76px, fixed | The application rail folded to a column of glyphs over short names. |
+
+**More contrast keeps every edge at full strength.** A high-contrast theme (`contrast: "high"`) draws the hairline, soft and medium steps as the control edge, and every theme sheet (`css/themes`, each `css/themes/<id>` and `css/themes/all`) ends with a `@media (prefers-contrast: more)` block that does the same under its own three selectors, so it ties the specificity of the palette block it shadows and wins by coming later. `css` (the token layer on its own) carries one on `:root`. Focus keeps its own ring at full strength everywhere; no edge step is a focus indicator.
+
+| What changed | What to change | Details |
+| --- | --- | --- |
+| The tokens above are new. | Nothing. A stylesheet that mixed its own edge from the text or the control edge reads the step instead. | `scripts/build.mjs` (`EDGE_ALPHAS`, `FILL_ALPHAS`, `KIND_GROUND_ALPHAS`) |
+| In `@crewlethq/tokens/test/palette`, the rule `the primary text clears 4.5:1 on a kind ground` is new, with the export `ARTIFACT_KIND_GROUNDS`. Every theme already clears it. | Nothing, unless an application's own palette override repaints a kind's hue so its ground no longer carries the primary text. | [The palette suite](#the-palette-suite) |
+
 ## Changed in 0.67.0: the Assistant's working gesture
 
 `--motion-duration-spark` (1600ms, `motion.duration.spark`) is new. It is a PERIOD, like `--motion-duration-turn`: one working gesture of the Assistant's mark in `@crewlethq/ui`'s `ThinkingIndicator`, its main spark making a quarter turn while its companion dims, then resting. Nothing to change: no token is renamed or removed.
