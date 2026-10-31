@@ -311,9 +311,9 @@ export function groupBadge(links: readonly Pick<CompactNavLink, 'badge'>[]): (nu
 
 /**
  * Where a flyout stands: BESIDE the rail, not beside the tile, so every
- * group's flyout opens on one line a gap off the rail's edge, with its first
- * place level with the tile it opened from and slid back inside the bounds
- * where the tile is near the window's foot.
+ * group's flyout opens on one line a gap off the rail's edge, with its head
+ * level with the tile it opened from and slid back inside the bounds where
+ * the tile is near the window's foot.
  *
  * Pure arithmetic, in whichever coordinate space the caller uses for all
  * three, for the reason `placePopup` is: none of it can be observed in jsdom.
@@ -323,7 +323,7 @@ export function placeFlyout(
   railEnd: number,
   size: { width: number; height: number },
   bounds: PlacementRect,
-  /** How far above the tile's top the flyout's top stands: its own head and inset. */
+  /** How far above the tile's top the flyout's top stands: its own edge and inset, so its head is level with the tile. */
   lift = 0,
 ): { left: number; top: number } {
   const maxTop = bounds.y + bounds.height - size.height;
@@ -445,9 +445,10 @@ export function CompactNavGroup({ label, icon, links, renderLink, className }: C
       rail.right - (inHost ? host.x : 0),
       { width: own.width, height: own.height },
       { x: LAYER_GAP, y: LAYER_GAP, width: host.width - 2 * LAYER_GAP, height: host.height - 2 * LAYER_GAP },
-      // The flyout's first PLACE stands level with the tile: its head and
-      // the panel's own inset go above the tile's top.
-      head ? head.offsetTop + head.offsetHeight : 0,
+      // The flyout's HEAD stands level with the tile: the group's name beside
+      // the group's tile, and its places running down from there. The panel's
+      // own edge and inset go above the tile's top.
+      head ? head.offsetTop + box.clientTop : 0,
     );
     setPlace((was) => (was && was.left === spot.left && was.top === spot.top ? was : spot));
   }, [close, container]);
