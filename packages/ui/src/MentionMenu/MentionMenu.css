@@ -1,0 +1,65 @@
+/*
+ * MentionMenu: the suggestions a composer opens on "@" or "#".
+ *
+ * The popover surface (the fill, hairline, corner and shadow of the emoji
+ * picker that opens from the same composer), as wide as the field but no
+ * wider than a list a reader scans: on a wide room the trailing word
+ * ("Working") stood a screen's width from the name it belongs to; a host
+ * moves that cap with `--crewlet-mention-menu-width` on any box round it.
+ * It is placed against the nearest positioned box round the field, above
+ * it, so it never covers what is being typed.
+ */
+.crewlet-mention-menu {
+  position: absolute;
+  bottom: calc(100% + var(--spacing-1));
+  left: 0;
+  z-index: var(--z-index-dropdown);
+  box-sizing: border-box;
+  width: min(100%, var(--crewlet-mention-menu-width, 560px));
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  box-shadow: var(--shadow-xl);
+}
+
+.crewlet-mention-menu__label {
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--font-letter-spacing-wide);
+  text-transform: uppercase;
+}
+
+.crewlet-mention-menu__list {
+  max-height: 264px;
+  margin: 0;
+  padding: 0 var(--spacing-1) var(--spacing-1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+
+/* The panel's corner less its inset, so each row's curve runs parallel. */
+.crewlet-mention-menu__list > .crewlet-person-row {
+  --crewlet-person-row-radius: calc(var(--radius-lg) - var(--spacing-1));
+}
+
+.crewlet-mention-menu__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-top: 1px solid var(--color-border-default);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+/* The foot names keys, and a touch screen has none to press. */
+@media (hover: none) {
+  .crewlet-mention-menu__footer {
+    display: none;
+  }
+}
