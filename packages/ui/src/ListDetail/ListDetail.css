@@ -65,6 +65,12 @@
   min-height: 0;
 }
 
+/* A LIST THAT GROWS SCROLLS IN ITS OWN COLUMN, whatever it holds. The pane
+   left the scrolling to its content, which a DirectoryList does for its
+   groups and an InboxList does not: an activity list taller than the screen
+   ran past the pane's end, where the screen clipped its later rows and its
+   "older" link, with nothing to scroll them into view. A list that scrolls
+   itself fills the pane and never makes it overflow. */
 .crewlet-list-detail__list {
   display: flex;
   flex-direction: column;
@@ -72,6 +78,7 @@
   min-height: 0;
   padding-right: var(--crewlet-list-detail-gutter);
   border-right: 1px solid var(--color-border-default);
+  overflow-y: auto;
 }
 
 /* A DIRECTORY RUNS TO THE HAIRLINE. A DirectoryList is navigation: its lines
@@ -106,7 +113,6 @@
   .crewlet-list-detail__list {
     padding-right: 0;
     border-right: 0;
-    overflow-y: auto;
   }
 
   /* The list is the pane that scrolls now, and takes the detail's end where

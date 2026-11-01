@@ -105,3 +105,15 @@ test("standing in a fill screen's column, it reaches past the column's end pad t
     'margin-right: calc(var(--crewlet-app-shell-bleed-end, 0px) * -1);',
   );
 });
+
+// A LIST THAT GROWS SCROLLS IN ITS OWN COLUMN, at every width, whatever it
+// holds: an InboxList does not scroll itself, and a pane that left scrolling
+// to its content let a long activity list run past the screen's clipped end.
+// Only a phone, where the page scrolls as a whole, lets it be as tall as it is.
+test('the list pane scrolls its own column at every width, and only a phone lets the page scroll instead', () => {
+  const base = rule('.crewlet-list-detail__list');
+  expect(base).toContain('overflow-y: auto;');
+  expect(base).toContain('min-height: 0;');
+  const phone = (css.match(/@media \(width < 640px\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '').replace(/\s+/g, ' ');
+  expect(phone).toMatch(/\.crewlet-list-detail__list, \.crewlet-list-detail__detail \{ overflow: visible; \}/);
+});
