@@ -1,0 +1,162 @@
+/*
+ * Who gets something, as one list: a group row with its box, its name and
+ * its count, opening to its members, each a row of face, name and one quiet
+ * line. Rows stand at the kit's compact list height; the only colour is the
+ * box's own accent and a left-out member's quieter ink.
+ *
+ * A LIST'S TYPE, NOT A FORM'S: names in the 13px every list and table row
+ * sets a name in, at the medium weight a group's name takes, and every box the
+ * compact Checkbox's (14px beside 13px words). At the body's 14px, with a
+ * 16px box over 14px ones, it read a step larger than every list around it.
+ */
+.crewlet-member-picker {
+  display: grid;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.crewlet-member-picker__summary {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-compact);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-member-picker__list,
+.crewlet-member-picker__members {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-member-picker__list {
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.crewlet-member-picker__group + .crewlet-member-picker__group {
+  border-top: 1px solid var(--color-border-default);
+}
+
+.crewlet-member-picker__group-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-1);
+}
+
+/* The open control is the kit's small ghost IconButton; only its chevron
+   turns here, a quarter turn once the group is open. */
+.crewlet-member-picker__toggle svg {
+  transition: transform var(--motion-duration-fast) var(--motion-easing-default);
+}
+
+.crewlet-member-picker__group.is-open .crewlet-member-picker__toggle svg {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-member-picker__toggle svg {
+    transition: none;
+  }
+}
+
+.crewlet-member-picker__count {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.crewlet-member-picker__members {
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+}
+
+.crewlet-member-picker__member {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--size-control-lg);
+  /* Each member's box under its group's, past the open control and its gap. */
+  padding: var(--spacing-1) var(--spacing-3) var(--spacing-1) calc(var(--spacing-1) + var(--size-control-sm) + var(--spacing-2));
+}
+
+/* A MEMBER'S BOX STANDS UNDER ITS GROUP'S. The bare Checkbox centres its box
+   on the square the pointer floor allows, which set the box half the
+   difference in from the row's edge, a few pixels right of the group's box
+   above it. That inset is taken back, and the pointer square reaches into
+   the row's padding instead. */
+.crewlet-member-picker__members:not(.is-ungrouped) .crewlet-checkbox--bare {
+  margin-inline-start: calc((var(--crewlet-checkbox-size) - var(--size-target-min)) / 2);
+}
+
+.crewlet-member-picker__members.is-ungrouped {
+  border-top: 0;
+  background: transparent;
+}
+
+.crewlet-member-picker__members.is-ungrouped .crewlet-member-picker__member {
+  padding-inline-start: var(--spacing-3);
+}
+
+.crewlet-member-picker__avatar {
+  display: inline-flex;
+  flex: none;
+}
+
+/* The name and its line label the member's box, so they take the pointer a
+   Checkbox's own words take. */
+.crewlet-member-picker__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.crewlet-member-picker__name {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-compact);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-member-picker__detail {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-member-picker__mark {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.crewlet-member-picker__member.is-left-out .crewlet-member-picker__name,
+.crewlet-member-picker__mark.is-left-out {
+  color: var(--color-text-tertiary);
+}
+
+@media (width < 480px) {
+  .crewlet-member-picker__member {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    padding-inline-start: var(--spacing-3);
+  }
+
+  .crewlet-member-picker__mark {
+    grid-column: 3;
+  }
+}
+
+/* A group's name is the row's title: the medium weight, at the list's 13px. */
+.crewlet-member-picker__group-row .crewlet-checkbox__label {
+  font-weight: var(--font-weight-medium);
+}
