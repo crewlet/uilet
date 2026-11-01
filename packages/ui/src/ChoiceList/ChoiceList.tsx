@@ -58,8 +58,8 @@ export interface ChoiceListProps {
  * NATIVE RADIOS, so the arrow keys move the choice and Tab leaves the group as
  * the platform does, and every row is its radio's label, so the whole row
  * takes the pointer. A disabled choice is skipped by the arrows, keeps its
- * words at full contrast, and says why on its detail line. A choice's `panel` is drawn under it only while it is
- * selected, which is how a list ends in "Something else" with a field of its
+ * words at full contrast, and says why on a line of its own under its detail.
+ * A choice's `panel` is drawn under it only while it is selected, which is how a list ends in "Something else" with a field of its
  * own without a second control beside the list.
  */
 export function ChoiceList({ options, value, onChange, label, footer, disabled, className }: ChoiceListProps) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ChoiceCards, type ChoiceCardOption, type ChoiceCardsDensity, type ChoiceCardsMinWidth } from '@crewlethq/ui';
+import { ChoiceCards, ChoiceList, type ChoiceCardOption, type ChoiceCardsDensity, type ChoiceCardsMinWidth } from '@crewlethq/ui';
 import { VendorMark } from '@crewlethq/icons';
 import { GlobeGlyph, PackageGlyph, ServerGlyph, SquareTerminalGlyph } from '@crewlethq/icons/glyphs';
 import { themeScope } from '../themeScope';
@@ -212,5 +212,131 @@ export const DisabledBesideEnabled: Story = {
         </div>
       ))}
     </div>
+  ),
+};
+
+/**
+ * A chosen card that opens a narrower choice of its own: OAuth sign-in opens
+ * which client it signs in as, joined to the card under the row. The other
+ * cards open nothing, so choosing them closes it.
+ */
+export const DetailUnderTheChosenCard: Story = {
+  render: function Render() {
+    const [client, setClient] = useState('cimd');
+    return (
+      <Chooser
+        initial="oauth"
+        minCardWidth="xs"
+        density="compact"
+        options={[
+          {
+            value: 'oauth',
+            label: 'OAuth',
+            media: <GlobeGlyph size="lg" />,
+            description: 'Sign in once at the vendor.',
+            detail: (
+              <ChoiceCards
+                label="OAuth client"
+                minCardWidth="xs"
+                density="compact"
+                value={client}
+                onChange={setClient}
+                options={[
+                  { value: 'cimd', label: 'Published identity', tag: 'Recommended', description: 'No registration.' },
+                  { value: 'dcr', label: 'Register automatically', description: 'Registered on first use.' },
+                  { value: 'own', label: 'Your own client', description: 'A client ID and secret.' },
+                ]}
+              />
+            ),
+          },
+          { value: 'headers', label: 'Header', media: <ServerGlyph size="lg" />, description: 'A token or key.' },
+          { value: 'none', label: 'None', media: <SquareTerminalGlyph size="lg" />, description: 'No sign-in.' },
+        ]}
+      />
+    );
+  },
+};
+
+/**
+ * Four methods two to a row, the first one chosen: its detail opens straight
+ * under its own row, before the second row of cards, and draws no frame
+ * round the framed list it holds. One card's tag says a state in its own pill.
+ */
+export const DetailUnderItsOwnRow: Story = {
+  render: function Render() {
+    const [client, setClient] = useState('cimd');
+    return (
+      <div style={{ maxWidth: 640 }}>
+        <Chooser
+          initial="oauth"
+          minCardWidth="sm"
+          density="compact"
+          options={[
+            {
+              value: 'oauth',
+              label: 'OAuth',
+              media: <GlobeGlyph size="lg" />,
+              description: 'Sign in once at the vendor.',
+              detail: (
+                <ChoiceList
+                  label="OAuth client"
+                  value={client}
+                  onChange={setClient}
+                  options={[
+                    { value: 'cimd', label: 'Published identity', detail: 'No registration at the vendor.', tag: 'Recommended' },
+                    { value: 'dcr', label: 'Register automatically', detail: 'A client is created on first sign-in.' },
+                  ]}
+                />
+              ),
+            },
+            { value: 'headers', label: 'Header', media: <ServerGlyph size="lg" />, description: 'A token or key.' },
+            {
+              value: 'community',
+              label: 'From the community',
+              media: <SquareTerminalGlyph size="lg" />,
+              description: 'Listed by its author.',
+              tag: 'Not reviewed',
+              tagTone: 'warning',
+            },
+            { value: 'none', label: 'None', media: <SquareTerminalGlyph size="lg" />, description: 'No sign-in.' },
+          ]}
+        />
+      </div>
+    );
+  },
+};
+
+/** A tag that says a state, in each feedback tone, drawn in the card's own pill; without a tone, the neutral pill. */
+export const TagTones: Story = {
+  render: () => (
+    <Chooser
+      initial="neutral"
+      minCardWidth="xs"
+      density="compact"
+      options={[
+        { value: 'neutral', label: 'Default', tag: 'Company default', description: 'No tone.' },
+        { value: 'success', label: 'Verified', tag: 'Reviewed', tagTone: 'success', description: 'Checked by an admin.' },
+        { value: 'warning', label: 'Community', tag: 'Not reviewed', tagTone: 'warning', description: 'Listed by its author.' },
+        { value: 'danger', label: 'Revoked', tag: 'Blocked', tagTone: 'danger', description: 'Turned off by an admin.' },
+        { value: 'info', label: 'Preview', tag: 'New', tagTone: 'info', description: 'Added this week.' },
+      ]}
+    />
+  ),
+};
+
+/** Four short cards on one row: where a thing comes from, each a picture and one line. */
+export const FourAcross: Story = {
+  render: () => (
+    <Chooser
+      initial="catalogue"
+      minCardWidth="xs"
+      density="compact"
+      options={[
+        { value: 'catalogue', label: 'Catalogue', media: <PackageGlyph size="lg" />, description: 'Vetted servers.' },
+        { value: 'address', label: 'Address', media: <GlobeGlyph size="lg" />, description: 'Any remote URL.' },
+        { value: 'json', label: 'JSON', media: <SquareTerminalGlyph size="lg" />, description: 'Paste a config.' },
+        { value: 'community', label: 'Community', media: <ServerGlyph size="lg" />, description: 'Not reviewed.' },
+      ]}
+    />
   ),
 };

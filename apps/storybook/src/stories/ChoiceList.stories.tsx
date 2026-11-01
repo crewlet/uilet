@@ -109,7 +109,8 @@ export const WithPictures: Story = { render: () => <WhoBuildsIt /> };
 
 /**
  * Where it runs: a place this node cannot use stays in the list, disabled,
- * with why and the fix on its detail line (`disabled`, `disabledReason`).
+ * with why and the fix on a line of its own under its detail (`disabled`,
+ * `disabledReason`).
  */
 function WhereItRuns() {
   const [value, setValue] = useState<string | null>('container');

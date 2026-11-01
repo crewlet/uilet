@@ -3,6 +3,9 @@
  * drawn only under the selected choice, and a footer after every choice.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState } from 'react';
@@ -48,6 +51,18 @@ test('a panel is drawn only under the selected choice', () => {
   expect(screen.queryByText('Write it here')).toBeNull();
   fireEvent.click(screen.getByRole('radio', { name: /Something else/ }));
   expect(screen.getByText('Write it here')).toBeTruthy();
+});
+
+test('a tag is the pill a choice card draws, and the radio the compact control step', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceList.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const cards = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../ChoiceCards/ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (sheet: string, selector: string) => new RegExp(`\\${selector} \\{([^}]*)\\}`).exec(sheet)?.[1]?.trim();
+  // One look for one word beside a choice's name, in a list or on a card.
+  expect(rule(css, '.crewlet-choice-list__tag')).toBe(rule(cards, '.crewlet-choice-cards__tag'));
+  // The box a compact Checkbox draws beside the same 13px words.
+  const checkbox = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../Checkbox/Checkbox.css'), 'utf8');
+  const compact = /\.crewlet-checkbox--sm \{[^}]*--crewlet-checkbox-size: ([^;]+);/.exec(checkbox)?.[1];
+  expect(/--crewlet-choice-list-radio-size: ([^;]+);/.exec(css)?.[1]).toBe(compact);
 });
 
 test('the tag and the separating rule are drawn where asked, and the footer after every choice', () => {
@@ -123,6 +138,24 @@ test('a value with a space still names its radio and describes its reason', () =
   // An id built from the value split on its space, and the radio lost its name and its reason.
   const opus = screen.getByRole('radio', { name: 'Opus The strongest.' });
   expect(document.getElementById(opus.getAttribute('aria-describedby') ?? '')?.textContent).toBe('Sign in first.');
+});
+
+test("a disabled choice's reason takes a line of its own under the detail", () => {
+  render(
+    <ChoiceList
+      label="Client"
+      value={null}
+      onChange={() => {}}
+      options={[{ value: 'cimd', label: 'Published identity', detail: 'No registration', disabled: true, disabledReason: 'Not read yet.' }]}
+    />,
+  );
+  const reason = screen.getByText('Not read yet.');
+  // In the detail's line box, after the detail, so the two are one block a reader scans down.
+  expect(reason.parentElement?.classList.contains('crewlet-choice-list__detail')).toBe(true);
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceList.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  // A block of its own, and nothing that sets it beside the detail on the same line.
+  expect(/\.crewlet-choice-list__reason \{([^}]*)\}/.exec(css)?.[1]).toMatch(/display:\s*block;/);
+  expect(css).not.toMatch(/__reason:not\(:first-child\)/);
 });
 
 test('carries no axe violation', async () => {
