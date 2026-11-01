@@ -218,6 +218,26 @@
 }
 
 /*
+ * FLUSH: the chevron and the panel start on the line the words around the
+ * section start on. The trigger's start inset is taken back (its hover ground
+ * and its inset ring reach into the gutter instead, as a flush Button's do),
+ * and the panel keeps no inset of either side. Inset, a section opened under
+ * a sentence put its chevron and its content a step in from that sentence.
+ */
+.crewlet-disclosure--flush .crewlet-disclosure__trigger {
+  margin-inline-start: calc(-1 * var(--spacing-2));
+  width: calc(100% + var(--spacing-2));
+}
+
+.crewlet-disclosure--flush .crewlet-disclosure__bar > .crewlet-disclosure__trigger {
+  width: auto;
+}
+
+.crewlet-disclosure--flush .crewlet-disclosure__panel {
+  padding-inline: 0;
+}
+
+/*
  * An aside: what was considered, not what was decided. The rule down its edge
  * is what lets a reader skip the block by its shape.
  */

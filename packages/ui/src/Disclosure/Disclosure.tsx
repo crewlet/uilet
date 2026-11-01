@@ -41,6 +41,15 @@ export interface DisclosureProps extends Omit<HTMLAttributes<HTMLDivElement>, 't
   variant?: DisclosureVariant | undefined;
   size?: DisclosureSize | undefined;
   /**
+   * Its chevron and its panel start on the line its box starts on: the
+   * trigger's inset is taken back at the start, so only its hover ground and
+   * ring reach past the line, and the panel takes no inset of its own. For a
+   * section opened under a line of text (a request's arguments under the
+   * sentence that asks for it), whose chevron and content then stand on the
+   * words' own edge, as a flush Button does.
+   */
+  flush?: boolean | undefined;
+  /**
    * The heading the trigger is wrapped in. Defaults to the level the
    * surrounding surface declares, so the same section is an `h3` on a page
    * under an `h2` and an `h2` inside a dialog. `none` leaves the button
@@ -71,6 +80,7 @@ export function Disclosure({
   lazy = false,
   variant = 'default',
   size = 'default',
+  flush = false,
   headingLevel,
   className,
   children,
@@ -94,6 +104,7 @@ export function Disclosure({
         'crewlet-disclosure',
         `crewlet-disclosure--${variant}`,
         size === 'compact' && 'crewlet-disclosure--compact',
+        flush && 'crewlet-disclosure--flush',
         className,
       )}
       data-state={open ? 'open' : 'closed'}

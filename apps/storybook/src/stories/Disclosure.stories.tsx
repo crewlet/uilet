@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { CodeBlock, CopyButton, Disclosure, Prose, Tag, Text } from '@crewlethq/ui';
+import { CodeBlock, CopyButton, Disclosure, InlineCode, Prose, Tag, Text } from '@crewlethq/ui';
 
 const meta: Meta<typeof Disclosure> = {
   title: 'UI/Disclosure',
@@ -33,6 +33,24 @@ export const AToolCall: Story = {
   render: (args) => (
     <div style={{ maxWidth: 520 }}>
       <Disclosure {...args} />
+    </div>
+  ),
+};
+
+/**
+ * Flush, under a line of text: a request's arguments under the sentence that
+ * asks for it, the chevron and the JSON on the sentence's own edge rather than
+ * a step in from it.
+ */
+export const FlushUnderAQuestion: Story = {
+  render: () => (
+    <div style={{ maxWidth: 520, display: 'grid', gap: 'var(--spacing-1)' }}>
+      <Text as="p" variant="body">
+        Call <InlineCode>create_pull_request</InlineCode> on GitHub?
+      </Text>
+      <Disclosure title="Arguments" size="compact" headingLevel="none" flush defaultOpen>
+        <CodeBlock code={RECORD} plain selectable label="The call's arguments, as JSON" />
+      </Disclosure>
     </div>
   ),
 };

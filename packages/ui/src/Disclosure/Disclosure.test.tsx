@@ -22,6 +22,24 @@ afterEach(cleanup);
  */
 const here = dirname(fileURLToPath(import.meta.url));
 
+test('a flush section starts its chevron and its panel on the line its box starts on', () => {
+  const { container } = render(
+    <Disclosure title="Arguments" size="compact" headingLevel="none" flush defaultOpen>
+      <p>{'{ "title": "Fix" }'}</p>
+    </Disclosure>,
+  );
+  expect(container.firstElementChild!.classList.contains('crewlet-disclosure--flush')).toBe(true);
+  const css = readFileSync(join(here, 'Disclosure.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  expect(css).toMatch(/\.crewlet-disclosure--flush \.crewlet-disclosure__trigger \{[^}]*margin-inline-start: calc\(-1 \* var\(--spacing-2\)\)/);
+  // The trigger's own start inset, taken back exactly.
+  expect(css).toMatch(/\.crewlet-disclosure__trigger \{[^}]*padding: var\(--spacing-1\) var\(--spacing-2\);/);
+  // After the compact panel's inset, so a compact flush section is flush too.
+  const compact = css.indexOf('.crewlet-disclosure--compact .crewlet-disclosure__panel {');
+  const flush = css.indexOf('.crewlet-disclosure--flush .crewlet-disclosure__panel {');
+  expect(flush).toBeGreaterThan(compact);
+  expect(css.slice(flush, css.indexOf('}', flush))).toContain('padding-inline: 0');
+});
+
 test('the section own controls are beside the toggle, never inside it', () => {
   // A button nested in a button is not a thing, and worse: pressing the copy
   // control would collapse the very block it just copied.
