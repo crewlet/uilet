@@ -4,6 +4,7 @@ import { EmptyValue } from '../EmptyValue/index.js';
 import { Link } from '../Link/index.js';
 import { RelativeTime, type TimeValue } from '../RelativeTime/index.js';
 import { Tag } from '../Tag/index.js';
+import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import type { Tone } from '../utils/tone.js';
@@ -299,6 +300,118 @@ export function TableTextCell({ children, icon, mark }: TableTextCellProps) {
           </span>
         ) : null)}
       <span className="crewlet-table-cell__truncate">{children}</span>
+    </span>
+  );
+}
+
+/** Which of a two-line cell's lines is a literal, set in the mono face. */
+export type TableTwoLineCellMono = 'value' | 'detail' | 'both';
+
+export type TableTwoLineCellProps = {
+  /** The value, in the cell's own register: a name, a key, a short state. */
+  value: ReactNode;
+  /**
+   * The quieter line under it, a caption in the secondary ink: where it runs,
+   * the id it resolves to, when it last answered. Left out, the cell is the
+   * value's one line, at the same place a row of two-line cells puts it.
+   */
+  detail?: ReactNode;
+  /**
+   * Which line is a literal (a command, an id, a key), set in the mono face:
+   * in the sans face `--` and `=` read as prose.
+   */
+  mono?: TableTwoLineCellMono | undefined;
+  /**
+   * The whole cell's hover text, where the two lines are not the whole story
+   * (a model's CLI, key and id in one line). Given, neither line adds its own.
+   */
+  title?: string | undefined;
+  /**
+   * Whether a cut line carries its whole words as its title (`Text`'s
+   * `titleWhenCut`). On by default. Off where something else already shows
+   * them, a `Tooltip` around the cell.
+   */
+  titleWhenCut?: boolean | undefined;
+} & (
+  | {
+      /**
+       * A mark every row of the column wears, centred against the two lines.
+       * The header carries the meaning, so it is drawn as decoration.
+       */
+      icon?: ReactNode;
+      mark?: never;
+    }
+  | {
+      icon?: never;
+      /**
+       * A mark that varies per row and states a fact of its own (a vendor, the
+       * CLI a model runs on), centred against the two lines. It brings its own
+       * accessible name and is read.
+       */
+      mark: ReactNode;
+    }
+);
+
+/**
+ * A value over a quieter line, each cut on one line: a name over where it
+ * runs, a key over the id it resolves to, a short state over when it began.
+ *
+ * TWO LINES IN TWO REGISTERS, ALWAYS THE SAME TWO, so every two-line cell in a
+ * table reads alike: the value in the cell's own register (it inherits the
+ * grid's size and ink), the line under it a caption in the secondary ink. A
+ * row of them is as tall as two lines whatever they hold, because each line
+ * is cut with an ellipsis rather than wrapped, and its whole words are on its
+ * title while it is cut (`Text`'s `truncate`).
+ *
+ * A MARK STANDS CENTRED AGAINST BOTH LINES, the way a vendor's mark stands
+ * beside a service's name and host. In a grid's stacked rows the lines, not
+ * the mark, give the row its baseline, so a column's label stands on the
+ * value's line (DataGrid.css).
+ */
+export function TableTwoLineCell({
+  value,
+  detail,
+  mono,
+  title,
+  titleWhenCut = true,
+  icon,
+  mark,
+}: TableTwoLineCellProps) {
+  const ownTitles = titleWhenCut && title === undefined;
+  const hasDetail = detail !== undefined && detail !== null && detail !== false && detail !== '';
+  const leading =
+    mark ??
+    (icon !== undefined && icon !== null ? (
+      <span className="crewlet-table-cell__icon" aria-hidden="true">
+        {icon}
+      </span>
+    ) : null);
+  // An empty mark or icon (`cond ? <Glyph /> : null`) draws no leading slot,
+  // so the lines are the whole cell and carry its title.
+  const leads = leading !== null && leading !== undefined && leading !== false;
+  const lines = (
+    <span className="crewlet-table-cell__lines" title={leads ? undefined : title}>
+      <Text variant="inherit" truncate mono={mono === 'value' || mono === 'both'} titleWhenCut={ownTitles}>
+        {value}
+      </Text>
+      {hasDetail ? (
+        <Text
+          variant="caption"
+          tone="secondary"
+          truncate
+          mono={mono === 'detail' || mono === 'both'}
+          titleWhenCut={ownTitles}
+        >
+          {detail}
+        </Text>
+      ) : null}
+    </span>
+  );
+  if (!leads) return lines;
+  return (
+    <span className="crewlet-table-cell__two-line" title={title}>
+      {leading}
+      {lines}
     </span>
   );
 }

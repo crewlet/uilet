@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
+  DataGrid,
   PrincipalAvatar,
   Table,
   TableDateCell,
@@ -9,8 +10,12 @@ import {
   TableStatusCell,
   TableTagsCell,
   TableTextCell,
+  TableTwoLineCell,
+  type DataGridColumn,
 } from '@crewlethq/ui';
-import { DatabaseGlyph } from '@crewlethq/icons/glyphs';
+import { VendorMark, type Vendor } from '@crewlethq/icons';
+import { DatabaseGlyph, SquareTerminalGlyph } from '@crewlethq/icons/glyphs';
+import { themeScope } from '../themeScope';
 
 const meta: Meta = {
   title: 'UI/TableCells',
@@ -59,5 +64,130 @@ export const AllCells: Story = {
         ],
       ]}
     />
+  ),
+};
+
+interface Connection {
+  key: string;
+  vendor?: Vendor;
+  name: string;
+  where: string;
+  command?: boolean;
+  model: string;
+  modelId: string;
+  last: string;
+  lastDetail?: string;
+}
+
+const CONNECTIONS: Connection[] = [
+  {
+    key: 'linear',
+    vendor: 'linear',
+    name: 'Linear',
+    where: 'api.linear.app',
+    model: 'planner',
+    modelId: 'claude-sonnet-5-5',
+    last: 'Answered',
+    lastDetail: '4 minutes ago',
+  },
+  {
+    key: 'github',
+    vendor: 'github',
+    name: 'GitHub for the production organisation, read only',
+    where: 'api.github.com/orgs/production/repos?visibility=private',
+    model: 'reviewer-with-a-long-key',
+    modelId: 'claude-opus-5-5-with-extended-thinking',
+    last: 'Timed out after 30 seconds while listing its repositories',
+    lastDetail: 'Product Manager, 12 minutes ago',
+  },
+  {
+    key: 'backup',
+    name: 'Nightly backup',
+    where: 'rsync -a --delete --exclude=.cache /srv/shared backup:/vault/shared',
+    command: true,
+    model: 'fast',
+    modelId: 'claude-haiku-5-5',
+    last: 'Never answered',
+  },
+];
+
+const CONNECTION_COLUMNS: DataGridColumn<Connection>[] = [
+  {
+    key: 'name',
+    header: 'Connection',
+    floor: '12rem',
+    cell: (c) =>
+      c.vendor ? (
+        <TableTwoLineCell
+          mark={<VendorMark vendor={c.vendor} size="xl" title={c.name} />}
+          value={c.name}
+          detail={c.where}
+        />
+      ) : (
+        <TableTwoLineCell icon={<SquareTerminalGlyph size="xl" />} value={c.name} detail={c.where} mono={c.command ? 'detail' : undefined} />
+      ),
+  },
+  {
+    key: 'model',
+    header: 'Model',
+    floor: '9rem',
+    cell: (c) => <TableTwoLineCell value={c.model} detail={c.modelId} mono="both" />,
+  },
+  {
+    key: 'last',
+    header: 'Last answer',
+    floor: '9rem',
+    cell: (c) => <TableTwoLineCell value={c.last} detail={c.lastDetail} />,
+  },
+];
+
+function Connections() {
+  return <DataGrid rows={CONNECTIONS} columns={CONNECTION_COLUMNS} rowKey={(c: Connection) => c.key} />;
+}
+
+/**
+ * A value over a quieter line, each cut on one line with its whole words on
+ * hover: a connection's name over where it runs (a vendor's mark, or a column
+ * glyph, centred against both), a model's key over its id (both literals, so
+ * both mono), and the last answer over who asked and when. A row with one
+ * line ("Never answered") keeps the row's height. Drag the corner to narrow
+ * the grid and watch every line cut rather than wrap.
+ */
+export const TwoLineCells: Story = {
+  render: () => (
+    <div style={{ width: 720, resize: 'horizontal', overflow: 'auto', paddingBottom: 'var(--spacing-2)' }}>
+      <Connections />
+    </div>
+  ),
+};
+
+/** The same grid right to left: the mark leads from the right, and each line is cut at its left end. */
+export const TwoLineCellsRightToLeft: Story = {
+  render: () => (
+    <div dir="rtl" style={{ width: 560 }}>
+      <Connections />
+    </div>
+  ),
+};
+
+/** Narrow enough that the grid stacks its rows: the column's label stands on the value's line, not the mark's foot. */
+export const TwoLineCellsStacked: Story = {
+  render: () => (
+    <div style={{ width: 340 }}>
+      <Connections />
+    </div>
+  ),
+};
+
+/** Both themes: the caption line in the secondary ink on each ground. */
+export const TwoLineCellsBothThemes: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)', maxWidth: 720 }}>
+      {(['light', 'dark'] as const).map((theme) => (
+        <div key={theme} style={{ ...themeScope(theme), padding: 'var(--spacing-4)', background: 'var(--color-surface-background)' }}>
+          <Connections />
+        </div>
+      ))}
+    </div>
   ),
 };
