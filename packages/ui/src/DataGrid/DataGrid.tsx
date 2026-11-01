@@ -908,6 +908,7 @@ export function DataGrid<T>({
           alignOf(column) !== 'left' && `crewlet-data-grid__cell--${alignOf(column)}`,
           column.icon && 'crewlet-data-grid__cell--icon',
           column.shrink && 'crewlet-data-grid__cell--shrink',
+          column.action && 'crewlet-data-grid__cell--action',
         )}
         data-lead={column.phoneLead || undefined}
         data-phone-omit={column.phoneOmit || undefined}

@@ -665,6 +665,63 @@ button.crewlet-data-grid__row-link {
   overflow-wrap: anywhere;
 }
 
+/* A VALUE THAT LEADS WITH A PICTURE IS NAMED ON ITS WORDS' LINE. The name
+   stands on the value's first baseline, and a row of a mark beside two lines
+   (a vendor's mark beside a name and its host) reads its baseline off its
+   first item, the picture, whose baseline is its bottom edge: the name stood
+   on the second line. The words after the picture take part in baseline
+   alignment instead, so the row's baseline is theirs; beside a picture no
+   taller than they are, they keep the place they had.
+   ONLY A PICTURE WITH NO WORDS OF ITS OWN: an svg or an img, or a box that
+   holds nothing but one. A monogram avatar or an avatar stack has its
+   initials' baseline already, and its name stood on its line; matched by its
+   role, the shorter words beside it rose to the top of the row, off the
+   picture's centre. */
+:where(.crewlet-data-grid[data-stacked])
+  .crewlet-data-grid__cell
+  > *
+  > :is(svg, img, :has(> :is(svg, img)):not(:has(> :not(svg, img)))):first-child
+  + * {
+  align-self: baseline;
+}
+
+/* THE ROW'S ACTIONS STAND ON ITS FIRST LINE, at its end, as a card's head
+   carries its menu. On a line of their own after every value they sat alone
+   under the names, with nothing beside them to say whose they were. */
+:where(.crewlet-data-grid[data-stacked]:not([data-phone-rows='compact']))
+  .crewlet-data-grid__row:has(> .crewlet-data-grid__cell--action) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: var(--spacing-2);
+}
+
+:where(.crewlet-data-grid[data-stacked]:not([data-phone-rows='compact']))
+  .crewlet-data-grid__row:has(> .crewlet-data-grid__cell--action)
+  > .crewlet-data-grid__cell:not(.crewlet-data-grid__cell--action) {
+  grid-column: 1;
+}
+
+/* ONLY THE FIRST LINE SHARES ITS WIDTH WITH THE ACTIONS. Their track is sized
+   to them, and a line held to the other track gave that width up with nothing
+   beside it: every line of a card ended a third of a phone's row short of its
+   edge, and its value wrapped. Every line after the first (a value with
+   nothing in it draws none) spans the row. */
+:where(.crewlet-data-grid[data-stacked]:not([data-phone-rows='compact']))
+  .crewlet-data-grid__row:has(> .crewlet-data-grid__cell--action)
+  > .crewlet-data-grid__cell:not(.crewlet-data-grid__cell--action):not(:empty)
+  ~ .crewlet-data-grid__cell:not(.crewlet-data-grid__cell--action) {
+  grid-column: 1 / -1;
+}
+
+:where(.crewlet-data-grid[data-stacked]:not([data-phone-rows='compact']))
+  .crewlet-data-grid__row
+  > .crewlet-data-grid__cell--action {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+
 /* ---- THE COMPACT ROW (`phoneRows="compact"`) ---------------------------
    TWO LINES, NO LABELS: what the row is, then its marks. One flex run that
    breaks once: the lead cells first, a zero-height full-width `::after`

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { Button, Card, ChooserList, ColumnChooser, DataGrid, Menu, Tag, columnChoicesOf, type DataGridColumn } from '@crewlethq/ui';
+import { AvatarStack, Button, Card, ChooserList, ColumnChooser, DataGrid, Menu, Tag, columnChoicesOf, type DataGridColumn } from '@crewlethq/ui';
+import { VendorMark, type Vendor } from '@crewlethq/icons';
 import { BugGlyph, InboxGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof DataGrid> = {
@@ -178,6 +179,68 @@ export const StacksWhenNothingFits: Story = {
         rowKey={(t: Task) => t.key}
         rowHref={(t: Task) => `#/worklet/${t.key}`}
       />
+    </div>
+  ),
+};
+
+interface Service {
+  vendor: Vendor;
+  name: string;
+  host: string;
+  tools: number;
+  state: string;
+  owners: string[];
+}
+
+const SERVICES: Service[] = [
+  { vendor: 'github', name: 'GitHub', host: 'api.github.com', tools: 43, state: 'Connected', owners: ['Ada Lovelace', 'Alan Turing'] },
+  { vendor: 'linear', name: 'Linear', host: 'mcp.linear.app', tools: 21, state: 'Needs sign-in', owners: ['Grace Hopper', 'Ada Lovelace', 'Edsger Dijkstra'] },
+  { vendor: 'sentry', name: 'Sentry', host: 'mcp.sentry.dev', tools: 16, state: 'Connected', owners: ['Alan Turing', 'Grace Hopper'] },
+];
+
+const SERVICE_COLUMNS: DataGridColumn<Service>[] = [
+  {
+    key: 'name',
+    header: 'Service',
+    floor: '12rem',
+    cell: (s) => (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+        <VendorMark vendor={s.vendor} size="xl" />
+        <span style={{ display: 'grid' }}>
+          <span>{s.name}</span>
+          <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)' }}>{s.host}</span>
+        </span>
+      </span>
+    ),
+  },
+  {
+    key: 'owners',
+    header: 'Owners',
+    cell: (s) => (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--spacing-1)' }}>
+        <AvatarStack decorative members={s.owners.map((name) => ({ name }))} />
+        <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--font-size-xs)' }}>{s.owners.length} people</span>
+      </span>
+    ),
+  },
+  { key: 'tools', header: 'Tools', align: 'right', shrink: true, cell: (s) => s.tools },
+  { key: 'state', header: 'State', shrink: true, cell: (s) => <Tag size="sm">{s.state}</Tag> },
+  { key: 'open', header: '', action: true, cell: (s) => <Button size="small" variant="ghost">Manage {s.name}</Button> },
+];
+
+/**
+ * Stacked card rows whose first value leads with a picture: a vendor's mark
+ * beside a name and its host. The column's name stands on the words' first
+ * line, not at the foot of the mark, and the row's action stands on its first
+ * line at its end, as a card's head carries its menu, rather than alone on a
+ * line after every value. The owners lead with an avatar stack, whose
+ * initials give the row its line already, so the words beside it stay
+ * centred on it.
+ */
+export const StackedRowsLedByAMark: Story = {
+  render: () => (
+    <div style={{ width: 360, resize: 'horizontal', overflow: 'auto', paddingBottom: 'var(--spacing-2)' }}>
+      <DataGrid rows={SERVICES} columns={SERVICE_COLUMNS} rowKey={(s: Service) => s.vendor} />
     </div>
   ),
 };
