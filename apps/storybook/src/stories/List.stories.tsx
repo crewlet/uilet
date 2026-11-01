@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { List, ListItem, RelativeTime, StatusDot, Text } from '@crewlethq/ui';
+import { Button, List, ListItem, RelativeTime, StatusDot, Text } from '@crewlethq/ui';
 import { ChevronRightGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof List> = {
@@ -121,6 +121,41 @@ export const NumberedAndDivided: Story = {
         <ListItem>
           A change that reaches a customer is reviewed by a second agent before it ships, and the review is linked from
           the task it closes.
+        </ListItem>
+      </List>
+    </div>
+  ),
+};
+
+/**
+ * A ROW WITH A CONTROL OF ITS OWN: the row is a link and `action` stands
+ * beside it, never inside it, so each is a control and the link's name is the
+ * row's words. `note` is a line under both: what the action came to.
+ */
+export const WithAnAction: Story = {
+  render: () => (
+    <div style={{ maxWidth: 520 }}>
+      <List variant="divided" aria-label="Webhooks">
+        <ListItem
+          href="#/hooks/deploy"
+          action={
+            <Button size="small" variant="secondary">
+              Retry
+            </Button>
+          }
+          note={<Text variant="caption">The last delivery was refused with 503.</Text>}
+        >
+          deploy_finished
+        </ListItem>
+        <ListItem
+          href="#/hooks/turn"
+          action={
+            <Button size="small" variant="ghost">
+              Pause
+            </Button>
+          }
+        >
+          turn_completed
         </ListItem>
       </List>
     </div>

@@ -126,6 +126,19 @@ export interface ListItemProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
   leading?: ReactNode;
   /** Drawn after it: a time, a count, a chevron. */
   trailing?: ReactNode;
+  /**
+   * A control of its own at the row's end (Join, a switch), drawn BESIDE the
+   * row's link or button rather than inside it: a control inside another is
+   * one a keyboard cannot reach and a screen reader announces as part of the
+   * row's name. Not part of the row's hover or its name.
+   */
+  action?: ReactNode;
+  /**
+   * A line under the row, across its whole width: what pressing `action` came
+   * to when that needs saying (a refusal, a next step). Not part of the row's
+   * name either.
+   */
+  note?: ReactNode;
   tone?: ListItemTone | undefined;
   /** Read in place of the danger rail, so colour is never the only signal. */
   dangerLabel?: string | undefined;
@@ -153,6 +166,8 @@ export function ListItem({
   onClick,
   leading,
   trailing,
+  action,
+  note,
   tone = 'default',
   dangerLabel = 'Failed',
   selected = false,
@@ -261,6 +276,8 @@ export function ListItem({
     row = <span className={rowClass}>{contents(children)}</span>;
   }
 
+  const hasAction = action !== undefined && action !== null;
+  const hasNote = note !== undefined && note !== null;
   return (
     <li
       {...rest}
@@ -268,11 +285,14 @@ export function ListItem({
         'crewlet-list__item',
         tone === 'danger' && 'crewlet-list__item--danger',
         selected && 'crewlet-list__item--selected',
+        (hasAction || hasNote) && 'crewlet-list__item--split',
         className,
       )}
       aria-current={interactive ? undefined : current}
     >
       {row}
+      {hasAction ? <span className="crewlet-list__action">{action}</span> : null}
+      {hasNote ? <div className="crewlet-list__note">{note}</div> : null}
     </li>
   );
 }

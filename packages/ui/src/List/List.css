@@ -210,6 +210,38 @@
   max-inline-size: var(--size-measure-wide);
 }
 
+/*
+ * A ROW WITH A CONTROL OF ITS OWN (`action`) or a line under it (`note`): the
+ * row's link or button takes the room and the action stands beside it, at the
+ * row's end and on its middle, so the two are two controls and the action is
+ * never inside the row's hover or its name. The note wraps under both, at the
+ * row's own inset.
+ */
+.crewlet-list__item--split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--spacing-2);
+}
+
+.crewlet-list__item--split > .crewlet-list__row {
+  flex: 1 1 0;
+}
+
+.crewlet-list__action {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding-inline-end: var(--spacing-3);
+}
+
+.crewlet-list__note {
+  flex-basis: 100%;
+  min-width: 0;
+  padding: 0 var(--spacing-3) var(--spacing-2);
+}
+
 /* ---- States ------------------------------------------------------------ */
 
 /*
