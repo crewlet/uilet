@@ -11,6 +11,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import axe from 'axe-core';
 import { memo, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
 import { INBOX_ROW_LEAVE, InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle } from './index.js';
 
@@ -497,4 +498,113 @@ test('the motions are the kit\'s: the row closes its one track on the slow step,
   const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
   expect(reduced).toMatch(/\.crewlet-inbox-row--leaving\s*\{\s*transition: none;/);
   expect(reduced).toMatch(/\.crewlet-inbox-list__arrival\s*\{\s*animation: none;/);
+});
+
+/*
+ * A LONG QUALIFIER NEVER HIDES THE NAME, AND THE TIME NEVER HIDES THE ROOM.
+ * The head was one line of boxes in which only the name could shrink, so
+ * "replied to a thread in Product Manager" squeezed the name to 0px and
+ * pushed the time 60px past the row's edge; given a column of its own, the
+ * time then took its width from both lines and cut the room's name off the
+ * second. jsdom lays nothing out, so this pins the cascade that makes the
+ * layout safe: one run of words, wrapping and clamped at two lines, the name
+ * first; the time floated at the end of the first line, which it can only
+ * take by coming first in the source; and the control still named in reading
+ * order, the time after the words it follows on screen.
+ */
+test('the time floats at the end of the first line of a clamped run of words, and the name still reads in order', () => {
+  const remove = installSheets('InboxList/InboxList.css');
+  try {
+    render(
+      <InboxList label="Activity">
+        <InboxGroup label="Activity" hideLabel>
+          <InboxRow
+            title="Product Manager"
+            qualifier="replied to a thread in #engineering"
+            meta="8h ago"
+            leading={<span style={{ display: 'block', width: 32, height: 32 }} />}
+            onClick={() => {}}
+          >
+            Sounds good
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    const row = screen.getByRole('button', { name: /^Product Manager replied to a thread in #engineering 8h ago Sounds good$/ });
+    const head = row.querySelector('.crewlet-inbox-row__head')!;
+    const text = head.querySelector('.crewlet-inbox-row__head-text')!;
+    const end = text.querySelector('.crewlet-inbox-row__head-end')!;
+    const title = text.querySelector('.crewlet-inbox-row__title')!;
+    const qualifier = text.querySelector('.crewlet-inbox-row__qualifier')!;
+    const meta = end.querySelector('.crewlet-inbox-row__meta')!;
+
+    // The float leads the words it floats beside, and the name leads the words.
+    expect(text.parentElement).toBe(head);
+    expect(text.firstElementChild).toBe(end);
+    expect(end.nextElementSibling).toBe(title);
+    expect(meta.textContent).toBe('8h ago');
+
+    const headStyle = getComputedStyle(head);
+    expect(headStyle.display).toBe('-webkit-box');
+    expect(headStyle.minWidth).toBe('0px');
+    expect(headStyle.overflow).toBe('hidden');
+    expect(headStyle.getPropertyValue('overflow-wrap')).toBe('anywhere');
+    expect(headStyle.getPropertyValue('-webkit-line-clamp')).toBe('2');
+    expect(headStyle.getPropertyValue('line-clamp')).toBe('2');
+    // A float lays out in every engine inside a block of its own under the clamp.
+    expect(getComputedStyle(text).display).toBe('block');
+
+    const endStyle = getComputedStyle(end);
+    expect(endStyle.getPropertyValue('float')).toBe('inline-end');
+    expect(endStyle.whiteSpace).toBe('nowrap');
+
+    // Words in the run, never boxes that shrink or refuse to wrap.
+    for (const each of [title, qualifier]) {
+      const style = getComputedStyle(each);
+      expect(style.display).toBe('inline');
+      expect(style.whiteSpace).toBe('normal');
+      expect(style.overflow).toBe('visible');
+    }
+  } finally {
+    remove();
+  }
+});
+
+/*
+ * THE LEADING SLOT FITS WHAT IT HOLDS. A fixed 24px by one-line box let a 32px
+ * face overflow it by 8px, up and to the left. The slot is at least a target
+ * square and grows past it; the name's line is centred on a target-sized mark
+ * by moving the words down by exactly what the control's top pad gives up,
+ * so the name sits where it does in a row without a leading mark.
+ */
+test('the leading slot grows to its mark, and the name keeps its line', () => {
+  const remove = installSheets('InboxList/InboxList.css');
+  try {
+    const { container } = render(
+      <InboxList label="Inbox">
+        <InboxGroup label="Updates">
+          <InboxRow title="Crewlet-PM" meta="2m" leading={<span />} onClick={() => {}}>
+            With a face
+          </InboxRow>
+          <InboxRow title="Crewlet-PM" meta="2m" onClick={() => {}}>
+            Without one
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    const [withFace, without] = [...container.querySelectorAll('.crewlet-inbox-row__control')];
+    const slot = getComputedStyle(withFace!.querySelector('.crewlet-inbox-row__leading')!);
+    expect(slot.width).toBe('auto');
+    expect(slot.height).toBe('auto');
+    expect(slot.minWidth).toBe('24px');
+    expect(px(withFace!.querySelector('.crewlet-inbox-row__leading')!, 'min-height')).toBeGreaterThanOrEqual(24);
+    expect(slot.flexShrink).toBe('0');
+
+    const nameTop = (control: Element) => px(control, 'padding-top') + px(control.querySelector('.crewlet-inbox-row__main')!, 'padding-top');
+    expect(px(withFace!.querySelector('.crewlet-inbox-row__main')!, 'padding-top')).toBeGreaterThan(0);
+    expect(nameTop(withFace!)).toBeCloseTo(nameTop(without!), 5);
+    expect(px(without!.querySelector('.crewlet-inbox-row__main')!, 'padding-top')).toBe(0);
+  } finally {
+    remove();
+  }
 });

@@ -223,19 +223,36 @@
 }
 
 /*
- * The avatar is centred on the head's line, the name it belongs to: its box
- * is one line tall and the avatar, a target taller than the line, overflows
- * it evenly into the control's top pad. Hung from the line's top by a pixel
- * it stood 3.6px under the name's middle, its top a step further from the
- * row's edge than its side.
+ * THE LEADING SLOT FITS WHAT IT HOLDS. It is at least a target square (and at
+ * least a line tall), with its mark centred in it, and it grows to a larger
+ * mark, such as a 32px face, rather than letting it spill: a fixed one-line
+ * box let a 32px face overflow it by 8px, up and to the left, until it all but
+ * touched the row's edge.
+ *
+ * THE NAME'S LINE IS CENTRED ON A TARGET-SIZED MARK by moving the words down
+ * rather than the mark up: the words start half the difference between the
+ * target and a line lower, and the control's top pad is that much shorter, so
+ * a row with a target-sized avatar keeps its height and its name where they
+ * were, with the avatar inside the control instead of over its pad. A larger
+ * mark hangs from the same top, beside the name's line and the one under it.
  */
+.crewlet-inbox-row__control--leading {
+  --crewlet-inbox-row-lift: max(0px, (var(--size-target-min) - 1lh) / 2);
+
+  padding-top: calc(var(--spacing-2) + var(--spacing-1) / 2 - var(--crewlet-inbox-row-lift));
+}
+
+.crewlet-inbox-row__control--leading > .crewlet-inbox-row__main {
+  padding-top: var(--crewlet-inbox-row-lift);
+}
+
 .crewlet-inbox-row__leading {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: var(--size-target-min);
-  height: 1lh;
+  min-width: var(--size-target-min);
+  min-height: max(var(--size-target-min), 1lh);
 }
 
 .crewlet-inbox-row__main {
@@ -245,24 +262,49 @@
   min-width: 0;
 }
 
+/*
+ * THE HEAD IS ONE RUN OF WORDS: who, then what they did, wrapping as words do
+ * and stopping at two lines with an ellipsis. The name comes first, so it is
+ * the last thing a long qualifier can push out of sight. As one line of boxes
+ * the name was the only one allowed to shrink, so a qualifier longer than a
+ * word ("replied to a thread in Product Manager") squeezed the name to
+ * nothing and pushed the time past the row's edge.
+ *
+ * THE TIME FLOATS AT THE END OF THE FIRST LINE, so only that line gives up
+ * room to it and the second runs the row's full width: "replied to a thread
+ * in #engineering" keeps the room's name, the part of the line most worth
+ * reading, where a column of its own took the time's width from both lines.
+ * The float sits in a block of its own inside the clamp, which is where every
+ * engine lays a float out and still counts the clamped lines.
+ */
 .crewlet-inbox-row__head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--spacing-1);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--color-text-tertiary);
+}
+
+.crewlet-inbox-row__head-text {
+  display: block;
+}
+
+/* The time (and any status), in the head's own line box, so the time sits on the name's baseline. */
+.crewlet-inbox-row__head-end {
+  float: inline-end;
+  margin-inline-start: var(--spacing-2);
+  white-space: nowrap;
 }
 
 .crewlet-inbox-row__title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
 
 .crewlet-inbox-row__qualifier {
-  flex: none;
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
@@ -272,8 +314,6 @@
 }
 
 .crewlet-inbox-row__meta {
-  flex: none;
-  margin-inline-start: auto;
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -321,19 +361,10 @@
   color: var(--color-text-secondary);
 }
 
+/* At the end of the first line, before the time when the row has both. */
 .crewlet-inbox-row__status {
   display: inline-flex;
-  flex: none;
   align-items: center;
-}
-
-/* With a status, the time stays at the end and the status sits beside it. */
-.crewlet-inbox-row__status + .crewlet-inbox-row__meta {
-  margin-inline-start: 0;
-}
-
-.crewlet-inbox-row__head > .crewlet-inbox-row__status {
-  margin-inline-start: auto;
 }
 
 /*
@@ -391,7 +422,9 @@
 
 /*
  * The task, under the words and lined up with them: the control's start pad,
- * the leading slot and the gap after it.
+ * a target-sized leading slot and the gap after it. The task sits outside the
+ * control, so it lines up with the words for a mark of the target size, the
+ * size `leading` asks for.
  */
 .crewlet-inbox-row__aside {
   min-width: 0;

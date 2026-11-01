@@ -9,6 +9,7 @@ import {
   InboxRow,
   InboxToggle,
   Link,
+  ListDetail,
   ReadingPane,
   ReadingPaneTitle,
   Tag,
@@ -143,8 +144,9 @@ export const Default: Story = {
 };
 
 /**
- * Nothing is cut at the edge: the name ellipsizes, the time never wraps, and
- * the words take up to three lines, even when they hold a word with no break.
+ * Nothing is cut at the edge: the name wraps to two lines before it stops,
+ * the time never wraps, and the words take up to three lines, even when they
+ * hold a word with no break.
  */
 export const LongWords: Story = {
   render: () => (
@@ -168,6 +170,62 @@ export const LongWords: Story = {
       </InboxList>
     </div>
   ),
+};
+
+const ACTIVITY = [
+  { key: 'a-1', who: 'Product Manager', what: 'replied to a thread in #engineering', when: '8h ago', text: 'Sounds good, I will update the brief tonight.', unread: true },
+  { key: 'a-2', who: 'Dana Reyes', kind: 'human', what: 'mentioned you in Design reviews and critiques', when: '1d ago', text: 'Can you look at the empty state before Friday?' },
+  { key: 'a-3', who: 'Crewlet-Principal-Engineer', what: 'reacted to your message in General', when: '2d ago', text: 'Ship the export first.' },
+  { key: 'a-4', who: 'Crewlet-QA', what: 'replied to a thread in Release readiness', when: '3d ago', text: 'The regression suite is green on the release branch.' },
+  { key: 'a-5', who: 'Jane Doe', kind: 'human', what: 'mentioned you in Design reviews and critiques', when: '4d ago', text: 'Pinned the latest mockups for the onboarding flow.' },
+  { key: 'a-6', who: 'Product Manager', what: 'replied to a thread in Product Manager', when: '5d ago', text: 'Moved the launch to the second week.' },
+] as const;
+
+/**
+ * A LONG QUALIFIER beside a larger face, in a list as narrow as a list beside
+ * a reading pane (`ListDetail`, 17rem). The name and what the person did read
+ * as one run of words that wraps to a second line and stops there, the name
+ * first so it is never the part cut, and the time keeps a column of its own
+ * at the end. The leading slot grows to the 32px face rather than letting it
+ * spill over the row's edge. The list is taller than its box, so it scrolls
+ * in its own column while the reading pane stays put.
+ */
+export const LongQualifier: Story = {
+  render: function Render() {
+    const [open, setOpen] = useState<string>(ACTIVITY[0].key);
+    const item = ACTIVITY.find((each) => each.key === open)!;
+    return (
+      <div style={{ display: 'flex', height: 360, maxWidth: 760, background: 'var(--color-surface-background)' }}>
+        <ListDetail
+          list={
+            <InboxList label="Activity">
+              <InboxGroup label="Activity" hideLabel>
+                {ACTIVITY.map((each) => (
+                  <InboxRow
+                    key={each.key}
+                    title={each.who}
+                    qualifier={each.what}
+                    meta={each.when}
+                    leading={<Avatar name={each.who} kind={'kind' in each ? each.kind : 'agent'} size={32} decorative />}
+                    unread={'unread' in each ? each.unread : false}
+                    selected={open === each.key}
+                    onClick={() => setOpen(each.key)}
+                  >
+                    {each.text}
+                  </InboxRow>
+                ))}
+              </InboxGroup>
+            </InboxList>
+          }
+        >
+          <ReadingPane contentKey={open}>
+            <ReadingPaneTitle>{item.who}</ReadingPaneTitle>
+            <p style={{ margin: 0 }}>{item.text}</p>
+          </ReadingPane>
+        </ListDetail>
+      </div>
+    );
+  },
 };
 
 /**
