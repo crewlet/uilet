@@ -62,6 +62,37 @@ export const WaitingForApproval: Story = {
   },
 };
 
+/**
+ * A check that failed part-way: the steps it never reached are pending, a
+ * dashed circle and quiet words, said by the caller as "Not reached".
+ */
+export const NotReached: Story = {
+  args: {
+    label: 'Stages on node-0',
+    summary: 'node-0',
+    labels: { pending: 'Not reached' },
+    steps: [
+      { id: 'address', label: 'Address', state: 'done', duration: '0 ms', detail: 'A valid address' },
+      { id: 'resolve', label: 'Resolve', state: 'done', duration: '12 ms', detail: '203.0.113.7' },
+      { id: 'connect', label: 'Connect', state: 'failed', duration: '30 ms', detail: 'connection refused' },
+      { id: 'tls', label: 'Certificate', state: 'pending' },
+      { id: 'list', label: 'List tools', state: 'pending' },
+    ],
+  },
+};
+
+/** A check under way: what it has done, what it is doing, and what is still to come. */
+export const UnderWay: Story = {
+  args: {
+    label: 'Checking the address',
+    steps: [
+      { id: 'reach', label: 'Reach the address', state: 'done' },
+      { id: 'discover', label: 'Discover the server', state: 'running' },
+      { id: 'metadata', label: 'Read its sign-in metadata', state: 'pending' },
+    ],
+  },
+};
+
 /** Long labels and a long request wrap under the label; the mark and duration stay on its first line. */
 export const LongLabels: Story = {
   args: {

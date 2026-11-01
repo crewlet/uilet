@@ -151,8 +151,10 @@ test("a list's radio is drawn, an empty ring until it is chosen, and the platfor
   expect(list.get('.crewlet-choice-list__radio:checked')).toMatch(/var\(--color-brand-accent\)/);
   const text = readFileSync(resolve(here, '..', 'ChoiceList/ChoiceList.css'), 'utf8');
   expect(text).toMatch(/@media \(forced-colors: active\) \{\s*\.crewlet-choice-list__radio \{\s*appearance: auto;/);
-  // The tag is about an answer, not the pick, so it is not a second accent mark.
-  expect(list.get('.crewlet-choice-list__tag')).toMatch(/color: var\(--color-text-tertiary\)/);
+  // The tag is about an answer, not the pick, so it is not a second accent
+  // mark: it is a choice card's quiet pill, in the secondary ink.
+  expect(list.get('.crewlet-choice-list__tag')).toMatch(/color: var\(--color-text-secondary\)/);
+  expect(list.get('.crewlet-choice-list__tag')).not.toMatch(/accent/);
 });
 
 test("a card's radio is the platform's under forced colours, its pick in the system's selection colour, an unavailable card in its disabled ink", () => {

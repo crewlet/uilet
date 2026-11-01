@@ -6,8 +6,14 @@
  * which is the focus ring's colour.
  */
 .crewlet-choice-list {
-  /* The platform's radio, sized here so a panel can line up with the text beside it. */
-  --crewlet-choice-list-radio-size: 13px;
+  /*
+   * THE COMPACT CONTROL STEP, the box a compact Checkbox draws beside the same
+   * 13px words: a control takes the step of the text it sits beside (16px
+   * beside 14px, 14px beside 13px), and at 13px this radio matched no other
+   * control in the kit, so a list nested under a card's 16px radio, or beside
+   * a compact checkbox, drew a third size.
+   */
+  --crewlet-choice-list-radio-size: 14px;
   /* The step between two answers. Every row's pointer target reaches half of it. */
   --crewlet-choice-list-gap: var(--spacing-1);
   /*
@@ -133,7 +139,8 @@
   box-sizing: border-box;
   width: var(--crewlet-choice-list-radio-size);
   height: var(--crewlet-choice-list-radio-size);
-  margin: 3px 0 0;
+  /* Centred on the label's first line: its 13px in the body's leading. */
+  margin: calc((var(--font-size-compact) * var(--font-line-height-body) - var(--crewlet-choice-list-radio-size)) / 2) 0 0;
   border: 1px solid var(--color-border-control);
   border-radius: 50%;
   background: transparent;
@@ -175,26 +182,35 @@
   overflow-wrap: anywhere;
 }
 
-/* Why a disabled choice cannot be made, after its detail on the same line, in the warning ink. */
+/*
+ * WHY A DISABLED CHOICE CANNOT BE MADE, on a line of its own under the
+ * detail, in the warning ink, as a ChoiceCards card puts it on its own row.
+ * Run on after the detail, it read as the detail's next clause, and in a
+ * narrow column it wrapped wherever the detail happened to end.
+ */
 .crewlet-choice-list__reason {
+  display: block;
   color: var(--color-feedback-warning-ink);
 }
 
-.crewlet-choice-list__detail > .crewlet-choice-list__reason:not(:first-child) {
-  margin-inline-start: var(--spacing-2);
+/* A tag says something ABOUT an answer ("Recommended"), so it is set in a
+   quiet ink: in the accent ink it was a second accent mark on the chosen row,
+   beside the radio and the fill that already say which one is chosen. It is
+   the pill a ChoiceCards card draws its tag in, so one word beside a choice's
+   name reads the same in a list as on a card in the same step, where it was an
+   11px capital label here and a pill there. It stands on the label's line. */
+.crewlet-choice-list__tag {
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
 }
 
-/* A tag says something ABOUT an answer ("Suggested"), so it is set in the
-   tertiary ink: in the accent ink it was a second accent mark on the chosen
-   row, beside the radio and the fill that already say which one is chosen. */
-.crewlet-choice-list__tag {
-  padding-top: 2px;
-  font-size: var(--font-size-2xs);
-  font-weight: 500;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary);
-  white-space: nowrap;
+/* On the selected fill the default edge all but vanishes in light, so the tag takes the strong one, as a chosen card's does. */
+.crewlet-choice-list__row.is-checked .crewlet-choice-list__tag {
+  border-color: var(--color-border-strong);
 }
 
 /* A SELECTED CHOICE'S PANEL is part of the choice: it continues the row's

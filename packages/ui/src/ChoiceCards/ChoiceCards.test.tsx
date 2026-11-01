@@ -154,15 +154,15 @@ test('a reason given on a fact’s line keeps the disabled card to the same line
   expect(description('In E2B')).toBe('A cloud sandbox. Needs E2B key not set. Add E2B_API_KEY. Isolation A separate machine');
 });
 
-test('the narrowest a card stands is the prop that says so, sm, md or lg', () => {
+test('the narrowest a card stands is the prop that says so, xs, sm, md or lg', () => {
   const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-  for (const [width, rem] of [['sm', '15rem'], ['md', '20rem'], ['lg', '24rem']] as const) {
+  for (const [width, rem] of [['xs', '8rem'], ['sm', '15rem'], ['md', '20rem'], ['lg', '24rem']] as const) {
     const { container } = render(
       <ChoiceCards label="Cards" options={OPTIONS} value={null} onChange={() => {}} minCardWidth={width} />,
     );
     expect(container.querySelector('.crewlet-choice-cards')!.classList.contains(`crewlet-choice-cards--${width}`), width).toBe(true);
     cleanup();
-    // md is the group's own default; sm and lg each set the property again.
+    // md is the group's own default; xs, sm and lg each set the property again.
     const rule = width === 'md' ? /\.crewlet-choice-cards \{([^}]*)\}/.exec(css)?.[1] : new RegExp(`\\.crewlet-choice-cards--${width} \\{([^}]*)\\}`).exec(css)?.[1];
     expect(rule, width).toMatch(new RegExp(`--crewlet-choice-cards-min:\\s*${rem};`));
   }
@@ -457,4 +457,82 @@ test('the chosen card keeps its tag edged in the strong border, which the tint d
       uninstall();
     }
   }
+});
+
+describe('a chosen card’s detail', () => {
+  const WITH_DETAIL: ChoiceCardOption[] = [
+    { value: 'oauth', label: 'OAuth', detail: <p>Which client it signs in as</p> },
+    { value: 'none', label: 'None' },
+  ];
+
+  test('opens on a line of its own straight under its card\'s row, not under the whole grid', () => {
+    const FOUR: ChoiceCardOption[] = [
+      { value: 'integration', label: 'GitHub' },
+      { value: 'oauth', label: 'OAuth', detail: <p>Which client it signs in as</p> },
+      { value: 'headers', label: 'Header' },
+      { value: 'none', label: 'None' },
+    ];
+    render(<ChoiceCards label="Sign-in" options={FOUR} value="oauth" onChange={() => {}} />);
+    const detail = screen.getByRole('group', { name: 'OAuth' });
+    // An item of the grid itself, straight after the chosen card...
+    expect(detail.parentElement).toBe(screen.getByRole('radiogroup', { name: 'Sign-in' }));
+    expect(detail.previousElementSibling?.contains(screen.getByRole('radio', { name: 'OAuth' }))).toBe(true);
+    // ...across every column, in a grid that packs the rest of its row back in.
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(/\.crewlet-choice-cards \{([^}]*)\}/.exec(css)?.[1]).toMatch(/grid-auto-flow: row dense/);
+    const rule = /\.crewlet-choice-cards__detail \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/grid-column: 1 \/ -1/);
+    // No frame of its own: what it holds brings its own.
+    expect(rule).not.toMatch(/border|background|padding/);
+  });
+
+  test('a tag with a state takes its feedback ink and line in the card\'s own pill', () => {
+    for (const theme of ['light', 'dark'] as const) {
+      const uninstall = installThemed(theme, 'ChoiceCards/ChoiceCards.css');
+      try {
+        const { container } = render(
+          <ChoiceCards
+            label="Server"
+            value={null}
+            onChange={() => {}}
+            options={[{ value: 'gophrase', label: 'GoPhrase', tag: 'Not reviewed', tagTone: 'warning' }]}
+          />,
+        );
+        const tag = container.querySelector('.crewlet-choice-cards__tag')!;
+        expect(tag.textContent).toBe('Not reviewed');
+        expect(tag.classList.contains('is-warning')).toBe(true);
+        const drawn = getComputedStyle(tag);
+        expect(channels(drawn.color), theme).toEqual(channels(themeColour(theme, token('color-feedback-warning-ink'))));
+        expect(channels(drawn.borderTopColor), theme).toEqual(channels(themeColour(theme, token('color-feedback-warning-line'))));
+      } finally {
+        cleanup();
+        uninstall();
+      }
+    }
+  });
+
+  test('a chosen card that is unavailable draws no detail, and its radio controls nothing', () => {
+    // The value can name a card that has since become unavailable. Its detail
+    // is not drawn, so its radio must not point at a detail that is not there.
+    render(
+      <ChoiceCards
+        label="Sign-in"
+        options={[{ ...WITH_DETAIL[0]!, disabled: true, disabledReason: 'Not offered by this server.' }, WITH_DETAIL[1]!]}
+        value="oauth"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.queryByText('Which client it signs in as')).toBeNull();
+    expect(screen.getByRole('radio', { name: 'OAuth' }).getAttribute('aria-controls')).toBeNull();
+  });
+
+  test('opens under the cards while its card is chosen, controlled by its radio and named by it', () => {
+    const { rerender } = render(<ChoiceCards label="Sign-in" options={WITH_DETAIL} value="oauth" onChange={() => {}} />);
+    const detail = screen.getByRole('group', { name: 'OAuth' });
+    expect(detail.textContent).toContain('Which client it signs in as');
+    expect(screen.getByRole('radio', { name: 'OAuth' }).getAttribute('aria-controls')).toBe(detail.id);
+    rerender(<ChoiceCards label="Sign-in" options={WITH_DETAIL} value="none" onChange={() => {}} />);
+    expect(screen.queryByText('Which client it signs in as')).toBeNull();
+    expect(screen.getByRole('radiogroup', { name: 'Sign-in' }).parentElement?.className ?? '').not.toContain('with-detail');
+  });
 });

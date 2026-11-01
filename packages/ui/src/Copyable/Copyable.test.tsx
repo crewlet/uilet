@@ -11,6 +11,9 @@
  * `ui/primitives.test.tsx`.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -408,6 +411,20 @@ describe('Copyable', () => {
     expect(clipboard.written).toEqual(['0f8c2a11-4d1e-49f5-9b3a-2f1c7d0e5a44']);
   });
 
+  test('a block draws its whole value, wrapped, never cut short', () => {
+    const url = 'https://app.example.com/integrations/oauth/callback/7f3a9c2e';
+    render(<Copyable value={url} variant="block" monospace />);
+    // Every character is in the value, with no shortened form drawn in its place.
+    expect(screen.getByText(url).classList.contains('crewlet-copyable__value')).toBe(true);
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Copyable.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = /\.crewlet-copyable--block \.crewlet-copyable__value \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    // It wraps at any character, keeps its spaces, and neither scrolls nor ends in an ellipsis.
+    expect(rule).toMatch(/white-space:\s*pre-wrap;/);
+    expect(rule).toMatch(/overflow-wrap:\s*anywhere;/);
+    expect(rule).toMatch(/text-overflow:\s*clip;/);
+    expect(rule).not.toMatch(/overflow-x:\s*auto/);
+  });
+
   test('an absent value draws nothing at all', () => {
     const { container } = render(<Copyable value={null} />);
     expect(container.innerHTML).toBe('');
@@ -479,4 +496,14 @@ describe('writeClipboard', () => {
     // that must not receive one as an exception.
     await expect(writeClipboard('x')).resolves.toBe(false);
   });
+});
+
+test('an inline value takes the size and ink of the row it stands in, a value among values', () => {
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'Copyable.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = /\.crewlet-copyable--inline \.crewlet-copyable__value \{([^}]*)\}/.exec(css)?.[1] ?? '';
+  expect(rule).toMatch(/font-size: inherit/);
+  expect(rule).toMatch(/color: inherit/);
+  const { container } = render(<Copyable value="https://api.example.com/v1/" variant="inline" monospace />);
+  // Whole: the inline variant never cuts a value it was not asked to.
+  expect(container.querySelector('.crewlet-copyable__value')!.textContent).toBe('https://api.example.com/v1/');
 });

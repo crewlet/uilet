@@ -154,6 +154,34 @@ export const Cards: Story = {
 };
 
 /**
+ * Chips with counts: each count is a figure in its chip's own ink, so the
+ * chosen chip's count reads on the accent fill like its word.
+ */
+export const ChipsWithCounts: Story = {
+  render: () => {
+    function Demo() {
+      const [risk, setRisk] = useState('all');
+      return (
+        <SegmentedControl
+          label="Show"
+          semantics="radio"
+          layout="chips"
+          value={risk}
+          onValueChange={setRisk}
+          options={[
+            { value: 'all', label: 'All', count: 43 },
+            { value: 'read', label: 'Read only', count: 12 },
+            { value: 'writes', label: 'Writes', count: 22 },
+            { value: 'destructive', label: 'Destructive', count: 9 },
+          ]}
+        />
+      );
+    }
+    return <Demo />;
+  },
+};
+
+/**
  * A row of separate chips, for a setting with more choices than a well holds
  * on one line: the console's row of unit types. The chips wrap with the panel,
  * the chosen one is filled with the accent, and the last one asks for a value

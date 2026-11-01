@@ -28,8 +28,15 @@
     minmax(min(100%, var(--crewlet-choice-cards-min)), 1fr)
   );
   grid-auto-rows: auto;
+  /* DENSE, for a chosen card's detail: it spans every column after its card,
+     and the cards after it on that row pack back in before it (see below). */
+  grid-auto-flow: row dense;
   column-gap: var(--spacing-3);
   row-gap: 0;
+}
+
+.crewlet-choice-cards--xs {
+  --crewlet-choice-cards-min: 8rem;
 }
 
 .crewlet-choice-cards--sm {
@@ -192,6 +199,32 @@
 /* On the chosen card's tint the default edge all but vanishes in light, so the tag takes the strong one. */
 .crewlet-choice-cards__card.is-checked .crewlet-choice-cards__tag {
   border-color: var(--color-border-strong);
+}
+
+/* A TAG THAT SAYS A STATE takes its feedback ink and line, in the card's own
+   pill: a kit Tag handed in drew a second pill inside this one. */
+.crewlet-choice-cards__tag.is-success,
+.crewlet-choice-cards__card.is-checked .crewlet-choice-cards__tag.is-success {
+  border-color: var(--color-feedback-success-line);
+  color: var(--color-feedback-success-ink);
+}
+
+.crewlet-choice-cards__tag.is-warning,
+.crewlet-choice-cards__card.is-checked .crewlet-choice-cards__tag.is-warning {
+  border-color: var(--color-feedback-warning-line);
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-choice-cards__tag.is-danger,
+.crewlet-choice-cards__card.is-checked .crewlet-choice-cards__tag.is-danger {
+  border-color: var(--color-feedback-danger-line);
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-choice-cards__tag.is-info,
+.crewlet-choice-cards__card.is-checked .crewlet-choice-cards__tag.is-info {
+  border-color: var(--color-feedback-info-line);
+  color: var(--color-feedback-info-ink);
 }
 
 /*
@@ -370,4 +403,20 @@
   .crewlet-choice-cards__card {
     transition: none;
   }
+}
+
+/*
+ * A CHOSEN CARD'S DETAIL: the narrower choice it opens, on a line of its own
+ * straight under the chosen card's row (an item of the grid after its card,
+ * across every column, packed densely), so it reads as part of that choice and
+ * not as a second question. NO FRAME OF ITS OWN: what it holds is usually a
+ * framed list, and a tinted, bordered panel round it was a box in a box. It
+ * keeps the gap a row of cards keeps below it.
+ */
+.crewlet-choice-cards__detail {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: var(--spacing-2);
+  min-width: 0;
+  margin-block-end: var(--spacing-3);
 }

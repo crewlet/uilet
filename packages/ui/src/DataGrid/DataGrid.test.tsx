@@ -443,6 +443,82 @@ describe('the fit', () => {
     expect(squeezed(wrap, visible)).toBe('values');
   });
 
+  test('a card row carries its actions on its first line, at its end', () => {
+    const { container } = render(<DataGrid rows={ROWS} columns={COLUMNS} rowKey={(r) => r.id} />);
+    const cells = [...container.querySelector('.crewlet-data-grid__row')!.children];
+    expect(cells.map((c) => c.classList.contains('crewlet-data-grid__cell--action'))).toEqual([false, false, false, false, true]);
+    const css = sheet().replace(/\s+/g, ' ');
+    expect(css).toMatch(
+      /\.crewlet-data-grid__row:has\(> \.crewlet-data-grid__cell--action\) \{[^}]*display: grid;[^}]*grid-template-columns: minmax\(0, 1fr\) auto;/,
+    );
+    expect(css).toMatch(/\.crewlet-data-grid__row > \.crewlet-data-grid__cell--action \{[^}]*grid-column: 2;[^}]*grid-row: 1;/);
+    // Not on a compact row, whose contract is two lines of its own.
+    expect(css).toMatch(/:where\(\.crewlet-data-grid\[data-stacked\]:not\(\[data-phone-rows='compact'\]\)\) \.crewlet-data-grid__row:has/);
+  });
+
+  test('only a card row\'s first line shares its width with the actions; every line after it spans the row', () => {
+    /*
+     * The actions' track is sized to the actions, and a line placed in the
+     * other track alone gives that width up whether or not anything stands
+     * beside it: at 360px every line of a card ended 110px short of its edge,
+     * a third of the row, and the values wrapped (measured in Chrome).
+     */
+    const css = sheet().replace(/\s+/g, ' ');
+    const spanning = [...css.matchAll(/([^{}]+)\{ grid-column: 1 \/ -1; \}/g)]
+      .map((m) => m[1]!.trim())
+      .find((s) => s.includes('.crewlet-data-grid__cell--action'));
+    expect(spanning).toBeTruthy();
+    const cell = (label: string, text = 'value') => `<div class="crewlet-data-grid__cell" data-label="${label}">${text}</div>`;
+    const action = '<div class="crewlet-data-grid__cell crewlet-data-grid__cell--action"><button type="button">Open</button></div>';
+    document.body.innerHTML = `<div class="crewlet-data-grid" data-stacked><div class="crewlet-data-grid__body">${[
+      `<div class="crewlet-data-grid__row">${cell('Name')}${cell('Tools')}${cell('State')}${action}</div>`,
+      // A first value with nothing in it draws no line, so the next one stands beside the actions.
+      `<div class="crewlet-data-grid__row">${cell('Name', '')}${cell('Tools')}${cell('State')}${action}</div>`,
+    ].join('')}</div></div>`;
+    const spans = (row: number) =>
+      [...document.querySelectorAll('.crewlet-data-grid__row')[row]!.querySelectorAll('.crewlet-data-grid__cell[data-label]')]
+        .filter((c) => c.textContent !== '')
+        .map((c) => `${(c as HTMLElement).dataset.label}${c.matches(spanning!) ? ' spans' : ''}`);
+    expect(spans(0)).toEqual(['Name', 'Tools spans', 'State spans']);
+    expect(spans(1)).toEqual(['Tools', 'State spans']);
+    // A compact row is a run of its own, and nothing here reaches it.
+    document.querySelector('.crewlet-data-grid')!.setAttribute('data-phone-rows', 'compact');
+    expect(spans(0)).toEqual(['Name', 'Tools', 'State']);
+    document.body.innerHTML = '';
+  });
+
+  test('a card row names a value that leads with a picture on its words\' line, not the picture\'s', () => {
+    const css = sheet().replace(/\s+/g, ' ');
+    // The name still stands on the value's first baseline.
+    expect(css).toMatch(/:where\(\.crewlet-data-grid\[data-stacked\]\) \.crewlet-data-grid__cell \{[^}]*align-items: baseline;/);
+    const selector = [...css.matchAll(/([^{}]+)\{ align-self: baseline; \}/g)]
+      .map((m) => m[1]!.trim())
+      .find((s) => s.includes('.crewlet-data-grid__cell') && s.includes(':first-child'));
+    expect(selector).toBeTruthy();
+    /*
+     * ONLY A PICTURE WITH NO WORDS OF ITS OWN hands the row's baseline to the
+     * words after it: an svg or an img, whose baseline is its bottom edge, or
+     * a box holding nothing else. A monogram avatar or an avatar stack has its
+     * initials' baseline already, and taking part in baseline alignment moved
+     * the shorter words beside it to the top of the row, off the picture's
+     * centre (4px beside a stack, 7px beside a 32px avatar, measured in
+     * Chrome).
+     */
+    const words = (lead: string, id: string) =>
+      `<div class="crewlet-data-grid__cell" data-label="Who"><span class="row">${lead}<span data-words="${id}">Words</span></span></div>`;
+    document.body.innerHTML = `<div class="crewlet-data-grid" data-stacked><div class="crewlet-data-grid__body"><div class="crewlet-data-grid__row">${[
+      words('<svg aria-hidden="true" viewBox="0 0 24 24"></svg>', 'mark'),
+      words('<span aria-hidden="true"><svg viewBox="0 0 24 24"></svg></span>', 'boxed mark'),
+      words('<img alt="" src="data:," />', 'photo'),
+      words('<span class="crewlet-avatar" aria-hidden="true">AL</span>', 'monogram'),
+      words('<span class="crewlet-avatar-stack" aria-hidden="true"><span class="crewlet-avatar" aria-hidden="true">AL</span><span class="crewlet-avatar" aria-hidden="true">AT</span></span>', 'stack'),
+      words('<span role="img" aria-label="Ada">AL</span>', 'named monogram'),
+    ].join('')}</div></div></div>`;
+    const reached = [...document.querySelectorAll(selector!)].map((el) => (el as HTMLElement).dataset.words);
+    expect(reached).toEqual(['mark', 'boxed mark', 'photo']);
+    document.body.innerHTML = '';
+  });
+
   test('card rows are the grid\'s own decision, never a window media query', () => {
     expect(sheet()).not.toMatch(/@media \(width < 640px\)/);
     expect(sheet()).toMatch(/\.crewlet-data-grid:where\(\[data-stacked\]\)\s*\{[^}]*display: block/);

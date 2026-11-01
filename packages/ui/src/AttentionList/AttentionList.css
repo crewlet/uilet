@@ -1,0 +1,212 @@
+/*
+ * What needs a person: a card like the page's other panels (Card supplies the
+ * surface, the hairline, the corner and the header), rows a line or two high,
+ * and the tone in each row's glyph alone. Nothing here tints the frame: the
+ * row's action is the page's own button, and the panel sits as calmly as the
+ * cards beside it.
+ */
+
+/* The header's counts: each tone's glyph in its ink beside a figure in the
+   header's quiet type, so the summary reads as the rows' glyphs, small. */
+.crewlet-attention-list__counts {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.crewlet-attention-list__count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.crewlet-attention-list__count.is-danger svg {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-attention-list__count.is-warning svg {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-attention-list__count.is-info svg {
+  color: var(--color-feedback-info-ink);
+}
+
+/*
+ * ONE SET OF COLUMNS FOR EVERY ROW. The list holds the tracks and each row is
+ * a subgrid of them, so a Details and a fix stand in one column down the
+ * panel whatever the width of each fix, every title starts on one line
+ * whether or not its row has a mark, and the body that opens under a row
+ * starts on that line too. The mark's track is there only when a row has a
+ * mark (`--media`), since an empty track still takes a gap each side.
+ */
+.crewlet-attention-list__rows {
+  --crewlet-attention-list-line: calc(var(--font-size-sm) * var(--font-line-height-normal));
+
+  display: grid;
+  grid-template-columns: [glyph] auto [text] minmax(0, 1fr) [details] auto [action] auto [end];
+  column-gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crewlet-attention-list__rows--media {
+  grid-template-columns: [glyph] auto [media] auto [text] minmax(0, 1fr) [details] auto [action] auto [end];
+}
+
+.crewlet-attention-list__item {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.crewlet-attention-list__item + .crewlet-attention-list__item {
+  border-top: 1px solid var(--color-border-default);
+}
+
+/* A ghost Details takes no gutter back here: it stands in a column of its
+   own, and pulled out it would reach into the words before it. */
+.crewlet-attention-list__row {
+  --crewlet-btn-flush-outdent: 0px;
+
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  min-height: var(--size-row-lg);
+  padding: var(--spacing-2) var(--spacing-4);
+}
+
+/* THE GLYPH STANDS ON THE TITLE'S LINE, as a Callout's does: a box one title
+   line tall at the row's top, the glyph centred in it. Centred on the row, it
+   would sit beside the second line of a title that wraps (a phone's width
+   wraps them). A row of one line is centred whole, since its line is the
+   row's middle. */
+.crewlet-attention-list__glyph {
+  display: inline-flex;
+  grid-column: glyph;
+  align-self: start;
+  align-items: center;
+  block-size: var(--crewlet-attention-list-line);
+}
+
+.crewlet-attention-list__row:not(:has(.crewlet-attention-list__meta)) .crewlet-attention-list__glyph {
+  align-self: center;
+}
+
+.crewlet-attention-list__glyph.is-danger {
+  color: var(--color-feedback-danger-ink);
+}
+
+.crewlet-attention-list__glyph.is-warning {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-attention-list__glyph.is-info {
+  color: var(--color-feedback-info-ink);
+}
+
+/* A MARK IS CENTRED ON THE TWO LINES, as a table row centres its mark: it is
+   the height of the pair, not of a title's line. */
+.crewlet-attention-list__media {
+  display: inline-flex;
+  grid-column: media;
+}
+
+.crewlet-attention-list__text {
+  display: flex;
+  grid-column: text;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crewlet-attention-list__line {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-attention-list__meta {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Details and the fix are each a column of their own (see the rows). */
+.crewlet-attention-list__end {
+  display: contents;
+}
+
+.crewlet-attention-list__details {
+  grid-column: details;
+}
+
+.crewlet-attention-list__action {
+  display: inline-flex;
+  grid-column: action;
+  justify-self: end;
+}
+
+.crewlet-attention-list__details[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+/* What opens under a row starts on its title's line and keeps the card's edge. */
+.crewlet-attention-list__body {
+  grid-column: text / end;
+  padding: 0 var(--spacing-4) var(--spacing-3) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+/* The fold's control on a row of its own, its words on the card's text edge,
+   where every glyph stands. */
+.crewlet-attention-list__foot {
+  padding: var(--spacing-1) var(--spacing-4);
+  border-top: 1px solid var(--color-border-default);
+}
+
+@media (width < 640px) {
+  /* No mark, and Details and the fix wrap onto a line of their own under the
+     words, Details first on the title's line. */
+  .crewlet-attention-list__rows,
+  .crewlet-attention-list__rows--media {
+    grid-template-columns: [glyph] auto [text] minmax(0, 1fr) [end];
+  }
+
+  .crewlet-attention-list__row {
+    --crewlet-btn-flush-outdent: initial;
+  }
+
+  .crewlet-attention-list__media {
+    display: none;
+  }
+
+  .crewlet-attention-list__line,
+  .crewlet-attention-list__meta {
+    white-space: normal;
+  }
+
+  .crewlet-attention-list__row:not(:has(.crewlet-attention-list__meta)) .crewlet-attention-list__glyph {
+    align-self: start;
+  }
+
+  .crewlet-attention-list__end {
+    display: flex;
+    grid-column: text / end;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+}

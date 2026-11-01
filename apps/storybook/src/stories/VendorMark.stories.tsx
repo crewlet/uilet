@@ -8,10 +8,12 @@ import { themeScope } from '../themeScope';
  * system draws somebody else's colours.
  *
  * Both themes side by side, because most of these are a fixed hue that has to
- * hold on either ground, while GitHub's, Notion's and OpenCode's are the current text
- * colour and invert with the theme. The muted state is the answer to
- * "available, not connected", and it drains the mark's own colour rather than
- * inventing a second palette for somebody else's brand.
+ * hold on either ground, Mattermost's and Sentry's take the text colour on the
+ * dark ground, as each vendor publishes them for one, and GitHub's, Notion's
+ * and OpenCode's are the current text colour and invert with the theme. The
+ * muted state is the answer to "available, not connected", and it drains the
+ * mark's own colour rather than inventing a second palette for somebody else's
+ * brand.
  */
 
 const panel: CSSProperties = {

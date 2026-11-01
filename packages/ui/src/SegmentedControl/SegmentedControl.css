@@ -136,6 +136,17 @@
   background: var(--color-brand-accent);
 }
 
+/* A COUNT IN A CHIP IS A FIGURE IN THE CHIP'S OWN INK, as on a FilterChip and
+   a lens chip: no pill of its own, since a box inside a box beside its word
+   says nothing more. On the chosen chip the inset pill's tertiary figure lay
+   on the accent fill at 1.4:1; inheriting, it is the label's on-accent ink. */
+.crewlet-segmented--chips .crewlet-count {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+}
+
 /* What completes the last choice sits in the row, at the chips' own height
    and in their face: a field at its own control step stood taller than every
    chip beside it. */
