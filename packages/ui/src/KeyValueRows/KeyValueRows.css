@@ -1,0 +1,44 @@
+/*
+ * KeyValueRows: keys and their values as rows under one column head
+ * (KeyValueRows.tsx).
+ */
+
+/* The rows, then Add under them, a row's gap apart. */
+.crewlet-key-value-rows__body,
+.crewlet-key-value-rows__table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+/*
+ * EVERY ROW STANDS ON ITS FIELDS' TOP EDGE, so a key's error grows its own
+ * cell downward and nothing beside it moves. The last track is the remove
+ * button's, a square the fields' height, and the head keeps it empty so the
+ * value's name stands over the value column.
+ */
+.crewlet-key-value-rows__head,
+.crewlet-key-value-rows__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--size-control-md);
+  align-items: start;
+  gap: var(--spacing-2);
+}
+
+/* The head stands over the first row at a field label's distance from its field. */
+.crewlet-key-value-rows__head {
+  margin-block-end: calc(var(--spacing-1) - var(--spacing-2));
+}
+
+.crewlet-key-value-rows__empty {
+  margin: 0;
+  font-size: var(--font-size-compact);
+  line-height: var(--font-line-height-normal);
+  color: var(--color-text-secondary);
+}
+
+/* Add hugs its words, on the fields' start edge, rather than spanning the list. */
+.crewlet-key-value-rows__add {
+  display: flex;
+}
