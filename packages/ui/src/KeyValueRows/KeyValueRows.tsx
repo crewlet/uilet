@@ -102,10 +102,17 @@ interface KeyValueRowsBaseProps<T extends KeyValueRow> {
  * key and value, when the list makes `{ id, key: '', value: '' }` itself;
  * required once the caller's rows carry a field of their own that a blank row
  * must set.
+ *
+ * AN EMPTY LIST NAMES NO ROW TYPE. `value={[]}` infers `never`, which no row
+ * is assignable to, so a test of assignability alone asked an empty list for
+ * a `createRow` it has no use for. A list whose row type was never inferred
+ * makes its own blank rows too.
  */
-type RowMaker<T extends KeyValueRow> = KeyValueRow extends T
+type RowMaker<T extends KeyValueRow> = [T] extends [never]
   ? { createRow?: (() => T) | undefined }
-  : { createRow: () => T };
+  : KeyValueRow extends T
+    ? { createRow?: (() => T) | undefined }
+    : { createRow: () => T };
 
 export type KeyValueRowsProps<T extends KeyValueRow = KeyValueRow> = KeyValueRowsBaseProps<T> & RowMaker<T>;
 

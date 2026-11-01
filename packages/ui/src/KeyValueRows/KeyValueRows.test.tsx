@@ -81,6 +81,11 @@ test('a caller’s rows keep their own fields, and a blank row is the caller’s
   }
   const onChange = vi.fn();
   const rows: Stored[] = [{ id: 's', key: 'Authorization', value: '', stored: true }];
+  // @ts-expect-error A row with a field of its own needs createRow to make a blank one.
+  const unmade = <KeyValueRows<Stored> label="Headers" keyLabel="Header" value={rows} onChange={onChange} />;
+  // An empty list names no row type, and makes its own blank rows.
+  const empty = <KeyValueRows label="Headers" keyLabel="Header" value={[]} onChange={() => {}} />;
+  expect([unmade, empty]).toHaveLength(2);
   render(
     <KeyValueRows<Stored>
       label="Headers"
