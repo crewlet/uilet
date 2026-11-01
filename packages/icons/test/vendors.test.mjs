@@ -108,16 +108,31 @@ describe('a vendor mark', () => {
     }
   });
 
-  it('draws Mattermost reversed on the dark themes, as Mattermost publishes it for a dark ground', async () => {
-    // Its blue under 3:1 on the dark ground; reversed it is the text's ink.
-    // The dark themes are chosen as the tokens choose them: dark is the
-    // default, unless the document or the system asks for light.
+  it('draws Mattermost and Sentry reversed on the dark themes, as each publishes its mark for a dark ground', async () => {
+    // Mattermost's blue under 3:1 and Sentry's violet under 2:1 on the dark
+    // ground; reversed, each is the text's ink. The dark themes are chosen as
+    // the tokens choose them: dark is the default, unless the document or the
+    // system asks for light.
     const sheet = await readFile(resolve(PACKAGE, 'src/VendorMark.css'), 'utf8');
-    assert.match(sheet, /:root\[data-theme='dark'\] \.crewlet-vendor-mark--mattermost \{\s*fill: currentColor;/);
-    assert.match(
-      sheet,
-      /@media not \(prefers-color-scheme: light\) \{\s*:root:not\(\[data-theme='light'\]\) \.crewlet-vendor-mark--mattermost \{\s*fill: currentColor;/,
-    );
+    const rule = (selectors) => {
+      const start = sheet.indexOf(selectors[0]);
+      assert.ok(start >= 0, `no rule names ${selectors[0]}`);
+      const block = sheet.slice(start, sheet.indexOf('}', start));
+      for (const selector of selectors) assert.ok(block.includes(selector), `${selector} is not in the rule`);
+      assert.match(block, /\{\s*fill: currentColor;/);
+    };
+    for (const vendor of ['mattermost', 'sentry']) {
+      rule([`:root[data-theme='dark'] .crewlet-vendor-mark--${vendor}`]);
+    }
+    const media = sheet.slice(sheet.indexOf('@media not (prefers-color-scheme: light)'));
+    assert.ok(media.length < sheet.length, 'the system-dark rule is missing');
+    for (const vendor of ['mattermost', 'sentry']) {
+      assert.ok(
+        media.slice(0, media.indexOf('}')).includes(`:root:not([data-theme='light']) .crewlet-vendor-mark--${vendor}`),
+        `${vendor} is not reversed on a system dark ground`,
+      );
+    }
+    rule([`:root:not([data-theme='light']) .crewlet-vendor-mark--mattermost`, `:root:not([data-theme='light']) .crewlet-vendor-mark--sentry`]);
   });
 
   it('reads no token, because a vendor hue is not ours to theme', async () => {

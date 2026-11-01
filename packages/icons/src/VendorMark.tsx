@@ -21,6 +21,11 @@
  * to its channel's name all but disappeared. The reversed mark takes the
  * current text colour, as GitHub's does (`VendorMark.css`).
  *
+ * Sentry's dark violet is the same case: its mark on a light ground, and on a
+ * dark one a hue under 2:1 that left the glyph a smudge. Sentry's branding
+ * page offers the glyph in white for a dark ground, so the dark themes draw it
+ * in the current text colour, by the same rule as Mattermost's.
+ *
  * Datadog draws its own mark as a violet tile with the dog knocked OUT of it,
  * so the dog is a hole rather than a shape and needs something opaque behind
  * it: the white plate is the tile itself, corner for corner off the violet
@@ -42,8 +47,11 @@
  * its own viewBox, as every vendor's does; the mark's square slot centres it.
  *
  * The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram and Microsoft
- * Teams drawings are Simple Icons' renderings (CC0 1.0). Claude's is the
- * Claude Spark in Clay, from Anthropic's own press kit
+ * Teams drawings are Simple Icons' renderings (CC0 1.0), and so are the
+ * Cloudflare, Linear, PostgreSQL, Sentry and Stripe drawings, taken from
+ * simple-icons 16.35.0 (its icons/<slug>.svg, path unchanged) in the hex that
+ * release records for each brand. Claude's is the Claude Spark in Clay, from
+ * Anthropic's own press kit
  * (anthropic.com/press-kit, "Anthropic media resources", Claude logos, 3 Claude
  * Spark), unchanged but for the file's size attributes. OpenCode's is the
  * square logo from its own brand page (opencode.ai/brand,
@@ -66,17 +74,22 @@ export const VENDORS = [
   'atlassian',
   'claude',
   'clickup',
+  'cloudflare',
   'crewlet',
   'datadog',
   'discord',
   'figma',
   'github',
   'gitlab',
+  'linear',
   'mattermost',
   'microsoft-teams',
   'notion',
   'opencode',
+  'postgresql',
+  'sentry',
   'slack',
+  'stripe',
   'telegram',
 ] as const;
 
@@ -99,17 +112,22 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   atlassian: marks.Atlassian,
   claude: marks.Claude,
   clickup: marks.Clickup,
+  cloudflare: marks.Cloudflare,
   crewlet: CrewletIcon,
   datadog: marks.Datadog,
   discord: marks.Discord,
   figma: marks.Figma,
   github: marks.Github,
   gitlab: marks.Gitlab,
+  linear: marks.Linear,
   mattermost: marks.Mattermost,
   'microsoft-teams': marks.MicrosoftTeams,
   notion: marks.Notion,
   opencode: marks.Opencode,
+  postgresql: marks.Postgresql,
+  sentry: marks.Sentry,
   slack: marks.Slack,
+  stripe: marks.Stripe,
   telegram: marks.Telegram,
 };
 

@@ -73,7 +73,7 @@ import { VendorMark } from '@crewlethq/icons';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `vendor` | `Vendor`: `'atlassian' \| 'claude' \| 'clickup' \| 'crewlet' \| 'datadog' \| 'discord' \| 'figma' \| 'github' \| 'gitlab' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'opencode' \| 'slack' \| 'telegram'` | required | Which mark. |
+| `vendor` | `Vendor`: `'atlassian' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'crewlet' \| 'datadog' \| 'discord' \| 'figma' \| 'github' \| 'gitlab' \| 'linear' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'opencode' \| 'postgresql' \| 'sentry' \| 'slack' \| 'stripe' \| 'telegram'` | required | Which mark. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `muted` | boolean | `false` | Drains the colour, for an application that is available but not connected. |
@@ -82,13 +82,15 @@ import { VendorMark } from '@crewlethq/icons';
 
 GitHub's, Notion's and OpenCode's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
 
+Mattermost's blue mark and Sentry's violet one are each drawn for a light ground, and each vendor publishes the same drawing in white for a dark one, which is what the dark themes draw: on the dark ground Mattermost's blue falls under 3:1 and Sentry's violet under 2:1, and either mark all but disappears.
+
 **`claude` and `opencode` name the coding CLI a model runs** (Claude Code and OpenCode). Claude's is the Claude Spark (Clay) from Anthropic's press kit at anthropic.com/press-kit; OpenCode's is the logo from opencode.ai/brand. Each mark is its owner's trademark.
 
 **`crewlet` is Crewlet's own mark**, for the services built into it (Worklet, Doclet) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
 
 A mark keeps its own viewBox, so one that is not square (Figma's is 2:3) is drawn to fit the square `size` and centred in it, at the aspect ratio the vendor draws. Every drawing fills its viewBox edge to edge, so the marks in a catalogue stand at one weight: GitLab's is cropped to its logo (its press-kit file framed the logo in twice its own width, and drew at half the size of every mark beside it), and Crewlet's is the brand mark framed in the square its own extent fits rather than in the wide file's artwork margins, so it draws the slot's full width.
 
-The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRADEMARKS.md), which ships in the package. The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram and Microsoft Teams drawings are Simple Icons' renderings, whose path data is CC0 1.0.
+The marks and the terms on which they may be used are in [`TRADEMARKS.md`](./TRADEMARKS.md), which ships in the package. The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram, Microsoft Teams, Cloudflare, Linear, PostgreSQL, Sentry and Stripe drawings are Simple Icons' renderings, whose path data is CC0 1.0. The Cloudflare, Linear, PostgreSQL, Sentry and Stripe drawings are taken from simple-icons 16.35.0, each path unchanged and in the hex that release records for its brand.
 
 `VENDORS` lists every mark the package carries.
 
