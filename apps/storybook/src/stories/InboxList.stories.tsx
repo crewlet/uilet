@@ -173,7 +173,7 @@ export const LongWords: Story = {
 };
 
 const ACTIVITY = [
-  { key: 'a-1', who: 'Product Manager', what: 'replied to a thread in Product Manager', when: '8h ago', text: 'Sounds good, I will update the brief tonight.', unread: true },
+  { key: 'a-1', who: 'Product Manager', what: 'replied to a thread in #engineering', when: '8h ago', text: 'Sounds good, I will update the brief tonight.', unread: true },
   { key: 'a-2', who: 'Dana Reyes', kind: 'human', what: 'mentioned you in Design reviews and critiques', when: '1d ago', text: 'Can you look at the empty state before Friday?' },
   { key: 'a-3', who: 'Crewlet-Principal-Engineer', what: 'reacted to your message in General', when: '2d ago', text: 'Ship the export first.' },
   { key: 'a-4', who: 'Crewlet-QA', what: 'replied to a thread in Release readiness', when: '3d ago', text: 'The regression suite is green on the release branch.' },

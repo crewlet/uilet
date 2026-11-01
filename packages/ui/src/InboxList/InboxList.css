@@ -263,31 +263,21 @@
 }
 
 /*
- * THE HEAD IS TWO COLUMNS: who and what they did, as one run of words that
- * wraps, then the time (and any status) in a column of its own at the end.
- * As one line of boxes the name was the only one allowed to shrink, so a
- * qualifier longer than a word ("replied to a thread in Product Manager")
- * squeezed the name to nothing and pushed the time past the row's edge.
- * The end column is as wide as its content and never wraps; the words take
- * what is left, and every column's floor is zero, so nothing pushes the row
- * wider than the list.
+ * THE HEAD IS ONE RUN OF WORDS: who, then what they did, wrapping as words do
+ * and stopping at two lines with an ellipsis. The name comes first, so it is
+ * the last thing a long qualifier can push out of sight. As one line of boxes
+ * the name was the only one allowed to shrink, so a qualifier longer than a
+ * word ("replied to a thread in Product Manager") squeezed the name to
+ * nothing and pushed the time past the row's edge.
+ *
+ * THE TIME FLOATS AT THE END OF THE FIRST LINE, so only that line gives up
+ * room to it and the second runs the row's full width: "replied to a thread
+ * in #engineering" keeps the room's name, the part of the line most worth
+ * reading, where a column of its own took the time's width from both lines.
+ * The float sits in a block of its own inside the clamp, which is where every
+ * engine lays a float out and still counts the clamped lines.
  */
 .crewlet-inbox-row__head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-auto-columns: auto;
-  grid-auto-flow: column;
-  align-items: baseline;
-  column-gap: var(--spacing-2);
-  min-width: 0;
-}
-
-/*
- * The name, then the qualifier after it in the quiet ink, wrapping as words
- * do and stopping at two lines with an ellipsis. The name comes first, so it
- * is the last thing a long qualifier can push out of sight.
- */
-.crewlet-inbox-row__name {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -296,6 +286,17 @@
   overflow: hidden;
   overflow-wrap: anywhere;
   color: var(--color-text-tertiary);
+}
+
+.crewlet-inbox-row__head-text {
+  display: block;
+}
+
+/* The time (and any status), in the head's own line box, so the time sits on the name's baseline. */
+.crewlet-inbox-row__head-end {
+  float: inline-end;
+  margin-inline-start: var(--spacing-2);
+  white-space: nowrap;
 }
 
 .crewlet-inbox-row__title {
@@ -360,7 +361,7 @@
   color: var(--color-text-secondary);
 }
 
-/* In the end column, before the time when the row has both. */
+/* At the end of the first line, before the time when the row has both. */
 .crewlet-inbox-row__status {
   display: inline-flex;
   align-items: center;

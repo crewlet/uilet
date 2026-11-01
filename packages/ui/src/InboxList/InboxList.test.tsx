@@ -501,16 +501,18 @@ test('the motions are the kit\'s: the row closes its one track on the slow step,
 });
 
 /*
- * A LONG QUALIFIER NEVER HIDES THE NAME. The head was one line of boxes in
- * which only the name could shrink, so "replied to a thread in Product
- * Manager" squeezed the name to 0px and pushed the time 60px past the row's
- * edge. jsdom lays nothing out, so this pins the cascade that makes the
- * layout safe: the name and the qualifier are one run of words in a column
- * whose floor is zero, wrapping and clamped at two lines, the name first so
- * the clamp takes the qualifier's end before it, and the time in an end
- * column of its own that never wraps.
+ * A LONG QUALIFIER NEVER HIDES THE NAME, AND THE TIME NEVER HIDES THE ROOM.
+ * The head was one line of boxes in which only the name could shrink, so
+ * "replied to a thread in Product Manager" squeezed the name to 0px and
+ * pushed the time 60px past the row's edge; given a column of its own, the
+ * time then took its width from both lines and cut the room's name off the
+ * second. jsdom lays nothing out, so this pins the cascade that makes the
+ * layout safe: one run of words, wrapping and clamped at two lines, the name
+ * first; the time floated at the end of the first line, which it can only
+ * take by coming first in the source; and the control still named in reading
+ * order, the time after the words it follows on screen.
  */
-test('a long qualifier wraps after the name in a clamped column, and the time keeps a column of its own', () => {
+test('the time floats at the end of the first line of a clamped run of words, and the name still reads in order', () => {
   const remove = installSheets('InboxList/InboxList.css');
   try {
     render(
@@ -518,7 +520,7 @@ test('a long qualifier wraps after the name in a clamped column, and the time ke
         <InboxGroup label="Activity" hideLabel>
           <InboxRow
             title="Product Manager"
-            qualifier="replied to a thread in Product Manager"
+            qualifier="replied to a thread in #engineering"
             meta="8h ago"
             leading={<span style={{ display: 'block', width: 32, height: 32 }} />}
             onClick={() => {}}
@@ -528,39 +530,41 @@ test('a long qualifier wraps after the name in a clamped column, and the time ke
         </InboxGroup>
       </InboxList>,
     );
-    const row = screen.getByRole('button', { name: /^Product Manager replied to a thread in Product Manager 8h ago Sounds good$/ });
+    const row = screen.getByRole('button', { name: /^Product Manager replied to a thread in #engineering 8h ago Sounds good$/ });
     const head = row.querySelector('.crewlet-inbox-row__head')!;
-    const name = head.querySelector('.crewlet-inbox-row__name')!;
-    const title = name.querySelector('.crewlet-inbox-row__title')!;
-    const qualifier = name.querySelector('.crewlet-inbox-row__qualifier')!;
-    const meta = head.querySelector('.crewlet-inbox-row__meta')!;
+    const text = head.querySelector('.crewlet-inbox-row__head-text')!;
+    const end = text.querySelector('.crewlet-inbox-row__head-end')!;
+    const title = text.querySelector('.crewlet-inbox-row__title')!;
+    const qualifier = text.querySelector('.crewlet-inbox-row__qualifier')!;
+    const meta = end.querySelector('.crewlet-inbox-row__meta')!;
 
-    expect(name.parentElement).toBe(head);
-    expect(name.firstElementChild).toBe(title);
-    expect(name.contains(meta)).toBe(false);
-    expect(meta.parentElement).toBe(head);
+    // The float leads the words it floats beside, and the name leads the words.
+    expect(text.parentElement).toBe(head);
+    expect(text.firstElementChild).toBe(end);
+    expect(end.nextElementSibling).toBe(title);
+    expect(meta.textContent).toBe('8h ago');
 
     const headStyle = getComputedStyle(head);
-    expect(headStyle.display).toBe('grid');
-    expect(headStyle.getPropertyValue('grid-template-columns')).toBe('minmax(0, 1fr)');
-    expect(headStyle.getPropertyValue('grid-auto-flow')).toBe('column');
-    expect(headStyle.getPropertyValue('grid-auto-columns')).toBe('auto');
+    expect(headStyle.display).toBe('-webkit-box');
+    expect(headStyle.minWidth).toBe('0px');
+    expect(headStyle.overflow).toBe('hidden');
+    expect(headStyle.getPropertyValue('overflow-wrap')).toBe('anywhere');
+    expect(headStyle.getPropertyValue('-webkit-line-clamp')).toBe('2');
+    expect(headStyle.getPropertyValue('line-clamp')).toBe('2');
+    // A float lays out in every engine inside a block of its own under the clamp.
+    expect(getComputedStyle(text).display).toBe('block');
 
-    const nameStyle = getComputedStyle(name);
-    expect(nameStyle.minWidth).toBe('0px');
-    expect(nameStyle.overflow).toBe('hidden');
-    expect(nameStyle.getPropertyValue('overflow-wrap')).toBe('anywhere');
-    expect(nameStyle.getPropertyValue('-webkit-line-clamp')).toBe('2');
-    expect(nameStyle.getPropertyValue('line-clamp')).toBe('2');
+    const endStyle = getComputedStyle(end);
+    expect(endStyle.getPropertyValue('float')).toBe('inline-end');
+    expect(endStyle.whiteSpace).toBe('nowrap');
 
     // Words in the run, never boxes that shrink or refuse to wrap.
-    for (const part of [title, qualifier]) {
-      const style = getComputedStyle(part);
+    for (const each of [title, qualifier]) {
+      const style = getComputedStyle(each);
       expect(style.display).toBe('inline');
       expect(style.whiteSpace).toBe('normal');
       expect(style.overflow).toBe('visible');
     }
-    expect(getComputedStyle(meta).whiteSpace).toBe('nowrap');
   } finally {
     remove();
   }

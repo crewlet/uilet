@@ -487,44 +487,69 @@ export function InboxRow({
     told.current = true;
     onLeft?.();
   }, [gone, onLeft]);
-  // Every part is set apart by a space, so the control is announced as
-  // "Crewlet-PM coding run 2h Which ledger" rather than as one run-on word: an
-  // accessible name is the concatenation of an element's parts with nothing
-  // inserted between them.
+  /*
+   * THE NAME IS READ IN THE ORDER THE ROW IS MEANT: "Crewlet-PM coding run 2h
+   * Which ledger". The time and any status come FIRST in the source, because
+   * a float takes the end of the first line only when it precedes the words
+   * that wrap around it (InboxList.css), so the control names itself from its
+   * parts in reading order (`aria-labelledby`) rather than from source order,
+   * which would read the time before the name. Every part is still set apart
+   * by a space where it is drawn, for a reader that walks the content.
+   */
+  const ids = useId();
+  const part = (name: string) => `${ids}-${name}`;
+  const hasQualifier = qualifier !== undefined;
+  const hasStatus = status !== undefined && status !== null;
+  const hasMeta = meta !== undefined;
+  const hasOutcome = outcome !== undefined && outcome !== null;
+  const labelledBy = [
+    leading === undefined ? null : part('leading'),
+    part('title'),
+    hasQualifier ? part('qualifier') : null,
+    hasStatus || hasMeta ? part('end') : null,
+    part('text'),
+    hasOutcome ? part('outcome') : null,
+    unread ? part('unread') : null,
+    done ? part('done') : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
   const contents = (
     <>
       {leading === undefined ? null : (
         <>
-          <span className="crewlet-inbox-row__leading">{leading}</span>{' '}
+          <span id={part('leading')} className="crewlet-inbox-row__leading">
+            {leading}
+          </span>{' '}
         </>
       )}
       <span className="crewlet-inbox-row__main">
         <span className="crewlet-inbox-row__head">
-          <span className="crewlet-inbox-row__name">
-            <span className="crewlet-inbox-row__title">{title}</span>
-            {qualifier === undefined ? null : (
+          <span className="crewlet-inbox-row__head-text">
+            {hasStatus || hasMeta ? (
+              <span id={part('end')} className="crewlet-inbox-row__head-end">
+                {hasStatus ? <span className="crewlet-inbox-row__status">{status}</span> : null}
+                {hasStatus && hasMeta ? ' ' : null}
+                {hasMeta ? <span className="crewlet-inbox-row__meta">{meta}</span> : null}
+              </span>
+            ) : null}
+            <span id={part('title')} className="crewlet-inbox-row__title">
+              {title}
+            </span>
+            {hasQualifier ? (
               <>
                 {' '}
-                <span className={cx('crewlet-inbox-row__qualifier', qualifierTone === 'danger' && 'crewlet-inbox-row__qualifier--danger')}>
+                <span
+                  id={part('qualifier')}
+                  className={cx('crewlet-inbox-row__qualifier', qualifierTone === 'danger' && 'crewlet-inbox-row__qualifier--danger')}
+                >
                   {qualifier}
                 </span>
               </>
-            )}
+            ) : null}
           </span>
-          {status === undefined || status === null ? null : (
-            <>
-              {' '}
-              <span className="crewlet-inbox-row__status">{status}</span>
-            </>
-          )}
-          {meta === undefined ? null : (
-            <>
-              {' '}
-              <span className="crewlet-inbox-row__meta">{meta}</span>
-            </>
-          )}
         </span>{' '}
-        <span className="crewlet-inbox-row__text">
+        <span id={part('text')} className="crewlet-inbox-row__text">
           {children}
           {excerpt === undefined ? null : (
             <>
@@ -533,10 +558,10 @@ export function InboxRow({
             </>
           )}
         </span>
-        {outcome === undefined || outcome === null ? null : (
+        {hasOutcome ? (
           <>
             {' '}
-            <span className={cx('crewlet-inbox-row__outcome', `crewlet-inbox-row__outcome--${outcomeTone}`)}>
+            <span id={part('outcome')} className={cx('crewlet-inbox-row__outcome', `crewlet-inbox-row__outcome--${outcomeTone}`)}>
               {outcomeIcon === undefined ? null : (
                 <span aria-hidden className="crewlet-inbox-row__outcome-icon">
                   {outcomeIcon}
@@ -545,17 +570,17 @@ export function InboxRow({
               <span className="crewlet-inbox-row__outcome-text">{outcome}</span>
             </span>
           </>
-        )}
+        ) : null}
         {unread ? (
           <>
             {' '}
-            <VisuallyHidden>{unreadLabel}</VisuallyHidden>
+            <VisuallyHidden id={part('unread')}>{unreadLabel}</VisuallyHidden>
           </>
         ) : null}
         {done ? (
           <>
             {' '}
-            <VisuallyHidden>{doneLabel}</VisuallyHidden>
+            <VisuallyHidden id={part('done')}>{doneLabel}</VisuallyHidden>
           </>
         ) : null}
       </span>
@@ -573,11 +598,11 @@ export function InboxRow({
 
   const control =
     href !== undefined ? (
-      <a className={controlClass} href={href} aria-current={current} onClick={onClick}>
+      <a className={controlClass} href={href} aria-current={current} aria-labelledby={labelledBy} onClick={onClick}>
         {contents}
       </a>
     ) : (
-      <button type="button" className={controlClass} aria-current={current} onClick={onClick}>
+      <button type="button" className={controlClass} aria-current={current} aria-labelledby={labelledBy} onClick={onClick}>
         {contents}
       </button>
     );
