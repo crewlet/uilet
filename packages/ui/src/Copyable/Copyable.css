@@ -78,11 +78,15 @@
 
 /* ---- inline ------------------------------------------------------------ */
 
+/* INLINE TAKES THE ROW'S OWN REGISTER: in a detail row it is one of the
+   row's values, so it is their size and ink, in the mono face. At a fixed
+   12px in the secondary ink, an address was the one value in its list a step
+   smaller and quieter than the values around it. */
 .crewlet-copyable--inline .crewlet-copyable__value {
-  font-size: var(--font-size-xs);
+  font-size: inherit;
   background: transparent;
   padding: 0;
-  color: var(--color-text-secondary);
+  color: inherit;
 }
 
 /* ---- block ------------------------------------------------------------- */
@@ -103,13 +107,23 @@
   padding: var(--spacing-2) var(--spacing-3);
 }
 
+/*
+ * A BLOCK SHOWS ITS VALUE WHOLE, wrapped at any character and with every
+ * space kept: it is the variant for an address a reader must allowlist or a
+ * command they must check before running it. Held to one line, it scrolled
+ * past a phone's width behind an ellipsis, with no scrollbar to say there was
+ * more, and the reader saw "https://example.com/webho…" of the address they
+ * were asked to copy into a vendor's form.
+ */
 .crewlet-copyable--block .crewlet-copyable__value {
   font-size: var(--font-size-compact);
   color: var(--color-text-primary);
   background: transparent;
   padding: 0;
-  white-space: nowrap;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
   flex: 1;
 }
 

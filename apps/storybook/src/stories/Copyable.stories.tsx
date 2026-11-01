@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, type ReactNode } from 'react';
-import { Copyable, CopyButton, Text } from '@crewlethq/ui';
+import { Copyable, CopyButton, DescriptionList, Text } from '@crewlethq/ui';
 
 const meta: Meta<typeof Copyable> = {
   title: 'UI/Copyable',
@@ -24,6 +24,19 @@ export const Chip: Story = {};
 
 export const Inline: Story = { args: { variant: 'inline' } };
 
+/** Inline in a detail list: the value takes the row's own size and ink, a value among values. */
+export const InlineInADetailList: Story = {
+  render: () => (
+    <DescriptionList
+      fit
+      items={[
+        ['Address', <Copyable key="address" value="https://api.example.com/v1/" variant="inline" monospace />],
+        ['Transport', 'Streamable HTTP'],
+      ]}
+    />
+  ),
+};
+
 export const Block: Story = {
   args: {
     variant: 'block',
@@ -37,6 +50,19 @@ export const BlockMonospace: Story = {
     monospace: true,
     value: 'kubectl get pods --all-namespaces',
   },
+};
+
+/**
+ * A block shows its value whole: an address a reader must allowlist wraps in
+ * a phone's width rather than scrolling out of it behind an ellipsis.
+ */
+export const BlockLongAddressNarrow: Story = {
+  args: {
+    variant: 'block',
+    monospace: true,
+    value: 'https://app.example.com/integrations/oauth/callback/7f3a9c2e',
+  },
+  decorators: [(Story) => <div style={{ maxWidth: 320 }}>{Story()}</div>],
 };
 
 export const TruncatedChip: Story = {
