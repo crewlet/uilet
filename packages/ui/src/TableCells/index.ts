@@ -9,6 +9,7 @@ export {
   TableStatusCell,
   TableTagsCell,
   TableTextCell,
+  TableTwoLineCell,
 } from './TableCells.js';
 export type {
   TableDateCellProps,
@@ -19,4 +20,6 @@ export type {
   TableTagsCellLabels,
   TableTagsCellProps,
   TableTextCellProps,
+  TableTwoLineCellMono,
+  TableTwoLineCellProps,
 } from './TableCells.js';

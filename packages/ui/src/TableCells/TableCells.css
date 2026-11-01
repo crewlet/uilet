@@ -112,3 +112,31 @@
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * A VALUE OVER A QUIETER LINE (TableTwoLineCell), each line its own block cut
+ * on one line. A column of boxes rather than two runs of text, so neither
+ * line takes the line box of the words around it, and the cell is exactly
+ * the two lines tall. `min-width: 0` lets the column shrink inside a grid's
+ * cell, which is what cuts the lines rather than pushing the column wider.
+ */
+.crewlet-table-cell__lines {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* The mark is centred against both lines, as an entity's badge is against its name. */
+.crewlet-table-cell__two-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* The mark keeps its size: the lines give way to the column, never the mark. */
+.crewlet-table-cell__two-line > :first-child {
+  flex: none;
+}
