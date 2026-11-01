@@ -497,6 +497,39 @@ test('the chips layout is separate raised chips that wrap, the chosen one filled
 });
 
 /*
+ * A COUNT IN A CHIP TAKES THE CHIP'S INK: on the chosen chip the inset pill's
+ * tertiary figure lay on the accent fill at 1.4:1, a number nobody could read
+ * on the one chip being read.
+ */
+test('a chip\'s count is a figure in the chip\'s own ink, on-accent on the chosen chip', () => {
+  const transparent = (value: string) => value === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(value);
+  for (const theme of ['dark', 'light'] as const) {
+    const uninstall = installThemed(theme, 'Tabs/Tabs.css', 'Count/Count.css', 'SegmentedControl/SegmentedControl.css');
+    const { unmount } = render(
+      <SegmentedControl
+        label="Show"
+        semantics="radio"
+        layout="chips"
+        value="all"
+        options={[
+          { value: 'all', label: 'All', count: 43 },
+          { value: 'read', label: 'Read only', count: 12 },
+        ]}
+        onValueChange={() => {}}
+      />,
+    );
+    const palette = palettes[theme].color;
+    const on = screen.getByRole('radio', { name: /All/ }).querySelector('.crewlet-count')!;
+    const off = screen.getByRole('radio', { name: /Read only/ }).querySelector('.crewlet-count')!;
+    expect(channels(getComputedStyle(on).color), `${theme}: the chosen chip's count`).toEqual(parseHex(palette.text.onAccent));
+    expect(channels(getComputedStyle(off).color), `${theme}: a chip that is off`).toEqual(parseHex(palette.text.secondary));
+    for (const count of [on, off]) expect(transparent(getComputedStyle(count).backgroundColor), `${theme}: no pill`).toBe(true);
+    unmount();
+    uninstall();
+  }
+});
+
+/*
  * SMALL, AS THE CONSOLE'S CHIPS ARE: the 11px face, at the pointer-target
  * floor and no taller. At the small control step a row of ten read as a second
  * row of buttons under the field's label.
