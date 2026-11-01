@@ -206,3 +206,17 @@ test('a mark stands before the two lines: a columnâ€™s icon is hidden and a rowâ
   // The title belongs to the whole cell, the mark included.
   expect(marked.getAttribute('title')).toBe('Linear, remote');
 });
+
+test('an empty icon or mark leaves the title on the lines, since they are the whole cell', () => {
+  const { container, rerender } = render(
+    <TableTwoLineCell value="Filesystem" detail="Local" icon={null} title="Filesystem, on this node" />,
+  );
+  const cell = container.firstElementChild as HTMLElement;
+  expect(cell.className).toBe('crewlet-table-cell__lines');
+  expect(cell.getAttribute('title')).toBe('Filesystem, on this node');
+
+  rerender(<TableTwoLineCell value="Linear" detail="api.linear.app" mark={null} title="Linear, remote" />);
+  const unmarked = container.firstElementChild as HTMLElement;
+  expect(unmarked.className).toBe('crewlet-table-cell__lines');
+  expect(unmarked.getAttribute('title')).toBe('Linear, remote');
+});

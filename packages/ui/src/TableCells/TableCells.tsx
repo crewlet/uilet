@@ -379,8 +379,18 @@ export function TableTwoLineCell({
 }: TableTwoLineCellProps) {
   const ownTitles = titleWhenCut && title === undefined;
   const hasDetail = detail !== undefined && detail !== null && detail !== false && detail !== '';
+  const leading =
+    mark ??
+    (icon !== undefined && icon !== null ? (
+      <span className="crewlet-table-cell__icon" aria-hidden="true">
+        {icon}
+      </span>
+    ) : null);
+  // An empty mark or icon (`cond ? <Glyph /> : null`) draws no leading slot,
+  // so the lines are the whole cell and carry its title.
+  const leads = leading !== null && leading !== undefined && leading !== false;
   const lines = (
-    <span className="crewlet-table-cell__lines" title={mark === undefined && icon === undefined ? title : undefined}>
+    <span className="crewlet-table-cell__lines" title={leads ? undefined : title}>
       <Text variant="inherit" truncate mono={mono === 'value' || mono === 'both'} titleWhenCut={ownTitles}>
         {value}
       </Text>
@@ -397,14 +407,7 @@ export function TableTwoLineCell({
       ) : null}
     </span>
   );
-  const leading =
-    mark ??
-    (icon !== undefined && icon !== null ? (
-      <span className="crewlet-table-cell__icon" aria-hidden="true">
-        {icon}
-      </span>
-    ) : null);
-  if (leading === null || leading === undefined) return lines;
+  if (!leads) return lines;
   return (
     <span className="crewlet-table-cell__two-line" title={title}>
       {leading}
