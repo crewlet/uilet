@@ -11,6 +11,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import axe from 'axe-core';
 import { memo, useState } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
+import { installSheets, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { driveMotion, preferReducedMotion, settleMotion } from '../../../../apps/ui-tests/src/motion.js';
 import { INBOX_ROW_LEAVE, InboxGroup, InboxList, InboxMore, InboxRow, InboxToggle } from './index.js';
 
@@ -497,4 +498,109 @@ test('the motions are the kit\'s: the row closes its one track on the slow step,
   const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\n\}/)?.[0] ?? '';
   expect(reduced).toMatch(/\.crewlet-inbox-row--leaving\s*\{\s*transition: none;/);
   expect(reduced).toMatch(/\.crewlet-inbox-list__arrival\s*\{\s*animation: none;/);
+});
+
+/*
+ * A LONG QUALIFIER NEVER HIDES THE NAME. The head was one line of boxes in
+ * which only the name could shrink, so "replied to a thread in Product
+ * Manager" squeezed the name to 0px and pushed the time 60px past the row's
+ * edge. jsdom lays nothing out, so this pins the cascade that makes the
+ * layout safe: the name and the qualifier are one run of words in a column
+ * whose floor is zero, wrapping and clamped at two lines, the name first so
+ * the clamp takes the qualifier's end before it, and the time in an end
+ * column of its own that never wraps.
+ */
+test('a long qualifier wraps after the name in a clamped column, and the time keeps a column of its own', () => {
+  const remove = installSheets('InboxList/InboxList.css');
+  try {
+    render(
+      <InboxList label="Activity">
+        <InboxGroup label="Activity" hideLabel>
+          <InboxRow
+            title="Product Manager"
+            qualifier="replied to a thread in Product Manager"
+            meta="8h ago"
+            leading={<span style={{ display: 'block', width: 32, height: 32 }} />}
+            onClick={() => {}}
+          >
+            Sounds good
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    const row = screen.getByRole('button', { name: /^Product Manager replied to a thread in Product Manager 8h ago Sounds good$/ });
+    const head = row.querySelector('.crewlet-inbox-row__head')!;
+    const name = head.querySelector('.crewlet-inbox-row__name')!;
+    const title = name.querySelector('.crewlet-inbox-row__title')!;
+    const qualifier = name.querySelector('.crewlet-inbox-row__qualifier')!;
+    const meta = head.querySelector('.crewlet-inbox-row__meta')!;
+
+    expect(name.parentElement).toBe(head);
+    expect(name.firstElementChild).toBe(title);
+    expect(name.contains(meta)).toBe(false);
+    expect(meta.parentElement).toBe(head);
+
+    const headStyle = getComputedStyle(head);
+    expect(headStyle.display).toBe('grid');
+    expect(headStyle.getPropertyValue('grid-template-columns')).toBe('minmax(0, 1fr)');
+    expect(headStyle.getPropertyValue('grid-auto-flow')).toBe('column');
+    expect(headStyle.getPropertyValue('grid-auto-columns')).toBe('auto');
+
+    const nameStyle = getComputedStyle(name);
+    expect(nameStyle.minWidth).toBe('0px');
+    expect(nameStyle.overflow).toBe('hidden');
+    expect(nameStyle.getPropertyValue('overflow-wrap')).toBe('anywhere');
+    expect(nameStyle.getPropertyValue('-webkit-line-clamp')).toBe('2');
+    expect(nameStyle.getPropertyValue('line-clamp')).toBe('2');
+
+    // Words in the run, never boxes that shrink or refuse to wrap.
+    for (const part of [title, qualifier]) {
+      const style = getComputedStyle(part);
+      expect(style.display).toBe('inline');
+      expect(style.whiteSpace).toBe('normal');
+      expect(style.overflow).toBe('visible');
+    }
+    expect(getComputedStyle(meta).whiteSpace).toBe('nowrap');
+  } finally {
+    remove();
+  }
+});
+
+/*
+ * THE LEADING SLOT FITS WHAT IT HOLDS. A fixed 24px by one-line box let a 32px
+ * face overflow it by 8px, up and to the left. The slot is at least a target
+ * square and grows past it; the name's line is centred on a target-sized mark
+ * by moving the words down by exactly what the control's top pad gives up,
+ * so the name sits where it does in a row without a leading mark.
+ */
+test('the leading slot grows to its mark, and the name keeps its line', () => {
+  const remove = installSheets('InboxList/InboxList.css');
+  try {
+    const { container } = render(
+      <InboxList label="Inbox">
+        <InboxGroup label="Updates">
+          <InboxRow title="Crewlet-PM" meta="2m" leading={<span />} onClick={() => {}}>
+            With a face
+          </InboxRow>
+          <InboxRow title="Crewlet-PM" meta="2m" onClick={() => {}}>
+            Without one
+          </InboxRow>
+        </InboxGroup>
+      </InboxList>,
+    );
+    const [withFace, without] = [...container.querySelectorAll('.crewlet-inbox-row__control')];
+    const slot = getComputedStyle(withFace!.querySelector('.crewlet-inbox-row__leading')!);
+    expect(slot.width).toBe('auto');
+    expect(slot.height).toBe('auto');
+    expect(slot.minWidth).toBe('24px');
+    expect(px(withFace!.querySelector('.crewlet-inbox-row__leading')!, 'min-height')).toBeGreaterThanOrEqual(24);
+    expect(slot.flexShrink).toBe('0');
+
+    const nameTop = (control: Element) => px(control, 'padding-top') + px(control.querySelector('.crewlet-inbox-row__main')!, 'padding-top');
+    expect(px(withFace!.querySelector('.crewlet-inbox-row__main')!, 'padding-top')).toBeGreaterThan(0);
+    expect(nameTop(withFace!)).toBeCloseTo(nameTop(without!), 5);
+    expect(px(without!.querySelector('.crewlet-inbox-row__main')!, 'padding-top')).toBe(0);
+  } finally {
+    remove();
+  }
 });

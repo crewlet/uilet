@@ -334,13 +334,23 @@ export type InboxRowTone = 'default' | 'danger';
 export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'onClick' | 'title'> {
   /** Who the row is from: a seat's or a person's name. */
   title: ReactNode;
-  /** A word after the name where the row is not a plain question or update: "coding run", "stopped". */
+  /**
+   * After the name, in the quiet ink: a word where the row is not a plain
+   * question or update ("coding run", "stopped"), or what the person did
+   * ("replied to a thread in Design"). The name and the qualifier read as one
+   * run of words that wraps to a second line before it stops, so a long
+   * qualifier never hides the name.
+   */
   qualifier?: ReactNode;
   /** `danger` sets the qualifier in the danger ink, for a seat that has stopped. */
   qualifierTone?: InboxRowTone | undefined;
   /** At the end of the first line: when it arrived. */
   meta?: ReactNode;
-  /** Before the words: an avatar, drawn at the target size. */
+  /**
+   * Before the words: an avatar or a mark, at the target size. Its slot is at
+   * least a target square and grows to fit a larger mark, such as a 32px face,
+   * with the name's line beside its top.
+   */
   leading?: ReactNode;
   /** What the row says, in up to three lines. */
   children?: ReactNode;
@@ -421,7 +431,8 @@ export interface InboxRowProps extends Omit<LiHTMLAttributes<HTMLLIElement>, 'on
  * caller names in the head (`status`): every word stays legible, and the
  * state is never carried by a decoration alone.
  *
- * NOTHING IS CUT AT THE EDGE. The name ellipsizes, the time never wraps, and
+ * NOTHING IS CUT AT THE EDGE. The name and its qualifier wrap to two lines
+ * before they stop, the time keeps a column of its own and never wraps, and
  * the words take up to three lines before they stop, so a row says what it is
  * rather than its first few words.
  */
@@ -489,15 +500,17 @@ export function InboxRow({
       )}
       <span className="crewlet-inbox-row__main">
         <span className="crewlet-inbox-row__head">
-          <span className="crewlet-inbox-row__title">{title}</span>
-          {qualifier === undefined ? null : (
-            <>
-              {' '}
-              <span className={cx('crewlet-inbox-row__qualifier', qualifierTone === 'danger' && 'crewlet-inbox-row__qualifier--danger')}>
-                {qualifier}
-              </span>
-            </>
-          )}
+          <span className="crewlet-inbox-row__name">
+            <span className="crewlet-inbox-row__title">{title}</span>
+            {qualifier === undefined ? null : (
+              <>
+                {' '}
+                <span className={cx('crewlet-inbox-row__qualifier', qualifierTone === 'danger' && 'crewlet-inbox-row__qualifier--danger')}>
+                  {qualifier}
+                </span>
+              </>
+            )}
+          </span>
           {status === undefined || status === null ? null : (
             <>
               {' '}
@@ -551,6 +564,7 @@ export function InboxRow({
 
   const controlClass = cx(
     'crewlet-inbox-row__control',
+    leading !== undefined && 'crewlet-inbox-row__control--leading',
     unread && 'crewlet-inbox-row__control--unread',
     actionable && 'crewlet-inbox-row__control--actionable',
     done && 'crewlet-inbox-row__control--done',
