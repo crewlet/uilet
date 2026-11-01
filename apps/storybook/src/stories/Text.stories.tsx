@@ -14,6 +14,7 @@ const meta: Meta<typeof Text> = {
     mono: { control: 'boolean' },
     numeric: { control: 'boolean' },
     truncate: { control: 'boolean' },
+    titleWhenCut: { control: 'boolean' },
   },
 };
 
@@ -79,7 +80,7 @@ export const Numeric: Story = {
   ),
 };
 
-/** One line, two lines, or a bounded measure. */
+/** One line, two lines, or a bounded measure. A cut line or clamp shows its whole words on hover. */
 export const Cutting: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)', maxWidth: 320 }}>
@@ -92,6 +93,49 @@ export const Cutting: Story = {
         A bounded measure, so a paragraph in a side panel does not run the full width of a desk
         monitor and lose the reader between one line and the next.
       </Text>
+    </div>
+  ),
+};
+
+const CUT_LINES: { words: string; mono?: boolean }[] = [
+  { words: 'Fits whole' },
+  { words: 'A name long enough to be cut at the column’s end' },
+  { words: 'deploy-preview --region=eu-west-1 --replicas=3 --wait', mono: true },
+  { words: 'Antwortet nur innerhalb des Produktionsarbeitsbereichs' },
+];
+
+/**
+ * A line cut to its column carries its whole words on the pointer's title,
+ * measured when the pointer arrives: hover each line. The first fits, so it
+ * carries none. The last pair is the same column with the title left to
+ * something else (`titleWhenCut={false}`), as under a Tooltip.
+ */
+export const WholeWordsWhenCut: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--spacing-5)', maxWidth: 480 }}>
+      {(['ltr', 'rtl'] as const).map((dir) => (
+        <div
+          key={dir}
+          dir={dir}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--spacing-1)',
+            width: 220,
+            padding: 'var(--spacing-2)',
+            border: '1px dashed var(--color-border-default)',
+          }}
+        >
+          {CUT_LINES.map(({ words, mono }) => (
+            <Text key={words} variant="cell" truncate mono={mono}>
+              {dir === 'rtl' && !mono ? 'يجيب فقط داخل مساحة عمل الإنتاج، وليس في أي مكان آخر' : words}
+            </Text>
+          ))}
+          <Text variant="caption" tone="secondary" truncate titleWhenCut={false}>
+            No title of its own: something else shows these words whole
+          </Text>
+        </div>
+      ))}
     </div>
   ),
 };

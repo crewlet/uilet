@@ -1,4 +1,4 @@
-import type { ElementType, HTMLAttributes } from 'react';
+import type { ElementType, HTMLAttributes, MouseEvent } from 'react';
 import { cx } from '../utils/cx.js';
 
 /**
@@ -62,10 +62,22 @@ export interface TextProps extends HTMLAttributes<HTMLElement> {
    * it on every push, because the proportional digits have different widths.
    */
   numeric?: boolean | undefined;
-  /** One line, cut with an ellipsis. */
+  /**
+   * One line, cut with an ellipsis: a name in a narrow column, a caption
+   * under it. While the words are cut, the pointer's title carries them whole
+   * (see `titleWhenCut`).
+   */
   truncate?: boolean | undefined;
-  /** Two or three lines, then an ellipsis. */
+  /** Two or three lines, then an ellipsis, with the whole words on the title while they are cut. */
   clamp?: 2 | 3 | undefined;
+  /**
+   * Whether words cut by `truncate` or `clamp` carry their whole text as the
+   * element's title while they are cut. On by default. Turn it off where
+   * something else already shows the whole words, a `Tooltip` around the
+   * text or a title on the element around it, so the reader is not shown
+   * them twice. A `title` the caller passes always wins.
+   */
+  titleWhenCut?: boolean | undefined;
   /** Bounds the line length, for anything a reader reads rather than scans. */
   measure?: TextMeasure | undefined;
 }
@@ -83,6 +95,16 @@ export interface TextProps extends HTMLAttributes<HTMLElement> {
  * `variant` sets the size, the weight, the tracking and the ink together,
  * because those four move as one. `tone` overrides only the ink, for the case
  * where the same register carries a quieter fact.
+ *
+ * CUT WORDS ARE STILL READABLE WHOLE. A line cut with an ellipsis hid the
+ * end of a name from a sighted reader, who had no way to read it short of
+ * widening the window, while a screen reader read it whole (the cut is
+ * paint, not content). So a cut Text puts its whole words on its title. It
+ * is MEASURED AT THE MOMENT THE POINTER ARRIVES, which is the only moment a
+ * title is read: the words and the column are what they are then, so a title
+ * never goes stale after a resize or a new value, and a table of a thousand
+ * cut cells costs nothing until one is hovered. Words that fit carry no
+ * title, since a tooltip that repeats what is on the screen is noise.
  */
 export function Text({
   as: Tag = 'span',
@@ -93,13 +115,27 @@ export function Text({
   truncate = false,
   clamp,
   measure,
+  titleWhenCut = true,
   className,
   children,
   ...rest
 }: TextProps) {
+  const cuts = truncate || clamp !== undefined;
+  // The caller's own title (even an empty one) is theirs, so the measured one
+  // is only set where none was given.
+  const measures = cuts && titleWhenCut && rest.title === undefined;
+  const { onMouseEnter } = rest;
   return (
     <Tag
       {...rest}
+      onMouseEnter={
+        measures
+          ? (event: MouseEvent<HTMLElement>) => {
+              titleIfCut(event.currentTarget, truncate ? 'inline' : 'block');
+              onMouseEnter?.(event);
+            }
+          : onMouseEnter
+      }
       className={cx(
         'crewlet-text',
         `crewlet-text--${variant}`,
@@ -115,4 +151,19 @@ export function Text({
       {children}
     </Tag>
   );
+}
+
+/**
+ * Puts the element's whole words on its title while they are cut, and takes
+ * the title off while they fit. One line is cut across (`inline`), a clamp
+ * down (`block`). The words are read from the element itself, so a run of
+ * marked-up text (a mono id inside the line) reads as it is shown, with its
+ * white space collapsed as the line collapses it.
+ */
+function titleIfCut(element: HTMLElement, axis: 'inline' | 'block'): void {
+  const cut =
+    axis === 'inline' ? element.scrollWidth > element.clientWidth : element.scrollHeight > element.clientHeight;
+  const words = (element.textContent ?? '').replace(/\s+/g, ' ').trim();
+  if (cut && words !== '') element.setAttribute('title', words);
+  else element.removeAttribute('title');
 }
