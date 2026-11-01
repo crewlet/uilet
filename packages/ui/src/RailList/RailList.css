@@ -1,0 +1,97 @@
+/*
+ * RailList: a directory in a card, a rail of groups beside the chosen
+ * group's list, folding into a picker where the card is narrow
+ * (RailList.tsx).
+ *
+ * SIZED BY ITS OWN WIDTH, NOT THE WINDOW'S, because the same directory stands
+ * in a page and in a sheet: the root is an inline-size container, and under
+ * the rail's room (44rem) the rail goes and the picker shows. Both are always
+ * rendered and the stylesheet decides, so the fold costs no measurement and
+ * never draws the wrong one first.
+ */
+.crewlet-rail-list {
+  container: crewlet-rail-list / inline-size;
+  min-width: 0;
+}
+
+/* The bar across the card's top: the caller's search and chips, and the folded picker. */
+.crewlet-rail-list__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border-block-end: 1px solid var(--color-border-default);
+}
+
+/* Wide, the rail is the choice: the picker and a bar that holds nothing else are not drawn. */
+.crewlet-rail-list__picker,
+.crewlet-rail-list__bar--picker-only {
+  display: none;
+}
+
+/* The rail at a fixed width (13rem by default), the list taking the rest. */
+.crewlet-rail-list__body {
+  display: grid;
+  grid-template-columns: var(--crewlet-rail-list-rail, 13rem) minmax(0, 1fr);
+  min-width: 0;
+}
+
+/* The rail on a hairline of its own, its note a step under its rows. */
+.crewlet-rail-list__rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+  padding: var(--spacing-2);
+  border-inline-end: 1px solid var(--color-border-default);
+}
+
+/* The note starts on the rows' words, inside the dense rail's own inset. */
+.crewlet-rail-list__note {
+  margin: 0;
+  padding-inline: var(--spacing-2);
+}
+
+.crewlet-rail-list__list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* What the chosen group holds, over its list on a hairline, at the list's own inset. */
+.crewlet-rail-list__about {
+  margin: 0;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-block-end: 1px solid var(--color-border-default);
+}
+
+/*
+ * A GRID AT THE LIST'S TOP TAKES NO RULE OF ITS OWN. A grid in a card draws
+ * one rule above its head to part it from the card's head (DataGrid.css);
+ * here the bar's hairline, the description's or the card's own edge is
+ * already that rule, and the grid's drew a second line under it.
+ */
+.crewlet-rail-list__list > .crewlet-data-grid:first-child,
+.crewlet-rail-list__about + .crewlet-data-grid {
+  border-top: 0;
+}
+
+/* Under the rail's room the list takes the card, and the picker takes the rail's place in the bar. */
+@container crewlet-rail-list (width < 44rem) {
+  .crewlet-rail-list__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .crewlet-rail-list__rail {
+    display: none;
+  }
+
+  .crewlet-rail-list__picker {
+    display: inline-flex;
+  }
+
+  .crewlet-rail-list__bar--picker-only {
+    display: flex;
+  }
+}
