@@ -3,9 +3,13 @@
  * said in words after its label and drawn as one mark in one column, the
  * detail breaking only at its separators, and ids that must be unique.
  */
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
+import { CircleDashedGlyph } from '@crewlethq/icons/glyphs';
 import { installMotion } from '../../../../apps/ui-tests/src/cascade.js';
 import { STEP_STATES, StepList, stepDetailPieces, type StepListStep } from './index.js';
 
@@ -46,6 +50,32 @@ test('every state has its own mark, and the running mark is the spinner at the g
   }
   const ring = container.querySelector('.crewlet-step-mark--running .crewlet-spinner')!;
   expect(ring.className).toContain('crewlet-spinner--sm');
+});
+
+test('a step not started is a dashed circle, said "Not started", and quiet through', () => {
+  const { container } = render(
+    <StepList
+      label="Stages"
+      steps={[
+        { id: 'address', label: 'Address', state: 'done', duration: '0 ms' },
+        { id: 'connect', label: 'Connect', state: 'failed', duration: '30 ms', detail: 'connection refused' },
+        { id: 'tls', label: 'Certificate', state: 'pending' },
+      ]}
+    />,
+  );
+  const step = container.querySelector('.crewlet-step-list__step--pending')!;
+  // The outline of a step still to come, not one of the finished states' glyphs.
+  const dashed = render(<CircleDashedGlyph size="sm" />).container.querySelector('svg')!.innerHTML;
+  expect(step.querySelector('.crewlet-step-mark--pending svg')!.innerHTML).toBe(dashed);
+  expect(step.querySelector('.crewlet-step-list__label')!.textContent).toBe('Certificate, Not started');
+  // A caller says what "not started" means where it knows better.
+  cleanup();
+  render(<StepList label="Stages" labels={{ pending: 'Not reached' }} steps={[{ id: 'tls', label: 'Certificate', state: 'pending' }]} />);
+  expect(screen.getByText(', Not reached')).toBeTruthy();
+  // Its words take the mark's quiet ink, so the step is one ink rather than a full-ink label by a dimmed mark.
+  const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'StepList.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  expect(/\.crewlet-step-list__step--pending \.crewlet-step-list__label \{([^}]*)\}/.exec(css)?.[1]).toMatch(/color:\s*var\(--color-text-tertiary\)/);
+  expect(css).toMatch(/\.crewlet-step-mark--pending[^{]*\{[^}]*--color-text-tertiary/);
 });
 
 test('a detail breaks only at a space or after a slash, a question mark or an ampersand', () => {

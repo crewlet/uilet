@@ -35,7 +35,8 @@
 }
 
 .crewlet-step-mark--refused,
-.crewlet-step-mark--stopped {
+.crewlet-step-mark--stopped,
+.crewlet-step-mark--pending {
   color: var(--color-text-tertiary);
 }
 
@@ -86,6 +87,16 @@
 
 .crewlet-step-list__label {
   overflow-wrap: anywhere;
+}
+
+/*
+ * A STEP THAT HAS NOT STARTED IS QUIET THROUGH: its words take the tertiary
+ * ink its mark and its detail already have, so the whole step reads as one
+ * thing still to come rather than as a label in full ink beside a dimmed
+ * mark.
+ */
+.crewlet-step-list__step--pending .crewlet-step-list__label {
+  color: var(--color-text-tertiary);
 }
 
 /*

@@ -2,6 +2,7 @@ import { Fragment, type HTMLAttributes, type ReactNode } from 'react';
 import {
   CircleAlertGlyph,
   CircleCheckGlyph,
+  CircleDashedGlyph,
   CircleStopGlyph,
   ClockGlyph,
   LockGlyph,
@@ -16,11 +17,21 @@ import { VisuallyHidden } from '../VisuallyHidden/index.js';
  * request finish, fail or are refused on their own: `running` while it works,
  * `done`, `failed` (the system could not do it), `refused` (the person's own
  * access does not allow it), `stopped` (the person stopped the request before
- * it finished) and `waiting` (it waits on the person's approval).
+ * it finished), `waiting` (it waits on the person's approval) and `pending`
+ * (it has not started: the request has not reached it yet, or ended before
+ * it, as the steps after a failed check that the check never got to).
  */
-export type StepState = 'running' | 'done' | 'failed' | 'refused' | 'stopped' | 'waiting';
+export type StepState = 'running' | 'done' | 'failed' | 'refused' | 'stopped' | 'waiting' | 'pending';
 
-export const STEP_STATES = ['running', 'done', 'failed', 'refused', 'stopped', 'waiting'] as const satisfies readonly StepState[];
+export const STEP_STATES = [
+  'running',
+  'done',
+  'failed',
+  'refused',
+  'stopped',
+  'waiting',
+  'pending',
+] as const satisfies readonly StepState[];
 
 /** The words each state is said with, after the step's own words: "Read token spend by agent, Done". */
 export type StepStateLabels = Record<StepState, string>;
@@ -32,6 +43,7 @@ export const STEP_STATE_LABELS: StepStateLabels = {
   refused: 'Not permitted',
   stopped: 'Stopped',
   waiting: 'Waiting for your approval',
+  pending: 'Not started',
 };
 
 export interface StepStateMarkProps {
@@ -43,7 +55,8 @@ export interface StepStateMarkProps {
  * A state's mark in its 16px box: the 14px glyph, or the spinner at the same
  * size while it runs, so nothing moves when the ring becomes a check. Running
  * takes the secondary ink, done the success ink, failed the danger ink,
- * waiting the warning ink, and refused and stopped the tertiary ink. One
+ * waiting the warning ink, and refused, stopped and pending the tertiary
+ * ink; pending is a dashed circle, the outline of a step still to come. One
  * mark for a request's steps and for the request's own state (`RunChip`),
  * which is what makes them one column.
  */
@@ -60,6 +73,8 @@ export function StepStateMark({ state, className }: StepStateMarkProps) {
         <LockGlyph size="sm" />
       ) : state === 'stopped' ? (
         <CircleStopGlyph size="sm" />
+      ) : state === 'pending' ? (
+        <CircleDashedGlyph size="sm" />
       ) : (
         <ClockGlyph size="sm" />
       )}
