@@ -1,0 +1,46 @@
+/*
+ * Who a person's message reached and who answered, under its words; and the
+ * same line over a composer, before the message is sent.
+ */
+
+.crewlet-delivery-receipt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--spacing-1);
+  max-width: 100%;
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--crewlet-chat-meta);
+  line-height: var(--font-line-height-snug);
+}
+
+.crewlet-delivery-receipt__part {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.crewlet-delivery-receipt__mark {
+  display: inline-flex;
+  flex: none;
+}
+
+.crewlet-delivery-receipt__answered {
+  color: var(--color-text-secondary);
+}
+
+/* The one raised tone: a message nobody was asked to answer. Its mark takes
+   the warning ink, its words the secondary ink; the hint stays quiet. */
+.crewlet-delivery-receipt--none {
+  color: var(--color-text-secondary);
+}
+
+.crewlet-delivery-receipt--none .crewlet-delivery-receipt__mark {
+  color: var(--color-feedback-warning-ink);
+}
+
+.crewlet-delivery-receipt__hint {
+  color: var(--color-text-tertiary);
+}
