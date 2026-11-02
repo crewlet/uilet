@@ -62,3 +62,39 @@ test('a disabled switch does not move, and the whole row is one target', () => {
   fireEvent.click(screen.getByText('Deliver webhooks'));
   expect(onCheckedChange).toHaveBeenCalledWith(true);
 });
+
+test('a switch with a reason stays a tab stop, does not move, and says why after its name', () => {
+  const onCheckedChange = vi.fn();
+  render(
+    <Switch
+      label="Product Manager gets every message"
+      checked
+      disabledReason="The org chart sets this for a team's own agents."
+      onCheckedChange={onCheckedChange}
+    />,
+  );
+  const control = screen.getByRole('switch', { name: 'Product Manager gets every message' }) as HTMLInputElement;
+  // Soft, never native: a natively disabled control is skipped by Tab and
+  // says nothing about why.
+  expect(control.disabled).toBe(false);
+  expect(control.getAttribute('aria-disabled')).toBe('true');
+  const reason = document.getElementById(control.getAttribute('aria-describedby') ?? '');
+  expect(reason?.textContent).toBe("The org chart sets this for a team's own agents.");
+  fireEvent.click(control);
+  expect(onCheckedChange).not.toHaveBeenCalled();
+  expect(control.checked).toBe(true);
+  cleanup();
+
+  // UNCONTROLLED, the click itself is what is held.
+  render(<Switch label="Catch up" defaultChecked={false} disabledReason="Paused by an administrator." />);
+  const loose = screen.getByRole('switch', { name: 'Catch up' }) as HTMLInputElement;
+  fireEvent.click(loose);
+  expect(loose.checked).toBe(false);
+});
+
+test('a switch whose label is hidden keeps the label as its name', () => {
+  const { container } = render(<Switch label="Designer gets every message" labelHidden checked={false} onChange={() => {}} />);
+  expect(screen.getByRole('switch', { name: 'Designer gets every message' })).toBeDefined();
+  expect(container.querySelector('.crewlet-switch')?.className).toContain('crewlet-switch--label-hidden');
+  expect(container.querySelector('.crewlet-visually-hidden .crewlet-switch__label')).not.toBeNull();
+});

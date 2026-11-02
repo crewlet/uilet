@@ -7,6 +7,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test } from 'vitest';
+import { Switch } from '../Switch/index.js';
 import { PersonRow } from './index.js';
 
 afterEach(cleanup);
@@ -60,6 +61,35 @@ test('as an option it is never a tab stop, says whether it is selected, and draw
   expect(miles!.getAttribute('aria-disabled')).toBe('true');
 });
 
+test('a row\'s own control stands beside its button, never inside it, and keeps its own name', () => {
+  let opened = 0;
+  let following = false;
+  render(
+    <ul aria-label="Members">
+      <li>
+        <PersonRow
+          avatar={<span />}
+          name="Designer"
+          detail="Answers when named"
+          onSelect={() => (opened += 1)}
+          action={<Switch label="Designer gets every message" labelHidden checked={following} onCheckedChange={(on) => (following = on)} />}
+        />
+      </li>
+    </ul>,
+  );
+  const row = screen.getByRole('button', { name: /Designer/ });
+  const toggle = screen.getByRole('switch', { name: 'Designer gets every message' });
+  // A control inside a button is one Tab cannot reach and a reader hears as
+  // part of the button's name.
+  expect(row.contains(toggle)).toBe(false);
+  expect(row.textContent).not.toContain('gets every message');
+  fireEvent.click(toggle);
+  expect(following).toBe(true);
+  expect(opened).toBe(0);
+  fireEvent.click(row);
+  expect(opened).toBe(1);
+});
+
 test('a list of rows carries no axe violation', async () => {
   const { container } = render(
     <main>
@@ -69,6 +99,9 @@ test('a list of rows carries no axe violation', async () => {
         </li>
         <li>
           <PersonRow avatar={<span />} name="Miles" detail="Designer" mark="toggle" selected />
+        </li>
+        <li>
+          <PersonRow avatar={<span />} name="QA" detail="Gets every message" action={<Switch label="QA gets every message" labelHidden checked onChange={() => {}} />} />
         </li>
       </ul>
       <ul role="listbox" aria-label="People">

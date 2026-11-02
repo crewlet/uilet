@@ -205,3 +205,38 @@ test('a list asked for a measure holds its words to it, and the row still spans 
     remove();
   }
 });
+
+test('a row’s own control stands beside its link, outside its name, and its note under both', () => {
+  // A control inside a link is one a keyboard cannot reach and a screen
+  // reader folds into the link's name ("general 3 members Join"), so the
+  // action is a sibling of the row's control and the note is outside both.
+  const onJoin = vi.fn();
+  render(
+    <List variant="divided">
+      <ListItem
+        href="#/chat/general"
+        action={
+          <button type="button" onClick={onJoin}>
+            Join
+          </button>
+        }
+        note="The room is archived."
+      >
+        general
+      </ListItem>
+      <ListItem href="#/chat/launch">launch</ListItem>
+    </List>,
+  );
+  const link = screen.getByRole('link', { name: 'general' });
+  const join = screen.getByRole('button', { name: 'Join' });
+  expect(link.contains(join)).toBe(false);
+  expect(link.textContent).not.toContain('archived');
+  const [first, second] = screen.getAllByRole('listitem');
+  expect(first!.className).toContain('crewlet-list__item--split');
+  expect(first!.contains(join)).toBe(true);
+  expect(first!.textContent).toContain('The room is archived.');
+  // A row with neither keeps the plain layout.
+  expect(second!.className).not.toContain('crewlet-list__item--split');
+  fireEvent.click(join);
+  expect(onJoin).toHaveBeenCalledTimes(1);
+});

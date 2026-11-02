@@ -66,3 +66,22 @@ export const Framed: Story = {
     return <Demo />;
   },
 };
+
+/**
+ * A switch that cannot move says why: it stays a tab stop, its reason is read
+ * after its name, and a Tooltip shows the sentence to a pointer. With
+ * `labelHidden` the label is still its name, for a row that already says what
+ * the switch sets.
+ */
+export const WithAReason: Story = {
+  render: () => (
+    <div style={column}>
+      <Switch
+        label="Deliver webhooks"
+        checked
+        disabledReason="Only an administrator can pause deliveries."
+      />
+      <Switch label="Designer gets every message" labelHidden checked={false} onChange={() => {}} />
+    </div>
+  ),
+};

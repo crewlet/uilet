@@ -1,0 +1,55 @@
+/*
+ * RoomRow: a room as a directory of rooms lists it, on List.Item.
+ *
+ * The row's words stack: the name line, the topic, the facts. They take the
+ * conversation's own scale (ChatScale.css), so a room's name in a directory
+ * is the size it is in the room's header and its messages.
+ */
+
+.crewlet-room-row > .crewlet-list__row > .crewlet-list__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+/* A room's name wraps rather than pushing past the row: one unbroken name (a
+   slug with no hyphen) otherwise runs over its own tag and into the action. */
+.crewlet-room-row__name {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: var(--spacing-5);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--crewlet-chat-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.crewlet-room-row__mark {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.crewlet-room-row__title {
+  min-width: 0;
+}
+
+.crewlet-room-row__topic {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--crewlet-chat-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crewlet-room-row__facts {
+  color: var(--color-text-secondary);
+  font-size: var(--crewlet-chat-meta);
+}
+
+.crewlet-room-row__sep {
+  color: var(--color-text-tertiary);
+}

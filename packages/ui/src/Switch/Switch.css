@@ -172,6 +172,21 @@
   border-radius: var(--radius-lg);
 }
 
+/*
+ * THE TRACK ALONE, for a switch whose label is its name and not drawn: no
+ * gap after it and no padding to centre a line of text that is not there, so
+ * it stands on the middle of the row it ends.
+ */
+.crewlet-switch--label-hidden {
+  align-items: center;
+  gap: 0;
+  padding-block: 0;
+}
+
+.crewlet-switch--label-hidden .crewlet-switch__track {
+  margin-block: 0;
+}
+
 .crewlet-switch.is-disabled,
 .crewlet-switch.is-disabled .crewlet-switch__control {
   cursor: not-allowed;

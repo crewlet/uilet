@@ -42,6 +42,13 @@ export interface PersonRowButtonProps extends PersonRowLook, Omit<ButtonHTMLAttr
   selected?: boolean | undefined;
   /** Pressing the row. */
   onSelect?: (() => void) | undefined;
+  /**
+   * A control of the row's own at its end (a `Switch` that sets how this
+   * member follows a room), drawn BESIDE the row's button rather than inside
+   * it: a control inside a button cannot be reached by Tab, and is read as
+   * part of the row's name. Pressing the row still does what `onSelect` says.
+   */
+  action?: ReactNode;
 }
 
 export interface PersonRowOptionProps extends PersonRowLook, Omit<LiHTMLAttributes<HTMLLIElement>, 'children'> {
@@ -133,8 +140,8 @@ export const PersonRow = forwardRef<HTMLButtonElement | HTMLLIElement, PersonRow
       </li>
     );
   }
-  const { as: _as, avatar, name, tag, detail, meta, mark, density = 'default', selected, onSelect, onClick, className, type = 'button', ...rest } = props;
-  return (
+  const { as: _as, avatar, name, tag, detail, meta, mark, density = 'default', selected, onSelect, onClick, action, className, type = 'button', ...rest } = props;
+  const row = (
     <button
       {...rest}
       ref={ref as (el: HTMLButtonElement | null) => void}
@@ -148,5 +155,14 @@ export const PersonRow = forwardRef<HTMLButtonElement | HTMLLIElement, PersonRow
     >
       <PersonRowBody avatar={avatar} name={name} tag={tag} detail={detail} meta={meta} mark={mark} density={density} selected={selected} />
     </button>
+  );
+  if (action === undefined || action === null) return row;
+  // THE ACTION IS THE BUTTON'S SIBLING, in one line with it: the row keeps its
+  // hover and its name, and the action is a control of its own after it.
+  return (
+    <div className={cx('crewlet-person-row-group', `crewlet-person-row-group--${density}`)}>
+      {row}
+      <span className="crewlet-person-row__action">{action}</span>
+    </div>
   );
 });
