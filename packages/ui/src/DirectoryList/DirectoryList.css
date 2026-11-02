@@ -19,10 +19,14 @@
 
 /* The groups take the room and scroll on their own, so the foot stays put.
 
-   THEIR INSET IS INSIDE THE SCROLLER. The gutter is reserved whether or not
-   they scroll, and the lines end a step before it: a line's state pill stood
-   against the scrollbar, and moved by its width when the list grew long
-   enough to scroll. */
+   THE LINES RUN NEARLY TO THE HAIRLINE. A list that fits reserves nothing for
+   a scrollbar, so a line's hover and selected grounds end one small step
+   before the pane's hairline, as the rail's end before its edge, and its
+   state stands at the line's end. A gutter reserved for a list that seldom
+   scrolls left nineteen pixels of empty column between every line and the
+   hairline. A list long enough to scroll takes the bar's width only then: an
+   overlay bar passes over the line's own inset, never its state, and a
+   classic bar stands beside the lines, which narrow by its width. */
 .crewlet-directory__groups {
   display: flex;
   flex: 1 1 auto;
@@ -31,9 +35,8 @@
      under it rather than a band between two runs of them. */
   gap: var(--spacing-3);
   min-height: 0;
-  padding-right: var(--spacing-2);
+  padding-right: var(--spacing-1);
   overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .crewlet-directory__group {
