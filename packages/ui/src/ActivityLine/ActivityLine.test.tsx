@@ -35,6 +35,15 @@ test('draws the working agent beside the Ask Crewlet mark, announcing its label 
   expect(announced.textContent).toBe('Senior Backend Engineer is writing a reply');
 });
 
+test('draws a queued request still, with what it waits behind', () => {
+  render(<ActivityLine working="Product Manager is queued behind its current task" queued />);
+  const indicator = document.querySelector('.crewlet-thinking')!;
+  expect(indicator.classList.contains('crewlet-thinking--queued')).toBe(true);
+  expect(indicator.querySelector('.crewlet-thinking__status')!.textContent).toBe(
+    'Product Manager is queued behind its current task',
+  );
+});
+
 test('keeps one line of height, and never grows wider than its column', () => {
   const uninstall = installSheets('ChatMessage/ChatScale.css', 'ActivityLine/ActivityLine.css');
   try {

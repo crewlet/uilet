@@ -192,6 +192,33 @@
   }
 }
 
+/*
+ * QUEUED, THE MARK RESTS AND THE LINE IS STILL. Work has not started, so
+ * nothing moves: both parts of the mark stop in the idle pose (the spark at
+ * full size and upright, the companion at full strength), which is the pose
+ * the working loop rests in for half of every period, and the line drops its
+ * shimmer for the secondary ink. The same height, so the indicator starts
+ * moving in place when the work begins.
+ */
+.crewlet-thinking--queued .crewlet-thinking__mark [data-motion='turn'],
+.crewlet-thinking--queued .crewlet-thinking__mark [data-motion='twinkle'] {
+  animation: none;
+  transform: none;
+  opacity: 1;
+}
+
+.crewlet-thinking--queued .crewlet-thinking__status {
+  background-image: none;
+  color: var(--color-text-secondary);
+  animation: crewlet-thinking-enter var(--motion-duration-moderate) var(--motion-easing-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crewlet-thinking--queued .crewlet-thinking__status {
+    animation: none;
+  }
+}
+
 /* The system's own ink: a gradient clipped to text is dropped there. */
 @media (forced-colors: active) {
   .crewlet-thinking__status {
