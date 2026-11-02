@@ -27,6 +27,15 @@ export const ReadingAStep: Story = { args: { status: 'Listing the agents' } };
 /** While the answer's words arrive, the mark stands alone after them. */
 export const MarkAlone: Story = { args: { status: undefined } };
 
+/**
+ * Waiting its turn: the request sits behind something the agent is already
+ * doing, so the mark rests and the line is still. When the work starts the
+ * same indicator moves again, in place.
+ */
+export const Queued: Story = {
+  args: { status: 'Product Manager is queued behind its current task', queued: true },
+};
+
 const ANSWER =
   'Both of your agents are idle. The Product Manager finished its last turn four minutes ago, and the Software Engineer is waiting on a review.';
 

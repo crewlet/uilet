@@ -17,6 +17,13 @@ export interface ActivityLineProps extends Omit<HTMLAttributes<HTMLDivElement>, 
    * `working` by default.
    */
   workingLabel?: string | undefined;
+  /**
+   * The agent has not started on it yet: the request waits behind something
+   * it is already doing, and `working` says so ("Product Manager is queued
+   * behind its current task"). Drawn as a queued `ThinkingIndicator`, still,
+   * until the work starts.
+   */
+  queued?: boolean | undefined;
 }
 
 /**
@@ -28,11 +35,16 @@ export interface ActivityLineProps extends Omit<HTMLAttributes<HTMLDivElement>, 
  * `ThinkingIndicator`, which announces its label once and keeps its changing
  * steps to the eye.
  */
-export function ActivityLine({ typing, working, workingLabel, className, ...rest }: ActivityLineProps) {
+export function ActivityLine({ typing, working, workingLabel, queued, className, ...rest }: ActivityLineProps) {
   return (
     <div {...rest} className={cx('crewlet-activity-line', className)}>
       {working ? (
-        <ThinkingIndicator status={working} label={workingLabel ?? working} className="crewlet-activity-line__working" />
+        <ThinkingIndicator
+          status={working}
+          label={workingLabel ?? working}
+          queued={queued}
+          className="crewlet-activity-line__working"
+        />
       ) : null}
       <span className="crewlet-activity-line__typing" role="status">
         {typing ? (

@@ -101,6 +101,38 @@ test('holds a still working pose under a reduced-motion preference, and stops ev
   expect(reduced).toMatch(/\.crewlet-thinking__status\s*\{[^}]*background-image: none;/);
 });
 
+// A request waiting behind the agent's current task must not read as one being
+// written. Mutation: drop the queued rules, or keep either animation, and a
+// queued indicator turns its spark as if the work had started.
+test('rests while queued: the mark in its idle pose, the line still, and it says Queued', () => {
+  const { container, rerender } = render(
+    <ThinkingIndicator status="Product Manager is queued behind its current task" queued />,
+  );
+  const root = container.querySelector('.crewlet-thinking')!;
+  expect(root.classList.contains('crewlet-thinking--queued')).toBe(true);
+  expect(screen.getByRole('status').textContent).toBe('Queued');
+  const mark = ruleBody(
+    css,
+    ".crewlet-thinking--queued .crewlet-thinking__mark [data-motion='turn'],\n.crewlet-thinking--queued .crewlet-thinking__mark [data-motion='twinkle']",
+  );
+  expect(mark).toMatch(/animation: none;/);
+  expect(mark).toMatch(/transform: none;/);
+  expect(mark).toMatch(/opacity: 1;/);
+  const line = ruleBody(css, '.crewlet-thinking--queued .crewlet-thinking__status');
+  expect(line).toMatch(/background-image: none;/);
+  expect(line).toMatch(/color: var\(--color-text-secondary\);/);
+  expect(line).not.toMatch(/crewlet-thinking-shimmer/);
+  // When the work starts the same indicator moves again, and says so.
+  rerender(<ThinkingIndicator status="Thinking" />);
+  expect(container.querySelector('.crewlet-thinking--queued')).toBeNull();
+  expect(screen.getByRole('status').textContent).toBe('Thinking');
+});
+
+test('a label still wins over the queued default', () => {
+  render(<ThinkingIndicator queued label="Waiting for the Product Manager" />);
+  expect(screen.getByRole('status').textContent).toBe('Waiting for the Product Manager');
+});
+
 // A long status in a column that sizes its items by their content (a
 // message's footer) made the indicator as wide as its words, and a phone's
 // transcript scrolled sideways. Mutation: drop the cap, and it reads none.

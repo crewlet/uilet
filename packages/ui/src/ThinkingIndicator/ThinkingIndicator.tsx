@@ -12,10 +12,20 @@ export interface ThinkingIndicatorProps extends Omit<HTMLAttributes<HTMLDivEleme
   status?: string | undefined;
   /**
    * What a screen reader is told, once, when the indicator appears.
-   * "Thinking" by default. It never changes with `status`, so a reader is not
-   * told every step the assistant takes while they read.
+   * "Thinking" by default, and "Queued" while `queued`. It never changes with
+   * `status`, so a reader is not told every step the assistant takes while
+   * they read.
    */
   label?: string | undefined;
+  /**
+   * The work has not started: the request is waiting behind something the
+   * agent is already doing ("is queued behind its current task"). The mark
+   * rests in its idle pose and the line is drawn without its shimmer, so a
+   * person can tell a reply that is being written from one that is waiting
+   * its turn. When the work starts, drop it and the indicator moves again in
+   * place, with nothing else on the page moving.
+   */
+  queued?: boolean | undefined;
 }
 
 /**
@@ -41,10 +51,17 @@ export interface ThinkingIndicatorProps extends Omit<HTMLAttributes<HTMLDivEleme
  * tucked, the companion dimmed) and the line is drawn in the secondary ink
  * without the shimmer: the mark and the words still say that work is under
  * way.
+ *
+ * QUEUED, NOTHING MOVES. A request waiting behind the agent's current task is
+ * drawn with the mark in its idle pose and the line in the secondary ink, at
+ * the same height, so the moment the work starts is the moment the mark
+ * starts to turn. Motion means work under way, and a queued request has none
+ * yet.
  */
-export function ThinkingIndicator({ status, label = 'Thinking', className, ...rest }: ThinkingIndicatorProps) {
+export function ThinkingIndicator({ status, label, queued = false, className, ...rest }: ThinkingIndicatorProps) {
+  const announced = label ?? (queued ? 'Queued' : 'Thinking');
   return (
-    <div {...rest} className={cx('crewlet-thinking', className)}>
+    <div {...rest} className={cx('crewlet-thinking', queued && 'crewlet-thinking--queued', className)}>
       <ProductMark product="assistant" size="md" className="crewlet-thinking__mark" />
       {status === undefined || status === '' ? null : (
         // Keyed by its words, so a new step's line fades in rather than
@@ -54,7 +71,7 @@ export function ThinkingIndicator({ status, label = 'Thinking', className, ...re
         </span>
       )}
       <VisuallyHidden>
-        <span role="status">{label}</span>
+        <span role="status">{announced}</span>
       </VisuallyHidden>
     </div>
   );

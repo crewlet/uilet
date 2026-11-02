@@ -24,6 +24,14 @@ export const Working: Story = {
   },
 };
 
+/**
+ * The agent has not started on it yet: the request waits behind something it
+ * is already doing, so the mark rests and the line is still.
+ */
+export const Queued: Story = {
+  args: { working: 'Product Manager is queued behind its current task', queued: true },
+};
+
 /** Both at once; a narrow column truncates the working line rather than widening. */
 export const Both: Story = {
   args: {
