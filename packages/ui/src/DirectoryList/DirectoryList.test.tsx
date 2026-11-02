@@ -66,15 +66,15 @@ function rule(selector: string): string {
   return new RegExp(`${selector.replace(/[.]/g, '\\.')} \\{([^}]*)\\}`).exec(css)?.[1] ?? '';
 }
 
-// THE GROUPS ARE THE LIST'S SCROLLER, and keep their inset inside: the gutter
-// is reserved whether or not they scroll, and the lines end a step before it,
-// so a line's state never touches the scrollbar and does not move when the
-// list grows long enough to scroll.
-test("the groups scroll with their gutter reserved, and a line's state clear of the bar", () => {
+// THE GROUPS ARE THE LIST'S SCROLLER, and the lines run nearly to the
+// hairline: no gutter is reserved for a list that fits, so a line's grounds
+// end one small step before the pane's edge rather than a scrollbar's width
+// and a step before it.
+test('the groups scroll on their own, and a line runs nearly to the hairline', () => {
   const groups = rule('.crewlet-directory__groups');
   expect(groups).toMatch(/overflow-y:\s*auto;/);
-  expect(groups).toMatch(/scrollbar-gutter:\s*stable;/);
-  expect(groups).toMatch(/padding-right:\s*var\(--spacing-2\);/);
+  expect(groups).not.toMatch(/scrollbar-gutter/);
+  expect(groups).toMatch(/padding-right:\s*var\(--spacing-1\);/);
 });
 
 // THE RAIL'S ROW STEP: a line is exactly the rail's height, in its compact
