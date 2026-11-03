@@ -9,8 +9,9 @@
  * from a mark, and a mark appears only beside the app's own name, so the rule
  * holds everywhere else.
  *
- * GitHub's, Notion's, OpenCode's and Expo's marks are monochrome by design, so
- * they take the current text colour and read on either theme. That is each
+ * GitHub's, Notion's, OpenCode's, Expo's and DigitalOcean's marks are
+ * monochrome by design, so they take the current text colour and read on
+ * either theme. That is each
  * vendor's own instruction rather than an exemption from the rule above: each
  * publishes one mark, dark on a light ground and light on a dark one, and a
  * fixed hex would be wrong in one theme whichever one was picked.
@@ -65,7 +66,13 @@
  * colours taken from the text as above. Expo's is the mark from its own logo
  * pack (github.com/expo/logos, svg/logo-type-a.svg, which expo.dev/brand
  * links), its path unchanged, its size attributes dropped and its black taken
- * from the text, as Expo's own site and docs draw it.
+ * from the text, as Expo's own site and docs draw it. DigitalOcean's is Simple
+ * Icons' rendering (CC0 1.0) from simple-icons 16.35.0
+ * (icons/digitalocean.svg, path unchanged), the same icon DigitalOcean's own
+ * logo pack draws (the Brand Assets download on digitalocean.com/press), but
+ * not in the blue that release records: the pack now publishes the logo only
+ * in black for a light ground and white for a dark one, so it takes the text
+ * colour as above.
  * Using a mark to name the app it belongs to is nominative use; TRADEMARKS.md
  * says what that does and does not allow.
  */
@@ -86,6 +93,7 @@ export const VENDORS = [
   'cloudflare',
   'crewlet',
   'datadog',
+  'digitalocean',
   'discord',
   'expo',
   'figma',
@@ -126,6 +134,7 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   cloudflare: marks.Cloudflare,
   crewlet: CrewletIcon,
   datadog: marks.Datadog,
+  digitalocean: marks.Digitalocean,
   discord: marks.Discord,
   expo: marks.Expo,
   figma: marks.Figma,

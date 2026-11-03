@@ -10,8 +10,8 @@ import { themeScope } from '../themeScope';
  * Both themes side by side, because most of these are a fixed hue that has to
  * hold on either ground, Mattermost's, Scaleway's and Sentry's take the text
  * colour on the dark ground, as each vendor publishes them for one, and
- * GitHub's, Notion's, OpenCode's and Expo's are the current text colour and
- * invert with the theme.
+ * GitHub's, Notion's, OpenCode's, Expo's and DigitalOcean's are the current
+ * text colour and invert with the theme.
  * The muted state is the answer to "available, not connected", and it drains
  * the mark's own colour rather than inventing a second palette for somebody
  * else's brand.
