@@ -79,6 +79,13 @@
  * colour as above.
  * Using a mark to name the app it belongs to is nominative use; TRADEMARKS.md
  * says what that does and does not allow.
+ *
+ * AWS HAS NO MARK HERE. AWS's trademark guidelines allow a third party a
+ * plain-text reference only, with no logo (Section 13), so its tile draws the
+ * glyph set's own cloud (CloudGlyph, Lucide's, under ISC) beside the name: a
+ * generic drawing that claims nothing about AWS. It is the glyph component
+ * itself rather than a copy in svg/vendor, so it draws as every glyph does,
+ * a stroke in the current text colour on either theme.
  */
 
 import type { ComponentType, SVGProps } from 'react';
@@ -87,11 +94,13 @@ import './VendorMark.css';
 import type { GlyphSize } from './Glyph.js';
 import { cssLength } from './Glyph.js';
 import CrewletIcon from './generated/CrewletIcon.js';
+import CloudGlyph from './generated/glyphs/CloudGlyph.js';
 import * as marks from './generated/vendors/index.js';
 
-/** The apps this package carries a mark for, Crewlet's own services among them. */
+/** The apps this package draws on a catalogue tile, Crewlet's own services among them. */
 export const VENDORS = [
   'atlassian',
+  'aws',
   'claude',
   'clickup',
   'cloudflare',
@@ -134,6 +143,7 @@ export interface VendorMarkProps extends Omit<SVGProps<SVGSVGElement>, 'title'> 
 
 const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   atlassian: marks.Atlassian,
+  aws: CloudGlyph,
   claude: marks.Claude,
   clickup: marks.Clickup,
   cloudflare: marks.Cloudflare,
