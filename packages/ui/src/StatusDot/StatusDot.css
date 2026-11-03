@@ -179,6 +179,25 @@
 }
 
 /*
+ * A WRAPPED STATUS is a sentence: the word runs to every line it needs, and the
+ * dot stands centred on the first of them by that line's own height.
+ */
+.crewlet-status--wrap {
+  align-items: flex-start;
+}
+
+.crewlet-status--wrap > .crewlet-status-dot {
+  margin-top: calc((1lh - var(--crewlet-status-dot-size)) / 2);
+}
+
+.crewlet-status--wrap > .crewlet-status__label {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+/*
  * HELD, not slowed: a mark that loops for as long as the work runs is exactly
  * what the setting is for. The stop names the selector that starts the pulse
  * and comes after it, so it wins on source order at the same specificity,
