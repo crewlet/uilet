@@ -82,6 +82,52 @@ test('a caller-supplied sentence is described before the help and the error', ()
   expect(screen.getByText('https://').getAttribute('aria-hidden')).toBe('true');
 });
 
+// A PASSWORD FIELD THAT NAMES NO AUTOCOMPLETE HOLDS A SECRET TO STORE, so no
+// browser or password manager offers a saved login into it; one that names
+// `current-password` is a sign-in, and is left for them to fill. The Combobox
+// a ValueField draws its secret through lets the caller's choice through too.
+// Mutation: drop the default and the bare password field carries nothing.
+test('a password field refuses saved logins unless it names its own autocomplete', () => {
+  render(
+    <>
+      <Input aria-label="Token" type="password" />
+      <Input aria-label="Password" type="password" autoComplete="current-password" />
+      {/* The popup variant, with the props a ValueField's secret passes it. */}
+      <Combobox
+        aria-label="Key"
+        label="Secrets"
+        type="password"
+        mono
+        tabCommits
+        value=""
+        options={[]}
+        open={false}
+        onOpenChange={() => {}}
+        onValueChange={() => {}}
+      />
+      <Combobox
+        aria-label="Name"
+        label="Secrets"
+        mono
+        tabCommits
+        value=""
+        options={[]}
+        open={false}
+        onOpenChange={() => {}}
+        onValueChange={() => {}}
+      />
+    </>,
+  );
+  const token = screen.getByLabelText('Token');
+  expect(token.getAttribute('autocomplete')).toBe('new-password');
+  expect(token.hasAttribute('data-1p-ignore')).toBe(true);
+  const signIn = screen.getByLabelText('Password');
+  expect(signIn.getAttribute('autocomplete')).toBe('current-password');
+  expect(signIn.hasAttribute('data-1p-ignore')).toBe(false);
+  expect(screen.getByLabelText('Key').getAttribute('autocomplete')).toBe('new-password');
+  expect(screen.getByLabelText('Name').getAttribute('autocomplete')).toBe('off');
+});
+
 test('requiredness is a mark for the eye and an attribute for the reader', () => {
   const { rerender } = render(
     <FormField label="Name" required>

@@ -303,6 +303,7 @@ export function ValueField({
             ref={box}
             // A REFERENCE READS AS A NAME, in the face a stored entry's name wears.
             appearance={reference ? 'reference' : 'default'}
+            // A masked field names no autocomplete, so Input refuses saved logins.
             type={masked ? 'password' : 'text'}
             inputMode={kind === 'email' ? 'email' : kind === 'url' ? 'url' : undefined}
             value={shown}

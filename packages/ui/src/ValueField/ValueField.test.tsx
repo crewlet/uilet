@@ -196,6 +196,25 @@ test('a secret holding anything else stays masked', () => {
   }
 });
 
+// A SAVED LOGIN IS NEVER OFFERED INTO A SECRET. Chrome ignores
+// `autocomplete="off"` on a password field and filled a person's own sign-in
+// password into an integration's token field, which a save would then seal.
+// Mutation: let Combobox force `off` again, or drop Input's secret default,
+// and the field offers saved logins again.
+test('a masked secret refuses every saved login, and a reference in it takes none', () => {
+  render(<ValueField label="API token" kind="secret" value="" onChange={() => {}} />);
+  const masked = screen.getByLabelText('API token');
+  expect(masked.getAttribute('autocomplete')).toBe('new-password');
+  expect(masked.hasAttribute('data-1p-ignore')).toBe(true);
+  expect(masked.getAttribute('data-lpignore')).toBe('true');
+  expect(masked.hasAttribute('data-bwignore')).toBe(true);
+  cleanup();
+  render(<ValueField label="API token" kind="secret" value='${JIRA_TOKEN}' onChange={() => {}} />);
+  const reference = screen.getByLabelText('API token');
+  expect(reference.getAttribute('autocomplete')).toBe('off');
+  expect(reference.hasAttribute('data-1p-ignore')).toBe(false);
+});
+
 // A SINGLE TOKEN TAKES NO WHITESPACE, including from a paste. A space around
 // an address is invisible in the box and fatal at the vendor.
 test('a single-token field drops whitespace as it is typed or pasted', () => {

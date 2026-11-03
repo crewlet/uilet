@@ -4,6 +4,7 @@ import { IconButton } from '../IconButton/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import { useFocusModality } from '../utils/focusModality.js';
+import { SECRET_INPUT_PROPS } from '../utils/secretInput.js';
 
 export type InputSize = 'sm' | 'md';
 
@@ -110,6 +111,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const controlled = rest.value !== undefined;
   const filled = controlled ? String(rest.value ?? '') !== '' : typed;
 
+  // A password field that names no autocomplete holds a secret to store, so no
+  // saved login is offered into it. A sign-in form names `current-password`.
+  const secret = rest.type === 'password' && rest.autoComplete === undefined;
+
   const onChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (!controlled) setTyped(event.target.value !== '');
     rest.onChange?.(event);
@@ -150,6 +155,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         disabled={disabled}
         aria-invalid={error || undefined}
         {...rest}
+        {...(secret ? SECRET_INPUT_PROPS : {})}
         {...(onClear ? { onChange } : {})}
       />
       {trailing ? <span className="crewlet-input__trailing">{trailing}</span> : null}

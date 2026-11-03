@@ -129,6 +129,15 @@ interface ModeProps {
 const INLINE_ROWS = 6;
 
 /**
+ * The field's autocomplete: the caller's where it names one, none on a password
+ * field (Input then treats it as a secret), and off elsewhere, so a browser's
+ * own suggestions never cover the list.
+ */
+function autoCompleteOf(props: { type?: string | undefined; autoComplete?: string | undefined }) {
+  return props.autoComplete ?? (props.type === 'password' ? undefined : 'off');
+}
+
+/**
  * A text field that offers completions.
  *
  * WHY THE LIST IS ANCHORED RATHER THAN PORTALLED. It is positioned absolutely
@@ -323,7 +332,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
           aria-expanded={listed}
           aria-controls={listed ? listbox.listId : undefined}
           aria-activedescendant={offered.length > 0 && listbox.active >= 0 ? listbox.optionId(listbox.active) : undefined}
-          autoComplete="off"
+          autoComplete={autoCompleteOf(rest)}
           spellCheck={false}
           onChange={(event) => onValueChange(event.target.value)}
           onKeyDown={onKeyDown}
@@ -371,7 +380,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
         aria-expanded={announcesRole ? lists : undefined}
         aria-controls={lists ? listbox.listId : undefined}
         aria-activedescendant={lists && offered.length > 0 ? listbox.optionId(listbox.active) : undefined}
-        autoComplete="off"
+        autoComplete={autoCompleteOf(rest)}
         spellCheck={false}
         onChange={(event) => onValueChange(event.target.value)}
         onKeyDown={onKeyDown}
