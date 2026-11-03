@@ -9,8 +9,9 @@
  * from a mark, and a mark appears only beside the app's own name, so the rule
  * holds everywhere else.
  *
- * GitHub's, Notion's, OpenCode's and Expo's marks are monochrome by design, so
- * they take the current text colour and read on either theme. That is each
+ * GitHub's, Notion's, OpenCode's, Expo's and DigitalOcean's marks are
+ * monochrome by design, so they take the current text colour and read on
+ * either theme. That is each
  * vendor's own instruction rather than an exemption from the rule above: each
  * publishes one mark, dark on a light ground and light on a dark one, and a
  * fixed hex would be wrong in one theme whichever one was picked.
@@ -25,6 +26,11 @@
  * dark one a hue under 2:1 that left the glyph a smudge. Sentry's branding
  * page offers the glyph in white for a dark ground, so the dark themes draw it
  * in the current text colour, by the same rule as Mattermost's.
+ *
+ * Scaleway's purple is the same case again: its mark on a light ground, and
+ * under 2:1 on a dark one. Scaleway draws the same mark in white on a dark
+ * ground (the logo in its CLI's documentation), so the dark themes draw it in
+ * the current text colour too.
  *
  * Datadog draws its own mark as a violet tile with the dog knocked OUT of it,
  * so the dog is a hole rather than a shape and needs something opaque behind
@@ -48,9 +54,10 @@
  *
  * The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram and Microsoft
  * Teams drawings are Simple Icons' renderings (CC0 1.0), and so are the
- * Cloudflare, Linear, PostgreSQL, Sentry and Stripe drawings, taken from
- * simple-icons 16.35.0 (its icons/<slug>.svg, path unchanged) in the hex that
- * release records for each brand. Claude's is the Claude Spark in Clay, from
+ * Cloudflare, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings, taken
+ * from simple-icons 16.35.0 (its icons/<slug>.svg, path unchanged) in the hex
+ * that release records for each brand. Scaleway's is its purple, #4F0599,
+ * which that release sources to Scaleway's own design system. Claude's is the Claude Spark in Clay, from
  * Anthropic's own press kit
  * (anthropic.com/press-kit, "Anthropic media resources", Claude logos, 3 Claude
  * Spark), unchanged but for the file's size attributes. OpenCode's is the
@@ -59,7 +66,13 @@
  * colours taken from the text as above. Expo's is the mark from its own logo
  * pack (github.com/expo/logos, svg/logo-type-a.svg, which expo.dev/brand
  * links), its path unchanged, its size attributes dropped and its black taken
- * from the text, as Expo's own site and docs draw it.
+ * from the text, as Expo's own site and docs draw it. DigitalOcean's is Simple
+ * Icons' rendering (CC0 1.0) from simple-icons 16.35.0
+ * (icons/digitalocean.svg, path unchanged), the same icon DigitalOcean's own
+ * logo pack draws (the Brand Assets download on digitalocean.com/press), but
+ * not in the blue that release records: the pack now publishes the logo only
+ * in black for a light ground and white for a dark one, so it takes the text
+ * colour as above.
  * Using a mark to name the app it belongs to is nominative use; TRADEMARKS.md
  * says what that does and does not allow.
  */
@@ -80,6 +93,7 @@ export const VENDORS = [
   'cloudflare',
   'crewlet',
   'datadog',
+  'digitalocean',
   'discord',
   'expo',
   'figma',
@@ -91,6 +105,7 @@ export const VENDORS = [
   'notion',
   'opencode',
   'postgresql',
+  'scaleway',
   'sentry',
   'slack',
   'stripe',
@@ -119,6 +134,7 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   cloudflare: marks.Cloudflare,
   crewlet: CrewletIcon,
   datadog: marks.Datadog,
+  digitalocean: marks.Digitalocean,
   discord: marks.Discord,
   expo: marks.Expo,
   figma: marks.Figma,
@@ -130,6 +146,7 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   notion: marks.Notion,
   opencode: marks.Opencode,
   postgresql: marks.Postgresql,
+  scaleway: marks.Scaleway,
   sentry: marks.Sentry,
   slack: marks.Slack,
   stripe: marks.Stripe,
