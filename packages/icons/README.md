@@ -73,18 +73,20 @@ import { VendorMark } from '@crewlethq/icons';
 
 | Prop | Type | Default | Purpose |
 | ---- | ---- | ------- | ------- |
-| `vendor` | `Vendor`: `'atlassian' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'crewlet' \| 'datadog' \| 'discord' \| 'figma' \| 'github' \| 'gitlab' \| 'linear' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'opencode' \| 'postgresql' \| 'sentry' \| 'slack' \| 'stripe' \| 'telegram'` | required | Which mark. |
+| `vendor` | `Vendor`: `'atlassian' \| 'claude' \| 'clickup' \| 'cloudflare' \| 'crewlet' \| 'datadog' \| 'discord' \| 'expo' \| 'figma' \| 'github' \| 'gitlab' \| 'linear' \| 'mattermost' \| 'microsoft-teams' \| 'notion' \| 'opencode' \| 'postgresql' \| 'sentry' \| 'slack' \| 'stripe' \| 'telegram'` | required | Which mark. |
 | `size` | as `Glyph` | `'1em'` | How big it draws. |
 | `title` | string | none | Names the mark. Without one it is `aria-hidden`. |
 | `muted` | boolean | `false` | Drains the colour, for an application that is available but not connected. |
 
 **This is the one place the design system draws somebody else's colours.** Colour here carries state and never identity, and a third-party application's mark is the deliberate exception: identity is exactly what a mark is for, and a recoloured Slack mark is not Slack's. No hue in `svg/vendor/` is a token, nothing reads state from a mark, and a mark appears only beside the name of the application it belongs to.
 
-GitHub's, Notion's and OpenCode's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
+GitHub's, Notion's, OpenCode's and Expo's marks are monochrome by design and take the current text colour, so they read on either theme. That is each vendor's own instruction rather than an exemption: each publishes one mark, black on a light ground and white on a dark one, so a fixed hex would be wrong in one theme whichever was picked.
 
 Mattermost's blue mark and Sentry's violet one are each drawn for a light ground, and each vendor publishes the same drawing in white for a dark one, which is what the dark themes draw: on the dark ground Mattermost's blue falls under 3:1 and Sentry's violet under 2:1, and either mark all but disappears.
 
 **`claude` and `opencode` name the coding CLI a model runs** (Claude Code and OpenCode). Claude's is the Claude Spark (Clay) from Anthropic's press kit at anthropic.com/press-kit; OpenCode's is the logo from opencode.ai/brand. Each mark is its owner's trademark.
+
+**`expo` is Expo's mark**, from Expo's own logo pack (github.com/expo/logos, `svg/logo-type-a.svg`, the download that expo.dev/brand links), its path unchanged and its black taken from the text, as Expo's own site and documentation draw it.
 
 **`crewlet` is Crewlet's own mark**, for the services built into it (Worklet, Doclet) where a catalogue lists them beside the third-party apps they stand in for. It is drawn from the brand mark the package already carries (`svg/crewlet-icon.svg`, `CrewletIcon`), not a second copy, and takes the same `size` and `muted` as any other vendor.
 
