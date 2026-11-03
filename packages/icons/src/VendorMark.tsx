@@ -9,8 +9,8 @@
  * from a mark, and a mark appears only beside the app's own name, so the rule
  * holds everywhere else.
  *
- * GitHub's, Notion's and OpenCode's marks are monochrome by design, so they
- * take the current text colour and read on either theme. That is each
+ * GitHub's, Notion's, OpenCode's and Expo's marks are monochrome by design, so
+ * they take the current text colour and read on either theme. That is each
  * vendor's own instruction rather than an exemption from the rule above: each
  * publishes one mark, dark on a light ground and light on a dark one, and a
  * fixed hex would be wrong in one theme whichever one was picked.
@@ -56,7 +56,10 @@
  * Spark), unchanged but for the file's size attributes. OpenCode's is the
  * square logo from its own brand page (opencode.ai/brand,
  * opencode-logo-light-square.svg), its no-op clip and mask removed and its
- * colours taken from the text as above.
+ * colours taken from the text as above. Expo's is the mark from its own logo
+ * pack (github.com/expo/logos, svg/logo-type-a.svg, which expo.dev/brand
+ * links), its path unchanged, its size attributes dropped and its black taken
+ * from the text, as Expo's own site and docs draw it.
  * Using a mark to name the app it belongs to is nominative use; TRADEMARKS.md
  * says what that does and does not allow.
  */
@@ -78,6 +81,7 @@ export const VENDORS = [
   'crewlet',
   'datadog',
   'discord',
+  'expo',
   'figma',
   'github',
   'gitlab',
@@ -116,6 +120,7 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   crewlet: CrewletIcon,
   datadog: marks.Datadog,
   discord: marks.Discord,
+  expo: marks.Expo,
   figma: marks.Figma,
   github: marks.Github,
   gitlab: marks.Gitlab,
