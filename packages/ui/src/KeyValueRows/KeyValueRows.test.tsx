@@ -181,6 +181,8 @@ test('secret values hide what is typed and are never offered a saved password; k
   const value = screen.getByLabelText('Value for Authorization');
   expect(value.getAttribute('type')).toBe('password');
   expect(value.getAttribute('autocomplete')).toBe('new-password');
+  expect(value.hasAttribute('data-1p-ignore')).toBe(true);
+  expect(value.getAttribute('data-lpignore')).toBe('true');
   const key = screen.getByRole('textbox', { name: 'Header 1' });
   expect(key.getAttribute('spellcheck')).toBe('false');
   expect(key.getAttribute('autocomplete')).toBe('off');

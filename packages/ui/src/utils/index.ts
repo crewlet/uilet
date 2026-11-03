@@ -1,4 +1,5 @@
 export { cx } from './cx.js';
+export { SECRET_INPUT_PROPS } from './secretInput.js';
 export { attachRef, composeRefs, useComposedRef } from './composedRef.js';
 export { tokenMs } from './tokenMs.js';
 export { useClipboard, writeClipboard } from './useClipboard.js';

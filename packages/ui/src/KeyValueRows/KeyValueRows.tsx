@@ -258,9 +258,9 @@ export function KeyValueRows<T extends KeyValueRow = KeyValueRow>(props: KeyValu
                         error={field.invalid}
                         type={secret ? 'password' : 'text'}
                         // A saved password offered into a header's value is a
-                        // credential sent to a third party; "new-password" is
-                        // the one value every browser reads as "never fill".
-                        autoComplete={secret ? 'new-password' : 'off'}
+                        // credential sent to a third party, so a secret names no
+                        // autocomplete and Input refuses saved logins.
+                        autoComplete={secret ? undefined : 'off'}
                         spellCheck={false}
                         value={row.value}
                         placeholder={placeholderFor(row)}
