@@ -14,17 +14,31 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
+import { CloudGlyph } from '../dist/glyphs.js';
 import { CrewletIcon, VENDORS, VendorMark } from '../dist/index.js';
 import { extent, markPaths } from '../scripts/mark.mjs';
 import { PACKAGE, attribute, render } from './support.mjs';
 
 describe('the vendor list', () => {
-  it('is exactly the drawings the package carries, and Crewlet', async () => {
+  it('is exactly the drawings the package carries, Crewlet, and AWS', async () => {
     const files = (await readdir(resolve(PACKAGE, 'svg/vendor')))
       .filter((file) => file.endsWith('.svg'))
       .map((file) => file.slice(0, -'.svg'.length))
       .sort();
-    assert.deepEqual(VENDORS.filter((vendor) => vendor !== 'crewlet').sort(), files);
+    assert.deepEqual(VENDORS.filter((vendor) => vendor !== 'crewlet' && vendor !== 'aws').sort(), files);
+  });
+
+  it("draws AWS as the cloud glyph in the text colour, and nothing of AWS's own", () => {
+    // AWS allows a third party a plain-text reference only, so the tile draws
+    // the glyph set's generic cloud beside the name: the glyph's own paths, a
+    // stroke in currentColor, and no colour or file of AWS's.
+    const paths = (markup) => [...markup.matchAll(/\sd="([^"]+)"/g)].map((match) => match[1]);
+    const mark = render(VendorMark, { vendor: 'aws' });
+    assert.deepEqual(paths(mark), paths(render(CloudGlyph, {})));
+    assert.equal(attribute(mark, 'stroke'), 'currentColor');
+    assert.equal(attribute(mark, 'fill'), 'none');
+    assert.doesNotMatch(mark, /(fill|stroke)="#/);
+    assert.match(attribute(mark, 'class') ?? '', /(^| )crewlet-vendor-mark--aws( |$)/);
   });
 
   it("draws Crewlet's own services with the brand mark, never a second copy of it", () => {
