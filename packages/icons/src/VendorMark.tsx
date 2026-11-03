@@ -26,6 +26,11 @@
  * page offers the glyph in white for a dark ground, so the dark themes draw it
  * in the current text colour, by the same rule as Mattermost's.
  *
+ * Scaleway's purple is the same case again: its mark on a light ground, and
+ * under 2:1 on a dark one. Scaleway draws the same mark in white on a dark
+ * ground (the logo in its CLI's documentation), so the dark themes draw it in
+ * the current text colour too.
+ *
  * Datadog draws its own mark as a violet tile with the dog knocked OUT of it,
  * so the dog is a hole rather than a shape and needs something opaque behind
  * it: the white plate is the tile itself, corner for corner off the violet
@@ -48,9 +53,10 @@
  *
  * The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram and Microsoft
  * Teams drawings are Simple Icons' renderings (CC0 1.0), and so are the
- * Cloudflare, Linear, PostgreSQL, Sentry and Stripe drawings, taken from
- * simple-icons 16.35.0 (its icons/<slug>.svg, path unchanged) in the hex that
- * release records for each brand. Claude's is the Claude Spark in Clay, from
+ * Cloudflare, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings, taken
+ * from simple-icons 16.35.0 (its icons/<slug>.svg, path unchanged) in the hex
+ * that release records for each brand. Scaleway's is its purple, #4F0599,
+ * which that release sources to Scaleway's own design system. Claude's is the Claude Spark in Clay, from
  * Anthropic's own press kit
  * (anthropic.com/press-kit, "Anthropic media resources", Claude logos, 3 Claude
  * Spark), unchanged but for the file's size attributes. OpenCode's is the
@@ -91,6 +97,7 @@ export const VENDORS = [
   'notion',
   'opencode',
   'postgresql',
+  'scaleway',
   'sentry',
   'slack',
   'stripe',
@@ -130,6 +137,7 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   notion: marks.Notion,
   opencode: marks.Opencode,
   postgresql: marks.Postgresql,
+  scaleway: marks.Scaleway,
   sentry: marks.Sentry,
   slack: marks.Slack,
   stripe: marks.Stripe,
