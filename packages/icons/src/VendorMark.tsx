@@ -54,10 +54,14 @@
  *
  * The Mattermost, Datadog, Notion, Discord, ClickUp, Telegram and Microsoft
  * Teams drawings are Simple Icons' renderings (CC0 1.0), and so are the
- * Cloudflare, Linear, PostgreSQL, Scaleway, Sentry and Stripe drawings, taken
- * from simple-icons 16.35.0 (its icons/<slug>.svg, path unchanged) in the hex
- * that release records for each brand. Scaleway's is its purple, #4F0599,
- * which that release sources to Scaleway's own design system. Claude's is the Claude Spark in Clay, from
+ * Cloudflare, Google Cloud, Linear, PostgreSQL, Scaleway, Sentry and Stripe
+ * drawings, taken from simple-icons 16.35.0 (its icons/<slug>.svg, path
+ * unchanged) in the hex that release records for each brand. Scaleway's is its
+ * purple, #4F0599, which that release sources to Scaleway's own design system.
+ * Google Cloud's (icons/googlecloud.svg) is Google Blue, #4285F4, which that
+ * release sources to cloud.google.com: the cloud Google draws in four colours,
+ * in its one blue. Google's brand terms allow a product icon only beside the
+ * product's name, never alone, which is how every mark here is drawn. Claude's is the Claude Spark in Clay, from
  * Anthropic's own press kit
  * (anthropic.com/press-kit, "Anthropic media resources", Claude logos, 3 Claude
  * Spark), unchanged but for the file's size attributes. OpenCode's is the
@@ -99,6 +103,7 @@ export const VENDORS = [
   'figma',
   'github',
   'gitlab',
+  'google-cloud',
   'linear',
   'mattermost',
   'microsoft-teams',
@@ -140,6 +145,7 @@ const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   figma: marks.Figma,
   github: marks.Github,
   gitlab: marks.Gitlab,
+  'google-cloud': marks.GoogleCloud,
   linear: marks.Linear,
   mattermost: marks.Mattermost,
   'microsoft-teams': marks.MicrosoftTeams,
