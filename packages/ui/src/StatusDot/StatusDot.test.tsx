@@ -384,6 +384,31 @@ describe('a dot with its word', () => {
     expect(line.textContent).toBe(' Reviewing !231');
   });
 
+  test('a wrapped word runs to every line it needs, the dot on its first; an unwrapped one is cut', () => {
+    remove = installSheets('StatusDot/StatusDot.css');
+    const sentence =
+      'This provisioner token contains 2 spaces (characters 4 and 6). A provisioner token is one unbroken line.';
+    const { container } = render(
+      <>
+        <StatusDot tone="danger" wrap className="verdict">
+          {sentence}
+        </StatusDot>
+        <StatusDot tone="danger">{sentence}</StatusDot>
+      </>,
+    );
+    const [wrapped, cut] = [...container.children] as HTMLElement[];
+    expect(wrapped!.className).toBe('crewlet-status crewlet-status--wrap verdict');
+    expect(cut!.className).toBe('crewlet-status');
+    const label = (line: HTMLElement) => getComputedStyle(line.querySelector('.crewlet-status__label')!);
+    expect(label(wrapped!).whiteSpace).toBe('normal');
+    expect(label(wrapped!).textOverflow).toBe('clip');
+    expect(label(cut!).whiteSpace).toBe('nowrap');
+    expect(label(cut!).textOverflow).toBe('ellipsis');
+    expect(getComputedStyle(wrapped!).alignItems).toBe('flex-start');
+    // CENTRED ON THE FIRST LINE by the dot's own size, never a second literal of it.
+    expect(code).toMatch(/\.crewlet-status--wrap > \.crewlet-status-dot\s*\{[^}]*calc\(\(1lh - var\(--crewlet-status-dot-size\)\) \/ 2\)/);
+  });
+
   test('without a word it is the bare dot it always was, the class on the dot', () => {
     const { container } = render(<StatusDot tone="warning" className="mine" />);
     expect(container.firstElementChild!.className).toBe('crewlet-status-dot crewlet-status-dot--warning mine');

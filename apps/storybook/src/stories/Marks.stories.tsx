@@ -119,6 +119,26 @@ export const StatusDots: Story = {
 };
 
 /**
+ * A status whose word is a sentence, such as a check's verdict under a field,
+ * wraps to every line it needs with the dot centred on the first, where a
+ * one-line status would cut the sentence short of its remedy.
+ */
+export const WrappedStatus: Story = {
+  render: () => (
+    <div style={{ ...page, maxWidth: 360 }}>
+      <StatusDot tone="danger" wrap>
+        This provisioner token contains 2 spaces (characters 4 and 6). A provisioner token is one unbroken line, so
+        copy it again or remove them.
+      </StatusDot>
+      <StatusDot tone="success" wrap>
+        Works. The token is active and reads 3 zones in the account. The Configure level is unavailable until the
+        provisioner token holds Zone Settings: Edit and Response Compression: Edit.
+      </StatusDot>
+    </div>
+  ),
+};
+
+/**
  * An absent number is a marked absence, never a zero: a cost nobody measured
  * and a cost of nothing are different facts, and a table that draws both as 0
  * has thrown the difference away.

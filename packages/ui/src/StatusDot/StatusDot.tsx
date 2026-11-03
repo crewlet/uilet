@@ -27,6 +27,12 @@ export interface StatusDotProps {
    * `className` goes on that line. The word is read; the dot still is not.
    */
   children?: ReactNode;
+  /**
+   * A word that is a sentence, such as a check's verdict: it wraps to as many
+   * lines as it takes, with the dot centred on its first line. Without it the
+   * status is one line, and a word longer than its room is cut with an ellipsis.
+   */
+  wrap?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -50,7 +56,7 @@ export interface StatusDotProps {
  * The size is the design's, the same at every density, and a dot drawn at
  * another size beside the kit's own reads as another mark.
  */
-export function StatusDot({ tone = 'neutral', pulse = false, children, className }: StatusDotProps) {
+export function StatusDot({ tone = 'neutral', pulse = false, children, wrap = false, className }: StatusDotProps) {
   const worded = children !== undefined && children !== null && children !== false && children !== '';
   const dot = (
     <span
@@ -69,7 +75,7 @@ export function StatusDot({ tone = 'neutral', pulse = false, children, className
    * dot's neighbour run into nothing.
    */
   return (
-    <span className={cx('crewlet-status', className)}>
+    <span className={cx('crewlet-status', wrap && 'crewlet-status--wrap', className)}>
       {dot}{' '}
       <span className="crewlet-status__label">{children}</span>
     </span>
