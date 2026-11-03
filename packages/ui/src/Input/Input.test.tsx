@@ -92,8 +92,30 @@ test('a password field refuses saved logins unless it names its own autocomplete
     <>
       <Input aria-label="Token" type="password" />
       <Input aria-label="Password" type="password" autoComplete="current-password" />
-      <Combobox aria-label="Key" label="Secrets" type="password" value="" onValueChange={() => {}} options={[]} />
-      <Combobox aria-label="Name" label="Secrets" value="" onValueChange={() => {}} options={[]} />
+      {/* The popup variant, with the props a ValueField's secret passes it. */}
+      <Combobox
+        aria-label="Key"
+        label="Secrets"
+        type="password"
+        mono
+        tabCommits
+        value=""
+        options={[]}
+        open={false}
+        onOpenChange={() => {}}
+        onValueChange={() => {}}
+      />
+      <Combobox
+        aria-label="Name"
+        label="Secrets"
+        mono
+        tabCommits
+        value=""
+        options={[]}
+        open={false}
+        onOpenChange={() => {}}
+        onValueChange={() => {}}
+      />
     </>,
   );
   const token = screen.getByLabelText('Token');
