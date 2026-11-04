@@ -52,6 +52,38 @@ export const ALongURL: Story = {
 };
 
 /**
+ * A LONG REFERENCE AT A PHONE'S WIDTH, in a frame as wide as a 390px screen's
+ * dialog. `${` and `}` stay with the name, and only the name breaks, where
+ * the chip does not fit on a line of its own. The short reference below it
+ * fits a line, so it moves to the next line whole.
+ */
+export const ALongReferenceAtAPhonesWidth: Story = {
+  render: () => (
+    <div
+      style={{
+        boxSizing: 'border-box',
+        width: 390,
+        padding: 'var(--spacing-4)',
+        border: '1px solid var(--color-border-default)',
+        borderRadius: 'var(--radius-lg)',
+        display: 'grid',
+        gap: 'var(--spacing-3)',
+      }}
+    >
+      <Text as="p">
+        Seal the new key as{' '}
+        <InlineCode variant="reference">{'${GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY_FOR_THE_RELEASE_REVIEWER}'}</InlineCode>, and
+        clear the one it replaces.
+      </Text>
+      <Text as="p">
+        The company document stores a pointer named <InlineCode variant="reference">{'${SLACK_BOT_TOKEN}'}</InlineCode>{' '}
+        and the sealed store holds what it points at.
+      </Text>
+    </div>
+  ),
+};
+
+/**
  * A short token a reader reads as one, a cron expression or an event type,
  * takes `whole`: it moves to the next line intact rather than splitting.
  */

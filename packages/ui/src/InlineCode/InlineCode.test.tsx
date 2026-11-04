@@ -7,9 +7,23 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { InlineCode } from './index.js';
 
-afterEach(cleanup);
+let uninstall: (() => void) | null = null;
+
+afterEach(() => {
+  cleanup();
+  uninstall?.();
+  uninstall = null;
+});
+
+/** The chip's text, run by run, with each held run marked. */
+function runs(code: Element): string[] {
+  return [...code.childNodes].map((node) =>
+    node instanceof Element && node.classList.contains('crewlet-inline-code__end') ? `[${node.textContent}]` : (node.textContent ?? ''),
+  );
+}
 
 test('it is a code element, so a reader is told it is one', () => {
   render(<InlineCode>store.driver</InlineCode>);
@@ -68,4 +82,46 @@ test('a chip inside a message takes its ink and keeps its own ground', () => {
   expect(rule).toContain('color: inherit');
   expect(rule).not.toMatch(/background\s*:/);
   expect(rule).not.toMatch(/padding\s*:/);
+});
+
+test('a reference holds its braces to the name and lets the name break', () => {
+  // Held whole, a long name ran past a dialog at a phone's width. Held by its
+  // ends, `${` and `}` never stand on a line of their own, and the name between
+  // them offers no break, so a chip that fits a line still moves there whole.
+  uninstall = installSheets('InlineCode/InlineCode.css');
+  const { container } = render(<InlineCode variant="reference">{'${GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY}'}</InlineCode>);
+  const code = container.querySelector('code')!;
+  expect(runs(code)).toEqual(['[${G]', 'OOGLE_CLOUD_SERVICE_ACCOUNT_KE', '[Y}]']);
+  // One token to a reader: copied or read, it is the name exactly.
+  expect(code.textContent).toBe('${GOOGLE_CLOUD_SERVICE_ACCOUNT_KEY}');
+  expect(getComputedStyle(code).whiteSpace).not.toBe('nowrap');
+  expect(getComputedStyle(code).overflowWrap).toBe('anywhere');
+  for (const end of code.querySelectorAll('.crewlet-inline-code__end')) {
+    expect(getComputedStyle(end).whiteSpace).toBe('nowrap');
+  }
+});
+
+test('a reference written in pieces is held the same way', () => {
+  const { container } = render(
+    <InlineCode variant="reference">
+      ${'{'}SLACK_BOT_TOKEN{'}'}
+    </InlineCode>,
+  );
+  expect(runs(container.querySelector('code')!)).toEqual(['[${S]', 'LACK_BOT_TOKE', '[N}]']);
+});
+
+test('a one-character name is held whole', () => {
+  const { container } = render(<InlineCode variant="reference">{'${A}'}</InlineCode>);
+  expect(runs(container.querySelector('code')!)).toEqual(['[${A}]']);
+});
+
+test('only a reference shaped ${NAME} is cut, and only in the reference variant', () => {
+  const bare = render(<InlineCode variant="reference">SLACK_BOT_TOKEN</InlineCode>);
+  expect(runs(bare.container.querySelector('code')!)).toEqual(['SLACK_BOT_TOKEN']);
+  bare.unmount();
+  const empty = render(<InlineCode variant="reference">{'${}'}</InlineCode>);
+  expect(runs(empty.container.querySelector('code')!)).toEqual(['${}']);
+  empty.unmount();
+  const plain = render(<InlineCode>{'${SLACK_BOT_TOKEN}'}</InlineCode>);
+  expect(runs(plain.container.querySelector('code')!)).toEqual(['${SLACK_BOT_TOKEN}']);
 });
