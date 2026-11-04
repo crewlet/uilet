@@ -119,6 +119,54 @@
   flex-direction: column;
   gap: var(--spacing-2);
   min-width: 0;
+  /* A long handle or path breaks inside the column rather than running past
+     the ledger, which at a phone's width is past the dialog holding it. */
+  overflow-wrap: anywhere;
+}
+
+/*
+ * COMPACT: a dialog's handful of short sentences rather than a run's blocks.
+ * The pad between steps still beats the gap inside one, so a step's note
+ * stays with its own step.
+ */
+.crewlet-timeline--compact .crewlet-timeline__item {
+  padding-block: var(--spacing-1);
+}
+
+.crewlet-timeline--compact .crewlet-timeline__body {
+  gap: var(--spacing-1);
+}
+
+/*
+ * A HUE: whose steps these are, in the colour their avatar wears. Each hue
+ * pairs its fill with its own ink, which the palette gate measures as a pair.
+ */
+.crewlet-timeline--hue-purple { --crewlet-timeline-hue-fill: var(--color-node-purple-fill); --crewlet-timeline-hue-line: var(--color-node-purple-line); --crewlet-timeline-hue-ink: var(--color-node-purple-ink); }
+.crewlet-timeline--hue-cyan { --crewlet-timeline-hue-fill: var(--color-node-cyan-fill); --crewlet-timeline-hue-line: var(--color-node-cyan-line); --crewlet-timeline-hue-ink: var(--color-node-cyan-ink); }
+.crewlet-timeline--hue-green { --crewlet-timeline-hue-fill: var(--color-node-green-fill); --crewlet-timeline-hue-line: var(--color-node-green-line); --crewlet-timeline-hue-ink: var(--color-node-green-ink); }
+.crewlet-timeline--hue-amber { --crewlet-timeline-hue-fill: var(--color-node-amber-fill); --crewlet-timeline-hue-line: var(--color-node-amber-line); --crewlet-timeline-hue-ink: var(--color-node-amber-ink); }
+.crewlet-timeline--hue-rose { --crewlet-timeline-hue-fill: var(--color-node-rose-fill); --crewlet-timeline-hue-line: var(--color-node-rose-line); --crewlet-timeline-hue-ink: var(--color-node-rose-ink); }
+.crewlet-timeline--hue-blue { --crewlet-timeline-hue-fill: var(--color-node-blue-fill); --crewlet-timeline-hue-line: var(--color-node-blue-line); --crewlet-timeline-hue-ink: var(--color-node-blue-ink); }
+
+/*
+ * ONLY A DEFAULT STEP TAKES THE HUE. A failed or destructive step and the
+ * step in flight keep their own node, so the one step a reader scans for
+ * still stands out among an agent's others.
+ */
+.crewlet-timeline--hued .crewlet-timeline__item--default .crewlet-timeline__node {
+  border-color: var(--crewlet-timeline-hue-line);
+  background: var(--crewlet-timeline-hue-fill);
+  color: var(--crewlet-timeline-hue-ink);
+}
+
+.crewlet-timeline--hued .crewlet-timeline__item--default .crewlet-timeline__rail::after {
+  background: var(--crewlet-timeline-hue-line);
+}
+
+/* In a hued ledger a danger step's rail is drawn in its node's line too, so a
+   step that takes access away is marked along its whole height. */
+.crewlet-timeline--hued .crewlet-timeline__item--danger .crewlet-timeline__rail::after {
+  background: var(--color-feedback-danger-line);
 }
 
 /*

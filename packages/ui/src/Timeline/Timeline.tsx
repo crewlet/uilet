@@ -8,15 +8,23 @@ import {
   type ReactNode,
 } from 'react';
 import { cx } from '../utils/cx.js';
+import type { NodeHue } from '../utils/nodeHue.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 export type TimelineItemState =
   /** Done, or simply past. */
   | 'default'
-  /** This step failed. */
+  /** This step failed, or, in a plan still to run, takes something away. */
   | 'danger'
   /** This step is where the work is now. */
   | 'active';
+
+/** How much room each step takes. */
+export type TimelineDensity =
+  /** A run's ledger of blocks, a step's prose and its tool calls under it. The default. */
+  | 'comfortable'
+  /** A handful of short sentences, the steps a dialog lists before somebody confirms them. */
+  | 'compact';
 
 /** The word before an item's number, read but not drawn: "Round 3". */
 const TimelineContext = createContext<string>('Item');
@@ -41,6 +49,15 @@ export interface TimelineProps extends HTMLAttributes<HTMLOListElement> {
    * separates adjacent blocks without claiming a meaning.
    */
   alternating?: boolean | undefined;
+  /**
+   * The hue of whoever the steps belong to, on each default step's node and
+   * rail: an agent's own colour, as its `Avatar` wears it. A danger or an
+   * active step keeps its own colour, and the steps' words still say what
+   * each one does, so the hue is identity and never state.
+   */
+  hue?: NodeHue | undefined;
+  /** `compact` tightens each step for a dialog or a card. */
+  density?: TimelineDensity | undefined;
 }
 
 /**
@@ -55,6 +72,8 @@ export interface TimelineProps extends HTMLAttributes<HTMLOListElement> {
 export function Timeline({
   itemLabel = 'Item',
   alternating = false,
+  hue,
+  density = 'comfortable',
   className,
   children,
   ...rest
@@ -64,7 +83,14 @@ export function Timeline({
     <TimelineContext.Provider value={itemLabel}>
       <ol
         {...rest}
-        className={cx('crewlet-timeline', alternating && 'crewlet-timeline--alternating', className)}
+        className={cx(
+          'crewlet-timeline',
+          alternating && 'crewlet-timeline--alternating',
+          hue !== undefined && 'crewlet-timeline--hued',
+          hue !== undefined && `crewlet-timeline--hue-${hue}`,
+          density === 'compact' && 'crewlet-timeline--compact',
+          className,
+        )}
       >
         {items.map((child, index) => (
           <TimelinePositionContext.Provider key={child.key ?? index} value={index + 1}>
