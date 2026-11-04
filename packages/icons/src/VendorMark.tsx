@@ -27,6 +27,10 @@
  * page offers the glyph in white for a dark ground, so the dark themes draw it
  * in the current text colour, by the same rule as Mattermost's.
  *
+ * AWS's wordmark is the same case for one part of the mark: squid ink on a
+ * light ground, under 2:1 on a dark one, and white in the logo AWS draws for a
+ * dark ground. Only the wordmark takes the root's fill, so the smile stays.
+ *
  * Scaleway's purple is the same case again: its mark on a light ground, and
  * under 2:1 on a dark one. Scaleway draws the same mark in white on a dark
  * ground (the logo in its CLI's documentation), so the dark themes draw it in
@@ -80,12 +84,10 @@
  * Using a mark to name the app it belongs to is nominative use; TRADEMARKS.md
  * says what that does and does not allow.
  *
- * AWS HAS NO MARK HERE. AWS's trademark guidelines allow a third party a
- * plain-text reference only, with no logo (Section 13), so its tile draws the
- * glyph set's own cloud (CloudGlyph, Lucide's, under ISC) beside the name: a
- * generic drawing that claims nothing about AWS. It is the glyph component
- * itself rather than a copy in svg/vendor, so it draws as every glyph does,
- * a stroke in the current text colour on either theme.
+ * AWS's is its logo, the wordmark over the smile, as Amazon drew it (Wikimedia
+ * Commons, File:Amazon_Web_Services_Logo.svg, path data minified). The
+ * wordmark is squid ink, #232F3E, and takes the text colour on a dark ground,
+ * as AWS reverses it; the smile keeps its #FF9900 in both themes.
  */
 
 import type { ComponentType, SVGProps } from 'react';
@@ -94,7 +96,6 @@ import './VendorMark.css';
 import type { GlyphSize } from './Glyph.js';
 import { cssLength } from './Glyph.js';
 import CrewletIcon from './generated/CrewletIcon.js';
-import CloudGlyph from './generated/glyphs/CloudGlyph.js';
 import * as marks from './generated/vendors/index.js';
 
 /** The apps this package draws on a catalogue tile, Crewlet's own services among them. */
@@ -143,7 +144,7 @@ export interface VendorMarkProps extends Omit<SVGProps<SVGSVGElement>, 'title'> 
 
 const drawings: Record<Vendor, ComponentType<SVGProps<SVGSVGElement>>> = {
   atlassian: marks.Atlassian,
-  aws: CloudGlyph,
+  aws: marks.Aws,
   claude: marks.Claude,
   clickup: marks.Clickup,
   cloudflare: marks.Cloudflare,

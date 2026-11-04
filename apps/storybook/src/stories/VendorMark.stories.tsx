@@ -8,8 +8,8 @@ import { themeScope } from '../themeScope';
  * system draws somebody else's colours.
  *
  * Both themes side by side, because most of these are a fixed hue that has to
- * hold on either ground, Mattermost's, Scaleway's and Sentry's take the text
- * colour on the dark ground, as each vendor publishes them for one, and
+ * hold on either ground, Mattermost's, Scaleway's, Sentry's and AWS's wordmark
+ * take the text colour on a dark document, as each vendor publishes them, and
  * GitHub's, Notion's, OpenCode's, Expo's and DigitalOcean's are the current
  * text colour and invert with the theme.
  * The muted state is the answer to "available, not connected", and it drains
@@ -155,4 +155,63 @@ export const CodingCLIs: StoryObj = {
       ))}
     </div>
   ),
+};
+
+/** The sizes the engine dashboard draws a vendor mark at, smallest first. */
+const DASHBOARD_SIZES = [14, 16, 20, 28, 36] as const;
+
+/** The other cloud providers, to hold AWS's wide logo against in the tile well. */
+const CLOUDS = ['aws', 'google-cloud', 'cloudflare', 'digitalocean', 'scaleway'] as const;
+
+/*
+ * AWS's wordmark reverses with the DOCUMENT's theme, as Mattermost's does, so
+ * these stories pin the Mode global rather than scoping a panel.
+ */
+function AwsSheet() {
+  return (
+    <div style={{ padding: 'var(--spacing-5)', display: 'grid', gap: 'var(--spacing-5)' }}>
+      <div style={panel}>
+        <p style={caption}>beside its name, at every size the dashboard draws</p>
+        <div style={row}>
+          {DASHBOARD_SIZES.map((size) => (
+            <span key={size} style={label}>
+              <VendorMark vendor="aws" size={size} />
+              AWS
+              <span style={caption}>{size}px</span>
+            </span>
+          ))}
+        </div>
+        <p style={caption}>20px in a 48px box, beside the other clouds</p>
+        <div style={row}>
+          {CLOUDS.map((vendor) => (
+            <span key={vendor} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--spacing-1)' }}>
+              <span style={tile}>
+                <VendorMark vendor={vendor} size={20} />
+              </span>
+              <span style={caption}>{vendor}</span>
+            </span>
+          ))}
+        </div>
+        <p style={caption}>muted, 20 and 36</p>
+        <div style={row}>
+          <VendorMark vendor="aws" size={20} muted />
+          <VendorMark vendor="aws" size={36} muted />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** AWS's logo on a light document: the wordmark in squid ink, the smile in its orange. */
+export const AwsLight: StoryObj = {
+  name: 'AWS, light',
+  globals: { theme: 'light' },
+  render: () => <AwsSheet />,
+};
+
+/** AWS's logo on a dark document: the wordmark in the text colour, as AWS reverses it. */
+export const AwsDark: StoryObj = {
+  name: 'AWS, dark',
+  globals: { theme: 'dark' },
+  render: () => <AwsSheet />,
 };

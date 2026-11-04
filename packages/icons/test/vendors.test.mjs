@@ -14,31 +14,30 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { CloudGlyph } from '../dist/glyphs.js';
 import { CrewletIcon, VENDORS, VendorMark } from '../dist/index.js';
 import { extent, markPaths } from '../scripts/mark.mjs';
 import { PACKAGE, attribute, render } from './support.mjs';
 
 describe('the vendor list', () => {
-  it('is exactly the drawings the package carries, Crewlet, and AWS', async () => {
+  it('is exactly the drawings the package carries, and Crewlet', async () => {
     const files = (await readdir(resolve(PACKAGE, 'svg/vendor')))
       .filter((file) => file.endsWith('.svg'))
       .map((file) => file.slice(0, -'.svg'.length))
       .sort();
-    assert.deepEqual(VENDORS.filter((vendor) => vendor !== 'crewlet' && vendor !== 'aws').sort(), files);
+    assert.deepEqual(VENDORS.filter((vendor) => vendor !== 'crewlet').sort(), files);
   });
 
-  it("draws AWS as the cloud glyph in the text colour, and nothing of AWS's own", () => {
-    // AWS allows a third party a plain-text reference only, so the tile draws
-    // the glyph set's generic cloud beside the name: the glyph's own paths, a
-    // stroke in currentColor, and no colour or file of AWS's.
-    const paths = (markup) => [...markup.matchAll(/\sd="([^"]+)"/g)].map((match) => match[1]);
+  it("draws AWS's wordmark in the mark's own fill and its smile in AWS orange", () => {
+    // The wordmark inherits the root's squid ink, so the dark rule can reverse
+    // it; the smile names its own orange, so no theme can move it.
     const mark = render(VendorMark, { vendor: 'aws' });
-    assert.deepEqual(paths(mark), paths(render(CloudGlyph, {})));
-    assert.equal(attribute(mark, 'stroke'), 'currentColor');
-    assert.equal(attribute(mark, 'fill'), 'none');
-    assert.doesNotMatch(mark, /(fill|stroke)="#/);
-    assert.match(attribute(mark, 'class') ?? '', /(^| )crewlet-vendor-mark--aws( |$)/);
+    const paths = [...mark.matchAll(/<path\b[^>]*>/g)].map((match) => match[0]);
+    assert.equal(attribute(mark, 'fill'), '#232F3E');
+    assert.equal(attribute(mark, 'viewBox'), '0 0 304 182');
+    assert.equal(paths.length, 3);
+    assert.equal(attribute(paths[0], 'fill'), null, 'the wordmark carries a fill of its own');
+    for (const smile of paths.slice(1)) assert.match(attribute(smile, 'fill') ?? '', /^#(F90|FF9900)$/i);
+    assert.doesNotMatch(mark, /\sstroke=/);
   });
 
   it("draws Crewlet's own services with the brand mark, never a second copy of it", () => {
@@ -122,11 +121,11 @@ describe('a vendor mark', () => {
     }
   });
 
-  it('draws Mattermost, Scaleway and Sentry reversed on the dark themes, as each publishes its mark for a dark ground', async () => {
-    // Mattermost's blue under 3:1, and Scaleway's purple and Sentry's violet
-    // under 2:1, on the dark ground; reversed, each is the text's ink. The dark themes are chosen as
-    // the tokens choose them: dark is the default, unless the document or the
-    // system asks for light.
+  it("draws Mattermost, Scaleway, Sentry and AWS's wordmark reversed on the dark themes, as each publishes its mark for a dark ground", async () => {
+    // Mattermost's blue under 3:1, and Scaleway's purple, Sentry's violet and
+    // AWS's squid ink under 2:1, on the dark ground; reversed, each is the
+    // text's ink. The dark themes are chosen as the tokens choose them: dark
+    // is the default, unless the document or the system asks for light.
     const sheet = await readFile(resolve(PACKAGE, 'src/VendorMark.css'), 'utf8');
     const rule = (selectors) => {
       const start = sheet.indexOf(selectors[0]);
@@ -135,18 +134,19 @@ describe('a vendor mark', () => {
       for (const selector of selectors) assert.ok(block.includes(selector), `${selector} is not in the rule`);
       assert.match(block, /\{\s*fill: currentColor;/);
     };
-    for (const vendor of ['mattermost', 'scaleway', 'sentry']) {
+    for (const vendor of ['aws', 'mattermost', 'scaleway', 'sentry']) {
       rule([`:root[data-theme='dark'] .crewlet-vendor-mark--${vendor}`]);
     }
     const media = sheet.slice(sheet.indexOf('@media not (prefers-color-scheme: light)'));
     assert.ok(media.length < sheet.length, 'the system-dark rule is missing');
-    for (const vendor of ['mattermost', 'scaleway', 'sentry']) {
+    for (const vendor of ['aws', 'mattermost', 'scaleway', 'sentry']) {
       assert.ok(
         media.slice(0, media.indexOf('}')).includes(`:root:not([data-theme='light']) .crewlet-vendor-mark--${vendor}`),
         `${vendor} is not reversed on a system dark ground`,
       );
     }
     rule([
+      `:root:not([data-theme='light']) .crewlet-vendor-mark--aws`,
       `:root:not([data-theme='light']) .crewlet-vendor-mark--mattermost`,
       `:root:not([data-theme='light']) .crewlet-vendor-mark--scaleway`,
       `:root:not([data-theme='light']) .crewlet-vendor-mark--sentry`,
