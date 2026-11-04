@@ -35,13 +35,16 @@
 }
 
 /*
- * A `${NAME}` pointer. It is one token a reader copies, so it keeps its braces
- * together. THE SAME INK AS ANY OTHER CHIP: a pointer is the name of a sealed
- * entry, and drawn a step quieter than the identifiers around it, it read as
- * decoration rather than as the thing an operator has to type back.
+ * A `${NAME}` pointer. It is one token a reader copies, so `${` and `}` are
+ * held to the name's first and last characters. THE SAME INK AS ANY OTHER
+ * CHIP: drawn a step quieter, it read as decoration rather than as the thing
+ * an operator has to type back.
+ *
+ * THE NAME ITSELF MAY BREAK. Held whole, a long name ran past a dialog at a
+ * phone's width. It offers no break of its own, so the chip still moves to
+ * the next line whole where it fits there, and breaks only where it does not.
  */
-.crewlet-inline-code--reference {
-  overflow-wrap: normal;
+.crewlet-inline-code__end {
   white-space: nowrap;
 }
 

@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react';
+import { Children, type HTMLAttributes, type ReactNode } from 'react';
 import { cx } from '../utils/cx.js';
 
 export type InlineCodeVariant =
@@ -6,8 +6,9 @@ export type InlineCodeVariant =
   | 'default'
   /**
    * A `${NAME}` pointing at a secret or an environment variable. Ligatures are
-   * off everywhere in this component, and this variant also holds the braces
-   * on one line: a reference torn across a line break names nothing.
+   * off everywhere in this component, and this variant holds `${` and `}` to
+   * the name: the chip moves to the next line whole where it fits there, and
+   * breaks inside the name only where it does not fit on a line of its own.
    */
   | 'reference';
 
@@ -36,6 +37,25 @@ export interface InlineCodeProps extends HTMLAttributes<HTMLElement> {
 }
 
 /**
+ * A reference's text in three runs: `${` with the name's first character, the
+ * rest of the name, and its last character with `}`. A name of one character
+ * is one run. Null for anything not shaped `${NAME}`, which is drawn as given.
+ */
+function referenceRuns(children: ReactNode): readonly [string, string, string] | null {
+  const parts = Children.toArray(children);
+  if (!parts.every((part) => typeof part === 'string' || typeof part === 'number')) return null;
+  const text = parts.join('');
+  if (!text.startsWith('${') || !text.endsWith('}')) return null;
+  // Code points, so a character outside the BMP is never cut in half.
+  const name = Array.from(text.slice(2, -1));
+  if (name.length === 0) return null;
+  if (name.length === 1) return [text, '', ''];
+  const first = name[0]!;
+  const last = name[name.length - 1]!;
+  return ['${' + first, name.slice(1, -1).join(''), last + '}'];
+}
+
+/**
  * One identifier inside a sentence.
  *
  * IT WRAPS ANYWHERE, and that is the whole reason it is a component rather
@@ -55,6 +75,7 @@ export function InlineCode({
   children,
   ...rest
 }: InlineCodeProps) {
+  const runs = variant === 'reference' ? referenceRuns(children) : null;
   return (
     <code
       {...rest}
@@ -67,7 +88,15 @@ export function InlineCode({
         className,
       )}
     >
-      {children}
+      {runs === null ? (
+        children
+      ) : (
+        <>
+          <span className="crewlet-inline-code__end">{runs[0]}</span>
+          {runs[1]}
+          {runs[2] === '' ? null : <span className="crewlet-inline-code__end">{runs[2]}</span>}
+        </>
+      )}
     </code>
   );
 }
