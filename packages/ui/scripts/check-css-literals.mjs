@@ -47,10 +47,9 @@
 //     the hover overlay, never both, because both are a background on the same
 //     element and the selected state wins. Drawing the hover on a ::before is
 //     the one way to stack them, and it produces a composite nothing measured.
-//  7. `scrollbar-width` and `scrollbar-color` only inside
-//     `@supports not selector(::-webkit-scrollbar)`, apart from `auto` and a
-//     hidden bar's `none`. Chromium ignores every `::-webkit-scrollbar` rule on
-//     an element that sets either, and draws its native bar instead.
+//  7. `scrollbar-width` and `scrollbar-color` (other than `auto` or `none`)
+//     only inside `@supports not selector(::-webkit-scrollbar)`. Chromium
+//     ignores every `::-webkit-scrollbar` rule on an element that sets either.
 
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
