@@ -1,6 +1,6 @@
 /*
  * AsideLayout: a main column with an aside beside it from 56rem of its own
- * width, and after it below that (AsideLayout.tsx).
+ * width (44rem in a pane), and after it below that (AsideLayout.tsx).
  */
 
 .crewlet-aside-layout {
@@ -32,6 +32,8 @@
    midway: the aside takes the gap's own step under it, where the stack's
    smaller step left it 32px under the main column and 24px over the aside. */
 .crewlet-aside-layout__aside {
+  --crewlet-aside-layout-stick: static;
+
   padding-top: var(--crewlet-aside-layout-gap);
   border-top: 1px solid var(--color-border-default);
 }
@@ -43,7 +45,49 @@
   }
 
   .crewlet-aside-layout__aside {
+    --crewlet-aside-layout-stick: sticky;
+
     padding-top: 0;
     border-top: 0;
   }
+}
+
+/* A PANE (`fit="pane"`) is narrower than a page by the list beside it: it
+   splits sooner, at a narrower aside, one step apart. */
+.crewlet-aside-layout--pane .crewlet-aside-layout__columns {
+  --crewlet-aside-layout-gap: var(--spacing-6);
+}
+
+@container (min-width: 44rem) {
+  .crewlet-aside-layout--pane .crewlet-aside-layout__columns {
+    grid-template-columns: minmax(0, 1fr) var(--crewlet-aside-layout-aside, 16rem);
+    gap: var(--spacing-4);
+  }
+
+  .crewlet-aside-layout--pane .crewlet-aside-layout__aside {
+    --crewlet-aside-layout-stick: sticky;
+
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+/* STICKY (`sticky`): the aside's content as one stack, as tall as itself, so
+   it has the aside's length to stick along. Only a split sets the aside's
+   `--crewlet-aside-layout-stick`, so it sticks beside the main column alone. */
+.crewlet-aside-layout--sticky > .crewlet-aside-layout__columns {
+  align-items: stretch;
+}
+
+.crewlet-aside-layout__stick {
+  position: var(--crewlet-aside-layout-stick);
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+/* ALONE (no aside), the main column is the whole width at every size. */
+.crewlet-aside-layout--alone > .crewlet-aside-layout__columns {
+  grid-template-columns: minmax(0, 1fr);
 }
