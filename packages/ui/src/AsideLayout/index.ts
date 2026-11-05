@@ -1,4 +1,4 @@
 import './AsideLayout.css';
 
-export { AsideLayout } from './AsideLayout.js';
-export type { AsideLayoutProps } from './AsideLayout.js';
+export { ASIDE_LAYOUT_SPLIT_REM, AsideLayout } from './AsideLayout.js';
+export type { AsideLayoutFit, AsideLayoutProps } from './AsideLayout.js';
