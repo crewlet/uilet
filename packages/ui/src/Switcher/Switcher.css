@@ -202,7 +202,14 @@ svg.crewlet-switcher-trigger__chevron {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--spacing-1);
-  scrollbar-width: thin;
+}
+
+/* Thin only where `::-webkit-scrollbar` is not read: set where it is, Chromium
+   would draw its native bar instead of the base sheet's slim one. */
+@supports not selector(::-webkit-scrollbar) {
+  .crewlet-switcher__scroller {
+    scrollbar-width: thin;
+  }
 }
 
 .crewlet-switcher__list {

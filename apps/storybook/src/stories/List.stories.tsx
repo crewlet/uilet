@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Button, List, ListItem, RelativeTime, StatusDot, Text } from '@crewlethq/ui';
+import { Button, Callout, List, ListItem, RelativeTime, StatusDot, Text } from '@crewlethq/ui';
 import { ChevronRightGlyph } from '@crewlethq/icons/glyphs';
 
 const meta: Meta<typeof List> = {
@@ -76,6 +76,29 @@ export const InProse: Story = {
     </div>
   ),
 };
+
+/** Steps in a narrow titled Callout: the numbers stand in its icon column, the words under its title. */
+const hangingMarkers = () => (
+  <div style={{ width: 256 }}>
+    <Callout variant="neutral" title="Setup steps">
+      <List variant="numbered" density="compact" markers="hanging">
+        <ListItem>Create an API key in the provider's console.</ListItem>
+        <ListItem>Grant it read access to the projects the agents work in.</ListItem>
+        <ListItem>Paste the key here and test the connection.</ListItem>
+      </List>
+    </Callout>
+  </div>
+);
+
+/**
+ * HANGING MARKERS (`markers="hanging"`): the list keeps no gutter of its own,
+ * so its numbers stand in the margin before it and its words keep the box's
+ * width. In light.
+ */
+export const HangingMarkersLight: Story = { render: hangingMarkers, globals: { theme: 'light' } };
+
+/** The same hanging markers, in dark. */
+export const HangingMarkersDark: Story = { render: hangingMarkers, globals: { theme: 'dark' } };
 
 /**
  * The four framings. `divided` is the DEFAULT, because it is the list every

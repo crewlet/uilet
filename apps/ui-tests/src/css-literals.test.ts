@@ -1,7 +1,8 @@
 /**
- * The literal check's own suite, for the two rules whose failure is SILENT:
- * a motion whose reduced-motion stop does not win, and a media query nobody
- * read.
+ * The literal check's own suite, for the rules whose failure is SILENT: a
+ * motion whose reduced-motion stop does not win, a media query nobody read,
+ * and a scrollbar property that turns Chromium's slim bar back into its
+ * native one.
  *
  * Both passed for as long as they were wrong. The motion rule asked only that
  * a stylesheet mention `prefers-reduced-motion`, and three components passed
@@ -136,4 +137,35 @@ test('a nested query is read once, however many runs of declarations it holds', 
   });
   expect(status).toBe(1);
   expect(found['nested']).toEqual([expect.stringMatching(/^2: the media query switches at 901px/)]);
+});
+
+const WITHOUT_WEBKIT = '@supports not selector(::-webkit-scrollbar)';
+
+test("a scrollbar's standard properties pass only where ::-webkit-scrollbar is not read", () => {
+  // Chromium ignores every ::-webkit-scrollbar rule on an element that sets
+  // either property, so the base sheet's slim bar gives way to a native one.
+  const passes = check({
+    guarded: `${WITHOUT_WEBKIT} {\n  .a { scrollbar-width: thin; scrollbar-color: var(--color-scrollbar) transparent; }\n}`,
+    'guarded-nested': `.a {\n  overflow: auto;\n  ${WITHOUT_WEBKIT} {\n    scrollbar-width: thin;\n  }\n}`,
+    'guarded-in-parens': `@supports not (selector(::-webkit-scrollbar)) {\n  .a { scrollbar-width: thin; }\n}`,
+    // A hidden bar is hidden in every engine, and `auto` leaves the rules in force.
+    hidden: `.a { scrollbar-width: none; }\n.a::-webkit-scrollbar { display: none; }`,
+    auto: `.a { scrollbar-width: auto; scrollbar-color: auto; }`,
+  });
+  expect(passes.found).toEqual({});
+  expect(passes.status).toBe(0);
+
+  const { status, found } = check({
+    width: `.a { overflow: auto; scrollbar-width: thin; }`,
+    colour: `.a {\n  overflow: auto;\n}\n\n.b {\n  scrollbar-color: var(--color-scrollbar) transparent;\n}`,
+    // Chromium supports this condition, so it reads the rule.
+    'other-condition': `@supports (scrollbar-width: thin) {\n  .a { scrollbar-width: thin; }\n}`,
+    // Under `or`, the rule also reaches a browser that reads ::-webkit-scrollbar.
+    'either-condition': `${WITHOUT_WEBKIT} or (display: grid) {\n  .a { scrollbar-width: thin; }\n}`,
+  });
+  expect(status).toBe(1);
+  const lines = Object.fromEntries(Object.entries(found).map(([file, each]) => [file, each.map((one) => one.split(':')[0])]));
+  expect(lines).toEqual({ width: ['1'], colour: ['5'], 'other-condition': ['2'], 'either-condition': ['2'] });
+  expect(found['colour']![0]).toContain('scrollbar-color is set where Chromium reads ::-webkit-scrollbar');
+  expect(found['width']![0]).toContain(`Set it inside ${WITHOUT_WEBKIT}`);
 });

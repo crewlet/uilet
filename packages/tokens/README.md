@@ -459,6 +459,8 @@ No token is renamed; two values moved to the approved design.
 
 The focus indicator is an **outline**, never a box-shadow alone. Forced-colors mode drops every box-shadow and keeps outlines, so a ring drawn as a shadow disappears for exactly the readers who most need one. `--shadow-focus` is still there for a component that wants a shadow as well, paired with a transparent outline so forced colors substitutes a system colour for it. `--size-focus-ring-inset-offset` is the offset for a ring drawn inside its own box: on a focusable row inside a clipping scroller, where an outset ring is clipped by the scroller and painted over by the next row, and on any control that draws a visible boundary of its own, where a ring standing off the border is two edges with a gap between them. At -2px the ring covers a 1px border, so a focused control shows one edge.
 
+The scrollbar is a 6px track with a 4px thumb in `--color-scrollbar` (`--color-scrollbar-hover` under the pointer) where the browser reads `::-webkit-scrollbar` (Chromium and Safari), and `scrollbar-width: thin` in the same colours where it does not (Firefox, 8px). `scrollbar-width` and `scrollbar-color` are set only in the second case, because Chromium ignores the `::-webkit-scrollbar` rules on an element with either one and draws its native bar. A stylesheet of your own keeps them inside `@supports not selector(::-webkit-scrollbar)` as well (`npx crewlet-css-check` refuses them anywhere else), and a layout that reserves room for the bar reserves 8px, the wider of the two.
+
 The body's height and overflow are deliberately not here. A page that can scroll as a whole moves an application's rail off the top of the window, so the rule that stops it belongs to the shell that owns the rail.
 
 ## Type

@@ -164,15 +164,15 @@ img {
 }
 
 /* Scrollbars belong to the palette. A bright system gutter down the side of a
-   dark page is the most visible way an application admits it is a web page. */
-* {
-  scrollbar-color: var(--color-scrollbar) transparent;
-  scrollbar-width: thin;
-}
+   dark page is the most visible way an application admits it is a web page.
 
+   Chromium and Safari draw the slim bar below: a 6px track with a 4px thumb.
+   Chromium (from 121) ignores these rules on any element with a
+   `scrollbar-width` or `scrollbar-color`, so those two are set further down,
+   only where `::-webkit-scrollbar` is not read. */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -181,7 +181,7 @@ img {
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-scrollbar);
-  border: 3px solid transparent;
+  border: 1px solid transparent;
   background-clip: content-box;
   border-radius: var(--radius-pill);
 }
@@ -193,6 +193,15 @@ img {
 
 ::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* Where `::-webkit-scrollbar` is not read (Firefox): the standard properties,
+   a thin bar in the same colours. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-color: var(--color-scrollbar) transparent;
+    scrollbar-width: thin;
+  }
 }
 
 /* The one place a reduced-motion preference is honoured for the whole

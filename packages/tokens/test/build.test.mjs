@@ -579,6 +579,33 @@ describe('the document baseline', () => {
     assert.match(base, /@media \(prefers-reduced-motion: reduce\)/);
   });
 
+  test('its WebKit scrollbar is a 6px track with a 4px thumb in the scrollbar tokens', () => {
+    const css = base.replace(/\/\*[\s\S]*?\*\//g, '');
+    const body = (selector) => new RegExp(`\\n${selector}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    const track = body('::-webkit-scrollbar');
+    const thumb = body('::-webkit-scrollbar-thumb');
+    const width = Number(/\bwidth: (\d+)px;/.exec(track)?.[1]);
+    const border = Number(/border: (\d+)px solid transparent;/.exec(thumb)?.[1]);
+    assert.equal(width, 6);
+    assert.match(track, /\bheight: 6px;/);
+    // The thumb is what the transparent border leaves of the track.
+    assert.equal(width - 2 * border, 4);
+    assert.match(thumb, /background: var\(--color-scrollbar\);/);
+    assert.match(thumb, /background-clip: content-box;/);
+    assert.match(body('::-webkit-scrollbar-thumb:hover'), /background: var\(--color-scrollbar-hover\);/);
+  });
+
+  test('it sets the standard scrollbar properties only where ::-webkit-scrollbar is not read', () => {
+    // Chromium ignores every ::-webkit-scrollbar rule on an element that sets
+    // either one, and draws its native bar instead of the slim one above.
+    const css = base.replace(/\/\*[\s\S]*?\*\//g, '');
+    const guarded = /@supports not selector\(::-webkit-scrollbar\) \{\s*\*\s*\{([^}]*)\}\s*\}/.exec(css);
+    assert.ok(guarded, 'no rule for the browsers without ::-webkit-scrollbar');
+    assert.match(guarded[1], /scrollbar-width: thin;/);
+    assert.match(guarded[1], /scrollbar-color: var\(--color-scrollbar\) transparent;/);
+    assert.doesNotMatch(css.replace(guarded[0], ''), /scrollbar-(width|color)\s*:/);
+  });
+
   test('it paints the body with the frame, the lowest rung', () => {
     // Whatever an application floats on the body (a sheet, a rail) brings its
     // own ground; the body is the application ground under all of it.
