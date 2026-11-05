@@ -1,8 +1,7 @@
 /**
  * The literal check's own suite, for the rules whose failure is SILENT: a
  * motion whose reduced-motion stop does not win, a media query nobody read,
- * and a scrollbar property that turns Chromium's slim bar back into its
- * native one.
+ * and a scrollbar property that brings back Chromium's native bar.
  *
  * Both passed for as long as they were wrong. The motion rule asked only that
  * a stylesheet mention `prefers-reduced-motion`, and three components passed

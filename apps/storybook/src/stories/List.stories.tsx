@@ -90,11 +90,7 @@ const hangingMarkers = () => (
   </div>
 );
 
-/**
- * HANGING MARKERS (`markers="hanging"`): the list keeps no gutter of its own,
- * so its numbers stand in the margin before it and its words keep the box's
- * width. In light.
- */
+/** HANGING MARKERS (`markers="hanging"`): the numbers stand in the margin, so the words keep the box's width. In light. */
 export const HangingMarkersLight: Story = { render: hangingMarkers, globals: { theme: 'light' } };
 
 /** The same hanging markers, in dark. */
