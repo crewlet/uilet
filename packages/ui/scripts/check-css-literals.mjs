@@ -47,6 +47,10 @@
 //     the hover overlay, never both, because both are a background on the same
 //     element and the selected state wins. Drawing the hover on a ::before is
 //     the one way to stack them, and it produces a composite nothing measured.
+//  7. `scrollbar-width` and `scrollbar-color` only inside
+//     `@supports not selector(::-webkit-scrollbar)`, apart from `auto` and a
+//     hidden bar's `none`. Chromium ignores every `::-webkit-scrollbar` rule on
+//     an element that sets either, and draws its native bar instead.
 
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -75,6 +79,16 @@ const MOTION = new Map([
 
 /** The one query a stop is read inside: exactly this, with nothing else around it. */
 const REDUCE = /^@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)$/;
+
+/** The condition a scrollbar's standard properties are set under (rule 7). */
+const WITHOUT_WEBKIT_SCROLLBAR = /^@supports not \(?\s*selector\(\s*::-webkit-scrollbar\s*\)\s*\)?$/;
+
+/** Whether a declaration switches Chromium off the `::-webkit-scrollbar` rules. */
+function overridesWebkitScrollbar(property, value) {
+  const bare = value.replace(/!\s*important\s*$/i, '').trim().toLowerCase();
+  if (property === 'scrollbar-width') return bare !== 'auto' && bare !== 'none';
+  return property === 'scrollbar-color' && bare !== 'auto';
+}
 
 function declarations(body) {
   const found = [];
@@ -235,8 +249,10 @@ export async function findings(roots, base = packageRoot) {
   for (const file of files) {
     const at = (index) => `${file.where}:${lineOf(file.text, index)}`;
 
-    for (const { selector, body, index, nestedDeclarations } of rules(file.text)) {
+    for (const block of rules(file.text)) {
+      const { selector, body, index, nestedDeclarations } = block;
       const where = at(index);
+      const withoutWebkitScrollbar = conditions(block).some((head) => WITHOUT_WEBKIT_SCROLLBAR.test(head));
 
       // Declarations resumed after a nested block carry their block's head
       // again, and the head was read with the block.
@@ -278,6 +294,11 @@ export async function findings(roots, base = packageRoot) {
         }
         if (property === 'z-index' && /^-?\d+$/.test(bare.trim()) && Math.abs(Number(bare.trim())) > 1) {
           problems.push(`${where}: z-index is a literal (${value.trim()}). Use a --z-index-* token, or the Layer module's own depth`);
+        }
+        if (!withoutWebkitScrollbar && overridesWebkitScrollbar(property, value)) {
+          problems.push(
+            `${where}: ${property} is set where Chromium reads ::-webkit-scrollbar, so it ignores those rules and draws its native bar. Set it inside @supports not selector(::-webkit-scrollbar)`,
+          );
         }
       }
     }

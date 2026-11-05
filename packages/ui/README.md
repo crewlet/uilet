@@ -170,8 +170,11 @@ drawn as a ligature, anything loaded from a host, a theme painted on a body
 class, the decoration step used as text, and a focus rule that turns the
 outline off without putting one back. A second, literal check refuses a colour,
 font size, radius, duration or z-index spelled out where a token belongs, a
-`color-mix()`, a media query off the breakpoint steps and a hover overlay drawn
-on a pseudo element. `npm run lint` in this package runs both over every
+`color-mix()`, a media query off the breakpoint steps, a hover overlay drawn
+on a pseudo element, and a `scrollbar-width` or `scrollbar-color` set outside
+`@supports not selector(::-webkit-scrollbar)`, where Chromium would ignore the
+slim bar `@crewlethq/tokens/css/base` draws and paint its native one (`none`
+and `auto` pass). `npm run lint` in this package runs both over every
 stylesheet in `src`, and `npx crewlet-css-check <folder>` runs both over an
 application's own stylesheets.
 
