@@ -127,6 +127,13 @@
   display: list-item;
 }
 
+/* HANGING MARKERS stand in the margin before the list, so its words line up
+   with the text above rather than one gutter inside it. */
+.crewlet-list--hanging.crewlet-list--bulleted,
+.crewlet-list--hanging.crewlet-list--numbered {
+  padding-inline-start: 0;
+}
+
 .crewlet-list--bulleted .crewlet-list__row,
 .crewlet-list--numbered .crewlet-list__row {
   min-height: 0;

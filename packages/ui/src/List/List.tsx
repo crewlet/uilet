@@ -71,6 +71,14 @@ export interface ListProps extends HTMLAttributes<HTMLElement> {
    * Unset, the words take the row's width, as a feed's do.
    */
   measure?: 'normal' | 'wide' | undefined;
+  /**
+   * Where a `bulleted` or `numbered` list's markers stand. `indented` (the
+   * default) gives them a gutter inside the list. `hanging` sets them in the
+   * margin before it, so the words line up with the text above and a narrow
+   * box keeps its width for them. For a container that keeps that margin free,
+   * such as a titled Callout's icon column.
+   */
+  markers?: 'indented' | 'hanging' | undefined;
 }
 
 /**
@@ -88,6 +96,7 @@ export function List({
   template,
   density = 'comfortable',
   measure,
+  markers = 'indented',
   className,
   style,
   children,
@@ -105,6 +114,7 @@ export function List({
           templated && 'crewlet-list--templated',
           density === 'compact' && 'crewlet-list--compact',
           measure && `crewlet-list--measure-${measure}`,
+          markers === 'hanging' && 'crewlet-list--hanging',
           className,
         )}
         style={templated ? ({ ...style, '--crewlet-list-template': template } as CSSProperties) : style}

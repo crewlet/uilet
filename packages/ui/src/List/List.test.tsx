@@ -172,6 +172,38 @@ test('a compact numbered list sets its rows a small step apart in the body’s s
   }
 });
 
+test('hanging markers stand in the margin before the list, and the list is still the ol or ul it was', () => {
+  const remove = installSheets('List/List.css');
+  try {
+    render(
+      <>
+        <List variant="numbered" aria-label="Indented">
+          <ListItem>Create an API key.</ListItem>
+        </List>
+        <List variant="numbered" markers="hanging" aria-label="Hanging numbers">
+          <ListItem>Create an API key.</ListItem>
+        </List>
+        <List variant="bulleted" markers="hanging" aria-label="Hanging bullets">
+          <ListItem>Read access.</ListItem>
+        </List>
+      </>,
+    );
+    const indented = screen.getByRole('list', { name: 'Indented' });
+    const numbers = screen.getByRole('list', { name: 'Hanging numbers' });
+    const bullets = screen.getByRole('list', { name: 'Hanging bullets' });
+    // The default keeps its gutter.
+    expect(indented.className).not.toContain('crewlet-list--hanging');
+    expect(px(indented, 'padding-inline-start')).toBe(20);
+    expect(px(numbers, 'padding-inline-start')).toBe(0);
+    expect(px(bullets, 'padding-inline-start')).toBe(0);
+    // Native markers, so a screen reader hears the list as before.
+    expect([numbers.tagName, bullets.tagName]).toEqual(['OL', 'UL']);
+    for (const item of screen.getAllByRole('listitem')) expect(getComputedStyle(item).display).toBe('list-item');
+  } finally {
+    remove();
+  }
+});
+
 test('a list asked for a measure holds its words to it, and the row still spans the list', () => {
   const remove = installSheets('List/List.css');
   try {
