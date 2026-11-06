@@ -166,7 +166,9 @@ describe('rows moved by hand (reorder) and their position (ordinal)', () => {
     expect(handle.getAttribute('draggable')).toBe('true');
     expect(handle.getAttribute('aria-describedby')).toBeTruthy();
     // The instruction it is described by lives in the table's head, as a cell's content.
-    expect(document.getElementById(handle.getAttribute('aria-describedby')!)!.closest('[role="columnheader"]')).not.toBeNull();
+    expect(
+      document.getElementById(handle.getAttribute('aria-describedby')!)!.closest('[role="columnheader"]'),
+    ).not.toBeNull();
     fireEvent.keyDown(handle, { key: 'ArrowDown' });
     expect(onMove).toHaveBeenCalledWith('a', 'c');
   });
@@ -239,7 +241,14 @@ describe('density and loading', () => {
 
   test('a loading grid with no rows keeps its head and draws placeholder rows, never the empty state', () => {
     const { container } = render(
-      <DataGrid rows={[]} columns={COLUMNS} rowKey={(r) => r.id} loading loadingRows={4} empty={{ title: 'Nothing here' }} />,
+      <DataGrid
+        rows={[]}
+        columns={COLUMNS}
+        rowKey={(r) => r.id}
+        loading
+        loadingRows={4}
+        empty={{ title: 'Nothing here' }}
+      />,
     );
     const table = screen.getByRole('table');
     expect(table.getAttribute('aria-busy')).toBe('true');
@@ -258,7 +267,7 @@ describe('density and loading', () => {
   });
 });
 
-describe('a column\'s overflow and hover text', () => {
+describe("a column's overflow and hover text", () => {
   const box = (el: HTMLElement, client: number, scroll: number) => {
     Object.defineProperty(el, 'clientWidth', { configurable: true, value: client });
     Object.defineProperty(el, 'scrollWidth', { configurable: true, value: scroll });
@@ -281,12 +290,18 @@ describe('a column\'s overflow and hover text', () => {
     expect(cut.hasAttribute('title')).toBe(false);
   });
 
-  test('a column\'s own hover text is the cell\'s title whether or not it is cut, and a prose column wraps', () => {
+  test("a column's own hover text is the cell's title whether or not it is cut, and a prose column wraps", () => {
     render(
       <DataGrid
         rows={ROWS}
         columns={[
-          { key: 'name', header: 'Name', overflow: 'truncate', title: (r: Row) => `Exactly ${r.name}`, cell: (r: Row) => r.name },
+          {
+            key: 'name',
+            header: 'Name',
+            overflow: 'truncate',
+            title: (r: Row) => `Exactly ${r.name}`,
+            cell: (r: Row) => r.name,
+          },
           { key: 'what', header: 'What changed', overflow: 'wrap', cell: (r: Row) => `${r.name} moved` },
         ]}
         rowKey={(r) => r.id}
@@ -315,7 +330,13 @@ describe('a head that sorts with no comparator (sortable)', () => {
         rows={ROWS}
         columns={[
           { key: 'name', header: 'Name', sortable: true, cell: (r: Row) => r.name },
-          { key: 'tokens', header: 'Tokens', sortable: false, sortValue: (r: Row) => r.tokens, cell: (r: Row) => r.tokens ?? null },
+          {
+            key: 'tokens',
+            header: 'Tokens',
+            sortable: false,
+            sortValue: (r: Row) => r.tokens,
+            cell: (r: Row) => r.tokens ?? null,
+          },
         ]}
         rowKey={(r) => r.id}
         sort="-name"
@@ -332,7 +353,7 @@ describe('a head that sorts with no comparator (sortable)', () => {
   });
 });
 
-describe('the foot is the table\'s own rows', () => {
+describe("the foot is the table's own rows", () => {
   test('every child of the table is a row or a row group, the foot and the way back from a column set included', () => {
     render(
       <DataGrid
@@ -342,7 +363,7 @@ describe('the foot is the table\'s own rows', () => {
         cols="name,extra"
         onColsChange={() => {}}
         footer={
-          <ul role="list" aria-label="Legend">
+          <ul aria-label="Legend">
             <li>Done</li>
           </ul>
         }

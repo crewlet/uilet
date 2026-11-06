@@ -181,7 +181,7 @@ test('a data grid whose foot holds a list and the way back from a column set car
         cols="id,title"
         onColsChange={() => {}}
         footer={
-          <ul role="list" aria-label="Legend">
+          <ul aria-label="Legend">
             <li>Done</li>
             <li>Open</li>
           </ul>

@@ -31,7 +31,15 @@ const FOREST: TreeInput[] = [
     id: 'root',
     label: 'Handbook',
     children: [
-      { id: 'b', label: 'Billing', children: [{ id: 'b/2', label: 'Refunds' }, { id: 'b/1', label: 'Invoices' }, { id: 'more:b', label: '' }] },
+      {
+        id: 'b',
+        label: 'Billing',
+        children: [
+          { id: 'b/2', label: 'Refunds' },
+          { id: 'b/1', label: 'Invoices' },
+          { id: 'more:b', label: '' },
+        ],
+      },
       { id: 'a', label: 'Access' },
       { id: 'c', label: 'Calendar' },
       { id: 'more:root', label: '' },
@@ -87,8 +95,8 @@ const level = (parent: string) => {
   return out;
 };
 
-describe('the head is a data grid\'s head', () => {
-  test('sortable heads are buttons, the edges are the column\'s, and an action head is read but not seen', () => {
+describe("the head is a data grid's head", () => {
+  test("sortable heads are buttons, the edges are the column's, and an action head is read but not seen", () => {
     render(<Grid />);
     const heads = screen.getAllByRole('columnheader');
     expect(heads.map((h) => h.getAttribute('aria-colindex'))).toEqual(['1', '2', '3', '4']);
@@ -104,7 +112,7 @@ describe('the head is a data grid\'s head', () => {
     expect(cell.classList.contains('crewlet-tree-grid__cell--right')).toBe(true);
   });
 
-  test('the tree\'s own order is the default, and no head is marked while it is in force', () => {
+  test("the tree's own order is the default, and no head is marked while it is in force", () => {
     render(<Grid />);
     for (const head of screen.getAllByRole('columnheader')) expect(head.hasAttribute('aria-sort')).toBe(false);
     expect(level('root')).toEqual(['Billing', 'Access', 'Calendar', '+']);
@@ -175,8 +183,16 @@ describe('the column set, the give-way columns and the foot', () => {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
       const grid = this.closest('[role="treegrid"]');
       const heads = grid ? grid.querySelectorAll('[role="columnheader"]').length : 0;
-      const right = this.getAttribute('role') === 'columnheader' && !this.nextElementSibling ? (heads > 3 ? 520 : 380) : 0;
-      return { left: 0, top: 0, right, bottom: 0, width: this.classList.contains('crewlet-tree-grid') ? 400 : 0, height: 0 } as DOMRect;
+      const right =
+        this.getAttribute('role') === 'columnheader' && !this.nextElementSibling ? (heads > 3 ? 520 : 380) : 0;
+      return {
+        left: 0,
+        top: 0,
+        right,
+        bottom: 0,
+        width: this.classList.contains('crewlet-tree-grid') ? 400 : 0,
+        height: 0,
+      } as DOMRect;
     });
     render(<Grid footer="12 pages" loadedNote="12 of 12 loaded" />);
     expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Title', 'Size', 'Edit']);
@@ -195,7 +211,7 @@ describe('the column set, the give-way columns and the foot', () => {
   });
 });
 
-describe('a row\'s link, its failure and an empty grid', () => {
+describe("a row's link, its failure and an empty grid", () => {
   test('a row that links carries a real href for the pointer, and Enter follows it where the caller does not', () => {
     const clicks: { href: string; meta: boolean }[] = [];
     const onRowKey = vi.fn((id: string) => id === 'c');
@@ -232,13 +248,15 @@ describe('a row\'s link, its failure and an empty grid', () => {
     const { rerender } = render(<Grid isFailed={(id) => id === 'c'} />);
     expect(document.querySelector('[data-tree-id="c"]')!.hasAttribute('data-failed')).toBe(true);
     expect(document.querySelector('[data-tree-id="a"]')!.hasAttribute('data-failed')).toBe(false);
-    rerender(<Grid rows={[]} empty={{ title: 'Nothing is filed here yet', action: <button type="button">Create</button> }} />);
+    rerender(
+      <Grid rows={[]} empty={{ title: 'Nothing is filed here yet', action: <button type="button">Create</button> }} />,
+    );
     expect(screen.queryByRole('treegrid')).toBeNull();
     expect(screen.getByText('Nothing is filed here yet')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Create' })).toBeTruthy();
   });
 
-  test('flush draws the grid as a card\'s body', () => {
+  test("flush draws the grid as a card's body", () => {
     const { container } = render(<Grid flush />);
     expect(container.querySelector('.crewlet-tree-grid')!.getAttribute('data-flush')).toBe('true');
   });
@@ -293,7 +311,7 @@ describe('where columns do not fit, a row is a card (phoneRows)', () => {
     expect(container.querySelector('.crewlet-tree-grid')!.hasAttribute('data-stacked')).toBe(false);
   });
 
-  test('on a phone each value is a named line under the row\'s name', () => {
+  test("on a phone each value is a named line under the row's name", () => {
     onAPhone();
     const { container, rerender } = render(<Grid phoneRows="labelled" />);
     const frame = container.querySelector('.crewlet-tree-grid')!;
