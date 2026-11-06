@@ -35,6 +35,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type ReactNode, type RefObject } from 'react';
 import { ChevronRightGlyph } from '@crewlethq/icons/glyphs';
 import { KeyChip } from '../KeyChip/index.js';
+import { Text } from '../Text/index.js';
 import { cx } from '../utils/cx.js';
 
 export interface BreadcrumbCrumb {
@@ -116,7 +117,9 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
             {/* THE LABEL IS ITS OWN BOX. Text straight inside a flex container is
                 an anonymous flex item that `text-overflow` never reaches, so the
                 heading was cut mid-word at the bar's edge with no ellipsis. */}
-            <span className="crewlet-breadcrumb__text">{crumb.label}</span>
+            <Text variant="inherit" truncate className="crewlet-breadcrumb__text">
+              {crumb.label}
+            </Text>
           </>
         );
         const face = crumb.mono ? 'is-mono' : undefined;
@@ -124,7 +127,12 @@ export function Breadcrumb({ crumbs, current, label = 'Breadcrumb', className, s
           // KEYED BY DEPTH, not by words: the crumb at a depth is the same place
           // in the trail whatever it is called, so a heading whose subject is
           // switched keeps its element, and the control in it keeps focus.
-          <span key={i} className="crewlet-breadcrumb__part">
+          <span
+            key={i}
+            className="crewlet-breadcrumb__part"
+            // The oldest ancestor gives way first: its share of a cut is its depth from the page.
+            style={last ? undefined : { flexShrink: crumbs.length - 1 - i }}
+          >
             {i > 0 ? <ChevronRightGlyph size="xs" className="crewlet-breadcrumb__separator" aria-hidden="true" /> : null}
             {last ? (
               <h1
