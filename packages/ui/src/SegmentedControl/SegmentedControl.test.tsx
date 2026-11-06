@@ -7,14 +7,14 @@
  * looking for the panel each one opened and found none.
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, test, vi } from 'vitest';
 import { themes as palettes } from '@crewlethq/tokens';
-import { parseHex } from '@crewlethq/tokens/test/palette';
+import { contrast, parseHex } from '@crewlethq/tokens/test/palette';
 import { channels, installSheets, installThemed, pseudoElement, px } from '../../../../apps/ui-tests/src/cascade.js';
 import { SegmentedControl } from './SegmentedControl.js';
 
@@ -457,7 +457,7 @@ const types = [
   { value: 'custom', label: 'Custom' },
 ];
 
-test('the chips layout is separate raised chips that wrap, the chosen one filled with the accent', () => {
+test('the chips layout is separate raised chips that wrap, the chosen one filled with the pressed accent', () => {
   const transparent = (value: string) => value === 'transparent' || /^rgba\(0, 0, 0, 0\)$/.test(value);
   for (const theme of ['dark', 'light'] as const) {
     const uninstall = installThemed(theme, 'Tabs/Tabs.css', 'SegmentedControl/SegmentedControl.css');
@@ -483,8 +483,10 @@ test('the chips layout is separate raised chips that wrap, the chosen one filled
     // button around it is the target and paints nothing of its own.
     const onChip = screen.getByRole('radio', { name: 'Team' });
     const on = getComputedStyle(pseudoElement(onChip, 'before'));
-    expect(channels(on.backgroundColor), `${theme}: the chip that is on`).toEqual(parseHex(palette.brand.accent));
+    expect(channels(on.backgroundColor), `${theme}: the chip that is on`).toEqual(parseHex(palette.brand.accentActive));
     expect(channels(getComputedStyle(onChip).color), `${theme}: its word`).toEqual(parseHex(palette.text.onAccent));
+    // Its 11px word clears the text floor with room, not at it.
+    expect(contrast(parseHex(palette.text.onAccent)!, parseHex(palette.brand.accentActive)!), `${theme}: its word on it`).toBeGreaterThan(7);
     expect(transparent(getComputedStyle(onChip).backgroundColor), `${theme}: the target paints nothing`).toBe(true);
 
     const offChip = screen.getByRole('radio', { name: 'Department' });
@@ -659,4 +661,25 @@ test('a card row or a chips row ignores fill, which is a pill row\'s', () => {
     <SegmentedControl label="Unit type" semantics="radio" layout="chips" fill value="team" options={types} onValueChange={() => {}} />,
   );
   expect(screen.getByRole('radiogroup', { name: 'Unit type' }).classList.contains('crewlet-segmented--fill')).toBe(false);
+});
+
+/*
+ * THE CHOSEN CHIP'S WORD HAS ROOM IN EVERY THEME. The plain accent carries it
+ * at 4.5:1 in two dark themes, the floor; the pressed step is held further
+ * from the label in every palette, so the word clears it with room.
+ */
+test("every theme carries the chosen chip's word well over the text floor", () => {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../../tokens/tokens/themes');
+  const ids = readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  expect(ids.length).toBeGreaterThan(5);
+  for (const id of ids) {
+    for (const mode of ['light', 'dark'] as const) {
+      const { color } = JSON.parse(readFileSync(resolve(root, id, `${mode}.json`), 'utf8'));
+      const label = parseHex(color.text.onAccent.value)!;
+      const pressed = parseHex(color.brand.accentActive.value)!;
+      const plain = parseHex(color.brand.accent.value)!;
+      expect(contrast(label, pressed), `${id} ${mode}`).toBeGreaterThan(5.5);
+      expect(contrast(label, pressed), `${id} ${mode}: a step from the label`).toBeGreaterThan(contrast(label, plain));
+    }
+  }
 });

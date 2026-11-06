@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Input, SegmentedControl, TabPanel } from '@crewlethq/ui';
 import { ListGlyph, MonitorGlyph, MoonGlyph, NetworkGlyph, SunGlyph, UsersGlyph } from '@crewlethq/icons/glyphs';
+import { BothThemes } from '../BothThemes';
 
 const meta: Meta<typeof SegmentedControl> = {
   title: 'UI/SegmentedControl',
@@ -301,5 +302,36 @@ export const CappedAndExplained: Story = {
       );
     }
     return <Demo />;
+  },
+};
+
+/**
+ * A row of status filters, the chosen chip filled with the accent's pressed
+ * step so its 11px word clears 7:1 on it in the default theme, light and dark,
+ * and 5.9:1 or more in every theme.
+ */
+export const StatusFilters: Story = {
+  render: function StatusFiltersStory() {
+    const [shown, setShown] = useState('all');
+    return (
+      <BothThemes>
+        <SegmentedControl
+          label="Show agents"
+          semantics="radio"
+          layout="chips"
+          size="sm"
+          value={shown}
+          onValueChange={setShown}
+          options={[
+            { value: 'all', label: 'All agents', count: 12 },
+            { value: 'working', label: 'Working', count: 6 },
+            { value: 'needs', label: 'Needs you', count: 2 },
+            { value: 'stopped', label: 'Paused or stopped', count: 1 },
+            { value: 'idle', label: 'Idle', count: 3 },
+            { value: 'problems', label: 'Agents with problems', count: 1 },
+          ]}
+        />
+      </BothThemes>
+    );
   },
 };
