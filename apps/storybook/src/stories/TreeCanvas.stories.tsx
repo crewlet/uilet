@@ -10,6 +10,7 @@ import {
   OrgNodeLabel,
   OrgNodeLead,
   StatusDot,
+  StatusLegend,
   Switch,
   Tag,
   TreeCanvas,
@@ -842,6 +843,89 @@ export const AddMarksAtAnyZoom: Story = {
             hasNodeMenu={() => true}
             onNodeKey={() => true}
             minZoom={0.02}
+          />
+        </div>
+      </BothThemes>
+    );
+  },
+};
+
+const LEGEND = [
+  { key: 'working', label: 'Working', tone: 'info' },
+  { key: 'needs', label: 'Needs you', tone: 'warning' },
+  { key: 'stopped', label: 'Paused or stopped', tone: 'danger' },
+  { key: 'idle', label: 'Idle', tone: 'neutral' },
+] as const;
+
+/**
+ * A status legend in the chart's own corner (`overlayEnd`, across from the
+ * zoom bar) that filters it: a pressed status pushes back every card that is
+ * not in it (`cardDimmed`, grey at full contrast), and a new filter fits the
+ * chart again (`fitKey`); a zoom of the reader's own holds until the next one.
+ * The fit keeps every card clear of the legend.
+ */
+export const StatusLegendInTheChart: Story = {
+  render: function StatusLegendInTheChartStory() {
+    const [show, setShow] = useState<string | null>(null);
+    const items = LEGEND.map((one) => ({
+      ...one,
+      count: Object.values(SEATS).filter((seat) => seat.state === one.key).length,
+    }));
+    const legend = (
+      <StatusLegend
+        label="Filter by status"
+        items={items}
+        value={show}
+        onValueChange={setShow}
+        countLabel={(count) => (count === 1 ? '1 seat' : `${count} seats`)}
+      />
+    );
+    return (
+      <BothThemes>
+        <div style={{ height: '44vh' }}>
+          <TreeCanvas
+            label="Org chart"
+            nodes={SEAT_NODES}
+            cards={seatCards}
+            cardOf={(id) => id}
+            ranks="shared"
+            renderCard={(id, card) => <SeatCard id={id} card={card} />}
+            hasNodeMenu={() => false}
+            onNodeKey={() => true}
+            controlsPlacement="top-right"
+            minZoom={0.02}
+            fitKey={show ?? 'all'}
+            cardDimmed={(id) => show !== null && SEATS[id]?.state !== show}
+            overlayEnd={legend}
+          />
+        </div>
+      </BothThemes>
+    );
+  },
+};
+
+/** The same at a phone's width: the legend wraps inside the canvas, holding its inset. */
+export const StatusLegendOnAPhone: Story = {
+  render: function StatusLegendOnAPhoneStory() {
+    const [show, setShow] = useState<string | null>('needs');
+    const items = LEGEND.map((one) => ({ ...one, count: Object.values(SEATS).filter((seat) => seat.state === one.key).length }));
+    return (
+      <BothThemes>
+        <div style={{ height: '50vh', width: 360 }}>
+          <TreeCanvas
+            label="Org chart"
+            nodes={SEAT_NODES}
+            cards={seatCards}
+            cardOf={(id) => id}
+            ranks="shared"
+            renderCard={(id, card) => <SeatCard id={id} card={card} />}
+            hasNodeMenu={() => false}
+            onNodeKey={() => true}
+            controlsPlacement="top-right"
+            minZoom={0.02}
+            fitKey={show ?? 'all'}
+            cardDimmed={(id) => show !== null && SEATS[id]?.state !== show}
+            overlayEnd={<StatusLegend label="Filter by status" items={items} value={show} onValueChange={setShow} />}
           />
         </div>
       </BothThemes>
