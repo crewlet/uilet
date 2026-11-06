@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import { useState, type HTMLAttributes, type ReactNode } from "react";
 import { CheckGlyph, TriangleAlertGlyph } from "@crewlethq/icons/glyphs";
 import { cx } from "../utils/cx.js";
 import { VisuallyHidden } from "../VisuallyHidden/index.js";
@@ -45,6 +45,10 @@ export interface DeliveryReceiptLabels {
   groups: (groups: readonly string[]) => string;
   /** A routing cap left seats out. */
   truncated: string;
+  /** The names past `max`, as the button that shows them: "and 4 more". */
+  more: (count: number) => string;
+  /** The same button once every name is shown. */
+  fewer: string;
 }
 
 export const DELIVERY_RECEIPT_LABELS: DeliveryReceiptLabels = {
@@ -57,6 +61,8 @@ export const DELIVERY_RECEIPT_LABELS: DeliveryReceiptLabels = {
   reason: (words) => `(${words})`,
   groups: (groups) => groups.join("; "),
   truncated: "Some seats were not reached",
+  more: (count) => `and ${count} more`,
+  fewer: "Show fewer",
 };
 
 export interface DeliveryReceiptProps extends Omit<
@@ -84,6 +90,12 @@ export interface DeliveryReceiptProps extends Omit<
    * announced every receipt would talk over the conversation.
    */
   announce?: boolean | undefined;
+  /**
+   * How many names the reach and the answered list each print before the rest
+   * are counted in a button that shows them all. 2 by default; a whole number
+   * of at least 1, or Infinity for every name.
+   */
+  max?: number | undefined;
   labels?: Partial<DeliveryReceiptLabels> | undefined;
 }
 
@@ -135,35 +147,62 @@ export function DeliveryReceipt({
   truncated = false,
   hint,
   announce = false,
+  max = 2,
   labels: overrides,
   className,
   ...rest
 }: DeliveryReceiptProps) {
+  if (max !== Infinity && (!Number.isInteger(max) || max < 1)) {
+    throw new RangeError(
+      `DeliveryReceipt max must be a whole number of at least 1; it was ${max}`,
+    );
+  }
+  const [expanded, setExpanded] = useState(false);
   const labels = overrides
     ? { ...DELIVERY_RECEIPT_LABELS, ...overrides }
     : DELIVERY_RECEIPT_LABELS;
+  const cap = expanded ? Infinity : max;
   const none = recipients.length === 0;
-  const answered =
+  const answeredAll =
     tense === "sent"
       ? recipients.filter((r) => r.answered).map((r) => r.name)
       : [];
+  const answered = answeredAll.slice(0, cap);
+  const reached = recipients.slice(0, cap);
+  const hiddenReach = recipients.length - reached.length;
+  const hiddenAnswered = answeredAll.length - answered.length;
+  // The names past the cap are a button rather than a tooltip, so a keyboard
+  // and a touch reader can open the whole list in place.
+  const toggle =
+    hiddenReach > 0 || hiddenAnswered > 0 || expanded ? (
+      <button
+        type="button"
+        className="crewlet-delivery-receipt__more"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((was) => !was)}
+      >
+        {expanded ? labels.fewer : labels.more(hiddenReach)}
+      </button>
+    ) : null;
   const reach = none
     ? tense === "draft"
       ? labels.noneDraft
       : labels.none
     : (tense === "draft" ? labels.reaches : labels.reached)(
-        reachOf(recipients, labels),
+        reachOf(reached, labels),
       );
   const parts: {
     key: string;
     className?: string;
     mark?: ReactNode;
     words: ReactNode;
+    after?: ReactNode;
   }[] = [
     {
       key: "reach",
       mark: none ? <TriangleAlertGlyph size="xs" /> : undefined,
       words: reach,
+      after: toggle,
     },
   ];
   if (truncated && !none)
@@ -173,7 +212,11 @@ export function DeliveryReceipt({
       key: "answered",
       className: "crewlet-delivery-receipt__answered",
       mark: <CheckGlyph size="xs" />,
-      words: labels.answered(labels.list(answered)),
+      words: labels.answered(
+        hiddenAnswered > 0
+          ? `${labels.list(answered)} ${labels.more(hiddenAnswered)}`
+          : labels.list(answered),
+      ),
     });
   }
   if (none && hint)
@@ -209,6 +252,7 @@ export function DeliveryReceipt({
             </span>
           ) : null}
           <span>{part.words}</span>
+          {part.after}
           {i < parts.length - 1 ? <VisuallyHidden>. </VisuallyHidden> : null}
         </span>
       ))}
