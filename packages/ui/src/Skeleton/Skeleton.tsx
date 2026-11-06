@@ -89,7 +89,7 @@ const Placeholder = ({
   // A size asked of a shape other than a box cuts the shape to it.
   const sized =
     width !== undefined || height !== undefined
-      ? ({ width: length(width), height: length(height), overflow: 'hidden', ...style } as CSSProperties)
+      ? ({ boxSizing: 'border-box', width: length(width), height: length(height), overflow: 'hidden', ...style } as CSSProperties)
       : style;
 
   switch (variant) {

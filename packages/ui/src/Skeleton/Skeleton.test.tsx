@@ -130,6 +130,8 @@ describe('a skeleton sized for its value', () => {
     expect(root.style.width).toBe('120px');
     expect(root.style.height).toBe('16px');
     expect(root.style.overflow).toBe('hidden');
+    // Its own padding inside the size asked, not added to it.
+    expect(root.style.boxSizing).toBe('border-box');
   });
 
   test('an unsized shape keeps its own size, and a box stands flush', () => {
