@@ -78,7 +78,8 @@
   box-sizing: border-box;
   padding: var(--crewlet-logo-slot-padding);
   overflow: hidden;
-  border: 1px solid var(--color-border-hover);
+  /* The strong hover step, so a ground that matches the card still has an edge. */
+  border: 1px solid var(--color-border-strong-hover);
   border-radius: var(--radius-lg);
   background: var(--crewlet-logo-slot-ground);
   color: var(--crewlet-logo-slot-ink);

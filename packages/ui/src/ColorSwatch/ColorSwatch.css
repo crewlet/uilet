@@ -28,7 +28,9 @@
   box-sizing: border-box;
   border-radius: var(--radius-md);
   background: var(--crewlet-color-swatch-value, var(--color-surface-inset));
-  box-shadow: inset 0 0 0 1px var(--color-border-hover);
+  /* The strong hover step: at the hover step (1.5:1 off the card) a dark
+     colour on a dark card, or a white one on a white card, had no edge. */
+  box-shadow: inset 0 0 0 1px var(--color-border-strong-hover);
 }
 
 .crewlet-color-swatch__chip.is-empty {
