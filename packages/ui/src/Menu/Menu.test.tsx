@@ -11,10 +11,11 @@ import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { useState, type ReactNode } from 'react';
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { ChevronDownGlyph, FolderInputGlyph, PencilGlyph } from '@crewlethq/icons/glyphs';
 import { LAYER_REPOSITION_EVENT, LayerHost, useModalLayer } from '../Layer/index.js';
 import { FOCUS_RETURNED_ATTRIBUTE } from '../utils/focusModality.js';
+import { tabTo } from '../../../../apps/ui-tests/src/keyboard.js';
 import { Menu, type MenuEntry } from './index.js';
 
 afterEach(cleanup);
@@ -728,4 +729,55 @@ test('valueTrigger draws the trigger as the value: flush, in the surrounding tex
   expect(css).toMatch(
     /\.crewlet-menu-anchor > \.crewlet-btn\.crewlet-menu__value-trigger \{[^}]*font-size: inherit;[^}]*font-weight: inherit;[^}]*color: inherit;/,
   );
+});
+
+describe('a tooltip on the trigger', () => {
+  const ACTIONS: MenuEntry[] = [
+    { key: 'edit', label: 'Edit', onSelect: () => {} },
+    { key: 'move', label: 'Move to', onSelect: () => {} },
+  ];
+  const tip = () => document.querySelector<HTMLElement>('[role="tooltip"]');
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+  const settle = () =>
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+  test('the pointer resting on the trigger shows it, shown and not read, and the icon gives up its own title', () => {
+    render(<Menu label="More actions for Product Lead" tooltip="More actions" items={ACTIONS} />);
+    const trigger = screen.getByRole('button', { name: 'More actions for Product Lead' });
+    expect(trigger.getAttribute('title')).toBe('');
+    fireEvent.pointerEnter(trigger);
+    settle();
+    expect(tip()?.textContent).toBe('More actions');
+    expect(tip()?.querySelector('[aria-hidden="true"]')?.textContent).toBe('More actions');
+  });
+
+  test('keyboard focus shows it, and it steps aside while the menu is open', () => {
+    render(<Menu label="More actions for Product Lead" tooltip="More actions" items={ACTIONS} />);
+    const trigger = screen.getByRole('button', { name: 'More actions for Product Lead' });
+    tabTo(trigger);
+    expect(tip()).not.toBeNull();
+    fireEvent.click(trigger);
+    settle();
+    expect(screen.getByRole('menu')).not.toBeNull();
+    expect(tip()).toBeNull();
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  test('a text trigger takes it too, and a menu without one keeps the icon title', () => {
+    render(
+      <>
+        <Menu label="Add to the organization" trigger="Add" tooltip="Add a seat or a team" items={ACTIONS} />
+        <Menu label="Row actions" items={ACTIONS} />
+      </>,
+    );
+    const text = screen.getByRole('button', { name: 'Add to the organization' });
+    fireEvent.pointerEnter(text);
+    settle();
+    expect(tip()?.textContent).toBe('Add a seat or a team');
+    expect(screen.getByRole('button', { name: 'Row actions' }).getAttribute('title')).toBe('Row actions');
+  });
 });

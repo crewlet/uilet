@@ -80,6 +80,7 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -96,6 +97,7 @@ import {
 } from '../Layer/index.js';
 import { Button, type ButtonVariant } from '../Button/index.js';
 import { IconButton } from '../IconButton/index.js';
+import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
 import { returnFocus } from '../utils/focusModality.js';
 import { useComposedRef } from '../utils/composedRef.js';
@@ -212,6 +214,12 @@ export interface MenuProps {
   renderTrigger?: ((props: MenuTriggerProps) => ReactNode) | undefined;
   /** Facts above the items: what the actions are about. Never an item. */
   header?: ReactNode;
+  /**
+   * The kit Tooltip on the menu's own trigger, on hover and keyboard focus,
+   * stepping aside while the menu is open. It repeats or shortens the trigger's
+   * name, which a screen reader already hears, so it is shown and not read.
+   */
+  tooltip?: ReactNode;
   className?: string | undefined;
 }
 
@@ -230,6 +238,7 @@ export function Menu({
   width = 'content',
   renderTrigger,
   header,
+  tooltip,
   className,
 }: MenuProps) {
   const id = useId();
@@ -551,26 +560,45 @@ export function Menu({
     onKeyDown: onTriggerKeyDown,
   };
 
+  // The tip steps aside while the menu is open, and the icon's own title gives way to it.
+  const tipped = tooltip !== undefined && tooltip !== null;
+  const withTip = (element: ReactElement) =>
+    tipped ? (
+      <Tooltip content={<span aria-hidden="true">{tooltip}</span>} disabled={open}>
+        {element}
+      </Tooltip>
+    ) : (
+      element
+    );
+
   return (
     <span className="crewlet-menu-anchor">
-      {renderTrigger ? (
-        renderTrigger(shared)
-      ) : trigger === undefined ? (
-        <IconButton {...shared} label={label} icon={icon ?? <EllipsisVerticalGlyph />} size="sm" />
-      ) : (
-        <Button
-          {...shared}
-          aria-label={label}
-          variant={triggerVariant}
-          size="small"
-          flush={valueTrigger}
-          className={valueTrigger ? 'crewlet-menu__value-trigger' : undefined}
-          leadingIcon={icon}
-          trailingIcon={trailingIcon}
-        >
-          {trigger}
-        </Button>
-      )}
+      {renderTrigger
+        ? renderTrigger(shared)
+        : trigger === undefined
+          ? withTip(
+              <IconButton
+                {...shared}
+                label={label}
+                icon={icon ?? <EllipsisVerticalGlyph />}
+                size="sm"
+                {...(tipped ? { title: '' } : {})}
+              />,
+            )
+          : withTip(
+              <Button
+                {...shared}
+                aria-label={label}
+                variant={triggerVariant}
+                size="small"
+                flush={valueTrigger}
+                className={valueTrigger ? 'crewlet-menu__value-trigger' : undefined}
+                leadingIcon={icon}
+                trailingIcon={trailingIcon}
+              >
+                {trigger}
+              </Button>,
+            )}
       {list && container ? createPortal(list, container) : null}
     </span>
   );
