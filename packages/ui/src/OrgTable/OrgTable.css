@@ -112,8 +112,8 @@
 
 /* A ROW DRAWN AS A CARD (`phoneRows`) starts its values' lines under its
    name: the cell's inset, the chevron, the wire's level and its gap. Set on
-   the cell, where the row's depth is known. */
-.crewlet-org-table [role='gridcell'] {
+   the row, which carries its depth; its cells inherit the length. */
+.crewlet-org-table [role='row'] {
   --crewlet-tree-grid-value-indent: calc(
     var(--spacing-2) * 2 + var(--size-control-sm) + var(--crewlet-org-table-indent) *
       var(--crewlet-tree-grid-depth, 0)
@@ -216,14 +216,14 @@
  */
 .crewlet-org-table [role='gridcell']:last-child,
 .crewlet-org-table [role='columnheader']:last-child {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
 }
 
 /* AND A LAST HEAD THAT SORTS ENDS WITH ITS VALUES: its button fills the head,
    so the button takes the end, and its arrow goes before the word, as a
    right-aligned head's does, so the word stays on the column's edge. */
 .crewlet-org-table [role='columnheader']:last-child > .crewlet-data-grid__sort {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
 }
 
 .crewlet-org-table [role='columnheader']:last-child .crewlet-data-grid__sort-mark {

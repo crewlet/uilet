@@ -6,6 +6,9 @@
  * a drawn indent, and the card a row becomes where columns do not fit.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -407,4 +410,26 @@ test("a fit made under a phone's styles does not carry over once the phone query
     'Edit',
   ]);
   expect(document.querySelector('.crewlet-data-grid__foot')).toBeNull();
+});
+
+test("a compact card indents its values' line on the row, so a wrapped value still starts under the name", () => {
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'TreeGrid.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\s+/g, ' ');
+  expect(css).toMatch(
+    /\.crewlet-tree-grid\[data-phone-rows='compact'\] \.crewlet-tree-grid__row::after \{ content: ''; order: 1; flex-basis: 100%; height: 0; \}/,
+  );
+  expect(css).toMatch(
+    /\.crewlet-tree-grid\[data-phone-rows='compact'\] \.crewlet-tree-grid__row \{[^}]*flex-wrap: wrap;[^}]*padding-inline: var\( --crewlet-tree-grid-value-indent,/,
+  );
+  expect(css).toMatch(
+    /\.crewlet-tree-grid\[data-phone-rows='compact'\] \.crewlet-tree-grid__cell:first-child \{ flex: 1 1 auto; order: 0; margin-inline: calc\( -1 \* var\( --crewlet-tree-grid-value-indent,/,
+  );
+});
+
+test('a tree may shrink below its content in a flex or grid layout, as a data grid may', () => {
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'TreeGrid.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\s+/g, ' ');
+  expect(css).toMatch(/\.crewlet-tree-grid \{[^}]*min-width: 0;/);
 });

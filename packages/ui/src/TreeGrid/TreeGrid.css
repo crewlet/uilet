@@ -15,6 +15,10 @@
   --crewlet-data-grid-edge: var(--crewlet-tree-grid-edge);
 
   position: relative;
+  /* A flex or grid item that may shrink below its content, as DataGrid's
+     frame: at its automatic minimum a tree widened its parent to its
+     longest line. */
+  min-width: 0;
 }
 
 /*
@@ -200,14 +204,15 @@
 }
 
 /* ONE EDGE PER COLUMN, shared by its head and its values, as a DataGrid's:
-   figures and times on the right in tabular digits, one mark centred. */
+   figures and times on the right in tabular digits, one mark centred, and
+   (`safe`) a value wider than its track cut at its end, never its start. */
 .crewlet-tree-grid__cell--right {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
   font-variant-numeric: tabular-nums;
 }
 
 .crewlet-tree-grid__cell--center {
-  justify-content: center;
+  justify-content: safe center;
 }
 
 /* A SHRINK COLUMN does not wrap inside its capped track, nor paint past it. */
@@ -426,31 +431,54 @@
   color: var(--color-text-tertiary);
 }
 
-/* THE COMPACT CARD: the name, then its values as one run of marks under it. */
+/* THE COMPACT CARD: the name, then its values as one run of marks under it.
+   The row is indented to its values' line and the name takes that back, so
+   a value that wraps to a new line still starts under the name. A zero-height
+   break after the name ends its line, as DataGrid's compact row does. */
 .crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   column-gap: var(--spacing-2);
-  padding-inline-end: var(--crewlet-tree-grid-edge);
+  padding-inline: var(
+      --crewlet-tree-grid-value-indent,
+      calc(
+        var(--crewlet-tree-grid-edge) + var(--size-control-sm) + var(--spacing-2) + var(--spacing-5) *
+          var(--crewlet-tree-grid-depth, 0)
+      )
+    )
+    var(--crewlet-tree-grid-edge);
 }
 
 .crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell:not(:first-child) {
   padding: 0;
 }
 
-.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell:first-child {
+.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__row::after {
+  content: '';
+  order: 1;
   flex-basis: 100%;
+  height: 0;
 }
 
-.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell:nth-child(2) {
-  margin-inline-start: var(
-    --crewlet-tree-grid-value-indent,
-    calc(
-      var(--crewlet-tree-grid-edge) + var(--size-control-sm) + var(--spacing-2) + var(--spacing-5) *
-        var(--crewlet-tree-grid-depth, 0)
+.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell {
+  order: 2;
+}
+
+.crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell:first-child {
+  flex: 1 1 auto;
+  order: 0;
+  margin-inline: calc(
+      -1 *
+        var(
+          --crewlet-tree-grid-value-indent,
+          calc(
+            var(--crewlet-tree-grid-edge) + var(--size-control-sm) + var(--spacing-2) + var(--spacing-5) *
+              var(--crewlet-tree-grid-depth, 0)
+          )
+        )
     )
-  );
+    calc(-1 * var(--crewlet-tree-grid-edge));
 }
 
 .crewlet-tree-grid[data-phone-rows='compact'] .crewlet-tree-grid__cell[data-label]::before {

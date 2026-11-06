@@ -176,6 +176,8 @@ function Pages({
       rowHref={(id) => `#/pages/${id}`}
       isFailed={(id) => Boolean(PAGES[id]?.failed)}
       footer={`${Object.keys(PAGES).length} pages`}
+      // At a phone's width the rows are cards, as a data grid's are.
+      phoneRows="labelled"
       {...rest}
     />
   );
@@ -229,6 +231,7 @@ export const GivesWayAndSaysSo: Story = {
           resize: 'horizontal',
           overflow: 'auto',
           paddingBottom: 'var(--spacing-2)',
+          containerType: 'inline-size',
         }}
       >
         <Pages loadedNote="8 of 8 loaded" onLoadMore={() => {}} />

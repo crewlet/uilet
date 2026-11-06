@@ -404,7 +404,7 @@ describe("a row's controls", () => {
     expect(frame).not.toMatch(/--crewlet-org-table-actions: auto/);
     // Its heading takes the same edge, so the word stands over the controls it names.
     expect(rule(SHEET, ".crewlet-org-table [role='columnheader']:last-child")).toMatch(
-      /justify-content: flex-end/,
+      /justify-content: safe flex-end/,
     );
     expect(SHEET).toContain(".crewlet-org-table [role='gridcell']:last-child,\n.crewlet-org-table [role='columnheader']:last-child");
   });
@@ -874,7 +874,7 @@ test('a sorted level ends its trunk at the row it draws last, and the head sorts
 test('a last head that sorts ends with its values, its arrow before its word', () => {
   const css = SHEET.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
   expect(css).toMatch(
-    /\.crewlet-org-table \[role='columnheader'\]:last-child > \.crewlet-data-grid__sort \{ justify-content: flex-end; \}/,
+    /\.crewlet-org-table \[role='columnheader'\]:last-child > \.crewlet-data-grid__sort \{ justify-content: safe flex-end; \}/,
   );
   expect(css).toMatch(/\.crewlet-org-table \[role='columnheader'\]:last-child \.crewlet-data-grid__sort-mark \{ order: -1; \}/);
 });

@@ -199,11 +199,11 @@
  * sorts is a button filling its head, and takes the same edge.
  */
 .crewlet-data-grid__th--right .crewlet-data-grid__sort {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
 }
 
 .crewlet-data-grid__th--center .crewlet-data-grid__sort {
-  justify-content: center;
+  justify-content: safe center;
 }
 
 .crewlet-data-grid__th:not(.crewlet-data-grid__th--plain):hover,
@@ -264,11 +264,11 @@
 }
 
 .crewlet-data-grid__th--right {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
 }
 
 .crewlet-data-grid__th--center {
-  justify-content: center;
+  justify-content: safe center;
 }
 
 .crewlet-data-grid__sort:focus-visible,
@@ -550,14 +550,16 @@ button.crewlet-data-grid__row-link {
 }
 
 /* A RIGHT-ALIGNED COLUMN holds figures, times and dates: tabular digits, so
-   "53s ago" and "12h ago" end on one edge and their digits stand in columns. */
+   "53s ago" and "12h ago" end on one edge and their digits stand in columns.
+   `safe`: a value wider than its clipped track keeps its start and is cut at
+   its end, where end alignment overflowed the start ("1d ago" read "ago"). */
 .crewlet-data-grid__cell--right {
-  justify-content: flex-end;
+  justify-content: safe flex-end;
   font-variant-numeric: tabular-nums;
 }
 
 .crewlet-data-grid__cell--center {
-  justify-content: center;
+  justify-content: safe center;
 }
 
 /* A PROSE COLUMN (`overflow: 'wrap'`) breaks over as many lines as it takes,
