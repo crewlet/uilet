@@ -74,6 +74,12 @@
   margin-inline-start: -6px;
 }
 
+/* At the 20px step 6px hid the second initial behind the next face, so the
+   faces read as broken words; 2px keeps both initials clear. */
+.crewlet-avatar-stack.crewlet-avatar-stack--xs > .crewlet-avatar-stack__member + .crewlet-avatar-stack__member {
+  margin-inline-start: -2px;
+}
+
 /*
  * THE COUNT OF THE REST. A PILL, where every face is a rounded square: it is
  * a number rather than somebody, and drawn in a face's outline it would read

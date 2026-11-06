@@ -38,11 +38,9 @@ export interface AvatarStackProps extends Omit<HTMLAttributes<HTMLSpanElement>, 
    *
    * NOT THE NEAREST STEP TO THE DESIGN'S 22px, which is `xs`, because the
    * design draws its stacks' initials at 9px and this kit's smallest type is
-   * 11px. Behind the next badge's 6px and its 2px cut-out, a badge shows its
-   * box less 8px: at `xs` that leaves 9 of the 14px two mono initials take,
-   * 64% of them, the second letter gone to a stem. The design's own stack
-   * shows 77% of its initials, and `sm` is the smallest step that shows as
-   * much, at 85%.
+   * 11px. `sm` shows 85% of two initials behind the next badge's 6px and its
+   * 2px cut-out; `xs` overlaps by 2px instead (AvatarStack.css), so its
+   * smaller face keeps both of its initials clear.
    */
   size?: AvatarSizeStep | undefined;
   /**
@@ -118,7 +116,7 @@ export function AvatarStack({
   return (
     <span
       {...rest}
-      className={cx('crewlet-avatar-stack', className)}
+      className={cx('crewlet-avatar-stack', `crewlet-avatar-stack--${size}`, className)}
       // The step's box, from the one table, for the chip: the badges set their
       // own from their step class, and the chip stands as tall as they do.
       style={{ '--crewlet-avatar-stack-size': `${AVATAR_SIZES[size]}px`, ...style } as CSSProperties}
