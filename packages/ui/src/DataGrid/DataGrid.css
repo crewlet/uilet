@@ -827,13 +827,6 @@ button.crewlet-data-grid__row-link {
   display: none;
 }
 
-/* A CARD LINE'S VALUE MAY SHRINK, so a value that holds one line (a table
-   cell that cuts its words) is cut inside the card rather than pushing the
-   card, and the page, past the screen's edge. */
-:where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell > * {
-  min-width: 0;
-}
-
 :where(.crewlet-data-grid[data-stacked]) .crewlet-data-grid__cell[data-label]::before {
   content: attr(data-label);
   flex: 0 0 7rem;

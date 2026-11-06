@@ -183,7 +183,8 @@ function Pages({
 
 const Frame = ({ children, width = 960 }: { children: ReactNode; width?: number }) => (
   <BothThemes>
-    <div style={{ maxWidth: width }}>{children}</div>
+    {/* Sized by the panel, never by the grid's content, as a page section is. */}
+    <div style={{ maxWidth: width, containerType: 'inline-size' }}>{children}</div>
   </BothThemes>
 );
 
@@ -245,15 +246,13 @@ export const GivesWayAndSaysSo: Story = {
 export const CardsWhereNothingFits: Story = {
   render: () => (
     <BothThemes>
-      <div
-        style={{
-          display: 'grid',
-          gap: 'var(--spacing-4)',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 360px))',
-        }}
-      >
-        <Pages phoneRows="labelled" columns={COLUMNS.map((c) => ({ ...c, drop: undefined }))} />
-        <Pages phoneRows="compact" columns={COLUMNS.map((c) => ({ ...c, drop: undefined }))} />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-4)', containerType: 'inline-size' }}>
+        <div style={{ flex: '1 1 300px', maxWidth: 360, minWidth: 0 }}>
+          <Pages phoneRows="labelled" columns={COLUMNS.map((c) => ({ ...c, drop: undefined }))} />
+        </div>
+        <div style={{ flex: '1 1 300px', maxWidth: 360, minWidth: 0 }}>
+          <Pages phoneRows="compact" columns={COLUMNS.map((c) => ({ ...c, drop: undefined }))} />
+        </div>
       </div>
     </BothThemes>
   ),

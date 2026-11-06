@@ -424,10 +424,4 @@ describe('a row that links still shows what its cells say on hover', () => {
     fireEvent.mouseLeave(link);
     expect(link.hasAttribute('title')).toBe(false);
   });
-
-  test("a card line's value may shrink, so a one-line value is cut inside the card", () => {
-    expect(sheet()).toMatch(
-      /:where\(\.crewlet-data-grid\[data-stacked\]\) \.crewlet-data-grid__cell > \* \{ min-width: 0; \}/,
-    );
-  });
 });

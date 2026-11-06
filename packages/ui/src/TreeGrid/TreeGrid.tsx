@@ -540,9 +540,12 @@ export function TreeGrid({
     const set = picked.length > 0 ? picked : columns.filter((c) => !c.optional);
     return set.filter((one) => one.hideBelow === undefined || width <= 0 || width >= one.hideBelow);
   }, [columns, colsRaw, width]);
-  const shownKeys = shownColumns.map((c) => c.key).join(',');
-  const [fit, setFit] = useState<GridFit>(NO_FIT);
   const phone = useMediaMatch(`(width < ${breakpoint.phone})`);
+  // A FIT IS DECIDED FOR ONE COLUMN SET IN ONE MEDIA STATE: the phone's styles
+  // size the cells otherwise, so a fit made under them never carries over to
+  // the desktop's at the same width, where it would not be re-tried.
+  const shownKeys = `${shownColumns.map((c) => c.key).join(',')}${phone ? '|phone' : ''}`;
+  const [fit, setFit] = useState<GridFit>(NO_FIT);
   // CARDS ONLY WHERE ASKED (`phoneRows`): a tree that keeps its columns
   // scrolls sideways below its minimum, as it always has.
   const stacked = phoneRows !== undefined && (phone || (fit.set === shownKeys && Boolean(fit.stacked)));

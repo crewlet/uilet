@@ -126,7 +126,8 @@ const COLUMNS: DataGridColumn<Seat>[] = [
 
 const Frame = ({ children }: { children: ReactNode }) => (
   <BothThemes>
-    <div style={{ maxWidth: 960 }}>{children}</div>
+    {/* Sized by the panel, never by the grid's content, as a page section is. */}
+    <div style={{ maxWidth: 960, containerType: 'inline-size' }}>{children}</div>
   </BothThemes>
 );
 

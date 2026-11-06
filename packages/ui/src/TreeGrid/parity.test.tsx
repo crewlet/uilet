@@ -359,3 +359,52 @@ test('a tree that keeps its columns gives way on a phone as anywhere', () => {
   expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Title', 'Size', 'Edit']);
   expect(document.querySelector('.crewlet-data-grid__foot')!.textContent).toBe('Hidden to fit: Last saved');
 });
+
+test("a fit made under a phone's styles does not carry over once the phone query stops matching", () => {
+  let phone = true;
+  const listeners = new Set<() => void>();
+  vi.spyOn(window, 'matchMedia').mockImplementation(
+    (query: string) =>
+      ({
+        get matches() {
+          return query.includes('width <') && phone;
+        },
+        media: query,
+        onchange: null,
+        addEventListener: (_type: string, fn: () => void) => listeners.add(fn),
+        removeEventListener: (_type: string, fn: () => void) => listeners.delete(fn),
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }) as unknown as MediaQueryList,
+  );
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (this: HTMLElement) {
+    return this.getAttribute('role') === 'treegrid' ? 900 : 0;
+  });
+  // Under the phone's styles the tracks overrun the same 900px; under the desktop's they fit.
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    const grid = this.closest('[role="treegrid"]');
+    const heads = grid ? grid.querySelectorAll('[role="columnheader"]').length : 0;
+    const last = this.getAttribute('role') === 'columnheader' && !this.nextElementSibling;
+    const right = last ? (phone && heads > 3 ? 1000 : 880) : 0;
+    return {
+      left: 0,
+      top: 0,
+      right,
+      bottom: 0,
+      width: this.classList.contains('crewlet-tree-grid') ? 900 : 0,
+      height: 0,
+    } as DOMRect;
+  });
+  render(<Grid />);
+  expect(screen.getAllByRole('columnheader')).toHaveLength(3);
+  phone = false;
+  act(() => listeners.forEach((fn) => fn()));
+  expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
+    'Title',
+    'Size',
+    'Last saved',
+    'Edit',
+  ]);
+  expect(document.querySelector('.crewlet-data-grid__foot')).toBeNull();
+});
