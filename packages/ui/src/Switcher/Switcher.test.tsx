@@ -11,6 +11,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import axe from 'axe-core';
 import { useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { installSheets } from '../../../../apps/ui-tests/src/cascade.js';
 import { Announcer } from '../Announcer/index.js';
 import { Switcher, type SwitcherGroup, type SwitcherOption, type SwitcherProps } from './index.js';
 
@@ -461,4 +462,43 @@ test('passes axe, closed and open, with every state a list can be in', async () 
   );
   openPanel();
   expect((await axe.run(document.body)).violations).toEqual([]);
+});
+
+describe('a long figure', () => {
+  const UNIT = 'Learner Community, Content Rights and Trust and Safety Operations';
+
+  test('gives way after the label and takes at most 40% of the row, cut with its words on hover', () => {
+    const uninstall = installSheets('Text/Text.css', 'Switcher/Switcher.css');
+    try {
+      render(
+        <Harness
+          groups={[
+            {
+              id: 'people',
+              label: 'Start a conversation',
+              options: [{ id: 'ba', label: 'Bartholomew Achterberg-Oyelaran', meta: UNIT, onSelect: () => {} }],
+            },
+          ]}
+        />,
+      );
+      openPanel();
+      const figure = screen.getByText(UNIT);
+      const meta = figure.closest('.crewlet-switcher__meta')!;
+      const label = screen.getByText('Bartholomew Achterberg-Oyelaran');
+      expect(getComputedStyle(meta).flexShrink).toBe('1');
+      expect(getComputedStyle(meta).minWidth).toBe('0px');
+      expect(getComputedStyle(meta).maxWidth).toBe('40%');
+      // The label still grows into the room the figure leaves.
+      expect(getComputedStyle(label).flexGrow).toBe('1');
+
+      expect(getComputedStyle(figure).overflow).toBe('hidden');
+      expect(getComputedStyle(figure).textOverflow).toBe('ellipsis');
+      Object.defineProperty(figure, 'clientWidth', { configurable: true, value: 120 });
+      Object.defineProperty(figure, 'scrollWidth', { configurable: true, value: 374 });
+      fireEvent.mouseEnter(figure);
+      expect(figure.getAttribute('title')).toBe(UNIT);
+    } finally {
+      uninstall();
+    }
+  });
 });

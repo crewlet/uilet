@@ -72,6 +72,7 @@ import { useListbox, useOptionKeys } from '../Listbox/index.js';
 import { Modal } from '../Modal/index.js';
 import { Popover } from '../Popover/index.js';
 import { Skeleton } from '../Skeleton/index.js';
+import { Text } from '../Text/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
 import { highlightMatch } from '../utils/highlight.js';
@@ -492,7 +493,11 @@ function SwitcherPanel({
           <>
             {' '}
             <span className="crewlet-switcher__meta">
-              {option.meta}
+              {option.meta !== undefined ? (
+                <Text variant="inherit" truncate className="crewlet-switcher__figure">
+                  {option.meta}
+                </Text>
+              ) : null}
               {option.held}
             </span>
           </>
