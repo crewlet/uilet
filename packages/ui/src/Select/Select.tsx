@@ -502,6 +502,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     top: number;
     width?: number | undefined;
     minWidth?: number | undefined;
+    maxWidth?: number | undefined;
   } | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   // The frame round the trigger: the bordered field a reader sees, and the
@@ -761,8 +762,13 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
     // takes the trigger as a FLOOR instead, so it is never narrower than the
     // control it hangs from and never capped by it.
     const matches = width === 'full';
-    box.style.width = matches ? `${rect.width}px` : '';
-    box.style.minWidth = matches ? '' : `${rect.width}px`;
+    // NEVER WIDER THAN THE ROOM IT IS PLACED IN: sized to its longest option,
+    // a panel wider than a phone hung past the edge however it was slid.
+    const room = Math.max(0, host.width - 2 * LAYER_GAP);
+    const floor = matches ? undefined : Math.min(rect.width, room);
+    box.style.maxWidth = `${room}px`;
+    box.style.width = matches ? `${Math.min(rect.width, room)}px` : '';
+    box.style.minWidth = floor === undefined ? '' : `${floor}px`;
     const own = box.getBoundingClientRect();
     const local: PlacementRect = {
       x: (align === 'right' ? rect.right - own.width : rect.left) - (inHost ? host.x : 0),
@@ -789,12 +795,16 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       { width: own.width, height: own.height },
       { x: LAYER_GAP, y: LAYER_GAP, width: host.width - 2 * LAYER_GAP, height: host.height - 2 * LAYER_GAP },
     );
-    const applied = matches ? rect.width : undefined;
-    const floor = matches ? undefined : rect.width;
+    const applied = matches ? Math.min(rect.width, room) : undefined;
     setPlace((was) =>
-      was && was.left === spot.left && was.top === spot.top && was.width === applied && was.minWidth === floor
+      was &&
+      was.left === spot.left &&
+      was.top === spot.top &&
+      was.width === applied &&
+      was.minWidth === floor &&
+      was.maxWidth === room
         ? was
-        : { left: spot.left, top: spot.top, width: applied, minWidth: floor },
+        : { left: spot.left, top: spot.top, width: applied, minWidth: floor, maxWidth: room },
     );
   }, [align, close, container, width]);
 
@@ -1043,7 +1053,7 @@ const ListboxSelect = forwardRef<HTMLButtonElement, ListboxSelectProps>(function
       )}
       style={
         place
-          ? { left: place.left, top: place.top, width: place.width, minWidth: place.minWidth }
+          ? { left: place.left, top: place.top, width: place.width, minWidth: place.minWidth, maxWidth: place.maxWidth }
           : // Laid out but not painted, so its own height can be measured
             // before it is placed and no reader sees it in a corner first.
             { visibility: 'hidden' }

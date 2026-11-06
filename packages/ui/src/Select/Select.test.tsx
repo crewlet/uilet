@@ -578,6 +578,40 @@ test('a picker panel floors at its trigger, a field panel matches it', () => {
 });
 
 /*
+ * NEVER WIDER THAN THE WINDOW. A panel sized to its longest option (a long
+ * seat title) was 586px on a 390px phone and ran 200px past the right edge,
+ * because nothing capped it and a slide cannot fit what is wider than the room.
+ */
+test('a panel wider than the window is capped at the room and slid inside it', () => {
+  const restore = stubGeometry({ trigger: rect(5, 140), panel: rect(0, 586) });
+  const panelBox = (el: Element) => {
+    const max = Number.parseFloat((el as HTMLElement).style.maxWidth) || Infinity;
+    return rect(0, Math.min(586, max));
+  };
+  const real = Element.prototype.getBoundingClientRect;
+  const wrapped = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-select__menu')) return panelBox(this);
+    return wrapped.call(this);
+  };
+  const width = window.innerWidth;
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+  try {
+    render(<Picker width="auto" />);
+    fireEvent.click(trigger());
+    const style = document.querySelector<HTMLElement>('.crewlet-select__menu')!.style;
+    expect(style.maxWidth).toBe('382px');
+    const left = Number.parseFloat(style.left);
+    expect(left).toBeGreaterThanOrEqual(4);
+    expect(left + 382).toBeLessThanOrEqual(390 - 4);
+  } finally {
+    Element.prototype.getBoundingClientRect = real;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+    restore();
+  }
+});
+
+/*
  * AN ELLIPSIS IS THREE DECLARATIONS OR IT IS NONE. `overflow: hidden` clips
  * what leaves the box and `text-overflow` replaces what a LINE cannot hold —
  * and neither does anything to text that is allowed to wrap. The option label
