@@ -153,11 +153,9 @@ interface OrgLabelWords {
    */
   trailing?: ReactNode | undefined;
   /**
-   * A live state's dot, on the corner of the mark's zone (`StatusDot`, no word).
-   * THE ONE PLACE A PUSH COSTS NO ROOM: it is drawn over a zone of fixed size, so
-   * it is the same spot on every node and a change of state never changes what
-   * the chart measures. An empty slot takes no room, so a node given its first
-   * state later is the size it was.
+   * A live state's dot on the corner of the mark's zone, the same spot on every node.
+   * Drawn over a zone of fixed size, so a change of state, or a first state arriving,
+   * never changes what a chart measures.
    */
   markStatus?: ReactNode | undefined;
   /**

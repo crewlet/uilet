@@ -1,16 +1,7 @@
 /*
- * A hierarchy as rows and columns (TreeGrid.tsx), on the table rules `DataGrid`
- * draws: the same frame, head, inline insets and track sizing, so a tree of
- * rows and a list of rows read as one kind of table on one screen.
- *
- * ONE TRACK LIST, ON THE GRID. The head, the body and the rows are `subgrid`
- * passthroughs, so a heading and a cell twenty rows down size the same track. A
- * row cannot be a table row and also a focusable treegrid row with a level, and
- * a row that was a grid of its own could only take lengths and fractions.
- *
- * The grid keeps a minimum width and scrolls sideways in its own box below
- * that, so a phone width screen keeps every column readable and the page itself
- * never scrolls sideways.
+ * A hierarchy as rows and columns (TreeGrid.tsx), on `DataGrid`'s table rules: one
+ * track list on the grid, which the head, body and rows pass through as `subgrid`.
+ * Below its minimum width it scrolls sideways in its own box, never the page's.
  */
 
 .crewlet-tree-grid {
@@ -140,12 +131,9 @@
 }
 
 /*
- * A CELL'S INLINE INSET, shared by the heading that names it, so a word in the
- * head and the values under it start on one line: the cells' own step between
- * two columns, and the grid's edge on the outer side of its first and last.
- *
- * A CELL IS THE ROW'S FULL HEIGHT and centres what it holds, so a value that
- * changes never moves its cell's box, and a focused cell's ring is the row's.
+ * A heading and its cells share one inline inset, so they start on one line. A cell
+ * is the row's full height and centres what it holds, so a value that changes never
+ * moves its box, and a focused cell's ring is the row's.
  */
 .crewlet-tree-grid__row > [role='columnheader'],
 .crewlet-tree-grid__cell {

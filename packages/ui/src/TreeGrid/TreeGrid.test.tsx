@@ -822,10 +822,8 @@ describe('a grid that fits its container', () => {
 });
 
 /*
- * THE KIT'S ONE SET OF TABLE RULES, which `DataGrid` draws. A tree of rows and a
- * list of rows stand on the same screens, and one that kept its own padding,
- * frame and head had its columns drift from its headings and from every table
- * beside it.
+ * THE KIT'S ONE SET OF TABLE RULES, which `DataGrid` draws. A tree of rows that kept
+ * its own padding, frame and head drifted from its headings and every table beside it.
  */
 describe('the table rules it shares with the data grid', () => {
   const here = dirname(fileURLToPath(import.meta.url));

@@ -98,12 +98,9 @@
 }
 
 /*
- * A PILL KEEPS ITS WIDTH AS THE SEQUENCE ADVANCES. A step behind the current one
- * draws the check, the current one the narrower dot and one still to come no mark
- * at all, so each pill changed width as the sequence moved: the pills after it
- * shifted, and a row that only just fit wrapped or unwrapped between two steps.
- * Every pill holds the check's room, split evenly about what it draws, so a row of
- * steps is one width at every step and either always wraps or never does.
+ * A PILL KEEPS ITS WIDTH AS THE SEQUENCE ADVANCES: each holds the check's room, split
+ * evenly about what it draws (the dot, or no mark). A row of steps is then one width
+ * at every step, and either always wraps or never does.
  */
 .crewlet-stepper__step--upcoming > .crewlet-stepper__chip,
 .crewlet-stepper__step--optional > .crewlet-stepper__chip {

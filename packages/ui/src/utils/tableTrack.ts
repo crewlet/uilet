@@ -16,10 +16,9 @@ export interface TableTrack {
 export const SHRINK_SHARE = 0.2;
 
 /**
- * A column's grid track, by the rules every table of columns in the kit sizes
- * by. `max-content` has no ceiling and a grid resolves it before any flexible
- * column, so one long value would starve the name: a content-sized column is
- * capped with `fit-content()`, and a flexible one takes the rest above its floor.
+ * A column's grid track, by the rules every table of columns in the kit sizes by: a
+ * content-sized column is capped with `fit-content()`, since `max-content` would
+ * starve the name, and a flexible one takes the rest above its floor.
  */
 export function tableTrack({ width, shrink, floor }: TableTrack): string {
   if (width) return width;

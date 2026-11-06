@@ -76,14 +76,9 @@ export interface TreeGridColumn {
    */
   headerHidden?: boolean | undefined;
   /**
-   * An exact track, in place of the computed one. One flexible column by
-   * default, as `DataGrid` draws it. A column of one control is the control and
-   * the cell's padding on either side:
-   * `calc(var(--size-control-sm) + var(--spacing-3) * 2)`.
-   *
-   * A VALUE THAT A LIVE PUSH CHANGES TAKES A LENGTH, not a size its content
-   * decides: the track list is the whole table's, so a content-sized track moves
-   * every column after it whenever its widest value changes.
+   * An exact track, in place of the default flexible one. A column whose values a
+   * live push changes takes a length: the track list is the whole table's, so a
+   * content-sized track moves every column after it when its widest value changes.
    */
   width?: string | undefined;
   /**

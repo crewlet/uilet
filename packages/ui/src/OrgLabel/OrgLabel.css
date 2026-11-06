@@ -145,10 +145,9 @@
 }
 
 /*
- * A LIVE STATE'S DOT, on the zone's lower corner. Out of the flow and inside the
- * zone's fixed box, so it adds nothing to what a chart measures, and a state that
- * changes twice a tool-loop round relays nothing. It stands on the card's own
- * ground, written as the card paints it, so it reads clear of the mark under it.
+ * A LIVE STATE'S DOT, on the zone's lower corner: out of the flow in a box of fixed
+ * size, so a change of state changes nothing a chart measures. It stands on the
+ * card's own ground, written as the card paints it, to read clear of the mark.
  */
 .crewlet-org-label__icon {
   position: relative;
