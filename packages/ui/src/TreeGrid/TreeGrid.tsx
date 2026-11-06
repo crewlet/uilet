@@ -586,7 +586,9 @@ export function TreeGrid({
                     style={{ '--crewlet-tree-grid-depth': treeLevel(model, id) - 1 } as CSSProperties}
                     onClick={(event) => {
                       // A press on a control in the row is the control's; a
-                      // press on the row itself selects it and takes focus.
+                      // press on the row itself selects it and takes focus. A
+                      // press in a surface portalled from a cell is not in the row.
+                      if (!event.currentTarget.contains(event.target as Node)) return;
                       if ((event.target as HTMLElement).closest("button, input, label, [role='menu']")) return;
                       focusAt(id, null);
                     }}

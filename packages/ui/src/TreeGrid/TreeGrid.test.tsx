@@ -23,6 +23,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRef, useMemo, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { Button } from '../Button/index.js';
 import { Menu } from '../Menu/index.js';
@@ -862,4 +863,30 @@ test("a column of values read after the name is a step smaller, and its heading 
   expect(screen.getAllByRole('columnheader')[1]!.hasAttribute('data-size')).toBe(false);
   const rule = declarations().find(([selector]) => selector === ".crewlet-tree-grid__cell[data-size='sm']")?.[1] ?? '';
   expect(rule).toMatch(/font-size:\s*var\(--font-size-2xs\)/);
+});
+
+test('a press in a surface portalled from a cell does not choose the row', () => {
+  const onSelect = vi.fn();
+  render(
+    <TreeGrid
+      label="Organization outline"
+      columns={COLUMNS.slice(0, 1)}
+      rows={forest(false)}
+      onSelect={onSelect}
+      renderCell={(id) =>
+        id === COMPANY ? (
+          <>
+            {nameOf(id)}
+            {createPortal(<div role="dialog" aria-label="Pause the company">Pausing stops every agent.</div>, document.body)}
+          </>
+        ) : (
+          nameOf(id)
+        )
+      }
+    />,
+  );
+  fireEvent.click(screen.getByText('Pausing stops every agent.'));
+  expect(onSelect).not.toHaveBeenCalled();
+  fireEvent.click(rowOf(COMPANY));
+  expect(onSelect).toHaveBeenCalledWith(COMPANY);
 });
