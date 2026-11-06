@@ -10,7 +10,9 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
+import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
+import { heldHint } from '../utils/heldHint.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 export type IconButtonSize = 'sm' | 'md' | 'lg';
@@ -46,6 +48,12 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   pressed?: boolean | undefined;
   /** Unavailable, and why. See Button's own prop for why it is not `disabled`. */
   disabledReason?: string | undefined;
+  /**
+   * The kit Tooltip on hover and keyboard focus, in place of the native title:
+   * `true` for the label, or a hint of its own, then the reason while held.
+   * Shown and not read, since the name and the reason already are.
+   */
+  tooltip?: string | boolean | undefined;
   /** Render the single child element with these classes instead of a button. */
   asChild?: boolean | undefined;
   children?: ReactNode;
@@ -71,6 +79,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     variant = 'ghost',
     pressed,
     disabledReason,
+    tooltip,
     className,
     type = 'button',
     asChild = false,
@@ -101,31 +110,36 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   }
 
   const inert = disabledReason !== undefined;
+  const hint = typeof tooltip === 'string' ? tooltip : tooltip ? label : undefined;
+  const tip = hint === undefined ? undefined : heldHint(hint, disabledReason);
+  const button = (
+    <button
+      {...rest}
+      ref={ref}
+      type={type}
+      className={classes}
+      disabled={disabled}
+      // The tooltip repeats the name rather than adding to it, so a pointer
+      // reader and a screen reader are told the same thing.
+      title={title ?? (tip === undefined ? label : '')}
+      aria-label={label}
+      aria-pressed={pressed}
+      aria-disabled={inert || undefined}
+      aria-describedby={inert ? cx(rest['aria-describedby'], reasonId) : rest['aria-describedby']}
+      onClick={(event: MouseEvent<HTMLButtonElement>) => {
+        if (inert) {
+          event.preventDefault();
+          return;
+        }
+        onClick?.(event);
+      }}
+    >
+      {content}
+    </button>
+  );
   return (
     <>
-      <button
-        {...rest}
-        ref={ref}
-        type={type}
-        className={classes}
-        disabled={disabled}
-        // The tooltip repeats the name rather than adding to it, so a pointer
-        // reader and a screen reader are told the same thing.
-        title={title ?? label}
-        aria-label={label}
-        aria-pressed={pressed}
-        aria-disabled={inert || undefined}
-        aria-describedby={inert ? cx(rest['aria-describedby'], reasonId) : rest['aria-describedby']}
-        onClick={(event: MouseEvent<HTMLButtonElement>) => {
-          if (inert) {
-            event.preventDefault();
-            return;
-          }
-          onClick?.(event);
-        }}
-      >
-        {content}
-      </button>
+      {tip === undefined ? button : <Tooltip content={<span aria-hidden="true">{tip}</span>}>{button}</Tooltip>}
       {inert ? <VisuallyHidden id={reasonId}>{disabledReason}</VisuallyHidden> : null}
     </>
   );
