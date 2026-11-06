@@ -165,3 +165,23 @@ test('carries no axe violation', async () => {
   });
   expect(result.violations).toEqual([]);
 });
+
+test('a reaction stored as a shortcode is drawn as its glyph and toggled as stored', () => {
+  // Stored as ":eyes:", a reaction drew its colons and spilled over the names.
+  const onToggle = vi.fn();
+  render(
+    <ReactionBar
+      reactions={[
+        { emoji: ':eyes:', count: 2, mine: true },
+        { emoji: ':sparkles:', count: 1, mine: false },
+      ]}
+      onToggle={onToggle}
+    />,
+  );
+  const eyes = screen.getByRole('button', { name: /eyes/ });
+  expect(eyes.querySelector('.crewlet-reaction__emoji')?.textContent).toBe('👀');
+  fireEvent.click(eyes);
+  expect(onToggle).toHaveBeenCalledWith(':eyes:');
+  // One the picker does not know is drawn by its words, never its colons.
+  expect(screen.getByRole('button', { name: /sparkles/ }).querySelector('.crewlet-reaction__emoji')?.textContent).toBe('sparkles');
+});

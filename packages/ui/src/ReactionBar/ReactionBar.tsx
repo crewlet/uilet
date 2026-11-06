@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { FaceSlightlySmilingPlusGlyph } from '@crewlethq/icons/glyphs';
-import { EmojiPicker, emojiName, type EmojiPickerProps } from '../EmojiPicker/index.js';
+import { EmojiPicker, emojiName, emojiOfShortcode, type EmojiPickerProps } from '../EmojiPicker/index.js';
 import { Tooltip } from '../Tooltip/index.js';
 import { cx } from '../utils/cx.js';
 import { heldHint } from '../utils/heldHint.js';
@@ -105,7 +105,10 @@ export function ReactionBar({ reactions, onToggle, add, disabledReason, labels: 
     <div className={cx('crewlet-reaction-bar', className)} role="group" aria-label={labels.group}>
       {reactions.map((reaction) => {
         const who = reactionWho(reaction, labels);
-        const hint = labels.reacted(who, reaction.emoji);
+        // A reaction stored as a shortcode is drawn as its glyph, or its words
+        // where the picker's table does not know it; it is toggled as stored.
+        const drawn = emojiOfShortcode(reaction.emoji) ?? emojiName(reaction.emoji);
+        const hint = labels.reacted(who, drawn);
         return (
           <Tooltip key={reaction.emoji} content={heldHint(hint, disabledReason)}>
             <button
@@ -119,7 +122,7 @@ export function ReactionBar({ reactions, onToggle, add, disabledReason, labels: 
               }}
             >
               <span className="crewlet-reaction__emoji" aria-hidden="true">
-                {reaction.emoji}
+                {drawn}
               </span>
               <span className="crewlet-reaction__count" aria-hidden="true">
                 {reaction.count.toLocaleString()}

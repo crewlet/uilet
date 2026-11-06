@@ -6,7 +6,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import axe from 'axe-core';
 import { afterEach, expect, test, vi } from 'vitest';
-import { EMOJI_GROUPS, EmojiPicker, emojiName, searchEmoji, type EmojiPickerProps } from './index.js';
+import { EMOJI_GROUPS, EmojiPicker, emojiName, emojiOfShortcode, emojiShortcode, isShortcode, searchEmoji, type EmojiPickerProps } from './index.js';
 
 afterEach(cleanup);
 
@@ -175,4 +175,26 @@ test('carries no axe violation while open', async () => {
   });
   expect(container).toBeTruthy();
   expect(result.violations).toEqual([]);
+});
+
+test('every emoji it offers carries its standard shortcode, and the two spellings convert both ways', () => {
+  // A chat engine stores reactions as shortcodes; with names only, every host
+  // kept its own table, and an agent's reaction drew as its raw colons.
+  const all = EMOJI_GROUPS.flatMap((group) => group.items);
+  for (const item of all) expect(item.shortcode, item.name).toMatch(/^:[a-z0-9_+-]+:$/);
+  expect(new Set(all.map((item) => item.shortcode)).size).toBe(new Set(all.map((item) => item.emoji)).size);
+  for (const item of all) {
+    expect(emojiShortcode(item.emoji)).toBe(item.shortcode);
+    expect(emojiOfShortcode(item.shortcode!)).toBe(item.emoji);
+  }
+  expect(emojiShortcode('👀')).toBe(':eyes:');
+  expect(emojiOfShortcode(':+1:')).toBe('👍');
+  // A glyph is already drawable; an unknown shortcode has no glyph.
+  expect(emojiOfShortcode('🦄')).toBe('🦄');
+  expect(emojiOfShortcode(':sparkles:')).toBeNull();
+  // And a shortcode is read by its name, an unknown one by its words.
+  expect(emojiName(':eyes:')).toBe('eyes');
+  expect(emojiName(':white_flag:')).toBe('white flag');
+  expect(isShortcode(':eyes:')).toBe(true);
+  expect(isShortcode('👀')).toBe(false);
 });
