@@ -781,3 +781,35 @@ describe('a tooltip on the trigger', () => {
     expect(screen.getByRole('button', { name: 'Row actions' }).getAttribute('title')).toBe('Row actions');
   });
 });
+
+/*
+ * WHOLE AT THE WINDOW'S FOOT. A layer host taller than the window (a long
+ * table's) had room below every trigger, so a menu near the window's foot
+ * opened below it, past the edge. It is placed in the part the window shows.
+ */
+test("in a layer taller than the window, a menu near the window's foot opens upward, whole", () => {
+  const rect = (left: number, top: number, width: number, height: number) =>
+    ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top }) as DOMRect;
+  const realRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('crewlet-layer-host')) return rect(0, 0, 900, 3000);
+    if (this.getAttribute('role') === 'menu') return rect(0, 0, 180, 200);
+    if (this.tagName === 'BUTTON' && !this.classList.contains('crewlet-menu__item')) return rect(600, window.innerHeight - 40, 24, 24);
+    return realRect.call(this);
+  };
+  try {
+    render(
+      <LayerHost>
+        <Menu label="Actions for Software Engineer" items={entries()} />
+      </LayerHost>,
+    );
+    fireEvent.click(trigger());
+    const menu = screen.getByRole('menu');
+    const top = Number.parseFloat(menu.style.top);
+    // Above the trigger by the gap, and inside the window.
+    expect(top).toBe(window.innerHeight - 40 - 4 - 200);
+    expect(top + 200).toBeLessThanOrEqual(window.innerHeight);
+  } finally {
+    Element.prototype.getBoundingClientRect = realRect;
+  }
+});

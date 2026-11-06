@@ -91,6 +91,7 @@ import {
   anchorGone,
   placePopup,
   useLayerContainer,
+  visibleBounds,
   usePopupLayer,
   viewportBounds,
   type PlacementRect,
@@ -319,16 +320,11 @@ export function Menu({
       height: rect.height,
     };
     /*
-     * The surface is PLACED inside a box inset by the gap, so it never touches
-     * an edge; whether the anchor is still on screen is asked of the anchor
-     * itself ([anchorGone]).
+     * The surface is PLACED inside the part of its layer the window shows,
+     * inset by the gap, so near the window's foot it opens upward; whether the
+     * anchor is still on screen is asked of the anchor itself ([anchorGone]).
      */
-    const bounds: PlacementRect = {
-      x: LAYER_GAP,
-      y: LAYER_GAP,
-      width: host.width - 2 * LAYER_GAP,
-      height: host.height - 2 * LAYER_GAP,
-    };
+    const bounds: PlacementRect = visibleBounds(host, inHost);
     // Panned out of view: a menu for a card nobody can see is a menu for
     // nothing, so it closes rather than floating detached at the edge.
     if (anchorGone(rect, host, inHost)) {
