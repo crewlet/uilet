@@ -126,9 +126,10 @@
 }
 
 /* A CHOSEN card's edge is already the accent, so a ring over it read as the
-   chosen state and focus did not show; there the ring stands outside it. */
+   chosen state and focus did not show; there the ring stands one step further
+   in, a band of the card's tint between it and the edge. */
 .crewlet-choice-cards__card.is-checked:has(.crewlet-choice-cards__radio:focus-visible) {
-  outline-offset: 2px;
+  outline-offset: calc(var(--size-focus-ring-inset-offset) * 2);
 }
 
 /* The radio, drawn in the card's top end and centred on the first line: an empty ring, or the accent ring round an accent dot. */

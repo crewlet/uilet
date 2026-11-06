@@ -344,14 +344,25 @@ test('a field with a width step bounds its wrapper and list to that step, not th
     ] as const) {
       cleanup();
       const { container } = render(
-        <Combobox label="Repositories" aria-label="Repository" width={width} value="" onValueChange={() => {}} options={[]} />,
+        <Combobox
+          label="Repositories"
+          aria-label="Repository"
+          width={width}
+          value=""
+          onValueChange={() => {}}
+          options={[]}
+          open={false}
+          onOpenChange={() => {}}
+        />,
       );
       const wrapper = container.querySelector('.crewlet-combobox')!;
       expect(getComputedStyle(wrapper).maxWidth, width).toBe(px);
       expect(getComputedStyle(container.querySelector('.crewlet-input')!).maxWidth, width).toBe(px);
     }
     cleanup();
-    const { container } = render(<Combobox label="Repositories" aria-label="Repository" value="" onValueChange={() => {}} options={[]} />);
+    const { container } = render(
+      <Combobox label="Repositories" aria-label="Repository" value="" onValueChange={() => {}} options={[]} open={false} onOpenChange={() => {}} />,
+    );
     expect(getComputedStyle(container.querySelector('.crewlet-combobox')!).maxWidth).toBe('none');
   } finally {
     uninstall();

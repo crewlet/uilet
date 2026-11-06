@@ -537,14 +537,14 @@ describe('a chosen card’s detail', () => {
   });
 });
 
-test('a chosen card draws its focus ring outside its accent edge, where it shows', () => {
-  // Inset over a chosen card's accent edge, the ring read as the chosen state
+test('a chosen card draws its focus ring inside its accent edge, apart from it', () => {
+  // Over a chosen card's accent edge, the ring read as the chosen state
   // itself. jsdom evaluates no :has(), so the rule is read from the sheet.
   const sheet = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'ChoiceCards.css'), 'utf8').replace(
     /\/\*[\s\S]*?\*\//g,
     '',
   );
   expect(sheet).toMatch(
-    /\.crewlet-choice-cards__card\.is-checked:has\(\.crewlet-choice-cards__radio:focus-visible\)\s*\{[^}]*outline-offset:\s*2px/,
+    /\.crewlet-choice-cards__card\.is-checked:has\(\.crewlet-choice-cards__radio:focus-visible\)\s*\{[^}]*outline-offset:\s*calc\(var\(--size-focus-ring-inset-offset\) \* 2\)/,
   );
 });
