@@ -55,19 +55,12 @@
     var(--size-target-min) * var(--crewlet-org-table-add-kinds) + (var(--crewlet-org-table-add-kinds) - 1) * 1px + 2px
   );
   /*
-   * THE TRACK A ROW'S CONTROL STRIP TAKES, and why it is a number at all:
-   * EVERY ROW IS ITS OWN GRID, so an `auto` last track is as wide as that
-   * row's own controls. The header row holds none, so its last track measured
-   * 16px where a row's measured 108, and every flexible column before it began
-   * somewhere else in the header than in the rows: a table whose headings
-   * named the wrong columns.
-   *
-   * The add's slot, the strip, and the cell's own inset. A caller with a
-   * different number sets its own track; what matters is that the track is
-   * fixed, and that it holds the add OPEN.
+   * THE TRACK A ROW'S CONTROL STRIP TAKES: the add's slot, the strip, the gap
+   * between them and the cell's own inset. A number because the strip's room is
+   * reserved whatever a row draws in it, and because the track holds the add OPEN.
    */
   --crewlet-org-table-actions: calc(
-    var(--crewlet-org-table-add) + var(--crewlet-org-table-strip) + var(--spacing-2) * 3
+    var(--crewlet-org-table-add) + var(--crewlet-org-table-strip) + var(--spacing-2) + var(--spacing-3) * 2
   );
   /*
    * THE ROOM THE QUIET STRIP KEEPS, whatever that row draws in it: three
@@ -138,9 +131,13 @@
   }
 }
 
+/* A PHONE'S ROW IS A NAME AND ITS TWO CONTROLS, so the room a cell keeps either
+   side of a control goes to the name. */
 @container crewlet-org-table (width < 40rem) {
-  .crewlet-org-table__grid {
+  .crewlet-org-table .crewlet-org-table__grid {
     --crewlet-org-table-indent: var(--spacing-3);
+    --crewlet-tree-grid-inset: var(--spacing-1);
+    --crewlet-tree-grid-edge: var(--spacing-1);
   }
 }
 
@@ -194,7 +191,7 @@
  * centres what it holds.
  */
 .crewlet-org-table [role='gridcell']:first-child {
-  align-self: stretch;
+  padding-block: 0;
   padding-inline-start: var(--spacing-2);
 }
 
@@ -205,8 +202,11 @@
  * END of the row, past the table's own edge and out of its scroller. Ended, it
  * spills back over the row instead, where the pill's own ground covers
  * whatever it crosses.
+ *
+ * ITS HEADING TAKES THE SAME EDGE, so the word stands over the controls it names.
  */
-.crewlet-org-table [role='gridcell']:last-child {
+.crewlet-org-table [role='gridcell']:last-child,
+.crewlet-org-table [role='columnheader']:last-child {
   justify-content: flex-end;
 }
 
@@ -234,8 +234,8 @@
  * the row's ground. In the plain border step it all but vanished on the
  * table's own ground, and the branches beside it read as loose dashes.
  *
- * It starts one hairline above the cell, over the grid's rule between rows,
- * so the segments meet rather than being cut by that rule.
+ * It starts one hairline above the cell, over the rule the row above draws at
+ * its foot, so the segments meet rather than being cut by that rule.
  */
 .crewlet-org-table__wire[data-trunk]::before {
   inset-block: -1px 0;
@@ -378,6 +378,9 @@
   justify-content: flex-end;
   gap: var(--spacing-1);
   min-width: var(--crewlet-org-table-strip);
+  /* THE LAST GLYPH ENDS ON THE COLUMN'S EDGE, under its heading: a small icon
+     button's own inset is taken back and only its hover's ground reaches past. */
+  margin-inline-end: calc((var(--font-size-xs) - var(--size-control-sm)) / 2);
   opacity: 0;
   transition: opacity var(--motion-duration-fast) var(--motion-easing-default);
 }

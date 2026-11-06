@@ -1,14 +1,25 @@
 /*
- * A hierarchy as rows and columns (TreeGrid.tsx).
+ * A hierarchy as rows and columns (TreeGrid.tsx), on the table rules `DataGrid`
+ * draws: the same frame, head, inline insets and track sizing, so a tree of
+ * rows and a list of rows read as one kind of table on one screen.
  *
- * Each row is a grid on ONE column template, so the cells of every row line up
- * without a table: a table row cannot be a focusable treegrid row with a
- * level. The grid keeps a minimum width and scrolls sideways in its own box
- * below that, so a phone width screen keeps every column readable and the page
- * itself never scrolls sideways.
+ * ONE TRACK LIST, ON THE GRID. The head, the body and the rows are `subgrid`
+ * passthroughs, so a heading and a cell twenty rows down size the same track. A
+ * row cannot be a table row and also a focusable treegrid row with a level, and
+ * a row that was a grid of its own could only take lengths and fractions.
+ *
+ * The grid keeps a minimum width and scrolls sideways in its own box below
+ * that, so a phone width screen keeps every column readable and the page itself
+ * never scrolls sideways.
  */
 
 .crewlet-tree-grid {
+  /* The inset between two columns, and the inset at the grid's two outer edges,
+     as `--crewlet-data-grid-edge`: the cells' own step standing alone, the card's
+     own in a flush card. */
+  --crewlet-tree-grid-inset: var(--spacing-3);
+  --crewlet-tree-grid-edge: var(--spacing-3);
+
   position: relative;
 }
 
@@ -43,13 +54,23 @@
    * menus open in, which must not be clipped.
    */
   background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-hover);
+  border-radius: var(--radius-md);
 }
 
 .crewlet-tree-grid__grid {
+  display: grid;
+  grid-template-columns: var(--crewlet-tree-grid-columns, minmax(0, 1fr));
   min-width: var(--crewlet-tree-grid-min-width, 45rem);
   font-size: var(--font-size-compact);
+}
+
+.crewlet-tree-grid__head,
+.crewlet-tree-grid__body,
+.crewlet-tree-grid__row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
 }
 
 /* A CONTAINER-WIDTH GRID never scrolls sideways: it leaves out the columns its
@@ -66,17 +87,21 @@
   position: sticky;
   top: 0;
   z-index: var(--z-index-sticky);
-  background: var(--color-surface-subtle);
-  border-start-start-radius: calc(var(--radius-lg) - 1px);
-  border-start-end-radius: calc(var(--radius-lg) - 1px);
+  border-start-start-radius: calc(var(--radius-md) - 1px);
+  border-start-end-radius: calc(var(--radius-md) - 1px);
 }
 
 /*
  * INSIDE A FLUSH CARD THE CARD IS THE FRAME. A flush card exists so that a
  * table's rows reach its edges (Card.css), and a grid that drew its own border
  * and corner there was a second rounded box one pixel inside the first, with
- * the card's footer hanging outside it. The rows keep their own hairlines.
+ * the card's footer hanging outside it. The rows keep their own hairlines, and
+ * the outer cells take the card's inset.
  */
+.crewlet-card--flush .crewlet-tree-grid {
+  --crewlet-tree-grid-edge: var(--spacing-4);
+}
+
 .crewlet-card--flush .crewlet-tree-grid__scroller {
   background: none;
   border: none;
@@ -84,22 +109,29 @@
 }
 
 .crewlet-tree-grid__row {
-  display: grid;
-  grid-template-columns: var(--crewlet-tree-grid-columns, minmax(0, 1fr));
   align-items: center;
   min-height: var(--size-row-md);
-  border-top: 1px solid var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.crewlet-tree-grid__body > .crewlet-tree-grid__row:last-child {
+  border-bottom: 0;
+}
+
+.crewlet-tree-grid__body > .crewlet-tree-grid__row:hover {
+  background: var(--color-surface-hover);
 }
 
 /*
- * THE HEAD IS THE TABLE'S HEADER REGISTER, in full. It spelled three of the
- * register's five declarations and left the tracking and the case off, so a
- * treegrid and a table standing on the same screen named their columns two
- * different ways. It is one micro-label step, declared once, wherever a column
- * is named.
+ * THE HEAD IS THE TABLE'S HEADER REGISTER, in full, on the raised ground under
+ * the stronger hairline `DataGrid` draws its head on. It is one micro-label
+ * step, declared once, wherever a column is named.
  */
 .crewlet-tree-grid__head .crewlet-tree-grid__row {
-  border-top: 0;
+  background: var(--color-surface-elevated);
+  border-bottom: 1px solid var(--color-border-hover);
+  border-start-start-radius: inherit;
+  border-start-end-radius: inherit;
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   letter-spacing: var(--font-letter-spacing-wide);
@@ -107,13 +139,40 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * A CELL'S INLINE INSET, shared by the heading that names it, so a word in the
+ * head and the values under it start on one line: the cells' own step between
+ * two columns, and the grid's edge on the outer side of its first and last.
+ *
+ * A CELL IS THE ROW'S FULL HEIGHT and centres what it holds, so a value that
+ * changes never moves its cell's box, and a focused cell's ring is the row's.
+ */
 .crewlet-tree-grid__row > [role='columnheader'],
 .crewlet-tree-grid__cell {
+  --crewlet-tree-grid-cell-start: var(--crewlet-tree-grid-inset);
+  --crewlet-tree-grid-cell-end: var(--crewlet-tree-grid-inset);
+
   display: flex;
+  align-self: stretch;
   align-items: center;
   gap: var(--spacing-2);
   min-width: 0;
-  padding: 0 var(--spacing-2);
+  padding-block: var(--spacing-1);
+  padding-inline: var(--crewlet-tree-grid-cell-start) var(--crewlet-tree-grid-cell-end);
+}
+
+.crewlet-tree-grid__row > [role='columnheader'] {
+  padding-block: var(--spacing-2);
+}
+
+.crewlet-tree-grid__row > [role='columnheader']:first-child,
+.crewlet-tree-grid__cell:first-child {
+  --crewlet-tree-grid-cell-start: var(--crewlet-tree-grid-edge);
+}
+
+.crewlet-tree-grid__row > [role='columnheader']:last-child,
+.crewlet-tree-grid__cell:last-child {
+  --crewlet-tree-grid-cell-end: var(--crewlet-tree-grid-edge);
 }
 
 /* A COLUMN OF VALUES READ AFTER THE NAME takes the caption's size, a step under the name's. */
@@ -124,11 +183,11 @@
 /*
  * The indent is the row's own level, set on the row, ON TOP OF the inset every
  * cell has. Replacing that inset left a top-level row's chevron flush against
- * the frame, its hover ground touching the edge, and the column starting 8px
- * further out than its own heading and every other column.
+ * the frame, its hover ground touching the edge, and the column starting further
+ * out than its own heading and every other column.
  */
 .crewlet-tree-grid__cell:first-child {
-  padding-inline-start: calc(var(--spacing-2) + var(--spacing-5) * var(--crewlet-tree-grid-depth, 0));
+  padding-inline-start: calc(var(--crewlet-tree-grid-edge) + var(--spacing-5) * var(--crewlet-tree-grid-depth, 0));
 }
 
 /*
@@ -192,9 +251,7 @@
 
 /*
  * A HEADLESS GRID keeps its header row for a screen reader and draws no band:
- * the row is taken out of the layout the way VisuallyHidden takes text out,
- * and the first row of the body loses the hairline that would otherwise sit
- * under the frame's own edge as a second line.
+ * the row is taken out of the layout the way VisuallyHidden takes text out.
  */
 .crewlet-tree-grid--headless .crewlet-tree-grid__head {
   position: absolute;
@@ -203,10 +260,6 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-.crewlet-tree-grid--headless .crewlet-tree-grid__head + [role='rowgroup'] > .crewlet-tree-grid__row:first-child {
-  border-top: 0;
 }
 
 /* The selection is where the reader is, so it takes the accent. */

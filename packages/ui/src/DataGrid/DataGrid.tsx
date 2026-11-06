@@ -19,6 +19,7 @@ import { EmptyState } from '../EmptyState/index.js';
 import { useMediaMatch } from '../MediaMatch/index.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 import { cx } from '../utils/cx.js';
+import { SHRINK_SHARE, tableTrack } from '../utils/tableTrack.js';
 
 /**
  * What activated a row: a click, a key on the row's overlay, or the
@@ -406,14 +407,6 @@ function compare(a: string | number, b: string | number): number {
   }
   return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
 }
-
-/**
- * The most of a grid one `shrink` column may take: a fraction, so it is the
- * same promise on a phone and a wide screen, and two at the cap still leave
- * three fifths of the grid to the flexible columns that are the point of it.
- */
-const SHRINK_CAP = '20%';
-const SHRINK_SHARE = 0.2;
 
 /** How many rows the squeeze check reads: a page's first screen. */
 const SQUEEZE_SAMPLE_ROWS = 12;
@@ -836,11 +829,7 @@ export function DataGrid<T>({
   }
 
   const template = drawnColumns
-    .map(
-      (c) =>
-        c.width ??
-        (c.icon ? DATA_GRID_ICON_TRACK : c.shrink ? `fit-content(${SHRINK_CAP})` : `minmax(${c.floor ?? 0}, 1fr)`),
-    )
+    .map((c) => tableTrack({ ...c, width: c.width ?? (c.icon ? DATA_GRID_ICON_TRACK : undefined) }))
     .join(' ');
 
   // A GROUPED ANSWER WITH NO ROWS ON THIS PAGE IS NOT AN EMPTY ANSWER: a band

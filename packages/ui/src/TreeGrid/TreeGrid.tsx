@@ -63,6 +63,7 @@ import {
   type TreeViewHandle,
 } from '../Tree/index.js';
 import { cx } from '../utils/cx.js';
+import { tableTrack } from '../utils/tableTrack.js';
 import { VisuallyHidden } from '../VisuallyHidden/index.js';
 
 export interface TreeGridColumn {
@@ -75,15 +76,28 @@ export interface TreeGridColumn {
    */
   headerHidden?: boolean | undefined;
   /**
-   * This column's grid track. One flexible column by default.
+   * An exact track, in place of the computed one. One flexible column by
+   * default, as `DataGrid` draws it. A column of one control is the control and
+   * the cell's padding on either side:
+   * `calc(var(--size-control-sm) + var(--spacing-3) * 2)`.
    *
-   * A LENGTH OR A FRACTION, NEVER A SIZE THE CONTENT DECIDES. Every row is a
-   * grid of its own on this template, so `auto`, `max-content` or
-   * `fit-content()` is sized row by row, and each row then starts its columns
-   * somewhere else. A column of one control is the control and the cell's
-   * padding on either side: `calc(var(--size-control-sm) + var(--spacing-2) * 2)`.
+   * A VALUE THAT A LIVE PUSH CHANGES TAKES A LENGTH, not a size its content
+   * decides: the track list is the whole table's, so a content-sized track moves
+   * every column after it whenever its widest value changes.
    */
   width?: string | undefined;
+  /**
+   * Shrink to content, up to a fifth of the grid (`fit-content(20%)`), for a
+   * column of values that hold still. One track list serves the header and every
+   * row, so the track is sized by all of them together.
+   */
+  shrink?: boolean | undefined;
+  /**
+   * The narrowest a flexible column may be drawn: its track is
+   * `minmax(floor, 1fr)` rather than `minmax(0, 1fr)`. For the column that is
+   * the point of the list, which at zero gave way to every column beside it.
+   */
+  floor?: string | undefined;
   /**
    * The grid's own width, in CSS pixels, below which this column is left out
    * with its header. A cell's words can then move into another column's.
@@ -525,7 +539,7 @@ export function TreeGrid({
     shown: (key) => drawn.some((one) => one.key === key),
   };
 
-  const template = drawn.map((one) => one.width ?? 'minmax(0, 1fr)').join(' ');
+  const template = drawn.map(tableTrack).join(' ');
 
   return (
     <div
@@ -557,7 +571,7 @@ export function TreeGrid({
                 ))}
               </div>
             </div>
-            <div role="rowgroup">
+            <div role="rowgroup" className="crewlet-tree-grid__body">
               {rows.map((id) => {
                 const add = isAddRow(id);
                 const cells = add ? add.cells : drawn.length;
