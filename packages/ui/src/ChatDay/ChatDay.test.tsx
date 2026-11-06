@@ -100,6 +100,13 @@ test('the pill pins within its own day, and its own margins stay positive', () =
   expect(rule(css, '.crewlet-chat-day')).toMatch(/position:\s*relative;/);
 });
 
+// THE RULE IS NEVER WHERE A THREAD KEEPS THE READER'S PLACE: older rows land
+// under it inside its day, so anchored there the view stayed put while they
+// pushed the reader's rows down (ChatThread steps over `overflow-anchor: none`).
+test("the day's rule is never a thread's anchor", () => {
+  expect(rule(sheet('ChatDay.css'), '.crewlet-chat-day__rule')).toMatch(/overflow-anchor:\s*none;/);
+});
+
 test('a day and its Jump to pill carry no axe violation', async () => {
   const { container } = render(
     <main>

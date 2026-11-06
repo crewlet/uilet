@@ -8,7 +8,7 @@
  */
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
-import { createRef } from 'react';
+import { createRef, type ReactNode } from 'react';
 import { afterEach, expect, test } from 'vitest';
 import { installSheets, installThemed } from '../../../../apps/ui-tests/src/cascade.js';
 import { Tag } from '../Tag/index.js';
@@ -132,6 +132,82 @@ test("holds the reader's place while what is above them changes", () => {
   tops.set('Message 0', 0);
   layout(log, 1100);
   rerender(<ChatThread label="Conversation">{[older, ...items(3)]}</ChatThread>);
+  expect(log.scrollTop).toBe(550);
+});
+
+// A PART THE HOST MARKS `overflow-anchor: none` IS NEVER THE ANCHOR, as the
+// browser's own anchoring skips it: a head that older items land under stays
+// put while the item the reader was at moves down by what landed. Mutation:
+// let the head be the anchor, and the view stays on the head as the items land.
+test('steps over a part the host marks overflow-anchor: none', () => {
+  const tops = new Map<string, number>([
+    ['Head', 0],
+    ['Message 1', 100],
+    ['Message 2', 400],
+  ]);
+  const rect = (top: number, height: number) =>
+    ({ x: 0, y: top, top, bottom: top + height, left: 0, right: 400, width: 400, height, toJSON: () => ({}) }) as DOMRect;
+  const placed = (log: HTMLElement) => {
+    log.getBoundingClientRect = () => rect(0, 400);
+    for (const p of Array.from(log.querySelectorAll('p'))) {
+      p.getBoundingClientRect = () => rect((tops.get(p.textContent ?? '') ?? 0) - log.scrollTop, 300);
+    }
+  };
+  const head = (
+    <p key="head" style={{ overflowAnchor: 'none' }}>
+      Head
+    </p>
+  );
+  const { rerender } = render(<ChatThread label="Conversation">{[head, ...items(2)]}</ChatThread>);
+  const log = screen.getByRole('log');
+  layout(log, 700);
+  placed(log);
+  rerender(<ChatThread label="Conversation">{[head, ...items(2)]}</ChatThread>);
+  expect(log.scrollTop).toBe(300);
+  log.scrollTop = 50;
+  fireEvent.scroll(log);
+  // Two older items, 300px between them, land under the head.
+  tops.set('Message 1', 400);
+  tops.set('Message 2', 700);
+  layout(log, 1000);
+  rerender(
+    <ChatThread label="Conversation">{[head, <p key="o1">Older 1</p>, <p key="o2">Older 2</p>, ...items(2)]}</ChatThread>,
+  );
+  expect(log.scrollTop).toBe(350);
+});
+
+// A DAY THAT RUNS PAST THE VIEW IS LOOKED INTO for the row at the top, as the
+// browser's anchoring looks into what it holds only part of: older rows land
+// at the start of the same day, and the day's own top does not move. Mutation:
+// take the first item in view whole, and the view stays on the day's top.
+test('looks into an item the view holds only part of for the row at its top', () => {
+  const tops = new Map<string, number>([
+    ['Message 1', 0],
+    ['Message 2', 300],
+    ['Message 3', 600],
+  ]);
+  const rect = (top: number, height: number) =>
+    ({ x: 0, y: top, top, bottom: top + height, left: 0, right: 400, width: 400, height, toJSON: () => ({}) }) as DOMRect;
+  const day = (rows: ReactNode[]) => <section key="day">{rows}</section>;
+  const placed = (log: HTMLElement, height: number) => {
+    log.getBoundingClientRect = () => rect(0, 400);
+    log.querySelector('section')!.getBoundingClientRect = () => rect(-log.scrollTop, height);
+    for (const p of Array.from(log.querySelectorAll('p'))) {
+      p.getBoundingClientRect = () => rect((tops.get(p.textContent ?? '') ?? 0) - log.scrollTop, 300);
+    }
+  };
+  const { rerender } = render(<ChatThread label="Conversation">{day(items(3))}</ChatThread>);
+  const log = screen.getByRole('log');
+  layout(log, 900);
+  placed(log, 900);
+  rerender(<ChatThread label="Conversation">{day(items(3))}</ChatThread>);
+  expect(log.scrollTop).toBe(500);
+  log.scrollTop = 250;
+  fireEvent.scroll(log);
+  for (const [text, top] of tops) tops.set(text, top + 300);
+  layout(log, 1200);
+  rerender(<ChatThread label="Conversation">{day([<p key="older">Older</p>, ...items(3)])}</ChatThread>);
+  placed(log, 1200);
   expect(log.scrollTop).toBe(550);
 });
 

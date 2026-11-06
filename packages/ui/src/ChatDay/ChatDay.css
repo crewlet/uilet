@@ -52,6 +52,8 @@
   height: 1px;
   margin: calc(var(--crewlet-chat-day-pill) / -2) 0 var(--crewlet-chat-day-gap);
   background: var(--color-edge-hairline);
+  /* Never the thread's anchor: older rows land under it, inside its day. */
+  overflow-anchor: none;
 }
 
 /* The New line on the day's rule covers the rule, as one line. */
