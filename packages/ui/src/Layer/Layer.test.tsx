@@ -717,3 +717,36 @@ test('a page shortcut can ask whether anything MODAL is up', () => {
   expect(isModalLayerOpen()).toBe(false);
   popup.unmount();
 });
+
+test('focus handed back to an opener on screen does not scroll the page; one off screen is scrolled to', () => {
+  // focus() with no preventScroll scrolled a page that needed none to its
+  // opener (93px measured) when a modal closed.
+  function Opener() {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <button onClick={() => setOpen(true)}>Store a secret</button>
+        {open && (
+          <Dialog title="Store" onClose={() => setOpen(false)}>
+            <button>Save</button>
+          </Dialog>
+        )}
+      </>
+    );
+  }
+  render(<Opener />);
+  const opener = screen.getByRole('button', { name: 'Store a secret' });
+  const focus = vi.spyOn(opener, 'focus');
+  for (const [top, preventScroll] of [
+    [120, true],
+    [-400, false],
+  ] as const) {
+    opener.getBoundingClientRect = () => ({ top, bottom: top + 30, left: 40, right: 200, width: 160, height: 30, x: 40, y: top }) as DOMRect;
+    opener.focus();
+    fireEvent.click(opener);
+    focus.mockClear();
+    press('Escape');
+    expect(focus).toHaveBeenCalledWith({ preventScroll });
+    expect(document.activeElement).toBe(opener);
+  }
+});
