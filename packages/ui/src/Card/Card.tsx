@@ -18,6 +18,7 @@ import {
 } from 'react';
 import { Count } from '../Count/index.js';
 import { cx } from '../utils/cx.js';
+import { Text } from '../Text/index.js';
 import { CardHeaderSlotContext, type CardHeaderSlot } from './headerSlot.js';
 import {
   HeadingLevelProvider,
@@ -627,7 +628,14 @@ const CardTitle = ({ as, truncate = false, className, children, ...rest }: CardT
       id={rest.id ?? card?.titleId}
       className={cx('crewlet-card__title', truncate && 'crewlet-card__title--truncate', className)}
     >
-      {children}
+      {truncate ? (
+        // The words are a truncating Text, so a cut title carries them on hover.
+        <Text variant="inherit" truncate>
+          {children}
+        </Text>
+      ) : (
+        children
+      )}
     </Tag>
   );
 };

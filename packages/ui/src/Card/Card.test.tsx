@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -885,4 +885,21 @@ test('a header asked to stack its subtitle says so, and only when it has one', (
   );
   const heads = [...container.querySelectorAll('.crewlet-card__header')];
   expect(heads.map((head) => head.classList.contains('crewlet-card__header--stacked'))).toEqual([true, false, false]);
+});
+
+test("a truncating title carries its whole words on hover when it is cut", () => {
+  // Cut on a phone ("Scratch repositories and commit i...") with no title.
+  render(
+    <Card>
+      <Card.Header>
+        <Card.Title truncate>Scratch repositories and commit identity</Card.Title>
+      </Card.Header>
+    </Card>,
+  );
+  const words = screen.getByText('Scratch repositories and commit identity');
+  expect(words.classList.contains('crewlet-text--truncate')).toBe(true);
+  Object.defineProperty(words, 'clientWidth', { configurable: true, value: 200 });
+  Object.defineProperty(words, 'scrollWidth', { configurable: true, value: 320 });
+  fireEvent.mouseEnter(words);
+  expect(words.getAttribute('title')).toBe('Scratch repositories and commit identity');
 });
